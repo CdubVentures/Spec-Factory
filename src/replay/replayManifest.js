@@ -1,9 +1,5 @@
 import zlib from 'node:zlib';
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function normalizeUrl(value) {
   const token = String(value || '').trim();

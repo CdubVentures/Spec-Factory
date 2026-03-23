@@ -2,7 +2,7 @@
 
 Validated: 2026-03-22 (round_mode fully retired from all code/fixtures/docs. Feedback loops clarified: per-run vs cross-product learning. LLM reason string fixed).
 
-Architecture audit: 2026-03-22. See `PIPELINE-CONTRACT-AUDIT.md` for full audit results, P0 SSOT fixes (complete), and P1 persistence work (in progress).
+Architecture audit: 2026-03-22. See `PIPELINE-CONTRACT-AUDIT.md` for full results. P0 SSOT fixes complete. P1 persistence complete (field_history table, write/read paths, fetch drain timeout, Zod schemas). P2 re-audited (all findings resolved). P3 complete (processDiscoveryResults decomposed 674→344 LOC into 3 modules).
 
 Source of truth:
 
@@ -13,7 +13,10 @@ Source of truth:
 - `src/features/indexing/discovery/stages/searchPlanner.js`
 - `src/features/indexing/discovery/stages/queryJourney.js`
 - `src/features/indexing/discovery/discoverySearchExecution.js`
-- `src/features/indexing/discovery/discoveryResultProcessor.js`
+- `src/features/indexing/discovery/discoveryResultProcessor.js` (orchestrator, 344 LOC)
+- `src/features/indexing/discovery/discoveryResultTraceBuilder.js` (trace lifecycle)
+- `src/features/indexing/discovery/discoveryResultClassifier.js` (URL/domain classification)
+- `src/features/indexing/discovery/discoveryResultPayloadBuilder.js` (SERP explorer + payloads)
 
 ## 8-Stage Pipeline Flow (Stages 01+02 parallel)
 
@@ -241,9 +244,11 @@ Search Results:
 - `src/features/indexing/search/searchProviders.js`
 - `src/features/indexing/search/searchGoogle.js`
 
-SERP Triage:
-- `src/features/indexing/discovery/discoveryResultProcessor.js`
-- triage helpers under `src/features/indexing/discovery/`
+SERP Triage (decomposed in P3):
+- `src/features/indexing/discovery/discoveryResultProcessor.js` (orchestrator, 344 LOC)
+- `src/features/indexing/discovery/discoveryResultTraceBuilder.js` (trace lifecycle)
+- `src/features/indexing/discovery/discoveryResultClassifier.js` (URL/domain classification)
+- `src/features/indexing/discovery/discoveryResultPayloadBuilder.js` (SERP explorer + payloads)
 - `src/features/indexing/discovery/serpSelector.js`
 - `src/features/indexing/discovery/serpSelectorLlmAdapter.js`
 - `src/research/serpReranker.js`

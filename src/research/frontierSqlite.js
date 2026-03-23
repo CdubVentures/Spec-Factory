@@ -9,11 +9,7 @@
 import Database from 'better-sqlite3';
 import { canonicalizeUrl } from './urlNormalize.js';
 import { configInt } from '../shared/settingsAccessor.js';
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function nowMs() {
   return Date.now();

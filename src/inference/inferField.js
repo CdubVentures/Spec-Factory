@@ -1,10 +1,6 @@
 import { extractRootDomain, nowIso } from '../utils/common.js';
 import { toRawFieldKey } from '../utils/fieldKeys.js';
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function toNumber(value, fallback = 0) {
   const parsed = Number.parseFloat(String(value ?? ''));

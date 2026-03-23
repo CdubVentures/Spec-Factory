@@ -17,7 +17,7 @@ export const SUMMARY_SHAPE = Object.freeze([
   { key: 'error_rate', coerce: 'float' },
   { key: 'docs_per_min', coerce: 'float' },
   { key: 'fields_per_min', coerce: 'float' },
-  { key: 'top_blockers', coerce: 'array' },
+  { key: 'top_blockers', coerce: 'array', itemRef: 'RuntimeOpsBlocker' },
 ]);
 export const SUMMARY_KEYS = Object.freeze(SUMMARY_SHAPE.map(s => s.key));
 
@@ -98,7 +98,7 @@ export const FALLBACK_EVENT_SHAPE = Object.freeze([
   { key: 'to_mode', coerce: 'string' },
   { key: 'reason', coerce: 'string' },
   { key: 'attempt', coerce: 'int' },
-  { key: 'result', coerce: 'string' },
+  { key: 'result', coerce: 'string', literals: ['pending', 'succeeded', 'exhausted', 'failed'] },
   { key: 'elapsed_ms', coerce: 'int' },
   { key: 'ts', coerce: 'string' },
 ]);
@@ -111,7 +111,7 @@ export const HOST_FALLBACK_PROFILE_SHAPE = Object.freeze([
   { key: 'success_rate', coerce: 'float' },
   { key: 'exhaustion_count', coerce: 'int' },
   { key: 'blocked_count', coerce: 'int' },
-  { key: 'modes_used', coerce: 'array' },
+  { key: 'modes_used', coerce: 'array', itemType: 'string' },
 ]);
 export const HOST_FALLBACK_PROFILE_KEYS = Object.freeze(HOST_FALLBACK_PROFILE_SHAPE.map(s => s.key));
 
@@ -124,12 +124,12 @@ export const QUEUE_STATE_KEYS = Object.freeze([
 export const QUEUE_JOB_SHAPE = Object.freeze([
   { key: 'id', coerce: 'string' },
   { key: 'lane', coerce: 'string' },
-  { key: 'status', coerce: 'string' },
+  { key: 'status', coerce: 'string', literals: ['queued', 'running', 'done', 'failed', 'cooldown'] },
   { key: 'host', coerce: 'string' },
   { key: 'url', coerce: 'string' },
   { key: 'query', coerce: 'string', nullable: true },
   { key: 'reason', coerce: 'string' },
-  { key: 'field_targets', coerce: 'array' },
+  { key: 'field_targets', coerce: 'array', itemType: 'string' },
   { key: 'cooldown_until', coerce: 'string', nullable: true },
   { key: 'created_at', coerce: 'string' },
   { key: 'transitions', coerce: 'array' },
@@ -182,8 +182,8 @@ export const PIPELINE_TRANSITION_KEYS = Object.freeze(PIPELINE_TRANSITION_SHAPE.
 export const WORKER_ROW_BASE_SHAPE = Object.freeze([
   { key: 'worker_id', coerce: 'string' },
   { key: 'pool', coerce: 'string' },
-  { key: 'state', coerce: 'string' },
-  { key: 'stage', coerce: 'string' },
+  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued'] },
+  { key: 'stage', coerce: 'string', literals: ['search', 'fetch', 'parse', 'index', 'llm'] },
   { key: 'current_url', coerce: 'string' },
   { key: 'started_at', coerce: 'string' },
   { key: 'elapsed_ms', coerce: 'int' },
@@ -244,7 +244,7 @@ export const EXTRACTION_RESPONSE_KEYS = Object.freeze(['fields']);
 export const EXTRACTION_FIELD_SHAPE = Object.freeze([
   { key: 'field', coerce: 'string' },
   { key: 'value', coerce: 'string', nullable: true },
-  { key: 'status', coerce: 'string' },
+  { key: 'status', coerce: 'string', literals: ['accepted', 'conflict', 'candidate', 'unknown'] },
   { key: 'confidence', coerce: 'float' },
   { key: 'method', coerce: 'string' },
   { key: 'source_tier', coerce: 'int', nullable: true },
@@ -252,7 +252,7 @@ export const EXTRACTION_FIELD_SHAPE = Object.freeze([
   { key: 'refs_count', coerce: 'int' },
   { key: 'batch_id', coerce: 'string', nullable: true },
   { key: 'round', coerce: 'int' },
-  { key: 'candidates', coerce: 'array' },
+  { key: 'candidates', coerce: 'array', itemRef: 'ExtractionCandidate' },
 ]);
 export const EXTRACTION_FIELD_KEYS = Object.freeze(EXTRACTION_FIELD_SHAPE.map(s => s.key));
 
@@ -278,7 +278,7 @@ export const LLM_CALL_ROW_SHAPE = Object.freeze([
   { key: 'round', coerce: 'int' },
   { key: 'model', coerce: 'string' },
   { key: 'provider', coerce: 'string' },
-  { key: 'status', coerce: 'string' },
+  { key: 'status', coerce: 'string', literals: ['active', 'done', 'failed'] },
   { key: 'prompt_tokens', coerce: 'int' },
   { key: 'completion_tokens', coerce: 'int' },
   { key: 'total_tokens', coerce: 'int' },

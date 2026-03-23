@@ -4,16 +4,7 @@ import { loadCategoryBrain } from '../features/indexing/learning/index.js';
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
 import { writeGeneratedCategoryTests } from './generateCategoryTests.js';
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function toFloat(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt, toFloat } from '../shared/valueNormalizers.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];

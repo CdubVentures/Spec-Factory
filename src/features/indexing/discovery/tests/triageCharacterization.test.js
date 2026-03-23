@@ -505,6 +505,181 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.ok(eventNames.includes('discovery_results_reranked'), 'emits discovery_results_reranked');
   });
 
+  it('trace enrichment populates reason_codes on serp_explorer candidates', async () => {
+    const result = await processDiscoveryResults({
+      rawResults: makeRawResults(),
+      searchAttempts: [{ query: 'razer viper v3 pro specs', attempts: 1, result_count: 2, providers: ['google'] }],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: 'missing_fields',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger: makeStubLogger(),
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight', 'sensor'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
+    });
+
+    // Trace enrichment produces reason_codes on every candidate in serp_explorer
+    const allCandidates = result.serp_explorer.queries.flatMap((q) => q.candidates);
+    assert.ok(allCandidates.length > 0, 'at least one trace candidate');
+    for (const c of allCandidates) {
+      assert.ok(Array.isArray(c.reason_codes), 'reason_codes is array');
+      // Every selected candidate must have selected_top_k; others below_top_k_cutoff
+      const hasSelectionCode = c.reason_codes.some(
+        (code) => code === 'selected_top_k' || code === 'below_top_k_cutoff'
+      );
+      assert.ok(hasSelectionCode, `candidate ${c.url} has selection reason code`);
+    }
+    // razer.com candidate should have brand_match + approved_domain
+    const razerCandidate = allCandidates.find((c) => c.host === 'razer.com');
+    if (razerCandidate) {
+      assert.ok(razerCandidate.reason_codes.includes('brand_match'), 'razer.com has brand_match');
+      assert.ok(razerCandidate.reason_codes.includes('approved_domain'), 'razer.com has approved_domain');
+    }
+  });
+
+  it('canonical URL merge deduplicates same URL from different providers', async () => {
+    // Same URL appears twice with different providers
+    const rawResults = [
+      {
+        url: 'https://razer.com/gaming-mice/razer-viper-v3-pro',
+        title: 'Razer Viper V3 Pro',
+        snippet: 'Official product page',
+        provider: 'google',
+        query: 'razer viper v3 pro specs',
+      },
+      {
+        url: 'https://razer.com/gaming-mice/razer-viper-v3-pro',
+        title: 'Razer Viper V3 Pro',
+        snippet: 'Official product page',
+        provider: 'bing',
+        query: 'razer viper v3 pro specs',
+      },
+      {
+        url: 'https://rtings.com/mouse/reviews/razer/viper-v3-pro',
+        title: 'RTINGS Review',
+        snippet: 'Lab review',
+        provider: 'google',
+        query: 'razer viper v3 pro review',
+      },
+    ];
+
+    const logger = makeStubLogger();
+    const result = await processDiscoveryResults({
+      rawResults,
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger,
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
+    });
+
+    // 3 raw results but razer.com appears twice → 2 unique candidates
+    const uniqueUrls = new Set(result.candidates.map((c) => c.url));
+    assert.equal(uniqueUrls.size, 2, 'duplicate URL merged into one candidate');
+
+    // canon_merge_count should be reflected in serp_explorer
+    assert.ok(result.serp_explorer.canon_merge_count >= 1, 'canon_merge_count >= 1');
+  });
+
+  it('domain classification produces safety map for mixed hosts', async () => {
+    const logger = makeStubLogger();
+    await processDiscoveryResults({
+      rawResults: [
+        ...makeRawResults(),
+        {
+          url: 'https://spam-site.biz/razer-viper',
+          title: 'Spam', snippet: 'Spam', provider: 'google',
+          query: 'razer viper v3 pro specs',
+        },
+      ],
+      searchAttempts: [],
+      searchJournal: [],
+      internalSatisfied: false,
+      externalSearchReason: '',
+      config: makeConfig(),
+      storage: makeStubStorage(),
+      categoryConfig: makeCategoryConfig(),
+      job: { productId: 'p1' },
+      runId: 'r1',
+      logger,
+      runtimeTraceWriter: null,
+      frontierDb: makeStubFrontierDb(),
+      variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
+      identityLock: makeIdentityLock(),
+      brandResolution: { officialDomain: 'razer.com' },
+      missingFields: ['weight'],
+      learning: { fieldYield: {} },
+      llmContext: {},
+      searchProfileBase: { variant_guard_terms: [] },
+      llmQueries: [],
+      queries: ['razer viper v3 pro specs'],
+      searchProfilePlanned: makeSearchProfilePlanned(),
+      searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
+      providerState: {},
+      queryConcurrency: 1,
+      discoveryCap: 20,
+      effectiveHostPlan: null,
+      _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
+    });
+
+    // domains_classified event should contain classification rows
+    const classifiedEvent = logger.events.find((e) => e.event === 'domains_classified');
+    assert.ok(classifiedEvent, 'domains_classified event emitted');
+    const rows = classifiedEvent.payload.classifications;
+    assert.ok(Array.isArray(rows) && rows.length > 0, 'classification rows exist');
+
+    // Each row has the expected shape
+    for (const row of rows) {
+      assert.equal(typeof row.domain, 'string');
+      assert.ok(['blocked', 'safe', 'caution'].includes(row.safety_class), `valid safety_class: ${row.safety_class}`);
+      assert.equal(typeof row.budget_score, 'number');
+      assert.ok(row.budget_score >= 10 && row.budget_score <= 90, `budget_score in range: ${row.budget_score}`);
+    }
+  });
+
   it('hard-drops denied hosts and non-https, keeps valid candidates', async () => {
     const rawResults = [
       ...makeRawResults(),

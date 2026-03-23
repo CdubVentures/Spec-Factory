@@ -1,7 +1,7 @@
 # Discovery Pipeline — Plain English Audit
 
 > Generated 2026-03-22. Verified against live code with line numbers.
-> Updated 2026-03-22: P0 SSOT fixes complete (shared constants, unified naming, stableHash extraction, array metadata refactor). P1 Phase A complete (field_history table in specDb). See `PIPELINE-CONTRACT-AUDIT.md` for full audit.
+> Updated 2026-03-22: P0 SSOT fixes complete. P1 complete (field_history persistence, fetch drain timeout, Zod schemas). P2 re-audited (all findings resolved). P3 complete (processDiscoveryResults decomposed 674→344 LOC). Legacy archetype pipeline removed — tier-only is sole query generation path. See `PIPELINE-CONTRACT-AUDIT.md` for full audit.
 
 ---
 
@@ -196,16 +196,13 @@ Raw search result rows — each with a URL, title, snippet, provider name, and t
 
 Takes the raw search results and decides which URLs are worth actually fetching and extracting data from. Two paths:
 
-**Deterministic Path** (default):
-1. Hard-drop filter: Remove CAPTCHA pages, PII-containing URLs, invalid URLs
-2. Domain classification: Categorize each URL (official site, review site, forum, spec database, etc.)
-3. Soft labels: Annotate relevance signals
-4. Lane assignment: Put URLs into priority lanes
-5. Lane quota selection: Pick the top URLs from each lane up to the discovery cap
-
-**Selector Path** (when enabled):
-- An LLM directly picks which URLs to keep, bypassing the deterministic lane logic
-- Falls back to deterministic if the LLM fails
+The triage flow (decomposed into 4 files in P3):
+1. Hard-drop filter: Remove non-HTTPS, denied hosts, cooldown violations
+2. Classify and deduplicate URLs (`discoveryResultClassifier.js`)
+3. Deterministic domain safety heuristics (`discoveryResultClassifier.js`)
+4. LLM selector picks which URLs to keep (the only triage path — no deterministic fallback)
+5. Enrich candidate traces with reason codes (`discoveryResultTraceBuilder.js`)
+6. Build SERP explorer and write payloads (`discoveryResultPayloadBuilder.js`)
 
 ### What Comes Out
 
@@ -251,6 +248,8 @@ Each field accumulates its own search history via `previousFieldHistories`:
 - `no_value_attempts` — how many searches returned zero useful values
 
 This drives **Tier 3 progressive enrichment** — each retry adds new angles based on what hasn't been tried.
+
+**Crash recovery (P1):** Field histories are persisted to the `field_history` table in specDb at the end of each round (inside the `exportToSpecDb()` transaction, atomic with all other writes). On startup, `runUntilComplete.js` loads histories from DB if available. In-memory handoff remains the fast path between rounds within the same process; DB read is the crash-recovery path.
 
 ### Per-URL History
 

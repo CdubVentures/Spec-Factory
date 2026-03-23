@@ -153,7 +153,7 @@ export const SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE = Object.freeze([
   { key: 'hint_source', coerce: 'string' },
   { key: 'tier', coerce: 'string' },
   { key: 'group_key', coerce: 'string' },
-  { key: 'target_fields', coerce: 'array' },
+  { key: 'target_fields', coerce: 'array', itemType: 'string' },
 ]);
 
 /**

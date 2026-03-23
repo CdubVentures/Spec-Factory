@@ -18,7 +18,7 @@ export interface RuntimeOpsSummary {
   error_rate: number;
   docs_per_min: number;
   fields_per_min: number;
-  top_blockers: unknown[];
+  top_blockers: RuntimeOpsBlocker[];
 }
 
 export interface RuntimeOpsBlocker {
@@ -79,7 +79,7 @@ export interface FallbackEventRow {
   to_mode: string;
   reason: string;
   attempt: number;
-  result: string;
+  result: 'pending' | 'succeeded' | 'exhausted' | 'failed';
   elapsed_ms: number;
   ts: string;
 }
@@ -91,18 +91,18 @@ export interface HostFallbackProfile {
   success_rate: number;
   exhaustion_count: number;
   blocked_count: number;
-  modes_used: unknown[];
+  modes_used: string[];
 }
 
-export interface QueueJobRow {
+export interface QueueJobRowGen {
   id: string;
   lane: string;
-  status: string;
+  status: 'queued' | 'running' | 'done' | 'failed' | 'cooldown';
   host: string;
   url: string;
   query: string | null;
   reason: string;
-  field_targets: unknown[];
+  field_targets: string[];
   cooldown_until: string | null;
   created_at: string;
   transitions: unknown[];
@@ -142,7 +142,7 @@ export interface PipelineTransition {
 export interface ExtractionFieldRow {
   field: string;
   value: string | null;
-  status: string;
+  status: 'accepted' | 'conflict' | 'candidate' | 'unknown';
   confidence: number;
   method: string;
   source_tier: number | null;
@@ -150,7 +150,7 @@ export interface ExtractionFieldRow {
   refs_count: number;
   batch_id: string | null;
   round: number;
-  candidates: unknown[];
+  candidates: ExtractionCandidate[];
 }
 
 export interface ExtractionCandidate {
@@ -170,7 +170,7 @@ export interface LlmCallRow {
   round: number;
   model: string;
   provider: string;
-  status: string;
+  status: 'active' | 'done' | 'failed';
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
@@ -183,7 +183,7 @@ export interface LlmCallRow {
   ts: string;
 }
 
-export interface LlmCallsDashboardSummary {
+export interface LlmCallsDashboardSummaryGen {
   total_calls: number;
   active_calls: number;
   completed_calls: number;
@@ -198,7 +198,7 @@ export interface LlmCallsDashboardSummary {
   by_call_type: unknown[];
 }
 
-export interface SearchResultEntry {
+export interface SerpSearchResultEntry {
   title: string;
   url: string;
   domain: string;
@@ -211,7 +211,7 @@ export interface SearchResultEntry {
   already_crawled: boolean;
 }
 
-export interface SearchResultDetail {
+export interface SerpSearchResultDetail {
   query: string;
   provider: string;
   dedupe_count: number;
@@ -224,7 +224,7 @@ export interface TriageScoreComponents {
   penalties: number;
 }
 
-export interface TriageCandidate {
+export interface TriageCandidateGen {
   url: string;
   title: string;
   domain: string;
@@ -296,7 +296,7 @@ export interface SearchPlanEnhancementRow {
   hint_source: string;
   tier: string;
   group_key: string;
-  target_fields: unknown[];
+  target_fields: string[];
 }
 
 export interface PrefetchNeedSetBase {
@@ -317,14 +317,14 @@ export interface PrefetchNeedSetBase {
 
 export interface BrandResolutionData {
   brand: string;
-  status: string;
-  skip_reason: string;
+  status?: string;
+  skip_reason?: string;
   official_domain: string;
-  aliases: unknown[];
+  aliases: string[];
   support_domain: string;
   confidence: number | null;
-  candidates: unknown[];
-  reasoning: unknown[];
+  candidates?: unknown[];
+  reasoning?: string[];
 }
 
 export interface SearchPlanPassBase {
@@ -353,8 +353,8 @@ export interface PrefetchSearchResult {
   result_count: number;
   duration_ms: number;
   worker_id: string;
-  throttle_events: number;
-  throttle_wait_ms: number;
+  throttle_events?: number;
+  throttle_wait_ms?: number;
   ts: string;
 }
 
@@ -369,8 +369,8 @@ export interface DomainHealthRow {
   notes: string;
 }
 
-export interface PrefetchLlmCall {
-  status: string;
+export interface PrefetchLlmCallGen {
+  status: 'finished' | 'failed' | 'running';
   reason: string;
   model: string;
   provider: string;
@@ -383,11 +383,11 @@ export interface PrefetchLlmCall {
 
 // WHY: Worker row is base fields (required) + pool-specific extras (all optional).
 // The pool determines which extra fields are populated.
-export interface RuntimeOpsWorkerRow {
+export interface RuntimeOpsWorkerRowGen {
   worker_id: string;
   pool: string;
-  state: string;
-  stage: string;
+  state: 'idle' | 'running' | 'stuck' | 'queued';
+  stage: 'search' | 'fetch' | 'parse' | 'index' | 'llm';
   current_url: string;
   started_at: string;
   elapsed_ms: number;

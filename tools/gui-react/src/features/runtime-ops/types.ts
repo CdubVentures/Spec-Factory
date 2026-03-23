@@ -1,30 +1,70 @@
+// ── Imports from generated backend shape descriptors ──
+
+import type {
+  RuntimeOpsSummary,
+  RuntimeOpsBlocker,
+  RuntimeOpsDocumentRow,
+  RuntimeOpsDocumentDetail,
+  PoolMetric,
+  QualityMetric,
+  FailureMetric,
+  ExtractionCandidate,
+  ExtractionFieldRow,
+  FallbackEventRow,
+  HostFallbackProfile,
+  LaneSummary,
+  BlockedHostEntry,
+  PipelineStage,
+  PipelineTransition,
+  LlmCallRow,
+  SearchPlanEnhancementRow,
+  TriageScoreComponents,
+  SerpTriageFunnel,
+  DomainHealthRow,
+  PrefetchSearchResult,
+  BrandResolutionData,
+  QueryJourneyData,
+  QueueJobRowGen,
+  RuntimeOpsWorkerRowGen,
+  PrefetchLlmCallGen,
+  LlmCallsDashboardSummaryGen,
+  TriageCandidateGen,
+  SearchPlanPassBase,
+  SerpTriageEnvelope,
+  SerpSearchResultDetail,
+} from './types.generated';
+
+// ── Pure re-exports (identical to generated) ──
+
+export type {
+  RuntimeOpsSummary,
+  RuntimeOpsBlocker,
+  RuntimeOpsDocumentRow,
+  RuntimeOpsDocumentDetail,
+  PoolMetric,
+  QualityMetric,
+  FailureMetric,
+  ExtractionCandidate,
+  ExtractionFieldRow,
+  FallbackEventRow,
+  HostFallbackProfile,
+  LaneSummary,
+  BlockedHostEntry,
+  PipelineStage,
+  PipelineTransition,
+  LlmCallRow,
+  SearchPlanEnhancementRow,
+  TriageScoreComponents,
+  SerpTriageFunnel,
+  DomainHealthRow,
+  PrefetchSearchResult,
+  BrandResolutionData,
+  QueryJourneyData,
+};
+
+// ── UI-only tab / badge types ──
+
 export type RuntimeOpsTab = 'overview' | 'workers' | 'documents' | 'extraction' | 'fallbacks' | 'queue' | 'compound';
-
-export interface RuntimeOpsSummaryResponse {
-  run_id: string;
-  status: string;
-  round: number;
-  phase_cursor?: string;
-  boot_step?: string;
-  boot_progress?: number;
-  total_fetches: number;
-  total_parses: number;
-  total_llm_calls: number;
-  error_rate: number;
-  docs_per_min: number;
-  fields_per_min: number;
-  top_blockers: RuntimeOpsBlocker[];
-}
-
-export interface RuntimeOpsBlocker {
-  host: string;
-  error_count: number;
-}
-
-export interface RuntimeOpsWorkersResponse {
-  run_id: string;
-  workers: RuntimeOpsWorkerRow[];
-}
 
 export type RuntimeIdxBadgeState = 'active' | 'off';
 
@@ -35,17 +75,141 @@ export interface RuntimeIdxBadge {
   tooltip: string;
 }
 
-export interface RuntimeOpsDocumentRow {
-  url: string;
-  host: string;
-  status: string;
-  status_code: number | null;
-  bytes: number | null;
-  content_type: string | null;
-  content_hash: string | null;
-  dedupe_outcome: string | null;
-  parse_method: string | null;
-  last_event_ts: string;
+// ── Extended interfaces (narrow or add fields over generated base) ──
+
+export interface RuntimeOpsSummaryResponse extends RuntimeOpsSummary {
+  run_id: string;
+}
+
+export interface RuntimeOpsDocumentDetailResponse extends RuntimeOpsDocumentDetail {
+  run_id: string;
+  timeline: RuntimeOpsTimelineEntry[];
+}
+
+export interface QueueJobRow extends QueueJobRowGen {
+  transitions: QueueTransition[];
+}
+
+export interface RuntimeOpsWorkerRow extends RuntimeOpsWorkerRowGen {
+  idx_runtime?: RuntimeIdxBadge[];
+}
+
+export interface PrefetchLlmCall extends PrefetchLlmCallGen {
+  tokens: { input: number; output: number };
+}
+
+export interface LlmCallsDashboardSummary extends LlmCallsDashboardSummaryGen {
+  by_model: Array<{ model: string; calls: number; cost_usd: number }>;
+  by_call_type: Array<{ call_type: string; cost_usd: number }>;
+}
+
+export interface TriageCandidate extends TriageCandidateGen {
+  score_components: TriageScoreComponents;
+  primary_lane: number | null;
+}
+
+export interface SearchPlanPass extends SearchPlanPassBase {
+  queries_generated: string[];
+  query_target_map: Record<string, string[]>;
+  missing_critical_fields: string[];
+  source?: string;
+  enhancement_rows?: SearchPlanEnhancementRow[];
+}
+
+export interface SerpTriageResult extends SerpTriageEnvelope {
+  funnel?: SerpTriageFunnel | null;
+  candidates: TriageCandidate[];
+}
+
+export interface SearchResultDetail extends SerpSearchResultDetail {
+  results: SerpResultRow[];
+  screenshot_filename?: string;
+}
+
+// ── Full definitions (can't use extends — many fields change from required to optional) ──
+
+// WHY: Can't use extends PrefetchNeedSetBase — many fields change from required to optional.
+export interface PrefetchNeedSetData {
+  total_fields: number;
+  identity_state?: string | null;
+  summary?: PrefetchNeedSetSummary;
+  blockers?: { missing: number; weak: number; conflict: number; needs_exact_match?: number; search_exhausted?: number };
+  focus_fields?: string[];
+  fields?: NeedSetField[];
+  bundles?: PrefetchSchema4Bundle[];
+  profile_mix?: PrefetchNeedSetProfileMix;
+  profile_influence?: PrefetchNeedSetProfileInfluence | null;
+  tier_allocation?: PrefetchNeedSetTierAllocation | null;
+  rows?: PrefetchNeedSetPlannerRow[];
+  deltas?: Array<{ field: string; from: string; to: string }>;
+  round?: number;
+  schema_version?: string | null;
+  snapshots?: Array<{ needset_size: number; total_fields: number; identity_state: string | null; ts: string }>;
+  debug?: {
+    suppressed_duplicate_rows: string[];
+    state_inputs: Record<string, unknown>;
+    bundle_assignment_notes: string[];
+  };
+  needset_size?: number;
+}
+
+// WHY: Can't use extends PrefetchSearchProfileBase — many fields change from required to optional.
+export interface PrefetchSearchProfileData {
+  query_count: number;
+  selected_query_count?: number;
+  provider: string;
+  llm_query_planning: boolean;
+  llm_query_model?: string;
+  llm_queries?: Array<{ query?: string; target_fields?: string[] }>;
+  identity_aliases: Array<string | PrefetchSearchProfileAlias>;
+  variant_guard_terms: string[];
+  focus_fields?: string[];
+  query_rows: PrefetchSearchProfileQueryRow[];
+  query_guard: Record<string, number>;
+  hint_source_counts?: Record<string, number>;
+  field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
+  field_rule_hint_counts_by_field?: Record<string, PrefetchFieldRuleHintCountsByField>;
+  generated_at?: string;
+  product_id?: string;
+  source?: string;
+  query_reject_log?: Array<{ query?: string; source?: string; reason: string; stage?: string; detail?: string }>;
+  alias_reject_log?: Array<{ alias?: string; source?: string; reason?: string; stage?: string }>;
+  effective_host_plan?: Record<string, unknown> | null;
+  brand_resolution?: {
+    officialDomain: string;
+    supportDomain: string;
+    aliases: string[];
+    confidence: number;
+    reasoning: string[];
+  } | null;
+  base_model?: string;
+  aliases?: string[];
+  discovered_count?: number;
+  approved_count?: number;
+  candidate_count?: number;
+  selected_count?: number;
+  llm_serp_selector?: boolean;
+  serp_explorer?: {
+    query_count: number;
+    candidates_checked: number;
+    candidates_sent?: number;
+    urls_triaged: number;
+    urls_selected: number;
+    urls_rejected: number;
+    dedupe_input: number;
+    dedupe_output: number;
+    duplicates_removed: number;
+    hard_drop_count?: number;
+    soft_exclude_count?: number;
+    llm_triage_applied: boolean;
+  } | null;
+}
+
+// ── UI-only response / wrapper types ──
+
+export interface RuntimeOpsWorkersResponse {
+  run_id: string;
+  workers: RuntimeOpsWorkerRow[];
 }
 
 export interface RuntimeOpsDocumentsResponse {
@@ -62,25 +226,6 @@ export interface RuntimeOpsTimelineEntry {
   duration_ms?: number | null;
   parse_method?: string | null;
   evidence_chunks?: number | null;
-}
-
-export interface RuntimeOpsDocumentDetailResponse {
-  run_id: string;
-  url: string;
-  host: string;
-  timeline: RuntimeOpsTimelineEntry[];
-  status_code: number | null;
-  bytes: number | null;
-  parse_method: string | null;
-  candidates: number | null;
-  evidence_chunks: number | null;
-}
-
-export interface PoolMetric {
-  active: number;
-  queued: number;
-  completed: number;
-  failed: number;
 }
 
 export interface RuntimeOpsMetricsRailData {
@@ -110,58 +255,12 @@ export interface ProcessStatusResponse {
 
 // ── Extraction Tab ──
 
-export interface ExtractionCandidate {
-  value: string;
-  method: string;
-  confidence: number;
-  source_host: string;
-  source_tier: number;
-  snippet_id: string | null;
-  quote: string | null;
-}
-
-export interface ExtractionFieldRow {
-  field: string;
-  value: string | null;
-  status: 'accepted' | 'conflict' | 'candidate' | 'unknown';
-  confidence: number;
-  method: string;
-  source_tier: number | null;
-  source_host: string;
-  refs_count: number;
-  batch_id: string | null;
-  round: number;
-  candidates: ExtractionCandidate[];
-}
-
 export interface ExtractionFieldsResponse {
   run_id: string;
   fields: ExtractionFieldRow[];
 }
 
 // ── Fallbacks Tab ──
-
-export interface FallbackEventRow {
-  url: string;
-  host: string;
-  from_mode: string;
-  to_mode: string;
-  reason: string;
-  attempt: number;
-  result: 'pending' | 'succeeded' | 'exhausted' | 'failed';
-  elapsed_ms: number;
-  ts: string;
-}
-
-export interface HostFallbackProfile {
-  host: string;
-  fallback_total: number;
-  success_count: number;
-  success_rate: number;
-  exhaustion_count: number;
-  blocked_count: number;
-  modes_used: string[];
-}
 
 export interface FallbacksResponse {
   run_id: string;
@@ -178,37 +277,6 @@ export interface QueueTransition {
   reason: string;
 }
 
-export interface QueueJobRow {
-  id: string;
-  lane: string;
-  status: 'queued' | 'running' | 'done' | 'failed' | 'cooldown';
-  host: string;
-  url: string;
-  query: string | null;
-  reason: string;
-  field_targets: string[];
-  cooldown_until: string | null;
-  created_at: string;
-  transitions: QueueTransition[];
-}
-
-export interface LaneSummary {
-  lane: string;
-  queued: number;
-  running: number;
-  done: number;
-  failed: number;
-  cooldown: number;
-}
-
-export interface BlockedHostEntry {
-  host: string;
-  blocked_count: number;
-  threshold: number;
-  removed_count: number;
-  ts: string;
-}
-
 export interface QueueStateResponse {
   run_id: string;
   jobs: QueueJobRow[];
@@ -217,52 +285,6 @@ export interface QueueStateResponse {
 }
 
 // ── Worker Dashboard (Phase 13.3) ──
-
-export interface RuntimeOpsWorkerRow {
-  worker_id: string;
-  pool: string;
-  state: 'idle' | 'running' | 'stuck' | 'queued';
-  stage: 'search' | 'fetch' | 'parse' | 'index' | 'llm';
-  current_url: string;
-  started_at: string;
-  elapsed_ms: number;
-  last_error: string | null;
-  retries: number;
-  fetch_mode: string | null;
-  docs_processed: number;
-  fields_extracted: number;
-  display_label?: string | null;
-  assigned_search_slot?: string | null;
-  assigned_search_attempt_no?: number | null;
-  assigned_search_worker_id?: string | null;
-  assigned_search_query?: string | null;
-  slot?: string | null;
-  tasks_started?: number;
-  tasks_completed?: number;
-  current_query?: string | null;
-  current_provider?: string | null;
-  zero_result_count?: number;
-  avg_result_count?: number;
-  avg_duration_ms?: number;
-  last_result_count?: number;
-  last_duration_ms?: number;
-  primary_count?: number;
-  fallback_count?: number;
-  call_type?: string | null;
-  model?: string | null;
-  provider?: string | null;
-  round?: number | null;
-  prompt_tokens?: number | null;
-  completion_tokens?: number | null;
-  estimated_cost?: number | null;
-  duration_ms?: number | null;
-  input_summary?: string | null;
-  output_summary?: string | null;
-  prefetch_tab?: string | null;
-  prompt_preview?: string | null;
-  response_preview?: string | null;
-  idx_runtime?: RuntimeIdxBadge[];
-}
 
 export type WorkerDataTab = 'documents' | 'extraction' | 'queue' | 'screenshots' | 'metrics' | 'pipeline';
 
@@ -378,20 +400,6 @@ export interface WorkerDetailResponse {
   search_history?: SearchWorkerAttempt[];
   llm_detail?: WorkerLlmDetail;
   phase_lineage?: WorkerPhaseLineage;
-}
-
-export interface PipelineStage {
-  name: string;
-  active: number;
-  completed: number;
-  failed: number;
-}
-
-export interface PipelineTransition {
-  url: string;
-  from_stage: string;
-  to_stage: string;
-  ts: string;
 }
 
 export interface PipelineFlowResponse {
@@ -543,30 +551,6 @@ export interface PrefetchNeedSetTierAllocation {
   overflow_key_count: number;
 }
 
-export interface PrefetchNeedSetData {
-  total_fields: number;
-  identity_state?: string | null;
-  summary?: PrefetchNeedSetSummary;
-  blockers?: { missing: number; weak: number; conflict: number; needs_exact_match?: number; search_exhausted?: number };
-  focus_fields?: string[];
-  fields?: NeedSetField[];
-  bundles?: PrefetchSchema4Bundle[];
-  profile_mix?: PrefetchNeedSetProfileMix;
-  profile_influence?: PrefetchNeedSetProfileInfluence | null;
-  tier_allocation?: PrefetchNeedSetTierAllocation | null;
-  rows?: PrefetchNeedSetPlannerRow[];
-  deltas?: Array<{ field: string; from: string; to: string }>;
-  round?: number;
-  schema_version?: string | null;
-  snapshots?: Array<{ needset_size: number; total_fields: number; identity_state: string | null; ts: string }>;
-  debug?: {
-    suppressed_duplicate_rows: string[];
-    state_inputs: Record<string, unknown>;
-    bundle_assignment_notes: string[];
-  };
-  needset_size?: number;
-}
-
 export interface PrefetchSearchProfileQueryRow {
   query: string;
   target_fields?: string[];
@@ -618,118 +602,6 @@ export interface PrefetchFieldRuleHintCountsByField {
   preferred_content_types?: PrefetchFieldRuleHintCount;
 }
 
-export interface PrefetchSearchProfileData {
-  query_count: number;
-  selected_query_count?: number;
-  provider: string;
-  llm_query_planning: boolean;
-  llm_query_model?: string;
-  llm_queries?: Array<{ query?: string; target_fields?: string[] }>;
-  identity_aliases: Array<string | PrefetchSearchProfileAlias>;
-  variant_guard_terms: string[];
-  focus_fields?: string[];
-  query_rows: PrefetchSearchProfileQueryRow[];
-  query_guard: Record<string, number>;
-  hint_source_counts?: Record<string, number>;
-  field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
-  field_rule_hint_counts_by_field?: Record<string, PrefetchFieldRuleHintCountsByField>;
-  generated_at?: string;
-  product_id?: string;
-  source?: string;
-  query_reject_log?: Array<{ query?: string; source?: string; reason: string; stage?: string; detail?: string }>;
-  alias_reject_log?: Array<{ alias?: string; source?: string; reason?: string; stage?: string }>;
-  effective_host_plan?: Record<string, unknown> | null;
-  brand_resolution?: {
-    officialDomain: string;
-    supportDomain: string;
-    aliases: string[];
-    confidence: number;
-    reasoning: string[];
-  } | null;
-  base_model?: string;
-  aliases?: string[];
-  discovered_count?: number;
-  approved_count?: number;
-  candidate_count?: number;
-  selected_count?: number;
-  llm_serp_selector?: boolean;
-  serp_explorer?: {
-    query_count: number;
-    candidates_checked: number;
-    candidates_sent?: number;
-    urls_triaged: number;
-    urls_selected: number;
-    urls_rejected: number;
-    dedupe_input: number;
-    dedupe_output: number;
-    duplicates_removed: number;
-    hard_drop_count?: number;
-    soft_exclude_count?: number;
-    llm_triage_applied: boolean;
-  } | null;
-}
-
-export interface PrefetchLlmCall {
-  status: 'finished' | 'failed' | 'running';
-  reason: string;
-  model: string;
-  provider: string;
-  tokens: { input: number; output: number };
-  duration_ms: number;
-  prompt_preview: string | null;
-  response_preview: string | null;
-  error: string | null;
-}
-
-export interface PrefetchSearchResult {
-  query: string;
-  provider: string;
-  result_count: number;
-  duration_ms: number;
-  worker_id: string;
-  throttle_wait_ms?: number;
-  throttle_events?: number;
-  ts: string;
-}
-
-// ── Brand Resolver Story Mode ──
-
-export interface BrandResolutionData {
-  brand: string;
-  status?: string;
-  skip_reason?: string;
-  official_domain: string;
-  aliases: string[];
-  support_domain: string;
-  confidence: number | null;
-  candidates?: unknown[];
-  reasoning?: string[];
-}
-
-// ── Search Planner Story Mode ──
-
-export interface SearchPlanEnhancementRow {
-  query: string;
-  original_query: string;
-  hint_source: string;
-  tier: string;
-  group_key: string;
-  target_fields: string[];
-}
-
-export interface SearchPlanPass {
-  pass_index: number;
-  pass_name: string;
-  queries_generated: string[];
-  query_target_map: Record<string, string[]>;
-  missing_critical_fields: string[];
-  mode: string;
-  stop_condition: string;
-  plan_rationale: string;
-  source?: string;
-  enhancement_rows?: SearchPlanEnhancementRow[];
-}
-
 // ── Search Results Story Mode ──
 
 export interface SerpResultRow {
@@ -745,110 +617,7 @@ export interface SerpResultRow {
   already_crawled?: boolean;
 }
 
-export interface SearchResultDetail {
-  query: string;
-  provider: string;
-  dedupe_count: number;
-  results: SerpResultRow[];
-  screenshot_filename?: string;
-}
-
-// ── SERP Triage Story Mode ──
-
-export interface TriageScoreComponents {
-  base_relevance: number;
-  tier_boost: number;
-  identity_match: number;
-  penalties: number;
-}
-
-export interface TriageCandidate {
-  url: string;
-  title: string;
-  domain: string;
-  snippet: string;
-  score: number;
-  decision: string;
-  rationale: string;
-  score_components: TriageScoreComponents;
-  role: string;
-  identity_prelim: string;
-  host_trust_class: string;
-  primary_lane: number | null;
-  triage_disposition: string;
-  doc_kind_guess: string;
-  approval_bucket: string;
-}
-
-export interface SerpTriageFunnel {
-  raw_input: number;
-  hard_drop_count: number;
-  candidates_after_hard_drop: number;
-  canon_merge_count: number;
-  candidates_classified: number;
-  candidates_sent_to_llm: number;
-  overflow_capped: number;
-  llm_model: string;
-  llm_applied: boolean;
-}
-
-export interface SerpTriageResult {
-  query: string;
-  kept_count: number;
-  dropped_count: number;
-  funnel?: SerpTriageFunnel | null;
-  candidates: TriageCandidate[];
-}
-
-// ── Domain Health Story Mode ──
-
-export interface DomainHealthRow {
-  domain: string;
-  role: string;
-  safety_class: string;
-  budget_score: number;
-  cooldown_remaining: number;
-  success_rate: number;
-  avg_latency_ms: number;
-  notes: string;
-}
-
 // ── LLM Calls Dashboard ─────────────────────────────────────────────────────
-
-export interface LlmCallRow {
-  index: number;
-  worker_id: string;
-  call_type: string;
-  round: number;
-  model: string;
-  provider: string;
-  status: 'active' | 'done' | 'failed';
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  estimated_cost: number;
-  estimated_usage?: boolean;
-  duration_ms: number | null;
-  prompt_preview: string | null;
-  response_preview: string | null;
-  prefetch_tab: string | null;
-  ts: string;
-}
-
-export interface LlmCallsDashboardSummary {
-  total_calls: number;
-  active_calls: number;
-  completed_calls: number;
-  total_cost_usd: number;
-  total_tokens: number;
-  prompt_tokens: number;
-  completion_tokens: number;
-  avg_latency_ms: number;
-  rounds: number;
-  calls_in_latest_round: number;
-  by_model: Array<{ model: string; calls: number; cost_usd: number }>;
-  by_call_type: Array<{ call_type: string; cost_usd: number }>;
-}
 
 export interface LlmCallsDashboardResponse {
   run_id?: string;

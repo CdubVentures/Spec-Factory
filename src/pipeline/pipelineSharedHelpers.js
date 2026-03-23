@@ -1,7 +1,4 @@
-function toFloat(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toFloat } from '../shared/valueNormalizers.js';
 
 export function clamp01(value, fallback = 0) {
   const parsed = toFloat(value, fallback);

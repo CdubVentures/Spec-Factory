@@ -4,6 +4,7 @@
 
 import { resolvePhaseModel, roleTokenCap } from '../core/llm/client/routing.js';
 import { configInt, configValue } from '../shared/settingsAccessor.js';
+import { toInt } from '../shared/valueNormalizers.js';
 import {
   AVAILABILITY_RANKS,
   DIFFICULTY_RANKS,
@@ -34,11 +35,6 @@ const GROUP_DEFAULTS = {
 const GENERIC_FALLBACK = { desc: '', source_target: 'product_page', content_target: 'general' };
 
 const PHASE_ORDER = { now: 0, next: 1, hold: 2 };
-
-function toInt(value, fallback) {
-  const n = parseInt(String(value ?? ''), 10);
-  return Number.isFinite(n) ? n : fallback;
-}
 
 function isCoreBucket(requiredLevel) {
   return requiredLevel === 'identity' || requiredLevel === 'critical' || requiredLevel === 'required';

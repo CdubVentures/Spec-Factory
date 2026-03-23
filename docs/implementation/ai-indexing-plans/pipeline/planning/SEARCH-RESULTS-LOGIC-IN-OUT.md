@@ -1,6 +1,7 @@
 # Search Results Logic In And Out
 
-Validated against live code on 2026-03-20. Tier metadata now recorded per query via resolveSelectedQueryRow.
+Validated against live code on 2026-03-22. Tier metadata now recorded per query via resolveSelectedQueryRow.
+P1 Phase D (2026-03-22): `fetchDrainTimeoutMs` registry setting added for fetch completion gate.
 
 ## What this stage is
 
@@ -114,3 +115,7 @@ Search Results feeds SERP Triage with:
 - internal/external execution reason state
 
 SERP Triage then decides what survives.
+
+## Fetch Completion Gate (P1 Phase D)
+
+After search execution completes and URLs are enqueued for scraping, the fetch scheduler drain is guarded by `fetchDrainTimeoutMs` (default 120s, range 10s-600s). `runFetchSchedulerDrain.js` wraps `scheduler.drainQueue()` with `Promise.race`. On timeout, emits `fetch_drain_timeout` event with `urls_enqueued`, `urls_processed`, `urls_skipped`, `urls_remaining`. This prevents the pipeline from hanging indefinitely on slow or unresponsive fetches.

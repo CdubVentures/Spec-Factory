@@ -4,6 +4,7 @@ import {
   eventType, payloadOf,
 } from './runtimeOpsEventPrimitives.js';
 import { collectPacketAssertions, packetUrlSet } from './runtimeOpsPhaseLineage.js';
+import { resolveFieldCandidates, resolveUrl } from '../../../../shared/payloadAliases.js';
 
 function parseJsonPreview(value) {
   const raw = String(value || '').trim();
@@ -39,12 +40,12 @@ function readPrimeSourceUrlHints(promptPayload = {}) {
     : [];
   for (const [fieldKey, rows] of byFieldEntries) {
     for (const row of toArray(rows)) {
-      appendUrl(String(fieldKey || '').trim(), row?.url || row?.source_url);
+      appendUrl(String(fieldKey || '').trim(), resolveUrl(row));
     }
   }
 
   for (const row of toArray(primeSources?.rows)) {
-    appendUrl(String(row?.field_key || '').trim(), row?.url || row?.source_url);
+    appendUrl(String(row?.field_key || '').trim(), resolveUrl(row));
   }
 
   return {
@@ -54,7 +55,7 @@ function readPrimeSourceUrlHints(promptPayload = {}) {
 }
 
 function choosePreviewSourceUrl(fieldKey, workerUrls, promptHints, candidate = {}) {
-  const explicitUrl = String(candidate?.source_url || candidate?.url || '').trim();
+  const explicitUrl = resolveUrl(candidate);
   if (explicitUrl && workerUrls.has(explicitUrl)) {
     return explicitUrl;
   }
@@ -93,7 +94,7 @@ export function collectPreviewExtractionFields(events, workerUrls, existingField
 
     const responsePayload = parseJsonPreview(payload.response_preview);
     const promptPayload = parseJsonPreview(payload.prompt_preview);
-    const rawCandidates = toArray(responsePayload?.fieldCandidates || responsePayload?.field_candidates);
+    const rawCandidates = resolveFieldCandidates(responsePayload, toArray);
     if (rawCandidates.length === 0) continue;
 
     const promptHints = readPrimeSourceUrlHints(promptPayload || {});

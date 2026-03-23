@@ -7,6 +7,7 @@ import {
   buildEvidencePoolFromProvenance,
   buildTierAwareFieldRetrieval
 } from './tierAwareRetriever.js';
+import { toInt } from '../shared/valueNormalizers.js';
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -14,11 +15,6 @@ function isObject(value) {
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
-}
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function clampInt(value, fallback, min, max) {

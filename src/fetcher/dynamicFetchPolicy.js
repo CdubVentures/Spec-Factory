@@ -1,9 +1,5 @@
 import { configInt, configBool } from '../shared/settingsAccessor.js';
-
-function toInt(value, fallback) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function toBool(value, fallback) {
   if (value === undefined || value === null || value === '') {

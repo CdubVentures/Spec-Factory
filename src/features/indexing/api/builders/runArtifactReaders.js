@@ -4,6 +4,10 @@ import { toInt, normalizePathToken, normalizeJsonText } from '../../../../shared
 import { safeReadJson } from '../../../../shared/fileHelpers.js';
 import { classifyLlmTracePhase } from '../../../../api/helpers/llmHelpers.js';
 import { normalizeAutomationQuery } from './automationQueueHelpers.js';
+import {
+  resolveTotalFields, resolveResultCount, resolveSearchQuery,
+  resolveUrl, normalizeLlmUsage, resolveMetaPath,
+} from '../../../../shared/payloadAliases.js';
 
 // ---------------------------------------------------------------------------
 // Pure helpers (moved verbatim from indexlabDataBuilders.js)
@@ -18,13 +22,7 @@ export function buildNeedSetFromEvents(meta = {}, eventRows = []) {
       : {};
     const fields = Array.isArray(payload?.fields) ? payload.fields : [];
     const unresolved = fields.filter((f) => f && f.state !== 'accepted');
-    const totalFields = Math.max(
-      0,
-      toInt(
-        payload?.total_fields ?? payload?.field_count ?? payload?.needset_size,
-        fields.length
-      )
-    );
+    const totalFields = Math.max(0, toInt(resolveTotalFields(payload, fields.length), fields.length));
     return {
       generated_at: String(row?.ts || meta?.ended_at || meta?.started_at || '').trim() || null,
       fields,
@@ -67,13 +65,7 @@ export function pickSearchQueryFromEvent(row = {}) {
   const payload = row?.payload && typeof row.payload === 'object'
     ? row.payload
     : {};
-  const direct = String(
-    row?.query
-    || payload?.query
-    || payload?.search_query
-    || payload?.searchQuery
-    || ''
-  ).trim();
+  const direct = resolveSearchQuery(row, payload);
   if (direct) {
     return direct.replace(/\s+/g, ' ').trim();
   }
@@ -104,15 +96,7 @@ export function buildSearchProfileFromEvents(meta = {}, eventRows = []) {
       entry.attempts += 1;
     }
     if (eventName === 'search_finished' || eventName === 'discovery_query_completed') {
-      entry.result_count += Math.max(
-        0,
-        toInt(
-          payload?.result_count
-          ?? payload?.results_count
-          ?? payload?.results,
-          0
-        )
-      );
+      entry.result_count += Math.max(0, toInt(resolveResultCount(payload), 0));
     }
     const provider = String(payload?.provider || row?.provider || '').trim();
     if (provider) entry.providers.add(provider);
@@ -226,12 +210,10 @@ export function createRunArtifactReaders({
     const category = String(meta?.category || '').trim();
     const resolvedRunId = String(meta?.run_id || token).trim();
     const productId = resolveProductId(meta, eventRows);
-    const normalizedRunBase = String(meta?.run_base || meta?.runBase || '')
-      .trim()
+    const normalizedRunBase = resolveMetaPath(meta, 'run_base', 'runBase')
       .replace(/\\/g, '/')
       .replace(/^\/+|\/+$/g, '');
-    const normalizedLatestBase = String(meta?.latest_base || meta?.latestBase || '')
-      .trim()
+    const normalizedLatestBase = resolveMetaPath(meta, 'latest_base', 'latestBase')
       .replace(/\\/g, '/')
       .replace(/^\/+|\/+$/g, '');
 
@@ -437,7 +419,7 @@ export function createRunArtifactReaders({
           };
         }
         if (!row || typeof row !== 'object') return null;
-        const url = String(row.url || row.href || '').trim();
+        const url = resolveUrl(row);
         if (!url) return null;
         const reasonCodes = Array.isArray(row.reason_codes)
           ? row.reason_codes.map((item) => String(item || '').trim()).filter(Boolean)
@@ -447,7 +429,7 @@ export function createRunArtifactReaders({
           query: String(row.query || '').trim(),
           doc_kind: String(row.doc_kind || '').trim(),
           tier_name: String(row.tier_name || '').trim(),
-          score: Number(row.score || row.triage_score || 0),
+          score: Number(row.score ?? row.triage_score ?? 0),
           reason_codes: reasonCodes.length > 0 ? reasonCodes : ['summary_fallback']
         };
       })
@@ -549,12 +531,7 @@ export function createRunArtifactReaders({
         prompt_preview: normalizeJsonText(prompt, 8000),
         response_preview: normalizeJsonText(response, 12000),
         error: String(row.error || '').trim() || null,
-        usage: {
-          prompt_tokens: toInt(usage.prompt_tokens, toInt(usage.input_tokens, 0)),
-          completion_tokens: toInt(usage.completion_tokens, toInt(usage.output_tokens, 0)),
-          cached_prompt_tokens: toInt(usage.cached_prompt_tokens, toInt(usage.cached_input_tokens, 0)),
-          total_tokens: toInt(usage.total_tokens, 0)
-        },
+        usage: normalizeLlmUsage(usage, toInt),
         trace_file: name
       });
     }

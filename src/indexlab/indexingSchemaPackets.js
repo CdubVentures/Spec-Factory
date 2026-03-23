@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { toInt, toFloat } from '../shared/valueNormalizers.js';
 
 const PHASE_IDS = [
   'phase_01_static_html',
@@ -25,16 +26,6 @@ function toIso(value, fallback = '') {
   if (Number.isFinite(ms)) return new Date(ms).toISOString();
   if (fallback) return toIso(fallback, '');
   return new Date().toISOString();
-}
-
-function toInt(value, fallback = 0) {
-  const n = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function toFloat(value, fallback = 0) {
-  const n = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(n) ? n : fallback;
 }
 
 function clamp01(value, fallback = 0) {

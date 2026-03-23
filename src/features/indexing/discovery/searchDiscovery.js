@@ -66,7 +66,6 @@ export async function discoverCandidateSources({
   runtimeTraceWriter = null,
   learningStoreHints = null,
   sourceEntries = null,
-  focusGroups = [],
   brandResolution: preComputedBrandResolution = null,
   _runSearchProvidersFn,
   _searchSourceCorpusFn,
@@ -568,6 +567,6 @@ export async function discoverCandidateSources({
     variables, identityLock, brandResolution, missingFields, learning,
     llmContext, searchProfileBase, llmQueries: [],
     queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-    effectiveHostPlan, focusGroups,
+    effectiveHostPlan,
   });
 }

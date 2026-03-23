@@ -89,11 +89,6 @@ export function computeDeltas(ctx) {
     }));
 }
 
-function toInt(value, fallback) {
-  const n = parseInt(String(value ?? ''), 10);
-  return Number.isFinite(n) ? n : fallback;
-}
-
 function makeDisabledResult(ctx) {
   return assembleSchema4(ctx, [], { mode: 'disabled', plannerComplete: true });
 }

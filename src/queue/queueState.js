@@ -4,14 +4,10 @@ import {
   loadCanonicalIdentityIndex,
   registerCanonicalIdentity
 } from '../features/catalog/index.js';
+import { toInt } from '../shared/valueNormalizers.js';
 
 function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
-}
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function toArray(value) {

@@ -45,7 +45,7 @@ const SHAPE_REGISTRY = [
   { shape: FAILURE_METRIC_SHAPE, name: 'FAILURE_METRIC_SHAPE', iface: 'FailureMetric' },
   { shape: FALLBACK_EVENT_SHAPE, name: 'FALLBACK_EVENT_SHAPE', iface: 'FallbackEventRow' },
   { shape: HOST_FALLBACK_PROFILE_SHAPE, name: 'HOST_FALLBACK_PROFILE_SHAPE', iface: 'HostFallbackProfile' },
-  { shape: QUEUE_JOB_SHAPE, name: 'QUEUE_JOB_SHAPE', iface: 'QueueJobRow' },
+  { shape: QUEUE_JOB_SHAPE, name: 'QUEUE_JOB_SHAPE', iface: 'QueueJobRowGen' },
   { shape: LANE_SUMMARY_SHAPE, name: 'LANE_SUMMARY_SHAPE', iface: 'LaneSummary' },
   { shape: BLOCKED_HOST_SHAPE, name: 'BLOCKED_HOST_SHAPE', iface: 'BlockedHostEntry' },
   { shape: PIPELINE_STAGE_SHAPE, name: 'PIPELINE_STAGE_SHAPE', iface: 'PipelineStage' },
@@ -53,12 +53,14 @@ const SHAPE_REGISTRY = [
   { shape: EXTRACTION_FIELD_SHAPE, name: 'EXTRACTION_FIELD_SHAPE', iface: 'ExtractionFieldRow' },
   { shape: EXTRACTION_CANDIDATE_SHAPE, name: 'EXTRACTION_CANDIDATE_SHAPE', iface: 'ExtractionCandidate' },
   { shape: LLM_CALL_ROW_SHAPE, name: 'LLM_CALL_ROW_SHAPE', iface: 'LlmCallRow' },
-  { shape: LLM_DASHBOARD_SUMMARY_SHAPE, name: 'LLM_DASHBOARD_SUMMARY_SHAPE', iface: 'LlmCallsDashboardSummary' },
+  { shape: LLM_DASHBOARD_SUMMARY_SHAPE, name: 'LLM_DASHBOARD_SUMMARY_SHAPE', iface: 'LlmCallsDashboardSummaryGen' },
   // prefetchContract.js (already shape descriptors)
-  { shape: SEARCH_RESULT_ENTRY_SHAPE, name: 'SEARCH_RESULT_ENTRY_SHAPE', iface: 'SearchResultEntry' },
-  { shape: SEARCH_RESULT_DETAIL_SHAPE, name: 'SEARCH_RESULT_DETAIL_SHAPE', iface: 'SearchResultDetail' },
+  // WHY: Renamed to avoid collision with hand-written SearchResultEntry (worker-level,
+  // different fields). The generated shape is the SERP overview; consumer type is SerpResultRow.
+  { shape: SEARCH_RESULT_ENTRY_SHAPE, name: 'SEARCH_RESULT_ENTRY_SHAPE', iface: 'SerpSearchResultEntry' },
+  { shape: SEARCH_RESULT_DETAIL_SHAPE, name: 'SEARCH_RESULT_DETAIL_SHAPE', iface: 'SerpSearchResultDetail' },
   { shape: SERP_SCORE_COMPONENTS_SHAPE, name: 'SERP_SCORE_COMPONENTS_SHAPE', iface: 'TriageScoreComponents' },
-  { shape: SERP_TRIAGE_CANDIDATE_SHAPE, name: 'SERP_TRIAGE_CANDIDATE_SHAPE', iface: 'TriageCandidate' },
+  { shape: SERP_TRIAGE_CANDIDATE_SHAPE, name: 'SERP_TRIAGE_CANDIDATE_SHAPE', iface: 'TriageCandidateGen' },
   { shape: SERP_TRIAGE_ENVELOPE_SHAPE, name: 'SERP_TRIAGE_ENVELOPE_SHAPE', iface: 'SerpTriageEnvelope' },
   { shape: SERP_TRIAGE_FUNNEL_SHAPE, name: 'SERP_TRIAGE_FUNNEL_SHAPE', iface: 'SerpTriageFunnel' },
   { shape: SEARCH_PROFILE_SHAPE, name: 'SEARCH_PROFILE_SHAPE', iface: 'PrefetchSearchProfileBase' },
@@ -70,19 +72,28 @@ const SHAPE_REGISTRY = [
   { shape: QUERY_JOURNEY_SHAPE, name: 'QUERY_JOURNEY_SHAPE', iface: 'QueryJourneyData' },
   { shape: SEARCH_RESULT_SHAPE, name: 'SEARCH_RESULT_SHAPE', iface: 'PrefetchSearchResult' },
   { shape: DOMAIN_HEALTH_ROW_SHAPE, name: 'DOMAIN_HEALTH_ROW_SHAPE', iface: 'DomainHealthRow' },
-  { shape: PREFETCH_LLM_CALL_SHAPE, name: 'PREFETCH_LLM_CALL_SHAPE', iface: 'PrefetchLlmCall' },
+  { shape: PREFETCH_LLM_CALL_SHAPE, name: 'PREFETCH_LLM_CALL_SHAPE', iface: 'PrefetchLlmCallGen' },
 ];
 
 // ── TS type resolution ──
 
 function tsType(descriptor) {
+  // WHY: literals override coerce — produces union types from backend metadata
+  if (descriptor.literals) {
+    const union = descriptor.literals.map(v => `'${v}'`).join(' | ');
+    return descriptor.nullable ? `(${union}) | null` : union;
+  }
   const base = (() => {
     switch (descriptor.coerce) {
       case 'string': return 'string';
       case 'int':
       case 'float': return 'number';
       case 'bool': return 'boolean';
-      case 'array': return 'unknown[]';
+      case 'array': {
+        if (descriptor.itemRef) return `${descriptor.itemRef}[]`;
+        if (descriptor.itemType) return `${descriptor.itemType}[]`;
+        return 'unknown[]';
+      }
       case 'object_or_null': return 'Record<string, unknown> | null';
       case 'object_or_empty': return 'Record<string, unknown>';
       case 'passthrough': return 'unknown';
@@ -123,7 +134,7 @@ export function generateRuntimeOpsTypes() {
   // ── Composite: RuntimeOpsWorkerRow (base + 3 optional extras) ──
   lines.push('// WHY: Worker row is base fields (required) + pool-specific extras (all optional).');
   lines.push('// The pool determines which extra fields are populated.');
-  lines.push('export interface RuntimeOpsWorkerRow {');
+  lines.push('export interface RuntimeOpsWorkerRowGen {');
   for (const d of WORKER_ROW_BASE_SHAPE) {
     const opt = d.optional ? '?' : '';
     lines.push(`  ${d.key}${opt}: ${tsType(d)};`);

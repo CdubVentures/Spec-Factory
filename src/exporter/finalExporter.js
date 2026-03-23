@@ -1,16 +1,12 @@
 import { nowIso } from '../utils/common.js';
 import { applyRuntimeFieldRules } from '../engine/runtimeGate.js';
+import { toInt } from '../shared/valueNormalizers.js';
 
 function slug(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function toNumber(value, fallback = 0) {

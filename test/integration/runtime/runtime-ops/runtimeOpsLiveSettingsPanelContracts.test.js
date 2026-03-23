@@ -126,6 +126,19 @@ async function loadSearchPlannerModule() {
           return String(value ?? 0);
         }
       `,
+      '../../selectors/searchProfileTierHelpers.js': `
+        export function classifyQueryTier() { return 'legacy'; }
+        export function tierLabel() { return 'Legacy'; }
+        export function tierChipClass() { return 'sf-chip-neutral'; }
+        export function groupByTier(rows) {
+          return { seed: [], group: [], key: [], host_plan: rows || [], legacy: rows || [] };
+        }
+        export function buildTierBudgetSummary(rows, cap) {
+          const n = (rows||[]).length;
+          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, host_plan: { count: n, pct: 100 }, legacy: { count: n, pct: 100 }, total: n, cap };
+        }
+        export function enrichmentStrategyLabel() { return ''; }
+      `,
       '../../components/VerticalStepper': `
         export function VerticalStepper(props) {
           return { type: 'stepper', props: { children: props.children } };

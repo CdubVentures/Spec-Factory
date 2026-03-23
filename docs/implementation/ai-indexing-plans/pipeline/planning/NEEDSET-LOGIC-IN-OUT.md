@@ -10,8 +10,15 @@ extracted to `src/shared/discoveryRankConstants.js`. Accessor functions re-expor
 backward compatibility. Schema 2/3/4 naming convention retained in code comments — refers to the transformation
 chain: Schema 1 (raw input) → Schema 2 (per-field assessment) → Schema 3 (group planning) → Schema 4 (LLM annotations).
 
-P1 Phase A (2026-03-22): `field_history` table added to specDb. Per-field search history (repeat_count, domains_tried,
-no_value_attempts, etc.) will be persisted to DB at end of each round and loaded at start for crash recovery.
+P1 (2026-03-22, COMPLETE): `field_history` table added to specDb. Per-field search history persisted to DB
+at end of each round inside the `exportToSpecDb()` transaction (atomic with product_run, item_field_state,
+candidate writes). On startup, `runUntilComplete.js` loads `previousFieldHistories` from DB for crash recovery.
+In-memory handoff remains the fast path between rounds within the same process.
+
+P3 finding (2026-03-22): `NEED_SCORE_WEIGHTS` is redundant with `REQUIRED_LEVEL_RANKS` — both encode the same
+field importance hierarchy. `needScore` contributes ~1% to group productivity scoring and the productivity_score
+sort is discarded in final group ordering (which uses phase/priority via `PRIORITY_BUCKET_ORDER`). The scoring
+machinery is vestigial but retained for backward compat (`primeSourcesBuilder.js` sorts by `need_score`).
 
 ## What this stage is
 
@@ -116,13 +123,12 @@ Previously a single try/catch misattributed all failures as `schema4_computation
 | `fieldReasoning` | Runtime: `buildFieldReasoning()` | No |
 | `constraintAnalysis` | Runtime: `evaluateConstraintGraph()` | No |
 | `identityContext` | Runtime: identity gate + run results | Partial — `products` has brand/model |
-| `previousFieldHistories` | In-memory carry-forward from prior round | Partial — frontierDb `queries` covers some |
+| `previousFieldHistories` | In-memory carry-forward OR `specDb.getFieldHistories()` on crash recovery | **Yes** — `field_history` table in specDb (P1) |
 | `fieldOrder` | Static config: category authoring schema | No (and doesn't need to be) |
 | `queryExecutionHistory` | **DB**: `frontierDb.buildQueryExecutionHistory()` | Yes |
 
-Future SSOT migration requires extending the DB schema to persist provenance evidence arrays,
-field search history (evidence_classes_tried, no_value_attempts), and identity intermediate
-state.
+Field search history is now persisted in the `field_history` table (P1). Remaining SSOT gaps:
+provenance evidence arrays, identity intermediate state.
 
 ## Internal logic
 

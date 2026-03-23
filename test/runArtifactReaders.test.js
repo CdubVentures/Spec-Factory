@@ -470,3 +470,48 @@ test('readIndexLabRunLlmTraces: empty trace dir → empty traces array', async (
   assert.equal(result.category, 'mouse');
   assert.equal(result.product_id, 'mouse-test');
 });
+
+// ---------------------------------------------------------------------------
+// Characterization: alias fallback behavior (lock before extraction)
+// ---------------------------------------------------------------------------
+
+test('buildNeedSetFromEvents: reads total_fields from payload', () => {
+  const events = [{ event: 'needset_computed', ts: 'T1', payload: { total_fields: 10, fields: [] } }];
+  const result = buildNeedSetFromEvents({}, events);
+  assert.equal(result.total_fields, 10);
+});
+
+test('buildNeedSetFromEvents: falls back to field_count when total_fields missing', () => {
+  const events = [{ event: 'needset_computed', ts: 'T1', payload: { field_count: 7, fields: [] } }];
+  const result = buildNeedSetFromEvents({}, events);
+  assert.equal(result.total_fields, 7);
+});
+
+test('buildNeedSetFromEvents: falls back to needset_size when both missing', () => {
+  const events = [{ event: 'needset_computed', ts: 'T1', payload: { needset_size: 5, fields: [] } }];
+  const result = buildNeedSetFromEvents({}, events);
+  assert.equal(result.total_fields, 5);
+});
+
+test('buildNeedSetFromEvents: falls back to fields.length when all missing', () => {
+  const fields = [{ state: 'missing' }, { state: 'accepted' }];
+  const events = [{ event: 'needset_computed', ts: 'T1', payload: { fields } }];
+  const result = buildNeedSetFromEvents({}, events);
+  assert.equal(result.total_fields, 2);
+});
+
+test('pickSearchQueryFromEvent: prefers row.query', () => {
+  assert.equal(pickSearchQueryFromEvent({ query: 'row-q', payload: { query: 'p-q' } }), 'row-q');
+});
+
+test('pickSearchQueryFromEvent: falls back to payload.query', () => {
+  assert.equal(pickSearchQueryFromEvent({ payload: { query: 'p-q' } }), 'p-q');
+});
+
+test('pickSearchQueryFromEvent: falls back to payload.search_query', () => {
+  assert.equal(pickSearchQueryFromEvent({ payload: { search_query: 'sq' } }), 'sq');
+});
+
+test('pickSearchQueryFromEvent: falls back to payload.searchQuery', () => {
+  assert.equal(pickSearchQueryFromEvent({ payload: { searchQuery: 'cq' } }), 'cq');
+});

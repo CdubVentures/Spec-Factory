@@ -1,7 +1,7 @@
 # Pipeline Contract Audit — Results & Remediation Status
 
 Audited: 2026-03-22. Against: CLAUDE.md rules (SSOT, O(1) Scaling, Contract-First, Subtractive Engineering).
-P0 completed: 2026-03-22. P1 completed: 2026-03-22.
+P0 completed: 2026-03-22. P1 completed: 2026-03-22. P2 re-audited: 2026-03-22. P3 completed: 2026-03-22.
 
 ---
 
@@ -51,7 +51,7 @@ Both consumer files now import from shared. Old names (`V4_AVAILABILITY_RANKS`, 
 
 ---
 
-## P1 — Persistent Field History & Contract Boundaries (IN PROGRESS)
+## P1 — Persistent Field History & Contract Boundaries (COMPLETE)
 
 ### Phase A: DB Foundation (COMPLETE)
 
@@ -141,20 +141,54 @@ Input/output Zod schemas added to all 5 remaining stages. Exported but not enfor
 
 ---
 
-## Open Findings (Deferred to Later Phases)
+## P2 — Orchestrator Cleanup (RE-AUDITED — NO ACTION NEEDED)
 
-### Orchestrator Business Logic Leaks (P2)
-- Brand promotion logic in orchestrator (should be Brand Resolver's responsibility)
-- `search_queued` event emission in orchestrator (should be Query Journey's)
-- `normalizeFieldListFn` called twice with different inputs
-- `discoveryEnabled` forced true unconditionally
-- `queryConcurrency` hardcoded to 1
+Re-audited 2026-03-22 against current `searchDiscovery.js`. All 5 original findings are resolved or false positives:
 
-### Hardcoded Thresholds Not in Registry (P3)
-22 thresholds across NeedSet files — confidence gates (0.95, 0.70, 0.8), max focus fields (10), NEED_SCORE_WEIGHTS, group coverage threshold (0.80), seed cooldown (30 days). Plus query builder thresholds (max aliases 12, per-field cap 3, archetype budget 60%, LLM retry cap 2, slice caps 50/60/8).
+| Finding | Status | Detail |
+|---------|--------|--------|
+| Brand promotion logic in orchestrator | Already resolved | No promotion code found in searchDiscovery.js |
+| `search_queued` event emission | Already resolved | Not found in searchDiscovery.js |
+| `normalizeFieldListFn` called twice | False positive | Two calls use different inputs (critical+required+focus vs required-only) — both intentional |
+| `discoveryEnabled` forced true | False positive | Properly gated at entry point (line 75) — returns early with `enabled: false` if disabled |
+| `queryConcurrency` hardcoded to 1 | False positive | Read from `configInt(config, 'discoveryQueryConcurrency')` — config-driven, not hardcoded |
 
-### processDiscoveryResults Decomposition (P3)
-674 lines, 36 parameters. Should be broken into smaller contract-validated functions.
+---
+
+## P3 — processDiscoveryResults Decomposition (COMPLETE)
+
+Completed: 2026-03-22. 7,614 tests pass, 0 regressions from P3 changes.
+
+### Decomposition
+
+**Problem:** `processDiscoveryResults()` was 674 lines with 36 parameters (1 dead: `focusGroups`).
+
+**Fix:** Extracted into 3 focused modules:
+
+| Module | Functions | LOC | Responsibility |
+|--------|-----------|-----|---------------|
+| `discoveryResultTraceBuilder.js` | `createCandidateTraceMap()`, `enrichCandidateTraces()` | 143 | Trace lifecycle: creation, merge, reason code enrichment |
+| `discoveryResultClassifier.js` | `classifyAndDeduplicateCandidates()`, `classifyDomains()` | 193 | URL canonicalization, classification, domain heuristics |
+| `discoveryResultPayloadBuilder.js` | `buildSerpExplorer()`, `writeDiscoveryPayloads()` | 217 | SERP explorer assembly, discovery + candidates payload writes |
+
+**Orchestrator after:** 344 lines (49% reduction). Reads as sequential named steps.
+
+**Dead code removed:** `focusGroups` parameter removed from `processDiscoveryResults` signature and `searchDiscovery.js` call site.
+
+### Thresholds Assessment
+
+The original audit listed 22+ hardcoded thresholds for registry migration. After analysis:
+- Most are internal algorithm constants (scoring weights, display limits) that operators won't tune
+- `NEED_SCORE_WEIGHTS` is redundant with `REQUIRED_LEVEL_RANKS` — vestigial scoring that contributes ~1% to group productivity and is discarded in final group ordering
+- Existing config passthrough patterns (`config.seedCooldownMs ??`, `isGroupSearchWorthy({ thresholds })`) already handle the thresholds that matter
+- **Decision: No new registry entries.** Named file-level constants for readability if needed in future.
+
+---
+
+## Open Findings (Deferred)
+
+### indexingSchemaPackets.js Decomposition (P4)
+1,333 LOC. Tier weights (0.8/0.45/0.35), ambiguity thresholds, quality gates. Needs own decomposition plan before adding config threading.
 
 ### Frontier DB / SpecDb Consolidation (Future)
 Frontier tables (queries, urls, yields) are separate from SpecDb. Long-term: merge into unified per-category DB.

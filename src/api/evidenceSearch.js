@@ -1,7 +1,4 @@
-function toInt(value, fallback = 0) {
-  const n = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(n) ? n : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function unwrapPayload(row) {
   if (!row) return {};

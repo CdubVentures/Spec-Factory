@@ -1,6 +1,6 @@
 # Search Profile Logic In And Out
 
-Validated against live code on 2026-03-20 (NeedSet now provides tier_allocation upstream).
+Validated against live code on 2026-03-22. Legacy archetype pipeline removed — tier-only is the sole query generation path. `buildQueryRows()` deleted.
 
 ## What this stage is
 
@@ -52,14 +52,11 @@ Optional host-plan enrichment also uses:
 4. **Tier dispatch** via `determineQueryModes(seedStatus, focusGroups)`:
    - Returns 3 independent booleans: `runTier1Seeds`, `runTier2Groups`, `runTier3Keys`
    - All three can be true simultaneously (mixed tier mode)
-   - When `seedStatus` is provided and any tier is active, tier builders run instead of the legacy archetype pipeline
-   - When `seedStatus` is absent, falls through to the existing archetype pipeline (backward compat)
 5. **Tier 1** (`buildTier1Queries`): `{brand} {model} {variant} specifications` + `{brand} {model} {variant} {source}` per needed source seed. Tagged `tier: 'seed'`, `hint_source: 'tier1_seed'`.
 6. **Tier 2** (`buildTier2Queries`): one broad query per search-worthy group: `{brand} {model} {variant} {label} {group_description_long}`. Sorted by `productivity_score` descending. Tagged `tier: 'group_search'`, `hint_source: 'tier2_group'`, `group_key`.
 7. **Tier 3** (`buildTier3Queries`): one query per key from `normalized_key_queue` for non-worthy groups: `{brand} {model} {variant} {key}`. Tagged `tier: 'key_search'`, `hint_source: 'tier3_key'`, `group_key`, `normalized_key`.
-8. **Legacy path** (when no `seedStatus`): Build deterministic `query_rows` from archetype planner, field-rules, domain hints, aliases, learned templates. Interleave round-robin by target field.
-9. Dedupe and cap selected queries.
-10. Produce support blocks: `field_target_queries`, `doc_hint_queries`, `archetype_summary`, `coverage_analysis`, `hint_source_counts`, field-rule gate/hint counts.
+8. Dedupe and cap selected queries.
+9. Produce support blocks: `field_target_queries`, `doc_hint_queries`, `coverage_analysis`, `hint_source_counts`, field-rule gate/hint counts.
 
 `runSearchProfile()` then optionally adds:
 
@@ -72,9 +69,9 @@ Those host-plan rows are not part of `buildSearchProfile()` output. They are app
 
 - Search Profile always runs when the canonical discovery pipeline runs, even if Schema 4 is disabled or empty.
 - Search Profile is fully deterministic — no LLM calls. Tier dispatch is based on NeedSet signals (`seed_status`, `group_search_worthy`, `normalized_key_queue`).
-- When `seedStatus` is provided, `determineQueryModes()` gates which tiers fire. Tiers are independent — all three can be active simultaneously (e.g. Tier 2 for worthy groups + Tier 3 for exhausted groups' keys).
-- When `seedStatus` is absent (backward compat), the legacy archetype pipeline runs unchanged.
-- Stage 04 Search Planner consumes Search Profile: `base_templates`, targeted query rows, `archetype_summary`, `coverage_analysis`.
+- `determineQueryModes()` gates which tiers fire. Tiers are independent — all three can be active simultaneously (e.g. Tier 2 for worthy groups + Tier 3 for exhausted groups' keys).
+- The legacy archetype pipeline has been removed. Tier-only is the sole query generation path.
+- Stage 04 Search Planner consumes Search Profile: `base_templates`, targeted query rows, `coverage_analysis`.
 - `effective_host_plan` is optional and can be blocked by registry population rules.
 - Search Profile emits `search_profile_generated` with the deterministic query count and row details.
 - Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, guards, and appends host-plan rows.

@@ -1,11 +1,7 @@
 import http from 'node:http';
 import { loadSourceIntel } from '../intel/sourceIntel.js';
 import { nextBestUrlsFromHypotheses } from '../features/indexing/learning/index.js';
-
-function toInt(value, fallback) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toInt } from '../shared/valueNormalizers.js';
 
 function jsonResponse(res, statusCode, payload) {
   res.statusCode = statusCode;

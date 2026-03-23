@@ -1,6 +1,6 @@
 # SERP Triage Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-22. P3 decomposition complete — orchestrator split into 4 files.
 
 ## What this stage is
 
@@ -8,7 +8,10 @@ SERP Triage is the Stage 07 post-search selection boundary inside `processDiscov
 
 Primary owners:
 
-- `src/features/indexing/discovery/discoveryResultProcessor.js`
+- `src/features/indexing/discovery/discoveryResultProcessor.js` — orchestrator (344 LOC, sequencing only)
+- `src/features/indexing/discovery/discoveryResultTraceBuilder.js` — trace lifecycle (creation + enrichment)
+- `src/features/indexing/discovery/discoveryResultClassifier.js` — URL classification + domain heuristics
+- `src/features/indexing/discovery/discoveryResultPayloadBuilder.js` — SERP explorer + storage payloads
 - `src/features/indexing/discovery/triageHardDropFilter.js`
 - `src/features/indexing/discovery/triageRejectAuditor.js`
 - `src/features/indexing/discovery/serpSelector.js`
@@ -44,50 +47,32 @@ Coverage is split across:
 - `queryConcurrency`
 - `discoveryCap`
 - optional `effectiveHostPlan`
-- optional `focusGroups`
 - optional SERP selector DI seams
 
 ## Live logic
 
 The live triage flow is:
 
-1. Deduplicate search results with `dedupeSerpResults()`.
+1. Create candidate trace map via `createCandidateTraceMap()` (in `discoveryResultTraceBuilder.js`).
 2. Apply hard drops with `applyHardDropFilter()`.
-3. Classify surviving URLs with `classifyUrlCandidate()`.
-4. Build deterministic `domainClassificationRows` and `domainSafetyResults`.
-5. Choose a selection branch:
-   - selector path when `serpSelectorEnabled=true`, a triage route is available, and there are candidates
-   - deterministic path otherwise
-6. Selector path:
-   - build selector input with `buildSerpSelectorInput()`
-   - call the routed selector LLM with reason `serp_url_selector`
-   - validate output with `validateSelectorOutput()`
-   - adapt output with `adaptSerpSelectorOutput()`
-   - fall back to deterministic triage if validation fails or the call errors
-7. Deterministic path:
-   - apply soft labels
-   - assign lanes
-   - score rows
-   - compute lane quotas
-   - select by lane quota
-   - optionally call `rerankSerpResults()` when deterministic quality is weak enough
-8. Build reject-audit samples and audit trail.
-9. Build per-query candidate traces and `serp_explorer`.
-10. Rewrite `search_profile` from `planned` to `executed`.
-11. Write discovery and candidate payload artifacts.
+3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `discoveryResultClassifier.js`).
+4. Build deterministic domain safety results via `classifyDomains()` (in `discoveryResultClassifier.js`).
+5. Build selector input with `buildSerpSelectorInput()`.
+6. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, treat as all-reject (no deterministic fallback path).
+7. Build reject-audit samples and audit trail.
+8. Emit observability events (`serp_selector_completed` with full candidate funnel).
+9. Enrich candidate traces with reason codes via `enrichCandidateTraces()` (in `discoveryResultTraceBuilder.js`).
+10. Build SERP explorer via `buildSerpExplorer()` (in `discoveryResultPayloadBuilder.js`).
+11. Rewrite `search_profile` from `planned` to `executed`.
+12. Write discovery and candidate payloads via `writeDiscoveryPayloads()` (in `discoveryResultPayloadBuilder.js`).
 
 ## Important invariants
 
-- There is no separate LLM domain-classifier stage in the live code. Domain safety is built deterministically inside `processDiscoveryResults()`.
+- Domain safety is built deterministically via `classifyDomains()` — no separate LLM domain classifier.
 - Borderline relevance problems are soft-label decisions, not automatic hard drops.
-- Selector mode bypasses deterministic lane/quota/rerank logic for the selected set.
-- If selector output is invalid or the selector call fails, the code falls back to deterministic triage.
-- The optional SERP reranker is currently additive/annotative in this integration:
-  - it can attach `llm_rerank_score` and `llm_rerank_reason`
-  - it does not replace the already-selected lane set
-  - it does not add new URLs
+- The LLM selector is the only triage path. There is no deterministic lane/quota/rerank fallback — if the selector fails, the run continues with zero selected URLs.
 - Executed `search_profile` rewrites the same keys used by the planned artifact.
-- `serp_triage_completed` is not guaranteed on every run. It is emitted on the reranker path, not on selector-only runs.
+- `serp_selector_completed` event is emitted on every run with full candidate funnel metrics.
 
 ## Outputs out
 
@@ -113,7 +98,6 @@ It returns:
 - `search_profile_latest_key`
 - `provider_state`
 - `query_concurrency`
-- `uber_search_plan`
 - `internal_satisfied`
 - `external_search_reason`
 - `search_attempts`

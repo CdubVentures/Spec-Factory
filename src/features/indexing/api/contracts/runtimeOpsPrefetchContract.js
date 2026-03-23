@@ -35,14 +35,14 @@ export const NEEDSET_DATA_KEYS = Object.freeze(NEEDSET_DATA_SHAPE.map(s => s.key
 
 export const BRAND_RESOLUTION_SHAPE = Object.freeze([
   { key: 'brand', coerce: 'string' },
-  { key: 'status', coerce: 'string' },
-  { key: 'skip_reason', coerce: 'string' },
+  { key: 'status', coerce: 'string', optional: true },
+  { key: 'skip_reason', coerce: 'string', optional: true },
   { key: 'official_domain', coerce: 'string' },
-  { key: 'aliases', coerce: 'array' },
+  { key: 'aliases', coerce: 'array', itemType: 'string' },
   { key: 'support_domain', coerce: 'string' },
   { key: 'confidence', coerce: 'float', nullable: true },
-  { key: 'candidates', coerce: 'array' },
-  { key: 'reasoning', coerce: 'array' },
+  { key: 'candidates', coerce: 'array', optional: true },
+  { key: 'reasoning', coerce: 'array', itemType: 'string', optional: true },
 ]);
 export const BRAND_RESOLUTION_KEYS = Object.freeze(BRAND_RESOLUTION_SHAPE.map(s => s.key));
 
@@ -80,8 +80,8 @@ export const SEARCH_RESULT_SHAPE = Object.freeze([
   { key: 'result_count', coerce: 'int' },
   { key: 'duration_ms', coerce: 'int' },
   { key: 'worker_id', coerce: 'string' },
-  { key: 'throttle_events', coerce: 'int' },
-  { key: 'throttle_wait_ms', coerce: 'int' },
+  { key: 'throttle_events', coerce: 'int', optional: true },
+  { key: 'throttle_wait_ms', coerce: 'int', optional: true },
   { key: 'ts', coerce: 'string' },
 ]);
 export const SEARCH_RESULT_KEYS = Object.freeze(SEARCH_RESULT_SHAPE.map(s => s.key));
@@ -103,7 +103,7 @@ export const DOMAIN_HEALTH_ROW_KEYS = Object.freeze(DOMAIN_HEALTH_ROW_SHAPE.map(
 // ── Prefetch LLM Call ──
 
 export const PREFETCH_LLM_CALL_SHAPE = Object.freeze([
-  { key: 'status', coerce: 'string' },
+  { key: 'status', coerce: 'string', literals: ['finished', 'failed', 'running'] },
   { key: 'reason', coerce: 'string' },
   { key: 'model', coerce: 'string' },
   { key: 'provider', coerce: 'string' },

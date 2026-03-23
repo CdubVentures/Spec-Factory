@@ -4,25 +4,22 @@
 // trace enrichment → artifact writing → return value.
 
 import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
-import { toPosixKey } from '../../../s3/storage.js';
-import {
-  inferRoleForHost,
-  isApprovedHost,
-  isDeniedHost,
-  resolveTierForHost,
-} from '../../../categories/loader.js';
 import {
   normalizeHost,
   toArray,
-  uniqueTokens,
-  countTokenHits,
-  normalizeIdentityTokens,
 } from './discoveryIdentity.js';
 import {
-  classifyUrlCandidate,
-  docHintMatchesDocKind,
-  collectDomainClassificationSeeds,
-} from './discoveryUrlClassifier.js';
+  createCandidateTraceMap,
+  enrichCandidateTraces,
+} from './discoveryResultTraceBuilder.js';
+import {
+  classifyAndDeduplicateCandidates,
+  classifyDomains,
+} from './discoveryResultClassifier.js';
+import {
+  buildSerpExplorer,
+  writeDiscoveryPayloads,
+} from './discoveryResultPayloadBuilder.js';
 import {
   buildQueryAttemptStats,
   writeSearchProfileArtifacts,
@@ -50,60 +47,10 @@ export async function processDiscoveryResults({
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
-  const byUrl = new Map();
   const queryMetaByQuery = new Map(
     toArray(searchProfilePlanned?.query_rows).map((row) => [String(row?.query || '').trim(), row || {}])
   );
-  const candidateTraceByUrl = new Map();
-  const ensureTrace = (url, seed = {}) => {
-    const key = String(url || '').trim();
-    if (!key) return null;
-    if (!candidateTraceByUrl.has(key)) {
-      candidateTraceByUrl.set(key, {
-        url: key,
-        original_url: String(seed.original_url || key).trim(),
-        host: String(seed.host || '').trim(),
-        root_domain: String(seed.root_domain || '').trim(),
-        title: String(seed.title || '').trim(),
-        snippet: String(seed.snippet || '').trim(),
-        tier_guess: Number.isFinite(Number(seed.tier_guess)) ? Number(seed.tier_guess) : null,
-        tier_name_guess: String(seed.tier_name_guess || '').trim(),
-        role: String(seed.role || '').trim(),
-        doc_kind_guess: String(seed.doc_kind_guess || '').trim(),
-        approved_domain: Boolean(seed.approved_domain),
-        providers: uniqueTokens(seed.providers || [], 8),
-        queries: uniqueTokens(seed.queries || [], 20),
-        query_hints: uniqueTokens(seed.query_hints || [], 12),
-        hint_sources: uniqueTokens(seed.hint_sources || [], 8),
-        target_fields: uniqueTokens(seed.target_fields || [], 20),
-        domain_hints: uniqueTokens(seed.domain_hints || [], 10),
-        triage_score: null,
-        triage_reason: '',
-        decision: String(seed.decision || 'pending').trim() || 'pending',
-        reason_codes: uniqueTokens(seed.reason_codes || [], 16)
-      });
-    }
-    const row = candidateTraceByUrl.get(key);
-    row.providers = uniqueTokens([...(row.providers || []), ...(seed.providers || [])], 8);
-    row.queries = uniqueTokens([...(row.queries || []), ...(seed.queries || [])], 20);
-    row.query_hints = uniqueTokens([...(row.query_hints || []), ...(seed.query_hints || [])], 12);
-    row.hint_sources = uniqueTokens([...(row.hint_sources || []), ...(seed.hint_sources || [])], 8);
-    row.target_fields = uniqueTokens([...(row.target_fields || []), ...(seed.target_fields || [])], 20);
-    row.domain_hints = uniqueTokens([...(row.domain_hints || []), ...(seed.domain_hints || [])], 10);
-    row.reason_codes = uniqueTokens([...(row.reason_codes || []), ...(seed.reason_codes || [])], 16);
-    if (!row.title && seed.title) row.title = String(seed.title || '').trim();
-    if (!row.snippet && seed.snippet) row.snippet = String(seed.snippet || '').trim();
-    if (!row.host && seed.host) row.host = String(seed.host || '').trim();
-    if (!row.root_domain && seed.root_domain) row.root_domain = String(seed.root_domain || '').trim();
-    if (!row.doc_kind_guess && seed.doc_kind_guess) row.doc_kind_guess = String(seed.doc_kind_guess || '').trim();
-    if (!row.role && seed.role) row.role = String(seed.role || '').trim();
-    if (!row.tier_name_guess && seed.tier_name_guess) row.tier_name_guess = String(seed.tier_name_guess || '').trim();
-    if (row.tier_guess === null && Number.isFinite(Number(seed.tier_guess))) {
-      row.tier_guess = Number(seed.tier_guess);
-    }
-    if (seed.approved_domain) row.approved_domain = true;
-    return row;
-  };
+  const { ensureTrace, candidateTraceByUrl } = createCandidateTraceMap();
 
   // ── Phase 2: Hard-drop filter (replaces inline non-HTTPS/denied/cooldown checks) ──
   const { survivors: hardDropSurvivors, hardDrops } = applyHardDropFilter({
@@ -122,134 +69,25 @@ export async function processDiscoveryResults({
     });
   }
 
-  // Build candidate rows from survivors (classify + trace, no semantic kills)
-  let canonMergeCount = 0;
-  for (const raw of hardDropSurvivors) {
-    try {
-      const parsed = new URL(raw.url);
-      const canonicalFromFrontier = frontierDb?.canonicalize?.(parsed.toString())?.canonical_url || parsed.toString();
-      const queryList = uniqueTokens(
-        [...toArray(raw.seen_in_queries), raw.query],
-        20
-      );
-      const providerList = uniqueTokens(
-        [...toArray(raw.seen_by_providers), raw.provider],
-        8
-      );
-      const queryHintList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.doc_hint || '').trim()).filter(Boolean),
-        12
-      );
-      const hintSourceList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.hint_source || '').trim()).filter(Boolean),
-        8
-      );
-      const targetFieldList = uniqueTokens(
-        queryList.flatMap((query) => toArray(queryMetaByQuery.get(query)?.target_fields)),
-        20
-      );
-      const domainHintList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.domain_hint || '').trim()).filter(Boolean),
-        10
-      );
-      const trace = ensureTrace(canonicalFromFrontier, {
-        original_url: parsed.toString(),
-        title: String(raw.title || '').trim(),
-        snippet: String(raw.snippet || '').trim(),
-        providers: providerList,
-        queries: queryList,
-        query_hints: queryHintList,
-        hint_sources: hintSourceList,
-        target_fields: targetFieldList,
-        domain_hints: domainHintList
-      });
-      const classified = classifyUrlCandidate(raw, categoryConfig, {
-        identityLock,
-        variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms)
-      });
-      // WHY: No semantic kills here. Manufacturer brand mismatch, low relevance,
-      // forum subdomain, sibling model — all become soft labels via assignSoftLabels.
-      const canonical = canonicalFromFrontier;
-      if (trace) {
-        trace.host = classified.host;
-        trace.root_domain = classified.rootDomain;
-        trace.tier_guess = Number.isFinite(Number(classified.tier)) ? Number(classified.tier) : null;
-        trace.tier_name_guess = String(classified.tierName || '').trim();
-        trace.role = String(classified.role || '').trim();
-        trace.doc_kind_guess = String(classified.doc_kind_guess || '').trim();
-        trace.approved_domain = Boolean(classified.approvedDomain);
-        trace.decision = 'eligible';
-      }
-      if (!byUrl.has(canonical)) {
-        byUrl.set(canonical, {
-          ...classified,
-          url: canonical,
-          original_url: parsed.toString(),
-          seen_by_providers: providerList,
-          seen_in_queries: queryList,
-          cross_provider_count: providerList.length
-        });
-      } else {
-        canonMergeCount++;
-        const existing = byUrl.get(canonical);
-        existing.seen_by_providers = uniqueTokens([...(existing.seen_by_providers || []), ...providerList], 8);
-        existing.seen_in_queries = uniqueTokens([...(existing.seen_in_queries || []), ...queryList], 20);
-        existing.cross_provider_count = (existing.seen_by_providers || []).length;
-      }
-    } catch {
-      // ignore malformed URL
-    }
-  }
+  // ── Phase 2+3: Classify candidates + domain heuristics ──
+  const { byUrl: classifiedByUrl, canonMergeCount } = classifyAndDeduplicateCandidates({
+    hardDropSurvivors,
+    queryMetaByQuery,
+    frontierDb,
+    categoryConfig,
+    searchProfileBase,
+    identityLock,
+    ensureTrace,
+  });
+  const candidateRows = [...classifiedByUrl.values()];
 
-  const candidateRows = [...byUrl.values()];
-  const domainClassificationSeeds = collectDomainClassificationSeeds({
-    searchResultRows: candidateRows,
+  const { domainSafetyResults } = classifyDomains({
+    candidateRows,
     effectiveHostPlan,
     brandResolution,
+    categoryConfig,
+    logger,
   });
-  const domainClassificationRows = [];
-  // Domain safety: deterministic heuristics only (LLM call eliminated — zero correctness risk).
-  if (domainClassificationSeeds.length > 0) {
-    for (const domain of domainClassificationSeeds) {
-      const blocked = isDeniedHost(domain, categoryConfig);
-      const approved = !blocked && isApprovedHost(domain, categoryConfig);
-      const tier = Number(resolveTierForHost(domain, categoryConfig) || 0);
-      const baseScore = blocked
-        ? 10
-        : approved
-          ? 90
-          : tier === 1
-            ? 80
-            : tier === 2
-              ? 70
-              : tier === 3
-                ? 60
-                : 50;
-      domainClassificationRows.push({
-        domain,
-        role: String(inferRoleForHost(domain, categoryConfig) || '').trim(),
-        safety_class: blocked ? 'blocked' : (approved ? 'safe' : 'caution'),
-        budget_score: baseScore,
-        cooldown_remaining: 0,
-        success_rate: 0,
-        avg_latency_ms: 0,
-        notes: blocked ? 'category_denylist' : 'deterministic_heuristic'
-      });
-    }
-  }
-  const domainSafetyResults = new Map();
-  for (const row of domainClassificationRows) {
-    domainSafetyResults.set(row.domain, {
-      safe: row.safety_class !== 'blocked',
-      classification: row.safety_class,
-      reason: row.notes,
-    });
-  }
-  if (domainClassificationRows.length > 0) {
-    logger?.info?.('domains_classified', {
-      classifications: domainClassificationRows.slice(0, 50)
-    });
-  }
 
   // ── SERP Selector (LLM-only, no deterministic fallback) ──
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
@@ -421,145 +259,31 @@ export async function processDiscoveryResults({
   const selectedUrlSet = new Set(
     discovered.map((row) => String(row.url || '').trim()).filter(Boolean)
   );
-  const { brandTokens, modelTokens } = normalizeIdentityTokens(variables);
-  for (const trace of candidateTraceByUrl.values()) {
-    const candidateRow = candidateByUrl.get(String(trace.url || '').trim());
-    if (!candidateRow) {
-      if (trace.decision !== 'rejected') {
-        trace.decision = 'rejected';
-        trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'triage_excluded'], 16);
-      }
-      continue;
-    }
-
-    const isSelected = selectedUrlSet.has(String(trace.url || '').trim());
-    trace.decision = isSelected ? 'selected' : 'not_selected';
-    trace.tier_guess = Number.isFinite(Number(candidateRow.tier))
-      ? Number(candidateRow.tier)
-      : (Number.isFinite(Number(trace.tier_guess)) ? Number(trace.tier_guess) : null);
-    trace.tier_name_guess = String(candidateRow.tierName || trace.tier_name_guess || '').trim();
-    trace.approved_domain = Boolean(candidateRow.approvedDomain || trace.approved_domain);
-    trace.doc_kind_guess = String(candidateRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
-    trace.triage_score = Number(candidateRow.score || 0);
-    trace.triage_reason = String(candidateRow.triage_disposition || '').trim();
-
-    const haystack = `${trace.title || ''} ${trace.snippet || ''} ${trace.url || ''}`.toLowerCase();
-    const reasonCodes = [...(trace.reason_codes || [])];
-    if (trace.approved_domain) reasonCodes.push('approved_domain');
-    if (trace.tier_guess === 1) reasonCodes.push('tier_1');
-    if (trace.tier_guess === 2) reasonCodes.push('tier_2');
-    if (String(trace.doc_kind_guess || '').includes('pdf')) reasonCodes.push('doc_pdf');
-    if ((candidateRow.cross_provider_count || 0) > 1) reasonCodes.push('cross_provider_multi');
-    if (countTokenHits(haystack, brandTokens) > 0) reasonCodes.push('brand_match');
-    if (countTokenHits(haystack, modelTokens) > 0) reasonCodes.push('model_match');
-    for (const query of trace.queries || []) {
-      const meta = queryMetaByQuery.get(String(query || '').trim()) || {};
-      if (meta?.domain_hint) {
-        const hostToken = String(trace.host || '').toLowerCase();
-        const hintToken = String(meta.domain_hint || '').toLowerCase().replace(/^www\./, '');
-        if (hostToken && hintToken && hostToken.includes(hintToken)) {
-          reasonCodes.push('domain_hint_match');
-        }
-      }
-      if (docHintMatchesDocKind(meta?.doc_hint, trace.doc_kind_guess)) {
-        reasonCodes.push('doc_hint_match');
-      }
-      if (String(meta?.hint_source || '').trim()) {
-        reasonCodes.push(`hint:${String(meta.hint_source).trim()}`);
-      }
-    }
-    reasonCodes.push(isSelected ? 'selected_top_k' : 'below_top_k_cutoff');
-    trace.reason_codes = uniqueTokens(reasonCodes, 16);
-  }
-
-  const tracesByQuery = new Map();
-  for (const trace of candidateTraceByUrl.values()) {
-    for (const query of trace.queries || []) {
-      const token = String(query || '').trim();
-      if (!token) continue;
-      if (!tracesByQuery.has(token)) {
-        tracesByQuery.set(token, []);
-      }
-      tracesByQuery.get(token).push(trace);
-    }
-  }
-  const decisionRank = {
-    selected: 3,
-    not_selected: 2,
-    rejected: 1,
-    eligible: 1,
-    pending: 0
-  };
-  const serpQueryRows = queryRowsEnriched.map((row) => {
-    const queryText = String(row?.query || '').trim();
-    const traces = [...(tracesByQuery.get(queryText) || [])]
-      .sort((a, b) => {
-        const decisionCmp = (decisionRank[b.decision] || 0) - (decisionRank[a.decision] || 0);
-        if (decisionCmp !== 0) return decisionCmp;
-        const scoreCmp = Number(b.triage_score || 0) - Number(a.triage_score || 0);
-        if (scoreCmp !== 0) return scoreCmp;
-        return String(a.url || '').localeCompare(String(b.url || ''));
-      })
-      .slice(0, 40)
-      .map((trace) => ({
-        url: trace.url,
-        title: String(trace.title || '').slice(0, 220),
-        snippet: String(trace.snippet || '').slice(0, 260),
-        host: trace.host,
-        tier: trace.tier_guess,
-        tier_name: trace.tier_name_guess,
-        doc_kind: trace.doc_kind_guess || 'other',
-        triage_score: Number.isFinite(Number(trace.triage_score))
-          ? Number(Number(trace.triage_score).toFixed(3))
-          : 0,
-        triage_reason: trace.triage_reason || '',
-        decision: trace.decision || 'pending',
-        reason_codes: uniqueTokens(trace.reason_codes || [], 8),
-        providers: uniqueTokens(trace.providers || [], 6),
-        // Additive Stage 06 fields
-        primary_lane: candidateByUrl.get(trace.url)?.primary_lane || null,
-        triage_disposition: candidateByUrl.get(trace.url)?.triage_disposition || null,
-        identity_prelim: candidateByUrl.get(trace.url)?.identity_prelim || null,
-        host_trust_class: candidateByUrl.get(trace.url)?.host_trust_class || null,
-        score_breakdown: candidateByUrl.get(trace.url)?.score_breakdown || null,
-      }));
-    const selectedCount = traces.filter((item) => item.decision === 'selected').length;
-    return {
-      query: queryText,
-      hint_source: String(row?.hint_source || '').trim(),
-      target_fields: toArray(row?.target_fields),
-      doc_hint: String(row?.doc_hint || '').trim(),
-      domain_hint: String(row?.domain_hint || '').trim(),
-      result_count: Number(row?.result_count || 0),
-      attempts: Number(row?.attempts || 0),
-      providers: toArray(row?.providers),
-      candidate_count: traces.length,
-      selected_count: selectedCount,
-      candidates: traces
-    };
+  enrichCandidateTraces({
+    candidateTraceByUrl,
+    candidateByUrl,
+    selectedUrlSet,
+    variables,
+    queryMetaByQuery,
   });
-  const candidateTraceRows = [...candidateTraceByUrl.values()];
-  const serpExplorer = {
-    generated_at: new Date().toISOString(),
-    provider: config.searchEngines,
-    // WHY: LLM selector is now the only triage path
-    llm_selector_enabled: true,
-    llm_selector_applied: validation.valid,
-    llm_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
-    query_count: serpQueryRows.length,
-    candidates_checked: candidateTraceRows.length,
-    urls_triaged: candidateRows.length,
-    // WHY: candidates_sent is how many the LLM saw; urls_selected is how many it kept.
-    candidates_sent: selectorInput.candidates.length,
-    urls_selected: selectedUrlSet.size,
-    urls_rejected: candidateTraceRows.filter((row) => row.decision === 'rejected').length,
-    raw_input: rawResults.length,
-    hard_drop_count: hardDrops.length,
-    canon_merge_count: canonMergeCount,
-    soft_exclude_count: notSelected.length,
-    audit_trail: auditTrail,
-    queries: serpQueryRows
-  };
+
+  // ── Phase 7: Build SERP explorer ──
+  const serpExplorer = buildSerpExplorer({
+    queryRowsEnriched,
+    candidateTraceByUrl,
+    candidateByUrl,
+    selectedUrlSet,
+    candidateRows,
+    rawResults,
+    hardDrops,
+    selected,
+    notSelected,
+    selectorInput,
+    validation,
+    auditTrail,
+    canonMergeCount,
+    config,
+  });
 
   const searchProfileFinal = {
     ...searchProfilePlanned,
@@ -583,71 +307,17 @@ export async function processDiscoveryResults({
     keys: searchProfileKeys
   });
 
-  const discoveryKey = toPosixKey(
-    config.s3InputPrefix,
-    '_discovery',
-    categoryConfig.category,
-    `${runId}.json`
-  );
-  const candidatesKey = toPosixKey(
-    config.s3InputPrefix,
-    '_sources',
-    'candidates',
-    categoryConfig.category,
-    `${runId}.json`
-  );
-
-  const discoveryPayload = {
-    category: categoryConfig.category,
-    productId: job.productId,
-    runId,
-    generated_at: new Date().toISOString(),
-    provider: config.searchEngines,
-    provider_state: providerState,
-    query_concurrency: queryConcurrency,
-    llm_query_planning: true,
-    llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
-    llm_serp_selector: true,
-    llm_serp_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
-    query_count: queries.length,
-    query_reject_count: toArray(searchProfileFinal?.query_reject_log).length,
-    discovered_count: discovered.length,
-    selected_count: selectedUrls.length,
-    queries,
-    query_guard: searchProfileFinal.query_guard || null,
-    query_reject_log: toArray(searchProfileFinal.query_reject_log).slice(0, 200),
-    llm_queries: llmQueries,
-    search_profile_key: searchProfileKeys.inputKey,
-    search_profile_run_key: searchProfileKeys.runKey,
-    search_profile_latest_key: searchProfileKeys.latestKey,
-    targeted_missing_fields: missingFields,
-    internal_satisfied: internalSatisfied,
-    external_search_reason: externalSearchReason,
-    search_attempts: searchAttempts,
-    search_journal: searchJournal,
-    serp_explorer: serpExplorer,
-    discovered: candidateRowsFinal
-  };
-  const candidatePayload = {
-    category: categoryConfig.category,
-    productId: job.productId,
-    runId,
-    generated_at: new Date().toISOString(),
-    candidate_count: candidateRowsFinal.length,
-    approved_count: approvedUrls.length,
-    candidates: candidateRowsFinal
-  };
-
-  await storage.writeObject(
-    discoveryKey,
-    Buffer.from(JSON.stringify(discoveryPayload, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-  await storage.writeObject(
-    candidatesKey,
-    Buffer.from(JSON.stringify(candidatePayload, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
+  // ── Phase 9: Write discovery + candidates payloads ──
+  const { discoveryKey, candidatesKey } = await writeDiscoveryPayloads({
+    config, storage, categoryConfig, job, runId,
+    queries, llmQueries, missingFields,
+    internalSatisfied, externalSearchReason,
+    searchAttempts, searchJournal,
+    providerState, queryConcurrency,
+    searchProfileFinal, serpExplorer,
+    candidateRowsFinal, discovered,
+    selectedUrls, approvedUrls, searchProfileKeys,
+  });
 
   return {
     enabled: true,
@@ -669,6 +339,6 @@ export async function processDiscoveryResults({
     external_search_reason: externalSearchReason,
     search_attempts: searchAttempts,
     search_journal: searchJournal,
-    serp_explorer: serpExplorer
+    serp_explorer: serpExplorer,
   };
 }
