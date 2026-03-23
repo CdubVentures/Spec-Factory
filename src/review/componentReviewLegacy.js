@@ -33,7 +33,7 @@ import {
 } from './componentReviewHelpers.js';
 
 export async function buildComponentReviewLayoutLegacy({ config = {}, category, fieldRules = null }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const files = await listJsonFiles(dbDir);
 
@@ -69,7 +69,7 @@ export async function buildComponentReviewLayoutLegacy({ config = {}, category, 
 }
 
 export async function buildComponentReviewPayloadsLegacy({ config = {}, category, componentType, specDb = null, fieldRules = null }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const dbDir = path.join(helperRoot, category, '_generated', 'component_db');
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
   const files = await listJsonFiles(dbDir);

@@ -54,7 +54,7 @@ export function createConfigPersistenceContext({
     studio = null,
   } = {}) {
     const persisted = await persistUserSettingsSections({
-      ['helper' + 'FilesRoot']: settingsRoot,
+      categoryAuthorityRoot: settingsRoot,
       runtime,
       convergence,
       storage: storageSection,

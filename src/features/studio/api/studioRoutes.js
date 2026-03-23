@@ -48,7 +48,6 @@ export function registerStudioRoutes(ctx) {
 
   const settingsRoot =
     config?.categoryAuthorityRoot
-    || config?.['helper' + 'FilesRoot']
     || HELPER_ROOT
     || 'category_authority';
 
@@ -57,7 +56,7 @@ export function registerStudioRoutes(ctx) {
       return ctx.loadStudioMapFromUserSettings(category);
     }
     const userSettings = await loadUserSettings({
-      ['helper' + 'FilesRoot']: settingsRoot,
+      categoryAuthorityRoot: settingsRoot,
     });
     return readStudioMapFromUserSettings(userSettings, category);
   }
@@ -381,7 +380,7 @@ export function registerStudioRoutes(ctx) {
         }
         const result = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config });
         await persistUserSettingsSections({
-          ['helper' + 'FilesRoot']: settingsRoot,
+          categoryAuthorityRoot: settingsRoot,
           studioPatch: {
             [category]: {
               file_path: typeof result.file_path === 'string' ? result.file_path : '',

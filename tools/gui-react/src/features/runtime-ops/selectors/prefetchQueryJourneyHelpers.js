@@ -1,3 +1,24 @@
+// WHY: Builds journey rows from search profile + planner + results data.
+// Tier-native ordering: sent queries by execution_order, unsent by tier priority.
+
+// WHY: Inline tier classification to avoid TS import barrier in node --test.
+// SSOT lives in searchProfileTierHelpers.ts — this mirrors the logic for .js consumers.
+const TIER_MAP = { seed: 'seed', group_search: 'group', key_search: 'key', host_plan: 'host_plan' };
+const HINT_SOURCE_TIER_MAP = { tier1_seed: 'seed', tier2_group: 'group', tier3_key: 'key', 'v2.host_plan': 'host_plan' };
+const TIER_LABELS = { seed: 'Seed', group: 'Group', key: 'Key', host_plan: 'Host Plan', legacy: 'Legacy' };
+
+function classifyQueryTier(row) {
+  const tier = String(row?.tier ?? '').trim();
+  if (tier && TIER_MAP[tier]) return TIER_MAP[tier];
+  const hint = String(row?.hint_source ?? '').trim();
+  if (hint && HINT_SOURCE_TIER_MAP[hint]) return HINT_SOURCE_TIER_MAP[hint];
+  return 'host_plan';
+}
+
+function tierLabel(tierKey) {
+  return TIER_LABELS[tierKey] ?? 'Host Plan';
+}
+
 function normalizeText(value) {
   return String(value || '').trim();
 }
@@ -24,7 +45,6 @@ function createRow(query) {
     planned: false,
     selected_by: 'deterministic',
     selected_by_label: 'Deterministic',
-    selected_by_tooltip: '',
     planner_passes: [],
     target_fields: [],
     hint_sources: [],
@@ -38,11 +58,12 @@ function createRow(query) {
     providers: [],
     sent_ts: null,
     execution_order: null,
-    order_metric: 0,
-    order_metric_label: '',
-    order_justification: '',
-    order_priority_breakdown: null,
     status: 'planned',
+    // WHY: Tier metadata propagated from Search Profile query_rows.
+    tier: '',
+    group_key: '',
+    normalized_key: '',
+    repeat_count: 0,
   };
 }
 
@@ -66,60 +87,8 @@ function statusForRow(row) {
   return 'observed';
 }
 
-function compactReasons(row) {
-  const out = [];
-  if (row.planner_passes.length > 0) out.push(`Planner pass: ${row.planner_passes.join(', ')}`);
-  if (row.hint_sources.length > 0) out.push(`Source: ${row.hint_sources.join(', ')}`);
-  if (row.source_hosts.length > 0 || row.domain_hints.length > 0 || /\bsite:\s*[a-z0-9.-]+/i.test(row.query)) out.push('Domain/site constrained');
-  if (row.doc_hints.length > 0) out.push(`Doc hint: ${row.doc_hints.join(', ')}`);
-  if (row.target_fields.length > 0) out.push(`Targets ${row.target_fields.length} field${row.target_fields.length > 1 ? 's' : ''}`);
-  if (out.length === 0) out.push('Profile-derived query');
-  return out.slice(0, 5);
-}
-
-function computePlannedPriorityScore(row) {
-  const passTokens = row.planner_passes.map((value) => normalizeToken(value));
-  const hasValidate = passTokens.some((value) => value.includes('validate'));
-  const hasReason = passTokens.some((value) => value.includes('reason'));
-  const hasPrimary = passTokens.some((value) => value.includes('primary'));
-  const hasFast = passTokens.some((value) => value.includes('fast'));
-  const hasFieldRules = row.hint_sources.some((source) => normalizeToken(source).startsWith('field_rules.'));
-  const hasDomainConstraint = row.source_hosts.length > 0 || row.domain_hints.length > 0 || /\bsite:\s*[a-z0-9.-]+/i.test(row.query);
-  const passType = (hasValidate ? 28 : 0) + (hasReason ? 20 : 0) + (hasPrimary ? 14 : 0) + (hasFast ? 8 : 0);
-  const targetCoverage = Math.min(24, row.target_fields.length * 4);
-  const attempts = Math.min(10, row.attempts * 2);
-  const constraints = (hasFieldRules ? 8 : 0) + (hasDomainConstraint ? 6 : 0);
-  const total = Math.max(0, passType + targetCoverage + attempts + constraints);
-  return { total, passType, targetCoverage, attempts, constraints };
-}
-
-function selectedByTooltip(row) {
-  if (row.selected_by === 'planner') {
-    const passText = row.planner_passes.length > 0 ? row.planner_passes.join(', ') : 'planner pass';
-    return `Selected by the LLM search planner (${passText}) to close missing field coverage with higher-value search angles.`;
-  }
-  return 'Selected by deterministic search-profile rules (identity, field hints, and query templates), not by the LLM planner.';
-}
-
-function orderJustification(row, firstSentMs) {
-  const priority = computePlannedPriorityScore(row);
-  row.order_priority_breakdown = priority;
-
-  if (row.execution_order != null && row.sent_ts) {
-    const sentMs = parseTsMs(row.sent_ts);
-    const deltaSec = sentMs > 0 && firstSentMs > 0 ? Math.max(0, (sentMs - firstSentMs) / 1000) : 0;
-    row.order_metric = Math.round(deltaSec * 10) / 10;
-    row.order_metric_label = `T+${row.order_metric.toFixed(1)}s`;
-    row.order_justification = row.execution_order === 1
-      ? `${row.order_metric_label}. First query sent in runtime execution order.`
-      : `${row.order_metric_label}. Sent later based on runtime timestamp ordering (query #${row.execution_order}).`;
-    return;
-  }
-
-  row.order_metric = priority.total;
-  row.order_metric_label = `P${priority.total}`;
-  row.order_justification = `${row.order_metric_label} = pass ${priority.passType} + target ${priority.targetCoverage} + attempts ${priority.attempts} (from ${row.attempts} logged attempts) + constraints ${priority.constraints}. Not sent yet.`;
-}
+// WHY: Tier priority order matches the pipeline budget allocation.
+const TIER_SORT_ORDER = { seed: 0, group: 1, key: 2, host_plan: 3, legacy: 4 };
 
 export function queryJourneyStatusLabel(status) {
   const token = normalizeToken(status);
@@ -163,6 +132,11 @@ export function buildQueryJourneyRows({
     addUnique(next.domain_hints, row?.domain_hint);
     addUnique(next.doc_hints, row?.doc_hint);
     addUnique(next.source_hosts, row?.source_host);
+    // WHY: Propagate tier metadata from Search Profile rows.
+    if (row?.tier && !next.tier) next.tier = normalizeText(row.tier);
+    if (row?.group_key && !next.group_key) next.group_key = normalizeText(row.group_key);
+    if (row?.normalized_key && !next.normalized_key) next.normalized_key = normalizeText(row.normalized_key);
+    if (typeof row?.repeat_count === 'number' && !next.repeat_count) next.repeat_count = row.repeat_count;
   }
 
   for (const plan of Array.isArray(searchPlans) ? searchPlans : []) {
@@ -209,27 +183,28 @@ export function buildQueryJourneyRows({
   withTs.forEach((row, index) => {
     row.execution_order = index + 1;
   });
-  const firstSentMs = withTs.length > 0 ? parseTsMs(withTs[0].sent_ts) : 0;
 
   const rows = Array.from(byQuery.values()).map((row) => {
-    row.selected_by = row.planner_passes.length > 0 ? 'planner' : 'deterministic';
-    row.selected_by_label = row.selected_by === 'planner'
-      ? `Planner (${row.planner_passes.join(', ')})`
-      : 'Deterministic';
-    row.selected_by_tooltip = selectedByTooltip(row);
+    const tierKey = classifyQueryTier(row);
+    const label = tierLabel(tierKey);
+    row.selected_by = row.planner_passes.length > 0 ? 'planner' : tierKey;
+    row.selected_by_label = row.planner_passes.length > 0
+      ? `${label} + Planner`
+      : label;
     row.status = statusForRow(row);
-    row.reasons = compactReasons(row);
-    orderJustification(row, firstSentMs);
     return row;
   });
 
+  // WHY: Sent queries first by execution order, unsent by tier priority.
   return rows.sort((a, b) => {
     if (a.execution_order != null && b.execution_order != null) {
       return a.execution_order - b.execution_order;
     }
     if (a.execution_order != null) return -1;
     if (b.execution_order != null) return 1;
-    if (a.order_metric !== b.order_metric) return b.order_metric - a.order_metric;
+    const tierA = TIER_SORT_ORDER[classifyQueryTier(a)] ?? 4;
+    const tierB = TIER_SORT_ORDER[classifyQueryTier(b)] ?? 4;
+    if (tierA !== tierB) return tierA - tierB;
     return a.query.localeCompare(b.query);
   });
 }

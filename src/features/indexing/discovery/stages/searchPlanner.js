@@ -2,8 +2,28 @@
 // Receives tier-tagged query_rows from Search Profile, enhances query strings via LLM.
 // Tier metadata (tier, hint_source, group_key, normalized_key, target_fields) is passthrough.
 
+import { z } from 'zod';
 import { enhanceQueryRows } from '../../../../research/queryPlanner.js';
 import { toArray } from '../discoveryIdentity.js';
+
+export const searchPlannerInputSchema = z.object({
+  searchProfileBase: z.object({
+    query_rows: z.array(z.unknown()).optional().default([]),
+    base_templates: z.array(z.string()).optional().default([]),
+  }).passthrough(),
+  queryExecutionHistory: z.object({
+    queries: z.array(z.unknown()).optional().default([]),
+  }).nullable().optional().default(null),
+  config: z.record(z.string(), z.unknown()),
+  logger: z.unknown().optional().default(null),
+  identityLock: z.object({}).passthrough().optional().default({}),
+  missingFields: z.array(z.string()).optional().default([]),
+}).passthrough();
+
+export const searchPlannerOutputSchema = z.object({
+  enhancedRows: z.array(z.unknown()),
+  source: z.string(),
+}).passthrough();
 
 /**
  * @param {object} ctx

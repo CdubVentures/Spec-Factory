@@ -79,7 +79,7 @@ function DomainDetailDrawer({
 
 /* ── Main Panel ── */
 
-export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScope, liveSettings, idxRuntime }: PrefetchDomainClassifierPanelProps) {
+export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
   const health = domainHealth || [];
   const hasStructured = health.length > 0;
   const overallStatus = hasStructured ? 'done' : 'pending';

@@ -6,7 +6,6 @@ import {
   fieldStatusBadgeClass,
   tierLabel,
   tierBadgeClass,
-  truncateUrl,
   pctString,
   METRIC_TIPS,
   friendlyMethod,

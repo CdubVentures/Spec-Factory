@@ -82,7 +82,7 @@ export async function buildReviewLayout({
     : compiledFields;
   const projected = projectFieldRulesForConsumer({ fields: mergedFields }, 'review');
   const fields = isObject(projected?.fields) ? projected.fields : mergedFields;
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
   const studioMap = await readJsonIfExists(mapPath);
 

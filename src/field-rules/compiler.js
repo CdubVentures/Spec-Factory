@@ -300,7 +300,7 @@ export async function compileRules({
     throw new Error('category_required');
   }
 
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const generatedRoot = path.join(helperRoot, normalizedCategory, '_generated');
 
   if (dryRun) {
@@ -423,7 +423,7 @@ export async function validateRules({
     throw new Error('category_required');
   }
 
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const generatedRoot = path.join(helperRoot, normalizedCategory, '_generated');
   const errors = [];
   const warnings = [];
@@ -575,7 +575,7 @@ export async function listFields({
     throw new Error('category_required');
   }
 
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const generatedRoot = path.join(helperRoot, normalizedCategory, '_generated');
   const [fieldRules, uiFieldCatalog] = await Promise.all([
     readJsonIfExists(path.join(generatedRoot, 'field_rules.json')),
@@ -701,7 +701,7 @@ export async function fieldReport({
 export async function discoverCompileCategories({
   config = {}
 } = {}) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   let entries = [];
   try {
     entries = await fs.readdir(helperRoot, { withFileTypes: true });
@@ -828,7 +828,7 @@ export async function readCompileReport({
   if (!normalizedCategory) {
     throw new Error('category_required');
   }
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const reportPath = path.join(helperRoot, normalizedCategory, '_generated', '_compile_report.json');
   const report = await readJsonIfExists(reportPath);
   return {
@@ -885,7 +885,7 @@ export async function watchCompileRules({
     throw new Error('category_required');
   }
   const chokidar = (await import('chokidar')).default;
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, normalizedCategory);
   const sourceRoot = path.join(categoryRoot, '_source');
   const controlRoot = path.join(categoryRoot, '_control_plane');

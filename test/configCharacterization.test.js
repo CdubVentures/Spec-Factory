@@ -403,8 +403,8 @@ test('CHAR config: category authority root has sensible default', () => {
   const cfg = loadConfig();
   assert.equal(typeof cfg.categoryAuthorityRoot, 'string');
   assert.ok(cfg.categoryAuthorityRoot.length > 0);
-  // helperFilesRoot should match categoryAuthorityRoot
-  assert.equal(cfg.helperFilesRoot, cfg.categoryAuthorityRoot);
+  // helperFilesRoot removed — canonical key is categoryAuthorityRoot
+  assert.strictEqual(cfg.helperFilesRoot, undefined);
 });
 
 test('CHAR config: indexingCategoryAuthorityEnabled defaults to false', () => {

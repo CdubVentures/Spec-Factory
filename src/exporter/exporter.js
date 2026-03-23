@@ -224,7 +224,9 @@ export async function exportRunArtifacts({
   events,
   markdownSummary,
   rowTsv,
-  writeMarkdownSummary
+  writeMarkdownSummary,
+  needSetFields,
+  round,
 }) {
   const runBase = storage.resolveOutputKey(category, productId, 'runs', runId);
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
@@ -369,7 +371,7 @@ export async function exportRunArtifacts({
   }
   if (db) {
     try {
-      exportToSpecDb({ specDb: db, category, productId, runId, normalized, provenance, candidates, summary });
+      exportToSpecDb({ specDb: db, category, productId, runId, normalized, provenance, candidates, summary, needSetFields, round });
     } catch (err) {
       // Best-effort — don't fail the export if SpecDb write fails
       if (typeof console !== 'undefined') console.error('[exporter] SpecDb dual-write error:', err.message);
@@ -386,7 +388,7 @@ export async function exportRunArtifacts({
 }
 
 /** Dual-write pipeline outputs into SpecDb tables */
-function exportToSpecDb({ specDb, category, productId, runId, normalized, provenance, candidates, summary }) {
+function exportToSpecDb({ specDb, category, productId, runId, normalized, provenance, candidates, summary, needSetFields, round }) {
   const fields = normalized?.fields || {};
   const isObj = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
   const usedCandidateIds = new Set();
@@ -511,6 +513,21 @@ function exportToSpecDb({ specDb, category, productId, runId, normalized, proven
         last_started_at: existingQueue.last_started_at,
         dirty_flags: existingQueue.dirty_flags
       });
+    }
+
+    // 5. Field histories (crash-recovery persistence for search progression)
+    if (Array.isArray(needSetFields) && typeof specDb.upsertFieldHistory === 'function') {
+      for (const field of needSetFields) {
+        if (field?.field_key && field?.history) {
+          specDb.upsertFieldHistory({
+            product_id: productId,
+            field_key: field.field_key,
+            round: round ?? 0,
+            run_id: runId,
+            history_json: JSON.stringify(field.history),
+          });
+        }
+      }
     }
   });
   tx();

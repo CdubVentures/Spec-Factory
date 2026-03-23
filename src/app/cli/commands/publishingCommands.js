@@ -116,7 +116,7 @@ export function createPublishingCommands({
     const categories = parseExpansionCategories(args.categories, ['monitor', 'keyboard']);
     const template = String(args.template || 'electronics').trim() || 'electronics';
     const helperRoot = String(
-      args['helper-root'] || config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority'
+      args['helper-root'] || config.categoryAuthorityRoot || 'category_authority'
     ).trim();
     const categoriesRoot = String(args['categories-root'] || 'categories').trim();
     const goldenRoot = String(args['golden-root'] || 'fixtures/golden').trim();
@@ -124,7 +124,6 @@ export function createPublishingCommands({
       config: {
         ...config,
         categoryAuthorityRoot: helperRoot,
-        ['helper' + 'FilesRoot']: helperRoot,
         categoriesRoot
       },
       categories,

@@ -35,7 +35,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
 
   const cachedRuntimeSettings = {
     searchEngines: '',
-    helperFilesRoot: 'helper-root-canonical',
+    categoryAuthorityRoot: 'helper-root-canonical',
     fetchConcurrency: 9999,
     discardMe: { nested: true },
   };
@@ -49,12 +49,12 @@ test('settings surface normalizes cached runtime settings through the public GUI
   const snapshot = readRuntimeSettingsSnapshot(queryClient);
   assert.deepEqual(snapshot, {
     searchEngines: '',
-    helperFilesRoot: 'helper-root-canonical',
+    categoryAuthorityRoot: 'helper-root-canonical',
     fetchConcurrency: 9999,
   });
 
   const bootstrap = readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS);
-  assert.equal(bootstrap.helperFilesRoot, 'helper-root-canonical');
+  assert.equal(bootstrap.categoryAuthorityRoot, 'helper-root-canonical');
   assert.equal(bootstrap.maxRunSeconds, RUNTIME_SETTING_DEFAULTS.maxRunSeconds);
 
   const numericBaseline = readRuntimeSettingsNumericBaseline(
@@ -64,7 +64,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
   assert.equal(numericBaseline.fetchConcurrency, 9999);
 
   const normalized = normalizeRuntimeDraft(snapshot, RUNTIME_SETTING_DEFAULTS);
-  assert.equal(normalized.helperFilesRoot, 'helper-root-canonical');
   assert.equal(normalized.categoryAuthorityRoot, 'helper-root-canonical');
   assert.equal(normalized.searchEngines, RUNTIME_SETTING_DEFAULTS.searchEngines);
   assert.equal(

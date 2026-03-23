@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../src/features/indexing/search/queryBuilder.js';
 
-test('buildTargetedQueries uses normalized missing fields and helper tooltip hints', () => {
+test('buildTargetedQueries uses normalized missing fields and produces tier-based queries', () => {
+  // WHY: Tier-only pipeline with seedStatus=null synthesizes specs_seed.is_needed=true.
+  // Queries are tier-based (seed query), not archetype-based tooltip expansions.
   const queries = buildTargetedQueries({
     job: {
       category: 'mouse',
@@ -30,14 +32,15 @@ test('buildTargetedQueries uses normalized missing fields and helper tooltip hin
     maxQueries: 20
   });
 
-  assert.equal(queries.some((row) => row.includes('report rate specification')), true);
-  assert.equal(queries.some((row) => row.includes('polling interval manual pdf')), true);
-  // WHY: soft domain bias — host appears as plain text, not site: operator
-  assert.equal(queries.some((row) => row.includes('logitechg.com') && !row.includes('site:')), true, 'soft domain bias present');
-  assert.equal(queries.some((row) => row.includes('site:')), false);
+  assert.ok(queries.length > 0, 'queries emitted');
+  // WHY: Tier-only with synthesized seedStatus produces "Logitech G Pro X Superlight 2 Wireless specifications"
+  assert.ok(queries.some((row) => row.includes('Logitech') && row.includes('G Pro X Superlight 2')), 'brand+model in query');
+  assert.equal(queries.some((row) => row.includes('site:')), false, 'no site: operators');
 });
 
-test('buildSearchProfile uses field rules search hints and emits provenance', () => {
+test('buildSearchProfile emits tier-based provenance and identity aliases', () => {
+  // WHY: Tier-only pipeline with seedStatus=null synthesizes specs_seed.is_needed=true.
+  // Queries are tier1_seed, not field_rules.search_hints.
   const profile = buildSearchProfile({
     job: {
       category: 'mouse',
@@ -75,10 +78,9 @@ test('buildSearchProfile uses field rules search hints and emits provenance', ()
 
   assert.equal(Array.isArray(profile.identity_aliases), true);
   assert.equal(profile.identity_aliases.some((row) => row.alias === 'aw610m'), true);
-  assert.equal(profile.query_rows.some((row) => row.hint_source === 'field_rules.search_hints'), true);
-  // WHY: soft domain bias — host appears as plain text, not site: operator
-  assert.equal(profile.queries.some((query) => query.includes('support.dell.com') && !query.includes('site:')), true, 'soft domain bias present');
-  assert.equal(profile.queries.some((query) => query.includes('polling_rate')), false);
+  // WHY: Tier-only pipeline emits tier1_seed hint_source, not field_rules.search_hints
+  assert.equal(profile.query_rows.some((row) => row.hint_source === 'tier1_seed'), true, 'tier1_seed provenance present');
+  assert.equal(profile.queries.some((query) => query.includes('site:')), false, 'no site: operators');
 });
 
 test('buildSearchProfile falls back to top-level job identity when identityLock is absent', () => {
@@ -276,6 +278,8 @@ test('buildSearchProfile keeps token-only domain_hints as 0/N effective counts',
 });
 
 test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is disabled for indexlab', () => {
+  // WHY: Tier-only pipeline with tier3 key rows can expose tooltip terms if consumer gates
+  // are not respected. Verify disabled tooltip_md terms don't leak into queries.
   const profile = buildSearchProfile({
     job: {
       category: 'mouse',
@@ -311,7 +315,18 @@ test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is
       polling_rate: ['precision cadence']
     },
     missingFields: ['polling_rate'],
-    maxQueries: 24
+    maxQueries: 24,
+    seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+    focusGroups: [
+      { key: 'polling_group', label: 'Polling Rate', group_search_worthy: false,
+        normalized_key_queue: ['polling_rate'], unresolved_field_keys: ['polling_rate'],
+        field_keys: ['polling_rate'], satisfied_field_keys: [], productivity_score: 50,
+        group_description_short: 'polling rate', group_description_long: 'polling rate hz',
+        query_terms_union: [], domain_hints_union: [], preferred_content_types_union: [],
+        domains_tried_union: [], aliases_union: [], total_field_count: 1,
+        resolved_field_count: 0, coverage_ratio: 0, phase: 'now',
+        skip_reason: null, desc: 'polling rate' },
+    ],
   });
 
   assert.equal(
@@ -319,9 +334,10 @@ test('buildSearchProfile ignores tooltip-derived IDX terms when ui.tooltip_md is
     false,
     'ui.tooltip_md should not leak tooltip-derived query terms into IndexLab when the IDX consumer is disabled'
   );
+  // WHY: tier3 key row for polling_rate produces a query containing "polling rate"
   assert.equal(
     profile.queries.some((query) => query.includes('polling rate')),
     true,
-    'default field synonyms should still contribute queries'
+    'tier3 key search produces polling rate query'
   );
 });

@@ -119,7 +119,7 @@ async function writeSuggestionFile(filePath, value) {
 
 export function suggestionFilePath({ config = {}, category, type }) {
   const normalizedType = normalizeType(type);
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const normalizedCategory = String(category || '').trim() || 'unknown';
   return path.join(
     helperRoot,

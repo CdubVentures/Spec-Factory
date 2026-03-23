@@ -25,8 +25,10 @@ describe('classifyQueryTier', () => {
     ['hint_source fallback: tier1_seed', { hint_source: 'tier1_seed' }, 'seed'],
     ['hint_source fallback: tier2_group', { hint_source: 'tier2_group' }, 'group'],
     ['hint_source fallback: tier3_key', { hint_source: 'tier3_key' }, 'key'],
-    ['no tier data → legacy', { hint_source: 'field_rules.search_hints' }, 'legacy'],
-    ['empty row → legacy', {}, 'legacy'],
+    ['tier field: host_plan', { tier: 'host_plan' }, 'host_plan'],
+    ['hint_source: v2.host_plan', { hint_source: 'v2.host_plan' }, 'host_plan'],
+    ['unknown hint_source → host_plan', { hint_source: 'field_rules.search_hints' }, 'host_plan'],
+    ['empty row → host_plan', {}, 'host_plan'],
     ['tier takes precedence over hint_source', { tier: 'seed', hint_source: 'tier3_key' }, 'seed'],
   ];
   for (const [label, overrides, expected] of cases) {
@@ -44,9 +46,9 @@ describe('tierLabel', () => {
     ['seed', 'Seed'],
     ['group', 'Group'],
     ['key', 'Key'],
-    ['legacy', 'Legacy'],
-    ['unknown', 'Legacy'],
-    ['', 'Legacy'],
+    ['host_plan', 'Host Plan'],
+    ['unknown', 'Host Plan'],
+    ['', 'Host Plan'],
   ];
   for (const [input, expected] of cases) {
     it(`${input || '(empty)'} → ${expected}`, () => {
@@ -63,7 +65,7 @@ describe('tierChipClass', () => {
     ['seed', 'sf-chip-accent'],
     ['group', 'sf-chip-warning'],
     ['key', 'sf-chip-info'],
-    ['legacy', 'sf-chip-neutral'],
+    ['host_plan', 'sf-chip-neutral'],
     ['', 'sf-chip-neutral'],
   ];
   for (const [input, expected] of cases) {
@@ -89,12 +91,12 @@ describe('groupByTier', () => {
     assert.equal(result.seed.length, 2);
     assert.equal(result.group.length, 1);
     assert.equal(result.key.length, 1);
-    assert.equal(result.legacy.length, 1);
+    assert.equal(result.host_plan.length, 1);
   });
 
   it('returns empty arrays for no rows', () => {
     const result = groupByTier([]);
-    assert.deepEqual(result, { seed: [], group: [], key: [], legacy: [] });
+    assert.deepEqual(result, { seed: [], group: [], key: [], host_plan: [] });
   });
 });
 
@@ -115,7 +117,7 @@ describe('buildTierBudgetSummary', () => {
     assert.equal(result.seed.count, 2);
     assert.equal(result.group.count, 1);
     assert.equal(result.key.count, 3);
-    assert.equal(result.legacy.count, 0);
+    assert.equal(result.host_plan.count, 0);
     assert.equal(result.total, 6);
     assert.equal(result.cap, 24);
     assert.ok(Math.abs(result.seed.pct - (2 / 6) * 100) < 0.01);
@@ -155,7 +157,7 @@ describe('enrichmentStrategyLabel', () => {
     assert.equal(enrichmentStrategyLabel(makeRow({ tier: 'group_search' })), '');
   });
 
-  it('returns empty string for legacy rows', () => {
+  it('returns empty string for host_plan rows', () => {
     assert.equal(enrichmentStrategyLabel(makeRow({ hint_source: 'field_rules.search_hints' })), '');
   });
 });

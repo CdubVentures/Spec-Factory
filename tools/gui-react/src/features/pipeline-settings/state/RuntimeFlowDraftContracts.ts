@@ -27,11 +27,12 @@ export const RESUME_MODE_OPTIONS = (REGISTRY_ENUM_MAP.resumeMode ?? []) as reado
 export const REPAIR_DEDUPE_RULE_OPTIONS = (REGISTRY_ENUM_MAP.repairDedupeRule ?? []) as readonly RuntimeRepairDedupeRule[];
 
 export type { NumberBound };
-export type RuntimeDraft = Omit<RuntimeSettingDefaults, 'runtimeAutoSaveEnabled'>;
+// WHY: Pick<> preserves mapped-type index compatibility that downstream
+// consumers rely on (e.g., `as Record<string, unknown>` casts).
+export type RuntimeDraft = Pick<RuntimeSettingDefaults, keyof RuntimeSettingDefaults>;
 
 export function toRuntimeDraft(defaults: RuntimeSettingDefaults): RuntimeDraft {
-  const { runtimeAutoSaveEnabled: _runtimeAutoSaveEnabled, ...draft } = defaults;
-  return draft;
+  return defaults;
 }
 
 export function runtimeDraftEqual(a: RuntimeDraft, b: RuntimeDraft) {

@@ -54,7 +54,7 @@ export async function scanOrphans({ storage, category, config = {} }) {
     });
   }
 
-  const canonicalIndex = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot']
+  const canonicalIndex = config?.categoryAuthorityRoot
     ? await loadCanonicalIdentityIndex({
       config,
       category

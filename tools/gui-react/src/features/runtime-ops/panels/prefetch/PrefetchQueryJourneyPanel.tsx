@@ -1,12 +1,10 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
@@ -24,6 +22,12 @@ import {
   queryJourneyStatusBadgeClass,
   queryJourneyStatusLabel,
 } from '../../selectors/prefetchQueryJourneyHelpers.js';
+import {
+  classifyQueryTier,
+  tierLabel,
+  tierChipClass,
+  enrichmentStrategyLabel,
+} from '../../selectors/searchProfileTierHelpers.js';
 
 interface PrefetchQueryJourneyPanelProps {
   searchProfile: PrefetchSearchProfileData;
@@ -34,7 +38,9 @@ interface PrefetchQueryJourneyPanelProps {
   idxRuntime?: RuntimeIdxBadge[];
 }
 
-/* ── Query Journey Drawer ── */
+const TH_CLS = 'py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle';
+
+/* ── Query Journey Drawer (tier-aware) ── */
 
 function QueryJourneyDrawer({
   row,
@@ -43,6 +49,9 @@ function QueryJourneyDrawer({
   row: ReturnType<typeof buildQueryJourneyRows>[number];
   onClose: () => void;
 }) {
+  const tier = classifyQueryTier(row);
+  const enrichment = enrichmentStrategyLabel(row);
+
   return (
     <DrawerShell
       title="Query Journey Detail"
@@ -55,30 +64,19 @@ function QueryJourneyDrawer({
       <DrawerSection title="Lifecycle">
         <div className="flex items-center gap-2 flex-wrap text-xs">
           <Chip label={queryJourneyStatusLabel(row.status)} className={queryJourneyStatusBadgeClass(row.status)} />
-          <Chip label={row.selected_by_label} className="sf-chip-warning" />
+          <Chip label={tierLabel(tier)} className={tierChipClass(tier)} />
+          {row.planner_passes.length > 0 && <Chip label={`+ ${row.planner_passes.join(', ')}`} className="sf-chip-warning" />}
           <Chip label={`order: ${row.execution_order ?? '-'}`} className="sf-chip-neutral" />
         </div>
       </DrawerSection>
 
-      <DrawerSection title="Why Selected">
-        <ul className="space-y-1">
-          {row.reasons.map((reason) => (
-            <li key={reason} className="text-xs sf-text-muted">
-              {reason}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-2 text-xs sf-text-muted">
-          Order justification: {row.order_justification}
+      <DrawerSection title="Tier Context">
+        <div className="space-y-1 text-xs sf-text-muted">
+          <div>Tier: <strong className="sf-text-primary">{tierLabel(tier)}</strong></div>
+          {row.group_key && <div>Group: <span className="font-mono">{row.group_key}</span></div>}
+          {row.normalized_key && <div>Key: <span className="font-mono">{row.normalized_key}</span></div>}
+          {enrichment && <div>Enrichment: <span className="italic">{enrichment}</span> (repeat {row.repeat_count})</div>}
         </div>
-        {row.order_priority_breakdown && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            <Chip label={`pass ${row.order_priority_breakdown.passType}`} className="sf-chip-info" />
-            <Chip label={`target ${row.order_priority_breakdown.targetCoverage}`} className="sf-chip-success" />
-            <Chip label={`attempts ${row.order_priority_breakdown.attempts}`} className="sf-chip-accent" />
-            <Chip label={`constraints ${row.order_priority_breakdown.constraints}`} className="sf-chip-warning" />
-          </div>
-        )}
       </DrawerSection>
 
       <DrawerSection title="Coverage Targets">
@@ -151,12 +149,11 @@ export function PrefetchQueryJourneyPanel({
     [journeyRows, selectedQuery],
   );
 
-  const [rankingOpen, toggleRankingOpen] = usePersistedToggle(`runtimeOps:queryJourney:ranking:${persistScope}`, true);
-
   const plannedCount = journeyRows.filter((row) => row.planned).length;
   const plannerCount = journeyRows.filter((row) => row.selected_by === 'planner').length;
-  const deterministicCount = journeyRows.filter((row) => row.selected_by === 'deterministic').length;
-  const sentCount = journeyRows.filter((row) => row.sent_count > 0).length;
+  const seedCount = journeyRows.filter((row) => classifyQueryTier(row) === 'seed').length;
+  const groupCount = journeyRows.filter((row) => classifyQueryTier(row) === 'group').length;
+  const keyCount = journeyRows.filter((row) => classifyQueryTier(row) === 'key').length;
   const resultsCount = journeyRows.filter((row) => row.status === 'results_received').length;
   const pendingCount = journeyRows.filter((row) => row.status === 'planned').length;
   const totalResults = journeyRows.reduce((sum, row) => sum + row.result_count, 0);
@@ -195,92 +192,41 @@ export function PrefetchQueryJourneyPanel({
           )}
         </>}
         trailing={<>
-          <Chip label="Deterministic" className="sf-chip-neutral" />
-          <Tip text="Story view for what was planned first, what got sent, and why each query was selected. Click any row to see the full journey detail." />
+          <Chip label="Tier-Aware" className="sf-chip-info" />
+          <Tip text="Queries ordered by tier priority: seeds first (broadest), then groups (by productivity), then keys (by availability/difficulty). Click any row for full detail." />
         </>}
       >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
-        {/* Big stat numbers */}
         <HeroStatGrid>
           <HeroStat value={plannedCount} label="planned" />
-          <HeroStat value={plannedCount} label="sent" colorClass={plannedCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={`T1:${seedCount} T2:${groupCount} T3:${keyCount}`} label="tier split" />
           <HeroStat value={resultsCount} label="results received" colorClass={resultsCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={pendingCount} label="still pending" colorClass={pendingCount > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
-        {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          {plannedCount > 0 && (
-            <>
-              <strong className="sf-text-primary not-italic">{plannedCount}</strong> queries planned
-              {(deterministicCount > 0 || plannerCount > 0) && (
-                <> (<strong className="sf-text-primary not-italic">{deterministicCount}</strong> from search profile, <strong className="sf-text-primary not-italic">{plannerCount}</strong> from search planner)</>
-              )}
-              {plannedCount > 0 && (
-                <> &mdash; <strong className="sf-text-primary not-italic">{plannedCount}</strong> sent to providers</>
-              )}
-              {resultsCount > 0 && (
-                <>, <strong className="sf-text-primary not-italic">{resultsCount}</strong> received <strong className="sf-text-primary not-italic">{totalResults}</strong> total results</>
-              )}
-              {pendingCount > 0 && (
-                <>. <strong className="sf-text-primary not-italic">{pendingCount}</strong> still awaiting execution</>
-              )}
-              .
-            </>
+          <strong className="sf-text-primary not-italic">{plannedCount}</strong> queries
+          {seedCount > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{seedCount}</strong> seeds</>}
+          {groupCount > 0 && <>, <strong className="sf-text-primary not-italic">{groupCount}</strong> groups</>}
+          {keyCount > 0 && <>, <strong className="sf-text-primary not-italic">{keyCount}</strong> keys</>}
+          {plannerCount > 0 && <> (<strong className="sf-text-primary not-italic">{plannerCount}</strong> LLM-enhanced)</>}
+          {resultsCount > 0 && (
+            <> &mdash; <strong className="sf-text-primary not-italic">{resultsCount}</strong> received <strong className="sf-text-primary not-italic">{totalResults}</strong> total results</>
           )}
+          {pendingCount > 0 && (
+            <>. <strong className="sf-text-primary not-italic">{pendingCount}</strong> still pending</>
+          )}
+          .
           {firstSearched && (
             <> First searched: <strong className="sf-text-primary not-italic font-mono text-xs">{firstSearched.query}</strong> ({firstSearched.selected_by_label}).</>
           )}
         </div>
       </HeroBand>
 
-      {/* ── Ranking Explainer (collapsible) ── */}
-      <div>
-        <CollapsibleSectionHeader isOpen={rankingOpen} onToggle={toggleRankingOpen}>ranking formula</CollapsibleSectionHeader>
-
-        {rankingOpen && (
-          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4 mt-3 space-y-4">
-            <div className="text-xs sf-text-muted leading-relaxed">
-              <strong className="sf-text-primary">Sent queries</strong> are ordered by first send timestamp (<span className="font-mono">T+seconds</span> from the earliest sent query).
-              <br />
-              <strong className="sf-text-primary">Unsent queries</strong> are ranked by planned priority score (<span className="font-mono">Pscore</span>) — higher scores rank first.
-            </div>
-            <div className="px-3 py-2 rounded-sm sf-pre-block">
-              <span className="text-[11px] font-mono font-bold sf-text-primary">Pscore = pass + target + attempts + constraints</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="px-3 py-2.5 rounded-sm border sf-border-soft sf-chip-info">
-                <div className="text-[9px] font-bold uppercase tracking-[0.06em]">Pass</div>
-                <div className="text-sm font-bold font-mono mt-0.5">0–70</div>
-                <div className="text-[10px] mt-1.5 opacity-80 leading-snug">
-                  Additive across passes a query appears in. Validate +28, Reason +20, Primary +14, Fast +8.
-                </div>
-              </div>
-              <div className="px-3 py-2.5 rounded-sm border sf-border-soft sf-chip-success">
-                <div className="text-[9px] font-bold uppercase tracking-[0.06em]">Target</div>
-                <div className="text-sm font-bold font-mono mt-0.5">0–24</div>
-                <div className="text-[10px] mt-1.5 opacity-80 leading-snug">
-                  +4 per targeted field on this query, capped at 24. More target fields = higher priority.
-                </div>
-              </div>
-              <div className="px-3 py-2.5 rounded-sm border sf-border-soft sf-chip-accent">
-                <div className="text-[9px] font-bold uppercase tracking-[0.06em]">Attempts</div>
-                <div className="text-sm font-bold font-mono mt-0.5">0–10</div>
-                <div className="text-[10px] mt-1.5 opacity-80 leading-snug">
-                  +2 per logged attempt from search profile <span className="font-mono">query_rows.attempts</span>, capped at 10. Retry boost for incomplete coverage.
-                </div>
-              </div>
-              <div className="px-3 py-2.5 rounded-sm border sf-border-soft sf-chip-warning">
-                <div className="text-[9px] font-bold uppercase tracking-[0.06em]">Constraints</div>
-                <div className="text-sm font-bold font-mono mt-0.5">0–14</div>
-                <div className="text-[10px] mt-1.5 opacity-80 leading-snug">
-                  +8 for field-rule hint sources, +6 for site/domain-constrained query text. Max 14.
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* ── Tier ordering explanation ── */}
+      <div className="text-[10px] sf-text-subtle italic">
+        Ordered by tier priority: seeds first (broadest), then groups (by productivity), then keys (by availability/difficulty). Sent queries ordered by execution timestamp.
       </div>
 
       {/* ── Journey Table ── */}
@@ -290,59 +236,52 @@ export function PrefetchQueryJourneyPanel({
           <table className="min-w-full text-xs">
             <thead className="sf-surface-elevated sticky top-0">
               <tr>
-                <th className="py-2 px-4 text-right border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle w-12">Order</th>
-                <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Query</th>
-                <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">
-                  Selected By
-                  <Tip text={'Who picked this query.\nPlanner = chosen by LLM pass to close missing coverage.\nDeterministic = generated by fixed search-profile rules.'} />
-                </th>
-                <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Target Fields</th>
-                <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Status</th>
-                <th className="py-2 px-4 text-right border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">
-                  Pscore
-                  <Tip text={'Total planned priority score.\nFor unsent queries: higher Pscore ranks earlier.\nFor sent queries: shown for context only.'} />
-                </th>
-                <th className="py-2 px-4 text-right border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Results</th>
+                <th className={`${TH_CLS} text-right w-12`}>Order</th>
+                <th className={TH_CLS}>Query</th>
+                <th className={TH_CLS}>Tier</th>
+                <th className={TH_CLS}>Target Fields</th>
+                <th className={TH_CLS}>Status</th>
+                <th className={`${TH_CLS} text-right`}>Results</th>
               </tr>
             </thead>
             <tbody>
-              {journeyRows.map((row) => (
-                <tr
-                  key={row.query}
-                  onClick={() => setSelectedQuery(selectedRow?.query === row.query ? null : row.query)}
-                  className={`border-b sf-border-soft hover:sf-surface-elevated cursor-pointer ${selectedRow?.query === row.query ? 'sf-callout sf-callout-info' : ''}`}
-                >
-                  <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
-                    {row.execution_order ?? '-'}
-                  </td>
-                  <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[24rem] truncate">
-                    {row.query}
-                  </td>
-                  <td className="py-1.5 px-4">
-                    <Chip
-                      label={row.selected_by_label}
-                      className={row.selected_by === 'planner' ? 'sf-chip-warning' : 'sf-chip-neutral'}
-                    />
-                  </td>
-                  <td className="py-1.5 px-4">
-                    <div className="flex flex-wrap gap-1">
-                      {row.target_fields.slice(0, 3).map((field) => (
-                        <Chip key={field} label={field} className="sf-chip-success" />
-                      ))}
-                      {row.target_fields.length > 3 && (
-                        <span className="sf-text-caption sf-text-subtle">+{row.target_fields.length - 3}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-1.5 px-4">
-                    <Chip label={queryJourneyStatusLabel(row.status)} className={queryJourneyStatusBadgeClass(row.status)} />
-                  </td>
-                  <td className="py-1.5 px-4 text-right font-mono sf-status-text-info">
-                    {row.order_priority_breakdown ? `P${row.order_priority_breakdown.total}` : '-'}
-                  </td>
-                  <td className="py-1.5 px-4 text-right font-mono">{row.result_count}</td>
-                </tr>
-              ))}
+              {journeyRows.map((row) => {
+                const tier = classifyQueryTier(row);
+                return (
+                  <tr
+                    key={row.query}
+                    onClick={() => setSelectedQuery(selectedRow?.query === row.query ? null : row.query)}
+                    className={`border-b sf-border-soft hover:sf-surface-elevated cursor-pointer ${selectedRow?.query === row.query ? 'sf-callout sf-callout-info' : ''}`}
+                  >
+                    <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
+                      {row.execution_order ?? '-'}
+                    </td>
+                    <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[24rem] truncate">
+                      {row.query}
+                    </td>
+                    <td className="py-1.5 px-4">
+                      <div className="flex items-center gap-1">
+                        <Chip label={tierLabel(tier)} className={tierChipClass(tier)} />
+                        {row.planner_passes.length > 0 && <Chip label="LLM" className="sf-chip-warning" />}
+                      </div>
+                    </td>
+                    <td className="py-1.5 px-4">
+                      <div className="flex flex-wrap gap-1">
+                        {row.target_fields.slice(0, 3).map((field) => (
+                          <Chip key={field} label={field} className="sf-chip-success" />
+                        ))}
+                        {row.target_fields.length > 3 && (
+                          <span className="sf-text-caption sf-text-subtle">+{row.target_fields.length - 3}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-1.5 px-4">
+                      <Chip label={queryJourneyStatusLabel(row.status)} className={queryJourneyStatusBadgeClass(row.status)} />
+                    </td>
+                    <td className="py-1.5 px-4 text-right font-mono">{row.result_count}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -25,7 +25,6 @@ import { coerceCategories, resolveActiveCategory } from '../../utils/categorySto
 import { usePersistedToggle } from '../../stores/collapseStore';
 import { usePersistedTab } from '../../stores/tabStore';
 import {
-  SF_THEME_COLOR_PROFILES,
   SF_THEME_RADIUS_PROFILES,
   SF_LIGHT_THEME_PROFILES,
   SF_DARK_THEME_PROFILES,

@@ -199,7 +199,7 @@ export async function loadRuntimeFieldRulesPayload({
     return null;
   }
   const helperRoot = path.resolve(
-    config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority'
+    config?.categoryAuthorityRoot || 'category_authority'
   );
   const candidatePaths = [
     path.join(helperRoot, normalizedCategory, '_generated', 'field_rules.runtime.json'),

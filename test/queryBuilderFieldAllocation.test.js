@@ -73,6 +73,34 @@ function makeCategoryConfig(overrides = {}) {
   };
 }
 
+// WHY: Tier-only pipeline needs focusGroups to produce per-field queries.
+// Build a tier3 focus group with one key per field.
+function makeFocusGroupsForFields(fields) {
+  return [{
+    key: 'field_allocation_group',
+    label: 'Field Allocation',
+    group_search_worthy: false,
+    normalized_key_queue: fields,
+    unresolved_field_keys: fields,
+    field_keys: fields,
+    satisfied_field_keys: [],
+    productivity_score: 50,
+    group_description_short: fields.join(' '),
+    group_description_long: fields.join(' '),
+    query_terms_union: [],
+    domain_hints_union: [],
+    preferred_content_types_union: [],
+    domains_tried_union: [],
+    aliases_union: [],
+    total_field_count: fields.length,
+    resolved_field_count: 0,
+    coverage_ratio: 0,
+    phase: 'now',
+    skip_reason: null,
+    desc: fields.join(' '),
+  }];
+}
+
 describe('Field Allocation — Round-Robin Fairness', () => {
   it('every missing field gets at least 1 query when 5 fields compete for 16 slots', () => {
     const fields = ['connection', 'polling_rate', 'sensor', 'dpi', 'weight'];
@@ -80,7 +108,9 @@ describe('Field Allocation — Round-Robin Fairness', () => {
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),
       missingFields: fields,
-      maxQueries: 16
+      maxQueries: 16,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+      focusGroups: makeFocusGroupsForFields(fields),
     });
 
     const fieldTargetMap = profile.field_target_queries;
@@ -98,7 +128,9 @@ describe('Field Allocation — Round-Robin Fairness', () => {
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),
       missingFields: fields,
-      maxQueries: cap
+      maxQueries: cap,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+      focusGroups: makeFocusGroupsForFields(fields),
     });
 
     const maxPerField = Math.ceil(cap / fields.length) + 2;
@@ -117,11 +149,14 @@ describe('Field Allocation — Round-Robin Fairness', () => {
   });
 
   it('late-listed fields (weight) get queries alongside early-listed fields (connection)', () => {
+    const fields = ['connection', 'polling_rate', 'sensor', 'dpi', 'weight'];
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),
-      missingFields: ['connection', 'polling_rate', 'sensor', 'dpi', 'weight'],
-      maxQueries: 16
+      missingFields: fields,
+      maxQueries: 16,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+      focusGroups: makeFocusGroupsForFields(fields),
     });
 
     const connectionQueries = profile.queries.filter((q) =>
@@ -155,7 +190,9 @@ describe('Field Allocation — Round-Robin Fairness', () => {
         }
       }),
       missingFields: fields,
-      maxQueries: 16
+      maxQueries: 16,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+      focusGroups: makeFocusGroupsForFields(fields),
     });
 
     const fieldTargetMap = profile.field_target_queries;
@@ -209,7 +246,11 @@ describe('Brand Domain Injection — Official Domain Fallback', () => {
 });
 
 describe('Query Diversity — Template Type Distribution', () => {
-  it('output contains at least 3 different doc_hint types across fields', () => {
+  it('tier-only output has seed doc_hint and tier tags on all rows', () => {
+    // WHY: Tier-only pipeline doc_hint diversity is limited: tier1 seed rows
+    // have doc_hint='spec', tier2/tier3 rows have empty doc_hint. The legacy
+    // archetype pipeline that produced diverse doc_hints has been removed.
+    const fields = ['connection', 'polling_rate', 'sensor', 'dpi', 'weight'];
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig({
@@ -223,18 +264,18 @@ describe('Query Diversity — Template Type Distribution', () => {
           }
         }
       }),
-      missingFields: ['connection', 'polling_rate', 'sensor', 'dpi', 'weight'],
-      maxQueries: 20
+      missingFields: fields,
+      maxQueries: 20,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
+      focusGroups: makeFocusGroupsForFields(fields),
     });
 
-    const docHints = new Set(
-      profile.query_rows
-        .map((r) => r.doc_hint)
-        .filter(Boolean)
-    );
-
-    assert.ok(docHints.size >= 3,
-      `expected at least 3 doc_hint types, got ${docHints.size}: [${[...docHints].join(', ')}]`);
+    // All rows should have a tier tag
+    assert.ok(profile.query_rows.every((r) => r.tier), 'all rows have tier tag');
+    // Seed rows should have doc_hint='spec'
+    const seedRows = profile.query_rows.filter((r) => r.tier === 'seed');
+    assert.ok(seedRows.length > 0, 'seed rows present');
+    assert.ok(seedRows.some((r) => r.doc_hint === 'spec'), 'seed row has doc_hint=spec');
   });
 
   it('per-field per-template-type is capped — no field produces 20 rows', () => {

@@ -151,7 +151,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
     });
   },
 
-  renameKey: (oldKey, newKey, rewriteConstraints, constraintRefsKeyFn) => {
+  renameKey: (oldKey, newKey, rewriteConstraints, _constraintRefsKeyFn) => {
     set((state) => {
       const nextOrder = state.editedFieldOrder.map((k) => (k === oldKey ? newKey : k));
       const nextRules: RuleMap = {};

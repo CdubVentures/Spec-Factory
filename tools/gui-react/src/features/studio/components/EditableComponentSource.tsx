@@ -224,7 +224,7 @@ export function EditableComponentSource({
   }
 
   const compType = source.component_type || source.type || "";
-  const [expanded, toggleCsExpanded, setExpanded] = usePersistedToggle(
+  const [expanded, , setExpanded] = usePersistedToggle(
     `studio:compSource:${compType || `idx-${index}`}:expanded`,
     false,
   );

@@ -98,8 +98,7 @@ export function buildRunSummaryPayload({
   buildTopEvidenceReferencesFn,
   nowIsoFn = () => new Date().toISOString(),
 } = {}) {
-  const helperRootKey = `helper${'FilesRoot'}`;
-  const helperRoot = config[helperRootKey] || legacyRootFallback;
+  const helperRoot = config.categoryAuthorityRoot || legacyRootFallback;
 
   return {
     productId,

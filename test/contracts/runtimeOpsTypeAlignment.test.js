@@ -17,6 +17,18 @@ import {
   DOCUMENT_ROW_KEYS,
   DOCUMENT_DETAIL_KEYS,
   METRICS_RAIL_KEYS,
+  POOL_METRIC_KEYS,
+  FALLBACK_EVENT_KEYS,
+  HOST_FALLBACK_PROFILE_KEYS,
+  QUEUE_JOB_KEYS,
+  LANE_SUMMARY_KEYS,
+  BLOCKED_HOST_KEYS,
+  PIPELINE_STAGE_KEYS,
+  PIPELINE_TRANSITION_KEYS,
+  WORKER_ROW_BASE_KEYS,
+  WORKER_FETCH_EXTRA_KEYS,
+  WORKER_SEARCH_EXTRA_KEYS,
+  WORKER_LLM_EXTRA_KEYS,
   EXTRACTION_FIELD_KEYS,
   EXTRACTION_CANDIDATE_KEYS,
   LLM_CALL_ROW_KEYS,
@@ -43,20 +55,33 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../tools/gui-react/src/features/runtime-ops/types.ts');
-const typesSource = readFileSync(TYPES_PATH, 'utf8');
+const TYPES_GEN_PATH = join(__dirname, '../../tools/gui-react/src/features/runtime-ops/types.generated.ts');
+// WHY: Interface definitions may live in types.ts (hand-written) or types.generated.ts
+// (codegen output). Concatenate both sources so the parser finds all interfaces.
+const typesSource = readFileSync(TYPES_PATH, 'utf8') + '\n' + readFileSync(TYPES_GEN_PATH, 'utf8');
 
 /**
  * Extract the top-level field names from a TypeScript interface block.
  * Handles: `fieldName: type;`, `fieldName?: type;`, inline objects, arrays.
  * Only captures fields at the first nesting level (2-space indent).
+ * Resolves `extends ParentInterface` by recursively collecting parent fields.
  */
 function extractInterfaceKeys(source, interfaceName) {
-  // Find the interface block — match `export interface Foo {` or `interface Foo {`
   const pattern = new RegExp(
-    `(?:export\\s+)?interface\\s+${interfaceName}\\s*(?:extends\\s+[^{]+)?\\{`,
+    `(?:export\\s+)?interface\\s+${interfaceName}\\s*(?:extends\\s+([^{]+))?\\{`,
   );
   const match = source.match(pattern);
   if (!match) return null;
+
+  // WHY: Resolve extends — collect fields from parent interfaces first.
+  const keys = [];
+  if (match[1]) {
+    const parents = match[1].split(',').map((p) => p.trim()).filter(Boolean);
+    for (const parent of parents) {
+      const parentKeys = extractInterfaceKeys(source, parent);
+      if (parentKeys) keys.push(...parentKeys);
+    }
+  }
 
   const startIdx = match.index + match[0].length;
   let depth = 1;
@@ -68,16 +93,12 @@ function extractInterfaceKeys(source, interfaceName) {
   }
 
   const block = source.slice(startIdx, blockEnd);
-  const keys = [];
-  // Match top-level fields: lines starting with `  fieldName` (2 spaces or tab)
-  // followed by `?:` or `:`. Skip lines inside nested braces.
   let nestedDepth = 0;
   for (const line of block.split('\n')) {
     for (const ch of line) {
       if (ch === '{' || ch === '[' || ch === '(') nestedDepth++;
       if (ch === '}' || ch === ']' || ch === ')') nestedDepth = Math.max(0, nestedDepth - 1);
     }
-    // Only capture at top level (nestedDepth 0 after processing, or 1 if a nested block starts on this line)
     if (nestedDepth <= 1) {
       const fieldMatch = line.match(/^\s{2}(\w+)\??:/);
       if (fieldMatch) keys.push(fieldMatch[1]);
@@ -148,5 +169,75 @@ describe('runtimeOpsTypeAlignment', () => {
 
   it('LlmCallsDashboardResponse contains all LLM_DASHBOARD_KEYS', () => {
     assertContractKeysInInterface(LLM_DASHBOARD_KEYS, 'LlmCallsDashboardResponse');
+  });
+
+  // ── Characterization: close the contract→interface test gap ──
+
+  it('PoolMetric contains all POOL_METRIC_KEYS', () => {
+    assertContractKeysInInterface(POOL_METRIC_KEYS, 'PoolMetric');
+  });
+
+  it('FallbackEventRow contains all FALLBACK_EVENT_KEYS', () => {
+    assertContractKeysInInterface(FALLBACK_EVENT_KEYS, 'FallbackEventRow');
+  });
+
+  it('HostFallbackProfile contains all HOST_FALLBACK_PROFILE_KEYS', () => {
+    assertContractKeysInInterface(HOST_FALLBACK_PROFILE_KEYS, 'HostFallbackProfile');
+  });
+
+  it('QueueJobRow contains all QUEUE_JOB_KEYS', () => {
+    assertContractKeysInInterface(QUEUE_JOB_KEYS, 'QueueJobRow');
+  });
+
+  it('LaneSummary contains all LANE_SUMMARY_KEYS', () => {
+    assertContractKeysInInterface(LANE_SUMMARY_KEYS, 'LaneSummary');
+  });
+
+  it('BlockedHostEntry contains all BLOCKED_HOST_KEYS', () => {
+    assertContractKeysInInterface(BLOCKED_HOST_KEYS, 'BlockedHostEntry');
+  });
+
+  it('PipelineStage contains all PIPELINE_STAGE_KEYS', () => {
+    assertContractKeysInInterface(PIPELINE_STAGE_KEYS, 'PipelineStage');
+  });
+
+  it('PipelineTransition contains all PIPELINE_TRANSITION_KEYS', () => {
+    assertContractKeysInInterface(PIPELINE_TRANSITION_KEYS, 'PipelineTransition');
+  });
+
+  it('RuntimeOpsWorkerRow contains all WORKER_ROW_BASE_KEYS', () => {
+    assertContractKeysInInterface(WORKER_ROW_BASE_KEYS, 'RuntimeOpsWorkerRow');
+  });
+
+  it('RuntimeOpsWorkerRow contains all WORKER_FETCH_EXTRA_KEYS', () => {
+    assertContractKeysInInterface(WORKER_FETCH_EXTRA_KEYS, 'RuntimeOpsWorkerRow');
+  });
+
+  it('RuntimeOpsWorkerRow contains all WORKER_SEARCH_EXTRA_KEYS', () => {
+    assertContractKeysInInterface(WORKER_SEARCH_EXTRA_KEYS, 'RuntimeOpsWorkerRow');
+  });
+
+  it('RuntimeOpsWorkerRow contains all WORKER_LLM_EXTRA_KEYS', () => {
+    assertContractKeysInInterface(WORKER_LLM_EXTRA_KEYS, 'RuntimeOpsWorkerRow');
+  });
+
+  it('BrandResolutionData contains all BRAND_RESOLUTION_KEYS', () => {
+    assertContractKeysInInterface(BRAND_RESOLUTION_KEYS, 'BrandResolutionData');
+  });
+
+  it('SearchPlanPass contains all SEARCH_PLAN_PASS_KEYS', () => {
+    assertContractKeysInInterface(SEARCH_PLAN_PASS_KEYS, 'SearchPlanPass');
+  });
+
+  it('PrefetchSearchResult contains all SEARCH_RESULT_KEYS', () => {
+    assertContractKeysInInterface(SEARCH_RESULT_KEYS, 'PrefetchSearchResult');
+  });
+
+  it('DomainHealthRow contains all DOMAIN_HEALTH_ROW_KEYS', () => {
+    assertContractKeysInInterface(DOMAIN_HEALTH_ROW_KEYS, 'DomainHealthRow');
+  });
+
+  it('PrefetchLlmCall contains all PREFETCH_LLM_CALL_KEYS', () => {
+    assertContractKeysInInterface(PREFETCH_LLM_CALL_KEYS, 'PrefetchLlmCall');
   });
 });

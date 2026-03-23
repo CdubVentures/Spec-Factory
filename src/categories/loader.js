@@ -380,7 +380,7 @@ async function readJsonIfExists(filePath) {
 
 function resolveHelperRoot(runtimeConfig = {}) {
   return path.resolve(
-    runtimeConfig.categoryAuthorityRoot || runtimeConfig['helper' + 'FilesRoot'] || 'category_authority'
+    runtimeConfig.categoryAuthorityRoot || 'category_authority'
   );
 }
 

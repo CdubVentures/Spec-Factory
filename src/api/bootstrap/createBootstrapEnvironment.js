@@ -80,10 +80,9 @@ export function createBootstrapEnvironment({ projectRoot }) {
     'category_authority',
   );
   config.categoryAuthorityRoot = resolvedCategoryAuthorityRoot;
-  config['helper' + 'FilesRoot'] = resolvedCategoryAuthorityRoot;
   config.localOutputRoot = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
   config.localInputRoot = resolveProjectPath(configValue(config, 'localInputRoot'), 'fixtures/s3');
-  const HELPER_ROOT = resolveProjectPath(config['helper' + 'FilesRoot'], 'category_authority');
+  const HELPER_ROOT = resolveProjectPath(config.categoryAuthorityRoot, 'category_authority');
   const LAUNCH_CWD = path.resolve(process.cwd());
   assertNoShadowHelperRuntime({
     helperRoot: HELPER_ROOT,

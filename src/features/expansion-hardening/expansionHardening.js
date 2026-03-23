@@ -98,7 +98,7 @@ export async function bootstrapExpansionCategories({
   goldenRoot = path.resolve('fixtures', 'golden')
 } = {}) {
   const categoryAuthorityRoot = path.resolve(
-    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority',
+    config.categoryAuthorityRoot || 'category_authority',
   );
   const categoriesRoot = path.resolve(config.categoriesRoot || 'categories');
   const normalizedTemplate = normalizeToken(template) || 'electronics';

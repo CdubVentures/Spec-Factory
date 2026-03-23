@@ -151,35 +151,6 @@ function buildPreviewProductId(category: string, brand: string, model: string, v
     .join('-');
 }
 
-function parseBulkLine(rawLine: string): { model: string; variant: string } {
-  const line = String(rawLine || '')
-    .replace(/^\uFEFF/, '')
-    .replace(/^\s*[-*•]\s*/, '')
-    .replace(/^\s*\d+[.)]\s*/, '')
-    .trim();
-  if (!line) return { model: '', variant: '' };
-
-  // Primary mode: spreadsheet paste with 2 columns => Model<TAB>Variant
-  if (line.includes('\t')) {
-    const parts = line.split('\t').map((part) => part.trim());
-    const model = String(parts[0] || '').trim();
-    const variant = String(parts[1] || '').trim();
-    return { model, variant };
-  }
-
-  // Secondary mode: allow quick manual delimiters, but still map to 2 columns only.
-  const delimiters = ['|', ';', ','];
-  for (const delimiter of delimiters) {
-    if (!line.includes(delimiter)) continue;
-    const parts = line.split(delimiter).map((part) => part.trim());
-    const model = String(parts[0] || '').trim();
-    const variant = String(parts[1] || '').trim();
-    return { model, variant };
-  }
-
-  return { model: line, variant: '' };
-}
-
 function isHeaderRow(model: string, variant: string): boolean {
   const m = String(model || '').trim().toLowerCase();
   const v = String(variant || '').trim().toLowerCase();

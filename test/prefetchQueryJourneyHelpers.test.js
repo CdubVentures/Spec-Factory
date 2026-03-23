@@ -4,14 +4,14 @@ import assert from 'node:assert/strict';
 import {
   buildQueryJourneyRows,
   queryJourneyStatusLabel,
-} from '../tools/gui-react/src/pages/runtime-ops/panels/prefetchQueryJourneyHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/prefetchQueryJourneyHelpers.js';
 
 describe('buildQueryJourneyRows', () => {
-  it('orders rows by first send time and marks selected-by source', () => {
+  it('orders sent rows by timestamp and propagates tier metadata', () => {
     const rows = buildQueryJourneyRows({
       queryRows: [
-        { query: 'mouse weight site:brand.com', target_fields: ['weight'], hint_source: 'field_rules.search_hints' },
-        { query: 'mouse battery life', target_fields: ['battery_life'], hint_source: 'runtime_bridge' },
+        { query: 'mouse weight site:brand.com', target_fields: ['weight'], hint_source: 'tier3_key', tier: 'key_search', group_key: 'physical', normalized_key: 'weight', repeat_count: 0 },
+        { query: 'mouse battery life', target_fields: ['battery_life'], hint_source: 'tier1_seed', tier: 'seed' },
       ],
       searchPlans: [
         {
@@ -29,54 +29,50 @@ describe('buildQueryJourneyRows', () => {
         { query: 'mouse battery life', provider: 'searxng', result_count: 3, duration_ms: 100, worker_id: 'w1', ts: '2026-02-24T10:00:01.000Z' },
         { query: 'mouse weight site:brand.com', provider: 'searxng', result_count: 1, duration_ms: 80, worker_id: 'w2', ts: '2026-02-24T10:00:02.000Z' },
       ],
-      searchResultDetails: [
-        { query: 'mouse battery life', provider: 'searxng', dedupe_count: 0, results: [{ url: 'https://x.com', decision: 'keep' }] },
-      ],
     });
 
     assert.equal(rows.length, 2);
+    // Sent rows ordered by timestamp
     assert.equal(rows[0].query, 'mouse battery life');
     assert.equal(rows[0].execution_order, 1);
     assert.equal(rows[0].selected_by, 'planner');
-    assert.equal(rows[0].order_metric_label, 'T+0.0s');
-    assert.match(String(rows[0].selected_by_tooltip || ''), /LLM search planner/i);
+    assert.equal(rows[0].tier, 'seed');
+
     assert.equal(rows[1].query, 'mouse weight site:brand.com');
     assert.equal(rows[1].execution_order, 2);
-    assert.equal(rows[1].selected_by, 'deterministic');
-    assert.equal(rows[1].order_metric_label, 'T+1.0s');
+    assert.equal(rows[1].tier, 'key_search');
+    assert.equal(rows[1].group_key, 'physical');
+    assert.equal(rows[1].normalized_key, 'weight');
+    assert.equal(rows[1].repeat_count, 0);
   });
 
-  it('derives lifecycle status from planned/sent/results signals', () => {
+  it('derives lifecycle status and sorts unsent by tier priority', () => {
     const rows = buildQueryJourneyRows({
       queryRows: [
-        { query: 'planned-only query', target_fields: [] },
-        { query: 'sent-no-results query', target_fields: [] },
-        { query: 'results query', target_fields: [] },
+        { query: 'key query', target_fields: ['dpi'], tier: 'key_search' },
+        { query: 'seed query', target_fields: [], tier: 'seed' },
+        { query: 'group query', target_fields: ['sensor'], tier: 'group_search' },
+        { query: 'sent query', target_fields: [], tier: 'seed' },
       ],
-      searchPlans: [],
       searchResults: [
-        { query: 'sent-no-results query', provider: 'searxng', result_count: 0, duration_ms: 100, worker_id: 'w1', ts: '2026-02-24T10:00:03.000Z' },
-        { query: 'results query', provider: 'searxng', result_count: 4, duration_ms: 120, worker_id: 'w2', ts: '2026-02-24T10:00:04.000Z' },
-      ],
-      searchResultDetails: [
-        { query: 'results query', provider: 'searxng', dedupe_count: 0, results: [{ url: 'https://y.com', decision: 'keep' }] },
+        { query: 'sent query', provider: 'google', result_count: 5, ts: '2026-02-24T10:00:00.000Z' },
       ],
     });
 
-    const byQuery = new Map(rows.map((row) => [row.query, row]));
-    assert.equal(byQuery.get('planned-only query')?.status, 'planned');
-    assert.equal(byQuery.get('sent-no-results query')?.status, 'sent');
-    assert.equal(byQuery.get('results query')?.status, 'results_received');
-    assert.match(String(byQuery.get('planned-only query')?.order_metric_label || ''), /^P\d+/);
-    assert.match(String(byQuery.get('planned-only query')?.order_justification || ''), /Not sent yet/i);
-    assert.match(String(byQuery.get('planned-only query')?.order_justification || ''), /logged attempts/i);
-    const plannedBreakdown = byQuery.get('planned-only query')?.order_priority_breakdown;
-    assert.equal(Boolean(plannedBreakdown), true);
-    assert.equal(typeof plannedBreakdown?.passType, 'number');
-    assert.equal(typeof plannedBreakdown?.targetCoverage, 'number');
-    assert.equal(typeof plannedBreakdown?.constraints, 'number');
-    assert.match(String(byQuery.get('results query')?.order_justification || ''), /runtime timestamp ordering|First query sent/i);
-    assert.equal(Boolean(byQuery.get('results query')?.order_priority_breakdown), true);
+    // Sent first
+    assert.equal(rows[0].query, 'sent query');
+    assert.equal(rows[0].execution_order, 1);
+    assert.equal(rows[0].status, 'results_received');
+
+    // Unsent by tier: seed → group → key
+    assert.equal(rows[1].query, 'seed query');
+    assert.equal(rows[2].query, 'group query');
+    assert.equal(rows[3].query, 'key query');
+
+    assert.equal(rows[1].status, 'planned');
+    assert.equal(rows[3].status, 'planned');
+
     assert.equal(queryJourneyStatusLabel('results_received'), 'Results received');
+    assert.equal(queryJourneyStatusLabel('planned'), 'Planned');
   });
 });

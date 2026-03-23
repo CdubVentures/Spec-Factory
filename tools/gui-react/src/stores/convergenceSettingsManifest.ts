@@ -1,4 +1,4 @@
-import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.js';
+import { SETTINGS_DEFAULTS } from '../../../../src/shared/settingsDefaults.js';
 import { CONVERGENCE_SETTINGS_REGISTRY } from '../../../../src/shared/settingsRegistry.js';
 
 export interface ConvergenceBoolKnob {

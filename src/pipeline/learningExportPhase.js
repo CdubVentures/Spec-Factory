@@ -22,6 +22,7 @@ export async function runLearningExportPhase({
   fieldOrder,
   runtimeEvidencePack,
   trafficLight,
+  needSet,
   persistLearningProfile: persistLearningProfileFn,
   exportRunArtifacts: exportRunArtifactsFn,
   writeFinalOutputs: writeFinalOutputsFn,
@@ -65,7 +66,8 @@ export async function runLearningExportPhase({
     events: logger.events,
     markdownSummary,
     rowTsv,
-    writeMarkdownSummary: config.writeMarkdownSummary
+    writeMarkdownSummary: config.writeMarkdownSummary,
+    needSetFields: needSet?.fields,
   });
 
   const finalExport = await writeFinalOutputsFn({

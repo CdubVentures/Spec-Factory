@@ -198,7 +198,7 @@ export async function generateTypesForCategory({
   if (!normalizedCategory) {
     throw new Error('category_required');
   }
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'helper_files');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const generatedRoot = path.join(helperRoot, normalizedCategory, '_generated');
   const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
   const knownValuesPath = path.join(generatedRoot, 'known_values.json');

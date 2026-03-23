@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { TagPicker } from '../../../shared/ui/forms/TagPicker';
 import { Tip } from '../../../shared/ui/feedback/Tip';
 import {
-  clampNumber,
   parseBoundedFloatInput,
 } from '../state/numericInputHelpers';
 import {

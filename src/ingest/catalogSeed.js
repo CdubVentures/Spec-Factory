@@ -452,7 +452,7 @@ function buildProductId({ category, brand, model, variant }) {
 }
 
 function helperCategoryDir({ category, config = {} }) {
-  return path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority', category);
+  return path.resolve(config.categoryAuthorityRoot || 'category_authority', category);
 }
 
 export function fieldRulesPathCandidates({ category, config = {} }) {

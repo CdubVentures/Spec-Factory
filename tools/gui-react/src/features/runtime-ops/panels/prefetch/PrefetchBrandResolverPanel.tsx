@@ -71,7 +71,7 @@ function sourceLabel(calls: PrefetchLlmCall[], hasResolution: boolean): { text: 
 
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
-export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings, idxRuntime }: PrefetchBrandResolverPanelProps) {
+export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, idxRuntime }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:brandResolver:llmCalls:${persistScope}`, false);
   const hasStructured = br !== null && br !== undefined;

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   shouldShowSearchProfileGateBadges,
   normalizeIdentityAliasEntries,
-} from '../tools/gui-react/src/pages/runtime-ops/panels/prefetchSearchProfileDisplayHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/prefetchSearchProfileDisplayHelpers.js';
 
 describe('shouldShowSearchProfileGateBadges', () => {
   it('defaults to visible when no option is provided', () => {

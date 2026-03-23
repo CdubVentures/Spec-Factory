@@ -142,7 +142,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
     capturePageScreenshotSelectors,
     staticDomMode,
     specDbDir,
-    ['helper' + 'FilesRoot']: legacyHelperFilesRoot,
+    categoryAuthorityRoot: legacyHelperFilesRoot,
     outputMode,
     localMode,
     mirrorToS3,

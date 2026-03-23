@@ -29,7 +29,7 @@ import {
 } from './overrideHelpers.js';
 
 export function resolveOverrideFilePath({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
 }
 
@@ -454,7 +454,7 @@ export async function buildReviewMetrics({
   category,
   windowHours = 24
 }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const rows = await listOverrideDocs(helperRoot, category);
   const now = Date.now();
   const cutoff = now - (Math.max(1, toNumber(windowHours, 24)) * 60 * 60 * 1000);

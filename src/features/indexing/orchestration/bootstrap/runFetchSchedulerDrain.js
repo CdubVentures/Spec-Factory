@@ -67,7 +67,9 @@ export async function runFetchSchedulerDrain({
   }
 
   const scheduler = createFetchSchedulerFn(buildSchedulerConfig(config));
-  await scheduler.drainQueue({
+  const timeoutMs = configInt(config, 'fetchDrainTimeoutMs');
+
+  const drainPromise = scheduler.drainQueue({
     sources: {
       hasNext() { return prefetchQueue.length > 0; },
       next() { return prefetchQueue.shift(); },
@@ -83,4 +85,25 @@ export async function runFetchSchedulerDrain({
     onSkipped,
     emitEvent,
   });
+
+  if (timeoutMs > 0) {
+    const result = await Promise.race([
+      drainPromise,
+      new Promise((resolve) =>
+        setTimeout(() => resolve({ timedOut: true, timeout_ms: timeoutMs }), timeoutMs)
+      ),
+    ]);
+    if (result?.timedOut) {
+      const drainStats = scheduler.stats();
+      emitEvent('fetch_drain_timeout', {
+        timeout_ms: timeoutMs,
+        urls_enqueued: prefetchQueue.length + (drainStats.processed || 0) + (drainStats.skipped || 0),
+        urls_processed: drainStats.processed || 0,
+        urls_skipped: drainStats.skipped || 0,
+        urls_remaining: drainStats.active || 0,
+      });
+    }
+  } else {
+    await drainPromise;
+  }
 }

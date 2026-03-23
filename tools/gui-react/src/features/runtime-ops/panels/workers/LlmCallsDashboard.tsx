@@ -601,7 +601,7 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
                   <MetaRow label="Provider" value={call.provider || '\u2014'} />
                   <MetaRow label="Round" value={`Round ${call.round}`} />
                   <MetaRow label="Duration" value={fmtDur(call.duration_ms, isActive)} />
-                  <MetaRow label="Worker ID" value={call.worker_id} mono />
+                  <MetaRow label="Worker ID" value={call.worker_id} />
                 </div>
               </div>
             </div>
@@ -614,7 +614,7 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
 
 // ── Shared tiny components ───────────────────────────────────────────────────
 
-function MetaRow({ label, value, bold, mono }: { label: string; value: string; bold?: boolean; mono?: boolean }) {
+function MetaRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div className="flex justify-between items-baseline gap-2 py-0.5">
       <span className="sf-text-muted">{label}</span>

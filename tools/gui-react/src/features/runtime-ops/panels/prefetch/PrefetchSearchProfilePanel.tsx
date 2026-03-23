@@ -18,7 +18,6 @@ import {
   querySourceChipClass,
   buildGateSummary,
   normalizeFieldRuleGateCounts,
-  resolveFieldRuleHintCountForRowGate,
 } from '../../selectors/prefetchSearchProfileGateHelpers.js';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import {
@@ -207,7 +206,7 @@ function TierQueryTable({
       ? ['query', 'tier', 'group', 'target fields', 'results']
       : tier === 'key'
         ? ['query', 'tier', 'key', 'repeat', 'enrichment', 'results']
-        : ['query', 'tier', 'target fields', 'source', 'results'];
+        : ['query', 'tier', 'site', 'results'];
 
   return (
     <div className="overflow-x-auto border sf-border-soft rounded-sm">
@@ -242,11 +241,8 @@ function TierQueryTable({
                   <td className={`${TD_CLS} sf-text-muted italic`}>{enrichmentStrategyLabel(r) || '-'}</td>
                 </>
               )}
-              {tier === 'legacy' && (
-                <>
-                  <td className={`${TD_CLS} sf-text-muted`}>{r.target_fields?.join(', ') || '-'}</td>
-                  <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.hint_source || '-'}</td>
-                </>
+              {tier === 'host_plan' && (
+                <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.source_host || r.domain_hint || '-'}</td>
               )}
               <td className={`${TD_CLS} text-right font-mono`}>{r.result_count ?? '-'}</td>
             </tr>
@@ -333,7 +329,6 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
   const guardRejected = typeof data.query_guard?.rejected_query_count === 'number' ? data.query_guard.rejected_query_count : null;
 
   const tiers = useMemo(() => groupByTier(data.query_rows), [data.query_rows]);
-  const hasTierData = tiers.seed.length > 0 || tiers.group.length > 0 || tiers.key.length > 0;
   const budget = useMemo(() => buildTierBudgetSummary(data.query_rows, 24), [data.query_rows]);
 
   /* ── Empty state ── */
@@ -366,7 +361,7 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
         </>}
         trailing={<>
           {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
-          <Chip label={hasTierData ? 'Tier-Aware' : 'Deterministic'} className={hasTierData ? 'sf-chip-info' : 'sf-chip-neutral'} />
+          <Chip label="Tier-Aware" className="sf-chip-info" />
           <Tip text="The Search Profile assembles queries from NeedSet tier analysis. Tier 1: broad seed searches. Tier 2: group-level searches for productive field clusters. Tier 3: individual key searches with progressive enrichment." />
         </>}
       >
@@ -374,44 +369,29 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
 
         <HeroStatGrid>
           <HeroStat value={data.selected_query_count ?? data.query_count} label="queries" />
-          {hasTierData
-            ? <HeroStat value={`T1:${budget.seed.count} T2:${budget.group.count} T3:${budget.key.count}`} label="tier split" />
-            : <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
-          }
-          <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={hasTierData ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={`T1:${budget.seed.count} T2:${budget.group.count} T3:${budget.key.count}`} label="tier split" />
+          <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label="urls selected" colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={guardRejected ?? guardGuarded ?? 0} label="guard rejected" colorClass={(guardRejected ?? 0) > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          {hasTierData ? (
-            <>
-              Tier-aware planner allocated <strong className="sf-text-primary not-italic">{budget.total}</strong> queries
-              {budget.seed.count > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{budget.seed.count}</strong> seeds</>}
-              {budget.group.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.group.count}</strong> group searches</>}
-              {budget.key.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.key.count}</strong> key searches</>}
-              {' '}from a cap of <strong className="sf-text-primary not-italic">{budget.cap}</strong>
-              {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
-                <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
-              )}
-              .
-            </>
-          ) : (
-            <>
-              Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
-              {' '}from field rules, search templates, and identity aliases
-              {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
-                <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
-              )}
-              .
-            </>
+          Tier-aware planner allocated <strong className="sf-text-primary not-italic">{budget.total}</strong> queries
+          {budget.seed.count > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{budget.seed.count}</strong> seeds</>}
+          {budget.group.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.group.count}</strong> group searches</>}
+          {budget.key.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.key.count}</strong> key searches</>}
+          {budget.host_plan.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.host_plan.count}</strong> host plan</>}
+          {' '}from a cap of <strong className="sf-text-primary not-italic">{budget.cap}</strong>
+          {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
+            <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
           )}
+          .
         </div>
       </HeroBand>
 
       {/* ══════════════════════════════════════════════════════════════════
-          BUDGET BAR (tier-aware only)
+          BUDGET BAR
           ══════════════════════════════════════════════════════════════════ */}
-      {hasTierData && <TierBudgetBar budget={budget} />}
+      <TierBudgetBar budget={budget} />
 
       {/* ══════════════════════════════════════════════════════════════════
           TIER 1 — SEEDS
@@ -444,12 +424,12 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-          LEGACY (backward compat — no tier data)
+          HOST PLAN (supplementary site-targeted queries)
           ══════════════════════════════════════════════════════════════════ */}
-      {tiers.legacy.length > 0 && (
+      {tiers.host_plan.length > 0 && (
         <div>
-          <SectionHeader>{hasTierData ? 'legacy queries' : 'query plan'} &middot; {tiers.legacy.length} queries &middot; {totalResults} results</SectionHeader>
-          <TierQueryTable rows={tiers.legacy} tier="legacy" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
+          <SectionHeader>host plan &middot; {tiers.host_plan.length} queries</SectionHeader>
+          <TierQueryTable rows={tiers.host_plan} tier="host_plan" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
 
           {(guardTotal !== null || guardAccepted !== null) && (
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 mt-2">

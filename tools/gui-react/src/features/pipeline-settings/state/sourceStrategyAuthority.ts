@@ -136,7 +136,7 @@ export function useSourceStrategyAuthority({
             : item
         ));
       },
-      toAppliedData: (response, entry, previousEntries) => {
+      toAppliedData: (response, _entry, previousEntries) => {
         const nextEntry = extractSourceEntryFromEnvelope(response);
         const baseline = Array.isArray(previousEntries) ? previousEntries : [];
         return baseline.map((item) => (item.sourceId === nextEntry.sourceId ? nextEntry : item));

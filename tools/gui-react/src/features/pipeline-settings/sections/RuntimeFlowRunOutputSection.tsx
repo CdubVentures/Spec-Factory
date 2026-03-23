@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
-import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
+import { AdvancedSettingsBlock, SettingGroupBlock, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
 const OUTPUT_PHASE_TIP =
   'Phase coverage: Stage 13 Validation To Output plus durable artifact persistence across the full run.';
@@ -23,8 +23,6 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
   inputCls,
   runtimeSubStepDomId,
   updateDraft,
-  onNumberChange,
-  getNumberBounds,
   storageAwsRegion,
   storageS3Bucket,
 }: RuntimeFlowRunOutputSectionProps) {

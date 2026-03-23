@@ -274,19 +274,6 @@ function categorizeDeltas(deltas: Array<{ field: string; from: string; to: strin
 
 /* ── Source family icons (profile influence) ───────────────────────── */
 
-function FamilyIcon({ family, size = 14 }: { family: string; size?: number }) {
-  const s = size;
-  const common = { width: s, height: s, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, className: 'inline-block shrink-0' };
-  if (family === 'manufacturer_html') return <svg {...common}><circle cx="8" cy="8" r="6" /><ellipse cx="8" cy="8" rx="3" ry="6" /><line x1="2" y1="8" x2="14" y2="8" /></svg>;
-  if (family === 'manual_pdf') return <svg {...common}><path d="M4.5 2h5L13 5.5V14h-8.5V2z" /><path d="M9 2v4h4" /><line x1="6" y1="8.5" x2="11" y2="8.5" /><line x1="6" y1="10.5" x2="10" y2="10.5" /></svg>;
-  if (family === 'support_docs') return <svg {...common}><path d="M3 9V7a5 5 0 0 1 10 0v2" /><rect x="1.5" y="8.5" width="3" height="4" rx="1" /><rect x="11.5" y="8.5" width="3" height="4" rx="1" /></svg>;
-  if (family === 'review_lookup') return <svg {...common}><path d="M2 5h12l-1.5 7H3.5z" /><circle cx="5.5" cy="3.5" r="1.5" /><circle cx="10.5" cy="3.5" r="1.5" /></svg>;
-  if (family === 'benchmark_lookup') return <svg {...common}><path d="M3 13V7" /><path d="M6.5 13V5" /><path d="M10 13V8" /><path d="M13 13V3" /><line x1="2" y1="13" x2="14" y2="13" /></svg>;
-  if (family === 'fallback_web') return <svg {...common}><circle cx="7" cy="7" r="4.5" /><line x1="10.5" y1="10.5" x2="14" y2="14" /></svg>;
-  if (family === 'targeted_single' || family === 'targeted_single_field') return <svg {...common}><circle cx="8" cy="8" r="6" /><circle cx="8" cy="8" r="3" /><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none" /></svg>;
-  return <svg {...common}><circle cx="8" cy="8" r="6" /></svg>;
-}
-
 /* ── LLM Pending Bar ──────────────────────────────────────────────── */
 
 function LlmPendingBar() {
@@ -310,15 +297,14 @@ const PLANNER_SORT_KEYS = ['field_key', 'required_level', 'state', 'bundle_id'] 
 const SORT_DIRS = ['asc', 'desc'] as const;
 const DRILLDOWN_FILTERS = ['unresolved', 'escalated', 'all'] as const;
 
-export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPlannerCalls }: PrefetchNeedSetPanelProps) {
+export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: PrefetchNeedSetPanelProps) {
   const [plannerSortKey, setPlannerSortKey] = usePersistedTab<PlannerSortKey>(`runtimeOps:needset:sortKey:${persistScope}`, 'required_level', { validValues: PLANNER_SORT_KEYS });
   const [plannerSortDir, setPlannerSortDir] = usePersistedTab<'asc' | 'desc'>(`runtimeOps:needset:sortDir:${persistScope}`, 'asc', { validValues: SORT_DIRS });
   const [fieldFilter, setFieldFilter] = usePersistedTab<string>(`runtimeOps:needset:fieldFilter:${persistScope}`, '');
-  const [expandedBundles, toggleBundle, replaceExpandedBundles] = usePersistedExpandMap(`runtimeOps:needset:expandedBundles:${persistScope}`);
-  const [showQueryPreview, toggleShowQueryPreview] = usePersistedToggle(`runtimeOps:needset:showQueryPreview:${persistScope}`, false);
+  const [expandedBundles, toggleBundle] = usePersistedExpandMap(`runtimeOps:needset:expandedBundles:${persistScope}`);
   const [drilldownFilter, setDrilldownFilter] = usePersistedTab<'unresolved' | 'escalated' | 'all'>(`runtimeOps:needset:drilldownFilter:${persistScope}`, 'unresolved', { validValues: DRILLDOWN_FILTERS });
-  const [drilldownOpen, toggleDrilldownOpen, setDrilldownOpen] = usePersistedToggle(`runtimeOps:needset:drilldownOpen:${persistScope}`, true);
-  const [historyOpen, toggleHistoryOpen, setHistoryOpen] = usePersistedToggle(`runtimeOps:needset:historyOpen:${persistScope}`, false);
+  const [drilldownOpen, toggleDrilldownOpen] = usePersistedToggle(`runtimeOps:needset:drilldownOpen:${persistScope}`, true);
+  const [historyOpen, toggleHistoryOpen] = usePersistedToggle(`runtimeOps:needset:historyOpen:${persistScope}`, false);
   const [expandedHistoryField, setExpandedHistoryField] = usePersistedNullableTab(`runtimeOps:needset:expandedHistory:${persistScope}`, null);
 
   const summary = data.summary;

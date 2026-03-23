@@ -56,7 +56,7 @@ function buildFullBody() {
         // WHY: JSON map fields must contain valid JSON, not arbitrary strings
         if (entry.key.endsWith('Json')) {
           body[entry.key] = entry.default || '';
-        } else if (entry.key === 'categoryAuthorityRoot' || entry.key === 'helperFilesRoot') {
+        } else if (entry.key === 'categoryAuthorityRoot') {
           body[entry.key] = TEST_CATEGORY_AUTHORITY_ROOT;
         } else {
           body[entry.key] = `test-${entry.key}`;

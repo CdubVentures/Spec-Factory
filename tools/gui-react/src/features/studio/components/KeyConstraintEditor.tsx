@@ -6,7 +6,6 @@ import {
   deriveTypeGroup,
   groupRangeConstraints,
   TYPE_GROUP_OPS,
-  type FieldTypeGroup,
 } from "../state/studioConstraintGroups";
 
 interface KeyConstraintEditorProps {

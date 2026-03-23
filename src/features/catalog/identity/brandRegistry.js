@@ -15,7 +15,7 @@ import { loadCatalogProducts, discoverCategoriesLocal } from '../products/catalo
 import { generateIdentifier } from './productIdentity.js';
 import { loadProductCatalog, updateProduct as catalogUpdateProduct } from '../products/productCatalog.js';
 function registryPath(config) {
-  const root = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority';
+  const root = config?.categoryAuthorityRoot || 'category_authority';
   return path.resolve(root, '_global', 'brand_registry.json');
 }
 
@@ -359,7 +359,7 @@ export function findBrandByAlias(registry, query) {
  * Uses product catalog categories first; falls back to activeFiltering source when catalog is absent.
  */
 export async function seedBrandsFromActiveFiltering({ config, category = 'all', extraCategories = [] }) {
-  const root = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority';
+  const root = config?.categoryAuthorityRoot || 'category_authority';
   const cat = String(category ?? '').trim().toLowerCase();
   const categories = cat && cat !== 'all'
     ? [cat]
@@ -429,7 +429,7 @@ export async function seedBrandsFromActiveFiltering({ config, category = 'all', 
  * Skips brands that already exist (merges categories).
  */
 export async function seedBrandsFromCatalog({ config, category = 'all', extraCategories = [] }) {
-  const root = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority';
+  const root = config?.categoryAuthorityRoot || 'category_authority';
 
   let categories;
   const cat = String(category ?? '').trim().toLowerCase();
@@ -671,7 +671,7 @@ export async function getBrandImpactAnalysis({ config, slug }) {
  * Stored at: category_authority/_global/brand_rename_log.json
  */
 export async function appendBrandRenameLog(config, entry) {
-  const root = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority';
+  const root = config?.categoryAuthorityRoot || 'category_authority';
   const logPath = path.resolve(root, '_global', 'brand_rename_log.json');
 
   let log;

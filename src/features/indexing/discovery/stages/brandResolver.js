@@ -3,9 +3,33 @@
 // workers appear simultaneously in the GUI. Resolves brand domain and
 // returns brand resolution data for the orchestrator to apply explicitly.
 
+import { z } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../../core/llm/client/routing.js';
 import { createBrandResolverCallLlm } from '../discoveryLlmAdapters.js';
 import { resolveBrandDomain as defaultResolveBrandDomain } from '../brandResolver.js';
+
+export const brandResolverInputSchema = z.object({
+  job: z.object({
+    brand: z.string().optional().default(''),
+    identityLock: z.object({ brand: z.string().optional().default('') }).optional().default({}),
+  }).passthrough(),
+  category: z.string().optional().default(''),
+  config: z.record(z.string(), z.unknown()),
+  storage: z.unknown(),
+  logger: z.unknown().optional().default(null),
+  categoryConfig: z.object({ category: z.string().optional() }).passthrough(),
+  resolveBrandDomainFn: z.custom((v) => typeof v === 'function', { message: 'resolveBrandDomainFn must be a function' }),
+}).passthrough();
+
+export const brandResolverOutputSchema = z.object({
+  brandResolution: z.object({
+    officialDomain: z.string().optional(),
+    aliases: z.array(z.string()).optional(),
+    supportDomain: z.string().optional(),
+    confidence: z.number().optional(),
+    reasoning: z.array(z.string()).optional(),
+  }).nullable(),
+}).passthrough();
 
 /**
  * @param {object} ctx

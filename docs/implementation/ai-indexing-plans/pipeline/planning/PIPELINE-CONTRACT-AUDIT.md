@@ -1,6 +1,7 @@
 # Pipeline Contract Audit — Results & Remediation Status
 
 Audited: 2026-03-22. Against: CLAUDE.md rules (SSOT, O(1) Scaling, Contract-First, Subtractive Engineering).
+P0 completed: 2026-03-22. P1 completed: 2026-03-22.
 
 ---
 
@@ -85,40 +86,46 @@ CREATE TABLE IF NOT EXISTS field_history (
 - `src/db/stores/fieldHistoryStore.js` — NEW
 - `src/db/specDb.js` — wired store + delegates
 
-### Phase B: Write Path (NEXT)
+### Phase B: Write Path (COMPLETE)
 
-Persist enriched field histories to DB inside the `exportToSpecDb()` transaction at end of each round, after `enrichNeedSetFieldHistories()` completes and all fetches have drained.
+Field histories persisted inside the `exportToSpecDb()` transaction at end of each round. Threaded `needSet` through:
+- `createProductCompletionRuntime.js` → learning export phase context
+- `learningExportPhase.js` → `exportRunArtifactsFn` call
+- `exporter.js` → `exportRunArtifacts()` and `exportToSpecDb()`
 
-### Phase C: Read Path (NEXT)
+Writes are atomic with product_run, item_field_state, and candidate writes.
 
-Load field histories from DB at round startup in `runUntilComplete.js`. In-memory handoff stays as fast path between rounds within same process. DB read is the crash-recovery path.
+### Phase C: Read Path (COMPLETE)
 
-### Phase D: Fetch Completion Gate (PLANNED)
+`runUntilComplete.js` now accepts optional `specDb` parameter. On startup, loads `previousFieldHistories` from `field_history` table via `specDb.getFieldHistories(productId)`. In-memory handoff stays as fast path between rounds within same process. DB read is the crash-recovery path. Existing callers pass `null` (backward compatible).
 
-Add `fetchDrainTimeoutMs` registry setting. Wrap fetch scheduler drain with `Promise.race` timeout. Emit accounting events for unfetched URLs.
+### Phase D: Fetch Completion Gate (COMPLETE)
 
-### Phase E: Stage Zod Schemas (PLANNED)
+- `fetchDrainTimeoutMs` added to settings registry (default 120s, range 10s-600s)
+- `runFetchSchedulerDrain.js` wraps `scheduler.drainQueue()` with `Promise.race` timeout
+- On timeout, emits `fetch_drain_timeout` event with `urls_enqueued`, `urls_processed`, `urls_skipped`, `urls_remaining`
 
-Add input/output Zod schemas to Stages 02-08. Exported but not enforced at runtime (matching Stage 01 NeedSet precedent).
+### Phase E: Stage Zod Schemas (COMPLETE)
+
+Input/output Zod schemas added to all 5 remaining stages. Exported but not enforced at runtime (matching Stage 01 NeedSet precedent). All use `.passthrough()` for forward compatibility.
 
 ---
 
-## Schema Coverage Scorecard (Current)
+## Schema Coverage Scorecard (After P1)
 
 | Stage | Input Schema | Output Schema |
 |-------|-------------|---------------|
-| 01 NeedSet (wrapper) | Zod | **NONE** |
-| 01 computeNeedSet | **NONE** | **NONE** |
-| 02 Brand Resolver | **NONE** | **NONE** |
-| 03 Search Profile | **NONE** | **NONE** |
-| 04 Search Planner | **NONE** | AJV (LLM only) |
-| 05 Query Journey | **NONE** | **NONE** |
-| 06 Search Execution | **NONE** | **NONE** |
-| 07 SERP Triage | **NONE** | **NONE** |
-| 08 Domain Classifier | **NONE** | **NONE** |
+| 01 NeedSet (wrapper) | Zod `needSetInputSchema` | **NONE** |
+| 02 Brand Resolver | Zod `brandResolverInputSchema` | Zod `brandResolverOutputSchema` |
+| 03 Search Profile | Zod `searchProfileInputSchema` | Zod `searchProfileOutputSchema` |
+| 04 Search Planner | Zod `searchPlannerInputSchema` + AJV (LLM) | Zod `searchPlannerOutputSchema` |
+| 05 Query Journey | Zod `queryJourneyInputSchema` | Zod `queryJourneyOutputSchema` |
+| 06 Search Execution | **NONE** (inline in orchestrator) | **NONE** |
+| 07 SERP Triage | **NONE** (inline in orchestrator) | **NONE** |
+| 08 Domain Classifier | Zod `domainClassifierInputSchema` | Zod `domainClassifierOutputSchema` |
 | Orchestrator | **NONE** | **NONE** |
 
-**Target after P1 Phase E: Zod input + output on every stage.**
+**Status: 12/14 stage-level schemas defined.** Stages 06/07 are inline functions in the orchestrator, not standalone stage wrappers. Orchestrator input/output schemas deferred to P2.
 
 ---
 

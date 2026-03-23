@@ -174,7 +174,7 @@ export async function initCategory({
   }
   const templateName = normalizeToken(template) || 'electronics';
 
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const helperCategoryRoot = path.join(helperRoot, normalizedCategory);
   const sourceRoot = path.join(helperCategoryRoot, '_source');
   const generatedRoot = path.join(helperCategoryRoot, '_generated');

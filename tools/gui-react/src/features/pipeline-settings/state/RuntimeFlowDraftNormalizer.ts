@@ -3,7 +3,6 @@
 
 import {
   type RuntimeSettingDefaults,
-  type SearxngEngine,
 } from '../../../stores/settingsManifest';
 import {
   RUNTIME_SETTINGS_REGISTRY,

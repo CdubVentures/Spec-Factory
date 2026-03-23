@@ -1,76 +1,9 @@
-﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { usePersistedTab } from "../../../stores/tabStore";
+﻿import { usePersistedTab } from "../../../stores/tabStore";
 import { useQueryClient } from "@tanstack/react-query";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import { useUiStore } from "../../../stores/uiStore";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore";
-import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
 import { Spinner } from "../../../shared/ui/feedback/Spinner";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { ComboSelect } from "../../../shared/ui/forms/ComboSelect";
-import { TagPicker } from "../../../shared/ui/forms/TagPicker";
-import { TierPicker } from "../../../shared/ui/forms/TierPicker";
-import { EnumConfigurator } from "./EnumConfigurator";
-import { SystemBadges } from "../workbench/SystemBadges";
-import type { DownstreamSystem } from "../workbench/systemMapping";
-import {
-  validateNewKeyTs,
-  rewriteConstraintsTs,
-  constraintRefsKey,
-  reorderFieldOrder,
-  deriveGroupsTs,
-  validateNewGroupTs,
-  validateBulkRows,
-  type BulkKeyRow,
-} from "../state/keyUtils";
-import DraggableKeyList from "./DraggableKeyList";
 import { StudioPageActivePanel } from "./StudioPageActivePanel";
-import { Section } from "./Section";
-import { StaticBadges } from "./StaticBadges";
-import BulkPasteGrid, {
-  type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid";
-import {
-  clampNumber,
-  parseBoundedFloatInput,
-  parseBoundedIntInput,
-  parseIntegerInput,
-  parseOptionalPositiveIntInput,
-} from "../state/numericInputHelpers";
-import {
-  arrN,
-  boolN,
-  getN,
-  numN,
-  strN,
-} from "../state/nestedValueHelpers";
-import {
-  STUDIO_COMPONENT_MATCH_DEFAULTS,
-  STUDIO_NUMERIC_KNOB_BOUNDS,
-} from "../state/studioNumericKnobBounds";
-import {
-  buildNextConsumerOverrides,
-  shouldFlushStudioMapOnUnmount,
-  isStudioContractFieldDeferredLocked,
-} from "../state/studioBehaviorContracts";
-import {
-  DEFAULT_PRIORITY_PROFILE,
-  deriveAiCallsFromEffort,
-  deriveAiModeFromPriority,
-  deriveComponentSourcePriority,
-  deriveListPriority,
-  hasExplicitPriority,
-  normalizeAiAssistConfig,
-  normalizePriorityProfile,
-} from "../state/studioPriority";
-import {
-  VARIANCE_POLICIES,
-  createEmptyComponentSource as emptyComponentSource,
-  migrateProperty,
-  type PropertyMapping,
-} from "../state/studioComponentSources";
-import { displayLabel } from "../state/studioDisplayLabel";
 import { useStudioPageDocsController } from "../state/useStudioPageDocsController";
 import { useStudioPageMutations } from "../state/useStudioPageMutations";
 import {
@@ -79,68 +12,15 @@ import {
 } from "../state/studioPageShellController";
 import { STUDIO_TAB_IDS, type StudioTabId } from "../state/studioPageTabs";
 import { useStudioPageQueries } from "../state/useStudioPageQueries";
-import {
-  areTypesCompatible,
-  CONSTRAINT_OPS,
-  deriveTypeGroup,
-  groupRangeConstraints,
-  TYPE_GROUP_OPS,
-  type FieldTypeGroup,
-} from "../state/studioConstraintGroups";
-import {
-  selectCls,
-  inputCls,
-  labelCls,
-  UNITS,
-  UNKNOWN_TOKENS,
-  GROUPS,
-  COMPONENT_TYPES,
-  PREFIXES,
-  SUFFIXES,
-  DOMAIN_HINT_SUGGESTIONS,
-  CONTENT_TYPE_SUGGESTIONS,
-  UNIT_ACCEPTS_SUGGESTIONS,
-  STUDIO_TIPS,
-  NORMALIZE_MODES,
-} from "./studioConstants";
 import { StudioPageShell } from "./StudioPageShell";
-import type {
-  StudioConfig,
-  ComponentSourceProperty,
-  PriorityProfile,
-  AiAssistConfig,
-} from "../../../types/studio";
+import type { StudioConfig } from "../../../types/studio";
 
-interface DataListEntry {
-  field: string;
-  normalize: string;
-  delimiter: string;
-  manual_values: string[];
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
-}
-
-interface ComponentSourceRoles {
-  maker?: string;
-  aliases?: string[];
-  links?: string[];
-  properties?: Array<Record<string, unknown>>;
-  [k: string]: unknown;
-}
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Shared styles ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
-import { btnPrimary, btnAction, btnSecondary, btnDanger, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses';
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Field Rule Table Columns ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Role definitions ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
-const ROLE_DEFS = [
-  { id: "aliases", label: "Name Variants (Aliases)" },
-  { id: "maker", label: "Maker (Brand)" },
-  { id: "links", label: "Reference URLs (Links)" },
-  { id: "properties", label: "Attributes (Properties)" },
-] as const;
 
-type RoleId = (typeof ROLE_DEFS)[number]["id"];
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Property row type ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 // Legacy property key ÃƒÂ¢Ã¢â‚¬Â ' product field key mapping (used during migration)

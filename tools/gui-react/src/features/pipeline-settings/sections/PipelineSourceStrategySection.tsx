@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
-import { type SourceEntry, type DiscoveryConfig, type CrawlConfig, type FieldCoverage } from '../state/sourceStrategyAuthority';
+import { type SourceEntry } from '../state/sourceStrategyAuthority';
 import { SectionNavIcon } from '../components/PipelineSettingsPageShell';
 // WHY: O(1) — types, draft shape, and enum options derived from backend contract SSOT.
 import {

@@ -220,6 +220,7 @@ export function buildScoredQueryRowsFromHostPlan(effectiveHostPlan, identity, fo
     const score = Number(sumScoreBreakdown(score_breakdown).toFixed(3));
     const row = {
       query,
+      tier: 'host_plan',
       sources: ['v2.host_plan'],
       hint_source: 'v2.host_plan',
       target_fields: toArray(focusFields).map((value) => String(value || '').trim()).filter(Boolean),

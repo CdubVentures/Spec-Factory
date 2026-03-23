@@ -2,7 +2,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import type { ColumnPreset } from './workbenchTypes';
-import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio';
 import { usePersistedTab } from '../../../stores/tabStore';
 import { buildWorkbenchRows } from './workbenchHelpers';
 import { buildColumns, getPresetVisibility } from './workbenchColumns';

@@ -8,9 +8,8 @@ import type {
 export interface QueryJourneyRow {
   query: string;
   planned: boolean;
-  selected_by: 'planner' | 'deterministic';
+  selected_by: string;
   selected_by_label: string;
-  selected_by_tooltip: string;
   planner_passes: string[];
   target_fields: string[];
   hint_sources: string[];
@@ -24,17 +23,11 @@ export interface QueryJourneyRow {
   providers: string[];
   sent_ts: string | null;
   execution_order: number | null;
-  order_metric: number;
-  order_metric_label: string;
-  order_justification: string;
-  order_priority_breakdown: {
-    total: number;
-    passType: number;
-    targetCoverage: number;
-    attempts: number;
-    constraints: number;
-  } | null;
   status: 'planned' | 'sent' | 'results_received' | 'observed';
+  tier: string;
+  group_key: string;
+  normalized_key: string;
+  repeat_count: number;
 }
 
 export declare function queryJourneyStatusLabel(status: string): string;

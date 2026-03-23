@@ -88,7 +88,7 @@ export function createRuntimeSettingsHandler({
           continue;
         }
         if (key in STRING_ENUM_MAP) {
-          const { cfgKey, allowed, csv } = STRING_ENUM_MAP[key];
+          const { configKey: cfgKey, allowed, csv } = STRING_ENUM_MAP[key];
           const str = String(value ?? '').trim().toLowerCase();
           if (csv) {
             // CSV field: validate each comma-separated token against allowed list
@@ -135,7 +135,7 @@ export function createRuntimeSettingsHandler({
           applied[key] = str;
           runtimePatch[cfgKey] = str;
         } else if (key in INT_RANGE_MAP) {
-          const { cfgKey, min, max } = INT_RANGE_MAP[key];
+          const { configKey: cfgKey, min, max } = INT_RANGE_MAP[key];
           const n = Number.parseInt(String(value ?? ''), 10);
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_integer'; continue; }
           const clamped = Math.max(min, Math.min(max, n));
@@ -143,7 +143,7 @@ export function createRuntimeSettingsHandler({
           applied[key] = clamped;
           runtimePatch[cfgKey] = clamped;
         } else if (key in FLOAT_RANGE_MAP) {
-          const { cfgKey, min, max } = FLOAT_RANGE_MAP[key];
+          const { configKey: cfgKey, min, max } = FLOAT_RANGE_MAP[key];
           const n = Number.parseFloat(String(value ?? ''));
           if (!Number.isFinite(n)) { rejected[key] = 'invalid_float'; continue; }
           const clamped = Math.max(min, Math.min(max, n));

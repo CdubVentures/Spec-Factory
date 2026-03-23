@@ -17,7 +17,7 @@ import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifact
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
 
 function catalogPath(config, category) {
-  const root = config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority';
+  const root = config?.categoryAuthorityRoot || 'category_authority';
   return path.resolve(root, category, '_control_plane', 'product_catalog.json');
 }
 
@@ -592,7 +592,7 @@ export async function seedFromCatalog({
 
     // Full mode: write field value overrides (merge with existing, don't overwrite manual edits)
     if (isFullMode && row.canonical_fields && Object.keys(row.canonical_fields).length > 0) {
-      const overrideDir = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority', cat, '_overrides');
+      const overrideDir = path.resolve(config?.categoryAuthorityRoot || 'category_authority', cat, '_overrides');
       await fs.mkdir(overrideDir, { recursive: true });
       const overridePath = path.join(overrideDir, `${pid}.overrides.json`);
       const setAt = nowIso();

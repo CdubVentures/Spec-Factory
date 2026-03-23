@@ -1,61 +1,14 @@
 ﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { usePersistedToggle } from "../../../stores/collapseStore";
-import { usePersistedTab } from "../../../stores/tabStore";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { api } from "../../../api/client";
 import { useUiStore } from "../../../stores/uiStore";
-import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore";
-import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
-import { Spinner } from "../../../shared/ui/feedback/Spinner";
-import { resolveStudioSaveStatus } from "../../../shared/ui/feedback/settingsStatus";
 import { Tip } from "../../../shared/ui/feedback/Tip";
-import { TierPicker } from "../../../shared/ui/forms/TierPicker";
-import { EnumConfigurator } from "./EnumConfigurator";
-import { FieldRulesWorkbench } from "../workbench/FieldRulesWorkbench";
-import { SystemBadges } from "../workbench/SystemBadges";
-import type { DownstreamSystem } from "../workbench/systemMapping";
-import {
-  decideStudioAuthorityAction,
-  shouldOpenStudioAuthorityConflict,
-} from "../state/authoritySync.js";
-import {
-  validateNewKeyTs,
-  rewriteConstraintsTs,
-  constraintRefsKey,
-  reorderFieldOrder,
-  deriveGroupsTs,
-  validateNewGroupTs,
-  validateBulkRows,
-  type BulkKeyRow,
-} from "../state/keyUtils";
-import DraggableKeyList from "./DraggableKeyList";
-import { Section } from "./Section";
-import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries";
-import { useStudioPersistenceAuthority } from "../state/studioPersistenceAuthority";
-import { assertFieldStudioMapValidationOrThrow } from "../state/mapValidationPreflight.js";
-import { useAuthoritySnapshot } from "../../../hooks/useAuthoritySnapshot.js";
-import { buildAuthorityVersionToken } from "../../../hooks/authoritySnapshotHelpers.js";
-import BulkPasteGrid, {
-  type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid";
 import { autoSaveFingerprint } from "../../../stores/autoSaveFingerprint";
 import {
   SETTINGS_AUTOSAVE_DEBOUNCE_MS,
-  SETTINGS_AUTOSAVE_STATUS_MS,
 } from "../../../stores/settingsManifest";
 import {
-  arrN,
-  boolN,
-  getN,
-  numN,
-  strN,
-} from "../state/nestedValueHelpers";
-import {
-  buildNextConsumerOverrides,
-  shouldFlushStudioDocsOnUnmount,
   shouldFlushStudioMapOnUnmount,
-  isStudioContractFieldDeferredLocked,
 } from "../state/studioBehaviorContracts";
 import {
   registerUnloadGuard,
@@ -74,55 +27,18 @@ import {
   createEmptyComponentSource as emptyComponentSource,
 } from "../state/studioComponentSources";
 import {
-  deriveStudioCompileStatus,
-  deriveStudioEnumListsWithValues,
-  deriveStudioPageProcessState,
-  deriveStudioPageRootDerivedState,
-  deriveStudioPageShellState,
-  deriveStudioPageViewState,
-} from "../state/studioPageDerivedState";
-import {
-  buildStudioPersistMap as buildStudioPersistMapPayload,
-  shouldPersistStudioDocsAttempt,
-} from "../state/studioPagePersistence";
-import {
-  areTypesCompatible,
-  CONSTRAINT_OPS,
-  deriveTypeGroup,
-  groupRangeConstraints,
-  TYPE_GROUP_OPS,
-  type FieldTypeGroup,
-} from "../state/studioConstraintGroups";
-import { CompileReportsTab } from "../tabs/CompileReportsTab";
-import {
   inputCls,
   labelCls,
-  UNITS,
-  UNKNOWN_TOKENS,
-  GROUPS,
-  SUFFIXES,
-  DOMAIN_HINT_SUGGESTIONS,
-  CONTENT_TYPE_SUGGESTIONS,
-  UNIT_ACCEPTS_SUGGESTIONS,
   STUDIO_TIPS,
-  NORMALIZE_MODES,
 } from "./studioConstants";
-import { STUDIO_TAB_IDS, StudioPageShell, type StudioTabId } from "./StudioPageShell";
 import type { StudioPageActivePanelMappingProps as MappingStudioTabProps } from "./studioPagePanelContracts";
 import type {
-  FieldRule,
-  StudioPayload,
-  FieldStudioMapResponse,
   StudioConfig,
-  TooltipBankResponse,
-  ArtifactEntry,
   ComponentSource,
   EnumEntry,
   PriorityProfile,
   AiAssistConfig,
 } from "../../../types/studio";
-import type { ProcessStatus } from "../../../types/events";
-import { MappingConstraintEditor } from "./MappingConstraintEditor";
 import { EditableDataList } from "./EditableDataList";
 import { EditableComponentSource } from "./EditableComponentSource";
 
@@ -135,35 +51,12 @@ interface DataListEntry {
   ai_assist?: AiAssistConfig;
 }
 
-interface ComponentSourceRoles {
-  maker?: string;
-  aliases?: string[];
-  links?: string[];
-  properties?: Array<Record<string, unknown>>;
-  [k: string]: unknown;
-}
-
-interface FieldStudioMapValidationResponse {
-  valid?: boolean;
-  ok?: boolean;
-  errors?: string[];
-  warnings?: string[];
-  normalized?: StudioConfig | null;
-}
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Shared styles ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
-import { btnPrimary, btnAction, btnSecondary, btnDanger, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses';
+import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses';
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Field Rule Table Columns ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Role definitions ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
-const ROLE_DEFS = [
-  { id: "aliases", label: "Name Variants (Aliases)" },
-  { id: "maker", label: "Maker (Brand)" },
-  { id: "links", label: "Reference URLs (Links)" },
-  { id: "properties", label: "Attributes (Properties)" },
-] as const;
-
-type RoleId = (typeof ROLE_DEFS)[number]["id"];
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Property row type ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 // Legacy property key ÃƒÂ¢Ã¢â‚¬Â ' product field key mapping (used during migration)
@@ -381,7 +274,6 @@ export function MappingStudioTab({
   ]);
 
   useEffect(() => {
-    const category = useUiStore.getState().category;
     return registerUnloadGuard({
       domain: 'studioMap',
       isDirty: () => {

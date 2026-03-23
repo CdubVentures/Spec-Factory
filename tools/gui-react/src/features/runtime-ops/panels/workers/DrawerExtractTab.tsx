@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../../stores/tabStore';
 import type { WorkerExtractionField } from '../../types';
-import { methodBadgeClass, friendlyMethod, pctString } from '../../helpers';
+import { methodBadgeClass, friendlyMethod } from '../../helpers';
 import { ConfidenceBar } from '../../components/ConfidenceBar';
 import { resolveIndexedFieldHydrationNotice } from '../../selectors/prefetchUiContracts';
 

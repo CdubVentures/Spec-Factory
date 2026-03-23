@@ -48,7 +48,6 @@ export function registerConfigRoutes(ctx) {
   const settingsRoot =
     HELPER_ROOT
     || config?.categoryAuthorityRoot
-    || config?.['helper' + 'FilesRoot']
     || 'category_authority';
   const canonicalOnlySettingsWrites = (
     (typeof config?.settingsCanonicalOnlyWrites === 'boolean')
@@ -63,7 +62,7 @@ export function registerConfigRoutes(ctx) {
         })()
   );
   const initialUserSettings = loadUserSettingsSync({
-    ['helper' + 'FilesRoot']: settingsRoot,
+    categoryAuthorityRoot: settingsRoot,
   });
 
   const persistenceCtx = createConfigPersistenceContext({

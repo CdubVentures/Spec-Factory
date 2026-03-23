@@ -12,10 +12,6 @@ import type { SearxngEngine } from '../../../stores/settingsManifest';
 import type { RuntimeDraft, NumberBound } from '../types/settingPrimitiveTypes';
 import { AdvancedSettingsBlock, MasterSwitchRow, SettingGroupBlock, SettingNumberInput, SettingRow, SettingToggle } from '../components/RuntimeFlowPrimitives';
 
-const DISCOVERY_PHASE_TIP =
-  'Phase coverage: 01 NeedSet, 02 Brand Resolver, 03 Search Profile, 04 Search Planner, 05 Query Journey, 06 Search Results, and 07 SERP Selector.';
-const PROFILE_PLANNER_JOURNEY_NOTE =
-  'Ordering note: Search Planner is precomputed early from NeedSet, Search Profile is the deterministic and fallback profile branch inside searchDiscovery(), and Query Journey chooses the Schema 4 handoff or the legacy profile chain before search executes.';
 const BUDGET_PHASE_TIP =
   'Phase coverage: 05 Query Journey, 06 Search Results, 07 SERP Selector, and 08 Fetch and Parse Entry.';
 const RESUME_PHASE_TIP =

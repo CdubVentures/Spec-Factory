@@ -56,6 +56,7 @@ export interface RuntimeSettingDefaults {
   fetchConcurrency: number;
   fetchPerHostConcurrencyCap: number;
   fetchSchedulerInternalsMapJson: string;
+  fetchDrainTimeoutMs: number;
   fetchSchedulerMaxRetries: number;
   fieldRewardHalfLifeDays: number;
   frontierBackoffMaxExponent: number;
@@ -81,8 +82,13 @@ export interface RuntimeSettingDefaults {
   serperApiKey: string;
   serperEnabled: boolean;
   graphqlReplayEnabled: boolean;
-  helperFilesRoot: string;
   helperSupportiveFillMissing: boolean;
+  hostHealthDownrankBlockRate: number;
+  hostHealthDownrankSuccessRate: number;
+  hostHealthExcludeSuccessRate: number;
+  hostPlanFocusTermsCap: number;
+  hostPlanSearchableThreshold: number;
+  hostPlanSparsityThreshold: number;
   hypothesisAutoFollowupRounds: number;
   hypothesisFollowupUrlsPerRound: number;
   importsPollSeconds: number;
@@ -217,7 +223,6 @@ export interface RuntimeSettingDefaults {
   learningJsonWrite: boolean;
   llmExtractionCacheEnabled: boolean;
   queueJsonWrite: boolean;
-  runtimeAutoSaveEnabled: boolean;
   scannedPdfOcrPromoteCandidates: boolean;
   staticDomExtractorEnabled: boolean;
 }

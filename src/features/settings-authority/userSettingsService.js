@@ -297,12 +297,8 @@ function resolveRuntimeRoot(rootPath = 'category_authority') {
 function resolveSettingsAuthorityRoot(options = {}) {
   const source = asRecord(options);
   const categoryAuthorityRoot = source.categoryAuthorityRoot;
-  const legacyHelperRoot = source[['helper', 'FilesRoot'].join('')];
   if (typeof categoryAuthorityRoot === 'string' && categoryAuthorityRoot.trim().length > 0) {
     return categoryAuthorityRoot;
-  }
-  if (typeof legacyHelperRoot === 'string' && legacyHelperRoot.trim().length > 0) {
-    return legacyHelperRoot;
   }
   return 'category_authority';
 }
@@ -369,14 +365,10 @@ export function readStudioMapFromUserSettings(payload, category = '') {
   };
 }
 
-const LEGACY_HELPER_ROOT_ALIAS_KEY = `helper${'FilesRoot'}`;
-
 export function loadUserSettingsSync(options = {}) {
   const { categoryAuthorityRoot = null, strictRead = false } = options;
-  const legacyHelperRoot = options[LEGACY_HELPER_ROOT_ALIAS_KEY] || 'category_authority';
   const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-    categoryAuthorityRoot,
-    [LEGACY_HELPER_ROOT_ALIAS_KEY]: legacyHelperRoot,
+    categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
   });
   const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
   const userPayload = readJsonFileSync(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
@@ -390,10 +382,8 @@ export function loadUserSettingsSync(options = {}) {
 
 export async function loadUserSettings(options = {}) {
   const { categoryAuthorityRoot = null, strictRead = false } = options;
-  const legacyHelperRoot = options[LEGACY_HELPER_ROOT_ALIAS_KEY] || 'category_authority';
   const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-    categoryAuthorityRoot,
-    [LEGACY_HELPER_ROOT_ALIAS_KEY]: legacyHelperRoot,
+    categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
   });
   const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
   const userRaw = await readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
@@ -473,7 +463,6 @@ export async function persistUserSettingsSections(options = {}) {
     studioPatch = null,
     ui = null,
   } = options;
-  const legacyHelperRoot = options[LEGACY_HELPER_ROOT_ALIAS_KEY] || 'category_authority';
   if (studio !== null && studioPatch !== null) {
     const error = new Error('persist_user_settings_studio_conflict');
     error.code = 'persist_user_settings_studio_conflict';
@@ -494,14 +483,12 @@ export async function persistUserSettingsSections(options = {}) {
 
   return enqueueUserSettingsPersist(async () => {
     const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-      categoryAuthorityRoot,
-      [LEGACY_HELPER_ROOT_ALIAS_KEY]: legacyHelperRoot,
+      categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
     });
     const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
     try {
       const existing = await loadUserSettings({
         categoryAuthorityRoot,
-        [LEGACY_HELPER_ROOT_ALIAS_KEY]: legacyHelperRoot,
         strictRead: true,
       });
       const existingStudio = sanitizeStudioSettings(existing.studio);

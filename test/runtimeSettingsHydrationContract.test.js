@@ -105,11 +105,11 @@ test('runtime hydration bindings apply canonical runtime setting aliases for con
 
   const snapshot = {
     fetchBudgetMs: 20000,
-    helperFilesRoot: 'helper_files',
+    categoryAuthorityRoot: 'category_authority',
   };
 
   assert.equal(hydrateRuntimeSettingsFromBindings(snapshot, false, bindings), true);
 
   assert.equal(state.setFetchBudgetMs, '20000');
-  assert.equal(state.setHelperFilesRoot, 'helper_files');
+  assert.equal(state.setCategoryAuthorityRoot, 'category_authority');
 });

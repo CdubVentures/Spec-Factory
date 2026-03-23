@@ -17,7 +17,6 @@ interface RuntimeFlowStepIconProps {
 export function RuntimeFlowStepIcon({
   id,
   active,
-  enabled = true,
 }: RuntimeFlowStepIconProps) {
   const toneClass = active
     ? 'sf-callout sf-callout-info'

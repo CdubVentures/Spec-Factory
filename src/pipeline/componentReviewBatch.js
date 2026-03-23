@@ -66,7 +66,7 @@ export async function runComponentReviewBatch({
   category,
   logger,
 }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const reviewFilePath = componentReviewPath({ config, category });
   const reviewDoc = await safeReadJson(reviewFilePath);
 

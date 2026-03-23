@@ -1,0 +1,1 @@
+import{aj as l}from"./index-BNg3gEHM.js";function o({nextRuntimeDraft:t,runtimeManifestDefaults:a,resolveModelTokenDefaults:e}){return l({...t,runtimeSettingsFallbackBaseline:a,resolveModelTokenDefaults:e})}export{o as c};

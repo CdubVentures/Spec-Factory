@@ -3,24 +3,28 @@
 
 import type { PrefetchSearchProfileQueryRow } from '../types';
 
-type TierKey = 'seed' | 'group' | 'key' | 'legacy';
+export type TierKey = 'seed' | 'group' | 'key' | 'host_plan' | 'legacy';
 
 const TIER_MAP: Record<string, TierKey> = {
   seed: 'seed',
   group_search: 'group',
   key_search: 'key',
+  host_plan: 'host_plan',
 };
 
 const HINT_SOURCE_TIER_MAP: Record<string, TierKey> = {
   tier1_seed: 'seed',
   tier2_group: 'group',
   tier3_key: 'key',
+  'v2.host_plan': 'host_plan',
+  legacy: 'legacy',
 };
 
 const TIER_LABELS: Record<TierKey, string> = {
   seed: 'Seed',
   group: 'Group',
   key: 'Key',
+  host_plan: 'Host Plan',
   legacy: 'Legacy',
 };
 
@@ -28,6 +32,7 @@ const TIER_CHIP_CLASSES: Record<TierKey, string> = {
   seed: 'sf-chip-accent',
   group: 'sf-chip-warning',
   key: 'sf-chip-info',
+  host_plan: 'sf-chip-neutral',
   legacy: 'sf-chip-neutral',
 };
 
@@ -36,11 +41,11 @@ export function classifyQueryTier(row: PrefetchSearchProfileQueryRow): TierKey {
   if (tier && TIER_MAP[tier]) return TIER_MAP[tier];
   const hint = String(row.hint_source ?? '').trim();
   if (hint && HINT_SOURCE_TIER_MAP[hint]) return HINT_SOURCE_TIER_MAP[hint];
-  return 'legacy';
+  return 'host_plan';
 }
 
 export function tierLabel(tier: string): string {
-  return TIER_LABELS[tier as TierKey] ?? 'Legacy';
+  return TIER_LABELS[tier as TierKey] ?? 'Host Plan';
 }
 
 export function tierChipClass(tier: string): string {
@@ -48,7 +53,7 @@ export function tierChipClass(tier: string): string {
 }
 
 export function groupByTier(rows: PrefetchSearchProfileQueryRow[]): Record<TierKey, PrefetchSearchProfileQueryRow[]> {
-  const result: Record<TierKey, PrefetchSearchProfileQueryRow[]> = { seed: [], group: [], key: [], legacy: [] };
+  const result: Record<TierKey, PrefetchSearchProfileQueryRow[]> = { seed: [], group: [], key: [], host_plan: [], legacy: [] };
   for (const row of rows) {
     result[classifyQueryTier(row)].push(row);
   }
@@ -56,7 +61,7 @@ export function groupByTier(rows: PrefetchSearchProfileQueryRow[]): Record<TierK
 }
 
 interface TierSlot { count: number; pct: number }
-interface TierBudgetSummary { seed: TierSlot; group: TierSlot; key: TierSlot; legacy: TierSlot; total: number; cap: number }
+interface TierBudgetSummary { seed: TierSlot; group: TierSlot; key: TierSlot; host_plan: TierSlot; legacy: TierSlot; total: number; cap: number }
 
 export function buildTierBudgetSummary(rows: PrefetchSearchProfileQueryRow[], cap: number): TierBudgetSummary {
   const grouped = groupByTier(rows);
@@ -66,6 +71,7 @@ export function buildTierBudgetSummary(rows: PrefetchSearchProfileQueryRow[], ca
     seed: { count: grouped.seed.length, pct: pct(grouped.seed.length) },
     group: { count: grouped.group.length, pct: pct(grouped.group.length) },
     key: { count: grouped.key.length, pct: pct(grouped.key.length) },
+    host_plan: { count: grouped.host_plan.length, pct: pct(grouped.host_plan.length) },
     legacy: { count: grouped.legacy.length, pct: pct(grouped.legacy.length) },
     total,
     cap,

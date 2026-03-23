@@ -145,7 +145,7 @@ export async function loadFieldStudioMap({
   config = {},
   mapPath = null
 }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, category);
   const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
   const mapPaths = mapPath
@@ -173,7 +173,7 @@ export async function saveFieldStudioMap({
   config = {},
   mapPath = null
 } = {}) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, category);
   const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
   const { fieldStudioPath } = resolveControlPlaneMapPaths(controlPlaneRoot);

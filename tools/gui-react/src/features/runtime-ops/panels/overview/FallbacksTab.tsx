@@ -73,11 +73,6 @@ export function FallbacksTab({ fallbacks, category, onNavigateToDocuments }: Fal
     [hostProfiles, selectedProfileHost],
   );
 
-  const hosts = useMemo(() => {
-    const set = new Set(events.map((e) => e.host).filter(Boolean));
-    return Array.from(set).sort();
-  }, [events]);
-
   const topHosts = useMemo(
     () => [...hostProfiles].sort((a, b) => b.fallback_total - a.fallback_total).slice(0, 5),
     [hostProfiles],

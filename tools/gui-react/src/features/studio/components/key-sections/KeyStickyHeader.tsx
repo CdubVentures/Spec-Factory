@@ -37,15 +37,11 @@ export function KeyStickyHeader({
   saveSuccess,
   autoSaveEnabled,
   autoSaveLocked,
-  autoSaveLockReason,
   onSaveAll,
   onRenameKey,
   onDeleteKey,
-  onUpdateLabel,
   onSetAutoSaveEnabled,
   updateField,
-  saveIfAutoSaveEnabled,
-  category,
 }: KeyStickyHeaderProps) {
   // Label edit state
   const [editingLabel, setEditingLabel] = useState(false);

@@ -7,7 +7,7 @@ import {
   fieldRulesCountForSource,
   normalizeFieldRuleGateCounts,
   resolveFieldRuleHintCountForRowGate,
-} from '../tools/gui-react/src/pages/runtime-ops/panels/prefetchSearchProfileGateHelpers.js';
+} from '../tools/gui-react/src/features/runtime-ops/selectors/prefetchSearchProfileGateHelpers.js';
 
 describe('getQueryGateFlags', () => {
   it('does not enable queryTerms/fieldRules from hint_source_counts when row hint_source is empty', () => {

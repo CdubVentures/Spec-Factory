@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { KeyPrioritySection } from "./key-sections/KeyPrioritySection";
 import { KeyComponentsSection } from "./key-sections/KeyComponentsSection";
 import { KeyContractSection } from "./key-sections/KeyContractSection";
@@ -9,15 +9,8 @@ import { KeyHintsSection } from "./key-sections/KeyHintsSection";
 import { KeyBulkPasteModal } from "./KeyBulkPasteModal";
 import { usePersistedToggle } from "../../../stores/collapseStore";
 import { usePersistedTab } from "../../../stores/tabStore";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import * as Tooltip from "@radix-ui/react-tooltip";
-import { api } from "../../../api/client";
-import { useUiStore } from "../../../stores/uiStore";
-import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
-import { Spinner } from "../../../shared/ui/feedback/Spinner";
 import { EnumConfigurator } from "./EnumConfigurator";
-import { FieldRulesWorkbench } from "../workbench/FieldRulesWorkbench";
 import { SystemBadges } from "../workbench/SystemBadges";
 import type { DownstreamSystem } from "../workbench/systemMapping";
 import {
@@ -25,14 +18,9 @@ import {
   useStudioFieldRulesState,
 } from "../state/studioFieldRulesController";
 import {
-  decideStudioAuthorityAction,
-  shouldOpenStudioAuthorityConflict,
-} from "../state/authoritySync.js";
-import {
   validateNewKeyTs,
   rewriteConstraintsTs,
   constraintRefsKey,
-  reorderFieldOrder,
   deriveGroupsTs,
   validateNewGroupTs,
   validateBulkRows,
@@ -40,91 +28,27 @@ import {
 } from "../state/keyUtils";
 import DraggableKeyList from "./DraggableKeyList";
 import { Section } from "./Section";
-import { StaticBadges } from "./StaticBadges";
-import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries";
-import { useStudioPersistenceAuthority } from "../state/studioPersistenceAuthority";
-import { assertFieldStudioMapValidationOrThrow } from "../state/mapValidationPreflight.js";
-import { useAuthoritySnapshot } from "../../../hooks/useAuthoritySnapshot.js";
-import { buildAuthorityVersionToken } from "../../../hooks/authoritySnapshotHelpers.js";
 import {
   type BulkGridRow,
 } from "../../../components/common/BulkPasteGrid";
-import {
-  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
-  SETTINGS_AUTOSAVE_STATUS_MS,
-} from "../../../stores/settingsManifest";
 import {
   arrN,
   strN,
 } from "../state/nestedValueHelpers";
 import {
   buildNextConsumerOverrides,
-  shouldFlushStudioDocsOnUnmount,
-  shouldFlushStudioMapOnUnmount,
 } from "../state/studioBehaviorContracts";
-import {
-  DEFAULT_PRIORITY_PROFILE,
-  deriveAiCallsFromEffort,
-  deriveAiModeFromPriority,
-  deriveComponentSourcePriority,
-  deriveListPriority,
-  hasExplicitPriority,
-  normalizeAiAssistConfig,
-  normalizePriorityProfile,
-} from "../state/studioPriority";
-import {
-  VARIANCE_POLICIES,
-  createEmptyComponentSource as emptyComponentSource,
-  migrateProperty,
-  type PropertyMapping,
-} from "../state/studioComponentSources";
-import {
-  deriveStudioCompileStatus,
-  deriveStudioEnumListsWithValues,
-  deriveStudioPageProcessState,
-  deriveStudioPageRootDerivedState,
-  deriveStudioPageShellState,
-  deriveStudioPageViewState,
-} from "../state/studioPageDerivedState";
 import { displayLabel } from "../state/studioDisplayLabel";
-import {
-  buildStudioPersistMap as buildStudioPersistMapPayload,
-  shouldPersistStudioDocsAttempt,
-} from "../state/studioPagePersistence";
 import { KeyConstraintEditor } from "./KeyConstraintEditor";
-import { CompileReportsTab } from "../tabs/CompileReportsTab";
 import {
   selectCls,
   inputCls,
   STUDIO_TIPS,
 } from "./studioConstants";
-import { STUDIO_TAB_IDS, StudioPageShell, type StudioTabId } from "./StudioPageShell";
 import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts";
-import type {
-  FieldRule,
-  StudioPayload,
-  FieldStudioMapResponse,
-  TooltipBankResponse,
-  ArtifactEntry,
-  ComponentSource,
-  ComponentSourceProperty,
-  KnownValuesResponse,
-  EnumEntry,
-  ComponentDbResponse,
-} from "../../../types/studio";
-import type { ProcessStatus } from "../../../types/events";
 import {
-  type DataListEntry,
-  type ComponentSourceRoles,
-  type FieldStudioMapValidationResponse,
-  ROLE_DEFS,
-  type RoleId,
   btnPrimary,
-  btnAction,
   btnSecondary,
-  btnDanger,
-  sectionCls,
-  actionBtnWidth,
 } from "./studioSharedTypes";
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Property row type ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
@@ -142,7 +66,6 @@ export function KeyNavigatorTab({
   saveSuccess,
   knownValues,
   enumLists,
-  componentDb,
   componentSources,
   autoSaveEnabled,
   setAutoSaveEnabled,

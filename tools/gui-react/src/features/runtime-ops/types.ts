@@ -250,6 +250,7 @@ export interface RuntimeOpsWorkerRow {
   fallback_count?: number;
   call_type?: string | null;
   model?: string | null;
+  provider?: string | null;
   round?: number | null;
   prompt_tokens?: number | null;
   completion_tokens?: number | null;
@@ -258,6 +259,8 @@ export interface RuntimeOpsWorkerRow {
   input_summary?: string | null;
   output_summary?: string | null;
   prefetch_tab?: string | null;
+  prompt_preview?: string | null;
+  response_preview?: string | null;
   idx_runtime?: RuntimeIdxBadge[];
 }
 
@@ -699,6 +702,7 @@ export interface BrandResolutionData {
   aliases: string[];
   support_domain: string;
   confidence: number | null;
+  candidates?: unknown[];
   reasoning?: string[];
 }
 

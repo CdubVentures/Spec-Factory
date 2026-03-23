@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { WorkerDetailResponse, PhaseStats } from '../../types';
-import { methodBadgeClass, friendlyMethod, pctString } from '../../helpers';
+import { methodBadgeClass, friendlyMethod } from '../../helpers';
 import { ConfidenceBar } from '../../components/ConfidenceBar';
 import {
   PHASE_REGISTRY,

@@ -370,6 +370,7 @@ export function createProductCompletionRuntime({
           fieldOrder: context.fieldOrder,
           runtimeEvidencePack: context.runtimeEvidencePack,
           trafficLight: context.trafficLight,
+          needSet: context.needSet,
           persistLearningProfile: context.persistLearningProfileFn,
           exportRunArtifacts: context.exportRunArtifactsFn,
           writeFinalOutputs: context.writeFinalOutputsFn,

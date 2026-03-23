@@ -298,6 +298,19 @@ async function loadSearchProfileModule() {
           return { status: 'off', effective: 0, total: 0 };
         }
       `,
+      '../../selectors/searchProfileTierHelpers.js': `
+        export function classifyQueryTier() { return 'legacy'; }
+        export function tierLabel() { return 'Legacy'; }
+        export function tierChipClass() { return 'sf-chip-neutral'; }
+        export function groupByTier(rows) {
+          return { seed: [], group: [], key: [], host_plan: rows || [], legacy: rows || [] };
+        }
+        export function buildTierBudgetSummary(rows, cap) {
+          const n = (rows||[]).length;
+          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, host_plan: { count: n, pct: 100 }, legacy: { count: n, pct: 100 }, total: n, cap };
+        }
+        export function enrichmentStrategyLabel() { return ''; }
+      `,
       '../../selectors/searchResultsHelpers.js': `
         export function providerDisplayLabel(value) {
           return String(value || '');
@@ -386,48 +399,3 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
   );
 });
 
-test('search profile shows deterministic badge regardless of live settings state', async () => {
-  const { PrefetchSearchProfilePanel } = await loadSearchProfileModule();
-  const populatedProfileData = createSearchProfileData({
-    artifactPlannerActive: true,
-    query_rows: [{ query: 'logitech g pro x superlight 2 sensor', target_fields: ['sensor'], result_count: 0 }],
-    query_count: 1,
-  });
-
-  const artifactOnlyTree = renderElement(PrefetchSearchProfilePanel({
-    data: populatedProfileData,
-    searchPlans: [],
-    persistScope: 'runtime-ops-search-profile-contract',
-    liveSettings: undefined,
-    idxRuntime: [],
-  }));
-  const withLiveSettings = renderElement(PrefetchSearchProfilePanel({
-    data: populatedProfileData,
-    searchPlans: [],
-    persistScope: 'runtime-ops-search-profile-contract',
-    liveSettings: { searchEngines: '' },
-    idxRuntime: [],
-  }));
-
-  const artifactDeterministic = collectNodes(
-    artifactOnlyTree,
-    (node) => node.type === 'span'
-      && textContent(node).includes('Deterministic')
-      && String(node.props?.className || '').includes('sf-chip'),
-  )[0];
-  const liveDeterministic = collectNodes(
-    withLiveSettings,
-    (node) => node.type === 'span'
-      && textContent(node).includes('Deterministic')
-      && String(node.props?.className || '').includes('sf-chip'),
-  )[0];
-
-  assert.ok(
-    artifactDeterministic,
-    'search profile shows Deterministic badge without live settings',
-  );
-  assert.ok(
-    liveDeterministic,
-    'search profile shows Deterministic badge with live settings',
-  );
-});

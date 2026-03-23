@@ -100,9 +100,7 @@ export function EnumConfigurator({
   const additionalValues = arrN(rule, 'enum.additional_values');
   const [customValue, setCustomValue] = useState('');
   const consumers = (rule?.consumers || {}) as Record<string, Record<string, boolean>>;
-  const consistencyMatchReviewEnabled = consumers?.['enum.match.strategy']?.review !== false;
   const consistencyFormatReviewEnabled = consumers?.['enum.match.format_hint']?.review !== false;
-  const consistencyReviewEnabled = consistencyMatchReviewEnabled && consistencyFormatReviewEnabled;
   const customStringReviewEnabled = consumers?.['enum.additional_values']?.review !== false;
   const consistencyFormatHint = strN(rule, 'enum.match.format_hint');
   const hasFormatPattern = consistencyFormatHint.trim().length > 0;

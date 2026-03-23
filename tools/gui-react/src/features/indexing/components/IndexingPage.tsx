@@ -63,7 +63,6 @@ export function IndexingPage() {
   // WHY: ?? undefined converts the store's null to the undefined that downstream
   // consumers expect (buildIndexingRuntimeDraft, buildIndexingRuntimeSettingsProjection).
   const runtimeSettingsData = useRuntimeSettingsValueStore((s) => s.values) ?? undefined;
-  const runtimeSettingsHydrated = useRuntimeSettingsValueStore((s) => s.hydrated);
   // WHY: Keep useRuntimeSettingsReader for the initial fetch trigger — the authority
   // hook hydrates the Zustand store when server data arrives. We only need isLoading.
   const { isLoading: runtimeSettingsLoading } = useRuntimeSettingsReader();

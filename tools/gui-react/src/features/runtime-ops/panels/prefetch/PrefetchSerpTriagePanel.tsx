@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import type { PrefetchLlmCall, SerpTriageResult, TriageCandidate, PrefetchLiveSettings } from '../../types';
-import { llmCallStatusBadgeClass, formatMs, triageDecisionBadgeClass, scoreBarSegments } from '../../helpers';
+import { formatMs, triageDecisionBadgeClass, scoreBarSegments } from '../../helpers';
 import { KanbanLane, KanbanCard } from '../../components/KanbanLane';
 import { StackedScoreBar } from '../../components/StackedScoreBar';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
@@ -141,9 +141,9 @@ function CandidateDrawer({
 
 /* ── Main Panel ── */
 
-export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveSettings, idxRuntime }: PrefetchSerpTriagePanelProps) {
-  const [showScoreDecomposition, toggleScoreDecomposition, setShowScoreDecomposition] = usePersistedToggle('runtimeOps:serp:scoreDecomposition', false);
-  const [kanbanView, toggleKanbanView, setKanbanView] = usePersistedToggle(`runtimeOps:serp:kanbanView:${persistScope}`, true);
+export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRuntime }: PrefetchSerpTriagePanelProps) {
+  const [showScoreDecomposition, , setShowScoreDecomposition] = usePersistedToggle('runtimeOps:serp:scoreDecomposition', false);
+  const [kanbanView, , setKanbanView] = usePersistedToggle(`runtimeOps:serp:kanbanView:${persistScope}`, true);
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:serpTriage:llmCalls:${persistScope}`, false);
 
   const triage = serpTriage || [];

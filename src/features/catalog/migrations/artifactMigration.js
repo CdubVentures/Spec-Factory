@@ -134,7 +134,7 @@ export async function migrateProductArtifacts({
   // Migrate override file (local filesystem)
   let override_migrated = false;
   try {
-    const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+    const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
     const oldOverridePath = path.join(helperRoot, category, '_overrides', `${oldProductId}.overrides.json`);
     const newOverridePath = path.join(helperRoot, category, '_overrides', `${newProductId}.overrides.json`);
 
@@ -194,7 +194,7 @@ export async function migrateProductArtifacts({
  * @param {object} entry    — rename log entry
  */
 export async function appendRenameLog(config, category, entry) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const logPath = path.join(helperRoot, category, '_control_plane', 'rename_log.json');
 
   let log;

@@ -133,7 +133,7 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     const set = deriveDeprecatedSet(RUNTIME_SETTINGS_REGISTRY);
     ok(set instanceof Set);
     // Currently no entries have deprecated set
-    // When Plan 09 is done, this should have helperFilesRoot, fetchSchedulerFallbackWaitMs, runtimeTraceLlmRing
+    // helperFilesRoot removed (Phase 3). Remaining candidates: fetchSchedulerFallbackWaitMs, runtimeTraceLlmRing
   });
 
   // --- Known alias configKey mapping ---

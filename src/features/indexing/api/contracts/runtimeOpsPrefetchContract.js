@@ -1,6 +1,7 @@
 // WHY: O(1) Feature Scaling — single source of truth for prefetch builder
-// response keys. Shape descriptors for search_profile live in prefetchContract.js
-// (SEARCH_PROFILE_SHAPE). This module covers the remaining sub-shapes.
+// response shapes. Shape descriptors carry type info ({key, coerce}) enabling
+// codegen of TS interfaces. Shape descriptors for search_profile live in
+// prefetchContract.js (SEARCH_PROFILE_SHAPE). This module covers the rest.
 
 // ── Top-level envelope ──
 
@@ -13,54 +14,103 @@ export const PREFETCH_RESPONSE_KEYS = Object.freeze([
 
 // ── NeedSet ──
 
-export const NEEDSET_DATA_KEYS = Object.freeze([
-  'needset_size', 'total_fields', 'identity_state',
-  'fields', 'summary', 'blockers', 'bundles',
-  'profile_influence', 'deltas', 'rows',
-  'round', 'schema_version', 'snapshots',
+export const NEEDSET_DATA_SHAPE = Object.freeze([
+  { key: 'needset_size', coerce: 'int' },
+  { key: 'total_fields', coerce: 'int' },
+  { key: 'identity_state', coerce: 'string', nullable: true },
+  { key: 'fields', coerce: 'array' },
+  { key: 'summary', coerce: 'object_or_empty' },
+  { key: 'blockers', coerce: 'object_or_empty' },
+  { key: 'bundles', coerce: 'array' },
+  { key: 'profile_influence', coerce: 'object_or_null' },
+  { key: 'deltas', coerce: 'array' },
+  { key: 'rows', coerce: 'array' },
+  { key: 'round', coerce: 'int' },
+  { key: 'schema_version', coerce: 'string', nullable: true },
+  { key: 'snapshots', coerce: 'array' },
 ]);
+export const NEEDSET_DATA_KEYS = Object.freeze(NEEDSET_DATA_SHAPE.map(s => s.key));
 
 // ── Brand Resolution ──
 
-export const BRAND_RESOLUTION_KEYS = Object.freeze([
-  'brand', 'status', 'skip_reason', 'official_domain',
-  'aliases', 'support_domain', 'confidence',
-  'candidates', 'reasoning',
+export const BRAND_RESOLUTION_SHAPE = Object.freeze([
+  { key: 'brand', coerce: 'string' },
+  { key: 'status', coerce: 'string' },
+  { key: 'skip_reason', coerce: 'string' },
+  { key: 'official_domain', coerce: 'string' },
+  { key: 'aliases', coerce: 'array' },
+  { key: 'support_domain', coerce: 'string' },
+  { key: 'confidence', coerce: 'float', nullable: true },
+  { key: 'candidates', coerce: 'array' },
+  { key: 'reasoning', coerce: 'array' },
 ]);
+export const BRAND_RESOLUTION_KEYS = Object.freeze(BRAND_RESOLUTION_SHAPE.map(s => s.key));
 
 // ── Search Plans ──
 
-export const SEARCH_PLAN_PASS_KEYS = Object.freeze([
-  'pass_index', 'pass_name', 'queries_generated',
-  'stop_condition', 'plan_rationale', 'query_target_map',
-  'missing_critical_fields', 'mode',
+export const SEARCH_PLAN_PASS_SHAPE = Object.freeze([
+  { key: 'pass_index', coerce: 'int' },
+  { key: 'pass_name', coerce: 'string' },
+  { key: 'queries_generated', coerce: 'array' },
+  { key: 'stop_condition', coerce: 'string' },
+  { key: 'plan_rationale', coerce: 'string' },
+  { key: 'query_target_map', coerce: 'object_or_empty' },
+  { key: 'missing_critical_fields', coerce: 'array' },
+  { key: 'mode', coerce: 'string' },
 ]);
+export const SEARCH_PLAN_PASS_KEYS = Object.freeze(SEARCH_PLAN_PASS_SHAPE.map(s => s.key));
 
 // ── Query Journey ──
 
-export const QUERY_JOURNEY_KEYS = Object.freeze([
-  'selected_query_count', 'selected_queries',
-  'schema4_query_count', 'deterministic_query_count',
-  'host_plan_query_count', 'rejected_count',
+export const QUERY_JOURNEY_SHAPE = Object.freeze([
+  { key: 'selected_query_count', coerce: 'int' },
+  { key: 'selected_queries', coerce: 'array' },
+  { key: 'schema4_query_count', coerce: 'int' },
+  { key: 'deterministic_query_count', coerce: 'int' },
+  { key: 'host_plan_query_count', coerce: 'int' },
+  { key: 'rejected_count', coerce: 'int' },
 ]);
+export const QUERY_JOURNEY_KEYS = Object.freeze(QUERY_JOURNEY_SHAPE.map(s => s.key));
 
 // ── Search Results ──
 
-export const SEARCH_RESULT_KEYS = Object.freeze([
-  'query', 'provider', 'result_count', 'duration_ms',
-  'worker_id', 'throttle_events', 'throttle_wait_ms', 'ts',
+export const SEARCH_RESULT_SHAPE = Object.freeze([
+  { key: 'query', coerce: 'string' },
+  { key: 'provider', coerce: 'string' },
+  { key: 'result_count', coerce: 'int' },
+  { key: 'duration_ms', coerce: 'int' },
+  { key: 'worker_id', coerce: 'string' },
+  { key: 'throttle_events', coerce: 'int' },
+  { key: 'throttle_wait_ms', coerce: 'int' },
+  { key: 'ts', coerce: 'string' },
 ]);
+export const SEARCH_RESULT_KEYS = Object.freeze(SEARCH_RESULT_SHAPE.map(s => s.key));
 
 // ── Domain Health ──
 
-export const DOMAIN_HEALTH_ROW_KEYS = Object.freeze([
-  'domain', 'role', 'safety_class', 'budget_score',
-  'cooldown_remaining', 'success_rate', 'avg_latency_ms', 'notes',
+export const DOMAIN_HEALTH_ROW_SHAPE = Object.freeze([
+  { key: 'domain', coerce: 'string' },
+  { key: 'role', coerce: 'string' },
+  { key: 'safety_class', coerce: 'string' },
+  { key: 'budget_score', coerce: 'float' },
+  { key: 'cooldown_remaining', coerce: 'int' },
+  { key: 'success_rate', coerce: 'float' },
+  { key: 'avg_latency_ms', coerce: 'float' },
+  { key: 'notes', coerce: 'string' },
 ]);
+export const DOMAIN_HEALTH_ROW_KEYS = Object.freeze(DOMAIN_HEALTH_ROW_SHAPE.map(s => s.key));
 
 // ── Prefetch LLM Call ──
 
-export const PREFETCH_LLM_CALL_KEYS = Object.freeze([
-  'status', 'reason', 'model', 'provider', 'tokens',
-  'duration_ms', 'prompt_preview', 'response_preview', 'error',
+export const PREFETCH_LLM_CALL_SHAPE = Object.freeze([
+  { key: 'status', coerce: 'string' },
+  { key: 'reason', coerce: 'string' },
+  { key: 'model', coerce: 'string' },
+  { key: 'provider', coerce: 'string' },
+  { key: 'tokens', coerce: 'object_or_empty' },
+  { key: 'duration_ms', coerce: 'int' },
+  { key: 'prompt_preview', coerce: 'string', nullable: true },
+  { key: 'response_preview', coerce: 'string', nullable: true },
+  { key: 'error', coerce: 'string', nullable: true },
 ]);
+export const PREFETCH_LLM_CALL_KEYS = Object.freeze(PREFETCH_LLM_CALL_SHAPE.map(s => s.key));

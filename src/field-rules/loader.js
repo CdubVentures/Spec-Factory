@@ -396,7 +396,7 @@ export async function loadFieldRules(category, options = {}) {
     throw new Error('category_required');
   }
 
-  const helperRoot = path.resolve(options.config?.categoryAuthorityRoot || options.config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(options.config?.categoryAuthorityRoot || 'category_authority');
   const resolvedCategory = await resolveCategoryAlias(helperRoot, normalizedCategory);
   const cacheKey = keyForCache(resolvedCategory, helperRoot);
   const cached = cache.get(cacheKey);

@@ -113,15 +113,6 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                     disabled={!runtimeSettingsReady}
                   />
                 </MasterSwitchRow>
-                <SettingRow label="Helper Files Root" tip={`${AUTOMATION_PHASE_TIP}\nLives in: helper runtime file resolution.\nWhat this controls: the root directory used to load helper files.`}>
-                  <input
-                    type="text"
-                    value={runtimeDraft.helperFilesRoot}
-                    onChange={(event) => updateDraft('helperFilesRoot', event.target.value)}
-                    disabled={!runtimeSettingsReady}
-                    className={inputCls}
-                  />
-                </SettingRow>
                 <SettingRow label="Category Authority Root" tip={`${AUTOMATION_PHASE_TIP}\nLives in: category authority file resolution.\nWhat this controls: the root directory for category authority data files.`}>
                   <input
                     type="text"

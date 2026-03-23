@@ -7,7 +7,7 @@ import path from 'node:path';
 import { cleanVariant } from '../identity/identityDedup.js';
 
 function helperRootFromConfig(config = {}) {
-  return path.resolve(String(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority'));
+  return path.resolve(String(config?.categoryAuthorityRoot || 'category_authority'));
 }
 
 function productCatalogPath({ category, config = {} }) {
@@ -180,10 +180,7 @@ export async function loadCatalogProductsWithFields({ category, config = {} }) {
  * Scans category_authority/ for subdirectories, filters out _ prefixed ones.
  */
 export async function discoverCategoriesLocal(options = {}) {
-  const helperRootAliasKey = `helper${'FilesRoot'}`;
-  const categoryAuthorityRoot = options.categoryAuthorityRoot;
-  const helperRootAlias = options[helperRootAliasKey];
-  const root = categoryAuthorityRoot || helperRootAlias || 'category_authority';
+  const root = options.categoryAuthorityRoot || 'category_authority';
   const rootPath = path.resolve(root);
   const cats = [];
 

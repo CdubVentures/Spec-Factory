@@ -67,7 +67,7 @@ export function buildIndexingRunStartPayload(
 
   // WHY: Spread the full runtimeSettingsPayload first so ALL settings keys
   // (including the 17 that were previously dropped: deepseekApiKey, fetchBudgetMs,
-  // geminiApiKey, googleSearch*, helperFilesRoot, llmPhaseOverridesJson,
+  // geminiApiKey, googleSearch*, llmPhaseOverridesJson,
   // llmPlanUseReasoning, llmProviderRegistryJson,
   // searxngMinQueryIntervalMs) flow through to the POST body → backend snapshot.
   // Hand-picked fields below overlay on top with priority because they include

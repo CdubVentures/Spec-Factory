@@ -74,7 +74,7 @@ async function readTextIfExists(filePath) {
 }
 
 function buildCategoryPaths({ rootDir, category, config }) {
-  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || 'category_authority');
   const helperCategory = path.join(helperRoot, category);
   const runtimeCategory = path.resolve(rootDir, 'categories', category);
   const helperCompiledDir = path.join(helperCategory, '_compiled');
@@ -222,7 +222,7 @@ export async function runAppDiagnostics({
   pruneMirrors = false,
   rootDir = process.cwd()
 } = {}) {
-  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(rootDir, config.categoryAuthorityRoot || 'category_authority');
   const runtimeRoot = path.resolve(rootDir, 'categories');
   const helperCategories = await listDirNames(helperRoot);
   const runtimeCategories = await listDirNames(runtimeRoot);

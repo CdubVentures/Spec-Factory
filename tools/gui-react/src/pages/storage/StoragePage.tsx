@@ -221,11 +221,7 @@ export function StoragePage() {
       setStatusText(error instanceof Error ? error.message : 'Failed to save storage settings.');
     },
   });
-  const canManualSave = useMemo(() => storageSettingsReady && !isStorageSaving && isDirty, [
-    storageSettingsReady,
-    isStorageSaving,
-    isDirty,
-  ]);
+  // WHY: canManualSave removed — was computed but never read. Re-derive if manual save UX is added.
 
   const s3TempNote = useMemo(() => {
     const base = String(storageSettings?.stagingTempDirectory || '').trim();

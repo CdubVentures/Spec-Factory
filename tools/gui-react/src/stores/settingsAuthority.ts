@@ -13,8 +13,6 @@ import { useSettingsAuthorityStore } from './settingsAuthorityStore';
 import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract';
 import {
   registerUnloadGuard,
-  markDomainFlushedByUnmount,
-  isDomainFlushedByUnload,
 } from './settingsUnloadGuard';
 
 export interface SettingsAuthoritySnapshot {

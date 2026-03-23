@@ -32,7 +32,6 @@ export function WorkbenchColumnPresets({
   autoSaveEnabled,
   setAutoSaveEnabled,
   autoSaveLocked,
-  autoSaveLockReason,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);

@@ -62,6 +62,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "fetchConcurrency", type: "int", default: 4, min: 1, max: 64, configKey: "concurrency", envKey: "CONCURRENCY" },
   { key: "fetchPerHostConcurrencyCap", type: "int", default: 1, min: 1, max: 64, configKey: "fetchPerHostConcurrencyCap", envKey: "FETCH_PER_HOST_CONCURRENCY_CAP" },
   { key: "fetchSchedulerInternalsMapJson", type: "string", default: DEFAULT_FETCH_SCHEDULER_INTERNALS_MAP_JSON, allowEmpty: true, configKey: "fetchSchedulerInternalsMapJson", envKey: "FETCH_SCHEDULER_INTERNALS_MAP_JSON" },
+  { key: "fetchDrainTimeoutMs", type: "int", default: 120000, min: 10000, max: 600000, configKey: "fetchDrainTimeoutMs", envKey: "FETCH_DRAIN_TIMEOUT_MS" },
   { key: "fetchSchedulerMaxRetries", type: "int", default: 1, min: 0, max: 20, configKey: "fetchSchedulerMaxRetries", envKey: "FETCH_SCHEDULER_MAX_RETRIES" },
   { key: "fieldRewardHalfLifeDays", type: "int", default: 45, min: 1, max: 365, configKey: "fieldRewardHalfLifeDays", envKey: "FIELD_REWARD_HALF_LIFE_DAYS" },
   { key: "frontierBackoffMaxExponent", type: "int", default: 4, min: 1, max: 12, configKey: "frontierBackoffMaxExponent", envKey: "FRONTIER_BACKOFF_MAX_EXPONENT" },
@@ -87,7 +88,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "serperApiKey", type: "string", default: "", allowEmpty: true, configKey: "serperApiKey", envKey: "SERPER_API_KEY" },
   { key: "serperEnabled", type: "bool", default: true, configKey: "serperEnabled", envKey: "SERPER_ENABLED" },
   { key: "graphqlReplayEnabled", type: "bool", default: true, configKey: "graphqlReplayEnabled", envKey: "GRAPHQL_REPLAY_ENABLED" },
-  { key: "helperFilesRoot", type: "string", default: "category_authority", allowEmpty: true, deprecated: true, configKey: "helperFilesRoot", envKey: "HELPER_FILES_ROOT" },
+  // WHY: helperFilesRoot removed — canonical key is categoryAuthorityRoot (line 31). HELPER_FILES_ROOT env var still read by configBuilder.
   { key: "helperSupportiveFillMissing", type: "bool", default: true, configKey: "helperSupportiveFillMissing", envKey: "HELPER_SUPPORTIVE_FILL_MISSING" },
   { key: "hostHealthDownrankBlockRate", type: "float", default: 0.3, min: 0.0, max: 1.0, configKey: "hostHealthDownrankBlockRate", envKey: "HOST_HEALTH_DOWNRANK_BLOCK_RATE" },
   { key: "hostHealthDownrankSuccessRate", type: "float", default: 0.5, min: 0.0, max: 1.0, configKey: "hostHealthDownrankSuccessRate", envKey: "HOST_HEALTH_DOWNRANK_SUCCESS_RATE" },

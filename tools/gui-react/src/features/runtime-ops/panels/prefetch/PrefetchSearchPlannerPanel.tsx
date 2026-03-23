@@ -13,6 +13,7 @@ import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDe
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
 import type { RuntimeIdxBadge } from '../../types';
+import { classifyQueryTier, tierLabel as tierLabelSsot, tierChipClass } from '../../selectors/searchProfileTierHelpers.js';
 
 interface PrefetchSearchPlannerPanelProps {
   calls: PrefetchLlmCall[];
@@ -129,7 +130,6 @@ function Schema4PlannerView({
   calls,
   searchPlans,
   searchResults,
-  liveSettings,
   idxRuntime,
   persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
@@ -312,24 +312,12 @@ function isTierEnhancePath(plans: SearchPlanPass[]): boolean {
   return plans.some((p) => p.mode === 'tier_enhance');
 }
 
-const TIER_CHIP_CLASS: Record<string, string> = {
-  seed: 'sf-chip-info',
-  group_search: 'sf-chip-accent',
-  key_search: 'sf-chip-warning',
-};
-
-function tierLabel(tier: string): string {
-  if (tier === 'seed') return 'Seed';
-  if (tier === 'group_search') return 'Group';
-  if (tier === 'key_search') return 'Key';
-  return tier.replace(/_/g, ' ');
-}
+// WHY: Use SSOT tier helpers — no local duplicates.
 
 function TierEnhanceView({
   calls,
   searchPlans,
   searchResults,
-  liveSettings,
   idxRuntime,
   persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
@@ -396,7 +384,7 @@ function TierEnhanceView({
           )}
           {Object.keys(tierCounts).length > 0 && (
             <> Tier breakdown: {Object.entries(tierCounts).map(([t, c], i) => (
-              <span key={t}>{i > 0 && ', '}<strong className="sf-text-primary not-italic">{c}</strong> {tierLabel(t).toLowerCase()}</span>
+              <span key={t}>{i > 0 && ', '}<strong className="sf-text-primary not-italic">{c}</strong> {tierLabelSsot(classifyQueryTier({ query: '', tier: t })).toLowerCase()}</span>
             ))}.
             </>
           )}
@@ -432,7 +420,7 @@ function TierEnhanceView({
                     <tr key={i} className={`border-b sf-border-soft ${sentToSearch ? 'sf-callout sf-callout-success' : ''}`}>
                       <td className="py-1.5 px-4 font-mono sf-text-subtle w-8">{i + 1}</td>
                       <td className="py-1.5 px-4">
-                        <Chip label={tierLabel(row.tier)} className={TIER_CHIP_CLASS[row.tier] || 'sf-chip-neutral'} />
+                        <Chip label={tierLabelSsot(classifyQueryTier({ query: '', tier: row.tier }))} className={tierChipClass(classifyQueryTier({ query: '', tier: row.tier }))} />
                       </td>
                       <td className="py-1.5 px-4 font-mono sf-text-muted max-w-[22rem]">
                         {row.original_query || row.query}
@@ -500,11 +488,10 @@ export function PrefetchSearchPlannerPanel({
   calls,
   searchPlans,
   searchResults,
-  liveSettings,
   idxRuntime,
   persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
-  const [expandedPassQueries, toggleExpandedPassQuery, replaceExpandedPassQueries] = usePersistedExpandMap(`runtimeOps:searchPlanner:expandedPass:${persistScope}`);
+  const [expandedPassQueries, toggleExpandedPassQuery] = usePersistedExpandMap(`runtimeOps:searchPlanner:expandedPass:${persistScope}`);
   const plans = searchPlans || [];
   const executedQueryTokens = useMemo(() => new Set(
     (searchResults || []).map((result) => normalizeToken(normalizeQuery(result.query))),
@@ -570,11 +557,11 @@ export function PrefetchSearchPlannerPanel({
   const [contextOpen, toggleContextOpen] = usePersistedToggle(`runtimeOps:searchPlanner:contextLegacy:${persistScope}`, true);
 
   if (tierEnhanceActive) {
-    return <TierEnhanceView calls={calls} searchPlans={searchPlans} searchResults={searchResults} liveSettings={liveSettings} idxRuntime={idxRuntime} persistScope={persistScope} />;
+    return <TierEnhanceView calls={calls} searchPlans={searchPlans} searchResults={searchResults} idxRuntime={idxRuntime} persistScope={persistScope} />;
   }
 
   if (schema4Active) {
-    return <Schema4PlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} liveSettings={liveSettings} idxRuntime={idxRuntime} persistScope={persistScope} />;
+    return <Schema4PlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} idxRuntime={idxRuntime} persistScope={persistScope} />;
   }
 
   if (!hasCalls && !hasStructured) {

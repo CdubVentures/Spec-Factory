@@ -41,7 +41,7 @@ export function stableSpecFieldOrder(fields = {}) {
 }
 
 export async function readOverrideDoc({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const overridePath = path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
   try {
     const raw = await fs.readFile(overridePath, 'utf8');
@@ -64,7 +64,7 @@ export async function readOverrideDoc({ config = {}, category, productId }) {
 }
 
 export async function listApprovedOverrideProductIds({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const dir = path.join(helperRoot, category, '_overrides');
   let entries = [];
   try {

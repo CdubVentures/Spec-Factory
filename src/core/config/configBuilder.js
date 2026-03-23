@@ -284,7 +284,6 @@ export function buildRawConfig({ manifestApplicator }) {
     // --- Category authority ---
     categoryAuthorityEnabled: parseBoolEnv('HELPER_FILES_ENABLED', runtimeSettingDefault('categoryAuthorityEnabled')),
     categoryAuthorityRoot: resolvedCategoryAuthorityRoot,
-    [`helper${'FilesRoot'}`]: resolvedCategoryAuthorityRoot,
 
     // --- DefaultsOnly entries that configBuilder still needs ---
     discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', runtimeSettingDefault('discoveryEnabled')),

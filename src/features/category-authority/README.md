@@ -13,5 +13,5 @@ This boundary is intentionally narrow: it exposes authority snapshot data withou
 ## Domain Invariants
 - Authority snapshot payloads combine session-rule timing data with SpecDb sync metadata for a category.
 - The snapshot route is only meaningful when authority snapshots are enabled by runtime config.
-- Generated authority artifacts remain rooted under `config.categoryAuthorityRoot` or `config.helperFilesRoot`, defaulting to `category_authority`.
+- Generated authority artifacts remain rooted under `config.categoryAuthorityRoot`, defaulting to `category_authority`.
 - Synthetic helper URLs keep the `category_authority://` scheme used by downstream consumers.

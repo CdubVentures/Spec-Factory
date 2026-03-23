@@ -41,7 +41,7 @@ export function EditableDataList({
   onRemove,
 }: EditableDataListProps) {
   const dlKey = entry.field || `idx-${index}`;
-  const [expanded, toggleExpanded, setExpanded] = usePersistedToggle(
+  const [expanded, , setExpanded] = usePersistedToggle(
     `studio:dataList:${dlKey}:expanded`,
     false,
   );

@@ -11,7 +11,7 @@ interface KnobTelemetrySubTabProps {
 export function KnobTelemetrySubTab({ data, category }: KnobTelemetrySubTabProps) {
   const snapshots = data?.snapshots ?? [];
   const [selectedIdx, setSelectedIdx] = usePersistedNumber(`runtimeOps:knobTelemetry:selectedIdx:${category}`, 0);
-  const [showAll, toggleShowAll, setShowAll] = usePersistedToggle(`runtimeOps:knobTelemetry:showAll:${category}`, true);
+  const [showAll, , setShowAll] = usePersistedToggle(`runtimeOps:knobTelemetry:showAll:${category}`, true);
 
   const snapshot = snapshots[selectedIdx] ?? null;
 

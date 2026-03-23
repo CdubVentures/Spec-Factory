@@ -133,24 +133,18 @@ describe('Characterization — buildSearchProfile structural invariants', () => 
     }
   });
 
-  it('produces diversity: distinct domain_hint and doc_hint values', () => {
+  it('produces tier1 seed row with doc_hint when seedStatus triggers', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig(),
       missingFields: ['weight', 'sensor', 'click_latency', 'dpi', 'polling_rate'],
-      maxQueries: 48
+      maxQueries: 48,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
     });
 
-    const domainHints = new Set(profile.query_rows.map((r) => r.domain_hint).filter(Boolean));
-    const docHints = new Set(profile.query_rows.map((r) => r.doc_hint).filter(Boolean));
-
-    console.log('[CHAR] distinct domain_hints:', [...domainHints]);
-    console.log('[CHAR] distinct doc_hints:', [...docHints]);
-    console.log('[CHAR] query_rows count:', profile.query_rows.length);
-
-    // Baseline diversity counts — these are the minimums the current implementation produces
-    assert.ok(domainHints.size >= 1, `domain_hint diversity baseline: ${domainHints.size}`);
-    assert.ok(docHints.size >= 1, `doc_hint diversity baseline: ${docHints.size}`);
+    const seedRows = profile.query_rows.filter((r) => r.tier === 'seed');
+    assert.ok(seedRows.length >= 1, `at least one seed row: ${seedRows.length}`);
+    assert.ok(seedRows.some((r) => r.doc_hint === 'spec'), 'seed row has doc_hint spec');
   });
 
   it('empty searchTemplates triggers fallback — base_templates never empty', () => {
@@ -166,19 +160,21 @@ describe('Characterization — buildSearchProfile structural invariants', () => 
     assert.ok(profile.base_templates[0].includes('Razer'), 'fallback includes brand');
   });
 
-  it('non-empty searchTemplates fills base_templates with identity', () => {
+  it('base_templates derived from tier1 seed queries', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeCategoryConfig({
         searchTemplates: ['{brand} {model} specifications', '{brand} {model} review']
       }),
       missingFields: ['weight'],
-      maxQueries: 24
+      maxQueries: 24,
+      seedStatus: { specs_seed: { is_needed: true }, source_seeds: {} },
     });
 
-    assert.ok(profile.base_templates.length === 2, 'two templates filled');
-    assert.ok(profile.base_templates[0].includes('Razer'), 'brand substituted');
-    assert.ok(profile.base_templates[0].includes('Viper'), 'model substituted');
+    // WHY: base_templates are now derived from tier1 seed query_rows, not from searchTemplates.
+    assert.ok(Array.isArray(profile.base_templates), 'base_templates is array');
+    assert.ok(profile.base_templates.length >= 1, 'at least one base template from seed');
+    assert.ok(profile.base_templates[0].includes('Razer'), 'seed query includes brand');
   });
 
   it('variant_guard_terms include brand/model tokens and digit groups', () => {

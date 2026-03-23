@@ -146,7 +146,7 @@ async function writeJson(filePath, value) {
 
 function helperCategoryDir({ category, config = {} }) {
   return path.resolve(
-    config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority',
+    config.categoryAuthorityRoot || 'category_authority',
     category
   );
 }

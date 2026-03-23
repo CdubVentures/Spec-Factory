@@ -45,7 +45,7 @@ import { resolvePropertyFieldMeta } from './componentReviewHelpers.js';
 // ── SpecDb-primary component payloads ────────────────────────────────
 
 export async function buildComponentReviewPayloadsSpecDb({ config = {}, category, componentType, specDb, fieldRules = null }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
 
   let allComponents = specDb.getAllComponentsForType(componentType);
 

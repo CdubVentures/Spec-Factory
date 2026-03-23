@@ -77,7 +77,8 @@ export async function runUntilComplete({
   config,
   s3key,
   maxRounds = 4,
-  mode
+  mode,
+  specDb = null,
 }) {
   const job = await storage.readJson(s3key);
   const category = job.category || 'mouse';
@@ -121,6 +122,18 @@ export async function runUntilComplete({
   let previousProgress = null;
   let previousRoundFields = null;
   let previousFieldHistories = {};
+  // WHY: Load accumulated field histories from DB for crash recovery.
+  // If the process crashed between rounds, in-memory histories were lost.
+  // The DB has the last persisted snapshot from the previous round's finalization.
+  if (specDb && typeof specDb.getFieldHistories === 'function') {
+    const dbHistories = specDb.getFieldHistories(productId);
+    if (dbHistories && Object.keys(dbHistories).length > 0) {
+      previousFieldHistories = dbHistories;
+      logger.info('field_histories_loaded_from_db', {
+        field_count: Object.keys(dbHistories).length,
+      });
+    }
+  }
   let noProgressStreak = 0;
   let completed = false;
   let exhausted = false;

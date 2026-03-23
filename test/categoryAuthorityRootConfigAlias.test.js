@@ -21,13 +21,11 @@ test('config resolves categoryAuthorityRoot with canonical env precedence and le
     process.env.HELPER_FILES_ROOT = '/tmp/legacy-helper-root';
     let cfg = loadConfig();
     assert.equal(cfg.categoryAuthorityRoot, '/tmp/category-authority-root');
-    assert.equal(cfg[`helper${'FilesRoot'}`], '/tmp/category-authority-root');
 
     delete process.env.CATEGORY_AUTHORITY_ROOT;
     process.env.HELPER_FILES_ROOT = '/tmp/legacy-helper-root';
     cfg = loadConfig();
     assert.equal(cfg.categoryAuthorityRoot, '/tmp/legacy-helper-root');
-    assert.equal(cfg[`helper${'FilesRoot'}`], '/tmp/legacy-helper-root');
   } finally {
     restoreEnv(previous);
   }
@@ -43,7 +41,7 @@ test('config defaults helper authority root to canonical category_authority toke
 
     const cfg = loadConfig();
     assert.equal(cfg.categoryAuthorityRoot, 'category_authority');
-    assert.equal(cfg[`helper${'FilesRoot'}`], 'category_authority');
+    assert.strictEqual(cfg.helperFilesRoot, undefined, 'helperFilesRoot should no longer exist on config');
   } finally {
     restoreEnv(previous);
   }

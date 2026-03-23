@@ -36,7 +36,7 @@ export function hasKnownValue(value) {
 // ── File I/O ────────────────────────────────────────────────────────
 
 export function resolveOverrideFilePath({ config = {}, category, productId }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
 }
 

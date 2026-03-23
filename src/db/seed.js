@@ -287,7 +287,7 @@ async function collectListSeedRows(fieldRules, config, category) {
   }
 
   // From control plane manual enum values
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const controlPlaneRoot = path.join(helperRoot, category, '_control_plane');
   const fieldStudioMapPath = path.join(controlPlaneRoot, 'field_studio_map.json');
   const fieldStudioMap = await readJsonIfExists(fieldStudioMapPath);
@@ -426,7 +426,7 @@ function buildFieldMeta(fieldRules) {
 // ── Step 1a: Component override seeding ──────────────────────────────────────
 
 async function seedComponentOverrides(db, config, category) {
-  const helperRoot = config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority';
+  const helperRoot = config.categoryAuthorityRoot || 'category_authority';
   const overrideDir = path.join(helperRoot, category, '_overrides', 'components');
   let overrideCount = 0;
 
@@ -670,7 +670,7 @@ async function collectPerSourceCandidates(outputRoot, productId, runId) {
 
 async function seedProducts(db, config, category, fieldRules, fieldMeta) {
   const outputRoot = path.join(config.localOutputRoot || 'out', 'specs', 'outputs', category);
-  const helperRoot = config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority';
+  const helperRoot = config.categoryAuthorityRoot || 'category_authority';
   const overridesDir = path.join(helperRoot, category, '_overrides');
 
   let entries;
@@ -1073,7 +1073,7 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
 
 async function seedQueueState(db, config, category) {
   // Try modern queue state path first, then legacy
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const modernPath = path.resolve(`_queue/${category}/state.json`);
   const legacyPath = path.join(helperRoot, category, '_queue', 'state.json');
 
@@ -1113,7 +1113,7 @@ async function seedQueueState(db, config, category) {
 // ── Curation suggestions seeding ─────────────────────────────────────────────
 
 async function seedCurationSuggestions(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const enumPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
   const compPath = path.join(helperRoot, category, '_suggestions', 'components.json');
 
@@ -1176,7 +1176,7 @@ async function seedCurationSuggestions(db, config, category) {
 // ── Component review queue seeding ───────────────────────────────────────────
 
 async function seedComponentReviewQueue(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const reviewPath = path.join(helperRoot, category, '_suggestions', 'component_review.json');
   const reviewDoc = await readJsonIfExists(reviewPath);
   if (!reviewDoc || !Array.isArray(reviewDoc.items)) return { count: 0 };
@@ -1212,7 +1212,7 @@ async function seedComponentReviewQueue(db, config, category) {
 // ── Product catalog seeding ───────────────────────────────────────────────────
 
 async function seedProductCatalog(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || config?.['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
   const catalogPath = path.join(helperRoot, category, '_control_plane', 'product_catalog.json');
   const catalog = await readJsonIfExists(catalogPath);
   if (!catalog || !isObject(catalog.products)) return { count: 0 };

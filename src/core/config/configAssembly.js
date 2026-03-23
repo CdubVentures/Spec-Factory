@@ -84,7 +84,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
 
   // Category authority (computed resolution chain)
   'categoryAuthorityEnabled', 'categoryAuthorityRoot',
-  'helperFilesRoot',
 
   // Chatmock (path.join computation)
   'chatmockDir', 'chatmockComposeFile',

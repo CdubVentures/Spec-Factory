@@ -84,7 +84,7 @@ export async function compileCategoryFieldStudio({
   if (!normalizeText(category)) {
     throw new Error('category_required');
   }
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || config['helper' + 'FilesRoot'] || 'category_authority');
+  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const categoryRoot = path.join(helperRoot, category);
   const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
   const generatedRoot = path.join(categoryRoot, '_generated');

@@ -17,17 +17,6 @@ import {
   collectHostPlanHintTokens
 } from './queryFieldRuleGates.js';
 import {
-  classifySourceArchetypes,
-  computeArchetypeCoverage,
-  allocateArchetypeBudget,
-  emitArchetypeQueries,
-  identifyUncoveredFields,
-  emitHardFieldQueries,
-  intentFingerprint,
-  buildArchetypeSummary,
-  buildCoverageAnalysis
-} from './archetypeQueryPlanner.js';
-import {
   clean,
   toArray,
   resolveJobIdentity,
@@ -142,282 +131,6 @@ function toDocHintRows(rows = [], perHintCap = 3) {
   }));
 }
 
-function buildQueryRows({
-  job,
-  categoryConfig,
-  focusFields = [],
-  tooltipHints = {},
-  lexicon = {},
-  learnedQueries = {},
-  identityAliases = [],
-  maxRows = 72,
-  rejectLog = [],
-  brandResolutionHints = [],
-  fieldYieldByDomain = null
-}) {
-  const brand = clean(job?.identityLock?.brand || '');
-  const model = clean(job?.identityLock?.model || '');
-  const variant = clean(job?.identityLock?.variant || '');
-  const product = clean([brand, model, variant].filter(Boolean).join(' '));
-  const rowCap = Math.max(1, Number(maxRows || 72));
-  const rows = [];
-  const seen = new Map();
-  const addReject = ({
-    query = '',
-    source = 'deterministic',
-    reason = '',
-    stage = 'query_row_builder',
-    detail = ''
-  }) => {
-    if (!Array.isArray(rejectLog) || !reason) {
-      return;
-    }
-    rejectLog.push({
-      query: clean(query),
-      source: clean(source || 'deterministic'),
-      reason: clean(reason),
-      stage: clean(stage),
-      detail: clean(detail)
-    });
-  };
-  const addRow = ({
-    query,
-    hintSource = 'deterministic',
-    targetFields = [],
-    docHint = '',
-    alias = '',
-    domainHint = ''
-  }) => {
-    const normalizedQuery = clean(query);
-    const source = clean(hintSource || 'deterministic');
-    if (!normalizedQuery || !brand) {
-      addReject({
-        query: normalizedQuery || String(query || ''),
-        source,
-        reason: !normalizedQuery ? 'empty_query' : 'missing_brand_identity'
-      });
-      return;
-    }
-    const token = normalizedQuery.toLowerCase();
-    if (seen.has(token)) {
-      const index = seen.get(token);
-      const existing = rows[index];
-      existing.target_fields = [...new Set([
-        ...toArray(existing.target_fields),
-        ...toArray(targetFields)
-      ])];
-      existing.hint_source = existing.hint_source || hintSource;
-      if (!existing.doc_hint && docHint) existing.doc_hint = docHint;
-      if (!existing.domain_hint && domainHint) {
-        existing.domain_hint = clean(domainHint);
-        existing.source_host = clean(domainHint);
-      }
-      addReject({
-        query: normalizedQuery,
-        source,
-        reason: 'duplicate_query_merged'
-      });
-      return;
-    }
-    if (rows.length >= rowCap) {
-      addReject({
-        query: normalizedQuery,
-        source,
-        reason: 'query_row_cap_reached',
-        detail: `cap:${rowCap}`
-      });
-      return;
-    }
-    rows.push({
-      query: normalizedQuery,
-      hint_source: hintSource,
-      target_fields: [...new Set(toArray(targetFields).filter(Boolean))],
-      doc_hint: clean(docHint),
-      alias: clean(alias),
-      domain_hint: clean(domainHint),
-      source_host: clean(domainHint)
-    });
-    seen.set(token, rows.length - 1);
-  };
-
-  const aliasRows = toArray(identityAliases)
-    .map((row) => clean(row?.alias || ''))
-    .filter(Boolean)
-    .slice(0, 8);
-  const queryAliasRows = aliasRows.filter((alias) => {
-    const token = alias.toLowerCase();
-    return (
-      (token.includes(model.toLowerCase()) || token.includes(variant.toLowerCase())) &&
-      !token.includes(brand.toLowerCase())
-    );
-  });
-
-  // ── Archetype pipeline: source-first query generation ──
-  const sourceRegistry = categoryConfig?.sourceRegistry || {};
-  const sourceHosts = toArray(categoryConfig?.sourceHosts);
-  let mfrHosts = selectManufacturerHosts(categoryConfig, brand, brandResolutionHints);
-  if (mfrHosts.length === 0) {
-    const officialHost = brandResolutionHints.find((h) => h.includes('.'));
-    if (officialHost) mfrHosts = [officialHost];
-  }
-
-  const archetypes = classifySourceArchetypes(sourceRegistry, sourceHosts, mfrHosts);
-  const archetypeCoverage = computeArchetypeCoverage(archetypes, focusFields);
-  const archetypeBudget = Math.max(4, Math.floor(rowCap * 0.6));
-  const allocatedSlots = allocateArchetypeBudget(archetypes, archetypeBudget, {});
-
-  // Collect all fields covered by archetypes (advisory)
-  const coveredFieldSet = new Set();
-  for (const a of archetypes) {
-    for (const f of (a.coveredFields || [])) {
-      coveredFieldSet.add(f);
-    }
-  }
-
-  // Emit archetype queries
-  for (const slot of allocatedSlots) {
-    if (slot.slots <= 0) continue;
-    const archetypeRows = emitArchetypeQueries(slot, { brand, model, variant }, product, focusFields, { fieldYieldByDomain });
-    for (const row of archetypeRows) {
-      addRow({
-        query: row.query,
-        hintSource: row.hint_source || 'archetype_planner',
-        targetFields: row.target_fields,
-        docHint: row.doc_hint,
-        domainHint: row.domain_hint
-      });
-      // Propagate _meta to the stored row (if addRow accepted it)
-      const stored = rows[rows.length - 1];
-      if (stored && stored.query === clean(row.query) && row._meta) {
-        stored._meta = row._meta;
-      }
-    }
-  }
-
-  // Hard-field queries for uncovered search-worthy fields
-  const uncovered = identifyUncoveredFields(focusFields, coveredFieldSet, categoryConfig);
-  const hardFieldRows = emitHardFieldQueries(
-    uncovered.searchWorthy, { brand, model, variant }, product, categoryConfig
-  );
-  for (const row of hardFieldRows) {
-    addRow({
-      query: row.query,
-      hintSource: row.hint_source || 'archetype_planner',
-      targetFields: row.target_fields,
-      docHint: row.doc_hint,
-      domainHint: row.domain_hint
-    });
-    const stored = rows[rows.length - 1];
-    if (stored && stored.query === clean(row.query) && row._meta) {
-      stored._meta = row._meta;
-    }
-  }
-
-  // Field-rules search hints + synonym fallback: per-field targeted queries
-  for (const field of focusFields) {
-    const fieldRule = lookupFieldRule(categoryConfig, field);
-    const queryTermsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.query_terms', 'indexlab').enabled;
-    const domainHintsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.domain_hints', 'indexlab').enabled;
-    const contentTypesGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.preferred_content_types', 'indexlab').enabled;
-    const searchHintTerms = (queryTermsGateEnabled ? toArray(fieldRule?.search_hints?.query_terms) : [])
-      .map((value) => normalizeSearchTerm(value))
-      .filter(Boolean);
-    const fallbackSynonyms = fieldSynonyms(field, lexicon, fieldRule, tooltipHints)
-      .map((value) => normalizeSearchTerm(value))
-      .filter(Boolean);
-    const terms = [...new Set([
-      ...searchHintTerms,
-      ...fallbackSynonyms
-    ])].slice(0, 8);
-    const preferredContent = contentTypesGateEnabled ? contentTypeSuffixes(fieldRule) : [];
-    const ruleDomainHints = domainHintsGateEnabled ? domainHintsForField(fieldRule) : [];
-
-    for (const term of terms) {
-      const hintSource = searchHintTerms.includes(term)
-        ? 'field_rules.search_hints'
-        : 'deterministic';
-      addRow({
-        query: `${product} ${term} specification`,
-        hintSource,
-        targetFields: [field],
-        docHint: 'spec',
-        alias: product
-      });
-      addRow({
-        query: `${product} ${term} manual pdf`,
-        hintSource,
-        targetFields: [field],
-        docHint: 'manual_pdf',
-        alias: product
-      });
-      for (const suffix of preferredContent.slice(0, 2)) {
-        addRow({
-          query: `${product} ${term} ${suffix}`,
-          hintSource: 'field_rules.search_hints',
-          targetFields: [field],
-          docHint: suffix,
-          alias: product
-        });
-      }
-    }
-
-    // Emit domain_hint soft-bias queries
-    for (const host of ruleDomainHints.slice(0, 4)) {
-      const primaryTerm = searchHintTerms[0] || field.replace(/_/g, ' ');
-      addRow({
-        query: `${brand} ${model} ${primaryTerm} ${host}`,
-        hintSource: 'field_rules.search_hints',
-        targetFields: [field],
-        domainHint: host
-      });
-    }
-
-    // Alias-driven queries
-    for (const alias of queryAliasRows.slice(0, 4)) {
-      const primaryTerm = terms[0] || field.replace(/_/g, ' ');
-      addRow({
-        query: `${brand} ${alias} ${primaryTerm} specification`,
-        hintSource: 'deterministic',
-        targetFields: [field],
-        alias
-      });
-    }
-
-    // Learned queries by field
-    for (const row of toArray(learnedQueries?.templates_by_field?.[field]).slice(0, 4)) {
-      addRow({
-        query: clean(row?.query || ''),
-        hintSource: 'learned',
-        targetFields: [field]
-      });
-    }
-  }
-
-  // Learned queries by brand
-  const brandKey = brand.toLowerCase();
-  for (const row of toArray(learnedQueries?.templates_by_brand?.[brandKey]).slice(0, 6)) {
-    addRow({
-      query: clean(row?.query || ''),
-      hintSource: 'learned',
-      targetFields: focusFields
-    });
-  }
-
-  if (!focusFields.length) {
-    addRow({
-      query: `${product} specifications`,
-      hintSource: 'deterministic',
-      docHint: 'spec'
-    });
-    addRow({
-      query: `${product} datasheet pdf`,
-      hintSource: 'deterministic',
-      docHint: 'datasheet_pdf'
-    });
-  }
-
-  return { rows, archetypeSlots: allocatedSlots, coveredFieldSet, hardFieldRows };
-}
 
 function fillTemplate(template, values) {
   return clean(
@@ -429,44 +142,6 @@ function fillTemplate(template, values) {
   );
 }
 
-function groupByTargetField(rows) {
-  const byField = new Map();
-  const noField = [];
-  for (const row of rows) {
-    const fields = toArray(row.target_fields).filter(Boolean);
-    if (fields.length === 0) {
-      noField.push(row);
-      continue;
-    }
-    const primary = fields[0];
-    if (!byField.has(primary)) byField.set(primary, []);
-    byField.get(primary).push(row);
-  }
-  if (noField.length > 0) {
-    byField.set('__untagged__', noField);
-  }
-  return byField;
-}
-
-function roundRobinInterleave(byField) {
-  const buckets = [...byField.values()];
-  if (buckets.length <= 1) return buckets[0] || [];
-  const result = [];
-  const indices = buckets.map(() => 0);
-  let remaining = true;
-  while (remaining) {
-    remaining = false;
-    for (let b = 0; b < buckets.length; b++) {
-      if (indices[b] < buckets[b].length) {
-        result.push(buckets[b][indices[b]]);
-        indices[b] += 1;
-        if (indices[b] < buckets[b].length) remaining = true;
-      }
-    }
-    if (!remaining) break;
-  }
-  return result;
-}
 
 export function buildSearchProfile({
   job,
@@ -511,51 +186,26 @@ export function buildSearchProfile({
     }
   }
 
-  // WHY: Tier dispatch — when seedStatus is provided, use tier-aware generation.
-  // When absent, fall through to the existing archetype pipeline (backward compat).
+  // WHY: Tier dispatch is the ONLY query generation path.
+  // When seedStatus is absent, synthesize a round-0 default so Tier 1 always fires.
   // Budget: seeds get first dibs, then groups fill remaining, then keys fill rest.
-  const modes = seedStatus ? determineQueryModes(seedStatus, focusGroups || []) : null;
-  const hasTierMode = modes && (modes.runTier1Seeds || modes.runTier2Groups || modes.runTier3Keys);
+  const effectiveSeedStatus = seedStatus || { specs_seed: { is_needed: true }, source_seeds: {} };
+  const modes = determineQueryModes(effectiveSeedStatus, focusGroups || []);
   const maxQueryCap = Math.max(1, Number(maxQueries || 24));
 
-  let queryRows;
-  let queryRowsMeta;
-  if (hasTierMode) {
-    const tierRows = [];
-    // Priority 1: seeds
-    if (modes.runTier1Seeds) {
-      tierRows.push(...buildTier1Queries(job, seedStatus, brandResolution));
-    }
-    // Priority 2: groups (fill remaining budget)
-    if (modes.runTier2Groups && tierRows.length < maxQueryCap) {
-      const groupRows = buildTier2Queries(job, focusGroups);
-      tierRows.push(...groupRows.slice(0, maxQueryCap - tierRows.length));
-    }
-    // Priority 3: keys (fill remaining budget)
-    if (modes.runTier3Keys && tierRows.length < maxQueryCap) {
-      const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain);
-      tierRows.push(...keyRows.slice(0, maxQueryCap - tierRows.length));
-    }
-    queryRows = tierRows;
-    // WHY: Archetype metadata is sparse in tier mode — no archetype pipeline ran.
-    queryRowsMeta = { archetypeSlots: [], coveredFieldSet: new Set(), hardFieldRows: [] };
-  } else {
-    const buildResult = buildQueryRows({
-      job,
-      categoryConfig,
-      focusFields,
-      tooltipHints,
-      lexicon,
-      learnedQueries,
-      identityAliases,
-      maxRows: Math.max(24, Number(maxQueries || 24) * 3),
-      rejectLog: queryRejectLog,
-      brandResolutionHints,
-      fieldYieldByDomain
-    });
-    queryRows = buildResult.rows;
-    queryRowsMeta = buildResult;
+  const tierRows = [];
+  if (modes.runTier1Seeds) {
+    tierRows.push(...buildTier1Queries(job, effectiveSeedStatus, brandResolution));
   }
+  if (modes.runTier2Groups && tierRows.length < maxQueryCap) {
+    const groupRows = buildTier2Queries(job, focusGroups);
+    tierRows.push(...groupRows.slice(0, maxQueryCap - tierRows.length));
+  }
+  if (modes.runTier3Keys && tierRows.length < maxQueryCap) {
+    const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain);
+    tierRows.push(...keyRows.slice(0, maxQueryCap - tierRows.length));
+  }
+  const queryRows = tierRows;
 
   const querySet = new Set();
   const selectedQueries = [];
@@ -585,15 +235,7 @@ export function buildSearchProfile({
     querySet.add(normalized);
     selectedQueries.push(cleanedQuery);
   };
-  if (!hasTierMode) {
-    for (const query of baseTemplates) {
-      addQuery(query, 'base_template');
-    }
-  }
-  const interleaved = hasTierMode
-    ? queryRows
-    : roundRobinInterleave(groupByTargetField(queryRows));
-  for (const row of interleaved) {
+  for (const row of queryRows) {
     addQuery(row.query, row.hint_source || 'query_row');
   }
   if (!selectedQueries.length && brand && model) {
@@ -620,21 +262,12 @@ export function buildSearchProfile({
     hintSourceCounts[token] = (hintSourceCounts[token] || 0) + 1;
   }
 
-  // Base templates: tier1 seeds when in tier mode, otherwise existing fallback
-  const effectiveBaseTemplates = hasTierMode
-    ? boundedRows.filter((r) => r.tier === 'seed').map((r) => r.query)
-    : baseTemplates.length > 0
-      ? baseTemplates
-      : (brand && model)
-        ? [clean(`${brand} ${model} ${variant} specifications`), clean(`${brand} ${model} ${variant} review`)]
-        : [];
+  // WHY: Base templates are tier1 seed queries — used by Search Planner as query history.
+  const effectiveBaseTemplates = boundedRows.filter((r) => r.tier === 'seed').map((r) => r.query);
 
-  // Archetype summary + coverage analysis from structured metadata
-  const archetypeSlots = queryRowsMeta.archetypeSlots || [];
-  const coveredFieldSet = queryRowsMeta.coveredFieldSet || new Set();
-  const hardFieldRowsMeta = queryRowsMeta.hardFieldRows || [];
-  const archetypeSummary = buildArchetypeSummary(archetypeSlots);
-  const coverageAnalysis = buildCoverageAnalysis(focusFields, coveredFieldSet, hardFieldRowsMeta);
+  // WHY: Archetype metadata is empty in tier-only mode — no archetype pipeline ran.
+  const archetypeSummary = {};
+  const coverageAnalysis = {};
 
   return {
     category,
