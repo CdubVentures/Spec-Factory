@@ -25,11 +25,26 @@ const AUTHORITY_ENUM = [
   'authoritative', 'instrumented', 'aggregator', 'community', 'unknown',
 ];
 
-const pacingSchema = z.object({
+// WHY: Raw ZodObject schemas exported for shape introspection (O(1) key derivation).
+// The wrapped versions (with .passthrough/.optional/.nullable) are used in sourceEntrySchema.
+export const crawlConfigSchema = z.object({
+  method: z.enum(['http', 'playwright']).optional().default('http'),
   rate_limit_ms: z.number().optional(),
   timeout_ms: z.number().optional(),
   max_concurrent: z.number().optional(),
-}).passthrough().optional().nullable();
+  robots_txt_compliant: z.boolean().optional().default(true),
+});
+const crawlConfigField = crawlConfigSchema.passthrough().optional().nullable();
+
+export const discoverySchema = z.object({
+  method: z.enum(['manual', 'search_first']).optional().default('manual'),
+  source_type: z.string().optional().default(''),
+  search_pattern: z.string().optional().default(''),
+  priority: z.number().optional().default(50),
+  enabled: z.boolean().optional().default(true),
+  notes: z.string().optional().default(''),
+});
+const discoveryField = discoverySchema.optional().nullable();
 
 const fieldCoverageSchema = z.object({
   high: z.array(z.string()).optional().default([]),
@@ -47,7 +62,8 @@ export const sourceEntrySchema = z.object({
   doc_kinds: z.array(z.string()).optional().default([]),
   field_coverage: fieldCoverageSchema.default(null),
   preferred_paths: z.array(z.string()).optional().default([]),
-  pacing: pacingSchema.default(null),
+  crawl_config: crawlConfigField.default(null),
+  discovery: discoveryField.default(null),
   requires_js: z.boolean().optional().default(false),
   connector_only: z.boolean().optional().default(false),
   blocked_in_search: z.boolean().optional().default(false),
@@ -63,49 +79,9 @@ export const sourceEntrySchema = z.object({
 
 const SCHEMA_VERSION = '1.0.0';
 
-/**
- * Convert raw crawl_config to pacing shape.
- */
-function crawlConfigToPacing(crawlConfig) {
-  if (!crawlConfig || typeof crawlConfig !== 'object') return null;
-  return {
-    rate_limit_ms: crawlConfig.rate_limit_ms ?? undefined,
-    timeout_ms: crawlConfig.timeout_ms ?? undefined,
-    max_concurrent: crawlConfig.max_concurrent ?? undefined,
-  };
-}
-
 function titleCaseHostLabel(host) {
   const base = String(host || '').split('.')[0] || 'Unknown';
   return base.charAt(0).toUpperCase() + base.slice(1);
-}
-
-function buildManufacturerOverrideEntry(host, rawSources) {
-  const overrides = rawSources?.manufacturer_crawl_overrides || {};
-  const defaults = rawSources?.manufacturer_defaults || {};
-  const override = overrides[host] || {};
-  const crawlConfig = {
-    ...defaults,
-    ...override,
-  };
-
-  return {
-    host,
-    display_name: `${titleCaseHostLabel(host)} Official`,
-    tier: 'tier1_manufacturer',
-    authority: 'authoritative',
-    base_url: `https://${host}`,
-    content_types: ['product_page'],
-    doc_kinds: ['spec_sheet'],
-    field_coverage: null,
-    preferred_paths: [],
-    pacing: crawlConfigToPacing(crawlConfig),
-    requires_js: crawlConfig.method === 'playwright',
-    connector_only: false,
-    blocked_in_search: false,
-    synthetic: false,
-    health: null,
-  };
 }
 
 /**
@@ -154,7 +130,7 @@ export function loadSourceRegistry(category, rawSources) {
       doc_kinds: raw.doc_kinds || [],
       field_coverage: raw.field_coverage || null,
       preferred_paths: raw.preferred_paths || [],
-      pacing: crawlConfigToPacing(raw.crawl_config),
+      crawl_config: raw.crawl_config || null,
       requires_js: raw.requires_js || (raw.crawl_config?.method === 'playwright'),
       connector_only: raw.connector_only || false,
       blocked_in_search: raw.blocked_in_search || false,
@@ -179,27 +155,6 @@ export function loadSourceRegistry(category, rawSources) {
     seenHosts.add(host);
   }
 
-  // Materialize manufacturer override hosts as first-class registry entries.
-  // WHY: static manufacturer rows were retired from sources.json, but discovery
-  // still needs a validated source entry for host resolution and host policy.
-  for (const overrideHost of Object.keys(rawSources.manufacturer_crawl_overrides || {})) {
-    const host = normalizeHost(overrideHost);
-    if (!host || seenHosts.has(host)) continue;
-
-    const candidate = buildManufacturerOverrideEntry(host, rawSources);
-    const result = sourceEntrySchema.safeParse(candidate);
-    if (!result.success) {
-      const issues = result.error.issues.map(i =>
-        `${i.path.join('.')}: ${i.message}`
-      );
-      validationErrors.push(`manufacturer override "${host}": ${issues.join('; ')}`);
-      continue;
-    }
-
-    entries.push(result.data);
-    seenHosts.add(host);
-  }
-
   // Generate synthetic entries for approved hosts not in sources
   for (const [role, hosts] of Object.entries(approved)) {
     const tier = TIER_TO_ROLE[role] || 'tier5_aggregator';
@@ -217,7 +172,7 @@ export function loadSourceRegistry(category, rawSources) {
         doc_kinds: [],
         field_coverage: null,
         preferred_paths: [],
-        pacing: null,
+        crawl_config: null,
         requires_js: false,
         connector_only: false,
         blocked_in_search: false,

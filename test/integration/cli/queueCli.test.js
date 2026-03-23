@@ -22,6 +22,9 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
   const importsRoot = path.join(tempRoot, 'imports');
 
   try {
+    // WHY: CATEGORY_AUTHORITY_ROOT must point to the temp dir so the CLI doesn't
+    // load the real user-settings.json (which overrides localOutputRoot).
+    const env = { CATEGORY_AUTHORITY_ROOT: tempRoot };
     const add = await runCli([
       'queue', 'add',
       '--category', 'mouse',
@@ -30,7 +33,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       '--variant', 'Wireless',
       '--priority', '2',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(add.command, 'queue');
     assert.equal(add.action, 'add');
     assert.equal(add.product.status, 'pending');
@@ -40,7 +43,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       'queue', 'list',
       '--category', 'mouse',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(list.count, 1);
     assert.equal(list.products[0].productId, productId);
 
@@ -48,7 +51,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       'queue', 'stats',
       '--category', 'mouse',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(stats.total_products, 1);
     assert.equal(stats.status.pending, 1);
 
@@ -57,7 +60,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       '--category', 'mouse',
       '--product-id', productId,
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(paused.product.status, 'paused');
 
     const retried = await runCli([
@@ -65,7 +68,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       '--category', 'mouse',
       '--product-id', productId,
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(retried.product.status, 'pending');
     assert.equal(retried.product.retry_count, 0);
 
@@ -74,14 +77,14 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
       '--category', 'mouse',
       '--status', 'pending',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(cleared.removed_count, 1);
 
     const afterClear = await runCli([
       'queue', 'list',
       '--category', 'mouse',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(afterClear.count, 0);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -96,6 +99,7 @@ test('queue add-batch imports csv and writes queue rows', async () => {
   const csvPath = path.join(tempRoot, 'batch.csv');
 
   try {
+    const env = { CATEGORY_AUTHORITY_ROOT: tempRoot };
     await fs.mkdir(tempRoot, { recursive: true });
     await fs.writeFile(
       csvPath,
@@ -112,7 +116,7 @@ test('queue add-batch imports csv and writes queue rows', async () => {
       '--category', 'mouse',
       '--file', csvPath,
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(batch.command, 'queue');
     assert.equal(batch.action, 'add-batch');
     assert.equal(batch.job_count, 2);
@@ -122,7 +126,7 @@ test('queue add-batch imports csv and writes queue rows', async () => {
       '--category', 'mouse',
       '--limit', '10',
       ...baseCliArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(list.count >= 2, true);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

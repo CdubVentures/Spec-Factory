@@ -159,7 +159,6 @@ function makeInput(
     reCrawlStaleAfterDays: 7,
     dynamicFetchPolicyMapJson: '',
     searchProfileCapMapJson: '',
-    serpRerankerWeightMapJson: '',
     userAgent: '',
     pdfPreferredBackend: '',
     capturePageScreenshotFormat: 'jpeg',

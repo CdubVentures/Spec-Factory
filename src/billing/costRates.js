@@ -96,18 +96,6 @@ function resolveModelSpecificRates(rates = {}, model = '') {
     return output;
   }
 
-  if (token === 'deepseek-chat' || token.startsWith('deepseek-chat')) {
-    applyIfValid(rates.llmCostInputPer1MDeepseekChat ?? rates.inputPer1MDeepseekChat, (num) => { output.inputPer1M = num; });
-    applyIfValid(rates.llmCostOutputPer1MDeepseekChat ?? rates.outputPer1MDeepseekChat, (num) => { output.outputPer1M = num; });
-    applyIfValid(rates.llmCostCachedInputPer1MDeepseekChat ?? rates.cachedInputPer1MDeepseekChat, (num) => { output.cachedInputPer1M = num; });
-  }
-
-  if (token === 'deepseek-reasoner' || token.startsWith('deepseek-reasoner')) {
-    applyIfValid(rates.llmCostInputPer1MDeepseekReasoner ?? rates.inputPer1MDeepseekReasoner, (num) => { output.inputPer1M = num; });
-    applyIfValid(rates.llmCostOutputPer1MDeepseekReasoner ?? rates.outputPer1MDeepseekReasoner, (num) => { output.outputPer1M = num; });
-    applyIfValid(rates.llmCostCachedInputPer1MDeepseekReasoner ?? rates.cachedInputPer1MDeepseekReasoner, (num) => { output.cachedInputPer1M = num; });
-  }
-
   return output;
 }
 
@@ -116,12 +104,6 @@ export function normalizeCostRates(config = {}) {
     llmCostInputPer1M: config.inputPer1M != null ? toNumber(config.inputPer1M, 1.25) : configFloat(config, 'llmCostInputPer1M'),
     llmCostOutputPer1M: config.outputPer1M != null ? toNumber(config.outputPer1M, 10) : configFloat(config, 'llmCostOutputPer1M'),
     llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toNumber(config.cachedInputPer1M, 0.125) : configFloat(config, 'llmCostCachedInputPer1M'),
-    llmCostInputPer1MDeepseekChat: toNumber(config.llmCostInputPer1MDeepseekChat ?? config.inputPer1MDeepseekChat, -1),
-    llmCostOutputPer1MDeepseekChat: toNumber(config.llmCostOutputPer1MDeepseekChat ?? config.outputPer1MDeepseekChat, -1),
-    llmCostCachedInputPer1MDeepseekChat: toNumber(config.llmCostCachedInputPer1MDeepseekChat ?? config.cachedInputPer1MDeepseekChat, -1),
-    llmCostInputPer1MDeepseekReasoner: toNumber(config.llmCostInputPer1MDeepseekReasoner ?? config.inputPer1MDeepseekReasoner, -1),
-    llmCostOutputPer1MDeepseekReasoner: toNumber(config.llmCostOutputPer1MDeepseekReasoner ?? config.outputPer1MDeepseekReasoner, -1),
-    llmCostCachedInputPer1MDeepseekReasoner: toNumber(config.llmCostCachedInputPer1MDeepseekReasoner ?? config.cachedInputPer1MDeepseekReasoner, -1),
     llmModelPricingMap: resolveModelPricingMap(config)
   };
 }

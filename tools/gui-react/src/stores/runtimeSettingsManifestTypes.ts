@@ -28,6 +28,7 @@ export interface RuntimeSettingDefaults {
   daemonConcurrency: number;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
+  searchPlannerQueryCap: number;
   discoveryQueryConcurrency: number;
   discoveryResultsPerQuery: number;
   domainClassifierUrlCap: number;
@@ -107,6 +108,7 @@ export interface RuntimeSettingDefaults {
   llmMaxOutputTokens: number;
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensPlanFallback: number;
+  llmMaxOutputTokensTriage: number;
   llmMaxOutputTokensReasoning: number;
   llmMaxOutputTokensReasoningFallback: number;
   llmMaxTokens: number;
@@ -132,7 +134,6 @@ export interface RuntimeSettingDefaults {
   localInputRoot: string;
   localMode: boolean;
   localOutputRoot: string;
-  manufacturerAutoPromote: boolean;
   maxCandidateUrls: number;
   maxGraphqlReplays: number;
   maxHypothesisItems: number;
@@ -198,7 +199,6 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   selfImproveEnabled: boolean;
-  serpRerankerWeightMapJson: string;
   specDbDir: string;
   staticDomMaxEvidenceSnippets: number;
   staticDomMode: string;

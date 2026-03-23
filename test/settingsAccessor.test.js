@@ -4,6 +4,16 @@
 import { describe, it } from 'node:test';
 import { strictEqual, throws } from 'node:assert';
 import { configValue, configInt, configFloat, configBool } from '../src/shared/settingsAccessor.js';
+import { RUNTIME_SETTINGS_REGISTRY } from '../src/shared/settingsRegistry.js';
+
+// WHY: All expected values are derived from the registry at runtime.
+// Zero hardcoded numbers — if someone changes a registry default/min/max,
+// these tests automatically pick it up.
+function registryEntry(key) {
+  const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
+  if (!entry) throw new Error(`Test setup: no registry entry for "${key}"`);
+  return entry;
+}
 
 describe('settingsAccessor', () => {
 
@@ -84,6 +94,42 @@ describe('settingsAccessor', () => {
         { message: /unknown setting/i }
       );
     });
+
+    it('returns registry default when value is non-numeric string (NaN)', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: 'abc' }, 'searchProfileQueryCap'), entry.default);
+    });
+
+    it('returns registry default when value is an object (NaN)', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: {} }, 'searchProfileQueryCap'), entry.default);
+    });
+
+    it('clamps to registry min when value is below floor', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: -5 }, 'searchProfileQueryCap'), entry.min);
+    });
+
+    it('clamps to registry max when value is above ceiling', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: 9999 }, 'searchProfileQueryCap'), entry.max);
+    });
+
+    it('preserves value at exact min boundary', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: entry.min }, 'searchProfileQueryCap'), entry.min);
+    });
+
+    it('preserves value at exact max boundary', () => {
+      const entry = registryEntry('searchProfileQueryCap');
+      strictEqual(configInt({ searchProfileQueryCap: entry.max }, 'searchProfileQueryCap'), entry.max);
+    });
+
+    it('preserves zero when zero is within registry min/max', () => {
+      const entry = registryEntry('domainRequestRps');
+      strictEqual(entry.min, 0); // sanity: registry declares min=0
+      strictEqual(configInt({ domainRequestRps: 0 }, 'domainRequestRps'), 0);
+    });
   });
 
   describe('configFloat', () => {
@@ -100,6 +146,31 @@ describe('settingsAccessor', () => {
     it('returns registry default when absent', () => {
       const config = {};
       strictEqual(configFloat(config, 'scannedPdfOcrMinConfidence'), 0.5);
+    });
+
+    it('returns registry default when value is non-numeric string (NaN)', () => {
+      const entry = registryEntry('scannedPdfOcrMinConfidence');
+      strictEqual(configFloat({ scannedPdfOcrMinConfidence: 'xyz' }, 'scannedPdfOcrMinConfidence'), entry.default);
+    });
+
+    it('clamps to registry max when value exceeds ceiling', () => {
+      const entry = registryEntry('scannedPdfOcrMinConfidence');
+      strictEqual(configFloat({ scannedPdfOcrMinConfidence: 5.0 }, 'scannedPdfOcrMinConfidence'), entry.max);
+    });
+
+    it('clamps to registry min when value is below floor', () => {
+      const entry = registryEntry('scannedPdfOcrMinConfidence');
+      strictEqual(configFloat({ scannedPdfOcrMinConfidence: -0.5 }, 'scannedPdfOcrMinConfidence'), entry.min);
+    });
+
+    it('preserves value at exact min boundary', () => {
+      const entry = registryEntry('scannedPdfOcrMinConfidence');
+      strictEqual(configFloat({ scannedPdfOcrMinConfidence: entry.min }, 'scannedPdfOcrMinConfidence'), entry.min);
+    });
+
+    it('preserves value at exact max boundary', () => {
+      const entry = registryEntry('scannedPdfOcrMinConfidence');
+      strictEqual(configFloat({ scannedPdfOcrMinConfidence: entry.max }, 'scannedPdfOcrMinConfidence'), entry.max);
     });
   });
 

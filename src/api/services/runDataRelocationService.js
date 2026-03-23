@@ -7,6 +7,12 @@ import {
 } from '@aws-sdk/client-s3';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { computeRunStorageMetrics } from './storageMetricsService.js';
+import { STORAGE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveStorageCanonicalKeys, deriveStorageSecretPresenceMap } from '../../shared/settingsRegistryDerivations.js';
+
+const STORAGE_CANONICAL_KEYS = deriveStorageCanonicalKeys(STORAGE_SETTINGS_REGISTRY);
+const STORAGE_SECRET_PRESENCE_MAP = deriveStorageSecretPresenceMap(STORAGE_SETTINGS_REGISTRY);
+const STORAGE_SECRET_KEY_SET = new Set(STORAGE_SECRET_PRESENCE_MAP.map((m) => m.sourceKey));
 
 const DEFAULT_LOCAL_FOLDER_NAME = 'SpecFactoryRuns';
 const DEFAULT_S3_PREFIX = 'spec-factory-runs';
@@ -280,17 +286,24 @@ async function purgeSharedJsonlSources({
   };
 }
 
-export function normalizeRunDataStorageSettings(input = {}, fallback = {}) {
+export function normalizeRunDataStorageSettings(input = {}, fallback = {}, options = {}) {
   const previous = fallback && typeof fallback === 'object' ? fallback : {};
   const next = input && typeof input === 'object' ? input : {};
+  const preserveExplicitVolatileLocalDirectory = options?.preserveExplicitVolatileLocalDirectory === true;
   const destinationType = normalizeDestinationType(
     Object.hasOwn(next, 'destinationType') ? next.destinationType : previous.destinationType,
     LOCAL_DESTINATION,
   );
+  const hasExplicitLocalDirectory = Object.hasOwn(next, 'localDirectory');
   const rawLocalDirectory = toToken(
-    Object.hasOwn(next, 'localDirectory') ? next.localDirectory : previous.localDirectory,
+    hasExplicitLocalDirectory ? next.localDirectory : previous.localDirectory,
   );
-  const localDirectoryToken = isVolatilePath(rawLocalDirectory) ? '' : rawLocalDirectory;
+  const localDirectoryToken = (
+    (hasExplicitLocalDirectory && preserveExplicitVolatileLocalDirectory)
+    || !isVolatilePath(rawLocalDirectory)
+  )
+    ? rawLocalDirectory
+    : '';
   const localDirectory = destinationType === LOCAL_DESTINATION
     ? (localDirectoryToken || defaultRunDataLocalDirectory())
     : localDirectoryToken;
@@ -329,24 +342,30 @@ export function normalizeRunDataStorageSettings(input = {}, fallback = {}) {
 }
 
 export function sanitizeRunDataStorageSettingsForResponse(settings = {}) {
-  const normalized = normalizeRunDataStorageSettings(settings, settings);
-  return {
-    enabled: normalized.enabled,
-    destinationType: normalized.destinationType,
-    localDirectory: normalized.localDirectory,
-    awsRegion: normalized.awsRegion,
-    s3Bucket: normalized.s3Bucket,
-    s3Prefix: normalized.s3Prefix,
-    s3AccessKeyId: normalized.s3AccessKeyId,
-    hasS3SecretAccessKey: Boolean(normalized.s3SecretAccessKey),
-    hasS3SessionToken: Boolean(normalized.s3SessionToken),
-    stagingTempDirectory: path.resolve(os.tmpdir()),
-    updatedAt: normalized.updatedAt,
-  };
+  const normalized = normalizeRunDataStorageSettings(
+    settings,
+    settings,
+    { preserveExplicitVolatileLocalDirectory: true },
+  );
+  // WHY: Registry-driven — O(1) for new fields. Secrets become has* booleans.
+  const response = {};
+  for (const key of STORAGE_CANONICAL_KEYS) {
+    if (STORAGE_SECRET_KEY_SET.has(key)) continue;
+    response[key] = normalized[key];
+  }
+  for (const { sourceKey, responseKey } of STORAGE_SECRET_PRESENCE_MAP) {
+    response[responseKey] = Boolean(normalized[sourceKey]);
+  }
+  response.stagingTempDirectory = path.resolve(os.tmpdir());
+  return response;
 }
 
 export function shouldRelocateRunData(settings = {}) {
-  const normalized = normalizeRunDataStorageSettings(settings, settings);
+  const normalized = normalizeRunDataStorageSettings(
+    settings,
+    settings,
+    { preserveExplicitVolatileLocalDirectory: true },
+  );
   if (!normalized.enabled) return false;
   if (normalized.destinationType === LOCAL_DESTINATION) {
     return Boolean(normalized.localDirectory);
@@ -358,7 +377,11 @@ export function shouldRelocateRunData(settings = {}) {
 }
 
 export function validateRunDataStorageSettings(settings = {}) {
-  const normalized = normalizeRunDataStorageSettings(settings, settings);
+  const normalized = normalizeRunDataStorageSettings(
+    settings,
+    settings,
+    { preserveExplicitVolatileLocalDirectory: true },
+  );
   if (!normalized.enabled) return null;
   if (normalized.destinationType === LOCAL_DESTINATION) {
     if (!normalized.localDirectory) return 'local_directory_required';
@@ -413,7 +436,11 @@ export async function relocateRunDataForCompletedRun({
   outputPrefix = 'specs/outputs',
   indexLabRoot = defaultIndexLabRoot(),
 } = {}) {
-  const normalizedSettings = normalizeRunDataStorageSettings(settings, settings);
+  const normalizedSettings = normalizeRunDataStorageSettings(
+    settings,
+    settings,
+    { preserveExplicitVolatileLocalDirectory: true },
+  );
   const validationError = validateRunDataStorageSettings(normalizedSettings);
   if (validationError) {
     throw new Error(validationError);

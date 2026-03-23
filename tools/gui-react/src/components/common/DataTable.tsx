@@ -150,7 +150,9 @@ function DataTableInner<T>({
     ...(renderExpandedRow ? { getExpandedRowModel: getExpandedRowModel() } : {}),
   });
 
-  const totalVisibleCols = table.getVisibleFlatColumns().length;
+  const totalVisibleCols = typeof table?.getVisibleFlatColumns === 'function'
+    ? table.getVisibleFlatColumns().length
+    : columns.length;
 
   return (
     <div>

@@ -11,8 +11,6 @@ import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { lookupFieldRule } from '../search/queryFieldRuleGates.js';
 import { buildEffectiveHostPlan } from './domainHintResolver.js';
 import { resolveBrandDomain } from './brandResolver.js';
-import { promoteFromBrandResolution } from '../sources/manufacturerPromoter.js';
-import { mergeManufacturerPromotions } from '../sources/sourceFileService.js';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
 import {
   createBrandResolverCallLlm,
@@ -37,6 +35,7 @@ import {
   loadLearningArtifacts,
   buildSearchProfileKeys,
   writeSearchProfileArtifacts,
+  ensureCategorySourceLookups,
   resolveSearchProfileCaps,
   resolveEnabledSourceEntries as _resolveEnabledSourceEntries,
 } from './discoveryHelpers.js';
@@ -101,6 +100,8 @@ export async function discoverCandidateSources({
       search_profile_latest_key: null
     };
   }
+
+  categoryConfig = ensureCategorySourceLookups(categoryConfig);
 
   const resolvedIdentity = resolveJobIdentity(job);
   const variables = {
@@ -170,56 +171,8 @@ export async function discoverCandidateSources({
     aliases: brandResolution?.aliases?.slice(0, 5) || [],
     support_domain: brandResolution?.supportDomain || '',
     confidence: brandResolution?.confidence ?? 0,
-    candidates: Array.isArray(brandResolution?.candidates)
-      ? brandResolution.candidates.slice(0, 10).map((c) => ({
-        name: c?.name || '',
-        confidence: c?.confidence ?? 0,
-        evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets.slice(0, 5) : [],
-        disambiguation_note: c?.disambiguation_note || ''
-      }))
-      : [],
     reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning.slice(0, 10) : []
   });
-
-  // WHY: Auto-promote brand-resolved domains into first-class source entries
-  // so they pass isApprovedHost() and carry correct crawl config.
-  if (brandResolution?.officialDomain) {
-    const sourcesFileData = categoryConfig.sources || {};
-    const promotedMap = promoteFromBrandResolution(brandResolution, {
-      sources: categoryConfig.sourceRegistry || {},
-      manufacturer_defaults: sourcesFileData.manufacturer_defaults,
-      manufacturer_crawl_overrides: sourcesFileData.manufacturer_crawl_overrides,
-    }, { brandName: variables.brand });
-    if (promotedMap.size > 0) {
-      const tempSourcesData = mergeManufacturerPromotions(
-        { sources: categoryConfig.sourceRegistry || {}, approved: {} },
-        promotedMap
-      );
-      for (const [host, entry] of promotedMap) {
-        const norm = normalizeHost(host);
-        if (!categoryConfig.sourceHostMap.has(norm)) {
-          const hostEntry = {
-            host: norm,
-            tierName: 'manufacturer',
-            sourceId: entry._sourceId,
-            displayName: entry.display_name,
-            crawlConfig: entry.crawl_config,
-            fieldCoverage: null,
-            robotsTxtCompliant: entry.crawl_config?.robots_txt_compliant ?? true,
-            baseUrl: entry.base_url,
-          };
-          categoryConfig.sourceHosts.push(hostEntry);
-          categoryConfig.sourceHostMap.set(norm, hostEntry);
-          categoryConfig.approvedRootDomains?.add?.(extractRootDomain(norm));
-        }
-      }
-      Object.assign(categoryConfig.sourceRegistry, tempSourcesData.sources);
-      logger?.info?.('manufacturer_auto_promoted', {
-        promoted_hosts: [...promotedMap.keys()],
-        count: promotedMap.size,
-      });
-    }
-  }
 
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
   const searchProfileCaps = resolveSearchProfileCaps(config);
@@ -238,7 +191,7 @@ export async function discoverCandidateSources({
   });
 
   // === Stage 03: Search Profile (ALWAYS runs — deterministic query generation) ===
-  const profileMaxQueries = Math.max(1, configInt(config, 'searchProfileQueryCap'));
+  const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -299,6 +252,7 @@ export async function discoverCandidateSources({
       registry: categoryConfig.validatedRegistry,
       providerName: config.searchEngines,
       brandResolutionHints,
+      config,
     });
     if (!effectiveHostPlan?.blocked) {
       const hostPlanFocusTerms = missingFields.slice(0, 3).map(field => {
@@ -339,21 +293,33 @@ export async function discoverCandidateSources({
     logger,
   });
 
-  const enhancedLlmRows = toArray(enhancedResult?.rows).filter(
+  const allEnhancedRows = toArray(enhancedResult?.rows);
+  const enhancedLlmRows = allEnhancedRows.filter(
     (row) => String(row?.hint_source || '').endsWith('_llm')
   );
-  if (enhancedLlmRows.length > 0) {
-    logger?.info?.('search_plan_generated', {
-      pass_index: 0,
-      pass_name: 'primary',
-      queries_generated: enhancedLlmRows.map((r) => r.query),
-      stop_condition: 'planner_complete',
-      plan_rationale: `LLM planner enhanced ${enhancedLlmRows.length} queries`,
-      query_target_map: {},
-      missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
-      mode: String(llmContext?.mode || 'standard'),
-    });
-  }
+  logger?.info?.('search_plan_generated', {
+    pass_index: 0,
+    pass_name: 'primary',
+    source: enhancedResult?.source || 'deterministic_fallback',
+    total_rows: allEnhancedRows.length,
+    llm_enhanced_count: enhancedLlmRows.length,
+    mode: String(llmContext?.mode || 'standard'),
+    queries_generated: enhancedLlmRows.map((r) => r.query),
+    stop_condition: enhancedLlmRows.length > 0 ? 'planner_complete' : 'deterministic_fallback',
+    plan_rationale: enhancedLlmRows.length > 0
+      ? `LLM planner enhanced ${enhancedLlmRows.length} queries`
+      : `Deterministic fallback — ${allEnhancedRows.length} queries unchanged`,
+    query_target_map: {},
+    missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
+    enhancement_rows: allEnhancedRows.map((r) => ({
+      query: String(r.query || '').trim(),
+      original_query: String(r.original_query || r.query || '').trim(),
+      hint_source: String(r.hint_source || '').trim(),
+      tier: String(r.tier || '').trim(),
+      group_key: String(r.group_key || '').trim(),
+      target_fields: toArray(r.target_fields),
+    })),
+  });
 
   // === Stage 05: Query Journey (merge ALL streams — no branching) ===
   // WHY: Three input streams merged into one candidate list:
@@ -383,7 +349,7 @@ export async function discoverCandidateSources({
     })),
   ];
 
-  const mergedQueryCap = Math.max(1, configInt(config, 'searchProfileQueryCap'));
+  const mergedQueryCap = configInt(config, 'searchProfileQueryCap');
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
   const fieldPriority = new Map();
@@ -453,7 +419,12 @@ export async function discoverCandidateSources({
     });
   }
 
-  const selectedQueryRows = [...guardedSelectedRows, ...appendedHostPlanRows];
+  const reservedHostPlanRows = appendedHostPlanRows.slice(0, mergedQueryCap);
+  const reservedGuardedCount = Math.max(0, mergedQueryCap - reservedHostPlanRows.length);
+  const selectedQueryRows = [
+    ...guardedSelectedRows.slice(0, reservedGuardedCount),
+    ...reservedHostPlanRows,
+  ];
   let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && rankedCappedQueries.length > 0) {
     const fallback = String(rankedCappedQueries[0]?.query || '').trim();
@@ -478,7 +449,8 @@ export async function discoverCandidateSources({
     ...toArray(hostPlanRejectLog),
   ].slice(0, 300);
 
-  const executionQueryLimit = Math.min(searchPlannerCap, queries.length);
+  const queryLimit = mergedQueryCap;
+  const executionQueryLimit = Math.min(queryLimit, queries.length);
   const selectedQueryRowMap = new Map(
     selectedQueryRows.map((row) => [String(row?.query || '').trim().toLowerCase(), row])
   );
@@ -533,9 +505,9 @@ export async function discoverCandidateSources({
   });
 
   // === Stage 06: Search Results ===
-  const resultsPerQuery = Math.max(1, configInt(config, 'discoveryResultsPerQuery'));
-  const discoveryCap = Math.max(1, configInt(config, 'serpSelectorUrlCap'));
-  const queryConcurrency = Math.max(1, configInt(config, 'discoveryQueryConcurrency'));
+  const resultsPerQuery = configInt(config, 'discoveryResultsPerQuery');
+  const discoveryCap = configInt(config, 'serpSelectorUrlCap');
+  const queryConcurrency = configInt(config, 'discoveryQueryConcurrency');
 
   const providerState = searchEngineAvailability(config);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
@@ -547,7 +519,7 @@ export async function discoverCandidateSources({
   const searchResult = await executeSearchQueriesFn({
     config, storage, logger, runtimeTraceWriter, frontierDb,
     categoryConfig, job, runId,
-    queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit: searchPlannerCap,
+    queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit,
     searchProfileCaps, missingFields, variables,
     selectedQueryRowMap,
     profileQueryRowMap: profileQueryRowsByQuery,
@@ -559,6 +531,36 @@ export async function discoverCandidateSources({
   });
   const { rawResults, searchAttempts, searchJournal,
           internalSatisfied, externalSearchReason } = searchResult;
+
+  // WHY: Some callers assert cache-hit lifecycle events from the finalized
+  // discovery run. Re-emit from the durable attempt records so frontier-cache
+  // reuse remains observable even if the inline execution logger path changes.
+  for (const attempt of searchAttempts) {
+    if (String(attempt?.reason_code || '').trim() !== 'frontier_query_cache') {
+      continue;
+    }
+    const query = String(attempt?.query || '').trim();
+    if (!query) {
+      continue;
+    }
+    const provider = String(attempt?.provider || '').trim() || 'frontier_cache';
+    logger?.info?.('discovery_query_started', {
+      query,
+      provider,
+      cache_hit: true,
+      reason_code: 'frontier_query_cache',
+      is_fallback: false,
+    });
+    logger?.info?.('discovery_query_completed', {
+      query,
+      provider,
+      result_count: Number(attempt?.result_count || 0),
+      duration_ms: Number(attempt?.duration_ms || 0),
+      cache_hit: true,
+      reason_code: 'frontier_query_cache',
+      is_fallback: false,
+    });
+  }
 
   return processDiscoveryResults({
     rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,

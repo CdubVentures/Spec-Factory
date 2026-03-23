@@ -57,11 +57,12 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
   try {
     const result = await runLlmHealthCheck({
       storage,
+      provider: 'deepseek',
+      model: 'deepseek-reasoner',
       config: {
         llmApiKey: 'ds-test',
         llmProvider: 'deepseek',
         llmBaseUrl: 'https://api.deepseek.com',
-        llmModelExtract: 'deepseek-reasoner',
         llmReasoningMode: true,
         llmReasoningBudget: 2048,
         llmTimeoutMs: 5_000,

@@ -20,19 +20,19 @@ function findEntry(registry, host) {
 }
 
 describe('hostPolicy', () => {
-  it('Tier1 + SearXNG → site supported', () => {
+  it('Tier2 lab + SearXNG → site supported', () => {
     const reg = buildMouseRegistry();
-    const entry = findEntry(reg, 'razer.com');
+    const entry = findEntry(reg, 'rtings.com');
     const policy = buildHostPolicy(entry, 'searxng');
     assert.equal(policy.operator_support.site, true);
-    assert.equal(policy.tier, 'tier1_manufacturer');
-    assert.equal(policy.tier_numeric, 1);
-    assert.equal(policy.host, 'razer.com');
+    assert.equal(policy.tier, 'tier2_lab');
+    assert.equal(policy.tier_numeric, 2);
+    assert.equal(policy.host, 'rtings.com');
   });
 
   it('any host + SearXNG → site supported', () => {
     const reg = buildMouseRegistry();
-    const entry = findEntry(reg, 'razer.com');
+    const entry = findEntry(reg, 'rtings.com');
     const policy = buildHostPolicy(entry, 'searxng');
     assert.equal(policy.operator_support.site, true);
     assert.equal(policy.operator_support.filetype, false);
@@ -44,7 +44,7 @@ describe('hostPolicy', () => {
       tier: 'tier3_retailer',
       authority: 'unknown',
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       connector_only: true,
       blocked_in_search: false,
@@ -58,7 +58,7 @@ describe('hostPolicy', () => {
 
   it('health is null in Phase 1', () => {
     const reg = buildMouseRegistry();
-    const entry = findEntry(reg, 'razer.com');
+    const entry = findEntry(reg, 'rtings.com');
     const policy = buildHostPolicy(entry, 'searxng');
     assert.equal(policy.health, null);
   });
@@ -69,7 +69,7 @@ describe('hostPolicy', () => {
       tier: 'tier2_lab',
       authority: 'instrumented',
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       connector_only: false,
       blocked_in_search: false,
@@ -90,9 +90,9 @@ describe('hostPolicy', () => {
 
   it('requires_js propagation', () => {
     const reg = buildMouseRegistry();
-    const entry = findEntry(reg, 'razer.com');
+    const entry = findEntry(reg, 'rtings.com');
     const policy = buildHostPolicy(entry, 'searxng');
-    assert.equal(policy.requires_js, true); // razer uses playwright
+    assert.equal(policy.requires_js, true); // rtings uses playwright
   });
 
   it('synthetic entry → synthetic=true in policy', () => {
@@ -102,7 +102,7 @@ describe('hostPolicy', () => {
       tier: 'tier3_retailer',
       authority: 'unknown',
       synthetic: true,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       connector_only: false,
       blocked_in_search: false,
@@ -128,8 +128,8 @@ describe('hostPolicy', () => {
 
   it('registrableDomain populated from hostParser', () => {
     const reg = buildMouseRegistry();
-    const entry = findEntry(reg, 'razer.com');
+    const entry = findEntry(reg, 'rtings.com');
     const policy = buildHostPolicy(entry, 'searxng');
-    assert.equal(policy.registrable_domain, 'razer.com');
+    assert.equal(policy.registrable_domain, 'rtings.com');
   });
 });

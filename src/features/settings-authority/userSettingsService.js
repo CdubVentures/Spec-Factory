@@ -5,6 +5,10 @@ import {
   normalizeRunDataStorageSettings,
   sanitizeRunDataStorageSettingsForResponse,
 } from '../../api/services/runDataRelocationService.js';
+import { STORAGE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveStorageCanonicalKeys } from '../../shared/settingsRegistryDerivations.js';
+
+const STORAGE_CANONICAL_KEYS = deriveStorageCanonicalKeys(STORAGE_SETTINGS_REGISTRY);
 import {
   CONVERGENCE_SETTINGS_KEYS,
   CONVERGENCE_SETTINGS_VALUE_TYPES,
@@ -253,18 +257,11 @@ function sanitizeStudioSettings(raw) {
 
 function sanitizeStorageSettings(raw) {
   const normalized = normalizeRunDataStorageSettings(raw, raw);
-  return {
-    enabled: normalized.enabled,
-    destinationType: normalized.destinationType,
-    localDirectory: normalized.localDirectory,
-    awsRegion: normalized.awsRegion,
-    s3Bucket: normalized.s3Bucket,
-    s3Prefix: normalized.s3Prefix,
-    s3AccessKeyId: normalized.s3AccessKeyId,
-    s3SecretAccessKey: normalized.s3SecretAccessKey,
-    s3SessionToken: normalized.s3SessionToken,
-    updatedAt: normalized.updatedAt || null,
-  };
+  const result = {};
+  for (const key of STORAGE_CANONICAL_KEYS) {
+    result[key] = normalized[key] ?? null;
+  }
+  return result;
 }
 
 function resolveBooleanSetting(source, key, fallback) {

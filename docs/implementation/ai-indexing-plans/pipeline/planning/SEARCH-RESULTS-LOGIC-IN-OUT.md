@@ -16,7 +16,7 @@ Primary owners:
 
 - `05-searxng-execution-input.json`
 - `05-google-crawlee-execution-input.json`
-- cumulative runtime output coverage continues in `04-query-journey-output.json`
+- cumulative runtime output coverage continues in `05-query-journey-output.json`
 
 ## Inputs in
 

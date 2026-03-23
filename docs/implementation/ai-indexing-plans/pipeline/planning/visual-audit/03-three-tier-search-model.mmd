@@ -1,0 +1,69 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 30, "nodeSpacing": 80, "rankSpacing": 100 }
+} }%%
+
+flowchart LR
+
+  NS(["NeedSet\nOutput"])
+
+  NS --> T1_GATE
+  NS --> T2_GATE
+  NS --> T3_SRC
+
+  T1_GATE{"TIER 1 Gate\nSeed needed?\nNot on cooldown?"}
+  T1_GATE -- "Yes" --> T1_SPEC["Seed Query:\nbrand + model + 'specifications'"]
+  T1_GATE -- "Yes" --> T1_SRC["Source Seed:\nbrand + model + source_name"]
+  T1_SPEC --> T1_CHECK["Completion:\nnew_fields_closed >= 1"]
+  T1_SRC --> T1_CHECK
+  T1_CHECK --> T1_COOL["Cooldown 30 days\nnext run skips"]
+  T1_COOL --> MERGE
+
+  T2_GATE{"TIER 2 Gate\ncoverage < 80%?\nunresolved >= 3?\ngroup_query_count < 3?"}
+  T2_GATE -- "Worthy" --> T2_SORT["Sort by\nproductivity_score"]
+  T2_SORT --> T2_Q["Group Query:\nbrand + model + group_label\n+ top 6 unresolved keys"]
+  T2_Q --> T2_EX["After 3 searches:\ngroup EXHAUSTED\nkeys fall to Tier 3"]
+  T2_EX --> MERGE
+  T2_GATE -- "Not worthy" --> T3_SRC
+
+  T3_SRC["Tier 3 Keys:\nnon-worthy groups\n+ exhausted groups"]
+  T3_SRC --> T3_SORT["Sort by: availability\ndifficulty, repeat,\nneed_score"]
+  T3_SORT --> T3A["3a: bare query\nrepeat=0"]
+  T3A -. "next round" .-> T3B["3b: + aliases\nrepeat=1"]
+  T3B -. "next round" .-> T3C["3c: + domain hint\nrepeat=2"]
+  T3C -. "next round" .-> T3D["3d: + content type\nrepeat=3+"]
+  T3A --> MERGE
+  T3B --> MERGE
+  T3C --> MERGE
+  T3D --> MERGE
+
+  MERGE(["All query_rows\nmerged for\nSearch Planner"])
+
+  style NS fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style MERGE fill:#10b981,stroke:#059669,color:#ffffff
+
+  style T1_GATE fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style T1_SPEC fill:#60a5fa,stroke:#3b82f6,color:#1e293b
+  style T1_SRC fill:#60a5fa,stroke:#3b82f6,color:#1e293b
+  style T1_CHECK fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+  style T1_COOL fill:#1d4ed8,stroke:#1e40af,color:#ffffff
+
+  style T2_GATE fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style T2_SORT fill:#a78bfa,stroke:#8b5cf6,color:#1e293b
+  style T2_Q fill:#a78bfa,stroke:#8b5cf6,color:#1e293b
+  style T2_EX fill:#7c3aed,stroke:#6d28d9,color:#ffffff
+
+  style T3_SRC fill:#fbbf24,stroke:#f59e0b,color:#1e293b
+  style T3_SORT fill:#fbbf24,stroke:#f59e0b,color:#1e293b
+  style T3A fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style T3B fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style T3C fill:#d97706,stroke:#b45309,color:#ffffff
+  style T3D fill:#b45309,stroke:#92400e,color:#ffffff

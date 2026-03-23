@@ -86,7 +86,7 @@ describe('Characterization — buildSearchProfile structural invariants', () => 
 
     const expectedKeys = [
       'category', 'identity', 'variant_guard_terms', 'identity_aliases',
-      'alias_reject_log', 'query_reject_log', 'negative_terms', 'focus_fields',
+      'alias_reject_log', 'query_reject_log', 'focus_fields',
       'base_templates', 'query_rows', 'queries', 'targeted_queries',
       'field_target_queries', 'doc_hint_queries', 'hint_source_counts',
       'field_rule_gate_counts', 'field_rule_hint_counts_by_field'
@@ -102,7 +102,6 @@ describe('Characterization — buildSearchProfile structural invariants', () => 
     assert.ok(Array.isArray(profile.identity_aliases));
     assert.ok(Array.isArray(profile.alias_reject_log));
     assert.ok(Array.isArray(profile.query_reject_log));
-    assert.ok(Array.isArray(profile.negative_terms));
     assert.ok(Array.isArray(profile.focus_fields));
     assert.ok(Array.isArray(profile.base_templates));
     assert.ok(Array.isArray(profile.query_rows));

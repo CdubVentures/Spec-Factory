@@ -10,13 +10,9 @@ Primary owners:
 
 - `src/features/indexing/discovery/discoveryResultProcessor.js`
 - `src/features/indexing/discovery/triageHardDropFilter.js`
-- `src/features/indexing/discovery/triageSoftLabeler.js`
-- `src/features/indexing/discovery/triageLaneRouter.js`
-- `src/features/indexing/discovery/triageSurfaceScorer.js`
 - `src/features/indexing/discovery/triageRejectAuditor.js`
 - `src/features/indexing/discovery/serpSelector.js`
 - `src/features/indexing/discovery/serpSelectorLlmAdapter.js`
-- `src/research/serpReranker.js`
 
 ## Schema files in this folder
 
@@ -24,7 +20,7 @@ There is no dedicated numbered JSON schema file just for SERP Triage.
 
 Coverage is split across:
 
-- `04-query-journey-output.json`
+- `05-query-journey-output.json`
 - the executed `search_profile` artifact
 - `_discovery/{category}/{runId}.json`
 - `_sources/candidates/{category}/{runId}.json`

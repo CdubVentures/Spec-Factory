@@ -617,15 +617,16 @@ test('discoverCandidateSources reuses cached frontier query results during same-
       [TEST_URLS.product]
     );
     assert.equal(searchFetchCalls, 0, 'internet search should not run when cached frontier results are reused');
-    const startedEvents = events.filter((event) => event.name === 'discovery_query_started');
-    const completedEvents = events.filter((event) => event.name === 'discovery_query_completed');
-    const cachedQuery = `${TEST_IDENTITY.brand} ${TEST_IDENTITY.model} specifications`;
-    const startedMatch = startedEvents.find((event) => event.payload?.query === cachedQuery);
-    const completedMatch = completedEvents.find((event) => event.payload?.query === cachedQuery);
-    assert.ok(startedMatch, 'cached query reuse should still emit discovery_query_started for the reused query');
-    assert.ok(completedMatch, 'cached query reuse should still emit discovery_query_completed for the reused query');
-    assert.equal(completedMatch?.payload?.provider, 'google');
-    assert.equal(completedMatch?.payload?.result_count, 1);
+    const cachedAttempt = (result.search_attempts || []).find((row) =>
+      row?.reason_code === 'frontier_query_cache'
+    );
+    assert.ok(cachedAttempt, 'cached query reuse should record a frontier_query_cache attempt');
+    assert.equal(cachedAttempt?.provider, 'google');
+    assert.equal(cachedAttempt?.result_count, 1);
+    const cachedJournalEntry = (result.search_journal || []).find((row) =>
+      row?.action === 'reuse'
+    );
+    assert.ok(cachedJournalEntry, 'cached query reuse should be visible in search_journal');
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

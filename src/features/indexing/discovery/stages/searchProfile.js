@@ -29,6 +29,12 @@ export function runSearchProfile({
   logger,
   runId,
 }) {
+  if (!Array.isArray(focusGroups) || focusGroups.length === 0) {
+    logger?.warn?.('search_profile_tier_fallback', {
+      reason: focusGroups == null ? 'focusGroups_null' : 'focusGroups_empty',
+    });
+  }
+
   const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
   const searchProfileBase = buildSearchProfile({
     job,
@@ -70,6 +76,16 @@ export function runSearchProfile({
       score_breakdown: row?.score_breakdown && typeof row.score_breakdown === 'object'
         ? row.score_breakdown : null,
       warnings: Array.isArray(row?.warnings) ? row.warnings : [],
+      // WHY: Tier metadata from NeedSet → Search Profile tier builders.
+      tier: String(row?.tier || '').trim(),
+      group_key: String(row?.group_key || '').trim(),
+      normalized_key: String(row?.normalized_key || '').trim(),
+      repeat_count: Number.isFinite(Number(row?.repeat_count)) ? Number(row.repeat_count) : 0,
+      all_aliases: Array.isArray(row?.all_aliases) ? row.all_aliases : [],
+      domain_hints: Array.isArray(row?.domain_hints) ? row.domain_hints : [],
+      preferred_content_types: Array.isArray(row?.preferred_content_types) ? row.preferred_content_types : [],
+      domains_tried_for_key: Array.isArray(row?.domains_tried_for_key) ? row.domains_tried_for_key : [],
+      content_types_tried_for_key: Array.isArray(row?.content_types_tried_for_key) ? row.content_types_tried_for_key : [],
     })),
   });
 
@@ -94,9 +110,11 @@ export function runSearchProfile({
       registry: categoryConfig.validatedRegistry,
       providerName: config.searchEngines,
       brandResolutionHints,
+      config,
     });
     if (!effectiveHostPlan?.blocked) {
-      const hostPlanFocusTerms = missingFields.slice(0, 3).map((field) => {
+      const focusTermsCap = configInt(config, 'hostPlanFocusTermsCap');
+      const hostPlanFocusTerms = missingFields.slice(0, focusTermsCap).map((field) => {
         const rule = lookupFieldRule(categoryConfig, field);
         const terms = toArray(rule?.search_hints?.query_terms)
           .map((t) => String(t || '').trim()).filter(Boolean);

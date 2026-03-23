@@ -1,20 +1,9 @@
-export const CONVERGENCE_SETTINGS_ROUTE_PUT = Object.freeze({
-  intKeys: Object.freeze([
-    'serpTriageMinScore',
-  ]),
-  floatKeys: Object.freeze([]),
-  boolKeys: Object.freeze([]),
-});
+// WHY: O(1) Feature Scaling — convergence route contract and value types
+// are derived from the registry SSOT. Adding a convergence knob = one entry.
 
-const convergenceValueTypeMap = {};
-for (const key of CONVERGENCE_SETTINGS_ROUTE_PUT.intKeys) {
-  convergenceValueTypeMap[key] = 'integer';
-}
-for (const key of CONVERGENCE_SETTINGS_ROUTE_PUT.floatKeys) {
-  convergenceValueTypeMap[key] = 'number';
-}
-for (const key of CONVERGENCE_SETTINGS_ROUTE_PUT.boolKeys) {
-  convergenceValueTypeMap[key] = 'boolean';
-}
+import { CONVERGENCE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveConvergenceRouteContract, deriveConvergenceValueTypes } from '../../shared/settingsRegistryDerivations.js';
 
-export const CONVERGENCE_SETTINGS_VALUE_TYPES = Object.freeze(convergenceValueTypeMap);
+export const CONVERGENCE_SETTINGS_ROUTE_PUT = deriveConvergenceRouteContract(CONVERGENCE_SETTINGS_REGISTRY);
+
+export const CONVERGENCE_SETTINGS_VALUE_TYPES = deriveConvergenceValueTypes(CONVERGENCE_SETTINGS_REGISTRY);

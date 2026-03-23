@@ -293,7 +293,8 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       'generated_at', 'llm_selector_enabled', 'llm_selector_applied',
       'query_count', 'candidates_checked', 'urls_triaged',
       'urls_selected', 'urls_rejected',
-      'dedupe_input', 'dedupe_output', 'duplicates_removed', 'queries',
+      'raw_input', 'hard_drop_count', 'canon_merge_count', 'soft_exclude_count',
+      'queries',
     ];
     for (const key of requiredKeys) {
       assert.ok(key in se, `serp_explorer has key '${key}', got keys: ${Object.keys(se).join(', ')}`);
@@ -307,9 +308,10 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.equal(typeof se.urls_triaged, 'number');
     assert.equal(typeof se.urls_selected, 'number');
     assert.equal(typeof se.urls_rejected, 'number');
-    assert.equal(typeof se.dedupe_input, 'number');
-    assert.equal(typeof se.dedupe_output, 'number');
-    assert.equal(typeof se.duplicates_removed, 'number');
+    assert.equal(typeof se.raw_input, 'number');
+    assert.equal(typeof se.hard_drop_count, 'number');
+    assert.equal(typeof se.canon_merge_count, 'number');
+    assert.equal(typeof se.soft_exclude_count, 'number');
   });
 
   it('serp_explorer query rows have expected candidate shape', async () => {
@@ -499,7 +501,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     });
 
     const eventNames = logger.events.map((e) => e.event);
-    assert.ok(eventNames.includes('discovery_serp_deduped'), 'emits discovery_serp_deduped');
     assert.ok(eventNames.includes('domains_classified'), 'emits domains_classified');
     assert.ok(eventNames.includes('discovery_results_reranked'), 'emits discovery_results_reranked');
   });

@@ -195,7 +195,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.scannedPdfOcrMinConfidence, 1);
   assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 
-  assert.equal(payload.searchProfileQueryCap, 1);
+  assert.equal(payload.searchProfileQueryCap, 0);
 
   assert.equal(payload.llmProvider, 'openai');
   assert.equal(payload.llmPlanProvider, 'openai');
@@ -226,7 +226,6 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
       discoveryResultsPerQuery: '99',
       discoveryQueryConcurrency: '8',
       fetchBudgetMs: 30000,
-      manufacturerAutoPromote: true,
     }),
     parsedValues: createParsedValues(),
     runControlPayload: {},
@@ -236,5 +235,4 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
   assert.equal(payload.discoveryResultsPerQuery, '99');
   assert.equal(payload.discoveryQueryConcurrency, '8');
   assert.equal(payload.fetchBudgetMs, 30000);
-  assert.equal(payload.manufacturerAutoPromote, true);
 });

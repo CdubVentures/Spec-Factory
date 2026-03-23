@@ -86,7 +86,9 @@ function readStorageString(
   return String(value);
 }
 
-function sanitizeStorageSettingsResponse(raw: Record<string, unknown>): StorageSettingsResponse {
+// WHY: Single sanitizer for API response → StorageSettingsResponse. Previously
+// duplicated in sanitizeStorageSettingsResponse() and readStorageSettingsBootstrap().
+function buildStorageSettingsFromRaw(raw: Record<string, unknown>): StorageSettingsResponse {
   return {
     enabled: Object.prototype.hasOwnProperty.call(raw, 'enabled')
       ? Boolean(raw.enabled)
@@ -110,14 +112,8 @@ function applyStoragePayloadOptimistically(
   payload: StorageSettingsPayload,
   previous: StorageSettingsResponse | undefined,
 ): StorageSettingsResponse {
-  const base: StorageSettingsResponse = previous || {
-    enabled: STORAGE_SETTING_DEFAULTS.enabled,
-    destinationType: STORAGE_SETTING_DEFAULTS.destinationType,
-    localDirectory: STORAGE_SETTING_DEFAULTS.localDirectory,
-    awsRegion: STORAGE_SETTING_DEFAULTS.awsRegion,
-    s3Bucket: STORAGE_SETTING_DEFAULTS.s3Bucket,
-    s3Prefix: STORAGE_SETTING_DEFAULTS.s3Prefix,
-    s3AccessKeyId: STORAGE_SETTING_DEFAULTS.s3AccessKeyId,
+  const base: StorageSettingsResponse = previous ?? {
+    ...STORAGE_SETTING_DEFAULTS,
     hasS3SecretAccessKey: false,
     hasS3SessionToken: false,
     updatedAt: null,
@@ -141,29 +137,12 @@ function applyStoragePayloadOptimistically(
 export function readStorageSettingsSnapshot(queryClient: QueryClient): StorageSettingsResponse | undefined {
   const cached = queryClient.getQueryData<unknown>(STORAGE_SETTINGS_QUERY_KEY);
   if (!isObject(cached)) return undefined;
-  return sanitizeStorageSettingsResponse(cached);
+  return buildStorageSettingsFromRaw(cached);
 }
 
 export function readStorageSettingsBootstrap(queryClient: QueryClient): StorageSettingsResponse {
   const source = queryClient.getQueryData<unknown>(STORAGE_SETTINGS_QUERY_KEY);
-  const snapshot = isObject(source) ? source : {};
-  return {
-    enabled: Object.prototype.hasOwnProperty.call(snapshot, 'enabled')
-      ? Boolean(snapshot.enabled)
-      : STORAGE_SETTING_DEFAULTS.enabled,
-    destinationType: normalizeStorageDestination(snapshot.destinationType),
-    localDirectory: readStorageString(snapshot, 'localDirectory', STORAGE_SETTING_DEFAULTS.localDirectory),
-    awsRegion: readStorageString(snapshot, 'awsRegion', STORAGE_SETTING_DEFAULTS.awsRegion),
-    s3Bucket: readStorageString(snapshot, 's3Bucket', STORAGE_SETTING_DEFAULTS.s3Bucket),
-    s3Prefix: readStorageString(snapshot, 's3Prefix', STORAGE_SETTING_DEFAULTS.s3Prefix),
-    s3AccessKeyId: readStorageString(snapshot, 's3AccessKeyId', STORAGE_SETTING_DEFAULTS.s3AccessKeyId),
-    hasS3SecretAccessKey: Boolean(snapshot.hasS3SecretAccessKey),
-    hasS3SessionToken: Boolean(snapshot.hasS3SessionToken),
-    stagingTempDirectory: snapshot.stagingTempDirectory == null
-      ? undefined
-      : String(snapshot.stagingTempDirectory),
-    updatedAt: snapshot.updatedAt == null ? null : String(snapshot.updatedAt),
-  };
+  return buildStorageSettingsFromRaw(isObject(source) ? source : {});
 }
 
 export function useStorageSettingsBootstrap(): StorageSettingsResponse {
@@ -182,7 +161,7 @@ export function useStorageSettingsReader({
     queryKey: STORAGE_SETTINGS_QUERY_KEY,
     queryFn: async () => {
       const result = await api.get<Record<string, unknown>>('/storage-settings');
-      return sanitizeStorageSettingsResponse(result);
+      return buildStorageSettingsFromRaw(result);
     },
     enabled,
   });
@@ -217,7 +196,7 @@ export function useStorageSettingsAuthority({
     queryKey: STORAGE_SETTINGS_QUERY_KEY,
     queryFn: async () => {
       const result = await api.get<Record<string, unknown>>('/storage-settings');
-      return sanitizeStorageSettingsResponse(result);
+      return buildStorageSettingsFromRaw(result);
     },
     enabled,
   });
@@ -263,7 +242,7 @@ export function useStorageSettingsAuthority({
           && response.snapshot && typeof response.snapshot === 'object'
           ? response.snapshot as Record<string, unknown>
           : response;
-        return sanitizeStorageSettingsResponse(source);
+        return buildStorageSettingsFromRaw(source);
       },
       toPersistedResult: (_response, _nextPayload, _previousData, appliedData) => appliedData,
       onPersisted: (nextSettings, nextPayload) => {

@@ -3,6 +3,7 @@
 // Clamping ranges derive from shared SSOT (settingsClampingRanges).
 
 import { assembleLlmPolicy } from '../llm/llmPolicySchema.js';
+import { providerFromModelToken } from '../llm/providerMeta.js';
 import { buildRegistryLookup } from '../llm/routeResolver.js';
 import {
   normalizeModelPricingMap,
@@ -87,8 +88,7 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   // Fallback infers provider from the model name for backward compat.
   if (!merged.llmProvider) {
     const m = String(merged.llmModelPlan || merged.llmModelExtract || '').toLowerCase();
-    merged.llmProvider = m.startsWith('gemini') ? 'gemini'
-      : m.startsWith('deepseek') ? 'deepseek' : 'openai';
+    merged.llmProvider = providerFromModelToken(m) || 'openai';
   }
   merged.llmApiKey = merged.llmApiKey || merged.openaiApiKey;
   merged.llmBaseUrl = merged.llmBaseUrl || merged.openaiBaseUrl;
@@ -152,14 +152,8 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     merged.llmModelOutputTokenMap[model] = { defaultOutputTokens, maxOutputTokens };
   };
 
-  upsertTokenProfile('deepseek-chat', {
-    defaultOutputTokens: merged.deepseekChatMaxOutputDefault,
-    maxOutputTokens: merged.deepseekChatMaxOutputMaximum,
-  });
-  upsertTokenProfile('deepseek-reasoner', {
-    defaultOutputTokens: merged.deepseekReasonerMaxOutputDefault,
-    maxOutputTokens: merged.deepseekReasonerMaxOutputMaximum,
-  });
+  upsertTokenProfile('deepseek-chat', { defaultOutputTokens: 2048, maxOutputTokens: 8192 });
+  upsertTokenProfile('deepseek-reasoner', { defaultOutputTokens: 4096, maxOutputTokens: 64000 });
   upsertTokenProfile('gemini-2.5-flash-lite', { defaultOutputTokens: 4096, maxOutputTokens: 8192 });
   upsertTokenProfile('gemini-2.5-flash', { defaultOutputTokens: 3072, maxOutputTokens: 8192 });
   upsertTokenProfile('gpt-5-low', { defaultOutputTokens: 3072, maxOutputTokens: 16384 });

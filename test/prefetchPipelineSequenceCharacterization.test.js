@@ -183,7 +183,7 @@ function makeNeedSetResult(overrides = {}) {
   return {
     schema2: makeSchema2(),
     schema3: makeSchema3(),
-    seedSchema4: makeSchema4WithHandoff(),
+    seedSearchPlan: makeSchema4WithHandoff(),
     searchPlanHandoff: makeSchema4WithHandoff().search_plan_handoff,
     focusGroups: [{ key: 'manufacturer_html', phase: 'now', core_unresolved_count: 2 }],
     ...overrides,
@@ -444,7 +444,7 @@ describe('Prefetch pipeline sequence characterization', () => {
       assert.equal(capturedProfileArgs.focusGroups[0].key, 'manufacturer_html');
     });
 
-    it('seedSchema4 is attached to discoveryResult', async () => {
+    it('seedSearchPlan is attached to discoveryResult', async () => {
       const result = await runDiscoverySeedPlan(makeBaseArgs({
         runId: 'run-flow-3',
       }));
@@ -521,7 +521,8 @@ describe('Prefetch pipeline sequence characterization', () => {
         'https://testbrand.com/testmodel',
       ]);
       for (const entry of enqueued) {
-        assert.equal(entry.reason, 'discovery');
+        assert.equal(entry.reason, 'discovery_approved');
+        assert.equal(entry.opts.forceApproved, true);
       }
     });
 

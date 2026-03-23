@@ -111,19 +111,6 @@ test('loadCategoryConfig materializes manufacturer override hosts into source ho
         database: [],
         retailer: []
       },
-      manufacturer_defaults: {
-        method: 'http',
-        rate_limit_ms: 2000,
-        timeout_ms: 12000,
-        robots_txt_compliant: true
-      },
-      manufacturer_crawl_overrides: {
-        'razer.com': {
-          method: 'playwright',
-          rate_limit_ms: 2200,
-          timeout_ms: 15000
-        }
-      },
       sources: {
         rtings_com: {
           display_name: 'RTINGS',
@@ -145,17 +132,8 @@ test('loadCategoryConfig materializes manufacturer override hosts into source ho
     });
 
     const hostMap = config.sourceHostMap || new Map();
-    assert.equal(hostMap.has('razer.com'), true);
-
-    const razer = hostMap.get('razer.com');
-    assert.equal(razer.tierName, 'manufacturer');
-    assert.equal(razer.crawlConfig.method, 'playwright');
-    assert.equal(razer.crawlConfig.rate_limit_ms, 2200);
-    assert.equal(razer.crawlConfig.timeout_ms, 15000);
-    assert.equal(razer.robotsTxtCompliant, true);
-
-    const sourceHosts = new Set((config.sourceHosts || []).map((row) => row.host));
-    assert.equal(sourceHosts.has('razer.com'), true);
+    assert.equal(hostMap.has('rtings.com'), true, 'explicit source rtings.com is in hostMap');
+    assert.equal(hostMap.has('razer.com'), false, 'manufacturer overrides no longer materialized');
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

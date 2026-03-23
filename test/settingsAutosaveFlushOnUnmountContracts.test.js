@@ -163,6 +163,36 @@ function buildCommonStubs({ manifestStub }) {
     '../../../stores/settingsPropagationContract': `
       export function publishSettingsPropagation() {}
     `,
+    '../../../api/teardownFetch': `
+      export function teardownFetch({ url, method, body }) {
+        globalThis.__hookHarness.apiPutCalls.push({ url, method, body });
+      }
+    `,
+    '../../../stores/settingsUnloadGuard': `
+      export function registerUnloadGuard() { return () => {}; }
+      export function markDomainFlushedByUnmount() {}
+      export function isDomainFlushedByUnload() { return false; }
+    `,
+    './settingsAutoSaveGate': `
+      export function shouldAutoSave(input) {
+        if (!input.initialHydrationApplied) return false;
+        if (!input.autoSaveEnabled) return false;
+        if (!input.dirty) return false;
+        if (!input.payloadFingerprint) return false;
+        if (input.payloadFingerprint === input.lastSavedFingerprint) return false;
+        if (input.payloadFingerprint === input.lastAttemptFingerprint) return false;
+        return true;
+      }
+      export function shouldFlushOnUnmount(input) {
+        if (input.alreadyFlushedByUnload) return false;
+        if (!input.enabled || !input.dirty || !input.autoSaveEnabled) return false;
+        if (!input.payloadFingerprint) return false;
+        if (input.payloadFingerprint === input.lastSavedFingerprint) return false;
+        if (!input.hadPendingTimer && input.payloadFingerprint === input.lastAttemptFingerprint) return false;
+        return true;
+      }
+      export function shouldForceHydration() { return false; }
+    `,
   };
 }
 
@@ -189,16 +219,26 @@ async function loadStorageAuthorityModule() {
 async function loadRuntimeAuthorityModule() {
   return loadModule(
     'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthority.ts',
-    buildCommonStubs({
-      manifestStub: `
-        export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = { runtime: 25 };
-        export const RUNTIME_SETTING_DEFAULTS = new Proxy({}, {
-          get() {
-            return 0;
-          },
-        });
+    {
+      ...buildCommonStubs({
+        manifestStub: `
+          export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = { runtime: 25 };
+          export const RUNTIME_SETTING_DEFAULTS = new Proxy({}, {
+            get() {
+              return 0;
+            },
+          });
+        `,
+      }),
+      '../../../stores/runtimeSettingsValueStore': `
+        export function useRuntimeSettingsValueStore(selector) {
+          return typeof selector === 'function' ? selector({ markClean() {} }) : {};
+        }
       `,
-    }),
+      './RuntimeFlowDraftNormalization': `
+        export function normalizeRuntimeDraft(v) { return v; }
+      `,
+    },
   );
 }
 
@@ -246,8 +286,9 @@ test('storage settings authority flushes a pending autosave payload on unmount',
     assert.equal(harness.timers.length, 1);
     assert.equal(harness.apiPutCalls.length, 1);
     assert.deepEqual(harness.apiPutCalls[0], {
-      url: '/storage-settings',
-      payload,
+      url: '/api/v1/storage-settings',
+      method: 'PUT',
+      body: payload,
     });
   } finally {
     harness.restore();
@@ -275,8 +316,9 @@ test('runtime settings authority flushes a pending autosave payload on unmount',
     assert.equal(harness.timers.length, 1);
     assert.equal(harness.apiPutCalls.length, 1);
     assert.deepEqual(harness.apiPutCalls[0], {
-      url: '/runtime-settings',
-      payload,
+      url: '/api/v1/runtime-settings',
+      method: 'PUT',
+      body: payload,
     });
   } finally {
     harness.restore();
@@ -304,9 +346,12 @@ test('llm settings authority flushes a pending autosave payload on unmount', asy
     harness.runUnmount();
 
     assert.equal(harness.timers.length, 1);
-    assert.deepEqual(harness.mutationCalls, [
-      { rows, version: 7 },
-    ]);
+    assert.equal(harness.apiPutCalls.length, 1);
+    assert.deepEqual(harness.apiPutCalls[0], {
+      url: '/api/v1/llm-settings/mouse/routes',
+      method: 'PUT',
+      body: { rows },
+    });
   } finally {
     harness.restore();
   }

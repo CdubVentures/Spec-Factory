@@ -6,10 +6,12 @@ export declare const TIER_VALUES: readonly string[];
 export declare const AUTHORITY_VALUES: readonly string[];
 export declare const DISCOVERY_METHOD_VALUES: readonly string[];
 export declare const FIELD_COVERAGE_KEYS: readonly string[];
-export declare const PACING_FIELD_KEYS: readonly string[];
+export declare const CRAWL_CONFIG_FIELD_KEYS: readonly string[];
 export declare const DISCOVERY_FIELD_KEYS: readonly string[];
 
 export declare const SOURCE_ENTRY_DEFAULTS: Readonly<Record<string, unknown>>;
+
+export declare const CRAWL_CONFIG_DEFAULTS: Readonly<Record<string, unknown>>;
 
 export declare const DISCOVERY_DEFAULTS: Readonly<{
   method: string;

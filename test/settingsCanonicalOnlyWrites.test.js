@@ -81,6 +81,7 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
       env: {
         ...process.env,
         HELPER_FILES_ROOT: helperRoot,
+        CATEGORY_AUTHORITY_ROOT: helperRoot,
         LOCAL_OUTPUT_ROOT: outputRoot,
         LOCAL_INPUT_ROOT: inputRoot,
         OUTPUT_MODE: 'local',
@@ -110,7 +111,9 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   });
   assert.equal(convergenceRes.status, 200, `convergence put failed; stdout=${stdout} stderr=${stderr}`);
 
-  const storageDirectory = path.join(tempRoot, 'run-data');
+  // WHY: normalizeRunDataStorageSettings rejects volatile (os.tmpdir()) paths.
+  // Use a non-volatile path so the persist round-trip keeps the value intact.
+  const storageDirectory = path.join(os.homedir(), 'Desktop', 'SpecFactoryRuns-test-canonical');
   const storageRes = await fetch(`${baseUrl}/storage-settings`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
@@ -138,6 +141,7 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
       && json?.storage?.destinationType === 'local'
       && json?.storage?.localDirectory === storageDirectory
     ),
+    12_000,
   );
   assert.equal(userSettings.runtime.concurrency, 11);
   assert.equal(userSettings.convergence.serpTriageMinScore, 3);

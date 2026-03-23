@@ -157,7 +157,7 @@ describe('Phase02 — Schema Validation', () => {
       doc_kinds: ['review'],
       field_coverage: { high: ['sensor'], medium: ['weight'], low: [] },
       preferred_paths: ['/reviews', '/mice'],
-      pacing: { rate_limit_ms: 2000, timeout_ms: 10000 },
+      crawl_config: { rate_limit_ms: 2000, timeout_ms: 10000 },
       requires_js: true,
       connector_only: false,
       blocked_in_search: false,
@@ -444,7 +444,7 @@ describe('Phase02 — HostPolicy Enforcement', () => {
       connector_only: true,
       blocked_in_search: false,
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       content_types: [],
       field_coverage: null,
@@ -461,7 +461,7 @@ describe('Phase02 — HostPolicy Enforcement', () => {
       connector_only: false,
       blocked_in_search: true,
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       content_types: [],
       field_coverage: null,
@@ -471,24 +471,24 @@ describe('Phase02 — HostPolicy Enforcement', () => {
     assert.equal(policy.blocked_in_search, true);
   });
 
-  it('pacing propagated to policy', () => {
+  it('crawl_config propagated to policy', () => {
     const entry = {
       host: 'slow.example.com',
       tier: 'tier3_retailer',
       connector_only: false,
       blocked_in_search: false,
       synthetic: false,
-      pacing: { rate_limit_ms: 5000, timeout_ms: 15000, max_concurrent: 1 },
+      crawl_config: { rate_limit_ms: 5000, timeout_ms: 15000, max_concurrent: 1 },
       requires_js: false,
       content_types: [],
       field_coverage: null,
       health: null,
     };
     const policy = buildHostPolicy(entry, 'searxng');
-    assert.ok(policy.pacing);
-    assert.equal(policy.pacing.rate_limit_ms, 5000);
-    assert.equal(policy.pacing.timeout_ms, 15000);
-    assert.equal(policy.pacing.max_concurrent, 1);
+    assert.ok(policy.crawl_config);
+    assert.equal(policy.crawl_config.rate_limit_ms, 5000);
+    assert.equal(policy.crawl_config.timeout_ms, 15000);
+    assert.equal(policy.crawl_config.max_concurrent, 1);
   });
 
   it('requires_js propagated → fetch path uses headless browser', () => {
@@ -498,7 +498,7 @@ describe('Phase02 — HostPolicy Enforcement', () => {
       connector_only: false,
       blocked_in_search: false,
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: true,
       content_types: [],
       field_coverage: null,
@@ -515,7 +515,7 @@ describe('Phase02 — HostPolicy Enforcement', () => {
       connector_only: false,
       blocked_in_search: false,
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       content_types: ['review'],
       field_coverage: { high: ['click_latency', 'sensor_latency'], medium: ['weight'], low: [] },
@@ -535,7 +535,7 @@ describe('Phase02 — HostPolicy Enforcement', () => {
       connector_only: false,
       blocked_in_search: false,
       synthetic: false,
-      pacing: null,
+      crawl_config: null,
       requires_js: false,
       content_types: ['html', 'pdf', 'json'],
       field_coverage: null,
@@ -977,12 +977,12 @@ describe('Phase02 — Synthetic-Entry Safety', () => {
     assert.equal(plan.reason, 'registry_too_sparse');
   });
 
-  it('production categories now run with 0 synthetic ratio', () => {
+  it('production categories have 0 non-manufacturer synthetic entries', () => {
     for (const cat of ['mouse', 'keyboard', 'monitor']) {
       const reg = loadSourceRegistry(cat, loadCategoryRaw(cat)).registry;
-      const report = registrySparsityReport(reg);
-      assert.equal(report.synthetic_ratio, 0, `${cat} synthetic ratio should be 0`);
-      assert.equal(report.synthetic_count, 0, `${cat} synthetic count should be 0`);
+      // WHY: manufacturer hosts in approved.manufacturer are intentionally synthetic
+      const nonMfrSynthetics = reg.entries.filter(e => e.synthetic && e.tier !== 'tier1_manufacturer').length;
+      assert.equal(nonMfrSynthetics, 0, `${cat} should have 0 non-manufacturer synthetic entries`);
     }
   });
 
@@ -1106,14 +1106,14 @@ describe('Phase02 — Population Gate Realism', () => {
     }
   });
 
-  it('production categories no longer rely on synthetic entries', () => {
+  it('production categories have no non-manufacturer synthetic entries', () => {
     for (const [cat, buildFn] of [['mouse', buildMouseRegistry], ['keyboard', buildKeyboardRegistry], ['monitor', buildMonitorRegistry]]) {
       const reg = buildFn();
-      const synthetics = reg.entries.filter(e => e.synthetic);
+      const nonMfrSynthetics = reg.entries.filter(e => e.synthetic && e.tier !== 'tier1_manufacturer');
       assert.deepEqual(
-        synthetics.map((entry) => entry.host),
+        nonMfrSynthetics.map((entry) => entry.host),
         [],
-        `${cat} should have 0 synthetic entries`
+        `${cat} should have 0 non-manufacturer synthetic entries`
       );
     }
   });

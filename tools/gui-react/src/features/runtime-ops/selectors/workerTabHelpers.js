@@ -130,9 +130,9 @@ export function buildWorkerButtonLabel(worker) {
   }
 
   if (worker.pool === 'search') {
+    if (worker.slot) return `slot ${worker.slot}`;
     const query = truncateText(worker.current_query, 40);
     if (query) return query;
-    if (worker.slot) return `search-${worker.slot}`;
   }
 
   if (worker.pool === 'fetch') {
@@ -150,8 +150,9 @@ export function buildWorkerButtonSubtitle(worker) {
   }
 
   if (worker.pool === 'search') {
+    const query = truncateText(worker.current_query, 60);
     const slot = worker.slot ? `slot ${worker.slot}` : null;
-    return [workerId, slot].filter(Boolean).join(' \u00b7 ') || null;
+    return [workerId, query || slot].filter(Boolean).join(' \u00b7 ') || null;
   }
 
   if (worker.pool === 'fetch') {

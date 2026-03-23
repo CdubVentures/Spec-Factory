@@ -192,7 +192,7 @@ test('buildLlmCallsDashboard: calls with different costs produce different by_ca
   assert.equal(searchPlanner.cost_usd, 0.007);
 });
 
-// ── BUG 5: estimated_usage type field on indexing LlmCallRow ─────────────────
+// ── BUG 5: estimated_usage type field on LlmCallRow ─────────────────────────
 
 test('buildLlmCallsDashboard: estimated_usage flag set correctly', () => {
   // Call with provider-reported tokens (estimated_usage should be false)

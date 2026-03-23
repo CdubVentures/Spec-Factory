@@ -1,0 +1,121 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 24, "nodeSpacing": 40, "rankSpacing": 70 }
+} }%%
+
+%% ─────────────────────────────────────────────────────────────
+%% TIER PROGRESSION ACROSS ROUNDS
+%% Shows how the search strategy evolves from Round 0
+%% through convergence — searches get narrower and smarter
+%% Optimized for 4K landscape (3840 x 2160)
+%% ─────────────────────────────────────────────────────────────
+
+flowchart LR
+
+  %% ── ROUND 0 ──
+  subgraph R0["ROUND 0 — First Run (no history)"]
+    direction TB
+    R0A["All fields are MISSING\nNo prior history\nrepeat_count = 0 everywhere"]
+    R0T1["TIER 1 fires:\n'Logitech G Pro X Superlight 2\nspecifications'\n+ per-source seed queries"]
+    R0T2["TIER 2 fires for ALL groups\nwith 3+ fields:\n'... sensor specs DPI tracking...'\n'... physical dimensions weight...'"]
+    R0T3["TIER 3: usually empty\n(no individual retries yet)"]
+    R0RES["Result: typically\n40-60% of fields filled\nSeed queries produce\nbroad coverage"]
+
+    R0A --> R0T1
+    R0A --> R0T2
+    R0A --> R0T3
+    R0T1 --> R0RES
+    R0T2 --> R0RES
+  end
+
+  %% ── ROUND 1 ──
+  subgraph R1["ROUND 1 — After First Scrape"]
+    direction TB
+    R1A["NeedSet reassesses:\nSome fields COVERED\nRemaining still MISSING\nrepeat_count incremented"]
+    R1T1["TIER 1: likely ON COOLDOWN\n(found new fields last round)\n30-day default cooldown"]
+    R1T2["TIER 2: only groups\nstill below 80% coverage\nGroups at 80%+ skip"]
+    R1T3["TIER 3 begins:\nrepeat=0 keys get bare queries\n'... weight'\n'... polling rate'\nLLM picks best alias combo"]
+    R1RES["Result:\nAnother 15-25% of fields\nfilled from targeted searches"]
+
+    R1A --> R1T1
+    R1A --> R1T2
+    R1A --> R1T3
+    R1T2 --> R1RES
+    R1T3 --> R1RES
+  end
+
+  %% ── ROUND 2 ──
+  subgraph R2["ROUND 2 — Narrowing Down"]
+    direction TB
+    R2A["Fields still missing\nare the hard ones\nHistory: domains tried,\ncontent types tried"]
+    R2T1["TIER 1: still on cooldown"]
+    R2T2["TIER 2: groups hitting\n3 searches → EXHAUSTED\nTheir keys fall to Tier 3"]
+    R2T3["TIER 3 enrichment:\nrepeat=1: + aliases\n'... weight grams mass'\nrepeat=0: bare query\nfor newly-fallen keys"]
+    R2RES["Result:\nDiminishing returns\n~5-10% more fields"]
+
+    R2A --> R2T1
+    R2A --> R2T2
+    R2A --> R2T3
+    R2T2 --> R2RES
+    R2T3 --> R2RES
+  end
+
+  %% ── ROUND 3+ ──
+  subgraph R3["ROUND 3+ — Deep Search"]
+    direction TB
+    R3A["Only stubborn fields remain\nFull history of what was tried"]
+    R3T1["TIER 1: cooldown"]
+    R3T2["TIER 2: all groups\neither resolved or exhausted"]
+    R3T3["TIER 3 deep enrichment:\nrepeat=2: + untried domain\n'... weight grams rtings.com'\nrepeat=3+: + untried content type\n'... weight teardown measured'"]
+    R3RES["Each query is materially\ndifferent from all prior\nattempts for that key"]
+
+    R3A --> R3T1
+    R3A --> R3T2
+    R3A --> R3T3
+    R3T3 --> R3RES
+  end
+
+  %% ── CONVERGENCE ──
+  CONV(["CONVERGENCE\n\nAll Tier 1 on cooldown\nAll Tier 2 resolved or exhausted\nTier 3 at diminishing returns\n\nFurther searching adds\nlittle value"])
+
+  %% ── FLOW ──
+  R0 --> R1 --> R2 --> R3 --> CONV
+
+  %% ── STYLING ──
+  style R0 fill:#dbeafe,stroke:#3b82f6,color:#1e293b
+  style R1 fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+  style R2 fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+  style R3 fill:#fce7f3,stroke:#ec4899,color:#1e293b
+  style CONV fill:#d1fae5,stroke:#10b981,color:#1e293b
+
+  style R0A fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style R0T1 fill:#60a5fa,stroke:#3b82f6,color:#1e293b
+  style R0T2 fill:#818cf8,stroke:#6366f1,color:#1e293b
+  style R0T3 fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style R0RES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style R1A fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style R1T1 fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style R1T2 fill:#818cf8,stroke:#6366f1,color:#1e293b
+  style R1T3 fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style R1RES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style R2A fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style R2T1 fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style R2T2 fill:#7c3aed,stroke:#6d28d9,color:#ffffff
+  style R2T3 fill:#d97706,stroke:#b45309,color:#ffffff
+  style R2RES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style R3A fill:#ec4899,stroke:#db2777,color:#ffffff
+  style R3T1 fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style R3T2 fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style R3T3 fill:#b45309,stroke:#92400e,color:#ffffff
+  style R3RES fill:#10b981,stroke:#059669,color:#ffffff

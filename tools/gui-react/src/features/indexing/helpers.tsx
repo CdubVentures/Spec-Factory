@@ -1,5 +1,5 @@
 import { Tip } from '../../components/common/Tip';
-import type { PanelStateToken, TimedIndexLabEvent } from './types';
+import type { TimedIndexLabEvent } from './types';
 
 export function normalizeToken(value: unknown) {
   return String(value || '').trim().toLowerCase();
@@ -247,73 +247,6 @@ export function looksLikePdfUrl(value: string) {
   return /\.pdf($|[?#])/i.test(text);
 }
 
-export function llmPhaseLabel(phase: string) {
-  const token = normalizeToken(phase);
-  if (token === 'phase_02') return 'Phase 02';
-  if (token === 'phase_03') return 'Phase 03';
-  if (token === 'extract') return 'Extract';
-  if (token === 'validate') return 'Validate';
-  if (token === 'write') return 'Write';
-  if (token === 'plan') return 'Plan';
-  return 'Other';
-}
-
-export function classifyLlmPhase(purpose: string, routeRole: string) {
-  const reason = normalizeToken(purpose);
-  const role = normalizeToken(routeRole);
-  if (role === 'extract') return 'extract';
-  if (role === 'validate') return 'validate';
-  if (role === 'write') return 'write';
-  if (role === 'plan') return 'plan';
-  if (reason.includes('discovery_planner') || reason.includes('search_profile') || reason.includes('searchprofile')) {
-    return 'phase_02';
-  }
-  if (reason.includes('serp') || reason.includes('triage') || reason.includes('rerank') || reason.includes('discovery_query_plan')) {
-    return 'phase_03';
-  }
-  if (reason.includes('extract')) return 'extract';
-  if (reason.includes('validate') || reason.includes('verify')) return 'validate';
-  if (reason.includes('write') || reason.includes('summary')) return 'write';
-  if (reason.includes('planner') || reason.includes('plan')) return 'plan';
-  return 'other';
-}
-
-export function llmPhaseBadgeClasses(phase: string) {
-  const token = normalizeToken(phase);
-  if (token === 'phase_02') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-  if (token === 'phase_03') return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
-  if (token === 'extract') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-  if (token === 'validate') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-  if (token === 'write') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
-  if (token === 'plan') return 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300';
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
-}
-
-export function panelStateChipClasses(state: PanelStateToken) {
-  if (state === 'live') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-  if (state === 'ready') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
-  return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-}
-
-export function hostBudgetStateBadgeClasses(state: string) {
-  const token = normalizeToken(state);
-  if (token === 'blocked') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300';
-  if (token === 'backoff') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-  if (token === 'degraded') return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300';
-  if (token === 'active') return 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300';
-  if (token === 'open') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200';
-}
-
-export function roleHelpText(role: string) {
-  const token = normalizeToken(role);
-  if (token === 'plan') return 'Builds search/discovery strategy and query plans before heavy fetch work.';
-  if (token === 'extract') return 'Extracts candidate values from evidence snippets and structured artifacts.';
-  if (token === 'validate') return 'Verifies extracted candidates against evidence and consistency gates.';
-  if (token === 'write') return 'Builds summary/write outputs after extraction and validation.';
-  return '';
-}
-
 export function formatDuration(ms: number) {
   const safeMs = Math.max(0, Number.isFinite(ms) ? ms : 0);
   const totalSeconds = Math.floor(safeMs / 1000);
@@ -344,54 +277,28 @@ export function formatLatencyMs(value: number) {
   return `${formatNumber(safe, 0)} ms`;
 }
 
-export function needsetRequiredLevelWeight(level: string) {
-  const token = normalizeToken(level);
-  if (token === 'identity') return 5;
-  if (token === 'critical') return 4;
-  if (token === 'required') return 3;
-  if (token === 'expected') return 2;
-  return 1;
-}
+// ── Query Family Badge Registry ─────────────────────────────────────
+// WHY: Single source of truth for query family → badge class mapping.
+// Adding a new query family requires editing only this record.
 
-export function needsetRequiredLevelBadge(level: string) {
-  const token = normalizeToken(level);
-  if (token === 'identity') return { short: 'I', cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' };
-  if (token === 'critical') return { short: 'C', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' };
-  if (token === 'required') return { short: 'R', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
-  return { short: 'O', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
-}
+const QUERY_FAMILY_BADGES: Record<string, string> = {
+  manufacturer_html:    'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
+  manual_pdf:           'bg-violet-600 text-white dark:bg-violet-500 dark:text-white',
+  support_docs:         'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-white',
+  review_lookup:        'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
+  benchmark_lookup:     'bg-teal-600 text-white dark:bg-teal-500 dark:text-white',
+  fallback_web:         'bg-slate-500 text-white dark:bg-slate-400 dark:text-white',
+  targeted_single:      'bg-orange-500 text-white dark:bg-orange-400 dark:text-white',
+  targeted_single_field:'bg-orange-500 text-white dark:bg-orange-400 dark:text-white',
+  spec_sheet:           'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white',
+  review:               'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
+  product_page:         'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
+};
 
-export function needsetStateBadge(state: string) {
-  const token = normalizeToken(state);
-  if (token === 'missing') return { label: 'missing', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' };
-  if (token === 'weak') return { label: 'weak', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
-  if (token === 'conflict') return { label: 'conflict', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
-  if (token === 'satisfied' || token === 'covered') return { label: 'satisfied', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' };
-  return { label: state || 'unknown', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
-}
+const QUERY_FAMILY_FALLBACK = 'bg-gray-500 text-white dark:bg-gray-400 dark:text-white';
 
-export function needsetBucketBadge(bucket: string) {
-  const token = normalizeToken(bucket);
-  if (token === 'core') return { label: 'core', cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' };
-  if (token === 'secondary') return { label: 'secondary', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
-  if (token === 'expected') return { label: 'expected', cls: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' };
-  if (token === 'optional') return { label: 'optional', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
-  return { label: bucket || 'unknown', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200' };
-}
-
-export function queryFamilyBadge(family: string) {
-  const token = normalizeToken(family);
-  if (token === 'manufacturer_html') return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
-  if (token === 'manual_pdf') return 'bg-violet-600 text-white dark:bg-violet-500 dark:text-white';
-  if (token === 'support_docs') return 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-white';
-  if (token === 'review_lookup') return 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white';
-  if (token === 'benchmark_lookup') return 'bg-teal-600 text-white dark:bg-teal-500 dark:text-white';
-  if (token === 'fallback_web') return 'bg-slate-500 text-white dark:bg-slate-400 dark:text-white';
-  if (token === 'targeted_single' || token === 'targeted_single_field') return 'bg-orange-500 text-white dark:bg-orange-400 dark:text-white';
-  if (token === 'spec_sheet') return 'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white';
-  if (token === 'review') return 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white';
-  if (token === 'product_page') return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
-  return 'bg-gray-500 text-white dark:bg-gray-400 dark:text-white';
+export function queryFamilyBadge(family: string): string {
+  return QUERY_FAMILY_BADGES[normalizeToken(family)] ?? QUERY_FAMILY_FALLBACK;
 }
 
 export function computeActivityStats(

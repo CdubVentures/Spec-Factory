@@ -11,7 +11,7 @@ test('SOURCE_ENTRY_MUTABLE_KEYS is a frozen Set', () => {
 });
 
 test('validateSourceEntryPatch', async (t) => {
-  await t.test('accepts all known source entry keys', () => {
+  await t.test('accepts all schema-derived source entry keys', () => {
     const patch = {
       display_name: 'Test Source',
       tier: 'tier1_manufacturer',
@@ -22,6 +22,19 @@ test('validateSourceEntryPatch', async (t) => {
       crawl_config: { method: 'http' },
       field_coverage: { high: [], medium: [], low: [] },
       discovery: { method: 'search_first', enabled: true },
+    };
+    const result = validateSourceEntryPatch(patch);
+    assert.deepEqual(result.rejected, {});
+    for (const key of Object.keys(patch)) {
+      assert.ok(
+        Object.hasOwn(result.accepted, key),
+        `expected "${key}" in accepted`,
+      );
+    }
+  });
+
+  await t.test('rejects dead legacy keys (enabled, notes, label, url, approved, source_type)', () => {
+    const patch = {
       enabled: true,
       notes: 'test note',
       label: 'My Label',
@@ -30,13 +43,9 @@ test('validateSourceEntryPatch', async (t) => {
       source_type: 'manufacturer',
     };
     const result = validateSourceEntryPatch(patch);
-    assert.deepEqual(result.rejected, {});
-    // All keys should be in accepted
+    assert.deepEqual(result.accepted, {});
     for (const key of Object.keys(patch)) {
-      assert.ok(
-        Object.hasOwn(result.accepted, key),
-        `expected "${key}" in accepted`,
-      );
+      assert.equal(result.rejected[key], 'unknown_key', `expected "${key}" to be rejected`);
     }
   });
 

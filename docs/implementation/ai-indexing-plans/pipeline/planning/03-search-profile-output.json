@@ -1,0 +1,64 @@
+{
+  "_doc": "Stage 03 Search Profile output returned by runSearchProfile() and its inner buildSearchProfile().",
+  "validated_against": "2026-03-22",
+  "runSearchProfile_return": {
+    "searchProfileBase": "object — from buildSearchProfile()",
+    "effectiveHostPlan": "object|null — from buildEffectiveHostPlan() when validatedRegistry exists",
+    "hostPlanQueryRows": "array — from buildScoredQueryRowsFromHostPlan() or []"
+  },
+  "buildSearchProfile_return": {
+    "category": "string",
+    "identity": {
+      "brand": "string",
+      "model": "string",
+      "variant": "string",
+      "category": "string"
+    },
+    "variant_guard_terms": "array — tokens used by identity guard in Query Journey",
+    "identity_aliases": "array of { alias: string, source: string, weight: number }",
+    "alias_reject_log": "array — rejected aliases with reasons",
+    "query_reject_log": "array — rejected queries with reasons",
+    "focus_fields": "array — unresolved field keys",
+    "base_templates": "array of string — prior queries to avoid (fed to Search Planner as query history)",
+    "query_rows": "array of row objects — tier-tagged deterministic query rows",
+    "queries": "array of string — bounded query strings",
+    "targeted_queries": "array of string — queries from query_rows",
+    "field_target_queries": "object — Map<field_key, Array<query>>",
+    "doc_hint_queries": "array — structured doc hint grouping",
+    "archetype_summary": "object",
+    "coverage_analysis": "object",
+    "hint_source_counts": "object — Map<hint_source, number>",
+    "field_rule_gate_counts": "object",
+    "field_rule_hint_counts_by_field": "object"
+  },
+  "query_row_shape": {
+    "_common": {
+      "query": "string — the search query text",
+      "hint_source": "string — tier1_seed | tier2_group | tier3_key | archetype_* | field_rule_* | ...",
+      "tier": "string — seed | group_search | key_search (only present on tier-dispatched rows)",
+      "target_fields": "string[] — fields this query targets",
+      "doc_hint": "string",
+      "alias": "string",
+      "domain_hint": "string",
+      "source_host": "string"
+    },
+    "_tier2_additions": {
+      "group_key": "string — group this query targets"
+    },
+    "_tier3_additions": {
+      "group_key": "string",
+      "normalized_key": "string",
+      "repeat_count": "number — 0-based per-key retry count",
+      "all_aliases": "string[]",
+      "domain_hints": "string[]",
+      "preferred_content_types": "string[]",
+      "domains_tried_for_key": "string[]",
+      "content_types_tried_for_key": "string[]"
+    }
+  },
+  "downstream_consumers": [
+    "Stage 04 Search Planner — receives searchProfileBase.query_rows and searchProfileBase.base_templates",
+    "Stage 05 Query Journey — receives searchProfileBase (variant_guard_terms, query_reject_log), effectiveHostPlan, hostPlanQueryRows"
+  ],
+  "persistence": "Search Profile generation is in-memory only. The persisted artifact is written later by Query Journey."
+}

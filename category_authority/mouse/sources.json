@@ -2,7 +2,7 @@
   "category": "mouse",
   "version": "1.0.0",
   "approved": {
-    "manufacturer": [],
+    "manufacturer": ["razer.com", "logitechg.com", "steelseries.com", "corsair.com", "gloriousgaming.com", "pulsar.gg", "endgamegear.com", "zowie.benq.com", "vaxee.co"],
     "lab": [
       "rtings.com",
       "techpowerup.com",
@@ -33,23 +33,6 @@
     ]
   },
   "denylist": [],
-  "manufacturer_defaults": {
-    "method": "playwright",
-    "rate_limit_ms": 3000,
-    "timeout_ms": 15000,
-    "robots_txt_compliant": true
-  },
-  "manufacturer_crawl_overrides": {
-    "razer.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
-    "logitechg.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
-    "steelseries.com": { "method": "playwright", "rate_limit_ms": 3500, "timeout_ms": 15000 },
-    "corsair.com": { "method": "playwright", "rate_limit_ms": 4000, "timeout_ms": 15000 },
-    "gloriousgaming.com": { "method": "playwright", "rate_limit_ms": 4000, "timeout_ms": 15000 },
-    "pulsar.gg": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
-    "endgamegear.com": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
-    "zowie.benq.com": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 },
-    "vaxee.co": { "method": "playwright", "rate_limit_ms": 3000, "timeout_ms": 15000 }
-  },
   "sources": {
     "rtings_com": {
       "display_name": "RTINGS",

@@ -124,7 +124,6 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       'intelJsonWrite',
       'learningJsonWrite',
       'llmExtractionCacheEnabled',
-      'manufacturerAutoPromote',
       'queueJsonWrite',
       'runtimeAutoSaveEnabled',
       'scannedPdfOcrPromoteCandidates',

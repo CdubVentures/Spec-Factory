@@ -130,7 +130,7 @@ test('publish CLI publishes approved overrides and exposes provenance/changelog 
     await seedHelperArtifacts(helperRoot);
     await seedLatest(outputRoot, productId, '59');
     await seedApprovedOverride(helperRoot, productId, '58');
-    const env = { HELPER_FILES_ROOT: helperRoot };
+    const env = { HELPER_FILES_ROOT: helperRoot, CATEGORY_AUTHORITY_ROOT: helperRoot };
 
     const published = await runCli([
       'publish',

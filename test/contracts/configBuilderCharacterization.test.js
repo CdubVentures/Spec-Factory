@@ -148,7 +148,7 @@ describe('configBuilder characterization — golden master', () => {
       'indexingReextractEnabled', 'indexingSchemaPacketsValidationEnabled',
       'indexingSchemaPacketsValidationStrict',
       'frontierStripTrackingParams', 'helperSupportiveFillMissing',
-      'manufacturerAutoPromote', 'chartExtractionEnabled',
+      'chartExtractionEnabled',
     ];
     for (const key of expectedBools) {
       strictEqual(typeof cfg[key], 'boolean', `cfg.${key} should be boolean, got ${typeof cfg[key]}`);
@@ -159,7 +159,7 @@ describe('configBuilder characterization — golden master', () => {
     const expectedObjects = [
       'fetchSchedulerInternalsMap', 'dynamicFetchPolicyMap',
       'retrievalInternalsMap', 'evidencePackLimitsMap', 'parsingConfidenceBaseMap',
-      'searchProfileCapMap', 'serpRerankerWeightMap',
+      'searchProfileCapMap',
       'articleExtractorDomainPolicyMap', 'llmModelPricingMap',
       'llmModelOutputTokenMap',
     ];

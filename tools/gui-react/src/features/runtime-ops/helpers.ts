@@ -1,3 +1,16 @@
+import { resolvePoolStage, POOL_STAGE_KEYS } from './poolStageRegistry';
+
+export { POOL_STAGE_KEYS as STAGE_ORDER };
+
+export function poolBadgeClass(pool: string): string { return resolvePoolStage(pool).badge; }
+export function poolDotClass(pool: string): string { return resolvePoolStage(pool).dot; }
+export function poolMeterFillClass(pool: string): string { return resolvePoolStage(pool).meterFill; }
+export function poolSelectedTabClass(pool: string): string { return resolvePoolStage(pool).selectedTab; }
+export function poolOutlineTabClass(pool: string): string { return resolvePoolStage(pool).outlineTab; }
+export function stageBadgeClass(stage: string): string { return resolvePoolStage(stage).badge; }
+export function stageMeterFillClass(stage: string): string { return resolvePoolStage(stage).meterFill; }
+export function stageLabel(stage: string): string { return resolvePoolStage(stage).stageLabel || stage; }
+
 export function statusBadgeClass(status: string): string {
   switch (status) {
     case 'running':
@@ -37,91 +50,6 @@ export function workerStateBadgeClass(state: string): string {
       return 'sf-chip-neutral';
     default:
       return 'sf-chip-neutral';
-  }
-}
-
-export function poolBadgeClass(pool: string): string {
-  switch (pool) {
-    case 'search':
-      return 'sf-chip-accent';
-    case 'fetch':
-      return 'sf-chip-success';
-    case 'parse':
-      return 'sf-chip-info';
-    case 'llm':
-      return 'sf-chip-warning';
-    case 'index':
-      return 'sf-chip-success';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function poolDotClass(pool: string): string {
-  switch (pool) {
-    case 'search':
-      return 'sf-dot-accent';
-    case 'fetch':
-      return 'sf-dot-success';
-    case 'parse':
-      return 'sf-dot-info';
-    case 'llm':
-      return 'sf-dot-warning';
-    case 'index':
-      return 'sf-dot-success';
-    default:
-      return 'sf-dot-neutral';
-  }
-}
-
-export function poolMeterFillClass(pool: string): string {
-  switch (pool) {
-    case 'search':
-      return 'sf-meter-fill';
-    case 'fetch':
-      return 'sf-meter-fill-success';
-    case 'parse':
-      return 'sf-meter-fill-info';
-    case 'llm':
-      return 'sf-meter-fill-warning';
-    case 'index':
-      return 'sf-meter-fill-success';
-    default:
-      return 'sf-meter-fill-neutral';
-  }
-}
-
-export function poolSelectedTabClass(pool: string): string {
-  switch (pool) {
-    case 'search':
-      return 'sf-prefetch-tab-idle-accent';
-    case 'fetch':
-      return 'sf-prefetch-tab-idle-success';
-    case 'parse':
-      return 'sf-prefetch-tab-idle-info';
-    case 'llm':
-      return 'sf-prefetch-tab-idle-warning';
-    case 'index':
-      return 'sf-prefetch-tab-idle-success';
-    default:
-      return 'sf-prefetch-tab-idle-neutral';
-  }
-}
-
-export function poolOutlineTabClass(pool: string): string {
-  switch (pool) {
-    case 'search':
-      return 'sf-prefetch-tab-outline-accent';
-    case 'fetch':
-      return 'sf-prefetch-tab-outline-success';
-    case 'parse':
-      return 'sf-prefetch-tab-outline-info';
-    case 'llm':
-      return 'sf-prefetch-tab-outline-warning';
-    case 'index':
-      return 'sf-prefetch-tab-outline-success';
-    default:
-      return 'sf-prefetch-tab-outline-neutral';
   }
 }
 
@@ -220,35 +148,6 @@ export function fallbackResultBadgeClass(result: string): string {
       return 'sf-chip-info';
     default:
       return 'sf-chip-neutral';
-  }
-}
-
-export function searchProviderBadgeClass(provider: string): string {
-  switch (provider) {
-    case 'serper':
-      return 'sf-chip-accent';
-    case 'google':
-      return 'sf-chip-info';
-    case 'brave-api':
-      return 'sf-chip-success';
-    case 'bing':
-    case 'duckduckgo':
-    case 'brave':
-      return 'sf-chip-warning';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function searchProviderLabel(provider: string): string {
-  switch (provider) {
-    case 'serper': return 'Serper';
-    case 'google': return 'Google';
-    case 'brave-api': return 'Brave API';
-    case 'bing': return 'Bing';
-    case 'duckduckgo': return 'DuckDuckGo';
-    case 'brave': return 'Brave';
-    default: return provider;
   }
 }
 
@@ -415,34 +314,6 @@ export function tierBadgeClass(tier: number | null): string {
   }
 }
 
-export const STAGE_ORDER = ['search', 'fetch', 'parse', 'index', 'llm'] as const;
-
-export function stageBadgeClass(stage: string): string {
-  switch (stage) {
-    case 'search': return 'sf-chip-accent';
-    case 'fetch': return 'sf-chip-success';
-    case 'parse': return 'sf-chip-info';
-    case 'index': return 'sf-chip-success';
-    case 'llm': return 'sf-chip-warning';
-    default: return 'sf-chip-neutral';
-  }
-}
-
-export function stageMeterFillClass(stage: string): string {
-  return poolMeterFillClass(stage);
-}
-
-export function stageLabel(stage: string): string {
-  switch (stage) {
-    case 'search': return 'Searching';
-    case 'fetch': return 'Fetching';
-    case 'parse': return 'Parsing';
-    case 'index': return 'Indexing';
-    case 'llm': return 'Extracting';
-    default: return stage;
-  }
-}
-
 // ── Pre-Fetch Phase Helpers ──
 
 export function llmCallStatusBadgeClass(status: string): string {
@@ -458,69 +329,17 @@ export function llmCallStatusBadgeClass(status: string): string {
   }
 }
 
-export function needsetReasonBadgeClass(reason: string): string {
-  switch (reason) {
-    case 'missing':
-      return 'sf-chip-danger';
-    case 'low_confidence':
-    case 'low_conf':
-      return 'sf-chip-warning';
-    case 'conflict':
-      return 'sf-chip-danger';
-    case 'tier_pref_unmet':
-      return 'sf-chip-warning';
-    case 'min_refs_fail':
-      return 'sf-chip-warning';
-    case 'publish_gate_block':
-      return 'sf-chip-danger';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function domainClassBadgeClass(classification: string): string {
-  switch (classification) {
-    case 'safe':
-    case 'manufacturer':
-      return 'sf-chip-success';
-    case 'review':
-    case 'lab':
-      return 'sf-chip-info';
-    case 'retail':
-      return 'sf-chip-warning';
-    case 'blocked':
-    case 'unsafe':
-      return 'sf-chip-danger';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
 export function triageDecisionBadgeClass(decision: string): string {
   switch (decision) {
     case 'keep':
       return 'sf-chip-success';
-    case 'maybe':
+    case 'hard_drop':
       return 'sf-chip-warning';
     case 'drop':
     case 'skip':
       return 'sf-chip-danger';
     case 'fetch':
       return 'sf-chip-info';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function riskFlagBadgeClass(flag: string): string {
-  switch (flag) {
-    case 'low_trust':
-    case 'potential_paywall':
-    case 'blocked':
-      return 'sf-chip-danger';
-    case 'pdf_only':
-    case 'slow':
-      return 'sf-chip-warning';
     default:
       return 'sf-chip-neutral';
   }
@@ -556,10 +375,6 @@ export function safetyClassBadgeClass(safetyClass: string): string {
   }
 }
 
-export function confidenceBarWidth(confidence: number): string {
-  return `${Math.min(100, Math.max(0, Math.round(confidence * 100)))}%`;
-}
-
 import type { TriageScoreComponents } from './types';
 
 export function scoreBarSegments(components: TriageScoreComponents): { label: string; value: number; color: string }[] {
@@ -571,17 +386,4 @@ export function scoreBarSegments(components: TriageScoreComponents): { label: st
   ];
 }
 
-export function prefetchTabAccent(tab: string): string {
-  switch (tab) {
-    case 'needset': return 'sf-prefetch-tab-selected-success';
-    case 'search_profile': return 'sf-prefetch-tab-selected-info';
-    case 'search_results': return 'sf-prefetch-tab-selected-accent';
-    case 'query_journey': return 'sf-prefetch-tab-selected-info';
-    case 'brand_resolver':
-    case 'search_planner':
-    case 'serp_selector':
-    case 'domain_classifier': return 'sf-prefetch-tab-selected-warning';
-    default: return 'sf-prefetch-tab-selected-neutral';
-  }
-}
 

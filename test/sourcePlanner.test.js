@@ -24,7 +24,7 @@ function makeConfig(overrides = {}) {
   };
 }
 
-test('source planner does not enqueue candidate domains when candidate crawl is disabled', () => {
+test('source planner still enqueues candidate domains after candidate crawl knob retirement', () => {
   const planner = new SourcePlanner(
     { seedUrls: [], preferredSources: {} },
     makeConfig({ fetchCandidateSources: false }),
@@ -35,8 +35,11 @@ test('source planner does not enqueue candidate domains when candidate crawl is 
   planner.enqueue('https://unknown.example/specs');
 
   const first = planner.next();
+  const second = planner.next();
   assert.equal(first.host, 'manufacturer.com');
   assert.equal(first.candidateSource, false);
+  assert.equal(second.host, 'unknown.example');
+  assert.equal(second.candidateSource, true);
   assert.equal(planner.hasNext(), false);
 });
 

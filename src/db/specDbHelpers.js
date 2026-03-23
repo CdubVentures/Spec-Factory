@@ -3,6 +3,8 @@
  * Extracted from specDb.js — no side effects, no DB access.
  */
 
+import { LLM_ROUTE_COLUMN_REGISTRY } from './specDbSchema.js';
+
 export function normalizeListLinkToken(value) {
   return String(value ?? '').trim();
 }
@@ -53,22 +55,11 @@ export function makeRouteKey(scope, requiredLevel, difficulty, availability, eff
 
 export function defaultContextFlagsForScope(scope = 'field') {
   const isComponent = scope === 'component';
-  return {
-    studio_key_navigation_sent_in_extract_review: 1,
-    studio_contract_rules_sent_in_extract_review: 1,
-    studio_extraction_guidance_sent_in_extract_review: 1,
-    studio_tooltip_or_description_sent_when_present: 1,
-    studio_enum_options_sent_when_present: 1,
-    studio_component_variance_constraints_sent_in_component_review: isComponent ? 1 : 0,
-    studio_parse_template_sent_direct_in_extract_review: 1,
-    studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: 1,
-    studio_required_level_sent_in_extract_review: 1,
-    studio_component_entity_set_sent_when_component_field: isComponent ? 1 : 0,
-    studio_evidence_policy_sent_direct_in_extract_review: 1,
-    studio_variance_policy_sent_in_component_review: isComponent ? 1 : 0,
-    studio_constraints_sent_in_component_review: isComponent ? 1 : 0,
-    studio_send_booleans_prompted_to_model: 0
-  };
+  const flags = {};
+  for (const col of LLM_ROUTE_COLUMN_REGISTRY.filter(c => c.promptFlag)) {
+    flags[col.key] = col.componentOnly ? (isComponent ? 1 : 0) : col.sqlDefault;
+  }
+  return flags;
 }
 
 export function baseLlmRoute({

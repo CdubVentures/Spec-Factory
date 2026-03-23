@@ -492,6 +492,7 @@ export interface PrefetchSchema4Bundle {
 
 /** Tier-aware profile influence — budget-aware when tier_allocation is present */
 export interface PrefetchNeedSetProfileInfluence {
+  targeted_brand: number;
   targeted_specification: number;
   targeted_sources: number;
   total_sources: number;
@@ -510,7 +511,7 @@ export interface PrefetchNeedSetProfileInfluence {
 }
 
 export interface TierAllocationSeed {
-  type: 'specs' | 'source';
+  type: 'brand' | 'specs' | 'source';
   source_name: string | null;
   is_needed: boolean;
 }
@@ -574,6 +575,16 @@ export interface PrefetchSearchProfileQueryRow {
   domain_hint?: string;
   source_host?: string;
   __from_plan_profile?: boolean;
+  // Tier metadata from NeedSet → Search Profile tier builders
+  tier?: string;
+  group_key?: string;
+  normalized_key?: string;
+  repeat_count?: number;
+  all_aliases?: string[];
+  domain_hints?: string[];
+  preferred_content_types?: string[];
+  domains_tried_for_key?: string[];
+  content_types_tried_for_key?: string[];
 }
 
 export interface PrefetchSearchProfileAlias {
@@ -635,6 +646,8 @@ export interface PrefetchSearchProfileData {
   base_model?: string;
   aliases?: string[];
   discovered_count?: number;
+  approved_count?: number;
+  candidate_count?: number;
   selected_count?: number;
   llm_serp_selector?: boolean;
   serp_explorer?: {
@@ -678,13 +691,6 @@ export interface PrefetchSearchResult {
 
 // ── Brand Resolver Story Mode ──
 
-export interface BrandCandidate {
-  name: string;
-  confidence: number;
-  evidence_snippets: string[];
-  disambiguation_note: string;
-}
-
 export interface BrandResolutionData {
   brand: string;
   status?: string;
@@ -692,12 +698,20 @@ export interface BrandResolutionData {
   official_domain: string;
   aliases: string[];
   support_domain: string;
-  confidence: number;
-  candidates: BrandCandidate[];
+  confidence: number | null;
   reasoning?: string[];
 }
 
 // ── Search Planner Story Mode ──
+
+export interface SearchPlanEnhancementRow {
+  query: string;
+  original_query: string;
+  hint_source: string;
+  tier: string;
+  group_key: string;
+  target_fields: string[];
+}
 
 export interface SearchPlanPass {
   pass_index: number;
@@ -708,6 +722,8 @@ export interface SearchPlanPass {
   mode: string;
   stop_condition: string;
   plan_rationale: string;
+  source?: string;
+  enhancement_rows?: SearchPlanEnhancementRow[];
 }
 
 // ── Search Results Story Mode ──
@@ -760,10 +776,23 @@ export interface TriageCandidate {
   approval_bucket: string;
 }
 
+export interface SerpTriageFunnel {
+  raw_input: number;
+  hard_drop_count: number;
+  candidates_after_hard_drop: number;
+  canon_merge_count: number;
+  candidates_classified: number;
+  candidates_sent_to_llm: number;
+  overflow_capped: number;
+  llm_model: string;
+  llm_applied: boolean;
+}
+
 export interface SerpTriageResult {
   query: string;
   kept_count: number;
   dropped_count: number;
+  funnel?: SerpTriageFunnel | null;
   candidates: TriageCandidate[];
 }
 
@@ -855,6 +884,7 @@ export interface PreFetchPhasesResponse {
     selected_query_count: number;
     selected_queries: string[];
     schema4_query_count: number;
+    llm_enhanced_count?: number;
     deterministic_query_count: number;
     host_plan_query_count: number;
     rejected_count: number;

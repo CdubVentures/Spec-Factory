@@ -59,7 +59,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'evidencePackLimitsMap', 'parsingConfidenceBaseMap',
   'evidenceHeadingsLimit', 'evidenceChunkMaxLength', 'evidenceSpecSectionsLimit',
   'searchProfileCapMap', 'searchProfileCapMapJson',
-  'serpRerankerWeightMap', 'serpRerankerWeightMapJson',
   'articleExtractorDomainPolicyMap', 'articleExtractorDomainPolicyMapJson',
   'dynamicFetchPolicyMap', 'dynamicFetchPolicyMapJson',
   'fetchSchedulerInternalsMap',
@@ -76,7 +75,7 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'consensusTier3Weight', 'consensusTier4Weight',
   'retrievalMaxHitsPerField', 'retrievalMaxPrimeSources', 'retrievalIdentityFilterEnabled',
   'automationQueueStorageEngine', 'runtimeScreenshotMode', 'accuracyMode',
-  'chartExtractionEnabled', 'manufacturerAutoPromote',
+  'chartExtractionEnabled',
   'fieldRulesEngineEnforceEvidence', 'runtimeOpsWorkbenchEnabled',
   'indexingHelperFilesEnabled', 'helperFilesEnabled',
   'helperSupportiveEnabled', 'helperSupportiveMaxSources',
@@ -94,18 +93,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'indexingResumeRetryPersistLimit', 'indexingResumeSuccessPersistLimit',
   'indexingReextractSeedLimit',
   'indexingSchemaPacketsSchemaRoot',
-
-  // Deepseek-specific (not in registry)
-  'deepseekModelVersion', 'deepseekContextLength',
-  'deepseekChatMaxOutputDefault', 'deepseekChatMaxOutputMaximum',
-  'deepseekReasonerMaxOutputDefault', 'deepseekReasonerMaxOutputMaximum',
-  'deepseekFeatures',
-
-  // Per-model costs with -1 defaults (not in registry)
-  'llmCostInputPer1MDeepseekChat', 'llmCostOutputPer1MDeepseekChat',
-  'llmCostCachedInputPer1MDeepseekChat',
-  'llmCostInputPer1MDeepseekReasoner', 'llmCostOutputPer1MDeepseekReasoner',
-  'llmCostCachedInputPer1MDeepseekReasoner',
 
   // Hardcoded bool flags with no runtimeSettingDefault
   'llmVerifyAggressiveAlways', 'llmVerifyAggressiveBatchCount',

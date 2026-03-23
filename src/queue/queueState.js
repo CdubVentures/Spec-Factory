@@ -136,6 +136,29 @@ export function queueStateKey({ storage, category }) {
 }
 
 async function readQueueJsonSafe(storage, key) {
+  if (typeof storage.readTextOrNull === 'function') {
+    const text = await storage.readTextOrNull(key);
+    if (text == null) {
+      return {
+        data: null,
+        corrupt: false
+      };
+    }
+    try {
+      return {
+        data: JSON.parse(text),
+        corrupt: false
+      };
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        return {
+          data: null,
+          corrupt: true
+        };
+      }
+      throw error;
+    }
+  }
   try {
     return {
       data: await storage.readJsonOrNull(key),

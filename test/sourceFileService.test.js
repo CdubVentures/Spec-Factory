@@ -11,7 +11,6 @@ import {
   addSourceEntry,
   updateSourceEntry,
   removeSourceEntry,
-  mergeManufacturerPromotions,
   DISCOVERY_DEFAULTS,
 } from '../src/features/indexing/sources/sourceFileService.js';
 
@@ -213,44 +212,3 @@ describe('removeSourceEntry', () => {
   });
 });
 
-describe('mergeManufacturerPromotions', () => {
-  const PROMOTED_ENTRY = {
-    _sourceId: 'brand_pulsar_gg',
-    display_name: 'Pulsar Official',
-    tier: 'tier1_manufacturer',
-    authority: 'authoritative',
-    base_url: 'https://pulsar.gg',
-    content_types: ['product_page'],
-    doc_kinds: ['spec_sheet'],
-    crawl_config: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
-    field_coverage: null,
-    discovery: { method: 'search_first', source_type: 'manufacturer', priority: 70, enabled: true, notes: '' },
-  };
-
-  it('injects promoted entries and recomputes approved', () => {
-    const promotedMap = new Map([['pulsar.gg', PROMOTED_ENTRY]]);
-    const result = mergeManufacturerPromotions(MINIMAL_DATA, promotedMap);
-    assert.ok(result.sources.brand_pulsar_gg);
-    assert.equal(result.sources.brand_pulsar_gg.tier, 'tier1_manufacturer');
-    assert.ok(result.approved.manufacturer.includes('pulsar.gg'));
-    assert.ok(result.sources.rtings_com, 'existing entries preserved');
-  });
-
-  it('does not overwrite existing source entries', () => {
-    const conflicting = { ...PROMOTED_ENTRY, _sourceId: 'rtings_com', base_url: 'https://rtings.com' };
-    const promotedMap = new Map([['rtings.com', conflicting]]);
-    const result = mergeManufacturerPromotions(MINIMAL_DATA, promotedMap);
-    assert.equal(result.sources.rtings_com.display_name, 'RTINGS', 'original entry unchanged');
-  });
-
-  it('returns unchanged data for empty promoted map', () => {
-    const result = mergeManufacturerPromotions(MINIMAL_DATA, new Map());
-    assert.deepEqual(result.sources, MINIMAL_DATA.sources);
-  });
-
-  it('strips _sourceId from injected entries', () => {
-    const promotedMap = new Map([['pulsar.gg', PROMOTED_ENTRY]]);
-    const result = mergeManufacturerPromotions(MINIMAL_DATA, promotedMap);
-    assert.equal(result.sources.brand_pulsar_gg._sourceId, undefined);
-  });
-});

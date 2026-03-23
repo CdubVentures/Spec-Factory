@@ -49,7 +49,7 @@ test('collectLlmModels does not include per-role fallback model candidates', () 
 
 const DEAD_MODEL_ALIASES = ['llmModelTriage', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite'];
 const DEAD_TOKEN_CAP_ALIASES = [
-  'llmMaxOutputTokensTriage', 'llmMaxOutputTokensExtract',
+  'llmMaxOutputTokensExtract',
   'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
 ];
 const DEAD_FALLBACK_TOKEN_ALIASES = [
@@ -93,6 +93,13 @@ test('RUNTIME_SETTINGS_ROUTE_GET.intMap does not contain dead fallback token ali
   }
 });
 
+test('RUNTIME_SETTINGS_ROUTE_GET.intMap keeps the surviving triage token cap', () => {
+  assert.equal(
+    RUNTIME_SETTINGS_ROUTE_GET.intMap.llmMaxOutputTokensTriage,
+    'llmMaxOutputTokensTriage',
+  );
+});
+
 test('RUNTIME_SETTINGS_ROUTE_GET.boolMap does not contain llmTriageUseReasoning', () => {
   assert.equal(RUNTIME_SETTINGS_ROUTE_GET.boolMap.llmTriageUseReasoning, undefined,
     'boolMap should not contain llmTriageUseReasoning');
@@ -131,6 +138,11 @@ test('SETTINGS_CLAMPING_INT_RANGE_MAP does not contain dead token cap aliases', 
     assert.equal(SETTINGS_CLAMPING_INT_RANGE_MAP[key], undefined,
       `clamping ranges should not contain ${key}`);
   }
+});
+
+test('SETTINGS surfaces keep the surviving triage token cap', () => {
+  assert.equal(Object.hasOwn(SETTINGS_DEFAULTS.runtime, 'llmMaxOutputTokensTriage'), true);
+  assert.notEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.llmMaxOutputTokensTriage, undefined);
 });
 
 test('DUAL_KEY_PAIRS does not contain dead fallback model entries', () => {

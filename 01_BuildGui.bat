@@ -15,6 +15,8 @@ if /I "%~1"=="/?" goto :show_help
 if /I "%~1"=="help" goto :show_help
 
 cd /d "%ROOT%"
+echo Rebuilding native modules...
+call npm rebuild better-sqlite3 2>nul
 echo Building GUI...
 call npm run gui:build
 

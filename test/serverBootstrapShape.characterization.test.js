@@ -6,7 +6,7 @@ import path from 'node:path';
 const EXPECTED_KEYS = [
   // Config & paths
   'config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD',
-  'storage', 'runDataStorageState',
+  'storage', 'runDataStorageState', 'getIndexLabRoot',
   // Session & SpecDb
   'sessionCache', 'resolveCategoryAlias',
   'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady',
@@ -53,7 +53,7 @@ function extractReturnKeys(src) {
   return { keys: [...new Set(keyMatches)], spreads };
 }
 
-test('characterization: serverBootstrap return object has exactly 64 keys', () => {
+test('characterization: serverBootstrap return object has exactly 65 keys', () => {
   const assemblerSrc = fs.readFileSync(
     path.resolve('src/api/serverBootstrap.js'), 'utf8'
   );
@@ -71,7 +71,7 @@ test('characterization: serverBootstrap return object has exactly 64 keys', () =
   }
 
   const actualKeys = [...new Set([...directKeys, ...spreadKeys])];
-  assert.equal(actualKeys.length, 64, `expected 64 keys, got ${actualKeys.length}: ${actualKeys.join(', ')}`);
+  assert.equal(actualKeys.length, 65, `expected 65 keys, got ${actualKeys.length}: ${actualKeys.join(', ')}`);
   const expectedSet = new Set(EXPECTED_KEYS);
   const actualSet = new Set(actualKeys);
   for (const k of expectedSet) {
@@ -82,9 +82,9 @@ test('characterization: serverBootstrap return object has exactly 64 keys', () =
   }
 });
 
-test('characterization: EXPECTED_KEYS has exactly 64 entries', () => {
-  assert.equal(EXPECTED_KEYS.length, 64);
-  assert.equal(new Set(EXPECTED_KEYS).size, 64, 'duplicate keys in EXPECTED_KEYS');
+test('characterization: EXPECTED_KEYS has exactly 65 entries', () => {
+  assert.equal(EXPECTED_KEYS.length, 65);
+  assert.equal(new Set(EXPECTED_KEYS).size, 65, 'duplicate keys in EXPECTED_KEYS');
 });
 
 test('characterization: createBootstrapEnvironment returns configGate with gate API', () => {

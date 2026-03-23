@@ -51,8 +51,8 @@ export function createSpecDbRuntime({
       specDbCache.set(resolvedCategory, db);
       triggerAutoSeed(resolvedCategory, db);
       return db;
-    } catch {
-      // create path below
+    } catch (err) {
+      logger.error(`[getSpecDb] primary open failed for ${resolvedCategory}:`, err?.message || err);
     }
 
     try {
@@ -61,7 +61,8 @@ export function createSpecDbRuntime({
       specDbCache.set(resolvedCategory, db);
       triggerAutoSeed(resolvedCategory, db);
       return db;
-    } catch {
+    } catch (err) {
+      logger.error(`[getSpecDb] fallback create failed for ${resolvedCategory}:`, err?.message || err);
       specDbCache.set(resolvedCategory, null);
       return null;
     }

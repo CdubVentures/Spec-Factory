@@ -337,27 +337,24 @@ export function buildRuntimeIdxBadgesBySurface(fieldRulesPayload = {}) {
   );
 }
 
+// WHY: Derives LLM worker field paths from PREFETCH_SURFACE_SPECS (SSOT).
+// Unknown tabs fall back to EXTRACTION_RUNTIME_FIELDS for backward compat.
 function llmWorkerFieldPaths(worker = {}) {
   const prefetchTab = normalizeText(worker?.prefetch_tab);
-  if (prefetchTab === 'search_planner' || prefetchTab === 'query_journey' || prefetchTab === 'search_results' || prefetchTab === 'search_profile') {
-    return SEARCH_RUNTIME_FIELDS;
-  }
-  if (prefetchTab === 'brand_resolver' || prefetchTab === 'serp_selector' || prefetchTab === 'domain_classifier') {
-    return [];
-  }
-  return EXTRACTION_RUNTIME_FIELDS;
+  const spec = PREFETCH_SURFACE_SPECS[prefetchTab];
+  return spec ? spec.fields : EXTRACTION_RUNTIME_FIELDS;
 }
+
+const WORKER_POOL_FIELD_MAP = {
+  search: { fields: SEARCH_RUNTIME_FIELDS, label: 'Search Worker' },
+  fetch:  { fields: EXTRACTION_RUNTIME_FIELDS, label: 'Fetch Worker' },
+};
 
 export function buildRuntimeIdxBadgesForWorker({ fieldRulesPayload = {}, worker = {} } = {}) {
   const pool = normalizeText(worker?.pool).toLowerCase();
-  if (pool === 'search') {
-    return buildBadgesForFields(fieldRulesPayload, SEARCH_RUNTIME_FIELDS, 'Search Worker');
-  }
-  if (pool === 'fetch') {
-    return buildBadgesForFields(fieldRulesPayload, EXTRACTION_RUNTIME_FIELDS, 'Fetch Worker');
-  }
   if (pool === 'llm') {
     return buildBadgesForFields(fieldRulesPayload, llmWorkerFieldPaths(worker), 'LLM');
   }
-  return [];
+  const mapping = WORKER_POOL_FIELD_MAP[pool];
+  return mapping ? buildBadgesForFields(fieldRulesPayload, mapping.fields, mapping.label) : [];
 }

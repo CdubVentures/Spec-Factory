@@ -2,26 +2,12 @@ import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../../../../src/share
 
 export type StorageDestinationOption = 'local' | 's3';
 
-export interface StorageSettingDefaults {
-  enabled: boolean;
-  destinationType: StorageDestinationOption;
-  localDirectory: string;
-  awsRegion: string;
-  s3Bucket: string;
-  s3Prefix: string;
-  s3AccessKeyId: string;
-}
-
-export interface UiSettingDefaults {
-  studioAutoSaveAllEnabled: boolean;
-  studioAutoSaveEnabled: boolean;
-  studioAutoSaveMapEnabled: boolean;
-  runtimeAutoSaveEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
-}
+// WHY: Derived from codegen'd settingsDefaults.d.ts — no manual interface to maintain.
+export type StorageSettingDefaults = typeof SETTINGS_DEFAULTS['storage'];
+export type UiSettingDefaults = typeof SETTINGS_DEFAULTS['ui'];
 
 export const STORAGE_SETTING_DEFAULTS: StorageSettingDefaults = {
-  ...(SETTINGS_DEFAULTS.storage as StorageSettingDefaults),
+  ...SETTINGS_DEFAULTS.storage,
 };
 
 export const STORAGE_DESTINATION_OPTIONS = Object.freeze(
@@ -29,7 +15,7 @@ export const STORAGE_DESTINATION_OPTIONS = Object.freeze(
 );
 
 export const UI_SETTING_DEFAULTS: UiSettingDefaults = {
-  ...(SETTINGS_DEFAULTS.ui as UiSettingDefaults),
+  ...SETTINGS_DEFAULTS.ui,
 };
 
 export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = Object.freeze({

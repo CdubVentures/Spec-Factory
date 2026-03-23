@@ -458,6 +458,8 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
     query_target_map: row.query_target_map && typeof row.query_target_map === 'object' ? row.query_target_map : {},
     missing_critical_fields: Array.isArray(row.missing_critical_fields) ? row.missing_critical_fields : [],
     mode: String(row.mode || '').trim(),
+    source: String(row.source || '').trim(),
+    enhancement_rows: Array.isArray(row.enhancement_rows) ? row.enhancement_rows : [],
   }, ts);
 }
 
@@ -518,6 +520,17 @@ async function handleSerpTriageCompleted(state, deps, { ts, row }) {
     query: String(row.query || '').trim(),
     kept_count: asInt(row.kept_count, 0),
     dropped_count: asInt(row.dropped_count, 0),
+    funnel: row.funnel && typeof row.funnel === 'object' ? {
+      raw_input: asInt(row.funnel.raw_input, 0),
+      hard_drop_count: asInt(row.funnel.hard_drop_count, 0),
+      candidates_after_hard_drop: asInt(row.funnel.candidates_after_hard_drop, 0),
+      canon_merge_count: asInt(row.funnel.canon_merge_count, 0),
+      candidates_classified: asInt(row.funnel.candidates_classified, 0),
+      candidates_sent_to_llm: asInt(row.funnel.candidates_sent_to_llm, 0),
+      overflow_capped: asInt(row.funnel.overflow_capped, 0),
+      llm_model: String(row.funnel.llm_model || '').trim(),
+      llm_applied: Boolean(row.funnel.llm_applied),
+    } : null,
     candidates: Array.isArray(row.candidates) ? row.candidates.map((c) => ({
       url: String(c?.url || '').trim(),
       title: String(c?.title || '').trim(),
@@ -532,6 +545,13 @@ async function handleSerpTriageCompleted(state, deps, { ts, row }) {
         identity_match: asFloat(c.score_components.identity_match, 0),
         penalties: asFloat(c.score_components.penalties, 0),
       } : { base_relevance: 0, tier_boost: 0, identity_match: 0, penalties: 0 },
+      role: String(c?.role || '').trim(),
+      identity_prelim: String(c?.identity_prelim || '').trim(),
+      host_trust_class: String(c?.host_trust_class || '').trim(),
+      primary_lane: c?.primary_lane ?? null,
+      triage_disposition: String(c?.triage_disposition || '').trim(),
+      doc_kind_guess: String(c?.doc_kind_guess || '').trim(),
+      approval_bucket: String(c?.approval_bucket || '').trim(),
     })) : [],
   }, ts);
 }

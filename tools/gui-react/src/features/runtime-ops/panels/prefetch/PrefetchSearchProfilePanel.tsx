@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, SearchPlanPass, PrefetchLiveSettings } from '../../types';
+import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, PrefetchLiveSettings } from '../../types';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { deriveLlmPlannerStatus } from '../../selectors/searchProfileHelpers.js';
 import {
   shouldShowSearchProfileGateBadges,
   normalizeIdentityAliasEntries,
@@ -22,6 +21,14 @@ import {
   resolveFieldRuleHintCountForRowGate,
 } from '../../selectors/prefetchSearchProfileGateHelpers.js';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
+import {
+  classifyQueryTier,
+  tierLabel,
+  tierChipClass,
+  groupByTier,
+  buildTierBudgetSummary,
+  enrichmentStrategyLabel,
+} from '../../selectors/searchProfileTierHelpers.js';
 import { formatTooltip, TooltipBadge } from '../../components/PrefetchTooltip';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
@@ -29,7 +36,6 @@ import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSearchProfilePanelProps {
   data: PrefetchSearchProfileData;
-  searchPlans?: SearchPlanPass[];
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
@@ -73,7 +79,11 @@ function gateZeroRatioReason(gateKey: string): string {
   return '0/Y means no effective values are available for this gate on enabled fields.';
 }
 
-/* ── Query Detail Drawer ─────────────────────────────────────────────── */
+const TH_CLS = 'py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle';
+const TD_CLS = 'py-1.5 px-4';
+const ROW_CLS = 'border-b sf-border-soft hover:sf-surface-elevated cursor-pointer';
+
+/* ── Query Detail Drawer (tier-aware) ──────────────────────────────── */
 
 function QueryDetailDrawer({
   row,
@@ -89,12 +99,60 @@ function QueryDetailDrawer({
   const sourceHost = sourceHostFromRow(row);
   const queryGateFlags = getQueryGateFlags(row, hintSourceCounts);
   const source = querySourceLabel(row);
+  const tier = classifyQueryTier(row);
+  const enrichment = enrichmentStrategyLabel(row);
 
   return (
     <DrawerShell title="Query Detail" subtitle={row.query} maxHeight="none" className="max-h-none" scrollContent={false} onClose={onClose}>
       <DrawerSection title="Query">
         <div className="font-mono sf-text-caption sf-text-primary sf-pre-block rounded p-2">{row.query}</div>
       </DrawerSection>
+
+      <DrawerSection title="Tier">
+        <div className="flex items-center gap-2">
+          <Chip label={tierLabel(tier)} className={tierChipClass(tier)} />
+          {row.group_key && <span className="sf-text-caption sf-text-muted font-mono">{row.group_key}</span>}
+          {row.normalized_key && <Chip label={row.normalized_key} className="sf-chip-info" />}
+          {enrichment && <span className="sf-text-caption sf-text-muted italic">{enrichment}</span>}
+        </div>
+      </DrawerSection>
+
+      {tier === 'key' && (
+        <>
+          {(row.all_aliases?.length ?? 0) > 0 && (
+            <DrawerSection title="Aliases Available">
+              <div className="flex flex-wrap gap-1">
+                {row.all_aliases?.map((a) => <Chip key={a} label={a} className="sf-chip-accent" />)}
+              </div>
+            </DrawerSection>
+          )}
+          {((row.domain_hints?.length ?? 0) > 0 || (row.domains_tried_for_key?.length ?? 0) > 0) && (
+            <DrawerSection title="Domain Coverage">
+              <div className="space-y-1 text-xs sf-text-muted">
+                {(row.domain_hints?.length ?? 0) > 0 && (
+                  <div>Available: {row.domain_hints?.map((d) => <Chip key={d} label={d} className="sf-chip-neutral" />)}</div>
+                )}
+                {(row.domains_tried_for_key?.length ?? 0) > 0 && (
+                  <div>Tried: {row.domains_tried_for_key?.map((d) => <Chip key={d} label={d} className="sf-chip-danger" />)}</div>
+                )}
+              </div>
+            </DrawerSection>
+          )}
+          {((row.preferred_content_types?.length ?? 0) > 0 || (row.content_types_tried_for_key?.length ?? 0) > 0) && (
+            <DrawerSection title="Content Type Coverage">
+              <div className="space-y-1 text-xs sf-text-muted">
+                {(row.preferred_content_types?.length ?? 0) > 0 && (
+                  <div>Available: {row.preferred_content_types?.map((c) => <Chip key={c} label={c} className="sf-chip-neutral" />)}</div>
+                )}
+                {(row.content_types_tried_for_key?.length ?? 0) > 0 && (
+                  <div>Tried: {row.content_types_tried_for_key?.map((c) => <Chip key={c} label={c} className="sf-chip-danger" />)}</div>
+                )}
+              </div>
+            </DrawerSection>
+          )}
+        </>
+      )}
+
       {showGateBadges && (
         <DrawerSection title="Applied Gates">
           <div className="flex flex-wrap gap-1.5">
@@ -128,9 +186,114 @@ function QueryDetailDrawer({
   );
 }
 
+/* ── Tier Section Table ────────────────────────────────────────────── */
+
+function TierQueryTable({
+  rows,
+  tier,
+  selectedQueryText,
+  onSelect,
+}: {
+  rows: PrefetchSearchProfileQueryRow[];
+  tier: string;
+  selectedQueryText: string | null;
+  onSelect: (query: string | null) => void;
+}) {
+  if (rows.length === 0) return null;
+
+  const columns = tier === 'seed'
+    ? ['query', 'tier', 'domain hint', 'results']
+    : tier === 'group'
+      ? ['query', 'tier', 'group', 'target fields', 'results']
+      : tier === 'key'
+        ? ['query', 'tier', 'key', 'repeat', 'enrichment', 'results']
+        : ['query', 'tier', 'target fields', 'source', 'results'];
+
+  return (
+    <div className="overflow-x-auto border sf-border-soft rounded-sm">
+      <table className="min-w-full text-xs">
+        <thead className="sf-surface-elevated sticky top-0">
+          <tr>
+            {columns.map((h) => <th key={h} className={TH_CLS}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr
+              key={i}
+              className={ROW_CLS}
+              onClick={() => onSelect(selectedQueryText === r.query ? null : r.query)}
+            >
+              <td className={`${TD_CLS} font-mono sf-text-primary max-w-[20rem] truncate`}>{r.query}</td>
+              <td className={TD_CLS}><Chip label={tierLabel(tier)} className={tierChipClass(tier)} /></td>
+              {tier === 'seed' && (
+                <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.domain_hint || r.source_host || '-'}</td>
+              )}
+              {tier === 'group' && (
+                <>
+                  <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.group_key || '-'}</td>
+                  <td className={`${TD_CLS} sf-text-muted`}>{r.target_fields?.join(', ') || '-'}</td>
+                </>
+              )}
+              {tier === 'key' && (
+                <>
+                  <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.normalized_key || '-'}</td>
+                  <td className={`${TD_CLS} text-right font-mono`}>{r.repeat_count ?? 0}</td>
+                  <td className={`${TD_CLS} sf-text-muted italic`}>{enrichmentStrategyLabel(r) || '-'}</td>
+                </>
+              )}
+              {tier === 'legacy' && (
+                <>
+                  <td className={`${TD_CLS} sf-text-muted`}>{r.target_fields?.join(', ') || '-'}</td>
+                  <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.hint_source || '-'}</td>
+                </>
+              )}
+              <td className={`${TD_CLS} text-right font-mono`}>{r.result_count ?? '-'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── Budget Bar ────────────────────────────────────────────────────── */
+
+function TierBudgetBar({ budget }: { budget: ReturnType<typeof buildTierBudgetSummary> }) {
+  const segments: Array<{ key: string; label: string; count: number; pct: number; cls: string }> = [
+    { key: 'seed', label: 'T1 Seeds', count: budget.seed.count, pct: budget.seed.pct, cls: 'sf-chip-accent' },
+    { key: 'group', label: 'T2 Groups', count: budget.group.count, pct: budget.group.pct, cls: 'sf-chip-warning' },
+    { key: 'key', label: 'T3 Keys', count: budget.key.count, pct: budget.key.pct, cls: 'sf-chip-info' },
+  ];
+  if (budget.legacy.count > 0) {
+    segments.push({ key: 'legacy', label: 'Legacy', count: budget.legacy.count, pct: budget.legacy.pct, cls: 'sf-chip-neutral' });
+  }
+  const used = budget.total;
+  const unusedPct = budget.cap > 0 ? Math.max(0, ((budget.cap - used) / budget.cap) * 100) : 0;
+
+  return (
+    <div>
+      <SectionHeader>budget allocation &middot; {used}/{budget.cap} slots used</SectionHeader>
+      <div className="flex h-3 w-full rounded-sm overflow-hidden border sf-border-soft">
+        {segments.filter((s) => s.count > 0).map((s) => (
+          <div key={s.key} className={`${s.cls} h-full`} style={{ width: `${(s.count / Math.max(budget.cap, 1)) * 100}%` }} />
+        ))}
+        {unusedPct > 0 && <div className="sf-surface-elevated h-full" style={{ width: `${unusedPct}%` }} />}
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1.5">
+        {segments.filter((s) => s.count > 0).map((s) => (
+          <span key={s.key} className="text-[10px] font-semibold uppercase tracking-[0.06em] sf-text-muted">
+            {s.label} <strong className="sf-text-primary">{s.count}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
-export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, liveSettings, idxRuntime }: PrefetchSearchProfilePanelProps) {
+export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, idxRuntime }: PrefetchSearchProfilePanelProps) {
   const showGateBadges = shouldShowSearchProfileGateBadges();
   const queryValues = useMemo(() => data.query_rows.map((row) => row.query).filter(Boolean), [data.query_rows]);
   const [selectedQueryText, setSelectedQueryText] = usePersistedNullableTab<string>(
@@ -143,23 +306,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     [data.query_rows, selectedQueryText],
   );
   const hintSourceCounts = data.hint_source_counts || {};
-  const llmPlannerFromArtifact = useMemo(
-    () => deriveLlmPlannerStatus(data as unknown as Record<string, unknown>),
-    [data],
-  );
-  const llmPlannerActive = llmPlannerFromArtifact;
   const liveProvider = liveSettings?.searchEngines || '';
-  const llmPlannedQueries = useMemo(() => {
-    const planned = new Set<string>();
-    for (const plan of searchPlans || []) {
-      const queries = Array.isArray(plan.queries_generated) ? plan.queries_generated : [];
-      for (const query of queries) {
-        const token = String(query || '').trim();
-        if (token) planned.add(token);
-      }
-    }
-    return planned;
-  }, [searchPlans]);
   const allTargetFields = [...new Set(data.query_rows.flatMap((r) => r.target_fields || []))];
   const uncoveredFields = allTargetFields.length > 0
     ? allTargetFields.filter((f) => !data.query_rows.some((r) => r.target_fields?.includes(f) && (r.result_count ?? 0) > 0))
@@ -176,10 +323,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
     () => normalizeFieldRuleGateCounts(data.field_rule_gate_counts),
     [data.field_rule_gate_counts],
   );
-  const effectiveGateCounts = useMemo(
-    () => new Map(fieldRuleGateCounts.map((row) => [row.key, row])),
-    [fieldRuleGateCounts],
-  );
   const providerLabel = providerDisplayLabel(liveProvider || data.provider) || toChipLabel(liveProvider || data.provider);
   const totalResults = data.query_rows.reduce((s, r) => s + (r.result_count ?? 0), 0);
   const topLevelFieldRulesOn = gateSummary.fieldRulesOn || gateSummary.fieldRuleKeyCounts.length > 0;
@@ -188,6 +331,10 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
   const guardGuarded = typeof data.query_guard?.guarded === 'number' ? data.query_guard.guarded : null;
   const guardAccepted = typeof data.query_guard?.accepted_query_count === 'number' ? data.query_guard.accepted_query_count : null;
   const guardRejected = typeof data.query_guard?.rejected_query_count === 'number' ? data.query_guard.rejected_query_count : null;
+
+  const tiers = useMemo(() => groupByTier(data.query_rows), [data.query_rows]);
+  const hasTierData = tiers.seed.length > 0 || tiers.group.length > 0 || tiers.key.length > 0;
+  const budget = useMemo(() => buildTierBudgetSummary(data.query_rows, 24), [data.query_rows]);
 
   /* ── Empty state ── */
   if (data.query_rows.length === 0 && !data.brand_resolution) {
@@ -199,7 +346,7 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
           <div className="text-3xl opacity-60">&#128270;</div>
           <div className="text-sm font-medium sf-text-muted">Waiting for search profile</div>
           <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Profile will appear after query planning completes. It combines deterministic rules with optional LLM planner queries to discover source URLs.
+            Profile will appear after query planning completes. Queries are assembled deterministically from field rules, search templates, and identity aliases.
           </p>
         </div>
       </div>
@@ -216,98 +363,94 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         titleRow={<>
           <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Profile</span>
           <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Discovery Pipeline</span>
-          {data.query_rows.length > 0 && <Chip label="Deterministic" className="sf-chip-neutral" />}
         </>}
         trailing={<>
           {providerLabel && <Chip label={providerLabel} className="sf-chip-accent" />}
-          <Chip label="Deterministic" className="sf-chip-neutral" />
-          <Tip text="The Search Profile assembles queries, aliases, and variant guards used to discover source URLs. It combines deterministic rules with LLM planner query output." />
+          <Chip label={hasTierData ? 'Tier-Aware' : 'Deterministic'} className={hasTierData ? 'sf-chip-info' : 'sf-chip-neutral'} />
+          <Tip text="The Search Profile assembles queries from NeedSet tier analysis. Tier 1: broad seed searches. Tier 2: group-level searches for productive field clusters. Tier 3: individual key searches with progressive enrichment." />
         </>}
       >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
-        {/* Big stat numbers */}
         <HeroStatGrid>
           <HeroStat value={data.selected_query_count ?? data.query_count} label="queries" />
-          <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          {hasTierData
+            ? <HeroStat value={`T1:${budget.seed.count} T2:${budget.group.count} T3:${budget.key.count}`} label="tier split" />
+            : <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
+          }
+          <HeroStat value={data.selected_count ?? data.discovered_count ?? totalResults} label={hasTierData ? 'urls selected' : 'serp results'} colorClass={(data.selected_count ?? data.discovered_count ?? 0) > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={guardRejected ?? guardGuarded ?? 0} label="guard rejected" colorClass={(guardRejected ?? 0) > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
-        {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
-          {' '}from field rules, search templates, and identity aliases
-          {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
-            <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
+          {hasTierData ? (
+            <>
+              Tier-aware planner allocated <strong className="sf-text-primary not-italic">{budget.total}</strong> queries
+              {budget.seed.count > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{budget.seed.count}</strong> seeds</>}
+              {budget.group.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.group.count}</strong> group searches</>}
+              {budget.key.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.key.count}</strong> key searches</>}
+              {' '}from a cap of <strong className="sf-text-primary not-italic">{budget.cap}</strong>
+              {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
+                <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
+              )}
+              .
+            </>
+          ) : (
+            <>
+              Deterministic planner assembled <strong className="sf-text-primary not-italic">{data.selected_query_count ?? data.query_count}</strong> queries
+              {' '}from field rules, search templates, and identity aliases
+              {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
+                <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
+              )}
+              .
+            </>
           )}
-          .
         </div>
       </HeroBand>
 
       {/* ══════════════════════════════════════════════════════════════════
-          QUERY TABLE
+          BUDGET BAR (tier-aware only)
           ══════════════════════════════════════════════════════════════════ */}
-      {data.query_rows.length > 0 && (
-        <div>
-          <SectionHeader>query plan &middot; {data.query_rows.length} queries &middot; {totalResults} results</SectionHeader>
-          <div className={`overflow-x-auto overflow-y-auto border sf-border-soft rounded-sm ${selectedQuery ? 'max-h-[50vh]' : 'max-h-none'}`}>
-            <table className="min-w-full text-xs">
-              <thead className="sf-surface-elevated sticky top-0">
-                <tr>
-                  {['query', 'strategy', 'target fields', showGateBadges ? 'gate badges' : 'source', 'results', 'providers'].map((h) => (
-                    <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.query_rows.map((r, i) => {
-                  const isLlm = llmPlannedQueries.has(r.query);
-                  const queryTermsGate = effectiveGateCounts.get('search_hints.query_terms');
-                  const domainHintsGate = effectiveGateCounts.get('search_hints.domain_hints');
-                  const contentTypesGate = effectiveGateCounts.get('search_hints.preferred_content_types');
-                  const primaryTargetField = String(r.target_fields?.[0] || '').trim();
-                  const perFieldHintCounts = primaryTargetField ? data.field_rule_hint_counts_by_field?.[primaryTargetField] : undefined;
-                  const resolveCount = (
-                    key: 'query_terms' | 'domain_hints' | 'preferred_content_types',
-                    fallback: { status: string; valueCount: number } | undefined,
-                  ) => resolveFieldRuleHintCountForRowGate({ perFieldHintCounts, gateKey: key, fallbackGate: fallback });
-                  const queryTermsInfo = resolveCount('query_terms', queryTermsGate);
-                  const domainHintsInfo = resolveCount('domain_hints', domainHintsGate);
-                  const contentTypesInfo = resolveCount('preferred_content_types', contentTypesGate);
-                  const toRatioLabel = (info: { status: string; effective: number; total: number }) => info.status === 'off' ? 'OFF' : `${info.effective}/${Math.max(info.total, info.effective)}`;
-                  const source = querySourceLabel(r);
-                  return (
-                    <tr
-                      key={i}
-                      className="border-b sf-border-soft hover:sf-surface-elevated cursor-pointer"
-                      onClick={() => setSelectedQueryText(selectedQueryText === r.query ? null : r.query)}
-                    >
-                      <td className="py-1.5 px-4 font-mono sf-text-primary max-w-[20rem] truncate">{r.query}</td>
-                      <td className="py-1.5 px-4">
-                        <Chip label={isLlm ? 'LLM' : 'Det.'} className={isLlm ? 'sf-chip-warning' : 'sf-chip-neutral'} />
-                      </td>
-                      <td className="py-1.5 px-4 sf-text-muted">{r.target_fields?.join(', ') || '-'}</td>
-                      {showGateBadges ? (
-                        <td className="py-1.5 px-4">
-                          <div className="flex flex-wrap gap-1">
-                            <Chip label={`Terms ${toRatioLabel(queryTermsInfo)}`} className={gateBadgeClass(queryTermsInfo.status === 'active')} />
-                            <Chip label={`Domain ${toRatioLabel(domainHintsInfo)}`} className={gateBadgeClass(domainHintsInfo.status === 'active')} />
-                            <Chip label={`Content ${toRatioLabel(contentTypesInfo)}`} className={gateBadgeClass(contentTypesInfo.status === 'active')} />
-                          </div>
-                        </td>
-                      ) : (
-                        <td className="py-1.5 px-4 sf-text-muted font-mono">{source}</td>
-                      )}
-                      <td className="py-1.5 px-4 text-right font-mono">{r.result_count ?? '-'}</td>
-                      <td className="py-1.5 px-4 sf-text-muted">{formatProviderList(r.providers) || '-'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      {hasTierData && <TierBudgetBar budget={budget} />}
 
-          {/* Guard summary footer */}
+      {/* ══════════════════════════════════════════════════════════════════
+          TIER 1 — SEEDS
+          ══════════════════════════════════════════════════════════════════ */}
+      {tiers.seed.length > 0 && (
+        <div>
+          <SectionHeader>tier 1 &mdash; seeds &middot; {tiers.seed.length} queries</SectionHeader>
+          <TierQueryTable rows={tiers.seed} tier="seed" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          TIER 2 — GROUPS
+          ══════════════════════════════════════════════════════════════════ */}
+      {tiers.group.length > 0 && (
+        <div>
+          <SectionHeader>tier 2 &mdash; groups &middot; {tiers.group.length} queries</SectionHeader>
+          <TierQueryTable rows={tiers.group} tier="group" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          TIER 3 — KEYS
+          ══════════════════════════════════════════════════════════════════ */}
+      {tiers.key.length > 0 && (
+        <div>
+          <SectionHeader>tier 3 &mdash; keys &middot; {tiers.key.length} queries</SectionHeader>
+          <TierQueryTable rows={tiers.key} tier="key" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          LEGACY (backward compat — no tier data)
+          ══════════════════════════════════════════════════════════════════ */}
+      {tiers.legacy.length > 0 && (
+        <div>
+          <SectionHeader>{hasTierData ? 'legacy queries' : 'query plan'} &middot; {tiers.legacy.length} queries &middot; {totalResults} results</SectionHeader>
+          <TierQueryTable rows={tiers.legacy} tier="legacy" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
+
           {(guardTotal !== null || guardAccepted !== null) && (
             <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 mt-2">
               {guardAccepted !== null && <span>accepted <strong className="sf-text-primary">{guardAccepted}</strong></span>}
@@ -412,7 +555,6 @@ export function PrefetchSearchProfilePanel({ data, searchPlans, persistScope, li
         </div>
       )}
 
-      {/* Uncovered fields warning */}
       {uncoveredFields.length > 0 && (
         <div className="px-4 py-3 rounded-sm border border-[var(--sf-state-warning-border)] bg-[var(--sf-state-warning-bg)]">
           <span className="text-xs font-bold text-[var(--sf-state-warning-fg)]">Uncovered fields: </span>

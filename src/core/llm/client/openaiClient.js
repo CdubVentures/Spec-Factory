@@ -4,6 +4,7 @@ import {
   normalizeUsage
 } from '../../../billing/costRates.js';
 import { selectLlmProvider } from '../providers/index.js';
+import { providerFromModelToken } from '../providerMeta.js';
 import { LlmProviderHealth } from './providerHealth.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -25,26 +26,6 @@ function normalizeModel(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function isDeepSeekRequest({ baseUrl, model }) {
-  const url = normalizeBaseUrl(baseUrl).toLowerCase();
-  const modelToken = normalizeModel(model);
-  return url.includes('deepseek.com') || modelToken.startsWith('deepseek');
-}
-
-// TODO: consolidate with routeResolver.js — registry should be sole provider authority
-function providerName({ baseUrl, model }) {
-  if (isDeepSeekRequest({ baseUrl, model })) {
-    return 'deepseek';
-  }
-  const url = normalizeBaseUrl(baseUrl).toLowerCase();
-  if (url.includes('googleapis.com') || normalizeModel(model).includes('gemini')) {
-    return 'gemini';
-  }
-  if (url.includes('chatmock') || url.includes('localhost')) {
-    return 'chatmock';
-  }
-  return 'openai';
-}
 
 function shouldRetryWithoutJsonSchema(error) {
   const token = String(error?.message || '').toLowerCase();
@@ -55,6 +36,23 @@ function shouldRetryWithoutJsonSchema(error) {
     token.includes('invalid parameter') ||
     token.includes('invalid_request_error')
   );
+}
+
+function shouldCountAsProviderFailure(error) {
+  const token = String(error?.message || '').toLowerCase();
+  if (!token) {
+    return true;
+  }
+  if (
+    token.includes('structured output failed schema validation') ||
+    token.includes('content was not valid json') ||
+    token.includes('response missing message content') ||
+    token.includes('llm_api_key is not configured') ||
+    token.includes('response.text is not a function')
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function sanitizeText(message, secrets = []) {
@@ -556,11 +554,10 @@ export async function callOpenAI({
   }
 
   const baseUrlNormalized = normalizeBaseUrl(baseUrl);
-  const providerClient = selectLlmProvider(
-    provider || providerName({ baseUrl: baseUrlNormalized, model })
-  );
+  const inferredProvider = provider || providerFromModelToken(model);
+  const providerClient = selectLlmProvider(inferredProvider);
   const providerLabel = providerClient.name;
-  const deepSeekMode = isDeepSeekRequest({ baseUrl, model });
+  const deepSeekMode = inferredProvider === 'deepseek';
   const reason = String(usageContext?.reason || 'extract');
   const routeRole = String(usageContext?.route_role || '').trim();
   const traceWriter = usageContext?.traceWriter || null;
@@ -911,7 +908,9 @@ export async function callOpenAI({
     return parsed;
   } catch (firstError) {
     if (!jsonSchema || !shouldRetryWithoutJsonSchema(firstError)) {
-      _providerHealth.recordFailure(providerLabel, firstError);
+      if (shouldCountAsProviderFailure(firstError)) {
+        _providerHealth.recordFailure(providerLabel, firstError);
+      }
       const safeMessage = sanitizeText(firstError.message, [apiKey]);
       emitFailure(safeMessage);
       await emitTrace({
@@ -972,7 +971,9 @@ export async function callOpenAI({
       });
       return parsed;
     } catch (retryError) {
-      _providerHealth.recordFailure(providerLabel, retryError);
+      if (shouldCountAsProviderFailure(retryError)) {
+        _providerHealth.recordFailure(providerLabel, retryError);
+      }
       const safeMessage = sanitizeText(retryError.message, [apiKey]);
       emitFailure(safeMessage);
       await emitTrace({

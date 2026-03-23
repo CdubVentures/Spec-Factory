@@ -1,0 +1,112 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#1d4ed8",
+    "secondaryColor": "#7c3aed",
+    "secondaryTextColor": "#ffffff",
+    "secondaryBorderColor": "#6d28d9",
+    "tertiaryColor": "#059669",
+    "tertiaryTextColor": "#ffffff",
+    "tertiaryBorderColor": "#047857",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 24, "nodeSpacing": 60, "rankSpacing": 80 }
+} }%%
+
+%% ─────────────────────────────────────────────────────────────
+%% FULL DISCOVERY PIPELINE — 8 STAGES
+%% Optimized for 4K landscape (3840 x 2160)
+%% ─────────────────────────────────────────────────────────────
+
+flowchart LR
+
+  %% ── INPUT ──
+  START(["Product Identity\n+ Category Config\n+ Round Context"])
+
+  %% ── PARALLEL BLOCK ──
+  subgraph PARALLEL["PARALLEL — Stages 01 & 02 fire simultaneously"]
+    direction TB
+
+    subgraph S01["Stage 01 — NeedSet"]
+      direction LR
+      N1["Schema 2\nPer-Field\nGap Check"]
+      N2["Schema 3\nGroup Planning\n+ Tier Allocation"]
+      N3["Schema 4\nLLM Assessment\n(priority only)"]
+      N1 --> N2 --> N3
+    end
+
+    subgraph S02["Stage 02 — Brand Resolver"]
+      direction LR
+      B1["Cache\nLookup"]
+      B2{"Cache\nHit?"}
+      B3["LLM Call\n(resolve domain)"]
+      B4["Return Domain\n+ Confidence"]
+      B1 --> B2
+      B2 -- "Yes" --> B4
+      B2 -- "No" --> B3 --> B4
+    end
+  end
+
+  START --> PARALLEL
+
+  %% ── CONVERGENCE ──
+  CONV{{"Convergence Point\n(Orchestrator merges\nNeedSet + Brand)"}}
+
+  PARALLEL --> CONV
+
+  %% ── SEQUENTIAL STAGES ──
+  subgraph SEQ["SEQUENTIAL — Stages 03 through 08"]
+    direction LR
+
+    S03["Stage 03\nSearch Profile\n(deterministic)\nGenerate tier-tagged\nquery rows"]
+
+    S04["Stage 04\nSearch Planner\n(LLM)\nPolish query\nwording"]
+
+    S05["Stage 05\nQuery Journey\n(deterministic)\nDedupe + rank\n+ guard + cap"]
+
+    S06["Stage 06\nSearch Execution\nRun queries vs\nGoogle / SearXNG\n/ internal corpus"]
+
+    S07["Stage 07\nSERP Triage\nClassify + filter\n+ select URLs\nto scrape"]
+
+    S08["Stage 08\nDomain Classifier\nEnqueue approved\nURLs to scraper"]
+
+    S03 --> S04 --> S05 --> S06 --> S07 --> S08
+  end
+
+  CONV --> SEQ
+
+  %% ── OUTPUT ──
+  DONE(["Approved URLs\nenqueued for\npage fetching\n+ extraction"])
+
+  SEQ --> DONE
+
+  %% ── FEEDBACK LOOPS ──
+  S08 -. "Per-field history\n+ query execution history\nfed back to next round" .-> START
+
+  %% ── STYLING ──
+  style START fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style DONE fill:#10b981,stroke:#059669,color:#ffffff
+  style CONV fill:#ec4899,stroke:#db2777,color:#ffffff
+  style PARALLEL fill:#f1f5f9,stroke:#94a3b8,color:#1e293b
+  style SEQ fill:#f8fafc,stroke:#94a3b8,color:#1e293b
+
+  style N1 fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style N2 fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style N3 fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+
+  style B1 fill:#06b6d4,stroke:#0891b2,color:#ffffff
+  style B2 fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style B3 fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style B4 fill:#06b6d4,stroke:#0891b2,color:#ffffff
+
+  style S03 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+  style S04 fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S05 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+  style S06 fill:#059669,stroke:#047857,color:#ffffff
+  style S07 fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style S08 fill:#10b981,stroke:#059669,color:#ffffff

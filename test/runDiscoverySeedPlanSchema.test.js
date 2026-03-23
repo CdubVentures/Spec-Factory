@@ -76,7 +76,7 @@ function stubLoadSourceEntries() { return []; }
 // These stubs return minimal valid shapes so the test focuses on schema4 wiring.
 function makeStageStubs({ captureSearchPlannerArgs } = {}) {
   return {
-    runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
+    runBrandResolverFn: async () => ({ brandResolution: null, promotions: { hostEntries: [], registryEntries: {} } }),
     runSearchProfileFn: () => ({
       searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
       effectiveHostPlan: null,
@@ -119,7 +119,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     let capturedJourneyArgs = null;
 
     const stubComputeNeedSet = () => ({
-      schema_version: 'needset_output.v2',
+      schema_version: 'needset_output.v2.1',
       fields: [],
       summary: {},
       blockers: {},

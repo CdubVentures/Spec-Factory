@@ -253,7 +253,7 @@ describe('classifySourceArchetypes', () => {
     assert.ok(labHosts.includes('techpowerup.com'), 'techpowerup.com in lab_review');
   });
 
-  it('manufacturer archetype from manufacturer_crawl_overrides + brand resolution', () => {
+  it('manufacturer archetype from brand resolution hints', () => {
     const archetypes = classifySourceArchetypes(
       makeSourceRegistry(), makeSourceHosts(), ['razer.com', 'logitechg.com']
     );

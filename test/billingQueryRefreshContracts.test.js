@@ -110,7 +110,17 @@ function buildCommonStubs() {
         return { type: 'MetricRow', props };
       }
     `,
+    '../../shared/ui/data-display/MetricRow': `
+      export function MetricRow(props) {
+        return { type: 'MetricRow', props };
+      }
+    `,
     '../../components/common/Spinner': `
+      export function Spinner(props) {
+        return { type: 'Spinner', props };
+      }
+    `,
+    '../../shared/ui/feedback/Spinner': `
       export function Spinner(props) {
         return { type: 'Spinner', props };
       }
@@ -120,7 +130,17 @@ function buildCommonStubs() {
         return { type: 'ProgressBar', props };
       }
     `,
+    '../../shared/ui/data-display/ProgressBar': `
+      export function ProgressBar(props) {
+        return { type: 'ProgressBar', props };
+      }
+    `,
     '../../components/common/DataTable': `
+      export function DataTable(props) {
+        return { type: 'DataTable', props };
+      }
+    `,
+    '../../shared/ui/data-display/DataTable': `
       export function DataTable(props) {
         return { type: 'DataTable', props };
       }
@@ -130,7 +150,17 @@ function buildCommonStubs() {
         return { type: 'StatusBadge', props };
       }
     `,
+    '../../shared/ui/feedback/StatusBadge': `
+      export function StatusBadge(props) {
+        return { type: 'StatusBadge', props };
+      }
+    `,
     '../../components/common/TrafficLight': `
+      export function TrafficLight(props) {
+        return { type: 'TrafficLight', props };
+      }
+    `,
+    '../../shared/ui/feedback/TrafficLight': `
       export function TrafficLight(props) {
         return { type: 'TrafficLight', props };
       }

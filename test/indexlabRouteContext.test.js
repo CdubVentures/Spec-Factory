@@ -4,7 +4,8 @@ import { createIndexlabRouteContext } from '../src/features/indexing/api/indexla
 
 const EXPECTED_KEYS = [
   'jsonRes', 'toInt', 'toFloat', 'config', 'safeJoin', 'safeReadJson', 'path',
-  'INDEXLAB_ROOT', 'processStatus', 'readIndexLabRunMeta',
+  'INDEXLAB_ROOT', 'OUTPUT_ROOT', 'processStatus', 'readJsonBody', 'broadcastWs',
+  'runDataStorageState', 'storage', 'getIndexLabRoot', 'readIndexLabRunMeta',
   'resolveIndexLabRunDirectory', 'readIndexLabRunEvents', 'readIndexLabRunNeedSet',
   'readIndexLabRunSearchProfile', 'readIndexLabRunPhase07Retrieval',
   'readIndexLabRunPhase08Extraction', 'readIndexLabRunDynamicFetchDashboard',
@@ -22,7 +23,8 @@ const EXPECTED_KEYS = [
 
 const CORE_KEYS = [
   'jsonRes', 'toInt', 'toFloat', 'config', 'safeJoin', 'safeReadJson', 'path',
-  'INDEXLAB_ROOT', 'processStatus',
+  'INDEXLAB_ROOT', 'OUTPUT_ROOT', 'processStatus', 'readJsonBody', 'broadcastWs',
+  'runDataStorageState', 'storage', 'getIndexLabRoot',
 ];
 
 test('createIndexlabRouteContext throws TypeError on non-object input', () => {

@@ -4,7 +4,7 @@ Validated against live code on 2026-03-20 (NeedSet now provides tier_allocation 
 
 ## What this stage is
 
-Search Profile is the deterministic Stage 03 query-profile layer built by `runSearchProfile()`. In the canonical 8-stage pipeline it runs after NeedSet and Brand Resolver, then feeds both Stage 04 Search Planner and Stage 05 Query Journey.
+Search Profile is the deterministic Stage 03 query-profile layer built by `runSearchProfile()`. It is the **convergence point** of the pipeline -- the first stage that requires output from both NeedSet (Stage 01: `focusGroups`, `seedStatus`) and Brand Resolver (Stage 02: `brandResolution`). Stages 01 and 02 run in parallel via `Promise.all`; after both complete, the orchestrator applies brand promotions and resolves identity/learning context, then feeds everything into Search Profile. See `03-pipeline-context.json` for the full accumulated state at this convergence point. Search Profile then feeds both Stage 04 Search Planner and Stage 05 Query Journey.
 
 Primary owners:
 
@@ -16,12 +16,8 @@ Primary owners:
 
 ## Schema files in this folder
 
-There is no dedicated numbered JSON schema file just for Search Profile.
-
-Coverage is split across:
-
-- `04-query-journey-output.json`
-- the planned/executed `search_profile` artifacts written by runtime code
+- `03-pipeline-context.json` -- the PipelineContext convergence document (replaces the former `03-search-profile-input.json`). Search Profile's input IS the PipelineContext -- the accumulated state from stages 01+02 plus orchestrator glue.
+- `03-search-profile-output.json`
 
 ## Inputs in
 
@@ -93,7 +89,6 @@ Those host-plan rows are not part of `buildSearchProfile()` output. They are app
 - `identity_aliases`
 - `alias_reject_log`
 - `query_reject_log`
-- `negative_terms`
 - `focus_fields`
 - `base_templates`
 - `query_rows`

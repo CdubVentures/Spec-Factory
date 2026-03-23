@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { RuntimeOpsWorkerRow } from '../../types';
 import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBadgeClass } from '../../helpers';
+import { resolvePoolStage } from '../../poolStageRegistry';
 import { buildWorkerButtonLabel, buildWorkerButtonSubtitle, sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
 
 interface WorkerSubTabsProps {
@@ -10,15 +11,8 @@ interface WorkerSubTabsProps {
   poolFilter: string;
 }
 
+// WHY: UI-specific display order — not all pools are shown, and the order differs from POOL_STAGE_KEYS.
 const POOL_ORDER: ReadonlyArray<string> = ['llm', 'search', 'fetch'];
-
-const POOL_META: Record<string, { label: string; laneClass: string; labelClass: string; tintClass: string }> = {
-  llm:    { label: 'LLM',    laneClass: 'sf-pool-lane-llm',    labelClass: 'sf-pool-label-llm',    tintClass: 'sf-pool-tint-llm' },
-  search: { label: 'Search', laneClass: 'sf-pool-lane-search', labelClass: 'sf-pool-label-search', tintClass: 'sf-pool-tint-search' },
-  fetch:  { label: 'Fetch',  laneClass: 'sf-pool-lane-fetch',  labelClass: 'sf-pool-label-fetch',  tintClass: 'sf-pool-tint-fetch' },
-};
-
-const FALLBACK_META = { label: 'Other', laneClass: 'sf-pool-lane-other', labelClass: 'sf-pool-label-other', tintClass: '' };
 
 function stateAnimClass(state: string): string {
   switch (state) {
@@ -31,7 +25,7 @@ function stateAnimClass(state: string): string {
 
 interface PoolGroup {
   pool: string;
-  meta: typeof POOL_META[string];
+  meta: { shortLabel: string; laneClass: string; labelClass: string; tintClass: string };
   workers: RuntimeOpsWorkerRow[];
   runningCount: number;
 }
@@ -43,9 +37,10 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
     for (const pool of POOL_ORDER) {
       const poolWorkers = sortWorkersForTabs(list.filter((w) => w.pool === pool));
       if (poolWorkers.length > 0) {
+        const vis = resolvePoolStage(pool);
         groups.push({
           pool,
-          meta: POOL_META[pool] ?? FALLBACK_META,
+          meta: vis,
           workers: poolWorkers,
           runningCount: poolWorkers.filter((w) => w.state === 'running').length,
         });
@@ -53,7 +48,8 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
     }
     const otherWorkers = sortWorkersForTabs(list.filter((w) => !POOL_ORDER.includes(w.pool)));
     if (otherWorkers.length > 0) {
-      groups.push({ pool: 'other', meta: FALLBACK_META, workers: otherWorkers, runningCount: 0 });
+      const fallback = resolvePoolStage('other');
+      groups.push({ pool: 'other', meta: fallback, workers: otherWorkers, runningCount: 0 });
     }
     return groups;
   }, [workers, poolFilter]);
@@ -70,7 +66,7 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
           {/* ── Lane sidebar ── */}
           <div className="flex items-center gap-2.5 pl-3 pr-4 py-2 shrink-0">
             <span className={`sf-text-caption font-bold uppercase tracking-widest ${group.meta.labelClass} select-none`}>
-              {group.meta.label}
+              {group.meta.shortLabel}
             </span>
             <span className="sf-text-nano font-mono tabular-nums sf-text-muted leading-none">
               {group.runningCount > 0

@@ -1,4 +1,5 @@
 import type { LlmRouteRow } from '../../types/llmSettings.ts';
+import { LLM_ROUTE_COLUMN_KEYS } from '../../types/llmRouteTypes.generated.ts';
 import { LLM_SETTING_LIMITS, LLM_ROUTE_PRESET_LIMITS } from '../../stores/llmSettingsManifest.ts';
 import type { LlmRoutePresetConfig } from '../../stores/llmSettingsManifest.ts';
 import { PROMPT_FLAG_FIELDS } from './llmRouteTaxonomy.ts';
@@ -66,39 +67,12 @@ export function applyContextPack(row: LlmRouteRow, pack: 'minimal' | 'standard' 
 }
 
 export function rowDefaultsComparable(row: LlmRouteRow) {
-  return {
-    scope: row.scope,
-    required_level: row.required_level,
-    difficulty: row.difficulty,
-    availability: row.availability,
-    effort: row.effort,
-    effort_band: row.effort_band,
-    single_source_data: row.single_source_data,
-    all_source_data: row.all_source_data,
-    enable_websearch: row.enable_websearch,
-    model_ladder_today: row.model_ladder_today,
-    all_sources_confidence_repatch: row.all_sources_confidence_repatch,
-    max_tokens: row.max_tokens,
-    studio_key_navigation_sent_in_extract_review: row.studio_key_navigation_sent_in_extract_review,
-    studio_contract_rules_sent_in_extract_review: row.studio_contract_rules_sent_in_extract_review,
-    studio_extraction_guidance_sent_in_extract_review: row.studio_extraction_guidance_sent_in_extract_review,
-    studio_tooltip_or_description_sent_when_present: row.studio_tooltip_or_description_sent_when_present,
-    studio_enum_options_sent_when_present: row.studio_enum_options_sent_when_present,
-    studio_component_variance_constraints_sent_in_component_review: row.studio_component_variance_constraints_sent_in_component_review,
-    studio_parse_template_sent_direct_in_extract_review: row.studio_parse_template_sent_direct_in_extract_review,
-    studio_ai_mode_difficulty_effort_sent_direct_in_extract_review: row.studio_ai_mode_difficulty_effort_sent_direct_in_extract_review,
-    studio_required_level_sent_in_extract_review: row.studio_required_level_sent_in_extract_review,
-    studio_component_entity_set_sent_when_component_field: row.studio_component_entity_set_sent_when_component_field,
-    studio_evidence_policy_sent_direct_in_extract_review: row.studio_evidence_policy_sent_direct_in_extract_review,
-    studio_variance_policy_sent_in_component_review: row.studio_variance_policy_sent_in_component_review,
-    studio_constraints_sent_in_component_review: row.studio_constraints_sent_in_component_review,
-    studio_send_booleans_prompted_to_model: row.studio_send_booleans_prompted_to_model,
-    scalar_linked_send: row.scalar_linked_send,
-    component_values_send: row.component_values_send,
-    list_values_send: row.list_values_send,
-    llm_output_min_evidence_refs_required: row.llm_output_min_evidence_refs_required,
-    insufficient_evidence_action: row.insufficient_evidence_action
-  };
+  // WHY: O(1) — uses generated column keys instead of manual 32-field enumeration.
+  const result: Record<string, unknown> = {};
+  for (const key of LLM_ROUTE_COLUMN_KEYS) {
+    result[key] = row[key];
+  }
+  return result;
 }
 
 export function applyRoutePreset(row: LlmRouteRow, preset: 'balanced' | 'deep') {

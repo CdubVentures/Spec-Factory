@@ -151,3 +151,5 @@ export const LLM_DASHBOARD_SUMMARY_KEYS = Object.freeze([
   'avg_latency_ms', 'rounds', 'calls_in_latest_round',
   'by_model', 'by_call_type',
 ]);
+
+export const LLM_CALL_STATUS_VALUES = Object.freeze(['active', 'done', 'failed']);

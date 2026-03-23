@@ -325,7 +325,6 @@ export interface IndexLabSearchProfileResponse {
     accepted_query_count?: number;
     rejected_query_count?: number;
   };
-  negative_terms?: string[];
   field_target_queries?: Record<string, string[]>;
   doc_hint_queries?: Array<{
     doc_hint: string;
@@ -508,6 +507,7 @@ export interface IndexingLlmConfigResponse {
     as_of?: string | null;
     sources?: Record<string, string>;
   };
+  resolved_api_keys?: Record<string, string>;
 }
 
 export interface IndexingLlmMetricsRunRow {
@@ -587,49 +587,6 @@ export interface IndexLabLlmTracesResponse {
   product_id?: string;
   count?: number;
   traces?: IndexLabLlmTraceRow[];
-}
-
-// ── LLM Calls Dashboard ─────────────────────────────────────────────────────
-
-export interface LlmCallRow {
-  index: number;
-  worker_id: string;
-  call_type: string;
-  round: number;
-  model: string;
-  provider: string;
-  status: 'active' | 'done' | 'failed';
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  estimated_cost: number;
-  estimated_usage?: boolean;
-  duration_ms: number | null;
-  prompt_preview: string | null;
-  response_preview: string | null;
-  prefetch_tab: string | null;
-  ts: string;
-}
-
-export interface LlmCallsDashboardSummary {
-  total_calls: number;
-  active_calls: number;
-  completed_calls: number;
-  total_cost_usd: number;
-  total_tokens: number;
-  prompt_tokens: number;
-  completion_tokens: number;
-  avg_latency_ms: number;
-  rounds: number;
-  calls_in_latest_round: number;
-  by_model: Array<{ model: string; calls: number; cost_usd: number }>;
-  by_call_type: Array<{ call_type: string; cost_usd: number }>;
-}
-
-export interface LlmCallsDashboardResponse {
-  run_id?: string;
-  calls: LlmCallRow[];
-  summary: LlmCallsDashboardSummary;
 }
 
 export interface IndexingDomainChecklistUrlRow {

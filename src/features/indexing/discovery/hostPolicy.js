@@ -31,7 +31,7 @@ export function buildHostPolicy(sourceEntry, providerName) {
     tier_numeric: TIER_NUMERIC[sourceEntry.tier] ?? 99,
     authority: sourceEntry.authority || 'unknown',
     synthetic: sourceEntry.synthetic || false,
-    pacing: sourceEntry.pacing || null,
+    crawl_config: sourceEntry.crawl_config || null,
     requires_js: sourceEntry.requires_js || false,
     connector_only: sourceEntry.connector_only || false,
     blocked_in_search: sourceEntry.blocked_in_search || false,

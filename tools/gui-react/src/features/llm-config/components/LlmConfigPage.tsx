@@ -48,24 +48,8 @@ const LlmExtractionSection = lazy(async () => {
   return { default: module.LlmExtractionSection };
 });
 
-interface RuntimeSettingsLlmConfigResponse {
-  model_options?: string[];
-  token_defaults?: { plan?: number };
-  token_presets?: number[];
-  model_token_profiles?: Array<{
-    model: string;
-    default_output_tokens?: number;
-    max_output_tokens?: number;
-  }>;
-  model_pricing?: Array<{
-    model: string;
-    provider?: string;
-    input_per_1m?: number;
-    output_per_1m?: number;
-    cached_input_per_1m?: number;
-  }>;
-  resolved_api_keys?: Record<string, string>;
-}
+// WHY: Single canonical contract — no local duplicates.
+import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
 export function LlmConfigPage() {
   const queryClient = useQueryClient();

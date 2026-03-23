@@ -132,7 +132,12 @@ export async function runQueryJourney({
     });
   }
 
-  const selectedQueryRows = [...guardedSelectedRows, ...appendedHostPlanRows];
+  const reservedHostPlanRows = appendedHostPlanRows.slice(0, mergedQueryCap);
+  const reservedGuardedCount = Math.max(0, mergedQueryCap - reservedHostPlanRows.length);
+  const selectedQueryRows = [
+    ...guardedSelectedRows.slice(0, reservedGuardedCount),
+    ...reservedHostPlanRows,
+  ];
   let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && rankedCappedQueries.length > 0) {
     const fallback = String(rankedCappedQueries[0]?.query || '').trim();
@@ -220,6 +225,7 @@ export async function runQueryJourney({
     selected_queries: queries.slice(0, 50),
     deterministic_query_count: toArray(enhancedRows).filter((r) => !String(r?.hint_source || '').endsWith('_llm')).length,
     llm_enhanced_count: llmQueries.length,
+    schema4_query_count: llmQueries.length,
     host_plan_query_count: appendedHostPlanRows.length,
     rejected_count: queryRejectLogCombined.length,
   });

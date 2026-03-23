@@ -1,3 +1,5 @@
+import { configInt } from '../../../shared/settingsAccessor.js';
+
 function brandResolverSchema() {
   return {
     type: 'object',
@@ -6,9 +8,10 @@ function brandResolverSchema() {
       official_domain: { type: 'string' },
       aliases: { type: 'array', items: { type: 'string' } },
       support_domain: { type: 'string' },
+      confidence: { type: 'number', description: '0-1 confidence that this is the correct official domain' },
       reasoning: { type: 'array', items: { type: 'string' } }
     },
-    required: ['official_domain']
+    required: ['official_domain', 'confidence']
   };
 }
 
@@ -28,7 +31,7 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
       ].join('\n'),
       user: JSON.stringify({ brand, category }),
       jsonSchema: brandResolverSchema(),
-      timeoutMs: config.llmTimeoutMs || 15000,
+      timeoutMs: configInt(config, 'llmTimeoutMs'),
       logger
     });
     return result;

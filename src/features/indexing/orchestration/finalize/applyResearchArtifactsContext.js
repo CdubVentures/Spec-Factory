@@ -17,7 +17,11 @@ export async function applyResearchArtifactsContext({
   }
 
   const researchBase = storage.resolveOutputKey(category, productId, 'runs', runId, 'research');
-  const searchPlanPayload = { source: 'none', queries: discoveryResult?.queries || [] };
+  const searchPlanPayload = (
+    discoveryResult?.uber_search_plan && typeof discoveryResult.uber_search_plan === 'object'
+      ? discoveryResult.uber_search_plan
+      : { source: 'none', queries: discoveryResult?.queries || [] }
+  );
   const searchJournalRows = Array.isArray(discoveryResult?.search_journal) ? discoveryResult.search_journal : [];
   const frontierSnapshot = frontierDb?.frontierSnapshot?.({ limit: 200 }) || null;
   const previousFields = previousFinalSpec?.fields && typeof previousFinalSpec.fields === 'object'

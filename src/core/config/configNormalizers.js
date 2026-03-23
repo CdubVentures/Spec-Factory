@@ -53,32 +53,6 @@ export const SEARCH_PROFILE_CAP_DEFAULTS = parseRuntimeJsonDefault('searchProfil
   dedupeQueriesCap: 24
 });
 
-// WHY: Fallback values match SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson exactly.
-// These only apply if the shared JSON string is missing or malformed.
-export const SERP_RERANKER_WEIGHT_DEFAULTS = parseRuntimeJsonDefault('serpRerankerWeightMapJson', {
-  identityStrongBonus: 1.4,
-  identityPartialBonus: 0.7,
-  identityWeakBonus: 0,
-  identityNoneBonus: -1.4,
-  brandPresenceBonus: 1.6,
-  modelPresenceBonus: 2.1,
-  specManualKeywordBonus: 0.7,
-  reviewBenchmarkBonus: 0.6,
-  forumRedditPenalty: -1.2,
-  brandInHostnameBonus: 0.8,
-  wikipediaPenalty: -1,
-  variantGuardPenalty: -4,
-  multiModelHintPenalty: -1.6,
-  tier1Bonus: 1.1,
-  tier2Bonus: 0.1,
-  hostHealthDownrankPenalty: -0.4,
-  hostHealthExcludePenalty: -2,
-  operatorRiskPenalty: -0.5,
-  fieldAffinityBonus: 0.5,
-  diversityPenaltyPerDupe: -0.3,
-  needsetCoverageBonus: 0.2,
-});
-
 export const FETCH_SCHEDULER_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('fetchSchedulerInternalsMapJson', {
   defaultDelayMs: 300,
   defaultConcurrency: 3,
@@ -203,33 +177,6 @@ export function normalizeSearchProfileCapMap(input = {}) {
     llmDocHintQueriesCap: clampIntFromMap(source, 'llmDocHintQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmDocHintQueriesCap, 1, 20),
     llmFieldTargetQueriesCap: clampIntFromMap(source, 'llmFieldTargetQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmFieldTargetQueriesCap, 1, 20),
     dedupeQueriesCap: clampIntFromMap(source, 'dedupeQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.dedupeQueriesCap, 1, 200),
-  };
-}
-
-export function normalizeSerpRerankerWeightMap(input = {}) {
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  return {
-    identityStrongBonus: clampFloatFromMap(source, 'identityStrongBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityStrongBonus, -20, 20),
-    identityPartialBonus: clampFloatFromMap(source, 'identityPartialBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityPartialBonus, -20, 20),
-    identityWeakBonus: clampFloatFromMap(source, 'identityWeakBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityWeakBonus, -20, 20),
-    identityNoneBonus: clampFloatFromMap(source, 'identityNoneBonus', SERP_RERANKER_WEIGHT_DEFAULTS.identityNoneBonus, -20, 20),
-    brandPresenceBonus: clampFloatFromMap(source, 'brandPresenceBonus', SERP_RERANKER_WEIGHT_DEFAULTS.brandPresenceBonus, -20, 20),
-    modelPresenceBonus: clampFloatFromMap(source, 'modelPresenceBonus', SERP_RERANKER_WEIGHT_DEFAULTS.modelPresenceBonus, -20, 20),
-    specManualKeywordBonus: clampFloatFromMap(source, 'specManualKeywordBonus', SERP_RERANKER_WEIGHT_DEFAULTS.specManualKeywordBonus, -20, 20),
-    reviewBenchmarkBonus: clampFloatFromMap(source, 'reviewBenchmarkBonus', SERP_RERANKER_WEIGHT_DEFAULTS.reviewBenchmarkBonus, -20, 20),
-    forumRedditPenalty: clampFloatFromMap(source, 'forumRedditPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.forumRedditPenalty, -20, 20),
-    brandInHostnameBonus: clampFloatFromMap(source, 'brandInHostnameBonus', SERP_RERANKER_WEIGHT_DEFAULTS.brandInHostnameBonus, -20, 20),
-    wikipediaPenalty: clampFloatFromMap(source, 'wikipediaPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.wikipediaPenalty, -20, 20),
-    variantGuardPenalty: clampFloatFromMap(source, 'variantGuardPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.variantGuardPenalty, -20, 20),
-    multiModelHintPenalty: clampFloatFromMap(source, 'multiModelHintPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.multiModelHintPenalty, -20, 20),
-    tier1Bonus: clampFloatFromMap(source, 'tier1Bonus', SERP_RERANKER_WEIGHT_DEFAULTS.tier1Bonus, -20, 20),
-    tier2Bonus: clampFloatFromMap(source, 'tier2Bonus', SERP_RERANKER_WEIGHT_DEFAULTS.tier2Bonus, -20, 20),
-    hostHealthDownrankPenalty: clampFloatFromMap(source, 'hostHealthDownrankPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.hostHealthDownrankPenalty, -20, 20),
-    hostHealthExcludePenalty: clampFloatFromMap(source, 'hostHealthExcludePenalty', SERP_RERANKER_WEIGHT_DEFAULTS.hostHealthExcludePenalty, -20, 20),
-    operatorRiskPenalty: clampFloatFromMap(source, 'operatorRiskPenalty', SERP_RERANKER_WEIGHT_DEFAULTS.operatorRiskPenalty, -20, 20),
-    fieldAffinityBonus: clampFloatFromMap(source, 'fieldAffinityBonus', SERP_RERANKER_WEIGHT_DEFAULTS.fieldAffinityBonus, -20, 20),
-    diversityPenaltyPerDupe: clampFloatFromMap(source, 'diversityPenaltyPerDupe', SERP_RERANKER_WEIGHT_DEFAULTS.diversityPenaltyPerDupe, -20, 20),
-    needsetCoverageBonus: clampFloatFromMap(source, 'needsetCoverageBonus', SERP_RERANKER_WEIGHT_DEFAULTS.needsetCoverageBonus, -20, 20),
   };
 }
 

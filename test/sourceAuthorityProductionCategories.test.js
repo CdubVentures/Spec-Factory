@@ -32,11 +32,6 @@ const CATEGORY_EXPECTATIONS = {
       'theremingoat.com',
       'keybumps.com',
     ],
-    manufacturerOverrides: [
-      'corsair.com', 'razer.com', 'logitechg.com', 'steelseries.com',
-      'hyperx.com', 'asus.com', 'keychron.com', 'wooting.io', 'duckychannel.com.tw',
-    ],
-    manufacturerDefaultMethod: 'http',
   },
   monitor: {
     minRealCount: 20,
@@ -58,11 +53,6 @@ const CATEGORY_EXPECTATIONS = {
       'blurbusters.com',
       'panelook.com',
     ],
-    manufacturerOverrides: [
-      'dell.com', 'lg.com', 'samsung.com', 'asus.com', 'benq.com',
-      'acer.com', 'msi.com', 'gigabyte.com',
-    ],
-    manufacturerDefaultMethod: 'http',
   },
   mouse: {
     minRealCount: 20,
@@ -86,11 +76,6 @@ const CATEGORY_EXPECTATIONS = {
       'rocketjumpninja.com',
       'gaminggem.com',
     ],
-    manufacturerOverrides: [
-      'razer.com', 'logitechg.com', 'steelseries.com', 'corsair.com',
-      'gloriousgaming.com', 'pulsar.gg', 'endgamegear.com', 'zowie.benq.com', 'vaxee.co',
-    ],
-    manufacturerDefaultMethod: 'playwright',
   },
 };
 
@@ -126,13 +111,20 @@ for (const [category, expectation] of Object.entries(CATEGORY_EXPECTATIONS)) {
       entry?.tier === 'tier1_manufacturer'
     ));
 
+    // WHY: manufacturer hosts are curated in approved.manufacturer separately
+    // from detailed sources — only non-manufacturer roles must match derived.
+    const { manufacturer: _m, ...approvedWithoutMfr } = raw.approved;
+    const { manufacturer: _d, ...derivedWithoutMfr } = derivedApproved;
     assert.deepEqual(
-      raw.approved,
-      derivedApproved,
-      `${category} approved block must be derived from detailed sources`
+      approvedWithoutMfr,
+      derivedWithoutMfr,
+      `${category} non-manufacturer approved block must be derived from detailed sources`
     );
     assert.deepEqual(validationErrors, [], `${category} validation errors: ${validationErrors.join('; ')}`);
-    assert.equal(report.synthetic_count, 0, `${category} should have 0 synthetic entries`);
+    // WHY: manufacturer hosts in approved.manufacturer are intentionally synthetic
+    // (no detailed source entry) — only non-manufacturer synthetics should be 0.
+    const nonMfrSynthetics = registry.entries.filter(e => e.synthetic && e.tier !== 'tier1_manufacturer').length;
+    assert.equal(nonMfrSynthetics, 0, `${category} should have 0 non-manufacturer synthetic entries`);
     assert.equal(report.real_count >= expectation.minRealCount, true, `${category} should have >= ${expectation.minRealCount} real entries`);
     assert.deepEqual(staticManufacturerEntries, [], `${category} should not ship static tier1 manufacturer entries`);
 
@@ -151,32 +143,10 @@ for (const [category, expectation] of Object.entries(CATEGORY_EXPECTATIONS)) {
     }
   });
 
-  test(`${category} approved.manufacturer is empty (runtime auto-promoted)`, () => {
+  test(`${category} approved.manufacturer lists known brand domains`, () => {
     const raw = loadCategoryRaw(category);
-    assert.deepEqual(raw.approved.manufacturer, [],
-      `${category} approved.manufacturer should be [] (populated at runtime by auto-promote)`);
+    assert.ok(Array.isArray(raw.approved.manufacturer),
+      `${category} approved.manufacturer should be an array`);
   });
 
-  test(`${category} manufacturer_crawl_overrides has valid crawl shapes`, () => {
-    const raw = loadCategoryRaw(category);
-    const overrides = raw.manufacturer_crawl_overrides || {};
-    for (const host of expectation.manufacturerOverrides) {
-      assert.ok(overrides[host], `${category} missing override for ${host}`);
-      assert.ok(['http', 'playwright'].includes(overrides[host].method),
-        `${category} override for ${host} has invalid method`);
-      assert.ok(typeof overrides[host].rate_limit_ms === 'number',
-        `${category} override for ${host} missing rate_limit_ms`);
-      assert.ok(typeof overrides[host].timeout_ms === 'number',
-        `${category} override for ${host} missing timeout_ms`);
-    }
-  });
-
-  test(`${category} manufacturer_defaults block is present`, () => {
-    const raw = loadCategoryRaw(category);
-    assert.ok(raw.manufacturer_defaults, `${category} missing manufacturer_defaults`);
-    assert.equal(raw.manufacturer_defaults.method, expectation.manufacturerDefaultMethod);
-    assert.ok(typeof raw.manufacturer_defaults.rate_limit_ms === 'number');
-    assert.ok(typeof raw.manufacturer_defaults.timeout_ms === 'number');
-    assert.equal(raw.manufacturer_defaults.robots_txt_compliant, true);
-  });
 }

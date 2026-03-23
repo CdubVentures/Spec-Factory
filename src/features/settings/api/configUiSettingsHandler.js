@@ -1,5 +1,9 @@
 import { emitDataChange } from '../../../api/events/dataChangeContract.js';
 import { snapshotUiSettings } from '../../settings-authority/index.js';
+import { UI_SETTINGS_REGISTRY } from '../../../shared/settingsRegistry.js';
+import { deriveUiMutableKeys } from '../../../shared/settingsRegistryDerivations.js';
+
+const UI_MUTABLE_KEYS = deriveUiMutableKeys(UI_SETTINGS_REGISTRY);
 
 export function createUiSettingsHandler({
   jsonRes,
@@ -16,13 +20,7 @@ export function createUiSettingsHandler({
 
     if (method === 'PUT') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const KEY_SET = new Set([
-        'studioAutoSaveAllEnabled',
-        'studioAutoSaveEnabled',
-        'studioAutoSaveMapEnabled',
-        'runtimeAutoSaveEnabled',
-        'storageAutoSaveEnabled',
-      ]);
+      const KEY_SET = new Set(UI_MUTABLE_KEYS);
       const nextUiSettings = {
         ...snapshotUiSettings(persistenceCtx.getUiSettingsState()),
       };

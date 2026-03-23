@@ -1,31 +1,45 @@
-import type { PrefetchSearchResult, SearchResultDetail, SearchPlanPass, PrefetchLiveSettings } from '../types';
+import type { SearchResultDetail, SearchPlanPass, PrefetchLiveSettings } from '../types';
 
-export interface DecisionCounts {
+export interface SearchDecisionCounts {
   keep: number;
   maybe: number;
   drop: number;
   other: number;
 }
 
-export interface DomainCount {
+export interface SearchDomainCount {
   domain: string;
   count: number;
 }
 
-export interface DecisionSegment {
+export interface SearchDecisionSegment {
   label: string;
   value: number;
   color: string;
 }
 
+export interface SearchPerQueryStats {
+  keepCount: number;
+  maybeCount: number;
+  dropCount: number;
+  topDomain: string;
+  avgRelevance: number;
+}
+
+export interface SearchDomainDecisionBreakdown {
+  keep: number;
+  maybe: number;
+  drop: number;
+}
+
 export declare function computeDecisionCounts(
   details: SearchResultDetail[],
-): DecisionCounts;
+): SearchDecisionCounts;
 
 export declare function computeTopDomains(
   details: SearchResultDetail[],
   limit: number,
-): DomainCount[];
+): SearchDomainCount[];
 
 export declare function computeUniqueUrls(
   details: SearchResultDetail[],
@@ -36,14 +50,14 @@ export declare function computeFilteredCount(
 ): number;
 
 export declare function buildFunnelBullets(
-  results: PrefetchSearchResult[],
+  results: Array<{ provider?: string; result_count: number }>,
   details: SearchResultDetail[],
-  decisions: DecisionCounts,
+  decisions: SearchDecisionCounts,
 ): string[];
 
 export declare function buildDecisionSegments(
-  decisions: DecisionCounts,
-): DecisionSegment[];
+  decisions: SearchDecisionCounts,
+): SearchDecisionSegment[];
 
 export declare function buildQueryTargetMap(
   searchPlans: SearchPlanPass[] | undefined,
@@ -54,32 +68,18 @@ export declare function queryPassName(
   searchPlans: SearchPlanPass[] | undefined,
 ): string | undefined;
 
-export interface PerQueryStats {
-  keepCount: number;
-  maybeCount: number;
-  dropCount: number;
-  topDomain: string;
-  avgRelevance: number;
-}
-
 export declare function computePerQueryStats(
   details: SearchResultDetail[],
-): Map<string, PerQueryStats>;
-
-export interface DomainDecisionBreakdown {
-  keep: number;
-  maybe: number;
-  drop: number;
-}
+): Map<string, SearchPerQueryStats>;
 
 export declare function computeDomainDecisionBreakdown(
   details: SearchResultDetail[],
-): Map<string, DomainDecisionBreakdown>;
+): Map<string, SearchDomainDecisionBreakdown>;
 
 export declare function buildEnrichedFunnelBullets(
-  results: PrefetchSearchResult[],
+  results: Array<{ provider?: string; result_count: number }>,
   details: SearchResultDetail[],
-  decisions: DecisionCounts,
+  decisions: SearchDecisionCounts,
   searchPlans: SearchPlanPass[] | undefined,
 ): string[];
 

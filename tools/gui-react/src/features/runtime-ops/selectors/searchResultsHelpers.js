@@ -2,10 +2,10 @@ export function computeDecisionCounts(details) {
   const counts = { keep: 0, maybe: 0, drop: 0, other: 0 };
   for (const detail of details) {
     for (const r of detail.results) {
-      const d = r.decision;
-      if (d === 'keep') counts.keep++;
-      else if (d === 'maybe') counts.maybe++;
-      else if (d === 'drop') counts.drop++;
+      const decision = r.decision;
+      if (decision === 'keep') counts.keep++;
+      else if (decision === 'maybe') counts.maybe++;
+      else if (decision === 'drop') counts.drop++;
       else counts.other++;
     }
   }
@@ -51,7 +51,6 @@ export function buildFunnelBullets(results, details, decisions) {
   const bullets = [];
   const providers = [...new Set(results.map((r) => providerDisplayLabel(r.provider)).filter(Boolean))];
   const totalRawResults = results.reduce((sum, r) => sum + r.result_count, 0);
-  const totalDetailResults = details.reduce((sum, d) => sum + d.results.length, 0);
 
   if (results.length > 0) {
     const providerPart = providers.length > 0 ? ` across ${providers.join(', ')}` : '';
@@ -118,6 +117,7 @@ export function computePerQueryStats(details) {
     let dropCount = 0;
     let totalRelevance = 0;
     const domainCounts = new Map();
+
     for (const r of detail.results) {
       if (r.decision === 'keep') keepCount++;
       else if (r.decision === 'maybe') maybeCount++;
@@ -125,6 +125,7 @@ export function computePerQueryStats(details) {
       totalRelevance += r.relevance_score || 0;
       domainCounts.set(r.domain, (domainCounts.get(r.domain) || 0) + 1);
     }
+
     let topDomain = '';
     let topDomainCount = 0;
     for (const [domain, count] of domainCounts) {
@@ -133,10 +134,14 @@ export function computePerQueryStats(details) {
         topDomainCount = count;
       }
     }
-    const avgRelevance = detail.results.length > 0
-      ? totalRelevance / detail.results.length
-      : 0;
-    map.set(detail.query, { keepCount, maybeCount, dropCount, topDomain, avgRelevance });
+
+    map.set(detail.query, {
+      keepCount,
+      maybeCount,
+      dropCount,
+      topDomain,
+      avgRelevance: detail.results.length > 0 ? totalRelevance / detail.results.length : 0,
+    });
   }
   return map;
 }
@@ -160,16 +165,9 @@ export function computeDomainDecisionBreakdown(details) {
 export function buildEnrichedFunnelBullets(results, details, decisions, searchPlans) {
   if (results.length === 0 && details.length === 0) return [];
 
-  const bullets = [];
-  const providers = [...new Set(results.map((r) => providerDisplayLabel(r.provider)).filter(Boolean))];
-  const totalRawResults = results.reduce((sum, r) => sum + r.result_count, 0);
-
-  if (results.length > 0) {
-    const providerPart = providers.length > 0 ? ` across ${providers.join(', ')}` : '';
-    bullets.push(`${results.length} queries${providerPart} returned ${totalRawResults} raw results`);
-  }
-
+  const bullets = buildFunnelBullets(results, details, decisions);
   const queryTargetMap = buildQueryTargetMap(searchPlans);
+
   if (queryTargetMap.size > 0) {
     const allTargets = new Set();
     for (const targets of queryTargetMap.values()) {
@@ -182,28 +180,14 @@ export function buildEnrichedFunnelBullets(results, details, decisions, searchPl
     }
   }
 
-  const totalDeduped = details.reduce((sum, d) => sum + d.dedupe_count, 0);
-  if (totalDeduped > 0) {
-    bullets.push(`${totalDeduped} duplicate${totalDeduped > 1 ? 's' : ''} removed during dedupe`);
-  }
-
-  const total = decisions.keep + decisions.maybe + decisions.drop + decisions.other;
-  if (total > 0) {
-    const parts = [];
-    if (decisions.keep > 0) parts.push(`${decisions.keep} kept`);
-    if (decisions.maybe > 0) parts.push(`${decisions.maybe} maybe`);
-    if (decisions.drop > 0) parts.push(`${decisions.drop} dropped`);
-    bullets.push(`Decision: ${parts.join(', ')}`);
-  }
-
   if (details.length > 1) {
     let bestQuery = '';
     let bestKeepCount = 0;
-    for (const d of details) {
-      const keepCount = d.results.filter((r) => r.decision === 'keep').length;
+    for (const detail of details) {
+      const keepCount = detail.results.filter((r) => r.decision === 'keep').length;
       if (keepCount > bestKeepCount) {
         bestKeepCount = keepCount;
-        bestQuery = d.query;
+        bestQuery = detail.query;
       }
     }
     if (bestQuery && bestKeepCount > 0) {
@@ -305,7 +289,7 @@ export function resolveDomainCapSummary(liveSettings = {}) {
   const defaults = profileCapDefaults(profile);
   const maxPagesPerDomain = toPositiveInt(liveSettings?.maxPagesPerDomain, 0);
   const discoveryResultsPerQuery = toPositiveInt(liveSettings?.discoveryResultsPerQuery, defaults.queryCap);
-  const discoveredCap = defaults.discoveredCap;
+  const discoveredCap = toPositiveInt(liveSettings?.searchPlannerQueryCap, defaults.discoveredCap);
   const value = maxPagesPerDomain > 0 ? String(maxPagesPerDomain) : defaults.domainCapValue;
   const source = maxPagesPerDomain > 0 ? 'runtime maxPagesPerDomain knob' : defaults.domainCapSource;
   const profileLabel = profile.charAt(0).toUpperCase() + profile.slice(1);
@@ -343,7 +327,8 @@ export function resolveRuntimeDomainCapSummary(liveSettings) {
   const hasRuntimeSnapshot = Boolean(
     liveSettings.profile !== undefined
     || liveSettings.maxPagesPerDomain !== undefined
-    || liveSettings.discoveryResultsPerQuery !== undefined,
+    || liveSettings.discoveryResultsPerQuery !== undefined
+    || liveSettings.searchPlannerQueryCap !== undefined
   );
   if (!hasRuntimeSnapshot) {
     return {

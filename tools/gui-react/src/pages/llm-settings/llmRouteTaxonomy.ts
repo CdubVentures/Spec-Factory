@@ -58,24 +58,11 @@ export const SORT_BY_KEYS = [
 ] as const satisfies ReadonlyArray<SortBy>;
 export const SORT_DIR_KEYS = ['asc', 'desc'] as const;
 
-// --- Prompt flag fields ---
+// --- Prompt flag fields (derived from registry via codegen) ---
 
-export const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [
-  'studio_key_navigation_sent_in_extract_review',
-  'studio_contract_rules_sent_in_extract_review',
-  'studio_extraction_guidance_sent_in_extract_review',
-  'studio_tooltip_or_description_sent_when_present',
-  'studio_enum_options_sent_when_present',
-  'studio_component_variance_constraints_sent_in_component_review',
-  'studio_parse_template_sent_direct_in_extract_review',
-  'studio_ai_mode_difficulty_effort_sent_direct_in_extract_review',
-  'studio_required_level_sent_in_extract_review',
-  'studio_component_entity_set_sent_when_component_field',
-  'studio_evidence_policy_sent_direct_in_extract_review',
-  'studio_variance_policy_sent_in_component_review',
-  'studio_constraints_sent_in_component_review',
-  'studio_send_booleans_prompted_to_model'
-];
+import { LLM_ROUTE_PROMPT_FLAG_KEYS } from '../../types/llmRouteTypes.generated.ts';
+
+export const PROMPT_FLAG_FIELDS: Array<keyof LlmRouteRow> = [...LLM_ROUTE_PROMPT_FLAG_KEYS];
 
 // --- Enum option arrays for inline dropdowns ---
 

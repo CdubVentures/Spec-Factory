@@ -1,60 +1,52 @@
-export interface SharedUiDefaults {
-  studioAutoSaveAllEnabled: boolean;
-  studioAutoSaveEnabled: boolean;
-  studioAutoSaveMapEnabled: boolean;
-  runtimeAutoSaveEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
-}
+// AUTO-GENERATED from RUNTIME_SETTINGS_REGISTRY — do not edit manually.
+// Run: node tools/gui-react/scripts/generateManifestTypes.js
 
-export interface SharedStorageDefaults {
-  enabled: boolean;
-  destinationType: 'local' | 's3';
-  localDirectory: string;
-  awsRegion: string;
-  s3Bucket: string;
-  s3Prefix: string;
-  s3AccessKeyId: string;
-}
+export declare const SETTINGS_DEFAULTS: {
+  readonly convergence: Readonly<Record<string, number | boolean>>;
+  readonly runtime: Readonly<Record<string, string | number | boolean>>;
+  readonly storage: Readonly<{
+    enabled: boolean;
+    destinationType: 'local' | 's3';
+    localDirectory: string;
+    awsRegion: string;
+    s3Bucket: string;
+    s3Prefix: string;
+    s3AccessKeyId: string;
+  }>;
+  readonly ui: Readonly<{
+    studioAutoSaveAllEnabled: boolean;
+    studioAutoSaveEnabled: boolean;
+    studioAutoSaveMapEnabled: boolean;
+    runtimeAutoSaveEnabled: boolean;
+    storageAutoSaveEnabled: boolean;
+  }>;
+  readonly autosave: Readonly<{
+    debounceMs: Readonly<{
+      runtime: number;
+      storage: number;
+      llmRoutes: number;
+      uiSettings: number;
+      studioDocs: number;
+      studioMap: number;
+    }>;
+    statusMs: Readonly<{
+      studioSavedIndicatorReset: number;
+    }>;
+  }>;
+};
 
-export interface SharedAutosaveDefaults {
-  debounceMs: {
-    runtime: number;
-    storage: number;
-    llmRoutes: number;
-    uiSettings: number;
-    studioDocs: number;
-    studioMap: number;
-  };
-  statusMs: {
-    studioSavedIndicatorReset: number;
-  };
-}
+export declare const SETTINGS_OPTION_VALUES: {
+  readonly runtime: Readonly<{
+    outputMode: readonly string[];
+    repairDedupeRule: readonly string[];
+    resumeMode: readonly string[];
+    scannedPdfOcrBackend: readonly string[];
+    searchEngines: readonly string[];
+    searchEnginesFallback: readonly string[];
+  }>;
+  readonly storage: Readonly<{
+    destinationType: readonly ('local' | 's3')[];
+  }>;
+};
 
-export interface SharedSettingsDefaults {
-  convergence: Record<string, number | boolean>;
-  runtime: Record<string, string | number | boolean>;
-  storage: SharedStorageDefaults;
-  ui: SharedUiDefaults;
-  autosave: SharedAutosaveDefaults;
-}
-
-export const SETTINGS_DEFAULTS: SharedSettingsDefaults;
-
-export interface SharedRuntimeOptionValues {
-  searchProvider: readonly ['none', 'google', 'bing', 'searxng', 'dual'];
-  resumeMode: readonly ['auto', 'force_resume', 'start_over'];
-  scannedPdfOcrBackend: readonly ['auto', 'tesseract', 'none'];
-  repairDedupeRule: readonly ['domain_once', 'domain_and_status', 'none'];
-  automationQueueStorageEngine: readonly ['sqlite', 'memory'];
-}
-
-export interface SharedStorageOptionValues {
-  destinationType: readonly ['local', 's3'];
-}
-
-export interface SharedSettingsOptionValues {
-  runtime: SharedRuntimeOptionValues;
-  storage: SharedStorageOptionValues;
-}
-
-export const SETTINGS_OPTION_VALUES: SharedSettingsOptionValues;
+export declare const SEARXNG_AVAILABLE_ENGINES: readonly string[];

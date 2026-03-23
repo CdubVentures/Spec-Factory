@@ -306,7 +306,7 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
   assert.equal(state.setLlmModelPlan, 'alias-plan-model');
   assert.equal(state.setLlmModelReasoning, 'alias-reasoning-model');
   assert.equal(state.setLlmPlanFallbackModel, 'alias-plan-fallback');
-  assert.equal(state.setLlmMaxOutputTokensPlan, 1536);
-  assert.equal(state.setLlmMaxOutputTokensPlanFallback, 2048);
-  assert.equal(state.setLlmMaxOutputTokensReasoningFallback, 2304);
+  assert.equal(state.setLlmMaxOutputTokensPlan, '1536');
+  assert.equal(state.setLlmMaxOutputTokensPlanFallback, '2048');
+  assert.equal(state.setLlmMaxOutputTokensReasoningFallback, '2304');
 });

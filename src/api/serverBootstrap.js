@@ -82,8 +82,10 @@ export function bootstrapServer({ projectRoot }) {
   forwardScreencastControlProvider = forwardScreencastControl;
 
   // WHY: Dynamic getter so run discovery tracks live storage settings, not boot-time snapshot.
+  // Falls back to boot-time INDEXLAB_ROOT (which honours --indexlab-root) instead of the
+  // global default, so tests and CLI overrides are respected.
   const getIndexLabRoot = () => resolveCurrentIndexLabRoot({
-    runDataStorageState, defaultIndexLabRoot, defaultLocalOutputRoot,
+    runDataStorageState, defaultIndexLabRoot: () => INDEXLAB_ROOT, defaultLocalOutputRoot,
   });
 
   // ── IndexLab init (side effect, no return value) ──

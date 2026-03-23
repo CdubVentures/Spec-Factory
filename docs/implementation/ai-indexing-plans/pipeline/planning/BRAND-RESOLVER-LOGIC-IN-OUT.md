@@ -1,124 +1,181 @@
 # Brand Resolver Logic In And Out
 
-Validated against live code on 2026-03-19.
+Validated against live code on 2026-03-22.
 
 ## What this stage is
 
-Brand Resolver is the Stage 02 cache-first brand-domain lookup. In the canonical orchestrator it runs after NeedSet so the NeedSet worker appears first in the GUI, then it feeds brand-aware Search Profile and later triage.
+Brand Resolver is Stage 02 of the prefetch pipeline -- a cache-first brand-domain lookup. In the canonical orchestrator it runs IN PARALLEL with NeedSet (Stage 01) via `Promise.all` -- neither stage depends on the other's output. After both complete, the orchestrator applies brand promotions to `categoryConfig` and the pipeline converges at Stage 03 (Search Profile). See `03-pipeline-context.json` for the full accumulated state at convergence.
 
 Primary owners:
 
-- `src/features/indexing/discovery/stages/brandResolver.js`
-- `src/features/indexing/discovery/brandResolver.js`
-- `src/features/indexing/discovery/discoveryLlmAdapters.js`
-- orchestration callers:
+- `src/features/indexing/discovery/stages/brandResolver.js` (stage wrapper)
+- `src/features/indexing/discovery/brandResolver.js` (core resolution logic)
+- `src/features/indexing/discovery/discoveryLlmAdapters.js` (LLM adapter factory)
+- orchestration caller (owns promotion logic inline):
   - `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`
-  - `src/features/indexing/discovery/searchDiscovery.js` (compatibility path)
 
 ## Schema files in this folder
 
 - `02-brand-resolver-input.json`
 - `02-brand-resolver-output.json`
 
+## Registry settings (4 new)
+
+All four are consumed via `configFloat` / `configInt` from `settingsAccessor.js`:
+
+| Key | Type | Default | Range | Used by |
+|-----|------|---------|-------|---------|
+| `brandResolverDefaultConfidence` | float | 0.8 | 0.1 - 1.0 | `resolveBrandDomain()` -- confidence for cache hits and LLM successes |
+| `manufacturerCrawlRateLimitMs` | int | 2000 | 100 - 60000 | `buildManufacturerCrawlDefaults()` -- crawl rate limit |
+| `manufacturerCrawlTimeoutMs` | int | 12000 | 1000 - 120000 | `buildManufacturerCrawlDefaults()` -- crawl timeout |
+| `manufacturerPromotionPriority` | int | 70 | 1 - 100 | `promoteManufacturerHost()` -- discovery.priority |
+
+Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always true).
+
 ## Inputs in
 
 `resolveBrandDomain()` receives:
 
-- `brand`
-- `category`
-- `config`
-- optional `callLlmFn`
-- optional `storage`
+- `brand` -- string
+- `category` -- string
+- `config` -- object, consumed for registry lookups (`brandResolverDefaultConfidence` via `configFloat`)
+- `callLlmFn` -- function or null
+- `storage` -- object or null
+- `logger` -- object or null, used for LLM error logging (`brand_resolver_llm_error`)
 
-`runBrandResolver()` wraps it with:
+`runBrandResolver()` (stage wrapper) receives:
 
-- `job`
-- `categoryConfig`
-- `logger`
+- `job` -- extracts brand from `job.brand` or `job.identityLock.brand`
+- `category` -- string
+- `config` -- object
+- `storage` -- object or null
+- `logger` -- object or null, passed through to `resolveBrandDomainFn`
+- `categoryConfig` -- object (read-only in the stage; sources data read for promotion)
+- `resolveBrandDomainFn` -- DI seam, defaults to `resolveBrandDomain`
 
-`discoverCandidateSources()` only calls the resolver when no precomputed `brandResolution` was passed in.
+## Storage contract (B7 JSDoc)
+
+Defined as `BrandDomainRow` typedef in `brandResolver.js`:
+
+```
+{ brand, category, official_domain, aliases (JSON string or array), support_domain, confidence (0-1) }
+```
+
+- Read: `storage.getBrandDomain(brand, category)`
+- Write: `storage.upsertBrandDomain({ brand, category, official_domain, aliases, support_domain, confidence })`
 
 ## Live logic
 
-The resolver path is:
+The resolver path in `resolveBrandDomain()`:
 
 1. Trim `brand` and `category`.
-2. If `brand` is empty, return the empty object immediately.
-3. If `storage.getBrandDomain()` exists, try cache first.
-4. On cache hit:
-   - parse cached aliases
+2. Read `defaultConfidence` from `configFloat(config, 'brandResolverDefaultConfidence')`.
+3. If `brand` is empty, return the empty object (confidence 0).
+4. If `storage.getBrandDomain()` exists, try cache first.
+5. On cache hit:
+   - parse cached aliases (JSON string or array)
    - return cached `official_domain`, `support_domain`, aliases
-   - use cached confidence or fallback `0.8`
+   - use `cached.confidence ?? defaultConfidence` (stored value wins, registry fallback)
    - return empty `reasoning`
-5. If there is no cache hit and no `callLlmFn`, return the empty object.
-6. If `callLlmFn` exists, call the routed adapter created by `createBrandResolverCallLlm()`.
-7. Normalize the LLM result:
+6. If there is no cache hit and no `callLlmFn`, return the empty object.
+7. If `callLlmFn` exists, call the routed adapter created by `createBrandResolverCallLlm({ callRoutedLlmFn, config, logger })`.
+8. Normalize the LLM result:
    - lowercase `official_domain`
    - lowercase aliases
    - lowercase `support_domain`
    - string-array `reasoning`
-8. If `storage.upsertBrandDomain()` exists, persist the normalized row back to cache.
-9. On any LLM error, return the same empty object instead of failing discovery.
+9. Set confidence: `officialDomain ? defaultConfidence : 0`
+10. If `storage.upsertBrandDomain()` exists, persist the normalized row back to cache.
+11. On any LLM error (B5 fix): log `brand_resolver_llm_error` via `logger.warn()` with brand, category, error message, then return the empty object.
+
+## Confidence tiering
+
+Confidence is never model-derived. It follows a strict tier:
+
+1. **Cache hit**: uses `cached.confidence ?? defaultConfidence` (stored value preserved)
+2. **LLM success with domain**: uses `defaultConfidence` from registry (default 0.8)
+3. **LLM success without domain**: returns 0
+4. **Empty brand / no callLlmFn / LLM error**: returns 0
+
+## Stage wrapper behavior
 
 `runBrandResolver()` then:
 
-1. creates `callLlmFn` only when `hasLlmRouteApiKey(config, { role: "triage" })` is true
-2. emits `brand_resolved` status telemetry at the caller level
-3. optionally auto-promotes the resolved official domain into `categoryConfig.sourceHostMap`, `sourceHosts`, `approvedRootDomains`, and `sourceRegistry`
+1. Creates `callLlmFn` only when `hasLlmRouteApiKey(config, { role: "triage" })` is true.
+2. Passes `logger` through to `resolveBrandDomainFn` (enables LLM error logging).
+3. Emits `brand_resolved` event via `logger.info()` with status telemetry. The `candidates` field is no longer emitted.
+4. Returns `{ brandResolution }`.
 
-## Important invariants
+## Orchestrator-owned promotion (no categoryConfig mutation in stage)
 
-- Canonical stage order is NeedSet first, Brand Resolver second.
-- Cache always wins over LLM.
-- Missing brand always returns the empty object.
-- Missing route/API key never throws; it just returns the empty object.
-- Resolver confidence is not model-derived in the current implementation. Routed success stores `0.8`; cache hits reuse `cached.confidence || 0.8`.
-- Brand Resolver does not feed Stage 01 NeedSet or Schema 4 directly anymore. Its main runtime consumers are Search Profile, Query Journey artifacts, and SERP triage context.
+The stage returns only `{ brandResolution }`. The orchestrator (`runDiscoverySeedPlan`) applies brand promotion inline after the stage completes:
+
+1. Checks `brand.brandResolution?.officialDomain`.
+2. Calls `ensureCategorySourceLookups(categoryConfig)`.
+3. Normalizes the official domain and builds a manufacturer host entry inline with `tierName: 'manufacturer'`, `sourceId: 'brand_<host>'`, crawl defaults, and `fieldCoverage: null`.
+4. Adds the entry to `categoryConfig.sourceHosts` and `categoryConfig.sourceHostMap` (skipping duplicates).
+5. Updates `categoryConfig.approvedRootDomains` with `extractRootDomain(host)`.
+
+This ensures all downstream stages see the promoted brand host consistently because the orchestrator owns the mutation.
+
+## Promotion logic (orchestrator inline)
+
+The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline after the stage returns. There is no separate promotion function -- the logic lives directly in the orchestrator:
+
+- Checks `brand.brandResolution?.officialDomain`.
+- Normalizes the official domain via `normalizeHost()`.
+- Skips if the host is already in `categoryConfig.sourceHostMap`.
+- Builds a host entry inline:
+  - `host`: normalized official domain
+  - `tierName`: `'manufacturer'`
+  - `sourceId`: `'brand_' + normalized_host` (deterministic)
+  - `displayName`: `'{officialDomain} Official'`
+  - `crawlConfig`: `{ method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true }`
+  - `fieldCoverage`: `null`
+  - `robotsTxtCompliant`: `true`
+  - `baseUrl`: `'https://{host}'`
+- Pushes entry to `categoryConfig.sourceHosts` and sets in `sourceHostMap`.
+- Adds root domain to `categoryConfig.approvedRootDomains`.
 
 ## Outputs out
 
-The resolver returns this shape:
+`resolveBrandDomain()` returns:
 
-- `officialDomain`
-- `aliases`
-- `supportDomain`
-- `confidence`
-- `reasoning`
+- `officialDomain` -- string
+- `aliases` -- string[]
+- `supportDomain` -- string
+- `confidence` -- number (0-1, registry-driven)
+- `reasoning` -- string[]
 
-The empty return shape is:
+Empty return shape: `{ officialDomain: "", aliases: [], supportDomain: "", confidence: 0, reasoning: [] }`
 
-- `officialDomain: ""`
-- `aliases: []`
-- `supportDomain: ""`
-- `confidence: 0`
-- `reasoning: []`
+`runBrandResolver()` returns `{ brandResolution }`:
 
-Caller-added status metadata is not part of the resolver return:
+- `brandResolution` -- object or null (the `resolveBrandDomain()` result)
+- The orchestrator handles promotion inline from `brandResolution.officialDomain` -- the stage itself does not return promotion data.
+
+Caller-added status metadata (not part of the resolver return):
 
 - `resolved`
 - `resolved_empty`
 - `skipped`
 - `failed`
 
-`runBrandResolver()` returns:
-
-- `brandResolution`
-- `promotedHosts`
-
 ## Side effects and persistence
 
-- reads cache through `storage.getBrandDomain()`
-- writes cache through `storage.upsertBrandDomain()`
-- emits `brand_resolved` runtime telemetry at the caller level
-- can trigger manufacturer auto-promotion in both the canonical stage wrapper and the compatibility `discoverCandidateSources()` path
+- Reads cache through `storage.getBrandDomain()`
+- Writes cache through `storage.upsertBrandDomain()`
+- Emits `brand_resolved` event via `logger.info()` at the stage wrapper level
+- Logs `brand_resolver_llm_error` via `logger.warn()` on LLM failures (B5 fix)
 
 ## What it feeds next
 
 Brand Resolver feeds:
 
 - Stage 03 Search Profile via `brandResolution`
-- optional Effective Host Plan building via brand host hints
-- planned/executed `search_profile.brand_resolution`
-- Stage 07 SERP triage context and selector input
+- Optional Effective Host Plan building via brand host hints
+- Planned/executed `search_profile.brand_resolution`
+- Stage 05 Query Journey via `brandResolution`
+- Stage 07 Result Processing via `brandResolution`
 
 There is still no dedicated `brand_resolver.json` artifact in the live runtime.

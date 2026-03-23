@@ -1,10 +1,11 @@
 export function computeTriageDecisionCounts(triage) {
-  const counts = { keep: 0, maybe: 0, drop: 0 };
+  const counts = { keep: 0, dropped_by_llm: 0, overflow_capped: 0, hard_drop: 0 };
   for (const t of triage) {
     for (const c of t.candidates) {
       if (c.decision === 'keep') counts.keep++;
-      else if (c.decision === 'maybe') counts.maybe++;
-      else counts.drop++;
+      else if (c.decision === 'hard_drop') counts.hard_drop++;
+      else if (c.triage_disposition === 'selector_input_capped') counts.overflow_capped++;
+      else counts.dropped_by_llm++;
     }
   }
   return counts;
@@ -34,11 +35,11 @@ export function computeTriageUniqueDomains(triage) {
 }
 
 export function buildTriageDecisionSegments(counts) {
-  return [
-    { label: 'Keep', value: counts.keep, color: 'sf-metric-fill-success' },
-    { label: 'Maybe', value: counts.maybe, color: 'sf-metric-fill-warning' },
-    { label: 'Drop', value: counts.drop, color: 'sf-metric-fill-danger' },
-  ];
+  const segments = [];
+  if (counts.keep > 0) segments.push({ label: 'Keep', value: counts.keep, color: 'sf-metric-fill-success' });
+  if (counts.dropped_by_llm > 0) segments.push({ label: 'Dropped by LLM', value: counts.dropped_by_llm, color: 'sf-metric-fill-danger' });
+  if (counts.hard_drop > 0) segments.push({ label: 'Hard Dropped', value: counts.hard_drop, color: 'sf-metric-fill-warning' });
+  return segments;
 }
 
 export function buildTriageFunnelBullets(triage, calls) {
@@ -57,12 +58,13 @@ export function buildTriageFunnelBullets(triage, calls) {
     bullets.push(`${uniqueDomains} unique domain${uniqueDomains !== 1 ? 's' : ''} represented`);
   }
 
-  const total = counts.keep + counts.maybe + counts.drop;
+  const total = counts.keep + counts.dropped_by_llm + counts.overflow_capped + counts.hard_drop;
   if (total > 0) {
     const parts = [];
     if (counts.keep > 0) parts.push(`${counts.keep} kept`);
-    if (counts.maybe > 0) parts.push(`${counts.maybe} maybe`);
-    if (counts.drop > 0) parts.push(`${counts.drop} dropped`);
+    if (counts.dropped_by_llm > 0) parts.push(`${counts.dropped_by_llm} dropped by LLM`);
+    if (counts.hard_drop > 0) parts.push(`${counts.hard_drop} hard-dropped`);
+    if (counts.overflow_capped > 0) parts.push(`${counts.overflow_capped} overflow capped`);
     bullets.push(`Decision: ${parts.join(', ')}`);
   }
 
@@ -73,33 +75,17 @@ export function buildTriageFunnelBullets(triage, calls) {
   return bullets;
 }
 
-export function computeTriageDedupeStats(triage) {
-  const urls = [];
-  const urlSet = new Set();
-  for (const t of triage) {
-    for (const c of t.candidates) {
-      urls.push(c.url);
-      urlSet.add(c.url);
-    }
-  }
-  return {
-    totalCandidates: urls.length,
-    uniqueUrls: urlSet.size,
-    deduped: urls.length - urlSet.size,
-  };
-}
-
 export function buildTriageDomainDecisionBreakdown(triage) {
   const map = new Map();
   for (const t of triage) {
     for (const c of t.candidates) {
       if (!map.has(c.domain)) {
-        map.set(c.domain, { keep: 0, maybe: 0, drop: 0 });
+        map.set(c.domain, { keep: 0, dropped_by_llm: 0, hard_drop: 0 });
       }
       const entry = map.get(c.domain);
       if (c.decision === 'keep') entry.keep++;
-      else if (c.decision === 'maybe') entry.maybe++;
-      else entry.drop++;
+      else if (c.decision === 'hard_drop') entry.hard_drop++;
+      else entry.dropped_by_llm++;
     }
   }
   return map;

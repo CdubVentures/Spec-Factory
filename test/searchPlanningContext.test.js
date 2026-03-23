@@ -1560,9 +1560,27 @@ describe('V4 — buildNormalizedKeyQueue', () => {
 
 describe('V4 — deriveSeedStatus', () => {
   it('specs seed needed when never run', () => {
-    const status = deriveSeedStatus(null, { official_domain: 'razer.com' });
+    const status = deriveSeedStatus(null, { official_domain: 'razer.com', manufacturer: 'Razer' });
     assert.equal(status.specs_seed.is_needed, true);
     assert.equal(status.specs_seed.last_status, 'never_run');
+  });
+
+  it('brand_seed is_needed when identity has manufacturer', () => {
+    const status = deriveSeedStatus(null, { manufacturer: 'Razer' });
+    assert.equal(status.brand_seed.is_needed, true);
+    assert.equal(status.brand_seed.brand_name, 'Razer');
+  });
+
+  it('brand_seed not needed when no brand name', () => {
+    const status = deriveSeedStatus(null, {});
+    assert.equal(status.brand_seed.is_needed, false);
+    assert.equal(status.brand_seed.brand_name, '');
+  });
+
+  it('identity domains NOT included in source_seeds', () => {
+    const status = deriveSeedStatus(null, { official_domain: 'razer.com', support_domain: 'support.razer.com', manufacturer: 'Razer' });
+    assert.equal(status.source_seeds['razer.com'], undefined, 'official_domain should not be in source_seeds');
+    assert.equal(status.source_seeds['support.razer.com'], undefined, 'support_domain should not be in source_seeds');
   });
 
   it('specs seed not needed when complete + on cooldown', () => {
@@ -1598,10 +1616,11 @@ describe('V4 — deriveSeedStatus', () => {
         { tier: 'seed', source_name: 'amazon.com', status: 'scrape_incomplete', completed_at_ms: null, new_fields_closed: 0, pending_count: 3 },
       ]
     };
-    const status = deriveSeedStatus(history, { official_domain: 'razer.com' });
+    const status = deriveSeedStatus(history, { official_domain: 'razer.com', manufacturer: 'Razer' });
     assert.equal(status.source_seeds['rtings.com'].is_needed, false);
     assert.equal(status.source_seeds['amazon.com'].is_needed, true);
-    assert.equal(status.source_seeds['razer.com'].is_needed, true); // from identity, never run
+    assert.equal(status.source_seeds['razer.com'], undefined, 'identity domain not in source_seeds');
+    assert.equal(status.brand_seed.is_needed, true, 'brand tracked via brand_seed');
   });
 
   it('query_completion_summary counts correctly', () => {
@@ -1876,6 +1895,7 @@ describe('V4 — budget-aware phase assignment', () => {
 
 function makeSeedStatus(overrides = {}) {
   return {
+    brand_seed: { is_needed: false, brand_name: '' },
     specs_seed: { is_needed: true, last_status: 'never_run' },
     source_seeds: {},
     query_completion_summary: { total_queries: 0, complete: 0, incomplete: 0, pending_scrapes: 0 },
@@ -1993,6 +2013,19 @@ describe('V4 — computeTierAllocation', () => {
     assert.equal(alloc.tier1_seeds.length, 2); // specs + rtings (done.com excluded)
     assert.deepStrictEqual(alloc.tier1_seeds[0], { type: 'specs', source_name: null, is_needed: true });
     assert.deepStrictEqual(alloc.tier1_seeds[1], { type: 'source', source_name: 'rtings.com', is_needed: true });
+  });
+
+  it('brand seed appears first in tier1_seeds (above specs)', () => {
+    const seedStatus = makeSeedStatus({
+      brand_seed: { is_needed: true, brand_name: 'Razer' },
+      specs_seed: { is_needed: true },
+      source_seeds: { 'rtings.com': { is_needed: true } },
+    });
+    const alloc = computeTierAllocation(seedStatus, [], 10);
+    assert.equal(alloc.tier1_seeds.length, 3); // brand + specs + rtings
+    assert.deepStrictEqual(alloc.tier1_seeds[0], { type: 'brand', source_name: null, is_needed: true });
+    assert.deepStrictEqual(alloc.tier1_seeds[1], { type: 'specs', source_name: null, is_needed: true });
+    assert.deepStrictEqual(alloc.tier1_seeds[2], { type: 'source', source_name: 'rtings.com', is_needed: true });
   });
 
   it('tier2_groups array marks allocated vs overflow', () => {

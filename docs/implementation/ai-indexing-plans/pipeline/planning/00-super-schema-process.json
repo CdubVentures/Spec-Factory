@@ -1,6 +1,6 @@
 {
   "_doc": "High-level map of the live discovery seed/planning pipeline.",
-  "validated_against": "2026-03-18",
+  "validated_against": "2026-03-22",
   "historical_numbering_note": "The numbered files in this folder are documentation buckets, not the exact runtime order.",
   "canonical_entrypoint": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
   "compatibility_entrypoint": "src/features/indexing/discovery/searchDiscovery.js",
@@ -170,7 +170,7 @@
     },
     {
       "surface": "Search Planner",
-      "reason": "search_planner",
+      "reason": "search_planner_enhance",
       "role": "plan",
       "owner": "src/research/queryPlanner.js"
     },
@@ -181,13 +181,6 @@
       "owner": "src/features/indexing/discovery/serpSelectorLlmAdapter.js",
       "conditional": "only when config.serpSelectorEnabled is true and hasLlmRouteApiKey(config, { role: 'triage' }) is true"
     },
-    {
-      "surface": "SERP reranker",
-      "reason": "uber_serp_reranker",
-      "role": "plan",
-      "owner": "src/research/serpReranker.js",
-      "conditional": "only on the deterministic triage path when deterministic quality is weak"
-    }
   ],
   "runtime_bridge": {
     "panel_seed_event": "needset_computed",
@@ -208,6 +201,18 @@
       "_learning/{category}/field_yield.json"
     ],
     "finalization_writeback": "src/features/indexing/orchestration/finalize/persistSelfImproveLearningStores.js",
-    "current_wiring_note": "buildSearchPlan() supports learning dead-domain/dead-query suppression, but runNeedSet() currently passes learning: null into buildSearchPlanningContext()."
+    "wiring_status": "Learning stores are read at bootstrap and consumed by Search Profile (Stage 03) for query template injection and lexicon enrichment. They are NOT passed to NeedSet — runNeedSet() passes learning: null into buildSearchPlanningContext(). NeedSet planning relies on per-run feedback (previousFieldHistories + queryExecutionHistory) instead of cross-product learning."
+  },
+  "feedback_loops": {
+    "per_run_feedback": {
+      "previousFieldHistories": "Per-field retry counts, domains_tried, content_types_tried. Built by buildFieldHistories() at finalization, passed via roundContext to next round. Drives Tier 3 progressive enrichment and group exhaustion detection.",
+      "queryExecutionHistory": "Per-query completion state from frontierDb. Built by buildQueryExecutionHistory(productId) before NeedSet. Drives seed completion, group_query_count, tier allocation."
+    },
+    "cross_product_learning": {
+      "scope": "Category-level, persisted to SQLite (_learning/{category}/spec.sqlite), survives across runs and products",
+      "consumed_by": "Search Profile (Stage 03) only — learnedQueries.templates_by_field, templates_by_brand, enrichedLexicon, fieldYieldByDomain",
+      "not_consumed_by": "NeedSet planner (learning: null), Search Planner LLM, SERP triage",
+      "gate": "selfImproveEnabled (defaults true)"
+    }
   }
 }

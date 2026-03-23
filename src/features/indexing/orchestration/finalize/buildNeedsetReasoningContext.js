@@ -129,7 +129,6 @@ export function buildNeedsetReasoningContext({
     model: job.identityLock?.model || identity.model || '',
     baseModel: job.identityLock?.base_model || '',
     aliases: job.identityLock?.aliases || [],
-    settings: config || {},
   });
 
   return {

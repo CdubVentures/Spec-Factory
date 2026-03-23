@@ -74,6 +74,37 @@ describe('readArchivedS3RunMetaOnly', () => {
     }
   });
 
+  test('enriches parsed metadata with artifact readiness from single-object probes', async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'meta-only-'));
+    try {
+      const runMeta = { run_id: 'run-artifacts', status: 'completed', category: 'keyboard', counters: { pages: 5 } };
+      const s3Stub = createS3Stub({
+        'archive/keyboard/kb-product/run-artifacts/indexlab/run.json': runMeta,
+        'archive/keyboard/kb-product/run-artifacts/indexlab/needset.json': { ok: true },
+        'archive/keyboard/kb-product/run-artifacts/indexlab/search_profile.json': { ok: true },
+      });
+      initArchivedRunLocationHelpers({
+        outputRoot: tempRoot,
+        runDataArchiveStorage: s3Stub.storage,
+        runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: 'archive' },
+      });
+
+      const location = { type: 's3', keyBase: 'archive/keyboard/kb-product/run-artifacts', runId: 'run-artifacts' };
+      const result = await readArchivedS3RunMetaOnly(location, 'run-artifacts');
+
+      assert.deepEqual(result, {
+        ...runMeta,
+        artifacts: {
+          has_needset: true,
+          has_search_profile: true,
+        },
+      });
+      assert.equal(s3Stub.calls.listKeys, 0, 'artifact enrichment must not call listKeys');
+    } finally {
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
   test('returns null when S3 key is missing', async () => {
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'meta-only-'));
     try {

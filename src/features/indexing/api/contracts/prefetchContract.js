@@ -25,6 +25,7 @@ export const PREFETCH_LLM_REASON_MAP = Object.freeze({
 // WHY: Prefix-match patterns for reason classification (order matters).
 export const PREFETCH_LLM_REASON_PREFIX_MAP = Object.freeze([
   { prefix: 'discovery_planner', tabKey: 'search_planner' },
+  { prefix: 'search_planner', tabKey: 'search_planner' },
 ]);
 
 // WHY: Substring-match patterns for reason classification.
@@ -103,6 +104,18 @@ export const SERP_TRIAGE_ENVELOPE_SHAPE = Object.freeze([
   { key: 'dropped_count', coerce: 'int' },
 ]);
 
+export const SERP_TRIAGE_FUNNEL_SHAPE = Object.freeze([
+  { key: 'raw_input', coerce: 'int' },
+  { key: 'hard_drop_count', coerce: 'int' },
+  { key: 'candidates_after_hard_drop', coerce: 'int' },
+  { key: 'canon_merge_count', coerce: 'int' },
+  { key: 'candidates_classified', coerce: 'int' },
+  { key: 'candidates_sent_to_llm', coerce: 'int' },
+  { key: 'overflow_capped', coerce: 'int' },
+  { key: 'llm_model', coerce: 'string' },
+  { key: 'llm_applied', coerce: 'bool' },
+]);
+
 export const SEARCH_PROFILE_SHAPE = Object.freeze([
   { key: 'query_count', coerce: 'int' },
   { key: 'selected_query_count', coerce: 'int' },
@@ -132,6 +145,15 @@ export const SEARCH_PROFILE_SHAPE = Object.freeze([
   { key: 'candidate_count', coerce: 'int' },
   { key: 'llm_serp_selector', coerce: 'bool' },
   { key: 'serp_explorer', coerce: 'object_or_null' },
+]);
+
+export const SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE = Object.freeze([
+  { key: 'query', coerce: 'string' },
+  { key: 'original_query', coerce: 'string' },
+  { key: 'hint_source', coerce: 'string' },
+  { key: 'tier', coerce: 'string' },
+  { key: 'group_key', coerce: 'string' },
+  { key: 'target_fields', coerce: 'array' },
 ]);
 
 /**

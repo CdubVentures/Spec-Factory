@@ -175,7 +175,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     }
   });
 
-  it('valid all-reject produces zero candidates', async () => {
+  it('valid all-reject produces zero selected URLs', async () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
@@ -186,10 +186,12 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     });
     const result = await processDiscoveryResults(args);
     assert.equal(result.enabled, true);
-    assert.equal(result.candidates.length, 0, 'all-reject means zero candidates');
+    assert.equal(result.selectedUrls.length, 0, 'all-reject means zero selected URLs');
+    assert.equal(result.approvedUrls.length, 0, 'all-reject means zero approved URLs');
+    assert.equal(result.candidates.length, 3, 'all triaged candidates remain visible for auditability');
   });
 
-  it('LLM call failure produces zero candidates (no fallback)', async () => {
+  it('LLM call failure produces zero selected URLs (no fallback)', async () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
@@ -197,10 +199,12 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     });
     const result = await processDiscoveryResults(args);
     assert.equal(result.enabled, true);
-    assert.equal(result.candidates.length, 0, 'failure = zero candidates, no deterministic fallback');
+    assert.equal(result.selectedUrls.length, 0, 'failure = zero selected URLs, no deterministic fallback');
+    assert.equal(result.approvedUrls.length, 0, 'failure = zero approved URLs');
+    assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after selector failure');
   });
 
-  it('invalid output produces zero candidates (no fallback)', async () => {
+  it('invalid output produces zero selected URLs (no fallback)', async () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
@@ -209,7 +213,9 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
       },
     });
     const result = await processDiscoveryResults(args);
-    assert.equal(result.candidates.length, 0, 'invalid output = zero candidates');
+    assert.equal(result.selectedUrls.length, 0, 'invalid output = zero selected URLs');
+    assert.equal(result.approvedUrls.length, 0, 'invalid output = zero approved URLs');
+    assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after invalid output');
     const warnEvents = logger.events.filter((e) => e.event === 'serp_selector_invalid_output');
     assert.ok(warnEvents.length >= 1, 'logged serp_selector_invalid_output');
   });

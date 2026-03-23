@@ -47,8 +47,8 @@ const TABLE = [
     isFallback: false,
     registryMaxOutput: 65536,
     configPlanCap: 4096,
-    configTriageCap: 512,
-    expected: 512,
+    configTriageCap: 24000,
+    expected: 24000,
   },
   {
     label: 'plan reasoning: reasoning cap under ceiling → reasoning cap',

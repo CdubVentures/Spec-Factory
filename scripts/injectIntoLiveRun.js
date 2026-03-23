@@ -180,7 +180,6 @@ async function main() {
       profile_influence: pi,
       deltas,
       round: 1,
-      round_mode: 'carry_forward',
       schema_version: 'needset_planner_output.v2',
       fields,
     },

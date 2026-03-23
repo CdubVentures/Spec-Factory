@@ -59,13 +59,13 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
 
   assert.equal(projection.runtimeDraft.llmModelPlan, 'planner-live');
   assert.equal(projection.runtimeDraft.fetchConcurrency, 7);
-  assert.equal(projection.runtimeDraft.scannedPdfOcrMaxPairs, 500);
+  assert.equal(projection.runtimeDraft.scannedPdfOcrMaxPairs, 900);
   assert.equal(projection.runtimeSettingsPayload.fetchConcurrency, 7);
   assert.equal(projection.runtimeSettingsPayload.dynamicFetchRetryBudget, 4);
-  assert.equal(projection.runtimeSettingsPayload.scannedPdfOcrMaxPairs, 500);
+  assert.equal(projection.runtimeSettingsPayload.scannedPdfOcrMaxPairs, 900);
   assert.equal(projection.runtimeSettingsBaseline.fetchConcurrency, 7);
   assert.equal(projection.runtimeSettingsBaseline.dynamicFetchRetryBudget, 4);
-  assert.equal(projection.runtimeSettingsBaseline.scannedPdfOcrMaxPairs, 500);
+  assert.equal(projection.runtimeSettingsBaseline.scannedPdfOcrMaxPairs, 900);
   assert.deepEqual(projection.phase05RuntimeSettings, {
     fetchConcurrency: '7',
     perHostMinDelayMs: '1250',
@@ -75,7 +75,7 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
     scannedPdfOcrEnabled: true,
     scannedPdfOcrBackend: 'tesseract',
     scannedPdfOcrMaxPages: '12',
-    scannedPdfOcrMaxPairs: '500',
+    scannedPdfOcrMaxPairs: '900',
     scannedPdfOcrMinCharsPerPage: '40',
     scannedPdfOcrMinLinesPerPage: '3',
     scannedPdfOcrMinConfidence: '0.75',

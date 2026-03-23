@@ -271,7 +271,7 @@ function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse |
     case 'needset':
       return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} persistScope={persistScope} idxRuntime={data?.idx_runtime?.needset} needsetPlannerCalls={data?.llm_calls?.needset_planner} />;
     case 'search_profile':
-      return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} searchPlans={data?.search_plans} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_profile} />;
+      return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_profile} />;
     case 'brand_resolver':
       return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.brand_resolver} />;
     case 'search_planner':

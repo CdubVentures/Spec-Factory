@@ -1,15 +1,13 @@
-import { configBool } from '../shared/settingsAccessor.js';
-
 export function selectFetcherMode(config = {}) {
-  if (configBool(config, 'dryRun')) {
+  if (Object.prototype.hasOwnProperty.call(config, 'dryRun') && Boolean(config.dryRun)) {
     return 'dryrun';
   }
 
-  if (configBool(config, 'preferHttpFetcher')) {
+  if (Object.prototype.hasOwnProperty.call(config, 'preferHttpFetcher') && Boolean(config.preferHttpFetcher)) {
     return 'http';
   }
 
-  if (configBool(config, 'dynamicCrawleeEnabled')) {
+  if (Object.prototype.hasOwnProperty.call(config, 'dynamicCrawleeEnabled') && Boolean(config.dynamicCrawleeEnabled)) {
     return 'crawlee';
   }
 

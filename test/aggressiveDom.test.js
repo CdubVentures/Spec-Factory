@@ -4,7 +4,10 @@ import { AggressiveDomExtractor } from '../src/features/indexing/extraction/aggr
 
 test('AggressiveDomExtractor extracts basic field candidates from HTML text', async () => {
   const extractor = new AggressiveDomExtractor({
-    config: {}
+    config: {
+      llmModelPlan: 'test-fast-model',
+      llmModelReasoning: 'test-deep-model',
+    }
   });
   const result = await extractor.extractFromDom(
     '<html><body><div>weight: 59 g</div><div>dpi: 26000</div></body></html>',
@@ -13,7 +16,7 @@ test('AggressiveDomExtractor extracts basic field candidates from HTML text', as
     { source_id: 'manufacturer' }
   );
 
-  assert.equal(result.model, 'gpt-5-low');
+  assert.equal(result.model, 'test-fast-model');
   assert.equal(result.force_deep, false);
   assert.equal(result.fieldCandidates.some((row) => row.field === 'weight'), true);
   assert.equal(result.fieldCandidates.some((row) => row.field === 'dpi'), true);
@@ -21,7 +24,10 @@ test('AggressiveDomExtractor extracts basic field candidates from HTML text', as
 
 test('AggressiveDomExtractor uses deep model when forceDeep is true', async () => {
   const extractor = new AggressiveDomExtractor({
-    config: {}
+    config: {
+      llmModelPlan: 'test-fast-model',
+      llmModelReasoning: 'test-deep-model',
+    }
   });
   const result = await extractor.extractFromDom(
     '<div>weight: 58 g</div>',
@@ -30,7 +36,6 @@ test('AggressiveDomExtractor uses deep model when forceDeep is true', async () =
     { source_id: 'manufacturer' },
     { forceDeep: true }
   );
-  assert.equal(result.model, 'gpt-5-high');
+  assert.equal(result.model, 'test-deep-model');
   assert.equal(result.force_deep, true);
 });
-

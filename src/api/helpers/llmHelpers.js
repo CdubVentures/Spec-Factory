@@ -1,5 +1,7 @@
 import { normalizeModelToken, toInt, toFloat, hasKnownValue, parseCsvTokens } from './valueNormalizers.js';
 import { resolveModelFromRegistry, resolveModelCosts, resolveModelTokenProfile } from '../../core/llm/routeResolver.js';
+import { providerFromModelToken } from '../../core/llm/providerMeta.js';
+import { buildDefaultModelPricingMap } from '../../billing/modelPricingCatalog.js';
 
 export function llmProviderFromModel(model, registryLookup) {
   // Registry-first: if registry knows this model, use its providerType
@@ -7,12 +9,8 @@ export function llmProviderFromModel(model, registryLookup) {
     const resolved = resolveModelFromRegistry(registryLookup, normalizeModelToken(model));
     if (resolved?.providerType) return resolved.providerType;
   }
-  // Prefix fallback
-  const token = normalizeModelToken(model);
-  if (!token) return 'openai';
-  if (token.startsWith('gemini')) return 'gemini';
-  if (token.startsWith('deepseek')) return 'deepseek';
-  return 'openai';
+  // Prefix fallback via shared provider metadata
+  return providerFromModelToken(model) || 'openai';
 }
 
 export function classifyLlmTracePhase(purpose = '', routeRole = '') {
@@ -145,20 +143,6 @@ export function resolvePricingForModel(cfg, model) {
       )
     };
   }
-  if (modelToken.startsWith('deepseek-chat')) {
-    return {
-      input_per_1m: toFloat(cfg?.llmCostInputPer1MDeepseekChat, defaultRates.input_per_1m),
-      output_per_1m: toFloat(cfg?.llmCostOutputPer1MDeepseekChat, defaultRates.output_per_1m),
-      cached_input_per_1m: toFloat(cfg?.llmCostCachedInputPer1MDeepseekChat, defaultRates.cached_input_per_1m)
-    };
-  }
-  if (modelToken.startsWith('deepseek-reasoner')) {
-    return {
-      input_per_1m: toFloat(cfg?.llmCostInputPer1MDeepseekReasoner, defaultRates.input_per_1m),
-      output_per_1m: toFloat(cfg?.llmCostOutputPer1MDeepseekReasoner, defaultRates.output_per_1m),
-      cached_input_per_1m: toFloat(cfg?.llmCostCachedInputPer1MDeepseekReasoner, defaultRates.cached_input_per_1m)
-    };
-  }
   return defaultRates;
 }
 
@@ -213,21 +197,15 @@ export function resolveTokenProfileForModel(cfg, model) {
 }
 
 export function collectLlmModels(cfg = {}) {
-  // WHY: Only include actively configured models + well-known defaults.
-  // The pricing catalog (llmModelPricingMap) is for billing lookups, not model selection.
+  // WHY: Include actively configured models + all canonical catalog models.
   const candidates = [
     cfg.llmModelPlan,
     cfg.llmModelReasoning,
     cfg.llmPlanFallbackModel,
     cfg.llmReasoningFallbackModel,
-    ...parseCsvTokens(cfg.llmModelCatalog || '')
+    ...parseCsvTokens(cfg.llmModelCatalog || ''),
+    ...Object.keys(buildDefaultModelPricingMap()),
   ];
-  candidates.push(
-    'gemini-2.5-flash-lite',
-    'gemini-2.5-flash',
-    'deepseek-chat',
-    'deepseek-reasoner'
-  );
   const seen = new Set();
   const rows = [];
   for (const model of candidates) {

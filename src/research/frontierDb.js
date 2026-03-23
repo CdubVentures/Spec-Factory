@@ -19,14 +19,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function stableHash(value) {
-  const text = String(value || '');
-  let hash = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash).toString(36);
-}
+import { stableHashString } from '../shared/stableHash.js';
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -36,7 +29,7 @@ function normalizeQuery(value) {
 }
 
 function makeQueryHash(productId, query) {
-  return stableHash(`${String(productId || '').trim().toLowerCase()}::${normalizeQuery(query)}`);
+  return stableHashString(`${String(productId || '').trim().toLowerCase()}::${normalizeQuery(query)}`);
 }
 
 function ensureObject(value) {

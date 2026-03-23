@@ -7,8 +7,36 @@ import {
   AUTHORITY_VALUES,
   DISCOVERY_METHOD_VALUES,
   FIELD_COVERAGE_KEYS,
+  CRAWL_CONFIG_FIELD_KEYS,
+  DISCOVERY_FIELD_KEYS,
+  CRAWL_CONFIG_DEFAULTS,
   DISCOVERY_DEFAULTS,
 } from '../../../../../../src/features/indexing/discovery/contracts/sourceEntryContract.js';
+
+// WHY: SourceStrategyDraftField lives here (with the draft shape) so that
+// updateDraftByPath() can reference it without circular imports.
+export type SourceStrategyDraftField =
+  | 'host'
+  | 'display_name'
+  | 'tier'
+  | 'authority'
+  | 'base_url'
+  | 'content_types'
+  | 'doc_kinds'
+  | 'crawl_config.method'
+  | 'crawl_config.rate_limit_ms'
+  | 'crawl_config.timeout_ms'
+  | 'crawl_config.max_concurrent'
+  | 'crawl_config.robots_txt_compliant'
+  | 'field_coverage.high'
+  | 'field_coverage.medium'
+  | 'field_coverage.low'
+  | 'discovery.method'
+  | 'discovery.source_type'
+  | 'discovery.search_pattern'
+  | 'discovery.priority'
+  | 'discovery.enabled'
+  | 'discovery.notes';
 
 // --- Enum option arrays for UI dropdowns (derived from contract) ---
 
@@ -33,13 +61,12 @@ export interface FieldCoverage {
   low: string[];
 }
 
-// WHY: CrawlConfig is the API-response name for the Zod schema's `pacing` field.
-// The API route maps pacing → crawl_config for backward compatibility with
-// the file format. The contract exports PACING_FIELD_KEYS for reference.
+// WHY: CrawlConfig matches the canonical Zod crawlConfigSchema in sourceRegistry.js.
 export interface CrawlConfig {
   method: string;
   rate_limit_ms: number;
   timeout_ms: number;
+  max_concurrent?: number;
   robots_txt_compliant: boolean;
 }
 
@@ -103,6 +130,7 @@ export interface SourceStrategyDraft {
     method: string;
     rate_limit_ms: string;
     timeout_ms: string;
+    max_concurrent: string;
     robots_txt_compliant: string;
   };
   field_coverage: {
@@ -130,10 +158,11 @@ export function makeSourceStrategyDraft(): SourceStrategyDraft {
     content_types: '',
     doc_kinds: '',
     crawl_config: {
-      method: 'http',
-      rate_limit_ms: '2000',
-      timeout_ms: '12000',
-      robots_txt_compliant: 'true',
+      method: String(CRAWL_CONFIG_DEFAULTS.method ?? 'http'),
+      rate_limit_ms: String(CRAWL_CONFIG_DEFAULTS.rate_limit_ms ?? 2000),
+      timeout_ms: String(CRAWL_CONFIG_DEFAULTS.timeout_ms ?? 12000),
+      max_concurrent: String(CRAWL_CONFIG_DEFAULTS.max_concurrent ?? 5),
+      robots_txt_compliant: String(CRAWL_CONFIG_DEFAULTS.robots_txt_compliant ?? true),
     },
     field_coverage: { high: '', medium: '', low: '' },
     discovery: {
@@ -146,3 +175,39 @@ export function makeSourceStrategyDraft(): SourceStrategyDraft {
     },
   };
 }
+
+// --- Generic draft updater (replaces 22-case switch) ---
+
+type NestedDraftGroup = 'crawl_config' | 'field_coverage' | 'discovery';
+
+// WHY: All draft values are strings (HTML form inputs). The structure is always
+// either top-level (`host`, `tier`) or one-level nested (`crawl_config.method`).
+// This single function replaces the 22-case switch in PipelineSettingsPage.
+export function updateDraftByPath(
+  draft: SourceStrategyDraft,
+  path: SourceStrategyDraftField,
+  value: string,
+): SourceStrategyDraft {
+  const dotIdx = path.indexOf('.');
+  if (dotIdx === -1) return { ...draft, [path]: value };
+  const group = path.slice(0, dotIdx) as NestedDraftGroup;
+  const field = path.slice(dotIdx + 1);
+  return { ...draft, [group]: { ...draft[group], [field]: value } };
+}
+
+// --- Contract alignment ---
+
+// WHY: Runtime array of all valid draft field paths. The alignment test verifies
+// this matches the backend contract key arrays (CRAWL_CONFIG_FIELD_KEYS, etc.).
+// Adding a field to the Zod schema will cause the alignment test to fail until
+// the path is added here.
+const TOP_LEVEL_DRAFT_FIELDS: readonly string[] = [
+  'host', 'display_name', 'tier', 'authority', 'base_url', 'content_types', 'doc_kinds',
+];
+
+export const SOURCE_STRATEGY_DRAFT_FIELD_PATHS: readonly string[] = Object.freeze([
+  ...TOP_LEVEL_DRAFT_FIELDS,
+  ...CRAWL_CONFIG_FIELD_KEYS.map((k: string) => `crawl_config.${k}`),
+  ...FIELD_COVERAGE_KEYS.map((k: string) => `field_coverage.${k}`),
+  ...DISCOVERY_FIELD_KEYS.map((k: string) => `discovery.${k}`),
+]);

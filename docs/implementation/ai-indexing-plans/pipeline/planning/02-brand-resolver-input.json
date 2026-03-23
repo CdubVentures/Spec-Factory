@@ -1,23 +1,60 @@
 {
-  "_doc": "Call boundary for resolveBrandDomain().",
-  "validated_against": "2026-03-18",
+  "_doc": "Call boundary for resolveBrandDomain() and the stage wrapper runBrandResolver().",
+  "validated_against": "2026-03-22",
   "function": "resolveBrandDomain",
   "file": "src/features/indexing/discovery/brandResolver.js",
   "call_shape": {
     "brand": "string",
     "category": "string",
-    "config": "object",
+    "config": "object — consumed for registry lookups (brandResolverDefaultConfidence via configFloat)",
     "callLlmFn": "function|null",
-    "storage": "object|null"
+    "storage": "object|null",
+    "logger": "object|null — used for LLM error logging (brand_resolver_llm_error)"
+  },
+  "registry_settings_consumed": {
+    "brandResolverDefaultConfidence": {
+      "type": "float",
+      "default": 0.8,
+      "min": 0.1,
+      "max": 1.0,
+      "envKey": "BRAND_RESOLVER_DEFAULT_CONFIDENCE",
+      "used_by": "resolveBrandDomain() — sets confidence for cache hits (fallback) and LLM successes"
+    },
+    "manufacturerCrawlRateLimitMs": {
+      "type": "int",
+      "default": 2000,
+      "min": 100,
+      "max": 60000,
+      "envKey": "MANUFACTURER_CRAWL_RATE_LIMIT_MS",
+      "used_by": "manufacturerPromoter.buildManufacturerCrawlDefaults()"
+    },
+    "manufacturerCrawlTimeoutMs": {
+      "type": "int",
+      "default": 12000,
+      "min": 1000,
+      "max": 120000,
+      "envKey": "MANUFACTURER_CRAWL_TIMEOUT_MS",
+      "used_by": "manufacturerPromoter.buildManufacturerCrawlDefaults()"
+    },
+    "manufacturerPromotionPriority": {
+      "type": "int",
+      "default": 70,
+      "min": 1,
+      "max": 100,
+      "envKey": "MANUFACTURER_PROMOTION_PRIORITY",
+      "used_by": "manufacturerPromoter.promoteManufacturerHost() — sets discovery.priority"
+    }
   },
   "storage_contract": {
     "read": "storage.getBrandDomain(brand, category)",
     "write": "storage.upsertBrandDomain({ brand, category, official_domain, aliases, support_domain, confidence })",
-    "cached_aliases_shape": "JSON string or array"
+    "cached_aliases_shape": "JSON string or array",
+    "_jsdoc": "BrandDomainRow typedef: { brand, category, official_domain, aliases, support_domain, confidence }"
   },
   "llm_adapter": {
     "factory": "createBrandResolverCallLlm",
     "file": "src/features/indexing/discovery/discoveryLlmAdapters.js",
+    "factory_params": "{ callRoutedLlmFn, config, logger }",
     "routing": {
       "reason": "brand_resolution",
       "role": "triage",
@@ -30,9 +67,31 @@
       "reasoning": "string[]"
     }
   },
+  "stage_wrapper": {
+    "function": "runBrandResolver",
+    "file": "src/features/indexing/discovery/stages/brandResolver.js",
+    "call_shape": {
+      "job": "object",
+      "category": "string",
+      "config": "object",
+      "storage": "object|null",
+      "logger": "object|null — passed through to resolveBrandDomainFn and used for event emission",
+      "categoryConfig": "object",
+      "resolveBrandDomainFn": "function (DI seam, defaults to resolveBrandDomain)"
+    },
+    "di_seam_note": "resolveBrandDomainFn now receives logger as a parameter alongside brand, category, config, callLlmFn, storage"
+  },
   "caller_gates": [
-    "runDiscoverySeedPlan() only attempts resolution when a brand is present",
-    "runDiscoverySeedPlan() only creates callLlmFn when hasLlmRouteApiKey(config, { role: 'triage' }) is true",
-    "discoverCandidateSources() only calls the resolver when no precomputed brandResolution was passed in"
-  ]
+    "runDiscoverySeedPlan() only attempts resolution when a brand is present in job",
+    "runBrandResolver() only creates callLlmFn when hasLlmRouteApiKey(config, { role: 'triage' }) is true",
+    "resolveBrandDomainFn receives logger so LLM errors are logged as brand_resolver_llm_error"
+  ],
+  "promotion_inputs": {
+    "promoteFromBrandResolution_receives": {
+      "brandResolution": "object — the resolver result",
+      "sourcesData": "{ sources: categoryConfig.sourceRegistry, manufacturer_defaults, manufacturer_crawl_overrides }",
+      "options": "{ brandName, config }"
+    },
+    "file": "src/features/indexing/sources/manufacturerPromoter.js"
+  }
 }

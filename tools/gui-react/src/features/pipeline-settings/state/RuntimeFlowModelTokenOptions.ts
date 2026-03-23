@@ -1,18 +1,10 @@
 import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain';
 import { normalizeToken, type RuntimeDraft } from './RuntimeFlowDraftContracts';
 
-export interface RuntimeSettingsLlmConfigResponse {
-  model_options?: string[];
-  token_defaults?: {
-    plan?: number;
-  };
-  token_presets?: number[];
-  model_token_profiles?: Array<{
-    model: string;
-    default_output_tokens?: number;
-    max_output_tokens?: number;
-  }>;
-}
+// WHY: Single canonical contract — no local duplicates.
+import type { IndexingLlmConfigResponse } from '../../indexing/types.ts';
+export type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse };
+type RuntimeSettingsLlmConfigResponse = IndexingLlmConfigResponse;
 
 interface DeriveRuntimeLlmModelOptionsParams {
   indexingLlmConfig: RuntimeSettingsLlmConfigResponse | undefined;

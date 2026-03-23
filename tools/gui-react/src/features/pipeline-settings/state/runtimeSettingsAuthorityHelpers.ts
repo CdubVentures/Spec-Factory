@@ -1,8 +1,18 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
+import type { RuntimeSettingDefaults } from '../../../stores/runtimeSettingsManifestTypes.ts';
 
-export type RuntimeSettings = Record<string, string | number | boolean>;
+type RuntimeSettingValue = string | number | boolean;
+
+/**
+ * WHY: Preserves 220+ keyed fields from registry SSOT for autocomplete + compile-time
+ * validation, while allowing dynamic string-keyed access for API transport / Object.entries.
+ * Partial because server snapshots may not contain every key.
+ */
+export type RuntimeSettings =
+  Partial<{ [K in keyof RuntimeSettingDefaults]: RuntimeSettingValue }>
+  & Record<string, RuntimeSettingValue>;
 
 export interface RuntimeEditorSaveStatus {
   kind: 'idle' | 'ok' | 'partial' | 'error';

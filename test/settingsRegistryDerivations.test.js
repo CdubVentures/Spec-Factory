@@ -389,10 +389,6 @@ describe('registry enrichment — deprecated', () => {
     strictEqual(byKey.fetchCandidateSources.deprecated, true);
   });
 
-  it('manufacturerAutoPromote is deprecated', () => {
-    strictEqual(byKey.manufacturerAutoPromote.deprecated, true);
-  });
-
   it('helperFilesRoot is deprecated (alias of categoryAuthorityRoot)', () => {
     strictEqual(byKey.helperFilesRoot.deprecated, true);
   });

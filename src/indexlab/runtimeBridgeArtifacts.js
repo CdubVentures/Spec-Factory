@@ -153,7 +153,11 @@ export function refreshSearchProfileCollections(state, ts = '') {
   state.searchProfile.selected_queries = normalizedRows.map((row) => row.query);
   state.searchProfile.selected_query_count = normalizedRows.length;
   state.searchProfile.generated_at = toIso(ts || state.searchProfile.generated_at || new Date().toISOString());
-  state.searchProfile.status = normalizedRows.length > 0 ? 'executed' : 'pending';
+  // WHY: Preserve caller's status ('planned' from applySearchProfilePlannedPayload,
+  // 'executed' from recordSearchProfileQuery). Only default when missing or pending.
+  if (!state.searchProfile.status || state.searchProfile.status === 'pending') {
+    state.searchProfile.status = normalizedRows.length > 0 ? 'executed' : 'pending';
+  }
   state.searchProfile.run_id = state.runId || '';
   state.searchProfile.category = state.context.category || '';
   state.searchProfile.product_id = state.context.productId || '';

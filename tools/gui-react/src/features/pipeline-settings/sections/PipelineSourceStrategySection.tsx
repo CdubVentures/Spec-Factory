@@ -8,33 +8,12 @@ import {
   AUTHORITY_OPTIONS,
   DISCOVERY_METHOD_OPTIONS,
   type SourceStrategyDraft,
+  type SourceStrategyDraftField,
 } from '../state/sourceEntryDerived';
-export type { SourceStrategyDraft } from '../state/sourceEntryDerived';
+export type { SourceStrategyDraft, SourceStrategyDraftField } from '../state/sourceEntryDerived';
 
 type SortColumn = 'host' | 'name' | 'tier' | 'authority' | 'discovery' | 'priority' | 'enabled';
 type SortDirection = 'asc' | 'desc';
-
-export type SourceStrategyDraftField =
-  | 'host'
-  | 'display_name'
-  | 'tier'
-  | 'authority'
-  | 'base_url'
-  | 'content_types'
-  | 'doc_kinds'
-  | 'crawl_config.method'
-  | 'crawl_config.rate_limit_ms'
-  | 'crawl_config.timeout_ms'
-  | 'crawl_config.robots_txt_compliant'
-  | 'field_coverage.high'
-  | 'field_coverage.medium'
-  | 'field_coverage.low'
-  | 'discovery.method'
-  | 'discovery.source_type'
-  | 'discovery.search_pattern'
-  | 'discovery.priority'
-  | 'discovery.enabled'
-  | 'discovery.notes';
 
 function resolveSourceId(entry: SourceEntry): string {
   return String(entry.sourceId || '').trim();

@@ -273,21 +273,6 @@ function pushModelDetails(lines, config = {}) {
   const details = [
     ['Provider', config.llmProvider || ''],
     ['Base URL', config.llmBaseUrl || config.openaiBaseUrl || ''],
-    ['Model Version', config.deepseekModelVersion || ''],
-    ['Context Length', config.deepseekContextLength || ''],
-    [
-      'Max Output (deepseek-chat)',
-      config.deepseekChatMaxOutputDefault || config.deepseekChatMaxOutputMaximum
-        ? `default ${config.deepseekChatMaxOutputDefault || '?'} / max ${config.deepseekChatMaxOutputMaximum || '?'}`
-        : ''
-    ],
-    [
-      'Max Output (deepseek-reasoner)',
-      config.deepseekReasonerMaxOutputDefault || config.deepseekReasonerMaxOutputMaximum
-        ? `default ${config.deepseekReasonerMaxOutputDefault || '?'} / max ${config.deepseekReasonerMaxOutputMaximum || '?'}`
-        : ''
-    ],
-    ['Features', config.deepseekFeatures || '']
   ];
 
   const pricing = [
@@ -303,22 +288,6 @@ function pushModelDetails(lines, config = {}) {
       'Pricing Default (1M output)',
       safeNumber(config.llmCostOutputPer1M, 0) > 0 ? `$${safeNumber(config.llmCostOutputPer1M, 0)}` : ''
     ],
-    [
-      'Pricing deepseek-chat',
-      safeNumber(config.llmCostInputPer1MDeepseekChat, -1) >= 0 ||
-      safeNumber(config.llmCostOutputPer1MDeepseekChat, -1) >= 0 ||
-      safeNumber(config.llmCostCachedInputPer1MDeepseekChat, -1) >= 0
-        ? `in $${safeNumber(config.llmCostInputPer1MDeepseekChat, 0)} / out $${safeNumber(config.llmCostOutputPer1MDeepseekChat, 0)} / cache-hit $${safeNumber(config.llmCostCachedInputPer1MDeepseekChat, 0)}`
-        : ''
-    ],
-    [
-      'Pricing deepseek-reasoner',
-      safeNumber(config.llmCostInputPer1MDeepseekReasoner, -1) >= 0 ||
-      safeNumber(config.llmCostOutputPer1MDeepseekReasoner, -1) >= 0 ||
-      safeNumber(config.llmCostCachedInputPer1MDeepseekReasoner, -1) >= 0
-        ? `in $${safeNumber(config.llmCostInputPer1MDeepseekReasoner, 0)} / out $${safeNumber(config.llmCostOutputPer1MDeepseekReasoner, 0)} / cache-hit $${safeNumber(config.llmCostCachedInputPer1MDeepseekReasoner, 0)}`
-        : ''
-    ]
   ];
 
   const rows = [...details, ...pricing].filter(([, value]) => String(value || '').trim() !== '');

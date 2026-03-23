@@ -43,7 +43,7 @@ export function applyHardDropFilter({
   for (const raw of dedupedResults || []) {
     const rawUrl = String(raw?.url || '').trim();
     if (!rawUrl) {
-      hardDrops.push({ url: rawUrl, host: '', hard_drop_reason: 'invalid_url' });
+      hardDrops.push({ ...raw, url: rawUrl, host: '', hard_drop_reason: 'invalid_url' });
       continue;
     }
 
@@ -52,14 +52,14 @@ export function applyHardDropFilter({
     try {
       parsed = new URL(rawUrl);
     } catch {
-      hardDrops.push({ url: rawUrl, host: '', hard_drop_reason: 'invalid_url' });
+      hardDrops.push({ ...raw, url: rawUrl, host: '', hard_drop_reason: 'invalid_url' });
       continue;
     }
 
     // Step 2: Protocol check — normalize HTTP to HTTPS, drop non-HTTP(S)
     const protocol = String(parsed.protocol || '').toLowerCase();
     if (protocol !== 'https:' && protocol !== 'http:') {
-      hardDrops.push({ url: rawUrl, host: normalizeHost(parsed.hostname), hard_drop_reason: 'invalid_protocol' });
+      hardDrops.push({ ...raw, url: rawUrl, host: normalizeHost(parsed.hostname), hard_drop_reason: 'invalid_protocol' });
       continue;
     }
 
@@ -68,7 +68,7 @@ export function applyHardDropFilter({
       try {
         parsed = new URL(rawUrl.replace(/^http:/i, 'https:'));
       } catch {
-        hardDrops.push({ url: rawUrl, host: normalizeHost(parsed.hostname), hard_drop_reason: 'invalid_protocol' });
+        hardDrops.push({ ...raw, url: rawUrl, host: normalizeHost(parsed.hostname), hard_drop_reason: 'invalid_protocol' });
         continue;
       }
     }
@@ -78,14 +78,14 @@ export function applyHardDropFilter({
 
     // Step 3: Denied host
     if (!host || isDeniedHost(host, categoryConfig)) {
-      hardDrops.push({ url: canonicalUrl, host, hard_drop_reason: 'denied_host' });
+      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'denied_host' });
       continue;
     }
 
     // Step 4: Cooldown
     const cooldownResult = frontierDb?.shouldSkipUrl?.(canonicalUrl) || { skip: false };
     if (cooldownResult.skip) {
-      hardDrops.push({ url: canonicalUrl, host, hard_drop_reason: 'url_cooldown' });
+      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'url_cooldown' });
       continue;
     }
 
@@ -95,7 +95,7 @@ export function applyHardDropFilter({
     const pathAndQuery = `${pathname}${search}`;
 
     if (UTILITY_SHELL_RE.test(pathname) || SEARCH_RESULTS_RE.test(pathAndQuery)) {
-      hardDrops.push({ url: canonicalUrl, host, hard_drop_reason: 'utility_shell' });
+      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'utility_shell' });
       continue;
     }
 

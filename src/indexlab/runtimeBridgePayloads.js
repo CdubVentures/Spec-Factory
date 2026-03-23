@@ -172,21 +172,31 @@ export function toSearchProfileBaseline({
 }
 
 export function toSearchProfileQueryRow(entry = {}) {
+  const toStringArray = (arr) => Array.isArray(arr)
+    ? arr.map((v) => String(v || '').trim()).filter(Boolean)
+    : [];
   return {
     query: String(entry.query || '').trim(),
-    target_fields: Array.isArray(entry.target_fields)
-      ? entry.target_fields.map((value) => String(value || '').trim()).filter(Boolean)
-      : [],
+    target_fields: toStringArray(entry.target_fields),
     attempts: Math.max(0, asInt(entry.attempts, 0)),
     result_count: Math.max(0, asInt(entry.result_count, 0)),
-    providers: Array.isArray(entry.providers)
-      ? entry.providers.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 8)
-      : [],
+    providers: toStringArray(entry.providers).slice(0, 8),
     hint_source: String(entry.hint_source || '').trim(),
     doc_hint: String(entry.doc_hint || '').trim(),
     domain_hint: String(entry.domain_hint || '').trim(),
     source_host: String(entry.source_host || '').trim(),
-    __from_plan_profile: Boolean(entry.__from_plan_profile)
+    __from_plan_profile: Boolean(entry.__from_plan_profile),
+    // WHY: Tier metadata from NeedSet → Search Profile tier builders.
+    // Absent on legacy (archetype) rows — safe defaults preserve backward compat.
+    tier: String(entry.tier || '').trim(),
+    group_key: String(entry.group_key || '').trim(),
+    normalized_key: String(entry.normalized_key || '').trim(),
+    repeat_count: Math.max(0, asInt(entry.repeat_count, 0)),
+    all_aliases: toStringArray(entry.all_aliases),
+    domain_hints: toStringArray(entry.domain_hints),
+    preferred_content_types: toStringArray(entry.preferred_content_types),
+    domains_tried_for_key: toStringArray(entry.domains_tried_for_key),
+    content_types_tried_for_key: toStringArray(entry.content_types_tried_for_key),
   };
 }
 

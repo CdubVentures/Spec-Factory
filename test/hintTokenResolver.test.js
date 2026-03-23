@@ -16,19 +16,19 @@ function buildMouseRegistry() {
 }
 
 describe('hintTokenResolver', () => {
-  it('razer.com with registry → host, source_entry populated', () => {
+  it('rtings.com with registry → host, source_entry populated', () => {
     const reg = buildMouseRegistry();
-    const r = resolveHintToken('razer.com', reg);
+    const r = resolveHintToken('rtings.com', reg);
     assert.equal(r.classification, 'host');
-    assert.equal(r.host, 'razer.com');
+    assert.equal(r.host, 'rtings.com');
     assert.ok(r.source_entry, 'source_entry should be populated');
-    assert.equal(r.source_entry.tier, 'tier1_manufacturer');
-    assert.equal(r.raw, 'razer.com');
+    assert.equal(r.source_entry.tier, 'tier2_lab');
+    assert.equal(r.raw, 'rtings.com');
   });
 
-  it('docs.razer.com → host (subdomain match)', () => {
+  it('www.rtings.com → host (subdomain match)', () => {
     const reg = buildMouseRegistry();
-    const r = resolveHintToken('docs.razer.com', reg);
+    const r = resolveHintToken('www.rtings.com', reg);
     assert.equal(r.classification, 'host');
     assert.ok(r.source_entry);
   });

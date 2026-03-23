@@ -18,11 +18,9 @@ import { LlmCallCard } from '../../components/LlmCallCard';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
 import {
   computeTriageDecisionCounts,
-  computeTriageTopDomains,
   computeTriageUniqueDomains,
   buildTriageDecisionSegments,
   buildTriageFunnelBullets,
-  buildTriageDomainDecisionBreakdown,
 } from '../../selectors/serpTriageHelpers.js';
 import type { RuntimeIdxBadge } from '../../types';
 
@@ -187,35 +185,18 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
   const hasFailed = calls.some((c) => c.status === 'failed');
   const overallStatus = hasFailed ? 'error' : hasStructured ? 'done' : 'pending';
 
+  const funnel = useMemo(() => {
+    for (const t of triage) {
+      if (t.funnel) return t.funnel;
+    }
+    return null;
+  }, [triage]);
+
   const counts = useMemo(() => computeTriageDecisionCounts(triage), [triage]);
-  const topDomains = useMemo(() => computeTriageTopDomains(triage, 6), [triage]);
   const uniqueDomains = useMemo(() => computeTriageUniqueDomains(triage), [triage]);
   const decisionSegments = useMemo(() => buildTriageDecisionSegments(counts), [counts]);
   const funnelBullets = useMemo(() => buildTriageFunnelBullets(triage, calls), [triage, calls]);
-  const domainBreakdown = useMemo(() => buildTriageDomainDecisionBreakdown(triage), [triage]);
-  const hasDecisions = counts.keep + counts.maybe + counts.drop > 0;
-
-  const approvedCount = useMemo(() => {
-    let count = 0;
-    for (const t of triage) {
-      for (const c of t.candidates) {
-        if (c.approval_bucket === 'approved') count += 1;
-      }
-    }
-    return count;
-  }, [triage]);
-
-  const candidateCount = totalCandidates - approvedCount;
-
-  const domainFilterValues = useMemo(
-    () => topDomains.map((d) => d.domain),
-    [topDomains],
-  );
-  const [domainFilter, setDomainFilter] = usePersistedNullableTab<string>(
-    `runtimeOps:prefetch:serpTriage:domainFilter:${persistScope}`,
-    null,
-    { validValues: domainFilterValues },
-  );
+  const hasDecisions = counts.keep + counts.dropped_by_llm + counts.overflow_capped + counts.hard_drop > 0;
 
   const allDroppedQueries = useMemo(
     () => triage.filter((t) => t.kept_count === 0 && t.candidates.length > 0),
@@ -260,7 +241,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
           {calls.length > 0 && calls[0].provider && (
             <Chip label={calls[0].provider} className="sf-chip-accent" />
           )}
-          <Tip text="LLM-based URL selector that decides which search results are worth fetching. Classifies each URL as approved (fetch now), candidate (backup), or reject (skip)." />
+          <Tip text="SERP Selector receives raw search results, dedupes across providers, hard-drops invalid/denied/utility URLs, classifies and caps candidates, then uses LLM to select the most relevant URLs for fetching." />
         </>}
         footer={<>
           {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
@@ -273,27 +254,65 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
 
         {/* Big stat numbers */}
         <HeroStatGrid columns={6}>
-          <HeroStat value={totalCandidates} label="candidates" />
+          <HeroStat value={funnel ? funnel.raw_input : totalCandidates} label="raw input" />
+          <HeroStat value={counts.hard_drop || '-'} label="hard dropped" colorClass={counts.hard_drop > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={funnel ? funnel.candidates_sent_to_llm : counts.keep + counts.dropped_by_llm} label="sent to LLM" />
           <HeroStat value={counts.keep} label="kept" colorClass={counts.keep > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={counts.maybe} label="maybe" colorClass={counts.maybe > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={counts.drop} label="dropped" colorClass={counts.drop > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={approvedCount} label="approved" colorClass={approvedCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={candidateCount} label="candidate" colorClass={candidateCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
+          <HeroStat value={counts.dropped_by_llm} label="dropped by LLM" colorClass={counts.dropped_by_llm > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={counts.overflow_capped || '-'} label="overflow capped" colorClass={counts.overflow_capped > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
         {/* Narrative */}
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          <strong className="sf-text-primary not-italic">{totalCandidates}</strong> candidate{totalCandidates !== 1 ? 's' : ''} across <strong className="sf-text-primary not-italic">{triage.length}</strong> quer{triage.length === 1 ? 'y' : 'ies'}
-          {counts.keep > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{counts.keep}</strong> kept</>}
-          {counts.maybe > 0 && <>, <strong className="sf-text-primary not-italic">{counts.maybe}</strong> maybe</>}
-          {counts.drop > 0 && <>, <strong className="sf-text-primary not-italic">{counts.drop}</strong> dropped</>}
-          {approvedCount > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{approvedCount}</strong> approved, <strong className="sf-text-primary not-italic">{candidateCount}</strong> candidate</>}
-          {totalTokens > 0 && (
-            <>. Used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
-          )}
-          .
+          {funnel ? (<>
+            <strong className="sf-text-primary not-italic">{funnel.raw_input}</strong> raw results
+            {funnel.hard_drop_count > 0 && <>, <strong className="sf-text-primary not-italic">{funnel.hard_drop_count}</strong> hard-dropped</>}
+            , <strong className="sf-text-primary not-italic">{funnel.candidates_sent_to_llm}</strong> sent to LLM
+            {funnel.overflow_capped > 0 && <> (<strong className="sf-text-primary not-italic">{funnel.overflow_capped}</strong> overflow capped)</>}
+            {counts.keep > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{counts.keep}</strong> kept</>}
+            {counts.dropped_by_llm > 0 && <>, <strong className="sf-text-primary not-italic">{counts.dropped_by_llm}</strong> dropped by LLM</>}
+            {totalTokens > 0 && (
+              <>. Used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
+            )}
+            .
+          </>) : (<>
+            <strong className="sf-text-primary not-italic">{totalCandidates}</strong> URL{totalCandidates !== 1 ? 's' : ''} across <strong className="sf-text-primary not-italic">{triage.length}</strong> quer{triage.length === 1 ? 'y' : 'ies'}
+            {counts.hard_drop > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{counts.hard_drop}</strong> hard-dropped</>}
+            {counts.keep > 0 && <>{counts.hard_drop > 0 ? ', ' : ' \u2014 '}<strong className="sf-text-primary not-italic">{counts.keep}</strong> kept</>}
+            {counts.dropped_by_llm > 0 && <>, <strong className="sf-text-primary not-italic">{counts.dropped_by_llm}</strong> dropped by LLM</>}
+            {counts.overflow_capped > 0 && <>, <strong className="sf-text-primary not-italic">{counts.overflow_capped}</strong> overflow capped</>}
+            {totalTokens > 0 && (
+              <>. Used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
+            )}
+            .
+          </>)}
         </div>
       </HeroBand>
+
+      {/* ── Input Funnel ── */}
+      {funnel && (
+        <div>
+          <SectionHeader>input funnel</SectionHeader>
+          <div className="sf-surface-elevated rounded-sm border sf-border-soft px-5 py-4">
+            <div className="flex flex-col gap-1.5">
+              {[
+                { label: 'Raw results from search', count: funnel.raw_input, delta: null, tip: null },
+                { label: 'After hard drop filter', count: funnel.candidates_after_hard_drop, delta: funnel.hard_drop_count > 0 ? `-${funnel.hard_drop_count} dropped` : null, tip: 'Removes malformed URLs, denied/blocked hosts, URLs in cooldown, and utility pages (login, cart, checkout, search results)' },
+                { label: 'After URL normalization', count: funnel.candidates_classified, delta: funnel.canon_merge_count > 0 ? `-${funnel.canon_merge_count} merged` : null, tip: 'Frontier database merges URL variants that resolve to the same page (trailing slashes, redirects, param differences)' },
+                { label: 'Sent to LLM', count: funnel.candidates_sent_to_llm, delta: funnel.overflow_capped > 0 ? `${funnel.overflow_capped} overflow capped` : null, tip: 'Priority-ranked candidates capped at 80 max. Official/support domains and multi-provider hits go first' },
+                { label: 'Kept by LLM', count: counts.keep, delta: funnel.llm_model ? `by ${funnel.llm_model}` : null, tip: null },
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-3 text-xs">
+                  <span className="font-mono font-bold sf-text-primary w-8 text-right">{step.count}</span>
+                  <span className="sf-text-muted">{step.label}</span>
+                  {step.delta && <span className="sf-text-subtle italic">({step.delta})</span>}
+                  {step.tip && <Tip text={step.tip} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── All-Dropped Warnings ── */}
       {allDroppedQueries.length > 0 && (
@@ -346,36 +365,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
                   )}
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Top Domains ── */}
-      {topDomains.length > 0 && (
-        <div>
-          <SectionHeader>top domains</SectionHeader>
-          <div className="flex flex-wrap gap-1.5">
-            {topDomains.map((d) => (
-              <button
-                key={d.domain}
-                type="button"
-                onClick={() => setDomainFilter(domainFilter === d.domain ? null : d.domain)}
-                className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] border-[1.5px] border-current transition-colors ${
-                  domainFilter === d.domain ? 'sf-chip-info sf-icon-badge' : 'sf-chip-info'
-                }`}
-              >
-                {d.domain} ({d.count})
-              </button>
-            ))}
-            {domainFilter && (
-              <button
-                type="button"
-                onClick={() => setDomainFilter(null)}
-                className="sf-text-caption sf-status-text-danger hover:underline ml-1"
-              >
-                Clear filter
-              </button>
             )}
           </div>
         </div>
@@ -454,13 +443,12 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
             {triage.map((t, ti) => {
               const queryKey = triageQueryKeys[ti] || `query-${ti}`;
               const isExpanded = triage.length === 1 || Boolean(expandedQueries[queryKey]);
-              const allCandidates = domainFilter
-                ? t.candidates.filter((c) => c.domain === domainFilter)
-                : t.candidates;
+              const allCandidates = t.candidates;
               const kept = allCandidates.filter((c) => c.decision === 'keep');
-              const maybe = allCandidates.filter((c) => c.decision === 'maybe');
-              const dropped = allCandidates.filter((c) => c.decision === 'drop' || c.decision === 'skip');
-              const queryAllDropped = t.kept_count === 0 && t.candidates.length > 0;
+              const droppedByLlm = allCandidates.filter((c) => c.decision !== 'keep' && c.decision !== 'hard_drop' && c.triage_disposition !== 'selector_input_capped');
+              const hardDropped = allCandidates.filter((c) => c.decision === 'hard_drop');
+              const overflowCapped = allCandidates.filter((c) => c.triage_disposition === 'selector_input_capped');
+              const queryAllDropped = kept.length === 0 && allCandidates.length > 0;
 
               return (
                 <div key={ti} className="sf-surface-elevated rounded-sm overflow-hidden border sf-border-soft">
@@ -472,9 +460,11 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
                     >
                       <span className="sf-text-caption sf-text-subtle">{isExpanded ? '\u25BC' : '\u25B6'}</span>
                       <span className="text-xs font-mono sf-text-primary flex-1 truncate">{t.query || 'All Results'}</span>
-                      <span className="sf-text-caption font-mono sf-text-subtle">{t.candidates.length} candidates</span>
-                      <span className="sf-text-caption sf-status-text-success">Keep: {t.kept_count}</span>
-                      <span className="sf-text-caption sf-status-text-danger">Drop: {t.dropped_count}</span>
+                      <span className="sf-text-caption font-mono sf-text-subtle">{allCandidates.length} URLs</span>
+                      <span className="sf-text-caption sf-status-text-success">Keep: {kept.length}</span>
+                      <span className="sf-text-caption sf-status-text-danger">LLM drop: {droppedByLlm.length}</span>
+                      {hardDropped.length > 0 && <span className="sf-text-caption sf-status-text-warning">Hard drop: {hardDropped.length}</span>}
+                      {overflowCapped.length > 0 && <span className="sf-text-caption sf-text-subtle">Overflow: {overflowCapped.length}</span>}
                       {queryAllDropped && <Chip label="all dropped" className="sf-chip-warning" />}
                     </button>
                   )}
@@ -500,8 +490,8 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
                         ))}
                         {kept.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
                       </KanbanLane>
-                      <KanbanLane title="Maybe" count={maybe.length} badgeClass="sf-chip-warning">
-                        {maybe.map((c, ci) => (
+                      <KanbanLane title="Dropped by LLM" count={droppedByLlm.length} badgeClass="sf-chip-danger">
+                        {droppedByLlm.map((c, ci) => (
                           <KanbanCard
                             key={ci}
                             title={c.title}
@@ -518,35 +508,49 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
                             )}
                           </KanbanCard>
                         ))}
-                        {maybe.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
+                        {droppedByLlm.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
                       </KanbanLane>
-                      <KanbanLane title="Drop" count={dropped.length} badgeClass="sf-chip-danger">
-                        {dropped.map((c, ci) => (
-                          <KanbanCard
-                            key={ci}
-                            title={c.title}
-                            domain={c.domain}
-                            snippet={c.snippet}
-                            score={c.score}
-                            rationale={c.rationale}
-                            onClick={() => setSelectedCandidateKey(
-                              selectedCandidateKey === `${queryKey}::${c.url}` ? null : `${queryKey}::${c.url}`,
-                            )}
-                          >
-                            {showScoreDecomposition && (
-                              <StackedScoreBar segments={scoreBarSegments(c.score_components)} className="mt-1" />
-                            )}
-                          </KanbanCard>
-                        ))}
-                        {dropped.length === 0 && <div className="sf-text-caption sf-text-subtle py-2 text-center">None</div>}
-                      </KanbanLane>
+                      {hardDropped.length > 0 && (
+                        <KanbanLane title="Hard Dropped" count={hardDropped.length} badgeClass="sf-chip-warning">
+                          {hardDropped.map((c, ci) => (
+                            <KanbanCard
+                              key={ci}
+                              title={c.title || c.url}
+                              domain={c.domain}
+                              snippet={c.snippet}
+                              score={0}
+                              rationale={c.rationale}
+                              onClick={() => setSelectedCandidateKey(
+                                selectedCandidateKey === `${queryKey}::${c.url}` ? null : `${queryKey}::${c.url}`,
+                              )}
+                            />
+                          ))}
+                        </KanbanLane>
+                      )}
+                      {overflowCapped.length > 0 && (
+                        <KanbanLane title="Overflow Capped" count={overflowCapped.length} badgeClass="sf-chip-neutral">
+                          {overflowCapped.map((c, ci) => (
+                            <KanbanCard
+                              key={ci}
+                              title={c.title}
+                              domain={c.domain}
+                              snippet={c.snippet}
+                              score={c.score}
+                              rationale={c.rationale}
+                              onClick={() => setSelectedCandidateKey(
+                                selectedCandidateKey === `${queryKey}::${c.url}` ? null : `${queryKey}::${c.url}`,
+                              )}
+                            />
+                          ))}
+                        </KanbanLane>
+                      )}
                     </div>
                   ) : isExpanded ? (
                     <div className={`overflow-x-auto border-t sf-border-soft ${selectedCandidate ? 'max-h-[50vh] overflow-y-auto' : ''}`}>
                       <table className="min-w-full text-xs">
                         <thead className="sf-surface-elevated sticky top-0">
                           <tr>
-                            {['title', 'domain', 'role', 'identity', 'score', 'decision'].map((h) => (
+                            {['title', 'domain', 'role', 'identity', 'score', 'decision', 'drop reason'].map((h) => (
                               <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
                             ))}
                           </tr>
@@ -567,6 +571,17 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, liveS
                               <td className="py-1.5 px-4 font-mono">{c.score.toFixed(3)}</td>
                               <td className="py-1.5 px-4">
                                 <Chip label={c.decision} className={triageDecisionBadgeClass(c.decision)} />
+                              </td>
+                              <td className="py-1.5 px-4">
+                                {c.decision === 'hard_drop' ? (
+                                  <Chip label={(c.triage_disposition || 'hard drop').replace(/_/g, ' ')} className="sf-chip-warning" />
+                                ) : c.triage_disposition === 'selector_input_capped' ? (
+                                  <Chip label="overflow capped" className="sf-chip-neutral" />
+                                ) : c.decision !== 'keep' ? (
+                                  <Chip label="LLM rejected" className="sf-chip-danger" />
+                                ) : (
+                                  <span className="sf-text-subtle">-</span>
+                                )}
                               </td>
                             </tr>
                           ))}

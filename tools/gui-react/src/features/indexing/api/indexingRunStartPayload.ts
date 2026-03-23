@@ -68,7 +68,7 @@ export function buildIndexingRunStartPayload(
   // WHY: Spread the full runtimeSettingsPayload first so ALL settings keys
   // (including the 17 that were previously dropped: deepseekApiKey, fetchBudgetMs,
   // geminiApiKey, googleSearch*, helperFilesRoot, llmPhaseOverridesJson,
-  // llmPlanUseReasoning, llmProviderRegistryJson, manufacturerAutoPromote,
+  // llmPlanUseReasoning, llmProviderRegistryJson,
   // searxngMinQueryIntervalMs) flow through to the POST body → backend snapshot.
   // Hand-picked fields below overlay on top with priority because they include
   // min/max enforcement and parsed numeric values from deriveIndexingRunStartParsedValues.
@@ -147,7 +147,6 @@ export function buildIndexingRunStartPayload(
       parsedScannedPdfOcrMinConfidence: p.parsedScannedPdfOcrMinConfidence,
       dynamicFetchPolicyMapJson: readString(s.dynamicFetchPolicyMapJson),
       searchProfileCapMapJson: readString(s.searchProfileCapMapJson),
-      serpRerankerWeightMapJson: readString(s.serpRerankerWeightMapJson),
       fetchSchedulerInternalsMapJson: readString(s.fetchSchedulerInternalsMapJson),
       parsingConfidenceBaseMapJson: readString(s.parsingConfidenceBaseMapJson),
       repairDedupeRule: readString(s.repairDedupeRule),

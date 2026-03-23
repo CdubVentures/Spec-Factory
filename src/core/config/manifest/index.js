@@ -14,7 +14,7 @@ import { miscGroup } from './miscGroup.js';
 
 export const CONFIG_MANIFEST_VERSION = 1;
 
-export const CONFIG_MANIFEST = Object.freeze([
+const manifestGroupsWithoutMisc = Object.freeze([
   coreGroup,
   cachingGroup,
   storageGroup,
@@ -24,7 +24,22 @@ export const CONFIG_MANIFEST = Object.freeze([
   runtimeGroup,
   observabilityGroup,
   pathsGroup,
-  miscGroup,
+]);
+
+const categorizedKeys = new Set(
+  manifestGroupsWithoutMisc.flatMap((section) => section.entries.map((entry) => entry.key))
+);
+
+const normalizedMiscGroup = Object.freeze({
+  ...miscGroup,
+  entries: Object.freeze(
+    miscGroup.entries.filter((entry) => !categorizedKeys.has(entry.key))
+  ),
+});
+
+export const CONFIG_MANIFEST = Object.freeze([
+  ...manifestGroupsWithoutMisc,
+  normalizedMiscGroup,
 ]);
 
 export const CONFIG_MANIFEST_KEYS = Object.freeze(

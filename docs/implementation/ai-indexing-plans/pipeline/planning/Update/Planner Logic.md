@@ -1,5 +1,9 @@
 # Discovery Search Logic V4
 
+> **SUPERSEDED** — This document describes an aspirational Pass A-E architecture that was never implemented.
+> The live system uses a three-tier model (Tier 1/2/3) documented in `PREFETCH-PIPELINE-OVERVIEW.md` and the `*-LOGIC-IN-OUT.md` files.
+> The JSON contracts in sections 13.1-13.4 reference non-existent schema versions (`v4`, `pass_plan.v1`, `pass_input.v1`, `pass_output.v1`). Do not use them as implementation references.
+
 ## Implementation Status
 
 The A-E pass model described below was **conceptual reference**. The actual implementation uses a **three-tier model**:

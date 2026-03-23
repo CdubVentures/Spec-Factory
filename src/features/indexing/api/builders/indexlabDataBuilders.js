@@ -25,7 +25,6 @@ import {
 let _resolveIndexLabRoot = () => '';
 let _outputRoot = '';
 let _storage = null;
-let _config = null;
 let _getSpecDbReady = null;
 let _isProcessRunning = null;
 let _processStatus = null;
@@ -123,7 +122,6 @@ export function initIndexLabDataBuilders({
     : () => indexLabRoot;
   _outputRoot = outputRoot;
   _storage = storage;
-  _config = config;
   _eventCache = new Map();
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;

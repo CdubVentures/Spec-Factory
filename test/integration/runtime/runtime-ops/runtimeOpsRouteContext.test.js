@@ -4,6 +4,7 @@ import { createRuntimeOpsRouteContext } from '../../../../src/features/indexing/
 
 const EXPECTED_KEYS = [
   'jsonRes', 'toInt', 'INDEXLAB_ROOT', 'OUTPUT_ROOT', 'config', 'storage',
+  'getIndexLabRoot',
   'readIndexLabRunEvents', 'readIndexLabRunSearchProfile', 'readIndexLabRunMeta',
   'readIndexLabRunSourceIndexingPackets', 'resolveIndexLabRunDirectory',
   'processStatus', 'getLastScreencastFrame', 'safeReadJson', 'safeJoin', 'path',
@@ -11,6 +12,7 @@ const EXPECTED_KEYS = [
 
 const CORE_KEYS = [
   'jsonRes', 'toInt', 'INDEXLAB_ROOT', 'OUTPUT_ROOT', 'config', 'storage',
+  'getIndexLabRoot',
   'processStatus', 'getLastScreencastFrame', 'safeReadJson', 'safeJoin', 'path',
 ];
 

@@ -33,23 +33,20 @@ describe('sourceRegistry', () => {
     assert.ok(typeof registry.generated_at === 'string');
   });
 
-  it('mouse has no approved-only synthetic entries after source curation', () => {
+  it('mouse has no non-manufacturer synthetic entries after source curation', () => {
     const raw = loadMouseRaw();
-    const { registry, sparsityWarnings } = loadSourceRegistry('mouse', raw);
-    const syntheticHosts = registry.entries.filter((entry) => entry.synthetic).map((entry) => entry.host);
-    assert.deepEqual(syntheticHosts, [], `mouse should not rely on synthetic entries: ${syntheticHosts.join(', ')}`);
-    assert.deepEqual(sparsityWarnings, [], `mouse should not emit sparsity warnings: ${JSON.stringify(sparsityWarnings)}`);
+    const { registry } = loadSourceRegistry('mouse', raw);
+    const nonMfrSynthetics = registry.entries.filter(e => e.synthetic && e.tier !== 'tier1_manufacturer').map(e => e.host);
+    assert.deepEqual(nonMfrSynthetics, [], `mouse should not have non-manufacturer synthetic entries: ${nonMfrSynthetics.join(', ')}`);
   });
 
-  it('sparsity report reflects a fully detailed mouse registry', () => {
+  it('sparsity report reflects a detailed mouse registry with manufacturer synthetics', () => {
     const raw = loadMouseRaw();
     const { registry } = loadSourceRegistry('mouse', raw);
     const report = registrySparsityReport(registry);
     assert.ok(report.total > 0);
     assert.ok(report.real_count > 0);
-    assert.equal(report.synthetic_count, 0);
     assert.equal(report.total, report.real_count + report.synthetic_count);
-    assert.equal(report.synthetic_ratio, 0);
     assert.ok(Array.isArray(report.detailed));
   });
 

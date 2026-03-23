@@ -15,8 +15,20 @@ import { DISCOVERY_DEFAULTS, sourceEntryMutableKeys } from '../discovery/contrac
 // WHY: Frozen Set for backward compat — existing callers expect a Set, not a function.
 export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(sourceEntryMutableKeys());
 
-// WHY: Keys that must be plain objects when present (not arrays, not primitives).
-const OBJECT_TYPED_KEYS = new Set(['discovery', 'crawl_config', 'field_coverage']);
+// WHY: Derived from Zod schema — O(1), auto-includes new object-typed fields.
+// Parse a populated entry to discover which fields resolve to plain objects.
+import { sourceEntrySchema } from '../discovery/sourceRegistry.js';
+
+const _probeParsed = sourceEntrySchema.parse({
+  host: '_probe', tier: 'tier2_lab',
+  crawl_config: {}, discovery: {}, field_coverage: {}, health: {},
+});
+const OBJECT_TYPED_KEYS = new Set(
+  Object.keys(_probeParsed).filter(key => {
+    const val = _probeParsed[key];
+    return val !== null && typeof val === 'object' && !Array.isArray(val);
+  })
+);
 
 /**
  * Validate a source entry patch against the whitelist.
@@ -196,28 +208,3 @@ export function removeSourceEntry(data, sourceId) {
   };
 }
 
-/**
- * Merge promoted manufacturer entries into sources data.
- * Does NOT overwrite existing entries. Recomputes approved block.
- *
- * @param {object} data - sourcesData (category sources.json shape)
- * @param {Map<string, object>} promotedMap - Map<host, promotedEntry> from promoteFromBrandResolution
- * @returns {object} new sourcesData with promoted entries injected
- */
-export function mergeManufacturerPromotions(data, promotedMap) {
-  if (!promotedMap || promotedMap.size === 0) {
-    return data;
-  }
-  const newSources = { ...data.sources };
-  for (const [, entry] of promotedMap) {
-    const sourceId = entry._sourceId;
-    if (!sourceId || newSources[sourceId]) continue;
-    const { _sourceId, ...rest } = entry;
-    newSources[sourceId] = rest;
-  }
-  return {
-    ...data,
-    sources: newSources,
-    approved: deriveApprovedFromSources(newSources),
-  };
-}

@@ -279,7 +279,9 @@ export async function bootstrapRunProductExecutionState({
   // WHY: Warm up browser in background while discovery runs.
   // fetcher.start() has zero dependency on discovery data. PlaywrightFetcher.start()
   // and CrawleeFetcher.start() are both idempotent — safe to call twice.
-  const fetcherBootPromise = fetcher.start().catch((err) => ({ error: err }));
+  const fetcherBootPromise = typeof fetcher?.start === 'function'
+    ? fetcher.start().catch((err) => ({ error: err }))
+    : Promise.resolve(null);
 
   const sourceResults = [];
   const attemptedSourceUrls = new Set();

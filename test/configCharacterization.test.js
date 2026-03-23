@@ -68,9 +68,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(cfg.searchProfileCapMap !== null);
   assert.equal(typeof cfg.searchProfileCapMap.deterministicAliasCap, 'number');
 
-  assert.equal(typeof cfg.serpRerankerWeightMap, 'object');
-  assert.ok(cfg.serpRerankerWeightMap !== null);
-  assert.equal(typeof cfg.serpRerankerWeightMap.identityStrongBonus, 'number');
 
   assert.equal(typeof cfg.fetchSchedulerInternalsMap, 'object');
   assert.ok(cfg.fetchSchedulerInternalsMap !== null);
@@ -345,22 +342,6 @@ test('CHAR config: searchProfileCapMap has all expected keys', () => {
   }
 });
 
-test('CHAR config: serpRerankerWeightMap has all 21 expected keys', () => {
-  const cfg = loadConfig();
-  const expected = [
-    'identityStrongBonus', 'identityPartialBonus', 'identityWeakBonus', 'identityNoneBonus',
-    'brandPresenceBonus', 'modelPresenceBonus', 'specManualKeywordBonus', 'reviewBenchmarkBonus',
-    'forumRedditPenalty', 'brandInHostnameBonus', 'wikipediaPenalty', 'variantGuardPenalty',
-    'multiModelHintPenalty', 'tier1Bonus', 'tier2Bonus',
-    'hostHealthDownrankPenalty', 'hostHealthExcludePenalty', 'operatorRiskPenalty',
-    'fieldAffinityBonus', 'diversityPenaltyPerDupe', 'needsetCoverageBonus'
-  ];
-  assert.equal(Object.keys(cfg.serpRerankerWeightMap).length, 21);
-  for (const key of expected) {
-    assert.ok(key in cfg.serpRerankerWeightMap, `serpRerankerWeightMap must have ${key}`);
-    assert.equal(typeof cfg.serpRerankerWeightMap[key], 'number');
-  }
-});
 
 test('CHAR config: fetchSchedulerInternalsMap has all expected keys', () => {
   const cfg = loadConfig();
@@ -404,11 +385,6 @@ test('CHAR config: searchProfileCapMapJson is valid JSON matching searchProfileC
   assert.deepStrictEqual(parsed, cfg.searchProfileCapMap);
 });
 
-test('CHAR config: serpRerankerWeightMapJson matches serpRerankerWeightMap exactly (SSOT)', () => {
-  const cfg = loadConfig();
-  const parsed = JSON.parse(cfg.serpRerankerWeightMapJson);
-  assert.deepStrictEqual(parsed, cfg.serpRerankerWeightMap);
-});
 
 test('CHAR config: fetchSchedulerInternalsMapJson is valid JSON matching fetchSchedulerInternalsMap', () => {
   const cfg = loadConfig();
@@ -448,26 +424,6 @@ test('CHAR config: loadConfig called twice returns consistent shapes', () => {
   assert.deepStrictEqual(keys1, keys2);
 });
 
-// =========================================================================
-// SECTION 17: SSOT — serpRerankerWeightMapJson has all 21 keys
-// =========================================================================
-
-test('SSOT: SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson has all 21 reranker keys', () => {
-  const parsed = JSON.parse(SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson);
-  const expected = [
-    'identityStrongBonus', 'identityPartialBonus', 'identityWeakBonus', 'identityNoneBonus',
-    'brandPresenceBonus', 'modelPresenceBonus', 'specManualKeywordBonus', 'reviewBenchmarkBonus',
-    'forumRedditPenalty', 'brandInHostnameBonus', 'wikipediaPenalty', 'variantGuardPenalty',
-    'multiModelHintPenalty', 'tier1Bonus', 'tier2Bonus',
-    'hostHealthDownrankPenalty', 'hostHealthExcludePenalty', 'operatorRiskPenalty',
-    'fieldAffinityBonus', 'diversityPenaltyPerDupe', 'needsetCoverageBonus'
-  ];
-  assert.equal(Object.keys(parsed).length, 21, `Expected 21 keys, got ${Object.keys(parsed).length}`);
-  for (const key of expected) {
-    assert.ok(key in parsed, `serpRerankerWeightMapJson must have ${key}`);
-    assert.equal(typeof parsed[key], 'number');
-  }
-});
 
 // =========================================================================
 // Fix 3: extraction/validate/write phases inherit reasoning from llmPlanUseReasoning
@@ -539,13 +495,14 @@ test('fallback aliasing: per-role fallback model keys are removed from config', 
 test('token cap aliasing: per-role token cap keys are removed from config', () => {
   const cfg = loadConfig();
   const deadTokenKeys = [
-    'llmMaxOutputTokensTriage',
     'llmMaxOutputTokensExtract', 'llmMaxOutputTokensValidate',
     'llmMaxOutputTokensWrite',
   ];
   for (const key of deadTokenKeys) {
     assert.equal(cfg[key], undefined, `${key} should no longer exist in config`);
   }
+  assert.equal(typeof cfg.llmMaxOutputTokensTriage, 'number',
+    'llmMaxOutputTokensTriage remains the live triage-phase cap');
 });
 
 test('token cap aliasing: per-role fallback token cap keys are removed from config', () => {

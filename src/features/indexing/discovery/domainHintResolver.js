@@ -3,40 +3,31 @@
 // applies health ladder, attaches policies and provider caps.
 
 import { resolveHintTokens } from './hintTokenResolver.js';
-import { listSourcesByTier, registrySparsityReport } from './sourceRegistry.js';
+import { listSourcesByTier, registrySparsityReport, TIER_TO_ROLE } from './sourceRegistry.js';
 import { buildHostPolicy } from './hostPolicy.js';
 import { getProviderCapabilities } from './providerCapabilities.js';
 import { normalizeHost } from './hostParser.js';
-
-const TIER_TO_ROLE = {
-  manufacturer: 'tier1_manufacturer',
-  lab: 'tier2_lab',
-  database: 'tier5_aggregator',
-  retailer: 'tier3_retailer',
-  community: 'tier4_community',
-  aggregator: 'tier5_aggregator',
-};
-
-const SEARCHABLE_THRESHOLD = 3;
+import { configInt, configFloat } from '../../../shared/settingsAccessor.js';
 
 /**
  * Determine health_action from a source entry's health object.
  * Ladder: normal → downranked → excluded.
  */
-function classifyHealthAction(entry) {
+function classifyHealthAction(entry, config) {
   const health = entry?.health;
   if (!health) return 'normal';
 
   const successRate = health.success_rate_7d;
   const blockRate = health.block_rate_7d;
+  const excludeThreshold = configFloat(config, 'hostHealthExcludeSuccessRate');
+  const downrankSuccessThreshold = configFloat(config, 'hostHealthDownrankSuccessRate');
+  const downrankBlockThreshold = configFloat(config, 'hostHealthDownrankBlockRate');
 
-  // Excluded: blocked_reason set OR success_rate < 0.1
-  if (typeof successRate === 'number' && successRate < 0.1) return 'excluded';
+  if (typeof successRate === 'number' && successRate < excludeThreshold) return 'excluded';
 
-  // Downranked: success_rate < 0.5 OR block_rate > 0.3
   if (
-    (typeof successRate === 'number' && successRate < 0.5) ||
-    (typeof blockRate === 'number' && blockRate > 0.3)
+    (typeof successRate === 'number' && successRate < downrankSuccessThreshold) ||
+    (typeof blockRate === 'number' && blockRate > downrankBlockThreshold)
   ) {
     return 'downranked';
   }
@@ -47,12 +38,14 @@ function classifyHealthAction(entry) {
 /**
  * Category population gate. Rejects underpopulated or overly sparse registries.
  */
-function checkPopulationGate(registry) {
-  if (registry.entries.length < 3) {
+function checkPopulationGate(registry, config) {
+  const searchableThreshold = configInt(config, 'hostPlanSearchableThreshold');
+  if (registry.entries.length < searchableThreshold) {
     return { blocked: true, reason: 'registry_underpopulated' };
   }
   const sparsity = registrySparsityReport(registry);
-  if (sparsity.synthetic_ratio > 0.8) {
+  const sparsityThreshold = configFloat(config, 'hostPlanSparsityThreshold');
+  if (sparsity.synthetic_ratio > sparsityThreshold) {
     return { blocked: true, reason: 'registry_too_sparse' };
   }
   return null;
@@ -68,9 +61,9 @@ function checkPopulationGate(registry) {
  * @param {string[]} opts.brandResolutionHints - brand-resolved hosts
  * @returns {object} EffectiveHostPlan
  */
-export function buildEffectiveHostPlan({ domainHints = [], registry, providerName, brandResolutionHints = [] }) {
+export function buildEffectiveHostPlan({ domainHints = [], registry, providerName, brandResolutionHints = [], config }) {
   // Population gate
-  const gateResult = checkPopulationGate(registry);
+  const gateResult = checkPopulationGate(registry, config);
   if (gateResult) return gateResult;
 
   const provider_caps = getProviderCapabilities(providerName);
@@ -142,7 +135,7 @@ export function buildEffectiveHostPlan({ domainHints = [], registry, providerNam
       if (hosts.includes(host)) { origin = `tier_expansion:${tierKey}`; break; }
     }
 
-    const healthAction = entry ? classifyHealthAction(entry) : 'normal';
+    const healthAction = entry ? classifyHealthAction(entry, config) : 'normal';
     const isConnector = entry?.connector_only || false;
     const isBlocked = entry?.blocked_in_search || false;
     const searchable = !isConnector && !isBlocked && healthAction === 'normal';
@@ -180,7 +173,7 @@ export function buildEffectiveHostPlan({ domainHints = [], registry, providerNam
 
   // Relaxation: if searchable count < threshold, promote downranked to normal
   let searchableCount = hostGroupsList.filter(g => g.searchable).length;
-  if (searchableCount < SEARCHABLE_THRESHOLD) {
+  if (searchableCount < configInt(config, 'hostPlanSearchableThreshold')) {
     for (const group of hostGroupsList) {
       if (group.health_action === 'downranked') {
         group.health_action = 'normal';

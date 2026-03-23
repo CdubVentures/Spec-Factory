@@ -794,23 +794,46 @@ CREATE TABLE IF NOT EXISTS domain_classifications (
 -- source_strategy table removed: sources.json is now the SSOT (see sourceFileService.js)
 `;
 
-export const LLM_ROUTE_BOOLEAN_KEYS = [
-  'single_source_data',
-  'all_source_data',
-  'enable_websearch',
-  'all_sources_confidence_repatch',
-  'studio_key_navigation_sent_in_extract_review',
-  'studio_contract_rules_sent_in_extract_review',
-  'studio_extraction_guidance_sent_in_extract_review',
-  'studio_tooltip_or_description_sent_when_present',
-  'studio_enum_options_sent_when_present',
-  'studio_component_variance_constraints_sent_in_component_review',
-  'studio_parse_template_sent_direct_in_extract_review',
-  'studio_ai_mode_difficulty_effort_sent_direct_in_extract_review',
-  'studio_required_level_sent_in_extract_review',
-  'studio_component_entity_set_sent_when_component_field',
-  'studio_evidence_policy_sent_direct_in_extract_review',
-  'studio_variance_policy_sent_in_component_review',
-  'studio_constraints_sent_in_component_review',
-  'studio_send_booleans_prompted_to_model'
-];
+// WHY: Single source of truth for llm_route_matrix columns (excluding structural
+// cols id, category, created_at, updated_at). Adding a column = one entry here.
+// promptFlag: appears in the studio prompt context flags group.
+// componentOnly: defaults to 1 for component scope, 0 for field scope.
+export const LLM_ROUTE_COLUMN_REGISTRY = Object.freeze([
+  { key: 'scope', type: 'string', sqlDefault: 'field' },
+  { key: 'route_key', type: 'string', sqlDefault: '' },
+  { key: 'required_level', type: 'string', sqlDefault: 'expected' },
+  { key: 'difficulty', type: 'string', sqlDefault: 'medium' },
+  { key: 'availability', type: 'string', sqlDefault: 'expected' },
+  { key: 'effort', type: 'int', sqlDefault: 3 },
+  { key: 'effort_band', type: 'string', sqlDefault: '1-3' },
+  { key: 'single_source_data', type: 'bool', sqlDefault: 1 },
+  { key: 'all_source_data', type: 'bool', sqlDefault: 0 },
+  { key: 'enable_websearch', type: 'bool', sqlDefault: 1 },
+  { key: 'model_ladder_today', type: 'string', sqlDefault: 'gpt-5-low -> gpt-5-medium' },
+  { key: 'all_sources_confidence_repatch', type: 'bool', sqlDefault: 1 },
+  { key: 'max_tokens', type: 'int', sqlDefault: 4096 },
+  { key: 'studio_key_navigation_sent_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_contract_rules_sent_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_extraction_guidance_sent_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_tooltip_or_description_sent_when_present', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_enum_options_sent_when_present', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_component_variance_constraints_sent_in_component_review', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
+  { key: 'studio_parse_template_sent_direct_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_ai_mode_difficulty_effort_sent_direct_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_required_level_sent_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_component_entity_set_sent_when_component_field', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
+  { key: 'studio_evidence_policy_sent_direct_in_extract_review', type: 'bool', sqlDefault: 1, promptFlag: true },
+  { key: 'studio_variance_policy_sent_in_component_review', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
+  { key: 'studio_constraints_sent_in_component_review', type: 'bool', sqlDefault: 1, promptFlag: true, componentOnly: true },
+  { key: 'studio_send_booleans_prompted_to_model', type: 'bool', sqlDefault: 0, promptFlag: true },
+  { key: 'scalar_linked_send', type: 'string', sqlDefault: 'scalar value + prime sources' },
+  { key: 'component_values_send', type: 'string', sqlDefault: 'component values + prime sources' },
+  { key: 'list_values_send', type: 'string', sqlDefault: 'list values prime sources' },
+  { key: 'llm_output_min_evidence_refs_required', type: 'int', sqlDefault: 1 },
+  { key: 'insufficient_evidence_action', type: 'string', sqlDefault: 'threshold_unmet' },
+]);
+
+// WHY: Derived from registry for backward compat with llmRouteSourceStore.js
+export const LLM_ROUTE_BOOLEAN_KEYS = LLM_ROUTE_COLUMN_REGISTRY
+  .filter(c => c.type === 'bool')
+  .map(c => c.key);

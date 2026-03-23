@@ -32,20 +32,7 @@ test('brand_resolved event populates brand_resolution structured data', () => {
       aliases: ['Razer Inc', 'Razer USA'],
       support_domain: 'support.razer.com',
       confidence: 0.95,
-      candidates: [
-        {
-          name: 'Razer',
-          confidence: 0.95,
-          evidence_snippets: ['Official Razer website', 'Razer Inc press release'],
-          disambiguation_note: 'Primary gaming peripherals brand',
-        },
-        {
-          name: 'Razer Inc.',
-          confidence: 0.8,
-          evidence_snippets: ['SEC filing'],
-          disambiguation_note: 'Corporate entity name',
-        },
-      ],
+      reasoning: ['LLM identified razer.com'],
     }),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
@@ -55,9 +42,7 @@ test('brand_resolved event populates brand_resolution structured data', () => {
   assert.deepEqual(result.brand_resolution.aliases, ['Razer Inc', 'Razer USA']);
   assert.equal(result.brand_resolution.support_domain, 'support.razer.com');
   assert.equal(result.brand_resolution.confidence, 0.95);
-  assert.equal(result.brand_resolution.candidates.length, 2);
-  assert.equal(result.brand_resolution.candidates[0].name, 'Razer');
-  assert.deepEqual(result.brand_resolution.candidates[0].evidence_snippets, ['Official Razer website', 'Razer Inc press release']);
+  assert.deepEqual(result.brand_resolution.reasoning, ['LLM identified razer.com']);
 });
 
 test('brand_resolution defaults to null when no brand_resolved event', () => {
@@ -417,8 +402,8 @@ test('brand_resolved event handles missing optional fields gracefully', () => {
   assert.equal(result.brand_resolution.official_domain, 'razer.com');
   assert.deepEqual(result.brand_resolution.aliases, []);
   assert.equal(result.brand_resolution.support_domain, '');
-  assert.equal(result.brand_resolution.confidence, 0);
-  assert.deepEqual(result.brand_resolution.candidates, []);
+  assert.equal(result.brand_resolution.confidence, null);
+  assert.deepEqual(result.brand_resolution.reasoning, []);
 });
 
 test('search_results_collected handles empty results array', () => {

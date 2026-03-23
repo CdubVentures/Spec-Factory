@@ -2,7 +2,7 @@
   "category": "keyboard",
   "version": "1.0.0",
   "approved": {
-    "manufacturer": [],
+    "manufacturer": ["corsair.com", "razer.com", "logitechg.com", "steelseries.com", "hyperx.com", "asus.com", "keychron.com", "wooting.io", "duckychannel.com.tw"],
     "lab": [
       "rtings.com",
       "techpowerup.com",
@@ -34,23 +34,6 @@
     ]
   },
   "denylist": [],
-  "manufacturer_defaults": {
-    "method": "http",
-    "rate_limit_ms": 2000,
-    "timeout_ms": 12000,
-    "robots_txt_compliant": true
-  },
-  "manufacturer_crawl_overrides": {
-    "corsair.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
-    "razer.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
-    "logitechg.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
-    "steelseries.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
-    "hyperx.com": { "method": "playwright", "rate_limit_ms": 2000, "timeout_ms": 15000 },
-    "asus.com": { "method": "playwright", "rate_limit_ms": 2200, "timeout_ms": 15000 },
-    "keychron.com": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 },
-    "wooting.io": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 },
-    "duckychannel.com.tw": { "method": "http", "rate_limit_ms": 2000, "timeout_ms": 12000 }
-  },
   "sources": {
     "rtings_com": {
       "display_name": "RTINGS",

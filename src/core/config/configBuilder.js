@@ -4,6 +4,7 @@
 
 import path from 'node:path';
 import { hasS3EnvCreds, defaultChatmockDir } from './llmModelResolver.js';
+import { providerFromModelToken } from '../llm/providerMeta.js';
 import {
   buildDefaultModelPricingMap,
   LLM_PRICING_AS_OF,
@@ -16,7 +17,6 @@ import {
   runtimeSettingDefault,
   convergenceSettingDefault,
   normalizeSearchProfileCapMap,
-  normalizeSerpRerankerWeightMap,
   normalizeFetchSchedulerInternalsMap,
   normalizeRetrievalInternalsMap,
   normalizeEvidencePackLimitsMap,
@@ -65,8 +65,7 @@ function resolveRegistryDefaults() {
     const primary = models.find(m => m?.role === 'primary' && m?.modelId);
     if (primary) {
       const model = String(primary.modelId).trim();
-      const provider = model.startsWith('gemini') ? 'gemini'
-        : model.startsWith('deepseek') ? 'deepseek' : 'openai';
+      const provider = providerFromModelToken(model) || 'openai';
       return { provider, model, baseUrl: String(entry.baseUrl || '').trim() };
     }
   }
@@ -112,6 +111,7 @@ export function buildRawConfig({ manifestApplicator }) {
   const manifestDefaultedEnvKeys = manifestApplicator.getDefaultedEnvKeys();
 
   const explicitCategoryAuthorityRoot = String(process.env.CATEGORY_AUTHORITY_ROOT || '').trim();
+  const explicitLegacyHelperRoot = String(process.env.HELPER_FILES_ROOT || '').trim();
   const explicitEnvKeys = new Set(
     Object.entries(process.env)
       .filter(([key, value]) => {
@@ -161,7 +161,9 @@ export function buildRawConfig({ manifestApplicator }) {
     : '';
   const resolvedCategoryAuthorityRoot =
     explicitCategoryAuthorityRoot ||
+    explicitLegacyHelperRoot ||
     process.env.CATEGORY_AUTHORITY_ROOT ||
+    process.env.HELPER_FILES_ROOT ||
     'category_authority';
 
   // WHY: O(1) scaling — simple settings assembled from registry SSOT.
@@ -230,12 +232,6 @@ export function buildRawConfig({ manifestApplicator }) {
       process.env.LLM_OUTPUT_TOKEN_PRESETS,
       [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192]
     ),
-    llmCostInputPer1MDeepseekChat: parseFloatEnv('LLM_COST_INPUT_PER_1M_DEEPSEEK_CHAT', -1),
-    llmCostOutputPer1MDeepseekChat: parseFloatEnv('LLM_COST_OUTPUT_PER_1M_DEEPSEEK_CHAT', -1),
-    llmCostCachedInputPer1MDeepseekChat: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_CHAT', -1),
-    llmCostInputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_INPUT_PER_1M_DEEPSEEK_REASONER', -1),
-    llmCostOutputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_OUTPUT_PER_1M_DEEPSEEK_REASONER', -1),
-    llmCostCachedInputPer1MDeepseekReasoner: parseFloatEnv('LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_REASONER', -1),
     llmVerifyAggressiveAlways: parseBoolEnv('LLM_VERIFY_AGGRESSIVE_ALWAYS', false),
     llmVerifyAggressiveBatchCount: parseIntEnv('LLM_VERIFY_AGGRESSIVE_BATCH_COUNT', 3),
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
@@ -280,8 +276,6 @@ export function buildRawConfig({ manifestApplicator }) {
     dynamicFetchPolicyMapJson,
     searchProfileCapMap: normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {})),
     searchProfileCapMapJson: JSON.stringify(normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {}))),
-    serpRerankerWeightMap: normalizeSerpRerankerWeightMap(parseJsonEnv('SERP_RERANKER_WEIGHT_MAP_JSON', {})),
-    serpRerankerWeightMapJson: JSON.stringify(normalizeSerpRerankerWeightMap(parseJsonEnv('SERP_RERANKER_WEIGHT_MAP_JSON', {}))),
 
     // --- Chatmock ---
     chatmockDir: process.env.CHATMOCK_DIR || defaultChatmockDir(),
@@ -291,15 +285,6 @@ export function buildRawConfig({ manifestApplicator }) {
     categoryAuthorityEnabled: parseBoolEnv('HELPER_FILES_ENABLED', runtimeSettingDefault('categoryAuthorityEnabled')),
     categoryAuthorityRoot: resolvedCategoryAuthorityRoot,
     [`helper${'FilesRoot'}`]: resolvedCategoryAuthorityRoot,
-
-    // --- Deepseek-specific (not in registry) ---
-    deepseekModelVersion: process.env.DEEPSEEK_MODEL_VERSION || '',
-    deepseekContextLength: process.env.DEEPSEEK_CONTEXT_LENGTH || '',
-    deepseekChatMaxOutputDefault: parseIntEnv('DEEPSEEK_CHAT_MAX_OUTPUT_DEFAULT', 2048),
-    deepseekChatMaxOutputMaximum: parseIntEnv('DEEPSEEK_CHAT_MAX_OUTPUT_MAXIMUM', 4096),
-    deepseekReasonerMaxOutputDefault: parseIntEnv('DEEPSEEK_REASONER_MAX_OUTPUT_DEFAULT', 4096),
-    deepseekReasonerMaxOutputMaximum: parseIntEnv('DEEPSEEK_REASONER_MAX_OUTPUT_MAXIMUM', 8192),
-    deepseekFeatures: process.env.DEEPSEEK_FEATURES || '',
 
     // --- DefaultsOnly entries that configBuilder still needs ---
     discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', runtimeSettingDefault('discoveryEnabled')),
@@ -329,7 +314,6 @@ export function buildRawConfig({ manifestApplicator }) {
     runtimeScreenshotMode: 'last_only',
     accuracyMode: 'production',
     chartExtractionEnabled: true,
-    manufacturerAutoPromote: true,
     fieldRulesEngineEnforceEvidence: parseBoolEnv('FIELD_RULES_ENGINE_ENFORCE_EVIDENCE', true),
     runtimeOpsWorkbenchEnabled: parseBoolEnv('RUNTIME_OPS_WORKBENCH_ENABLED', true),
     indexingHelperFilesEnabled: false,

@@ -199,7 +199,7 @@ async function createNewRun() {
     productId, runId, category,
     needset_size: Object.keys(PROVENANCE).length, total_fields: Object.keys(PROVENANCE).length,
     summary: { missing_count: Object.keys(PROVENANCE).length, accepted_count: 0 },
-    blockers: {}, bundles: [], profile_influence: null, deltas: [], round: 0, round_mode: 'seed',
+    blockers: {}, bundles: [], profile_influence: null, deltas: [], round: 0,
     schema_version: null, fields: [],
   });
 
@@ -238,7 +238,7 @@ async function createNewRun() {
     productId, runId, category,
     needset_size: unresolved.length, total_fields: enrichedFields.length,
     summary, blockers: {}, bundles, profile_influence: profileInfluence,
-    deltas, round: 1, round_mode: 'carry_forward',
+    deltas, round: 1,
     schema_version: 'needset_planner_output.v2', fields: enrichedFields,
   });
 
@@ -258,7 +258,7 @@ async function createNewRun() {
     run_id: runId, category, product_id: productId, generated_at: now.toISOString(),
     total_fields: enrichedFields.length, needset_size: unresolved.length,
     fields: enrichedFields, bundles, profile_influence: profileInfluence,
-    deltas, round: 1, round_mode: 'carry_forward', schema_version: 'needset_planner_output.v2',
+    deltas, round: 1, schema_version: 'needset_planner_output.v2',
     summary, blockers: {},
   };
   await fs.writeFile(path.join(runDir, 'needset.json'), JSON.stringify(needsetArtifact, null, 2) + '\n', 'utf8');
@@ -301,7 +301,7 @@ async function injectIntoExisting(runId) {
     productId, runId, category,
     needset_size: unresolved.length, total_fields: enrichedFields.length,
     summary, blockers: {}, bundles, profile_influence: profileInfluence,
-    deltas, round: 1, round_mode: 'carry_forward',
+    deltas, round: 1,
     schema_version: 'needset_planner_output.v2', fields: enrichedFields,
   };
   await fs.appendFile(path.join(runDir, 'run_events.ndjson'), JSON.stringify(event) + '\n', 'utf8');
@@ -311,7 +311,7 @@ async function injectIntoExisting(runId) {
     run_id: runId, category, product_id: productId, generated_at: new Date().toISOString(),
     total_fields: enrichedFields.length, needset_size: unresolved.length,
     fields: enrichedFields, bundles, profile_influence: profileInfluence,
-    deltas, round: 1, round_mode: 'carry_forward', schema_version: 'needset_planner_output.v2',
+    deltas, round: 1, schema_version: 'needset_planner_output.v2',
     summary, blockers: {},
   };
   await fs.writeFile(path.join(runDir, 'needset.json'), JSON.stringify(needsetArtifact, null, 2) + '\n', 'utf8');

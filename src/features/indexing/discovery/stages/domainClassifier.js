@@ -59,22 +59,34 @@ export function runDomainClassifier({
 
   // WHY: Single enqueue path — triage metadata drives queue routing.
   // No caps, no approved/candidate split. SERP selector already decided what survives.
-  const selectedUrls = discoveryResult.selectedUrls || [];
-  for (const url of selectedUrls) {
+  const approvedUrls = discoveryResult.approvedUrls || discoveryResult.selectedUrls || [];
+  const candidateUrls = discoveryResult.candidateUrls || [];
+  for (const url of approvedUrls) {
     const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
-    planner.enqueue(url, 'discovery', { triageMeta: meta });
+    planner.enqueue(url, 'discovery_approved', {
+      forceApproved: true,
+      forceBrandBypass: false,
+      triageMeta: meta,
+    });
+  }
+  let seededCount = 0;
+  if (config?.fetchCandidateSources && candidateUrls.length > 0 && typeof planner?.seedCandidates === 'function') {
+    planner.seedCandidates(candidateUrls, { triageMetaMap });
+    seededCount = candidateUrls.length;
   }
 
   if (planner.enqueueCounters) {
     const counters = planner.enqueueCounters;
     logger?.info?.('discovery_enqueue_summary', {
       ...counters,
-      input_selected_count: selectedUrls.length,
+      input_selected_count: approvedUrls.length,
+      input_candidate_count: candidateUrls.length,
     });
   }
 
   return {
-    enqueuedCount: selectedUrls.length,
+    enqueuedCount: approvedUrls.length,
+    seededCount,
   };
 }
 

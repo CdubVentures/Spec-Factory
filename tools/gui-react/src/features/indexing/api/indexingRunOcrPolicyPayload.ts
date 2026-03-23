@@ -10,7 +10,6 @@ export interface BuildIndexingRunOcrPolicyPayloadInput {
   parsedScannedPdfOcrMinConfidence: number;
   dynamicFetchPolicyMapJson: string;
   searchProfileCapMapJson: string;
-  serpRerankerWeightMapJson: string;
   fetchSchedulerInternalsMapJson: string;
   parsingConfidenceBaseMapJson: string;
   repairDedupeRule: string;
@@ -29,7 +28,6 @@ export function buildIndexingRunOcrPolicyPayload(
     scannedPdfOcrMinConfidence: Math.max(0, Math.min(1, input.parsedScannedPdfOcrMinConfidence)),
     dynamicFetchPolicyMapJson: String(input.dynamicFetchPolicyMapJson || '').trim(),
     searchProfileCapMapJson: String(input.searchProfileCapMapJson || '').trim(),
-    serpRerankerWeightMapJson: String(input.serpRerankerWeightMapJson || '').trim(),
     fetchSchedulerInternalsMapJson: String(input.fetchSchedulerInternalsMapJson || '').trim(),
     parsingConfidenceBaseMapJson: String(input.parsingConfidenceBaseMapJson || '').trim(),
     repairDedupeRule: String(input.repairDedupeRule || '').trim(),

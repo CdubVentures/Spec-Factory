@@ -355,11 +355,16 @@ export function registerRuntimeOpsRoutes(ctx) {
         safeReadJson(brandPath),
         readIndexLabRunSearchProfile ? readIndexLabRunSearchProfile(runId).catch(() => null) : Promise.resolve(null),
       ]);
-      let searchProfile = profileArt && typeof profileArt === 'object'
-        ? (planProfile && typeof planProfile === 'object'
-          ? mergeSearchProfileRows(profileArt, planProfile, toInt)
-          : profileArt)
-        : planProfile;
+      // WHY: Pipeline artifact (planProfile) is authoritative once executed.
+      // Bridge file (profileArt) accumulates all event-observed queries
+      // including unexecuted seed queries — merge only for progressive display.
+      let searchProfile = planProfile?.status === 'executed'
+        ? planProfile
+        : profileArt && typeof profileArt === 'object'
+          ? (planProfile && typeof planProfile === 'object'
+            ? mergeSearchProfileRows(profileArt, planProfile, toInt)
+            : profileArt)
+          : planProfile;
       const fieldRulesPayload = await loadRuntimeFieldRulesPayload({
         category: resolvedMeta?.category,
         config,

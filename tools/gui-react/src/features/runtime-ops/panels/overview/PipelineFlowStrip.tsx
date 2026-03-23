@@ -1,28 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client';
 import { stageBadgeClass, stageLabel, getRefetchInterval, STAGE_ORDER } from '../../helpers';
+import { resolvePoolStage } from '../../poolStageRegistry';
 import type { PipelineFlowResponse } from '../../types';
 
 interface PipelineFlowStripProps {
   runId: string;
   isRunning: boolean;
   onStageClick?: (stage: string) => void;
-}
-
-function stageActiveCountClass(stage: string): string {
-  switch (stage) {
-    case 'search':
-      return 'sf-link-accent';
-    case 'fetch':
-    case 'index':
-      return 'sf-status-text-success';
-    case 'parse':
-      return 'sf-status-text-info';
-    case 'llm':
-      return 'sf-status-text-warning';
-    default:
-      return 'sf-text-subtle';
-  }
 }
 
 export function PipelineFlowStrip({ runId, isRunning, onStageClick }: PipelineFlowStripProps) {
@@ -56,7 +41,7 @@ export function PipelineFlowStrip({ runId, isRunning, onStageClick }: PipelineFl
               <div className={`text-xs font-medium px-2 py-0.5 rounded inline-block mb-1 ${stageBadgeClass(s.name)}`}>
                 {stageLabel(s.name)}
               </div>
-              <div className={`text-xl font-bold ${s.active > 0 ? `${stageActiveCountClass(s.name)} animate-pulse` : 'sf-text-subtle'}`}>
+              <div className={`text-xl font-bold ${s.active > 0 ? `${resolvePoolStage(s.name).activeCount} animate-pulse` : 'sf-text-subtle'}`}>
                 {s.active}
               </div>
               <div className="flex justify-center gap-2 sf-text-caption sf-text-muted mt-0.5">

@@ -1,20 +1,5 @@
-export const UI_SETTINGS_VALUE_TYPES = Object.freeze({
-  studioAutoSaveAllEnabled: 'boolean',
-  studioAutoSaveEnabled: 'boolean',
-  studioAutoSaveMapEnabled: 'boolean',
-  runtimeAutoSaveEnabled: 'boolean',
-  storageAutoSaveEnabled: 'boolean',
-});
+import { UI_SETTINGS_REGISTRY, STORAGE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveUiValueTypes, deriveStorageValueTypes } from '../../shared/settingsRegistryDerivations.js';
 
-export const STORAGE_SETTINGS_VALUE_TYPES = Object.freeze({
-  enabled: 'boolean',
-  destinationType: 'string',
-  localDirectory: 'string',
-  awsRegion: 'string',
-  s3Bucket: 'string',
-  s3Prefix: 'string',
-  s3AccessKeyId: 'string',
-  s3SecretAccessKey: 'string',
-  s3SessionToken: 'string',
-  updatedAt: 'string_or_null',
-});
+export const UI_SETTINGS_VALUE_TYPES = deriveUiValueTypes(UI_SETTINGS_REGISTRY);
+export const STORAGE_SETTINGS_VALUE_TYPES = deriveStorageValueTypes(STORAGE_SETTINGS_REGISTRY);

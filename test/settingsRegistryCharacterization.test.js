@@ -72,7 +72,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('FLOAT_RANGE_MAP has expected key count', () => {
     const count = Object.keys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP).length;
-    strictEqual(count, 7);
+    strictEqual(count, 11);
   });
 
   it('every FLOAT_RANGE_MAP entry has cfgKey, min, max', () => {
@@ -126,7 +126,7 @@ describe('RUNTIME_SETTINGS_ROUTE_GET — characterization', () => {
   });
 
   it('floatMap has expected count', () => {
-    strictEqual(Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap).length, 7);
+    strictEqual(Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap).length, 11);
   });
 
   it('boolMap has expected count', () => {

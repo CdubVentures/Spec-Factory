@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { toInt } from '../../../../shared/valueNormalizers.js';
 import { safeJoin, safeReadJson, safeStat } from '../../../../shared/fileHelpers.js';
+import { buildArchivedS3CacheRoot } from './archivedRunLocationHelpers.js';
 
 export function createRunListBuilder({
   getIndexLabRoot,
@@ -189,7 +190,13 @@ export function createRunListBuilder({
         const s3Meta = await readArchivedS3RunMetaOnly(runLocation, dir);
         const s3Status = String(s3Meta?.status || '').trim().toLowerCase();
         const s3HasCounters = s3Meta?.counters && typeof s3Meta.counters === 'object';
-        if (s3Meta && s3HasCounters && s3Status !== 'running') {
+        const s3HasArtifactReadiness = Boolean(
+          s3Meta?.artifacts?.has_needset
+          || s3Meta?.artifacts?.has_search_profile
+          || s3Meta?.needset
+          || s3Meta?.search_profile
+        );
+        if (s3Meta && s3HasCounters && s3Status !== 'running' && s3HasArtifactReadiness) {
           const rowCategory = toToken(s3Meta.category);
           if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
           const rowRunId = toToken(s3Meta.run_id || dir);
@@ -208,7 +215,7 @@ export function createRunListBuilder({
             phase_cursor: String(s3Meta.phase_cursor || '').trim(),
             startup_ms: normalizeStartupMs(s3Meta.startup_ms),
             events_path: '',
-            run_dir: '',
+            run_dir: path.join(buildArchivedS3CacheRoot(rowRunId), 'indexlab'),
             storage_origin: storageOrigin,
             storage_state: resolveStorageState(resolvedStatus),
             picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
@@ -226,6 +233,8 @@ export function createRunListBuilder({
       if (!runDir) return null;
       const runMetaPath = path.join(runDir, 'run.json');
       const runEventsPath = path.join(runDir, 'run_events.ndjson');
+      const runNeedSetPath = path.join(runDir, 'needset.json');
+      const runSearchProfilePath = path.join(runDir, 'search_profile.json');
       const meta = await safeReadJson(runMetaPath);
       const rawStatus = String(meta?.status || 'unknown').trim();
       const resolvedStatus = (
@@ -233,6 +242,18 @@ export function createRunListBuilder({
       ) ? 'completed' : rawStatus;
       const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
       const needsEvents = rawStatus.toLowerCase() === 'running' || !hasMetaCounters;
+      const needSetStat = await safeStat(runNeedSetPath);
+      const searchProfileStat = await safeStat(runSearchProfilePath);
+      const hasNeedSet = Boolean(
+        meta?.artifacts?.has_needset
+        || meta?.needset
+        || needSetStat
+      );
+      const hasSearchProfile = Boolean(
+        meta?.artifacts?.has_search_profile
+        || meta?.search_profile
+        || searchProfileStat
+      );
 
       // Skip expensive event reading + stat calls when run.json
       // already carries counters and the run is not active.
@@ -258,17 +279,13 @@ export function createRunListBuilder({
           storage_origin: storageOrigin,
           storage_state: resolveStorageState(resolvedStatus),
           picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
-          has_needset: Boolean(meta?.artifacts?.has_needset || meta?.needset),
-          has_search_profile: Boolean(meta?.artifacts?.has_search_profile || meta?.search_profile),
+          has_needset: hasNeedSet,
+          has_search_profile: hasSearchProfile,
           counters: meta.counters,
         };
       }
 
-      const runNeedSetPath = path.join(runDir, 'needset.json');
-      const runSearchProfilePath = path.join(runDir, 'search_profile.json');
       const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
-      const needSetStat = await safeStat(runNeedSetPath);
-      const searchProfileStat = await safeStat(runSearchProfilePath);
       const eventRows = await readEvents(dir, 6000);
       const eventSummary = summarizeEvents(eventRows);
       const rowCategory = toToken(meta?.category);
@@ -276,16 +293,6 @@ export function createRunListBuilder({
       const rowRunId = toToken(meta?.run_id || dir);
       const rowProductId = toToken(meta?.product_id || eventSummary.productId);
       const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
-      const hasNeedSet = Boolean(
-        meta?.artifacts?.has_needset
-        || meta?.needset
-        || needSetStat
-      );
-      const hasSearchProfile = Boolean(
-        meta?.artifacts?.has_search_profile
-        || meta?.search_profile
-        || searchProfileStat
-      );
       return {
         run_id: rowRunId,
         category: rowCategory,

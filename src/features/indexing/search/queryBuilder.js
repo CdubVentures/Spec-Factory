@@ -416,12 +416,7 @@ function buildQueryRows({
     });
   }
 
-  // Stash archetype metadata on the result for buildSearchProfile
-  rows._archetypeSlots = allocatedSlots;
-  rows._coveredFieldSet = coveredFieldSet;
-  rows._hardFieldRows = hardFieldRows;
-
-  return rows;
+  return { rows, archetypeSlots: allocatedSlots, coveredFieldSet, hardFieldRows };
 }
 
 function fillTemplate(template, values) {
@@ -524,6 +519,7 @@ export function buildSearchProfile({
   const maxQueryCap = Math.max(1, Number(maxQueries || 24));
 
   let queryRows;
+  let queryRowsMeta;
   if (hasTierMode) {
     const tierRows = [];
     // Priority 1: seeds
@@ -542,11 +538,9 @@ export function buildSearchProfile({
     }
     queryRows = tierRows;
     // WHY: Archetype metadata is sparse in tier mode — no archetype pipeline ran.
-    queryRows._archetypeSlots = [];
-    queryRows._coveredFieldSet = new Set();
-    queryRows._hardFieldRows = [];
+    queryRowsMeta = { archetypeSlots: [], coveredFieldSet: new Set(), hardFieldRows: [] };
   } else {
-    queryRows = buildQueryRows({
+    const buildResult = buildQueryRows({
       job,
       categoryConfig,
       focusFields,
@@ -559,6 +553,8 @@ export function buildSearchProfile({
       brandResolutionHints,
       fieldYieldByDomain
     });
+    queryRows = buildResult.rows;
+    queryRowsMeta = buildResult;
   }
 
   const querySet = new Set();
@@ -633,10 +629,10 @@ export function buildSearchProfile({
         ? [clean(`${brand} ${model} ${variant} specifications`), clean(`${brand} ${model} ${variant} review`)]
         : [];
 
-  // Archetype summary + coverage analysis from stashed metadata
-  const archetypeSlots = queryRows._archetypeSlots || [];
-  const coveredFieldSet = queryRows._coveredFieldSet || new Set();
-  const hardFieldRowsMeta = queryRows._hardFieldRows || [];
+  // Archetype summary + coverage analysis from structured metadata
+  const archetypeSlots = queryRowsMeta.archetypeSlots || [];
+  const coveredFieldSet = queryRowsMeta.coveredFieldSet || new Set();
+  const hardFieldRowsMeta = queryRowsMeta.hardFieldRows || [];
   const archetypeSummary = buildArchetypeSummary(archetypeSlots);
   const coverageAnalysis = buildCoverageAnalysis(focusFields, coveredFieldSet, hardFieldRowsMeta);
 
@@ -647,7 +643,6 @@ export function buildSearchProfile({
     identity_aliases: identityAliases,
     alias_reject_log: aliasRejectLog.slice(0, 120),
     query_reject_log: queryRejectLog.slice(0, 240),
-    negative_terms: [],
     focus_fields: focusFields,
     base_templates: effectiveBaseTemplates,
     query_rows: boundedRows,
@@ -674,7 +669,7 @@ export function buildTargetedQueries(options = {}) {
  * WHY: Reports which tiers have available work. All three can be true.
  * Budget allocation (priority ordering) happens in buildSearchProfile —
  * seeds get first dibs, then groups, then keys fill remaining budget.
- * @param {object|null} seedStatus - from needset.schema3.seed_status
+ * @param {object|null} seedStatus - from needset.seedStatus
  * @param {Array} focusGroups - from needset.focusGroups
  * @returns {{ runTier1Seeds: boolean, runTier2Groups: boolean, runTier3Keys: boolean }}
  */

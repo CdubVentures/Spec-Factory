@@ -260,3 +260,4 @@ describe('mergeSearchProfileRows', () => {
     assert.equal(result.query_rows[0].hint_source, 'llm_planner');
   });
 });
+

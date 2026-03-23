@@ -2,8 +2,9 @@ import type { SerpTriageResult, PrefetchLlmCall } from '../types';
 
 export interface TriageDecisionCounts {
   keep: number;
-  maybe: number;
-  drop: number;
+  dropped_by_llm: number;
+  overflow_capped: number;
+  hard_drop: number;
 }
 
 export interface TriageDomainCount {
@@ -17,16 +18,10 @@ export interface TriageDecisionSegment {
   color: string;
 }
 
-export interface TriageDedupeStats {
-  totalCandidates: number;
-  uniqueUrls: number;
-  deduped: number;
-}
-
 export interface TriageDomainBreakdown {
   keep: number;
-  maybe: number;
-  drop: number;
+  dropped_by_llm: number;
+  hard_drop: number;
 }
 
 export declare function computeTriageDecisionCounts(
@@ -50,10 +45,6 @@ export declare function buildTriageFunnelBullets(
   triage: SerpTriageResult[],
   calls: PrefetchLlmCall[],
 ): string[];
-
-export declare function computeTriageDedupeStats(
-  triage: SerpTriageResult[],
-): TriageDedupeStats;
 
 export declare function buildTriageDomainDecisionBreakdown(
   triage: SerpTriageResult[],

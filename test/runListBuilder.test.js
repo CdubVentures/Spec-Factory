@@ -206,6 +206,7 @@ test('S3 run with counters and completed status skips materialize and readEvents
     started_at: '2026-03-01T00:00:00Z',
     ended_at: '2026-03-01T00:10:00Z',
     counters: { pages_checked: 5, fetch_ok: 5, parse_completed: 3, indexed_docs: 2, fields_filled: 10 },
+    artifacts: { has_needset: true, has_search_profile: true },
   };
 
   try {
@@ -221,6 +222,9 @@ test('S3 run with counters and completed status skips materialize and readEvents
     assert.ok(row, 'S3 run should appear in listing');
     assert.equal(row.status, 'completed');
     assert.deepEqual(row.counters, meta.counters);
+    assert.equal(row.has_needset, true);
+    assert.equal(row.has_search_profile, true);
+    assert.equal(path.basename(String(row.run_dir || '')), 'indexlab');
     assert.equal(materializeCalled, false, 'materializeArchivedRunLocation must NOT be called');
     assert.equal(readEventsCalled, false, 'readEvents must NOT be called');
   } finally {

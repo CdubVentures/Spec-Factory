@@ -8,7 +8,9 @@ import {
   SERP_SCORE_COMPONENTS_SHAPE,
   SERP_TRIAGE_CANDIDATE_SHAPE,
   SERP_TRIAGE_ENVELOPE_SHAPE,
+  SERP_TRIAGE_FUNNEL_SHAPE,
   SEARCH_PROFILE_SHAPE,
+  SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE,
 } from '../contracts/prefetchContract.js';
 
 function buildCrossQueryUrlCounts(details) {
@@ -208,13 +210,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         official_domain: String(payload.official_domain || '').trim(),
         aliases: Array.isArray(payload.aliases) ? payload.aliases : [],
         support_domain: String(payload.support_domain || '').trim(),
-        confidence: toFloat(payload.confidence, 0),
-        candidates: Array.isArray(payload.candidates) ? payload.candidates.map((c) => ({
-          name: String(c?.name || '').trim(),
-          confidence: toFloat(c?.confidence, 0),
-          evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets : [],
-          disambiguation_note: String(c?.disambiguation_note || '').trim(),
-        })) : [],
+        confidence: payload.confidence != null ? toFloat(payload.confidence, 0) : null,
         reasoning: Array.isArray(payload.reasoning) ? payload.reasoning : [],
       };
     }
@@ -230,6 +226,10 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           ? payload.query_target_map : {},
         missing_critical_fields: Array.isArray(payload.missing_critical_fields) ? payload.missing_critical_fields : [],
         mode: String(payload.mode || '').trim(),
+        source: String(payload.source || '').trim(),
+        enhancement_rows: Array.isArray(payload.enhancement_rows)
+          ? payload.enhancement_rows.map((r) => projectShape(r, SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE))
+          : [],
       });
     }
 
@@ -263,8 +263,12 @@ export function buildPreFetchPhases(events, meta, artifacts) {
 
     if (type === 'serp_selector_completed') {
       const envelope = projectShape(payload, SERP_TRIAGE_ENVELOPE_SHAPE);
+      const funnel = payload.funnel && typeof payload.funnel === 'object'
+        ? projectShape(payload.funnel, SERP_TRIAGE_FUNNEL_SHAPE)
+        : null;
       serpTriage.push({
         ...envelope,
+        funnel,
         candidates: Array.isArray(payload.candidates) ? payload.candidates.map((c) => ({
           ...projectShape(c, SERP_TRIAGE_CANDIDATE_SHAPE),
           score_components: projectShape(
@@ -418,12 +422,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       aliases: Array.isArray(artBrand.aliases) ? artBrand.aliases : [],
       support_domain: String(artBrand.support_domain || '').trim(),
       confidence: toFloat(artBrand.confidence, 0),
-      candidates: Array.isArray(artBrand.candidates) ? artBrand.candidates.map((c) => ({
-        name: String(c?.name || '').trim(),
-        confidence: toFloat(c?.confidence, 0),
-        evidence_snippets: Array.isArray(c?.evidence_snippets) ? c.evidence_snippets : [],
-        disambiguation_note: String(c?.disambiguation_note || '').trim(),
-      })) : [],
       reasoning: Array.isArray(artBrand.reasoning) ? artBrand.reasoning : [],
     } : null),
     search_plans: searchPlans,

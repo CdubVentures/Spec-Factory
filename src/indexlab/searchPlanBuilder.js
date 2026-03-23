@@ -4,20 +4,10 @@
 
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 import { configInt } from '../shared/settingsAccessor.js';
-
-// --- Query hashing (same algorithm as frontierDb.js, inlined to avoid coupling) ---
-
-function stableHash(value) {
-  const text = String(value || '');
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash).toString(36);
-}
+import { stableHashString } from '../shared/stableHash.js';
 
 function defaultQueryHash(query) {
-  return stableHash(String(query || '').trim().toLowerCase().replace(/\s+/g, ' '));
+  return stableHashString(String(query || '').trim().toLowerCase().replace(/\s+/g, ' '));
 }
 
 // --- LLM schema + prompt ---
@@ -87,6 +77,7 @@ export function computeDeltas(ctx) {
     }));
   }
   return prev
+    .filter(e => e != null && e.field_key)
     .filter(e => {
       const cur = currentMap.get(e.field_key) || 'missing';
       return cur !== e.state;
@@ -141,6 +132,9 @@ function assembleSchema4(ctx, queries, {
   );
 
   const tierInfluence = {
+    targeted_brand: alloc
+      ? alloc.tier1_seeds.filter(s => s.type === 'brand').length
+      : (seedStatus?.brand_seed?.is_needed ? 1 : 0),
     targeted_specification: alloc
       ? alloc.tier1_seeds.filter(s => s.type === 'specs').length
       : (specsSeedNeeded ? 1 : 0),

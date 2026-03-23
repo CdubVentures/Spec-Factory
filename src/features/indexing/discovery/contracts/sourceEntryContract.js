@@ -5,6 +5,8 @@
 
 import {
   sourceEntrySchema,
+  crawlConfigSchema,
+  discoverySchema,
   TIER_ENUM,
 } from '../sourceRegistry.js';
 
@@ -26,9 +28,8 @@ export const DISCOVERY_METHOD_VALUES = Object.freeze([
 
 export const FIELD_COVERAGE_KEYS = Object.freeze(['high', 'medium', 'low']);
 
-export const PACING_FIELD_KEYS = Object.freeze([
-  'rate_limit_ms', 'timeout_ms', 'max_concurrent',
-]);
+// WHY: Derived from crawlConfigSchema shape — O(1), auto-expands with schema.
+export const CRAWL_CONFIG_FIELD_KEYS = Object.freeze(Object.keys(crawlConfigSchema.shape));
 
 // WHY: Defaults extracted from the Zod schema by parsing an empty-ish object.
 // This guarantees defaults match the schema exactly.
@@ -38,19 +39,14 @@ const _parsed = sourceEntrySchema.parse({
 const { host: _host, tier: _tier, ...defaultsWithoutRequired } = _parsed;
 export const SOURCE_ENTRY_DEFAULTS = Object.freeze(defaultsWithoutRequired);
 
-export const DISCOVERY_DEFAULTS = Object.freeze({
-  method: 'manual',
-  source_type: '',
-  search_pattern: '',
-  priority: 50,
-  enabled: true,
-  notes: '',
-});
+// WHY: Derived from schema parse — no manual object to maintain.
+export const CRAWL_CONFIG_DEFAULTS = Object.freeze(crawlConfigSchema.parse({}));
+export const DISCOVERY_DEFAULTS = Object.freeze(discoverySchema.parse({}));
 
-export const DISCOVERY_FIELD_KEYS = Object.freeze(Object.keys(DISCOVERY_DEFAULTS));
+// WHY: Derived from discoverySchema shape — O(1), auto-expands with schema.
+export const DISCOVERY_FIELD_KEYS = Object.freeze(Object.keys(discoverySchema.shape));
 
 // WHY: Mutable keys derived from schema shape minus computed/identity fields.
-// Replaces the hand-maintained SOURCE_ENTRY_MUTABLE_KEYS in sourceFileService.js.
 const NON_MUTABLE_KEYS = new Set(['host', 'health', 'synthetic']);
 
 export function sourceEntryMutableKeys() {
@@ -58,12 +54,6 @@ export function sourceEntryMutableKeys() {
   for (const key of SOURCE_ENTRY_FIELD_KEYS) {
     if (NON_MUTABLE_KEYS.has(key)) continue;
     keys.add(key);
-  }
-  // WHY: discovery, crawl_config, enabled, notes, label, url, approved,
-  // source_type are legacy mutation keys not in the Zod schema but accepted
-  // by the PATCH endpoint for backward compatibility.
-  for (const legacy of ['discovery', 'crawl_config', 'enabled', 'notes', 'label', 'url', 'approved', 'source_type']) {
-    keys.add(legacy);
   }
   return keys;
 }

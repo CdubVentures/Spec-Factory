@@ -28,7 +28,7 @@ describe('sourceEntryContract', () => {
       const expected = [
         'host', 'display_name', 'tier', 'authority', 'base_url',
         'content_types', 'doc_kinds', 'field_coverage', 'preferred_paths',
-        'pacing', 'requires_js', 'connector_only', 'blocked_in_search',
+        'crawl_config', 'discovery', 'requires_js', 'connector_only', 'blocked_in_search',
         'synthetic', 'health',
       ];
       for (const key of expected) {
@@ -86,7 +86,7 @@ describe('sourceEntryContract', () => {
       deepStrictEqual(SOURCE_ENTRY_DEFAULTS.content_types, []);
       deepStrictEqual(SOURCE_ENTRY_DEFAULTS.doc_kinds, []);
       strictEqual(SOURCE_ENTRY_DEFAULTS.health, null);
-      strictEqual(SOURCE_ENTRY_DEFAULTS.pacing, null);
+      strictEqual(SOURCE_ENTRY_DEFAULTS.crawl_config, null);
     });
   });
 

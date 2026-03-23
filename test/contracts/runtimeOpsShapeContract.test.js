@@ -33,6 +33,9 @@ import {
   EXTRACTION_FIELD_KEYS,
   EXTRACTION_CANDIDATE_KEYS,
   LLM_DASHBOARD_KEYS,
+  LLM_CALL_ROW_KEYS,
+  LLM_DASHBOARD_SUMMARY_KEYS,
+  LLM_CALL_STATUS_VALUES,
 } from '../../src/features/indexing/api/contracts/runtimeOpsContract.js';
 
 import {
@@ -159,6 +162,32 @@ describe('runtimeOpsShapeContract — buildLlmCallsDashboard', () => {
   it('top-level keys match LLM_DASHBOARD_KEYS', () => {
     const result = buildLlmCallsDashboard([], {});
     deepStrictEqual(sorted(Object.keys(result)), sorted(LLM_DASHBOARD_KEYS));
+  });
+});
+
+describe('runtimeOpsShapeContract — buildLlmCallsDashboard row/summary shapes', () => {
+  const llmEvents = [
+    { type: 'worker_started', payload: { worker_id: 'llm-1', pool: 'llm', call_type: 'extraction', model: 'gpt-4o-mini', provider: 'openai' }, ts: '2024-01-01T00:00:01Z' },
+    { type: 'worker_done', payload: { worker_id: 'llm-1', pool: 'llm', prompt_tokens: 100, completion_tokens: 50, estimated_cost: 0.001, duration_ms: 500 }, ts: '2024-01-01T00:00:02Z' },
+  ];
+
+  it('call row keys match LLM_CALL_ROW_KEYS', () => {
+    const result = buildLlmCallsDashboard(llmEvents, {});
+    ok(result.calls.length > 0, 'should produce at least one call row');
+    deepStrictEqual(sorted(Object.keys(result.calls[0])), sorted([...LLM_CALL_ROW_KEYS]));
+  });
+
+  it('summary keys match LLM_DASHBOARD_SUMMARY_KEYS', () => {
+    const result = buildLlmCallsDashboard(llmEvents, {});
+    deepStrictEqual(sorted(Object.keys(result.summary)), sorted([...LLM_DASHBOARD_SUMMARY_KEYS]));
+  });
+
+  it('call row status is a valid LLM_CALL_STATUS_VALUES member', () => {
+    const result = buildLlmCallsDashboard(llmEvents, {});
+    for (const row of result.calls) {
+      ok(LLM_CALL_STATUS_VALUES.includes(row.status),
+        `status "${row.status}" is not in LLM_CALL_STATUS_VALUES`);
+    }
   });
 });
 

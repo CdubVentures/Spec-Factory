@@ -160,10 +160,10 @@ test('runPlannerProcessingLifecycle stops on run budget exhaustion before repair
     },
     config: {
       searchEngines: 'serpapi',
-      maxRunSeconds: 1,
+      maxRunSeconds: 30,
     },
     startMs: 0,
-    nowFn: () => 1000,
+    nowFn: () => 30_000,
     processPlannerQueueFn: async () => ({
       runtimePauseAnnounced: true,
       artifactSequence: 3,

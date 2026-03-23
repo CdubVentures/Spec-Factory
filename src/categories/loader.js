@@ -31,20 +31,6 @@ function titleCaseHostLabel(host) {
   return base.charAt(0).toUpperCase() + base.slice(1);
 }
 
-function manufacturerSourceIdFromHost(host) {
-  return 'brand_' + normalizeHost(host).replace(/[^a-z0-9]/g, '_');
-}
-
-function manufacturerCrawlConfigForHost(sources, host) {
-  const defaults = isObject(sources?.manufacturer_defaults) ? sources.manufacturer_defaults : {};
-  const overrides = isObject(sources?.manufacturer_crawl_overrides) ? sources.manufacturer_crawl_overrides : {};
-  const override = isObject(overrides?.[host]) ? overrides[host] : {};
-  return {
-    ...defaults,
-    ...override
-  };
-}
-
 function flattenApprovedHosts(sources) {
   const byTier = sources?.approved || {};
   const hostMap = new Map();
@@ -106,25 +92,6 @@ function flattenApprovedHosts(sources) {
         : null,
       requires_js: Boolean(sourceRow.requires_js) || crawlConfig?.method === 'playwright',
       baseUrl: String(sourceRow.base_url || sourceRow.baseUrl || '').trim()
-    });
-  }
-
-  for (const overrideHost of Object.keys(sources?.manufacturer_crawl_overrides || {})) {
-    const host = normalizeHost(overrideHost);
-    if (!host) {
-      continue;
-    }
-    const crawlConfig = manufacturerCrawlConfigForHost(sources, host);
-    upsertHost(host, {
-      sourceId: manufacturerSourceIdFromHost(host),
-      displayName: `${titleCaseHostLabel(host)} Official`,
-      tierName: 'manufacturer',
-      crawlConfig,
-      robotsTxtCompliant: crawlConfig.robots_txt_compliant !== undefined
-        ? Boolean(crawlConfig.robots_txt_compliant)
-        : true,
-      requires_js: crawlConfig?.method === 'playwright',
-      baseUrl: `https://${host}`
     });
   }
 
@@ -268,8 +235,6 @@ function defaultSources() {
       retailer: []
     },
     denylist: [],
-    manufacturer_defaults: {},
-    manufacturer_crawl_overrides: {},
     sources: {}
   };
 }
@@ -393,14 +358,6 @@ function mergeSources(baseSources, overrideSources) {
   return {
     approved: mergedApproved,
     denylist: mergeUnique([...(baseSources?.denylist || []), ...(overrideSources?.denylist || [])]),
-    manufacturer_defaults: {
-      ...(isObject(baseSources?.manufacturer_defaults) ? baseSources.manufacturer_defaults : {}),
-      ...(isObject(overrideSources?.manufacturer_defaults) ? overrideSources.manufacturer_defaults : {})
-    },
-    manufacturer_crawl_overrides: {
-      ...(isObject(baseSources?.manufacturer_crawl_overrides) ? baseSources.manufacturer_crawl_overrides : {}),
-      ...(isObject(overrideSources?.manufacturer_crawl_overrides) ? overrideSources.manufacturer_crawl_overrides : {})
-    },
     sources: {
       ...(isObject(baseSources?.sources) ? baseSources.sources : {}),
       ...(isObject(overrideSources?.sources) ? overrideSources.sources : {})

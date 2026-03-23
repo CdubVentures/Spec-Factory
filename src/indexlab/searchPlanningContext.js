@@ -4,7 +4,19 @@
 
 import { resolvePhaseModel, roleTokenCap } from '../core/llm/client/routing.js';
 import { configInt, configValue } from '../shared/settingsAccessor.js';
+import {
+  AVAILABILITY_RANKS,
+  DIFFICULTY_RANKS,
+  REQUIRED_LEVEL_RANKS,
+  PRIORITY_BUCKET_ORDER,
+  EXHAUSTION_MIN_ATTEMPTS,
+  EXHAUSTION_MIN_EVIDENCE_CLASSES,
+} from '../shared/discoveryRankConstants.js';
 
+// WHY: Fallback group metadata for the mouse category. These are used when
+// fieldGroupsData does not provide metadata for a group key. Once all category
+// contracts fully populate fieldGroupsData.groups with desc/source_target/content_target,
+// these defaults can be retired. Until then, they prevent broken bundle formation.
 const GROUP_DEFAULTS = {
   sensor_performance: { desc: 'Sensor and performance metrics', source_target: 'spec_sheet', content_target: 'technical_specs' },
   connectivity:       { desc: 'Connection and wireless specs',  source_target: 'product_page', content_target: 'technical_specs' },
@@ -22,11 +34,6 @@ const GROUP_DEFAULTS = {
 const GENERIC_FALLBACK = { desc: '', source_target: 'product_page', content_target: 'general' };
 
 const PHASE_ORDER = { now: 0, next: 1, hold: 2 };
-const PRIORITY_ORDER = { core: 0, secondary: 1, optional: 2 };
-
-// GAP-4: threshold for search exhaustion
-const EXHAUSTION_NO_VALUE_THRESHOLD = 3;
-const EXHAUSTION_EVIDENCE_CLASSES_THRESHOLD = 3;
 
 function toInt(value, fallback) {
   const n = parseInt(String(value ?? ''), 10);
@@ -73,9 +80,9 @@ function derivePlannerLimits(config) {
   };
 }
 
-// GAP-7: resolve group metadata from fieldGroupsData first, then GROUP_DEFAULTS, then fallback
+// WHY: Resolve group metadata from the category contract's fieldGroupsData only.
+// No hardcoded fallbacks — if the category doesn't define a group, use GENERIC_FALLBACK.
 function resolveGroupMeta(groupKey, fieldGroupsData) {
-  // Check fieldGroupsData for category-specific metadata
   if (fieldGroupsData && Array.isArray(fieldGroupsData.groups)) {
     const fgdGroup = fieldGroupsData.groups.find(g => g.group_key === groupKey);
     if (fgdGroup) {
@@ -91,10 +98,9 @@ function resolveGroupMeta(groupKey, fieldGroupsData) {
     }
   }
 
-  // Fall back to GROUP_DEFAULTS (mouse hardcoded)
+  // Fall back to GROUP_DEFAULTS for known categories
   const defaults = GROUP_DEFAULTS[groupKey];
   if (defaults) {
-    // label resolved separately (needs displayNameMap from fieldGroupsData)
     return { ...defaults };
   }
 
@@ -168,9 +174,6 @@ export function isGroupSearchWorthy({ coverageRatio, unresolvedCount, groupQuery
   return { worthy: true, skipReason: null };
 }
 
-const V4_AVAILABILITY_RANKS = { always: 0, expected: 1, sometimes: 2, rare: 3, editorial_only: 4 };
-const V4_DIFFICULTY_RANKS = { easy: 0, medium: 1, hard: 2 };
-const V4_REQUIRED_LEVEL_RANKS = { identity: 0, critical: 1, required: 2, expected: 3, optional: 4 };
 
 // WHY: Groups with easy-to-find, easy-to-extract, un-tried fields score highest.
 // Higher score = more productive to search now.
@@ -181,8 +184,8 @@ export function computeGroupProductivityScore(unresolvedFields, groupQueryCount)
   let totalNeed = 0;
   for (const f of unresolvedFields) {
     // Invert ranks: available/easy fields contribute MORE to score
-    totalAvail += 4 - (V4_AVAILABILITY_RANKS[f.availability] ?? 4);
-    totalDiff += 2 - (V4_DIFFICULTY_RANKS[f.difficulty] ?? 2);
+    totalAvail += 4 - (AVAILABILITY_RANKS[f.availability] ?? 4);
+    totalDiff += 2 - (DIFFICULTY_RANKS[f.difficulty] ?? 2);
     totalNeed += f.need_score || 0;
   }
   const fieldCount = unresolvedFields.length;
@@ -210,10 +213,10 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
       domains_tried_for_key: Array.isArray(f.domains_tried_for_key) ? f.domains_tried_for_key : [],
       content_types_tried_for_key: Array.isArray(f.content_types_tried_for_key) ? f.content_types_tried_for_key : [],
       // Sort keys for ranking
-      _avail: V4_AVAILABILITY_RANKS[f.availability] ?? 4,
-      _diff: V4_DIFFICULTY_RANKS[f.difficulty] ?? 2,
+      _avail: AVAILABILITY_RANKS[f.availability] ?? 4,
+      _diff: DIFFICULTY_RANKS[f.difficulty] ?? 2,
       _need: f.need_score || 0,
-      _req: V4_REQUIRED_LEVEL_RANKS[f.required_level] ?? 4,
+      _req: REQUIRED_LEVEL_RANKS[f.required_level] ?? 4,
     };
   });
   entries.sort((a, b) =>
@@ -249,17 +252,24 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, c
 
   const specsSeed = seedStatusFor((q) => q.tier === 'seed' && !q.source_name);
 
-  // WHY: Source seeds come from three places:
+  // WHY: brand_seed tracks the product's manufacturer as its own tier,
+  // prioritized above specification. NeedSet knows the brand NAME only —
+  // the .com comes from brand resolver (runs in parallel).
+  const brandName = String(identity?.manufacturer || identity?.brand || '').trim();
+  const brandSeed = brandName
+    ? { is_needed: true, brand_name: brandName }
+    : { is_needed: false, brand_name: '' };
+
+  // WHY: Source seeds come from two places:
   // 1. Category source hosts (e.g. rtings.com, techpowerup.com) — known before any run
-  // 2. Identity official/support domains — from identityContext
-  // 3. Previously executed seed queries — from queryExecutionHistory
+  // 2. Previously executed seed queries — from queryExecutionHistory
+  // Identity domains (official_domain, support_domain) are NOT included here —
+  // they belong to brand_seed, not source_seeds.
   const sourceSeeds = {};
   const sourceNames = new Set();
   for (const q of queries) {
     if (q.tier === 'seed' && q.source_name) sourceNames.add(q.source_name);
   }
-  if (identity?.official_domain) sourceNames.add(identity.official_domain);
-  if (identity?.support_domain) sourceNames.add(identity.support_domain);
   for (const entry of (categorySourceHosts || [])) {
     const host = String(entry?.host || '').trim();
     if (host) sourceNames.add(host);
@@ -271,6 +281,7 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, c
   const complete = queries.filter((q) => q.status === 'scrape_complete' || q.status === 'exhausted').length;
   return {
     specs_seed: specsSeed,
+    brand_seed: brandSeed,
     source_seeds: sourceSeeds,
     query_completion_summary: {
       total_queries: queries.length,
@@ -289,8 +300,11 @@ export function computeTierAllocation(seedStatus, focusGroups, queryBudget) {
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
   let remaining = budget;
 
-  // Tier 1: seeds
+  // Tier 1: seeds — brand first (highest priority), then specs, then sources
   const tier1Seeds = [];
+  if (seedStatus?.brand_seed?.is_needed) {
+    tier1Seeds.push({ type: 'brand', source_name: null, is_needed: true });
+  }
   if (seedStatus?.specs_seed?.is_needed) {
     tier1Seeds.push({ type: 'specs', source_name: null, is_needed: true });
   }
@@ -362,8 +376,8 @@ function isSearchExhausted(field) {
   const hist = field.history || {};
   const noValueAttempts = toInt(hist.no_value_attempts, 0);
   const evidenceClasses = Array.isArray(hist.evidence_classes_tried) ? hist.evidence_classes_tried : [];
-  return noValueAttempts >= EXHAUSTION_NO_VALUE_THRESHOLD
-    && evidenceClasses.length >= EXHAUSTION_EVIDENCE_CLASSES_THRESHOLD;
+  return noValueAttempts >= EXHAUSTION_MIN_ATTEMPTS
+    && evidenceClasses.length >= EXHAUSTION_MIN_EVIDENCE_CLASSES;
 }
 
 function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory) {
@@ -574,6 +588,7 @@ export function buildSearchPlanningContext({
   // Pre-compute seed count for budget-aware group allocation
   const preSeedStatus = deriveSeedStatus(queryExecutionHistory, ns.identity, config, categorySourceHosts);
   let seedSlots = 0;
+  if (preSeedStatus?.brand_seed?.is_needed) seedSlots++;
   if (preSeedStatus?.specs_seed?.is_needed) seedSlots++;
   for (const info of Object.values(preSeedStatus?.source_seeds || {})) {
     if (info?.is_needed) seedSlots++;
@@ -610,7 +625,7 @@ export function buildSearchPlanningContext({
   focusGroups.sort((a, b) => {
     const phaseDiff = (PHASE_ORDER[a.phase] ?? 3) - (PHASE_ORDER[b.phase] ?? 3);
     if (phaseDiff !== 0) return phaseDiff;
-    const priDiff = (PRIORITY_ORDER[a.priority] ?? 3) - (PRIORITY_ORDER[b.priority] ?? 3);
+    const priDiff = (PRIORITY_BUCKET_ORDER[a.priority] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority] ?? 3);
     if (priDiff !== 0) return priDiff;
     return a.key.localeCompare(b.key); // GAP-10: key not group_key
   });

@@ -82,6 +82,58 @@ export function buildArchivedS3CacheRoot(runId = '') {
   return path.join(baseRoot, '_runtime', 'archived_runs', 's3', safeRunId);
 }
 
+async function objectExists(storage, key) {
+  if (!storage || !key) return false;
+  try {
+    if (typeof storage.objectExists === 'function') {
+      return await storage.objectExists(key);
+    }
+    if (typeof storage.readTextOrNull === 'function') {
+      return await storage.readTextOrNull(key) !== null;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+async function enrichArchivedS3MetaWithArtifacts(parsed = null, { storage = null, keyBase = '' } = {}) {
+  if (!parsed || typeof parsed !== 'object') return null;
+  const normalizedKeyBase = String(keyBase || '').trim().replace(/\/+$/g, '');
+  if (!normalizedKeyBase || !storage) return parsed;
+
+  const existingArtifacts = parsed.artifacts && typeof parsed.artifacts === 'object'
+    ? parsed.artifacts
+    : {};
+  const needsetKey = `${normalizedKeyBase}/indexlab/needset.json`;
+  const searchProfileKey = `${normalizedKeyBase}/indexlab/search_profile.json`;
+
+  const hasNeedset = Boolean(
+    existingArtifacts.has_needset
+    || parsed.needset
+    || await objectExists(storage, needsetKey)
+  );
+  const hasSearchProfile = Boolean(
+    existingArtifacts.has_search_profile
+    || parsed.search_profile
+    || await objectExists(storage, searchProfileKey)
+  );
+  const hasExplicitArtifactHints = Object.hasOwn(existingArtifacts, 'has_needset')
+    || Object.hasOwn(existingArtifacts, 'has_search_profile');
+  if (!hasExplicitArtifactHints && !hasNeedset && !hasSearchProfile) {
+    return parsed;
+  }
+
+  return {
+    ...parsed,
+    artifacts: {
+      ...existingArtifacts,
+      has_needset: hasNeedset,
+      has_search_profile: hasSearchProfile,
+    },
+  };
+}
+
 async function hydrateArchivedS3RunDirectory(location = {}, runId = '') {
   const keyBase = String(location?.keyBase || '').trim().replace(/\/+$/g, '');
   if (!keyBase) return '';
@@ -90,8 +142,10 @@ async function hydrateArchivedS3RunDirectory(location = {}, runId = '') {
   const cacheRoot = buildArchivedS3CacheRoot(runId || location?.runId || '');
   const cacheIndexLabDir = path.join(cacheRoot, 'indexlab');
   const cacheMetaPath = path.join(cacheIndexLabDir, 'run.json');
+  const cacheMaterializedMarkerPath = path.join(cacheRoot, '.materialized');
   const cachedMeta = await safeReadJson(cacheMetaPath);
-  if (cachedMeta && typeof cachedMeta === 'object') {
+  const cachedMaterialized = await safeStat(cacheMaterializedMarkerPath);
+  if (cachedMeta && typeof cachedMeta === 'object' && cachedMaterialized) {
     return cacheIndexLabDir;
   }
 
@@ -123,6 +177,9 @@ async function hydrateArchivedS3RunDirectory(location = {}, runId = '') {
     }
 
     const meta = await safeReadJson(cacheMetaPath);
+    if (meta && typeof meta === 'object') {
+      await fs.writeFile(cacheMaterializedMarkerPath, 'ok\n', 'utf8');
+    }
     return meta && typeof meta === 'object' ? cacheIndexLabDir : '';
   })().finally(() => {
     _archivedRunMaterializationLocks.delete(lockKey);
@@ -159,7 +216,21 @@ export async function readArchivedS3RunMetaOnly(location = {}, runId = '') {
 
   // Check local cache first — avoids S3 call if already materialized.
   const cachedMeta = await safeReadJson(cacheMetaPath);
-  if (cachedMeta && typeof cachedMeta === 'object') return cachedMeta;
+  if (cachedMeta && typeof cachedMeta === 'object') {
+    const enrichedCachedMeta = await enrichArchivedS3MetaWithArtifacts(cachedMeta, {
+      storage: s3Settings.storage,
+      keyBase,
+    });
+    if (enrichedCachedMeta && enrichedCachedMeta !== cachedMeta) {
+      try {
+        await fs.mkdir(cacheIndexLabDir, { recursive: true });
+        await fs.writeFile(cacheMetaPath, JSON.stringify(enrichedCachedMeta), 'utf8');
+      } catch {
+        // Best-effort cache write.
+      }
+    }
+    return enrichedCachedMeta;
+  }
 
   // Single-file S3 read (no listKeys).
   const metaKey = `${keyBase}/indexlab/run.json`;
@@ -178,16 +249,20 @@ export async function readArchivedS3RunMetaOnly(location = {}, runId = '') {
     return null;
   }
   if (!parsed || typeof parsed !== 'object') return null;
+  const enrichedParsed = await enrichArchivedS3MetaWithArtifacts(parsed, {
+    storage: s3Settings.storage,
+    keyBase,
+  });
 
   // Cache locally so subsequent calls (and full hydration) short-circuit.
   try {
     await fs.mkdir(cacheIndexLabDir, { recursive: true });
-    await fs.writeFile(cacheMetaPath, text, 'utf8');
+    await fs.writeFile(cacheMetaPath, JSON.stringify(enrichedParsed), 'utf8');
   } catch {
     // Best-effort cache write.
   }
 
-  return parsed;
+  return enrichedParsed;
 }
 
 async function addArchivedS3RunHints(nextIndex = new Map(), s3Settings = null) {

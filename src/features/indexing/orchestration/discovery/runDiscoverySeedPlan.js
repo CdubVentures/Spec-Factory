@@ -10,12 +10,14 @@ import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
 import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
 import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
 import { resolveBrandDomain } from '../../discovery/brandResolver.js';
-import { resolveJobIdentity, toArray } from '../../discovery/discoveryIdentity.js';
+import { resolveJobIdentity, toArray, normalizeHost } from '../../discovery/discoveryIdentity.js';
 import {
   mergeLearningStoreHintsIntoLexicon,
   loadLearningArtifacts,
   resolveSearchProfileCaps,
+  ensureCategorySourceLookups,
 } from '../../discovery/discoveryHelpers.js';
+import { extractRootDomain } from '../../../../utils/common.js';
 import { searchEngineAvailability } from '../../search/searchProviders.js';
 import { executeSearchQueries } from '../../discovery/discoverySearchExecution.js';
 import { processDiscoveryResults } from '../../discovery/discoveryResultProcessor.js';
@@ -104,22 +106,45 @@ export async function runDiscoverySeedPlan({
     normalizeFieldListFn,
   });
 
-  // === Stage 01: NeedSet ===
-  // WHY: Build queryExecutionHistory from frontier so NeedSet can track
-  // seed completion, group query counts, and tier escalation across rounds.
+  // === Stages 01 + 02: NeedSet and Brand Resolver (parallel) ===
+  // WHY: Stages 01 and 02 are completely independent — neither needs the
+  // other's output. Firing them in parallel saves wall-clock time equal to
+  // the shorter of the two LLM calls.
   const queryExecutionHistory = frontierDb?.buildQueryExecutionHistory?.(job?.productId) || { queries: [] };
 
-  const needset = await runNeedSetFn({
-    config, job, runId, category, categoryConfig, roundContext, llmContext, logger,
-    queryExecutionHistory,
-    computeNeedSetFn, buildSearchPlanningContextFn, buildSearchPlanFn,
-  });
+  const [needset, brand] = await Promise.all([
+    runNeedSetFn({
+      config, job, runId, category, categoryConfig, roundContext, llmContext, logger,
+      queryExecutionHistory,
+      computeNeedSetFn, buildSearchPlanningContextFn, buildSearchPlanFn,
+    }),
+    runBrandResolverFn({
+      job, category, config, storage, logger, categoryConfig,
+      resolveBrandDomainFn,
+    }),
+  ]);
 
-  // === Stage 02: Brand Resolver ===
-  const brand = await runBrandResolverFn({
-    job, category, config, storage, logger, categoryConfig,
-    resolveBrandDomainFn,
-  });
+  // WHY: Add brand-resolved domain to categoryConfig so downstream stages
+  // (host policy, query builder) recognise it as an approved source.
+  if (brand.brandResolution?.officialDomain) {
+    categoryConfig = ensureCategorySourceLookups(categoryConfig);
+    const official = normalizeHost(brand.brandResolution.officialDomain);
+    if (official && !categoryConfig.sourceHostMap.has(official)) {
+      const entry = {
+        host: official,
+        tierName: 'manufacturer',
+        sourceId: `brand_${official.replace(/[^a-z0-9]/g, '_')}`,
+        displayName: `${brand.brandResolution.officialDomain} Official`,
+        crawlConfig: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
+        fieldCoverage: null,
+        robotsTxtCompliant: true,
+        baseUrl: `https://${official}`,
+      };
+      categoryConfig.sourceHosts.push(entry);
+      categoryConfig.sourceHostMap.set(official, entry);
+      categoryConfig.approvedRootDomains?.add?.(extractRootDomain(official));
+    }
+  }
 
   // Resolve identity + missing fields for downstream stages
   const resolvedIdentity = resolveJobIdentity(job);
@@ -157,7 +182,7 @@ export async function runDiscoverySeedPlan({
     brandResolution: brand.brandResolution,
     config: discoveryConfig, searchProfileCaps, variables,
     focusGroups: needset.focusGroups,
-    seedStatus: needset.schema3?.seed_status || null,
+    seedStatus: needset.seedStatus,
     logger, runId,
   });
 
@@ -241,8 +266,8 @@ export async function runDiscoverySeedPlan({
   });
 
   // WHY: Attach the seed-phase schema4 so finalization can reuse it.
-  if (needset.seedSchema4) {
-    discoveryResult.seed_search_plan_output = needset.seedSchema4;
+  if (needset.seedSearchPlan) {
+    discoveryResult.seed_search_plan_output = needset.seedSearchPlan;
   }
 
   // === Stage 08: Domain Classifier ===

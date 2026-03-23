@@ -1,12 +1,16 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
+import { builtinModules, createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { transform } from 'sucrase';
 
 const require = createRequire(import.meta.url);
+const BUILTIN_MODULES = new Set([
+  ...builtinModules,
+  ...builtinModules.map((specifier) => specifier.replace(/^node:/, '')),
+]);
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 const ASSET_EXTENSIONS = ['.css', '.scss', '.sass', '.less', '.svg', '.png', '.jpg', '.jpeg', '.webp'];
 const IMPORT_SPECIFIER_RE = /(?:\bimport\s+(?:[^'"]*?\s+from\s*)?|\bexport\s+[^'"]*?\s+from\s*|\bimport\s*\()\s*(['"])([^'"]+)\1/g;
@@ -344,6 +348,35 @@ function createGenericBareStubCode({ exportNames = [], needsDefault = false } = 
   return lines.join('\n');
 }
 
+function createResolvedBareModuleStubCode(resolvedSpecifierPath) {
+  const target = pathToFileURL(resolvedSpecifierPath).href;
+  return [
+    `import * as inner from ${JSON.stringify(target)};`,
+    `export * from ${JSON.stringify(target)};`,
+    'const defaultExport = inner.default ?? inner;',
+    'export default defaultExport;',
+    '',
+  ].join('\n');
+}
+
+function isResolvedExternalSpecifier(specifier) {
+  const text = String(specifier || '');
+  return text.startsWith('file:')
+    || /^[A-Za-z]:[\\/]/.test(text)
+    || text.startsWith('/');
+}
+
+function resolveBareSpecifierPath(specifier, fromDir = process.cwd()) {
+  if (BUILTIN_MODULES.has(specifier) || specifier.startsWith('node:')) {
+    return null;
+  }
+  try {
+    return require.resolve(specifier, { paths: [fromDir] });
+  } catch {
+    return null;
+  }
+}
+
 export async function loadBundledModule(entryRelativePath, {
   stubs = {},
   prefix = 'bundled-module-',
@@ -383,6 +416,7 @@ export async function loadBundledModule(entryRelativePath, {
       const importedSpecifier = match[2];
       if (stubReplacements.has(importedSpecifier)) continue;
       if (importedSpecifier === specifier) continue;
+      if (importedSpecifier.startsWith('node:') || isResolvedExternalSpecifier(importedSpecifier)) continue;
 
       if (Object.prototype.hasOwnProperty.call(stubs, importedSpecifier)) {
         const dependencyPath = await writeStub(importedSpecifier, stubs[importedSpecifier]);
@@ -393,6 +427,16 @@ export async function loadBundledModule(entryRelativePath, {
       const builtInFallbackStub = getBuiltInFallbackStub(importedSpecifier);
       if (builtInFallbackStub !== null) {
         const dependencyPath = await writeStub(importedSpecifier, builtInFallbackStub);
+        stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
+        continue;
+      }
+
+      const resolvedBarePath = resolveBareSpecifierPath(importedSpecifier, process.cwd());
+      if (resolvedBarePath) {
+        const dependencyPath = await writeStub(
+          importedSpecifier,
+          createResolvedBareModuleStubCode(resolvedBarePath),
+        );
         stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
         continue;
       }
@@ -454,6 +498,7 @@ export async function loadBundledModule(entryRelativePath, {
     for (const match of transpiled.matchAll(IMPORT_SPECIFIER_RE)) {
       const specifier = match[2];
       if (replacements.has(specifier)) continue;
+      if (specifier.startsWith('node:') || isResolvedExternalSpecifier(specifier)) continue;
 
       if (Object.prototype.hasOwnProperty.call(stubs, specifier)) {
         const stubPath = await writeStub(specifier, stubs[specifier]);
@@ -478,6 +523,13 @@ export async function loadBundledModule(entryRelativePath, {
         const resolvedPath = resolveSourceModule(dirName, specifier);
         const emittedPath = await emitModule(resolvedPath);
         replacements.set(specifier, ensureRelativeSpecifier(outPath, emittedPath));
+        continue;
+      }
+
+      const resolvedBarePath = resolveBareSpecifierPath(specifier, dirName);
+      if (resolvedBarePath) {
+        const stubPath = await writeStub(specifier, createResolvedBareModuleStubCode(resolvedBarePath));
+        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
         continue;
       }
 

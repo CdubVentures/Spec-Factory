@@ -312,10 +312,6 @@ function approvedDomainsFromSources(sources) {
     }
     approved.add(new URL(source.base_url).hostname.replace(/^www\./, '').toLowerCase());
   }
-  // WHY: manufacturer hosts are auto-promoted at runtime but override hosts are still valid targets for search hints
-  for (const host of Object.keys(sources.manufacturer_crawl_overrides || {})) {
-    approved.add(String(host).trim().toLowerCase());
-  }
   return approved;
 }
 

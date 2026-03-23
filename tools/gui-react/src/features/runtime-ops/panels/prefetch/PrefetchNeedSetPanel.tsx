@@ -405,7 +405,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
   const sortArrow = (key: PlannerSortKey) =>
     plannerSortKey === key ? (plannerSortDir === 'asc' ? ' \u25b4' : ' \u25be') : '';
 
-  const TIER_CATEGORIES = ['targeted_specification', 'targeted_sources', 'targeted_groups', 'targeted_single'] as const;
+  const TIER_CATEGORIES = ['targeted_brand', 'targeted_specification', 'targeted_sources', 'targeted_groups', 'targeted_single'] as const;
   const tierEntries = useMemo(() => {
     if (!profileInfluence) return [];
     // WHY: Always show all 4 tier categories so the user sees the full picture
@@ -497,7 +497,8 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
             {profileInfluence.budget != null && (
               <strong className="sf-text-primary not-italic">Budget: {profileInfluence.budget} queries &mdash; </strong>
             )}
-            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_specification}/{profileInfluence.targeted_specification > 0 ? 1 : 1} spec seed, </strong>
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_brand}/1 brand, </strong>
+            <strong className="sf-text-primary not-italic">{profileInfluence.targeted_specification}/1 spec seed, </strong>
             <strong className="sf-text-primary not-italic">{profileInfluence.targeted_sources}/{profileInfluence.total_sources ?? 0} sources, </strong>
             <strong className="sf-text-primary not-italic">{profileInfluence.targeted_groups}/{profileInfluence.total_groups ?? 0} groups, </strong>
             <strong className="sf-text-primary not-italic">{profileInfluence.targeted_single}/{profileInfluence.total_unresolved_keys ?? 0} keys. </strong>
@@ -603,6 +604,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
                   <div
                     key={e.category}
                     className={`flex items-center justify-center text-[10px] font-bold ${
+                      e.category === 'targeted_brand' ? 'bg-rose-600 text-white' :
                       e.category === 'targeted_specification' ? 'bg-blue-600 text-white' :
                       e.category === 'targeted_sources' ? 'bg-violet-600 text-white' :
                       e.category === 'targeted_groups' ? 'bg-amber-500 text-white' :
@@ -620,6 +622,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs sf-text-muted">
               {tierEntries.map((e) => {
                 const total =
+                  e.category === 'targeted_brand' ? 1 :
                   e.category === 'targeted_specification' ? 1 :
                   e.category === 'targeted_sources' ? (profileInfluence.total_sources ?? 0) :
                   e.category === 'targeted_groups' ? (profileInfluence.total_groups ?? 0) :
@@ -627,6 +630,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime, needsetPl
                 return (
                   <span key={e.category} className="flex items-center gap-2">
                     <span className={`inline-block w-3 h-3 rounded-sm ${
+                      e.category === 'targeted_brand' ? 'bg-rose-600' :
                       e.category === 'targeted_specification' ? 'bg-blue-600' :
                       e.category === 'targeted_sources' ? 'bg-violet-600' :
                       e.category === 'targeted_groups' ? 'bg-amber-500' :

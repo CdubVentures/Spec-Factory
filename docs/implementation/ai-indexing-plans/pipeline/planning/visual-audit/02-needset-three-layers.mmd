@@ -1,0 +1,112 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#1d4ed8",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 20, "nodeSpacing": 50, "rankSpacing": 70 }
+} }%%
+
+%% ─────────────────────────────────────────────────────────────
+%% NEEDSET — THREE SCHEMA LAYERS
+%% Shows how field data flows through Schema 2 → 3 → 4
+%% Optimized for 4K landscape (3840 x 2160)
+%% ─────────────────────────────────────────────────────────────
+
+flowchart LR
+
+  %% ── INPUTS ──
+  subgraph INPUTS["Inputs to NeedSet"]
+    direction TB
+    I1["Product Identity\n(brand, model, variant)"]
+    I2["Category Config\n(fieldOrder, fieldRules,\nfieldGroups, sourceHosts)"]
+    I3["Round Context\n(provenance, previous\nfield histories)"]
+    I4["Query Execution\nHistory\n(null on round 0)"]
+  end
+
+  %% ── SCHEMA 2: PER-FIELD GAP CHECK ──
+  subgraph S2["LAYER 1 — Schema 2: Per-Field Gap Check (deterministic)"]
+    direction TB
+    S2A["Collect all field keys\nfrom fieldOrder +\nprovenance + fieldRules"]
+    S2B["Per-field assessment:\n- State: covered / missing / weak / conflict\n- Required level: identity / critical / required / expected / optional\n- Need score: 0 for covered, higher = more urgent"]
+    S2C["Build search pack per key:\n- normalized_key (human-search-safe)\n- all_aliases (display name + rule aliases + query terms)\n- availability (always / expected / sometimes / rare)\n- difficulty (easy / medium / hard)\n- repeat_count (from prior field histories)"]
+    S2D["Sort unresolved keys:\navailability, then difficulty,\nthen repeat count,\nthen need score,\nthen required level"]
+    S2A --> S2B --> S2C --> S2D
+  end
+
+  %% ── SCHEMA 3: GROUP PLANNING ──
+  subgraph S3["LAYER 2 — Schema 3: Group Planning + Tier Allocation (deterministic)"]
+    direction TB
+    S3A["Group fields by category\nfield groups (e.g. sensor,\nphysical, connectivity)"]
+    S3B["Per-group metrics:\n- coverage_ratio = resolved / total\n- group_query_count (Tier 2 searches done)\n- productivity_score"]
+    S3C["Group worthiness check:\nWorthy if:\n  coverage < 80% AND\n  unresolved >= 3 AND\n  group_query_count < 3"]
+    S3D["Build normalized_key_queue\nper group — sorted unresolved\nkeys with search context"]
+    S3E["Budget-aware tier allocation:\n- Tier 1 slots for needed seeds\n- Tier 2 slots for worthy groups\n- Tier 3 slots for remaining keys"]
+    S3F["Compute seed_status:\n- specs_seed.is_needed?\n- source_seeds[name].is_needed?\n- cooldown timestamps"]
+    S3A --> S3B --> S3C --> S3D --> S3E
+    S3B --> S3F
+  end
+
+  %% ── SCHEMA 4: LLM ASSESSMENT ──
+  subgraph S4["LAYER 3 — Schema 4: LLM Group Assessment"]
+    direction TB
+    S4A["Build LLM payload:\nproduct identity +\nfocus groups +\nunresolved context"]
+    S4B["LLM reviews groups\n(does NOT generate queries)\nReturns per-group:\n  phase: now / next / hold\n  reason_active: string\n  planner_confidence: 0-1"]
+    S4C["Anti-garbage filters\napplied to LLM response"]
+    S4A --> S4B --> S4C
+  end
+
+  %% ── OUTPUT ──
+  subgraph OUT["NeedSet Output (3 fields)"]
+    direction TB
+    O1["focusGroups[]\nPrioritized groups with\nnormalized_key_queue,\nproductivity_score,\ngroup_search_worthy flag"]
+    O2["seedStatus\nspecs_seed + source_seeds\nwith is_needed flags\nand cooldown timestamps"]
+    O3["seedSearchPlan\nSchema 4 assessment\nfor GUI + finalization"]
+  end
+
+  %% ── CONNECTIONS ──
+  INPUTS --> S2
+  S2 --> S3
+  S3 --> S4
+  S4 --> OUT
+
+  %% ── DOWNSTREAM ARROW ──
+  OUT --> NEXT(["To Stage 03:\nSearch Profile\n(query generation)"])
+
+  %% ── STYLING ──
+  style INPUTS fill:#f8fafc,stroke:#94a3b8,color:#1e293b
+  style S2 fill:#dbeafe,stroke:#3b82f6,color:#1e293b
+  style S3 fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+  style S4 fill:#fce7f3,stroke:#ec4899,color:#1e293b
+  style OUT fill:#d1fae5,stroke:#10b981,color:#1e293b
+  style NEXT fill:#10b981,stroke:#059669,color:#ffffff
+
+  style I1 fill:#f1f5f9,stroke:#64748b,color:#1e293b
+  style I2 fill:#f1f5f9,stroke:#64748b,color:#1e293b
+  style I3 fill:#f1f5f9,stroke:#64748b,color:#1e293b
+  style I4 fill:#f1f5f9,stroke:#64748b,color:#1e293b
+
+  style S2A fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style S2B fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style S2C fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style S2D fill:#3b82f6,stroke:#2563eb,color:#ffffff
+
+  style S3A fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S3B fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S3C fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S3D fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S3E fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style S3F fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+
+  style S4A fill:#ec4899,stroke:#db2777,color:#ffffff
+  style S4B fill:#ec4899,stroke:#db2777,color:#ffffff
+  style S4C fill:#ec4899,stroke:#db2777,color:#ffffff
+
+  style O1 fill:#10b981,stroke:#059669,color:#ffffff
+  style O2 fill:#10b981,stroke:#059669,color:#ffffff
+  style O3 fill:#10b981,stroke:#059669,color:#ffffff

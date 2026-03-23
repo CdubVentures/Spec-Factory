@@ -3,6 +3,17 @@ import {
   ruleAvailability,
   ruleDifficulty,
 } from '../engine/ruleAccessors.js';
+import {
+  AVAILABILITY_RANKS,
+  DIFFICULTY_RANKS,
+  REQUIRED_LEVEL_RANKS,
+  PRIORITY_BUCKET_ORDER,
+  EXHAUSTION_MIN_ATTEMPTS,
+  EXHAUSTION_MIN_EVIDENCE_CLASSES,
+  availabilityRank,
+  difficultyRank,
+  requiredLevelRank,
+} from '../shared/discoveryRankConstants.js';
 
 const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
 
@@ -40,23 +51,7 @@ export function shardAliases(aliases, maxTokensPerShard = 8) {
   return shards;
 }
 
-const AVAILABILITY_RANKS = { always: 0, expected: 1, sometimes: 2, rare: 3, editorial_only: 4 };
-const DIFFICULTY_RANKS = { easy: 0, medium: 1, hard: 2 };
-const REQUIRED_LEVEL_RANKS = { identity: 0, critical: 1, required: 2, expected: 3, optional: 4 };
-
-export function availabilityRank(avail) {
-  return AVAILABILITY_RANKS[avail] ?? 4;
-}
-
-export function difficultyRank(diff) {
-  return DIFFICULTY_RANKS[diff] ?? 2;
-}
-
-export function requiredLevelRank(level) {
-  return REQUIRED_LEVEL_RANKS[level] ?? 4;
-}
-
-const BUCKET_ORDER = { core: 0, secondary: 1, optional: 2 };
+export { availabilityRank, difficultyRank, requiredLevelRank };
 
 const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
 
@@ -264,7 +259,7 @@ function formBundles(eligibleFields, bundleAssignmentNotes) {
   }
 
   bundles.sort((a, b) => {
-    const diff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    const diff = (PRIORITY_BUCKET_ORDER[a.priority_bucket] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority_bucket] ?? 3);
     if (diff !== 0) return diff;
     return a.bundle_id.localeCompare(b.bundle_id);
   });
@@ -291,7 +286,7 @@ function deriveProfileMix(bundles) {
 
 function selectFocusFields(eligibleFields, maxFocus = 10) {
   const sorted = [...eligibleFields].sort((a, b) => {
-    const bucketDiff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    const bucketDiff = (PRIORITY_BUCKET_ORDER[a.priority_bucket] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority_bucket] ?? 3);
     if (bucketDiff !== 0) return bucketDiff;
     return a.field_key.localeCompare(b.field_key);
   });
@@ -411,7 +406,6 @@ export function computeNeedSet({
   model = '',
   baseModel = '',
   aliases = [],
-  settings = {},
   previousFieldHistories = {},
 } = {}) {
   const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
@@ -473,9 +467,9 @@ export function computeNeedSet({
     const effectiveConfidence = clamp01(toNumber(confidence, 0));
     const meetsPassTarget = internalState === 'covered' || (confidence !== null && confidence >= passTarget);
 
-    const bestTierSeen = evidence.length > 0
-      ? Math.min(...evidence.map((e) => toNumber(e?.tier, 99)).filter((t) => t !== null && t < 99))
-      : null;
+    // WHY: Guard against Math.min(...[]) returning Infinity when all tiers are >= 99.
+    const validTiers = evidence.map((e) => toNumber(e?.tier, 99)).filter((t) => t !== null && t < 99);
+    const bestTierSeen = validTiers.length > 0 ? Math.min(...validTiers) : null;
 
     const reasons = deriveFieldReasons({
       field,
@@ -581,7 +575,7 @@ export function computeNeedSet({
   }));
 
   rows.sort((a, b) => {
-    const bucketDiff = (BUCKET_ORDER[a.priority_bucket] ?? 3) - (BUCKET_ORDER[b.priority_bucket] ?? 3);
+    const bucketDiff = (PRIORITY_BUCKET_ORDER[a.priority_bucket] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority_bucket] ?? 3);
     if (bucketDiff !== 0) return bucketDiff;
     return a.field_key.localeCompare(b.field_key);
   });
@@ -602,14 +596,12 @@ export function computeNeedSet({
   // WHY: A field is search-exhausted when it's been targeted multiple times
   // with diverse evidence classes and still has no value. This tells the planner
   // to stop wasting query budget on dead-end fields.
-  const SEARCH_EXHAUSTED_MIN_ATTEMPTS = 3;
-  const SEARCH_EXHAUSTED_MIN_CLASSES = 3;
   const searchExhaustedCount = schema2Fields.filter((f) => {
     if (f.state === 'accepted') return false;
     const hist = f.history || {};
     const attempts = toNumber(hist.no_value_attempts, 0);
     const classCount = Array.isArray(hist.evidence_classes_tried) ? hist.evidence_classes_tried.length : 0;
-    return attempts >= SEARCH_EXHAUSTED_MIN_ATTEMPTS && classCount >= SEARCH_EXHAUSTED_MIN_CLASSES;
+    return attempts >= EXHAUSTION_MIN_ATTEMPTS && classCount >= EXHAUSTION_MIN_EVIDENCE_CLASSES;
   }).length;
 
   // --- Summary (Schema 2: 9 fields + backward compat) ---

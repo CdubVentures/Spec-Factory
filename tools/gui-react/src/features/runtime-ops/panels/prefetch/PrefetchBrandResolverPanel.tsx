@@ -1,13 +1,9 @@
-import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { PrefetchLlmCall, BrandResolutionData, BrandCandidate, PrefetchLiveSettings } from '../../types';
+import type { PrefetchLlmCall, BrandResolutionData, PrefetchLiveSettings } from '../../types';
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers';
-import { ScoreBar } from '../../components/ScoreBar';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { LlmCallCard } from '../../components/LlmCallCard';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
 import { Tip } from '../../../../shared/ui/feedback/Tip';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
 import { Chip } from '../../../../shared/ui/feedback/Chip';
@@ -42,13 +38,15 @@ function brandResolutionBadgeClass(status: string): string {
   return 'sf-chip-neutral';
 }
 
-function confidenceColorClass(confidence: number): string {
+function confidenceColorClass(confidence: number | null): string {
+  if (confidence == null) return 'sf-metric-ring-muted';
   if (confidence >= 0.8) return 'sf-metric-ring-success';
   if (confidence >= 0.5) return 'sf-metric-ring-warning';
   return 'sf-metric-ring-danger';
 }
 
-function confidenceStatColor(confidence: number): string {
+function confidenceStatColor(confidence: number | null): string {
+  if (confidence == null) return 'sf-text-muted';
   if (confidence >= 0.8) return 'text-[var(--sf-state-success-fg)]';
   if (confidence >= 0.5) return 'text-[var(--sf-state-warning-fg)]';
   return 'text-[var(--sf-state-error-fg)]';
@@ -59,7 +57,7 @@ function buildReasoningBullets(br: BrandResolutionData): string[] {
   if (reasoning.length > 0) return reasoning;
   const bullets: string[] = [];
   if (br.official_domain) bullets.push(`Resolved official domain: ${br.official_domain}`);
-  if (br.confidence > 0) bullets.push(`Confidence: ${Math.round(br.confidence * 100)}%`);
+  if ((br.confidence ?? 0) > 0) bullets.push(`Confidence: ${Math.round((br.confidence ?? 0) * 100)}%`);
   if (br.aliases.length > 0) bullets.push(`${br.aliases.length} alias${br.aliases.length > 1 ? 'es' : ''} identified: ${br.aliases.join(', ')}`);
   if (br.support_domain) bullets.push(`Support domain: ${br.support_domain}`);
   return bullets;
@@ -71,81 +69,18 @@ function sourceLabel(calls: PrefetchLlmCall[], hasResolution: boolean): { text: 
   return { text: 'LLM', badgeClass: 'sf-chip-warning' };
 }
 
-/* ── Candidate Drawer ─────────────────────────────────────────────── */
-
-function CandidateDrawer({ candidate, call, onClose }: { candidate: BrandCandidate; call?: PrefetchLlmCall; onClose: () => void }) {
-  return (
-    <DrawerShell title={candidate.name} subtitle="Brand Candidate" onClose={onClose}>
-      <DrawerSection title="Confidence">
-        <ScoreBar value={candidate.confidence} max={1} label={candidate.confidence.toFixed(2)} />
-      </DrawerSection>
-      {candidate.evidence_snippets.length > 0 && (
-        <DrawerSection title="Evidence Snippets">
-          <div className="space-y-1">
-            {candidate.evidence_snippets.map((s, i) => (
-              <div key={i} className="rounded p-2 italic sf-text-caption sf-pre-block">
-                &ldquo;{s}&rdquo;
-              </div>
-            ))}
-          </div>
-        </DrawerSection>
-      )}
-      {candidate.disambiguation_note && (
-        <DrawerSection title="Disambiguation">
-          <div className="sf-text-caption sf-text-muted">{candidate.disambiguation_note}</div>
-        </DrawerSection>
-      )}
-      {call && (
-        <DrawerSection title="LLM Context">
-          <div className="grid grid-cols-2 gap-1 sf-text-caption">
-            <span className="sf-text-muted">Model</span>
-            <span className="font-mono">{call.model || '-'}</span>
-            <span className="sf-text-muted">Provider</span>
-            <span className="font-mono">{call.provider || '-'}</span>
-            {call.tokens && (
-              <>
-                <span className="sf-text-muted">Tokens</span>
-                <span className="font-mono">{call.tokens.input}+{call.tokens.output}</span>
-              </>
-            )}
-            {call.duration_ms !== undefined && (
-              <>
-                <span className="sf-text-muted">Duration</span>
-                <span className="font-mono">{formatMs(call.duration_ms)}</span>
-              </>
-            )}
-          </div>
-        </DrawerSection>
-      )}
-    </DrawerShell>
-  );
-}
-
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
 export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, liveSettings, idxRuntime }: PrefetchBrandResolverPanelProps) {
   const br = brandResolution;
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:brandResolver:llmCalls:${persistScope}`, false);
-  const candidateValues = useMemo(
-    () => (br?.candidates ?? []).map((candidate) => candidate.name),
-    [br?.candidates],
-  );
-  const [selectedCandidateName, setSelectedCandidateName] = usePersistedNullableTab<string>(
-    `runtimeOps:prefetch:brandResolver:selectedCandidate:${persistScope}`,
-    null,
-    { validValues: candidateValues },
-  );
-  const selectedCandidate = useMemo(
-    () => (selectedCandidateName ? (br?.candidates ?? []).find((candidate) => candidate.name === selectedCandidateName) ?? null : null),
-    [br?.candidates, selectedCandidateName],
-  );
   const hasStructured = br !== null && br !== undefined;
   const status = br?.status || '';
   const isResolved = status === 'resolved';
   const isSkipped = status === 'skipped';
   const isFailed = status === 'failed';
   const isResolvedEmpty = status === 'resolved_empty';
-  const isLowConfidence = isResolved && br!.confidence < 0.7;
+  const isLowConfidence = isResolved && br!.confidence != null && br!.confidence < 0.7;
   const hasOfficialDomain = hasStructured && Boolean(br.official_domain);
 
   const totalTokens = calls.reduce((sum, c) => sum + (c.tokens?.input ?? 0) + (c.tokens?.output ?? 0), 0);
@@ -202,9 +137,8 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
         {/* Big stat numbers — 4-col grid with colored values */}
         {hasStructured && (isResolved || isResolvedEmpty) && (
           <HeroStatGrid>
-            <HeroStat value={pctString(br!.confidence)} label="confidence" colorClass={confidenceStatColor(br!.confidence)} />
+            <HeroStat value={br!.confidence != null ? pctString(br!.confidence) : 'N/A'} label="confidence" colorClass={confidenceStatColor(br!.confidence)} />
             <HeroStat value={br!.aliases.length} label="aliases found" />
-            <HeroStat value={br!.candidates.length} label="candidates" />
             <HeroStat value={calls.length} label="llm calls" colorClass="sf-text-primary" />
           </HeroStatGrid>
         )}
@@ -252,17 +186,12 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             <span className="text-2xl leading-none">{'\u26a0'}</span>
             <div>
               <div className="text-xs font-bold uppercase tracking-[0.06em] text-[var(--sf-state-warning-fg)]">
-                Low confidence ({Math.round(br!.confidence * 100)}%) &mdash; brand identity may be ambiguous
+                Low confidence ({Math.round((br?.confidence ?? 0) * 100)}%) &mdash; brand identity may be ambiguous
               </div>
               <div className="mt-1 text-xs sf-text-muted">
                 Search queries will use generic patterns instead of targeted site: filters,
                 reducing the chance of finding official manufacturer specification pages.
               </div>
-              {br!.candidates.length > 0 && (
-                <div className="mt-0.5 text-xs sf-text-muted">
-                  Review the {br!.candidates.length} candidate{br!.candidates.length > 1 ? 's' : ''} below for alternative brand identities.
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -311,12 +240,12 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
                         stroke="currentColor"
                         className={confidenceColorClass(br!.confidence)}
                         strokeWidth="2.5"
-                        strokeDasharray={`${br!.confidence * 97.4} 97.4`}
+                        strokeDasharray={`${(br!.confidence ?? 0) * 97.4} 97.4`}
                         strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center text-sm font-bold sf-text-primary">
-                      {Math.round(br!.confidence * 100)}%
+                      {br!.confidence != null ? `${Math.round(br!.confidence * 100)}%` : 'N/A'}
                     </div>
                   </div>
                   <div className="mt-1 text-[10px] font-bold font-mono uppercase tracking-[0.06em] sf-text-subtle">confidence</div>
@@ -393,52 +322,6 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── Brand Candidates ───────────────────────────────── */}
-      {hasStructured && br.candidates.length > 0 && (
-        <div>
-          <SectionHeader>brand candidates</SectionHeader>
-          <div className="overflow-x-auto overflow-y-auto max-h-[56rem] border sf-border-soft rounded-sm">
-            <table className="min-w-full text-xs">
-              <thead className="sf-surface-elevated sticky top-0">
-                <tr>
-                  {['name', 'confidence', 'evidence', 'disambiguation'].map(h => (
-                    <th key={h} className="py-2 px-5 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {br.candidates.map((c, i) => (
-                  <tr
-                    key={i}
-                    className="cursor-pointer border-b sf-border-soft hover:sf-surface-elevated"
-                    onClick={() => setSelectedCandidateName(selectedCandidateName === c.name ? null : c.name)}
-                  >
-                    <td className="py-1.5 px-5 font-mono font-medium sf-text-primary">{c.name}</td>
-                    <td className="py-1.5 px-5 w-36">
-                      <ScoreBar value={c.confidence} max={1} label={c.confidence.toFixed(2)} />
-                    </td>
-                    <td className="py-1.5 px-5">
-                      <span className="px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-[0.08em] sf-chip-info">
-                        {c.evidence_snippets.length} snippet{c.evidence_snippets.length !== 1 ? 's' : ''}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-5 max-w-[14rem] truncate sf-text-muted">{c.disambiguation_note || '\u2014'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {selectedCandidate && (
-        <CandidateDrawer
-          candidate={selectedCandidate}
-          call={calls[0]}
-          onClose={() => setSelectedCandidateName(null)}
-        />
       )}
 
       {/* ── LLM Call Details ───────────────────────────────── */}

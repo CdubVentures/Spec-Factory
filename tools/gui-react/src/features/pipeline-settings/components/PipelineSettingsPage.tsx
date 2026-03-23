@@ -23,7 +23,7 @@ import {
   type SourceStrategyDraft,
   type SourceStrategyDraftField,
 } from '../sections/PipelineSourceStrategySection';
-import { makeSourceStrategyDraft } from '../state/sourceEntryDerived';
+import { makeSourceStrategyDraft, updateDraftByPath } from '../state/sourceEntryDerived';
 
 const RuntimeSettingsFlowCard = lazy(async () => {
   const module = await import('./RuntimeSettingsFlowCard');
@@ -79,6 +79,7 @@ function sourceStrategyDraftFromEntry(entry: SourceEntry): SourceStrategyDraft {
       method: dv(entry.crawl_config?.method, 'http'),
       rate_limit_ms: String(entry.crawl_config?.rate_limit_ms ?? 2000),
       timeout_ms: String(entry.crawl_config?.timeout_ms ?? 12000),
+      max_concurrent: String(entry.crawl_config?.max_concurrent ?? 5),
       robots_txt_compliant: String(entry.crawl_config?.robots_txt_compliant ?? true),
     },
     field_coverage: {
@@ -111,6 +112,7 @@ function sourceStrategyPayloadFromDraft(draft: SourceStrategyDraft): Partial<Sou
       method: draft.crawl_config.method || 'http',
       rate_limit_ms: toNum(draft.crawl_config.rate_limit_ms, 2000, 0, 60000),
       timeout_ms: toNum(draft.crawl_config.timeout_ms, 12000, 0, 120000),
+      max_concurrent: toNum(draft.crawl_config.max_concurrent, 5, 1, 50),
       robots_txt_compliant: draft.crawl_config.robots_txt_compliant !== 'false',
     },
     field_coverage: {
@@ -129,48 +131,8 @@ function sourceStrategyPayloadFromDraft(draft: SourceStrategyDraft): Partial<Sou
   };
 }
 
-function updateSourceStrategyDraftField(
-  previous: SourceStrategyDraft,
-  key: SourceStrategyDraftField,
-  value: string,
-): SourceStrategyDraft {
-  switch (key) {
-    case 'host':
-    case 'display_name':
-    case 'tier':
-    case 'authority':
-    case 'base_url':
-    case 'content_types':
-    case 'doc_kinds':
-      return { ...previous, [key]: value };
-    case 'crawl_config.method':
-      return { ...previous, crawl_config: { ...previous.crawl_config, method: value } };
-    case 'crawl_config.rate_limit_ms':
-      return { ...previous, crawl_config: { ...previous.crawl_config, rate_limit_ms: value } };
-    case 'crawl_config.timeout_ms':
-      return { ...previous, crawl_config: { ...previous.crawl_config, timeout_ms: value } };
-    case 'crawl_config.robots_txt_compliant':
-      return { ...previous, crawl_config: { ...previous.crawl_config, robots_txt_compliant: value } };
-    case 'field_coverage.high':
-      return { ...previous, field_coverage: { ...previous.field_coverage, high: value } };
-    case 'field_coverage.medium':
-      return { ...previous, field_coverage: { ...previous.field_coverage, medium: value } };
-    case 'field_coverage.low':
-      return { ...previous, field_coverage: { ...previous.field_coverage, low: value } };
-    case 'discovery.method':
-      return { ...previous, discovery: { ...previous.discovery, method: value } };
-    case 'discovery.source_type':
-      return { ...previous, discovery: { ...previous.discovery, source_type: value } };
-    case 'discovery.search_pattern':
-      return { ...previous, discovery: { ...previous.discovery, search_pattern: value } };
-    case 'discovery.priority':
-      return { ...previous, discovery: { ...previous.discovery, priority: value } };
-    case 'discovery.enabled':
-      return { ...previous, discovery: { ...previous.discovery, enabled: value } };
-    case 'discovery.notes':
-      return { ...previous, discovery: { ...previous.discovery, notes: value } };
-  }
-}
+// WHY: 22-case switch replaced by generic updateDraftByPath() in sourceEntryDerived.ts.
+// The draft structure is always top-level or one-level nested (group.field).
 
 function ConvergenceGroupIcon({ label, active }: { label: string; active: boolean }) {
   const toneClass = active
@@ -460,7 +422,7 @@ export function PipelineSettingsPage() {
   }
 
   function updateSourceDraft(key: SourceStrategyDraftField, value: string) {
-    setSourceDraft((previous) => updateSourceStrategyDraftField(previous, key, value));
+    setSourceDraft((previous) => updateDraftByPath(previous, key, value));
   }
 
   function saveEntryDraft() {

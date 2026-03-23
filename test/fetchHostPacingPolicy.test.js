@@ -30,40 +30,6 @@ describe('PP-01: sources.json has per-host rate_limit_ms', () => {
 });
 
 // ---------------------------------------------------------------------------
-// PP-02: Default delay exists in manufacturer_defaults
-// ---------------------------------------------------------------------------
-describe('PP-02: Default delay when no per-host config', () => {
-  it('manufacturer_defaults has rate_limit_ms', () => {
-    assert.ok(sources.manufacturer_defaults.rate_limit_ms > 0);
-  });
-
-  it('manufacturer_defaults rate_limit_ms is at least 1500', () => {
-    assert.ok(sources.manufacturer_defaults.rate_limit_ms >= 1500);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// PP-03: All manufacturer crawl overrides have rate_limit_ms >= 3000
-// ---------------------------------------------------------------------------
-describe('PP-03: Manufacturer hosts rate_limit_ms >= 3000', () => {
-  it('manufacturer_defaults rate_limit_ms >= 3000', () => {
-    assert.ok(
-      sources.manufacturer_defaults.rate_limit_ms >= 3000,
-      `manufacturer_defaults.rate_limit_ms is ${sources.manufacturer_defaults.rate_limit_ms}, expected >= 3000`
-    );
-  });
-
-  for (const [host, config] of Object.entries(sources.manufacturer_crawl_overrides)) {
-    it(`${host} rate_limit_ms >= 3000`, () => {
-      assert.ok(
-        config.rate_limit_ms >= 3000,
-        `${host} rate_limit_ms is ${config.rate_limit_ms}, expected >= 3000`
-      );
-    });
-  }
-});
-
-// ---------------------------------------------------------------------------
 // PP-04: Retailer hosts have rate_limit_ms >= 4000
 // ---------------------------------------------------------------------------
 describe('PP-04: Retailer hosts rate_limit_ms >= 4000', () => {
@@ -82,17 +48,6 @@ describe('PP-04: Retailer hosts rate_limit_ms >= 4000', () => {
         entry.crawl_config.rate_limit_ms >= 4000,
         `${key} rate_limit_ms is ${entry.crawl_config.rate_limit_ms}, expected >= 4000`
       );
-    });
-  }
-});
-
-// ---------------------------------------------------------------------------
-// PP-05: Manufacturer overrides all use method=playwright
-// ---------------------------------------------------------------------------
-describe('PP-05: Manufacturer overrides use Playwright', () => {
-  for (const [host, config] of Object.entries(sources.manufacturer_crawl_overrides)) {
-    it(`${host} method is playwright`, () => {
-      assert.equal(config.method, 'playwright');
     });
   }
 });

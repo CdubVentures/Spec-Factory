@@ -62,11 +62,37 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
     const { data } = await fetchJson('/api/v1/indexlab/runs');
     if (!data?.runs?.length) return;
 
+    const isArtifactBearingRun = (run) => {
+      if (!run || typeof run !== 'object') return false;
+      const status = String(run.status || '').trim().toLowerCase();
+      const pagesChecked = Number(run.counters?.pages_checked || 0);
+      return (
+        ['completed', 'failed', 'running', 'starting', 'relocating'].includes(status)
+        && (
+          pagesChecked > 0
+          || run.has_needset === true
+          || run.has_search_profile === true
+          || Boolean(String(run.ended_at || '').trim())
+        )
+      );
+    };
+
     const completed = data.runs.filter((r) => r.status === 'completed');
     const sorted = data.runs
       .filter((r) => r.status === 'completed' && r.counters?.pages_checked > 5)
       .sort((a, b) => (b.counters?.pages_checked || 0) - (a.counters?.pages_checked || 0));
-    richRunId = sorted[0]?.run_id || completed[0]?.run_id || data.runs[0]?.run_id;
+    const artifactBearing = data.runs
+      .filter(isArtifactBearingRun)
+      .sort((a, b) => {
+        const aPages = Number(a?.counters?.pages_checked || 0);
+        const bPages = Number(b?.counters?.pages_checked || 0);
+        if (bPages !== aPages) return bPages - aPages;
+        return Date.parse(String(b?.started_at || '')) - Date.parse(String(a?.started_at || ''));
+      });
+    richRunId = sorted[0]?.run_id
+      || artifactBearing[0]?.run_id
+      || completed[0]?.run_id
+      || data.runs[0]?.run_id;
   });
 
   it('skips all tests when server is not running', { skip: false }, () => {

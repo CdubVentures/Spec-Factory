@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { selectLlmProvider } from '../src/core/llm/providers/index.js';
 import { resolveLlmRoute } from '../src/core/llm/client/routing.js';
 import { buildRegistryLookup } from '../src/core/llm/routeResolver.js';
+import { KNOWN_PROVIDERS, normalizeProvider } from '../src/core/llm/providerMeta.js';
 
 // ---------------------------------------------------------------------------
 // Phase 1a: Characterization — lock down current selectLlmProvider behavior
@@ -156,4 +157,30 @@ test('non-registry route still infers provider from model name', () => {
 
   const providerClient = selectLlmProvider(route.provider);
   assert.equal(providerClient.name, 'deepseek');
+});
+
+// ---------------------------------------------------------------------------
+// SSOT contract: PROVIDER_DISPATCH derives from KNOWN_PROVIDERS
+// ---------------------------------------------------------------------------
+
+test('PROVIDER_DISPATCH covers all KNOWN_PROVIDERS', () => {
+  for (const name of KNOWN_PROVIDERS) {
+    const result = selectLlmProvider(name);
+    assert.equal(result.name, name,
+      `PROVIDER_DISPATCH missing entry for "${name}"`);
+    assert.equal(typeof result.request, 'function');
+  }
+});
+
+test('normalizeProvider returns canonical name for known providers', () => {
+  for (const name of KNOWN_PROVIDERS) {
+    assert.equal(normalizeProvider(name), name);
+    assert.equal(normalizeProvider(name.toUpperCase()), name);
+  }
+});
+
+test('normalizeProvider returns empty string for unknown providers', () => {
+  assert.equal(normalizeProvider('unknown'), '');
+  assert.equal(normalizeProvider(''), '');
+  assert.equal(normalizeProvider(null), '');
 });

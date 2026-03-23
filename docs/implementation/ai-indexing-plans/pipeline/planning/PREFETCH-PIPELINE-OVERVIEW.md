@@ -1,6 +1,6 @@
 # Prefetch Pipeline Overview
 
-Validated: 2026-03-20 (NeedSet budget-aware allocation added, round-mode overrides removed, round_mode field retired).
+Validated: 2026-03-22 (round_mode fully retired from all code/fixtures/docs. Feedback loops clarified: per-run vs cross-product learning. LLM reason string fixed).
 
 Source of truth:
 
@@ -13,12 +13,22 @@ Source of truth:
 - `src/features/indexing/discovery/discoverySearchExecution.js`
 - `src/features/indexing/discovery/discoveryResultProcessor.js`
 
-## Strict 8-Stage Sequential Flow
+## 8-Stage Pipeline Flow (Stages 01+02 parallel)
+
+```text
+         ┌── 01: NeedSet ──────┐
+Start ──>│                      ├──> 03: Search Profile ──> 04 ──> 05 ──> 06 ──> 07 ──> 08
+         └── 02: Brand Resolver─┘
+                                 ^
+                          convergence point
+```
 
 ```text
 Stage 01: NeedSet           - Schema 2 -> Schema 3 -> Schema 4 group annotations (no queries)
 Stage 02: Brand Resolver    - brand domain, aliases, support domain, auto-promotion
-Stage 03: Search Profile    - tier-aware deterministic query generation + optional host plan
+  (01 + 02 run in parallel via Promise.all -- neither depends on the other's output)
+Stage 03: Search Profile    - CONVERGENCE POINT: first stage requiring both NeedSet + Brand outputs
+                              tier-aware deterministic query generation + optional host plan
 Stage 04: Search Planner    - tier-aware LLM query enhancement via enhanceQueryRows
 Stage 05: Query Journey     - dedupe, rank, guard, cap, write planned search_profile
 Stage 06: Search Results    - internal/frontier/provider execution
@@ -26,7 +36,7 @@ Stage 07: SERP Triage       - selector path or deterministic lane-selection path
 Stage 08: Domain Classifier - enqueue approved/candidate URLs to planner queue
 ```
 
-Every stage runs. There is no branching between stages. Conditional behavior stays inside the stage that owns it.
+Every stage runs. There is no branching between stages. Conditional behavior stays inside the stage that owns it. Stages 01 and 02 are the only parallel pair -- all subsequent stages are strictly sequential. See `03-pipeline-context.json` for the full accumulated state at convergence.
 
 ## Three-Tier Search Model (V4)
 
@@ -68,16 +78,29 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
 `runDiscoverySeedPlan()`:
 1. Load enabled source entries and normalize planning hints.
 2. Force `discoveryEnabled=true` and default empty `searchEngines` to `bing,google`.
-3. Stage 01 NeedSet:
-   - `computeNeedSet()` builds Schema 2.
-   - `buildSearchPlanningContext()` builds Schema 3 (includes `seed_status`, `focus_groups` with V4 tier signals, budget-aware `tier_allocation`, expanded `pass_seed`). Receives `queryExecutionHistory` for round-over-round awareness.
-   - `buildSearchPlan()` builds Schema 4 — LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. `search_plan_handoff.queries` is always empty.
-   - `runNeedSet()` emits `needset_computed` twice when Schema 4 succeeds:
-     - `scope: schema2_preview` before the Schema 4 LLM call
-     - `scope: schema4_planner` after panel is assembled. Panel `profile_influence` shows budget-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single` (allocation-based), plus `budget`, `allocated`, `overflow_groups`, `overflow_keys`.
-4. Stage 02 Brand Resolver:
-   - `runBrandResolver()` resolves brand domains after NeedSet so the NeedSet worker appears first in the GUI.
-   - manufacturer auto-promotion happens here when enabled.
+3. **Stages 01 + 02 (parallel via Promise.all):**
+   - Stage 01 NeedSet and Stage 02 Brand Resolver fire simultaneously -- neither depends on the other's output. Wall-clock time saved equals the shorter of the two calls.
+   - Stage 01 NeedSet:
+     - `computeNeedSet()` builds Schema 2.
+     - `buildSearchPlanningContext()` builds Schema 3 (includes `seed_status`, `focus_groups` with V4 tier signals, budget-aware `tier_allocation`, expanded `pass_seed`). Receives `queryExecutionHistory` for round-over-round awareness.
+     - `buildSearchPlan()` builds Schema 4 -- LLM assesses groups (`reason_active`, `planner_confidence`) but does NOT generate queries. `search_plan_handoff.queries` is always empty.
+     - `runNeedSet()` emits `needset_computed` twice when Schema 4 succeeds:
+       - `scope: schema2_preview` before the Schema 4 LLM call
+       - `scope: schema4_planner` after panel is assembled. Panel `profile_influence` shows budget-aware targeting: `targeted_specification`, `targeted_sources`, `targeted_groups`, `targeted_single` (allocation-based), plus `budget`, `allocated`, `overflow_groups`, `overflow_keys`.
+   - Stage 02 Brand Resolver:
+     - `runBrandResolver()` resolves brand domains in parallel with NeedSet.
+     - manufacturer auto-promotion happens here when enabled.
+4. Orchestrator convergence glue (between stages 01+02 and Stage 03):
+   - Apply brand promotions to `categoryConfig` (sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry). The stage returns pure data; the orchestrator owns the mutation.
+   - `resolveJobIdentity(job)` builds `variables` object (`brand`, `model`, `variant`, `category`).
+   - Normalize `missingFields` from `fieldOrder` and provenance.
+   - `loadLearningStoreHintsForRun()` loads learning artifacts from storage.
+   - `mergeLearningStoreHints()` produces `enrichedLexicon`.
+   - `resolveSearchProfileCaps(config)` produces `searchProfileCaps`.
+   - Build `identityLock` from `job.identityLock` or `job` fields (`brand`, `model`, `variant`, `productId`).
+   - These feed Stage 03 Search Profile, Stage 04 Search Planner, and several downstream stages.
+   - This is inline orchestrator logic, not a separate stage module.
+   - See `03-pipeline-context.json` for the full accumulated state at this convergence point.
 5. Stage 03 Search Profile:
    - `runSearchProfile()` receives `seedStatus` and `focusGroups` from NeedSet.
    - `buildSearchProfile()` calls `determineQueryModes()` to decide which tiers fire, then runs `buildTier1Queries`, `buildTier2Queries`, `buildTier3Queries` as appropriate. Fully deterministic, no LLM.
@@ -98,9 +121,7 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
    - `executeSearchQueries()` runs internal-first lookup, frontier reuse, live provider search, and plan-only fallback.
 10. Stage 07 SERP Triage:
    - `processDiscoveryResults()` performs deterministic domain classification.
-   - then either:
-     - uses the LLM selector path, or
-     - uses deterministic soft-label/lane/quota selection plus optional rerank annotation.
+   - LLM selector path selects URLs (selector is the only triage path).
 11. Attach `seed_search_plan_output` to the discovery result when Schema 4 exists.
 12. Stage 08 Domain Classifier:
    - `runDomainClassifier()` enqueues approved URLs and seeds candidate URLs.
@@ -256,11 +277,22 @@ Seed-phase carry-through:
 - Stage 07 uses the selector path only when `serpSelectorEnabled=true` and a triage route key exists; otherwise it falls back to deterministic triage.
 - `serp_triage_completed` is only guaranteed on the reranker path. Selector-only runs still surface as `serp_triage` LLM calls through worker telemetry.
 
-## Learning loop
+## Feedback loops
 
-Bootstrap readback:
-- `loadLearningStoreHintsForRun()` is best-effort and only when `selfImproveEnabled=true`.
-- runtime discovery reads `_learning/{category}/field_lexicon.json`, `query_templates.json`, and `field_yield.json`.
+Two separate feedback mechanisms serve different purposes:
 
-Finalization writeback:
-- `persistSelfImproveLearningStores()` only writes when `selfImproveEnabled=true` and there are accepted updates.
+### Per-run feedback (primary planning signals)
+
+- **`previousFieldHistories`** — per-field retry counts, `domains_tried`, `content_types_tried`, `query_modes_tried_for_key`. Built by `buildFieldHistories()` at finalization, passed via `roundContext` to the next round's `computeNeedSet()`. Drives `repeat_count` accumulation, group exhaustion detection, and progressive Tier 3 enrichment.
+- **`queryExecutionHistory`** — per-query completion state with `tier`, `group_key`, `normalized_key`, `status`, `completed_at_ms`. Built from `frontierDb.buildQueryExecutionHistory(productId)` before NeedSet. Drives seed completion, `group_query_count`, and budget-aware `tier_allocation`.
+
+These are per-product, per-run, and reset between runs. They are the signals NeedSet and Search Planning Context use for all tier/phase/exhaustion decisions.
+
+### Cross-product category learning (query generation only)
+
+- **Bootstrap**: `loadLearningStoreHintsForRun()` reads from SQLite (`_learning/{category}/spec.sqlite`) when `selfImproveEnabled=true`. `loadLearningArtifacts()` reads `field_lexicon.json`, `query_templates.json`, `field_yield.json`.
+- **Consumed by**: Search Profile (Stage 03) only — `learnedQueries.templates_by_field` and `templates_by_brand` inject learned query templates. `enrichedLexicon` merges learning hints into the field lexicon. `fieldYieldByDomain` optionally informs domain-aware query generation.
+- **Not consumed by**: NeedSet planner (`runNeedSet()` passes `learning: null` into `buildSearchPlanningContext()`), Search Planner LLM, or SERP triage.
+- **Finalization writeback**: `persistSelfImproveLearningStores()` writes domain/field yield, URL memory, field anchors, and component lexicon to SQLite when `selfImproveEnabled=true` and there are accepted updates.
+
+Category learning captures cross-product patterns (e.g., "for mice, sensor DPI is found on spec sheets") that accumulate over time with configurable decay. It influences which query templates Search Profile generates, but does not influence NeedSet's tier allocation or group exhaustion logic.

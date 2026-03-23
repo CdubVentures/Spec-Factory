@@ -1,6 +1,6 @@
 // Post-execution result processing extracted from searchDiscovery.js.
 // Takes raw search results and produces the final discovery output:
-// SERP dedup → hard-drop filter → LLM SERP selector → reject audit →
+// hard-drop filter → URL normalization → LLM SERP selector → reject audit →
 // trace enrichment → artifact writing → return value.
 
 import { resolvePhaseModel } from '../../../core/llm/client/routing.js';
@@ -11,7 +11,6 @@ import {
   isDeniedHost,
   resolveTierForHost,
 } from '../../../categories/loader.js';
-import { dedupeSerpResults } from '../search/serpDedupe.js';
 import {
   normalizeHost,
   toArray,
@@ -51,14 +50,6 @@ export async function processDiscoveryResults({
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
-  const { deduped: dedupedResults, stats: dedupeStats } = dedupeSerpResults(rawResults);
-  logger?.info?.('discovery_serp_deduped', {
-    total_input: dedupeStats.total_input,
-    total_output: dedupeStats.total_output,
-    duplicates_removed: dedupeStats.duplicates_removed,
-    providers_seen: dedupeStats.providers_seen
-  });
-
   const byUrl = new Map();
   const queryMetaByQuery = new Map(
     toArray(searchProfilePlanned?.query_rows).map((row) => [String(row?.query || '').trim(), row || {}])
@@ -116,7 +107,7 @@ export async function processDiscoveryResults({
 
   // ── Phase 2: Hard-drop filter (replaces inline non-HTTPS/denied/cooldown checks) ──
   const { survivors: hardDropSurvivors, hardDrops } = applyHardDropFilter({
-    dedupedResults,
+    dedupedResults: rawResults,
     categoryConfig,
     frontierDb,
     identityLock,
@@ -132,6 +123,7 @@ export async function processDiscoveryResults({
   }
 
   // Build candidate rows from survivors (classify + trace, no semantic kills)
+  let canonMergeCount = 0;
   for (const raw of hardDropSurvivors) {
     try {
       const parsed = new URL(raw.url);
@@ -198,6 +190,7 @@ export async function processDiscoveryResults({
           cross_provider_count: providerList.length
         });
       } else {
+        canonMergeCount++;
         const existing = byUrl.get(canonical);
         existing.seen_by_providers = uniqueTokens([...(existing.seen_by_providers || []), ...providerList], 8);
         existing.seen_in_queries = uniqueTokens([...(existing.seen_in_queries || []), ...queryList], 20);
@@ -270,6 +263,7 @@ export async function processDiscoveryResults({
     categoryConfig,
     discoveryCap,
     serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
+    domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
 
@@ -308,6 +302,7 @@ export async function processDiscoveryResults({
   });
 
   const discovered = selected;
+  const candidateRowsFinal = [...selected, ...notSelected];
 
   // ── Phase 7: Reject audit ──
   const auditSamples = sampleRejectAudit({ hardDrops, notSelected });
@@ -323,7 +318,7 @@ export async function processDiscoveryResults({
         selected_urls: discovered.slice(0, 80).map((row) => ({
           url: row.url,
           host: row.host,
-          tier: row.tierName || row.tier_name || '',
+          tier: row.tierName || '',
           primary_lane: row.primary_lane || null,
           reason: row.triage_disposition || ''
         }))
@@ -337,8 +332,8 @@ export async function processDiscoveryResults({
     });
   }
   logger?.info?.('discovery_results_reranked', {
-    discovered_count: discovered.length,
-    approved_count: discovered.filter((item) => item.approved_domain || item.approvedDomain).length
+    discovered_count: candidateRowsFinal.length,
+    approved_count: discovered.filter((item) => item.approvedDomain).length
   });
 
   // WHY: Emit serp_selector_completed so the bridge handler populates
@@ -348,30 +343,64 @@ export async function processDiscoveryResults({
     query: '',
     kept_count: selected.length,
     dropped_count: notSelected.length,
-    candidates: [...candidateMap.entries()].slice(0, 120).map(([id, orig]) => {
-      const isKept = keepIdSet.has(id);
-      const enriched = isKept ? selected.find((r) => r.url === orig.url) : null;
-      return {
-        url: String(orig.url || '').trim(),
-        title: String(orig.title || '').trim(),
-        domain: String(orig.host || '').trim(),
-        snippet: String(orig.snippet || '').slice(0, 260),
-        score: enriched?.score || 0,
-        decision: isKept ? 'keep' : 'drop',
-        rationale: isKept ? 'llm_selected' : 'not_selected',
-        score_components: { base_relevance: enriched?.score || 0, tier_boost: 0, identity_match: 0, penalties: 0 },
+    funnel: {
+      raw_input: rawResults.length,
+      hard_drop_count: hardDrops.length,
+      candidates_after_hard_drop: hardDropSurvivors.length,
+      canon_merge_count: canonMergeCount,
+      candidates_classified: candidateRows.length,
+      candidates_sent_to_llm: selectorInput.candidates.length,
+      overflow_capped: overflowRows.length,
+      llm_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
+      llm_applied: validation.valid,
+    },
+    candidates: [
+      ...[...candidateMap.entries()].slice(0, 120).map(([id, orig]) => {
+        const isKept = keepIdSet.has(id);
+        const enriched = isKept ? selected.find((r) => r.url === orig.url) : null;
+        return {
+          url: String(orig.url || '').trim(),
+          title: String(orig.title || '').trim(),
+          domain: String(orig.host || '').trim(),
+          snippet: String(orig.snippet || '').slice(0, 260),
+          score: enriched?.score || 0,
+          decision: isKept ? 'keep' : 'drop',
+          rationale: isKept ? 'llm_selected' : 'not_selected',
+          score_components: { base_relevance: enriched?.score || 0, tier_boost: 0, identity_match: 0, penalties: 0 },
+          role: '',
+          identity_prelim: enriched?.identity_prelim || 'uncertain',
+          host_trust_class: enriched?.host_trust_class || 'unknown',
+          primary_lane: enriched?.primary_lane || null,
+          triage_disposition: enriched?.triage_disposition || 'fetch_low',
+          doc_kind_guess: enriched?.doc_kind_guess || 'unknown',
+          approval_bucket: isKept ? 'approved' : '',
+        };
+      }),
+      ...hardDrops.slice(0, 60).map((drop) => ({
+        url: String(drop.url || '').trim(),
+        title: String(drop.title || '').trim(),
+        domain: String(drop.host || drop.domain || '').trim(),
+        snippet: String(drop.snippet || '').slice(0, 260),
+        score: 0,
+        decision: 'hard_drop',
+        rationale: drop.hard_drop_reason || 'hard_drop',
+        score_components: { base_relevance: 0, tier_boost: 0, identity_match: 0, penalties: 0 },
         role: '',
-        identity_prelim: enriched?.identity_prelim || 'uncertain',
-        host_trust_class: enriched?.host_trust_class || 'unknown',
-        primary_lane: enriched?.primary_lane || null,
-        triage_disposition: enriched?.triage_disposition || 'fetch_low',
-        doc_kind_guess: enriched?.doc_kind_guess || 'unknown',
-        approval_bucket: isKept ? 'approved' : '',
-      };
-    }),
+        identity_prelim: '',
+        host_trust_class: '',
+        primary_lane: null,
+        triage_disposition: drop.hard_drop_reason || 'hard_drop',
+        doc_kind_guess: '',
+        approval_bucket: '',
+      })),
+    ],
   });
 
   const selectedUrls = discovered.map((item) => item.url);
+  const approvedUrls = [...selectedUrls];
+  const candidateUrls = candidateRowsFinal
+    .map((item) => String(item?.url || '').trim())
+    .filter(Boolean);
   const queryAttemptStats = buildQueryAttemptStats(searchAttempts);
   const attemptMap = new Map(queryAttemptStats.map((row) => [row.query, row]));
   const queryRowsEnriched = toArray(searchProfilePlanned.query_rows).map((row) => {
@@ -408,8 +437,8 @@ export async function processDiscoveryResults({
     trace.tier_guess = Number.isFinite(Number(candidateRow.tier))
       ? Number(candidateRow.tier)
       : (Number.isFinite(Number(trace.tier_guess)) ? Number(trace.tier_guess) : null);
-    trace.tier_name_guess = String(candidateRow.tier_name || candidateRow.tierName || trace.tier_name_guess || '').trim();
-    trace.approved_domain = Boolean(candidateRow.approved_domain || candidateRow.approvedDomain || trace.approved_domain);
+    trace.tier_name_guess = String(candidateRow.tierName || trace.tier_name_guess || '').trim();
+    trace.approved_domain = Boolean(candidateRow.approvedDomain || trace.approved_domain);
     trace.doc_kind_guess = String(candidateRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
     trace.triage_score = Number(candidateRow.score || 0);
     trace.triage_reason = String(candidateRow.triage_disposition || '').trim();
@@ -524,11 +553,9 @@ export async function processDiscoveryResults({
     candidates_sent: selectorInput.candidates.length,
     urls_selected: selectedUrlSet.size,
     urls_rejected: candidateTraceRows.filter((row) => row.decision === 'rejected').length,
-    dedupe_input: dedupeStats.total_input,
-    dedupe_output: dedupeStats.total_output,
-    duplicates_removed: dedupeStats.duplicates_removed,
-    // Additive Stage 06 fields
+    raw_input: rawResults.length,
     hard_drop_count: hardDrops.length,
+    canon_merge_count: canonMergeCount,
     soft_exclude_count: notSelected.length,
     audit_trail: auditTrail,
     queries: serpQueryRows
@@ -540,7 +567,9 @@ export async function processDiscoveryResults({
     status: 'executed',
     query_rows: queryRowsEnriched,
     query_stats: queryAttemptStats,
-    discovered_count: discovered.length,
+    discovered_count: candidateRowsFinal.length,
+    approved_count: approvedUrls.length,
+    candidate_count: candidateRowsFinal.length,
     selected_count: selectedUrls.length,
     llm_query_planning: true,
     llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
@@ -597,15 +626,16 @@ export async function processDiscoveryResults({
     search_attempts: searchAttempts,
     search_journal: searchJournal,
     serp_explorer: serpExplorer,
-    discovered
+    discovered: candidateRowsFinal
   };
   const candidatePayload = {
     category: categoryConfig.category,
     productId: job.productId,
     runId,
     generated_at: new Date().toISOString(),
-    candidate_count: discovered.length,
-    candidates: discovered
+    candidate_count: candidateRowsFinal.length,
+    approved_count: approvedUrls.length,
+    candidates: candidateRowsFinal
   };
 
   await storage.writeObject(
@@ -623,7 +653,9 @@ export async function processDiscoveryResults({
     enabled: true,
     discoveryKey,
     candidatesKey,
-    candidates: discovered,
+    candidates: candidateRowsFinal,
+    approvedUrls,
+    candidateUrls,
     selectedUrls,
     queries,
     llm_queries: llmQueries,

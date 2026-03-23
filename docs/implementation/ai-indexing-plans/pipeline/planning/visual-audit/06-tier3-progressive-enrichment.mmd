@@ -1,0 +1,121 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 30, "nodeSpacing": 60, "rankSpacing": 90 }
+} }%%
+
+%% ─────────────────────────────────────────────────────────────
+%% TIER 3 PROGRESSIVE ENRICHMENT
+%% Shows how a single field's search query evolves across rounds
+%% Example: searching for "weight" on a Logitech G Pro X Superlight 2
+%% Optimized for 4K landscape (3840 x 2160)
+%% ─────────────────────────────────────────────────────────────
+
+flowchart LR
+
+  %% ── FIELD IDENTITY ──
+  FIELD(["Unresolved Field:\nweight\n\nCategory: mouse\nAvailability: always\nDifficulty: easy"])
+
+  %% ── STAGE 3a ──
+  subgraph S3A["STEP 3a — First Try (repeat_count = 0)"]
+    direction TB
+    A1["Search Profile generates:\n'Logitech G Pro X Superlight 2 weight'"]
+    A2["Search Planner LLM:\nPicks best alias combo\nfor clean first search"]
+    A3["Final query:\n'Logitech G Pro X Superlight 2 weight'"]
+    ARES{"Found\nvalue?"}
+    A1 --> A2 --> A3 --> ARES
+  end
+
+  %% ── STAGE 3b ──
+  subgraph S3B["STEP 3b — Alias Enrichment (repeat_count = 1)"]
+    direction TB
+    B0["History now shows:\nquery_count: 1\nexisting_queries: ['...weight']\ndomains_tried: []\ncontent_types_tried: []"]
+    B1["Search Profile generates:\n'... weight grams mass'\n(adds all_aliases)"]
+    B2["Search Planner LLM:\nUses DIFFERENT alias combo\nthan base query"]
+    B3["Final query:\n'Logitech G Pro X Superlight 2\nweight grams'"]
+    BRES{"Found\nvalue?"}
+    B0 --> B1 --> B2 --> B3 --> BRES
+  end
+
+  %% ── STAGE 3c ──
+  subgraph S3C["STEP 3c — Domain Hint (repeat_count = 2)"]
+    direction TB
+    C0["History now shows:\nquery_count: 2\ndomains_tried: []\ncontent_types_tried: []"]
+    C1["Search Profile generates:\n'... weight grams rtings.com'\n(adds untried domain hint)\nCumulative: aliases still present"]
+    C2["Search Planner LLM:\nPicks domain NOT in\ndomains_tried_for_key"]
+    C3["Final query:\n'Logitech G Pro X Superlight 2\nweight grams rtings.com'"]
+    CRES{"Found\nvalue?"}
+    C0 --> C1 --> C2 --> C3 --> CRES
+  end
+
+  %% ── STAGE 3d ──
+  subgraph S3D["STEP 3d — Content Type Variation (repeat_count = 3+)"]
+    direction TB
+    D0["History now shows:\nquery_count: 3+\ndomains_tried: ['rtings.com']\ncontent_types_tried: []"]
+    D1["Search Profile generates:\n'... weight teardown measured'\n(adds untried content type)\nVaries phrasing family"]
+    D2["Search Planner LLM:\nMaximum creativity\nUses untried content types\n+ untried domains\nEach query materially unique"]
+    D3["Possible queries:\n'... weight teardown measured'\n'... weight benchmark spec sheet'\n'... weight comparison review'"]
+    DRES{"Found\nvalue?"}
+    D0 --> D1 --> D2 --> D3 --> DRES
+  end
+
+  %% ── RESOLUTION ──
+  RESOLVED(["Field RESOLVED\nValue accepted\nrepeat_count frozen\nField removed from\nnormalized_key_queue"])
+
+  DIMINISH(["DIMINISHING RETURNS\nField remains unresolved\nbut each retry targets\na new angle never\npreviously tried"])
+
+  %% ── FLOW ──
+  FIELD --> S3A
+  ARES -- "No" --> S3B
+  ARES -- "Yes" --> RESOLVED
+  BRES -- "No" --> S3C
+  BRES -- "Yes" --> RESOLVED
+  CRES -- "No" --> S3D
+  CRES -- "Yes" --> RESOLVED
+  DRES -- "Yes" --> RESOLVED
+  DRES -- "No, retry\nwith different\nangles" --> DIMINISH
+  DIMINISH -. "next round:\nnew untried\ncontent type /\ndomain combo" .-> S3D
+
+  %% ── KEY INSIGHT ANNOTATION ──
+  NOTE1["KEY INSIGHT:\nEach step is CUMULATIVE\nAliases added at 3b stay\nfor all future attempts\n\nHistory tracks EXACTLY\nwhat was tried so nothing\nis ever repeated"]
+
+  %% ── STYLING ──
+  style FIELD fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style RESOLVED fill:#10b981,stroke:#059669,color:#ffffff
+  style DIMINISH fill:#94a3b8,stroke:#64748b,color:#ffffff
+  style NOTE1 fill:#f8fafc,stroke:#cbd5e1,color:#475569
+
+  style S3A fill:#dbeafe,stroke:#3b82f6,color:#1e293b
+  style S3B fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+  style S3C fill:#fef3c7,stroke:#f59e0b,color:#1e293b
+  style S3D fill:#fce7f3,stroke:#ec4899,color:#1e293b
+
+  style A1 fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style A2 fill:#60a5fa,stroke:#3b82f6,color:#1e293b
+  style A3 fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+  style ARES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style B0 fill:#a78bfa,stroke:#8b5cf6,color:#1e293b
+  style B1 fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style B2 fill:#a78bfa,stroke:#8b5cf6,color:#1e293b
+  style B3 fill:#7c3aed,stroke:#6d28d9,color:#ffffff
+  style BRES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style C0 fill:#fbbf24,stroke:#f59e0b,color:#1e293b
+  style C1 fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style C2 fill:#fbbf24,stroke:#f59e0b,color:#1e293b
+  style C3 fill:#d97706,stroke:#b45309,color:#ffffff
+  style CRES fill:#10b981,stroke:#059669,color:#ffffff
+
+  style D0 fill:#f9a8d4,stroke:#ec4899,color:#1e293b
+  style D1 fill:#ec4899,stroke:#db2777,color:#ffffff
+  style D2 fill:#f9a8d4,stroke:#ec4899,color:#1e293b
+  style D3 fill:#db2777,stroke:#be185d,color:#ffffff
+  style DRES fill:#10b981,stroke:#059669,color:#ffffff

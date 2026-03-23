@@ -1,7 +1,7 @@
 import { configInt, configBool } from '../shared/settingsAccessor.js';
 
 function screencastIntervalMs(config = {}) {
-  const requestedFps = Math.max(1, configInt(config, 'runtimeScreencastFps'));
+  const requestedFps = configInt(config, 'runtimeScreencastFps');
   const screenshotFps = Math.min(requestedFps, 2);
   return Math.max(250, Math.round(1000 / screenshotFps));
 }
@@ -120,7 +120,7 @@ export async function attachRuntimeScreencast({
       quality: configInt(config, 'runtimeScreencastQuality'),
       maxWidth: configInt(config, 'runtimeScreencastMaxWidth'),
       maxHeight: configInt(config, 'runtimeScreencastMaxHeight'),
-      everyNthFrame: Math.max(1, Math.ceil(60 / Math.max(1, configInt(config, 'runtimeScreencastFps')))),
+      everyNthFrame: Math.max(1, Math.ceil(60 / configInt(config, 'runtimeScreencastFps'))),
     });
     cdpSession.on('Page.screencastFrame', (params) => {
       try {

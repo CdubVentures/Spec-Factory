@@ -8,7 +8,9 @@ import {
   updateSourceEntry,
   removeSourceEntry,
   validateSourceEntryPatch,
+  DISCOVERY_DEFAULTS,
 } from '../sources/sourceFileService.js';
+import { SOURCE_ENTRY_DEFAULTS } from '../discovery/contracts/sourceEntryContract.js';
 
 export function registerSourceStrategyRoutes(ctx) {
   const {
@@ -53,13 +55,13 @@ export function registerSourceStrategyRoutes(ctx) {
       const entry = {
         display_name: restBody.display_name || body.host,
         tier: restBody.tier || 'tier2_lab',
-        authority: restBody.authority || 'unknown',
+        authority: restBody.authority || SOURCE_ENTRY_DEFAULTS.authority,
         base_url: restBody.base_url || `https://${body.host}`,
-        content_types: restBody.content_types || [],
-        doc_kinds: restBody.doc_kinds || [],
-        crawl_config: restBody.crawl_config || { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
-        field_coverage: restBody.field_coverage || { high: [], medium: [], low: [] },
-        discovery: bodyDiscovery || { method: 'search_first', source_type: restBody.source_type || '', search_pattern: '', priority: 50, enabled: true, notes: '' },
+        content_types: restBody.content_types || SOURCE_ENTRY_DEFAULTS.content_types,
+        doc_kinds: restBody.doc_kinds || SOURCE_ENTRY_DEFAULTS.doc_kinds,
+        crawl_config: restBody.crawl_config || SOURCE_ENTRY_DEFAULTS.crawl_config,
+        field_coverage: restBody.field_coverage || SOURCE_ENTRY_DEFAULTS.field_coverage,
+        discovery: bodyDiscovery || { ...DISCOVERY_DEFAULTS, method: 'search_first', source_type: restBody.source_type || '' },
       };
       const updated = addSourceEntry(data, sourceId, entry);
       await writeSourcesFile(root, category, updated);

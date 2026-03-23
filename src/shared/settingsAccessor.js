@@ -4,7 +4,7 @@
 
 import { RUNTIME_SETTINGS_REGISTRY } from './settingsRegistry.js';
 
-// WHY: Build lookup map once at import. Keyed by both `key` and `configKey`
+// WHY: Build lookup maps once at import. Keyed by both `key` and `configKey`
 // so consumers can use either name. Registry is the sole source of defaults.
 const REGISTRY_DEFAULTS = Object.freeze(
   Object.fromEntries(
@@ -19,6 +19,27 @@ const REGISTRY_DEFAULTS = Object.freeze(
   )
 );
 
+// WHY: Clamp maps derived from the registry's min/max declarations.
+// configInt/configFloat use these to prevent NaN and out-of-range values.
+function buildClampMap(type) {
+  return Object.freeze(
+    Object.fromEntries(
+      RUNTIME_SETTINGS_REGISTRY
+        .filter(e => e.type === type && e.min != null && e.max != null)
+        .flatMap(e => {
+          const clamp = Object.freeze({ min: e.min, max: e.max });
+          const pairs = [[e.key, clamp]];
+          const cfgKey = e.configKey || e.key;
+          if (cfgKey !== e.key) pairs.push([cfgKey, clamp]);
+          return pairs;
+        })
+    )
+  );
+}
+
+const REGISTRY_INT_CLAMPS = buildClampMap('int');
+const REGISTRY_FLOAT_CLAMPS = buildClampMap('float');
+
 const VALID_KEYS = new Set(Object.keys(REGISTRY_DEFAULTS));
 
 /**
@@ -32,18 +53,26 @@ export function configValue(config, key) {
   if (!VALID_KEYS.has(key)) {
     throw new Error(`Unknown setting key: "${key}" — not found in RUNTIME_SETTINGS_REGISTRY`);
   }
-  const val = config[key];
+  const val = config == null ? undefined : config[key];
   return val ?? REGISTRY_DEFAULTS[key];
 }
 
-/** Read a config value and coerce to integer. */
+/** Read a config value and coerce to integer, clamped to registry min/max. */
 export function configInt(config, key) {
-  return Number(configValue(config, key));
+  const raw = Number(configValue(config, key));
+  if (Number.isNaN(raw)) return REGISTRY_DEFAULTS[key];
+  const clamp = REGISTRY_INT_CLAMPS[key];
+  if (!clamp) return raw;
+  return Math.max(clamp.min, Math.min(clamp.max, raw));
 }
 
-/** Read a config value and coerce to float. */
+/** Read a config value and coerce to float, clamped to registry min/max. */
 export function configFloat(config, key) {
-  return parseFloat(String(configValue(config, key)));
+  const raw = parseFloat(String(configValue(config, key)));
+  if (Number.isNaN(raw)) return REGISTRY_DEFAULTS[key];
+  const clamp = REGISTRY_FLOAT_CLAMPS[key];
+  if (!clamp) return raw;
+  return Math.max(clamp.min, Math.min(clamp.max, raw));
 }
 
 /** Read a config value and coerce to boolean. */

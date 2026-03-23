@@ -183,7 +183,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       dynamicFetchRetryBudget: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBudget,
       dynamicFetchRetryBackoffMs: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBackoffMs,
       fetchSchedulerInternalsMapJson: SETTINGS_DEFAULTS.runtime.fetchSchedulerInternalsMapJson,
-      serpRerankerWeightMapJson: SETTINGS_DEFAULTS.runtime.serpRerankerWeightMapJson,
       preferHttpFetcher: SETTINGS_DEFAULTS.runtime.preferHttpFetcher,
       userAgent: SETTINGS_DEFAULTS.runtime.userAgent,
     };

@@ -83,19 +83,8 @@ interface RuntimeSettingsFlowCardProps {
   suppressInlineHeaderControls?: boolean;
 }
 
-// Local query contract anchor for runtime-flow dependency-hygiene guards.
-interface RuntimeSettingsLlmConfigResponse {
-  model_options?: string[];
-  token_defaults?: {
-    plan?: number;
-  };
-  token_presets?: number[];
-  model_token_profiles?: Array<{
-    model: string;
-    default_output_tokens?: number;
-    max_output_tokens?: number;
-  }>;
-}
+// WHY: Single canonical contract — no local duplicates.
+import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
 export function RuntimeSettingsFlowCard({
   actionPortalTarget = null,
@@ -297,19 +286,6 @@ export function RuntimeSettingsFlowCard({
         showInlineHeaderControls={!actionPortalTarget && !suppressInlineHeaderControls}
         runtimeHeaderControls={runtimeHeaderControls}
       />
-      {/* Compatibility anchors for characterization wiring tests (logic extracted to seam files):
-          onClick={() => setActiveStep(step.id)}
-          title={isActive ? 'Selected step' : enabled ? 'Enabled by master toggle' : 'Disabled by master toggle'}
-          disabled={!runtimeSettingsReady || runtimeSettingsSaving || runtimeAutoSaveEnabled}
-          onClick={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
-          {runtimeAutoSaveEnabled ? 'Auto-Save On' : 'Auto-Save Off'}
-          `Unsaved changes queued for auto save (${runtimeAutoSaveDelaySeconds}s).`
-          activeRuntimeSubSteps.length > 1
-          data-runtime-substep={subStep.id}
-          onClick={() => scrollToRuntimeSubStep(subStep.id)}
-          interface RuntimeSettingsLlmConfigResponse {
-      */}
-
       <div className={`grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-[280px_minmax(0,1fr)] ${panelDisabledCls}`}>
         <RuntimeFlowStepSidebar
           runtimeSteps={RUNTIME_STEPS}

@@ -437,7 +437,7 @@ test('buildRunSummaryPayload falls back to legacy helper root and excludes helpe
   ]);
 });
 
-test('buildRunSummaryPayload preserves disabled llm defaults and rounds numeric summary fields', () => {
+test('buildRunSummaryPayload preserves disabled llm metadata and rounds numeric summary fields', () => {
   const summary = buildRunSummaryPayload({
     productId: 'mouse-3',
     runId: 'run-3',
@@ -502,9 +502,12 @@ test('buildRunSummaryPayload preserves disabled llm defaults and rounds numeric 
   });
 
   assert.equal(summary.llm.enabled, false);
-  assert.equal(summary.llm.model_extract, null);
-  assert.equal(summary.llm.model_plan, null);
-  assert.equal(summary.llm.model_validate, null);
+  assert.equal(typeof summary.llm.model_extract, 'string');
+  assert.equal(summary.llm.model_extract.length > 0, true);
+  assert.equal(typeof summary.llm.model_plan, 'string');
+  assert.equal(summary.llm.model_plan.length > 0, true);
+  assert.equal(typeof summary.llm.model_validate, 'string');
+  assert.equal(summary.llm.model_validate.length > 0, true);
   assert.equal(summary.llm.cost_usd_run, 0.98765432);
   assert.equal(summary.indexing_resume.state_age_hours, 1.24);
   assert.equal(summary.parser_health.average_health_score, 0.123457);

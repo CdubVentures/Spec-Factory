@@ -13,7 +13,7 @@ import { useSettingsAutoSaveEffect } from '../../pipeline-settings/state/useSett
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
 import type { RuntimeSettings } from '../../pipeline-settings';
 import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/llmPolicyApi';
-import type { LlmPolicy, LlmPolicyGroup } from '../types/llmPolicyTypes';
+import type { LlmPolicy, LlmPolicyGroup } from './llmPolicyAdapter.generated';
 import { flattenLlmPolicy, flattenPolicyGroup } from './llmPolicyAdapter';
 import { assembleLlmPolicyFromFlat } from './llmPolicyDefaults';
 import { validateModelExistence } from './llmModelValidation';

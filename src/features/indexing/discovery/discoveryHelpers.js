@@ -4,7 +4,9 @@
  * Extracted from searchDiscovery.js (Phase 4A of structural decomposition).
  * Contains 10 helper functions: 6 pure, 4 with I/O (storage reads/writes).
  */
+import { extractRootDomain } from '../../../utils/common.js';
 import { toPosixKey } from '../../../s3/storage.js';
+import { normalizeHost } from './discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
 // runWithConcurrency — generic concurrency pool
@@ -241,4 +243,41 @@ export function resolveEnabledSourceEntries({
       discovery: normalizeSourceEntryDiscovery(entry.discovery),
     }))
     .filter((entry) => entry.discovery.enabled !== false);
+}
+
+// ---------------------------------------------------------------------------
+// ensureCategorySourceLookups — hydrates derived host lookup structures
+// ---------------------------------------------------------------------------
+
+export function ensureCategorySourceLookups(categoryConfig = {}) {
+  const sourceHosts = Array.isArray(categoryConfig?.sourceHosts)
+    ? [...categoryConfig.sourceHosts]
+    : [];
+  const sourceHostMap = categoryConfig?.sourceHostMap instanceof Map
+    ? new Map(categoryConfig.sourceHostMap)
+    : new Map();
+  for (const row of sourceHosts) {
+    const host = normalizeHost(row?.host);
+    if (!host || sourceHostMap.has(host)) continue;
+    sourceHostMap.set(host, { ...row, host });
+  }
+
+  const approvedRootDomains = categoryConfig?.approvedRootDomains instanceof Set
+    ? new Set(categoryConfig.approvedRootDomains)
+    : new Set();
+  for (const row of sourceHosts) {
+    const host = normalizeHost(row?.host);
+    if (!host) continue;
+    approvedRootDomains.add(extractRootDomain(host));
+  }
+
+  return {
+    ...categoryConfig,
+    sourceHosts,
+    sourceHostMap,
+    approvedRootDomains,
+    sourceRegistry: categoryConfig?.sourceRegistry && typeof categoryConfig.sourceRegistry === 'object'
+      ? categoryConfig.sourceRegistry
+      : {},
+  };
 }

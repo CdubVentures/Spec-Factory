@@ -1,78 +1,23 @@
-// WHY: Single source of truth for the LlmPolicy composite shape.
+// WHY: O(1) Feature Scaling — all LLM policy structure is derived from the registry's
+// policyGroup/policyField metadata. Adding a new LLM setting = add one registry entry.
 // assembleLlmPolicy converts flat config keys → structured policy.
 // disassembleLlmPolicy converts structured policy → flat config keys.
 // The round-trip invariant: disassemble(assemble(flat)) === flat for all LLM keys.
 
-// WHY: Canonical mapping from composite group.field → flat config key.
-// Adding a new LLM setting = add one entry here + one registry entry.
-export const LLM_POLICY_GROUPS = Object.freeze({
-  models: Object.freeze({
-    plan: 'llmModelPlan',
-    reasoning: 'llmModelReasoning',
-    planFallback: 'llmPlanFallbackModel',
-    reasoningFallback: 'llmReasoningFallbackModel',
-  }),
-  provider: Object.freeze({
-    id: 'llmProvider',
-    baseUrl: 'llmBaseUrl',
-    planProvider: 'llmPlanProvider',
-    planBaseUrl: 'llmPlanBaseUrl',
-  }),
-  apiKeys: Object.freeze({
-    gemini: 'geminiApiKey',
-    deepseek: 'deepseekApiKey',
-    anthropic: 'anthropicApiKey',
-    openai: 'openaiApiKey',
-    plan: 'llmPlanApiKey',
-  }),
-  tokens: Object.freeze({
-    maxOutput: 'llmMaxOutputTokens',
-    maxTokens: 'llmMaxTokens',
-    plan: 'llmMaxOutputTokensPlan',
-    reasoning: 'llmMaxOutputTokensReasoning',
-    planFallback: 'llmMaxOutputTokensPlanFallback',
-    reasoningFallback: 'llmMaxOutputTokensReasoningFallback',
-  }),
-  reasoning: Object.freeze({
-    enabled: 'llmPlanUseReasoning',
-    budget: 'llmReasoningBudget',
-    mode: 'llmReasoningMode',
-  }),
-  extraction: Object.freeze({
-    cacheDir: 'llmExtractionCacheDir',
-    cacheTtlMs: 'llmExtractionCacheTtlMs',
-    maxSnippetChars: 'llmExtractMaxSnippetChars',
-    maxSnippetsPerBatch: 'llmExtractMaxSnippetsPerBatch',
-    skipLowSignal: 'llmExtractSkipLowSignal',
-    maxBatchesPerProduct: 'llmMaxBatchesPerProduct',
-    maxCallsPerProductTotal: 'llmMaxCallsPerProductTotal',
-    maxCallsPerRound: 'llmMaxCallsPerRound',
-    maxEvidenceChars: 'llmMaxEvidenceChars',
-  }),
-  budget: Object.freeze({
-    monthlyUsd: 'llmMonthlyBudgetUsd',
-    perProductUsd: 'llmPerProductBudgetUsd',
-    costInputPer1M: 'llmCostInputPer1M',
-    costOutputPer1M: 'llmCostOutputPer1M',
-    costCachedInputPer1M: 'llmCostCachedInputPer1M',
-  }),
-  verify: Object.freeze({
-    mode: 'llmVerifyMode',
-    sampleRate: 'llmVerifySampleRate',
-  }),
-});
+import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import {
+  deriveLlmPolicyGroupMap,
+  deriveLlmPolicyTopLevelKeys,
+  deriveLlmPolicyJsonKeys,
+  deriveLlmPolicyFlatKeyToEnv,
+  deriveLlmPolicyDefaults,
+} from '../../shared/settingsRegistryDerivations.js';
 
-// WHY: Top-level scalar keys that don't belong to a nested group.
-const TOP_LEVEL_KEYS = Object.freeze({
-  timeoutMs: 'llmTimeoutMs',
-  writeSummary: 'llmWriteSummary',
-});
-
-// WHY: JSON-serialized fields that become parsed objects in the composite.
-const JSON_KEYS = Object.freeze({
-  phaseOverrides: 'llmPhaseOverridesJson',
-  providerRegistry: 'llmProviderRegistryJson',
-});
+// WHY: Derived from policyGroup/policyField metadata in settingsRegistry.js.
+export const LLM_POLICY_GROUPS = deriveLlmPolicyGroupMap(RUNTIME_SETTINGS_REGISTRY);
+export const TOP_LEVEL_KEYS = deriveLlmPolicyTopLevelKeys(RUNTIME_SETTINGS_REGISTRY);
+export const JSON_KEYS = deriveLlmPolicyJsonKeys(RUNTIME_SETTINGS_REGISTRY);
+export const LLM_FLAT_KEY_TO_ENV = deriveLlmPolicyFlatKeyToEnv(RUNTIME_SETTINGS_REGISTRY);
 
 // WHY: Complete list of all flat keys managed by LlmPolicy, for round-trip verification.
 export const LLM_POLICY_FLAT_KEYS = Object.freeze([
@@ -80,52 +25,6 @@ export const LLM_POLICY_FLAT_KEYS = Object.freeze([
   ...Object.values(TOP_LEVEL_KEYS),
   ...Object.values(JSON_KEYS),
 ]);
-
-// WHY: Flat config key → env var name mapping for processStartLaunchPlan.
-// Only includes keys that have corresponding env vars (empty envKey = not env-settable).
-export const LLM_FLAT_KEY_TO_ENV = Object.freeze({
-  llmModelPlan: 'LLM_MODEL_PLAN',
-  llmModelReasoning: 'LLM_MODEL_REASONING',
-  llmPlanFallbackModel: 'LLM_PLAN_FALLBACK_MODEL',
-  llmReasoningFallbackModel: 'LLM_REASONING_FALLBACK_MODEL',
-  llmProvider: 'LLM_PROVIDER',
-  llmBaseUrl: 'LLM_BASE_URL',
-  llmPlanProvider: 'LLM_PLAN_PROVIDER',
-  llmPlanBaseUrl: 'LLM_PLAN_BASE_URL',
-  geminiApiKey: 'GEMINI_API_KEY',
-  deepseekApiKey: 'DEEPSEEK_API_KEY',
-  anthropicApiKey: 'ANTHROPIC_API_KEY',
-  openaiApiKey: 'OPENAI_API_KEY',
-  llmPlanApiKey: 'LLM_PLAN_API_KEY',
-  llmMaxOutputTokens: 'LLM_MAX_OUTPUT_TOKENS',
-  llmMaxTokens: 'LLM_MAX_TOKENS',
-  llmMaxOutputTokensPlan: 'LLM_MAX_OUTPUT_TOKENS_PLAN',
-  llmMaxOutputTokensReasoning: 'LLM_MAX_OUTPUT_TOKENS_REASONING',
-  llmMaxOutputTokensPlanFallback: 'LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK',
-  llmMaxOutputTokensReasoningFallback: 'LLM_MAX_OUTPUT_TOKENS_REASONING_FALLBACK',
-  llmPlanUseReasoning: 'LLM_PLAN_USE_REASONING',
-  llmReasoningBudget: 'LLM_REASONING_BUDGET',
-  llmReasoningMode: 'LLM_REASONING_MODE',
-  llmExtractionCacheDir: 'LLM_EXTRACTION_CACHE_DIR',
-  llmExtractionCacheTtlMs: 'LLM_EXTRACTION_CACHE_TTL_MS',
-  llmExtractMaxSnippetChars: 'LLM_EXTRACT_MAX_SNIPPET_CHARS',
-  llmExtractMaxSnippetsPerBatch: 'LLM_EXTRACT_MAX_SNIPPETS_PER_BATCH',
-  llmExtractSkipLowSignal: 'LLM_EXTRACT_SKIP_LOW_SIGNAL',
-  llmMaxBatchesPerProduct: 'LLM_MAX_BATCHES_PER_PRODUCT',
-  llmMaxCallsPerProductTotal: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL',
-  llmMaxCallsPerRound: 'LLM_MAX_CALLS_PER_ROUND',
-  llmMaxEvidenceChars: 'LLM_MAX_EVIDENCE_CHARS',
-  llmMonthlyBudgetUsd: 'LLM_MONTHLY_BUDGET_USD',
-  llmPerProductBudgetUsd: 'LLM_PER_PRODUCT_BUDGET_USD',
-  llmCostInputPer1M: 'LLM_COST_INPUT_PER_1M',
-  llmCostOutputPer1M: 'LLM_COST_OUTPUT_PER_1M',
-  llmCostCachedInputPer1M: 'LLM_COST_CACHED_INPUT_PER_1M',
-  llmVerifyMode: 'LLM_VERIFY_MODE',
-  llmVerifySampleRate: 'LLM_VERIFY_SAMPLE_RATE',
-  llmTimeoutMs: 'LLM_TIMEOUT_MS',
-  llmWriteSummary: 'LLM_WRITE_SUMMARY',
-  // JSON blobs have no env var equivalent (they're persisted-only)
-});
 
 function safeJsonParse(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -218,43 +117,8 @@ export function disassembleLlmPolicy(policy = {}) {
 
 /**
  * Default LlmPolicy assembled from registry defaults.
+ * WHY: Derived from policyGroup entries — no hand-maintained default values.
  */
-export const DEFAULT_LLM_POLICY = Object.freeze(assembleLlmPolicy({
-  llmModelPlan: 'gemini-2.5-flash',
-  llmModelReasoning: 'deepseek-reasoner',
-  llmPlanFallbackModel: 'deepseek-chat',
-  llmReasoningFallbackModel: 'gemini-2.5-pro',
-  llmProvider: 'gemini',
-  llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-  llmPlanProvider: 'gemini',
-  llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-  llmMaxOutputTokens: 1400,
-  llmMaxTokens: 16384,
-  llmMaxOutputTokensPlan: 4096,
-  llmMaxOutputTokensReasoning: 4096,
-  llmMaxOutputTokensPlanFallback: 2048,
-  llmMaxOutputTokensReasoningFallback: 2048,
-  llmPlanUseReasoning: false,
-  llmReasoningBudget: 32768,
-  llmReasoningMode: true,
-  llmPhaseOverridesJson: '{}',
-  llmProviderRegistryJson: '[]',
-  llmExtractionCacheDir: '.specfactory_tmp/llm_cache',
-  llmExtractionCacheTtlMs: 604800000,
-  llmExtractMaxSnippetChars: 700,
-  llmExtractMaxSnippetsPerBatch: 4,
-  llmExtractSkipLowSignal: true,
-  llmMaxBatchesPerProduct: 4,
-  llmMaxCallsPerProductTotal: 14,
-  llmMaxCallsPerRound: 5,
-  llmMaxEvidenceChars: 60000,
-  llmMonthlyBudgetUsd: 300,
-  llmPerProductBudgetUsd: 0.35,
-  llmCostInputPer1M: 1.25,
-  llmCostOutputPer1M: 10,
-  llmCostCachedInputPer1M: 0.125,
-  llmVerifyMode: true,
-  llmVerifySampleRate: 25,
-  llmTimeoutMs: 30000,
-  llmWriteSummary: false,
-}));
+export const DEFAULT_LLM_POLICY = Object.freeze(
+  assembleLlmPolicy(deriveLlmPolicyDefaults(RUNTIME_SETTINGS_REGISTRY))
+);

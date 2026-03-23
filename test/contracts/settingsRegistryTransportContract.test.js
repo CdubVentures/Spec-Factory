@@ -80,12 +80,14 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
       'googleSearchProxyUrlsJson',
       'llmPhaseOverridesJson',
       'llmProviderRegistryJson',
-      'parsingConfidenceBaseMapJson',
-      'daemonGracefulShutdownTimeoutMs',
+      'localOutputRoot',
     ]);
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       if (entry.envKey === '') {
-        ok(KNOWN_NO_ENV.has(entry.key), `${entry.key} has empty envKey but is not in known no-env set`);
+        ok(
+          entry.defaultsOnly || entry.routeOnly || KNOWN_NO_ENV.has(entry.key),
+          `${entry.key} has empty envKey but is not defaultsOnly/routeOnly or in the known no-env set`
+        );
       }
     }
   });

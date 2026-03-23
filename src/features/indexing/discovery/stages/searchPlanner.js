@@ -38,17 +38,34 @@ export async function runSearchPlanner({
     logger,
   });
 
-  if (result.source === 'llm' && result.rows.length > 0) {
-    const llmCount = result.rows.filter((r) => String(r.hint_source || '').endsWith('_llm')).length;
-    logger?.info?.('search_plan_generated', {
-      pass_index: 0,
-      pass_name: 'enhance',
-      source: result.source,
-      total_rows: result.rows.length,
-      llm_enhanced_count: llmCount,
-      mode: 'tier_enhance',
-    });
-  }
+  const llmCount = result.rows.filter((r) => String(r.hint_source || '').endsWith('_llm')).length;
+  logger?.info?.('search_plan_generated', {
+    pass_index: 0,
+    pass_name: 'enhance',
+    source: result.source,
+    total_rows: result.rows.length,
+    llm_enhanced_count: llmCount,
+    mode: 'tier_enhance',
+    queries_generated: result.rows.map((r) => String(r.query || '').trim()).filter(Boolean),
+    query_target_map: Object.fromEntries(
+      result.rows
+        .filter((r) => r.query && Array.isArray(r.target_fields) && r.target_fields.length > 0)
+        .map((r) => [String(r.query).trim(), r.target_fields])
+    ),
+    missing_critical_fields: toArray(missingFields).slice(0, 30),
+    stop_condition: result.source === 'llm' ? 'planner_complete' : 'deterministic_fallback',
+    plan_rationale: result.source === 'llm'
+      ? `LLM enhanced ${llmCount} of ${result.rows.length} queries`
+      : `Deterministic fallback — ${result.rows.length} queries unchanged`,
+    enhancement_rows: result.rows.map((r) => ({
+      query: String(r.query || '').trim(),
+      original_query: String(r.original_query || r.query || '').trim(),
+      hint_source: String(r.hint_source || '').trim(),
+      tier: String(r.tier || '').trim(),
+      group_key: String(r.group_key || '').trim(),
+      target_fields: toArray(r.target_fields),
+    })),
+  });
 
   return { enhancedRows: result.rows, source: result.source };
 }

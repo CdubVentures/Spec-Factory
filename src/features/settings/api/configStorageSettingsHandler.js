@@ -8,6 +8,10 @@ import {
   validateRunDataStorageSettings,
 } from '../../../api/services/runDataRelocationService.js';
 import { snapshotStorageSettings } from '../../settings-authority/index.js';
+import { STORAGE_SETTINGS_REGISTRY } from '../../../shared/settingsRegistry.js';
+import { deriveStorageMutableKeys, deriveStorageClearFlags } from '../../../shared/settingsRegistryDerivations.js';
+
+const STORAGE_CLEAR_FLAGS = deriveStorageClearFlags(STORAGE_SETTINGS_REGISTRY);
 
 export function createStorageSettingsHandler({
   jsonRes,
@@ -57,29 +61,20 @@ export function createStorageSettingsHandler({
     // autosave guard needs POST to work. Both methods do the same thing.
     if (method === 'PUT' || method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
-      // WHY: clearS3SecretAccessKey and clearS3SessionToken are sent by the
-      // GUI to explicitly clear stored secrets. They must be in the allowlist
-      // so they aren't rejected as unknown_key.
-      const storageMutableKeys = [
-        'enabled',
-        'destinationType',
-        'localDirectory',
-        'awsRegion',
-        's3Bucket',
-        's3Prefix',
-        's3AccessKeyId',
-        's3SecretAccessKey',
-        's3SessionToken',
-        'clearS3SecretAccessKey',
-        'clearS3SessionToken',
-      ];
+      // WHY: Derived from STORAGE_SETTINGS_REGISTRY — O(1) Feature Scaling.
+      // Includes mutable keys + clear flags for secret fields.
+      const storageMutableKeys = deriveStorageMutableKeys(STORAGE_SETTINGS_REGISTRY);
       const STORAGE_ALLOWED = new Set(storageMutableKeys);
       const rejected = {};
       for (const key of Object.keys(body || {})) {
         if (!STORAGE_ALLOWED.has(key)) rejected[key] = 'unknown_key';
       }
       const currentStorageSnapshot = snapshotStorageSettings(runDataStorageState);
-      const normalized = normalizeRunDataStorageSettings(body, currentStorageSnapshot);
+      const normalized = normalizeRunDataStorageSettings(
+        body,
+        currentStorageSnapshot,
+        { preserveExplicitVolatileLocalDirectory: true },
+      );
       const validationError = validateRunDataStorageSettings(normalized);
       if (validationError) {
         return jsonRes(res, 400, { error: validationError });
@@ -93,13 +88,9 @@ export function createStorageSettingsHandler({
         }
       }
       // WHY: Handle explicit secret-clearing flags from the GUI.
-      // When the user clicks "clear" on a secret field, the GUI sends
-      // clearS3SecretAccessKey: true or clearS3SessionToken: true.
-      if (body?.clearS3SecretAccessKey === true) {
-        normalized.s3SecretAccessKey = '';
-      }
-      if (body?.clearS3SessionToken === true) {
-        normalized.s3SessionToken = '';
+      // Derived from registry clearFlag metadata — O(1) for new secret fields.
+      for (const { clearFlag, key } of STORAGE_CLEAR_FLAGS) {
+        if (body?.[clearFlag] === true) normalized[key] = '';
       }
       const normalizedStorageSnapshot = snapshotStorageSettings({
         ...currentStorageSnapshot,

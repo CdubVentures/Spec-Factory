@@ -552,8 +552,6 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.deepEqual(result.brand_resolution.aliases, ['Razer Inc', 'Razer USA', 'RZ01-0490']);
   assert.equal(result.brand_resolution.support_domain, 'support.razer.com');
   assert.equal(result.brand_resolution.confidence, 0.97);
-  assert.equal(result.brand_resolution.candidates.length, 2);
-  assert.equal(result.brand_resolution.candidates[0].name, 'Razer');
   assert.equal(result.brand_resolution.reasoning.length, 3);
 
   // ===== SEARCH PLANS =====

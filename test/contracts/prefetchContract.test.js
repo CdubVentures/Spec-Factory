@@ -13,6 +13,7 @@ import {
   SERP_TRIAGE_CANDIDATE_SHAPE,
   SERP_TRIAGE_ENVELOPE_SHAPE,
   SEARCH_PROFILE_SHAPE,
+  SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE,
 } from '../../src/features/indexing/api/contracts/prefetchContract.js';
 
 describe('prefetchContract', () => {
@@ -44,6 +45,11 @@ describe('prefetchContract', () => {
     it('discovery_planner prefix → search_planner', () => {
       strictEqual(classifyPrefetchLlmReason('discovery_planner'), 'search_planner');
       strictEqual(classifyPrefetchLlmReason('discovery_planner_v2'), 'search_planner');
+    });
+
+    it('search_planner_enhance prefix → search_planner', () => {
+      strictEqual(classifyPrefetchLlmReason('search_planner_enhance'), 'search_planner');
+      strictEqual(classifyPrefetchLlmReason('search_planner'), 'search_planner');
     });
 
     it('triage substring → serp_selector', () => {
@@ -166,6 +172,16 @@ describe('prefetchContract', () => {
                         'alias_reject_log', 'effective_host_plan', 'brand_resolution',
                         'base_model', 'aliases', 'discovered_count', 'approved_count',
                         'candidate_count', 'llm_serp_selector', 'serp_explorer']) {
+        ok(keys.includes(k), `missing key: ${k}`);
+      }
+    });
+  });
+
+  describe('SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', () => {
+    assertFrozenDescriptor(SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE, 'SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', 6);
+    it('has expected keys', () => {
+      const keys = SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE.map((d) => d.key);
+      for (const k of ['query', 'original_query', 'hint_source', 'tier', 'group_key', 'target_fields']) {
         ok(keys.includes(k), `missing key: ${k}`);
       }
     });

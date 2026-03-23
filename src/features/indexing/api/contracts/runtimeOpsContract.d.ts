@@ -27,3 +27,4 @@ export declare const EXTRACTION_CANDIDATE_KEYS: readonly string[];
 export declare const LLM_DASHBOARD_KEYS: readonly string[];
 export declare const LLM_CALL_ROW_KEYS: readonly string[];
 export declare const LLM_DASHBOARD_SUMMARY_KEYS: readonly string[];
+export declare const LLM_CALL_STATUS_VALUES: readonly string[];

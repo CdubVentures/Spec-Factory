@@ -1,5 +1,7 @@
-import { describe, it } from 'node:test';
+import { after, describe, it } from 'node:test';
 import { ok, strictEqual, deepStrictEqual } from 'node:assert';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { buildProcessStartLaunchPlan } from '../../src/features/indexing/api/builders/processStartLaunchPlan.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../../src/shared/settingsRegistry.js';
@@ -13,6 +15,16 @@ import {
 // Every assertion here documents the CURRENT state, not the desired state.
 
 // --- Helpers ---
+
+const TEST_CATEGORY_AUTHORITY_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-settings-propagation-'));
+
+function cleanup(dir) {
+  try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
+}
+
+after(() => {
+  cleanup(TEST_CATEGORY_AUTHORITY_ROOT);
+});
 
 function buildFullBody() {
   // Build a POST body with all registry keys set to recognizable test values
@@ -44,6 +56,8 @@ function buildFullBody() {
         // WHY: JSON map fields must contain valid JSON, not arbitrary strings
         if (entry.key.endsWith('Json')) {
           body[entry.key] = entry.default || '';
+        } else if (entry.key === 'categoryAuthorityRoot' || entry.key === 'helperFilesRoot') {
+          body[entry.key] = TEST_CATEGORY_AUTHORITY_ROOT;
         } else {
           body[entry.key] = `test-${entry.key}`;
         }
@@ -239,7 +253,7 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'eloSupabaseAnonKey', 'eloSupabaseEndpoint',
       // Search
       'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
-      'searchProfileCapMapJson', 'serpRerankerWeightMapJson',
+      'searchProfileCapMapJson',
       'repairDedupeRule', 'parsingConfidenceBaseMapJson',
       // Resume
       'resumeMode', 'resumeWindowHours', 'reextractIndexed', 'reextractAfterHours',
@@ -248,7 +262,7 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'googleSearchProxyUrlsJson', 'googleSearchScreenshotsEnabled',
       'googleSearchTimeoutMs',
       // Learning
-      'userAgent', 'manufacturerAutoPromote',
+      'userAgent',
     ];
 
     // This documents the gap — these are sent by GUI but dropped before child launch

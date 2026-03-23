@@ -1,5 +1,5 @@
 import { api } from '../../../api/client';
-import type { LlmPolicy } from '../types/llmPolicyTypes';
+import type { LlmPolicy } from '../state/llmPolicyAdapter.generated';
 
 export const LLM_POLICY_QUERY_KEY = ['llm-policy'] as const;
 

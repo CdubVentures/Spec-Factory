@@ -21,22 +21,22 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     assert.equal(config.llmSerpRerankEnabled, undefined);
   });
 
-  it('discoveryResultsPerQuery is hardcoded to 10', () => {
+  it('discoveryResultsPerQuery keeps default value 10', () => {
     const config = loadConfig();
     assert.equal(config.discoveryResultsPerQuery, 10);
   });
 
-  it('discoveryQueryConcurrency is hardcoded to 2', () => {
+  it('discoveryQueryConcurrency keeps default value 2', () => {
     const config = loadConfig();
     assert.equal(config.discoveryQueryConcurrency, 2);
   });
 
-  it('env var DISCOVERY_RESULTS_PER_QUERY has no effect', () => {
+  it('env var DISCOVERY_RESULTS_PER_QUERY is respected', () => {
     const original = process.env.DISCOVERY_RESULTS_PER_QUERY;
     try {
       process.env.DISCOVERY_RESULTS_PER_QUERY = '99';
       const config = loadConfig();
-      assert.equal(config.discoveryResultsPerQuery, 10);
+      assert.equal(config.discoveryResultsPerQuery, 99);
     } finally {
       if (original !== undefined) {
         process.env.DISCOVERY_RESULTS_PER_QUERY = original;
@@ -46,12 +46,12 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     }
   });
 
-  it('env var DISCOVERY_QUERY_CONCURRENCY has no effect', () => {
+  it('env var DISCOVERY_QUERY_CONCURRENCY is respected', () => {
     const original = process.env.DISCOVERY_QUERY_CONCURRENCY;
     try {
       process.env.DISCOVERY_QUERY_CONCURRENCY = '16';
       const config = loadConfig();
-      assert.equal(config.discoveryQueryConcurrency, 2);
+      assert.equal(config.discoveryQueryConcurrency, 16);
     } finally {
       if (original !== undefined) {
         process.env.DISCOVERY_QUERY_CONCURRENCY = original;
@@ -61,10 +61,8 @@ describe('Stage 2 knob retirement — hardcoded values', () => {
     }
   });
 
-  it('retired stage 2 knobs are removed from shared defaults and settings authority surfaces', () => {
+  it('retired stage 2 knobs remain removed from shared defaults and settings authority surfaces', () => {
     const retiredRuntimeKeys = [
-      'discoveryResultsPerQuery',
-      'discoveryQueryConcurrency',
       'phase3LlmTriageEnabled',
       'llmSerpRerankEnabled',
     ];

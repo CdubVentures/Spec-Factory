@@ -1,0 +1,59 @@
+%%{ init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#2563eb",
+    "primaryTextColor": "#ffffff",
+    "lineColor": "#475569",
+    "textColor": "#1e293b",
+    "fontSize": "22px",
+    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif"
+  },
+  "flowchart": { "curve": "basis", "padding": 30, "nodeSpacing": 70, "rankSpacing": 100 }
+} }%%
+
+flowchart LR
+
+  RUN(["Pipeline Run\nRound N"]) --> QH
+  RUN --> FH
+  RUN --> UH
+  RUN --> CL
+
+  QH["PER-QUERY HISTORY\n(frontierDb)\nquery_hash, status,\nresults_returned,\nfields_extracted,\nnew_fields_closed"]
+
+  FH["PER-FIELD HISTORY\n(finalization)\nquery_count = repeat_count,\ndomains_tried,\ncontent_types_tried,\nurls_examined"]
+
+  UH["PER-URL HISTORY\n(frontier)\nscrape status,\nfield extractions,\ndeduplication"]
+
+  CL["CROSS-PRODUCT\nLEARNING\n(category SQLite)\ndomain/field yield,\nURL memory,\nfield anchors"]
+
+  QH --> QH_D["Drives:\nseed completion,\ngroup_query_count,\ntier_allocation"]
+  FH --> FH_D["Drives:\nTier 3 repeat_count,\ndomains_tried_for_key,\ncontent_types_tried"]
+  UH --> UH_D["Drives:\nURL dedup in triage,\nscrape tracking,\nseed status"]
+  CL --> CL_D["Drives:\nSearch Profile\nquery templates\n(NOT NeedSet tiers)"]
+
+  QH_D --> NS["NeedSet\n(next round)\nseedStatus +\ngroupCounts"]
+  FH_D --> NS
+  FH_D --> SP["Search Planner\n(next round)\nquery_history +\ntried context"]
+  QH_D --> SP
+  CL_D --> PROF["Search Profile\n(next round)\ntemplates +\nfield yield"]
+
+  NS --> NEXT(["Pipeline Run\nRound N+1"])
+  SP --> NEXT
+  PROF --> NEXT
+
+  style RUN fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style NEXT fill:#f59e0b,stroke:#d97706,color:#1e293b
+
+  style QH fill:#3b82f6,stroke:#2563eb,color:#ffffff
+  style FH fill:#8b5cf6,stroke:#7c3aed,color:#ffffff
+  style UH fill:#f59e0b,stroke:#d97706,color:#1e293b
+  style CL fill:#ec4899,stroke:#db2777,color:#ffffff
+
+  style QH_D fill:#2563eb,stroke:#1d4ed8,color:#ffffff
+  style FH_D fill:#7c3aed,stroke:#6d28d9,color:#ffffff
+  style UH_D fill:#d97706,stroke:#b45309,color:#ffffff
+  style CL_D fill:#db2777,stroke:#be185d,color:#ffffff
+
+  style NS fill:#10b981,stroke:#059669,color:#ffffff
+  style SP fill:#10b981,stroke:#059669,color:#ffffff
+  style PROF fill:#10b981,stroke:#059669,color:#ffffff

@@ -7,6 +7,7 @@ import {
 } from './discoveryIdentity.js';
 import {
   guessDocKind,
+  isForumLikeManufacturerSubdomain,
 } from './discoveryUrlClassifier.js';
 import {
   isApprovedHost,
@@ -92,6 +93,7 @@ export function buildSerpSelectorInput({
   categoryConfig,
   discoveryCap,
   serpSelectorUrlCap,
+  domainClassifierUrlCap,
 }) {
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
@@ -115,9 +117,12 @@ export function buildSerpSelectorInput({
     else normalRows.push(row);
   }
 
-  // WHY: SERP_SELECTOR_MAX_CANDIDATES is the fixed input cap for how many
-  // candidates to send to the LLM. serpSelectorUrlCap controls max_keep.
-  const effectiveCap = SERP_SELECTOR_MAX_CANDIDATES;
+  // WHY: max_keep is controlled by serpSelectorUrlCap, but the selector input
+  // list still honors the classifier-stage URL cap when provided.
+  const configuredInputCap = Number(domainClassifierUrlCap);
+  const effectiveCap = Number.isFinite(configuredInputCap) && configuredInputCap > 0
+    ? Math.min(SERP_SELECTOR_MAX_CANDIDATES, configuredInputCap)
+    : SERP_SELECTOR_MAX_CANDIDATES;
 
   const priorityCapped = priorityRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
   const normalSlots = Math.max(0, effectiveCap - priorityCapped.length);
@@ -194,7 +199,6 @@ export function adaptSerpSelectorOutput({
     selected.push({
       ...originalRow,
       approvedDomain: Boolean(originalRow.approvedDomain),
-      approved_domain: Boolean(originalRow.approvedDomain || originalRow.approved_domain),
       identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
       host_trust_class: hostTrust,
       doc_kind_guess: docKind,
@@ -212,10 +216,23 @@ export function adaptSerpSelectorOutput({
   // Not-selected: everything in candidateMap not in keepSet
   for (const [id, originalRow] of candidateMap) {
     if (keepSet.has(id)) continue;
+    const host = normalizeHost(String(originalRow.host || ''));
+    let pathname = '';
+    try { pathname = new URL(String(originalRow.url || '')).pathname; } catch { /* ignore */ }
+    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
+    const docKind = guessDocKind({
+      url: String(originalRow.url || ''),
+      pathname,
+      title: originalRow.title || '',
+      snippet: originalRow.snippet || '',
+    });
     notSelected.push({
       ...originalRow,
       approvedDomain: Boolean(originalRow.approvedDomain),
-      approved_domain: Boolean(originalRow.approvedDomain || originalRow.approved_domain),
+      host_trust_class: hostTrust,
+      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
+      doc_kind_guess: docKind,
+      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
       triage_disposition: 'fetch_low',
       selection_priority: 'low',
       score: 0,
@@ -226,10 +243,23 @@ export function adaptSerpSelectorOutput({
 
   // Overflow rows (capped out of selector input)
   for (const row of overflowRows) {
+    const host = normalizeHost(String(row.host || ''));
+    let pathname = '';
+    try { pathname = new URL(String(row.url || '')).pathname; } catch { /* ignore */ }
+    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
+    const docKind = guessDocKind({
+      url: String(row.url || ''),
+      pathname,
+      title: row.title || '',
+      snippet: row.snippet || '',
+    });
     notSelected.push({
       ...row,
       approvedDomain: Boolean(row.approvedDomain),
-      approved_domain: Boolean(row.approvedDomain || row.approved_domain),
+      host_trust_class: hostTrust,
+      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
+      doc_kind_guess: docKind,
+      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
       triage_disposition: 'selector_input_capped',
       selection_priority: 'low',
       score: 0,
@@ -244,9 +274,11 @@ export function adaptSerpSelectorOutput({
 function deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig }) {
   if (officialDomain && host === officialDomain) return 'official';
   if (supportDomain && host === supportDomain) return 'support';
+  if (isForumLikeManufacturerSubdomain(host)) return 'community';
   if (categoryConfig?.validatedRegistry?.[host]) return 'trusted_specdb';
   if (categoryConfig) {
     const role = inferRoleForHost(host, categoryConfig);
+    if (role === 'community') return 'community';
     if (role === 'review' || role === 'lab') return 'trusted_review';
     if (role === 'retailer') return 'retailer';
     if (isApprovedHost(host, categoryConfig)) return 'trusted_review';

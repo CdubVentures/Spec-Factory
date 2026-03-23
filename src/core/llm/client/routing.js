@@ -1,6 +1,7 @@
 import { callOpenAI } from './openaiClient.js';
 import { resolveModelFromRegistry } from '../routeResolver.js';
 import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
+import { providerFromModelToken, defaultBaseUrlForProvider, bootstrapApiKeyForProvider, KNOWN_PROVIDERS, normalizeProvider } from '../providerMeta.js';
 
 // WHY: All roles alias to plan model via configPostMerge. ROLE_KEYS only needs
 // model + fallbackModel. Provider/baseUrl/apiKey resolved via registry or bootstrap.
@@ -86,45 +87,6 @@ function routeRoleFromReason(reason = '') {
   return 'extract';
 }
 
-function normalizeProvider(value) {
-  const token = normalized(value).toLowerCase();
-  if (token === 'openai' || token === 'deepseek' || token === 'gemini') {
-    return token;
-  }
-  return '';
-}
-
-// TODO: consolidate with routeResolver.js — registry should be sole provider authority
-function providerFromModel(value) {
-  const token = normalized(value).toLowerCase();
-  if (!token) {
-    return '';
-  }
-  if (token.startsWith('gemini')) {
-    return 'gemini';
-  }
-  if (token.startsWith('deepseek')) {
-    return 'deepseek';
-  }
-  return 'openai';
-}
-
-// WHY: No process.env reads at runtime — config object already has keys from configBuilder.
-function bootstrapApiKey(config = {}, provider = '') {
-  if (provider === 'gemini') return normalized(String(configValue(config, 'geminiApiKey')));
-  if (provider === 'deepseek') return normalized(String(configValue(config, 'deepseekApiKey')));
-  if (provider === 'anthropic') return normalized(String(configValue(config, 'anthropicApiKey')));
-  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback only
-  return normalized(String(configValue(config, 'openaiApiKey'))) || normalized(config.llmApiKey || '');
-}
-
-function defaultBaseUrl(provider = '') {
-  if (provider === 'gemini') return 'https://generativelanguage.googleapis.com/v1beta/openai';
-  if (provider === 'deepseek') return 'https://api.deepseek.com';
-  if (provider === 'anthropic') return 'https://api.anthropic.com';
-  return 'https://api.openai.com';
-}
-
 function roleKeySet(role) {
   return ROLE_KEYS[role] || ROLE_KEYS.extract;
 }
@@ -141,19 +103,19 @@ function baseRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || bootstrapApiKey(config, resolved.providerType),
+      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, resolved.providerType),
       _registryEntry: resolved,
     };
   }
 
   // Last resort: infer provider from model name, use bootstrap keys
-  const inferred = providerFromModel(modelKey);
+  const inferred = providerFromModelToken(modelKey);
   return {
     role,
     provider: inferred,
     model: modelKey,
-    baseUrl: defaultBaseUrl(inferred),
-    apiKey: bootstrapApiKey(config, inferred),
+    baseUrl: defaultBaseUrlForProvider(inferred),
+    apiKey: bootstrapApiKeyForProvider(config, inferred),
   };
 }
 
@@ -172,19 +134,19 @@ function fallbackRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || bootstrapApiKey(config, resolved.providerType),
+      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, resolved.providerType),
       _registryEntry: resolved,
     };
   }
 
   // Last resort: infer provider from model name, use bootstrap keys
-  const inferred = providerFromModel(model);
+  const inferred = providerFromModelToken(model);
   return {
     role,
     provider: inferred,
     model,
-    baseUrl: defaultBaseUrl(inferred),
-    apiKey: bootstrapApiKey(config, inferred),
+    baseUrl: defaultBaseUrlForProvider(inferred),
+    apiKey: bootstrapApiKeyForProvider(config, inferred),
   };
 }
 
@@ -284,8 +246,8 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
   if (overrideModel) {
     const enforceRoleProvider = Boolean(config.llmForceRoleModelProvider);
     if (enforceRoleProvider) {
-      const roleProvider = normalizeProvider(route.provider || providerFromModel(route.model));
-      const overrideProvider = providerFromModel(overrideModel);
+      const roleProvider = normalizeProvider(route.provider || providerFromModelToken(route.model));
+      const overrideProvider = providerFromModelToken(overrideModel);
       if (roleProvider && overrideProvider && roleProvider !== overrideProvider) {
         return route;
       }
@@ -305,10 +267,10 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
     // Override model not in registry — infer provider from model name
     delete route._registryEntry;
     route.model = overrideModel;
-    const inferred = providerFromModel(overrideModel);
+    const inferred = providerFromModelToken(overrideModel);
     route.provider = inferred;
-    route.baseUrl = defaultBaseUrl(inferred);
-    route.apiKey = bootstrapApiKey(config, inferred);
+    route.baseUrl = defaultBaseUrlForProvider(inferred);
+    route.apiKey = bootstrapApiKeyForProvider(config, inferred);
   }
   return route;
 }
@@ -460,10 +422,7 @@ export async function callLlmWithRouting({
         : Boolean(config?.runtimeTraceLlmPayloads),
       model_token_profile_map: config?.llmModelOutputTokenMap || {},
       default_output_token_cap: primaryTokenCap,
-      deepseek_default_max_output_tokens: Math.max(
-        toIntToken(config?.deepseekChatMaxOutputMaximum, 4096),
-        toIntToken(config?.deepseekReasonerMaxOutputMaximum, 8192)
-      )
+      deepseek_default_max_output_tokens: 8192
     },
     costRates,
     onUsage,

@@ -19,6 +19,9 @@ import {
   METRICS_RAIL_KEYS,
   EXTRACTION_FIELD_KEYS,
   EXTRACTION_CANDIDATE_KEYS,
+  LLM_CALL_ROW_KEYS,
+  LLM_DASHBOARD_SUMMARY_KEYS,
+  LLM_DASHBOARD_KEYS,
 } from '../../src/features/indexing/api/contracts/runtimeOpsContract.js';
 
 import {
@@ -133,5 +136,17 @@ describe('runtimeOpsTypeAlignment', () => {
 
   it('PreFetchPhasesResponse contains all PREFETCH_RESPONSE_KEYS', () => {
     assertContractKeysInInterface(PREFETCH_RESPONSE_KEYS, 'PreFetchPhasesResponse');
+  });
+
+  it('LlmCallRow contains all LLM_CALL_ROW_KEYS', () => {
+    assertContractKeysInInterface(LLM_CALL_ROW_KEYS, 'LlmCallRow');
+  });
+
+  it('LlmCallsDashboardSummary contains all LLM_DASHBOARD_SUMMARY_KEYS', () => {
+    assertContractKeysInInterface(LLM_DASHBOARD_SUMMARY_KEYS, 'LlmCallsDashboardSummary');
+  });
+
+  it('LlmCallsDashboardResponse contains all LLM_DASHBOARD_KEYS', () => {
+    assertContractKeysInInterface(LLM_DASHBOARD_KEYS, 'LlmCallsDashboardResponse');
   });
 });

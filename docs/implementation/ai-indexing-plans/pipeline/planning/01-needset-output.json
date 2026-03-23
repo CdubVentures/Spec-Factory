@@ -1,109 +1,362 @@
 {
-  "_doc": "Actual output shape returned by computeNeedSet().",
-  "validated_against": "2026-03-19",
-  "schema_version": "needset_output.v2.1",
-  "top_level_keys": [
-    "schema_version",
-    "round",
-    "round_mode",
-    "identity",
-    "fields",
-    "planner_seed",
-    "sorted_unresolved_keys",
-    "run_id",
-    "category",
-    "product_id",
-    "generated_at",
-    "total_fields",
-    "summary",
-    "blockers",
-    "focus_fields",
-    "bundles",
-    "profile_mix",
-    "rows",
-    "debug"
-  ],
-  "identity_block": {
-    "state": "locked|provisional|conflict|unknown",
-    "source_label_state": "matched|possible|different|unknown",
-    "manufacturer": "string|null",
-    "model": "string|null",
-    "confidence": "number",
-    "official_domain": "string|null",
-    "support_domain": "string|null"
+  "_doc": "Output contracts for Stage 01 NeedSet. Three layers: stage return, Schema 2 (computeNeedSet), and events.",
+  "validated_against": "2026-03-22",
+
+  "stage_return": {
+    "_doc": "What runNeedSet() returns to the orchestrator. Clean 3-field contract.",
+    "function": "runNeedSet",
+    "file": "src/features/indexing/discovery/stages/needSet.js",
+    "shape": {
+      "focusGroups": "FocusGroup[] — see focus_group_shape below",
+      "seedStatus": "SeedStatus | null — see seed_status_shape below",
+      "seedSearchPlan": "Schema4 | null — see schema4_output below"
+    },
+    "consumers": {
+      "focusGroups": "Stage 03 Search Profile — tier-aware query generation via determineQueryModes(), buildTier2Queries(), buildTier3Queries()",
+      "seedStatus": "Stage 03 Search Profile — seed dispatch via determineQueryModes(), buildTier1Queries()",
+      "seedSearchPlan": "Finalization — bundles, profile_influence, deltas, search_plan_handoff.queries for enrichNeedSetFieldHistories()"
+    },
+    "removed_2026-03-22": ["needSetOutput (internal only)", "planningContext (exposed as seedStatus)", "searchPlanHandoff (internal only)"]
   },
-  "field_entry": {
-    "field_key": "string",
-    "label": "string",
-    "group_key": "string|null",
-    "required_level": "identity|critical|required|expected|optional",
-    "idx": {
-      "min_evidence_refs": "number",
-      "query_terms": "string[]",
+
+  "focus_group_shape": {
+    "_doc": "Shape of each entry in focusGroups[]. Consumed by Stage 03 Search Profile for tier-aware query generation.",
+    "key": "string — group key",
+    "label": "string — from catalog",
+    "desc": "string — from catalog",
+    "source_target": "string",
+    "content_target": "string",
+    "field_keys": "string[] — all fields in group (sorted)",
+    "satisfied_field_keys": "string[] — sorted",
+    "unresolved_field_keys": "string[] — sorted",
+    "weak_field_keys": "string[] — sorted",
+    "conflict_field_keys": "string[] — sorted",
+    "search_exhausted_field_keys": "string[] — sorted",
+    "search_exhausted_count": "number",
+    "core_unresolved_count": "number",
+    "secondary_unresolved_count": "number",
+    "optional_unresolved_count": "number",
+    "exact_match_count": "number",
+    "no_value_attempts": "number",
+    "duplicate_attempts_suppressed": "number",
+    "urls_examined_count": "number",
+    "query_count": "number",
+    "query_terms_union": "string[]",
+    "domain_hints_union": "string[]",
+    "preferred_content_types_union": "string[]",
+    "existing_queries_union": "string[]",
+    "domains_tried_union": "string[]",
+    "host_classes_tried_union": "string[]",
+    "evidence_classes_tried_union": "string[]",
+    "aliases_union": "string[]",
+    "priority": "string — core | secondary | optional",
+    "phase": "string — now | next | hold",
+    "productivity_score": "number",
+    "group_description_short": "string",
+    "group_description_long": "string",
+    "total_field_count": "number",
+    "resolved_field_count": "number",
+    "coverage_ratio": "number",
+    "group_query_count": "number — Tier 2 broad searches only",
+    "group_key_retry_count": "number — sum of per-field repeat_counts",
+    "group_search_worthy": "boolean — Tier 2 gate",
+    "skip_reason": "string | null",
+    "group_fingerprint_coarse": "string",
+    "group_fingerprint_fine": "string",
+    "normalized_key_queue": [{
+      "_doc": "V4-sorted unresolved keys for Tier 3 query builders.",
+      "normalized_key": "string",
+      "repeat_count": "number",
+      "all_aliases": "string[]",
+      "alias_shards": "string[][]",
       "domain_hints": "string[]",
       "preferred_content_types": "string[]",
-      "tooltip_md": "string|null",
-      "aliases": "string[]"
+      "domains_tried_for_key": "string[]",
+      "content_types_tried_for_key": "string[]"
+    }],
+    "group_search_terms": "string[]",
+    "content_type_candidates": "string[]",
+    "domains_tried_for_group": "string[]"
+  },
+
+  "seed_status_shape": {
+    "_doc": "Shape of seedStatus. Consumed by Stage 03 Search Profile for seed dispatch via determineQueryModes().",
+    "specs_seed": {
+      "is_needed": "boolean",
+      "last_status": "string — never_run | searched | scrape_incomplete | scrape_complete | exhausted",
+      "last_completed_at_ms": "number | null",
+      "cooldown_until_ms": "number | null",
+      "new_fields_closed_last_run": "number"
     },
-    "state": "accepted|unknown|weak|conflict",
-    "value": "any current field value",
-    "confidence": "number",
-    "effective_confidence": "number",
-    "refs_found": "number",
-    "min_refs": "number",
-    "best_tier_seen": "number|null",
-    "pass_target": "number",
-    "meets_pass_target": "boolean",
-    "exact_match_required": "boolean",
-    "need_score": "number",
-    "reasons": [
-      "missing",
-      "conflict",
-      "low_conf",
-      "min_refs_fail",
-      "publish_gate_block"
-    ],
-    "history": {
-      "existing_queries": "string[]",
-      "domains_tried": "string[]",
-      "host_classes_tried": "string[]",
-      "evidence_classes_tried": "string[]",
-      "query_count": "number",
-      "urls_examined_count": "number",
-      "refs_found": "number",
-      "no_value_attempts": "number",
-      "duplicate_attempts_suppressed": "number",
-      "query_modes_tried_for_key": "string[] (V4)"
+    "source_seeds": {
+      "[sourceName]": {
+        "is_needed": "boolean",
+        "last_status": "string",
+        "last_completed_at_ms": "number | null",
+        "cooldown_until_ms": "number | null",
+        "new_fields_closed_last_run": "number"
+      }
     },
-    "_v4_search_pack": {
-      "normalized_key": "string — human-search-safe form of field_key",
-      "all_aliases": "string[] — union of display_name, normalized_key, rule.aliases, query_terms",
-      "alias_shards": "string[][] — whole-alias-boundary chunks for query construction",
-      "search_intent": "string — exact_match|broad (per-key, derived from exact_match_required)",
-      "availability": "string — always|expected|sometimes|rare|editorial_only",
-      "difficulty": "string — easy|medium|hard",
-      "repeat_count": "number — from history.query_count",
-      "query_modes_tried_for_key": "string[] — which query patterns were used",
-      "domains_tried_for_key": "string[] — alias of history.domains_tried",
-      "content_types_tried_for_key": "string[] — alias of history.evidence_classes_tried"
+    "query_completion_summary": {
+      "total_queries": "number",
+      "complete": "number",
+      "incomplete": "number",
+      "pending_scrapes": "number"
     }
   },
-  "sorted_unresolved_keys": "string[] (V4) — unresolved field_keys sorted by availability -> difficulty -> repeat -> need_score -> required_level",
-  "planner_seed": {
-    "missing_critical_fields": "string[]",
-    "unresolved_fields": "string[]",
-    "existing_queries": "string[]",
-    "current_product_identity": {
+
+  "schema2_output": {
+    "_doc": "Full output shape of computeNeedSet(). Internal to runNeedSet — not returned to orchestrator.",
+    "function": "computeNeedSet",
+    "file": "src/indexlab/needsetEngine.js",
+    "schema_version": "needset_output.v2.1",
+    "shape": {
+      "schema_version": "string — 'needset_output.v2.1'",
+      "round": "number",
+      "identity": {
+        "state": "string — locked | provisional | conflict | unknown",
+        "source_label_state": "string — matched | possible | different | unknown",
+        "manufacturer": "string | null",
+        "model": "string | null",
+        "confidence": "number",
+        "official_domain": "string | null",
+        "support_domain": "string | null"
+      },
+      "fields": [{
+        "field_key": "string",
+        "label": "string",
+        "group_key": "string | null",
+        "required_level": "string — identity | critical | required | expected | optional",
+        "idx": {
+          "min_evidence_refs": "number",
+          "query_terms": "string[]",
+          "domain_hints": "string[]",
+          "preferred_content_types": "string[]",
+          "tooltip_md": "string | null",
+          "aliases": "string[]"
+        },
+        "state": "string — accepted | unknown | weak | conflict",
+        "value": "unknown — current field value",
+        "confidence": "number",
+        "effective_confidence": "number — clamped 0-1",
+        "refs_found": "number",
+        "min_refs": "number",
+        "best_tier_seen": "number | null — lowest tier seen in evidence, null if none < 99",
+        "pass_target": "number — clamped 0-1, default 0.8",
+        "meets_pass_target": "boolean",
+        "exact_match_required": "boolean",
+        "need_score": "number — 0 for covered; weighted for unresolved",
+        "reasons": "string[] — subset of: missing, conflict, low_conf, min_refs_fail, publish_gate_block",
+        "history": {
+          "existing_queries": "string[]",
+          "domains_tried": "string[]",
+          "host_classes_tried": "string[]",
+          "evidence_classes_tried": "string[]",
+          "query_count": "number",
+          "urls_examined_count": "number",
+          "refs_found": "number",
+          "no_value_attempts": "number",
+          "duplicate_attempts_suppressed": "number",
+          "query_modes_tried_for_key": "string[]"
+        },
+        "normalized_key": "string — human-search-safe form of field_key",
+        "all_aliases": "string[] — union of display_name, normalized_key, rule.aliases, query_terms",
+        "alias_shards": "string[][] — whole-alias-boundary chunks",
+        "availability": "string — always | expected | sometimes | rare | editorial_only",
+        "difficulty": "string — easy | medium | hard",
+        "search_intent": "string — exact_match | broad (per-key, from exact_match_required)",
+        "repeat_count": "number — from history.query_count",
+        "query_modes_tried_for_key": "string[]",
+        "domains_tried_for_key": "string[]",
+        "content_types_tried_for_key": "string[]"
+      }],
+      "planner_seed": {
+        "missing_critical_fields": "string[] — identity + critical fields that are not accepted",
+        "unresolved_fields": "string[] — all fields that are not accepted",
+        "existing_queries": "string[] — sorted deduplicated union from all field histories",
+        "current_product_identity": {
+          "category": "string",
+          "brand": "string",
+          "model": "string"
+        }
+      },
+      "sorted_unresolved_keys": "string[] — sorted by availability -> difficulty -> repeat -> need_score -> required_level",
+      "run_id": "string",
       "category": "string",
-      "brand": "string",
-      "model": "string"
+      "product_id": "string",
+      "generated_at": "string — ISO timestamp",
+      "total_fields": "number",
+      "summary": {
+        "total": "number",
+        "resolved": "number",
+        "core_total": "number",
+        "core_unresolved": "number",
+        "secondary_total": "number",
+        "secondary_unresolved": "number",
+        "optional_total": "number",
+        "optional_unresolved": "number",
+        "conflicts": "number",
+        "bundles_planned": "number"
+      },
+      "blockers": {
+        "missing": "number",
+        "weak": "number",
+        "conflict": "number",
+        "needs_exact_match": "number",
+        "search_exhausted": "number"
+      },
+      "focus_fields": "string[] — top 10 unresolved sorted by bucket then field_key",
+      "bundles": [{
+        "_doc": "Content-type-based bundles (backward compat). NOT the same as focus_groups.",
+        "bundle_id": "string — composite of priority_bucket + content_types",
+        "label": "string",
+        "priority_bucket": "string — core | secondary | optional",
+        "fields": "string[]",
+        "preferred_content_types": "string[]",
+        "query_terms": "string[]",
+        "domain_hints": "string[]",
+        "planned_query_families": "string[]"
+      }],
+      "profile_mix": {
+        "manufacturer_html": "number",
+        "manual_pdf": "number",
+        "support_docs": "number",
+        "fallback_web": "number",
+        "targeted_single_field": "number"
+      },
+      "rows": [{
+        "_doc": "Backward compat. Unresolved fields only, sorted by bucket then field_key.",
+        "field_key": "string",
+        "required_level": "string",
+        "priority_bucket": "string — core | secondary | optional",
+        "state": "string — missing | weak | conflict (internal state, not schema state)",
+        "bundle_id": "string"
+      }],
+      "debug": {
+        "suppressed_duplicate_rows": "unknown[]",
+        "state_inputs": {
+          "total_fields": "number",
+          "eligible_count": "number",
+          "covered_count": "number"
+        },
+        "bundle_assignment_notes": "unknown[]",
+        "identity_context": "Record<string, unknown>"
+      }
     }
   },
-  "backward_compat_sections": [
-    "focus_fields",
-    "bundles",
-    "profile_mix",
-    "rows",
-    "debug"
-  ]
+
+  "schema4_output": {
+    "_doc": "Full output shape of buildSearchPlan() / assembleSchema4(). Returned as seedSearchPlan.",
+    "function": "buildSearchPlan",
+    "file": "src/indexlab/searchPlanBuilder.js",
+    "schema_version": "needset_planner_output.v2",
+    "shape": {
+      "schema_version": "string — 'needset_planner_output.v2'",
+      "run": {
+        "run_id": "string",
+        "category": "string",
+        "product_id": "string",
+        "brand": "string",
+        "model": "string",
+        "base_model": "string",
+        "aliases": "string[]",
+        "round": "number"
+      },
+      "planner": {
+        "mode": "string — llm | disabled | error",
+        "model": "string",
+        "planner_complete": "boolean",
+        "planner_confidence": "number — 0-1 from LLM",
+        "queries_generated": "number",
+        "duplicates_suppressed": "number",
+        "targeted_exceptions": "number",
+        "error": "string | null"
+      },
+      "search_plan_handoff": {
+        "queries": [{
+          "q": "string",
+          "family": "string",
+          "group_key": "string",
+          "target_fields": "string[]",
+          "preferred_domains": "string[]",
+          "exact_match_required": "boolean",
+          "query_hash": "string"
+        }],
+        "query_hashes": "string[]",
+        "total": "number"
+      },
+      "panel": {
+        "_doc": "GUI-facing panel data. null when LLM is disabled or fails.",
+        "round": "number",
+        "identity": "Identity | null",
+        "summary": "Summary",
+        "blockers": "Blockers",
+        "bundles": [{
+          "key": "string",
+          "label": "string",
+          "desc": "string",
+          "source_target": "string",
+          "content_target": "string",
+          "search_intent": "string | null",
+          "host_class": "string | null",
+          "phase": "string — now | next | hold",
+          "priority": "string — core | secondary | optional",
+          "queries": [{ "q": "string", "family": "string" }],
+          "query_family_mix": "unknown | null",
+          "reason_active": "string | null — from LLM group annotation",
+          "fields": [{
+            "key": "string",
+            "state": "string — satisfied | weak | conflict | missing",
+            "bucket": "string — core | secondary | expected | optional"
+          }]
+        }],
+        "profile_influence": {
+          "targeted_specification": "number",
+          "targeted_sources": "number",
+          "total_sources": "number",
+          "targeted_groups": "number",
+          "total_groups": "number",
+          "targeted_single": "number",
+          "total_unresolved_keys": "number",
+          "groups_now": "number",
+          "groups_next": "number",
+          "groups_hold": "number",
+          "planner_confidence": "number",
+          "budget": "number | null",
+          "allocated": "number | null",
+          "overflow_groups": "number",
+          "overflow_keys": "number"
+        },
+        "deltas": [{ "field": "string", "from": "string", "to": "string" }]
+      },
+      "learning_writeback": {
+        "query_hashes_generated": "string[]",
+        "queries_generated": "string[]",
+        "families_used": "string[] — sorted",
+        "domains_targeted": "string[] — sorted",
+        "groups_activated": "string[] — sorted",
+        "duplicates_suppressed": "number"
+      }
+    }
+  },
+
+  "events_emitted": {
+    "needset_computed_preview": {
+      "event": "needset_computed",
+      "scope": "schema2_preview",
+      "payload_keys": ["scope", "schema_version", "fields", "summary", "blockers", "planner_seed", "total_fields", "round", "deltas", "bundles", "profile_influence", "rows"],
+      "note": "Emitted before LLM call. bundles=[], profile_influence=null, rows=[]"
+    },
+    "needset_computed_planner": {
+      "event": "needset_computed",
+      "scope": "schema4_planner",
+      "payload_keys": ["...searchPlan.panel", "schema_version", "scope", "fields", "planner_seed"],
+      "note": "Emitted after LLM call only when searchPlan.panel is non-null"
+    },
+    "schema4_handoff_ready": {
+      "event": "schema4_handoff_ready",
+      "payload_keys": ["query_count", "planner_mode"],
+      "note": "Emitted only when searchPlanHandoff has queries"
+    }
+  }
 }

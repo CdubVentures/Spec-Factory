@@ -36,6 +36,10 @@ function defaultUsageRow() {
   };
 }
 
+function normalized(value) {
+  return String(value ?? '').trim();
+}
+
 export async function runLlmHealthCheck({
   storage,
   config,
@@ -43,13 +47,22 @@ export async function runLlmHealthCheck({
   model = '',
   logger = null
 }) {
-  // WHY: Use registry-resolved route when no explicit provider/model override
-  const route = resolveLlmRoute(config, { role: 'extract' });
-  const resolvedProvider = String(provider || route.provider || configValue(config, 'llmProvider') || 'openai').trim().toLowerCase();
-  const resolvedModel = String(model || route.model || configValue(config, 'llmModelPlan')).trim();
+  const explicitModel = normalized(model);
+  const route = resolveLlmRoute(config, {
+    role: 'extract',
+    modelOverride: explicitModel,
+  });
+  const resolvedProvider = normalized(
+    route.provider || provider || config.llmProvider || configValue(config, 'llmProvider') || 'openai'
+  ).toLowerCase();
+  const resolvedModel = normalized(
+    explicitModel || route.model || configValue(config, 'llmModelPlan')
+  );
   // WHY: llmApiKey is not a registry key — legacy bootstrap fallback
   const resolvedApiKey = route.apiKey || config.llmApiKey || '';
-  const resolvedBaseUrl = route.baseUrl || String(configValue(config, 'llmBaseUrl'));
+  const resolvedBaseUrl = normalized(
+    route.baseUrl || config.llmBaseUrl || configValue(config, 'llmBaseUrl')
+  );
 
   if (!resolvedApiKey) {
     throw new Error('LLM_API_KEY is missing');
