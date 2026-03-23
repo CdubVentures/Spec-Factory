@@ -187,7 +187,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     const result = await processDiscoveryResults(args);
     assert.equal(result.enabled, true);
     assert.equal(result.selectedUrls.length, 0, 'all-reject means zero selected URLs');
-    assert.equal(result.approvedUrls.length, 0, 'all-reject means zero approved URLs');
+    assert.equal(result.selectedUrls.length, 0, 'all-reject means zero selected URLs');
     assert.equal(result.candidates.length, 3, 'all triaged candidates remain visible for auditability');
   });
 
@@ -200,7 +200,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     const result = await processDiscoveryResults(args);
     assert.equal(result.enabled, true);
     assert.equal(result.selectedUrls.length, 0, 'failure = zero selected URLs, no deterministic fallback');
-    assert.equal(result.approvedUrls.length, 0, 'failure = zero approved URLs');
+    assert.equal(result.selectedUrls.length, 0, 'failure = zero selected URLs');
     assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after selector failure');
   });
 
@@ -214,7 +214,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     });
     const result = await processDiscoveryResults(args);
     assert.equal(result.selectedUrls.length, 0, 'invalid output = zero selected URLs');
-    assert.equal(result.approvedUrls.length, 0, 'invalid output = zero approved URLs');
+    assert.equal(result.selectedUrls.length, 0, 'invalid output = zero selected URLs');
     assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after invalid output');
     const warnEvents = logger.events.filter((e) => e.event === 'serp_selector_invalid_output');
     assert.ok(warnEvents.length >= 1, 'logged serp_selector_invalid_output');
@@ -231,8 +231,8 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     assert.equal(typeof result.discoveryKey, 'string');
     assert.equal(typeof result.candidatesKey, 'string');
     assert.ok(Array.isArray(result.candidates));
-    assert.ok(Array.isArray(result.approvedUrls));
-    assert.ok(Array.isArray(result.candidateUrls));
+    assert.ok(Array.isArray(result.selectedUrls));
+    assert.ok(Array.isArray(result.allCandidateUrls));
     assert.ok(Array.isArray(result.queries));
     assert.ok(typeof result.search_profile === 'object');
     assert.ok(typeof result.serp_explorer === 'object');

@@ -165,10 +165,10 @@ test('discoverCandidateSources uses internal source corpus when external provide
       llmContext: {}
     });
 
-    // WHY: approvedUrls is populated by the SERP selector LLM, which is not available
+    // WHY: selectedUrls is populated by the SERP selector LLM, which is not available
     // in this test (no LLM key). The selector now rejects all candidates on failure
     // (no deterministic fallback). The internal corpus lookup is verified by search_attempts.
-    assert.ok(Array.isArray(discovery.approvedUrls), 'approvedUrls is an array');
+    assert.ok(Array.isArray(discovery.selectedUrls), 'selectedUrls is an array');
     assert.equal((discovery.search_attempts || []).some((row) => row.provider === 'internal'), true);
     assert.equal(
       (discovery.search_attempts || []).some((row) => row.provider === 'internal' && row.reason_code === 'internal_corpus_lookup'),

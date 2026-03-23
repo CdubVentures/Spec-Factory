@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   decideStudioAuthorityAction,
   shouldOpenStudioAuthorityConflict,
-} from '../tools/gui-react/src/pages/studio/authoritySync.js';
+} from '../tools/gui-react/src/features/studio/state/authoritySync.js';
 
 test('studio authority: category switch resets and hydrates from server snapshot', () => {
   const result = decideStudioAuthorityAction({

@@ -1,12 +1,8 @@
 import { Suspense, lazy, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client';
 import {
-  buildRuntimeLlmTokenProfileLookup,
   deriveRuntimeLlmModelOptions,
-  deriveRuntimeLlmTokenContractPresetMax,
-  createRuntimeModelTokenDefaultsResolver,
   parseBoundedNumber,
   RUNTIME_NUMBER_BOUNDS,
   toRuntimeDraft,
@@ -52,7 +48,6 @@ const LlmExtractionSection = lazy(async () => {
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
 export function LlmConfigPage() {
-  const queryClient = useQueryClient();
   const runtimeAutoSaveEnabled = useUiStore((state) => state.runtimeAutoSaveEnabled);
   const setRuntimeAutoSaveEnabled = useUiStore((state) => state.setRuntimeAutoSaveEnabled);
   const runtimeReadyFlag = useSettingsAuthorityStore((state) => state.snapshot.runtimeReady);
@@ -69,15 +64,6 @@ export function LlmConfigPage() {
     queryKey: ['indexing', 'llm-config'],
     queryFn: () => api.get<RuntimeSettingsLlmConfigResponse>('/indexing/llm-config'),
   });
-
-  const llmTokenProfileLookup = useMemo(() => buildRuntimeLlmTokenProfileLookup({
-    indexingLlmConfig,
-  }), [indexingLlmConfig]);
-
-  const llmTokenContractPresetMax = useMemo(() => deriveRuntimeLlmTokenContractPresetMax({
-    indexingLlmConfig,
-    runtimeManifestDefaults,
-  }), [indexingLlmConfig, runtimeManifestDefaults]);
 
   // WHY: LLM config now uses the dedicated LlmPolicy authority instead of
   // useRuntimeSettingsEditorAdapter. The authority auto-saves to PUT /llm-policy.

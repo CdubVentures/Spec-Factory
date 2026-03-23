@@ -105,8 +105,8 @@ function makeStageStubs({ captureSearchPlannerArgs } = {}) {
     }),
     processDiscoveryResultsFn: async () => ({
       enabled: true,
-      approvedUrls: [],
-      candidateUrls: [],
+      selectedUrls: [],
+      allCandidateUrls: [],
       candidates: [],
     }),
     runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),

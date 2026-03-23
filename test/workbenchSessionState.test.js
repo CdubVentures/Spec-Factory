@@ -4,7 +4,7 @@ import { createStorage, withWindowStub } from './helpers/browserStorageHarness.j
 import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 function loadWorkbenchSessionStateModule() {
-  return loadBundledModule('tools/gui-react/src/pages/studio/workbench/workbenchSessionState.ts', {
+  return loadBundledModule('tools/gui-react/src/features/studio/workbench/workbenchSessionState.ts', {
     prefix: 'workbench-session-state-',
   });
 }

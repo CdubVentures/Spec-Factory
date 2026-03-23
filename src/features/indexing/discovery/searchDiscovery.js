@@ -169,7 +169,7 @@ export async function discoverCandidateSources({
     official_domain: brandResolution?.officialDomain || '',
     aliases: brandResolution?.aliases?.slice(0, 5) || [],
     support_domain: brandResolution?.supportDomain || '',
-    confidence: brandResolution?.confidence ?? 0,
+    confidence: brandResolution?.confidence ?? null,
     reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning.slice(0, 10) : []
   });
 
@@ -481,7 +481,7 @@ export async function discoverCandidateSources({
       officialDomain: brandResolution.officialDomain || '',
       supportDomain: brandResolution.supportDomain || '',
       aliases: brandResolution.aliases || [],
-      confidence: brandResolution.confidence ?? 0,
+      confidence: brandResolution.confidence ?? null,
       reasoning: brandResolution.reasoning || [],
     } : null,
     key: searchProfileKeys.inputKey,

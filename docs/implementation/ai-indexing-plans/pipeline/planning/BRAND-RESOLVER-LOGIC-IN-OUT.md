@@ -1,6 +1,6 @@
 # Brand Resolver Logic In And Out
 
-Validated against live code on 2026-03-22.
+Validated against live code on 2026-03-22. Updated 2026-03-22 post-audit (B3+B4 fixes).
 
 ## What this stage is
 
@@ -19,16 +19,9 @@ Primary owners:
 - `02-brand-resolver-input.json`
 - `02-brand-resolver-output.json`
 
-## Registry settings (4 new)
+## Registry settings
 
-All four are consumed via `configFloat` / `configInt` from `settingsAccessor.js`:
-
-| Key | Type | Default | Range | Used by |
-|-----|------|---------|-------|---------|
-| `brandResolverDefaultConfidence` | float | 0.8 | 0.1 - 1.0 | `resolveBrandDomain()` -- confidence for cache hits and LLM successes |
-| `manufacturerCrawlRateLimitMs` | int | 2000 | 100 - 60000 | `buildManufacturerCrawlDefaults()` -- crawl rate limit |
-| `manufacturerCrawlTimeoutMs` | int | 12000 | 1000 - 120000 | `buildManufacturerCrawlDefaults()` -- crawl timeout |
-| `manufacturerPromotionPriority` | int | 70 | 1 - 100 | `promoteManufacturerHost()` -- discovery.priority |
+No brand-resolver-specific registry settings exist. Confidence comes from the LLM response (not a registry default). Crawl config values (`rate_limit_ms: 2000`, `timeout_ms: 12000`) are hardcoded inline in the orchestrator pending the fetch/extraction redesign which will Zod-enforce crawl config.
 
 Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always true).
 
@@ -38,7 +31,7 @@ Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always tru
 
 - `brand` -- string
 - `category` -- string
-- `config` -- object, consumed for registry lookups (`brandResolverDefaultConfidence` via `configFloat`)
+- `config` -- object, consumed for LLM routing (`hasLlmRouteApiKey`, `llmTimeoutMs`)
 - `callLlmFn` -- function or null
 - `storage` -- object or null
 - `logger` -- object or null, used for LLM error logging (`brand_resolver_llm_error`)
@@ -69,33 +62,32 @@ Defined as `BrandDomainRow` typedef in `brandResolver.js`:
 The resolver path in `resolveBrandDomain()`:
 
 1. Trim `brand` and `category`.
-2. Read `defaultConfidence` from `configFloat(config, 'brandResolverDefaultConfidence')`.
-3. If `brand` is empty, return the empty object (confidence 0).
-4. If `storage.getBrandDomain()` exists, try cache first.
-5. On cache hit:
-   - parse cached aliases (JSON string or array)
+2. If `brand` is empty, return the empty object (confidence `null`).
+3. If `storage.getBrandDomain()` exists, try cache first.
+4. On cache hit:
+   - parse cached aliases (JSON string or array via `parseAliases()`)
    - return cached `official_domain`, `support_domain`, aliases
-   - use `cached.confidence ?? defaultConfidence` (stored value wins, registry fallback)
+   - confidence: `parseConfidence(cached.confidence)` (stored value, clamped 0-1, null if missing)
    - return empty `reasoning`
-6. If there is no cache hit and no `callLlmFn`, return the empty object.
-7. If `callLlmFn` exists, call the routed adapter created by `createBrandResolverCallLlm({ callRoutedLlmFn, config, logger })`.
-8. Normalize the LLM result:
+5. If there is no cache hit and no `callLlmFn`, return the empty object.
+6. If `callLlmFn` exists, call the routed adapter created by `createBrandResolverCallLlm({ callRoutedLlmFn, config, logger })`.
+7. Normalize the LLM result:
    - lowercase `official_domain`
    - lowercase aliases
    - lowercase `support_domain`
    - string-array `reasoning`
-9. Set confidence: `officialDomain ? defaultConfidence : 0`
-10. If `storage.upsertBrandDomain()` exists, persist the normalized row back to cache.
-11. On any LLM error (B5 fix): log `brand_resolver_llm_error` via `logger.warn()` with brand, category, error message, then return the empty object.
+8. Set confidence: `officialDomain ? parseConfidence(result?.confidence) : null` -- LLM-provided, not registry-driven.
+9. If `storage.upsertBrandDomain()` exists, persist the normalized row back to cache.
+10. On any LLM error (B5 fix): log `brand_resolver_llm_error` via `logger.warn()` with brand, category, error message, then return the empty object.
 
 ## Confidence tiering
 
-Confidence is never model-derived. It follows a strict tier:
+Confidence is LLM-derived via `parseConfidence()` which clamps to 0-1 (values >1 are divided by 100):
 
-1. **Cache hit**: uses `cached.confidence ?? defaultConfidence` (stored value preserved)
-2. **LLM success with domain**: uses `defaultConfidence` from registry (default 0.8)
-3. **LLM success without domain**: returns 0
-4. **Empty brand / no callLlmFn / LLM error**: returns 0
+1. **Cache hit**: `parseConfidence(cached.confidence)` -- stored value, null if missing
+2. **LLM success with domain**: `parseConfidence(result?.confidence)` -- LLM-provided
+3. **LLM success without domain**: `null` (no resolution = no confidence)
+4. **Empty brand / no callLlmFn / LLM error**: `null`
 
 ## Stage wrapper behavior
 
@@ -144,10 +136,10 @@ The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline afte
 - `officialDomain` -- string
 - `aliases` -- string[]
 - `supportDomain` -- string
-- `confidence` -- number (0-1, registry-driven)
+- `confidence` -- number (0-1, LLM-derived via `parseConfidence()`) or null
 - `reasoning` -- string[]
 
-Empty return shape: `{ officialDomain: "", aliases: [], supportDomain: "", confidence: 0, reasoning: [] }`
+Empty return shape: `{ officialDomain: "", aliases: [], supportDomain: "", confidence: null, reasoning: [] }`
 
 `runBrandResolver()` returns `{ brandResolution }`:
 

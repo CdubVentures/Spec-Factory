@@ -1,1 +1,0 @@
-import{aj as l}from"./index-BSdPNdYC.js";function o({nextRuntimeDraft:t,runtimeManifestDefaults:a,resolveModelTokenDefaults:e}){return l({...t,runtimeSettingsFallbackBaseline:a,resolveModelTokenDefaults:e})}export{o as c};

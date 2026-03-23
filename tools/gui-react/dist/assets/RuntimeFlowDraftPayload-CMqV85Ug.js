@@ -1,0 +1,1 @@
+import{aj as l}from"./index-BHo3WI1y.js";function o({nextRuntimeDraft:t,runtimeManifestDefaults:a,resolveModelTokenDefaults:e}){return l({...t,runtimeSettingsFallbackBaseline:a,resolveModelTokenDefaults:e})}export{o as c};

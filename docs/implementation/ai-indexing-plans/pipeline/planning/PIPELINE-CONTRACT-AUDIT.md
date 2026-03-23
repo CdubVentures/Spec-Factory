@@ -2,6 +2,7 @@
 
 Audited: 2026-03-22. Against: CLAUDE.md rules (SSOT, O(1) Scaling, Contract-First, Subtractive Engineering).
 P0 completed: 2026-03-22. P1 completed: 2026-03-22. P2 re-audited: 2026-03-22. P3 completed: 2026-03-22.
+P4 post-audit fixes (2026-03-22): NEW-1 focusGroups immutability, N5 bucket mapping SSOT, B3+B4 confidence/docs.
 
 ---
 
@@ -185,10 +186,37 @@ The original audit listed 22+ hardcoded thresholds for registry migration. After
 
 ---
 
+## P4 — Post-Audit Fixes (COMPLETE, 2026-03-22)
+
+All changes verified: 7,570+ tests pass, 0 regressions.
+
+### P4-1: focusGroups Immutability (NEW-1)
+**Problem:** `buildSearchPlanningContext()` mutated `.phase` directly on locally-created focusGroup objects via filtered array references.
+**Fix:** Replaced in-place mutation with `phaseOverrides` Map + immutable `.map()` spread. Original objects are never modified. New variable `phasedGroups` used for all downstream references.
+
+### P4-2: Bucket Mapping SSOT (N5)
+**Problem:** `mapPriorityBucket` (needsetEngine) mapped `required` → `core`. `requiredLevelToBucket` (searchPlanBuilder) mapped `required` → `secondary` and `expected` → `'expected'` (invalid bucket not in PRIORITY_BUCKET_ORDER).
+**Fix:** Extracted `mapRequiredLevelToBucket()` to `discoveryRankConstants.js`. Deleted all 3 private copies (needsetEngine, searchPlanBuilder, scripts/injectFieldHistoryProof). Fixed test assertion in searchPlanBuilder.test.js.
+
+### P4-3: Confidence Fallback + Doc Cleanup (B3+B4)
+**Problem:** Brand resolution confidence used `?? 0` in 3 telemetry sites but `?? null` in the stage itself. 4 phantom registry settings documented that don't exist in code.
+**Fix:** Unified to `?? null` in queryJourney.js and searchDiscovery.js. Removed phantom registry settings from brand resolver docs. Added WHY comments on hardcoded crawlConfig and queryConcurrency in orchestrator.
+
+---
+
 ## Open Findings (Deferred)
 
-### indexingSchemaPackets.js Decomposition (P4)
+### indexingSchemaPackets.js Decomposition
 1,333 LOC. Tier weights (0.8/0.45/0.35), ambiguity thresholds, quality gates. Needs own decomposition plan before adding config threading.
 
 ### Frontier DB / SpecDb Consolidation (Future)
 Frontier tables (queries, urls, yields) are separate from SpecDb. Long-term: merge into unified per-category DB.
+
+### Tier Row Central Schema (SP2)
+Tier row fields (`tier`, `group_key`, `normalized_key`, `repeat_count`, etc.) defined inline across 5+ files with no central schema. Needs a shared Zod definition.
+
+### SERP Selector Schema Inconsistency (S2)
+`serpSelectorOutputSchema()` returns plain JSON schema while all other stages use Zod. Should be converted for consistency.
+
+### URL Naming Confusion (S4)
+`approvedUrls` is a duplicate of `selectedUrls` in discoveryResultProcessor.js. `candidateUrls` includes all candidates (selected + rejected). Naming is misleading.

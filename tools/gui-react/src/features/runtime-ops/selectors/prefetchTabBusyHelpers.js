@@ -1,7 +1,6 @@
 // WHY: Order matches the strict 8-stage sequential pipeline.
-// Stage 01: NeedSet → 02: Brand Resolver → 03: Search Profile →
-// 04: Search Planner → 05: Query Journey → 06: Search Results →
-// 07: SERP Selector → 08: Domain Classifier
+// Canonical keys live in prefetchStageKeys.ts (TypeScript SSOT).
+// This .js copy exists for node --test compatibility.
 export const DEFAULT_PREFETCH_TAB_KEYS = [
   'needset',
   'brand_resolver',

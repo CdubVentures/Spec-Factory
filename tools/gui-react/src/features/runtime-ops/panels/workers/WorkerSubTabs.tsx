@@ -3,6 +3,7 @@ import type { RuntimeOpsWorkerRow } from '../../types';
 import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBadgeClass } from '../../helpers';
 import { resolvePoolStage } from '../../poolStageRegistry';
 import { buildWorkerButtonLabel, buildWorkerButtonSubtitle, sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
+import { SearchProviderIcon } from '../../../../shared/ui/icons/SearchProviderIcon';
 
 interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];
@@ -109,15 +110,8 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                       </span>
                     )}
                   </span>
-                  {w.pool === 'search' && (w.primary_count ?? 0) > 0 && (
-                    <span className="px-1 py-0 rounded sf-text-nano font-semibold font-mono sf-chip-info shrink-0">
-                      P:{w.primary_count}
-                    </span>
-                  )}
-                  {w.pool === 'search' && (w.fallback_count ?? 0) > 0 && (
-                    <span className="px-1 py-0 rounded sf-text-nano font-semibold font-mono sf-chip-warning shrink-0">
-                      F:{w.fallback_count}
-                    </span>
+                  {w.pool === 'search' && w.current_provider && (
+                    <SearchProviderIcon provider={w.current_provider} size={14} className="sf-text-muted shrink-0 opacity-70" />
                   )}
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>

@@ -57,7 +57,7 @@ function makeJob(overrides = {}) {
 }
 
 function collectUrls(result = {}) {
-  return [...new Set([...(result.approvedUrls || []), ...(result.candidateUrls || [])])];
+  return [...new Set([...(result.selectedUrls || []), ...(result.allCandidateUrls || [])])];
 }
 
 // WHY: The SERP selector is LLM-only. Tests that mock global.fetch for search

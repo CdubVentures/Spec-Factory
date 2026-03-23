@@ -21,3 +21,9 @@ export function difficultyRank(diff) {
 export function requiredLevelRank(level) {
   return REQUIRED_LEVEL_RANKS[level] ?? 4;
 }
+
+export function mapRequiredLevelToBucket(level) {
+  if (level === 'identity' || level === 'critical' || level === 'required') return 'core';
+  if (level === 'expected') return 'secondary';
+  return 'optional';
+}

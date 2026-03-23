@@ -144,7 +144,6 @@ export async function writeDiscoveryPayloads({
   candidateRowsFinal,
   discovered,
   selectedUrls,
-  approvedUrls,
   searchProfileKeys,
 }) {
   const discoveryKey = toPosixKey(
@@ -198,7 +197,7 @@ export async function writeDiscoveryPayloads({
     runId,
     generated_at: new Date().toISOString(),
     candidate_count: candidateRowsFinal.length,
-    approved_count: approvedUrls.length,
+    approved_count: selectedUrls.length,
     candidates: candidateRowsFinal,
   };
 

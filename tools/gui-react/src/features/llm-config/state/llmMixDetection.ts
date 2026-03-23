@@ -26,7 +26,6 @@ export function detectMixIssues(
   const baseProv = resolveProviderForModel(registry, defaults.llmModelPlan);
   const reasonProv = resolveProviderForModel(registry, defaults.llmModelReasoning);
   const baseFbProv = resolveProviderForModel(registry, defaults.llmPlanFallbackModel);
-  const reasonFbProv = resolveProviderForModel(registry, defaults.llmReasoningFallbackModel);
 
   // Cross-provider base vs reasoning
   if (baseProv && reasonProv && baseProv.id !== reasonProv.id) {

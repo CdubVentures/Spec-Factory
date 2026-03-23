@@ -21,9 +21,6 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// WHY: Keys that should not generate hydration bindings (UI-only state).
-const SKIP_KEYS = new Set(['runtimeAutoSaveEnabled']);
-
 export function createRuntimeHydrationBindings(
   setters: RuntimeHydrationBindingSetters,
 ): RuntimeHydrationBindings {
@@ -33,8 +30,6 @@ export function createRuntimeHydrationBindings(
   const booleanBindings: RuntimeHydrationBindings['booleanBindings'] = [];
 
   for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-    if (SKIP_KEYS.has(entry.key)) continue;
-
     const setterName = `set${capitalize(entry.key)}`;
     const setter = setterMap[setterName];
     if (!setter) continue;

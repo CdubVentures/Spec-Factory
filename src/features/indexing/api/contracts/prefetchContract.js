@@ -148,12 +148,27 @@ export const SEARCH_PROFILE_SHAPE = Object.freeze([
 ]);
 
 export const SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE = Object.freeze([
+  // Base fields (all tiers)
   { key: 'query', coerce: 'string' },
-  { key: 'original_query', coerce: 'string' },
   { key: 'hint_source', coerce: 'string' },
   { key: 'tier', coerce: 'string' },
-  { key: 'group_key', coerce: 'string' },
   { key: 'target_fields', coerce: 'array', itemType: 'string' },
+  { key: 'doc_hint', coerce: 'string' },
+  { key: 'alias', coerce: 'string' },
+  { key: 'domain_hint', coerce: 'string' },
+  { key: 'source_host', coerce: 'string' },
+  // Tier 2+ fields
+  { key: 'group_key', coerce: 'string' },
+  // Tier 3 enrichment fields
+  { key: 'normalized_key', coerce: 'string' },
+  { key: 'repeat_count', coerce: 'int' },
+  { key: 'all_aliases', coerce: 'array', itemType: 'string' },
+  { key: 'domain_hints', coerce: 'array', itemType: 'string' },
+  { key: 'preferred_content_types', coerce: 'array', itemType: 'string' },
+  { key: 'domains_tried_for_key', coerce: 'array', itemType: 'string' },
+  { key: 'content_types_tried_for_key', coerce: 'array', itemType: 'string' },
+  // LLM-added (post-enhancement)
+  { key: 'original_query', coerce: 'string' },
 ]);
 
 /**

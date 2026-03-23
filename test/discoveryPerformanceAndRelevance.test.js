@@ -316,7 +316,7 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
       .filter(Boolean);
     assert.equal(notes.includes('deterministic_heuristic'), true);
 
-    assert.equal((result.approvedUrls || []).length > 0, true);
+    assert.equal((result.selectedUrls || []).length > 0, true);
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });
@@ -615,7 +615,7 @@ test('discoverCandidateSources filters low-signal review URLs (rss/opensearch/se
 
     // WHY: The /search?q= URL is hard-dropped as utility_shell by the hard-drop
     // filter. All other URLs survive to the LLM selector which approves them.
-    const urls = [...new Set([...(result.approvedUrls || []), ...(result.candidateUrls || [])])];
+    const urls = [...new Set([...(result.selectedUrls || []), ...(result.allCandidateUrls || [])])];
     assert.equal(
       urls.includes('https://www.rtings.com/mouse/reviews/hyperx/pulsefire-haste-2-core-wireless'),
       true

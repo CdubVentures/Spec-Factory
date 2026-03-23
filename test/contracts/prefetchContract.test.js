@@ -178,10 +178,15 @@ describe('prefetchContract', () => {
   });
 
   describe('SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', () => {
-    assertFrozenDescriptor(SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE, 'SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', 6);
+    assertFrozenDescriptor(SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE, 'SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', 17);
     it('has expected keys', () => {
       const keys = SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE.map((d) => d.key);
-      for (const k of ['query', 'original_query', 'hint_source', 'tier', 'group_key', 'target_fields']) {
+      for (const k of [
+        'query', 'hint_source', 'tier', 'target_fields', 'doc_hint', 'alias',
+        'domain_hint', 'source_host', 'group_key', 'normalized_key', 'repeat_count',
+        'all_aliases', 'domain_hints', 'preferred_content_types',
+        'domains_tried_for_key', 'content_types_tried_for_key', 'original_query',
+      ]) {
         ok(keys.includes(k), `missing key: ${k}`);
       }
     });

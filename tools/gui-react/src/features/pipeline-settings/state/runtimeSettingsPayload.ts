@@ -63,10 +63,6 @@ function serializeEntry(
   }
 }
 
-// WHY: Skip defaultsOnly entries — they're config-internal, not serialized to payload.
-// Also skip runtimeAutoSaveEnabled (UI-only state, not a runtime setting).
-const SKIP_KEYS = new Set(['runtimeAutoSaveEnabled']);
-
 export function collectRuntimeSettingsPayload(
   input: RuntimeSettingsPayloadSerializerInput,
 ): RuntimeSettings {
@@ -76,7 +72,6 @@ export function collectRuntimeSettingsPayload(
   const result: Record<string, string | number | boolean> = {};
 
   for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-    if (SKIP_KEYS.has(entry.key)) continue;
     if (entry.readOnly || entry.defaultsOnly) continue;
     result[entry.key] = serializeEntry(inputMap, baseline, entry, resolveModelTokenDefaults);
   }

@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import {
   dedupeQueryRows,
-  prioritizeQueryRows,
   enforceIdentityQueryGuard,
 } from '../discoveryQueryPlan.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
@@ -95,45 +94,18 @@ export async function runQueryJourney({
   const mergedQueryCap = queryLimit;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
-  const fieldPriority = new Map();
-  for (const f of toArray(planningHints.missingCriticalFields)) {
-    const key = String(f || '').trim();
-    if (key) fieldPriority.set(key, 'critical');
-  }
-  for (const f of toArray(planningHints.missingRequiredFields)) {
-    const key = String(f || '').trim();
-    if (key && !fieldPriority.has(key)) fieldPriority.set(key, 'required');
-  }
-  const hostFieldFit = new Map();
-  for (const [host, entry] of categoryConfig.sourceHostMap || new Map()) {
-    const policy = effectiveHostPlan?.policy_map?.[host];
-    const coverage = policy?.field_coverage || entry?.fieldCoverage;
-    if (!coverage) {
-      const tierName = entry?.tierName || '';
-      hostFieldFit.set(host, {
-        heuristic: tierName === 'manufacturer' ? 0.4 : tierName === 'lab' ? 0.3 : 0.1,
-      });
-      continue;
-    }
-    hostFieldFit.set(host, {
-      high: new Set(toArray(coverage.high)),
-      medium: new Set(toArray(coverage.medium)),
-    });
-  }
-  const rankedQueries = prioritizeQueryRows(mergedQueries.rows, variables, missingFields, {
-    fieldPriority,
-    hostFieldFit,
-  });
-  const rankedCappedQueries = rankedQueries.slice(0, mergedQueryCap);
-  const rankedCapRejectLog = rankedQueries.slice(mergedQueryCap).map((row) => ({
+  // WHY: Tier order from Search Profile IS the execution priority.
+  // No re-ranking — seeds first, groups by productivity, keys by availability/difficulty.
+  const cappedQueries = mergedQueries.rows.slice(0, mergedQueryCap);
+  const capRejectLog = mergedQueries.rows.slice(mergedQueryCap).map((row) => ({
     query: String(row?.query || '').trim(),
     source: toArray(row?.sources),
     reason: 'max_query_cap',
-    stage: 'pre_execution_rank_cap',
+    stage: 'pre_execution_cap',
     detail: `cap:${mergedQueryCap}`,
   }));
   const guardedQueries = enforceIdentityQueryGuard({
-    rows: rankedCappedQueries,
+    rows: cappedQueries,
     variables,
     variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms),
   });
@@ -171,14 +143,14 @@ export async function runQueryJourney({
     ...appendedHostPlanRows.slice(0, remainingBudget),
   ];
   let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
-  if (!queries.length && rankedCappedQueries.length > 0) {
-    const fallback = String(rankedCappedQueries[0]?.query || '').trim();
+  if (!queries.length && cappedQueries.length > 0) {
+    const fallback = String(cappedQueries[0]?.query || '').trim();
     if (fallback) {
       queries = [fallback];
-      selectedQueryRows.push({ ...rankedCappedQueries[0], query: fallback });
+      selectedQueryRows.push({ ...cappedQueries[0], query: fallback });
       guardedQueries.rejectLog.push({
         query: fallback,
-        source: toArray(rankedCappedQueries[0]?.sources),
+        source: toArray(cappedQueries[0]?.sources),
         reason: 'guard_fallback_retained',
         stage: 'pre_execution_guard',
         detail: 'all_queries_rejected',
@@ -189,7 +161,7 @@ export async function runQueryJourney({
   const queryRejectLogCombined = [
     ...toArray(searchProfileBase?.query_reject_log),
     ...toArray(mergedQueries.rejectLog),
-    ...toArray(rankedCapRejectLog),
+    ...toArray(capRejectLog),
     ...toArray(guardedQueries.rejectLog),
     ...toArray(hostPlanRejectLog),
   ].slice(0, 300);
@@ -240,7 +212,7 @@ export async function runQueryJourney({
       officialDomain: brandResolution.officialDomain || '',
       supportDomain: brandResolution.supportDomain || '',
       aliases: brandResolution.aliases || [],
-      confidence: brandResolution.confidence ?? 0,
+      confidence: brandResolution.confidence ?? null,
       reasoning: brandResolution.reasoning || [],
     } : null,
     key: searchProfileKeys.inputKey,

@@ -5,7 +5,7 @@ import {
   getFieldStudioMapValidationOutcome,
   assertFieldStudioMapValidationOrThrow,
   resolveFieldStudioMapPayloadForSave,
-} from '../tools/gui-react/src/pages/studio/mapValidationPreflight.js';
+} from '../tools/gui-react/src/features/studio/state/mapValidationPreflight.js';
 
 test('getFieldStudioMapValidationOutcome prefers explicit valid flag', () => {
   const result = getFieldStudioMapValidationOutcome({

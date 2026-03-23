@@ -1,40 +1,41 @@
-// WHY: Pure display-logic helpers for tier-aware Search Profile panel.
-// Tier classification is SSOT — classifyQueryTier is the single source.
+// WHY: O(1) tier registry — single source for tier metadata.
+// Adding a new tier = 1 entry in TIER_REGISTRY. All maps derived.
 
 import type { PrefetchSearchProfileQueryRow } from '../types';
 
-export type TierKey = 'seed' | 'group' | 'key' | 'host_plan' | 'legacy';
+export type TierKey = 'seed' | 'group' | 'key' | 'host_plan';
 
-const TIER_MAP: Record<string, TierKey> = {
-  seed: 'seed',
-  group_search: 'group',
-  key_search: 'key',
-  host_plan: 'host_plan',
-};
+interface TierEntry {
+  readonly key: TierKey;
+  readonly label: string;
+  readonly chipClass: string;
+  readonly tierFieldValues: readonly string[];
+  readonly hintSourceValues: readonly string[];
+}
 
-const HINT_SOURCE_TIER_MAP: Record<string, TierKey> = {
-  tier1_seed: 'seed',
-  tier2_group: 'group',
-  tier3_key: 'key',
-  'v2.host_plan': 'host_plan',
-  legacy: 'legacy',
-};
+export const TIER_REGISTRY: readonly TierEntry[] = Object.freeze([
+  { key: 'seed',      label: 'Seed',      chipClass: 'sf-chip-accent',  tierFieldValues: ['seed'],         hintSourceValues: ['tier1_seed'] },
+  { key: 'group',     label: 'Group',     chipClass: 'sf-chip-warning', tierFieldValues: ['group_search'], hintSourceValues: ['tier2_group'] },
+  { key: 'key',       label: 'Key',       chipClass: 'sf-chip-info',    tierFieldValues: ['key_search'],   hintSourceValues: ['tier3_key'] },
+  { key: 'host_plan', label: 'Host Plan', chipClass: 'sf-chip-neutral', tierFieldValues: ['host_plan'],    hintSourceValues: ['v2.host_plan'] },
+]);
 
-const TIER_LABELS: Record<TierKey, string> = {
-  seed: 'Seed',
-  group: 'Group',
-  key: 'Key',
-  host_plan: 'Host Plan',
-  legacy: 'Legacy',
-};
+// WHY: Derived maps — O(1) addition, zero manual sync.
+export const TIER_MAP: Record<string, TierKey> = Object.fromEntries(
+  TIER_REGISTRY.flatMap(e => e.tierFieldValues.map(v => [v, e.key]))
+) as Record<string, TierKey>;
 
-const TIER_CHIP_CLASSES: Record<TierKey, string> = {
-  seed: 'sf-chip-accent',
-  group: 'sf-chip-warning',
-  key: 'sf-chip-info',
-  host_plan: 'sf-chip-neutral',
-  legacy: 'sf-chip-neutral',
-};
+export const HINT_SOURCE_TIER_MAP: Record<string, TierKey> = Object.fromEntries(
+  TIER_REGISTRY.flatMap(e => e.hintSourceValues.map(v => [v, e.key]))
+) as Record<string, TierKey>;
+
+const TIER_LABELS: Record<TierKey, string> = Object.fromEntries(
+  TIER_REGISTRY.map(e => [e.key, e.label])
+) as Record<TierKey, string>;
+
+const TIER_CHIP_CLASSES: Record<TierKey, string> = Object.fromEntries(
+  TIER_REGISTRY.map(e => [e.key, e.chipClass])
+) as Record<TierKey, string>;
 
 export function classifyQueryTier(row: PrefetchSearchProfileQueryRow): TierKey {
   const tier = String(row.tier ?? '').trim();
@@ -53,7 +54,7 @@ export function tierChipClass(tier: string): string {
 }
 
 export function groupByTier(rows: PrefetchSearchProfileQueryRow[]): Record<TierKey, PrefetchSearchProfileQueryRow[]> {
-  const result: Record<TierKey, PrefetchSearchProfileQueryRow[]> = { seed: [], group: [], key: [], host_plan: [], legacy: [] };
+  const result: Record<TierKey, PrefetchSearchProfileQueryRow[]> = { seed: [], group: [], key: [], host_plan: [] };
   for (const row of rows) {
     result[classifyQueryTier(row)].push(row);
   }
@@ -61,7 +62,7 @@ export function groupByTier(rows: PrefetchSearchProfileQueryRow[]): Record<TierK
 }
 
 interface TierSlot { count: number; pct: number }
-interface TierBudgetSummary { seed: TierSlot; group: TierSlot; key: TierSlot; host_plan: TierSlot; legacy: TierSlot; total: number; cap: number }
+interface TierBudgetSummary { seed: TierSlot; group: TierSlot; key: TierSlot; host_plan: TierSlot; total: number; cap: number }
 
 export function buildTierBudgetSummary(rows: PrefetchSearchProfileQueryRow[], cap: number): TierBudgetSummary {
   const grouped = groupByTier(rows);
@@ -72,7 +73,6 @@ export function buildTierBudgetSummary(rows: PrefetchSearchProfileQueryRow[], ca
     group: { count: grouped.group.length, pct: pct(grouped.group.length) },
     key: { count: grouped.key.length, pct: pct(grouped.key.length) },
     host_plan: { count: grouped.host_plan.length, pct: pct(grouped.host_plan.length) },
-    legacy: { count: grouped.legacy.length, pct: pct(grouped.legacy.length) },
     total,
     cap,
   };

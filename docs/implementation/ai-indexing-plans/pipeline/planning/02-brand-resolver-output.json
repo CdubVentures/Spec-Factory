@@ -5,22 +5,22 @@
     "officialDomain": "string",
     "aliases": "string[]",
     "supportDomain": "string",
-    "confidence": "number (0-1, registry-driven via brandResolverDefaultConfidence)",
+    "confidence": "number (0-1, LLM-derived via parseConfidence()) or null",
     "reasoning": "string[]"
   },
   "empty_return_shape": {
     "officialDomain": "",
     "aliases": [],
     "supportDomain": "",
-    "confidence": 0,
+    "confidence": null,
     "reasoning": []
   },
   "confidence_behavior": [
-    "cache hit returns cached.confidence ?? defaultConfidence (registry-driven, default 0.8)",
-    "LLM success with officialDomain returns defaultConfidence from configFloat(config, 'brandResolverDefaultConfidence')",
-    "LLM success without officialDomain returns 0",
-    "empty brand / no callLlmFn / LLM error returns 0",
-    "confidence is never model-derived — it is tiered: cache stored value > registry default > 0"
+    "cache hit: parseConfidence(cached.confidence) — stored value, clamped 0-1, null if missing",
+    "LLM success with officialDomain: parseConfidence(result?.confidence) — LLM-provided",
+    "LLM success without officialDomain: null (no resolution = no confidence)",
+    "empty brand / no callLlmFn / LLM error: null",
+    "confidence IS model-derived — parseConfidence() clamps to 0-1 (values >1 divided by 100)"
   ],
   "caller_statuses": [
     "resolved — officialDomain is non-empty",

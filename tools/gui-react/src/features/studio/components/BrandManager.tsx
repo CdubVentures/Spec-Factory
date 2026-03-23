@@ -9,7 +9,7 @@ import { Spinner } from "../../../shared/ui/feedback/Spinner";
 import { inputCls, labelCls } from "./studioConstants";
 import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { BrandImpactAnalysis } from "../../../types/product";
+import type { BrandImpactAnalysis, Brand, BrandMutationResult } from "../../../types/product";
 
 import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../../shared/ui/buttonClasses';
 const borderPanelCls = "sf-border-default";
@@ -31,41 +31,6 @@ const redConfirmButtonCls =
   "px-3 py-1.5 text-xs sf-danger-button-solid disabled:opacity-40 disabled:cursor-not-allowed";
 const amberConfirmButtonCls =
   "px-3 py-1.5 text-xs sf-confirm-button-solid disabled:opacity-40 disabled:cursor-not-allowed";
-
-interface Brand {
-  slug: string;
-  canonical_name: string;
-  identifier?: string;
-  aliases: string[];
-  categories: string[];
-  website: string;
-  added_at: string;
-  added_by: string;
-  updated_at?: string;
-  rename_history?: Array<{
-    previous_slug: string;
-    previous_name: string;
-    renamed_at: string;
-  }>;
-}
-
-interface BrandMutationResult {
-  ok: boolean;
-  error?: string;
-  slug?: string;
-  brand?: Brand;
-  seeded?: number;
-  skipped?: number;
-  total_brands?: number;
-  categories_scanned?: number;
-  oldSlug?: string;
-  newSlug?: string;
-  identifier?: string;
-  oldName?: string;
-  newName?: string;
-  cascaded_products?: number;
-  cascade_failures?: number;
-}
 
 type BrandBulkPreviewStatus =
   | "ready"

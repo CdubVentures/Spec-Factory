@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 function loadWorkbenchHelpers() {
-  return loadBundledModule('tools/gui-react/src/pages/studio/workbench/workbenchHelpers.ts', {
+  return loadBundledModule('tools/gui-react/src/features/studio/workbench/workbenchHelpers.ts', {
     prefix: 'workbench-helpers-',
   });
 }

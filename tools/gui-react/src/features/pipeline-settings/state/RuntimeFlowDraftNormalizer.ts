@@ -140,9 +140,6 @@ function normalizeEntry(
   }
 }
 
-// --- Entries to skip (not part of RuntimeDraft) ---
-const SKIP_KEYS = new Set(['runtimeAutoSaveEnabled']);
-
 export function normalizeRuntimeDraft(
   source: RuntimeSettings | undefined,
   fallback: RuntimeSettingDefaults,
@@ -152,7 +149,6 @@ export function normalizeRuntimeDraft(
   const result: Record<string, unknown> = {};
 
   for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-    if (SKIP_KEYS.has(entry.key)) continue;
     result[entry.key] = normalizeEntry(raw, fb, entry);
   }
 

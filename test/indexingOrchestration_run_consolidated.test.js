@@ -564,8 +564,8 @@ function makeStageStubs(overrides = {}) {
     }),
     processDiscoveryResultsFn: async () => ({
       enabled: true,
-      approvedUrls: ['https://approved.example/spec'],
-      candidateUrls: ['https://candidate.example/spec'],
+      selectedUrls: ['https://approved.example/spec'],
+      allCandidateUrls: ['https://candidate.example/spec'],
       candidates: [],
     }),
     runDomainClassifierFn: () => ({ enqueuedCount: 0, seededCount: 0 }),
@@ -705,8 +705,8 @@ test('runDiscoverySeedPlan skips candidate seeding when fetchCandidateSources is
     ...makeStageStubs({
       processDiscoveryResultsFn: async () => ({
         enabled: true,
-        approvedUrls: [],
-        candidateUrls: ['https://candidate.example/spec'],
+        selectedUrls: [],
+        allCandidateUrls: ['https://candidate.example/spec'],
         candidates: [],
       }),
       runDomainClassifierFn: (args) => runDomainClassifier(args),

@@ -1383,3 +1383,22 @@ Node.js v22.14.0
 [SETTINGS-DEBUG] PUT /runtime-settings keys= 215 fetchConcurrency= 11
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-D7u2CHaf.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DWUU2whg.js, CategoryManager-C6HRe2C9.js, Chip-DT26XC1B.js, ComponentReviewPage-Cc7_beMo.js, DataTable-BmrjKX2I.js, DrawerShell-BHGAscle.js, fieldNormalize-gPMNHgg-.js, FlagsSection-D4mBHVTb.js, formatting-B6A_RRxb.js, index-BHo3WI1y.js, index-DG6IV-ny.css, IndexingPage-BOvx8jif.js, indexlabRunsQuery-DZnl132H.js, invalidateFieldRulesQueries-ffxE8yI8.js, LlmConfigPage-Bcif2Kzt.js, LlmExtractionSection-BNHyP8hF.js, LlmGlobalSection-ea7EmLWO.js, LlmPhaseSection-BTxrHZMM.js, llmPolicyDefaults-BXw-uoE5.js, LlmProviderRegistrySection-Ditd9sqS.js, LlmSettingsPage-Cqfrq-BY.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-CkPCrSYI.js, PipelineSettingsPage-Ds6JW1EE.js, PipelineSourceStrategySection-DMtVixbl.js, ProductPage-DFFuzlUs.js, ReviewPage-CgmyC_z3.js, RuntimeFlowAutomationSection-Bdqffb4j.js, RuntimeFlowBrowserRenderingSection-fUALw84u.js, RuntimeFlowDraftPayload-CMqV85Ug.js, RuntimeFlowFetchNetworkSection-DvIZ6vk2.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-BPe6CEM6.js, RuntimeFlowOcrSection-CliCA646.js, RuntimeFlowParsingSection-rdmxNJiI.js, RuntimeFlowRunOutputSection-Bdnnuy2S.js, RuntimeFlowRunSetupSection-A3qoYY6G.js, RuntimeOpsPage-BaF556iK.js, RuntimeSettingsFlowCard-CkeNNl_X.js, settingsStatus-BVm315aX.js, SidebarShell-E8p-Pr1p.js, StoragePage-ColbOt79.js, StudioPage-zKs7k3W5.js, TabStrip-Klqv926z.js, TestModePage-BibyepvX.js, TrafficLight-CL38Txp-.js, useFieldLabels-DBWbMKNw.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 215 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11

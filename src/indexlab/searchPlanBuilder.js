@@ -5,6 +5,7 @@
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
 import { configInt } from '../shared/settingsAccessor.js';
 import { stableHashString } from '../shared/stableHash.js';
+import { mapRequiredLevelToBucket } from '../shared/discoveryRankConstants.js';
 
 function defaultQueryHash(query) {
   return stableHashString(String(query || '').trim().toLowerCase().replace(/\s+/g, ' '));
@@ -47,12 +48,6 @@ const PLANNER_SYSTEM_PROMPT = [
 
 // --- Core ---
 
-function requiredLevelToBucket(level) {
-  if (level === 'identity' || level === 'critical') return 'core';
-  if (level === 'required') return 'secondary';
-  if (level === 'expected') return 'expected';
-  return 'optional';
-}
 
 export function computeDeltas(ctx) {
   const currentMap = new Map();
@@ -204,7 +199,7 @@ function assembleSchema4(ctx, queries, {
     bundle.fields = (bundle._fieldKeys || []).map(fk => ({
       key: fk,
       state: satSet.has(fk) ? 'satisfied' : weakSet.has(fk) ? 'weak' : conflictSet.has(fk) ? 'conflict' : 'missing',
-      bucket: requiredLevelToBucket(fpm[fk] || 'optional'),
+      bucket: mapRequiredLevelToBucket(fpm[fk] || 'optional'),
     }));
   }
 

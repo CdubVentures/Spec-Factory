@@ -8,9 +8,8 @@ import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.
 export const domainClassifierInputSchema = z.object({
   discoveryResult: z.object({
     candidates: z.array(z.unknown()).optional().default([]),
-    approvedUrls: z.array(z.string()).optional().default([]),
     selectedUrls: z.array(z.string()).optional().default([]),
-    candidateUrls: z.array(z.string()).optional().default([]),
+    allCandidateUrls: z.array(z.string()).optional().default([]),
   }).passthrough(),
   planner: z.object({
     enqueue: z.custom((v) => typeof v === 'function', { message: 'planner.enqueue must be a function' }),
@@ -79,8 +78,8 @@ export function runDomainClassifier({
 
   // WHY: Single enqueue path — triage metadata drives queue routing.
   // No caps, no approved/candidate split. SERP selector already decided what survives.
-  const approvedUrls = discoveryResult.approvedUrls || discoveryResult.selectedUrls || [];
-  const candidateUrls = discoveryResult.candidateUrls || [];
+  const approvedUrls = discoveryResult.selectedUrls || [];
+  const candidateUrls = discoveryResult.allCandidateUrls || [];
   for (const url of approvedUrls) {
     const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
     planner.enqueue(url, 'discovery_approved', {

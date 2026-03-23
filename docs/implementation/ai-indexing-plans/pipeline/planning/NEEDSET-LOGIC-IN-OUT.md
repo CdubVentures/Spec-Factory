@@ -10,6 +10,13 @@ extracted to `src/shared/discoveryRankConstants.js`. Accessor functions re-expor
 backward compatibility. Schema 2/3/4 naming convention retained in code comments — refers to the transformation
 chain: Schema 1 (raw input) → Schema 2 (per-field assessment) → Schema 3 (group planning) → Schema 4 (LLM annotations).
 
+Post-audit fixes (2026-03-22):
+- `mapRequiredLevelToBucket()` extracted to `discoveryRankConstants.js` as shared SSOT. Private copies in
+  `needsetEngine.js` and `searchPlanBuilder.js` deleted. Fixes semantic divergence where `required` mapped to
+  `core` in one file and `secondary` in the other.
+- `buildSearchPlanningContext()` phase assignment refactored to immutable pattern: `phaseOverrides` Map +
+  `.map()` spread instead of in-place `g.phase = 'next'` mutation. Original `focusGroups` objects are never modified.
+
 P1 (2026-03-22, COMPLETE): `field_history` table added to specDb. Per-field search history persisted to DB
 at end of each round inside the `exportToSpecDb()` transaction (atomic with product_run, item_field_state,
 candidate writes). On startup, `runUntilComplete.js` loads `previousFieldHistories` from DB for crash recovery.

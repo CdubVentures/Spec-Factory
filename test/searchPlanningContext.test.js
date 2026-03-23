@@ -1891,6 +1891,93 @@ describe('V4 — budget-aware phase assignment', () => {
   });
 });
 
+describe('phase assignment immutability', () => {
+  it('no focus_group has phase=pending in the output (pending is resolved to now/next)', () => {
+    const ns = makeNeedSetOutput({
+      fields: [
+        makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' }),
+        makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
+        makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
+      ]
+    });
+    for (const round of [0, 1, 2]) {
+      const result = buildSearchPlanningContext({
+        needSetOutput: ns,
+        runContext: makeRunContext({ round }),
+      });
+      for (const g of result.focus_groups) {
+        assert.notEqual(g.phase, 'pending',
+          `group ${g.key} at round ${round} must not have phase=pending`);
+      }
+    }
+  });
+
+  it('budget overflow: excess worthy groups get next not now', () => {
+    const fields = [];
+    for (let g = 0; g < 3; g++) {
+      for (let f = 0; f < 4; f++) {
+        fields.push(makeField({
+          field_key: `g${g}_f${f}`,
+          group_key: `grp${g}`,
+          required_level: 'expected',
+          state: 'unknown',
+          need_score: (3 - g) * 10,
+        }));
+      }
+    }
+    const result = buildSearchPlanningContext({
+      needSetOutput: makeNeedSetOutput({ fields }),
+      runContext: makeRunContext({ round: 1 }),
+      config: { searchProfileQueryCap: 3 },
+    });
+    const nowCount = result.focus_groups.filter(g => g.phase === 'now').length;
+    const nextCount = result.focus_groups.filter(g => g.phase === 'next').length;
+    assert.ok(nowCount >= 1, 'at least one group should be now');
+    assert.equal(nowCount + nextCount, 3, 'all 3 groups accounted for');
+  });
+
+  it('focus_groups from two calls are independent objects (no shared mutation)', () => {
+    const ns = makeNeedSetOutput({
+      fields: [
+        makeField({ field_key: 'f1', group_key: 'grp', state: 'unknown', required_level: 'critical' }),
+        makeField({ field_key: 'f2', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
+        makeField({ field_key: 'f3', group_key: 'grp', state: 'unknown', required_level: 'expected' }),
+      ]
+    });
+    const args = {
+      needSetOutput: ns,
+      runContext: makeRunContext({ round: 1 }),
+      config: { searchProfileQueryCap: 10 },
+    };
+    const r1 = buildSearchPlanningContext(args);
+    const r2 = buildSearchPlanningContext(args);
+
+    r1.focus_groups[0].phase = 'CORRUPTED';
+    assert.notEqual(r2.focus_groups[0].phase, 'CORRUPTED',
+      'focus_groups objects must not be shared across calls');
+  });
+
+  it('needSetOutput is not mutated by buildSearchPlanningContext', () => {
+    const ns = makeNeedSetOutput({
+      fields: [
+        makeField({ field_key: 'f1', group_key: 'grp_a', state: 'unknown', required_level: 'critical' }),
+        makeField({ field_key: 'f2', group_key: 'grp_a', state: 'unknown', required_level: 'expected' }),
+        makeField({ field_key: 'f3', group_key: 'grp_a', state: 'unknown', required_level: 'expected' }),
+        makeField({ field_key: 'f4', group_key: 'grp_b', state: 'unknown', required_level: 'optional' }),
+      ]
+    });
+    const snapshot = structuredClone(ns);
+
+    buildSearchPlanningContext({
+      needSetOutput: ns,
+      runContext: makeRunContext({ round: 1 }),
+      config: { searchProfileQueryCap: 10 },
+    });
+
+    assert.deepStrictEqual(ns, snapshot, 'needSetOutput must not be mutated');
+  });
+});
+
 // ── V4: computeTierAllocation ──
 
 function makeSeedStatus(overrides = {}) {

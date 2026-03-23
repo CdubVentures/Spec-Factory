@@ -3,13 +3,13 @@
 Date: 2026-03-17
 
 > **Purpose:** Preserve the rollout-era IDX/source audit while separating historical observations from the current code-proven seams.
-> **Current authority:** [../../04-features/indexing-lab.md](../../04-features/indexing-lab.md), [../../04-features/category-authority.md](../../04-features/category-authority.md), [../../04-features/pipeline-and-runtime-settings.md](../../04-features/pipeline-and-runtime-settings.md)
+> **Current authority:** [../../../04-features/indexing-lab.md](../../../04-features/indexing-lab.md), [../../../04-features/category-authority.md](../../../04-features/category-authority.md), [../../../04-features/pipeline-and-runtime-settings.md](../../../04-features/pipeline-and-runtime-settings.md)
 
 This file remains in the preserved `docs/implementation/ai-indexing-plans/` subtree. It should not be treated as the live runtime source of truth.
 
 ## 2026-03-17 Audit Corrections
 
-- The old follow-up link `docs/category-source-authority-guide.md` was broken. The current maintained category/source authority doc is [../../04-features/category-authority.md](../../04-features/category-authority.md).
+- The old follow-up link `docs/category-source-authority-guide.md` was broken. The current maintained category/source authority doc is [../../../04-features/category-authority.md](../../../04-features/category-authority.md).
 - The earlier source inventory counts in this file were stale. Current `sources.json` counts are `keyboard=23`, `monitor=23`, `mouse=22`.
 - The older statement that the live path still failed to emit a non-null `search_profile.effective_host_plan` is no longer safe as current truth. Current code and tests prove `discoverCandidateSources()` can emit a non-null host plan when `categoryConfig.validatedRegistry` is present.
 - `priority.block_publish_when_unk` remains live in publish-time behavior through `src/publish/publishingPipeline.js`.
@@ -81,6 +81,6 @@ The following should now be read as historical observations only:
 
 ## Related Documents
 
-- [../../04-features/indexing-lab.md](../../04-features/indexing-lab.md) - current end-to-end indexing run flow.
-- [../../04-features/category-authority.md](../../04-features/category-authority.md) - current authority snapshot and artifact-root ownership.
-- [../../05-operations/spec_factory_knobs_maintenance.md](../../05-operations/spec_factory_knobs_maintenance.md) - current maintained settings/source-strategy maintenance snapshot.
+- [../../../04-features/indexing-lab.md](../../../04-features/indexing-lab.md) - current end-to-end indexing run flow.
+- [../../../04-features/category-authority.md](../../../04-features/category-authority.md) - current authority snapshot and artifact-root ownership.
+- [../../../05-operations/spec_factory_knobs_maintenance.md](../../../05-operations/spec_factory_knobs_maintenance.md) - current maintained settings/source-strategy maintenance snapshot.

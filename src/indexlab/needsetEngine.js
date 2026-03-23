@@ -13,6 +13,7 @@ import {
   availabilityRank,
   difficultyRank,
   requiredLevelRank,
+  mapRequiredLevelToBucket,
 } from '../shared/discoveryRankConstants.js';
 
 const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
@@ -129,13 +130,6 @@ function mapInternalToSchemaState(internalState) {
   return internalState; // 'weak' and 'conflict' unchanged
 }
 
-function mapPriorityBucket(requiredLevel) {
-  if (requiredLevel === 'identity' || requiredLevel === 'critical' || requiredLevel === 'required') {
-    return 'core';
-  }
-  if (requiredLevel === 'expected') return 'secondary';
-  return 'optional';
-}
 
 // WHY: Logic Box 1 step 1 requires normalization of per-field hints
 // to prevent duplicate/variant terms from wasting planner query budget.
@@ -432,7 +426,7 @@ export function computeNeedSet({
 
     const internalState = deriveFieldState({ missing, conflict, confidence, passTarget });
     const schemaState = mapInternalToSchemaState(internalState);
-    const priorityBucket = mapPriorityBucket(requiredLevel);
+    const priorityBucket = mapRequiredLevelToBucket(requiredLevel);
     const searchHints = extractSearchHints(rule);
 
     const preferredContentTypes = searchHints.preferred_content_types.length > 0

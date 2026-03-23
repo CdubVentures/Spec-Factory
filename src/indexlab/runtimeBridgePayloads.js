@@ -3,6 +3,7 @@
 
 import fs from 'node:fs/promises';
 import { toIso, asInt, asFloat } from './runtimeBridgeCoercers.js';
+import { SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE } from '../features/indexing/api/contracts/prefetchContract.js';
 
 export function toIdentityEvidenceRow(row = {}, index = 0) {
   const reasonCodes = Array.isArray(row?.reason_codes)
@@ -175,29 +176,25 @@ export function toSearchProfileQueryRow(entry = {}) {
   const toStringArray = (arr) => Array.isArray(arr)
     ? arr.map((v) => String(v || '').trim()).filter(Boolean)
     : [];
-  return {
-    query: String(entry.query || '').trim(),
-    target_fields: toStringArray(entry.target_fields),
-    attempts: Math.max(0, asInt(entry.attempts, 0)),
-    result_count: Math.max(0, asInt(entry.result_count, 0)),
-    providers: toStringArray(entry.providers).slice(0, 8),
-    hint_source: String(entry.hint_source || '').trim(),
-    doc_hint: String(entry.doc_hint || '').trim(),
-    domain_hint: String(entry.domain_hint || '').trim(),
-    source_host: String(entry.source_host || '').trim(),
-    __from_plan_profile: Boolean(entry.__from_plan_profile),
-    // WHY: Tier metadata from NeedSet → Search Profile tier builders.
-    // Absent on legacy (archetype) rows — safe defaults preserve backward compat.
-    tier: String(entry.tier || '').trim(),
-    group_key: String(entry.group_key || '').trim(),
-    normalized_key: String(entry.normalized_key || '').trim(),
-    repeat_count: Math.max(0, asInt(entry.repeat_count, 0)),
-    all_aliases: toStringArray(entry.all_aliases),
-    domain_hints: toStringArray(entry.domain_hints),
-    preferred_content_types: toStringArray(entry.preferred_content_types),
-    domains_tried_for_key: toStringArray(entry.domains_tried_for_key),
-    content_types_tried_for_key: toStringArray(entry.content_types_tried_for_key),
-  };
+
+  // WHY: Tier row fields derived from SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE (SSOT).
+  // Adding a new tier field = one line in prefetchContract.js, zero changes here.
+  const out = {};
+  for (const { key, coerce, itemType } of SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE) {
+    if (coerce === 'string') out[key] = String(entry[key] ?? '').trim();
+    else if (coerce === 'int') out[key] = Math.max(0, asInt(entry[key], 0));
+    else if (coerce === 'array') out[key] = itemType === 'string'
+      ? toStringArray(entry[key])
+      : (Array.isArray(entry[key]) ? entry[key] : []);
+  }
+
+  // Search-profile-specific fields (not part of tier row shape)
+  out.attempts = Math.max(0, asInt(entry.attempts, 0));
+  out.result_count = Math.max(0, asInt(entry.result_count, 0));
+  out.providers = toStringArray(entry.providers).slice(0, 8);
+  out.__from_plan_profile = Boolean(entry.__from_plan_profile);
+
+  return out;
 }
 
 export function toSearchProfileQueryCard(entry = {}) {

@@ -158,7 +158,7 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
     // WHY: Brand-mismatched manufacturer URLs survive as candidates instead of
     // being hard-dropped. The LLM SERP selector sets identity_prelim from its
     // own confidence assessment — brand mismatch is not a hard-drop gate.
-    const urls = [...new Set([...(result.approvedUrls || []), ...(result.candidateUrls || [])])];
+    const urls = [...new Set([...(result.selectedUrls || []), ...(result.allCandidateUrls || [])])];
     assert.equal(urls.some((url) => url.includes('logitechg.com')), true);
 
     // razer.com URLs survive (not hard-dropped) — brand mismatch is soft

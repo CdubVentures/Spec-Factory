@@ -1064,7 +1064,7 @@ describe('buildSearchPlan', () => {
       assert.equal(byKey.lod.state, 'conflict');
     });
 
-    it('bucket mapping: identity/critical→core, required→secondary, expected→expected, optional→optional', async () => {
+    it('bucket mapping: identity/critical/required→core, expected→secondary, optional→optional', async () => {
       fetchMock = installFetchMock(makeLlmResponse());
       const ctx = makeSearchPlanningContext({
         focus_groups: [
@@ -1081,8 +1081,8 @@ describe('buildSearchPlan', () => {
       const byKey = Object.fromEntries(bundle.fields.map(f => [f.key, f]));
       assert.equal(byKey.a.bucket, 'core');
       assert.equal(byKey.b.bucket, 'core');
-      assert.equal(byKey.c.bucket, 'secondary');
-      assert.equal(byKey.d.bucket, 'expected');
+      assert.equal(byKey.c.bucket, 'core');
+      assert.equal(byKey.d.bucket, 'secondary');
       assert.equal(byKey.e.bucket, 'optional');
     });
 

@@ -8,6 +8,10 @@ import {
 } from '../src/indexlab/needsetEngine.js';
 
 import {
+  mapRequiredLevelToBucket,
+} from '../src/shared/discoveryRankConstants.js';
+
+import {
   computeGroupProductivityScore,
 } from '../src/indexlab/searchPlanningContext.js';
 
@@ -96,6 +100,25 @@ describe('discoveryRankConstants characterization', () => {
       const score5 = computeGroupProductivityScore(fields, 5);
       // Repeat penalty caps at 5 * 10 = 50
       assert.equal(score10, score5);
+    });
+  });
+
+  describe('mapRequiredLevelToBucket', () => {
+    it('identity/critical/required → core', () => {
+      assert.equal(mapRequiredLevelToBucket('identity'), 'core');
+      assert.equal(mapRequiredLevelToBucket('critical'), 'core');
+      assert.equal(mapRequiredLevelToBucket('required'), 'core');
+    });
+
+    it('expected → secondary', () => {
+      assert.equal(mapRequiredLevelToBucket('expected'), 'secondary');
+    });
+
+    it('optional and unknown → optional', () => {
+      assert.equal(mapRequiredLevelToBucket('optional'), 'optional');
+      assert.equal(mapRequiredLevelToBucket(''), 'optional');
+      assert.equal(mapRequiredLevelToBucket(undefined), 'optional');
+      assert.equal(mapRequiredLevelToBucket(null), 'optional');
     });
   });
 });

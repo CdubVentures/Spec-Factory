@@ -410,15 +410,8 @@ export interface PipelineFlowResponse {
 
 // ── Pre-Fetch Phases (Workers tab pinned row) ──
 
-export type PrefetchTabKey =
-  | 'needset'
-  | 'search_profile'
-  | 'brand_resolver'
-  | 'search_planner'
-  | 'query_journey'
-  | 'serp_selector'
-  | 'domain_classifier'
-  | 'search_results';
+import type { PrefetchTabKey as _PrefetchTabKey } from './panels/prefetch/prefetchStageKeys';
+export type PrefetchTabKey = _PrefetchTabKey;
 
 export interface PrefetchNeedSetBundle {
   bundle_id: string;

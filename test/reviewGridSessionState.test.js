@@ -4,7 +4,7 @@ import { createStorage, withWindowStub } from './helpers/browserStorageHarness.j
 import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 function loadReviewGridSessionStateModule() {
-  return loadBundledModule('tools/gui-react/src/pages/review/reviewGridSessionState.ts', {
+  return loadBundledModule('tools/gui-react/src/features/review/state/reviewGridSessionState.ts', {
     prefix: 'review-grid-session-state-',
   });
 }

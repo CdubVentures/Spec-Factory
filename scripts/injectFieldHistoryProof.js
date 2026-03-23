@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { mapRequiredLevelToBucket } from '../src/shared/discoveryRankConstants.js';
 /**
  * injectFieldHistoryProof.js
  *
@@ -72,12 +73,6 @@ const FIELD_GROUPS = [
   { key: 'market', label: 'Market & Availability', desc: 'Price and release information', source_target: 'marketplace', content_target: 'store listing', search_intent: 'commercial', host_class: 'marketplace', priority: 7, field_keys: ['release_date', 'price_usd'], required_levels: { release_date: 'optional', price_usd: 'optional' } },
 ];
 
-function requiredLevelToBucket(level) {
-  if (level === 'identity' || level === 'critical') return 'core';
-  if (level === 'required') return 'secondary';
-  if (level === 'expected') return 'expected';
-  return 'optional';
-}
 
 function buildEnrichedNeedsetPayload({ productId, runId, category }) {
   // Build NeedSet fields from PROVENANCE
@@ -120,7 +115,7 @@ function buildEnrichedNeedsetPayload({ productId, runId, category }) {
     }
     const fields = fg.field_keys.map((fk) => {
       const enriched = enrichedFields.find((f) => f.field_key === fk);
-      return { key: fk, state: enriched?.state || 'missing', bucket: requiredLevelToBucket(fg.required_levels[fk] || 'optional') };
+      return { key: fk, state: enriched?.state || 'missing', bucket: mapRequiredLevelToBucket(fg.required_levels[fk] || 'optional') };
     });
     return {
       key: fg.key, label: fg.label, desc: fg.desc, source_target: fg.source_target,

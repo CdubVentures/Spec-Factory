@@ -4,7 +4,7 @@ import { api } from '../../../../api/client';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore';
 import { useRuntimeSettingsReader } from '../../../pipeline-settings';
-import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, PrefetchNeedSetData } from '../../types';
+import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../../types';
 import { getRefetchInterval } from '../../helpers';
 import { WorkerSubTabs } from './WorkerSubTabs';
 import { WorkerLivePanel } from './WorkerLivePanel';
@@ -12,14 +12,7 @@ import { WorkerDataDrawer } from './WorkerDataDrawer';
 import { SearchWorkerPanel } from './SearchWorkerPanel';
 import { LlmCallsDashboard } from './LlmCallsDashboard';
 import { PrefetchTabRow } from '../prefetch/PrefetchTabRow';
-import { PrefetchNeedSetPanel } from '../prefetch/PrefetchNeedSetPanel';
-import { PrefetchSearchProfilePanel } from '../prefetch/PrefetchSearchProfilePanel';
-import { PrefetchBrandResolverPanel } from '../prefetch/PrefetchBrandResolverPanel';
-import { PrefetchSearchPlannerPanel } from '../prefetch/PrefetchSearchPlannerPanel';
-import { PrefetchQueryJourneyPanel } from '../prefetch/PrefetchQueryJourneyPanel';
-import { PrefetchSearchResultsPanel } from '../prefetch/PrefetchSearchResultsPanel';
-import { PrefetchSerpTriagePanel } from '../prefetch/PrefetchSerpTriagePanel';
-import { PrefetchDomainClassifierPanel } from '../prefetch/PrefetchDomainClassifierPanel';
+import { PREFETCH_STAGE_REGISTRY, PREFETCH_STAGE_KEYS } from '../prefetch/prefetchStageRegistry';
 import { buildBusyPrefetchTabs } from '../../selectors/prefetchTabBusyHelpers.js';
 import {
   buildDisabledPrefetchTabs,
@@ -37,16 +30,8 @@ interface WorkersTabProps {
   wsUrl?: string;
 }
 
-const PREFETCH_TAB_KEYS = [
-  'needset',
-  'search_profile',
-  'brand_resolver',
-  'search_planner',
-  'query_journey',
-  'search_results',
-  'serp_selector',
-  'domain_classifier',
-] as const satisfies ReadonlyArray<PrefetchTabKey>;
+// WHY: Tab keys now derived from PREFETCH_STAGE_REGISTRY (O(1) scaling).
+const PREFETCH_TAB_KEYS = PREFETCH_STAGE_KEYS;
 
 function toOptionalPositiveInt(value: unknown): number | undefined {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -263,46 +248,9 @@ function renderWorkerPanel({
   return <WorkerLivePanel worker={worker} runId={runId} wsUrl={wsUrl} isRunning={isRunning} />;
 }
 
+// WHY: Panel routing now driven by PREFETCH_STAGE_REGISTRY (O(1) scaling).
 function renderPrefetchPanel(tab: PrefetchTabKey, data: PreFetchPhasesResponse | undefined, persistScope: string, liveSettings: PrefetchLiveSettings | undefined, runId?: string) {
-  const emptyNeedset: PrefetchNeedSetData = { total_fields: 0 };
-  const emptyProfile = { query_count: 0, provider: '', llm_query_planning: false, identity_aliases: [], variant_guard_terms: [], query_rows: [], query_guard: {} };
-
-  switch (tab) {
-    case 'needset':
-      return <PrefetchNeedSetPanel data={data?.needset ?? emptyNeedset} persistScope={persistScope} idxRuntime={data?.idx_runtime?.needset} needsetPlannerCalls={data?.llm_calls?.needset_planner} />;
-    case 'search_profile':
-      return <PrefetchSearchProfilePanel data={data?.search_profile ?? emptyProfile} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_profile} />;
-    case 'brand_resolver':
-      return <PrefetchBrandResolverPanel calls={data?.llm_calls?.brand_resolver ?? []} brandResolution={data?.brand_resolution} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.brand_resolver} />;
-    case 'search_planner':
-      return (
-        <PrefetchSearchPlannerPanel
-          calls={data?.llm_calls?.search_planner ?? []}
-          searchPlans={data?.search_plans}
-          searchResults={data?.search_results}
-          liveSettings={liveSettings}
-          idxRuntime={data?.idx_runtime?.search_planner}
-          persistScope={persistScope}
-        />
-      );
-    case 'query_journey':
-      return (
-        <PrefetchQueryJourneyPanel
-          searchProfile={data?.search_profile ?? emptyProfile}
-          searchPlans={data?.search_plans}
-          searchResults={data?.search_results}
-          searchResultDetails={data?.search_result_details}
-          persistScope={persistScope}
-          idxRuntime={data?.idx_runtime?.query_journey}
-        />
-      );
-    case 'search_results':
-      return <PrefetchSearchResultsPanel results={data?.search_results ?? []} searchResultDetails={data?.search_result_details} searchPlans={data?.search_plans} crossQueryUrlCounts={data?.cross_query_url_counts} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.search_results} runId={runId} />;
-    case 'serp_selector':
-      return <PrefetchSerpTriagePanel calls={data?.llm_calls?.serp_selector ?? []} serpTriage={data?.serp_selector} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.serp_selector} />;
-    case 'domain_classifier':
-      return <PrefetchDomainClassifierPanel calls={data?.llm_calls?.domain_classifier ?? []} domainHealth={data?.domain_health} persistScope={persistScope} liveSettings={liveSettings} idxRuntime={data?.idx_runtime?.domain_classifier} />;
-    default:
-      return null;
-  }
+  const entry = PREFETCH_STAGE_REGISTRY.find((e) => e.key === tab);
+  if (!entry) return null;
+  return entry.render({ data, persistScope, liveSettings, runId });
 }

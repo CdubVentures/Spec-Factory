@@ -1,7 +1,7 @@
 # Spec Factory Knobs Maintenance Reference
 
 > **Purpose:** Preserve the old rollout-era maintenance narrative while recording the current corrections needed to read it safely.
-> **Prerequisites:** [../../05-operations/spec_factory_knobs_maintenance.md](../../05-operations/spec_factory_knobs_maintenance.md), [../../04-features/pipeline-and-runtime-settings.md](../../04-features/pipeline-and-runtime-settings.md)
+> **Prerequisites:** [../../../05-operations/spec_factory_knobs_maintenance.md](../../../05-operations/spec_factory_knobs_maintenance.md), [../../../04-features/pipeline-and-runtime-settings.md](../../../04-features/pipeline-and-runtime-settings.md)
 > **Last audited:** 2026-03-17
 
 This file lives under the preserved `docs/implementation/ai-indexing-plans/` subtree. It is not current-state authority.
@@ -10,8 +10,8 @@ This file lives under the preserved `docs/implementation/ai-indexing-plans/` sub
 
 Use these instead when you need live settings truth:
 
-- [../../05-operations/spec_factory_knobs_maintenance.md](../../05-operations/spec_factory_knobs_maintenance.md)
-- [../../04-features/pipeline-and-runtime-settings.md](../../04-features/pipeline-and-runtime-settings.md)
+- [../../../05-operations/spec_factory_knobs_maintenance.md](../../../05-operations/spec_factory_knobs_maintenance.md)
+- [../../../04-features/pipeline-and-runtime-settings.md](../../../04-features/pipeline-and-runtime-settings.md)
 - `src/shared/settingsDefaults.js`
 - `src/core/config/manifest/index.js`
 - `src/config.js`
@@ -63,5 +63,5 @@ Use these instead when you need live settings truth:
 
 ## Related Documents
 
-- [../../05-operations/spec_factory_knobs_maintenance.md](../../05-operations/spec_factory_knobs_maintenance.md) - current maintained copy.
-- [../../04-features/pipeline-and-runtime-settings.md](../../04-features/pipeline-and-runtime-settings.md) - current settings persistence flow.
+- [../../../05-operations/spec_factory_knobs_maintenance.md](../../../05-operations/spec_factory_knobs_maintenance.md) - current maintained copy.
+- [../../../04-features/pipeline-and-runtime-settings.md](../../../04-features/pipeline-and-runtime-settings.md) - current settings persistence flow.

@@ -235,8 +235,7 @@ export async function processDiscoveryResults({
   });
 
   const selectedUrls = discovered.map((item) => item.url);
-  const approvedUrls = [...selectedUrls];
-  const candidateUrls = candidateRowsFinal
+  const allCandidateUrls = candidateRowsFinal
     .map((item) => String(item?.url || '').trim())
     .filter(Boolean);
   const queryAttemptStats = buildQueryAttemptStats(searchAttempts);
@@ -292,7 +291,7 @@ export async function processDiscoveryResults({
     query_rows: queryRowsEnriched,
     query_stats: queryAttemptStats,
     discovered_count: candidateRowsFinal.length,
-    approved_count: approvedUrls.length,
+    approved_count: selectedUrls.length,
     candidate_count: candidateRowsFinal.length,
     selected_count: selectedUrls.length,
     llm_query_planning: true,
@@ -316,7 +315,7 @@ export async function processDiscoveryResults({
     providerState, queryConcurrency,
     searchProfileFinal, serpExplorer,
     candidateRowsFinal, discovered,
-    selectedUrls, approvedUrls, searchProfileKeys,
+    selectedUrls, searchProfileKeys,
   });
 
   return {
@@ -324,9 +323,8 @@ export async function processDiscoveryResults({
     discoveryKey,
     candidatesKey,
     candidates: candidateRowsFinal,
-    approvedUrls,
-    candidateUrls,
     selectedUrls,
+    allCandidateUrls,
     queries,
     llm_queries: llmQueries,
     search_profile: searchProfileFinal,

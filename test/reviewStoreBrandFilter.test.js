@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadBundledModule } from './helpers/loadBundledModule.js';
 
 test('review store can set custom brand filter selection explicitly', async () => {
-  const mod = await loadBundledModule('tools/gui-react/src/stores/reviewStore.ts', {
+  const mod = await loadBundledModule('tools/gui-react/src/features/review/state/reviewStore.ts', {
     prefix: 'review-store-',
   });
   const store = mod.useReviewStore;
@@ -22,7 +22,7 @@ test('review store can set custom brand filter selection explicitly', async () =
 });
 
 test('available brands update prunes custom brand selection and normalizes mode', async () => {
-  const mod = await loadBundledModule('tools/gui-react/src/stores/reviewStore.ts', {
+  const mod = await loadBundledModule('tools/gui-react/src/features/review/state/reviewStore.ts', {
     prefix: 'review-store-',
   });
   const store = mod.useReviewStore;

@@ -154,7 +154,7 @@ search_queued
 discovery_query_started
 discovery_query_completed
 search_results_collected
-serp_triage_completed   (reranker path only)
+serp_selector_completed
 domains_classified
 discovery_enqueue_summary
 ```
@@ -282,7 +282,7 @@ Seed-phase carry-through:
 - External search can be skipped when `discoveryInternalFirst` satisfies required-field pressure.
 - Plan-only URLs are emitted only when there is no viable provider path and `rawResults` is still empty.
 - Stage 07 uses the selector path only when `serpSelectorEnabled=true` and a triage route key exists; otherwise it falls back to deterministic triage.
-- `serp_triage_completed` is only guaranteed on the reranker path. Selector-only runs still surface as `serp_triage` LLM calls through worker telemetry.
+- `serp_selector_completed` is emitted after the LLM selector path completes. There is no separate reranker path — the selector is the sole LLM triage mechanism.
 
 ## Feedback loops
 

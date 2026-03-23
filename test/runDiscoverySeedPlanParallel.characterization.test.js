@@ -59,7 +59,7 @@ function makeStageStubs(overrides = {}) {
       internalSatisfied: false, externalSearchReason: null,
     })),
     processDiscoveryResultsFn: overrides.processDiscoveryResultsFn || (async () => ({
-      enabled: true, approvedUrls: [], candidateUrls: [], candidates: [],
+      enabled: true, selectedUrls: [], allCandidateUrls: [], candidates: [],
     })),
     runDomainClassifierFn: overrides.runDomainClassifierFn || (() => ({ enqueuedCount: 0, seededCount: 0 })),
   };

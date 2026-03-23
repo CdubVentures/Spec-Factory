@@ -130,7 +130,7 @@ export function buildWorkerButtonLabel(worker) {
   }
 
   if (worker.pool === 'search') {
-    if (worker.slot) return `slot ${worker.slot}`;
+    if (worker.slot) return `Slot ${String(worker.slot).toUpperCase()}`;
     const query = truncateText(worker.current_query, 40);
     if (query) return query;
   }
@@ -150,9 +150,7 @@ export function buildWorkerButtonSubtitle(worker) {
   }
 
   if (worker.pool === 'search') {
-    const query = truncateText(worker.current_query, 60);
-    const slot = worker.slot ? `slot ${worker.slot}` : null;
-    return [workerId, query || slot].filter(Boolean).join(' \u00b7 ') || null;
+    return truncateText(worker.current_query, 45) || null;
   }
 
   if (worker.pool === 'fetch') {

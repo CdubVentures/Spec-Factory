@@ -17,35 +17,7 @@ const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
 const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';
 
 // ── Types ──────────────────────────────────────────────────────────
-interface RenameHistoryEntry {
-  previous_slug: string;
-  previous_model: string;
-  previous_variant: string;
-  renamed_at: string;
-  migration_result: { migrated_count: number; failed_count: number };
-}
-
-interface CatalogProduct {
-  productId: string;
-  id: number;
-  identifier: string;
-  brand: string;
-  model: string;
-  variant: string;
-  status: string;
-  seed_urls: string[];
-  added_at: string;
-  added_by: string;
-  updated_at?: string;
-  rename_history?: RenameHistoryEntry[];
-}
-
-interface Brand {
-  slug: string;
-  canonical_name: string;
-  aliases: string[];
-  categories: string[];
-}
+import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product';
 
 interface MutationResult {
   ok: boolean;

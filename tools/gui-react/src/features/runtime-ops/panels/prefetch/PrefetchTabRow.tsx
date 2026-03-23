@@ -1,5 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
 import type { PrefetchTabKey } from '../../types';
+import { PREFETCH_STAGE_REGISTRY } from './prefetchStageRegistry';
 import {
   buildPrefetchTabState,
   resolveNextPrefetchTabSelection,
@@ -12,72 +13,8 @@ interface PrefetchTabRowProps {
   disabledTabs?: Set<PrefetchTabKey>;
 }
 
-const TABS: { key: PrefetchTabKey; label: string; markerClass: string; idleClass: string; outlineClass: string; tip: string }[] = [
-  {
-    key: 'needset',
-    label: 'NeedSet',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'Shows which product fields still need data and why.\nEvery field gets a score based on how urgently it needs evidence Ã¢â‚¬â€ the higher the score, the more important it is to find.',
-  },
-  {
-    key: 'brand_resolver',
-    label: 'Brand Resolver',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'Identifies the official website for this brand.\nUsed to build targeted search queries like "site:razer.com" so the system prioritizes manufacturer pages first.',
-  },
-  {
-    key: 'search_profile',
-    label: 'Search Profile',
-    markerClass: 'sf-prefetch-dot-info',
-    idleClass: 'sf-prefetch-tab-idle-info',
-    outlineClass: 'sf-prefetch-tab-outline-info',
-    tip: 'The search plan Ã¢â‚¬â€ all the queries the system will send to search engines.\nBuilt from the product name, missing fields, and the brand\'s official domain.',
-  },
-  {
-    key: 'search_planner',
-    label: 'Search Planner',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'An AI that reviews the search plan and suggests additional queries.\nFocuses on hard-to-find fields that the standard templates might miss.',
-  },
-  {
-    key: 'query_journey',
-    label: 'Query Journey',
-    markerClass: 'sf-prefetch-dot-info',
-    idleClass: 'sf-prefetch-tab-idle-info',
-    outlineClass: 'sf-prefetch-tab-outline-info',
-    tip: 'Story view for query selection and execution.\nShows what was planned first, what was sent, and why each query was selected.',
-  },
-  {
-    key: 'search_results',
-    label: 'Search Results',
-    markerClass: 'sf-prefetch-dot-accent',
-    idleClass: 'sf-prefetch-tab-idle-accent',
-    outlineClass: 'sf-prefetch-tab-outline-accent',
-    tip: 'Raw results returned by configured providers for each query.\nSupports Google, Bing, SearXNG, and Dual mode, including provider usage counts.',
-  },
-  {
-    key: 'serp_selector',
-    label: 'SERP Selector',
-    markerClass: 'sf-prefetch-dot-warning',
-    idleClass: 'sf-prefetch-tab-idle-warning',
-    outlineClass: 'sf-prefetch-tab-outline-warning',
-    tip: 'LLM-based URL selector that decides which search results are worth fetching.\nClassifies each URL as approved (fetch now), candidate (backup), or reject (skip).',
-  },
-  {
-    key: 'domain_classifier',
-    label: 'Domain Classifier',
-    markerClass: 'sf-prefetch-dot-info',
-    idleClass: 'sf-prefetch-tab-idle-info',
-    outlineClass: 'sf-prefetch-tab-outline-info',
-    tip: 'Checks whether each website is safe and useful to fetch.\nClassifies domains by role (manufacturer, review site, retailer) and routes them to queues.\nUses deterministic heuristics — no LLM call.',
-  },
-];
+// WHY: Tab metadata now lives in PREFETCH_STAGE_REGISTRY (O(1) scaling).
+const TABS = PREFETCH_STAGE_REGISTRY;
 
 export function PrefetchTabRow({ activeTab, onSelectTab, busyTabs, disabledTabs }: PrefetchTabRowProps) {
   return (

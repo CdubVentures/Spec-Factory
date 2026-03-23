@@ -261,8 +261,8 @@ function TierBudgetBar({ budget }: { budget: ReturnType<typeof buildTierBudgetSu
     { key: 'group', label: 'T2 Groups', count: budget.group.count, pct: budget.group.pct, cls: 'sf-chip-warning' },
     { key: 'key', label: 'T3 Keys', count: budget.key.count, pct: budget.key.pct, cls: 'sf-chip-info' },
   ];
-  if (budget.legacy.count > 0) {
-    segments.push({ key: 'legacy', label: 'Legacy', count: budget.legacy.count, pct: budget.legacy.pct, cls: 'sf-chip-neutral' });
+  if (budget.host_plan.count > 0) {
+    segments.push({ key: 'host_plan', label: 'Host Plan', count: budget.host_plan.count, pct: budget.host_plan.pct, cls: 'sf-chip-neutral' });
   }
   const used = budget.total;
   const unusedPct = budget.cap > 0 ? Math.max(0, ((budget.cap - used) / budget.cap) * 100) : 0;

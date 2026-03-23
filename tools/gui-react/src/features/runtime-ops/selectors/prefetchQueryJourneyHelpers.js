@@ -1,11 +1,12 @@
 // WHY: Builds journey rows from search profile + planner + results data.
 // Tier-native ordering: sent queries by execution_order, unsent by tier priority.
 
-// WHY: Inline tier classification to avoid TS import barrier in node --test.
-// SSOT lives in searchProfileTierHelpers.ts — this mirrors the logic for .js consumers.
+// WHY: Tier maps derived from the same registry as searchProfileTierHelpers.ts.
+// Inline here because .js files can't import .ts under plain node --test.
+// SSOT is TIER_REGISTRY in searchProfileTierHelpers.ts — keep in sync.
 const TIER_MAP = { seed: 'seed', group_search: 'group', key_search: 'key', host_plan: 'host_plan' };
 const HINT_SOURCE_TIER_MAP = { tier1_seed: 'seed', tier2_group: 'group', tier3_key: 'key', 'v2.host_plan': 'host_plan' };
-const TIER_LABELS = { seed: 'Seed', group: 'Group', key: 'Key', host_plan: 'Host Plan', legacy: 'Legacy' };
+const TIER_LABELS = { seed: 'Seed', group: 'Group', key: 'Key', host_plan: 'Host Plan' };
 
 function classifyQueryTier(row) {
   const tier = String(row?.tier ?? '').trim();
@@ -88,7 +89,7 @@ function statusForRow(row) {
 }
 
 // WHY: Tier priority order matches the pipeline budget allocation.
-const TIER_SORT_ORDER = { seed: 0, group: 1, key: 2, host_plan: 3, legacy: 4 };
+const TIER_SORT_ORDER = { seed: 0, group: 1, key: 2, host_plan: 3 };
 
 export function queryJourneyStatusLabel(status) {
   const token = normalizeToken(status);

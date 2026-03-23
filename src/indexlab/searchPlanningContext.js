@@ -591,25 +591,35 @@ export function buildSearchPlanningContext({
   }
   const groupBudget = Math.max(0, queryBudget - seedSlots);
 
-  const pendingGroups = focusGroups.filter((g) => g.phase === 'pending');
-  if (pendingGroups.length > 0) {
-    pendingGroups.sort((a, b) => b.productivity_score - a.productivity_score);
+  // WHY: Build phase overrides without mutating focusGroup objects.
+  // pendingByProductivity is a sorted copy — original focusGroups order is untouched.
+  const phaseOverrides = new Map();
+  const pendingByProductivity = focusGroups
+    .filter((g) => g.phase === 'pending')
+    .sort((a, b) => b.productivity_score - a.productivity_score);
+
+  if (pendingByProductivity.length > 0) {
     if (seedsStillNeeded) {
       // Round 0: all pending groups defer to 'next' — seeds take priority
-      for (const g of pendingGroups) g.phase = 'next';
+      for (const g of pendingByProductivity) phaseOverrides.set(g.key, 'next');
     } else {
       // Round 1+: budget-aware — only worthy groups that fit the budget become 'now'
       // Non-worthy groups stay 'next' — their individual keys fire as Tier 3
       // but the group itself doesn't get a broad Tier 2 search.
-      const worthyPending = pendingGroups.filter((g) => g.group_search_worthy === true);
-      const nonWorthyPending = pendingGroups.filter((g) => g.group_search_worthy !== true);
+      const worthyPending = pendingByProductivity.filter((g) => g.group_search_worthy === true);
+      const nonWorthyPending = pendingByProductivity.filter((g) => g.group_search_worthy !== true);
       const nowGroupCount = Math.min(worthyPending.length, groupBudget);
       for (let i = 0; i < worthyPending.length; i++) {
-        worthyPending[i].phase = i < nowGroupCount ? 'now' : 'next';
+        phaseOverrides.set(worthyPending[i].key, i < nowGroupCount ? 'now' : 'next');
       }
-      for (const g of nonWorthyPending) g.phase = 'next';
+      for (const g of nonWorthyPending) phaseOverrides.set(g.key, 'next');
     }
   }
+
+  // Apply overrides immutably — original focusGroups objects are never modified
+  const phasedGroups = focusGroups.map((g) =>
+    phaseOverrides.has(g.key) ? { ...g, phase: phaseOverrides.get(g.key) } : g
+  );
 
   // Build field_priority_map: field_key → required_level
   const fieldPriorityMap = {};
@@ -618,7 +628,7 @@ export function buildSearchPlanningContext({
   }
 
   // Pass 3: Sort — phase (now < next < hold), then priority (core < secondary < optional), then key
-  focusGroups.sort((a, b) => {
+  phasedGroups.sort((a, b) => {
     const phaseDiff = (PHASE_ORDER[a.phase] ?? 3) - (PHASE_ORDER[b.phase] ?? 3);
     if (phaseDiff !== 0) return phaseDiff;
     const priDiff = (PRIORITY_BUCKET_ORDER[a.priority] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority] ?? 3);
@@ -640,17 +650,17 @@ export function buildSearchPlanningContext({
   const seedStatus = preSeedStatus;
 
   // V4: tier_allocation — budget-aware slot distribution
-  const tierAllocation = computeTierAllocation(seedStatus, focusGroups, queryBudget);
+  const tierAllocation = computeTierAllocation(seedStatus, phasedGroups, queryBudget);
 
   // V4: pass_seed signals — expanded with B queue
   const passSeed = {
     passA_specs_seed: seedStatus?.specs_seed?.is_needed ?? (round === 0),
     passA_source_candidates: [ns.identity?.official_domain, ns.identity?.support_domain].filter(Boolean),
-    passA_target_groups: focusGroups.filter((g) => g.phase === 'now').map((g) => g.key),
-    passB_group_queue: focusGroups
+    passA_target_groups: phasedGroups.filter((g) => g.phase === 'now').map((g) => g.key),
+    passB_group_queue: phasedGroups
       .filter((g) => g.group_search_worthy === true && g.phase !== 'hold')
       .map((g) => g.key),
-    passB_key_queue: focusGroups
+    passB_key_queue: phasedGroups
       .filter((g) => g.group_search_worthy === false &&
         Array.isArray(g.normalized_key_queue) && g.normalized_key_queue.length > 0)
       .flatMap((g) => g.normalized_key_queue.map((e) =>
@@ -674,7 +684,7 @@ export function buildSearchPlanningContext({
     needset,
     planner_limits: plannerLimits,
     group_catalog: groupCatalog,
-    focus_groups: focusGroups,
+    focus_groups: phasedGroups,
     field_priority_map: fieldPriorityMap,
     learning: learning || null,
     previous_round_fields: previousRoundFields || null,

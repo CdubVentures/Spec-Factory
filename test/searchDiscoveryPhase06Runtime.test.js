@@ -613,7 +613,7 @@ test('discoverCandidateSources reuses cached frontier query results during same-
     });
 
     assert.deepEqual(
-      result.approvedUrls,
+      result.selectedUrls,
       [TEST_URLS.product]
     );
     assert.equal(searchFetchCalls, 0, 'internet search should not run when cached frontier results are reused');
@@ -766,7 +766,7 @@ test('discoverCandidateSources ignores cooldown-only empty cache and still execu
 
     assert.equal(searchFetchCalls > 0, true, 'internet search should still run when cooldown cache is empty');
     assert.deepEqual(
-      result.approvedUrls,
+      result.selectedUrls,
       [TEST_URLS.product]
     );
   } finally {

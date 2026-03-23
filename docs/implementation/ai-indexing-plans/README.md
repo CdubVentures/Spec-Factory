@@ -1,6 +1,6 @@
 # AI Indexing Plans Reference
 
-Related: [Implementation Reference](../README.md) | [IndexLab](../../features/indexing-lab.md) | [Search And Discovery](../../features/search-and-discovery.md) | [Pipeline And LLM Settings](../../features/pipeline-and-llm-settings.md)
+Related: [Implementation Reference](../README.md) | [IndexLab](../../04-features/indexing-lab.md) | [Pipeline And Runtime Settings](../../04-features/pipeline-and-runtime-settings.md)
 
 This preserved subtree contains rollout packets, per-phase reports, and planning artifacts for the indexing pipeline.
 
@@ -18,7 +18,7 @@ All documentation in this subtree should be read with this boundary in mind. Ref
 
 ## Preserved Entry Points
 
-- [Product Goal](./00-PRODUCT-GOAL.md)
+- [Product Goal](./PRODUCT-GOAL.md)
 - [System Status](./01-SYSTEM-STATUS.md)
 - [Master Rollout](./02-MASTER-ROLLOUT.md)
 - [Testing Protocol](./03-TESTING-PROTOCOL.md)

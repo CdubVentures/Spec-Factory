@@ -135,6 +135,8 @@ export async function runDiscoverySeedPlan({
         tierName: 'manufacturer',
         sourceId: `brand_${official.replace(/[^a-z0-9]/g, '_')}`,
         displayName: `${brand.brandResolution.officialDomain} Official`,
+        // WHY: crawlConfig is consumed by the fetcher for rate limiting and method detection.
+        // Hardcoded pending fetch/extraction redesign which will Zod-enforce crawl config.
         crawlConfig: { method: 'http', rate_limit_ms: 2000, timeout_ms: 12000, robots_txt_compliant: true },
         fieldCoverage: null,
         robotsTxtCompliant: true,
@@ -230,6 +232,8 @@ export async function runDiscoverySeedPlan({
   // WHY: discoveryCap derives from serpSelectorUrlCap (a URL count).
   const discoveryCap = configInt(discoveryConfig, 'serpSelectorUrlCap');
   // WHY: Strict sequential execution — search-b must not start until search-a finishes.
+  // discoveryQueryConcurrency exists in the registry but is intentionally not used here.
+  // Fetch/extraction redesign will handle parallelism with proper Zod schema enforcement.
   const queryConcurrency = 1;
   const providerState = searchEngineAvailability(discoveryConfig);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
