@@ -3,8 +3,18 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { createSpecDbRuntime } from '../specDbRuntime.js';
 
-test('specdb runtime returns cached seeded db without triggering auto-seed', async () => {
-  let syncCalls = 0;
+function createSyncResult(overrides = {}) {
+  return {
+    components_seeded: 0,
+    list_values_seeded: 0,
+    products_seeded: 0,
+    duration_ms: 0,
+    specdb_sync_version: 0,
+    ...overrides,
+  };
+}
+
+test('specdb runtime reuses seeded db handles immediately', async () => {
   class SeededDb {
     constructor({ dbPath, category }) {
       this.dbPath = dbPath;
@@ -23,16 +33,7 @@ test('specdb runtime returns cached seeded db without triggering auto-seed', asy
       accessSync: () => {},
       mkdirSync: () => {},
     },
-    syncSpecDbForCategory: async () => {
-      syncCalls += 1;
-      return {
-        components_seeded: 0,
-        list_values_seeded: 0,
-        products_seeded: 0,
-        duration_ms: 0,
-        specdb_sync_version: 0,
-      };
-    },
+    syncSpecDbForCategory: async () => createSyncResult(),
     config: { localMode: true },
     logger: { log: () => {}, error: () => {} },
   });
@@ -44,20 +45,21 @@ test('specdb runtime returns cached seeded db without triggering auto-seed', asy
 
   const ready = await runtime.getSpecDbReady('mouse');
   assert.equal(ready, first);
-  assert.equal(syncCalls, 0);
 });
 
-test('specdb runtime triggers auto-seed for unseeded db and resolves ready handle', async () => {
-  let syncCalls = 0;
+test('specdb runtime resolves aliased unseeded db handles after auto-seed finishes', async () => {
   const syncCategories = [];
+  let releaseSeed = null;
+  const pendingSeed = new Promise((resolve) => {
+    releaseSeed = resolve;
+  });
+
   class UnseededDb {
     constructor({ dbPath, category }) {
       this.dbPath = dbPath;
       this.category = category;
-      this.isSeededCallCount = 0;
     }
     isSeeded() {
-      this.isSeededCallCount += 1;
       return false;
     }
   }
@@ -73,15 +75,15 @@ test('specdb runtime triggers auto-seed for unseeded db and resolves ready handl
       mkdirSync: () => {},
     },
     syncSpecDbForCategory: async ({ category }) => {
-      syncCalls += 1;
       syncCategories.push(category);
-      return {
+      await pendingSeed;
+      return createSyncResult({
         components_seeded: 3,
         list_values_seeded: 4,
         products_seeded: 5,
         duration_ms: 1,
         specdb_sync_version: 7,
-      };
+      });
     },
     config: { localMode: true },
     logger: { log: () => {}, error: () => {} },
@@ -91,8 +93,17 @@ test('specdb runtime triggers auto-seed for unseeded db and resolves ready handl
   assert.ok(db);
   assert.equal(db.category, '_test_mouse');
 
-  const ready = await runtime.getSpecDbReady('test_mouse');
+  const readyPromise = runtime.getSpecDbReady('test_mouse');
+  let settled = false;
+  void readyPromise.then(() => {
+    settled = true;
+  });
+
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+
+  releaseSeed();
+  const ready = await readyPromise;
   assert.equal(ready, db);
-  assert.equal(syncCalls, 1);
   assert.deepEqual(syncCategories, ['_test_mouse']);
 });

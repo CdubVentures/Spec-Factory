@@ -17,7 +17,6 @@ interface UseIndexingRunSelectionStateInput {
   category: string;
   processStatusRunId: string;
   processStartedAt: string;
-  processRunning: boolean;
   selectedIndexLabRunId: string;
   setSelectedIndexLabRunId: (value: string) => void;
   clearedRunViewId: string;
@@ -31,7 +30,6 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
     category,
     processStatusRunId,
     processStartedAt,
-    processRunning,
     selectedIndexLabRunId,
     setSelectedIndexLabRunId,
     clearedRunViewId,
@@ -90,7 +88,7 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
       indexlabRuns,
       selectedIndexLabRunId,
       processStatusRunId,
-      isProcessRunning: processRunning,
+      isProcessRunning,
     });
     if (selectionDecision.type === 'set') {
       setSelectedIndexLabRunId(selectionDecision.runId);
@@ -98,7 +96,7 @@ export function useIndexingRunSelectionState(input: UseIndexingRunSelectionState
   }, [
     indexlabRuns,
     selectedIndexLabRunId,
-    processRunning,
+    isProcessRunning,
     processStatusRunId,
     setSelectedIndexLabRunId,
   ]);

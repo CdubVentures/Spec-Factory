@@ -5,9 +5,9 @@
 
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
-import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
-import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
-import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
+import { computeNeedSet } from '../needSet/needsetEngine.js';
+import { buildSearchPlanningContext } from '../needSet/searchPlanningContext.js';
+import { buildSearchPlan } from '../needSet/searchPlanBuilder.js';
 import { resolveBrandDomain } from '../brandResolver/resolveBrandDomain.js';
 import { resolveJobIdentity, toArray, normalizeHost, SLOT_LABELS } from '../shared/discoveryIdentity.js';
 import {

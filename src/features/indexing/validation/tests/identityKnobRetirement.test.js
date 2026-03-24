@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const IDENTITY_GATE_PATH = path.resolve('src/features/indexing/validation/identityGate.js');
 const SETTINGS_DEFAULTS_PATH = path.resolve('src/shared/settingsDefaults.js');
-const NEEDSET_ENGINE_PATH = path.resolve('src/indexlab/needsetEngine.js');
+const NEEDSET_ENGINE_PATH = path.resolve('src/features/indexing/pipeline/needSet/needsetEngine.js');
 
 test('evaluateSourceIdentity uses identityGateBaseMatchThreshold directly (no dynamic adjustment)', async () => {
   const mod = await import(pathToFileURL(IDENTITY_GATE_PATH).href);

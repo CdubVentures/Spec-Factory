@@ -8,7 +8,6 @@ import {
   normalizeModelPricingMap,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
-  normalizeOutputMode,
   normalizeUserAgent,
   DEFAULT_USER_AGENT,
 } from './configNormalizers.js';
@@ -36,18 +35,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     ...canonicalCfg,
     ...filtered,
   };
-
-  // --- localMode / outputMode / mirrorToS3 coercion ---
-  if (merged.localMode === true && !filtered.outputMode) {
-    merged.outputMode = 'local';
-  }
-  merged.outputMode = normalizeOutputMode(merged.outputMode, merged.localMode ? 'local' : 'dual');
-  if (merged.outputMode === 'local') {
-    merged.mirrorToS3 = false;
-  }
-  if (!merged.s3Bucket) {
-    merged.mirrorToS3 = false;
-  }
 
   // --- userAgent ---
   merged.userAgent = normalizeUserAgent(merged.userAgent, DEFAULT_USER_AGENT);

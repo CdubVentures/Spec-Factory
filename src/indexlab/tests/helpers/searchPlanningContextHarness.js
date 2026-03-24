@@ -8,7 +8,7 @@ import {
   buildNormalizedKeyQueue,
   deriveSeedStatus,
   computeTierAllocation,
-} from '../../searchPlanningContext.js';
+} from '../../../features/indexing/pipeline/needSet/searchPlanningContext.js';
 
 export {
   buildSearchPlanningContext,

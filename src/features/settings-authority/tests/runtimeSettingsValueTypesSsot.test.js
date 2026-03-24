@@ -25,14 +25,14 @@ test('valueTypes SSOT: key set matches registry-derived map (minus defaultsOnly)
     'RUNTIME_SETTINGS_VALUE_TYPES keys should equal deriveValueTypeMap(registry) minus defaultsOnly');
 });
 
-test('valueTypes SSOT: readOnly entries are included without hardcoding', () => {
-  // awsRegion and s3Bucket are readOnly: true — must appear naturally from the registry
-  assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.awsRegion, 'string');
-  assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.s3Bucket, 'string');
+test('valueTypes SSOT: storage-owned keys do not leak into the runtime value-type map', () => {
+  // awsRegion and s3Bucket now belong to the storage settings surface, not runtime.
+  assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.awsRegion, undefined);
+  assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.s3Bucket, undefined);
 });
 
 test('valueTypes SSOT: defaultsOnly entries are excluded', () => {
-  // discoveryEnabled has defaultsOnly: true — must NOT appear
+  // discoveryEnabled has defaultsOnly: true and must not appear.
   assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.discoveryEnabled, undefined,
     'defaultsOnly entries must not appear in RUNTIME_SETTINGS_VALUE_TYPES');
 });

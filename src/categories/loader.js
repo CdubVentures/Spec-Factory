@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { extractRootDomain } from '../utils/common.js';
 import { toPosixKey } from '../s3/storage.js';
+import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import {
   ruleRequiredLevel,
   ruleAvailability,
@@ -588,9 +589,9 @@ export async function loadCategoryConfig(category, options = {}) {
   let sources = mergeSources(baseConfig.sources || defaultSources(), generated.sources || null);
   let sourcesOverrideKey = null;
 
-  if (storage && runtimeConfig?.s3InputPrefix) {
+  if (storage) {
     const overrideKey = toPosixKey(
-      runtimeConfig.s3InputPrefix,
+      INPUT_KEY_PREFIX,
       '_sources',
       'overrides',
       category,

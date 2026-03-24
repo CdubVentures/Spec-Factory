@@ -627,67 +627,20 @@ export interface IndexingDomainChecklistResponse {
   notes?: string[];
 }
 
-export interface IndexLabAutomationJobRow {
-  job_id: string;
-  job_type: string;
-  priority?: number;
-  status?: string;
-  category?: string;
-  product_id?: string;
-  run_id?: string;
-  field_targets?: string[];
-  url?: string | null;
-  domain?: string | null;
-  query?: string | null;
-  provider?: string | null;
-  doc_hint?: string | null;
-  dedupe_key?: string;
-  source_signal?: string;
-  scheduled_at?: string | null;
-  started_at?: string | null;
-  finished_at?: string | null;
-  next_run_at?: string | null;
-  attempt_count?: number;
-  reason_tags?: string[];
-  last_error?: string | null;
-  notes?: string[];
-}
+// WHY: Automation queue types are auto-generated from backend shape descriptors.
+// Source: src/features/indexing/api/contracts/automationQueueContract.js
+// Codegen: tools/gui-react/scripts/generateAutomationQueueTypes.js
+import type { AutomationJobRowGen, AutomationActionRowGen, AutomationSummaryGen } from './types.generated';
 
-export interface IndexLabAutomationActionRow {
-  ts?: string | null;
-  event?: string | null;
-  job_id?: string;
-  job_type?: string;
-  status?: string;
-  source_signal?: string;
-  priority?: number;
-  detail?: string | null;
-  domain?: string | null;
-  url?: string | null;
-  query?: string | null;
-  field_targets?: string[];
-  reason_tags?: string[];
-}
+export type IndexLabAutomationJobRow = AutomationJobRowGen;
+export type IndexLabAutomationActionRow = AutomationActionRowGen;
 
 export interface IndexLabAutomationQueueResponse {
   generated_at?: string;
   run_id?: string;
   category?: string;
   product_id?: string;
-  summary?: {
-    total_jobs?: number;
-    queue_depth?: number;
-    active_jobs?: number;
-    queued?: number;
-    running?: number;
-    done?: number;
-    failed?: number;
-    cooldown?: number;
-    repair_search?: number;
-    staleness_refresh?: number;
-    deficit_rediscovery?: number;
-    domain_backoff?: number;
-  };
+  summary?: AutomationSummaryGen;
   policies?: {
     owner?: string;
     loops?: Record<string, boolean>;

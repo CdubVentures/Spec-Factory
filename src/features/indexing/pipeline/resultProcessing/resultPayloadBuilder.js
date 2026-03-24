@@ -4,6 +4,7 @@
 
 import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
 import { toPosixKey } from '../../../../s3/storage.js';
+import { INPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 import { toArray, uniqueTokens } from '../shared/discoveryIdentity.js';
 
 /**
@@ -143,13 +144,13 @@ export async function writeDiscoveryPayloads({
   searchProfileKeys,
 }) {
   const discoveryKey = toPosixKey(
-    config.s3InputPrefix,
+    INPUT_KEY_PREFIX,
     '_discovery',
     categoryConfig.category,
     `${runId}.json`
   );
   const candidatesKey = toPosixKey(
-    config.s3InputPrefix,
+    INPUT_KEY_PREFIX,
     '_sources',
     'candidates',
     categoryConfig.category,

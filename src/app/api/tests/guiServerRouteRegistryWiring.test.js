@@ -7,18 +7,8 @@ import {
 } from '../requestDispatch.js';
 import {
   createGuiApiRouteRegistry,
-  GUI_API_ROUTE_ORDER,
 } from '../routeRegistry.js';
-
-function createStubRes() {
-  return {
-    statusCode: 0,
-    endCallCount: 0,
-    end() {
-      this.endCallCount += 1;
-    },
-  };
-}
+import { createCaptureResponse } from './helpers/appApiTestBuilders.js';
 
 test('api path parser aliases scoped category segments', () => {
   const parsePath = createApiPathParser({
@@ -89,13 +79,13 @@ test('api http request handler applies preflight, api 404, static fallback, and 
     logApiError: () => {},
   });
 
-  const optionsRes = createStubRes();
+  const optionsRes = createCaptureResponse();
   await requestHandler({ method: 'OPTIONS', url: '/api/v1/health' }, optionsRes);
   assert.equal(optionsRes.corsApplied, true);
   assert.equal(optionsRes.statusCode, 204);
   assert.equal(optionsRes.endCallCount, 1);
 
-  const notFoundRes = createStubRes();
+  const notFoundRes = createCaptureResponse();
   await requestHandler({ method: 'GET', url: '/api/v1/unknown-route' }, notFoundRes);
   assert.equal(notFoundRes.corsApplied, true);
   assert.deepEqual(notFoundRes.json, {
@@ -103,12 +93,12 @@ test('api http request handler applies preflight, api 404, static fallback, and 
     body: { error: 'not_found' },
   });
 
-  const staticRes = createStubRes();
+  const staticRes = createCaptureResponse();
   await requestHandler({ method: 'GET', url: '/dashboard' }, staticRes);
   assert.equal(staticRes.corsApplied, true);
   assert.equal(staticRes.staticServed, true);
 
-  const errorRes = createStubRes();
+  const errorRes = createCaptureResponse();
   await requestHandler({ method: 'GET', url: '/api/v1/throws' }, errorRes);
   assert.equal(errorRes.corsApplied, true);
   assert.deepEqual(errorRes.json, {
@@ -117,41 +107,14 @@ test('api http request handler applies preflight, api 404, static fallback, and 
   });
 });
 
-test('gui api route registry returns handlers in canonical order using each route context', () => {
-  const routeCtx = Object.fromEntries(
-    GUI_API_ROUTE_ORDER.map((name) => [`${name}RouteContext`, { token: `${name}-ctx` }]),
-  );
-
-  const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
-    key: name,
-    registrar: (ctx) => () => `${name}:${ctx.token}`,
-  }));
-
-  const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
-
-  assert.deepEqual(
-    registry.routeHandlers.map((handler) => handler()),
-    GUI_API_ROUTE_ORDER.map((name) => `${name}:${name}-ctx`),
-  );
-});
-
-test('gui api route registry maps distinct pre-built contexts to the matching route handlers', () => {
+test('gui api route registry returns handlers in definition order with their paired contexts', () => {
   const routeCtx = {
-    infraRouteContext: { token: 'infra-ctx' },
-    configRouteContext: { token: 'config-ctx' },
-    indexlabRouteContext: { token: 'indexlab-ctx' },
-    runtimeOpsRouteContext: { token: 'runtimeOps-ctx' },
-    catalogRouteContext: { token: 'catalog-ctx' },
-    brandRouteContext: { token: 'brand-ctx' },
-    studioRouteContext: { token: 'studio-ctx' },
-    dataAuthorityRouteContext: { token: 'dataAuthority-ctx' },
-    queueBillingLearningRouteContext: { token: 'queueBillingLearning-ctx' },
-    reviewRouteContext: { token: 'review-ctx' },
-    testModeRouteContext: { token: 'testMode-ctx' },
-    sourceStrategyRouteContext: { token: 'sourceStrategy-ctx' },
+    betaRouteContext: { token: 'beta' },
+    alphaRouteContext: { token: 'alpha' },
+    gammaRouteContext: { token: 'gamma' },
   };
 
-  const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
+  const routeDefinitions = ['beta', 'alpha', 'gamma'].map((name) => ({
     key: name,
     registrar: (ctx) => () => ctx.token,
   }));
@@ -160,31 +123,16 @@ test('gui api route registry maps distinct pre-built contexts to the matching ro
 
   assert.deepEqual(
     registry.routeHandlers.map((handler) => handler()),
-    [
-      'infra-ctx',
-      'config-ctx',
-      'indexlab-ctx',
-      'runtimeOps-ctx',
-      'catalog-ctx',
-      'brand-ctx',
-      'studio-ctx',
-      'dataAuthority-ctx',
-      'queueBillingLearning-ctx',
-      'review-ctx',
-      'testMode-ctx',
-      'sourceStrategy-ctx',
-    ],
+    ['beta', 'alpha', 'gamma'],
   );
 });
 
-test('gui api route registry rejects empty routeDefinitions', () => {
+test('gui api route registry rejects invalid registry definitions', () => {
   assert.throws(
     () => createGuiApiRouteRegistry({ routeCtx: {}, routeDefinitions: [] }),
     { message: /routeDefinitions must be a non-empty array/ },
   );
-});
 
-test('gui api route registry rejects non-function registrar with key in message', () => {
   assert.throws(
     () => createGuiApiRouteRegistry({
       routeCtx: { badRouteContext: {} },
@@ -192,14 +140,20 @@ test('gui api route registry rejects non-function registrar with key in message'
     }),
     { message: /registrar for "bad" must be a function/ },
   );
-});
 
-test('gui api route registry rejects missing context key', () => {
   assert.throws(
     () => createGuiApiRouteRegistry({
       routeCtx: {},
       routeDefinitions: [{ key: 'missing', registrar: () => () => {} }],
     }),
     { message: /missingRouteContext.*missing/ },
+  );
+
+  assert.throws(
+    () => createGuiApiRouteRegistry({
+      routeCtx: { badRouteContext: {} },
+      routeDefinitions: [{ key: 'bad', registrar: () => 'not-a-handler' }],
+    }),
+    { message: /must return a route handler function/ },
   );
 });

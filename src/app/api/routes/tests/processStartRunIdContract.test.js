@@ -330,16 +330,10 @@ test('process/start forwards representative runtime override families into child
       productId: 'mouse-acme-orbit-x1',
       localMode: true,
       dryRun: true,
-      mirrorToS3: false,
-      mirrorToS3Input: true,
       localInputRoot: path.resolve('fixtures', 'input'),
       localOutputRoot: path.resolve('fixtures', 'output'),
       runtimeEventsKey: '_runtime/custom-events.jsonl',
       writeMarkdownSummary: false,
-      awsRegion: 'us-west-2',
-      s3Bucket: 'spec-bucket',
-      s3InputPrefix: 'specs/input',
-      s3OutputPrefix: 'specs/output',
       llmProvider: 'openai',
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
@@ -372,16 +366,10 @@ test('process/start forwards representative runtime override families into child
 
   assert.equal(capturedEnv?.LOCAL_MODE, 'true');
   assert.equal(capturedEnv?.DRY_RUN, 'true');
-  assert.equal(capturedEnv?.MIRROR_TO_S3, 'false');
-  assert.equal(capturedEnv?.MIRROR_TO_S3_INPUT, 'true');
   assert.equal(capturedEnv?.LOCAL_INPUT_ROOT, path.resolve('fixtures', 'input'));
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
   assert.equal(capturedEnv?.RUNTIME_EVENTS_KEY, '_runtime/custom-events.jsonl');
   assert.equal(capturedEnv?.WRITE_MARKDOWN_SUMMARY, 'false');
-  assert.equal(capturedEnv?.AWS_REGION, 'us-west-2');
-  assert.equal(capturedEnv?.S3_BUCKET, 'spec-bucket');
-  assert.equal(capturedEnv?.S3_INPUT_PREFIX, 'specs/input');
-  assert.equal(capturedEnv?.S3_OUTPUT_PREFIX, 'specs/output');
   assert.equal(capturedEnv?.LLM_PROVIDER, 'openai');
   assert.equal(capturedEnv?.LLM_BASE_URL, 'http://llm.test');
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');

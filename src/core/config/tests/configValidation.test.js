@@ -114,15 +114,7 @@ test('C.1 profile: runProfile is always standard regardless of input', () => {
   assert.equal(loadConfig().runProfile, 'standard');
 });
 
-// =========================================================================
-// SECTION 5: Override precedence
-// =========================================================================
-
-test('C.1 overrides: localMode forces outputMode to local', () => {
-  const config = loadConfig({ localMode: true });
-  assert.equal(config.outputMode, 'local');
-  assert.equal(config.mirrorToS3, false);
-});
+// WHY: Section 5 (localMode forces outputMode) removed — outputMode/mirrorToS3 settings retired.
 
 // =========================================================================
 // SECTION 6: Edge cases

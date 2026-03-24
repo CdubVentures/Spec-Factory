@@ -73,7 +73,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     ...(isLocal ? { localMode: true } : {}),
     ...(argVal('local-input-root', '') ? { localInputRoot: argVal('local-input-root', '') } : {}),
     ...(argVal('local-output-root', '') ? { localOutputRoot: argVal('local-output-root', '') } : {}),
-    ...(argVal('output-mode', '') ? { outputMode: argVal('output-mode', '') } : {}),
   });
   const resolvedCategoryAuthorityRoot = resolveProjectPath(
     configValue(config, 'categoryAuthorityRoot'),
@@ -107,8 +106,8 @@ export function createBootstrapEnvironment({ projectRoot }) {
     enabled: envBool('RUN_DATA_STORAGE_ENABLED', envToken('S3_BUCKET', '') !== ''),
     destinationType: resolveRunDataDestinationType({ env: process.env }),
     localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
-    awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', configValue(config, 'awsRegion')),
-    s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', configValue(config, 's3Bucket')),
+    awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', 'us-east-2'),
+    s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', ''),
     s3Prefix: envToken('RUN_DATA_STORAGE_S3_PREFIX', 'spec-factory-runs'),
     s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', process.env.AWS_ACCESS_KEY_ID || ''),
     s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', process.env.AWS_SECRET_ACCESS_KEY || ''),
@@ -116,8 +115,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     updatedAt: null,
     ...userSettings.storage,
   });
-  if (runDataStorageState.awsRegion) config.awsRegion = runDataStorageState.awsRegion;
-  if (runDataStorageState.s3Bucket) config.s3Bucket = runDataStorageState.s3Bucket;
   const storageBackedWorkspaceRoots = resolveStorageBackedWorkspaceRoots(runDataStorageState);
   if (storageBackedWorkspaceRoots) {
     if (storageBackedWorkspaceRoots.outputRoot) {

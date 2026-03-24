@@ -1,6 +1,7 @@
 import { slug, parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
 import pathNode from 'node:path';
-import { configInt, configValue } from '../../../shared/settingsAccessor.js';
+import { configInt } from '../../../shared/settingsAccessor.js';
+import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 
 export function createPipelineCommands({
   asBool,
@@ -12,7 +13,7 @@ export function createPipelineCommands({
 }) {
   async function commandRunOne(config, storage, args) {
     const s3Key =
-      args.s3key || `${configValue(config, 's3InputPrefix')}/mouse/products/mouse-razer-viper-v3-pro.json`;
+      args.s3key || `${INPUT_KEY_PREFIX}/mouse/products/mouse-razer-viper-v3-pro.json`;
 
     const result = await runProduct({ storage, config, s3Key });
     const urlsCrawled = result.crawlResults?.length ?? 0;
@@ -41,7 +42,7 @@ export function createPipelineCommands({
     const buildInputKey = (pid) => {
       const normalized = String(pid || '').trim().replace(/\.json$/i, '');
       if (!normalized) return '';
-      return toPosixKey(configValue(config, 's3InputPrefix'), category, 'products', `${normalized}.json`);
+      return toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${normalized}.json`);
     };
 
     let s3Key = String(args.s3key || '').trim();
@@ -264,7 +265,7 @@ export function createPipelineCommands({
     }
 
     const s3Key =
-      args.s3key || toPosixKey(configValue(config, 's3InputPrefix'), category, 'products', `${productId}.json`);
+      args.s3key || toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`);
 
     await storage.writeObject(
       s3Key,

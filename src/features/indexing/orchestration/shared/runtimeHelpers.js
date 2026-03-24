@@ -1,5 +1,6 @@
 import { toInt, toBool } from './typeHelpers.js';
 import { configValue } from '../../../../shared/settingsAccessor.js';
+import { OUTPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 
 export function parseMinEvidenceRefs(value, fallback = 1) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -280,7 +281,7 @@ export function resolveRuntimeControlKey(storage, config = {}) {
   if (!raw) {
     return storage.resolveOutputKey('_runtime/control/runtime_overrides.json');
   }
-  if (raw.startsWith(`${config.s3OutputPrefix || 'specs/outputs'}/`)) {
+  if (raw.startsWith(`${OUTPUT_KEY_PREFIX}/`)) {
     return raw;
   }
   return storage.resolveOutputKey(raw);

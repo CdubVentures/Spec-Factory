@@ -4,7 +4,7 @@ import { searchEngineAvailability } from '../search/searchProviders.js';
 import { enhanceQueryRows } from '../../../research/queryPlanner.js';
 import {
   buildSearchProfile,
-} from '../search/queryBuilder.js';
+} from '../pipeline/searchProfile/queryBuilder.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { resolveBrandDomain } from './brandResolver.js';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';

@@ -126,7 +126,6 @@ export function IndexingPage() {
     category,
     processStatusRunId,
     processStartedAt: String(processStatus?.startedAt || ''),
-    processRunning: Boolean(processStatus?.running),
     selectedIndexLabRunId,
     setSelectedIndexLabRunId,
     clearedRunViewId,

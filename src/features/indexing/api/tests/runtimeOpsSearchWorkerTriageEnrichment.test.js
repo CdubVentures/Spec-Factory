@@ -82,13 +82,55 @@ function makeEvent(type, payload) {
 function eventType(evt) { return evt.type; }
 function payloadOf(evt) { return evt.payload || {}; }
 
+function makeTriageCandidate(overrides = {}) {
+  return {
+    url: 'https://example.com/page',
+    decision: 'maybe',
+    score: 5.5,
+    rationale: 'mixed_signals',
+    score_components: null,
+    ...overrides,
+  };
+}
+
+function makeSearchResultRow(overrides = {}) {
+  return {
+    url: 'https://example.com/page',
+    domain: 'example.com',
+    fetch_worker_id: null,
+    fetched: false,
+    ...overrides,
+  };
+}
+
+function makeFetchStartedEvent(overrides = {}) {
+  return makeEvent('fetch_started', {
+    scope: 'url',
+    url: 'https://example.com/page',
+    worker_id: 'fetch-001',
+    ...overrides,
+  });
+}
+
 describe('Search worker triage enrichment', () => {
   it('1. Triage events enrich results with decision/score/rationale', () => {
     const events = [
       makeEvent('serp_selector_completed', {
         candidates: [
-          { url: 'https://razer.com/viper', decision: 'keep', score: 8.5, rationale: 'manufacturer_site', score_components: { base_relevance: 6, tier_boost: 1.5, identity_match: 1, penalties: 0 } },
-          { url: 'https://rtings.com/mouse', decision: 'drop', score: 2.1, rationale: 'low_relevance', score_components: { base_relevance: 2, tier_boost: 0.1, identity_match: 0, penalties: 0 } },
+          makeTriageCandidate({
+            url: 'https://razer.com/viper',
+            decision: 'keep',
+            score: 8.5,
+            rationale: 'manufacturer_site',
+            score_components: { base_relevance: 6, tier_boost: 1.5, identity_match: 1, penalties: 0 },
+          }),
+          makeTriageCandidate({
+            url: 'https://rtings.com/mouse',
+            decision: 'drop',
+            score: 2.1,
+            rationale: 'low_relevance',
+            score_components: { base_relevance: 2, tier_boost: 0.1, identity_match: 0, penalties: 0 },
+          }),
         ],
       }),
     ];
@@ -106,7 +148,7 @@ describe('Search worker triage enrichment', () => {
     const triageByUrl = {};
     const urlToFetchWorker = {};
     const hostToFetchWorkers = {};
-    const result = { url: 'https://example.com/page', domain: 'example.com', fetch_worker_id: null, fetched: false };
+    const result = makeSearchResultRow();
 
     enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFetchWorkers);
 
@@ -120,7 +162,7 @@ describe('Search worker triage enrichment', () => {
     const triageByUrl = { 'https://razer.com/viper': { decision: 'keep', score: 8, rationale: 'ok', score_components: null } };
     const urlToFetchWorker = { 'https://razer.com/viper': 'fetch-001' };
     const hostToFetchWorkers = {};
-    const result = { url: 'https://razer.com/viper', domain: 'razer.com', fetch_worker_id: null, fetched: false };
+    const result = makeSearchResultRow({ url: 'https://razer.com/viper', domain: 'razer.com' });
 
     enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFetchWorkers);
 
@@ -135,7 +177,7 @@ describe('Search worker triage enrichment', () => {
     const hostToFetchWorkers = {
       'razer.com': [{ worker_id: 'fetch-007', url: 'https://razer.com/other-page' }],
     };
-    const result = { url: 'https://razer.com/viper-v3-pro', domain: 'razer.com', fetch_worker_id: null, fetched: false };
+    const result = makeSearchResultRow({ url: 'https://razer.com/viper-v3-pro', domain: 'razer.com' });
 
     enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFetchWorkers);
 
@@ -147,13 +189,9 @@ describe('Search worker triage enrichment', () => {
     const events = [
       makeEvent('serp_selector_completed', {
         candidates: [
-          {
-            url: 'https://example.com/page',
-            decision: 'maybe',
-            score: 5.5,
-            rationale: 'mixed_signals',
+          makeTriageCandidate({
             score_components: { base_relevance: 3, tier_boost: 1.5, identity_match: 1.5, penalties: -0.5 },
-          },
+          }),
         ],
       }),
     ];
@@ -177,7 +215,7 @@ describe('Search worker triage enrichment', () => {
     const triageByUrl = buildTriageLookup(events, eventType, payloadOf);
     assert.deepEqual(triageByUrl, {});
 
-    const result = { url: 'https://example.com/page', domain: 'example.com', fetch_worker_id: null, fetched: false };
+    const result = makeSearchResultRow();
     enrichResultWithTriage(result, triageByUrl, {}, {});
     assert.equal(result.decision, 'unknown');
     assert.equal(result.score, 0);
@@ -187,22 +225,30 @@ describe('Search worker triage enrichment', () => {
     const events = [
       makeEvent('serp_selector_completed', {
         candidates: [
-          { url: 'https://a.com/page', decision: 'keep', score: 9, rationale: 'query1_top', score_components: null },
-          { url: 'https://b.com/page', decision: 'drop', score: 1, rationale: 'query1_irrelevant', score_components: null },
+          makeTriageCandidate({ url: 'https://a.com/page', decision: 'keep', score: 9, rationale: 'query1_top' }),
+          makeTriageCandidate({ url: 'https://b.com/page', decision: 'drop', score: 1, rationale: 'query1_irrelevant' }),
         ],
       }),
       makeEvent('serp_selector_completed', {
         candidates: [
-          { url: 'https://c.com/page', decision: 'maybe', score: 5, rationale: 'query2_mixed', score_components: null },
+          makeTriageCandidate({ url: 'https://c.com/page', decision: 'maybe', score: 5, rationale: 'query2_mixed' }),
           // Same URL from different triage round — last write wins
-          { url: 'https://a.com/page', decision: 'keep', score: 9.5, rationale: 'query2_confirmed', score_components: { base_relevance: 7, tier_boost: 1.5, identity_match: 1, penalties: 0 } },
+          makeTriageCandidate({
+            url: 'https://a.com/page',
+            decision: 'keep',
+            score: 9.5,
+            rationale: 'query2_confirmed',
+            score_components: { base_relevance: 7, tier_boost: 1.5, identity_match: 1, penalties: 0 },
+          }),
         ],
       }),
     ];
 
     const triageByUrl = buildTriageLookup(events, eventType, payloadOf);
 
-    assert.equal(Object.keys(triageByUrl).length, 3);
+    assert.ok(triageByUrl['https://a.com/page']);
+    assert.ok(triageByUrl['https://b.com/page']);
+    assert.ok(triageByUrl['https://c.com/page']);
     assert.equal(triageByUrl['https://a.com/page'].score, 9.5, 'Last write wins for duplicate URLs');
     assert.equal(triageByUrl['https://b.com/page'].decision, 'drop');
     assert.equal(triageByUrl['https://c.com/page'].decision, 'maybe');
@@ -210,10 +256,10 @@ describe('Search worker triage enrichment', () => {
 
   it('8. Host-level fetch map built from fetch_started events', () => {
     const events = [
-      makeEvent('fetch_started', { scope: 'url', url: 'https://razer.com/viper', worker_id: 'fetch-001' }),
-      makeEvent('fetch_started', { scope: 'url', url: 'https://razer.com/other', worker_id: 'fetch-002' }),
-      makeEvent('fetch_started', { scope: 'url', url: 'https://rtings.com/review', worker_id: 'fetch-003' }),
-      makeEvent('fetch_started', { scope: 'batch', url: 'https://ignored.com', worker_id: 'fetch-999' }),
+      makeFetchStartedEvent({ url: 'https://razer.com/viper' }),
+      makeFetchStartedEvent({ url: 'https://razer.com/other', worker_id: 'fetch-002' }),
+      makeFetchStartedEvent({ url: 'https://rtings.com/review', worker_id: 'fetch-003' }),
+      makeFetchStartedEvent({ scope: 'batch', url: 'https://ignored.com', worker_id: 'fetch-999' }),
     ];
 
     const hostMap = buildHostToFetchWorkers(events, eventType, payloadOf);

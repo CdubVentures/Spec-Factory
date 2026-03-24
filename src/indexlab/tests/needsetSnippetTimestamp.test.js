@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeNeedSet } from '../needsetEngine.js';
+import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 
 // Minimal helper to build field rules and provenance for testing
 function buildTestInput({ fieldKey, value, confidence, evidenceRows, requiredLevel = 'required' }) {

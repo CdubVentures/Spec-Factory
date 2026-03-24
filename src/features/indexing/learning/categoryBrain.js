@@ -1,4 +1,5 @@
 import { toPosixKey } from '../../../s3/storage.js';
+import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 import { nowIso } from '../../../utils/common.js';
 import { promotionSuggestionsKey } from '../../../intel/sourceIntel.js';
 import { defaultFieldLexicon, updateFieldLexicon } from './fieldLexicon.js';
@@ -83,7 +84,7 @@ async function autoPromoteSources({
   }
 
   const overrideKey = toPosixKey(
-    config.s3InputPrefix,
+    INPUT_KEY_PREFIX,
     '_sources',
     'overrides',
     category,

@@ -11,9 +11,7 @@ import {
   type RuntimeSettingsNumericBaseline,
 } from '../../pipeline-settings/index.ts';
 
-export interface Phase05RuntimeSettings {
-  perHostMinDelayMs: string;
-}
+export interface Phase05RuntimeSettings {}
 
 interface BuildIndexingRuntimeDraftInput {
   runtimeSettings: RuntimeSettings | undefined;
@@ -33,10 +31,6 @@ interface IndexingRuntimeSettingsProjection {
   phase05RuntimeSettings: Phase05RuntimeSettings;
 }
 
-function toDisplayString(value: number) {
-  return String(value);
-}
-
 export function buildIndexingRuntimeDraft({
   runtimeSettings,
   runtimeBootstrap,
@@ -45,11 +39,9 @@ export function buildIndexingRuntimeDraft({
 }
 
 export function buildIndexingPhase05RuntimeSettings(
-  runtimeDraft: RuntimeDraft,
+  _runtimeDraft: RuntimeDraft,
 ): Phase05RuntimeSettings {
-  return {
-    perHostMinDelayMs: toDisplayString(runtimeDraft.perHostMinDelayMs),
-  };
+  return {};
 }
 
 export function buildIndexingRuntimeSettingsProjection({

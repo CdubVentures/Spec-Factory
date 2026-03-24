@@ -5,7 +5,7 @@ import {
   availabilityRank,
   difficultyRank,
   requiredLevelRank,
-} from '../../indexlab/needsetEngine.js';
+} from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 
 import {
   mapRequiredLevelToBucket,
@@ -13,7 +13,7 @@ import {
 
 import {
   computeGroupProductivityScore,
-} from '../../indexlab/searchPlanningContext.js';
+} from '../../features/indexing/pipeline/needSet/searchPlanningContext.js';
 
 // WHY: Lock down current rank-constant behavior BEFORE extraction.
 // Both needsetEngine.js and searchPlanningContext.js use identical rank maps

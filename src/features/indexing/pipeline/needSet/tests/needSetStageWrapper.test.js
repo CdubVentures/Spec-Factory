@@ -4,8 +4,8 @@
 import { describe, it } from 'node:test';
 import { strictEqual, ok, deepStrictEqual } from 'node:assert';
 import { runNeedSet } from '../runNeedSet.js';
-import { computeNeedSet } from '../../../../../indexlab/needsetEngine.js';
-import { buildSearchPlanningContext } from '../../../../../indexlab/searchPlanningContext.js';
+import { computeNeedSet } from '../needsetEngine.js';
+import { buildSearchPlanningContext } from '../searchPlanningContext.js';
 
 // --- Factory helpers ---
 

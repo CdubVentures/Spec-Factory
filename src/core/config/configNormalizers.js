@@ -174,14 +174,6 @@ export function normalizeModelOutputTokenMap(input = {}) {
   return output;
 }
 
-export function normalizeOutputMode(value, fallback = 'dual') {
-  const token = String(value || '').trim().toLowerCase();
-  if (token === 'local' || token === 'dual' || token === 's3') {
-    return token;
-  }
-  return fallback;
-}
-
 export function normalizeBaseUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
 }

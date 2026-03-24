@@ -6,7 +6,7 @@ import {
   buildTier1Queries,
   buildTier2Queries,
   buildTier3Queries,
-} from '../../queryBuilder.js';
+} from '../../../pipeline/searchProfile/queryBuilder.js';
 import { normalizeQueryRows } from '../../../../../research/queryPlanner.js';
 
 export {

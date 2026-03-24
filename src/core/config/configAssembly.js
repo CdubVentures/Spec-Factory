@@ -14,14 +14,12 @@ import {
 // Grouped by reason — see configBuilder.js for the actual logic.
 export const CUSTOM_KEYS = Object.freeze(new Set([
   // Post-processed strings (.replace, .trim, .toLowerCase)
-  's3InputPrefix', 's3OutputPrefix',
   'indexingResumeMode',
   'capturePageScreenshotFormat', 'capturePageScreenshotSelectors',
 
   // Computed from multi-env chains or earlier variables
-  'userAgent', 'outputMode',
+  'userAgent',
   'localInputRoot', 'localOutputRoot',
-  'mirrorToS3',
   'searchEngines', 'searchEnginesFallback',
   'searxngBaseUrl', 'searxngDefaultBaseUrl',
 

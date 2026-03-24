@@ -31,7 +31,7 @@ async function loadQueueMigration() {
  * Migrate all storage artifacts from oldProductId to newProductId.
  *
  * @param {object} opts
- * @param {object} opts.storage       — storage instance (LocalStorage, S3Storage, DualMirroredStorage)
+ * @param {object} opts.storage       — storage instance (LocalStorage or S3Storage)
  * @param {object} opts.config        — app config (for categoryAuthorityRoot / legacy helper root alias)
  * @param {string} opts.category      — product category
  * @param {string} opts.oldProductId  — current slug (source)

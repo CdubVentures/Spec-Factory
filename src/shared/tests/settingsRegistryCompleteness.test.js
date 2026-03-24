@@ -104,7 +104,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       .filter(e => e.readOnly)
       .map(e => e.key)
       .sort();
-    deepStrictEqual(readOnlyKeys, ['awsRegion', 's3Bucket']);
+    deepStrictEqual(readOnlyKeys, []);
   });
 
   it('defaultsOnly entries are exactly the known set', () => {

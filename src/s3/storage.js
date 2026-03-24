@@ -8,7 +8,8 @@ import {
   ListObjectsV2Command,
   HeadObjectCommand
 } from '@aws-sdk/client-s3';
-import { configValue, configBool } from '../shared/settingsAccessor.js';
+import { configValue } from '../shared/settingsAccessor.js';
+import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 async function streamToBuffer(stream) {
   const chunks = [];
@@ -26,20 +27,12 @@ function toPosixKey(...parts) {
     .replace(/\/+/g, '/');
 }
 
-function normalizeOutputMode(value, fallback = 'local') {
-  const token = String(value || '').trim().toLowerCase();
-  if (token === 'local' || token === 'dual' || token === 's3') {
-    return token;
-  }
-  return fallback;
-}
-
 class S3Storage {
   constructor(config) {
-    this.bucket = configValue(config, 's3Bucket');
-    this.inputPrefix = configValue(config, 's3InputPrefix');
-    this.outputPrefix = configValue(config, 's3OutputPrefix');
-    this.client = new S3Client({ region: configValue(config, 'awsRegion') });
+    this.bucket = config.s3Bucket || '';
+    this.inputPrefix = config.s3InputPrefix || INPUT_KEY_PREFIX;
+    this.outputPrefix = config.s3OutputPrefix || OUTPUT_KEY_PREFIX;
+    this.client = new S3Client({ region: config.awsRegion || 'us-east-2' });
   }
 
   async listInputKeys(category) {
@@ -206,8 +199,8 @@ class LocalStorage {
   constructor(config) {
     this.inputRoot = path.resolve(configValue(config, 'localInputRoot'));
     this.outputRoot = path.resolve(configValue(config, 'localOutputRoot'));
-    this.inputPrefix = configValue(config, 's3InputPrefix');
-    this.outputPrefix = configValue(config, 's3OutputPrefix');
+    this.inputPrefix = INPUT_KEY_PREFIX;
+    this.outputPrefix = OUTPUT_KEY_PREFIX;
   }
 
   resolveLocalPath(key) {
@@ -359,152 +352,11 @@ class LocalStorage {
   }
 }
 
-class DualMirroredStorage {
-  constructor(config) {
-    this.config = config;
-    this.local = new LocalStorage(config);
-    this.s3 = new S3Storage(config);
-    this.inputPrefix = configValue(config, 's3InputPrefix');
-    this.outputPrefix = configValue(config, 's3OutputPrefix');
-    this.mirrorOutputEnabled = configBool(config, 'mirrorToS3');
-    this.mirrorInputEnabled = configBool(config, 'mirrorToS3Input') && configBool(config, 'mirrorToS3');
-    this._mirrorErrors = 0;
-  }
-
-  mapMirrorKey(key) {
-    const token = String(key || '').replace(/\\/g, '/');
-    if (!token) {
-      return '';
-    }
-    if (token.startsWith(`${this.inputPrefix}/`) || token === this.inputPrefix) {
-      if (!this.mirrorInputEnabled) {
-        return '';
-      }
-      return token;
-    }
-    if (token.startsWith(`${this.outputPrefix}/`) || token === this.outputPrefix) {
-      if (!this.mirrorOutputEnabled) {
-        return '';
-      }
-      return token;
-    }
-    if (!this.mirrorOutputEnabled) {
-      return '';
-    }
-    return toPosixKey(this.outputPrefix, token);
-  }
-
-  async mirrorWriteObject(key, body, metadata = {}) {
-    const mirrorKey = this.mapMirrorKey(key);
-    if (!mirrorKey) {
-      return;
-    }
-    try {
-      await this.s3.writeObject(mirrorKey, body, metadata);
-    } catch (error) {
-      this._mirrorErrors += 1;
-      process.stderr.write(
-        `[spec-harvester] mirror_write_failed key=${mirrorKey} message=${error.message}\n`
-      );
-    }
-  }
-
-  async mirrorAppendText(key, text, metadata = {}) {
-    const mirrorKey = this.mapMirrorKey(key);
-    if (!mirrorKey) {
-      return;
-    }
-    try {
-      await this.s3.appendText(mirrorKey, text, metadata);
-    } catch (error) {
-      this._mirrorErrors += 1;
-      process.stderr.write(
-        `[spec-harvester] mirror_append_failed key=${mirrorKey} message=${error.message}\n`
-      );
-    }
-  }
-
-  async listInputKeys(category) {
-    return this.local.listInputKeys(category);
-  }
-
-  async listKeys(prefix) {
-    return this.local.listKeys(prefix);
-  }
-
-  async readJson(key) {
-    return this.local.readJson(key);
-  }
-
-  async readText(key) {
-    return this.local.readText(key);
-  }
-
-  async readJsonOrNull(key) {
-    return this.local.readJsonOrNull(key);
-  }
-
-  async readTextOrNull(key) {
-    return this.local.readTextOrNull(key);
-  }
-
-  async readBuffer(key) {
-    return this.local.readBuffer(key);
-  }
-
-  async writeObject(key, body, metadata = {}) {
-    await this.local.writeObject(key, body, metadata);
-    await this.mirrorWriteObject(key, body, metadata);
-  }
-
-  async appendText(key, text, metadata = {}) {
-    await this.local.appendText(key, text, metadata);
-    await this.mirrorAppendText(key, text, metadata);
-  }
-
-  async objectExists(key) {
-    return this.local.objectExists(key);
-  }
-
-  async deleteObject(key) {
-    await this.local.deleteObject(key);
-    const mirrorKey = this.mapMirrorKey(key);
-    if (mirrorKey) {
-      try {
-        await this.s3.deleteObject(mirrorKey);
-      } catch (error) {
-        this._mirrorErrors += 1;
-        process.stderr.write(
-          `[spec-harvester] mirror_delete_failed key=${mirrorKey} message=${error.message}\n`
-        );
-      }
-    }
-  }
-
-  resolveOutputKey(...parts) {
-    return this.local.resolveOutputKey(...parts);
-  }
-
-  resolveInputKey(...parts) {
-    return this.local.resolveInputKey(...parts);
-  }
-}
-
 export function createStorage(config) {
-  const rawOutputMode = configValue(config, 'outputMode');
-  const isLocal = configBool(config, 'localMode');
-  const mode = normalizeOutputMode(
-    rawOutputMode || (isLocal ? 'local' : 's3'),
-    isLocal ? 'local' : 's3'
-  );
-
-  if (mode === 'local') {
-    return new LocalStorage(config);
+  if (String(config.outputMode || '').trim().toLowerCase() === 's3') {
+    return new S3Storage(config);
   }
-  if (mode === 'dual') {
-    return new DualMirroredStorage(config);
-  }
-  return new S3Storage(config);
+  return new LocalStorage(config);
 }
 
 export { toPosixKey };

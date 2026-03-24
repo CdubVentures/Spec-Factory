@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSearchProfile } from '../queryBuilder.js';
+import { buildSearchProfile } from '../../pipeline/searchProfile/queryBuilder.js';
 
 function makeJob(overrides = {}) {
   return {

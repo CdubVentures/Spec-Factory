@@ -21,15 +21,6 @@ export function validateConfig(config) {
     });
   }
 
-  // Rule 4: S3 output mode requires AWS credentials
-  if (config.outputMode === 's3' && !config.mirrorToS3) {
-    warnings.push({
-      code: 'S3_MODE_NO_CREDS',
-      message: 'OUTPUT_MODE=s3 but AWS credentials not detected'
-    });
-  }
-
-
   return {
     valid: errors.length === 0,
     errors,

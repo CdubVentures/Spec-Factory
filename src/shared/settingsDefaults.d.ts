@@ -37,7 +37,7 @@ export declare const SETTINGS_DEFAULTS: {
 
 export declare const SETTINGS_OPTION_VALUES: {
   readonly runtime: Readonly<{
-    outputMode: readonly string[];
+    fetcherAdapter: readonly string[];
     pipelineSchemaEnforcementMode: readonly string[];
     repairDedupeRule: readonly string[];
     resumeMode: readonly string[];

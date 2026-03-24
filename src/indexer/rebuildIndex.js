@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { toPosixKey } from '../s3/storage.js';
+import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 function productIdFromKey(key) {
   const name = path.posix.basename(key);
@@ -13,7 +14,7 @@ export async function rebuildCategoryIndex({ storage, config, category }) {
   for (const key of inputKeys) {
     const productId = productIdFromKey(key.replace(/\\/g, '/'));
     const latestSummaryKey = toPosixKey(
-      config.s3OutputPrefix,
+      OUTPUT_KEY_PREFIX,
       category,
       productId,
       'latest',
@@ -43,7 +44,7 @@ export async function rebuildCategoryIndex({ storage, config, category }) {
     items: rows
   };
 
-  const indexKey = toPosixKey(config.s3OutputPrefix, category, '_index', 'latest.json');
+  const indexKey = toPosixKey(OUTPUT_KEY_PREFIX, category, '_index', 'latest.json');
   await storage.writeObject(indexKey, Buffer.from(JSON.stringify(index, null, 2), 'utf8'), {
     contentType: 'application/json'
   });

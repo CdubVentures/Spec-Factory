@@ -53,7 +53,6 @@ describe('registry-derived settings maps — characterization', () => {
     strictEqual(typeMap.llmModelPlan, 'string');
     strictEqual(typeMap.autoScrollEnabled, 'bool');
     strictEqual(typeMap.searchEngines, 'csv_enum');
-    strictEqual(typeMap.outputMode, 'enum');
     strictEqual(typeMap.llmCostInputPer1M, 'float');
   });
 

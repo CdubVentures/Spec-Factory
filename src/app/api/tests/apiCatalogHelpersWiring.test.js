@@ -5,6 +5,13 @@ import {
   createCatalogBuilder,
   createCompiledComponentDbPatcher,
 } from '../catalogHelpers.js';
+import {
+  createCatalogProduct,
+  createCatalogInput,
+  createCatalogSummary,
+  createNormalizedIdentity,
+  createCompiledComponentRecord,
+} from './helpers/appApiTestBuilders.js';
 
 function cleanVariant(variant) {
   const token = String(variant ?? '').trim().toLowerCase();
@@ -20,55 +27,28 @@ function catalogKey(brand, model, variant) {
   return `${normText(brand)}|${normText(model)}|${normText(cleanVariant(variant))}`;
 }
 
-test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
-  const loadProductCatalog = async () => ({
-    products: {
-      'mouse-acme-orbit-x1': {
-        brand: 'Acme',
-        model: 'Orbit X1',
-        variant: '',
-        id: 10,
-      },
+function createCatalogStorageFixture() {
+  const seedInput = createCatalogInput();
+  const orphanInput = createCatalogInput({
+    productId: 'mouse-ghost-phantom',
+    active: false,
+    identityLock: {
+      brand: 'Ghost',
+      model: 'Phantom',
+      variant: '',
     },
   });
+  const latestBase = 'out/mouse/mouse-acme-orbit-x1/latest';
 
-  const storage = {
+  return {
     async listInputKeys() {
       return ['inputs/seed.json', 'inputs/orphan.json'];
     },
     async readJsonOrNull(key) {
-      if (key === 'inputs/seed.json') {
-        return {
-          productId: 'mouse-acme-orbit-x1',
-          identityLock: { brand: 'Acme', model: 'Orbit X1', variant: '' },
-          active: true,
-        };
-      }
-      if (key === 'inputs/orphan.json') {
-        return {
-          productId: 'mouse-ghost-phantom',
-          identityLock: { brand: 'Ghost', model: 'Phantom', variant: '' },
-        };
-      }
-      if (key.includes('mouse-acme-orbit-x1') && key.includes('/summary.json')) {
-        return {
-          validated: true,
-          confidence: 0.86,
-          coverage_overall_percent: 77,
-          fields_filled: 7,
-          fields_total: 9,
-          generated_at: '2026-02-26T10:00:00.000Z',
-        };
-      }
-      if (key.includes('mouse-acme-orbit-x1') && key.includes('/normalized.json')) {
-        return {
-          identity: {
-            brand: 'Acme',
-            model: 'Orbit X1',
-            variant: 'Core',
-          },
-        };
-      }
+      if (key === 'inputs/seed.json') return seedInput;
+      if (key === 'inputs/orphan.json') return orphanInput;
+      if (key === `${latestBase}/summary.json`) return createCatalogSummary();
+      if (key === `${latestBase}/normalized.json`) return createNormalizedIdentity();
       return null;
     },
     resolveOutputKey(category, productId) {
@@ -78,10 +58,18 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
       return key.includes('mouse-acme-orbit-x1');
     },
   };
+}
+
+test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
+  const loadProductCatalog = async () => ({
+    products: {
+      'mouse-acme-orbit-x1': createCatalogProduct(),
+    },
+  });
 
   const buildCatalog = createCatalogBuilder({
     config: { localMode: true },
-    storage,
+    storage: createCatalogStorageFixture(),
     getSpecDb: () => ({ id: 'fake-specdb' }),
     loadQueueState: async () => ({
       state: {
@@ -113,15 +101,7 @@ test('compiled component db patcher writes updated matching item', async () => {
     listFiles: async () => ['component-db.json'],
     safeReadJson: async () => ({
       component_type: 'sensor',
-      items: [
-        {
-          name: 'PixArt PMW',
-          maker: 'OldMaker',
-          links: [],
-          aliases: [],
-          properties: { dpi: 1000 },
-        },
-      ],
+      items: [createCompiledComponentRecord()],
     }),
     fs: {
       async writeFile(filePath, payload) {

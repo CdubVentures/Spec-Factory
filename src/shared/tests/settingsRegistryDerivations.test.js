@@ -306,7 +306,6 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
     const options = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
     deepStrictEqual([...options.resumeMode], ['auto', 'force_resume', 'start_over']);
     deepStrictEqual([...options.repairDedupeRule], ['domain_once', 'domain_and_status', 'none']);
-    deepStrictEqual([...options.outputMode], ['local', 'dual', 's3']);
     ok(options.searchEngines.includes('google'));
   });
 });

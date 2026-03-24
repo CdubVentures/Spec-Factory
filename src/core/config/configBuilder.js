@@ -3,7 +3,7 @@
 // buildRawConfig returns the raw cfg object + explicitEnvKeys before post-merge normalization.
 
 import path from 'node:path';
-import { hasS3EnvCreds, defaultChatmockDir } from './llmModelResolver.js';
+import { defaultChatmockDir } from './llmModelResolver.js';
 import { providerFromModelToken } from '../llm/providerMeta.js';
 import {
   buildDefaultModelPricingMap,
@@ -19,7 +19,6 @@ import {
   normalizeModelPricingMap,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
-  normalizeOutputMode,
   DEFAULT_USER_AGENT
 } from './configNormalizers.js';
 import {
@@ -126,9 +125,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const resolvedApiKey = resolveBootstrapApiKey(registryDefaults.provider);
   const resolvedBaseUrl = explicitLlmBaseUrl || registryDefaults.baseUrl;
   const timeoutMs = parseIntEnv('LLM_TIMEOUT_MS', runtimeSettingDefault('llmTimeoutMs'));
-  const envOutputMode = normalizeOutputMode(process.env.OUTPUT_MODE || 'dual', 'dual');
-  const hasS3Creds = hasS3EnvCreds();
-  const defaultMirrorToS3 = envOutputMode !== 'local' && hasS3Creds;
   const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap({});
   const resolvedCategoryAuthorityRoot =
     explicitCategoryAuthorityRoot ||
@@ -146,8 +142,6 @@ export function buildRawConfig({ manifestApplicator }) {
     ...simpleCfg,
 
     // --- Post-processed strings ---
-    s3InputPrefix: (process.env.S3_INPUT_PREFIX || runtimeSettingDefault('s3InputPrefix')).replace(/\/+$/, ''),
-    s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || runtimeSettingDefault('s3OutputPrefix')).replace(/\/+$/, ''),
     indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode')).trim().toLowerCase(),
     batchStrategy: 'bandit',
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',
@@ -155,8 +149,6 @@ export function buildRawConfig({ manifestApplicator }) {
 
     // --- Computed / multi-env values ---
     userAgent: process.env.USER_AGENT || SETTINGS_DEFAULTS.runtime.userAgent || DEFAULT_USER_AGENT,
-    outputMode: envOutputMode,
-    mirrorToS3: parseBoolEnv('MIRROR_TO_S3', runtimeSettingDefault('mirrorToS3')),
     localInputRoot: process.env.LOCAL_INPUT_ROOT || runtimeSettingDefault('localInputRoot'),
     localOutputRoot: process.env.LOCAL_OUTPUT_ROOT || defaultLocalOutputRoot(),
     runtimeEventsKey: process.env.RUNTIME_EVENTS_KEY || runtimeSettingDefault('runtimeEventsKey'),

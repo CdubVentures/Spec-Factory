@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
-import { useReviewStore } from '../state/reviewStore.ts';
+import { useReviewStore, selectSelectedField, selectSelectedProductId } from '../state/reviewStore.ts';
 import type { SortMode } from '../state/reviewStore.ts';
 import { ReviewMatrix } from './ReviewMatrix.tsx';
 import { CellDrawer } from '../../../components/common/CellDrawer.tsx';
@@ -63,12 +63,13 @@ export function ReviewPage() {
   const {
     activeCell, drawerOpen, openDrawer, closeDrawer,
     setFlaggedCells, nextFlagged, prevFlagged,
-    selectedProductId, selectedField,
     cellMode, editingValue, originalEditingValue, saveStatus,
     selectCell, startEditing, cancelEditing, setEditingValue, commitEditing, setSaveStatus,
     brandFilter, setAvailableBrands, setBrandFilterMode, setBrandFilterSelection,
     sortMode, setSortMode, showOnlyFlagged, setShowOnlyFlagged,
   } = useReviewStore();
+  const selectedField = useReviewStore(selectSelectedField);
+  const selectedProductId = useReviewStore(selectSelectedProductId);
   const queryClient = useQueryClient();
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');

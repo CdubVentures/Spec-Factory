@@ -7,7 +7,7 @@ import {
   difficultyRank,
   requiredLevelRank,
   deriveQueryFamilies,
-} from '../../needsetEngine.js';
+} from '../../../features/indexing/pipeline/needSet/needsetEngine.js';
 
 export {
   computeNeedSet,

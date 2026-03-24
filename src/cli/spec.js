@@ -47,7 +47,6 @@ import { runGoldenBenchmark } from '../benchmark/goldenBenchmark.js';
 import { rankBatchWithBandit } from '../features/indexing/learning/index.js';
 import { ingestCsvFile } from '../ingest/csvIngestor.js';
 import { compileCategoryFieldStudio } from '../ingest/categoryCompile.js';
-import { runWatchImports, runDaemon } from '../daemon/daemon.js';
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import {
   clearQueueByStatus,
@@ -165,8 +164,6 @@ function usage() {
     '  drift-reconcile --category <category> --product-id <id> [--auto-republish true|false] [--local]',
     '  discover --category <category> [--brand <brand>] [--local]',
     '  ingest-csv --category <category> --path <csv> [--imports-root <path>] [--local]',
-    '  watch-imports [--imports-root <path>] [--category <category>|--all] [--once] [--local]',
-    '  daemon [--imports-root <path>] [--category <category>|--all] [--once] [--local]',
     '  queue add --category <category> --brand <brand> --model <model> [--variant <variant>] [--priority <1-5>] [--local]',
     '  queue add --category <category> --product-id <id> [--s3key <key>] [--priority <1-5>] [--local]',
     '  queue add-batch --category <category> --file <csv> [--imports-root <path>] [--local]',
@@ -251,8 +248,6 @@ function buildConfig(args) {
   };
   if (args.local !== undefined) overrides.localMode = asBool(args.local);
   if (args['dry-run'] !== undefined) overrides.dryRun = asBool(args['dry-run']);
-  if (args['mirror-to-s3'] !== undefined) overrides.mirrorToS3 = asBool(args['mirror-to-s3']);
-  if (args['mirror-to-s3-input'] !== undefined) overrides.mirrorToS3Input = asBool(args['mirror-to-s3-input']);
   if (args['discovery-enabled'] !== undefined) overrides.discoveryEnabled = asBool(args['discovery-enabled']);
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
@@ -399,8 +394,6 @@ const dataUtility = createDataUtilityCommands({
   asBool,
   ingestCsvFile,
   EventLogger,
-  runWatchImports,
-  runDaemon,
   runS3Integration,
   generateTypesForCategory,
 });
@@ -461,8 +454,6 @@ const dispatchCliCommand = createCliCommandDispatcher({
     'run-batch': ({ config, storage, args }) => batch.commandRunBatch(config, storage, args),
     discover: ({ config, storage, args }) => commandDiscover(config, storage, args),
     'ingest-csv': ({ config, storage, args }) => dataUtility.commandIngestCsv(config, storage, args),
-    'watch-imports': ({ config, storage, args }) => dataUtility.commandWatchImports(config, storage, args),
-    daemon: ({ config, storage, args }) => dataUtility.commandDaemon(config, storage, args),
     queue: ({ config, storage, args }) => commandQueue(config, storage, args),
     review: ({ config, storage, args }) => commandReview(config, storage, args),
     'billing-report': ({ config, storage, args }) => commandBillingReport(config, storage, args),

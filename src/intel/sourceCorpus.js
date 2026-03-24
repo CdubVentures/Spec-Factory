@@ -1,4 +1,5 @@
 import { toPosixKey } from '../s3/storage.js';
+import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
 
 const CORPUS_CACHE = new Map();
@@ -231,7 +232,7 @@ function sourceCorpusCacheKey(storage, key) {
 }
 
 export function sourceCorpusKey(config, category) {
-  return toPosixKey(config.s3OutputPrefix, '_source_intel', category, 'corpus.json');
+  return toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'corpus.json');
 }
 
 export async function loadSourceCorpus({

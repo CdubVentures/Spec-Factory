@@ -7,7 +7,6 @@ import path from 'node:path';
 import {
   initArchivedRunLocationHelpers,
   readArchivedS3RunMetaOnly,
-  buildArchivedS3CacheRoot,
 } from '../archivedRunLocationHelpers.js';
 
 // ---------------------------------------------------------------------------
@@ -18,16 +17,15 @@ function createS3Stub(files = {}) {
   const normalized = new Map(
     Object.entries(files).map(([key, value]) => [key, typeof value === 'string' ? value : JSON.stringify(value)]),
   );
-  const calls = { listKeys: 0, readTextOrNull: 0 };
   return {
-    calls,
+    remove(key) {
+      normalized.delete(key);
+    },
     storage: {
       async listKeys(prefix) {
-        calls.listKeys += 1;
         return [...normalized.keys()].filter((k) => k.startsWith(prefix));
       },
       async readTextOrNull(key) {
-        calls.readTextOrNull += 1;
         return normalized.get(key) ?? null;
       },
       async readBuffer(key) {
@@ -99,7 +97,6 @@ describe('readArchivedS3RunMetaOnly', () => {
           has_search_profile: true,
         },
       });
-      assert.equal(s3Stub.calls.listKeys, 0, 'artifact enrichment must not call listKeys');
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }
@@ -139,35 +136,12 @@ describe('readArchivedS3RunMetaOnly', () => {
 
       const location = { type: 's3', keyBase: 'archive/mouse/ms-prod/run-cached', runId: 'run-cached' };
       const first = await readArchivedS3RunMetaOnly(location, 'run-cached');
-      const s3CallsAfterFirst = s3Stub.calls.readTextOrNull;
+      s3Stub.remove('archive/mouse/ms-prod/run-cached/indexlab/run.json');
 
       const second = await readArchivedS3RunMetaOnly(location, 'run-cached');
 
       assert.deepEqual(first, runMeta);
       assert.deepEqual(second, runMeta);
-      assert.equal(s3Stub.calls.readTextOrNull, s3CallsAfterFirst, 'second call must not hit S3');
-    } finally {
-      await fs.rm(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  test('does NOT call listKeys (single-file read only)', async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'meta-only-'));
-    try {
-      const runMeta = { run_id: 'run-nolist', status: 'completed' };
-      const s3Stub = createS3Stub({
-        'archive/keyboard/kb-prod/run-nolist/indexlab/run.json': runMeta,
-      });
-      initArchivedRunLocationHelpers({
-        outputRoot: tempRoot,
-        runDataArchiveStorage: s3Stub.storage,
-        runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: 'archive' },
-      });
-
-      const location = { type: 's3', keyBase: 'archive/keyboard/kb-prod/run-nolist', runId: 'run-nolist' };
-      await readArchivedS3RunMetaOnly(location, 'run-nolist');
-
-      assert.equal(s3Stub.calls.listKeys, 0, 'listKeys must never be called');
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }

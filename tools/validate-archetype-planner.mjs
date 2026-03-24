@@ -4,8 +4,8 @@
  * Captures full output for audit evidence.
  */
 import { loadCategoryConfig } from '../src/categories/loader.js';
-import { computeNeedSet } from '../src/indexlab/needsetEngine.js';
-import { buildSearchProfile } from '../src/features/indexing/search/queryBuilder.js';
+import { computeNeedSet } from '../src/features/indexing/pipeline/needSet/needsetEngine.js';
+import { buildSearchProfile } from '../src/features/indexing/pipeline/searchProfile/queryBuilder.js';
 import fs from 'node:fs';
 import path from 'node:path';
 

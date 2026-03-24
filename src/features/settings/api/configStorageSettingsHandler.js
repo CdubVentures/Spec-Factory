@@ -132,14 +132,6 @@ export function createStorageSettingsHandler({
         persistenceCtx.recordRouteWriteOutcome('storage', 'storage-settings-route', false, 'storage_settings_persist_failed');
         return jsonRes(res, 500, { ok: false, error: 'storage_settings_persist_failed' });
       }
-      const propagatedRegion = String(runDataStorageState.awsRegion || '').trim();
-      const propagatedBucket = String(runDataStorageState.s3Bucket || '').trim();
-      const s3Patch = {};
-      if (propagatedRegion) s3Patch.awsRegion = propagatedRegion;
-      if (propagatedBucket) s3Patch.s3Bucket = propagatedBucket;
-      if (Object.keys(s3Patch).length > 0 && configGate) {
-        configGate.applyPatch(s3Patch, { source: 'storage-settings-route' });
-      }
       emitDataChange({
         broadcastWs,
         event: 'storage-settings-updated',

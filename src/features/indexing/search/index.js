@@ -9,7 +9,7 @@ export {
   buildDeterministicAliases,
   buildSearchProfile,
   buildTargetedQueries
-} from './queryBuilder.js';
+} from '../pipeline/searchProfile/queryBuilder.js';
 export { dedupeSerpResults } from './serpDedupe.js';
 export { evaluateSearchLoopStop } from './searchLoop.js';
 export { searchGoogle } from './searchGoogle.js';

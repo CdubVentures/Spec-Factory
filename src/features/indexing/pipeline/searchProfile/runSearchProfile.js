@@ -3,7 +3,7 @@
 
 import {
   buildSearchProfile,
-} from '../../search/queryBuilder.js';
+} from './queryBuilder.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../shared/discoveryIdentity.js';
 

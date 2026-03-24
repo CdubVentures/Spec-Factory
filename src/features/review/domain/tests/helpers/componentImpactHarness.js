@@ -1,0 +1,56 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { createStorage } from '../../../../../s3/storage.js';
+import { SpecDb } from '../../../../../db/specDb.js';
+import { loadQueueState, saveQueueState } from '../../../../../queue/queueState.js';
+import {
+  cascadeComponentChange,
+  cascadeEnumChange,
+  findProductsReferencingComponent,
+} from '../../componentImpact.js';
+
+export {
+  cascadeComponentChange,
+  cascadeEnumChange,
+  findProductsReferencingComponent,
+  loadQueueState,
+  saveQueueState,
+};
+
+export async function createHarness() {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-impact-'));
+  const outputRoot = path.join(tempRoot, 'out');
+  const storage = createStorage({
+    localMode: true,
+    localInputRoot: path.join(tempRoot, 'fixtures'),
+    localOutputRoot: outputRoot,
+    s3InputPrefix: 'specs/inputs',
+    s3OutputPrefix: 'specs/outputs',
+  });
+
+  const dbPath = path.join(tempRoot, 'spec.sqlite');
+  const category = 'mouse';
+  const specDb = new SpecDb({ dbPath, category });
+
+  return { tempRoot, outputRoot, storage, specDb, category };
+}
+
+export async function cleanupHarness(harness) {
+  try {
+    harness?.specDb?.close();
+  } finally {
+    await fs.rm(harness.tempRoot, { recursive: true, force: true });
+  }
+}
+
+export function upsertQueueRow(specDb, productId, status = 'complete') {
+  specDb.upsertQueueProduct({
+    product_id: productId,
+    status,
+    priority: 3,
+    attempts_total: 0,
+    retry_count: 0,
+    max_attempts: 3,
+  });
+}

@@ -1,6 +1,6 @@
-// WHY: Derived from registry SSOT via deriveValueTypeMap(). No manual patching
-// needed for readOnly entries (awsRegion, s3Bucket) — the derivation includes them.
+// WHY: Derived from registry SSOT via deriveValueTypeMap().
 // defaultsOnly entries are filtered to preserve the existing RUNTIME_SETTINGS_KEYS contract.
+// Storage-owned keys stay in STORAGE_SETTINGS_VALUE_TYPES rather than leaking into runtime.
 
 import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
 import { deriveValueTypeMap } from '../../shared/settingsRegistryDerivations.js';

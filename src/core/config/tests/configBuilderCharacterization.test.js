@@ -63,9 +63,8 @@ describe('configBuilder characterization contract', () => {
     t.after(() => harness.cleanup());
 
     const expectedStrings = [
-      'awsRegion', 's3Bucket', 's3InputPrefix', 's3OutputPrefix',
       'userAgent',
-      'outputMode', 'localInputRoot', 'localOutputRoot', 'runtimeEventsKey',
+      'localInputRoot', 'localOutputRoot', 'runtimeEventsKey',
       'runProfile', 'searchEngines', 'searchEnginesFallback',
       'searxngBaseUrl', 'searxngDefaultBaseUrl',
       'llmProvider', 'llmApiKey', 'llmBaseUrl',
@@ -113,7 +112,7 @@ describe('configBuilder characterization contract', () => {
     t.after(() => harness.cleanup());
 
     const expectedBools = [
-      'localMode', 'dryRun', 'mirrorToS3', 'mirrorToS3Input',
+      'localMode', 'dryRun',
       'writeMarkdownSummary', 'discoveryEnabled',
       'crawleeHeadless',
       'capturePageScreenshotEnabled',
@@ -170,7 +169,6 @@ describe('configBuilder characterization contract', () => {
     const harness = createConfigBuilderHarness();
     t.after(() => harness.cleanup());
 
-    strictEqual(harness.cfg.outputMode, 'dual');
     strictEqual(harness.cfg.repairDedupeRule, 'domain_once');
     strictEqual(harness.cfg.discoveryEnabled, true);
     strictEqual(harness.cfg.robotsTxtCompliant, true);

@@ -23,16 +23,8 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(cfg.discoveryEnabled, true);
 
   // Output defaults
-  assert.equal(typeof cfg.outputMode, 'string');
   assert.equal(typeof cfg.localInputRoot, 'string');
   assert.equal(typeof cfg.localOutputRoot, 'string');
-
-  // S3 defaults
-  assert.equal(typeof cfg.s3Bucket, 'string');
-  assert.equal(typeof cfg.s3InputPrefix, 'string');
-  assert.equal(typeof cfg.s3OutputPrefix, 'string');
-  assert.ok(!cfg.s3InputPrefix.endsWith('/'));
-  assert.ok(!cfg.s3OutputPrefix.endsWith('/'));
 
   // LLM model keys exist (per-role aliases retired — only plan + reasoning)
   assert.equal(typeof cfg.llmModelPlan, 'string');
@@ -76,21 +68,7 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(typeof cfg.runtimeScreencastQuality, 'number');
 });
 
-// =========================================================================
-// SECTION 2: localMode override behavior
-// =========================================================================
-
-test('CHAR config: localMode=true forces outputMode=local and mirrorToS3=false', () => {
-  const cfg = loadConfig({ localMode: true });
-  assert.equal(cfg.outputMode, 'local');
-  assert.equal(cfg.mirrorToS3, false);
-});
-
-test('CHAR config: localMode=false uses default outputMode', () => {
-  const cfg = loadConfig({ localMode: false });
-  assert.equal(typeof cfg.outputMode, 'string');
-  assert.ok(['local', 'dual', 's3'].includes(cfg.outputMode));
-});
+// WHY: Section 2 (localMode override behavior) removed — outputMode/mirrorToS3 settings retired.
 
 // =========================================================================
 // SECTION 3: LLM fallback chain behavior
@@ -118,10 +96,7 @@ test('CHAR config: llmPlanApiKey falls back to llmApiKey', () => {
 // WHY: Section 5 normalizer tests for pdfPreferredBackend, scannedPdfOcrBackend,
 // staticDomMode removed — those settings were retired from the registry.
 
-test('CHAR config: outputMode normalizes invalid values', () => {
-  const cfg = loadConfig({ outputMode: 'nonsense' });
-  assert.ok(['local', 'dual', 's3'].includes(cfg.outputMode));
-});
+// WHY: outputMode normalization test removed — outputMode setting retired.
 
 // =========================================================================
 // SECTION 6: openai mirror keys are synced
@@ -200,7 +175,7 @@ test('CHAR validate: default config is valid', () => {
   assert.equal(result.errors.length, 0);
 });
 
-test('CHAR validate: all 3 validation rules produce correct codes', () => {
+test('CHAR validate: all 2 validation rules produce correct codes', () => {
   // Rule 1: LLM_NO_API_KEY (warning)
   const r1 = validateConfig(loadConfig({ llmApiKey: '' }));
   assert.ok(r1.warnings.some(w => w.code === 'LLM_NO_API_KEY'));
@@ -208,10 +183,6 @@ test('CHAR validate: all 3 validation rules produce correct codes', () => {
   // Rule 2: DISCOVERY_NO_SEARCH_PROVIDER (warning)
   const r2 = validateConfig(loadConfig({ searchEngines: '' }));
   assert.ok(r2.warnings.some(w => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
-
-  // Rule 3: S3_MODE_NO_CREDS (warning)
-  const r3 = validateConfig({ outputMode: 's3', mirrorToS3: false });
-  assert.ok(r3.warnings.some(w => w.code === 'S3_MODE_NO_CREDS'));
 });
 
 test('CHAR validate: return shape is { valid, errors, warnings }', () => {

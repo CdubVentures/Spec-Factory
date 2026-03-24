@@ -5,8 +5,9 @@
 // ── MAINTENANCE GUIDE ────────────────────────────────────────────────
 //
 // When adding a new field rule property:
-//   1. Add one entry to FIELD_CONSUMER_REGISTRY.
-//   2. Run: node --test test/systemMappingCoverage.test.js
+//   1. Add the field path + systems to FIELD_SYSTEM_MAP in src/field-rules/consumerGate.js (SSOT).
+//   2. Add tooltips (and optional navigation) to FIELD_CONSUMER_REGISTRY below.
+//   3. Run: node --test tools/gui-react/src/features/studio/workbench/__tests__/systemMappingCoverage.test.js
 //
 // Backend cross-references (trace these for consumer evidence):
 //   - src/engine/ruleAccessors.js    — universal getters for field rule properties
@@ -16,6 +17,9 @@
 //   - src/llm/extractCandidatesLLM.js — LLM extraction context
 //   - src/retrieve/tierAwareRetriever.js — tier preference retrieval
 //   - implementation/ai-implenentation-plans/ai-source-review.md — review route matrix
+
+// WHY: O(1) SSOT — field-to-system mapping owned by backend consumerGate.js.
+import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../../../../../../src/field-rules/consumerGate.js';
 
 export type DownstreamSystem = 'indexlab' | 'seed' | 'review';
 
@@ -47,18 +51,9 @@ export const SYSTEM_BADGE_CONFIGS: Record<DownstreamSystem, {
 
 type SystemSet = DownstreamSystem[];
 
-const IDX: SystemSet = ['indexlab'];
-const IDX_REV: SystemSet = ['indexlab', 'review'];
-const IDX_SEED_REV: SystemSet = ['indexlab', 'seed', 'review'];
-const SEED_IDX_REV: SystemSet = ['seed', 'indexlab', 'review'];
-const REV: SystemSet = ['review'];
-
-// ── Single source of truth: field → systems + navigation + tooltips ──
-
 type ConsumerTip = { on: string; off: string };
 
 interface FieldConsumerEntry {
-  systems: SystemSet;
   navigation?: { section: string; key: string };
   tooltips: Partial<Record<DownstreamSystem, ConsumerTip>>;
 }
@@ -66,7 +61,7 @@ interface FieldConsumerEntry {
 const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
   // ── Contract ──────────────────────────────────────────────────────────
   'contract.type': {
-    systems: IDX_SEED_REV,
+
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Data Type' },
     tooltips: {
       indexlab: {
@@ -84,7 +79,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'contract.shape': {
-    systems: IDX_SEED_REV,
+
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Shape' },
     tooltips: {
       indexlab: {
@@ -102,7 +97,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'contract.unit': {
-    systems: IDX_REV,
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Unit' },
     tooltips: {
       indexlab: {
@@ -116,7 +110,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'contract.range': {
-    systems: IDX,
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Range' },
     tooltips: {
       indexlab: {
@@ -126,7 +119,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'contract.list_rules': {
-    systems: IDX,
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'List Rules' },
     tooltips: {
       indexlab: {
@@ -136,7 +128,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'contract.unknown_token': {
-    systems: IDX,
     navigation: { section: 'Contract (Type, Shape, Unit)', key: 'Unknown Token' },
     tooltips: {
       indexlab: {
@@ -148,7 +139,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Priority ──────────────────────────────────────────────────────────
   'priority.required_level': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Priority & Effort', key: 'Required Level' },
     tooltips: {
       seed: {
@@ -166,7 +157,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'priority.availability': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Priority & Effort', key: 'Availability' },
     tooltips: {
       seed: {
@@ -184,7 +175,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'priority.difficulty': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Priority & Effort', key: 'Difficulty' },
     tooltips: {
       seed: {
@@ -202,7 +193,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'priority.effort': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Priority & Effort', key: 'Effort' },
     tooltips: {
       seed: {
@@ -220,7 +211,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'priority.block_publish_when_unk': {
-    systems: IDX_REV,
     navigation: { section: 'Priority & Effort', key: 'Block Publish When Unknown' },
     tooltips: {
       indexlab: {
@@ -236,7 +226,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── AI Assist ─────────────────────────────────────────────────────────
   'ai_assist.mode': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'AI Assist', key: 'Mode' },
     tooltips: {
       seed: {
@@ -254,7 +244,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'ai_assist.model_strategy': {
-    systems: IDX_REV,
     navigation: { section: 'AI Assist', key: 'Model Strategy' },
     tooltips: {
       indexlab: {
@@ -268,7 +257,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'ai_assist.max_tokens': {
-    systems: IDX_REV,
     navigation: { section: 'AI Assist', key: 'Max Tokens' },
     tooltips: {
       indexlab: {
@@ -282,7 +270,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'ai_assist.reasoning_note': {
-    systems: IDX_REV,
     navigation: { section: 'AI Assist', key: 'Reasoning Note' },
     tooltips: {
       indexlab: {
@@ -298,7 +285,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Parse ─────────────────────────────────────────────────────────────
   'parse.template': {
-    systems: IDX_REV,
     navigation: { section: 'Parse Rules', key: 'Parse Template' },
     tooltips: {
       indexlab: {
@@ -314,7 +300,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Enum ──────────────────────────────────────────────────────────────
   'enum.policy': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Enum Policy', key: 'Policy' },
     tooltips: {
       seed: {
@@ -332,7 +318,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'enum.source': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Enum Policy', key: 'Source' },
     tooltips: {
       seed: {
@@ -350,7 +336,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'enum.match.strategy': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review uses this matching strategy (alias, exact, fuzzy) when comparing candidates to enum values. Alias matching uses known alternate names.',
@@ -359,7 +344,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'enum.match.format_hint': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review uses this format template as output guidance during enum consistency runs. Use placeholders like XXXX and YYYY for variable segments.',
@@ -368,7 +352,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'enum.match.fuzzy_threshold': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review uses this threshold (0-1) as the minimum fuzzy similarity for a candidate to match an enum value. Lower = more lenient.',
@@ -377,7 +360,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'enum.additional_values': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review includes custom strings in review-time enum matching and consistency decisions.',
@@ -388,7 +370,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Evidence ──────────────────────────────────────────────────────────
   'evidence.required': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Evidence Requirements', key: 'Evidence Required' },
     tooltips: {
       seed: {
@@ -406,7 +388,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'evidence.min_evidence_refs': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Evidence Requirements', key: 'Min Evidence Refs' },
     tooltips: {
       seed: {
@@ -424,7 +406,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'evidence.conflict_policy': {
-    systems: IDX_REV,
     navigation: { section: 'Evidence Requirements', key: 'Conflict Policy' },
     tooltips: {
       indexlab: {
@@ -438,7 +419,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'evidence.tier_preference': {
-    systems: IDX_REV,
     navigation: { section: 'Evidence Requirements', key: 'Tier Preference' },
     tooltips: {
       indexlab: {
@@ -454,7 +434,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Search ────────────────────────────────────────────────────────────
   'search_hints.domain_hints': {
-    systems: IDX,
     navigation: { section: 'Search Hints', key: 'Domain Hints' },
     tooltips: {
       indexlab: {
@@ -464,7 +443,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'search_hints.preferred_content_types': {
-    systems: IDX,
     navigation: { section: 'Search Hints', key: 'Preferred Content Types' },
     tooltips: {
       indexlab: {
@@ -474,7 +452,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'search_hints.query_terms': {
-    systems: IDX,
     navigation: { section: 'Search Hints', key: 'Query Terms' },
     tooltips: {
       indexlab: {
@@ -486,7 +463,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Constraints ───────────────────────────────────────────────────────
   constraints: {
-    systems: IDX_REV,
     navigation: { section: 'Cross-Field Constraints', key: 'Constraints' },
     tooltips: {
       indexlab: {
@@ -502,7 +478,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Component / Deps ──────────────────────────────────────────────────
   'component.type': {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Components', key: 'Component Type' },
     tooltips: {
       seed: {
@@ -520,7 +496,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'component.match.fuzzy_threshold': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review uses this threshold (0-1) to control how similar a name must be to count as a component match. Lower = more lenient matching.',
@@ -529,7 +504,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'component.match.name_weight': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review weights component name similarity by this factor (0-1) in the identity score. Higher weight = name matters more than properties.',
@@ -538,7 +512,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'component.match.auto_accept_score': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review auto-accepts component matches scoring above this threshold without requiring human review. Higher = more conservative auto-accept.',
@@ -547,7 +520,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'component.match.flag_review_score': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review flags component matches scoring below this threshold for human review. Lower = only very poor matches are flagged.',
@@ -556,7 +528,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   'component.match.property_weight': {
-    systems: REV,
     tooltips: {
       review: {
         on: 'LLM Review weights component property similarity by this factor (0-1) in the identity score. Higher = properties matter more than names.',
@@ -565,7 +536,7 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
     },
   },
   aliases: {
-    systems: SEED_IDX_REV,
+
     navigation: { section: 'Extraction Hints & Aliases', key: 'Aliases' },
     tooltips: {
       seed: {
@@ -585,7 +556,6 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
   // ── Tooltip / UI ──────────────────────────────────────────────────────
   'ui.tooltip_md': {
-    systems: IDX_REV,
     navigation: { section: 'Extraction Hints & Aliases', key: 'Tooltip Markdown' },
     tooltips: {
       indexlab: {
@@ -602,9 +572,8 @@ const FIELD_CONSUMER_REGISTRY: Record<string, FieldConsumerEntry> = {
 
 // ── Derived exports ─────────────────────────────────────────────────────
 
-export const FIELD_SYSTEM_MAP: Record<string, SystemSet> = Object.fromEntries(
-  Object.entries(FIELD_CONSUMER_REGISTRY).map(([k, v]) => [k, v.systems]),
-);
+// WHY: SSOT — field-to-system mapping comes from backend consumerGate.js.
+export const FIELD_SYSTEM_MAP: Record<string, SystemSet> = BACKEND_FIELD_SYSTEM_MAP as Record<string, SystemSet>;
 
 export const CONSUMER_TOOLTIPS: Record<string, Partial<Record<DownstreamSystem, ConsumerTip>>> = Object.fromEntries(
   Object.entries(FIELD_CONSUMER_REGISTRY).map(([k, v]) => [k, v.tooltips]),

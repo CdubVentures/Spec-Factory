@@ -1,10 +1,3 @@
-export interface TraceEntry {
-  file: string;
-  section: string;
-  ts: string;
-  data: unknown;
-}
-
 export interface RuntimeOverrides {
   pause?: boolean;
   block_fields?: string[];
@@ -14,13 +7,20 @@ export interface RuntimeOverrides {
   [key: string]: unknown;
 }
 
+export interface TraceEntry {
+  file: string;
+  section: string;
+  ts: string;
+  data: Record<string, unknown> | null;
+}
+
 export interface FrontierEntry {
   url: string;
   rootDomain: string;
   priority: number;
   attempts: number;
-  lastAttempt?: string;
-  status?: string;
+  lastAttempt: string | null;
+  status: string;
 }
 
 export interface LlmTraceEntry {
@@ -31,5 +31,5 @@ export interface LlmTraceEntry {
   outputTokens: number;
   costUsd: number;
   durationMs: number;
-  field?: string;
+  field: string | null;
 }

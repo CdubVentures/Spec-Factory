@@ -1,3 +1,5 @@
+import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
+
 export function createQueueCommand({
   slug,
   toPosixKey,
@@ -31,7 +33,7 @@ export function createQueueCommand({
       }
 
       const s3key = String(
-        args.s3key || toPosixKey(config.s3InputPrefix, category, 'products', `${productId}.json`)
+        args.s3key || toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`)
       ).trim();
       if (!s3key) {
         throw new Error('queue add could not resolve s3key');

@@ -26,19 +26,7 @@ function resolveBrandFilterMode(selectedSize: number, availableSize: number): Br
   return 'custom';
 }
 
-// WHY: selectedField and selectedProductId are always derived from activeCell.
-// This helper guarantees the three fields stay in sync across all setters.
-function withActiveCell(cell: ActiveCell | null) {
-  return {
-    activeCell: cell,
-    selectedField: cell?.field ?? '',
-    selectedProductId: cell?.productId ?? '',
-  };
-}
-
 interface ReviewState {
-  selectedField: string;
-  selectedProductId: string;
   activeCell: ActiveCell | null;
   drawerOpen: boolean;
   flaggedCells: ActiveCell[];
@@ -86,8 +74,6 @@ interface ReviewState {
 }
 
 export const useReviewStore = create<ReviewState>((set, get) => ({
-  selectedField: '',
-  selectedProductId: '',
   activeCell: null,
   drawerOpen: false,
   flaggedCells: [],
@@ -104,9 +90,9 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   sortMode: 'brand',
   showOnlyFlagged: false,
 
-  setActiveCell: (cell) => set(withActiveCell(cell)),
+  setActiveCell: (cell) => set({ activeCell: cell }),
   openDrawer: (productId, field) => {
-    set({ ...withActiveCell({ productId, field }), drawerOpen: true });
+    set({ activeCell: { productId, field }, drawerOpen: true });
   },
   closeDrawer: () => set({ drawerOpen: false }),
   setFlaggedCells: (cells) => set({ flaggedCells: cells, flagIndex: cells.length > 0 ? 0 : -1 }),
@@ -114,19 +100,19 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
     const { flaggedCells, flagIndex } = get();
     if (flaggedCells.length === 0) return;
     const next = (flagIndex + 1) % flaggedCells.length;
-    set({ flagIndex: next, ...withActiveCell(flaggedCells[next]), drawerOpen: true });
+    set({ flagIndex: next, activeCell: flaggedCells[next], drawerOpen: true });
   },
   prevFlagged: () => {
     const { flaggedCells, flagIndex } = get();
     if (flaggedCells.length === 0) return;
     const prev = (flagIndex - 1 + flaggedCells.length) % flaggedCells.length;
-    set({ flagIndex: prev, ...withActiveCell(flaggedCells[prev]), drawerOpen: true });
+    set({ flagIndex: prev, activeCell: flaggedCells[prev], drawerOpen: true });
   },
 
   // Cell mode actions
   selectCell: (productId, field) => {
     set({
-      ...withActiveCell({ productId, field }),
+      activeCell: { productId, field },
       cellMode: 'selected',
       editingValue: '',
       originalEditingValue: '',
@@ -241,3 +227,11 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   setSortMode: (mode) => set({ sortMode: mode }),
   setShowOnlyFlagged: (value) => set({ showOnlyFlagged: value }),
 }));
+
+// WHY: selectedField and selectedProductId are derived from activeCell, not stored.
+export function selectSelectedField(state: ReviewState): string {
+  return state.activeCell?.field ?? '';
+}
+export function selectSelectedProductId(state: ReviewState): string {
+  return state.activeCell?.productId ?? '';
+}

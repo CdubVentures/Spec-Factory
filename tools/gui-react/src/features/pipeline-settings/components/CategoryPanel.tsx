@@ -24,7 +24,6 @@ function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean
   const iconPaths: Record<string, React.ReactNode> = {
     'run-setup': <><path d="M12 6v6l4 2" /><circle cx="12" cy="12" r="9" /></>,
     output: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></>,
-    'storage-cloud': <><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></>,
     observability: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></>,
     discovery: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></>,
     budgets: <><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>,

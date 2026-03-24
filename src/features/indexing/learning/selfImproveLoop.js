@@ -1,4 +1,5 @@
 import { toPosixKey } from '../../../s3/storage.js';
+import { OUTPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 
 function slug(value) {
   return String(value || '')
@@ -187,7 +188,7 @@ function mergeProfiles(previous, next) {
 
 export async function loadLearningProfile({ storage, config, category, job, specDb = null }) {
   const profileId = profileIdFromJob(job);
-  const profileKey = toPosixKey(config.s3OutputPrefix, '_learning', category, 'profiles', `${profileId}.json`);
+  const profileKey = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, 'profiles', `${profileId}.json`);
   const productId = job.productId;
 
   /* --- SQLite primary path --- */

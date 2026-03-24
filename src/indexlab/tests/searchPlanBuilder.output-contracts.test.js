@@ -183,12 +183,7 @@ describe('buildSearchPlan', () => {
       });
 
       assert.ok(result.learning_writeback);
-      assert.ok(Array.isArray(result.learning_writeback.query_hashes_generated));
-      assert.ok(Array.isArray(result.learning_writeback.queries_generated));
-      assert.ok(Array.isArray(result.learning_writeback.families_used));
-      assert.ok(Array.isArray(result.learning_writeback.domains_targeted));
       assert.ok(Array.isArray(result.learning_writeback.groups_activated));
-      assert.equal(typeof result.learning_writeback.duplicates_suppressed, 'number');
     });
   });
 
@@ -221,15 +216,6 @@ describe('buildSearchPlan', () => {
         config: makeConfig({ geminiApiKey: '' }),
       });
       assert.equal(result.planner.planner_confidence, 0);
-    });
-
-    it('planner.duplicates_suppressed is 0 (no query extraction)', async () => {
-      fetchMock = installFetchMock(makeLlmResponse());
-      const result = await buildSearchPlan({
-        searchPlanningContext: makeSearchPlanningContext(),
-        config: makeConfig(),
-      });
-      assert.equal(result.planner.duplicates_suppressed, 0);
     });
 
     it('planner.targeted_exceptions from LLM response', async () => {

@@ -6,6 +6,7 @@
  */
 import { extractRootDomain } from '../../../../utils/common.js';
 import { toPosixKey } from '../../../../s3/storage.js';
+import { INPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 import { normalizeHost } from './discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
@@ -92,7 +93,7 @@ export function buildSearchProfileKeys({
   runId
 }) {
   const inputKey = toPosixKey(
-    config.s3InputPrefix,
+    INPUT_KEY_PREFIX,
     '_discovery',
     category,
     `${runId}.search_profile.json`

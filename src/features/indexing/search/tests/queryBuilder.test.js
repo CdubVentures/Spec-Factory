@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../queryBuilder.js';
+import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../../pipeline/searchProfile/queryBuilder.js';
 
 test('buildTargetedQueries uses normalized missing fields and produces tier-based queries', () => {
   // WHY: Tier-only pipeline with seedStatus=null synthesizes specs_seed.is_needed=true.

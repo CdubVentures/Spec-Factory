@@ -2,7 +2,7 @@
 // Computes needSetOutput → planningContext → searchPlan (LLM call) and emits needset_computed.
 // Runs IN PARALLEL with Brand Resolver phase via Promise.all.
 
-import { computeDeltas } from '../../../../indexlab/searchPlanBuilder.js';
+import { computeDeltas } from './searchPlanBuilder.js';
 
 /**
  * @param {object} ctx

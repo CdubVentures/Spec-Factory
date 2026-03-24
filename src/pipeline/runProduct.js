@@ -44,9 +44,8 @@ import {
 import { UberAggressiveOrchestrator } from '../research/uberAggressiveOrchestrator.js';
 import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
 // --- new crawl pipeline ---
-import { createCrawlSession } from '../features/crawl/index.js';
-import { stealthPlugin } from '../features/crawl/plugins/stealthPlugin.js';
-import { autoScrollPlugin } from '../features/crawl/plugins/autoScrollPlugin.js';
+import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
+import { resolvePlugins } from '../features/crawl/plugins/pluginRegistry.js';
 import { runCrawlProcessingLifecycle } from './runCrawlProcessingLifecycle.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
@@ -212,11 +211,12 @@ export async function runProduct({
   });
 
   // --- New crawl pipeline: open pages, screenshot, record to frontier ---
-  const session = createCrawlSession({
-    settings: config,
-    plugins: [stealthPlugin, autoScrollPlugin],
-    logger,
-  });
+  const adapterName = String(config.fetcherAdapter || 'crawlee');
+  const pluginNames = String(config.fetcherPlugins || 'stealth,autoScroll,screenshot')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const plugins = resolvePlugins(pluginNames, { logger });
+  const adapter = resolveAdapter(adapterName);
+  const session = adapter.create({ settings: config, plugins, logger });
   await session.start();
 
   try {

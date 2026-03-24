@@ -111,18 +111,11 @@ export function buildProcessStartLaunchPlan(options = {}) {
     capturePageScreenshotSelectors,
     specDbDir,
     categoryAuthorityRoot: legacyHelperFilesRoot,
-    outputMode,
     localMode,
-    mirrorToS3,
-    mirrorToS3Input,
     localInputRoot,
     localOutputRoot,
     runtimeEventsKey,
     writeMarkdownSummary,
-    awsRegion,
-    s3Bucket,
-    s3InputPrefix,
-    s3OutputPrefix,
     llmProvider,
     llmBaseUrl,
     openaiApiKey,
@@ -229,22 +222,12 @@ export function buildProcessStartLaunchPlan(options = {}) {
     envOverrides.CATEGORY_AUTHORITY_ROOT = categoryAuthorityRoot;
   }
 
-  const normalizedOutputMode = String(outputMode || '').trim().toLowerCase();
-  if (['local', 'dual', 's3'].includes(normalizedOutputMode)) {
-    envOverrides.OUTPUT_MODE = normalizedOutputMode;
-  }
   assignBoolean(envOverrides, 'LOCAL_MODE', localMode);
   assignBoolean(envOverrides, 'DRY_RUN', dryRun);
-  assignBoolean(envOverrides, 'MIRROR_TO_S3', mirrorToS3);
-  assignBoolean(envOverrides, 'MIRROR_TO_S3_INPUT', mirrorToS3Input);
   assignString(envOverrides, 'LOCAL_INPUT_ROOT', localInputRoot);
   assignString(envOverrides, 'LOCAL_OUTPUT_ROOT', effectiveLocalOutputRoot);
   assignString(envOverrides, 'RUNTIME_EVENTS_KEY', runtimeEventsKey);
   assignBoolean(envOverrides, 'WRITE_MARKDOWN_SUMMARY', writeMarkdownSummary);
-  assignString(envOverrides, 'AWS_REGION', awsRegion);
-  assignString(envOverrides, 'S3_BUCKET', s3Bucket);
-  assignString(envOverrides, 'S3_INPUT_PREFIX', s3InputPrefix);
-  assignString(envOverrides, 'S3_OUTPUT_PREFIX', s3OutputPrefix);
   assignString(envOverrides, 'LLM_PROVIDER', llmProvider);
   assignString(envOverrides, 'LLM_BASE_URL', llmBaseUrl);
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);

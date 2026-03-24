@@ -25,6 +25,7 @@ import { createProcessRuntime } from '../app/api/processRuntime.js';
 import { createRealtimeBridge } from '../app/api/realtimeBridge.js';
 import { createBootstrapEnvironment } from './bootstrap/createBootstrapEnvironment.js';
 import { resolveCurrentIndexLabRoot } from './guiServerRuntimeConfig.js';
+import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createBootstrapSessionLayer } from './bootstrap/createBootstrapSessionLayer.js';
 import { createBootstrapDomainRuntimes } from './bootstrap/createBootstrapDomainRuntimes.js';
@@ -74,7 +75,7 @@ export function bootstrapServer({ projectRoot }) {
     handleCompileProcessCompletion, handleIndexLabProcessCompletion,
     runDataStorageState,
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
-    outputPrefix: config.s3OutputPrefix || 'specs/outputs',
+    outputPrefix: OUTPUT_KEY_PREFIX,
     getSpecDbReady, resolveCategoryAlias, logger: console,
   });
 

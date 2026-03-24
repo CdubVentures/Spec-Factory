@@ -31,7 +31,6 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     sections: Object.freeze([
       { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout, resume mode, seed limits, and persist limits' },
       { id: 'output', label: 'Output & Automation', tip: 'Output destinations, artifact controls, and category authority' },
-      { id: 'storage-cloud', label: 'Storage & Cloud', tip: 'Local database paths, AWS region, S3 bucket, and mirror settings' },
       { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
     ]),
   },

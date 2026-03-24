@@ -14,7 +14,8 @@ import { loadConfigWithUserSettings } from '../config.js';
 import { parseArgs, asBool } from './args.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
-import { configValue, configBool } from '../shared/settingsAccessor.js';
+import { configBool } from '../shared/settingsAccessor.js';
+import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 async function streamToString(stream) {
   const chunks = [];
@@ -77,10 +78,10 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
     writeMarkdownSummary: asBool(args['write-md'], true)
   });
 
-  const bucket = configValue(config, 's3Bucket');
-  const region = configValue(config, 'awsRegion');
-  const inputPrefix = configValue(config, 's3InputPrefix');
-  const outputPrefix = configValue(config, 's3OutputPrefix');
+  const bucket = config.s3Bucket || '';
+  const region = config.awsRegion || 'us-east-2';
+  const inputPrefix = INPUT_KEY_PREFIX;
+  const outputPrefix = OUTPUT_KEY_PREFIX;
 
   if (!bucket) {
     throw new Error('S3_BUCKET is required for test:s3');

@@ -10,7 +10,7 @@ import {
   validateSourceEntryPatch,
   DISCOVERY_DEFAULTS,
 } from '../sources/sourceFileService.js';
-import { SOURCE_ENTRY_DEFAULTS } from '../pipeline/shared/contracts/sourceEntryContract.js';
+import { SOURCE_ENTRY_DEFAULTS, sourceEntryMutableKeys } from '../pipeline/shared/contracts/sourceEntryContract.js';
 
 export function registerSourceStrategyRoutes(ctx) {
   const {
@@ -52,17 +52,23 @@ export function registerSourceStrategyRoutes(ctx) {
       const data = await readSourcesFile(root, category);
       const sourceId = body.sourceId || generateSourceId(body.host);
       const { discovery: bodyDiscovery, host: _h, sourceId: _sid, ...restBody } = body;
-      const entry = {
-        display_name: restBody.display_name || body.host,
-        tier: restBody.tier || 'tier2_lab',
-        authority: restBody.authority || SOURCE_ENTRY_DEFAULTS.authority,
-        base_url: restBody.base_url || `https://${body.host}`,
-        content_types: restBody.content_types || SOURCE_ENTRY_DEFAULTS.content_types,
-        doc_kinds: restBody.doc_kinds || SOURCE_ENTRY_DEFAULTS.doc_kinds,
-        crawl_config: restBody.crawl_config || SOURCE_ENTRY_DEFAULTS.crawl_config,
-        field_coverage: restBody.field_coverage || SOURCE_ENTRY_DEFAULTS.field_coverage,
-        discovery: bodyDiscovery || { ...DISCOVERY_DEFAULTS, method: 'search_first', source_type: restBody.source_type || '' },
+      // WHY: Loop over schema-derived mutable keys so new fields auto-flow through.
+      const hostDefaults = {
+        display_name: body.host,
+        tier: 'tier2_lab',
+        base_url: `https://${body.host}`,
+        discovery: { ...DISCOVERY_DEFAULTS, method: 'search_first', source_type: restBody.source_type || '' },
       };
+      const entry = {};
+      for (const key of sourceEntryMutableKeys()) {
+        if (key === 'discovery') {
+          entry[key] = bodyDiscovery || hostDefaults.discovery;
+        } else {
+          entry[key] = restBody[key] !== undefined
+            ? restBody[key]
+            : (hostDefaults[key] ?? SOURCE_ENTRY_DEFAULTS[key] ?? null);
+        }
+      }
       const updated = addSourceEntry(data, sourceId, entry);
       await writeSourcesFile(root, category, updated);
       emitDataChange({

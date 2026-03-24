@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeNeedSet } from '../needsetEngine.js';
+import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 
 // WHY: computeEvidenceDecay was removed in Phase 12 NeedSet legacy removal.
 // decayConfig is no longer accepted by computeNeedSet.

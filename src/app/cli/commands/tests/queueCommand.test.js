@@ -120,7 +120,7 @@ test('queue add creates missing job payload and upserts pending queue row', asyn
   });
 
   assert.equal(writes.length, 1);
-  assert.equal(writes[0].key, 'input/mouse/products/mouse-test.json');
+  assert.equal(writes[0].key, 'specs/inputs/mouse/products/mouse-test.json');
   assert.equal(writes[0].options.contentType, 'application/json');
   assert.equal(upserts.length, 1);
   assert.equal(upserts[0].patch.status, 'pending');

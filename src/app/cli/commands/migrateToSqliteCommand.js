@@ -1,3 +1,5 @@
+import { OUTPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
+
 export function createMigrateToSqliteCommand({
   openSpecDbForCategory,
   toPosixKey,
@@ -22,7 +24,7 @@ export function createMigrateToSqliteCommand({
 
       if (!phase || phase === 2) {
         let imported = 0;
-        const billingPrefix = toPosixKey(config.s3OutputPrefix, '_billing');
+        const billingPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_billing');
         const keys = await storage.listKeys(billingPrefix);
         const ledgerKeys = keys.filter((k) => k.endsWith('.jsonl') && k.includes('ledger'));
         for (const key of ledgerKeys) {
@@ -95,7 +97,7 @@ export function createMigrateToSqliteCommand({
 
       if (!phase || phase === 4) {
         let imported = 0;
-        const learningPrefix = toPosixKey(config.s3OutputPrefix, '_learning', category, 'profiles');
+        const learningPrefix = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, 'profiles');
         const keys = await storage.listKeys(learningPrefix);
         for (const key of keys) {
           if (!key.endsWith('.json')) continue;
@@ -145,7 +147,7 @@ export function createMigrateToSqliteCommand({
           'field_availability',
         ];
         for (const name of artifactNames) {
-          const key = toPosixKey(config.s3OutputPrefix, '_learning', category, `${name}.json`);
+          const key = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, `${name}.json`);
           try {
             const data = await storage.readJsonOrNull(key);
             if (data) {
@@ -160,7 +162,7 @@ export function createMigrateToSqliteCommand({
       }
 
       if (!phase || phase === 6) {
-        const intelKey = toPosixKey(config.s3OutputPrefix, '_source_intel', category, 'domain_stats.json');
+        const intelKey = toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'domain_stats.json');
         const data = await storage.readJsonOrNull(intelKey);
         if (data && data.domains) {
           specDb.persistSourceIntelFull(category, data.domains);
@@ -171,7 +173,7 @@ export function createMigrateToSqliteCommand({
       }
 
       if (!phase || phase === 7) {
-        const corpusKey = toPosixKey(config.s3OutputPrefix, '_source_intel', category, 'corpus.json');
+        const corpusKey = toPosixKey(OUTPUT_KEY_PREFIX, '_source_intel', category, 'corpus.json');
         const data = await storage.readJsonOrNull(corpusKey);
         if (data && Array.isArray(data.documents || data)) {
           const docs = data.documents || data;

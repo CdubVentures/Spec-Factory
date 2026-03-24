@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
 import { toPosixKey } from '../s3/storage.js';
+import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { nowIso } from '../utils/common.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 import { slugify as canonicalSlugify, buildProductId as canonicalBuildProductId } from '../features/catalog/identity/slugify.js';
@@ -864,7 +865,7 @@ export async function syncJobsFromCatalogSeed({
       productId
     });
 
-    const s3key = toPosixKey(config.s3InputPrefix, category, 'products', `${productId}.json`);
+    const s3key = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`);
     const exists = await storage.objectExists(s3key);
     if (exists) {
       skippedExisting += 1;

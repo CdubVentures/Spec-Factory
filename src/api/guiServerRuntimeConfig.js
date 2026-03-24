@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { configValue } from '../shared/settingsAccessor.js';
+import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 export function resolveProjectPath({ projectRoot, value, fallback = '' }) {
   const raw = String(value ?? '').trim();
@@ -199,14 +200,10 @@ export function createRunDataArchiveStorage({
   return createStorage({
     outputMode: 's3',
     localMode: false,
-    awsRegion: String(
-      runDataStorageState.awsRegion || configValue(config, 'awsRegion'),
-    ).trim(),
-    s3Bucket: String(
-      runDataStorageState.s3Bucket || configValue(config, 's3Bucket'),
-    ).trim(),
-    s3InputPrefix: configValue(config, 's3InputPrefix'),
-    s3OutputPrefix: configValue(config, 's3OutputPrefix'),
+    awsRegion: String(runDataStorageState.awsRegion || 'us-east-2').trim(),
+    s3Bucket: String(runDataStorageState.s3Bucket || '').trim(),
+    s3InputPrefix: INPUT_KEY_PREFIX,
+    s3OutputPrefix: OUTPUT_KEY_PREFIX,
     localInputRoot: configValue(config, 'localInputRoot'),
     localOutputRoot: configValue(config, 'localOutputRoot'),
   });

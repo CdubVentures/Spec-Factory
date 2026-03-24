@@ -7,8 +7,6 @@ export function createDataUtilityCommands({
   asBool,
   ingestCsvFile,
   EventLogger,
-  runWatchImports,
-  runDaemon,
   runS3Integration,
   generateTypesForCategory,
 }) {
@@ -35,64 +33,6 @@ export function createDataUtilityCommands({
     };
   }
 
-  async function commandWatchImports(config, storage, args) {
-    const importsRoot = args['imports-root'] || config.importsRoot;
-    const category = args.category || null;
-    const all = asBool(args.all, !category);
-    const once = asBool(args.once, false);
-    const logger = new EventLogger({
-      storage,
-      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
-      context: {
-        category
-      }
-    });
-    const result = await runWatchImports({
-      storage,
-      config,
-      importsRoot,
-      category,
-      all,
-      once,
-      logger
-    });
-    await logger.flush();
-    return {
-      command: 'watch-imports',
-      ...result,
-      events: logger.events.slice(-100)
-    };
-  }
-
-  async function commandDaemon(config, storage, args) {
-    const importsRoot = args['imports-root'] || config.importsRoot;
-    const category = args.category || null;
-    const all = asBool(args.all, !category);
-    const once = asBool(args.once, false);
-    const logger = new EventLogger({
-      storage,
-      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
-      context: {
-        category: category || 'all'
-      }
-    });
-
-    const result = await runDaemon({
-      storage,
-      config,
-      importsRoot,
-      category,
-      all,
-      once,
-      logger
-    });
-    await logger.flush();
-    return {
-      command: 'daemon',
-      ...result,
-      events: logger.events.slice(-200)
-    };
-  }
 
   async function commandSeedDb(config, _storage, args) {
     const category = String(args.category || '').trim();
@@ -145,8 +85,6 @@ export function createDataUtilityCommands({
 
   return {
     commandIngestCsv,
-    commandWatchImports,
-    commandDaemon,
     commandSeedDb,
     commandTestS3,
     commandGenerateTypes,

@@ -219,6 +219,6 @@ export function installFetchThrow(error) {
 }
 
 export async function loadBuildSearchPlan() {
-  const mod = await import('../../searchPlanBuilder.js');
+  const mod = await import('../../../features/indexing/pipeline/needSet/searchPlanBuilder.js');
   return mod.buildSearchPlan;
 }

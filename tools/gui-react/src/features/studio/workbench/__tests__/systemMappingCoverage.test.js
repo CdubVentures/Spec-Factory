@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../../../../../../../src/field-rules/consumerGate.js';
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function createSystemMappingHarness() {
@@ -75,21 +74,7 @@ test('enum.additional_values stays present in the published field map', async ()
   assert.ok(harness.fieldSystemMap['enum.additional_values'].length >= 1);
 });
 
-test('frontend and backend field maps remain in parity', async () => {
-  const harness = await createSystemMappingHarness();
-
-  const frontendEntries = Object.entries(harness.fieldSystemMap)
-    .map(([fieldPath, systems]) => [fieldPath, [...systems].sort()]);
-  const backendEntries = Object.entries(BACKEND_FIELD_SYSTEM_MAP)
-    .map(([fieldPath, systems]) => [fieldPath, [...systems].sort()]);
-
-  frontendEntries.sort((a, b) => a[0].localeCompare(b[0]));
-  backendEntries.sort((a, b) => a[0].localeCompare(b[0]));
-
-  assert.deepEqual(backendEntries, frontendEntries);
-});
-
-test('dead knobs stay out of the published field maps', async () => {
+test('dead knobs stay out of the published field map', async () => {
   const harness = await createSystemMappingHarness();
   const omittedKnobs = [
     'contract.rounding.decimals',
@@ -105,17 +90,14 @@ test('dead knobs stay out of the published field maps', async () => {
 
   for (const knob of omittedKnobs) {
     assert.equal(harness.fieldSystemMap[knob], undefined);
-    assert.equal(BACKEND_FIELD_SYSTEM_MAP[knob], undefined);
   }
 });
 
-test('live IDX knobs remain mapped in both frontend and backend contracts', async () => {
+test('live IDX knobs remain mapped in the field contract', async () => {
   const harness = await createSystemMappingHarness();
 
   assert.deepEqual(harness.fieldSystemMap['contract.range'], ['indexlab']);
-  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.range'], ['indexlab']);
   assert.deepEqual(harness.fieldSystemMap['contract.list_rules'], ['indexlab']);
-  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab']);
 });
 
 test('IDX tooltips point users to the field studio navigation path', async () => {

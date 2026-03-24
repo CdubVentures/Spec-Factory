@@ -75,7 +75,6 @@
 | `src/db/` | SQLite schema, migrations, and stores | `specDb.js`, `specDbSchema.js`, `specDbMigrations.js`, `stores/`, `DOMAIN.md` |
 | `src/features/` | feature-first backend boundaries | `catalog/`, `crawl/` (NEW — browser automation with plugins), `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/`, `review-curation/`, `expansion-hardening/` |
 | `src/pipeline/` | crawl-first run orchestration and batch review workers | `runProduct.js` (248 LOC, crawl-based), `runCrawlProcessingLifecycle.js`, `componentReviewBatch.js` |
-| `src/daemon/` | recurring watch/queue runner | `daemon.js` |
 | `src/indexlab/` | run-artifact readers and runtime bridge event handlers | `runtimeBridgeEventHandlers.js`, `needsetEngine.js`, `searchPlanningContext.js` |
 | `src/field-rules/` | compiled rule/session helpers used by studio and review | `sessionCache.js`, consumer gates, compile-time support |
 | `src/categories/` | category loader boundary | `loader.js` |
@@ -115,7 +114,7 @@
 
 | Path / concept | Source of truth | Notes |
 |----------------|-----------------|-------|
-| configured imports root (default `imports/`) | `src/shared/settingsDefaults.js`, `src/config.js`, `src/daemon/daemon.js` | daemon/watch-imports logic can read this path even though no top-level `imports/` directory is currently checked in |
+| configured imports root (default `imports/`) | `src/shared/settingsDefaults.js`, `src/config.js` | CSV ingest logic can read this path even though no top-level `imports/` directory is currently checked in |
 | local output root | `src/core/config/runtimeArtifactRoots.js`, `src/core/config/manifest/pathsGroup.js` | defaults under the OS temp directory, not a checked-in `storage/` folder |
 | local IndexLab root | `src/core/config/runtimeArtifactRoots.js` | defaults under the OS temp directory |
 | GUI build output | `tools/gui-react/dist/` | created by `npm run gui:build`; served by `src/api/guiServer.js` |
@@ -127,7 +126,6 @@
 | config | `package.json` | root scripts and key top-level files |
 | source | `src/api/guiServer.js` | top-level backend/runtime subtree ownership |
 | source | `src/app/api/routeRegistry.js` | route-family ownership across feature directories |
-| source | `src/daemon/daemon.js` | configured imports-root behavior and daemon boundaries |
 | source | `src/core/config/runtimeArtifactRoots.js` | temp-root runtime artifact defaults |
 | config | `src/core/config/manifest/pathsGroup.js` | path-root defaults including `CATEGORY_AUTHORITY_ROOT` and `SPEC_DB_DIR` |
 | source | `tools/gui-react/src/App.tsx` | GUI route wrapper and feature ownership |

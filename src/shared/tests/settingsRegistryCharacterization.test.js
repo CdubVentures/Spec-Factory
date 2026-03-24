@@ -127,7 +127,6 @@ describe('settingsClampingRanges — characterization', () => {
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.searchEngines.csv, true);
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.searchEnginesFallback.csv, true);
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.csv, undefined);
-    strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.outputMode.csv, undefined);
   });
 });
 
