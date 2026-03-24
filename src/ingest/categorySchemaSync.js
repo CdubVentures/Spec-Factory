@@ -5,14 +5,7 @@ import {
   extractCatalogSeedData,
   loadGeneratedFieldRules
 } from './catalogSeed.js';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject, toArray } from '../shared/primitives.js';
 
 function normalizeField(value) {
   return String(value || '')

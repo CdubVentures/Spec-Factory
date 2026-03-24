@@ -1,0 +1,33 @@
+import{r as b,j as e}from"./vendor-ui-ComJg1Ad.js";import{ar as x,au as u,at as h,as as l,av as d,aw as p}from"./index-DNjdlzym.js";import"./vendor-react-yyJz49DP.js";import"./vendor-query-B32LnyU-.js";const s="Phase coverage: background control plane around the main 01-13 run lifecycle, not a single in-run stage.",w=b.memo(function({runtimeDraft:t,runtimeSettingsReady:i,inputCls:a,runtimeSubStepDomId:m,updateDraft:n,onNumberChange:r,getNumberBounds:c}){return e.jsxs(e.Fragment,{children:[e.jsx("div",{id:m("automation-drift"),className:"scroll-mt-24"}),e.jsxs(x,{title:"Drift Detection",children:[e.jsx(u,{label:"Drift Detection Enabled",tip:`${s}
+Lives in: post-run drift monitoring.
+What this controls: whether the background drift scanner is allowed to look for stale or changed products outside the active run.`,hint:"Controls drift scanning and auto-republish settings below.",children:e.jsx(h,{checked:t.driftDetectionEnabled,onChange:o=>n("driftDetectionEnabled",o),disabled:!i})}),e.jsx(l,{label:"Drift Poll Seconds",tip:`${s}
+Lives in: drift scanner scheduling.
+What this controls: the polling interval between drift detection cycles.`,children:e.jsx(d,{draftKey:"driftPollSeconds",value:t.driftPollSeconds,bounds:c("driftPollSeconds"),step:60,disabled:!i,className:a,onNumberChange:r})}),e.jsx(l,{label:"Drift Scan Max Products",tip:`${s}
+Lives in: drift scanner batch sizing.
+What this controls: how many products a single drift cycle may inspect.`,children:e.jsx(d,{draftKey:"driftScanMaxProducts",value:t.driftScanMaxProducts,bounds:c("driftScanMaxProducts"),step:1,disabled:!i,className:a,onNumberChange:r})}),e.jsxs(p,{title:"Advanced Drift Settings",count:2,children:[e.jsx(l,{label:"Drift Auto Republish",tip:`${s}
+Lives in: drift remediation policy.
+What this controls: whether a qualifying drift detection can trigger automatic republish behavior.`,children:e.jsx(h,{checked:t.driftAutoRepublish,onChange:o=>n("driftAutoRepublish",o),disabled:!i})}),e.jsx(l,{label:"Re-Crawl Stale After (days)",tip:`${s}
+Lives in: stale-source maintenance policy.
+What this controls: how many days a source may age before automation treats it as stale and eligible for recrawl.`,children:e.jsx(d,{draftKey:"reCrawlStaleAfterDays",value:t.reCrawlStaleAfterDays,bounds:c("reCrawlStaleAfterDays"),step:1,disabled:!i,className:a,onNumberChange:r})})]})]}),e.jsx("div",{id:m("automation-learning"),className:"scroll-mt-24"}),e.jsxs(x,{title:"Self-Improvement",children:[e.jsx(u,{label:"Self Improve Enabled",tip:`${s}
+Lives in: post-run learning and follow-up generation.
+What this controls: whether the self-improvement loop may create hypotheses, follow-ups, and learning updates after runs complete.`,hint:"Controls learning confidence, hypothesis, and endpoint signal settings below.",children:e.jsx(h,{checked:t.selfImproveEnabled,onChange:o=>n("selfImproveEnabled",o),disabled:!i})}),e.jsx(l,{label:"Batch Strategy",tip:`${s}
+Lives in: advanced learning/runtime orchestration.
+What this controls: the batching strategy token used by higher-level automation logic.`,children:e.jsx("input",{type:"text",value:t.batchStrategy,onChange:o=>n("batchStrategy",o.target.value),disabled:!i,className:a})}),e.jsx(p,{title:"Advanced Learning Settings",count:1,children:e.jsx(l,{label:"Field Reward Half-Life (days)",tip:`${s}
+Lives in: learning reward decay.
+What this controls: how quickly historical field rewards lose influence over time.`,children:e.jsx(d,{draftKey:"fieldRewardHalfLifeDays",value:t.fieldRewardHalfLifeDays,bounds:c("fieldRewardHalfLifeDays"),step:1,disabled:!i,className:a,onNumberChange:r})})})]}),e.jsx("div",{id:m("automation-helper"),className:"scroll-mt-24"}),e.jsxs(x,{title:"Helper Runtime",children:[e.jsx(u,{label:"Category Authority Enabled",tip:`${s}
+Lives in: helper and authority-file substrate used beside the main runtime.
+What this controls: whether category authority data and helper files are available to the automation layer.`,hint:"Controls all helper file runtime settings below.",children:e.jsx(h,{checked:t.categoryAuthorityEnabled,onChange:o=>n("categoryAuthorityEnabled",o),disabled:!i})}),e.jsx(l,{label:"Category Authority Root",tip:`${s}
+Lives in: category authority file resolution.
+What this controls: the root directory for category authority data files.`,children:e.jsx("input",{type:"text",value:t.categoryAuthorityRoot,onChange:o=>n("categoryAuthorityRoot",o.target.value),disabled:!i,className:a})}),e.jsx(p,{title:"Advanced Helper Settings",count:1,children:e.jsx(l,{label:"Helper Supportive Fill Missing",tip:`${s}
+Lives in: helper supportive-fill policy.
+What this controls: whether helper logic may fill missing values when running in supportive mode.`,children:e.jsx(h,{checked:t.helperSupportiveFillMissing,onChange:o=>n("helperSupportiveFillMissing",o),disabled:!i})})})]}),e.jsx("div",{id:m("automation-operations"),className:"scroll-mt-24"}),e.jsxs(x,{title:"Operations",children:[e.jsx(l,{label:"Daemon Concurrency",tip:`${s}
+Lives in: daemon orchestration.
+What this controls: how many product runs daemon mode may execute concurrently.`,children:e.jsx(d,{draftKey:"daemonConcurrency",value:t.daemonConcurrency,bounds:c("daemonConcurrency"),step:1,disabled:!i,className:a,onNumberChange:r})}),e.jsxs(p,{title:"Resume",count:2,children:[e.jsx(l,{label:"Indexing Resume Seed Limit",tip:`${s}
+Lives in: daemon and resume bootstrap.
+What this controls: the maximum number of seed URLs loaded when resuming prior work.`,children:e.jsx(d,{draftKey:"indexingResumeSeedLimit",value:t.indexingResumeSeedLimit,bounds:c("indexingResumeSeedLimit"),step:1,disabled:!i,className:a,onNumberChange:r})}),e.jsx(l,{label:"Indexing Resume Persist Limit",tip:`${s}
+Lives in: daemon and resume bootstrap.
+What this controls: the maximum number of persisted items loaded while reconstructing resume state.`,children:e.jsx(d,{draftKey:"indexingResumePersistLimit",value:t.indexingResumePersistLimit,bounds:c("indexingResumePersistLimit"),step:1,disabled:!i,className:a,onNumberChange:r})})]}),e.jsxs(p,{title:"Import Watcher",count:2,children:[e.jsx(l,{label:"Imports Root",tip:`${s}
+Lives in: daemon import watcher.
+What this controls: the directory monitored for inbound imports.`,children:e.jsx("input",{type:"text",value:t.importsRoot,onChange:o=>n("importsRoot",o.target.value),disabled:!i,className:a})}),e.jsx(l,{label:"Imports Poll Seconds",tip:`${s}
+Lives in: daemon import watcher scheduling.
+What this controls: how often the import watcher polls for new work.`,children:e.jsx(d,{draftKey:"importsPollSeconds",value:t.importsPollSeconds,bounds:c("importsPollSeconds"),step:1,disabled:!i,className:a,onNumberChange:r})})]})]})]})});export{w as RuntimeFlowAutomationSection};

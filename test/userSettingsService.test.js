@@ -59,29 +59,8 @@ test('deriveSettingsArtifactsFromUserSettings keeps mapping and key/workbench au
   assert.equal(snapshot.ui.studioAutoSaveEnabled, false);
 });
 
-test('deriveSettingsArtifactsFromUserSettings normalizes runtime dynamic fetch policy object into canonical json', () => {
+test('deriveSettingsArtifactsFromUserSettings emits sanitized legacy storage snapshot', () => {
   const artifacts = deriveSettingsArtifactsFromUserSettings({
-    runtime: {
-      dynamicFetchPolicyMap: {
-        mouse: 'full',
-      },
-    },
-  });
-  assert.deepEqual(artifacts.snapshot.runtime.dynamicFetchPolicyMap, {
-    mouse: 'full',
-  });
-  assert.equal(artifacts.snapshot.runtime.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
-  assert.equal(artifacts.sections.runtime.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
-});
-
-test('deriveSettingsArtifactsFromUserSettings uses canonical runtime json and emits sanitized legacy storage snapshot', () => {
-  const artifacts = deriveSettingsArtifactsFromUserSettings({
-    runtime: {
-      dynamicFetchPolicyMapJson: '{"mode":"json"}',
-      dynamicFetchPolicyMap: {
-        mode: 'object',
-      },
-    },
     storage: {
       enabled: true,
       destinationType: 's3',
@@ -94,10 +73,6 @@ test('deriveSettingsArtifactsFromUserSettings uses canonical runtime json and em
     },
   });
 
-  assert.deepEqual(artifacts.snapshot.runtime.dynamicFetchPolicyMap, {
-    mode: 'json',
-  });
-  assert.equal(artifacts.snapshot.runtime.dynamicFetchPolicyMapJson, '{"mode":"json"}');
   assert.equal(artifacts.legacy.storage.destinationType, 's3');
   assert.equal(artifacts.legacy.storage.hasS3SecretAccessKey, true);
   assert.equal(artifacts.legacy.storage.hasS3SessionToken, true);

@@ -1,8 +1,5 @@
 import { toInt } from '../shared/valueNormalizers.js';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { toArray } from '../shared/primitives.js';
 
 function missingCount(summary = {}) {
   return {

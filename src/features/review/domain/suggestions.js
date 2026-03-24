@@ -1,14 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nowIso } from '../../../utils/common.js';
-
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject, normalizeToken } from '../../../shared/primitives.js';
 
 function normalizeField(value) {
   return String(value || '')

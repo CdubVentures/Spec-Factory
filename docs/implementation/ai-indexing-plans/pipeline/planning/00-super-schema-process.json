@@ -2,19 +2,19 @@
   "_doc": "High-level map of the live discovery seed/planning pipeline.",
   "validated_against": "2026-03-23",
   "historical_numbering_note": "The numbered files in this folder are documentation buckets, not the exact runtime order.",
-  "canonical_entrypoint": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+  "canonical_entrypoint": "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
   "compatibility_entrypoint": "src/features/indexing/discovery/searchDiscovery.js",
-  "schema_ssot": "src/features/indexing/discovery/pipelineContextSchema.js — cumulative Zod schema with 8 progressive checkpoints validated at each stage boundary by the orchestrator. This is the authoritative runtime contract for pipeline data shapes.",
+  "schema_ssot": "src/features/indexing/pipeline/orchestration/pipelineContextSchema.js — cumulative Zod schema with 8 progressive checkpoints validated at each phase boundary by the orchestrator. This is the authoritative runtime contract for pipeline data shapes.",
   "live_entrypoints": [
-    "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
-    "src/features/indexing/discovery/stages/needSet.js",
-    "src/features/indexing/discovery/stages/brandResolver.js",
-    "src/features/indexing/discovery/stages/searchProfile.js",
-    "src/features/indexing/discovery/stages/searchPlanner.js",
-    "src/features/indexing/discovery/stages/queryJourney.js",
-    "src/features/indexing/discovery/stages/domainClassifier.js",
-    "src/features/indexing/discovery/discoverySearchExecution.js",
-    "src/features/indexing/discovery/discoveryResultProcessor.js",
+    "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
+    "src/features/indexing/pipeline/needSet/runNeedSet.js",
+    "src/features/indexing/pipeline/brandResolver/runBrandResolver.js",
+    "src/features/indexing/pipeline/searchProfile/runSearchProfile.js",
+    "src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js",
+    "src/features/indexing/pipeline/queryJourney/runQueryJourney.js",
+    "src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js",
+    "src/features/indexing/pipeline/searchExecution/executeSearchQueries.js",
+    "src/features/indexing/pipeline/resultProcessing/processDiscoveryResults.js",
     "src/indexlab/needsetEngine.js",
     "src/indexlab/searchPlanningContext.js",
     "src/indexlab/searchPlanBuilder.js",
@@ -26,7 +26,7 @@
     {
       "step": 0,
       "name": "Seed setup",
-      "owner": "src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js",
+      "owner": "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
       "does": [
         "loadEnabledSourceEntries()",
         "normalizePlanningHints()",
@@ -36,21 +36,21 @@
     },
     {
       "step": 1,
-      "name": "NeedSet",
-      "owner": "src/features/indexing/discovery/stages/needSet.js",
+      "name": "NeedSet phase",
+      "owner": "src/features/indexing/pipeline/needSet/runNeedSet.js",
       "does": [
-        "computeNeedSet() builds schema_version needset_output.v2",
-        "buildSearchPlanningContext() builds schema_version search_planning_context.v2",
-        "buildSearchPlan() builds schema_version needset_planner_output.v2",
-        "emit needset_computed preview before the Schema 4 LLM call",
-        "emit needset_computed again with Schema 4 panel data when available",
-        "emit schema4_handoff_ready when search_plan_handoff has queries"
+        "computeNeedSet() builds NeedSet assessment (per-field gap check)",
+        "buildSearchPlanningContext() builds search planning context (group planning + tier allocation)",
+        "assembleSearchPlan() builds search plan (LLM-annotated group annotations)",
+        "emit needset_computed (scope: needset_assessment) before the search plan LLM call",
+        "emit needset_computed (scope: search_plan) with panel data when available",
+        "emit search_plan_ready when search_plan_handoff has queries"
       ]
     },
     {
       "step": 2,
-      "name": "Brand Resolver",
-      "owner": "src/features/indexing/discovery/stages/brandResolver.js",
+      "name": "Brand Resolver phase",
+      "owner": "src/features/indexing/pipeline/brandResolver/runBrandResolver.js",
       "does": [
         "cache-first brand-domain lookup",
         "optional routed triage LLM call",
@@ -61,22 +61,23 @@
         "skips to empty result when brand is empty",
         "skips to empty result when no triage route is available",
         "returns empty result on resolver failure"
-      ]
+      ],
+      "manufacturer_note": "Brand Resolver is the SOLE source of manufacturer domain data. No static manufacturer lists exist."
     },
     {
       "step": 3,
-      "name": "Search Profile",
-      "owner": "src/features/indexing/discovery/stages/searchProfile.js",
+      "name": "Search Profile phase",
+      "owner": "src/features/indexing/pipeline/searchProfile/runSearchProfile.js",
       "does": [
         "load learning artifacts and merge learningStoreHints into the lexicon",
         "build deterministic Search Profile returning { searchProfileBase }"
       ],
-      "note": "This stage is in-memory only. The planned search_profile artifact is written by Query Journey."
+      "note": "This phase is in-memory only. The planned search_profile artifact is written by Query Journey."
     },
     {
       "step": 4,
-      "name": "Search Planner",
-      "owner": "src/features/indexing/discovery/stages/searchPlanner.js",
+      "name": "Search Planner phase",
+      "owner": "src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js",
       "does": [
         "receive tier-tagged query_rows from Search Profile",
         "call enhanceQueryRows() for tier-aware LLM query enhancement",
@@ -88,8 +89,8 @@
     },
     {
       "step": 5,
-      "name": "Query Journey",
-      "owner": "src/features/indexing/discovery/stages/queryJourney.js",
+      "name": "Query Journey phase",
+      "owner": "src/features/indexing/pipeline/queryJourney/runQueryJourney.js",
       "does": [
         "receive enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically)",
         "dedupe, rank by field priority, cap to searchProfileQueryCap",
@@ -101,8 +102,8 @@
     },
     {
       "step": 6,
-      "name": "Search execution",
-      "owner": "src/features/indexing/discovery/discoverySearchExecution.js",
+      "name": "Search Execution phase",
+      "owner": "src/features/indexing/pipeline/searchExecution/executeSearchQueries.js",
       "does": [
         "emit search_queued before execution so the GUI pre-populates worker slots",
         "internal-first corpus search when enabled",
@@ -116,8 +117,8 @@
     },
     {
       "step": 7,
-      "name": "SERP triage",
-      "owner": "src/features/indexing/discovery/discoveryResultProcessor.js",
+      "name": "Result Processing phase",
+      "owner": "src/features/indexing/pipeline/resultProcessing/processDiscoveryResults.js",
       "does": [
         "dedupe results",
         "hard drops",
@@ -130,8 +131,8 @@
     },
     {
       "step": 8,
-      "name": "Planner queue handoff",
-      "owner": "src/features/indexing/discovery/stages/domainClassifier.js",
+      "name": "Domain Classifier phase",
+      "owner": "src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js",
       "does": [
         "enqueue approved URLs as discovery_approved",
         "seed candidate URLs only when fetchCandidateSources is enabled and maxCandidateUrls > 0",
@@ -156,7 +157,7 @@
   },
   "llm_surfaces": [
     {
-      "surface": "NeedSet Schema 4 planner",
+      "surface": "NeedSet search plan planner",
       "reason": "needset_search_planner",
       "role": "plan",
       "owner": "src/indexlab/searchPlanBuilder.js"
@@ -165,7 +166,7 @@
       "surface": "Brand Resolver",
       "reason": "brand_resolution",
       "role": "triage",
-      "owner": "src/features/indexing/discovery/discoveryLlmAdapters.js"
+      "owner": "src/features/indexing/pipeline/brandResolver/brandResolverLlmAdapter.js"
     },
     {
       "surface": "Search Planner",
@@ -177,19 +178,15 @@
       "surface": "SERP selector",
       "reason": "serp_url_selector",
       "role": "triage",
-      "owner": "src/features/indexing/discovery/serpSelectorLlmAdapter.js",
+      "owner": "src/features/indexing/pipeline/resultProcessing/serpSelectorLlmAdapter.js",
       "conditional": "only when config.serpSelectorEnabled is true and hasLlmRouteApiKey(config, { role: 'triage' }) is true"
-    },
+    }
   ],
   "runtime_bridge": {
     "panel_seed_event": "needset_computed",
     "search_slot_owner": "src/indexlab/runtimeBridgeSearchSlots.js",
-    "search_slot_events": [
-      "search_queued",
-      "discovery_query_started",
-      "discovery_query_completed"
-    ],
-    "search_profile_event_note": "search_profile_generated is emitted from Query Journey after Search Planner, but the bridge maps it to the Search Profile tab"
+    "search_slot_events": ["search_queued", "discovery_query_started", "discovery_query_completed"],
+    "search_profile_event_note": "search_profile_generated is emitted from Search Profile phase; the bridge maps it to the Search Profile tab"
   },
   "learning_loop": {
     "bootstrap_readback": "src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js",
@@ -200,7 +197,7 @@
       "_learning/{category}/field_yield.json"
     ],
     "finalization_writeback": "src/features/indexing/orchestration/finalize/persistSelfImproveLearningStores.js",
-    "wiring_status": "Learning stores are read at bootstrap and consumed by Search Profile (Stage 03) for query template injection and lexicon enrichment. They are NOT passed to NeedSet — runNeedSet() passes learning: null into buildSearchPlanningContext(). NeedSet planning relies on per-run feedback (previousFieldHistories + queryExecutionHistory) instead of cross-product learning."
+    "wiring_status": "Learning stores are read at bootstrap and consumed by Search Profile phase for query template injection and lexicon enrichment. They are NOT passed to NeedSet — runNeedSet() passes learning: null into buildSearchPlanningContext(). NeedSet planning relies on per-run feedback (previousFieldHistories + queryExecutionHistory) instead of cross-product learning."
   },
   "feedback_loops": {
     "per_run_feedback": {
@@ -209,8 +206,8 @@
     },
     "cross_product_learning": {
       "scope": "Category-level, persisted to SQLite (_learning/{category}/spec.sqlite), survives across runs and products",
-      "consumed_by": "Search Profile (Stage 03) only — learnedQueries.templates_by_field, templates_by_brand, enrichedLexicon, fieldYieldByDomain",
-      "not_consumed_by": "NeedSet planner (learning: null), Search Planner LLM, SERP triage",
+      "consumed_by": "Search Profile phase only — learnedQueries.templates_by_field, templates_by_brand, enrichedLexicon, fieldYieldByDomain",
+      "not_consumed_by": "NeedSet planner (learning: null), Search Planner LLM, Result Processing",
       "gate": "selfImproveEnabled (defaults true)"
     }
   }

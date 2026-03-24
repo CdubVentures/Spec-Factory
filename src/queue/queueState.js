@@ -5,16 +5,10 @@ import {
   registerCanonicalIdentity
 } from '../features/catalog/index.js';
 import { toInt } from '../shared/valueNormalizers.js';
+import { toArray } from '../shared/primitives.js';
 
 function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
-}
-
-function toArray(value) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value;
 }
 
 function parseDateMs(value) {

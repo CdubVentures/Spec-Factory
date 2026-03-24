@@ -1,13 +1,8 @@
 import { normalizeFieldList } from '../utils/fieldKeys.js';
+import { toArray } from '../shared/primitives.js';
+import { toInt } from '../shared/valueNormalizers.js';
 
-export function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+export { toArray, toInt };
 
 export function normalizedRoundCount(value, fallback = 4) {
   const parsed = toInt(value, fallback);

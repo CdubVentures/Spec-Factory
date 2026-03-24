@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import type { ReactNode } from 'react';
 import type {
   RuntimeDraft,
   NumberBound,
@@ -12,73 +11,39 @@ const BROWSER_PHASE_TIP =
 interface RuntimeFlowBrowserRenderingSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
-  dynamicFetchControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
   onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
   getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
-  renderDisabledHint: (message: string) => ReactNode;
 }
 
 export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrowserRenderingSection({
   runtimeDraft,
   runtimeSettingsReady,
-  dynamicFetchControlsLocked,
   inputCls,
   runtimeSubStepDomId,
   updateDraft,
   onNumberChange,
   getNumberBounds,
-  renderDisabledHint,
 }: RuntimeFlowBrowserRenderingSectionProps) {
   return (
     <>
       <div id={runtimeSubStepDomId('browser-rendering-core')} className="scroll-mt-24" />
       <SettingGroupBlock title="Browser Core">
-        <MasterSwitchRow label="Dynamic Crawlee Enabled" tip={`${BROWSER_PHASE_TIP}\nLives in: fetch mode escalation when HTTP retrieval is not enough.\nWhat this controls: whether the runtime can switch into a browser-backed Crawlee lane for dynamic pages.`} hint="Controls headless mode, timeouts, and dynamic fetch policy below">
-          <SettingToggle
-            checked={runtimeDraft.dynamicCrawleeEnabled}
-            onChange={(next) => updateDraft('dynamicCrawleeEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </MasterSwitchRow>
-        <SettingRow label="Crawlee Headless" tip={`${BROWSER_PHASE_TIP}\nLives in: browser-launch configuration.\nWhat this controls: whether the browser fallback runs without a visible window.`} disabled={dynamicFetchControlsLocked}>
+        <SettingRow label="Crawlee Headless" tip={`${BROWSER_PHASE_TIP}\nLives in: browser-launch configuration.\nWhat this controls: whether the browser fallback runs without a visible window.`}>
           <SettingToggle
             checked={runtimeDraft.crawleeHeadless}
             onChange={(next) => updateDraft('crawleeHeadless', next)}
-            disabled={!runtimeSettingsReady || dynamicFetchControlsLocked}
+            disabled={!runtimeSettingsReady}
           />
         </SettingRow>
         <SettingRow
           label="Crawlee Request Timeout (sec)"
           tip={`${BROWSER_PHASE_TIP}\nLives in: dynamic request handling inside the Crawlee lane.\nWhat this controls: the maximum time a single dynamic request handler is allowed to run before timing out.`}
-          disabled={dynamicFetchControlsLocked}
         >
-          <SettingNumberInput draftKey="crawleeRequestHandlerTimeoutSecs" value={runtimeDraft.crawleeRequestHandlerTimeoutSecs} bounds={getNumberBounds('crawleeRequestHandlerTimeoutSecs')} step={1} disabled={!runtimeSettingsReady || dynamicFetchControlsLocked} className={inputCls} onNumberChange={onNumberChange} />
+          <SettingNumberInput draftKey="crawleeRequestHandlerTimeoutSecs" value={runtimeDraft.crawleeRequestHandlerTimeoutSecs} bounds={getNumberBounds('crawleeRequestHandlerTimeoutSecs')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Dynamic Retry Budget" tip={`${BROWSER_PHASE_TIP}\nLives in: dynamic fetch retry policy.\nWhat this controls: how many retry attempts a browser-backed fetch may consume before the runtime gives up on the dynamic lane.`} disabled={dynamicFetchControlsLocked}>
-          <SettingNumberInput draftKey="dynamicFetchRetryBudget" value={runtimeDraft.dynamicFetchRetryBudget} bounds={getNumberBounds('dynamicFetchRetryBudget')} step={1} disabled={!runtimeSettingsReady || dynamicFetchControlsLocked} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <AdvancedSettingsBlock title="Dynamic Fetch Policy" count={2}>
-          <SettingRow label="Dynamic Retry Backoff (ms)" tip={`${BROWSER_PHASE_TIP}\nLives in: dynamic retry timing.\nWhat this controls: the delay inserted between browser-backed retry attempts.`} disabled={dynamicFetchControlsLocked}>
-            <SettingNumberInput draftKey="dynamicFetchRetryBackoffMs" value={runtimeDraft.dynamicFetchRetryBackoffMs} bounds={getNumberBounds('dynamicFetchRetryBackoffMs')} step={100} disabled={!runtimeSettingsReady || dynamicFetchControlsLocked} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow
-            label="Dynamic Fetch Policy Map (JSON)"
-            tip={`${BROWSER_PHASE_TIP}\nLives in: host-specific browser escalation rules.\nWhat this controls: an optional JSON map for per-host dynamic fetch behavior such as retry and lane selection overrides.`}
-            disabled={dynamicFetchControlsLocked}
-          >
-            <textarea
-              value={runtimeDraft.dynamicFetchPolicyMapJson}
-              onChange={(event) => updateDraft('dynamicFetchPolicyMapJson', event.target.value)}
-              disabled={!runtimeSettingsReady || dynamicFetchControlsLocked}
-              className={`${inputCls} min-h-[88px] font-mono sf-text-label`}
-              spellCheck={false}
-            />
-          </SettingRow>
-        </AdvancedSettingsBlock>
-        {dynamicFetchControlsLocked ? renderDisabledHint('Dynamic fetch controls are disabled because Dynamic Crawlee is OFF.') : null}
       </SettingGroupBlock>
 
       <div id={runtimeSubStepDomId('browser-rendering-scroll')} className="scroll-mt-24" />

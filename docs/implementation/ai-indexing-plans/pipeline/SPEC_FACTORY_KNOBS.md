@@ -10,12 +10,12 @@
 
 | GUI Panel | Knob Count | Description |
 |---|---|---|
-| Run Setup | 22 | Search engines, query caps, resume, re-extract, schema enforcement |
-| Browser Rendering | 16 | Crawlee, auto-scroll, robots.txt, page screenshots |
-| Fetch & Network | 25 | Concurrency, rate limits, timeouts, frontier cooldowns |
+| Run Setup | 19 | Search engines, query caps, resume, schema enforcement |
+| Browser Rendering | 12 | Crawlee, auto-scroll, robots.txt, page screenshots |
+| Fetch & Network | 17 | Timeouts, frontier cooldowns, per-host delay |
 | Parsing & Storage | 1 | Spec DB directory |
 | Run Output | 14 | Output mode, paths, S3 mirroring, markdown summary |
-| Automation | 20 | Drift detection, self-improve, category authority, daemon, imports |
+| Automation | 16 | Drift detection, self-improve, category authority, daemon, imports |
 | Observability | 10 | Tracing, event logging, screencast streaming |
 | LLM Global | 19 | Models, costs, budgets, call limits, API keys, timeout |
 | LLM Phase Overrides | 8 | Per-phase model, token cap, and reasoning overrides |
@@ -23,8 +23,8 @@
 | Storage Settings | 10 | Persistent storage destination (local / S3), credentials |
 | UI Settings | 5 | Auto-save toggles for Studio, Runtime, Storage panels |
 | Convergence | 0 | Empty |
-| Not in GUI | 14 | Backend-only, deprecated, or internally-managed knobs |
-| **TOTAL** | **169** | |
+| Not in GUI | 9 | Backend-only or internally-managed knobs |
+| **TOTAL** | **145** | |
 
 ---
 
@@ -34,14 +34,14 @@ All knobs live in one of four registries in `settingsRegistry.js`:
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 154 | Pipeline runtime config (env vars, route API, GUI) |
+| `RUNTIME_SETTINGS_REGISTRY` | 130 | Pipeline runtime config (env vars, route API, GUI) |
 | `CONVERGENCE_SETTINGS_REGISTRY` | 0 | Empty — reserved for future knobs |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
 
 ---
 
-## Run Setup (22 knobs)
+## Run Setup (19 knobs)
 
 Settings for search configuration, pipeline limits, and resume behavior.
 
@@ -63,27 +63,20 @@ Settings for search configuration, pipeline limits, and resume behavior.
 | `serpSelectorUrlCap` | int | 50 | 1–500 | `SERP_SELECTOR_URL_CAP` |
 | `domainClassifierUrlCap` | int | 50 | 1–500 | `DOMAIN_CLASSIFIER_URL_CAP` |
 | `llmEnhancerMaxRetries` | int | 2 | 1–5 | `LLM_ENHANCER_MAX_RETRIES` |
-| `maxJsonBytes` | int | 6,000,000 | 1,024–100,000,000 | `MAX_JSON_BYTES` |
 | `pipelineSchemaEnforcementMode` | enum | warn | off, warn, enforce | `PIPELINE_SCHEMA_ENFORCEMENT_MODE` |
 | `resumeMode` | enum | auto | auto, force_resume, start_over | `INDEXING_RESUME_MODE` |
 | `resumeWindowHours` | int | 48 | 1–8,760 | `INDEXING_RESUME_MAX_AGE_HOURS` |
-| `reextractIndexed` | bool | true | — | `INDEXING_REEXTRACT_ENABLED` |
-| `reextractAfterHours` | int | 24 | 1–8,760 | `INDEXING_REEXTRACT_AFTER_HOURS` |
 
 ---
 
-## Browser Rendering (16 knobs)
+## Browser Rendering (12 knobs)
 
 Controls for Crawlee browser automation, scrolling, and screenshots.
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `dynamicCrawleeEnabled` | bool | true | — | `DYNAMIC_CRAWLEE_ENABLED` |
 | `crawleeHeadless` | bool | true | — | `CRAWLEE_HEADLESS` |
 | `crawleeRequestHandlerTimeoutSecs` | int | 75 | 0–300 | `CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS` |
-| `dynamicFetchRetryBudget` | int | 1 | 0–5 | `DYNAMIC_FETCH_RETRY_BUDGET` |
-| `dynamicFetchRetryBackoffMs` | int | 2,500 | 0–30,000 | `DYNAMIC_FETCH_RETRY_BACKOFF_MS` |
-| `dynamicFetchPolicyMapJson` | string | "" | — | `DYNAMIC_FETCH_POLICY_MAP_JSON` |
 | `autoScrollEnabled` | bool | true | — | `AUTO_SCROLL_ENABLED` |
 | `autoScrollPasses` | int | 2 | 0–20 | `AUTO_SCROLL_PASSES` |
 | `autoScrollDelayMs` | int | 1,200 | 0–10,000 | `AUTO_SCROLL_DELAY_MS` |
@@ -97,21 +90,13 @@ Controls for Crawlee browser automation, scrolling, and screenshots.
 
 ---
 
-## Fetch & Network (25 knobs)
+## Fetch & Network (17 knobs)
 
-Concurrency, rate limiting, timeouts, and frontier cooldown policies.
+Timeouts, frontier cooldowns, and per-host delay policies.
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `fetchConcurrency` | int | 4 | 1–64 | `CONCURRENCY` |
 | `perHostMinDelayMs` | int | 1,500 | 0–120,000 | `PER_HOST_MIN_DELAY_MS` |
-| `fetchBudgetMs` | int | 45,000 | 5,000–300,000 | `FETCH_BUDGET_MS` |
-| `domainRequestRps` | int | 0 | 0–100 | `DOMAIN_REQUEST_RPS` |
-| `domainRequestBurst` | int | 0 | 0–1,000 | `DOMAIN_REQUEST_BURST` |
-| `globalRequestRps` | int | 0 | 0–100 | `GLOBAL_REQUEST_RPS` |
-| `globalRequestBurst` | int | 0 | 0–1,000 | `GLOBAL_REQUEST_BURST` |
-| `fetchPerHostConcurrencyCap` | int | 1 | 1–64 | `FETCH_PER_HOST_CONCURRENCY_CAP` |
-| `preferHttpFetcher` | bool | true | — | `PREFER_HTTP_FETCHER` |
 | `pageGotoTimeoutMs` | int | 12,000 | 0–120,000 | `PAGE_GOTO_TIMEOUT_MS` |
 | `pageNetworkIdleTimeoutMs` | int | 2,000 | 0–60,000 | `PAGE_NETWORK_IDLE_TIMEOUT_MS` |
 | `postLoadWaitMs` | int | 200 | 0–60,000 | `POST_LOAD_WAIT_MS` |
@@ -162,7 +147,7 @@ Output destinations, paths, and S3 mirroring.
 
 ---
 
-## Automation (20 knobs)
+## Automation (16 knobs)
 
 Drift detection, self-improvement, category authority, daemon, and imports.
 
@@ -176,10 +161,6 @@ Drift detection, self-improvement, category authority, daemon, and imports.
 | `selfImproveEnabled` | bool | true | — | `SELF_IMPROVE_ENABLED` |
 | `batchStrategy` | string | bandit | — | `BATCH_STRATEGY` |
 | `fieldRewardHalfLifeDays` | int | 45 | 1–365 | `FIELD_REWARD_HALF_LIFE_DAYS` |
-| `maxHypothesisItems` | int | 120 | 1–1,000 | `MAX_HYPOTHESIS_ITEMS` |
-| `endpointSignalLimit` | int | 120 | 1–500 | `ENDPOINT_SIGNAL_LIMIT` |
-| `endpointSuggestionLimit` | int | 36 | 1–200 | `ENDPOINT_SUGGESTION_LIMIT` |
-| `endpointNetworkScanLimit` | int | 1,800 | 50–10,000 | `ENDPOINT_NETWORK_SCAN_LIMIT` |
 | `categoryAuthorityEnabled` | bool | true | — | `HELPER_FILES_ENABLED` |
 | `categoryAuthorityRoot` | string | category_authority | — | `CATEGORY_AUTHORITY_ROOT` |
 | `helperSupportiveFillMissing` | bool | true | — | `HELPER_SUPPORTIVE_FILL_MISSING` |
@@ -308,26 +289,21 @@ Managed via `LlmProviderRegistrySection` — provider URLs, models, and costs.
 
 ---
 
-## Not in GUI (14 knobs)
+## Not in GUI (9 knobs)
 
-Backend-only, deprecated, or defaultsOnly knobs not exposed in any GUI panel.
+Backend-only or defaultsOnly knobs not exposed in any GUI panel.
 
 | Key | Type | Default | Env Var | Notes |
 |---|---|---|---|---|
 | `crawlSessionCount` | int | 4 | `CRAWL_SESSION_COUNT` | Parallel browser sessions |
-| `fetchCandidateSources` | bool | true | — | Deprecated, always true |
 | `googleSearchMaxRetries` | int | 1 | `GOOGLE_SEARCH_MAX_RETRIES` | Google-specific retry cap |
-| `indexingCategoryAuthorityEnabled` | bool | false | `INDEXING_HELPER_FILES_ENABLED` | Mirrors categoryAuthorityEnabled |
 | `llmMaxTokens` | int | 16,384 | `LLM_MAX_TOKENS` | Global context window |
 | `llmExtractionCacheDir` | string | .specfactory_tmp/llm_cache | `LLM_EXTRACTION_CACHE_DIR` | LLM response cache dir |
 | `maxCandidateUrls` | int | 80 | `MAX_CANDIDATE_URLS` | Discovery URL cap |
-| `maxPdfBytes` | int | 30,000,000 | `MAX_PDF_BYTES` | PDF size limit |
 | `maxUrlsPerProduct` | int | 50 | `MAX_URLS_PER_PRODUCT` | Fetch URL cap per product |
-| `parsingConfidenceBaseMapJson` | string | "" | — | Route-only confidence map |
 | `searxngMinQueryIntervalMs` | int | 3,000 | `SEARXNG_MIN_QUERY_INTERVAL_MS` | SearXNG throttle |
 | `discoveryEnabled` | bool | true | `DISCOVERY_ENABLED` | defaultsOnly master switch |
 | `daemonGracefulShutdownTimeoutMs` | int | 30,000 | — | defaultsOnly |
-| `frontierRepairSearchEnabled` | bool | true | — | defaultsOnly |
 
 ---
 

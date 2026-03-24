@@ -15,7 +15,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
 
   const ALL_KNOWN_KEYS = new Set([
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap),
-    RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey,
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap),
@@ -72,7 +71,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
     deepseekApiKey: '',
     llmPlanProvider: '',
     llmPlanBaseUrl: '',
-    importsRoot: '',
     llmExtractionCacheDir: '',
     resumeMode: 'auto',
     runtimeSettingsFallbackBaseline: new Proxy({}, { get: () => 0 }),

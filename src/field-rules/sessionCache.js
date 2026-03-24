@@ -1,8 +1,5 @@
 import path from 'node:path';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject } from '../shared/primitives.js';
 
 function mergeFieldOverrides(compiledFields, fieldOverrides) {
   if (!isObject(fieldOverrides)) return compiledFields;

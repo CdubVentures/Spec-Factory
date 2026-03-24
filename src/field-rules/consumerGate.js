@@ -1,22 +1,4 @@
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeText(value) {
-  return String(value ?? '').trim();
-}
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
 
 const SYSTEM_ALIASES = new Map([
   ['seed', 'seed'],

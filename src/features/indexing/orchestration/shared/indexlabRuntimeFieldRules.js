@@ -1,8 +1,5 @@
 import { projectFieldRulesForConsumer } from '../../../../field-rules/consumerGate.js';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject } from '../../../../shared/primitives.js';
 
 export function buildIndexlabRuntimeCategoryConfig(categoryConfig = null) {
   if (!isObject(categoryConfig)) {

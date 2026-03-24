@@ -55,7 +55,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       indexlabOut: path.resolve('ignored-indexlab-root'),
       specDbDir: path.resolve('ignored-spec-db-root'),
       llmExtractionCacheDir: path.resolve('ignored-cache-root'),
-      fetchCandidateSources: false,
       runtimeTraceFetchRing: 9_999,
       llmFallbackEnabled: false,
     }, {
@@ -99,8 +98,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       '--dry-run',
     ]);
 
-    // WHY: fetchCandidateSources retired - always true, no env override emitted.
-    assert.equal(result.envOverrides.FETCH_CANDIDATE_SOURCES, undefined);
     assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.join(localStorageRoot, 'output'));
     assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, '.specfactory_tmp'));
     assert.equal(
@@ -145,28 +142,3 @@ test('buildProcessStartLaunchPlan passes searchEngines through to CLI args', () 
   assert.ok(result.cliArgs.includes('bing,brave'), 'includes engine CSV value');
 });
 
-test('buildProcessStartLaunchPlan validates object-shaped JSON map overrides', () => {
-  const invalidJsonResult = buildPlan({
-    dynamicFetchPolicyMapJson: '{bad json',
-  });
-  assert.deepEqual(invalidJsonResult, {
-    ok: false,
-    status: 400,
-    body: {
-      error: 'invalid_dynamic_fetch_policy_json',
-      message: 'dynamicFetchPolicyMapJson must be valid JSON.',
-    },
-  });
-
-  const arrayResult = buildPlan({
-    dynamicFetchPolicyMapJson: '[]',
-  });
-  assert.deepEqual(arrayResult, {
-    ok: false,
-    status: 400,
-    body: {
-      error: 'invalid_dynamic_fetch_policy_json',
-      message: 'dynamicFetchPolicyMapJson must be a JSON object.',
-    },
-  });
-});

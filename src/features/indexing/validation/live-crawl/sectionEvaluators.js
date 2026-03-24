@@ -63,8 +63,8 @@ export function evaluateDefaultsAligned(runData) {
     passIf('DA-02', haSnap),
     manual('DA-03'),
     manual('DA-04'),
-    passIf('DA-05', haSnap && snap.searchProvider != null),
-    passIf('DA-07', haSnap && snap.preferHttpFetcher != null && snap.dynamicCrawleeEnabled != null),
+    passIf('DA-05', haSnap && (snap.searchEngines != null || snap.searchProvider != null)),
+    passIf('DA-07', haSnap && snap.perHostMinDelayMs != null),
     passIf('DA-09', haSnap && snap.capturePageScreenshotEnabled != null),
     passIf('DA-10', haSnap, 'drift disposition check'),
   ];

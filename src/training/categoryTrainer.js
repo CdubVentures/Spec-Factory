@@ -5,10 +5,7 @@ import { runUntilComplete } from '../runner/runUntilComplete.js';
 import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
 import { writeGeneratedCategoryTests } from './generateCategoryTests.js';
 import { toInt, toFloat } from '../shared/valueNormalizers.js';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { toArray } from '../shared/primitives.js';
 
 function knownValue(value) {
   const token = String(value || '').trim().toLowerCase();

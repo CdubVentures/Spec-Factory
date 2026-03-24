@@ -247,8 +247,7 @@ function buildConfig(args) {
     writeMarkdownSummary: asBool(args['write-md'], true),
     localInputRoot: args['local-input-root'] || undefined,
     localOutputRoot: args['local-output-root'] || undefined,
-    outputMode: args['output-mode'] || undefined,
-    batchStrategy: args.strategy || undefined
+    outputMode: args['output-mode'] || undefined
   };
   if (args.local !== undefined) overrides.localMode = asBool(args.local);
   if (args['dry-run'] !== undefined) overrides.dryRun = asBool(args['dry-run']);

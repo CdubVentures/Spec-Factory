@@ -6,7 +6,6 @@ import { deriveRouteGetMaps, deriveConvergenceKeySet } from '../../shared/settin
 
 export const CATEGORY_AUTHORITY_ROOT_KEY = 'categoryAuthorityRoot';
 export const CATEGORY_AUTHORITY_ENABLED_KEY = 'categoryAuthorityEnabled';
-export const INDEXING_CATEGORY_AUTHORITY_ENABLED_KEY = 'indexingCategoryAuthorityEnabled';
 
 export const RUNTIME_SETTINGS_ROUTE_GET = deriveRouteGetMaps(RUNTIME_SETTINGS_REGISTRY);
 

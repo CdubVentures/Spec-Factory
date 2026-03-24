@@ -60,18 +60,15 @@ test('deriveIndexingRunStartParsedValues parses runtime numeric settings and fal
 
   const parsed = deriveIndexingRunStartParsedValues({
     runtimeSettingsPayload: {
-      fetchConcurrency: 'bad-value',
       runtimeScreencastFps: '7',
       llmMonthlyBudgetUsd: '3.5',
     },
     runtimeSettingsBaseline: createBaseline({
-      fetchConcurrency: 5,
       runtimeScreencastFps: 12,
       llmMonthlyBudgetUsd: 9.25,
     }),
   });
 
-  assert.equal(parsed.parsedConcurrency, 5);
   assert.equal(parsed.parsedRuntimeScreencastFps, 7);
   assert.equal(parsed.parsedLlmMonthlyBudgetUsd, 3.5);
 });
@@ -85,11 +82,8 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
     productId: 'mouse-v3-pro',
     runtimeSettingsPayload: createPayload({
       searchEngines: ' bing,brave,duckduckgo ',
-      dynamicCrawleeEnabled: true,
       runtimeScreencastEnabled: true,
-      importsRoot: '  ./imports  ',
       eventsJsonWrite: true,
-      dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
       discoveryEnabled: true,
       llmProvider: '  openai  ',
       llmPlanProvider: '  openai  ',
@@ -114,14 +108,10 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       llmMaxOutputTokensWriteFallback: '138',
     }),
     parsedValues: createParsedValues({
-      parsedConcurrency: 7,
       parsedRuntimeScreencastFps: 0,
       parsedRuntimeScreencastQuality: 5,
       parsedRuntimeScreencastMaxWidth: 100,
       parsedRuntimeScreencastMaxHeight: 100,
-      parsedDaemonConcurrency: 0,
-      parsedDaemonGracefulShutdownTimeoutMs: 200,
-      parsedImportsPollSeconds: 0,
       parsedIdentityGatePublishThreshold: 1.5,
       parsedIndexingResumeSeedLimit: 0,
       parsedIndexingResumePersistLimit: 0,
@@ -131,8 +121,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedMaxCandidateUrls: 0,
       parsedMaxPagesPerDomain: 0,
       parsedMaxRunSeconds: 0,
-      parsedMaxJsonBytes: 0,
-      parsedMaxPdfBytes: 0,
       parsedLlmMaxCallsPerRound: 0,
       parsedLlmMaxOutputTokens: 50,
       parsedLlmMaxTokens: 0,
@@ -140,13 +128,9 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedLlmCostInputPer1M: -1,
       parsedLlmCostOutputPer1M: -1,
       parsedLlmCostCachedInputPer1M: -1,
-      parsedEndpointSignalLimit: 0,
-      parsedEndpointSuggestionLimit: 0,
-      parsedEndpointNetworkScanLimit: 0,
       parsedMaxManufacturerUrlsPerProduct: 0,
       parsedMaxManufacturerPagesPerDomain: 0,
       parsedManufacturerReserveUrls: -1,
-      parsedMaxHypothesisItems: 0,
       parsedLlmMaxCallsPerProductTotal: 0,
       parsedLlmMaxCallsPerProductFast: -1,
       // WHY: parsedNeedsetEvidenceDecayDays/Floor removed in Phase 12 NeedSet Legacy Removal
@@ -172,14 +156,9 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.requestedRunId, 'run-123');
   assert.equal(payload.mode, 'indexlab');
   assert.equal(payload.replaceRunning, true);
-  assert.equal(payload.fetchConcurrency, 7);
 
   assert.equal(payload.runtimeScreencastFps, 1);
   assert.equal(payload.runtimeScreencastQuality, 10);
-  assert.equal(payload.daemonConcurrency, 1);
-  assert.equal(payload.importsRoot, './imports');
-
-  assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 
   // WHY: Registry SSOT defines min: 1 for searchProfileQueryCap. The generic
   // overlay now enforces registry min consistently. Old discovery builder skipped
@@ -190,8 +169,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.llmPlanProvider, 'openai');
   assert.equal(payload.llmPlanApiKey, 'plan-key');
   assert.equal(payload.llmMaxOutputTokens, 256);
-  assert.equal(payload.endpointNetworkScanLimit, 50);
-
   assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.llmModelPlan, 'gpt-plan');
   assert.equal(payload.llmMaxOutputTokensPlan, 128);
@@ -212,12 +189,12 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
     category: 'mouse',
     productId: 'mouse-acme-orbit-x1',
     runtimeSettingsPayload: createPayload({
-      fetchBudgetMs: 30000,
+      perHostMinDelayMs: 1500,
     }),
     parsedValues: createParsedValues(),
     runControlPayload: {},
   });
 
   // WHY: These keys now flow through via the runtimeSettingsPayload spread
-  assert.equal(payload.fetchBudgetMs, 30000);
+  assert.equal(payload.perHostMinDelayMs, 1500);
 });

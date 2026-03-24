@@ -12,11 +12,7 @@ import {
 } from '../../pipeline-settings';
 
 export interface Phase05RuntimeSettings {
-  fetchConcurrency: string;
   perHostMinDelayMs: string;
-  dynamicCrawleeEnabled: boolean;
-  dynamicFetchRetryBudget: string;
-  dynamicFetchRetryBackoffMs: string;
 }
 
 interface BuildIndexingRuntimeDraftInput {
@@ -52,11 +48,7 @@ export function buildIndexingPhase05RuntimeSettings(
   runtimeDraft: RuntimeDraft,
 ): Phase05RuntimeSettings {
   return {
-    fetchConcurrency: toDisplayString(runtimeDraft.fetchConcurrency),
     perHostMinDelayMs: toDisplayString(runtimeDraft.perHostMinDelayMs),
-    dynamicCrawleeEnabled: runtimeDraft.dynamicCrawleeEnabled,
-    dynamicFetchRetryBudget: toDisplayString(runtimeDraft.dynamicFetchRetryBudget),
-    dynamicFetchRetryBackoffMs: toDisplayString(runtimeDraft.dynamicFetchRetryBackoffMs),
   };
 }
 

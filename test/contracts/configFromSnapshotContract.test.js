@@ -30,13 +30,13 @@ describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
     strictEqual(patches[0].source, 'snapshot');
   });
 
-  it('applySnapshotToConfig handles aliased keys (fetchConcurrency → concurrency)', () => {
-    const config = { concurrency: 4 };
-    const patches = applySnapshotToConfig(config, { fetchConcurrency: 8 });
-    strictEqual(config.concurrency, 8, 'configKey should be updated');
-    strictEqual(config.fetchConcurrency, 8, 'setting key should also be set');
+  it('applySnapshotToConfig handles aliased keys (resumeMode → indexingResumeMode)', () => {
+    const config = { indexingResumeMode: 'auto' };
+    const patches = applySnapshotToConfig(config, { resumeMode: 'force_resume' });
+    strictEqual(config.indexingResumeMode, 'force_resume', 'configKey should be updated');
+    strictEqual(config.resumeMode, 'force_resume', 'setting key should also be set');
     ok(patches.length === 1);
-    strictEqual(patches[0].configKey, 'concurrency');
+    strictEqual(patches[0].configKey, 'indexingResumeMode');
   });
 
   it('applySnapshotToConfig skips null/undefined values', () => {
@@ -67,15 +67,15 @@ describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
 
   it('isRegistrySetting identifies known settings', () => {
     ok(isRegistrySetting('autoScrollEnabled'));
-    ok(isRegistrySetting('fetchConcurrency'));
+    ok(isRegistrySetting('resumeMode'));
     ok(isRegistrySetting('llmModelPlan'));
     ok(!isRegistrySetting('notARealSetting'));
     ok(!isRegistrySetting(''));
   });
 
   it('getConfigKey returns configKey for aliased entries', () => {
-    strictEqual(getConfigKey('fetchConcurrency'), 'concurrency');
     strictEqual(getConfigKey('resumeMode'), 'indexingResumeMode');
+    strictEqual(getConfigKey('resumeWindowHours'), 'indexingResumeMaxAgeHours');
     strictEqual(getConfigKey('autoScrollEnabled'), 'autoScrollEnabled');
   });
 });
@@ -99,11 +99,10 @@ describe('loadConfigWithUserSettings — snapshot alias remap', () => {
       createdAt: Date.now(),
       source: 'test',
       settings: {
-        fetchConcurrency: 12,
         resumeMode: 'force_resume',
         resumeWindowHours: 72,
-        reextractAfterHours: 48,
-        reextractIndexed: false,
+        maxRunSeconds: 600,
+        autoScrollEnabled: false,
       },
     };
     snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
@@ -121,14 +120,12 @@ describe('loadConfigWithUserSettings — snapshot alias remap', () => {
     const config = loadConfigWithUserSettings();
 
     // Config keys (what consumers read) must have the snapshot values
-    strictEqual(config.concurrency, 12, 'config.concurrency should be 12 from fetchConcurrency');
     strictEqual(config.indexingResumeMode, 'force_resume', 'config.indexingResumeMode from resumeMode');
     strictEqual(config.indexingResumeMaxAgeHours, 72, 'config.indexingResumeMaxAgeHours from resumeWindowHours');
-    strictEqual(config.indexingReextractAfterHours, 48, 'config.indexingReextractAfterHours from reextractAfterHours');
-    strictEqual(config.indexingReextractEnabled, false, 'config.indexingReextractEnabled from reextractIndexed');
+    strictEqual(config.maxRunSeconds, 600, 'config.maxRunSeconds from snapshot');
+    strictEqual(config.autoScrollEnabled, false, 'config.autoScrollEnabled from snapshot');
 
     // Canonical setting keys should also be set (dual-key compat)
-    strictEqual(config.fetchConcurrency, 12, 'canonical key should also be set');
     strictEqual(config.resumeMode, 'force_resume', 'canonical key should also be set');
   });
 });

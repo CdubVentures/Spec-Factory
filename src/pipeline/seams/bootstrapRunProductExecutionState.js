@@ -169,16 +169,13 @@ export async function bootstrapRunProductExecutionState({
     frontierDb,
   });
 
-  let learningProfile = null;
-  if (config.selfImproveEnabled) {
-    learningProfile = await runtimeDeps.loadLearningProfileFn({
-      storage,
-      config,
-      category,
-      job,
-    });
-    runtimeDeps.applyLearningSeedsFn(planner, learningProfile);
-  }
+  const learningProfile = await runtimeDeps.loadLearningProfileFn({
+    storage,
+    config,
+    category,
+    job,
+  });
+  runtimeDeps.applyLearningSeedsFn(planner, learningProfile);
 
   const adapterSeedUrls = adapterManager.collectSeedUrls({ job });
   runtimeDeps.enqueueAdapterSeedUrlsFn(planner, adapterSeedUrls);

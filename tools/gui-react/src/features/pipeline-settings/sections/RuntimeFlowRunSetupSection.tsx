@@ -35,7 +35,6 @@ function composeEnginesCsv(primary: EngineSlot, dual: EngineSlot, triple: Engine
 interface RuntimeFlowRunSetupSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
-  reextractWindowLocked: boolean;
   plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
@@ -49,7 +48,6 @@ interface RuntimeFlowRunSetupSectionProps {
 export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSection({
   runtimeDraft,
   runtimeSettingsReady,
-  reextractWindowLocked,
   plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
@@ -280,13 +278,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
             <SettingNumberInput draftKey="llmEnhancerMaxRetries" value={runtimeDraft.llmEnhancerMaxRetries} bounds={getNumberBounds('llmEnhancerMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
-        <AdvancedSettingsBlock title="Advanced URL Budgets" count={2}>
-          <SettingRow
-            label="Max JSON Bytes"
-            tip={`${BUDGET_PHASE_TIP}\nLives in: fetch artifact capture and parser intake.\nWhat this controls: the safety ceiling for JSON payload size before the runtime truncates or rejects oversized structured responses.`}
-          >
-            <SettingNumberInput draftKey="maxJsonBytes" value={runtimeDraft.maxJsonBytes} bounds={getNumberBounds('maxJsonBytes')} step={1024} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
+        <AdvancedSettingsBlock title="Advanced URL Budgets" count={1}>
           <SettingRow
             label="User Agent"
             tip={`${BUDGET_PHASE_TIP}\nLives in: outbound HTTP and browser-backed fetch requests.\nWhat this controls: the User-Agent header presented to remote hosts during discovery and fetch.`}
@@ -305,9 +297,9 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         </AdvancedSettingsBlock>
       </SettingGroupBlock>
 
-      {/* ── Resume & Re-extract ── */}
+      {/* ── Resume ── */}
       <div id={runtimeSubStepDomId('run-setup-resume')} className="scroll-mt-24" />
-      <SettingGroupBlock title="Resume and Re-extract">
+      <SettingGroupBlock title="Resume">
         <SettingRow
           label="Resume Mode"
           tip={`${RESUME_PHASE_TIP}\nLives in: runtime bootstrap before NeedSet and discovery start.\nWhat this controls: whether prior run artifacts, queues, and saved state are reused, ignored, or selectively resumed.`}
@@ -330,19 +322,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
           tip={`${RESUME_PHASE_TIP}\nLives in: resumable-state filtering during bootstrap.\nWhat this controls: how old saved run state may be before the runtime refuses to resume it even when resume mode allows reuse.`}
         >
           <SettingNumberInput draftKey="resumeWindowHours" value={runtimeDraft.resumeWindowHours} bounds={getNumberBounds('resumeWindowHours')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <SettingRow
-          label="Re-extract Indexed"
-          tip={`${RESUME_PHASE_TIP}\nLives in: bootstrap and source-ingestion refresh gating before Stage 09 extraction.\nWhat this controls: whether already indexed sources may be sent back through extraction when they are considered stale.`}
-        >
-          <SettingToggle checked={runtimeDraft.reextractIndexed} onChange={(next) => updateDraft('reextractIndexed', next)} disabled={!runtimeSettingsReady} />
-        </SettingRow>
-        <SettingRow
-          label="Re-extract Age (hours)"
-          tip={`${RESUME_PHASE_TIP}\nLives in: stale-source refresh checks before a previously successful source is reused.\nWhat this controls: the age threshold after which an indexed source is considered stale enough to force another extraction pass.`}
-          disabled={reextractWindowLocked}
-        >
-          <SettingNumberInput draftKey="reextractAfterHours" value={runtimeDraft.reextractAfterHours} bounds={getNumberBounds('reextractAfterHours')} step={1} disabled={!runtimeSettingsReady || reextractWindowLocked} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
       </SettingGroupBlock>
     </>

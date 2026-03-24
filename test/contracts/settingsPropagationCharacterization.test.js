@@ -101,17 +101,12 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // WHY: These are the 42+ env vars that processStartLaunchPlan currently sets.
     // This is the golden master — any change to this set must be intentional.
     const EXPECTED_DIRECT_LAUNCH_ENV_KEYS = new Set([
-      'PREFER_HTTP_FETCHER',
       'DYNAMIC_CRAWLEE_ENABLED',
-      // WHY: FETCH_CANDIDATE_SOURCES retired — deprecated, always true, no longer manifested
-      'MAX_PDF_BYTES',
       'SPEC_DB_DIR',
       'LLM_EXTRACTION_CACHE_DIR',
       'HELPER_FILES_ENABLED',
       'HELPER_FILES_ROOT',
       'CATEGORY_AUTHORITY_ROOT',
-      // WHY: DYNAMIC_FETCH_POLICY_MAP_JSON only set when value is non-empty valid JSON object
-      // 'DYNAMIC_FETCH_POLICY_MAP_JSON',
       'OUTPUT_MODE',
       'LOCAL_MODE',
       'DRY_RUN',
@@ -123,7 +118,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'WRITE_MARKDOWN_SUMMARY',
       'LLM_PROVIDER',
       'LLM_BASE_URL',
-      'FETCH_PER_HOST_CONCURRENCY_CAP',
       'FRONTIER_DB_PATH',
       'FRONTIER_BLOCKED_DOMAIN_THRESHOLD',
       'PAGE_GOTO_TIMEOUT_MS',
@@ -134,12 +128,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'RUNTIME_TRACE_LLM_RING',
       'RUNTIME_TRACE_LLM_PAYLOADS',
       'EVENTS_JSON_WRITE',
-      'DAEMON_CONCURRENCY',
-      // WHY: daemonGracefulShutdownTimeoutMs is defaultsOnly in registry — only set when
-      // explicitly provided in POST body. The full body builder skips defaultsOnly entries.
-      // 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS',
-      'IMPORTS_ROOT',
-      'IMPORTS_POLL_SECONDS',
       'RUNTIME_SCREENCAST_ENABLED',
       'RUNTIME_SCREENCAST_FPS',
       'RUNTIME_SCREENCAST_QUALITY',
@@ -183,12 +171,10 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // these fall back to user-settings.json (stale-start risk).
     const KNOWN_PAYLOAD_ONLY_GAPS = [
       // Fetch network (sent in POST body but dropped before child launch)
-      'fetchConcurrency', 'perHostMinDelayMs', 'domainRequestRps', 'domainRequestBurst',
-      'globalRequestRps', 'globalRequestBurst', 'fetchBudgetMs',
+      'perHostMinDelayMs',
       'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       // Browser/rendering
-      'dynamicCrawleeEnabled', 'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
-      'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
+      'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
       'autoScrollEnabled', 'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtCompliant', 'robotsTxtTimeoutMs',
       'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
@@ -201,14 +187,13 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       // Discovery
       'searchProfileQueryCap',
       'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
-      'maxRunSeconds', 'maxJsonBytes',
+      'maxRunSeconds',
       // LLM settings
       'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmMaxTokens',
       'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M', 'llmCostCachedInputPer1M',
       'llmReasoningMode', 'llmReasoningBudget',
       'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd', 'llmMaxCallsPerProductTotal',
       'llmExtractionCacheDir',
-      'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
       // Model / provider
       'llmPlanProvider', 'llmPlanBaseUrl',
       'llmReasoningFallbackModel', 'llmMaxOutputTokensReasoningFallback',
@@ -217,11 +202,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'llmPlanUseReasoning',
       // Automation
       'categoryAuthorityEnabled', 'categoryAuthorityRoot',
-      'batchStrategy', 'fieldRewardHalfLifeDays',
-      'driftDetectionEnabled', 'driftPollSeconds', 'driftScanMaxProducts', 'driftAutoRepublish',
-      'selfImproveEnabled', 'maxHypothesisItems',
-      'helperSupportiveFillMissing', 'reCrawlStaleAfterDays',
-      'indexingCategoryAuthorityEnabled',
       'indexingResumeSeedLimit', 'indexingResumePersistLimit',
       // Run output/control
       'runtimeControlFile', 'specDbDir',
@@ -233,9 +213,9 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       's3InputPrefix', 's3OutputPrefix',
       // Search
       'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
-      'repairDedupeRule', 'parsingConfidenceBaseMapJson',
+      'repairDedupeRule',
       // Resume
-      'resumeMode', 'resumeWindowHours', 'reextractIndexed', 'reextractAfterHours',
+      'resumeMode', 'resumeWindowHours',
       // Google
       'googleSearchMaxRetries', 'googleSearchMinQueryIntervalMs',
       'googleSearchProxyUrlsJson', 'googleSearchScreenshotsEnabled',
@@ -247,16 +227,16 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // This documents the gap — these are sent by GUI but dropped before child launch
     // After the rewrite, ALL of these should travel via snapshot
     ok(
-      KNOWN_PAYLOAD_ONLY_GAPS.length > 50,
-      `Expected > 50 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
+      KNOWN_PAYLOAD_ONLY_GAPS.length > 40,
+      `Expected > 40 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
     );
   });
 
   it('boolean env values are string true/false', () => {
-    const result = buildPlan({ preferHttpFetcher: true, dryRun: false });
+    const result = buildPlan({ dryRun: false, localMode: true });
     ok(result.ok);
-    strictEqual(result.envOverrides.PREFER_HTTP_FETCHER, 'true');
     strictEqual(result.envOverrides.DRY_RUN, 'false');
+    strictEqual(result.envOverrides.LOCAL_MODE, 'true');
   });
 
   it('integer env values are clamped string numbers', () => {
@@ -266,7 +246,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
         category: 'mouse',
         mode: 'indexlab',
         productId: 'mouse-test-1',
-        fetchPerHostConcurrencyCap: 999,
         runtimeTraceFetchRing: 9999,
       },
       helperRoot: path.resolve('category_authority'),
@@ -278,8 +257,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       buildRunIdFn: () => 'test-run-clamp',
     });
     ok(result.ok, `plan failed: ${JSON.stringify(result.body)}`);
-    // Clamped to max 64
-    strictEqual(result.envOverrides.FETCH_PER_HOST_CONCURRENCY_CAP, '64');
     // Clamped to max 2000
     strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
   });
@@ -306,8 +283,8 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, undefined);
   });
 
-  it('invalid JSON object rejects with 400', () => {
-    const result = buildPlan({ dynamicFetchPolicyMapJson: 'not-json' });
+  it('unsupported mode rejects with 400', () => {
+    const result = buildPlan({ mode: 'unsupported' });
     strictEqual(result.ok, false);
     strictEqual(result.status, 400);
   });
@@ -323,8 +300,6 @@ describe('buildRoundConfig — round override characterization', () => {
       searchProvider: 'google',
       searxngBaseUrl: 'http://127.0.0.1:8080',
       discoveryEnabled: true,
-      fetchCandidateSources: true,
-      preferHttpFetcher: false,
       autoScrollEnabled: true,
       autoScrollPasses: 2,
       autoScrollDelayMs: 1200,
@@ -335,11 +310,6 @@ describe('buildRoundConfig — round override characterization', () => {
       maxUrlsPerProduct: 50,
       maxCandidateUrls: 80,
       maxPagesPerDomain: 5,
-      maxJsonBytes: 6000000,
-      maxHypothesisItems: 120,
-      endpointSignalLimit: 120,
-      endpointSuggestionLimit: 36,
-      endpointNetworkScanLimit: 1800,
       searchProfileQueryCap: 10,
       perHostMinDelayMs: 1500,
       llmMaxCallsPerRound: 5,
@@ -374,7 +344,6 @@ describe('buildRoundConfig — round override characterization', () => {
     const result = buildRoundConfig(base, { round: 1 });
 
     strictEqual(result.discoveryEnabled, true, 'round 1 enables discovery');
-    strictEqual(result.fetchCandidateSources, true, 'round 1 enables fetch sources');
     ok(result.maxUrlsPerProduct >= 60, `round 1 should floor maxUrlsPerProduct, got ${result.maxUrlsPerProduct}`);
     ok(result.searchProfileQueryCap >= 1, `round 1 should preserve searchProfileQueryCap, got ${result.searchProfileQueryCap}`);
   });
@@ -388,7 +357,6 @@ describe('buildRoundConfig — round override characterization', () => {
     });
 
     strictEqual(result.discoveryEnabled, false, 'discovery should be disabled when nothing missing');
-    strictEqual(result.fetchCandidateSources, true, 'fetch sources is always enabled');
   });
 
   it('search provider selection respects searxng readiness', () => {

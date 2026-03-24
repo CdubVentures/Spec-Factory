@@ -1,10 +1,4 @@
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
+import { isObject, normalizeToken } from '../../../shared/primitives.js';
 
 function humanizeSlugToken(value) {
   return String(value || '')

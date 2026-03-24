@@ -1,3 +1,5 @@
+import { toArray } from '../shared/primitives.js';
+
 function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
 }
@@ -5,10 +7,6 @@ function round(value, digits = 6) {
 function toDateKey(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   return date.toISOString().slice(0, 10);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function unknownWeaknessCount(summary = {}) {

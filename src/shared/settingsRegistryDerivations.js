@@ -94,7 +94,7 @@ export function deriveClampingStringEnumMap(registry) {
 
 /**
  * Derive the GET route maps.
- * Produces: { stringMap, intMap, floatMap, boolMap, dynamicFetchPolicyMapJsonKey }
+ * Produces: { stringMap, intMap, floatMap, boolMap }
  * matching RUNTIME_SETTINGS_ROUTE_GET shape.
  */
 export function deriveRouteGetMaps(registry) {
@@ -123,7 +123,6 @@ export function deriveRouteGetMaps(registry) {
     }
   }
   return Object.freeze({
-    dynamicFetchPolicyMapJsonKey: 'dynamicFetchPolicyMapJson',
     stringMap: Object.freeze(stringMap),
     intMap: Object.freeze(intMap),
     floatMap: Object.freeze(floatMap),
@@ -133,7 +132,7 @@ export function deriveRouteGetMaps(registry) {
 
 /**
  * Derive the PUT route contract.
- * Produces: { stringEnumMap, stringFreeMap, stringTrimMap, intRangeMap, floatRangeMap, boolMap, dynamicFetchPolicyMapJsonKey }
+ * Produces: { stringEnumMap, stringFreeMap, stringTrimMap, intRangeMap, floatRangeMap, boolMap }
  * matching RUNTIME_SETTINGS_ROUTE_PUT shape. Excludes readOnly entries.
  */
 export function deriveRoutePutContract(registry, { clampingIntRangeMap, clampingFloatRangeMap, clampingStringEnumMap }) {
@@ -144,8 +143,6 @@ export function deriveRoutePutContract(registry, { clampingIntRangeMap, clamping
     const cfgKey = entry.configKey || entry.key;
     switch (entry.type) {
       case 'string':
-        // WHY: dynamicFetchPolicyMapJson is handled as a special key, not in stringFreeMap
-        if (entry.key === 'dynamicFetchPolicyMapJson') break;
         stringFreeMap[entry.key] = cfgKey;
         break;
       case 'bool':
@@ -155,7 +152,6 @@ export function deriveRoutePutContract(registry, { clampingIntRangeMap, clamping
     }
   }
   return Object.freeze({
-    dynamicFetchPolicyMapJsonKey: 'dynamicFetchPolicyMapJson',
     stringEnumMap: clampingStringEnumMap,
     stringFreeMap: Object.freeze(stringFreeMap),
     stringTrimMap: Object.freeze({}),
@@ -225,6 +221,40 @@ export function deriveMiscGroupEntries(registry) {
     }));
   }
   return Object.freeze(entries);
+}
+
+/**
+ * Derive the full CONFIG_MANIFEST group array from a combined registry.
+ * @param {Array} registry - Combined [...RUNTIME_SETTINGS_REGISTRY, ...BOOTSTRAP_ENV_REGISTRY]
+ * @param {Array} groupMeta - Array of { id, title, notes } defining group order and metadata
+ * @param {Object} [computedDefaults] - Optional { envKey: value } overrides for platform-specific defaults
+ * @returns {ReadonlyArray} Frozen manifest groups, each with { id, title, notes, entries[] }
+ * WHY: Eliminates 10 hardcoded manifest group files. Single derivation from registry SSOT.
+ */
+export function deriveManifestGroups(registry, groupMeta, computedDefaults = {}) {
+  const byGroup = new Map(groupMeta.map(g => [g.id, { ...g, entries: [] }]));
+
+  for (const entry of registry) {
+    if (!entry.envKey) continue;
+    if (entry.routeOnly) continue;
+    const groupId = entry.group || 'misc';
+    const target = byGroup.get(groupId) || byGroup.get('misc');
+    const override = computedDefaults[entry.envKey];
+    target.entries.push(Object.freeze({
+      key: entry.envKey,
+      defaultValue: override !== undefined ? String(override) : String(entry.default ?? ''),
+      type: REGISTRY_TO_MANIFEST_TYPE[entry.type] || 'string',
+      secret: !!entry.secret,
+      userMutable: false,
+      description: 'System-level setting.',
+    }));
+  }
+
+  return Object.freeze(
+    groupMeta
+      .map(g => Object.freeze({ ...byGroup.get(g.id), entries: Object.freeze(byGroup.get(g.id).entries) }))
+      .filter(g => g.entries.length > 0)
+  );
 }
 
 // --- Plan 03: New derivation functions for SSOT rewrite ---

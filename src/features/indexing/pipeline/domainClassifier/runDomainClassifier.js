@@ -56,6 +56,8 @@ export function runDomainClassifier({
       doc_hint: candidate.doc_hint || null,
       domain_hint: candidate.domain_hint || null,
       providers: candidate.providers || null,
+      search_slot: candidate.search_slot || null,
+      search_rank: candidate.search_rank ?? null,
     });
   }
 
@@ -77,7 +79,7 @@ export function runDomainClassifier({
     });
   }
   let seededCount = 0;
-  if (config?.fetchCandidateSources && candidateUrls.length > 0 && typeof planner?.seedCandidates === 'function') {
+  if (candidateUrls.length > 0 && typeof planner?.seedCandidates === 'function') {
     planner.seedCandidates(candidateUrls, { triageMetaMap });
     seededCount = candidateUrls.length;
   }

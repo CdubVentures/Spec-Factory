@@ -1,14 +1,4 @@
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeText(value) {
-  return String(value ?? '').trim();
-}
-
-function normalizeToken(value) {
-  return normalizeText(value).toLowerCase();
-}
+import { isObject, normalizeText, normalizeToken } from '../shared/primitives.js';
 
 function looksLikeJson(text) {
   const trimmed = String(text || '').trim();

@@ -122,13 +122,77 @@ export function buildRuntimeOpsWorkers(events, options) {
     }
   }
 
+  // WHY: Host-level fallback for brand/manufacturer workers whose fetched URL
+  // differs from the search result URL (www prefix, locale path, brand seed vs
+  // SERP URL). Sorted by slot then rank so workers get the best available match.
+  function safeHostname(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+  }
+
+  const hostAssignmentQueues = {};
+  for (const [url, assignments] of Object.entries(urlSearchAssignments)) {
+    const hostname = safeHostname(url);
+    if (!hostname) continue;
+    for (const a of assignments) {
+      if (!hostAssignmentQueues[hostname]) hostAssignmentQueues[hostname] = [];
+      hostAssignmentQueues[hostname].push({ ...a, _source_url: url });
+    }
+  }
+  for (const queue of Object.values(hostAssignmentQueues)) {
+    queue.sort((a, b) => {
+      const slotCmp = String(a.slot || '').localeCompare(String(b.slot || ''));
+      if (slotCmp !== 0) return slotCmp;
+      return toInt(a.result_rank, 999) - toInt(b.result_rank, 999);
+    });
+  }
+
+  const consumedAssignmentUrls = new Set();
+  const workerResolvedAssignment = {};
   const workers = {};
 
   function applyFetchAssignment(worker, referenceTsMs) {
     if (!worker || worker.pool !== 'fetch') return;
 
+    // Reuse cached assignment (prevents re-consuming host queue entries)
+    const cached = workerResolvedAssignment[worker.worker_id];
+    if (cached) {
+      worker.assigned_search_slot = cached.slot ?? null;
+      worker.assigned_search_attempt_no = cached.attempt_no ?? null;
+      worker.assigned_result_rank = cached.result_rank ?? null;
+      worker.assigned_search_worker_id = cached.search_worker_id ?? null;
+      worker.assigned_search_query = cached.query ?? null;
+      worker.display_label = fetchAssignmentDisplayLabel(worker.worker_id, cached);
+      return;
+    }
+
     const url = String(worker.current_url || '').trim();
-    const assignment = resolveFetchAssignment(urlSearchAssignments[url], referenceTsMs);
+
+    // Exact URL match first
+    let assignment = resolveFetchAssignment(urlSearchAssignments[url], referenceTsMs);
+    if (assignment) {
+      consumedAssignmentUrls.add(url);
+    }
+
+    // Host-level fallback when URL differs from search result URL
+    if (!assignment && url) {
+      const hostname = safeHostname(url);
+      const queue = hostAssignmentQueues[hostname];
+      if (queue) {
+        while (queue.length > 0 && consumedAssignmentUrls.has(queue[0]._source_url)) {
+          queue.shift();
+        }
+        if (queue.length > 0) {
+          const entry = queue.shift();
+          consumedAssignmentUrls.add(entry._source_url);
+          assignment = entry;
+        }
+      }
+    }
+
+    if (assignment) {
+      workerResolvedAssignment[worker.worker_id] = assignment;
+    }
+
     worker.assigned_search_slot = assignment?.slot ?? null;
     worker.assigned_search_attempt_no = assignment?.attempt_no ?? null;
     worker.assigned_result_rank = assignment?.result_rank ?? null;

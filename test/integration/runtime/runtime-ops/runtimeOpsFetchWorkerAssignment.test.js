@@ -105,6 +105,87 @@ test('display label uses SERP rank — skips dropped results', () => {
   assert.equal(findWorker(workers, 'fetch-4').assigned_result_rank, 8);
 });
 
+test('host-level fallback assigns brand workers when URL differs from search result URL', () => {
+  // Brand seed URL differs from search result URL (www prefix, different path)
+  // but same host — should fall back to host matching
+  const events = [
+    makeEvent('search_started', {
+      worker_id: 'search-a', scope: 'query', slot: 'a',
+      tasks_started: 1, query: 'corsair m55 specs', provider: 'google',
+    }, '2026-03-01T00:00:01.000Z'),
+    makeEvent('search_results_collected', {
+      scope: 'query', query: 'corsair m55 specs', provider: 'google',
+      results: [
+        { url: 'https://corsair.com/m55-lightweight', rank: 1, domain: 'corsair.com' },
+        { url: 'https://corsair.com/m55-rgb-pro', rank: 4, domain: 'corsair.com' },
+        { url: 'https://funkykit.com/corsair-m55-review', rank: 2, domain: 'funkykit.com' },
+      ],
+    }, '2026-03-01T00:00:02.000Z'),
+    // Brand worker fetches a DIFFERENT corsair URL (brand seed, not search result)
+    makeEvent('fetch_queued', {
+      worker_id: 'fetch-1', scope: 'url',
+      url: 'https://www.corsair.com/us/en/p/gaming-mice/m55',
+    }, '2026-03-01T00:00:02.500Z'),
+    makeEvent('fetch_started', {
+      worker_id: 'fetch-1', scope: 'url',
+      url: 'https://www.corsair.com/us/en/p/gaming-mice/m55',
+    }, '2026-03-01T00:00:03.000Z'),
+    // funkykit exact match still works
+    makeEvent('fetch_started', {
+      worker_id: 'fetch-2', scope: 'url',
+      url: 'https://funkykit.com/corsair-m55-review',
+    }, '2026-03-01T00:00:03.100Z'),
+  ];
+
+  const workers = buildRuntimeOpsWorkers(events, { nowMs: Date.parse('2026-03-01T00:00:04.000Z') });
+
+  // Host fallback: corsair.com worker gets lowest-ranked corsair.com result (rank 1)
+  const brand = findWorker(workers, 'fetch-1');
+  assert.equal(brand.assigned_search_slot, 'a', 'host fallback assigns slot');
+  assert.equal(brand.assigned_result_rank, 1, 'host fallback picks lowest rank on host');
+  assert.equal(brand.display_label, 'fetch-a1');
+
+  // Exact match still preferred
+  const funky = findWorker(workers, 'fetch-2');
+  assert.equal(funky.assigned_search_slot, 'a');
+  assert.equal(funky.assigned_result_rank, 2);
+  assert.equal(funky.display_label, 'fetch-a2');
+});
+
+test('host fallback consumes assignments so multiple workers on same host get distinct ranks', () => {
+  const events = [
+    makeEvent('search_started', {
+      worker_id: 'search-a', scope: 'query', slot: 'a',
+      tasks_started: 1, query: 'corsair m55', provider: 'google',
+    }, '2026-03-01T00:00:01.000Z'),
+    makeEvent('search_results_collected', {
+      scope: 'query', query: 'corsair m55', provider: 'google',
+      results: [
+        { url: 'https://corsair.com/m55-page-a', rank: 1, domain: 'corsair.com' },
+        { url: 'https://corsair.com/m55-page-b', rank: 5, domain: 'corsair.com' },
+      ],
+    }, '2026-03-01T00:00:02.000Z'),
+    // Two different brand workers on corsair.com — neither URL matches search results
+    makeEvent('fetch_started', {
+      worker_id: 'fetch-1', scope: 'url',
+      url: 'https://www.corsair.com/us/en/p/m55-variant-1',
+    }, '2026-03-01T00:00:03.000Z'),
+    makeEvent('fetch_started', {
+      worker_id: 'fetch-2', scope: 'url',
+      url: 'https://www.corsair.com/us/en/p/m55-variant-2',
+    }, '2026-03-01T00:00:03.100Z'),
+  ];
+
+  const workers = buildRuntimeOpsWorkers(events, { nowMs: Date.parse('2026-03-01T00:00:04.000Z') });
+
+  const w1 = findWorker(workers, 'fetch-1');
+  const w2 = findWorker(workers, 'fetch-2');
+  assert.equal(w1.display_label, 'fetch-a1');
+  assert.equal(w1.assigned_result_rank, 1);
+  assert.equal(w2.display_label, 'fetch-a5');
+  assert.equal(w2.assigned_result_rank, 5);
+});
+
 test('buildRuntimeOpsWorkers leaves direct fetch rows on canonical labels when no search assignment exists', () => {
   const events = [
     makeEvent('fetch_started', {

@@ -39,10 +39,9 @@ describe('registry-derived settings maps — characterization', () => {
   it('every registry int/float with min+max produces a bounds entry', () => {
     const bounds = deriveBounds(RUNTIME_SETTINGS_REGISTRY);
     const boundsKeys = Object.keys(bounds).sort();
-    ok(boundsKeys.length >= 70, `expected >=70 bounds keys, got ${boundsKeys.length}`);
+    ok(boundsKeys.length >= 48, `expected >=48 bounds keys, got ${boundsKeys.length}`);
 
     // Spot-check known values against current hardcoded RuntimeFlowDraftContracts.ts
-    deepStrictEqual(bounds.fetchConcurrency, { min: 1, max: 64, int: true });
     deepStrictEqual(bounds.llmTimeoutMs, { min: 1000, max: 600000, int: true });
     deepStrictEqual(bounds.llmMonthlyBudgetUsd, { min: 0, max: 100000 }); // float
     deepStrictEqual(bounds.searchProfileQueryCap, { min: 1, max: 100, int: true });
@@ -51,7 +50,6 @@ describe('registry-derived settings maps — characterization', () => {
   it('type map covers every registry key', () => {
     const typeMap = deriveTypeMap(RUNTIME_SETTINGS_REGISTRY);
     strictEqual(Object.keys(typeMap).length, RUNTIME_SETTINGS_REGISTRY.length);
-    strictEqual(typeMap.fetchConcurrency, 'int');
     strictEqual(typeMap.llmModelPlan, 'string');
     strictEqual(typeMap.autoScrollEnabled, 'bool');
     strictEqual(typeMap.searchEngines, 'csv_enum');
@@ -73,7 +71,6 @@ describe('registry-derived settings maps — characterization', () => {
       RUNTIME_SETTINGS_REGISTRY.filter(e => e.allowEmpty).map(e => e.key)
     );
     ok(allowEmpty.has('llmPlanApiKey'));
-    ok(allowEmpty.has('dynamicFetchPolicyMapJson'));
     ok(allowEmpty.has('searxngBaseUrl'));
     ok(!allowEmpty.has('autoScrollEnabled')); // not allowEmpty
   });
@@ -96,30 +93,26 @@ describe('registry-derived settings maps — characterization', () => {
 
     // These are the keys currently hardcoded in RuntimeFlowDraftContracts.ts RUNTIME_NUMBER_BOUNDS
     const hardcodedKeys = [
-      'fetchBudgetMs', 'fetchConcurrency', 'perHostMinDelayMs', 'searxngMinQueryIntervalMs',
-      'domainRequestRps', 'domainRequestBurst', 'globalRequestRps', 'globalRequestBurst',
-      'fetchPerHostConcurrencyCap', 'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget',
-      'dynamicFetchRetryBackoffMs', 'pageGotoTimeoutMs',
+      'perHostMinDelayMs', 'searxngMinQueryIntervalMs',
+      'crawleeRequestHandlerTimeoutSecs', 'pageGotoTimeoutMs',
       'pageNetworkIdleTimeoutMs', 'postLoadWaitMs', 'frontierQueryCooldownSeconds',
       'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds', 'frontierCooldown410Seconds',
       'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
       'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold', 'frontierBlockedDomainThreshold',
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs', 'runtimeScreencastFps', 'runtimeScreencastQuality',
-      'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight', 'fieldRewardHalfLifeDays',
-      'driftPollSeconds', 'driftScanMaxProducts', 'endpointSignalLimit', 'endpointSuggestionLimit',
-      'endpointNetworkScanLimit', 'searchProfileQueryCap',
-      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain', 'maxRunSeconds', 'maxJsonBytes',
-      'maxPdfBytes', 'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
+      'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight', 'searchProfileQueryCap',
+      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain', 'maxRunSeconds',
+      'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
       'llmMaxCallsPerProductTotal',
       'llmReasoningBudget', 'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd',
       'llmMaxCallsPerRound', 'llmMaxOutputTokens',
       'llmMaxTokens', 'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M',
-      'llmCostCachedInputPer1M', 'maxHypothesisItems',
+      'llmCostCachedInputPer1M',
       'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
-      'daemonConcurrency', 'importsPollSeconds', 'indexingResumeSeedLimit', 'indexingResumePersistLimit',
+      'indexingResumeSeedLimit', 'indexingResumePersistLimit',
       'resumeWindowHours',
-      'reextractAfterHours', 'reCrawlStaleAfterDays', 'llmMaxOutputTokensReasoningFallback',
+      'llmMaxOutputTokensReasoningFallback',
       'googleSearchTimeoutMs', 'googleSearchMinQueryIntervalMs', 'googleSearchMaxRetries',
       'searchMaxRetries', 'serpSelectorUrlCap', 'domainClassifierUrlCap',
     ];

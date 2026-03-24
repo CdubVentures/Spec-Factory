@@ -16,8 +16,6 @@ for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap)) {
 for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.boolMap)) {
   runtimeValueTypeMap[value] = 'boolean';
 }
-runtimeValueTypeMap.dynamicFetchPolicyMapJson = 'string';
-runtimeValueTypeMap.dynamicFetchPolicyMap = 'object';
 runtimeValueTypeMap.awsRegion = 'string';
 runtimeValueTypeMap.s3Bucket = 'string';
 

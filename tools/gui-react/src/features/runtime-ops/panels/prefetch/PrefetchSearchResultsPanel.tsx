@@ -21,6 +21,7 @@ import {
   resolveRuntimeDomainCapSummary,
   isVideoUrl,
 } from '../../selectors/searchResultsHelpers.js';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSearchResultsPanelProps {
@@ -233,18 +234,15 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Search Results</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="text-3xl sf-text-subtle mb-3">&#128270;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for search results</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle mt-2">
-            Results will appear after the Search Planner generates queries and
-            they are executed against configured providers. Each query returns
-            ranked URLs that are deduped and filtered for duplicates and already-crawled pages.
-          </p>
+        <PrefetchEmptyState
+          icon="&#128270;"
+          heading="Waiting for search results"
+          description="Results will appear after the Search Planner generates queries and they are executed against configured providers. Each query returns ranked URLs that are deduped and filtered for duplicates and already-crawled pages."
+        >
           <div className="sf-text-caption sf-text-subtle mt-3">
             Engines: <span className="font-mono">{providerDisplayLabel(liveSettings?.searchEngines) || (liveSettings ? 'Not set' : 'runtime settings hydrating')}</span>
           </div>
-        </div>
+        </PrefetchEmptyState>
       </div>
     );
   }

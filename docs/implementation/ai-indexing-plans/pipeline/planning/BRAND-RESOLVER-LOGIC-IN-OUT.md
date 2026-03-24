@@ -2,22 +2,23 @@
 
 Validated against live code on 2026-03-23. Updated 2026-03-22 post-audit (B3+B4 fixes). Updated 2026-03-23 (P7: crawl config simplified to static shape, registry settings deleted).
 
-## What this stage is
+## What this phase is
 
-Brand Resolver is Stage 02 of the prefetch pipeline -- a cache-first brand-domain lookup. In the canonical orchestrator it runs IN PARALLEL with NeedSet (Stage 01) via `Promise.all` -- neither stage depends on the other's output. After both complete, the orchestrator applies brand promotions to `categoryConfig` and the pipeline converges at Stage 03 (Search Profile). See `03-pipeline-context.json` for the full accumulated state at convergence.
+Brand Resolver is the Brand Resolver phase of the prefetch pipeline -- a cache-first brand-domain lookup. In the canonical orchestrator it runs IN PARALLEL with NeedSet phase via `Promise.all` -- neither phase depends on the other's output. After both complete, the orchestrator applies brand promotions to `categoryConfig` and the pipeline converges at Search Profile phase. See `03-pipeline-context.json` for the full accumulated state at convergence.
+
+Brand Resolver is the SOLE source of manufacturer domain data per product. There are no static manufacturer domain lists — `sources.json` `approved.manufacturer` arrays are empty for all categories.
 
 Primary owners:
 
-- `src/features/indexing/discovery/stages/brandResolver.js` (stage wrapper)
-- `src/features/indexing/discovery/brandResolver.js` (core resolution logic)
-- `src/features/indexing/discovery/discoveryLlmAdapters.js` (LLM adapter factory)
+- `src/features/indexing/pipeline/brandResolver/runBrandResolver.js` (phase wrapper)
+- `src/features/indexing/pipeline/brandResolver/resolveBrandDomain.js` (core resolution logic)
+- `src/features/indexing/pipeline/brandResolver/brandResolverLlmAdapter.js` (LLM adapter factory)
 - orchestration caller (owns promotion logic inline):
-  - `src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js`
+  - `src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js`
 
 ## Schema files in this folder
 
-- `02-brand-resolver-input.json`
-- `02-brand-resolver-output.json`
+- `02-brand-resolver-contract.json` — merged input + output contracts
 
 ## Registry settings
 
@@ -36,19 +37,19 @@ Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always tru
 - `storage` -- object or null
 - `logger` -- object or null, used for LLM error logging (`brand_resolver_llm_error`)
 
-`runBrandResolver()` (stage wrapper) receives:
+`runBrandResolver()` (phase wrapper) receives:
 
 - `job` -- extracts brand from `job.brand` or `job.identityLock.brand`
 - `category` -- string
 - `config` -- object
 - `storage` -- object or null
 - `logger` -- object or null, passed through to `resolveBrandDomainFn`
-- `categoryConfig` -- object (read-only in the stage; sources data read for promotion)
+- `categoryConfig` -- object (read-only in the phase; sources data read for promotion)
 - `resolveBrandDomainFn` -- DI seam, defaults to `resolveBrandDomain`
 
 ## Storage contract (B7 JSDoc)
 
-Defined as `BrandDomainRow` typedef in `brandResolver.js`:
+Defined as `BrandDomainRow` typedef in `resolveBrandDomain.js`:
 
 ```
 { brand, category, official_domain, aliases (JSON string or array), support_domain, confidence (0-1) }
@@ -89,7 +90,7 @@ Confidence is LLM-derived via `parseConfidence()` which clamps to 0-1 (values >1
 3. **LLM success without domain**: `null` (no resolution = no confidence)
 4. **Empty brand / no callLlmFn / LLM error**: `null`
 
-## Stage wrapper behavior
+## Phase wrapper behavior
 
 `runBrandResolver()` then:
 
@@ -98,9 +99,9 @@ Confidence is LLM-derived via `parseConfidence()` which clamps to 0-1 (values >1
 3. Emits `brand_resolved` event via `logger.info()` with status telemetry. The `candidates` field is no longer emitted.
 4. Returns `{ brandResolution }`.
 
-## Orchestrator-owned promotion (no categoryConfig mutation in stage)
+## Orchestrator-owned promotion (no categoryConfig mutation in phase)
 
-The stage returns only `{ brandResolution }`. The orchestrator (`runDiscoverySeedPlan`) applies brand promotion inline after the stage completes:
+The phase returns only `{ brandResolution }`. The orchestrator (`runDiscoverySeedPlan`) applies brand promotion inline after the phase completes:
 
 1. Checks `brand.brandResolution?.officialDomain`.
 2. Calls `ensureCategorySourceLookups(categoryConfig)`.
@@ -108,11 +109,11 @@ The stage returns only `{ brandResolution }`. The orchestrator (`runDiscoverySee
 4. Adds the entry to `categoryConfig.sourceHosts` and `categoryConfig.sourceHostMap` (skipping duplicates).
 5. Updates `categoryConfig.approvedRootDomains` with `extractRootDomain(host)`.
 
-This ensures all downstream stages see the promoted brand host consistently because the orchestrator owns the mutation.
+This ensures all downstream phases see the promoted brand host consistently because the orchestrator owns the mutation.
 
 ## Promotion logic (orchestrator inline)
 
-The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline after the stage returns. There is no separate promotion function -- the logic lives directly in the orchestrator:
+The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline after the phase returns. There is no separate promotion function -- the logic lives directly in the orchestrator:
 
 - Checks `brand.brandResolution?.officialDomain`.
 - Normalizes the official domain via `normalizeHost()`.
@@ -144,7 +145,7 @@ Empty return shape: `{ officialDomain: "", aliases: [], supportDomain: "", confi
 `runBrandResolver()` returns `{ brandResolution }`:
 
 - `brandResolution` -- object or null (the `resolveBrandDomain()` result)
-- The orchestrator handles promotion inline from `brandResolution.officialDomain` -- the stage itself does not return promotion data.
+- The orchestrator handles promotion inline from `brandResolution.officialDomain` -- the phase itself does not return promotion data.
 
 Caller-added status metadata (not part of the resolver return):
 
@@ -157,16 +158,16 @@ Caller-added status metadata (not part of the resolver return):
 
 - Reads cache through `storage.getBrandDomain()`
 - Writes cache through `storage.upsertBrandDomain()`
-- Emits `brand_resolved` event via `logger.info()` at the stage wrapper level
+- Emits `brand_resolved` event via `logger.info()` at the phase wrapper level
 - Logs `brand_resolver_llm_error` via `logger.warn()` on LLM failures (B5 fix)
 
 ## What it feeds next
 
 Brand Resolver feeds:
 
-- Stage 03 Search Profile via `brandResolution`
+- Search Profile phase via `brandResolution`
 - Planned/executed `search_profile.brand_resolution`
-- Stage 05 Query Journey via `brandResolution`
-- Stage 07 Result Processing via `brandResolution`
+- Query Journey phase via `brandResolution`
+- Result Processing phase via `brandResolution`
 
 There is still no dedicated `brand_resolver.json` artifact in the live runtime.

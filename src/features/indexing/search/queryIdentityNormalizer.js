@@ -4,13 +4,8 @@ export function clean(value) {
     .trim();
 }
 
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { toArray, isObject } from '../../../shared/primitives.js';
+export { toArray, isObject };
 
 export function hasOwn(target, key) {
   return Object.prototype.hasOwnProperty.call(target, key);

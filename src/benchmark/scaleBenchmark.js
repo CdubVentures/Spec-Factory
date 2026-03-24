@@ -1,13 +1,10 @@
 import { toPosixKey } from '../s3/storage.js';
 import { toInt } from '../shared/valueNormalizers.js';
+import { toArray } from '../shared/primitives.js';
 
 function toNumber(value, fallback = 0) {
   const parsed = Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function round(value, digits = 6) {

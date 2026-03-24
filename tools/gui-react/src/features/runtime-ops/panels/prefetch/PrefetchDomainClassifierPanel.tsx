@@ -23,6 +23,7 @@ import {
   computeCooldownSummary,
   computeFetchSummary,
 } from '../../selectors/domainClassifierHelpers.js';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchDomainClassifierPanelProps {
@@ -156,14 +157,11 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
       <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Domain Classifier</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="text-3xl opacity-60">&#128737;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for domain classification</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Classification results will appear after deterministic heuristics evaluate each domain for safety, source tier,
-            and pacing constraints. Domains are labeled safe, cautious, or blocked to control fetch behavior and queue routing.
-          </p>
-        </div>
+        <PrefetchEmptyState
+          icon="&#128737;"
+          heading="Waiting for domain classification"
+          description="Classification results will appear after deterministic heuristics evaluate each domain for safety, source tier, and pacing constraints. Domains are labeled safe, cautious, or blocked to control fetch behavior and queue routing."
+        />
       </div>
     );
   }

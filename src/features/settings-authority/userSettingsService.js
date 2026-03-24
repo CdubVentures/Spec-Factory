@@ -152,60 +152,8 @@ function sanitizeSectionByTypeMap(raw, typeMap) {
   return normalized;
 }
 
-function normalizeRuntimeDynamicFetchPolicy(runtimeSettings = {}) {
-  const source = asRecord(runtimeSettings);
-  const normalized = { ...source };
-  const hasJson = Object.hasOwn(normalized, 'dynamicFetchPolicyMapJson');
-  const hasObjectMap = (
-    Object.hasOwn(normalized, 'dynamicFetchPolicyMap')
-    && normalized.dynamicFetchPolicyMap
-    && typeof normalized.dynamicFetchPolicyMap === 'object'
-    && !Array.isArray(normalized.dynamicFetchPolicyMap)
-  );
-  if (!hasJson && !hasObjectMap) {
-    return normalized;
-  }
-
-  const mapValue = hasObjectMap ? asRecord(normalized.dynamicFetchPolicyMap) : {};
-  const mapHasEntries = Object.keys(mapValue).length > 0;
-  if (!hasJson) {
-    normalized.dynamicFetchPolicyMap = mapValue;
-    normalized.dynamicFetchPolicyMapJson = mapHasEntries ? JSON.stringify(mapValue) : '';
-    return normalized;
-  }
-
-  const jsonToken = String(normalized.dynamicFetchPolicyMapJson ?? '').trim();
-  if (!jsonToken) {
-    normalized.dynamicFetchPolicyMapJson = '';
-    normalized.dynamicFetchPolicyMap = mapValue;
-    return normalized;
-  }
-
-  try {
-    const parsed = JSON.parse(jsonToken);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const parsedMap = asRecord(parsed);
-      normalized.dynamicFetchPolicyMap = parsedMap;
-      normalized.dynamicFetchPolicyMapJson = JSON.stringify(parsedMap);
-      return normalized;
-    }
-  } catch {}
-
-  if (hasObjectMap) {
-    normalized.dynamicFetchPolicyMap = mapValue;
-    normalized.dynamicFetchPolicyMapJson = mapHasEntries ? JSON.stringify(mapValue) : '';
-    return normalized;
-  }
-
-  normalized.dynamicFetchPolicyMap = {};
-  normalized.dynamicFetchPolicyMapJson = jsonToken;
-  return normalized;
-}
-
 function sanitizeRuntimeSettings(raw) {
-  return normalizeRuntimeDynamicFetchPolicy(
-    sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES),
-  );
+  return sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES);
 }
 
 function sanitizeConvergenceSettings(raw) {

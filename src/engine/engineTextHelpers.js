@@ -1,29 +1,8 @@
-// WHY: Shared pure text/token utility functions extracted from fieldRulesEngine.js.
-// Also consolidates duplicates from ruleAccessors.js and curationSuggestions.js.
+// WHY: Text/token utility functions for the engine subsystem.
+// Primitives imported from shared SSOT; engine-specific helpers defined locally.
+import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey } from '../shared/primitives.js';
 
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-export function normalizeText(value) {
-  return String(value ?? '').trim();
-}
-
-export function normalizeToken(value) {
-  return normalizeText(value).toLowerCase();
-}
-
-export function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+export { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey };
 
 export function isUnknownToken(value) {
   if (isObject(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {

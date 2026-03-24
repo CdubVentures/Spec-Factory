@@ -10,7 +10,6 @@ export interface RuntimeSettingDefaults {
   autoScrollEnabled: boolean;
   autoScrollPasses: number;
   awsRegion: string;
-  batchStrategy: string;
   capturePageScreenshotEnabled: boolean;
   capturePageScreenshotFormat: string;
   capturePageScreenshotMaxBytes: number;
@@ -21,31 +20,12 @@ export interface RuntimeSettingDefaults {
   crawleeHeadless: boolean;
   crawleeRequestHandlerTimeoutSecs: number;
   crawlSessionCount: number;
-  daemonConcurrency: number;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
-  domainRequestBurst: number;
-  domainRequestRps: number;
-  driftAutoRepublish: boolean;
-  driftDetectionEnabled: boolean;
-  driftPollSeconds: number;
-  driftScanMaxProducts: number;
   dryRun: boolean;
-  dynamicCrawleeEnabled: boolean;
-  dynamicFetchPolicyMapJson: string;
-  dynamicFetchRetryBackoffMs: number;
-  dynamicFetchRetryBudget: number;
-  endpointNetworkScanLimit: number;
-  endpointSignalLimit: number;
-  endpointSuggestionLimit: number;
   eventsJsonWrite: boolean;
-  fetchBudgetMs: number;
-  fetchCandidateSources: boolean;
   concurrency: number;
-  fetchConcurrency: number;
-  fetchPerHostConcurrencyCap: number;
-  fieldRewardHalfLifeDays: number;
   frontierBackoffMaxExponent: number;
   frontierBlockedDomainThreshold: number;
   frontierCooldown403BaseSeconds: number;
@@ -59,8 +39,6 @@ export interface RuntimeSettingDefaults {
   frontierQueryCooldownSeconds: number;
   frontierStripTrackingParams: boolean;
   geminiApiKey: string;
-  globalRequestBurst: number;
-  globalRequestRps: number;
   googleSearchMaxRetries: number;
   googleSearchMinQueryIntervalMs: number;
   googleSearchProxyUrlsJson: string;
@@ -68,10 +46,6 @@ export interface RuntimeSettingDefaults {
   googleSearchTimeoutMs: number;
   serperApiKey: string;
   serperEnabled: boolean;
-  helperSupportiveFillMissing: boolean;
-  importsPollSeconds: number;
-  importsRoot: string;
-  indexingCategoryAuthorityEnabled: boolean;
   indexingResumePersistLimit: number;
   indexingResumeSeedLimit: number;
   llmEnhancerMaxRetries: number;
@@ -109,10 +83,7 @@ export interface RuntimeSettingDefaults {
   localMode: boolean;
   localOutputRoot: string;
   maxCandidateUrls: number;
-  maxHypothesisItems: number;
-  maxJsonBytes: number;
   maxPagesPerDomain: number;
-  maxPdfBytes: number;
   maxRunSeconds: number;
   maxUrlsPerProduct: number;
   mirrorToS3: boolean;
@@ -124,12 +95,8 @@ export interface RuntimeSettingDefaults {
   perHostMinDelayMs: number;
   pipelineSchemaEnforcementMode: string;
   postLoadWaitMs: number;
-  preferHttpFetcher: boolean;
-  reCrawlStaleAfterDays: number;
   indexingReextractAfterHours: number;
-  reextractAfterHours: number;
   indexingReextractEnabled: boolean;
-  reextractIndexed: boolean;
   repairDedupeRule: RuntimeRepairDedupeRule;
   indexingResumeMode: RuntimeResumeMode;
   resumeMode: RuntimeResumeMode;
@@ -157,13 +124,10 @@ export interface RuntimeSettingDefaults {
   serpSelectorUrlCap: number;
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
-  selfImproveEnabled: boolean;
   specDbDir: string;
   userAgent: string;
   writeMarkdownSummary: boolean;
   discoveryEnabled: boolean;
-  daemonGracefulShutdownTimeoutMs: number;
-  frontierRepairSearchEnabled: boolean;
 }
 
 export type RuntimeProfile = 'standard';

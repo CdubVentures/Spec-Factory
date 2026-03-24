@@ -7,6 +7,7 @@
 //               ranking and by archetype planner for template reuse (consumption deferred).
 import { nowIso } from '../../../utils/common.js';
 import { isIdentityField, normalizeFieldList } from '../../../utils/fieldKeys.js';
+import { toArray } from '../../../shared/primitives.js';
 
 function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -16,10 +17,6 @@ function cleanQuery(value) {
   return String(value || '')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function ensureQuery(artifact, query) {

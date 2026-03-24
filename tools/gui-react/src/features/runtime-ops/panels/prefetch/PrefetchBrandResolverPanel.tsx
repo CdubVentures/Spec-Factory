@@ -1,6 +1,7 @@
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import type { PrefetchLlmCall, BrandResolutionData, PrefetchLiveSettings } from '../../types';
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers';
+import { resolveBrandResolutionBadge, resolveSkipReasonLabel, resolveConfidenceRingClass, resolveConfidenceTextClass } from '../../badgeRegistries';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { LlmCallCard } from '../../components/LlmCallCard';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
@@ -10,6 +11,7 @@ import { Chip } from '../../../../shared/ui/feedback/Chip';
 import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
 import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
 import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import type { RuntimeIdxBadge } from '../../types';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
@@ -20,36 +22,6 @@ interface PrefetchBrandResolverPanelProps {
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
-}
-
-/* ── Constants ──────────────────────────────────────────────────────── */
-
-const SKIP_REASON_LABELS: Record<string, string> = {
-  no_brand_in_identity_lock: 'No brand name was found in the product identity lock.',
-  no_api_key_for_triage_role: 'No API key is configured for the triage LLM role.',
-};
-
-/* ── Theme-aligned badge helpers ───────────────────────────────────── */
-
-function brandResolutionBadgeClass(status: string): string {
-  if (status === 'resolved') return 'sf-chip-success';
-  if (status === 'resolved_empty') return 'sf-chip-warning';
-  if (status === 'failed') return 'sf-chip-danger';
-  return 'sf-chip-neutral';
-}
-
-function confidenceColorClass(confidence: number | null): string {
-  if (confidence == null) return 'sf-metric-ring-muted';
-  if (confidence >= 0.8) return 'sf-metric-ring-success';
-  if (confidence >= 0.5) return 'sf-metric-ring-warning';
-  return 'sf-metric-ring-danger';
-}
-
-function confidenceStatColor(confidence: number | null): string {
-  if (confidence == null) return 'sf-text-muted';
-  if (confidence >= 0.8) return 'text-[var(--sf-state-success-fg)]';
-  if (confidence >= 0.5) return 'text-[var(--sf-state-warning-fg)]';
-  return 'text-[var(--sf-state-error-fg)]';
 }
 
 function buildReasoningBullets(br: BrandResolutionData): string[] {
@@ -93,14 +65,11 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Brand Resolver</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="text-3xl opacity-60">&#128270;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for brand resolution</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Brand resolution will appear after the LLM identifies the official manufacturer domain and aliases.
-            This allows search queries to use targeted site: filters for higher-quality Tier 1 sources.
-          </p>
-        </div>
+        <PrefetchEmptyState
+          icon="&#128270;"
+          heading="Waiting for brand resolution"
+          description="Brand resolution will appear after the LLM identifies the official manufacturer domain and aliases. This allows search queries to use targeted site: filters for higher-quality Tier 1 sources."
+        />
       </div>
     );
   }
@@ -114,7 +83,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
           <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Brand Resolver</span>
           <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Domain Resolution</span>
           {status && (
-            <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${brandResolutionBadgeClass(status)} border-[1.5px] border-current`}>
+            <span className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.06em] ${resolveBrandResolutionBadge(status)} border-[1.5px] border-current`}>
               {status === 'resolved_empty' ? 'no domain found' : status}
             </span>
           )}
@@ -137,7 +106,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
         {/* Big stat numbers — 4-col grid with colored values */}
         {hasStructured && (isResolved || isResolvedEmpty) && (
           <HeroStatGrid>
-            <HeroStat value={br!.confidence != null ? pctString(br!.confidence) : 'N/A'} label="confidence" colorClass={confidenceStatColor(br!.confidence)} />
+            <HeroStat value={br!.confidence != null ? pctString(br!.confidence) : 'N/A'} label="confidence" colorClass={resolveConfidenceTextClass(br!.confidence)} />
             <HeroStat value={br!.aliases.length} label="aliases found" />
             <HeroStat value={calls.length} label="llm calls" colorClass="sf-text-primary" />
           </HeroStatGrid>
@@ -168,7 +137,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
         )}
         {hasStructured && isSkipped && (
           <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-            Brand resolution was skipped &mdash; {SKIP_REASON_LABELS[br!.skip_reason || ''] || br!.skip_reason || 'unknown reason'}.
+            Brand resolution was skipped &mdash; {resolveSkipReasonLabel(br!.skip_reason || '') || 'unknown reason'}.
           </div>
         )}
         {hasStructured && isFailed && (
@@ -238,7 +207,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
                       <circle
                         cx="18" cy="18" r="15.5" fill="none"
                         stroke="currentColor"
-                        className={confidenceColorClass(br!.confidence)}
+                        className={resolveConfidenceRingClass(br!.confidence)}
                         strokeWidth="2.5"
                         strokeDasharray={`${(br!.confidence ?? 0) * 97.4} 97.4`}
                         strokeLinecap="round"
@@ -288,7 +257,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
             <div className="text-[22px] font-bold sf-text-muted leading-none">{'\u25CB'}</div>
             <div className="text-xs font-bold uppercase tracking-[0.06em] sf-text-muted">skipped</div>
             <div className="text-xs sf-text-subtle">
-              {SKIP_REASON_LABELS[br?.skip_reason || ''] || br?.skip_reason || 'Unknown reason'}
+              {resolveSkipReasonLabel(br?.skip_reason || '') || 'Unknown reason'}
             </div>
           </div>
         </div>

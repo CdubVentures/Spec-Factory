@@ -11,13 +11,11 @@ import {
   LLM_PRICING_SOURCES,
   mergeModelPricingMaps
 } from '../../billing/modelPricingCatalog.js';
-import { normalizeDynamicFetchPolicyMap } from '../../fetcher/dynamicFetchPolicy.js';
 import {
   runtimeSettingDefault,
   convergenceSettingDefault,
   normalizeSearchProfileCapMap,
   normalizeRetrievalInternalsMap,
-  normalizeParsingConfidenceBaseMap,
   normalizeRepairDedupeRule,
   normalizeModelPricingMap,
   normalizePricingSources,
@@ -135,13 +133,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const hasS3Creds = hasS3EnvCreds();
   const defaultMirrorToS3 = envOutputMode !== 'local' && hasS3Creds;
   const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap({});
-  const normalizedParsingConfidenceBaseMap = normalizeParsingConfidenceBaseMap({});
-  const normalizedDynamicFetchPolicyMap = normalizeDynamicFetchPolicyMap(
-    parseJsonEnv('DYNAMIC_FETCH_POLICY_MAP_JSON', {})
-  );
-  const dynamicFetchPolicyMapJson = Object.keys(normalizedDynamicFetchPolicyMap).length > 0
-    ? JSON.stringify(normalizedDynamicFetchPolicyMap)
-    : '';
   const resolvedCategoryAuthorityRoot =
     explicitCategoryAuthorityRoot ||
     explicitLegacyHelperRoot ||
@@ -162,7 +153,7 @@ export function buildRawConfig({ manifestApplicator }) {
     s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || runtimeSettingDefault('s3OutputPrefix')).replace(/\/+$/, ''),
     repairDedupeRule: normalizeRepairDedupeRule(process.env['REPAIR_DEDUPE_RULE'] || REPAIR_DEDUPE_RULE_DEFAULT),
     indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode')).trim().toLowerCase(),
-    batchStrategy: (process.env.BATCH_STRATEGY || runtimeSettingDefault('batchStrategy')).toLowerCase(),
+    batchStrategy: 'bandit',
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',
     capturePageScreenshotSelectors: String(process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS || 'table,[data-spec-table],.specs-table,.spec-table,.specifications').trim(),
 
@@ -235,9 +226,6 @@ export function buildRawConfig({ manifestApplicator }) {
     retrievalPrimeSourcesMaxCap: normalizedRetrievalInternalsMap.primeSourcesMaxCap,
     retrievalFallbackEvidenceMaxRows: normalizedRetrievalInternalsMap.fallbackEvidenceMaxRows,
     retrievalProvenanceOnlyMinRows: normalizedRetrievalInternalsMap.provenanceOnlyMinRows,
-    parsingConfidenceBaseMap: normalizedParsingConfidenceBaseMap,
-    dynamicFetchPolicyMap: normalizedDynamicFetchPolicyMap,
-    dynamicFetchPolicyMapJson,
     searchProfileCapMap: normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {})),
     searchProfileCapMapJson: JSON.stringify(normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {}))),
 
@@ -251,8 +239,7 @@ export function buildRawConfig({ manifestApplicator }) {
 
     // --- DefaultsOnly entries that configBuilder still needs ---
     discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', runtimeSettingDefault('discoveryEnabled')),
-    helperSupportiveFillMissing: parseBoolEnv('HELPER_SUPPORTIVE_FILL_MISSING', runtimeSettingDefault('helperSupportiveFillMissing')),
-    indexingCategoryAuthorityEnabled: parseBoolEnv('INDEXING_HELPER_FILES_ENABLED', runtimeSettingDefault('indexingCategoryAuthorityEnabled')),
+    helperSupportiveFillMissing: parseBoolEnv('HELPER_SUPPORTIVE_FILL_MISSING', true),
     runtimeControlFile: process.env.RUNTIME_CONTROL_FILE || runtimeSettingDefault('runtimeControlFile'),
 
     // --- Hardcoded constants ---
@@ -261,7 +248,6 @@ export function buildRawConfig({ manifestApplicator }) {
     searchPerHostRps: 0,
     searchPerHostBurst: 0,
     runProfile: 'standard',
-    fetchCandidateSources: true,
     consensusLlmWeightTier1: 0.60,
     consensusLlmWeightTier2: 0.40,
     consensusLlmWeightTier3: 0.20,

@@ -17,10 +17,7 @@ type DeriveIndexingRunStartParsedValuesInput = {
 // WHY: Legacy key names preserved for backward compat with existing consumers.
 // New settings use the standard `parsed${Capitalize(key)}` naming automatically.
 const KEY_NAME_OVERRIDES: Record<string, string> = {
-  fetchConcurrency: 'parsedConcurrency',
   crawleeRequestHandlerTimeoutSecs: 'parsedCrawleeTimeout',
-  dynamicFetchRetryBudget: 'parsedRetryBudget',
-  dynamicFetchRetryBackoffMs: 'parsedRetryBackoff',
 };
 
 export function parsedKeyName(registryKey: string): string {

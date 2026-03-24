@@ -13,8 +13,9 @@
 } }%%
 
 %% ─────────────────────────────────────────────────────────────
-%% NEEDSET — THREE SCHEMA LAYERS
-%% Shows how field data flows through Schema 2 → 3 → 4
+%% NEEDSET — THREE LAYERS
+%% Shows how field data flows through NeedSet assessment ->
+%% Search planning context -> Search plan (LLM-annotated)
 %% Optimized for 4K landscape (3840 x 2160)
 %% ─────────────────────────────────────────────────────────────
 
@@ -29,8 +30,8 @@ flowchart LR
     I4["Query Execution\nHistory\n(null on round 0)"]
   end
 
-  %% ── SCHEMA 2: PER-FIELD GAP CHECK ──
-  subgraph S2["LAYER 1 — Schema 2: Per-Field Gap Check (deterministic)"]
+  %% ── LAYER 1: NEEDSET ASSESSMENT ──
+  subgraph S2["LAYER 1 — NeedSet Assessment: Per-Field Gap Check (deterministic)"]
     direction TB
     S2A["Collect all field keys\nfrom fieldOrder +\nprovenance + fieldRules"]
     S2B["Per-field assessment:\n- State: covered / missing / weak / conflict\n- Required level: identity / critical / required / expected / optional\n- Need score: 0 for covered, higher = more urgent"]
@@ -39,8 +40,8 @@ flowchart LR
     S2A --> S2B --> S2C --> S2D
   end
 
-  %% ── SCHEMA 3: GROUP PLANNING ──
-  subgraph S3["LAYER 2 — Schema 3: Group Planning + Tier Allocation (deterministic)"]
+  %% ── LAYER 2: SEARCH PLANNING CONTEXT ──
+  subgraph S3["LAYER 2 — Search Planning Context: Group Planning + Tier Allocation (deterministic)"]
     direction TB
     S3A["Group fields by category\nfield groups (e.g. sensor,\nphysical, connectivity)"]
     S3B["Per-group metrics:\n- coverage_ratio = resolved / total\n- group_query_count (Tier 2 searches done)\n- productivity_score"]
@@ -52,8 +53,8 @@ flowchart LR
     S3B --> S3F
   end
 
-  %% ── SCHEMA 4: LLM ASSESSMENT ──
-  subgraph S4["LAYER 3 — Schema 4: LLM Group Assessment"]
+  %% ── LAYER 3: SEARCH PLAN (LLM) ──
+  subgraph S4["LAYER 3 — Search Plan: LLM Group Assessment"]
     direction TB
     S4A["Build LLM payload:\nproduct identity +\nfocus groups +\nunresolved context"]
     S4B["LLM reviews groups\n(does NOT generate queries)\nReturns per-group:\n  phase: now / next / hold\n  reason_active: string\n  planner_confidence: 0-1"]
@@ -66,7 +67,7 @@ flowchart LR
     direction TB
     O1["focusGroups[]\nPrioritized groups with\nnormalized_key_queue,\nproductivity_score,\ngroup_search_worthy flag"]
     O2["seedStatus\nspecs_seed + source_seeds\nwith is_needed flags\nand cooldown timestamps"]
-    O3["seedSearchPlan\nSchema 4 assessment\nfor GUI + finalization"]
+    O3["seedSearchPlan\nSearch plan assessment\nfor GUI + finalization"]
   end
 
   %% ── CONNECTIONS ──
@@ -76,7 +77,7 @@ flowchart LR
   S4 --> OUT
 
   %% ── DOWNSTREAM ARROW ──
-  OUT --> NEXT(["To Stage 03:\nSearch Profile\n(query generation)"])
+  OUT --> NEXT(["To Search Profile\nPhase\n(query generation)"])
 
   %% ── STYLING ──
   style INPUTS fill:#f8fafc,stroke:#94a3b8,color:#1e293b

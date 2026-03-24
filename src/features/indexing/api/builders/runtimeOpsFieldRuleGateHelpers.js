@@ -1,8 +1,7 @@
 import { projectFieldRulesForConsumer, resolveConsumerGate } from '../../../../field-rules/consumerGate.js';
 
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject, normalizeText } from '../../../../shared/primitives.js';
+export { isObject, normalizeText };
 
 export function hasOwn(target, key) {
   return Object.prototype.hasOwnProperty.call(target, key);
@@ -29,10 +28,6 @@ export function hasPathValue(target, pathSegments = []) {
     cursor = cursor[segment];
   }
   return true;
-}
-
-export function normalizeText(value) {
-  return String(value ?? '').trim();
 }
 
 export function countRuleValues(value) {

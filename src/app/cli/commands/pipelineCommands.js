@@ -180,9 +180,6 @@ export function createPipelineCommands({
       && discoveryEnabledArg === false
       && !runConfig.searchEngines
     ) {
-      runConfig.preferHttpFetcher = true;
-      runConfig.concurrency = 1;
-      runConfig.fetchPerHostConcurrencyCap = 1;
       runConfig.maxUrlsPerProduct = Math.min(
         configInt(runConfig, 'maxUrlsPerProduct'),
         4

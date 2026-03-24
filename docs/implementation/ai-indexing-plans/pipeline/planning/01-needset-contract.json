@@ -1,0 +1,334 @@
+{
+  "_doc": "Merged input + output contract for NeedSet phase. Validated against live code 2026-03-23.",
+  "validated_against": "2026-03-23",
+
+  "input": {
+    "stage_wrapper": {
+      "function": "runNeedSet",
+      "file": "src/features/indexing/pipeline/needSet/runNeedSet.js",
+      "caller": "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
+      "shape": {
+        "config": "Record<string, unknown> — resolved runtime settings object",
+        "job": {
+          "productId": "string",
+          "brand": "string (optional, default '')",
+          "model": "string (optional, default '')",
+          "baseModel": "string (optional, default '')",
+          "aliases": "string[]",
+          "identityLock": {
+            "brand": "string",
+            "model": "string",
+            "base_model": "string"
+          }
+        },
+        "runId": "string",
+        "category": "string",
+        "categoryConfig": {
+          "category": "string",
+          "fieldOrder": "string[]",
+          "fieldRules": "Record<string, FieldRule>",
+          "fieldGroups": "Record<string, unknown>",
+          "sourceHosts": "unknown[]"
+        },
+        "roundContext": {
+          "provenance": "Record<string, ProvenanceEntry>",
+          "fieldRules": "Record<string, FieldRule> | undefined",
+          "fieldReasoning": "Record<string, { reasons: string[], contradictions: unknown[] }>",
+          "constraintAnalysis": "{ contradictions: { fields: string[] }[] }",
+          "identityContext": "{ status: string, confidence: number, identity_gate_validated: boolean, ... }",
+          "round": "number (0 = first round)",
+          "previousFieldHistories": "Record<string, FieldHistory>",
+          "previousRoundFields": "{ field_key: string, state: string }[] | undefined"
+        },
+        "llmContext": "Record<string, unknown>",
+        "logger": "{ info, warn, debug } | null",
+        "queryExecutionHistory": {
+          "_doc": "Per-query completion state from frontierDb. Null on round 0.",
+          "queries": [
+            {
+              "query_hash": "string",
+              "query_text": "string",
+              "status": "not_run | searched | urls_admitted | scraping_in_progress | scrape_incomplete | scrape_complete | exhausted",
+              "completed_at_ms": "number | null",
+              "results_returned": "number",
+              "admitted_count": "number",
+              "scraped_complete_count": "number",
+              "scraped_incomplete_count": "number",
+              "pending_count": "number",
+              "fields_extracted_unique": "number",
+              "new_fields_closed": "number",
+              "tier": "seed | group_search | key_search",
+              "group_key": "string | null",
+              "normalized_key": "string | null",
+              "source_name": "string | null"
+            }
+          ]
+        },
+        "computeNeedSetFn": "function (DI seam)",
+        "buildSearchPlanningContextFn": "function (DI seam)",
+        "buildSearchPlanFn": "function (DI seam)"
+      }
+    },
+    "computeNeedSet": {
+      "function": "computeNeedSet",
+      "file": "src/indexlab/needsetEngine.js",
+      "shape": {
+        "runId": "string (default '')",
+        "category": "string (default '')",
+        "productId": "string (default '')",
+        "fieldOrder": "string[] (default [])",
+        "provenance": "Record<string, ProvenanceEntry> (default {})",
+        "fieldRules": "Record<string, FieldRule> | { fields: Record<string, FieldRule> } (default {})",
+        "fieldReasoning": "Record<string, { reasons: string[] }> (default {})",
+        "constraintAnalysis": "{ contradictions?: { fields: string[] }[] } (default {})",
+        "identityContext": "{ status?: string, confidence?: number, ... } (default {})",
+        "now": "string ISO timestamp (default: new Date().toISOString())",
+        "round": "number (default 0)",
+        "brand": "string (default '')",
+        "model": "string (default '')",
+        "baseModel": "string (default '')",
+        "aliases": "string[] (default [])",
+        "previousFieldHistories": "Record<string, FieldHistory> (default {})"
+      },
+      "retired_params": {
+        "settings": "Removed 2026-03-22 — was accepted but never read by computeNeedSet"
+      }
+    },
+    "buildSearchPlanningContext": {
+      "function": "buildSearchPlanningContext",
+      "file": "src/indexlab/searchPlanningContext.js",
+      "shape": {
+        "needSetOutput": "NeedSet assessment output from computeNeedSet()",
+        "config": "Record<string, unknown> (default {}) — reads searchProfileQueryCap for budget",
+        "fieldGroupsData": "{ groups?: { group_key, display_name, desc, source_target, content_target, field_keys }[] } (default {})",
+        "categorySourceHosts": "{ host, ... }[] (default [])",
+        "runContext": {
+          "run_id": "string",
+          "category": "string",
+          "product_id": "string",
+          "brand": "string",
+          "model": "string",
+          "aliases": "string[]",
+          "round": "number"
+        },
+        "learning": "null (always null — cross-product learning belongs to Search Profile phase)",
+        "previousRoundFields": "{ field_key: string, state: string }[] | null",
+        "queryExecutionHistory": "{ queries: QueryRecord[] } | null"
+      }
+    },
+    "buildFieldHistories_followup": {
+      "function": "buildFieldHistories",
+      "file": "src/indexlab/buildFieldHistories.js",
+      "shape": {
+        "previousFieldHistories": "Record<string, FieldHistory>",
+        "provenance": "Record<string, ProvenanceEntry>",
+        "searchPlanQueries": "{ target_fields: string[], ... }[]",
+        "duplicatesSuppressed": "number"
+      }
+    },
+    "data_origin_map": {
+      "_doc": "Where each input originates. SSOT gap analysis for future DB migration.",
+      "provenance": "Runtime: executeConsensusPhase() over in-memory sourceResults. NOT in DB today.",
+      "fieldRules": "Static config: category JSON via loadCategoryConfig(). Partial overlap with specDb llm_route_matrix.",
+      "fieldReasoning": "Runtime: buildFieldReasoning(). NOT in DB.",
+      "constraintAnalysis": "Runtime: evaluateConstraintGraph(). NOT in DB.",
+      "identityContext": "Runtime: identity gate + run results. Partial overlap with specDb products table.",
+      "previousFieldHistories": "In-memory carry-forward from prior round. Partial overlap with frontierDb queries.",
+      "fieldOrder": "Static config: derived from category authoring schema. NOT in DB.",
+      "queryExecutionHistory": "DB: frontierDb.buildQueryExecutionHistory(productId)."
+    }
+  },
+
+  "output": {
+    "stage_return": {
+      "_doc": "What runNeedSet() returns to the orchestrator. Clean 3-field contract.",
+      "function": "runNeedSet",
+      "file": "src/features/indexing/pipeline/needSet/runNeedSet.js",
+      "shape": {
+        "focusGroups": "FocusGroup[] — see focus_group_shape below",
+        "seedStatus": "SeedStatus | null — see seed_status_shape below",
+        "seedSearchPlan": "SearchPlan | null — see search_plan_output below"
+      },
+      "consumers": {
+        "focusGroups": "Search Profile phase — tier-aware query generation via determineQueryModes(), buildTier2Queries(), buildTier3Queries()",
+        "seedStatus": "Search Profile phase — seed dispatch via determineQueryModes(), buildTier1Queries()",
+        "seedSearchPlan": "Finalization — bundles, profile_influence, deltas, search_plan_handoff.queries for enrichNeedSetFieldHistories()"
+      },
+      "removed_2026-03-22": ["needSetOutput (internal only)", "planningContext (exposed as seedStatus)", "searchPlanHandoff (internal only)"]
+    },
+
+    "focus_group_shape": {
+      "_doc": "Shape of each entry in focusGroups[]. Consumed by Search Profile phase for tier-aware query generation.",
+      "key": "string — group key",
+      "label": "string — from catalog",
+      "desc": "string — from catalog",
+      "source_target": "string",
+      "content_target": "string",
+      "field_keys": "string[] — all fields in group (sorted)",
+      "satisfied_field_keys": "string[] — sorted",
+      "unresolved_field_keys": "string[] — sorted",
+      "weak_field_keys": "string[] — sorted",
+      "conflict_field_keys": "string[] — sorted",
+      "search_exhausted_field_keys": "string[] — sorted",
+      "search_exhausted_count": "number",
+      "core_unresolved_count": "number",
+      "secondary_unresolved_count": "number",
+      "optional_unresolved_count": "number",
+      "exact_match_count": "number",
+      "no_value_attempts": "number",
+      "duplicate_attempts_suppressed": "number",
+      "urls_examined_count": "number",
+      "query_count": "number",
+      "query_terms_union": "string[]",
+      "domain_hints_union": "string[]",
+      "preferred_content_types_union": "string[]",
+      "existing_queries_union": "string[]",
+      "domains_tried_union": "string[]",
+      "host_classes_tried_union": "string[]",
+      "evidence_classes_tried_union": "string[]",
+      "aliases_union": "string[]",
+      "priority": "string — core | secondary | optional",
+      "phase": "string — now | next | hold",
+      "productivity_score": "number",
+      "group_description_short": "string",
+      "group_description_long": "string",
+      "total_field_count": "number",
+      "resolved_field_count": "number",
+      "coverage_ratio": "number",
+      "group_query_count": "number — Tier 2 broad searches only",
+      "group_key_retry_count": "number — sum of per-field repeat_counts",
+      "group_search_worthy": "boolean — Tier 2 gate",
+      "skip_reason": "string | null",
+      "group_fingerprint_coarse": "string",
+      "group_fingerprint_fine": "string",
+      "normalized_key_queue": [{
+        "_doc": "V4-sorted unresolved keys for Tier 3 query builders.",
+        "normalized_key": "string",
+        "repeat_count": "number",
+        "all_aliases": "string[]",
+        "alias_shards": "string[][]",
+        "domain_hints": "string[]",
+        "preferred_content_types": "string[]",
+        "domains_tried_for_key": "string[]",
+        "content_types_tried_for_key": "string[]"
+      }],
+      "group_search_terms": "string[]",
+      "content_type_candidates": "string[]",
+      "domains_tried_for_group": "string[]"
+    },
+
+    "seed_status_shape": {
+      "_doc": "Shape of seedStatus. Consumed by Search Profile phase for seed dispatch via determineQueryModes().",
+      "specs_seed": {
+        "is_needed": "boolean",
+        "last_status": "string — never_run | searched | scrape_incomplete | scrape_complete | exhausted",
+        "last_completed_at_ms": "number | null",
+        "cooldown_until_ms": "number | null",
+        "new_fields_closed_last_run": "number"
+      },
+      "source_seeds": {
+        "[sourceName]": {
+          "is_needed": "boolean",
+          "last_status": "string",
+          "last_completed_at_ms": "number | null",
+          "cooldown_until_ms": "number | null",
+          "new_fields_closed_last_run": "number"
+        }
+      },
+      "query_completion_summary": {
+        "total_queries": "number",
+        "complete": "number",
+        "incomplete": "number",
+        "pending_scrapes": "number"
+      }
+    },
+
+    "needset_assessment_output": {
+      "_doc": "Full output shape of computeNeedSet(). Internal to runNeedSet — not returned to orchestrator.",
+      "function": "computeNeedSet",
+      "file": "src/indexlab/needsetEngine.js",
+      "schema_version": "needset_output.v2.1",
+      "shape": {
+        "schema_version": "string — 'needset_output.v2.1'",
+        "round": "number",
+        "identity": {
+          "state": "string — locked | provisional | conflict | unknown",
+          "source_label_state": "string — matched | possible | different | unknown",
+          "manufacturer": "string | null",
+          "model": "string | null",
+          "confidence": "number",
+          "official_domain": "string | null",
+          "support_domain": "string | null"
+        },
+        "fields": "Array<FieldAssessment> — see needset_assessment_output for full shape",
+        "planner_seed": {
+          "missing_critical_fields": "string[]",
+          "unresolved_fields": "string[]",
+          "existing_queries": "string[]",
+          "current_product_identity": { "category": "string", "brand": "string", "model": "string" }
+        },
+        "sorted_unresolved_keys": "string[]",
+        "run_id": "string",
+        "category": "string",
+        "product_id": "string",
+        "generated_at": "string — ISO timestamp",
+        "total_fields": "number",
+        "summary": "object — total, resolved, core/secondary/optional counts, conflicts, bundles_planned",
+        "blockers": "object — missing, weak, conflict, needs_exact_match, search_exhausted",
+        "focus_fields": "string[]",
+        "bundles": "Array<Bundle>",
+        "profile_mix": "object — manufacturer_html, manual_pdf, support_docs, fallback_web, targeted_single_field",
+        "rows": "Array<Row>",
+        "debug": "object"
+      }
+    },
+
+    "search_plan_output": {
+      "_doc": "Full output shape of assembleSearchPlan(). Returned as seedSearchPlan.",
+      "function": "assembleSearchPlan",
+      "file": "src/indexlab/searchPlanBuilder.js",
+      "schema_version": "needset_planner_output.v2",
+      "shape": {
+        "schema_version": "string — 'needset_planner_output.v2'",
+        "run": "object — run_id, category, product_id, brand, model, base_model, aliases, round",
+        "planner": {
+          "mode": "string — llm | disabled | error",
+          "model": "string",
+          "planner_complete": "boolean",
+          "planner_confidence": "number — 0-1 from LLM",
+          "queries_generated": "number",
+          "duplicates_suppressed": "number",
+          "targeted_exceptions": "number",
+          "error": "string | null"
+        },
+        "search_plan_handoff": {
+          "queries": "Array<SearchPlanQuery> — always empty (LLM no longer generates queries)",
+          "query_hashes": "string[]",
+          "total": "number"
+        },
+        "panel": "object | null — GUI-facing panel data (bundles, profile_influence, deltas)",
+        "learning_writeback": "object — query_hashes_generated, queries_generated, families_used, domains_targeted, groups_activated, duplicates_suppressed"
+      }
+    },
+
+    "events_emitted": {
+      "needset_computed_assessment": {
+        "event": "needset_computed",
+        "scope": "needset_assessment",
+        "payload_keys": ["scope", "schema_version", "fields", "summary", "blockers", "planner_seed", "total_fields", "round", "deltas", "bundles", "profile_influence", "rows"],
+        "note": "Emitted before LLM call. bundles=[], profile_influence=null, rows=[]"
+      },
+      "needset_computed_plan": {
+        "event": "needset_computed",
+        "scope": "search_plan",
+        "payload_keys": ["...searchPlan.panel", "schema_version", "scope", "fields", "planner_seed"],
+        "note": "Emitted after LLM call only when searchPlan.panel is non-null"
+      },
+      "search_plan_ready": {
+        "event": "search_plan_ready",
+        "payload_keys": ["query_count", "planner_mode"],
+        "note": "Emitted only when searchPlanHandoff has queries"
+      }
+    }
+  }
+}

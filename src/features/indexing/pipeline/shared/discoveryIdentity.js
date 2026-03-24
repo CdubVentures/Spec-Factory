@@ -34,9 +34,7 @@ export function compactToken(value) {
     .replace(/[^a-z0-9]+/g, '');
 }
 
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+export { toArray } from '../../../../shared/primitives.js';
 
 export function uniqueTokens(values = [], limit = 32) {
   const out = [];

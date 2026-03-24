@@ -1,10 +1,6 @@
 import { FieldRulesEngine } from '../../../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../../../engine/runtimeGate.js';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
+import { toArray } from '../../../shared/primitives.js';
 import { hasKnownValue } from '../../../shared/valueNormalizers.js';
 
 export async function runQaJudge({

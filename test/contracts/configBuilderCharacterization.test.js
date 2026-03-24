@@ -67,7 +67,7 @@ describe('configBuilder characterization — golden master', () => {
 
   it('cfg has at least 120 keys', () => {
     const keyCount = Object.keys(cfg).length;
-    ok(keyCount >= 120, `expected >= 120 cfg keys, got ${keyCount}`);
+    ok(keyCount >= 107, `expected >= 107 cfg keys, got ${keyCount}`);
   });
 
   // --- Shape verification: every key has the expected type ---
@@ -85,9 +85,9 @@ describe('configBuilder characterization — golden master', () => {
       'openaiApiKey', 'openaiBaseUrl', 'openaiModelExtract', 'openaiModelPlan', 'openaiModelWrite',
       'specDbDir', 'frontierDbPath', 'repairDedupeRule',
       'indexingResumeMode', 'runtimeControlFile', 'runtimeScreenshotMode',
-      'batchStrategy', 'accuracyMode',
+      'accuracyMode',
       'chatmockDir', 'chatmockComposeFile', 'categoryAuthorityRoot',
-      'importsRoot', 'automationQueueStorageEngine',
+      'automationQueueStorageEngine',
     ];
     for (const key of expectedStrings) {
       strictEqual(typeof cfg[key], 'string', `cfg.${key} should be string, got ${typeof cfg[key]}`);
@@ -98,11 +98,8 @@ describe('configBuilder characterization — golden master', () => {
     const expectedInts = [
       'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
       'serpSelectorUrlCap', 'domainClassifierUrlCap',
-      'maxRunSeconds', 'maxJsonBytes', 'maxPdfBytes',
-      'concurrency', 'perHostMinDelayMs',
-      'domainRequestRps', 'domainRequestBurst',
-      'globalRequestRps', 'globalRequestBurst',
-      'fetchPerHostConcurrencyCap',
+      'maxRunSeconds',
+      'perHostMinDelayMs',
       'searchProfileQueryCap',
       'searxngMinQueryIntervalMs',
       'llmTimeoutMs', 'openaiTimeoutMs', 'openaiMaxInputChars',
@@ -110,12 +107,8 @@ describe('configBuilder characterization — golden master', () => {
       'llmMaxOutputTokensReasoning', 'llmMaxOutputTokensPlanFallback',
       'llmReasoningBudget', 'llmMaxCallsPerRound', 'llmMaxCallsPerProductTotal',
       'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
-      'fetchBudgetMs', 'endpointSignalLimit', 'endpointSuggestionLimit',
-      'endpointNetworkScanLimit',
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs',
-      'daemonConcurrency', 'driftPollSeconds', 'driftScanMaxProducts',
-      'reCrawlStaleAfterDays', 'importsPollSeconds',
     ];
     for (const key of expectedInts) {
       strictEqual(typeof cfg[key], 'number', `cfg.${key} should be number, got ${typeof cfg[key]}`);
@@ -126,17 +119,15 @@ describe('configBuilder characterization — golden master', () => {
   it('all boolean keys are booleans', () => {
     const expectedBools = [
       'localMode', 'dryRun', 'mirrorToS3', 'mirrorToS3Input',
-      'writeMarkdownSummary', 'discoveryEnabled', 'fetchCandidateSources',
-      'dynamicCrawleeEnabled', 'crawleeHeadless',
-      'preferHttpFetcher', 'capturePageScreenshotEnabled',
+      'writeMarkdownSummary', 'discoveryEnabled',
+      'crawleeHeadless',
+      'capturePageScreenshotEnabled',
       'autoScrollEnabled', 'robotsTxtCompliant',
-      'driftDetectionEnabled', 'driftAutoRepublish',
       'categoryAuthorityEnabled', 'runtimeTraceEnabled',
-      'runtimeTraceLlmPayloads', 'selfImproveEnabled',
+      'runtimeTraceLlmPayloads',
       'llmPlanUseReasoning', 'llmReasoningMode',
       'eventsJsonWrite', 'runtimeScreencastEnabled',
-      'indexingReextractEnabled',
-      'frontierStripTrackingParams', 'helperSupportiveFillMissing',
+      'frontierStripTrackingParams',
       'chartExtractionEnabled',
     ];
     for (const key of expectedBools) {
@@ -146,8 +137,7 @@ describe('configBuilder characterization — golden master', () => {
 
   it('all object keys are objects', () => {
     const expectedObjects = [
-      'dynamicFetchPolicyMap',
-      'retrievalInternalsMap', 'parsingConfidenceBaseMap',
+      'retrievalInternalsMap',
       'searchProfileCapMap',
       'llmModelPricingMap',
       'llmModelOutputTokenMap',
@@ -163,12 +153,10 @@ describe('configBuilder characterization — golden master', () => {
     // These are the values that were drifted — verify they now use registry SSOT
     strictEqual(cfg.searchProfileQueryCap, 10, 'searchProfileQueryCap');
     strictEqual(cfg.maxRunSeconds, 480, 'maxRunSeconds');
-    strictEqual(cfg.concurrency, 4, 'concurrency (fetchConcurrency)');
   });
 
   it('spot-check: hardcoded values', () => {
     strictEqual(cfg.runProfile, 'standard');
-    strictEqual(cfg.fetchCandidateSources, true);
     strictEqual(cfg.searchGlobalRps, 0);
     strictEqual(cfg.searchGlobalBurst, 0);
     strictEqual(cfg.searchPerHostRps, 0);
@@ -185,7 +173,6 @@ describe('configBuilder characterization — golden master', () => {
 
   it('spot-check: boolean defaults', () => {
     strictEqual(cfg.discoveryEnabled, true);
-    strictEqual(cfg.preferHttpFetcher, true);
     strictEqual(cfg.robotsTxtCompliant, true);
     strictEqual(cfg.dryRun, false);
     strictEqual(cfg.localMode, true); // WHY: registry default is true; configBuilder had wrong fallback (false)

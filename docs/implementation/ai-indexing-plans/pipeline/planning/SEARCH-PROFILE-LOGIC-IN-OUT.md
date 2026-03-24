@@ -2,19 +2,19 @@
 
 Validated against live code on 2026-03-23. Legacy archetype pipeline removed — tier-only is the sole query generation path. P5: cumulative Zod checkpoint validates output at `afterProfile`.
 
-## What this stage is
+## What this phase is
 
-Search Profile is the deterministic Stage 03 query-profile layer built by `runSearchProfile()`. It is the **convergence point** of the pipeline -- the first stage that requires output from both NeedSet (Stage 01: `focusGroups`, `seedStatus`) and Brand Resolver (Stage 02: `brandResolution`). Stages 01 and 02 run in parallel via `Promise.all`; after both complete, the orchestrator applies brand promotions and resolves identity/learning context, then feeds everything into Search Profile. See `03-pipeline-context.json` for the full accumulated state at this convergence point. Search Profile then feeds both Stage 04 Search Planner and Stage 05 Query Journey.
+Search Profile is the deterministic Search Profile phase query-profile layer built by `runSearchProfile()`. It is the **convergence point** of the pipeline -- the first phase that requires output from both NeedSet (focusGroups, seedStatus) and Brand Resolver (brandResolution). NeedSet and Brand Resolver run in parallel via `Promise.all`; after both complete, the orchestrator applies brand promotions and resolves identity/learning context, then feeds everything into Search Profile. See `03-pipeline-context.json` for the full accumulated state at this convergence point. Search Profile then feeds both Search Planner and Query Journey.
 
 Primary owners:
 
-- `src/features/indexing/discovery/stages/searchProfile.js`
+- `src/features/indexing/pipeline/searchProfile/runSearchProfile.js`
 - `src/features/indexing/search/queryBuilder.js`
-- `src/features/indexing/discovery/discoveryHelpers.js`
+- `src/features/indexing/pipeline/shared/helpers.js`
 
 ## Schema files in this folder
 
-- `03-pipeline-context.json` -- the PipelineContext convergence document (replaces the former `03-search-profile-input.json`). Search Profile's input IS the PipelineContext -- the accumulated state from stages 01+02 plus orchestrator glue.
+- `03-pipeline-context.json` -- the PipelineContext convergence document (replaces the former `03-search-profile-input.json`). Search Profile's input IS the PipelineContext -- the accumulated state from NeedSet+Brand Resolver plus orchestrator glue.
 - `03-search-profile-output.json`
 
 ## Inputs in
@@ -30,8 +30,8 @@ Primary owners:
 - optional `brandResolution`
 - `config` and derived search-profile caps
 - `variables`
-- `focusGroups` — from NeedSet Schema 3 with V4 extensions (`group_search_worthy`, `normalized_key_queue`, `productivity_score`, `group_description_long`)
-- `seedStatus` — from NeedSet Schema 3 (`seed_status.specs_seed`, `seed_status.source_seeds`)
+- `focusGroups` — from search planning context with V4 extensions (`group_search_worthy`, `normalized_key_queue`, `productivity_score`, `group_description_long`)
+- `seedStatus` — from search planning context (`seed_status.specs_seed`, `seed_status.source_seeds`)
 
 ## Live logic
 
@@ -53,11 +53,11 @@ Primary owners:
 
 ## Important invariants
 
-- Search Profile always runs when the canonical discovery pipeline runs, even if Schema 4 is disabled or empty.
+- Search Profile always runs when the canonical discovery pipeline runs, even if the search plan is disabled or empty.
 - Search Profile is fully deterministic — no LLM calls. Tier dispatch is based on NeedSet signals (`seed_status`, `group_search_worthy`, `normalized_key_queue`).
 - `determineQueryModes()` gates which tiers fire. Tiers are independent — all three can be active simultaneously (e.g. Tier 2 for worthy groups + Tier 3 for exhausted groups' keys).
 - The legacy archetype pipeline has been removed. Tier-only is the sole query generation path.
-- Stage 04 Search Planner consumes Search Profile: `base_templates`, targeted query rows, `coverage_analysis`.
+- Search Planner consumes Search Profile: `base_templates`, targeted query rows, `coverage_analysis`.
 - Search Profile emits `search_profile_generated` with the deterministic query count and row details.
 - Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, and guards.
 
@@ -101,10 +101,10 @@ Later, Query Journey turns that into a persisted planned artifact by adding:
 - `selected_queries`
 - `selected_query_count`
 - `brand_resolution`
-- optional `schema4_planner`, `schema4_learning`, `schema4_panel`
+- optional `search_plan_planner`, `search_plan_learning`, `search_plan_panel`
 - artifact keys: `key`, `run_key`, `latest_key`
 
-After SERP triage, `processDiscoveryResults()` rewrites the same payload family to `status: "executed"` and adds:
+After Result Processing, `processDiscoveryResults()` rewrites the same payload family to `status: "executed"` and adds:
 
 - `query_stats`
 - `discovered_count`
@@ -120,7 +120,7 @@ After SERP triage, `processDiscoveryResults()` rewrites the same payload family 
 
 Search Profile generation itself is in-memory only.
 
-The persisted payload family is written later by Query Journey and then rewritten by SERP triage:
+The persisted payload family is written later by Query Journey and then rewritten by Result Processing:
 
 - `_discovery/{category}/{runId}.search_profile.json`
 - `{category}/{productId}/runs/{runId}/analysis/search_profile.json`
@@ -130,8 +130,8 @@ The persisted payload family is written later by Query Journey and then rewritte
 
 Search Profile feeds:
 
-- Stage 04 Search Planner with `searchProfileBase` containing tier-tagged `query_rows` and `base_templates` (query history). Search Planner enhances query strings via LLM while preserving all tier metadata.
-- Stage 05 Query Journey receives the enhanced rows from Search Planner (not directly from Search Profile). Query Journey also reads `variant_guard_terms` and `query_reject_log` from `searchProfileBase`.
+- Search Planner with `searchProfileBase` containing tier-tagged `query_rows` and `base_templates` (query history). Search Planner enhances query strings via LLM while preserving all tier metadata.
+- Query Journey receives the enhanced rows from Search Planner (not directly from Search Profile). Query Journey also reads `variant_guard_terms` and `query_reject_log` from `searchProfileBase`.
 
 The `searchProfileQueryCap` setting is the sole controller for total query count. Search Planner is 1:1 (same row count in/out), so the cap applies at Query Journey.
 
@@ -141,9 +141,9 @@ It also becomes the main discovery review artifact once execution finishes.
 
 NeedSet tells Search Profile which tier to operate in. Search Profile reads the signals and fires the appropriate builders:
 
-- **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` → `buildTier1Queries()` emits broad seed queries
-- **Tier 2**: `focus_group.group_search_worthy === true` → `buildTier2Queries()` emits one broad query per worthy group, sorted by `productivity_score`. Uses `group_description_long` as the enriched description.
-- **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` → `buildTier3Queries()` emits one query per key with progressive enrichment based on per-key `repeat_count`:
+- **Tier 1**: `seed_status.specs_seed.is_needed` and `seed_status.source_seeds[name].is_needed` -> `buildTier1Queries()` emits broad seed queries
+- **Tier 2**: `focus_group.group_search_worthy === true` -> `buildTier2Queries()` emits one broad query per worthy group, sorted by `productivity_score`. Uses `group_description_long` as the enriched description.
+- **Tier 3**: `focus_group.group_search_worthy === false` with non-empty `normalized_key_queue` -> `buildTier3Queries()` emits one query per key with progressive enrichment based on per-key `repeat_count`:
   - 3a (repeat=0): bare `{product} {key}`
   - 3b (repeat=1): `+ aliases` (cumulative — carried on all subsequent passes)
   - 3c (repeat=2): `+ untried domain hint` (prefers `domain_hints` not in `domains_tried_for_key`)
@@ -154,4 +154,4 @@ NeedSet tells Search Profile which tier to operate in. Search Profile reads the 
 
 ### Budget alignment with NeedSet (new)
 
-NeedSet now pre-computes a `tier_allocation` that mirrors Search Profile's priority order (seeds → groups → keys). This means the NeedSet dashboard shows accurate counts of what Search Profile will actually build. Search Profile's own budget-slicing logic (`maxQueryCap`, priority fill) is unchanged — the tier_allocation is a read-ahead estimate for the dashboard, not a binding instruction to Search Profile.
+NeedSet now pre-computes a `tier_allocation` that mirrors Search Profile's priority order (seeds -> groups -> keys). This means the NeedSet dashboard shows accurate counts of what Search Profile will actually build. Search Profile's own budget-slicing logic (`maxQueryCap`, priority fill) is unchanged — the tier_allocation is a read-ahead estimate for the dashboard, not a binding instruction to Search Profile.

@@ -15,7 +15,7 @@ import {
 export const CUSTOM_KEYS = Object.freeze(new Set([
   // Post-processed strings (.replace, .trim, .toLowerCase)
   's3InputPrefix', 's3OutputPrefix',
-  'indexingResumeMode', 'batchStrategy',
+  'indexingResumeMode',
   'capturePageScreenshotFormat', 'capturePageScreenshotSelectors',
   'repairDedupeRule',
 
@@ -53,12 +53,10 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'retrievalEvidenceRefsLimit', 'retrievalReasonBadgesLimit',
   'retrievalAnchorsLimit', 'retrievalPrimeSourcesMaxCap',
   'retrievalFallbackEvidenceMaxRows', 'retrievalProvenanceOnlyMinRows',
-  'parsingConfidenceBaseMap',
   'searchProfileCapMap', 'searchProfileCapMapJson',
-  'dynamicFetchPolicyMap', 'dynamicFetchPolicyMapJson',
 
   // Hardcoded constants (not in registry or always fixed)
-  'runProfile', 'fetchCandidateSources',
+  'runProfile',
   'searchGlobalRps', 'searchGlobalBurst', 'searchPerHostRps', 'searchPerHostBurst',
   'consensusLlmWeightTier1', 'consensusLlmWeightTier2',
   'consensusLlmWeightTier3', 'consensusLlmWeightTier4',
@@ -71,7 +69,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'indexingHelperFilesEnabled', 'helperFilesEnabled',
   'helperSupportiveEnabled', 'helperSupportiveMaxSources',
   'helperAutoSeedTargets', 'helperActiveSyncLimit',
-  'daemonGracefulShutdownTimeoutMs',
 
   // Category authority (computed resolution chain)
   'categoryAuthorityEnabled', 'categoryAuthorityRoot',
@@ -87,9 +84,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   // Runtime events key (uses simple pattern but grouped here for safety)
   'runtimeEventsKey',
 
-  // Helper supportive fill missing (reads env + runtimeSettingDefault but with
-  // different configKey 'helperSupportiveFillMissing')
-  'helperSupportiveFillMissing',
 ]));
 
 const PARSE_BY_TYPE = {

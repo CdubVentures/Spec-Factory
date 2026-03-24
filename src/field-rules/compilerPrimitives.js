@@ -1,29 +1,11 @@
 /**
- * Pure, zero-dependency utility functions used across compiler modules.
- * Leaf node — no internal imports.
+ * Pure utility functions used across compiler modules.
+ * Primitives imported from shared SSOT; domain-specific helpers defined locally.
  */
+import { isObject, toArray, normalizeToken, normalizeFieldKey } from '../shared/primitives.js';
+import { toInt as toSafeInt } from '../shared/valueNormalizers.js';
 
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-export function normalizeToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase();
-}
-
-export function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+export { isObject, toArray, normalizeToken, normalizeFieldKey, toSafeInt };
 
 export function titleCase(value) {
   return String(value || '')
@@ -49,11 +31,6 @@ export function pickGeneratedAt(fieldRules = {}) {
 export function toPhase1Group(value) {
   const token = normalizeFieldKey(value || '');
   return token || 'general';
-}
-
-export function toSafeInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export function normalizeCategoryList(values = []) {

@@ -1,73 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  isObject,
-  toArray,
-  normalizeText,
-  normalizeToken,
-  normalizeFieldKey,
   isUnknownToken,
   canonicalizeWhitespace,
   isValidIsoDateTime,
   safeJsonParse
 } from '../src/engine/engineTextHelpers.js';
 
-// ── isObject ──────────────────────────────────────────────────────────────────
-
-test('isObject returns true for plain objects', () => {
-  assert.equal(isObject({}), true);
-  assert.equal(isObject({ a: 1 }), true);
-});
-
-test('isObject returns false for non-objects', () => {
-  const cases = [null, undefined, 0, '', false, [], [1], 'string', 42, true];
-  for (const input of cases) {
-    assert.equal(isObject(input), false, `expected false for ${JSON.stringify(input)}`);
-  }
-});
-
-// ── toArray ───────────────────────────────────────────────────────────────────
-
-test('toArray returns the array unchanged when given an array', () => {
-  const arr = [1, 2, 3];
-  assert.equal(toArray(arr), arr);
-});
-
-test('toArray returns empty array for non-array inputs', () => {
-  const cases = [null, undefined, 0, '', false, {}, 'string', 42];
-  for (const input of cases) {
-    assert.deepEqual(toArray(input), [], `expected [] for ${JSON.stringify(input)}`);
-  }
-});
-
-// ── normalizeText ─────────────────────────────────────────────────────────────
-
-test('normalizeText trims whitespace and stringifies', () => {
-  assert.equal(normalizeText('  hello  '), 'hello');
-  assert.equal(normalizeText(42), '42');
-  assert.equal(normalizeText(null), '');
-  assert.equal(normalizeText(undefined), '');
-});
-
-// ── normalizeToken ────────────────────────────────────────────────────────────
-
-test('normalizeToken lowercases and trims', () => {
-  assert.equal(normalizeToken('  Hello World  '), 'hello world');
-  assert.equal(normalizeToken(null), '');
-  assert.equal(normalizeToken(undefined), '');
-  assert.equal(normalizeToken(0), '0');
-});
-
-// ── normalizeFieldKey ─────────────────────────────────────────────────────────
-
-test('normalizeFieldKey converts to snake_case token', () => {
-  assert.equal(normalizeFieldKey('Battery Hours'), 'battery_hours');
-  assert.equal(normalizeFieldKey('  Max DPI  '), 'max_dpi');
-  assert.equal(normalizeFieldKey('foo--bar__baz'), 'foo_bar_baz');
-  assert.equal(normalizeFieldKey(''), '');
-  assert.equal(normalizeFieldKey(null), '');
-  assert.equal(normalizeFieldKey(undefined), '');
-});
+// WHY: Primitives (isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey)
+// are now tested canonically in src/shared/tests/primitives.test.js.
+// This file tests only the engine-specific functions.
 
 // ── isUnknownToken ────────────────────────────────────────────────────────────
 

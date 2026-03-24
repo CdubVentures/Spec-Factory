@@ -623,7 +623,6 @@ export interface PrefetchLiveSettings {
   profile?: string;
   searchEngines?: string;
   discoveryEnabled?: boolean;
-  dynamicCrawleeEnabled?: boolean;
   maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
 }

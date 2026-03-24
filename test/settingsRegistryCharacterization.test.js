@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual, strictEqual, ok } from 'node:assert';
-import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../src/shared/settingsDefaults.js';
+import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 import {
   SETTINGS_CLAMPING_INT_RANGE_MAP,
   SETTINGS_CLAMPING_FLOAT_RANGE_MAP,
@@ -8,18 +8,44 @@ import {
 } from '../src/shared/settingsClampingRanges.js';
 import { RUNTIME_SETTINGS_ROUTE_GET } from '../src/core/config/settingsKeyMap.js';
 import { RUNTIME_SETTINGS_ROUTE_PUT } from '../src/features/settings-authority/runtimeSettingsRoutePut.js';
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                             */
-/* ------------------------------------------------------------------ */
+import { RUNTIME_SETTINGS_REGISTRY } from '../src/shared/settingsRegistry.js';
 
 function sortedKeys(obj) {
   return Object.keys(obj).sort();
 }
 
-/* ------------------------------------------------------------------ */
-/*  1. Defaults snapshot — key set and types                           */
-/* ------------------------------------------------------------------ */
+function runtimeDefaultKeysFromRegistry() {
+  const keys = new Set();
+  for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+    if (entry.routeOnly) continue;
+    const configKey = entry.configKey || entry.key;
+    keys.add(configKey);
+    if (entry.configKey && entry.configKey !== entry.key) {
+      keys.add(entry.key);
+    }
+  }
+  return [...keys].sort();
+}
+
+function registryKeysByType(
+  types,
+  { includeDefaultsOnly = true, includeReadOnly = true, requireBounds = false, requireAllowed = false } = {},
+) {
+  return RUNTIME_SETTINGS_REGISTRY
+    .filter((entry) => types.includes(entry.type))
+    .filter((entry) => includeDefaultsOnly || !entry.defaultsOnly)
+    .filter((entry) => includeReadOnly || !entry.readOnly)
+    .filter((entry) => !requireBounds || (entry.min != null && entry.max != null))
+    .filter((entry) => !requireAllowed || (Array.isArray(entry.allowed) && entry.allowed.length > 0))
+    .map((entry) => entry.key)
+    .sort();
+}
+
+function currentAliasEntries() {
+  return RUNTIME_SETTINGS_REGISTRY.filter(
+    (entry) => entry.configKey && entry.configKey !== entry.key,
+  );
+}
 
 describe('settingsDefaults.runtime — characterization', () => {
   const runtime = SETTINGS_DEFAULTS.runtime;
@@ -29,8 +55,8 @@ describe('settingsDefaults.runtime — characterization', () => {
     ok(Object.isFrozen(runtime));
   });
 
-  it('has at least 155 keys', () => {
-    ok(Object.keys(runtime).length >= 155, `expected >= 155, got ${Object.keys(runtime).length}`);
+  it('runtime defaults keyset matches the registry-derived surface', () => {
+    deepStrictEqual(sortedKeys(runtime), runtimeDefaultKeysFromRegistry());
   });
 
   it('every value is string, number, boolean, or frozen object', () => {
@@ -42,55 +68,57 @@ describe('settingsDefaults.runtime — characterization', () => {
     }
   });
 
-  it('contains the 5 known aliased keys with expected defaults', () => {
-    strictEqual(typeof runtime.indexingResumeMode, 'string');
-    strictEqual(typeof runtime.concurrency, 'number');
-    strictEqual(typeof runtime.indexingResumeMaxAgeHours, 'number');
-    strictEqual(typeof runtime.indexingReextractAfterHours, 'number');
-    strictEqual(typeof runtime.indexingReextractEnabled, 'boolean');
+  it('contains only the current live alias pairs', () => {
+    strictEqual(runtime.resumeMode, runtime.indexingResumeMode);
+    strictEqual(runtime.resumeWindowHours, runtime.indexingResumeMaxAgeHours);
+    strictEqual(Object.hasOwn(runtime, 'fetchConcurrency'), false);
+    strictEqual(Object.hasOwn(runtime, 'reextractAfterHours'), false);
+    strictEqual(Object.hasOwn(runtime, 'reextractIndexed'), false);
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  2. Clamping ranges — key sets and shapes                           */
-/* ------------------------------------------------------------------ */
-
 describe('settingsClampingRanges — characterization', () => {
-  it('INT_RANGE_MAP has expected key count', () => {
-    const count = Object.keys(SETTINGS_CLAMPING_INT_RANGE_MAP).length;
-    ok(count >= 70, `expected >= 70, got ${count}`);
+  it('INT_RANGE_MAP keyset matches registry int bounds', () => {
+    deepStrictEqual(
+      sortedKeys(SETTINGS_CLAMPING_INT_RANGE_MAP),
+      registryKeysByType(['int'], { requireBounds: true }),
+    );
   });
 
-  it('every INT_RANGE_MAP entry has cfgKey, min, max', () => {
+  it('every INT_RANGE_MAP entry has configKey, min, max', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_INT_RANGE_MAP)) {
-      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing configKey`);
       ok(typeof entry.min === 'number' && Number.isFinite(entry.min), `${key} bad min`);
       ok(typeof entry.max === 'number' && Number.isFinite(entry.max), `${key} bad max`);
       ok(entry.min <= entry.max, `${key} min > max`);
     }
   });
 
-  it('FLOAT_RANGE_MAP has expected key count', () => {
-    const count = Object.keys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP).length;
-    strictEqual(count, 5);
+  it('FLOAT_RANGE_MAP keyset matches registry float bounds', () => {
+    deepStrictEqual(
+      sortedKeys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP),
+      registryKeysByType(['float'], { requireBounds: true }),
+    );
   });
 
-  it('every FLOAT_RANGE_MAP entry has cfgKey, min, max', () => {
+  it('every FLOAT_RANGE_MAP entry has configKey, min, max', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_FLOAT_RANGE_MAP)) {
-      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing configKey`);
       ok(typeof entry.min === 'number' && Number.isFinite(entry.min), `${key} bad min`);
       ok(typeof entry.max === 'number' && Number.isFinite(entry.max), `${key} bad max`);
     }
   });
 
-  it('STRING_ENUM_MAP has expected key count', () => {
-    const count = Object.keys(SETTINGS_CLAMPING_STRING_ENUM_MAP).length;
-    strictEqual(count, 6);
+  it('STRING_ENUM_MAP keyset matches registry enum entries', () => {
+    deepStrictEqual(
+      sortedKeys(SETTINGS_CLAMPING_STRING_ENUM_MAP),
+      registryKeysByType(['enum', 'csv_enum'], { requireAllowed: true }),
+    );
   });
 
-  it('every STRING_ENUM_MAP entry has cfgKey and allowed array', () => {
+  it('every STRING_ENUM_MAP entry has configKey and allowed array', () => {
     for (const [key, entry] of Object.entries(SETTINGS_CLAMPING_STRING_ENUM_MAP)) {
-      ok(typeof entry.configKey === 'string', `${key} missing cfgKey`);
+      ok(typeof entry.configKey === 'string', `${key} missing configKey`);
       ok(Array.isArray(entry.allowed) && entry.allowed.length > 0, `${key} missing/empty allowed`);
     }
   });
@@ -103,10 +131,6 @@ describe('settingsClampingRanges — characterization', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  3. Route GET contract — key sets                                   */
-/* ------------------------------------------------------------------ */
-
 describe('RUNTIME_SETTINGS_ROUTE_GET — characterization', () => {
   it('has stringMap, intMap, floatMap, boolMap', () => {
     ok(RUNTIME_SETTINGS_ROUTE_GET.stringMap);
@@ -115,50 +139,55 @@ describe('RUNTIME_SETTINGS_ROUTE_GET — characterization', () => {
     ok(RUNTIME_SETTINGS_ROUTE_GET.boolMap);
   });
 
-  it('stringMap has expected count', () => {
-    const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.stringMap).length;
-    ok(count >= 38, `expected >= 38, got ${count}`);
+  it('stringMap keyset matches registry string/enum GET keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_GET.stringMap),
+      registryKeysByType(['string', 'enum', 'csv_enum'], { includeDefaultsOnly: false }),
+    );
   });
 
-  it('intMap has expected count', () => {
-    const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.intMap).length;
-    ok(count >= 70, `expected >= 70, got ${count}`);
+  it('intMap keyset matches registry int GET keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_GET.intMap),
+      registryKeysByType(['int'], { includeDefaultsOnly: false }),
+    );
   });
 
-  it('floatMap has expected count', () => {
-    strictEqual(Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap).length, 5);
+  it('floatMap keyset matches registry float GET keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_GET.floatMap),
+      registryKeysByType(['float'], { includeDefaultsOnly: false }),
+    );
   });
 
-  it('boolMap has expected count', () => {
-    const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.boolMap).length;
-    ok(count >= 24, `expected >= 24, got ${count}`);
+  it('boolMap keyset matches registry bool GET keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_GET.boolMap),
+      registryKeysByType(['bool'], { includeDefaultsOnly: false }),
+    );
   });
 
-  it('every map entry value is a string (config key)', () => {
+  it('every map entry value is a string config key', () => {
     for (const map of [
       RUNTIME_SETTINGS_ROUTE_GET.stringMap,
       RUNTIME_SETTINGS_ROUTE_GET.intMap,
       RUNTIME_SETTINGS_ROUTE_GET.floatMap,
       RUNTIME_SETTINGS_ROUTE_GET.boolMap,
     ]) {
-      for (const [key, cfgKey] of Object.entries(map)) {
-        ok(typeof cfgKey === 'string' && cfgKey.length > 0, `${key} has invalid cfgKey: ${cfgKey}`);
+      for (const [key, configKey] of Object.entries(map)) {
+        ok(typeof configKey === 'string' && configKey.length > 0, `${key} has invalid configKey: ${configKey}`);
       }
     }
   });
 
-  it('known aliases are correct in GET', () => {
+  it('known live aliases are correct in GET', () => {
     strictEqual(RUNTIME_SETTINGS_ROUTE_GET.stringMap.resumeMode, 'indexingResumeMode');
-    strictEqual(RUNTIME_SETTINGS_ROUTE_GET.intMap.fetchConcurrency, 'concurrency');
     strictEqual(RUNTIME_SETTINGS_ROUTE_GET.intMap.resumeWindowHours, 'indexingResumeMaxAgeHours');
-    strictEqual(RUNTIME_SETTINGS_ROUTE_GET.intMap.reextractAfterHours, 'indexingReextractAfterHours');
-    strictEqual(RUNTIME_SETTINGS_ROUTE_GET.boolMap.reextractIndexed, 'indexingReextractEnabled');
+    strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'fetchConcurrency'), false);
+    strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'reextractAfterHours'), false);
+    strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.boolMap, 'reextractIndexed'), false);
   });
 });
-
-/* ------------------------------------------------------------------ */
-/*  4. Route PUT contract — key sets                                   */
-/* ------------------------------------------------------------------ */
 
 describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
   it('has stringEnumMap, stringFreeMap, intRangeMap, floatRangeMap, boolMap', () => {
@@ -169,49 +198,49 @@ describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
     ok(RUNTIME_SETTINGS_ROUTE_PUT.boolMap);
   });
 
-  it('stringEnumMap key set matches clamping', () => {
+  it('stringEnumMap keyset matches clamping', () => {
     deepStrictEqual(
       sortedKeys(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap),
       sortedKeys(SETTINGS_CLAMPING_STRING_ENUM_MAP),
     );
   });
 
-  it('intRangeMap key set matches clamping', () => {
+  it('intRangeMap keyset matches clamping', () => {
     deepStrictEqual(
       sortedKeys(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap),
       sortedKeys(SETTINGS_CLAMPING_INT_RANGE_MAP),
     );
   });
 
-  it('floatRangeMap key set matches clamping', () => {
+  it('floatRangeMap keyset matches clamping', () => {
     deepStrictEqual(
       sortedKeys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap),
       sortedKeys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP),
     );
   });
 
-  it('stringFreeMap has expected count', () => {
-    const count = Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap).length;
-    ok(count >= 32, `expected >= 32, got ${count}`);
+  it('stringFreeMap keyset matches mutable registry string keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap),
+      registryKeysByType(['string'], { includeDefaultsOnly: false, includeReadOnly: false }),
+    );
   });
 
-  it('boolMap has expected count', () => {
-    const count = Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap).length;
-    ok(count >= 24, `expected >= 24, got ${count}`);
+  it('boolMap keyset matches mutable registry bool keys', () => {
+    deepStrictEqual(
+      sortedKeys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap),
+      registryKeysByType(['bool'], { includeDefaultsOnly: false, includeReadOnly: false }),
+    );
   });
 
-  it('known aliases are correct in PUT', () => {
+  it('known live aliases are correct in PUT', () => {
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.configKey, 'indexingResumeMode');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.fetchConcurrency.configKey, 'concurrency');
     strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.resumeWindowHours.configKey, 'indexingResumeMaxAgeHours');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.reextractAfterHours.configKey, 'indexingReextractAfterHours');
-    strictEqual(RUNTIME_SETTINGS_ROUTE_PUT.boolMap.reextractIndexed, 'indexingReextractEnabled');
+    strictEqual(Object.hasOwn(SETTINGS_CLAMPING_INT_RANGE_MAP, 'fetchConcurrency'), false);
+    strictEqual(Object.hasOwn(SETTINGS_CLAMPING_INT_RANGE_MAP, 'reextractAfterHours'), false);
+    strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.boolMap, 'reextractIndexed'), false);
   });
 });
-
-/* ------------------------------------------------------------------ */
-/*  5. Cross-checks: GET ↔ PUT coverage                                */
-/* ------------------------------------------------------------------ */
 
 describe('GET ↔ PUT cross-checks', () => {
   const getAllGetKeys = () => {
@@ -238,34 +267,22 @@ describe('GET ↔ PUT cross-checks', () => {
     ]) {
       for (const key of Object.keys(map)) keys.add(key);
     }
-    // dynamicFetchPolicyMapJson is a special key handled separately in PUT
-    keys.add(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey);
     return keys;
   };
 
   it('every PUT key also exists in GET', () => {
-    const getKeys = getAllGetKeys();
-    const putKeys = getAllPutKeys();
-    const missingFromGet = [];
-    for (const key of putKeys) {
-      if (!getKeys.has(key)) missingFromGet.push(key);
-    }
-    deepStrictEqual(missingFromGet, [], `PUT keys missing from GET: ${missingFromGet.join(', ')}`);
+    const missingFromGet = [...getAllPutKeys()].filter((key) => !getAllGetKeys().has(key)).sort();
+    deepStrictEqual(missingFromGet, []);
   });
 
-  it('GET keys not in PUT are exactly the known read-only set', () => {
-    const getKeys = getAllGetKeys();
+  it('GET-only keys are the read-only registry keys', () => {
     const putKeys = getAllPutKeys();
-    const readOnly = [];
-    for (const key of getKeys) {
-      if (!putKeys.has(key)) readOnly.push(key);
-    }
-    // Known read-only keys: present in GET but not in PUT
-    readOnly.sort();
-    deepStrictEqual(readOnly, [
-      'awsRegion',
-      's3Bucket',
-    ]);
+    const getOnly = [...getAllGetKeys()].filter((key) => !putKeys.has(key)).sort();
+    const expectedReadOnly = RUNTIME_SETTINGS_REGISTRY
+      .filter((entry) => !entry.defaultsOnly && entry.readOnly)
+      .map((entry) => entry.key)
+      .sort();
+    deepStrictEqual(getOnly, expectedReadOnly);
   });
 
   it('clamping ranges int keys are a subset of GET intMap keys', () => {
@@ -290,41 +307,27 @@ describe('GET ↔ PUT cross-checks', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  6. Alias consistency: cfgKey matches between GET and PUT           */
-/* ------------------------------------------------------------------ */
-
 describe('alias consistency — GET ↔ clamping ↔ PUT', () => {
-  const KNOWN_ALIASES = [
-    { feKey: 'resumeMode', cfgKey: 'indexingResumeMode' },
-    { feKey: 'fetchConcurrency', cfgKey: 'concurrency' },
-    { feKey: 'resumeWindowHours', cfgKey: 'indexingResumeMaxAgeHours' },
-    { feKey: 'reextractAfterHours', cfgKey: 'indexingReextractAfterHours' },
-    { feKey: 'reextractIndexed', cfgKey: 'indexingReextractEnabled' },
-  ];
-
-  for (const { feKey, cfgKey } of KNOWN_ALIASES) {
-    it(`alias ${feKey} → ${cfgKey} is consistent across all layers`, () => {
-      // Check GET maps
+  for (const entry of currentAliasEntries()) {
+    it(`alias ${entry.key} → ${entry.configKey} is consistent across all layers`, () => {
       const getMap =
-        RUNTIME_SETTINGS_ROUTE_GET.stringMap[feKey]
-        ?? RUNTIME_SETTINGS_ROUTE_GET.intMap[feKey]
-        ?? RUNTIME_SETTINGS_ROUTE_GET.floatMap[feKey]
-        ?? RUNTIME_SETTINGS_ROUTE_GET.boolMap[feKey];
-      strictEqual(getMap, cfgKey, `GET alias mismatch for ${feKey}`);
+        RUNTIME_SETTINGS_ROUTE_GET.stringMap[entry.key]
+        ?? RUNTIME_SETTINGS_ROUTE_GET.intMap[entry.key]
+        ?? RUNTIME_SETTINGS_ROUTE_GET.floatMap[entry.key]
+        ?? RUNTIME_SETTINGS_ROUTE_GET.boolMap[entry.key];
+      strictEqual(getMap, entry.configKey, `GET alias mismatch for ${entry.key}`);
 
-      // Check clamping / PUT maps
       const clampEntry =
-        SETTINGS_CLAMPING_INT_RANGE_MAP[feKey]
-        ?? SETTINGS_CLAMPING_FLOAT_RANGE_MAP[feKey]
-        ?? SETTINGS_CLAMPING_STRING_ENUM_MAP[feKey];
+        SETTINGS_CLAMPING_INT_RANGE_MAP[entry.key]
+        ?? SETTINGS_CLAMPING_FLOAT_RANGE_MAP[entry.key]
+        ?? SETTINGS_CLAMPING_STRING_ENUM_MAP[entry.key];
       if (clampEntry) {
-        strictEqual(clampEntry.configKey, cfgKey, `clamping alias mismatch for ${feKey}`);
+        strictEqual(clampEntry.configKey, entry.configKey, `clamping alias mismatch for ${entry.key}`);
       }
 
-      const putBool = RUNTIME_SETTINGS_ROUTE_PUT.boolMap[feKey];
+      const putBool = RUNTIME_SETTINGS_ROUTE_PUT.boolMap[entry.key];
       if (putBool) {
-        strictEqual(putBool, cfgKey, `PUT boolMap alias mismatch for ${feKey}`);
+        strictEqual(putBool, entry.configKey, `PUT boolMap alias mismatch for ${entry.key}`);
       }
     });
   }

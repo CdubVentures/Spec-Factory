@@ -9,10 +9,7 @@
 import { buildProductId, slugify } from './slugify.js';
 import { cleanVariant, isFabricatedVariant } from './identityDedup.js';
 import { loadProductCatalog } from '../products/productCatalog.js';
-
-function normalizeText(value) {
-  return String(value ?? '').trim();
-}
+import { normalizeText } from '../../../shared/primitives.js';
 
 function normalizeToken(value) {
   return normalizeText(value).toLowerCase().replace(/\s+/g, ' ');

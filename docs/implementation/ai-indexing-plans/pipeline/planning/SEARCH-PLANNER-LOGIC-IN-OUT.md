@@ -2,27 +2,27 @@
 
 Validated against live code on 2026-03-23.
 
-## What this stage is
+## What this phase is
 
-Search Planner is the Stage 04 tier-aware LLM enhancement boundary owned by `runSearchPlanner()`. It receives tier-tagged `query_rows` from Search Profile and enhances query strings via LLM. Tier metadata is passthrough — only the `query` string changes.
+Search Planner is the Search Planner phase tier-aware LLM enhancement boundary owned by `runSearchPlanner()`. It receives tier-tagged `query_rows` from Search Profile and enhances query strings via LLM. Tier metadata is passthrough — only the `query` string changes.
 
 Primary owners:
 
-- `src/features/indexing/discovery/stages/searchPlanner.js`
+- `src/features/indexing/pipeline/searchPlanner/runSearchPlanner.js`
 - `src/research/queryPlanner.js` (`enhanceQueryRows`)
 
 ## Inputs in
 
-`runSearchPlanner()` consumes (verified against `searchPlanner.js:12-19`):
+`runSearchPlanner()` consumes (verified against `runSearchPlanner.js`):
 
-- `searchProfileBase` — deterministic base from Stage 03
+- `searchProfileBase` — deterministic base from Search Profile phase
 - `queryExecutionHistory` — optional, defaults to `null`. Per-query completion state from frontierDb.
 - `config` — runtime config (LLM routing, timeouts)
 - `logger`
 - `identityLock` — `{ brand, model, variant, productId }`
 - `missingFields` — flat missing field list
 
-Note: `variables` and `job` are NOT parameters of `runSearchPlanner()`. They are consumed by other stages.
+Note: `variables` and `job` are NOT parameters of `runSearchPlanner()`. They are consumed by other phases.
 
 Derived internally:
 
@@ -58,10 +58,10 @@ Derived internally:
 **Retry:** 1 retry on failure, then deterministic fallback.
 
 **Fallback cascade:**
-- LLM returns wrong-length array → retry → fallback
-- LLM returns malformed response → retry → fallback
-- LLM call throws → retry → fallback
-- Both attempts fail → return original rows unchanged, `source: 'deterministic_fallback'`
+- LLM returns wrong-length array -> retry -> fallback
+- LLM returns malformed response -> retry -> fallback
+- LLM call throws -> retry -> fallback
+- Both attempts fail -> return original rows unchanged, `source: 'deterministic_fallback'`
 
 ## Tier-aware enhancement rules
 
@@ -216,7 +216,7 @@ Note: Row 2 is a Tier 3c query (repeat=2) — the deterministic base already inc
 - Optional routed LLM call through `enhanceQueryRows()`
 - `search_plan_generated` runtime event (when LLM succeeds)
 
-No direct storage writes happen in this stage.
+No direct storage writes happen in this phase.
 
 ## What it feeds next
 
@@ -225,4 +225,4 @@ Search Planner feeds Query Journey with `enhancedRows`. Query Journey treats the
 1. Query Journey deduplicates, ranks by field priority, applies identity guard
 2. Caps to `searchProfileQueryCap`
 3. Persists the planned search profile artifact
-4. Feeds Stage 06 Search Execution with the final query list
+4. Feeds Search Execution with the final query list

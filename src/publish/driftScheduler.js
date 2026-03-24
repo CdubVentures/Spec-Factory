@@ -2,10 +2,7 @@ import { nowIso } from '../utils/common.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 import { publishProducts } from './publishingPipeline.js';
 import { hasKnownValue } from '../shared/valueNormalizers.js';
-
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
+import { normalizeToken } from '../shared/primitives.js';
 
 function normalizeCategory(value) {
   return String(value || '')

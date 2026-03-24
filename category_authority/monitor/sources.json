@@ -2,7 +2,6 @@
   "category": "monitor",
   "version": "1.0.0",
   "approved": {
-    "manufacturer": ["dell.com", "lg.com", "samsung.com", "asus.com", "benq.com", "acer.com", "msi.com", "gigabyte.com"],
     "lab": [
       "rtings.com",
       "tftcentral.co.uk",

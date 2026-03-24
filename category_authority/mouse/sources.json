@@ -2,7 +2,6 @@
   "category": "mouse",
   "version": "1.0.0",
   "approved": {
-    "manufacturer": ["razer.com", "logitechg.com", "steelseries.com", "corsair.com", "gloriousgaming.com", "pulsar.gg", "endgamegear.com", "zowie.benq.com", "vaxee.co"],
     "lab": [
       "rtings.com",
       "techpowerup.com",

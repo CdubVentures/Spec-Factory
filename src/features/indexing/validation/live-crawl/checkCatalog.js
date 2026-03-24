@@ -82,7 +82,7 @@ const RAW_CHECKS = [
   ['DA-03', 'S1', 'UI values captured', 'Runtime settings panel shows same effective values', false],
   ['DA-04', 'S1', 'Fresh-session proof', 'Same values after reload / cleared stale overrides', false],
   ['DA-05', 'S1', 'searchProvider aligned', 'Claimed provider matches live run', true],
-  ['DA-07', 'S1', 'Fetch strategy knobs aligned', 'preferHttpFetcher, dynamicCrawleeEnabled, pacing values captured', true],
+  ['DA-07', 'S1', 'Fetch strategy knobs aligned', 'pacing values captured', true],
   ['DA-09', 'S1', 'Screenshot knobs aligned', 'capture enabled + format/quality values captured', true],
   ['DA-10', 'S1', 'Drift disposition recorded', 'Any mismatch marked promoted, temporary, or reverted', true],
   // S2: Crawl Alive Gate (12)

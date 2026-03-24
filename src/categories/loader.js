@@ -11,12 +11,9 @@ import {
   loadSourceRegistry,
   checkCategoryPopulationHardGate,
 } from '../features/indexing/pipeline/shared/index.js';
+import { isObject, toArray } from '../shared/primitives.js';
 
 const cache = new Map();
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
 
 function normalizeHost(host) {
   return String(host || '').trim().toLowerCase().replace(/^www\./, '');
@@ -221,10 +218,6 @@ function normalizeField(value) {
 }
 
 // ruleRequiredLevel, ruleAvailability, ruleDifficulty imported from ruleAccessors.js
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
 
 function defaultSources() {
   return {

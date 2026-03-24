@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import http from 'node:http';
 import { nowIso } from '../../../utils/common.js';
 import { buildReviewQueue } from './reviewGridData.js';
+import { normalizeToken } from '../../../shared/primitives.js';
 
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
@@ -11,10 +12,6 @@ function normalizeCategory(value) {
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
 }
 
 function toInt(value, fallback = 0) {

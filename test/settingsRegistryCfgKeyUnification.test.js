@@ -37,10 +37,7 @@ describe('cfgKey → configKey Unification Contract', () => {
 
   it('deriveRuntimeDefaults still emits dual keys for key≠configKey entries', () => {
     const derived = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(derived.fetchConcurrency, derived.concurrency, 'fetchConcurrency !== concurrency');
     strictEqual(derived.resumeMode, derived.indexingResumeMode, 'resumeMode !== indexingResumeMode');
     strictEqual(derived.resumeWindowHours, derived.indexingResumeMaxAgeHours);
-    strictEqual(derived.reextractAfterHours, derived.indexingReextractAfterHours);
-    strictEqual(derived.reextractIndexed, derived.indexingReextractEnabled);
   });
 });

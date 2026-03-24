@@ -1,135 +1,18 @@
-import { describe, it } from 'node:test';
+﻿import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   computeNeedSet,
-  normalizeFieldKey,
-  buildAllAliases,
-  shardAliases,
-  availabilityRank,
-  difficultyRank,
-  requiredLevelRank,
-  deriveQueryFamilies,
-} from '../src/indexlab/needsetEngine.js';
-
-// --- Factories ---
-
-function makeIdentityLocked() {
-  return {
-    status: 'locked',
-    confidence: 0.99,
-    identity_gate_validated: true,
-    extraction_gate_open: true,
-    publishable: true,
-    family_model_count: 1,
-    ambiguity_level: 'easy',
-    publish_blockers: [],
-    reason_codes: [],
-    page_count: 3,
-    max_match_score: 0.99
-  };
-}
-
-function makeIdentityUnlocked() {
-  return {
-    status: 'unlocked',
-    confidence: 0.3,
-    identity_gate_validated: false,
-    extraction_gate_open: false,
-    publishable: false,
-    family_model_count: 5,
-    ambiguity_level: 'hard',
-    publish_blockers: ['identity_not_validated'],
-    reason_codes: [],
-    page_count: 0,
-    max_match_score: 0.3
-  };
-}
-
-function makeIdentityConflict() {
-  return {
-    status: 'conflict',
-    confidence: 0.32,
-    identity_gate_validated: false,
-    extraction_gate_open: false,
-    publishable: false,
-    family_model_count: 5,
-    ambiguity_level: 'hard',
-    publish_blockers: ['identity_conflict'],
-    reason_codes: ['identity_conflict'],
-    page_count: 0,
-    max_match_score: 0.32
-  };
-}
-
-function makeBaseRules() {
-  return {
-    weight: {
-      required_level: 'required', min_evidence_refs: 2,
-      evidence: { tier_preference: [1, 2] },
-      search_hints: {
-        query_terms: ['weight', 'grams'],
-        preferred_content_types: ['spec_sheet', 'product_page'],
-        domain_hints: ['rtings.com']
-      }
-    },
-    sensor: {
-      required_level: 'critical', min_evidence_refs: 2,
-      evidence: { tier_preference: [1] },
-      search_hints: {
-        query_terms: ['sensor', 'optical sensor'],
-        preferred_content_types: ['spec_sheet', 'review'],
-        domain_hints: ['sensor.fyi', 'techpowerup.com']
-      }
-    },
-    dpi_max: {
-      required_level: 'required', min_evidence_refs: 1,
-      evidence: { tier_preference: [1, 2] },
-      search_hints: {
-        query_terms: ['dpi', 'max dpi', 'cpi'],
-        preferred_content_types: ['spec_sheet'],
-        domain_hints: []
-      }
-    },
-    rgb: {
-      required_level: 'optional', min_evidence_refs: 1,
-      search_hints: {
-        query_terms: ['rgb', 'lighting'],
-        preferred_content_types: ['product_page'],
-        domain_hints: []
-      }
-    },
-    brand: {
-      required_level: 'identity', min_evidence_refs: 1,
-      evidence: { tier_preference: [1] },
-      search_hints: {
-        query_terms: ['brand', 'manufacturer'],
-        preferred_content_types: ['product_page'],
-        domain_hints: []
-      }
-    }
-  };
-}
-
-function makeBaseInput(overrides = {}) {
-  return {
-    runId: 'r_test',
-    category: 'mouse',
-    productId: 'test-mouse',
-    fieldOrder: ['weight', 'sensor', 'dpi_max', 'rgb', 'brand'],
-    provenance: {},
-    fieldRules: makeBaseRules(),
-    fieldReasoning: {},
-    constraintAnalysis: {},
-    identityContext: makeIdentityLocked(),
-    now: '2026-02-20T00:00:00Z',
-    ...overrides
-  };
-}
+  makeIdentityLocked,
+  makeIdentityUnlocked,
+  makeIdentityConflict,
+  makeBaseRules,
+  makeBaseInput,
+} from './helpers/phase01NeedSetHarness.js';
 
 // --- Test groups ---
 
-describe('Phase 01 — Field State Derivation', () => {
-  it('missing field → state=missing when no provenance value', () => {
+describe('Phase 01 â€” Field State Derivation', () => {
+  it('missing field â†’ state=missing when no provenance value', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: makeBaseRules().weight }
@@ -139,7 +22,7 @@ describe('Phase 01 — Field State Derivation', () => {
     assert.equal(row.state, 'missing');
   });
 
-  it('unk/unknown tokens → state=missing', () => {
+  it('unk/unknown tokens â†’ state=missing', () => {
     for (const unknownToken of ['unk', 'unknown', 'n/a', 'none', '', 'null', 'undefined', 'na']) {
       const result = computeNeedSet(makeBaseInput({
         fieldOrder: ['weight'],
@@ -152,7 +35,7 @@ describe('Phase 01 — Field State Derivation', () => {
     }
   });
 
-  it('weak field → state=weak when confidence < pass_target', () => {
+  it('weak field â†’ state=weak when confidence < pass_target', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: makeBaseRules().weight },
@@ -168,7 +51,7 @@ describe('Phase 01 — Field State Derivation', () => {
     assert.equal(row.state, 'weak');
   });
 
-  it('conflict field → state=conflict when fieldReasoning has constraint_conflict', () => {
+  it('conflict field â†’ state=conflict when fieldReasoning has constraint_conflict', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: makeBaseRules().weight },
@@ -185,7 +68,7 @@ describe('Phase 01 — Field State Derivation', () => {
     assert.equal(row.state, 'conflict');
   });
 
-  it('conflict field → state=conflict when constraintAnalysis has contradictions', () => {
+  it('conflict field â†’ state=conflict when constraintAnalysis has contradictions', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: makeBaseRules().weight },
@@ -202,7 +85,7 @@ describe('Phase 01 — Field State Derivation', () => {
     assert.equal(row.state, 'conflict');
   });
 
-  it('covered field → excluded from rows', () => {
+  it('covered field â†’ excluded from rows', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: { required_level: 'required', min_evidence_refs: 1 } },
@@ -218,8 +101,8 @@ describe('Phase 01 — Field State Derivation', () => {
   });
 });
 
-describe('Phase 01 — Priority Bucket Mapping', () => {
-  it('identity required_level → core bucket', () => {
+describe('Phase 01 â€” Priority Bucket Mapping', () => {
+  it('identity required_level â†’ core bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['brand'],
       fieldRules: { brand: { required_level: 'identity' } }
@@ -229,7 +112,7 @@ describe('Phase 01 — Priority Bucket Mapping', () => {
     assert.equal(row.priority_bucket, 'core');
   });
 
-  it('critical required_level → core bucket', () => {
+  it('critical required_level â†’ core bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['sensor'],
       fieldRules: { sensor: { required_level: 'critical' } }
@@ -239,7 +122,7 @@ describe('Phase 01 — Priority Bucket Mapping', () => {
     assert.equal(row.priority_bucket, 'core');
   });
 
-  it('required required_level → core bucket', () => {
+  it('required required_level â†’ core bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: { required_level: 'required' } }
@@ -249,7 +132,7 @@ describe('Phase 01 — Priority Bucket Mapping', () => {
     assert.equal(row.priority_bucket, 'core');
   });
 
-  it('expected required_level → secondary bucket', () => {
+  it('expected required_level â†’ secondary bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['polling_rate'],
       fieldRules: { polling_rate: { required_level: 'expected' } }
@@ -259,7 +142,7 @@ describe('Phase 01 — Priority Bucket Mapping', () => {
     assert.equal(row.priority_bucket, 'secondary');
   });
 
-  it('optional required_level → optional bucket', () => {
+  it('optional required_level â†’ optional bucket', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['rgb'],
       fieldRules: { rgb: { required_level: 'optional' } }
@@ -270,7 +153,7 @@ describe('Phase 01 — Priority Bucket Mapping', () => {
   });
 });
 
-describe('Phase 01 — Bundle Formation', () => {
+describe('Phase 01 â€” Bundle Formation', () => {
   it('fields with shared search_hints are grouped into the same bundle', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight', 'dpi_max'],
@@ -310,7 +193,7 @@ describe('Phase 01 — Bundle Formation', () => {
     const rgbBundle = result.bundles.find((b) => b.fields.includes('rgb'));
     assert.ok(sensorBundle);
     assert.ok(rgbBundle);
-    assert.notEqual(sensorBundle.bundle_id, rgbBundle.bundle_id, 'different buckets → different bundles');
+    assert.notEqual(sensorBundle.bundle_id, rgbBundle.bundle_id, 'different buckets â†’ different bundles');
   });
 
   it('each bundle has required metadata fields', () => {
@@ -329,7 +212,7 @@ describe('Phase 01 — Bundle Formation', () => {
   });
 });
 
-describe('Phase 01 — Profile Mix Derivation', () => {
+describe('Phase 01 â€” Profile Mix Derivation', () => {
   it('profile_mix has correct keys', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(result.profile_mix, 'profile_mix must exist');
@@ -347,7 +230,7 @@ describe('Phase 01 — Profile Mix Derivation', () => {
   });
 });
 
-describe('Phase 01 — Focus Fields', () => {
+describe('Phase 01 â€” Focus Fields', () => {
   it('focus_fields contains top core unresolved fields', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(Array.isArray(result.focus_fields), 'focus_fields must be an array');
@@ -368,7 +251,7 @@ describe('Phase 01 — Focus Fields', () => {
   });
 });
 
-describe('Phase 01 — Summary Counts', () => {
+describe('Phase 01 â€” Summary Counts', () => {
   it('summary has correct structure and counts', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(result.summary, 'summary must exist');
@@ -393,7 +276,7 @@ describe('Phase 01 — Summary Counts', () => {
   });
 });
 
-describe('Phase 01 — Row Output Shape', () => {
+describe('Phase 01 â€” Row Output Shape', () => {
   it('every row has required fields', () => {
     const result = computeNeedSet(makeBaseInput());
     for (const row of result.rows) {
@@ -421,14 +304,14 @@ describe('Phase 01 — Row Output Shape', () => {
   });
 });
 
-describe('Phase 01 — Edge Cases', () => {
-  it('empty provenance — all fields become rows', () => {
+describe('Phase 01 â€” Edge Cases', () => {
+  it('empty provenance â€” all fields become rows', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.rows.length, 5, 'all 5 fields should be in rows when provenance is empty');
     assert.equal(result.total_fields, 5);
   });
 
-  it('all covered — no rows, no bundles', () => {
+  it('all covered â€” no rows, no bundles', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: {
         weight: { value: '58g', confidence: 0.95, pass_target: 0.8, evidence: [{ url: 'a', tier: 1 }, { url: 'b', tier: 1 }] },
@@ -443,7 +326,7 @@ describe('Phase 01 — Edge Cases', () => {
     assert.equal(result.summary.core_unresolved, 0);
   });
 
-  it('all missing — all fields in rows', () => {
+  it('all missing â€” all fields in rows', () => {
     const result = computeNeedSet(makeBaseInput({ provenance: {} }));
     assert.equal(result.rows.length, 5);
     for (const row of result.rows) {
@@ -451,14 +334,14 @@ describe('Phase 01 — Edge Cases', () => {
     }
   });
 
-  it('no field rules — graceful empty result', () => {
+  it('no field rules â€” graceful empty result', () => {
     const result = computeNeedSet(makeBaseInput({ fieldRules: {}, fieldOrder: [] }));
     assert.equal(result.rows.length, 0);
     assert.equal(result.bundles.length, 0);
     assert.equal(result.total_fields, 0);
   });
 
-  it('no search hints — fields still get rows and bundles', () => {
+  it('no search hints â€” fields still get rows and bundles', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: { required_level: 'required' } }
@@ -477,7 +360,7 @@ describe('Phase 01 — Edge Cases', () => {
   });
 });
 
-describe('Phase 01 — Output Shape Verification (post-legacy-removal)', () => {
+describe('Phase 01 â€” Output Shape Verification (post-legacy-removal)', () => {
   it('rows.length matches summary counts', () => {
     const result = computeNeedSet(makeBaseInput());
     const missingCount = result.rows.filter((r) => r.state === 'missing').length;
@@ -509,14 +392,14 @@ describe('Phase 01 — Output Shape Verification (post-legacy-removal)', () => {
   });
 });
 
-describe('Phase 01 — Identity Context in Debug', () => {
+describe('Phase 01 â€” Identity Context in Debug', () => {
   it('identityContext is preserved in debug.identity_context', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(result.debug.identity_context, 'debug.identity_context must exist');
     assert.equal(result.debug.identity_context.status, 'locked');
   });
 
-  it('identity state NOT used for scoring — no score impact from identity status', () => {
+  it('identity state NOT used for scoring â€” no score impact from identity status', () => {
     // Same field, same provenance, different identity statuses should produce same state
     const locked = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
@@ -537,7 +420,7 @@ describe('Phase 01 — Identity Context in Debug', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 need_score in fields[]', () => {
+describe('Phase 01 â€” Schema 2 need_score in fields[]', () => {
   it('every field in fields[] has a numeric need_score', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(Array.isArray(result.fields), 'fields[] must exist');
@@ -558,7 +441,7 @@ describe('Phase 01 — Schema 2 need_score in fields[]', () => {
   });
 });
 
-describe('Phase 01 — Determinism', () => {
+describe('Phase 01 â€” Determinism', () => {
   it('same inputs produce identical bundle ordering', () => {
     const input = makeBaseInput();
     const result1 = computeNeedSet(input);
@@ -576,7 +459,7 @@ describe('Phase 01 — Determinism', () => {
   });
 });
 
-describe('Phase 01 — Top-Level Output Shape', () => {
+describe('Phase 01 â€” Top-Level Output Shape', () => {
   it('output has all required top-level keys', () => {
     const result = computeNeedSet(makeBaseInput());
     const requiredKeys = [
@@ -601,7 +484,7 @@ describe('Phase 01 — Top-Level Output Shape', () => {
   });
 });
 
-describe('Phase 01 — NeedSet Event Payload Shape (via runtimeBridge)', () => {
+describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', () => {
   it('needset_computed event payload matches new NeedSet output shape', async () => {
     const { createAuditHarness, makeRunStartedEvent, makeNeedsetComputedEvent } = await import('./helpers/phase00AuditHarness.js');
     const harness = createAuditHarness();
@@ -678,7 +561,7 @@ describe('Phase 01 — NeedSet Event Payload Shape (via runtimeBridge)', () => {
 
 // --- Schema 2 output shape tests ---
 
-describe('Phase 01 — Schema 2 Top-Level Shape', () => {
+describe('Phase 01 â€” Schema 2 Top-Level Shape', () => {
   it('output includes schema_version and round', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.schema_version, 'needset_output.v2.1');
@@ -720,8 +603,8 @@ describe('Phase 01 — Schema 2 Top-Level Shape', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 Identity Block', () => {
-  it('locked identity with high confidence → state=locked, source_label_state=matched', () => {
+describe('Phase 01 â€” Schema 2 Identity Block', () => {
+  it('locked identity with high confidence â†’ state=locked, source_label_state=matched', () => {
     const result = computeNeedSet(makeBaseInput({
       identityContext: makeIdentityLocked(),
       brand: 'Razer',
@@ -733,7 +616,7 @@ describe('Phase 01 — Schema 2 Identity Block', () => {
     assert.equal(result.identity.model, 'Viper V3 Pro');
   });
 
-  it('unlocked identity with low confidence → state=unknown, source_label_state=unknown', () => {
+  it('unlocked identity with low confidence â†’ state=unknown, source_label_state=unknown', () => {
     const result = computeNeedSet(makeBaseInput({
       identityContext: makeIdentityUnlocked()
     }));
@@ -741,7 +624,7 @@ describe('Phase 01 — Schema 2 Identity Block', () => {
     assert.equal(result.identity.source_label_state, 'unknown');
   });
 
-  it('conflict identity → state=conflict, source_label_state=different', () => {
+  it('conflict identity â†’ state=conflict, source_label_state=different', () => {
     const result = computeNeedSet(makeBaseInput({
       identityContext: makeIdentityConflict()
     }));
@@ -750,7 +633,7 @@ describe('Phase 01 — Schema 2 Identity Block', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 Summary (9-field)', () => {
+describe('Phase 01 â€” Schema 2 Summary (9-field)', () => {
   it('summary has all 9 required fields', () => {
     const result = computeNeedSet(makeBaseInput());
     const s = result.summary;
@@ -771,13 +654,13 @@ describe('Phase 01 — Schema 2 Summary (9-field)', () => {
     assert.equal(s.total, s.resolved + s.core_unresolved + s.secondary_unresolved + s.optional_unresolved);
   });
 
-  it('all fields missing → resolved=0, total=5', () => {
+  it('all fields missing â†’ resolved=0, total=5', () => {
     const result = computeNeedSet(makeBaseInput({ provenance: {} }));
     assert.equal(result.summary.total, 5);
     assert.equal(result.summary.resolved, 0);
   });
 
-  it('all fields covered → resolved=5, unresolved all 0', () => {
+  it('all fields covered â†’ resolved=5, unresolved all 0', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: {
         weight: { value: '58g', confidence: 0.95, pass_target: 0.8 },
@@ -794,7 +677,7 @@ describe('Phase 01 — Schema 2 Summary (9-field)', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 Blockers (5-field)', () => {
+describe('Phase 01 â€” Schema 2 Blockers (5-field)', () => {
   it('blockers has all 5 fields', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(typeof result.blockers.missing, 'number');
@@ -815,7 +698,7 @@ describe('Phase 01 — Schema 2 Blockers (5-field)', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 fields[] per-field shape', () => {
+describe('Phase 01 â€” Schema 2 fields[] per-field shape', () => {
   it('each field entry has the full Schema 2 shape', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: {
@@ -889,14 +772,14 @@ describe('Phase 01 — Schema 2 fields[] per-field shape', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 reasons[] derivation', () => {
-  it('missing field → reasons includes "missing"', () => {
+describe('Phase 01 â€” Schema 2 reasons[] derivation', () => {
+  it('missing field â†’ reasons includes "missing"', () => {
     const result = computeNeedSet(makeBaseInput());
     const wField = result.fields.find((f) => f.field_key === 'weight');
     assert.ok(wField.reasons.includes('missing'));
   });
 
-  it('conflict field → reasons includes "conflict"', () => {
+  it('conflict field â†’ reasons includes "conflict"', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: { weight: { value: '58g', confidence: 0.9, pass_target: 0.8 } },
       fieldReasoning: { weight: { reasons: ['constraint_conflict'] } }
@@ -905,7 +788,7 @@ describe('Phase 01 — Schema 2 reasons[] derivation', () => {
     assert.ok(wField.reasons.includes('conflict'));
   });
 
-  it('low confidence → reasons includes "low_conf"', () => {
+  it('low confidence â†’ reasons includes "low_conf"', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: { weight: { value: '58g', confidence: 0.4, pass_target: 0.8 } }
     }));
@@ -913,7 +796,7 @@ describe('Phase 01 — Schema 2 reasons[] derivation', () => {
     assert.ok(wField.reasons.includes('low_conf'));
   });
 
-  it('insufficient refs → reasons includes "min_refs_fail"', () => {
+  it('insufficient refs â†’ reasons includes "min_refs_fail"', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
       fieldRules: { weight: { required_level: 'required', min_evidence_refs: 3 } },
@@ -924,7 +807,7 @@ describe('Phase 01 — Schema 2 reasons[] derivation', () => {
       `reasons should include min_refs_fail, got: ${JSON.stringify(wField.reasons)}`);
   });
 
-  it('accepted field → empty reasons', () => {
+  it('accepted field â†’ empty reasons', () => {
     const result = computeNeedSet(makeBaseInput({
       provenance: {
         weight: { value: '58g', confidence: 0.95, pass_target: 0.8, evidence: [{ url: 'a', tier: 1 }, { url: 'b', tier: 1 }] }
@@ -935,13 +818,13 @@ describe('Phase 01 — Schema 2 reasons[] derivation', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 planner_seed', () => {
+describe('Phase 01 â€” Schema 2 planner_seed', () => {
   it('missing_critical_fields includes identity/critical fields that are unresolved', () => {
     const result = computeNeedSet(makeBaseInput());
-    // brand is identity, sensor is critical — both missing
+    // brand is identity, sensor is critical â€” both missing
     assert.ok(result.planner_seed.missing_critical_fields.includes('brand'));
     assert.ok(result.planner_seed.missing_critical_fields.includes('sensor'));
-    // weight is required, not critical — should NOT be in missing_critical
+    // weight is required, not critical â€” should NOT be in missing_critical
     assert.ok(!result.planner_seed.missing_critical_fields.includes('weight'));
   });
 
@@ -963,8 +846,8 @@ describe('Phase 01 — Schema 2 planner_seed', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 history (round 0)', () => {
-  it('round 0 → all history fields are empty/zero', () => {
+describe('Phase 01 â€” Schema 2 history (round 0)', () => {
+  it('round 0 â†’ all history fields are empty/zero', () => {
     const result = computeNeedSet(makeBaseInput({ round: 0 }));
     for (const f of result.fields) {
       assert.deepEqual(f.history.existing_queries, [], `${f.field_key} history.existing_queries`);
@@ -977,8 +860,8 @@ describe('Phase 01 — Schema 2 history (round 0)', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 history (round 1+ carry-forward)', () => {
-  it('round 1 with evidence → domains_tried populated from evidence', () => {
+describe('Phase 01 â€” Schema 2 history (round 1+ carry-forward)', () => {
+  it('round 1 with evidence â†’ domains_tried populated from evidence', () => {
     const result = computeNeedSet(makeBaseInput({
       round: 1,
       provenance: {
@@ -998,7 +881,7 @@ describe('Phase 01 — Schema 2 history (round 1+ carry-forward)', () => {
   });
 });
 
-describe('Phase 01 — Schema 2 backward compat', () => {
+describe('Phase 01 â€” Schema 2 backward compat', () => {
   it('still emits rows, focus_fields, bundles, profile_mix for existing consumers', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(Array.isArray(result.rows), 'rows must still exist');
@@ -1012,10 +895,10 @@ describe('Phase 01 — Schema 2 backward compat', () => {
 // The decay tests that were here have been moved to evidenceFreshnessDecay.test.js (rewritten).
 
 // ============================================================
-// GAP-1: Logic Box 1 — idx hint normalization
+// GAP-1: Logic Box 1 â€” idx hint normalization
 // ============================================================
 
-describe('Phase 01 — Logic Box 1: idx hint normalization', () => {
+describe('Phase 01 â€” Logic Box 1: idx hint normalization', () => {
   it('query_terms are lowercased and trimmed', () => {
     const result = computeNeedSet(makeBaseInput({
       fieldOrder: ['weight'],
@@ -1121,7 +1004,7 @@ describe('Phase 01 — Logic Box 1: idx hint normalization', () => {
 // GAP-2: blockers.search_exhausted derivation
 // ============================================================
 
-describe('Phase 01 — blockers.search_exhausted derivation', () => {
+describe('Phase 01 â€” blockers.search_exhausted derivation', () => {
   it('search_exhausted = 0 when no field history (round 0)', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.blockers.search_exhausted, 0);
@@ -1158,8 +1041,8 @@ describe('Phase 01 — blockers.search_exhausted derivation', () => {
         }
       }
     }));
-    // weight: 3 no_value_attempts + 3 evidence classes → exhausted
-    // sensor: only 1 no_value_attempt + 1 evidence class → NOT exhausted
+    // weight: 3 no_value_attempts + 3 evidence classes â†’ exhausted
+    // sensor: only 1 no_value_attempt + 1 evidence class â†’ NOT exhausted
     assert.equal(result.blockers.search_exhausted, 1);
   });
 
@@ -1182,379 +1065,8 @@ describe('Phase 01 — blockers.search_exhausted derivation', () => {
         }
       }
     }));
-    // field is covered → not exhausted
+    // field is covered â†’ not exhausted
     assert.equal(result.blockers.search_exhausted, 0);
   });
 });
 
-// ── V4: normalizeFieldKey ──
-
-describe('V4 — normalizeFieldKey', () => {
-  it('replaces underscores with spaces', () => {
-    assert.equal(normalizeFieldKey('battery_hours'), 'battery hours');
-  });
-
-  it('lowercases', () => {
-    assert.equal(normalizeFieldKey('DPI_Max'), 'dpi max');
-  });
-
-  it('trims whitespace', () => {
-    assert.equal(normalizeFieldKey('  weight  '), 'weight');
-  });
-
-  it('single word unchanged except lowercase', () => {
-    assert.equal(normalizeFieldKey('rgb'), 'rgb');
-  });
-
-  it('empty/null → empty string', () => {
-    assert.equal(normalizeFieldKey(''), '');
-    assert.equal(normalizeFieldKey(null), '');
-    assert.equal(normalizeFieldKey(undefined), '');
-  });
-
-  it('multiple underscores', () => {
-    assert.equal(normalizeFieldKey('feet_material_type'), 'feet material type');
-  });
-});
-
-// ── V4: buildAllAliases ──
-
-describe('V4 — buildAllAliases', () => {
-  it('unions all sources, dedupes, sorts', () => {
-    const result = buildAllAliases({
-      normalizedKey: 'battery hours',
-      displayName: 'Battery Life (Hours)',
-      fieldAliases: ['battery life', 'battery runtime'],
-      queryTerms: ['battery life', 'battery hours', 'runtime'],
-    });
-    assert.deepStrictEqual(result, [
-      'battery hours',
-      'battery life',
-      'battery life (hours)',
-      'battery runtime',
-      'runtime',
-    ]);
-  });
-
-  it('case-insensitive dedup', () => {
-    const result = buildAllAliases({
-      normalizedKey: 'dpi',
-      displayName: 'DPI',
-      fieldAliases: ['dpi', 'CPI'],
-      queryTerms: ['DPI', 'cpi', 'max dpi'],
-    });
-    assert.ok(!result.some((a, i) => result.indexOf(a) !== i), 'no duplicates');
-    assert.ok(result.includes('dpi'));
-    assert.ok(result.includes('cpi'));
-    assert.ok(result.includes('max dpi'));
-  });
-
-  it('empty inputs → empty array', () => {
-    const result = buildAllAliases({
-      normalizedKey: '',
-      displayName: '',
-      fieldAliases: [],
-      queryTerms: [],
-    });
-    assert.deepStrictEqual(result, []);
-  });
-
-  it('filters out empty strings', () => {
-    const result = buildAllAliases({
-      normalizedKey: 'weight',
-      displayName: '',
-      fieldAliases: ['', '  '],
-      queryTerms: ['weight'],
-    });
-    assert.ok(!result.includes(''));
-    assert.ok(result.includes('weight'));
-  });
-});
-
-// ── V4: shardAliases ──
-
-describe('V4 — shardAliases', () => {
-  it('short alias list → single shard', () => {
-    const aliases = ['weight', 'mass', 'grams'];
-    const result = shardAliases(aliases, 8);
-    assert.equal(result.length, 1);
-    assert.deepStrictEqual(result[0], aliases);
-  });
-
-  it('long alias list → multiple shards at whole alias boundaries', () => {
-    const aliases = ['motion to photon latency', 'click delay', 'input lag', 'response time ms'];
-    const result = shardAliases(aliases, 5);
-    // "motion to photon latency" = 4 words → fits in shard 1
-    // "click delay" = 2 words → would make shard 1 = 6 words, over limit → shard 2
-    assert.equal(result.length, 3);
-    assert.deepStrictEqual(result[0], ['motion to photon latency']);
-    assert.deepStrictEqual(result[1], ['click delay', 'input lag']);
-    assert.deepStrictEqual(result[2], ['response time ms']);
-  });
-
-  it('never splits a multi-word alias across shards', () => {
-    const aliases = ['very long alias with many words here'];
-    const result = shardAliases(aliases, 3);
-    // Single alias exceeds limit but must stay intact in its own shard
-    assert.equal(result.length, 1);
-    assert.deepStrictEqual(result[0], ['very long alias with many words here']);
-  });
-
-  it('empty aliases → empty array', () => {
-    assert.deepStrictEqual(shardAliases([], 8), []);
-  });
-
-  it('respects custom maxTokensPerShard', () => {
-    const aliases = ['a', 'b', 'c', 'd', 'e'];
-    const result = shardAliases(aliases, 2);
-    assert.equal(result.length, 3);
-    assert.deepStrictEqual(result[0], ['a', 'b']);
-    assert.deepStrictEqual(result[1], ['c', 'd']);
-    assert.deepStrictEqual(result[2], ['e']);
-  });
-});
-
-// ── V4: Ranking helpers ──
-
-describe('V4 — availabilityRank', () => {
-  it('always=0, expected=1, sometimes=2, rare=3, editorial_only=4', () => {
-    assert.equal(availabilityRank('always'), 0);
-    assert.equal(availabilityRank('expected'), 1);
-    assert.equal(availabilityRank('sometimes'), 2);
-    assert.equal(availabilityRank('rare'), 3);
-    assert.equal(availabilityRank('editorial_only'), 4);
-  });
-
-  it('unknown → highest rank (least available)', () => {
-    assert.equal(availabilityRank('bogus'), 4);
-    assert.equal(availabilityRank(''), 4);
-  });
-});
-
-describe('V4 — difficultyRank', () => {
-  it('easy=0, medium=1, hard=2', () => {
-    assert.equal(difficultyRank('easy'), 0);
-    assert.equal(difficultyRank('medium'), 1);
-    assert.equal(difficultyRank('hard'), 2);
-  });
-
-  it('unknown → highest rank', () => {
-    assert.equal(difficultyRank('impossible'), 2);
-  });
-});
-
-describe('V4 — requiredLevelRank', () => {
-  it('identity=0, critical=1, required=2, expected=3, optional=4', () => {
-    assert.equal(requiredLevelRank('identity'), 0);
-    assert.equal(requiredLevelRank('critical'), 1);
-    assert.equal(requiredLevelRank('required'), 2);
-    assert.equal(requiredLevelRank('expected'), 3);
-    assert.equal(requiredLevelRank('optional'), 4);
-  });
-});
-
-// ── V4: Schema 2 field entry additions ──
-
-describe('V4 — Schema 2 field entries carry V4 fields', () => {
-  it('every field has normalized_key, all_aliases, alias_shards, availability, difficulty', () => {
-    const result = computeNeedSet(makeBaseInput());
-    for (const f of result.fields) {
-      assert.ok(typeof f.normalized_key === 'string', `${f.field_key} missing normalized_key`);
-      assert.ok(Array.isArray(f.all_aliases), `${f.field_key} missing all_aliases`);
-      assert.ok(Array.isArray(f.alias_shards), `${f.field_key} missing alias_shards`);
-      assert.ok(typeof f.availability === 'string', `${f.field_key} missing availability`);
-      assert.ok(typeof f.difficulty === 'string', `${f.field_key} missing difficulty`);
-      assert.ok(typeof f.repeat_count === 'number', `${f.field_key} missing repeat_count`);
-      assert.ok(Array.isArray(f.query_modes_tried_for_key), `${f.field_key} missing query_modes_tried_for_key`);
-      assert.ok(Array.isArray(f.domains_tried_for_key), `${f.field_key} missing domains_tried_for_key`);
-      assert.ok(Array.isArray(f.content_types_tried_for_key), `${f.field_key} missing content_types_tried_for_key`);
-    }
-  });
-
-  it('normalized_key derives correctly from field_key', () => {
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['dpi_max'], fieldRules: { dpi_max: makeBaseRules().dpi_max } }));
-    const f = result.fields.find((x) => x.field_key === 'dpi_max');
-    assert.equal(f.normalized_key, 'dpi max');
-  });
-
-  it('all_aliases unions display_name + normalized_key + rule.aliases + query_terms', () => {
-    const rules = {
-      weight: {
-        required_level: 'required', display_name: 'Weight',
-        aliases: ['mass'], min_evidence_refs: 1,
-        search_hints: { query_terms: ['weight', 'grams'], preferred_content_types: ['spec'], domain_hints: [] }
-      }
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['weight'], fieldRules: rules }));
-    const f = result.fields.find((x) => x.field_key === 'weight');
-    assert.ok(f.all_aliases.includes('weight'));
-    assert.ok(f.all_aliases.includes('mass'));
-    assert.ok(f.all_aliases.includes('grams'));
-  });
-
-  it('repeat_count = 0 on round 0', () => {
-    const result = computeNeedSet(makeBaseInput({ round: 0 }));
-    for (const f of result.fields) {
-      assert.equal(f.repeat_count, 0);
-    }
-  });
-
-  it('repeat_count carries from history on round 1+', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['weight'],
-      fieldRules: { weight: makeBaseRules().weight },
-      round: 2,
-      previousFieldHistories: { weight: { query_count: 5, existing_queries: [], domains_tried: [], host_classes_tried: [], evidence_classes_tried: [], urls_examined_count: 0, no_value_attempts: 1, duplicate_attempts_suppressed: 0, query_modes_tried_for_key: ['key_search'] } }
-    }));
-    const f = result.fields.find((x) => x.field_key === 'weight');
-    assert.equal(f.repeat_count, 5);
-    assert.deepStrictEqual(f.query_modes_tried_for_key, ['key_search']);
-  });
-
-  it('query_modes_tried_for_key empty on round 0', () => {
-    const result = computeNeedSet(makeBaseInput({ round: 0 }));
-    const f = result.fields[0];
-    assert.deepStrictEqual(f.query_modes_tried_for_key, []);
-  });
-});
-
-// ── V4: search_intent per field ──
-
-describe('V4 — search_intent is per-field, not per-group', () => {
-  it('exact_match_required=true → search_intent=exact_match', () => {
-    const rules = {
-      f1: { required_level: 'required', contract: { exact_match: true }, search_hints: { query_terms: ['x'], domain_hints: [] } }
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['f1'], fieldRules: rules }));
-    const f = result.fields.find((x) => x.field_key === 'f1');
-    assert.equal(f.search_intent, 'exact_match');
-  });
-
-  it('exact_match_required=false → search_intent=broad', () => {
-    const result = computeNeedSet(makeBaseInput());
-    const f = result.fields[0];
-    assert.equal(f.search_intent, 'broad');
-  });
-});
-
-// ── V4: Schema version bump ──
-
-describe('V4 — schema version', () => {
-  it('schema_version is needset_output.v2.1', () => {
-    const result = computeNeedSet(makeBaseInput());
-    assert.equal(result.schema_version, 'needset_output.v2.1');
-  });
-});
-
-// ── V4: sorted_unresolved_keys ──
-
-describe('V4 — sorted_unresolved_keys', () => {
-  it('exists on output and is an array', () => {
-    const result = computeNeedSet(makeBaseInput());
-    assert.ok(Array.isArray(result.sorted_unresolved_keys));
-  });
-
-  it('contains only unresolved field_keys', () => {
-    const result = computeNeedSet(makeBaseInput({
-      fieldOrder: ['weight', 'sensor'],
-      fieldRules: { weight: makeBaseRules().weight, sensor: makeBaseRules().sensor },
-      provenance: { weight: { value: '58g', confidence: 0.95, pass_target: 0.8 } }
-    }));
-    // weight is resolved, sensor is unresolved
-    assert.ok(!result.sorted_unresolved_keys.includes('weight'));
-    assert.ok(result.sorted_unresolved_keys.includes('sensor'));
-  });
-
-  it('sorts by availability first (easy-to-find fields first)', () => {
-    const rules = {
-      rare_field: { required_level: 'expected', priority: { availability: 'rare', difficulty: 'easy' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
-      always_field: { required_level: 'expected', priority: { availability: 'always', difficulty: 'easy' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['rare_field', 'always_field'], fieldRules: rules }));
-    const idx_always = result.sorted_unresolved_keys.indexOf('always_field');
-    const idx_rare = result.sorted_unresolved_keys.indexOf('rare_field');
-    assert.ok(idx_always < idx_rare, 'always should sort before rare');
-  });
-
-  it('same availability → sorts by difficulty (easy before hard)', () => {
-    const rules = {
-      hard_field: { required_level: 'expected', priority: { availability: 'expected', difficulty: 'hard' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
-      easy_field: { required_level: 'expected', priority: { availability: 'expected', difficulty: 'easy' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['hard_field', 'easy_field'], fieldRules: rules }));
-    const idx_easy = result.sorted_unresolved_keys.indexOf('easy_field');
-    const idx_hard = result.sorted_unresolved_keys.indexOf('hard_field');
-    assert.ok(idx_easy < idx_hard, 'easy should sort before hard');
-  });
-
-  it('required_level is tie-breaker only', () => {
-    const rules = {
-      optional_easy: { required_level: 'optional', priority: { availability: 'always', difficulty: 'easy' }, search_hints: { query_terms: ['x'], domain_hints: [] } },
-      critical_hard: { required_level: 'critical', priority: { availability: 'rare', difficulty: 'hard' }, search_hints: { query_terms: ['y'], domain_hints: [] } },
-    };
-    const result = computeNeedSet(makeBaseInput({ fieldOrder: ['optional_easy', 'critical_hard'], fieldRules: rules }));
-    const idx_opt = result.sorted_unresolved_keys.indexOf('optional_easy');
-    const idx_crit = result.sorted_unresolved_keys.indexOf('critical_hard');
-    // optional_easy has availability=always, difficulty=easy → sorts first despite being optional
-    assert.ok(idx_opt < idx_crit, 'availability/difficulty should outrank required_level');
-  });
-
-  it('backward compat: rows still sorted by bucket then field_key', () => {
-    const result = computeNeedSet(makeBaseInput());
-    for (let i = 1; i < result.rows.length; i++) {
-      const prev = result.rows[i - 1];
-      const curr = result.rows[i];
-      const prevBucket = prev.priority_bucket === 'core' ? 0 : prev.priority_bucket === 'secondary' ? 1 : 2;
-      const currBucket = curr.priority_bucket === 'core' ? 0 : curr.priority_bucket === 'secondary' ? 1 : 2;
-      assert.ok(prevBucket <= currBucket, 'rows should still be sorted by bucket');
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// deriveQueryFamilies — exact-match routing
-// ---------------------------------------------------------------------------
-
-describe('deriveQueryFamilies', () => {
-  const cases = [
-    // Existing tokens (should stay green)
-    { contentTarget: ['manual'],       domainHints: [], expected: ['manual_pdf'] },
-    { contentTarget: ['pdf'],          domainHints: [], expected: ['manual_pdf'] },
-    { contentTarget: ['support'],      domainHints: [], expected: ['support_docs'] },
-    { contentTarget: ['spec'],         domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['product_page'], domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['review'],       domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['lab_review'],   domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['spec_sheet'],   domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['manual_pdf'],   domainHints: [], expected: ['manual_pdf'] },
-
-    // Missing tokens — currently fall to fallback_web (RED tests)
-    { contentTarget: ['benchmark'],    domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['teardown'],     domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['lab'],          domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['datasheet'],    domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['comparison'],   domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['reference'],    domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['doc'],          domainHints: [], expected: ['support_docs'] },
-    { contentTarget: ['documentation'], domainHints: [], expected: ['support_docs'] },
-    { contentTarget: ['datasheet_pdf'], domainHints: [], expected: ['manual_pdf'] },
-    { contentTarget: ['spec_pdf'],     domainHints: [], expected: ['manufacturer_html'] },
-    { contentTarget: ['teardown_review'], domainHints: [], expected: ['manufacturer_html'] },
-
-    // Fallback / edge cases
-    { contentTarget: ['unknown_token'], domainHints: [], expected: ['fallback_web'] },
-    { contentTarget: [],                domainHints: [], expected: ['fallback_web'] },
-    { contentTarget: [],                domainHints: ['rtings.com'], expected: ['manufacturer_html'] },
-    { contentTarget: ['manual', 'spec'], domainHints: [], expected: ['manual_pdf', 'manufacturer_html'] },
-
-    // Normalization
-    { contentTarget: ['  SPEC  '],     domainHints: [], expected: ['manufacturer_html'] },
-  ];
-
-  for (const { contentTarget, domainHints, expected } of cases) {
-    it(`routes ${JSON.stringify(contentTarget)} + hints=${domainHints.length} → ${JSON.stringify(expected)}`, () => {
-      const result = deriveQueryFamilies(contentTarget, domainHints);
-      assert.deepStrictEqual(result, expected);
-    });
-  }
-});

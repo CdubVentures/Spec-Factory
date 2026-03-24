@@ -8,9 +8,7 @@ import { deriveRuntimeDefaults, deriveOptionValues, deriveConvergenceDefaults, d
 export { SEARXNG_AVAILABLE_ENGINES };
 
 // WHY: Derive runtime defaults from registry in a single pass.
-// dynamicFetchPolicyMap is the only non-registry key — it's a JS object (not a setting).
 const _derivedRuntime = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
-_derivedRuntime.dynamicFetchPolicyMap = Object.freeze({});
 
 export const SETTINGS_DEFAULTS = Object.freeze({
   convergence: Object.freeze(deriveConvergenceDefaults(CONVERGENCE_SETTINGS_REGISTRY)),

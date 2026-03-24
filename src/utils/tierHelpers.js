@@ -1,6 +1,4 @@
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject } from '../shared/primitives.js';
 
 export function toTierNumber(value) {
   if (value === null || value === undefined || value === '') return null;

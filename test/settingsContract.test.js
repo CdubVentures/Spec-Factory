@@ -81,7 +81,6 @@ test('runtime PUT route contract keys resolve to canonical runtime settings keys
     ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap).map((entry) => entry.configKey),
     ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap).map((entry) => entry.configKey),
     ...Object.values(RUNTIME_SETTINGS_ROUTE_PUT.boolMap),
-    'dynamicFetchPolicyMapJson',
   ]);
   const unknown = Array.from(cfgKeys).filter((key) => !runtimeSet.has(key));
   assert.deepEqual(unknown, []);
@@ -93,7 +92,6 @@ test('runtime GET route maps include all runtime PUT frontend keys', () => {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_GET.intMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_GET.boolMap),
-    String(RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey),
   ]);
   const putKeys = new Set([
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap),
@@ -101,7 +99,6 @@ test('runtime GET route maps include all runtime PUT frontend keys', () => {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap),
-    String(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey),
   ]);
   const missing = Array.from(putKeys).filter((key) => !getKeys.has(key));
   assert.deepEqual(missing, []);

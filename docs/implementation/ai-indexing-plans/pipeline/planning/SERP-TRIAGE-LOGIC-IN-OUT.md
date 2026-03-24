@@ -2,28 +2,28 @@
 
 Validated against live code on 2026-03-23. P3 decomposition complete — orchestrator split into 4 files. P6 re-audit: discoveryResult field names corrected (selectedUrls, allCandidateUrls).
 
-## What this stage is
+## What this phase is
 
-SERP Triage is the Stage 07 post-search selection boundary inside `processDiscoveryResults()`. It turns raw result rows into selected discovery candidates, approved/candidate URL lists, the executed `search_profile`, and the persisted discovery payloads.
+Result Processing is the Result Processing phase post-search selection boundary inside `processDiscoveryResults()`. It turns raw result rows into selected discovery candidates, approved/candidate URL lists, the executed `search_profile`, and the persisted discovery payloads.
 
 Primary owners:
 
-- `src/features/indexing/discovery/discoveryResultProcessor.js` — orchestrator (344 LOC, sequencing only)
-- `src/features/indexing/discovery/discoveryResultTraceBuilder.js` — trace lifecycle (creation + enrichment)
-- `src/features/indexing/discovery/discoveryResultClassifier.js` — URL classification + domain heuristics
-- `src/features/indexing/discovery/discoveryResultPayloadBuilder.js` — SERP explorer + storage payloads
+- `src/features/indexing/pipeline/resultProcessing/processDiscoveryResults.js` — orchestrator (344 LOC, sequencing only)
+- `src/features/indexing/pipeline/resultProcessing/resultTraceBuilder.js` — trace lifecycle (creation + enrichment)
+- `src/features/indexing/pipeline/resultProcessing/resultClassifier.js` — URL classification + domain heuristics
+- `src/features/indexing/pipeline/resultProcessing/resultPayloadBuilder.js` — SERP explorer + storage payloads
 - `src/features/indexing/discovery/triageHardDropFilter.js`
 - `src/features/indexing/discovery/triageRejectAuditor.js`
-- `src/features/indexing/discovery/serpSelector.js`
-- `src/features/indexing/discovery/serpSelectorLlmAdapter.js`
+- `src/features/indexing/pipeline/resultProcessing/serpSelector.js`
+- `src/features/indexing/pipeline/resultProcessing/serpSelectorLlmAdapter.js`
 
 ## Schema files in this folder
 
-There is no dedicated numbered JSON schema file just for SERP Triage.
+There is no dedicated numbered JSON schema file just for Result Processing.
 
 Coverage is split across:
 
-- `05-query-journey-output.json`
+- `05-execution-and-journey-contract.json`
 - the executed `search_profile` artifact
 - `_discovery/{category}/{runId}.json`
 - `_sources/candidates/{category}/{runId}.json`
@@ -52,18 +52,18 @@ Coverage is split across:
 
 The live triage flow is:
 
-1. Create candidate trace map via `createCandidateTraceMap()` (in `discoveryResultTraceBuilder.js`).
+1. Create candidate trace map via `createCandidateTraceMap()` (in `resultTraceBuilder.js`).
 2. Apply hard drops with `applyHardDropFilter()`.
-3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `discoveryResultClassifier.js`).
+3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `resultClassifier.js`).
 4. Build selector input with `buildSerpSelectorInput()`.
 5. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, treat as all-reject (no deterministic fallback path).
-6. Build deterministic domain safety results via `classifyDomains()` (in `discoveryResultClassifier.js`) — runs AFTER the SERP selector (pipeline contract: SERP Selector then Domain Classifier).
+6. Build deterministic domain safety results via `classifyDomains()` (in `resultClassifier.js`) — runs AFTER the SERP selector (pipeline contract: SERP Selector then Domain Classifier).
 7. Build reject-audit samples and audit trail.
 8. Emit observability events (`serp_selector_completed` with full candidate funnel).
-9. Enrich candidate traces with reason codes via `enrichCandidateTraces()` (in `discoveryResultTraceBuilder.js`).
-10. Build SERP explorer via `buildSerpExplorer()` (in `discoveryResultPayloadBuilder.js`).
+9. Enrich candidate traces with reason codes via `enrichCandidateTraces()` (in `resultTraceBuilder.js`).
+10. Build SERP explorer via `buildSerpExplorer()` (in `resultPayloadBuilder.js`).
 11. Rewrite `search_profile` from `planned` to `executed`.
-12. Write discovery and candidate payloads via `writeDiscoveryPayloads()` (in `discoveryResultPayloadBuilder.js`).
+12. Write discovery and candidate payloads via `writeDiscoveryPayloads()` (in `resultPayloadBuilder.js`).
 
 ## Important invariants
 

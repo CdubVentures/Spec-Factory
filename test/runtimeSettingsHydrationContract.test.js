@@ -22,7 +22,6 @@ function collectGetRouteFrontendKeys() {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_GET.boolMap),
   ]);
-  keys.add(RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey);
   return keys;
 }
 
@@ -35,7 +34,6 @@ function collectPutRouteFrontendKeys() {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap),
   ]);
-  keys.add(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey);
   return keys;
 }
 
@@ -104,12 +102,12 @@ test('runtime hydration bindings apply canonical runtime setting aliases for con
   const bindings = createRuntimeHydrationBindings(setters);
 
   const snapshot = {
-    fetchBudgetMs: 20000,
     categoryAuthorityRoot: 'category_authority',
+    perHostMinDelayMs: 500,
   };
 
   assert.equal(hydrateRuntimeSettingsFromBindings(snapshot, false, bindings), true);
 
-  assert.equal(state.setFetchBudgetMs, '20000');
   assert.equal(state.setCategoryAuthorityRoot, 'category_authority');
+  assert.equal(state.setPerHostMinDelayMs, '500');
 });

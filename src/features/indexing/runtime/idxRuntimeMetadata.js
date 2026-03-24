@@ -1,16 +1,5 @@
 import { resolveConsumerGate } from '../../../field-rules/consumerGate.js';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function normalizeText(value) {
-  return String(value ?? '').trim();
-}
+import { isObject, toArray, normalizeText } from '../../../shared/primitives.js';
 
 // WHY: Unified registry — adding a new IDX field path = 1 registry entry, zero switch edits.
 // Each entry carries the extractor (how to detect a meaningful value) and docs (tooltip text).

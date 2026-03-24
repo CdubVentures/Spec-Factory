@@ -22,7 +22,6 @@ test('persistSourceIntel ignores helper pseudo domains from source rows and evid
   const storage = makeMemoryStorage();
   const config = {
     s3OutputPrefix: 'specs/outputs',
-    fieldRewardHalfLifeDays: 45
   };
 
   await persistSourceIntel({

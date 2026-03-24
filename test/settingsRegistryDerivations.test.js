@@ -85,12 +85,12 @@ describe('deriveRuntimeDefaults', () => {
   const derived = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
   const existing = SETTINGS_DEFAULTS.runtime;
 
-  // WHY: After Phase 2, SETTINGS_DEFAULTS.runtime IS deriveRuntimeDefaults(REGISTRY)
-  // plus dynamicFetchPolicyMap. Zero drift sets remain.
+  // WHY: After Phase 2, SETTINGS_DEFAULTS.runtime IS deriveRuntimeDefaults(REGISTRY).
+  // Zero drift sets remain.
 
   it('derived key set matches existing (zero drift)', () => {
     const derivedKeys = sortedKeys(derived);
-    const existingKeys = sortedKeys(existing).filter(k => k !== 'dynamicFetchPolicyMap');
+    const existingKeys = sortedKeys(existing);
     deepStrictEqual(derivedKeys, existingKeys);
   });
 
@@ -215,9 +215,6 @@ describe('deriveRouteGetMaps', () => {
     }
   });
 
-  it('dynamicFetchPolicyMapJsonKey matches', () => {
-    strictEqual(derived.dynamicFetchPolicyMapJsonKey, RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey);
-  });
 });
 
 /* ------------------------------------------------------------------ */
@@ -266,10 +263,6 @@ describe('deriveRoutePutContract', () => {
     strictEqual(derived.floatRangeMap, clampingFloatRangeMap);
   });
 
-  it('dynamicFetchPolicyMapJsonKey matches', () => {
-    strictEqual(derived.dynamicFetchPolicyMapJsonKey, RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey);
-  });
-
   it('stringTrimMap matches', () => {
     deepStrictEqual(toPlainObject(derived.stringTrimMap), toPlainObject(RUNTIME_SETTINGS_ROUTE_PUT.stringTrimMap));
   });
@@ -285,28 +278,22 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
   it('SETTINGS_DEFAULTS.runtime is registry-derived (not hand-maintained)', () => {
     const derivedKeys = new Set(Object.keys(derived));
     for (const key of Object.keys(SETTINGS_DEFAULTS.runtime)) {
-      if (key === 'dynamicFetchPolicyMap') continue;
       ok(derivedKeys.has(key), `SETTINGS_DEFAULTS.runtime key "${key}" missing from derived`);
     }
   });
 
   it('spot-check key values match registry defaults', () => {
-    strictEqual(derived.fetchConcurrency, 4);
     strictEqual(derived.llmModelPlan, 'gemini-2.5-flash');
     strictEqual(derived.llmModelReasoning, 'deepseek-reasoner');
     strictEqual(derived.maxRunSeconds, 480);
     strictEqual(derived.autoScrollEnabled, true);
     strictEqual(derived.resumeMode, 'auto');
     strictEqual(derived.discoveryEnabled, true);
-    strictEqual(derived.fetchCandidateSources, true);
   });
 
   it('cfgKey aliases are emitted under both names', () => {
     strictEqual(derived.resumeMode, derived.indexingResumeMode);
-    strictEqual(derived.fetchConcurrency, derived.concurrency);
     strictEqual(derived.resumeWindowHours, derived.indexingResumeMaxAgeHours);
-    strictEqual(derived.reextractAfterHours, derived.indexingReextractAfterHours);
-    strictEqual(derived.reextractIndexed, derived.indexingReextractEnabled);
   });
 
   it('google search keys from registry appear in derived (gap closed)', () => {
@@ -350,10 +337,6 @@ describe('registry enrichment — aliases', () => {
     ok(byKey.categoryAuthorityEnabled.aliases?.includes('helperFilesEnabled'));
   });
 
-  it('indexingCategoryAuthorityEnabled has indexingHelperFilesEnabled alias', () => {
-    ok(byKey.indexingCategoryAuthorityEnabled.aliases?.includes('indexingHelperFilesEnabled'));
-  });
-
   it('searchEngines has searchProvider alias', () => {
     ok(byKey.searchEngines.aliases?.includes('searchProvider'));
   });
@@ -382,10 +365,6 @@ describe('registry enrichment — aliases', () => {
 describe('registry enrichment — deprecated', () => {
   const byKey = Object.fromEntries(RUNTIME_SETTINGS_REGISTRY.map(e => [e.key, e]));
 
-  it('fetchCandidateSources is deprecated', () => {
-    strictEqual(byKey.fetchCandidateSources.deprecated, true);
-  });
-
   it('helperFilesRoot removed from registry (canonical is categoryAuthorityRoot)', () => {
     strictEqual(byKey.helperFilesRoot, undefined);
   });
@@ -395,24 +374,13 @@ describe('registry enrichment — defaults-only gap closure', () => {
   const registryKeys = new Set(RUNTIME_SETTINGS_REGISTRY.map(e => e.key));
 
   // WHY: These keys were in SETTINGS_DEFAULTS.runtime but missing from the
-  // registry. Phase 1 added them as defaultsOnly entries. Pipeline rework
-  // removed 11 dead knobs — only frontierRepairSearchEnabled survives here.
-  const FORMERLY_MISSING = [
-    'frontierRepairSearchEnabled',
-  ];
+  // registry. Phase 1 added them as defaultsOnly entries. Dead knob removal
+  // retired all formerly-missing entries (fetchCandidateSources, frontierRepairSearchEnabled, etc.).
 
-  for (const key of FORMERLY_MISSING) {
-    it(`"${key}" is now in the registry`, () => {
-      ok(registryKeys.has(key), `${key} must be in RUNTIME_SETTINGS_REGISTRY`);
-    });
-  }
-
-  it('all formerly-missing entries are defaultsOnly booleans', () => {
-    for (const key of FORMERLY_MISSING) {
-      const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
-      ok(entry, `${key} missing from registry`);
-      strictEqual(entry.type, 'bool', `${key} should be bool`);
-      strictEqual(entry.defaultsOnly, true, `${key} should be defaultsOnly`);
+  it('all formerly-missing defaultsOnly entries have been retired', () => {
+    const retiredFormerly = ['frontierRepairSearchEnabled', 'fetchCandidateSources'];
+    for (const key of retiredFormerly) {
+      ok(!registryKeys.has(key), `retired key ${key} should no longer be in the registry`);
     }
   });
 });

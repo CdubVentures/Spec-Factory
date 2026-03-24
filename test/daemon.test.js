@@ -27,13 +27,12 @@ test('runDaemon respects daemon concurrency cap per iteration', async () => {
   const result = await runDaemon({
     storage: {},
     config: {
-      importsPollSeconds: 1,
       categoryAuthorityEnabled: false,
-      daemonConcurrency: 3
     },
     once: true,
     runtimeHooks: {
       categories: ['mouse'],
+      daemonConcurrency: 3,
       ingestIncomingCsvs: async () => ({
         discovered_csv_count: 0,
         processed_count: 0,
@@ -73,13 +72,12 @@ test('runDaemon exits after SIGTERM with graceful drain of active work', async (
   const result = await runDaemon({
     storage: {},
     config: {
-      importsPollSeconds: 1,
       categoryAuthorityEnabled: false,
-      daemonConcurrency: 1
     },
     once: false,
     runtimeHooks: {
       categories: ['mouse'],
+      daemonConcurrency: 1,
       signalTarget,
       ingestIncomingCsvs: async () => ({
         discovered_csv_count: 0,
@@ -123,15 +121,14 @@ test('runDaemon performs drift scan and drift reconcile for drift re-extract job
   const result = await runDaemon({
     storage: {},
     config: {
-      importsPollSeconds: 1,
       categoryAuthorityEnabled: false,
-      daemonConcurrency: 1,
-      driftDetectionEnabled: true,
-      driftPollSeconds: 1
     },
     once: true,
     runtimeHooks: {
       categories: ['mouse'],
+      daemonConcurrency: 1,
+      driftDetectionEnabled: true,
+      driftPollSeconds: 1,
       ingestIncomingCsvs: async () => ({
         discovered_csv_count: 0,
         processed_count: 0,
@@ -189,8 +186,6 @@ test('runDaemon discovers all categories from category_authority when running in
     const result = await runDaemon({
       storage: {},
       config: {
-        importsPollSeconds: 1,
-        daemonConcurrency: 1,
         categoryAuthorityRoot: helperRoot
       },
       importsRoot,

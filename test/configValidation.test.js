@@ -52,12 +52,9 @@ test('C.1 config overrides: quoted userAgent input is normalized without surroun
 
 test('C.1 config defaults: runtime fetch/search defaults use canonical tuned values', () => {
   const config = loadConfig({ runProfile: 'standard' });
-  assert.equal(config.concurrency, 4);
+  // WHY: concurrency removed — dead knob (fetchConcurrency retired from registry).
   assert.equal(config.pageGotoTimeoutMs, 12_000);
   assert.equal(config.postLoadWaitMs, 200);
-  assert.equal(config.fetchPerHostConcurrencyCap, 1);
-  assert.equal(config.dynamicFetchRetryBudget, 1);
-  assert.equal(config.dynamicFetchRetryBackoffMs, 2_500);
   assert.equal(config.frontierBlockedDomainThreshold, 1);
 });
 
@@ -67,10 +64,6 @@ test('C.1 config defaults: retired bingSearchEndpoint knob is absent', () => {
 });
 
 
-test('C.1 config defaults: indexing helper files disabled by default', () => {
-  const config = loadConfig();
-  assert.equal(config.indexingCategoryAuthorityEnabled, false);
-});
 
 // =========================================================================
 // SECTION 2: Config validation detects misconfigurations

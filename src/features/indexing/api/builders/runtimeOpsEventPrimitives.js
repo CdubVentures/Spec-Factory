@@ -1,16 +1,7 @@
-export function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toArray } from '../../../../shared/primitives.js';
+import { toInt, toFloat } from '../../../../shared/valueNormalizers.js';
 
-export function toFloat(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+export { toInt, toFloat, toArray };
 
 export function parseTsMs(value) {
   if (!value) return 0;

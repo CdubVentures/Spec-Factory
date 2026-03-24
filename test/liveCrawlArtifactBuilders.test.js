@@ -17,8 +17,6 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
   const config = {
     searchEngines: 'bing,brave,duckduckgo',
     discoveryEnabled: true,
-    preferHttpFetcher: true,
-    dynamicCrawleeEnabled: true,
     perHostMinDelayMs: 2000,
     pageGotoTimeoutMs: 30000,
     postLoadWaitMs: 1500,

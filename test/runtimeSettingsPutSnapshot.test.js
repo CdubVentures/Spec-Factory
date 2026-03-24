@@ -18,10 +18,8 @@ test('PUT runtime-settings response includes full snapshot after persist', async
   );
 
   const config = {
-    fetchConcurrency: 4,
-    dynamicCrawleeEnabled: true,
     searchEngines: 'bing,google',
-    dynamicFetchPolicyMapJson: '',
+    perHostMinDelayMs: 500,
   };
 
   let persistedSections = null;
@@ -47,7 +45,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
     responseBody = body;
     return true;
   };
-  const readJsonBody = async () => ({ fetchConcurrency: 8 });
+  const readJsonBody = async () => ({ perHostMinDelayMs: 800 });
   const toInt = (v, d) => {
     const n = Number.parseInt(String(v ?? ''), 10);
     return Number.isFinite(n) ? n : d;
@@ -71,7 +69,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
   assert.ok(responseBody.snapshot !== undefined, 'response must include snapshot');
   assert.ok(typeof responseBody.snapshot === 'object', 'snapshot must be an object');
   // Snapshot should reflect the updated value
-  assert.equal(responseBody.snapshot.fetchConcurrency, 8);
+  assert.equal(responseBody.snapshot.perHostMinDelayMs, 800);
 });
 
 // --- Client-side: normalizeRuntimeSaveResult prefers snapshot ---

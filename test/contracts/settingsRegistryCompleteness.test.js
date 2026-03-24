@@ -33,7 +33,9 @@ const allPutKeys = () => {
   ]) {
     for (const key of Object.keys(map)) keys.add(key);
   }
-  keys.add(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey);
+  if (RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey) {
+    keys.add(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey);
+  }
   return keys;
 };
 
@@ -44,7 +46,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('registry is a frozen non-empty array', () => {
     ok(Array.isArray(RUNTIME_SETTINGS_REGISTRY));
     ok(Object.isFrozen(RUNTIME_SETTINGS_REGISTRY));
-    ok(RUNTIME_SETTINGS_REGISTRY.length >= 150, `expected >= 150, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
+    ok(RUNTIME_SETTINGS_REGISTRY.length >= 110, `expected >= 110, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
   });
 
   it('every entry has a unique key', () => {
@@ -111,10 +113,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       .map(e => e.key)
       .sort();
     deepStrictEqual(defaultsOnlyKeys, [
-      'daemonGracefulShutdownTimeoutMs',
       'discoveryEnabled',
-      'fetchCandidateSources',
-      'frontierRepairSearchEnabled',
     ]);
   });
 
@@ -183,11 +182,8 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
 
   it('known cfgKey aliases exist in registry', () => {
     const KNOWN_ALIASES = {
-      fetchConcurrency: 'concurrency',
       resumeMode: 'indexingResumeMode',
       resumeWindowHours: 'indexingResumeMaxAgeHours',
-      reextractAfterHours: 'indexingReextractAfterHours',
-      reextractIndexed: 'indexingReextractEnabled',
     };
     for (const [key, cfgKey] of Object.entries(KNOWN_ALIASES)) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
@@ -211,7 +207,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('total registry count baseline', () => {
     const total = RUNTIME_SETTINGS_REGISTRY.length;
     // WHY: Lock down the count so adding/removing entries requires updating this test.
-    ok(total >= 150 && total <= 170, `expected 150-170 entries, got ${total}`);
+    ok(total >= 110 && total <= 130, `expected 110-130 entries, got ${total}`);
   });
 
   it('type distribution baseline', () => {
@@ -219,10 +215,10 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       counts[entry.type] = (counts[entry.type] || 0) + 1;
     }
-    ok(counts.string >= 35, `expected >= 35 strings, got ${counts.string}`);
-    ok(counts.int >= 70, `expected >= 70 ints, got ${counts.int}`);
+    ok(counts.string >= 28, `expected >= 28 strings, got ${counts.string}`);
+    ok(counts.int >= 50, `expected >= 50 ints, got ${counts.int}`);
     ok(counts.float >= 5, `expected >= 5 floats, got ${counts.float}`);
-    ok(counts.bool >= 25, `expected >= 25 bools, got ${counts.bool}`);
+    ok(counts.bool >= 18, `expected >= 18 bools, got ${counts.bool}`);
     ok(counts.enum >= 3, `expected >= 3 enums, got ${counts.enum}`);
     ok(counts.csv_enum >= 2, `expected >= 2 csv_enums, got ${counts.csv_enum}`);
   });

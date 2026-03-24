@@ -15,6 +15,7 @@ import type {
   SearchResultDetail,
   RuntimeIdxBadge,
 } from '../../types';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import { relativeTime } from '../../../../utils/formatting';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import {
@@ -164,14 +165,11 @@ export function PrefetchQueryJourneyPanel({
       <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Query Journey</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="text-3xl opacity-60">&#128506;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for query journey data</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            The query journey will appear once search profile, planner, and results data is available.
-            It shows the full lifecycle of each query — what was planned, what got sent, and why each query was selected.
-          </p>
-        </div>
+        <PrefetchEmptyState
+          icon="&#128506;"
+          heading="Waiting for query journey data"
+          description="The query journey will appear once search profile, planner, and results data is available. It shows the full lifecycle of each query — what was planned, what got sent, and why each query was selected."
+        />
       </div>
     );
   }

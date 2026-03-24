@@ -34,17 +34,7 @@ async function readJsonIfExists(filePath) {
   }
 }
 
-function isObject(v) {
-  return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
-}
-
-function toArray(v) {
-  return Array.isArray(v) ? v : [];
-}
-
-function normalizeToken(v) {
-  return String(v || '').trim().toLowerCase();
-}
+import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
 
 function isKnownToken(v) {
   const token = normalizeToken(v);

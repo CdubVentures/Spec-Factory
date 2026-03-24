@@ -19,7 +19,7 @@
 } }%%
 
 %% ─────────────────────────────────────────────────────────────
-%% FULL DISCOVERY PIPELINE — 8 STAGES
+%% FULL DISCOVERY PIPELINE — 8 PHASES
 %% Optimized for 4K landscape (3840 x 2160)
 %% ─────────────────────────────────────────────────────────────
 
@@ -29,18 +29,18 @@ flowchart LR
   START(["Product Identity\n+ Category Config\n+ Round Context"])
 
   %% ── PARALLEL BLOCK ──
-  subgraph PARALLEL["PARALLEL — Stages 01 & 02 fire simultaneously"]
+  subgraph PARALLEL["PARALLEL — NeedSet & Brand Resolver fire simultaneously"]
     direction TB
 
-    subgraph S01["Stage 01 — NeedSet"]
+    subgraph S01["NeedSet Phase"]
       direction LR
-      N1["Schema 2\nPer-Field\nGap Check"]
-      N2["Schema 3\nGroup Planning\n+ Tier Allocation"]
-      N3["Schema 4\nLLM Assessment\n(priority only)"]
+      N1["NeedSet\nAssessment\nPer-Field\nGap Check"]
+      N2["Search Planning\nContext\nGroup Planning\n+ Tier Allocation"]
+      N3["Search Plan\nLLM Assessment\n(priority only)"]
       N1 --> N2 --> N3
     end
 
-    subgraph S02["Stage 02 — Brand Resolver"]
+    subgraph S02["Brand Resolver Phase"]
       direction LR
       B1["Cache\nLookup"]
       B2{"Cache\nHit?"}
@@ -55,33 +55,33 @@ flowchart LR
   START --> PARALLEL
 
   %% ── CONVERGENCE ──
-  CONV{{"Convergence Point\n(Orchestrator merges\nNeedSet + Brand)\nafterBootstrap ✓"}}
+  CONV{{"Convergence Point\n(Orchestrator merges\nNeedSet + Brand)\nafterBootstrap check"}}
 
   PARALLEL --> CONV
 
-  %% ── SEQUENTIAL STAGES ──
-  subgraph SEQ["SEQUENTIAL — Stages 03 through 08 (Zod checkpoint validation at each boundary)"]
+  %% ── SEQUENTIAL PHASES ──
+  subgraph SEQ["SEQUENTIAL — Search Profile through Domain Classifier (Zod checkpoint validation at each boundary)"]
     direction LR
 
-    S03["Stage 03\nSearch Profile\n(deterministic)\nGenerate tier-tagged\nquery rows"]
+    S03["Search Profile\nPhase\n(deterministic)\nGenerate tier-tagged\nquery rows"]
 
-    S04["Stage 04\nSearch Planner\n(LLM)\nPolish query\nwording"]
+    S04["Search Planner\nPhase\n(LLM)\nPolish query\nwording"]
 
-    S05["Stage 05\nQuery Journey\n(deterministic)\nDedupe + rank\n+ guard + cap"]
+    S05["Query Journey\nPhase\n(deterministic)\nDedupe + rank\n+ guard + cap"]
 
-    S06["Stage 06\nSearch Execution\nRun queries vs\nGoogle / SearXNG\n/ internal corpus"]
+    S06["Search Execution\nPhase\nRun queries vs\nGoogle / SearXNG\n/ internal corpus"]
 
-    S07["Stage 07\nSERP Triage\nClassify + filter\n+ select URLs\nto scrape"]
+    S07["Result Processing\nPhase\nClassify + filter\n+ select URLs\nto scrape"]
 
-    S08["Stage 08\nDomain Classifier\nEnqueue approved\nURLs to scraper"]
+    S08["Domain Classifier\nPhase\nEnqueue approved\nURLs to scraper"]
 
-    S03 -->|"afterProfile ✓"| S04 -->|"afterPlanner ✓"| S05 -->|"afterJourney ✓"| S06 -->|"afterExecution ✓"| S07 --> S08
+    S03 -->|"afterProfile check"| S04 -->|"afterPlanner check"| S05 -->|"afterJourney check"| S06 -->|"afterExecution check"| S07 --> S08
   end
 
   CONV --> SEQ
 
   %% ── OUTPUT ──
-  DONE(["Approved URLs\nenqueued for\npage fetching\n+ extraction\nfinal ✓"])
+  DONE(["Approved URLs\nenqueued for\npage fetching\n+ extraction\nfinal check"])
 
   SEQ --> DONE
 

@@ -19,6 +19,7 @@ import {
   buildGateSummary,
   normalizeFieldRuleGateCounts,
 } from '../../selectors/prefetchSearchProfileGateHelpers.js';
+import { resolveGateBadge } from '../../badgeRegistries';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import {
   classifyQueryTier,
@@ -31,6 +32,7 @@ import {
 import { formatTooltip, TooltipBadge } from '../../components/PrefetchTooltip';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSearchProfilePanelProps {
@@ -61,14 +63,6 @@ function toChipLabel(value: unknown): string {
 function formatProviderList(providers: string[] | undefined): string {
   if (!Array.isArray(providers) || providers.length === 0) return '';
   return providers.map((p) => providerDisplayLabel(p)).filter(Boolean).join(', ');
-}
-
-function gateBadgeClass(active: boolean): string {
-  return active ? 'sf-chip-success' : 'sf-chip-neutral';
-}
-
-function gateBadgePillClass(active: boolean): string {
-  return `px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${gateBadgeClass(active)} border-[1.5px] border-current`;
 }
 
 function gateZeroRatioReason(gateKey: string): string {
@@ -155,10 +149,10 @@ function QueryDetailDrawer({
       {showGateBadges && (
         <DrawerSection title="Applied Gates">
           <div className="flex flex-wrap gap-1.5">
-            <Chip label="Query Terms" className={gateBadgeClass(queryGateFlags.queryTerms)} />
-            <Chip label="Domain Hint" className={gateBadgeClass(queryGateFlags.domainHints)} />
-            <Chip label="Content Type" className={gateBadgeClass(queryGateFlags.contentTypes)} />
-            <Chip label="Source Host" className={gateBadgeClass(Boolean(sourceHost))} />
+            <Chip label="Query Terms" className={resolveGateBadge(queryGateFlags.queryTerms)} />
+            <Chip label="Domain Hint" className={resolveGateBadge(queryGateFlags.domainHints)} />
+            <Chip label="Content Type" className={resolveGateBadge(queryGateFlags.contentTypes)} />
+            <Chip label="Source Host" className={resolveGateBadge(Boolean(sourceHost))} />
           </div>
         </DrawerSection>
       )}
@@ -331,13 +325,11 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Search Profile</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="text-3xl opacity-60">&#128270;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for search profile</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Profile will appear after query planning completes. Queries are assembled deterministically from field rules, search templates, and identity aliases.
-          </p>
-        </div>
+        <PrefetchEmptyState
+          icon="&#128270;"
+          heading="Waiting for search profile"
+          description="Profile will appear after query planning completes. Queries are assembled deterministically from field rules, search templates, and identity aliases."
+        />
       </div>
     );
   }
@@ -462,7 +454,7 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
       {showGateBadges && (
         <div className="flex items-center gap-2 flex-wrap">
           <TooltipBadge
-            className={gateBadgePillClass(topLevelFieldRulesOn)}
+            className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${resolveGateBadge(topLevelFieldRulesOn)} border-[1.5px] border-current`}
             tooltip={formatTooltip({
               what: topLevelFieldRulesOn ? 'At least one indexed field_rules.* key is active.' : 'No indexed field_rules.* keys are active.',
               effect: topLevelFieldRulesOn ? 'Field-rules guided query behavior is active.' : 'Field Rules badge stays OFF/gray.',
@@ -483,7 +475,7 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
                 setBy: 'Populate search_hints values in Field Rules.',
               });
             return (
-              <TooltipBadge key={gate.key} className={gateBadgePillClass(gate.status === 'active')} tooltip={tooltip}>
+              <TooltipBadge key={gate.key} className={`px-2 py-0.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.04em] ${resolveGateBadge(gate.status === 'active')} border-[1.5px] border-current`} tooltip={tooltip}>
                 {gate.label}: {displayValue}
               </TooltipBadge>
             );

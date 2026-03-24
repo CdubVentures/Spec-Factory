@@ -8,14 +8,7 @@ import {
   buildTierAwareFieldRetrieval
 } from './tierAwareRetriever.js';
 import { toInt } from '../shared/valueNormalizers.js';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { isObject, toArray } from '../shared/primitives.js';
 
 function clampInt(value, fallback, min, max) {
   const parsed = toInt(value, fallback);

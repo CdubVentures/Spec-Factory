@@ -68,13 +68,13 @@ test('runtime-settings PUT returns error when persistence writes fail', async ()
   resetSettingsPersistenceCounters();
   const helperRootFile = await makeInvalidHelperRoot();
   const config = {
-    concurrency: 4,
+    maxUrlsPerProduct: 50,
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRootFile,
     config,
     readJsonBody: async () => ({
-      fetchConcurrency: 5,
+      maxUrlsPerProduct: 25,
     }),
   }));
 
@@ -82,7 +82,7 @@ test('runtime-settings PUT returns error when persistence writes fail', async ()
   assert.equal(result.status, 500);
   assert.equal(result.body?.ok, false);
   assert.equal(result.body?.error, 'runtime_settings_persist_failed');
-  assert.equal(config.concurrency, 4, 'runtime config should roll back when persistence fails');
+  assert.equal(config.maxUrlsPerProduct, 50, 'runtime config should roll back when persistence fails');
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['runtime-settings-route']?.failed_total, 1);
 });
@@ -144,21 +144,21 @@ test('runtime-settings PUT records success telemetry when persistence succeeds',
   resetSettingsPersistenceCounters();
   const helperRoot = await makeHelperRoot();
   const config = {
-    concurrency: 4,
+    maxUrlsPerProduct: 50,
     runProfile: 'standard',
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRoot,
     config,
     readJsonBody: async () => ({
-      fetchConcurrency: 6,
+      maxUrlsPerProduct: 25,
     }),
   }));
 
   const result = await handler(['runtime-settings'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(result.status, 200);
   assert.equal(result.body?.ok, true);
-  assert.equal(config.concurrency, 6);
+  assert.equal(config.maxUrlsPerProduct, 25);
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['runtime-settings-route']?.success_total, 1);
 });

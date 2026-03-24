@@ -42,7 +42,7 @@ export const RUNTIME_STEPS: RuntimeStepEntry[] = [
     id: 'automation',
     phase: '02B',
     label: 'Automation',
-    tip: 'Background control plane for drift scans, learning loops, and daemon ops.',
+    tip: 'Background control plane for category authority and resume operations.',
   },
   {
     id: 'observability-trace',
@@ -102,24 +102,14 @@ export const RUNTIME_SUB_STEPS: Record<RuntimeStepId, RuntimeSubStepEntry[]> = {
   ],
   'automation': [
     {
-      id: 'automation-drift',
-      label: 'Drift Detection',
-      tip: 'Out-of-band maintenance after normal runs complete. Controls drift rescans, recrawl timing, and optional auto-republish behavior.',
-    },
-    {
-      id: 'automation-learning',
-      label: 'Self-Improvement',
-      tip: 'Post-run learning loop that reacts to weak coverage and stale evidence. Controls follow-up budgets, reward decay, and endpoint mining.',
-    },
-    {
       id: 'automation-helper',
-      label: 'Helper Runtime',
-      tip: 'External helper substrate used alongside the main pipeline. Controls category-authority roots and helper fill policy outside the stage graph.',
+      label: 'Category Authority',
+      tip: 'Category-authority roots and configuration outside the stage graph.',
     },
     {
       id: 'automation-operations',
-      label: 'Operations',
-      tip: 'Daemon and resume infrastructure around the pipeline, including concurrent run limits, schema validation, and import watching.',
+      label: 'Resume',
+      tip: 'Resume infrastructure around the pipeline, including seed and persist limits.',
     },
   ],
   'observability-trace': [

@@ -77,7 +77,6 @@ export function IndexingPage() {
     llmModelPlan,
     llmModelReasoning,
     resumeMode,
-    reextractIndexed,
   } = runtimeDraft;
   const singleBrand = useIndexLabStore((s) => s.pickerBrand);
   const setSingleBrand = useIndexLabStore((s) => s.setPickerBrand);
@@ -223,14 +222,12 @@ export function IndexingPage() {
     return deriveRunControlPayload({
       runtimeSettingsBaseline,
       resumeMode,
-      reextractIndexed,
       values: runtimeSettingsPayload,
     });
   }, [
     runtimeSettingsPayload,
     runtimeSettingsBaseline,
     resumeMode,
-    reextractIndexed,
   ]);
 
   const {

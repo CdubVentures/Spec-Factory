@@ -8,14 +8,11 @@ import {
   upsertQueueProduct
 } from '../../queue/queueState.js';
 import { buildSourceHealth } from '../../publish/publishingPipeline.js';
+import { normalizeToken } from '../../shared/primitives.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
 }
 
 function normalizeCategory(value) {

@@ -69,28 +69,6 @@ function normalizeJoinedList(value) {
   return String(value || '').trim();
 }
 
-function assignJsonObject(envOverrides, envKey, value, errorCode, fieldName) {
-  const normalized = String(value || '').trim();
-  if (!normalized) return null;
-
-  try {
-    const parsed = JSON.parse(normalized);
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-      return buildError(400, {
-        error: errorCode,
-        message: `${fieldName} must be a JSON object.`,
-      });
-    }
-    envOverrides[envKey] = JSON.stringify(parsed);
-    return null;
-  } catch {
-    return buildError(400, {
-      error: errorCode,
-      message: `${fieldName} must be valid JSON.`,
-    });
-  }
-}
-
 export function buildProcessStartLaunchPlan(options = {}) {
   const {
     body = {},
@@ -115,12 +93,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
     mode = 'indexlab',
     profile,
     dryRun,
-    fetchPerHostConcurrencyCap,
-    preferHttpFetcher,
     pageGotoTimeoutMs,
     frontierDbPath,
     frontierBlockedDomainThreshold,
-    dynamicFetchPolicyMapJson,
     runtimeTraceFetchRing,
     runtimeTraceLlmRing,
     runtimeTraceLlmPayloads,
@@ -135,7 +110,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     runtimeScreencastMaxWidth,
     runtimeScreencastMaxHeight,
     discoveryEnabled,
-    maxPdfBytes,
     capturePageScreenshotEnabled,
     capturePageScreenshotFormat,
     capturePageScreenshotSelectors,
@@ -251,11 +225,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
   }
 
   const envOverrides = {
-    PREFER_HTTP_FETCHER: 'false',
     DYNAMIC_CRAWLEE_ENABLED: 'false',
   };
 
-  assignInt(envOverrides, 'MAX_PDF_BYTES', maxPdfBytes, { minInput: 1024, minClamp: 1024, maxClamp: 100_000_000 });
   assignString(envOverrides, 'SPEC_DB_DIR', effectiveSpecDbDir);
   assignString(envOverrides, 'LLM_EXTRACTION_CACHE_DIR', effectiveLlmExtractionCacheDir);
   assignBoolean(envOverrides, 'HELPER_FILES_ENABLED', categoryAuthorityEnabled);
@@ -263,15 +235,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     envOverrides.HELPER_FILES_ROOT = categoryAuthorityRoot;
     envOverrides.CATEGORY_AUTHORITY_ROOT = categoryAuthorityRoot;
   }
-
-  const jsonResult = assignJsonObject(
-    envOverrides,
-    'DYNAMIC_FETCH_POLICY_MAP_JSON',
-    dynamicFetchPolicyMapJson,
-    'invalid_dynamic_fetch_policy_json',
-    'dynamicFetchPolicyMapJson',
-  );
-  if (jsonResult) return jsonResult;
 
   const normalizedOutputMode = String(outputMode || '').trim().toLowerCase();
   if (['local', 'dual', 's3'].includes(normalizedOutputMode)) {
@@ -294,10 +257,8 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);
   assignString(envOverrides, 'ANTHROPIC_API_KEY', anthropicApiKey);
 
-  assignBoolean(envOverrides, 'PREFER_HTTP_FETCHER', preferHttpFetcher);
   assignString(envOverrides, 'FRONTIER_DB_PATH', frontierDbPath);
   assignInt(envOverrides, 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD', frontierBlockedDomainThreshold, { minInput: 1, minClamp: 1, maxClamp: 50 });
-  assignInt(envOverrides, 'FETCH_PER_HOST_CONCURRENCY_CAP', fetchPerHostConcurrencyCap, { minInput: 1, minClamp: 1, maxClamp: 64 });
   assignInt(envOverrides, 'PAGE_GOTO_TIMEOUT_MS', pageGotoTimeoutMs, { minInput: 0, minClamp: 0, maxClamp: 120_000 });
 
   assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);

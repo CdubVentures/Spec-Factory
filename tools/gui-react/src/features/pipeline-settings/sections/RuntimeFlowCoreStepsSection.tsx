@@ -10,7 +10,6 @@ interface RuntimeFlowCoreStepsSectionProps {
   activeStep: string;
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
-  reextractWindowLocked: boolean;
   plannerControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
@@ -39,7 +38,6 @@ export function RuntimeFlowCoreStepsSection({
   activeStep,
   runtimeDraft,
   runtimeSettingsReady,
-  reextractWindowLocked,
   plannerControlsLocked,
   inputCls,
   runtimeSubStepDomId,
@@ -77,7 +75,6 @@ export function RuntimeFlowCoreStepsSection({
             <RuntimeFlowRunSetupSection
               runtimeDraft={runtimeDraft}
               runtimeSettingsReady={runtimeSettingsReady}
-              reextractWindowLocked={reextractWindowLocked}
               plannerControlsLocked={plannerControlsLocked}
               inputCls={inputCls}
               runtimeSubStepDomId={runtimeSubStepDomId}

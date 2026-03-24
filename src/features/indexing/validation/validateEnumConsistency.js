@@ -1,9 +1,6 @@
 import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
-
-function normalizeToken(value) {
-  return String(value ?? '').trim().toLowerCase();
-}
+import { normalizeToken } from '../../../shared/primitives.js';
 
 function hasMeaningfulValue(value) {
   const token = normalizeToken(value);

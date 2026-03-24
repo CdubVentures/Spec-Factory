@@ -52,11 +52,10 @@ test('retired per-role provider override keys are NOT in PUT stringFreeMap', () 
   }
 });
 
-test('PUT contract includes fallback model keys and parsingConfidenceBaseMapJson', () => {
+test('PUT contract includes fallback model keys', () => {
   const requiredKeys = [
     'llmPlanFallbackModel',
     'llmReasoningFallbackModel',
-    'parsingConfidenceBaseMapJson',
   ];
   for (const key of requiredKeys) {
     assert.ok(

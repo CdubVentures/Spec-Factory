@@ -11,6 +11,7 @@ import {
   summarizeAvailability,
   updateFieldAvailability
 } from './fieldAvailability.js';
+import { toArray } from '../../../shared/primitives.js';
 
 function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -31,10 +32,6 @@ function defaultStats(category) {
     average_completeness_required: 0,
     last_run: null
   };
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 async function readArtifact(storage, category, filename, fallbackFactory) {
@@ -58,7 +55,6 @@ async function writeArtifact(storage, key, value) {
 function normalizeSourcesOverride(input = {}) {
   return {
     approved: {
-      manufacturer: [...new Set(toArray(input.approved?.manufacturer).map((v) => String(v).toLowerCase()))],
       lab: [...new Set(toArray(input.approved?.lab).map((v) => String(v).toLowerCase()))],
       database: [...new Set(toArray(input.approved?.database).map((v) => String(v).toLowerCase()))],
       retailer: [...new Set(toArray(input.approved?.retailer).map((v) => String(v).toLowerCase()))],
@@ -95,7 +91,6 @@ async function autoPromoteSources({
   );
   const currentOverride = normalizeSourcesOverride(await storage.readJsonOrNull(overrideKey) || {});
   const existingApproved = new Set([
-    ...currentOverride.approved.manufacturer,
     ...currentOverride.approved.lab,
     ...currentOverride.approved.database,
     ...currentOverride.approved.retailer,

@@ -36,7 +36,6 @@ function getRuntimePutFrontendKeys() {
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap || {}),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap || {}),
     ...Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap || {}),
-    String(RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey || 'dynamicFetchPolicyMapJson'),
   ].filter((key) => !SERIALIZER_EXCLUDED_PUT_KEYS.has(key)));
 }
 
@@ -90,19 +89,14 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
 test('runtime settings serializer applies fallback baselines and shared model-token defaults at runtime', async () => {
   const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
   const payload = collectRuntimeSettingsPayload(createSerializerInput({
-    fetchConcurrency: 'not-a-number',
     llmMaxOutputTokens: 'bad-token-count',
     llmMaxOutputTokensPlan: 'bad-plan-tokens',
     llmMaxOutputTokensPlanFallback: 'bad-fallback-plan-tokens',
-    dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
   }));
 
-  assert.equal(payload.fetchConcurrency, 11);
-  // WHY: needsetEvidenceDecayFloor removed in Phase 12 NeedSet Legacy Removal
   assert.equal(payload.llmMaxOutputTokens, 11);
   assert.equal(payload.llmMaxOutputTokensPlan, 4096);
   assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
-  assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 });
 
 test('runtime settings serializer preserves budget and reasoning knobs as parsed runtime payload', async () => {

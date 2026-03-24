@@ -48,7 +48,6 @@ export {
   toInt,
   toFloat,
   toBool,
-  isIndexingHelperFlowEnabled,
 } from './typeHelpers.js';
 
 export {

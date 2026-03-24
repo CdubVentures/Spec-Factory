@@ -12,10 +12,6 @@ export async function loadLearningStoreHintsForRun({
   normalizeFieldListFn = (fields = []) => fields,
   readLearningHintsFromStoresFn = () => null,
 } = {}) {
-  if (!config.selfImproveEnabled) {
-    return null;
-  }
-
   let learningReadDb = null;
 
   try {

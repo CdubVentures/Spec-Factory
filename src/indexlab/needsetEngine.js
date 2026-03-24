@@ -55,9 +55,7 @@ export { availabilityRank, difficultyRank, requiredLevelRank, deriveQueryFamilie
 
 const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
 
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject } from '../shared/primitives.js';
 
 function clamp01(value) {
   if (!Number.isFinite(value)) return 0;

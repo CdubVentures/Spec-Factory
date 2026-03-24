@@ -1,6 +1,4 @@
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { toArray } from '../shared/primitives.js';
 
 function knownFieldCount(spec = {}, fieldOrder = []) {
   let count = 0;

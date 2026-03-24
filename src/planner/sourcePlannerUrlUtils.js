@@ -2,9 +2,7 @@ export function normalizeHost(host) {
   return String(host || '').trim().toLowerCase().replace(/^www\./, '');
 }
 
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+export { isObject } from '../shared/primitives.js';
 
 export function getHost(url) {
   try {

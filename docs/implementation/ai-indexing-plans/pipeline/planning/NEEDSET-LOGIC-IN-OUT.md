@@ -7,8 +7,9 @@ Validated against live code on 2026-03-23. Return shape simplified to 3-field co
 P0 changes (2026-03-22): Rank constants (`AVAILABILITY_RANKS`, `DIFFICULTY_RANKS`, `REQUIRED_LEVEL_RANKS`,
 `PRIORITY_BUCKET_ORDER`) and exhaustion thresholds (`EXHAUSTION_MIN_ATTEMPTS`, `EXHAUSTION_MIN_EVIDENCE_CLASSES`)
 extracted to `src/shared/discoveryRankConstants.js`. Accessor functions re-exported from `needsetEngine.js` for
-backward compatibility. Schema 2/3/4 naming convention retained in code comments — refers to the transformation
-chain: Schema 1 (raw input) → Schema 2 (per-field assessment) → Schema 3 (group planning) → Schema 4 (LLM annotations).
+backward compatibility. NeedSet assessment / search planning context / search plan naming convention retained in
+code comments — refers to the transformation chain: raw input -> NeedSet assessment (per-field) -> search planning
+context (group planning) -> search plan (LLM annotations).
 
 Post-audit fixes (2026-03-22):
 - `mapRequiredLevelToBucket()` extracted to `discoveryRankConstants.js` as shared SSOT. Private copies in
@@ -27,39 +28,39 @@ field importance hierarchy. `needScore` contributes ~1% to group productivity sc
 sort is discarded in final group ordering (which uses phase/priority via `PRIORITY_BUCKET_ORDER`). The scoring
 machinery is vestigial but retained for backward compat (`primeSourcesBuilder.js` sorts by `need_score`).
 
-## What this stage is
+## What this phase is
 
-NeedSet is Stage 01 of the discovery pipeline. It assesses what fields are missing, groups
+NeedSet is the NeedSet phase of the discovery pipeline. It assesses what fields are missing, groups
 them, ranks which groups are easiest/most productive to work on, computes a budget-aware tier
 allocation, and passes that information upstream. It does not write queries or decide search
 strategy.
 
 Internally it runs three functions in sequence:
-- `computeNeedSet()` — per-field gap assessment + V4 search packs (Schema 2)
+- `computeNeedSet()` — per-field gap assessment + V4 search packs (NeedSet assessment)
 - `buildSearchPlanningContext()` — group-level aggregation, coverage/worthiness ranking,
-  seed status, budget-aware tier allocation (Schema 3)
-- `buildSearchPlan()` — LLM call for group-level annotations only (Schema 4, does NOT
-  generate queries)
+  seed status, budget-aware tier allocation (search planning context)
+- `assembleSearchPlan()` — LLM call for group-level annotations only (search plan, LLM-annotated,
+  does NOT generate queries)
 
-These are implementation details. The stage returns a clean 3-field contract:
+These are implementation details. The phase returns a clean 3-field contract:
 ```
 { focusGroups, seedStatus, seedSearchPlan }
 ```
 
 Primary owners:
-- `src/features/indexing/discovery/stages/needSet.js` — stage wrapper
+- `src/features/indexing/pipeline/needSet/runNeedSet.js` — phase wrapper
 - `src/indexlab/needsetEngine.js` — `computeNeedSet()`
 - `src/indexlab/searchPlanningContext.js` — `buildSearchPlanningContext()`
-- `src/indexlab/searchPlanBuilder.js` — `buildSearchPlan()`
+- `src/indexlab/searchPlanBuilder.js` — `assembleSearchPlan()`
 - `src/indexlab/buildFieldHistories.js` — next-round memory (finalization only)
 
-## Stage return contract
+## Phase return contract
 
 ```js
 {
-  focusGroups: FocusGroup[],     // for Stage 03 tier-aware query generation
-  seedStatus:  SeedStatus|null,  // for Stage 03 seed dispatch
-  seedSearchPlan: Schema4|null,  // for finalization (bundles, profile_influence, deltas)
+  focusGroups: FocusGroup[],     // for Search Profile tier-aware query generation
+  seedStatus:  SeedStatus|null,  // for Search Profile seed dispatch
+  seedSearchPlan: SearchPlan|null,  // for finalization (bundles, profile_influence, deltas)
 }
 ```
 
@@ -101,12 +102,12 @@ focus on them now" and pass enriched descriptions and field packs upstream.
 ## Error handling (updated 2026-03-22)
 
 Step-isolated catches attribute failures to the correct step:
-- `computeNeedSetFn` throws → logs `needset_computation_failed`, returns early with all nulls
-- `buildSearchPlanningContextFn` throws → logs `search_planning_context_failed`, returns early
-- `buildSearchPlanFn` throws → logs `schema4_computation_failed` (defensive — real function
+- `computeNeedSetFn` throws -> logs `needset_computation_failed`, returns early with all nulls
+- `buildSearchPlanningContextFn` throws -> logs `search_planning_context_failed`, returns early
+- `buildSearchPlanFn` throws -> logs `search_plan_failed` (defensive — real function
   has internal catch and should never throw)
 
-Previously a single try/catch misattributed all failures as `schema4_computation_failed`.
+Previously a single try/catch misattributed all failures as `search_plan_failed`.
 
 ## Inputs
 
@@ -143,12 +144,12 @@ provenance evidence arrays, identity intermediate state.
 1. Collect field universe from `fieldOrder`, provenance keys, and rule keys
 2. Normalize required levels to `identity | critical | required | expected | optional`
 3. Normalize search hints into `query_terms`, `domain_hints`, `preferred_content_types`
-4. Derive field state: `covered | missing | weak | conflict` → map to Schema 2 state
+4. Derive field state: `covered | missing | weak | conflict` -> map to NeedSet assessment state
 5. Compute reasons: `missing`, `conflict`, `low_conf`, `min_refs_fail`, `publish_gate_block`
 6. Build per-field history from `previousFieldHistories` + current evidence
 7. Build V4 search packs: `normalized_key`, `all_aliases`, `alias_shards`, `availability`,
    `difficulty`, `repeat_count`, `search_intent` (per-key, not per-group)
-8. Compute `sorted_unresolved_keys` (availability → difficulty → repeat → need_score →
+8. Compute `sorted_unresolved_keys` (availability -> difficulty -> repeat -> need_score ->
    required_level)
 9. Compute bundles, rows, profile_mix, focus_fields, summary, blockers, planner_seed
 
@@ -161,21 +162,21 @@ provenance evidence arrays, identity intermediate state.
 6. `normalized_key_queue` — V4-sorted unresolved keys per group
 7. `productivity_score` — for budget-aware phase assignment
 8. `seed_status` — per-seed completion with cooldown
-9. `pass_seed` — seed signals for Stage 03
+9. `pass_seed` — seed signals for Search Profile
 10. `tier_allocation` — budget-aware slot distribution
 
-`buildSearchPlan()` (LLM):
+`assembleSearchPlan()` (LLM):
 - Annotates groups with `reason_active`, `planner_confidence`
 - Does NOT generate queries — `search_plan_handoff.queries` is always empty
 - Returns `panel` for GUI display (bundles, profile_influence, deltas)
 
 ## Events emitted
 
-1. `needset_computed` (scope: `schema2_preview`) — before LLM call. Fields, summary,
+1. `needset_computed` (scope: `needset_assessment`) — before LLM call. Fields, summary,
    blockers, planner_seed, deltas. Bundles and profile_influence are empty.
-2. `needset_computed` (scope: `schema4_planner`) — after LLM call, only when panel exists.
-   Includes Schema 4 panel data (bundles, profile_influence, deltas) plus Schema 2 fields.
-3. `schema4_handoff_ready` — when handoff has queries (currently always empty).
+2. `needset_computed` (scope: `search_plan`) — after LLM call, only when panel exists.
+   Includes search plan panel data (bundles, profile_influence, deltas) plus NeedSet assessment fields.
+3. `search_plan_ready` — when handoff has queries (currently always empty).
 
 ## Important invariants
 
@@ -189,14 +190,14 @@ provenance evidence arrays, identity intermediate state.
 - Phase is productivity-based AND budget-aware
 - Seed completion requires `new_fields_closed >= 1`
 - `passA_specs_seed` derives from `seedStatus.specs_seed.is_needed`, not round number
-- `tier_allocation` mirrors Search Profile's priority order (seeds → groups → keys)
+- `tier_allocation` mirrors Search Profile's priority order (seeds -> groups -> keys)
 - `configInt` is now clamped to registry `min`/`max` with NaN fallback to registry default
 - `bestTierSeen` returns `null` (not `Infinity`) when all evidence tiers >= 99
 - `computeDeltas` null-guards entries before accessing `.field_key`/`.state`
 
 ## What it feeds next
 
-- **Stage 03 Search Profile**: `focusGroups` + `seedStatus` — determines which tier to
+- **Search Profile phase**: `focusGroups` + `seedStatus` — determines which tier to
   operate in via `determineQueryModes()`, fires tier builders
 - **Finalization**: `seedSearchPlan` — bundles, profile_influence, deltas, and
   `search_plan_handoff.queries` for `enrichNeedSetFieldHistories()`
@@ -205,5 +206,4 @@ provenance evidence arrays, identity intermediate state.
 
 ## Schema files in this folder
 
-- `01-needset-input.json` — input contracts with data origin map
-- `01-needset-output.json` — stage return + FocusGroup shape + SeedStatus shape + Schema 2 + Schema 4
+- `01-needset-contract.json` — merged input + output contracts with data origin map, stage return shapes, NeedSet assessment, and search plan output

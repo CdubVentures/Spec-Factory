@@ -15,10 +15,3 @@ export function toBool(value, fallback = false) {
   const token = String(value).trim().toLowerCase();
   return token === '1' || token === 'true' || token === 'yes' || token === 'on';
 }
-
-export function isIndexingHelperFlowEnabled(config = {}) {
-  const globalEnabled = config?.categoryAuthorityEnabled;
-  const indexingEnabled =
-    config?.indexingCategoryAuthorityEnabled;
-  return Boolean(globalEnabled && indexingEnabled);
-}

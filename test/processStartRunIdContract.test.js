@@ -349,7 +349,6 @@ test('process/start forwards representative runtime override families into child
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
       anthropicApiKey: 'sk-anthropic',
-      preferHttpFetcher: true,
       frontierDbPath: 'runtime/frontier.json',
       capturePageScreenshotEnabled: true,
       capturePageScreenshotFormat: 'png',
@@ -358,9 +357,6 @@ test('process/start forwards representative runtime override families into child
       runtimeTraceLlmRing: 77,
       runtimeTraceLlmPayloads: true,
       eventsJsonWrite: true,
-      daemonConcurrency: 3,
-      importsRoot: './imports',
-      importsPollSeconds: 12,
       runtimeScreencastEnabled: true,
       runtimeScreencastFps: 15,
       runtimeScreencastQuality: 80,
@@ -397,7 +393,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');
   assert.equal(capturedEnv?.ANTHROPIC_API_KEY, 'sk-anthropic');
 
-  assert.equal(capturedEnv?.PREFER_HTTP_FETCHER, 'true');
   assert.equal(capturedEnv?.FRONTIER_DB_PATH, 'runtime/frontier.json');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
@@ -407,9 +402,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '77');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_PAYLOADS, 'true');
   assert.equal(capturedEnv?.EVENTS_JSON_WRITE, 'true');
-  assert.equal(capturedEnv?.DAEMON_CONCURRENCY, '3');
-  assert.equal(capturedEnv?.IMPORTS_ROOT, './imports');
-  assert.equal(capturedEnv?.IMPORTS_POLL_SECONDS, '12');
 
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_ENABLED, 'true');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '15');
@@ -425,14 +417,10 @@ test('process/start clamps representative runtime numeric env overrides before s
       category: 'mouse',
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
-      fetchPerHostConcurrencyCap: 999,
       pageGotoTimeoutMs: 999999,
       frontierBlockedDomainThreshold: 999,
-      maxPdfBytes: 999999999,
       runtimeTraceFetchRing: 999999,
       runtimeTraceLlmRing: 999999,
-      daemonConcurrency: 999,
-      importsPollSeconds: 999999,
       runtimeScreencastFps: 999,
       runtimeScreencastQuality: 999,
       runtimeScreencastMaxWidth: 999999,
@@ -451,14 +439,10 @@ test('process/start clamps representative runtime numeric env overrides before s
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
 
-  assert.equal(capturedEnv?.FETCH_PER_HOST_CONCURRENCY_CAP, '64');
   assert.equal(capturedEnv?.PAGE_GOTO_TIMEOUT_MS, '120000');
   assert.equal(capturedEnv?.FRONTIER_BLOCKED_DOMAIN_THRESHOLD, '50');
-  assert.equal(capturedEnv?.MAX_PDF_BYTES, '100000000');
   assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '2000');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '2000');
-  assert.equal(capturedEnv?.DAEMON_CONCURRENCY, '128');
-  assert.equal(capturedEnv?.IMPORTS_POLL_SECONDS, '3600');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '60');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_QUALITY, '100');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_MAX_WIDTH, '3840');
@@ -547,27 +531,3 @@ test('process/start accepts searchEngines CSV and spawns process', async () => {
   assert.equal(started, true, 'process should start with searchEngines CSV value');
 });
 
-test('process/start rejects invalid dynamic fetch policy JSON before spawn', async () => {
-  let started = false;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      dynamicFetchPolicyMapJson: '{bad json',
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: () => {
-      started = true;
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 400);
-  assert.equal(result.body?.error, 'invalid_dynamic_fetch_policy_json');
-  assert.equal(started, false, 'process should not start when dynamic fetch policy JSON is invalid');
-});

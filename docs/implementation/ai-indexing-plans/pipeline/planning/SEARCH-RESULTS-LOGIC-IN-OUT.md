@@ -3,21 +3,19 @@
 Validated against live code on 2026-03-23. Tier metadata now recorded per query via resolveSelectedQueryRow. P5: cumulative Zod checkpoint validates output at `afterExecution`.
 P1 Phase D (2026-03-22): `fetchDrainTimeoutMs` registry setting added for fetch completion gate.
 
-## What this stage is
+## What this phase is
 
-Search Results is the provider-facing execution stage. It runs the final query set, handles internal-first behavior, frontier cache reuse, the Google-vs-SearXNG transport split, and the plan-only fallback for no-provider scenarios.
+Search Execution is the provider-facing execution phase. It runs the final query set, handles internal-first behavior, frontier cache reuse, the Google-vs-SearXNG transport split, and the plan-only fallback for no-provider scenarios.
 
 Primary owners:
 
-- `src/features/indexing/discovery/discoverySearchExecution.js`
+- `src/features/indexing/pipeline/searchExecution/executeSearchQueries.js`
 - `src/features/indexing/search/searchProviders.js`
 - `src/features/indexing/search/searchGoogle.js`
 
 ## Schema files in this folder
 
-- `05-searxng-execution-input.json`
-- `05-google-crawlee-execution-input.json`
-- cumulative runtime output coverage continues in `05-query-journey-output.json`
+- `05-execution-and-journey-contract.json` — merged execution inputs (Google + SearXNG), Query Journey LLM call status, and Query Journey output
 
 ## Inputs in
 
@@ -83,8 +81,8 @@ Important details:
 - Frontier cache reuse can happen in both internal-first and internet-search branches.
 - Zero provider rows do not automatically trigger plan-only fallback; plan-only happens only when there is no viable provider path and no accumulated raw results.
 - CAPTCHA/consent handling on Google is non-fatal and returns zero rows.
-- Search Results itself does not choose winners. It only returns raw rows plus attempt/journal metadata.
-- `search_queued` is emitted by the canonical orchestrator before this stage starts. Search Results does not emit those queued-slot rows itself.
+- Search Execution itself does not choose winners. It only returns raw rows plus attempt/journal metadata.
+- `search_queued` is emitted by the canonical orchestrator before this phase starts. Search Execution does not emit those queued-slot rows itself.
 
 ## Outputs out
 
@@ -107,14 +105,14 @@ Important details:
 
 ## What it feeds next
 
-Search Results feeds SERP Triage with:
+Search Execution feeds Result Processing with:
 
 - raw provider rows
 - query attempt metadata
 - search journal rows
 - internal/external execution reason state
 
-SERP Triage then decides what survives.
+Result Processing then decides what survives.
 
 ## Fetch Completion Gate (P1 Phase D)
 

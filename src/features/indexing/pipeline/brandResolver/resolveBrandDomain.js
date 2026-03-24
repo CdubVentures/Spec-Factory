@@ -1,3 +1,5 @@
+import { toArray } from '../../../../shared/primitives.js';
+
 /**
  * Storage contract (getBrandDomain / upsertBrandDomain):
  * @typedef {object} BrandDomainRow
@@ -91,6 +93,3 @@ function parseAliases(value) {
   }
 }
 
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}

@@ -10,18 +10,7 @@ import { nowIso } from '../utils/common.js';
 import { componentReviewPath } from '../engine/curationSuggestions.js';
 import { validateComponentMatches } from '../features/indexing/validation/index.js';
 import { normalizeCostRates } from '../billing/costRates.js';
-
-function isObject(v) {
-  return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
-}
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+import { isObject, normalizeFieldKey } from '../shared/primitives.js';
 
 async function safeReadJson(fp) {
   try {

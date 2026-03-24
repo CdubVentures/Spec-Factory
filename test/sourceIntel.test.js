@@ -233,7 +233,6 @@ test('persistSourceIntel applies negative learning and decay for field rewards',
   const storage = makeMemoryStorage();
   const config = {
     s3OutputPrefix: 'specs/outputs',
-    fieldRewardHalfLifeDays: 1
   };
 
   await storage.writeObject(

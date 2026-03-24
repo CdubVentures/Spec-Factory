@@ -25,12 +25,9 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(cfg.maxCandidateUrls > 0);
   assert.equal(cfg.runProfile, 'standard');
   assert.equal(cfg.discoveryEnabled, true);
-  assert.equal(cfg.fetchCandidateSources, true);
 
-  // Concurrency / fetch defaults
-  assert.equal(typeof cfg.concurrency, 'number');
+  // Fetch defaults
   assert.equal(typeof cfg.perHostMinDelayMs, 'number');
-  assert.equal(typeof cfg.fetchPerHostConcurrencyCap, 'number');
   // Output defaults
   assert.equal(typeof cfg.outputMode, 'string');
   assert.equal(typeof cfg.localInputRoot, 'string');
@@ -67,9 +64,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
 
   assert.equal(typeof cfg.retrievalInternalsMap, 'object');
   assert.ok(cfg.retrievalInternalsMap !== null);
-
-  assert.equal(typeof cfg.parsingConfidenceBaseMap, 'object');
-  assert.ok(cfg.parsingConfidenceBaseMap !== null);
 
   // Pricing map
   assert.equal(typeof cfg.llmModelPricingMap, 'object');
@@ -281,14 +275,7 @@ test('CHAR config: retrievalInternalsMap has all expected keys', () => {
   }
 });
 
-test('CHAR config: parsingConfidenceBaseMap has all expected keys', () => {
-  const cfg = loadConfig();
-  const expected = ['network_json', 'embedded_state', 'json_ld', 'microdata', 'opengraph', 'microformat_rdfa'];
-  for (const key of expected) {
-    assert.ok(key in cfg.parsingConfidenceBaseMap, `parsingConfidenceBaseMap must have ${key}`);
-    assert.equal(typeof cfg.parsingConfidenceBaseMap[key], 'number');
-  }
-});
+// WHY: parsingConfidenceBaseMap test removed — setting retired from registry.
 
 // WHY: Section 13 (fetchSchedulerInternalsMapJson roundtrip) removed — setting retired.
 // retrievalInternalsMapJson was also previously retired.
@@ -305,10 +292,6 @@ test('CHAR config: category authority root has sensible default', () => {
   assert.strictEqual(cfg.helperFilesRoot, undefined);
 });
 
-test('CHAR config: indexingCategoryAuthorityEnabled defaults to false', () => {
-  const cfg = loadConfig();
-  assert.equal(cfg.indexingCategoryAuthorityEnabled, false);
-});
 
 // =========================================================================
 // SECTION 15: loadConfig is idempotent (calling twice gives same shape)

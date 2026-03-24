@@ -10,7 +10,6 @@ function buildRuntimeSettingsGetSnapshot(cfg, toInt) {
   const INT_MAP = RUNTIME_SETTINGS_ROUTE_GET.intMap;
   const FLOAT_MAP = RUNTIME_SETTINGS_ROUTE_GET.floatMap;
   const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_GET.boolMap;
-  const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_GET.dynamicFetchPolicyMapJsonKey;
   const settings = {};
   for (const [feKey, cfgKey] of Object.entries(STRING_MAP)) {
     settings[feKey] = String(cfg[cfgKey] ?? '');
@@ -21,13 +20,6 @@ function buildRuntimeSettingsGetSnapshot(cfg, toInt) {
   for (const [feKey, cfgKey] of Object.entries(FLOAT_MAP)) {
     const v = Number.parseFloat(String(cfg[cfgKey] ?? 0));
     settings[feKey] = Number.isFinite(v) ? v : 0;
-  }
-  if (typeof cfg.dynamicFetchPolicyMapJson === 'string') {
-    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = cfg.dynamicFetchPolicyMapJson;
-  } else if (cfg.dynamicFetchPolicyMap && typeof cfg.dynamicFetchPolicyMap === 'object') {
-    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = JSON.stringify(cfg.dynamicFetchPolicyMap);
-  } else {
-    settings[DYNAMIC_FETCH_POLICY_MAP_JSON_KEY] = '';
   }
   for (const [feKey, cfgKey] of Object.entries(BOOL_MAP)) {
     settings[feKey] = Boolean(cfg[cfgKey]);
@@ -60,7 +52,6 @@ export function createRuntimeSettingsHandler({
       console.log('[SETTINGS-DEBUG]', method, '/runtime-settings keys=', Object.keys(body || {}).length, 'fetchConcurrency=', (body || {}).fetchConcurrency);
       const STRING_ENUM_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap;
       const STRING_FREE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap;
-      const DYNAMIC_FETCH_POLICY_MAP_JSON_KEY = RUNTIME_SETTINGS_ROUTE_PUT.dynamicFetchPolicyMapJsonKey;
       const INT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap;
       const FLOAT_RANGE_MAP = RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap;
       const BOOL_MAP = RUNTIME_SETTINGS_ROUTE_PUT.boolMap;
@@ -75,7 +66,6 @@ export function createRuntimeSettingsHandler({
       // WHY: Build set of all known keys so unknown keys can be rejected.
       const ALL_KNOWN_KEYS = new Set([
         ...Object.keys(STRING_ENUM_MAP),
-        DYNAMIC_FETCH_POLICY_MAP_JSON_KEY,
         ...Object.keys(STRING_FREE_MAP),
         ...Object.keys(INT_RANGE_MAP),
         ...Object.keys(FLOAT_RANGE_MAP),
@@ -103,30 +93,6 @@ export function createRuntimeSettingsHandler({
             nextRuntimeSnapshot[cfgKey] = str;
             applied[key] = str;
             runtimePatch[cfgKey] = str;
-          }
-        } else if (key === DYNAMIC_FETCH_POLICY_MAP_JSON_KEY) {
-          const normalized = String(value ?? '').trim();
-          if (!normalized) {
-            nextRuntimeSnapshot.dynamicFetchPolicyMapJson = '';
-            nextRuntimeSnapshot.dynamicFetchPolicyMap = {};
-            applied[key] = '';
-            runtimePatch.dynamicFetchPolicyMapJson = '';
-            runtimePatch.dynamicFetchPolicyMap = {};
-            continue;
-          }
-          try {
-            const parsed = JSON.parse(normalized);
-            if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-              rejected[key] = 'invalid_json_object';
-              continue;
-            }
-            nextRuntimeSnapshot.dynamicFetchPolicyMap = parsed;
-            nextRuntimeSnapshot.dynamicFetchPolicyMapJson = JSON.stringify(parsed);
-            applied[key] = nextRuntimeSnapshot.dynamicFetchPolicyMapJson;
-            runtimePatch.dynamicFetchPolicyMap = parsed;
-            runtimePatch.dynamicFetchPolicyMapJson = nextRuntimeSnapshot.dynamicFetchPolicyMapJson;
-          } catch {
-            rejected[key] = 'invalid_json_object';
           }
         } else if (key in STRING_FREE_MAP) {
           const cfgKey = STRING_FREE_MAP[key];

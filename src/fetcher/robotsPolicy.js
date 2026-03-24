@@ -1,6 +1,4 @@
-function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
+import { normalizeToken } from '../shared/primitives.js';
 
 function stripComment(line) {
   const raw = String(line || '');

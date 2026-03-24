@@ -2,26 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { extractCatalogSeedData, loadGeneratedFieldRules } from '../ingest/catalogSeed.js';
 import { ruleRequiredLevel } from '../engine/ruleAccessors.js';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function normalizeText(value) {
-  return String(value || '').trim();
-}
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
 
 function normalizeCategory(value) {
   return normalizeFieldKey(value);

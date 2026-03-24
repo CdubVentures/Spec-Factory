@@ -1,0 +1,96 @@
+{
+  "_doc": "Merged LLM call contract + output for Search Planner phase. Validated against live code 2026-03-23.",
+  "validated_against": "2026-03-23",
+
+  "llm_call": {
+    "routing": {
+      "reason": "search_planner_enhance",
+      "role": "plan",
+      "phase": "searchPlanner",
+      "gate": "hasLlmRouteApiKey(config, { role: 'plan' }) plus resolvePhaseModel(config, 'searchPlanner')"
+    },
+    "system_prompt_rules": {
+      "identity_lock": "every output query MUST contain brand and model. Never drift to sibling/competitor.",
+      "tier_1_seed": "return unchanged or trivial phrasing cleanup only. Do not restructure.",
+      "tier_2_group_search": "tighten redundant tokens, pick better search angle. Use target_fields to focus. Keep group intent.",
+      "tier_3_key_search": "use enrichment context (repeat_count, all_aliases, domain_hints, preferred_content_types, domains_tried, content_types_tried) to craft materially different queries.",
+      "tier_3a_repeat_0": "first attempt. Pick best alias combination for a clean first search.",
+      "tier_3b_repeat_1": "aliases available. Use DIFFERENT alias combination than the base query.",
+      "tier_3c_repeat_2": "domain hints available. Add an UNTRIED domain as a bias term. Do NOT repeat domains_tried.",
+      "tier_3d_repeat_3_plus": "get creative. Vary phrasing family (teardown, benchmark, measured, review, spec sheet, comparison). Use untried content types and domain hints.",
+      "history": "query_history shows prior queries. Do NOT repeat them or trivial rewrites."
+    },
+    "user_payload_shape": {
+      "identity_lock": { "brand": "string", "model": "string", "variant": "string" },
+      "query_history": "string[] (up to 50 prior queries)",
+      "missing_fields": "string[] (up to 60 unresolved fields)",
+      "rows": [
+        {
+          "index": "0-based row index",
+          "query": "deterministic query string from Search Profile",
+          "tier": "seed | group_search | key_search",
+          "target_fields": "string[]",
+          "group_key": "string",
+          "normalized_key": "string",
+          "_tier3_only_fields": {
+            "repeat_count": "number (0=first attempt, 1=second, 2=third, 3+=creative)",
+            "all_aliases": "string[] (up to 8 aliases for this field)",
+            "domain_hints": "string[] (up to 5 suggested domains)",
+            "preferred_content_types": "string[] (up to 5 content types)",
+            "domains_tried": "string[] (domains already searched for this key)",
+            "content_types_tried": "string[] (content types already tried for this key)"
+          }
+        }
+      ]
+    },
+    "response_schema": {
+      "enhanced_queries": [
+        { "index": "integer (0-based, matches input row)", "query": "string (enhanced query)" }
+      ]
+    },
+    "post_processing": [
+      "response must have exactly N entries matching input row count",
+      "each enhanced query is normalized (trim, collapse whitespace)",
+      "per-row identity lock check: enhanced query must contain brand + model tokens",
+      "rows failing identity lock keep their original query (no _llm suffix)"
+    ],
+    "failure_modes": {
+      "no_plan_route_api_key": "returns deterministic_fallback (rows unchanged)",
+      "no_searchPlanner_model": "returns deterministic_fallback (rows unchanged)",
+      "wrong_length_response": "retry once, then deterministic_fallback",
+      "malformed_response": "retry once, then deterministic_fallback",
+      "llm_call_throws": "retry once, then deterministic_fallback",
+      "max_retries": 2
+    }
+  },
+
+  "output": {
+    "top_level_keys": ["enhancedRows", "source"],
+    "enhancedRows": {
+      "type": "array of row objects",
+      "count": "same length as input searchProfileBase.query_rows",
+      "row_shape": {
+        "query": "possibly LLM-rewritten query string",
+        "hint_source": "original_llm when enhanced, original value when fallback",
+        "original_query": "pre-enhancement query (only present on LLM-enhanced rows)",
+        "tier": "seed | group_search | key_search (passthrough, never mutated)",
+        "group_key": "string (passthrough)",
+        "normalized_key": "string (passthrough)",
+        "target_fields": "string[] (passthrough)",
+        "doc_hint": "string (passthrough)",
+        "domain_hint": "string (passthrough)",
+        "repeat_count": "number (Tier 3 only, passthrough)",
+        "all_aliases": "string[] (Tier 3 only, passthrough)",
+        "domain_hints": "string[] (Tier 3 only, passthrough)",
+        "preferred_content_types": "string[] (Tier 3 only, passthrough)",
+        "domains_tried_for_key": "string[] (Tier 3 only, passthrough)",
+        "content_types_tried_for_key": "string[] (Tier 3 only, passthrough)"
+      }
+    },
+    "source": "llm | deterministic_fallback",
+    "runtime_events": {
+      "search_plan_generated": "emitted when source is llm and enhancedRows has entries"
+    },
+    "downstream_consumer": "src/features/indexing/pipeline/queryJourney/runQueryJourney.js"
+  }
+}

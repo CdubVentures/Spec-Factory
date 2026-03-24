@@ -68,15 +68,6 @@ export const RETRIEVAL_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('retrievalIn
   provenanceOnlyMinRows: 24
 });
 
-export const PARSING_CONFIDENCE_BASE_DEFAULTS = parseRuntimeJsonDefault('parsingConfidenceBaseMapJson', {
-  network_json: 1,
-  embedded_state: 0.85,
-  json_ld: 0.9,
-  microdata: 0.88,
-  opengraph: 0.8,
-  microformat_rdfa: 0.78
-});
-
 export const REPAIR_DEDUPE_RULE_DEFAULT = 'domain_once';
 export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
@@ -110,32 +101,6 @@ export function normalizeRetrievalInternalsMap(input = {}) {
     primeSourcesMaxCap: clampIntFromMap(source, 'primeSourcesMaxCap', RETRIEVAL_INTERNALS_DEFAULTS.primeSourcesMaxCap, 1, 50),
     fallbackEvidenceMaxRows: clampIntFromMap(source, 'fallbackEvidenceMaxRows', RETRIEVAL_INTERNALS_DEFAULTS.fallbackEvidenceMaxRows, 200, 20000),
     provenanceOnlyMinRows: clampIntFromMap(source, 'provenanceOnlyMinRows', RETRIEVAL_INTERNALS_DEFAULTS.provenanceOnlyMinRows, 0, 500),
-  };
-}
-
-export function normalizeParsingConfidenceBaseMap(input = {}) {
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  const microformatRdfaFallback = clampFloatFromMap(
-    source,
-    'microformat_rdfa',
-    PARSING_CONFIDENCE_BASE_DEFAULTS.microformat_rdfa,
-    0,
-    2
-  );
-  const microformatRdfa = clampFloatFromMap(
-    source,
-    'microformat_rdfa',
-    clampFloatFromMap(source, 'microformat', microformatRdfaFallback, 0, 2),
-    0,
-    2
-  );
-  return {
-    network_json: clampFloatFromMap(source, 'network_json', PARSING_CONFIDENCE_BASE_DEFAULTS.network_json, 0, 2),
-    embedded_state: clampFloatFromMap(source, 'embedded_state', PARSING_CONFIDENCE_BASE_DEFAULTS.embedded_state, 0, 2),
-    json_ld: clampFloatFromMap(source, 'json_ld', PARSING_CONFIDENCE_BASE_DEFAULTS.json_ld, 0, 2),
-    microdata: clampFloatFromMap(source, 'microdata', PARSING_CONFIDENCE_BASE_DEFAULTS.microdata, 0, 2),
-    opengraph: clampFloatFromMap(source, 'opengraph', PARSING_CONFIDENCE_BASE_DEFAULTS.opengraph, 0, 2),
-    microformat_rdfa: microformatRdfa,
   };
 }
 

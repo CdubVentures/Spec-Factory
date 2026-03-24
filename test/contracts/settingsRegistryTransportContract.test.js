@@ -94,13 +94,11 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     ok(typeof map === 'object');
     ok(Object.isFrozen(map));
     // Spot checks
-    strictEqual(map.fetchConcurrency, 'CONCURRENCY');
     strictEqual(map.categoryAuthorityEnabled, 'HELPER_FILES_ENABLED');
     strictEqual(map.resumeMode, 'INDEXING_RESUME_MODE');
     strictEqual(map.autoScrollEnabled, 'AUTO_SCROLL_ENABLED');
     // Empty envKey entries should NOT appear
     strictEqual(map.llmPhaseOverridesJson, undefined);
-    strictEqual(map.daemonGracefulShutdownTimeoutMs, undefined);
   });
 
   it('deriveConfigKeyMap produces correct output', () => {
@@ -110,11 +108,8 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     // Every entry must be present
     strictEqual(Object.keys(map).length, RUNTIME_SETTINGS_REGISTRY.length);
     // Spot checks for aliased keys
-    strictEqual(map.fetchConcurrency, 'concurrency');
     strictEqual(map.resumeMode, 'indexingResumeMode');
     strictEqual(map.resumeWindowHours, 'indexingResumeMaxAgeHours');
-    strictEqual(map.reextractAfterHours, 'indexingReextractAfterHours');
-    strictEqual(map.reextractIndexed, 'indexingReextractEnabled');
     // Non-aliased key
     strictEqual(map.autoScrollEnabled, 'autoScrollEnabled');
   });
@@ -140,11 +135,8 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
 
   it('known cfgKey aliases have correct configKey', () => {
     const KNOWN = [
-      { key: 'fetchConcurrency', configKey: 'concurrency' },
       { key: 'resumeMode', configKey: 'indexingResumeMode' },
       { key: 'resumeWindowHours', configKey: 'indexingResumeMaxAgeHours' },
-      { key: 'reextractAfterHours', configKey: 'indexingReextractAfterHours' },
-      { key: 'reextractIndexed', configKey: 'indexingReextractEnabled' },
     ];
     for (const { key, configKey } of KNOWN) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
@@ -159,9 +151,6 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     const SPECIAL = [
       { key: 'categoryAuthorityEnabled', envKey: 'HELPER_FILES_ENABLED' },
       { key: 'categoryAuthorityRoot', envKey: 'CATEGORY_AUTHORITY_ROOT' },
-      { key: 'indexingCategoryAuthorityEnabled', envKey: 'INDEXING_HELPER_FILES_ENABLED' },
-      { key: 'fetchConcurrency', envKey: 'CONCURRENCY' },
-      { key: 'reCrawlStaleAfterDays', envKey: 'RECRAWL_STALE_AFTER_DAYS' },
       { key: 'frontierCooldown404Seconds', envKey: 'FRONTIER_COOLDOWN_404' },
     ];
     for (const { key, envKey } of SPECIAL) {

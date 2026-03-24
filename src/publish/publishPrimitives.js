@@ -1,3 +1,9 @@
+import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
+import { toInt, toFloat as toNumber } from '../shared/valueNormalizers.js';
+
+export { isObject, toArray, normalizeToken, toInt, toNumber };
+export { hasKnownValue } from '../shared/valueNormalizers.js';
+
 export function nowIso() {
   return new Date().toISOString();
 }
@@ -10,6 +16,8 @@ export function normalizeCategory(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+// WHY: Different from shared/primitives.js normalizeFieldKey — this variant
+// strips the "fields." prefix before normalizing. Used by publish pipeline.
 export function normalizeFieldKey(value) {
   return String(value || '')
     .trim()
@@ -19,33 +27,9 @@ export function normalizeFieldKey(value) {
     .replace(/^_+|_+$/g, '');
 }
 
-export function normalizeToken(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-export { hasKnownValue } from '../shared/valueNormalizers.js';
-
 export function parseDateMs(value) {
   const parsed = Date.parse(String(value || ''));
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-export function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-export function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export function parsePeriodDays(period, fallback = 30) {

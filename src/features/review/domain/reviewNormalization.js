@@ -1,20 +1,10 @@
 // ── Review Normalization ─────────────────────────────────────────────
 //
 // Shared normalizers used across the review subsystem.
-// Unified from duplicated definitions in componentReviewData.js,
-// reviewGridData.js, and reviewRoutes.js.
+// Primitives imported from shared SSOT; review-specific helpers defined locally.
+import { isObject, toArray, normalizeToken } from '../../../shared/primitives.js';
 
-export function isObject(v) {
-  return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
-}
-
-export function toArray(v) {
-  return Array.isArray(v) ? v : [];
-}
-
-export function normalizeToken(v) {
-  return String(v ?? '').trim().toLowerCase();
-}
+export { isObject, toArray, normalizeToken };
 
 export function normalizeFieldKey(value) {
   return String(value || '')

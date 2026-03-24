@@ -6,12 +6,13 @@ P4 post-audit fixes (2026-03-22): NEW-1 focusGroups immutability, N5 bucket mapp
 P5 schema enforcement (2026-03-23): Cumulative pipeline context schema, per-stage schemas deleted, LLM adapter schemas unified to Zod, enforcement mode with registry knob, orchestrator mutation + hardcoded config fixed. Live-tested in enforce mode.
 P6 re-audit (2026-03-23): Full pipeline re-audited against live code. Documentation inaccuracies fixed (event order, discoveryResult field names, Search Planner input contract, crawl config registry status). See P6 section below.
 P7 host plan removal + dead settings cleanup (2026-03-23): Entire host plan concept deleted. 6 dead registry settings removed. Domain classification ordering fixed. See P7 section below.
+Validated: 2026-03-23 (file paths updated to vertical slicing layout, event/scope names updated, stage labels updated to semantic phase names).
 
 ---
 
 ## Audit Scope
 
-18 source files across the 8-stage discovery pipeline, ~6,500 LOC. Verified every claim against live code with line numbers.
+18 source files across the 8-phase discovery pipeline, ~6,500 LOC. Verified every claim against live code with line numbers.
 
 ---
 
@@ -32,13 +33,13 @@ Both consumer files now import from shared. Old names (`V4_AVAILABILITY_RANKS`, 
 
 ### P0-3: Unified approvedDomain / approved_domain Naming
 
-**Problem:** `serpSelector.js` emitted BOTH `approvedDomain` (camelCase) AND `approved_domain` (snake_case) on the same objects. `discoveryResultProcessor.js` had OR-fallback reads.
+**Problem:** `serpSelector.js` emitted BOTH `approvedDomain` (camelCase) AND `approved_domain` (snake_case) on the same objects. `processDiscoveryResults.js` had OR-fallback reads.
 
 **Fix:**
 - `approvedDomain` (camelCase) is the canonical in-memory form (74 occurrences, 30 files)
 - `approved_domain` (snake_case) is correct only at serialization boundaries (DB, traces)
 - Removed dual-assignment from `serpSelector.js` (3 locations)
-- Removed OR-fallback reads from `discoveryResultProcessor.js` (4 locations)
+- Removed OR-fallback reads from `processDiscoveryResults.js` (4 locations)
 - Same cleanup applied to `tierName` / `tier_name_guess`
 
 ### P0-4: Fixed Hidden Array Metadata Pattern
@@ -93,9 +94,9 @@ CREATE TABLE IF NOT EXISTS field_history (
 ### Phase B: Write Path (COMPLETE)
 
 Field histories persisted inside the `exportToSpecDb()` transaction at end of each round. Threaded `needSet` through:
-- `createProductCompletionRuntime.js` → learning export phase context
-- `learningExportPhase.js` → `exportRunArtifactsFn` call
-- `exporter.js` → `exportRunArtifacts()` and `exportToSpecDb()`
+- `createProductCompletionRuntime.js` -> learning export phase context
+- `learningExportPhase.js` -> `exportRunArtifactsFn` call
+- `exporter.js` -> `exportRunArtifacts()` and `exportToSpecDb()`
 
 Writes are atomic with product_run, item_field_state, and candidate writes.
 
@@ -109,32 +110,32 @@ Writes are atomic with product_run, item_field_state, and candidate writes.
 - `runFetchSchedulerDrain.js` wraps `scheduler.drainQueue()` with `Promise.race` timeout
 - On timeout, emits `fetch_drain_timeout` event with `urls_enqueued`, `urls_processed`, `urls_skipped`, `urls_remaining`
 
-### Phase E: Stage Zod Schemas (SUPERSEDED by P5)
+### Phase E: Per-Phase Zod Schemas (SUPERSEDED by P5)
 
-Per-stage Zod schemas were added in P1 but have been **deleted in P5** (2026-03-23). They were never imported or enforced anywhere — pure dead code. Replaced by the cumulative pipeline context schema which validates the full accumulated state at each boundary.
+Per-phase Zod schemas were added in P1 but have been **deleted in P5** (2026-03-23). They were never imported or enforced anywhere — pure dead code. Replaced by the cumulative pipeline context schema which validates the full accumulated state at each boundary.
 
 ---
 
 ## Schema Coverage (After P5)
 
-**Architecture: Cumulative pipeline context schema** (`src/features/indexing/discovery/pipelineContextSchema.js`)
+**Architecture: Cumulative pipeline context schema** (`src/features/indexing/pipeline/orchestration/pipelineContextSchema.js`)
 
-One schema grows as data flows through the pipeline. 8 progressive Zod checkpoints validated at each stage boundary in the orchestrator:
+One schema grows as data flows through the pipeline. 8 progressive Zod checkpoints validated at each phase boundary in the orchestrator:
 
-| Checkpoint | After Stage | Key Fields Validated |
-|------------|-------------|---------------------|
-| `seed` | Before stages | config, job, category, categoryConfig, runId |
-| `afterBootstrap` | 01+02 parallel | focusGroups (typed elements), seedStatus, seedSearchPlan, brandResolution, variables, identityLock |
-| `afterProfile` | 03 | searchProfileBase (typed: query_rows, identity, queries) |
-| `afterPlanner` | 04 | enhancedRows |
-| `afterJourney` | 05 | queries, selectedQueryRowMap, executionQueryLimit, queryLimit |
-| `afterExecution` | 06 | rawResults (typed elements), searchAttempts (typed), searchJournal (typed), internalSatisfied, externalSearchReason |
-| `afterResults` | 07 | discoveryResult (typed: candidates, serp_explorer, all 19 fields) |
-| `final` | 08 | Same as afterResults (enqueue_summary attached via passthrough) |
+| Checkpoint | After Phase | Key Fields Validated |
+|------------|------------|---------------------|
+| `seed` | Before phases | config, job, category, categoryConfig, runId |
+| `afterBootstrap` | NeedSet+Brand Resolver parallel | focusGroups (typed elements), seedStatus, seedSearchPlan, brandResolution, variables, identityLock |
+| `afterProfile` | Search Profile | searchProfileBase (typed: query_rows, identity, queries) |
+| `afterPlanner` | Search Planner | enhancedRows |
+| `afterJourney` | Query Journey | queries, selectedQueryRowMap, executionQueryLimit, queryLimit |
+| `afterExecution` | Search Execution | rawResults (typed elements), searchAttempts (typed), searchJournal (typed), internalSatisfied, externalSearchReason |
+| `afterResults` | Result Processing | discoveryResult (typed: candidates, serp_explorer, all 19 fields) |
+| `final` | Domain Classifier | Same as afterResults (enqueue_summary attached via passthrough) |
 
 **Enforcement:** Controlled by `pipelineSchemaEnforcementMode` registry setting (`off`/`warn`/`enforce`). Default: `warn`. Live-tested in `enforce` mode — zero validation failures.
 
-**Per-stage schemas:** Deleted from all 6 `stages/*.js` files (11 schemas, 0 imports anywhere). Cumulative schema is the SSOT.
+**Per-phase schemas:** Deleted from all 6 phase modules (11 schemas, 0 imports anywhere). Cumulative schema is the SSOT.
 
 **LLM adapter schemas:** All 11 LLM response schemas converted from hand-written JSON Schema to Zod SSOT with `toJSONSchema()` conversion at call boundary. See P5 details below.
 
@@ -178,9 +179,9 @@ Completed: 2026-03-22. 7,614 tests pass, 0 regressions from P3 changes.
 
 | Module | Functions | LOC | Responsibility |
 |--------|-----------|-----|---------------|
-| `discoveryResultTraceBuilder.js` | `createCandidateTraceMap()`, `enrichCandidateTraces()` | 143 | Trace lifecycle: creation, merge, reason code enrichment |
-| `discoveryResultClassifier.js` | `classifyAndDeduplicateCandidates()`, `classifyDomains()` | 193 | URL canonicalization, classification, domain heuristics |
-| `discoveryResultPayloadBuilder.js` | `buildSerpExplorer()`, `writeDiscoveryPayloads()` | 217 | SERP explorer assembly, discovery + candidates payload writes |
+| `resultTraceBuilder.js` | `createCandidateTraceMap()`, `enrichCandidateTraces()` | 143 | Trace lifecycle: creation, merge, reason code enrichment |
+| `resultClassifier.js` | `classifyAndDeduplicateCandidates()`, `classifyDomains()` | 193 | URL canonicalization, classification, domain heuristics |
+| `resultPayloadBuilder.js` | `buildSerpExplorer()`, `writeDiscoveryPayloads()` | 217 | SERP explorer assembly, discovery + candidates payload writes |
 
 **Orchestrator after:** 344 lines (49% reduction). Reads as sequential named steps.
 
@@ -205,12 +206,12 @@ All changes verified: 7,570+ tests pass, 0 regressions.
 **Fix:** Replaced in-place mutation with `phaseOverrides` Map + immutable `.map()` spread. Original objects are never modified. New variable `phasedGroups` used for all downstream references.
 
 ### P4-2: Bucket Mapping SSOT (N5)
-**Problem:** `mapPriorityBucket` (needsetEngine) mapped `required` → `core`. `requiredLevelToBucket` (searchPlanBuilder) mapped `required` → `secondary` and `expected` → `'expected'` (invalid bucket not in PRIORITY_BUCKET_ORDER).
+**Problem:** `mapPriorityBucket` (needsetEngine) mapped `required` -> `core`. `requiredLevelToBucket` (searchPlanBuilder) mapped `required` -> `secondary` and `expected` -> `'expected'` (invalid bucket not in PRIORITY_BUCKET_ORDER).
 **Fix:** Extracted `mapRequiredLevelToBucket()` to `discoveryRankConstants.js`. Deleted all 3 private copies (needsetEngine, searchPlanBuilder, scripts/injectFieldHistoryProof). Fixed test assertion in searchPlanBuilder.test.js.
 
 ### P4-3: Confidence Fallback + Doc Cleanup (B3+B4)
-**Problem:** Brand resolution confidence used `?? 0` in 3 telemetry sites but `?? null` in the stage itself. 4 phantom registry settings documented that don't exist in code.
-**Fix:** Unified to `?? null` in queryJourney.js and searchDiscovery.js. Removed phantom registry settings from brand resolver docs. Added WHY comments on hardcoded crawlConfig and queryConcurrency in orchestrator.
+**Problem:** Brand resolution confidence used `?? 0` in 3 telemetry sites but `?? null` in the phase itself. 4 phantom registry settings documented that don't exist in code.
+**Fix:** Unified to `?? null` in runQueryJourney.js and searchDiscovery.js. Removed phantom registry settings from brand resolver docs. Added WHY comments on hardcoded crawlConfig and queryConcurrency in orchestrator.
 
 ---
 
@@ -220,23 +221,23 @@ All changes verified: 7,696 tests pass, live pipeline tested in enforce mode wit
 
 ### P5-1: Cumulative Pipeline Context Schema
 
-**Problem:** No runtime schema validation at pipeline stage boundaries. 12 per-stage Zod schemas exported but never imported, never enforced — pure dead code.
+**Problem:** No runtime schema validation at pipeline phase boundaries. 12 per-phase Zod schemas exported but never imported, never enforced — pure dead code.
 
-**Fix:** Created `src/features/indexing/discovery/pipelineContextSchema.js` — one cumulative schema with 8 progressive Zod checkpoints using `.extend()`. Wired `validatePipelineCheckpoint()` into orchestrator at all 6 inter-stage boundaries. Schema deepened with typed sub-schemas for focusGroups, seedStatus, seedSearchPlan, searchProfileBase, candidateRow, serpExplorer, discoveryResult (19 fields).
+**Fix:** Created `src/features/indexing/pipeline/orchestration/pipelineContextSchema.js` — one cumulative schema with 8 progressive Zod checkpoints using `.extend()`. Wired `validatePipelineCheckpoint()` into orchestrator at all 6 inter-phase boundaries. Schema deepened with typed sub-schemas for focusGroups, seedStatus, seedSearchPlan, searchProfileBase, candidateRow, serpExplorer, discoveryResult (19 fields).
 
-### P5-2: Dead Per-Stage Schema Cleanup
+### P5-2: Dead Per-Phase Schema Cleanup
 
-**Problem:** 11 per-stage Zod schemas across 6 `stages/*.js` files. Zero imports anywhere in codebase. SSOT drift risk with cumulative schema.
+**Problem:** 11 per-phase Zod schemas across 6 phase modules. Zero imports anywhere in codebase. SSOT drift risk with cumulative schema.
 
-**Fix:** Deleted all 11 schemas + `import { z } from 'zod'` from: needSet.js, brandResolver.js, searchProfile.js, searchPlanner.js, queryJourney.js, domainClassifier.js. Cumulative schema is the single source of truth.
+**Fix:** Deleted all 11 schemas + `import { z } from 'zod'` from: runNeedSet.js, runBrandResolver.js, runSearchProfile.js, runSearchPlanner.js, runQueryJourney.js, runDomainClassifier.js. Cumulative schema is the single source of truth.
 
 ### P5-3: Orchestrator Mutation Removal
 
-**Problem:** `discoveryResult.enqueue_summary = classifierResult` and `discoveryResult.seed_search_plan_output = needset.seedSearchPlan` — post-hoc mutations of Stage 07 output.
+**Problem:** `discoveryResult.enqueue_summary = classifierResult` and `discoveryResult.seed_search_plan_output = needset.seedSearchPlan` — post-hoc mutations of Result Processing output.
 
-**Fix:** Replaced with fresh `finalResult = { ...discoveryResult, seed_search_plan_output, enqueue_summary }` merge. Stage 08 still receives original discoveryResult (reads only). No behavior change.
+**Fix:** Replaced with fresh `finalResult = { ...discoveryResult, seed_search_plan_output, enqueue_summary }` merge. Domain Classifier still receives original discoveryResult (reads only). No behavior change.
 
-### P5-4: Hardcoded Crawl Config → Registry (SUPERSEDED by P7)
+### P5-4: Hardcoded Crawl Config -> Registry (SUPERSEDED by P7)
 
 **Problem:** Brand promotion crawlConfig in orchestrator had `rate_limit_ms: 2000, timeout_ms: 12000` hardcoded.
 
@@ -248,7 +249,7 @@ All changes verified: 7,696 tests pass, live pipeline tested in enforce mode wit
 
 **Problem:** 11 LLM adapter functions used hand-written JSON Schema objects for structured output contracts. Rest of codebase uses Zod. Mixed schema tech.
 
-**Fix:** All 11 converted to Zod SSOT using Zod v4's built-in `toJSONSchema()` at the LLM call boundary. No new dependencies. Schemas exported for validation/testing. Files: serpSelector.js, discoveryLlmAdapters.js, searchPlanBuilder.js, queryPlanner.js, validateEnumConsistency.js, validateComponentMatches.js, validateCandidatesLLM.js, invokeExtractionModel.js, writeSummaryLLM.js, healthCheck.js, testDataProvider.js.
+**Fix:** All 11 converted to Zod SSOT using Zod v4's built-in `toJSONSchema()` at the LLM call boundary. No new dependencies. Schemas exported for validation/testing. Files: serpSelector.js, brandResolverLlmAdapter.js, searchPlanBuilder.js, queryPlanner.js, validateEnumConsistency.js, validateComponentMatches.js, validateCandidatesLLM.js, invokeExtractionModel.js, writeSummaryLLM.js, healthCheck.js, testDataProvider.js.
 
 ### P5-6: Enforcement Mode Registry Setting
 
@@ -263,7 +264,7 @@ Live-tested: `PIPELINE_SCHEMA_ENFORCEMENT_MODE=enforce npm run smoke` completes 
 
 ### P5-7: Naming Documentation
 
-**Problem:** `profileQueryRowsByQuery` → `profileQueryRowMap` rename at orchestrator boundary was undocumented.
+**Problem:** `profileQueryRowsByQuery` -> `profileQueryRowMap` rename at orchestrator boundary was undocumented.
 
 **Fix:** WHY comment added at the rename site in `runDiscoverySeedPlan.js`. Assessed as intentional boundary rename — both names are semantically accurate.
 
@@ -271,20 +272,20 @@ Live-tested: `PIPELINE_SCHEMA_ENFORCEMENT_MODE=enforce npm run smoke` completes 
 
 ## P6 — Full Pipeline Re-Audit (2026-03-23)
 
-Re-audited all 8 stages against live code. The cumulative Zod checkpoint system (P5) IS the contract — individual stages don't need their own entry-point Zod. Key findings:
+Re-audited all 8 phases against live code. The cumulative Zod checkpoint system (P5) IS the contract — individual phases don't need their own entry-point Zod. Key findings:
 
 ### P6-1: Documentation Inaccuracies Fixed
 
 | File | Issue | Fix |
 |------|-------|-----|
-| `PREFETCH-PIPELINE-OVERVIEW.md` | Event order wrong: `search_plan_generated` listed before `search_profile_generated` | Corrected: Stage 03 emits `search_profile_generated` before Stage 04 emits `search_plan_generated` |
-| `PREFETCH-PIPELINE-OVERVIEW.md` | `search_profile_generated` attributed to Query Journey | Fixed: emitted by `searchProfile.js` (Stage 03) |
-| `PREFETCH-PIPELINE-OVERVIEW.md` | `prioritizeQueryRows()` listed in Query Journey merge | Removed: function doesn't exist. Journey does dedupe → cap → guard → append. |
-| `05-query-journey-output.json` | `processDiscoveryResults` return listed `approvedUrls` and `candidateUrls` | Fixed to `selectedUrls` and `allCandidateUrls` (actual field names on discoveryResult) |
-| `03-pipeline-context.json` | Same field name error in Stage 07 section | Fixed to match live `discoveryResultProcessor.js:321-341` |
+| `PREFETCH-PIPELINE-OVERVIEW.md` | Event order wrong: `search_plan_generated` listed before `search_profile_generated` | Corrected: Search Profile emits `search_profile_generated` before Search Planner emits `search_plan_generated` |
+| `PREFETCH-PIPELINE-OVERVIEW.md` | `search_profile_generated` attributed to Query Journey | Fixed: emitted by `runSearchProfile.js` (Search Profile phase) |
+| `PREFETCH-PIPELINE-OVERVIEW.md` | `prioritizeQueryRows()` listed in Query Journey merge | Removed: function doesn't exist. Journey does dedupe -> cap -> guard -> append. |
+| `05-execution-and-journey-contract.json` | `processDiscoveryResults` return listed `approvedUrls` and `candidateUrls` | Fixed to `selectedUrls` and `allCandidateUrls` (actual field names on discoveryResult) |
+| `03-pipeline-context.json` | Same field name error in Result Processing section | Fixed to match live `processDiscoveryResults.js` |
 | `SEARCH-PLANNER-LOGIC-IN-OUT.md` | Listed `variables`, `job` as inputs to `runSearchPlanner()` | Removed: not in the actual function signature. Added `queryExecutionHistory`. |
 | `SEARCH-PLANNER-LOGIC-IN-OUT.md` | `queryHistory` described as only `base_templates` | Fixed: union of `base_templates` + `queryExecutionHistory.queries[].query_text` |
-| `02-brand-resolver-input.json` | Crawl config described as "hardcoded inline" | Fixed (P5-4), then simplified to static shape in P7 |
+| `02-brand-resolver-contract.json` | Crawl config described as "hardcoded inline" | Fixed (P5-4), then simplified to static shape in P7 |
 | `BRAND-RESOLVER-LOGIC-IN-OUT.md` | Same crawl config inaccuracy | Fixed (P5-4), then simplified to static shape in P7 |
 
 ### P6-2: Top 5 Live Code Findings (Ranked)
@@ -321,10 +322,10 @@ Frontier tables (queries, urls, yields) are separate from SpecDb. Long-term: mer
 
 ## Resolved Decompositions
 
-- ~~**indexingSchemaPackets.js Decomposition**~~ — COMPLETE (P4 structural, 2026-03-23). 1,324 → 580 LOC. 4 extracted modules: `schemaPacketPhaseResolvers.js` (107), `schemaPacketValueHelpers.js` (85), `schemaPacketFieldHelpers.js` (87), `schemaPacketSourceBuilder.js` (491). Zero external consumer changes. 21 characterization tests + live smoke test.
+- ~~**indexingSchemaPackets.js Decomposition**~~ — COMPLETE (P4 structural, 2026-03-23). 1,324 -> 580 LOC. 4 extracted modules: `schemaPacketPhaseResolvers.js` (107), `schemaPacketValueHelpers.js` (85), `schemaPacketFieldHelpers.js` (87), `schemaPacketSourceBuilder.js` (491). Zero external consumer changes. 21 characterization tests + live smoke test.
 
 ### URL Naming Confusion (S4)
-`approvedUrls` is a duplicate of `selectedUrls` in discoveryResultProcessor.js. `candidateUrls` includes all candidates (selected + rejected). Naming is misleading.
+`approvedUrls` is a duplicate of `selectedUrls` in processDiscoveryResults.js. `candidateUrls` includes all candidates (selected + rejected). Naming is misleading.
 
 ---
 
@@ -346,8 +347,8 @@ Frontier tables (queries, urls, yields) are separate from SpecDb. Long-term: mer
 **Fix:** All host plan code, files, and references deleted:
 - `domainHintResolver.js` — deleted
 - `queryHostPlanScorer.js` — deleted
-- Stage 03 (Search Profile) now returns `{ searchProfileBase }` only
-- Stage 05 (Query Journey) no longer accepts or appends host plan rows
+- Search Profile phase now returns `{ searchProfileBase }` only
+- Query Journey phase no longer accepts or appends host plan rows
 - `afterProfile` Zod checkpoint no longer validates `effectiveHostPlan` or `hostPlanQueryRows`
 - `searchProfilePlanned.effective_host_plan` removed from planned artifact
 - QJ1 finding (missing `= []` default) resolved by deletion

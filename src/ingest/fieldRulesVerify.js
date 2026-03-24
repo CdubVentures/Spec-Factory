@@ -1,10 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject } from '../shared/primitives.js';
 
 function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex');

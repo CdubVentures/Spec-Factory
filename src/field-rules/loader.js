@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { isObject, toArray, normalizeFieldKey, normalizeToken } from '../shared/primitives.js';
 
 const cache = new Map();
 const signatureCache = new Map();
@@ -25,28 +26,6 @@ export function invalidateFieldRulesCache(category) {
     cache.clear();
     signatureCache.clear();
   }
-}
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function normalizeToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase();
-}
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
 }
 
 function normalizeCategory(value) {

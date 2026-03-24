@@ -118,9 +118,7 @@ describe('assembleConfigFromRegistry', () => {
       { key: 'maxPagesPerDomain', expected: 5 },
       { key: 'maxRunSeconds', expected: 480 },
       { key: 'searchProfileQueryCap', expected: 10 },
-      { key: 'fetchBudgetMs', expected: 45000 },
       { key: 'robotsTxtTimeoutMs', expected: 6000 },
-      { key: 'driftPollSeconds', expected: 86400 },
     ];
     for (const { key, expected } of spot) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);

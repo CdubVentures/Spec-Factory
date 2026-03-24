@@ -1,20 +1,5 @@
 import semver from 'semver';
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function normalizeFieldKey(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
+import { isObject, toArray, normalizeFieldKey } from '../shared/primitives.js';
 
 function stableFieldMap(rules = {}) {
   const fields = isObject(rules?.fields) ? rules.fields : {};

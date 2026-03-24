@@ -60,9 +60,6 @@ export class SourcePlanner {
     this.config = config;
     this.categoryConfig = categoryConfig;
     this.preferred = job.preferredSources || {};
-    // WHY: fetchCandidateSources retired — always true (trust the process).
-    this.fetchCandidateSources = true;
-
     const requiredFieldsRaw = options.requiredFields || [];
     this.requiredFields = requiredFieldsRaw
       .map((field) => toRawFieldKey(field, { fieldOrder: categoryConfig.fieldOrder || [] }))
@@ -378,9 +375,6 @@ export class SourcePlanner {
   }
 
   seedCandidates(urls, { triageMetaMap = null } = {}) {
-    if (!this.fetchCandidateSources) {
-      return;
-    }
     for (const url of urls || []) {
       const meta = triageMetaMap ? this._lookupTriageMeta(url, triageMetaMap) : null;
       this.enqueue(url, 'discovery', { forceCandidate: true, triageMeta: meta });
@@ -770,10 +764,6 @@ export class SourcePlanner {
     }
 
     if (isCandidateTarget) {
-      if (!this.fetchCandidateSources) {
-        this._rejectCounters.candidate_sources_disabled += 1;
-        return false;
-      }
       if (this.candidateQueue.length + this.candidateVisitedCount >= this.maxCandidateUrls) {
         this._rejectCounters.max_candidate_urls += 1;
         return false;
@@ -1005,7 +995,15 @@ export class SourcePlanner {
   }
 
   sortApprovedQueue() {
-    this.queue.sort((a, b) => a.tier - b.tier || b.priorityScore - a.priorityScore || a.url.localeCompare(b.url));
+    this.queue.sort((a, b) => {
+      const slotA = a.triage_passthrough?.search_slot ?? '\xff';
+      const slotB = b.triage_passthrough?.search_slot ?? '\xff';
+      if (slotA !== slotB) return slotA < slotB ? -1 : 1;
+      const rankA = Number(a.triage_passthrough?.search_rank) || Infinity;
+      const rankB = Number(b.triage_passthrough?.search_rank) || Infinity;
+      if (rankA !== rankB) return rankA - rankB;
+      return a.tier - b.tier || b.priorityScore - a.priorityScore || a.url.localeCompare(b.url);
+    });
   }
 
   sortCandidateQueue() {

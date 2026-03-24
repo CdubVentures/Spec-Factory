@@ -32,12 +32,8 @@ export const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set(
 );
 
 export const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
-  ['fetchConcurrency', ['CONCURRENCY']],
   ['categoryAuthorityEnabled', ['HELPER_FILES_ENABLED']],
-  ['indexingCategoryAuthorityEnabled', ['INDEXING_HELPER_FILES_ENABLED']],
   ['categoryAuthorityRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
-  ['dynamicFetchPolicyMap', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
-  ['dynamicFetchPolicyMapJson', ['DYNAMIC_FETCH_POLICY_MAP_JSON']],
   ['llmProvider', ['LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
   ['llmBaseUrl', ['LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
   ['llmModelPlan', ['LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_PLAN', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],

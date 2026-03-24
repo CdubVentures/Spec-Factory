@@ -57,8 +57,8 @@ export function validateSourceEntryPatch(patch) {
   return { accepted, rejected };
 }
 
+// WHY: manufacturer tier removed — Brand Resolver is the sole source of manufacturer domains per product.
 const TIER_TO_APPROVED_ROLE = {
-  tier1_manufacturer: 'manufacturer',
   tier2_lab: 'lab',
   tier3_retailer: 'retailer',
   tier4_community: 'database',
@@ -119,7 +119,7 @@ export async function writeSourcesFile(root, category, data) {
  * Recompute `approved` from the sources object (tier-based grouping).
  */
 export function deriveApprovedFromSources(sources) {
-  const approved = { manufacturer: [], lab: [], database: [], retailer: [] };
+  const approved = { lab: [], database: [], retailer: [] };
   for (const [sourceId, entry] of Object.entries(sources)) {
     const role = TIER_TO_APPROVED_ROLE[entry.tier];
     if (!role || !approved[role]) continue;

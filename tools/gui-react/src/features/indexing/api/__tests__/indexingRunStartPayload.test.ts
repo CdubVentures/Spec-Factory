@@ -109,9 +109,9 @@ describe('buildIndexingRunStartPayload — input params', () => {
 describe('buildIndexingRunStartPayload — spread', () => {
   it('includes boolean settings from payload', () => {
     const result = buildIndexingRunStartPayload(makeInput({
-      settingsOverrides: { dynamicCrawleeEnabled: false },
+      settingsOverrides: { crawleeHeadless: false },
     }));
-    strictEqual(result.dynamicCrawleeEnabled, false);
+    strictEqual(result.crawleeHeadless, false);
   });
 
   it('includes string settings from payload', () => {
@@ -163,30 +163,6 @@ describe('buildIndexingRunStartPayload — numeric clamping', () => {
     strictEqual(result.runtimeScreencastMaxHeight, 240);
   });
 
-  it('clamps daemonConcurrency to min 1', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedDaemonConcurrency: 0 },
-    }));
-    strictEqual(result.daemonConcurrency, 1);
-  });
-
-  // WHY: Registry has no min for this entry (defaultsOnly: true, default: 30000).
-  // Old sub-builder had a stale Math.max(1000, ...) floor not backed by registry SSOT.
-  // Generic overlay respects registry: no min → no clamping.
-  it('passes daemonGracefulShutdownTimeoutMs through (no registry min)', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedDaemonGracefulShutdownTimeoutMs: 200 },
-    }));
-    strictEqual(result.daemonGracefulShutdownTimeoutMs, 200);
-  });
-
-  it('clamps importsPollSeconds to min 1', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedImportsPollSeconds: 0 },
-    }));
-    strictEqual(result.importsPollSeconds, 1);
-  });
-
   it('clamps runtimeTraceFetchRing to min 10', () => {
     const result = buildIndexingRunStartPayload(makeInput({
       parsedOverrides: { parsedRuntimeTraceFetchRing: 3 },
@@ -214,12 +190,6 @@ describe('buildIndexingRunStartPayload — llm clamping', () => {
     strictEqual(result.llmTimeoutMs, 1000);
   });
 
-  it('clamps endpointNetworkScanLimit to min 50', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedEndpointNetworkScanLimit: 10 },
-    }));
-    strictEqual(result.endpointNetworkScanLimit, 50);
-  });
 
   it('clamps llmMaxOutputTokens to LLM_SETTING_LIMITS floor (256), not registry min (128)', () => {
     const result = buildIndexingRunStartPayload(makeInput({
@@ -241,13 +211,6 @@ describe('buildIndexingRunStartPayload — llm clamping', () => {
 /* ------------------------------------------------------------------ */
 
 describe('buildIndexingRunStartPayload — main body clamping', () => {
-  it('clamps fetchPerHostConcurrencyCap to min 1', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedFetchPerHostConcurrencyCap: 0 },
-    }));
-    strictEqual(result.fetchPerHostConcurrencyCap, 1);
-  });
-
   it('clamps robotsTxtTimeoutMs to min 100', () => {
     const result = buildIndexingRunStartPayload(makeInput({
       parsedOverrides: { parsedRobotsTxtTimeoutMs: 10 },
@@ -262,12 +225,6 @@ describe('buildIndexingRunStartPayload — main body clamping', () => {
     strictEqual(result.frontierBackoffMaxExponent, 1);
   });
 
-  it('clamps driftPollSeconds to min 60', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedDriftPollSeconds: 10 },
-    }));
-    strictEqual(result.driftPollSeconds, 60);
-  });
 });
 
 /* ------------------------------------------------------------------ */

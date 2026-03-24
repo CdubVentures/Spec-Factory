@@ -50,6 +50,27 @@ export async function processDiscoveryResults({
   );
   const { ensureTrace, candidateTraceByUrl } = createCandidateTraceMap();
 
+  // WHY: Build query→slot and (url,query)→rank maps for slot-ordered fetch queue.
+  // queries array is ordered: index 0 = slot 'a', index 1 = slot 'b', etc.
+  const slotLabels = 'abcdefghijklmnopqrstuvwxyz';
+  const queryToSlot = new Map();
+  for (let i = 0; i < queries.length && i < slotLabels.length; i++) {
+    const q = String(queries[i] || '').trim().toLowerCase();
+    if (q && !queryToSlot.has(q)) queryToSlot.set(q, { slot: slotLabels[i], index: i });
+  }
+  const serpRankByUrlQuery = new Map();
+  for (const raw of rawResults) {
+    const url = String(raw?.url || '').trim();
+    const query = String(raw?.query || '').trim().toLowerCase();
+    const rank = Number(raw?.rank) || 0;
+    if (url && query && rank > 0) {
+      const key = `${url}::${query}`;
+      if (!serpRankByUrlQuery.has(key) || rank < serpRankByUrlQuery.get(key)) {
+        serpRankByUrlQuery.set(key, rank);
+      }
+    }
+  }
+
   // ── Phase 2: Hard-drop filter (replaces inline non-HTTPS/denied/cooldown checks) ──
   const { survivors: hardDropSurvivors, hardDrops } = applyHardDropFilter({
     dedupedResults: rawResults,
@@ -126,6 +147,24 @@ export async function processDiscoveryResults({
     selectorOutput: validOutput, candidateMap, overflowRows,
     officialDomain, supportDomain, categoryConfig,
   });
+
+  // WHY: Enrich selected candidates with search_slot + search_rank so the
+  // planner can sort the fetch queue in strict slot order (a1→a2→b1→b2...).
+  for (const candidate of selected) {
+    const seenQueries = toArray(candidate.seen_in_queries);
+    let bestSlot = null;
+    let bestRank = null;
+    for (const q of seenQueries) {
+      const qLower = String(q || '').trim().toLowerCase();
+      const slotInfo = queryToSlot.get(qLower);
+      if (slotInfo && (!bestSlot || slotInfo.index < bestSlot.index)) {
+        bestSlot = slotInfo;
+        bestRank = serpRankByUrlQuery.get(`${candidate.url}::${qLower}`) ?? null;
+      }
+    }
+    candidate.search_slot = bestSlot?.slot ?? null;
+    candidate.search_rank = bestSlot ? bestRank : null;
+  }
 
   const discovered = selected;
   const candidateRowsFinal = [...selected, ...notSelected];

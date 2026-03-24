@@ -1,5 +1,9 @@
 import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey } from '../shared/primitives.js';
+import { toInt as asInt } from '../shared/valueNormalizers.js';
+
+export { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey, asInt };
 
 export const DEFAULT_REQUIRED_FIELDS = new Set([
   'weight',
@@ -36,34 +40,13 @@ export const INSTRUMENTED_HARD_FIELDS = new Set([
   'click_force'
 ]);
 
-export function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-export function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function asInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 export function asNumber(value) {
   const parsed = Number.parseFloat(String(value ?? ''));
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function normalizeText(value) {
-  return String(value ?? '').trim();
-}
-
 export function normalizeWhitespace(value) {
   return normalizeText(value).replace(/\s+/g, ' ');
-}
-
-export function normalizeToken(value) {
-  return normalizeText(value).toLowerCase();
 }
 
 export function parseSerialDate(value) {
@@ -162,14 +145,6 @@ export function normalizeReviewAiAssist(value = {}) {
     max_tokens: maxTokensRaw > 0 ? Math.max(256, Math.min(65536, maxTokensRaw)) : null,
     reasoning_note: normalizeText(aiAssist.reasoning_note || '')
   };
-}
-
-export function normalizeFieldKey(value) {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
 }
 
 export function titleFromKey(value) {

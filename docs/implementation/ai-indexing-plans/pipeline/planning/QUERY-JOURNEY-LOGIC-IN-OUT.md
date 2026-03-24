@@ -2,21 +2,21 @@
 
 Validated against live code on 2026-03-23. P7: host plan concept deleted entirely — no `hostPlanQueryRows` or `effectiveHostPlan` inputs.
 
-## What this stage is
+## What this phase is
 
-Query Journey is the Stage 05 query-selection and persistence boundary owned by `runQueryJourney()`. It does not call an LLM. It receives enhanced query rows from Search Planner (Stage 04), then deduplicates, ranks, guards, caps, and persists the final query list.
+Query Journey is the Query Journey phase query-selection and persistence boundary owned by `runQueryJourney()`. It does not call an LLM. It receives enhanced query rows from Search Planner phase, then deduplicates, ranks, guards, caps, and persists the final query list.
 
 Primary owners:
 
-- `src/features/indexing/discovery/stages/queryJourney.js`
-- `src/features/indexing/discovery/discoveryQueryPlan.js`
+- `src/features/indexing/pipeline/queryJourney/runQueryJourney.js`
+- `src/features/indexing/pipeline/shared/queryPlan.js`
 
 ## Inputs in
 
 Query Journey works from:
 
 - `enhancedRows` — tier-tagged rows from Search Planner (LLM-enhanced or deterministic fallback)
-- `searchProfileBase` — deterministic base from Stage 03 (for `variant_guard_terms`, `query_reject_log`, original `query_rows`)
+- `searchProfileBase` — deterministic base from Search Profile phase (for `variant_guard_terms`, `query_reject_log`, original `query_rows`)
 - `variables` — resolved job identity
 - `missingFields`
 - `planningHints.missingCriticalFields`, `planningHints.missingRequiredFields`
@@ -40,7 +40,7 @@ Search Planner returns `enhancedRows` which are the *same rows* as `searchProfil
 - No `original_query` field
 - No `_llm` suffix
 
-**Query Journey treats both identically.** It does not branch on whether the LLM succeeded. The rows go through the same dedupe → rank → guard → cap pipeline either way.
+**Query Journey treats both identically.** It does not branch on whether the LLM succeeded. The rows go through the same dedupe -> rank -> guard -> cap pipeline either way.
 
 ## Live logic
 
@@ -69,7 +69,7 @@ The identity guard rejects for reasons such as:
 - Query Journey is deterministic. It does not make its own LLM call.
 - Enhanced rows are the sole query source (no separate "deterministic" and "LLM" streams merged). The LLM enhancement is applied *before* Query Journey receives them.
 - `searchProfilePlanned.llm_queries` contains only queries where `hint_source` ends with `_llm`.
-- If the LLM failed in Stage 04, `llm_queries` will be empty and all rows will have their original deterministic `hint_source`.
+- If the LLM failed in Search Planner, `llm_queries` will be empty and all rows will have their original deterministic `hint_source`.
 
 ## Outputs out
 
@@ -104,7 +104,7 @@ The identity guard rejects for reasons such as:
 
 ## What it feeds next
 
-Query Journey feeds Search Results (Stage 06) with:
+Query Journey feeds Search Execution phase with:
 
 - final `queries`
 - `executionQueryLimit`

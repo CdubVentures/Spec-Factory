@@ -12,7 +12,7 @@ import {
   normalizeUserAgent,
   DEFAULT_USER_AGENT,
 } from './configNormalizers.js';
-import { toTokenInt, parseTokenPresetList, parseBoolEnv } from './envParsers.js';
+import { toTokenInt, parseTokenPresetList } from './envParsers.js';
 import { applyCanonicalSettingsDefaults } from './settingsClassification.js';
 import {
   buildDefaultModelPricingMap,
@@ -124,16 +124,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   merged.openaiTimeoutMs = merged.llmTimeoutMs;
 
   merged.runProfile = 'standard';
-
-  // --- preferHttpFetcher override ---
-  const hasExplicitPreferHttpFetcherOverride = Object.prototype.hasOwnProperty.call(filtered, 'preferHttpFetcher');
-  const hasEnvPreferHttpFetcherOverride = Object.prototype.hasOwnProperty.call(process.env, 'PREFER_HTTP_FETCHER');
-
-  if (hasExplicitPreferHttpFetcherOverride) {
-    merged.preferHttpFetcher = Boolean(filtered.preferHttpFetcher);
-  } else if (hasEnvPreferHttpFetcherOverride) {
-    merged.preferHttpFetcher = parseBoolEnv('PREFER_HTTP_FETCHER', merged.preferHttpFetcher);
-  }
 
   // WHY: registry lookup is SSOT for model→provider routing
   merged._registryLookup = buildRegistryLookup(merged.llmProviderRegistryJson);

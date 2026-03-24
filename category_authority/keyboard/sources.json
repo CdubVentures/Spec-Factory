@@ -2,7 +2,6 @@
   "category": "keyboard",
   "version": "1.0.0",
   "approved": {
-    "manufacturer": ["corsair.com", "razer.com", "logitechg.com", "steelseries.com", "hyperx.com", "asus.com", "keychron.com", "wooting.io", "duckychannel.com.tw"],
     "lab": [
       "rtings.com",
       "techpowerup.com",

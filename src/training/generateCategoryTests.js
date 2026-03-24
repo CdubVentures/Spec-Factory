@@ -1,9 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
+import { toArray } from '../shared/primitives.js';
 
 function esc(value) {
   return String(value || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`');

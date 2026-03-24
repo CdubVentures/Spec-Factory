@@ -20,7 +20,7 @@ import {
 import { runUntilComplete } from '../runner/runUntilComplete.js';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { validateConfig } from '../config.js';
-import { configInt, configBool, configValue } from '../shared/settingsAccessor.js';
+import { configValue } from '../shared/settingsAccessor.js';
 
 function resolveCategoryAuthorityRoot(config = {}) {
   return path.resolve(String(configValue(config, 'categoryAuthorityRoot')));
@@ -161,7 +161,7 @@ export async function runWatchImports({
     if (once) {
       break;
     }
-    await wait(configInt(config, 'importsPollSeconds') * 1000);
+    await wait(10 * 1000);
   } while (true);
 
   return {
@@ -227,11 +227,11 @@ export async function runDaemon({
   const scanAndEnqueueDriftFn = runtimeHooks.scanAndEnqueueDrift || scanAndEnqueueDriftedProducts;
   const reconcileDriftProductFn = runtimeHooks.reconcileDriftProduct || reconcileDriftedProduct;
   const signalTarget = runtimeHooks.signalTarget || process;
-  const driftDetectionEnabled = runtimeHooks.driftDetectionEnabled ?? configBool(config, 'driftDetectionEnabled');
-  const driftPollSeconds = runtimeHooks.driftPollSeconds ?? configInt(config, 'driftPollSeconds');
-  const driftScanMaxProducts = runtimeHooks.driftScanMaxProducts ?? configInt(config, 'driftScanMaxProducts');
-  const autoRepublishDrift = runtimeHooks.driftAutoRepublish ?? configBool(config, 'driftAutoRepublish');
-  const daemonConcurrency = runtimeHooks.daemonConcurrency ?? configInt(config, 'daemonConcurrency');
+  const driftDetectionEnabled = runtimeHooks.driftDetectionEnabled ?? true;
+  const driftPollSeconds = runtimeHooks.driftPollSeconds ?? 86400;
+  const driftScanMaxProducts = runtimeHooks.driftScanMaxProducts ?? 250;
+  const autoRepublishDrift = runtimeHooks.driftAutoRepublish ?? true;
+  const daemonConcurrency = runtimeHooks.daemonConcurrency ?? 1;
 
   const runs = [];
   const nextDriftScanMsByCategory = new Map();
@@ -276,7 +276,7 @@ export async function runDaemon({
         const staleScan = await markStaleQueueProductsFn({
           storage,
           category: cat,
-          staleAfterDays: configInt(config, 'reCrawlStaleAfterDays')
+          staleAfterDays: 30
         });
         logger?.info?.('daemon_stale_scan', {
           category: cat,
@@ -438,7 +438,7 @@ export async function runDaemon({
         break;
       }
       if (!processedAny) {
-        await waitFn(configInt(config, 'importsPollSeconds') * 1000);
+        await waitFn(10 * 1000);
       }
     } while (true);
   } finally {

@@ -158,29 +158,19 @@ export function RuntimeSettingsFlowCard({
     runtimeManifestDefaults,
   }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
   const {
-    dynamicCrawleeEnabled,
-    reextractIndexed,
     runtimeTraceEnabled,
   } = runtimeDraft;
 
   const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
   const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
   const {
-    dynamicFetchControlsLocked,
     plannerControlsLocked,
-    reextractWindowLocked,
     traceControlsLocked,
   } = deriveRuntimeFlowControlLocks({
-    dynamicCrawleeEnabled,
-    reextractIndexed,
     runtimeTraceEnabled,
   });
 
-  const stepEnabled = useMemo<Record<RuntimeStepId, boolean>>(() => deriveRuntimeStepEnabledMap({
-    dynamicCrawleeEnabled,
-  }), [
-    dynamicCrawleeEnabled,
-  ]);
+  const stepEnabled = useMemo<Record<RuntimeStepId, boolean>>(() => deriveRuntimeStepEnabledMap(), []);
   const activeRuntimeStep = useMemo(
     () => RUNTIME_STEPS.find((step) => step.id === activeStep) || RUNTIME_STEPS[0],
     [activeStep],
@@ -299,7 +289,6 @@ export function RuntimeSettingsFlowCard({
             activeStep={activeStep}
             runtimeDraft={runtimeDraft}
             runtimeSettingsReady={runtimeSettingsReady}
-            reextractWindowLocked={reextractWindowLocked}
             plannerControlsLocked={plannerControlsLocked}
             inputCls={inputCls}
             runtimeSubStepDomId={runtimeSubStepDomId}
@@ -363,7 +352,6 @@ export function RuntimeSettingsFlowCard({
               <RuntimeFlowFetchNetworkSection
                 runtimeDraft={runtimeDraft}
                 runtimeSettingsReady={runtimeSettingsReady}
-                dynamicFetchControlsLocked={dynamicFetchControlsLocked}
                 inputCls={inputCls}
                 runtimeSubStepDomId={runtimeSubStepDomId}
                 updateDraft={updateDraft}
@@ -384,13 +372,11 @@ export function RuntimeSettingsFlowCard({
               <RuntimeFlowBrowserRenderingSection
                 runtimeDraft={runtimeDraft}
                 runtimeSettingsReady={runtimeSettingsReady}
-                dynamicFetchControlsLocked={dynamicFetchControlsLocked}
                 inputCls={inputCls}
                 runtimeSubStepDomId={runtimeSubStepDomId}
                 updateDraft={updateDraft}
                 onNumberChange={onNumberChange}
                 getNumberBounds={getNumberBounds}
-                renderDisabledHint={renderDisabledHint}
               />
             </Suspense>
           ) : null}

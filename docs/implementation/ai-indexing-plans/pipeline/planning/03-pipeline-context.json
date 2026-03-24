@@ -1,19 +1,19 @@
 {
-  "_doc": "PipelineContext -- accumulated state at Stage 03 convergence. Stages 01 (NeedSet) and 02 (Brand Resolver) run in parallel via Promise.all. This object represents everything available to Stage 03 and all subsequent stages. NOTE: The authoritative runtime schema is now pipelineContextSchema.js (Zod, cumulative checkpoints). This JSON is a reference snapshot.",
+  "_doc": "PipelineContext -- accumulated state at Search Profile convergence. NeedSet phase and Brand Resolver phase run in parallel via Promise.all. This object represents everything available to Search Profile and all subsequent phases. NOTE: The authoritative runtime schema is now pipelineContextSchema.js (Zod, cumulative checkpoints). This JSON is a reference snapshot.",
   "validated_against": "2026-03-23 (re-audited: discoveryResult fields corrected to match live code)",
-  "source_of_truth": "src/features/indexing/discovery/pipelineContextSchema.js (Zod SSOT) + src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js (orchestrator)",
+  "source_of_truth": "src/features/indexing/pipeline/orchestration/pipelineContextSchema.js (Zod SSOT) + src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js (orchestrator)",
 
   "orchestrator_context": {
-    "_doc": "Resolved by the orchestrator before and between stages. Not owned by any single stage.",
+    "_doc": "Resolved by the orchestrator before and between phases. Not owned by any single phase.",
     "discoveryConfig": "object -- config with discoveryEnabled=true and searchEngines defaulted to 'bing,google'",
     "sourceEntries": "Array<object> -- from loadEnabledSourceEntries({ config, category })",
     "planningHints": {
       "missingRequiredFields": "string[] -- normalized from roundContext or requiredFields",
       "missingCriticalFields": "string[] -- normalized from roundContext or categoryConfig.schema.critical_fields"
     },
-    "queryExecutionHistory": "{ queries: Array<object> } -- from frontierDb.buildQueryExecutionHistory(productId), built before stages start",
+    "queryExecutionHistory": "{ queries: Array<object> } -- from frontierDb.buildQueryExecutionHistory(productId), built before phases start",
     "resolvedIdentity": {
-      "_doc": "Built from resolveJobIdentity(job) after stages 01+02 complete.",
+      "_doc": "Built from resolveJobIdentity(job) after NeedSet+Brand Resolver complete.",
       "brand": "string",
       "model": "string",
       "variant": "string"
@@ -26,7 +26,7 @@
     },
     "missingFields": "string[] -- deduplicated union of missingRequiredFields + missingCriticalFields + job.requirements.focus_fields + llmTargetFields",
     "learning": {
-      "_doc": "Loaded from storage after stages 01+02 complete.",
+      "_doc": "Loaded from storage after NeedSet+Brand Resolver complete.",
       "lexicon": "object -- from loadLearningArtifacts()",
       "learnedQueries": "object -- query templates from loadLearningArtifacts()",
       "fieldYieldByDomain": "object -- from loadLearningArtifacts()"
@@ -39,18 +39,18 @@
       "variant": "string",
       "productId": "string"
     },
-    "categoryConfig": "object -- MUTATED by orchestrator after Stage 02: brand promotions applied to sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry"
+    "categoryConfig": "object -- MUTATED by orchestrator after Brand Resolver: brand promotions applied to sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry"
   },
 
-  "from_stage_01_needset": {
-    "_doc": "Returned by runNeedSet(). See 01-needset-output.json for full shapes.",
-    "focusGroups": "FocusGroup[] -- from Schema 3 planningContext.focus_groups. Carries group_search_worthy, normalized_key_queue, productivity_score, group_description_long per group.",
-    "seedStatus": "SeedStatus | null -- from Schema 3 planningContext.seed_status. Contains specs_seed and source_seeds with is_needed flags.",
-    "seedSearchPlan": "Schema4 | null -- full Schema 4 output from buildSearchPlan(). Attached to discoveryResult at end of pipeline for finalization reuse."
+  "from_needset_phase": {
+    "_doc": "Returned by runNeedSet(). See 01-needset-contract.json for full shapes.",
+    "focusGroups": "FocusGroup[] -- from search planning context focus_groups. Carries group_search_worthy, normalized_key_queue, productivity_score, group_description_long per group.",
+    "seedStatus": "SeedStatus | null -- from search planning context seed_status. Contains specs_seed and source_seeds with is_needed flags.",
+    "seedSearchPlan": "SearchPlan | null -- full search plan output from assembleSearchPlan(). Attached to discoveryResult at end of pipeline for finalization reuse."
   },
 
-  "from_stage_02_brand_resolver": {
-    "_doc": "Returned by runBrandResolver(). See 02-brand-resolver-output.json for full shapes.",
+  "from_brand_resolver_phase": {
+    "_doc": "Returned by runBrandResolver(). See 02-brand-resolver-contract.json for full shapes.",
     "brandResolution": {
       "officialDomain": "string",
       "aliases": "string[]",
@@ -58,20 +58,20 @@
       "confidence": "number (0-1)",
       "reasoning": "string[]"
     },
-    "_note": "Orchestrator applies brand promotion inline — checks brandResolution.officialDomain and adds to categoryConfig.sourceHosts/sourceHostMap/approvedRootDomains directly. The stage does NOT return promotions."
+    "_note": "Orchestrator applies brand promotion inline — checks brandResolution.officialDomain and adds to categoryConfig.sourceHosts/sourceHostMap/approvedRootDomains directly. The phase does NOT return promotions. Brand Resolver is the SOLE source of manufacturer domain data — no static manufacturer lists exist."
   },
 
-  "stage_additions": {
-    "03_search_profile": {
-      "_doc": "CONVERGENCE POINT. First stage that requires output from both NeedSet (focusGroups, seedStatus) and Brand Resolver (brandResolution). Fully deterministic, no LLM.",
+  "phase_additions": {
+    "search_profile": {
+      "_doc": "CONVERGENCE POINT. First phase that requires output from both NeedSet (focusGroups, seedStatus) and Brand Resolver (brandResolution). Fully deterministic, no LLM.",
       "searchProfileBase": "object -- deterministic query profile with tier-tagged query_rows, base_templates, variant_guard_terms, coverage_analysis, etc."
     },
-    "04_search_planner": {
+    "search_planner": {
       "_doc": "LLM-enhanced query rows. Tier metadata (tier, hint_source, group_key, normalized_key, target_fields) passes through unchanged.",
       "enhancedRows": "Array<object> -- same shape as searchProfileBase.query_rows, with potentially LLM-rewritten query strings",
       "source": "string -- 'llm' | 'deterministic_fallback'"
     },
-    "05_query_journey": {
+    "query_journey": {
       "_doc": "Final selected query list after dedupe, rank, guard, cap.",
       "queries": "string[] -- final query strings for execution",
       "selectedQueryRowMap": "Map<string, object> -- lowercase query -> row",
@@ -81,7 +81,7 @@
       "executionQueryLimit": "number -- min(searchProfileQueryCap, queries.length)",
       "queryLimit": "number -- from configInt(config, 'searchProfileQueryCap')"
     },
-    "06_search_execution": {
+    "search_execution": {
       "_doc": "Internal-first lookup, frontier reuse, live provider search, plan-only fallback. queryConcurrency forced to 1.",
       "rawResults": "Array<object> -- raw SERP results",
       "searchAttempts": "Array<object> -- per-query attempt records",
@@ -89,8 +89,8 @@
       "internalSatisfied": "boolean -- true when internal sources met required-field pressure",
       "externalSearchReason": "string | null -- why external search was needed"
     },
-    "07_result_processing": {
-      "_doc": "SERP triage -- selector path or deterministic lane-selection path. Rewrites search_profile to status: 'executed'.",
+    "result_processing": {
+      "_doc": "Result Processing — selector path or deterministic lane-selection path. Rewrites search_profile to status: 'executed'.",
       "discoveryResult": {
         "enabled": "boolean (always true)",
         "discoveryKey": "string",
@@ -111,10 +111,10 @@
         "search_attempts": "Array<object>",
         "search_journal": "Array<object>",
         "serp_explorer": "object -- SERP explorer summary with per-query stats",
-        "_note": "Orchestrator attaches seed_search_plan_output and enqueue_summary via fresh merge after Stage 08."
+        "_note": "Orchestrator attaches seed_search_plan_output and enqueue_summary via fresh merge after Domain Classifier."
       }
     },
-    "08_domain_classifier": {
+    "domain_classifier": {
       "_doc": "Enqueues approved URLs to planner queue, seeds candidate URLs. Returns summary attached to discoveryResult.enqueue_summary.",
       "enqueue_summary": {
         "enqueuedCount": "number -- approved URLs enqueued",
@@ -123,8 +123,8 @@
     }
   },
 
-  "orchestrator_glue_between_stages": {
-    "between_02_and_03": [
+  "orchestrator_glue_between_phases": {
+    "between_brand_resolver_and_search_profile": [
       "Apply brand promotions to categoryConfig (sourceHosts, sourceHostMap, approvedRootDomains, sourceRegistry)",
       "resolveJobIdentity(job) -> resolvedIdentity, variables",
       "Normalize missingFields from planningHints + job.requirements",
@@ -133,10 +133,10 @@
       "resolveSearchProfileCaps() -> searchProfileCaps (hardcoded defaults, no config param)",
       "Build identityLock from job fields"
     ],
-    "between_05_and_06": [
+    "between_query_journey_and_search_execution": [
       "Emit search_queued events for all planned queries (GUI slot pre-allocation)"
     ],
-    "after_08": [
+    "after_domain_classifier": [
       "Build finalResult as fresh merge: { ...discoveryResult, seed_search_plan_output, enqueue_summary }",
       "Validate 'final' checkpoint",
       "Return finalResult"

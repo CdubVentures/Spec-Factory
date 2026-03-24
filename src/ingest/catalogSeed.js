@@ -14,31 +14,11 @@ import {
   loadCanonicalIdentityIndex,
   registerCanonicalIdentity
 } from '../features/catalog/identity/identityGate.js';
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
 
 function asInt(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function normalizeText(value) {
-  return String(value || '').trim();
-}
-
-function normalizeFieldKey(value) {
-  const token = String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return token;
 }
 
 function isIdentityLikeField(field) {

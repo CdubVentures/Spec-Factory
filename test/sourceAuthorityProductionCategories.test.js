@@ -143,10 +143,7 @@ for (const [category, expectation] of Object.entries(CATEGORY_EXPECTATIONS)) {
     }
   });
 
-  test(`${category} approved.manufacturer lists known brand domains`, () => {
-    const raw = loadCategoryRaw(category);
-    assert.ok(Array.isArray(raw.approved.manufacturer),
-      `${category} approved.manufacturer should be an array`);
-  });
+  // WHY: manufacturer key removed from sources.json — Brand Resolver is the sole
+  // source of manufacturer domains per product. No static manufacturer list needed.
 
 }

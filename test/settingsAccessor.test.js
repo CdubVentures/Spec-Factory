@@ -45,8 +45,8 @@ describe('settingsAccessor', () => {
     });
 
     it('preserves zero as a valid config value', () => {
-      const config = { domainRequestRps: 0 };
-      strictEqual(configValue(config, 'domainRequestRps'), 0);
+      const config = { autoScrollDelayMs: 0 };
+      strictEqual(configValue(config, 'autoScrollDelayMs'), 0);
     });
 
     it('preserves empty string as a valid config value', () => {
@@ -63,12 +63,12 @@ describe('settingsAccessor', () => {
     });
 
     it('looks up by configKey when configKey differs from key', () => {
-      // Registry: key=fetchConcurrency, configKey=concurrency
+      // Registry: key=categoryAuthorityRoot, configKey=categoryAuthorityRoot, aliases=["helperFilesRoot"]
       // The config object uses configKey names, so configValue should
       // accept the registry key and find the default
       const config = {};
-      const result = configValue(config, 'fetchConcurrency');
-      strictEqual(result, 4); // registry default for fetchConcurrency
+      const result = configValue(config, 'categoryAuthorityRoot');
+      strictEqual(result, 'category_authority'); // registry default for categoryAuthorityRoot
     });
   });
 
@@ -126,9 +126,9 @@ describe('settingsAccessor', () => {
     });
 
     it('preserves zero when zero is within registry min/max', () => {
-      const entry = registryEntry('domainRequestRps');
+      const entry = registryEntry('autoScrollDelayMs');
       strictEqual(entry.min, 0); // sanity: registry declares min=0
-      strictEqual(configInt({ domainRequestRps: 0 }, 'domainRequestRps'), 0);
+      strictEqual(configInt({ autoScrollDelayMs: 0 }, 'autoScrollDelayMs'), 0);
     });
   });
 

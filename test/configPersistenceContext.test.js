@@ -34,7 +34,7 @@ test('createConfigPersistenceContext returns expected shape', () => {
 });
 
 test('getUserSettingsState returns the initial user settings', () => {
-  const initial = { runtime: { concurrency: 4 }, convergence: {} };
+  const initial = { runtime: { maxUrlsPerProduct: 40 }, convergence: {} };
   const ctx = createConfigPersistenceContext({
     config: {},
     settingsRoot: 'category_authority',
@@ -153,13 +153,14 @@ test('persistCanonicalSections updates getUserSettingsState and returns artifact
   const initialState = ctx.getUserSettingsState();
   assert.deepEqual(initialState, {});
   const artifacts = await ctx.persistCanonicalSections({
-    runtime: { concurrency: 8 },
+    runtime: { maxUrlsPerProduct: 8 },
   });
   assert.notEqual(artifacts, null);
   assert.equal(typeof artifacts, 'object');
   assert.ok(artifacts.sections, 'artifacts should have sections');
   const updatedState = ctx.getUserSettingsState();
   assert.notEqual(updatedState, initialState, 'user settings state should be updated after persist');
+  assert.equal(updatedState.runtime.maxUrlsPerProduct, 8);
   await fs.rm(helperRoot, { recursive: true, force: true }).catch(() => {});
 });
 

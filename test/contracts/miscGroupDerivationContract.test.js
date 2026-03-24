@@ -91,7 +91,7 @@ describe('deriveMiscGroupEntries', () => {
 
   it('defaultValues are stringified registry defaults', () => {
     const spot = [
-      { envKey: 'CONCURRENCY', expectedDefault: '4' },
+      // WHY: CONCURRENCY removed — fetchConcurrency retired from registry.
       { envKey: 'MAX_RUN_SECONDS', expectedDefault: '480' },
       { envKey: 'MAX_URLS_PER_PRODUCT', expectedDefault: '50' },
       { envKey: 'PAGE_GOTO_TIMEOUT_MS', expectedDefault: '12000' },

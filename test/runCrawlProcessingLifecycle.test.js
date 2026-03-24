@@ -160,4 +160,43 @@ describe('runCrawlProcessingLifecycle', () => {
 
     assert.equal(frontierDb.getRecorded().length, 2);
   });
+
+  it('drains in strict slot→rank order across all queues', async () => {
+    // Simulate: manufacturer URL (no slot), then 2 general-queue URLs with slot info
+    const planner = createMockPlanner([
+      // Manufacturer seed — no triage_passthrough, corsair.com host
+      { url: 'http://corsair.com/brand-page', role: 'manufacturer' },
+      // General queue — slot b, rank 2
+      { url: 'http://versus.com/corsair-m55', triage_passthrough: { search_slot: 'b', search_rank: 2 } },
+      // General queue — slot a, rank 3
+      { url: 'http://amazon.com/corsair-m55', triage_passthrough: { search_slot: 'a', search_rank: 3 } },
+      // General queue — slot a, rank 1 (same host as manufacturer = corsair.com)
+      { url: 'http://corsair.com/m55-specs', triage_passthrough: { search_slot: 'a', search_rank: 1 } },
+    ]);
+
+    const processedUrls = [];
+    const session = {
+      slotCount: 4,
+      async processBatch(urls) {
+        processedUrls.push(...urls);
+        return urls.map((url) => ({
+          status: 'fulfilled',
+          value: { url, finalUrl: url, status: 200, html: '<html><body>ok</body></html>', screenshots: [], workerId: 'w' },
+        }));
+      },
+    };
+
+    await runCrawlProcessingLifecycle({
+      planner, session, settings: {}, startMs: Date.now(), maxRunMs: 0,
+    });
+
+    // Expected order: a1 (manufacturer via host fallback), a3 (general), b2 (general)
+    // corsair.com/brand-page gets host-fallback to slot a (same host as corsair.com/m55-specs)
+    assert.deepEqual(processedUrls, [
+      'http://corsair.com/brand-page',     // slot a, rank 1 (host fallback from corsair.com)
+      'http://corsair.com/m55-specs',      // slot a, rank 1 (exact triage)
+      'http://amazon.com/corsair-m55',     // slot a, rank 3
+      'http://versus.com/corsair-m55',     // slot b, rank 2
+    ]);
+  });
 });

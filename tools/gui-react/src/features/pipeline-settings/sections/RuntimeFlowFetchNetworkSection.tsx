@@ -17,7 +17,6 @@ const FRONTIER_PHASE_TIP =
 interface RuntimeFlowFetchNetworkSectionProps {
   runtimeDraft: RuntimeDraft;
   runtimeSettingsReady: boolean;
-  dynamicFetchControlsLocked: boolean;
   inputCls: string;
   runtimeSubStepDomId: (id: string) => string;
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
@@ -38,38 +37,10 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
     <>
       <div id={runtimeSubStepDomId('fetch-network-throughput')} className="scroll-mt-24" />
       <SettingGroupBlock title="Core Throughput">
-        <SettingRow label="Fetch Concurrency" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler worker dispatch.\nWhat this controls: the maximum number of fetch jobs allowed to run at the same time across hosts.`}>
-          <SettingNumberInput draftKey="fetchConcurrency" value={runtimeDraft.fetchConcurrency} bounds={getNumberBounds('fetchConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
         <SettingRow label="Per Host Min Delay (ms)" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: host pacing and polite-fetch enforcement.\nWhat this controls: the minimum wait inserted between consecutive requests to the same host.`}>
           <SettingNumberInput draftKey="perHostMinDelayMs" value={runtimeDraft.perHostMinDelayMs} bounds={getNumberBounds('perHostMinDelayMs')} step={100} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="Fetch Budget (ms)" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: round-level fetch budgeting before extraction can continue.\nWhat this controls: the total time budget available for fetch work in a single round before the runtime stops admitting more fetch activity.`}>
-          <SettingNumberInput draftKey="fetchBudgetMs" value={runtimeDraft.fetchBudgetMs} bounds={getNumberBounds('fetchBudgetMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-        </SettingRow>
-        <AdvancedSettingsBlock title="Rate Limits & Scheduler Internals" count={13}>
-          <SettingRow label="Domain Request RPS" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: per-host rate limiting.\nWhat this controls: the sustained requests-per-second ceiling applied to each domain.`}>
-            <SettingNumberInput draftKey="domainRequestRps" value={runtimeDraft.domainRequestRps} bounds={getNumberBounds('domainRequestRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Domain Request Burst" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: per-host burst limiter.\nWhat this controls: how many requests a single domain may burst before pacing has to catch up.`}>
-            <SettingNumberInput draftKey="domainRequestBurst" value={runtimeDraft.domainRequestBurst} bounds={getNumberBounds('domainRequestBurst')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Global Request RPS" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: global fetch throttling across all hosts.\nWhat this controls: the sustained request rate for non-search fetch traffic across the whole runtime.`}>
-            <SettingNumberInput draftKey="globalRequestRps" value={runtimeDraft.globalRequestRps} bounds={getNumberBounds('globalRequestRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Global Request Burst" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: global scheduler burst limiter.\nWhat this controls: the burst allowance for non-search fetch traffic before global throttling re-engages.`}>
-            <SettingNumberInput draftKey="globalRequestBurst" value={runtimeDraft.globalRequestBurst} bounds={getNumberBounds('globalRequestBurst')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Fetch Per-Host Concurrency Cap" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: host-level queue dispatch.\nWhat this controls: the hard cap on how many simultaneous fetches one host may own at once.`}>
-            <SettingNumberInput draftKey="fetchPerHostConcurrencyCap" value={runtimeDraft.fetchPerHostConcurrencyCap} bounds={getNumberBounds('fetchPerHostConcurrencyCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Prefer HTTP Fetcher" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: fetch mode selection before browser fallback is considered.\nWhat this controls: whether the runtime should prefer the lightweight HTTP lane and only escalate to browser-backed fetch when needed.`}>
-            <SettingToggle
-              checked={runtimeDraft.preferHttpFetcher}
-              onChange={(next) => updateDraft('preferHttpFetcher', next)}
-              disabled={!runtimeSettingsReady}
-            />
-          </SettingRow>
+        <AdvancedSettingsBlock title="Browser Navigation Internals" count={3}>
           <SettingRow label="Page Goto Timeout (ms)" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: browser-backed fetch navigation.\nWhat this controls: the maximum time a page navigation may spend loading before the browser lane times out.`}>
             <SettingNumberInput draftKey="pageGotoTimeoutMs" value={runtimeDraft.pageGotoTimeoutMs} bounds={getNumberBounds('pageGotoTimeoutMs')} step={100} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>

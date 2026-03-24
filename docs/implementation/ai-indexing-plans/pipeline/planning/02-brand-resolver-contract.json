@@ -1,0 +1,133 @@
+{
+  "_doc": "Merged input + output contract for Brand Resolver phase. Validated against live code 2026-03-23.",
+  "validated_against": "2026-03-23",
+
+  "input": {
+    "function": "resolveBrandDomain",
+    "file": "src/features/indexing/pipeline/brandResolver/resolveBrandDomain.js",
+    "call_shape": {
+      "brand": "string",
+      "category": "string",
+      "config": "object — consumed for LLM routing (hasLlmRouteApiKey, llmTimeoutMs)",
+      "callLlmFn": "function|null",
+      "storage": "object|null",
+      "logger": "object|null — used for LLM error logging (brand_resolver_llm_error)"
+    },
+    "registry_settings_consumed": {
+      "_note": "No brand-resolver-specific registry settings. Confidence is LLM-derived via parseConfidence(). Crawl config for brand promotions is now a static shape: { method: 'http', robots_txt_compliant: true } — no rate_limit_ms or timeout_ms. The former registry settings manufacturerCrawlRateLimitMs and manufacturerCrawlTimeoutMs were deleted on 2026-03-23."
+    },
+    "storage_contract": {
+      "read": "storage.getBrandDomain(brand, category)",
+      "write": "storage.upsertBrandDomain({ brand, category, official_domain, aliases, support_domain, confidence })",
+      "cached_aliases_shape": "JSON string or array",
+      "_jsdoc": "BrandDomainRow typedef: { brand, category, official_domain, aliases, support_domain, confidence }"
+    },
+    "llm_adapter": {
+      "factory": "createBrandResolverCallLlm",
+      "file": "src/features/indexing/pipeline/brandResolver/brandResolverLlmAdapter.js",
+      "factory_params": "{ callRoutedLlmFn, config, logger }",
+      "routing": {
+        "reason": "brand_resolution",
+        "role": "triage",
+        "phase": "brandResolver"
+      },
+      "response_schema": {
+        "official_domain": "string (required)",
+        "aliases": "string[]",
+        "support_domain": "string",
+        "reasoning": "string[]"
+      }
+    },
+    "stage_wrapper": {
+      "function": "runBrandResolver",
+      "file": "src/features/indexing/pipeline/brandResolver/runBrandResolver.js",
+      "call_shape": {
+        "job": "object",
+        "category": "string",
+        "config": "object",
+        "storage": "object|null",
+        "logger": "object|null — passed through to resolveBrandDomainFn and used for event emission",
+        "categoryConfig": "object",
+        "resolveBrandDomainFn": "function (DI seam, defaults to resolveBrandDomain)"
+      },
+      "di_seam_note": "resolveBrandDomainFn now receives logger as a parameter alongside brand, category, config, callLlmFn, storage"
+    },
+    "caller_gates": [
+      "runDiscoverySeedPlan() only attempts resolution when a brand is present in job",
+      "runBrandResolver() only creates callLlmFn when hasLlmRouteApiKey(config, { role: 'triage' }) is true",
+      "resolveBrandDomainFn receives logger so LLM errors are logged as brand_resolver_llm_error"
+    ],
+    "promotion_inputs": {
+      "_note": "Promotion logic is inline in runDiscoverySeedPlan.js, not a separate module.",
+      "file": "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
+      "inline_logic": "Normalizes officialDomain, builds host entry with crawlConfig { method: 'http', robots_txt_compliant: true }, pushes to categoryConfig.sourceHosts/sourceHostMap/approvedRootDomains",
+      "manufacturer_source_note": "Brand Resolver is the SOLE source of manufacturer domain data. sources.json approved.manufacturer arrays are empty for all categories."
+    }
+  },
+
+  "output": {
+    "function_return": {
+      "officialDomain": "string",
+      "aliases": "string[]",
+      "supportDomain": "string",
+      "confidence": "number (0-1, LLM-derived via parseConfidence()) or null",
+      "reasoning": "string[]"
+    },
+    "empty_return_shape": {
+      "officialDomain": "",
+      "aliases": [],
+      "supportDomain": "",
+      "confidence": null,
+      "reasoning": []
+    },
+    "confidence_behavior": [
+      "cache hit: parseConfidence(cached.confidence) — stored value, clamped 0-1, null if missing",
+      "LLM success with officialDomain: parseConfidence(result?.confidence) — LLM-provided",
+      "LLM success without officialDomain: null (no resolution = no confidence)",
+      "empty brand / no callLlmFn / LLM error: null",
+      "confidence IS model-derived — parseConfidence() clamps to 0-1 (values >1 divided by 100)"
+    ],
+    "caller_statuses": [
+      "resolved — officialDomain is non-empty",
+      "resolved_empty — LLM was available but returned no officialDomain",
+      "skipped — no brand or no_api_key_for_triage_role",
+      "failed — resolver threw an error"
+    ],
+    "stage_wrapper_return": {
+      "function": "runBrandResolver",
+      "return_shape": "{ brandResolution }",
+      "brandResolution": "object|null — the resolveBrandDomain() result or null",
+      "_note": "Orchestrator applies brand promotion inline — checks brandResolution.officialDomain and adds to categoryConfig.sourceHosts/sourceHostMap/approvedRootDomains directly."
+    },
+    "brand_resolved_event_shape": {
+      "brand": "string",
+      "status": "string",
+      "skip_reason": "string",
+      "official_domain": "string",
+      "aliases": "string[] (max 5)",
+      "support_domain": "string",
+      "confidence": "number",
+      "reasoning": "string[] (max 10)",
+      "_note": "candidates field removed — no longer emitted"
+    },
+    "caller_side_effects": [
+      "brand_resolved logger event emitted by phase wrapper",
+      "orchestrator applies brand promotion inline to categoryConfig after phase completes"
+    ],
+    "orchestrator_promotion_application": {
+      "file": "src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js",
+      "logic": [
+        "Checks brand.brandResolution?.officialDomain",
+        "ensureCategorySourceLookups(categoryConfig) called first",
+        "Builds a manufacturer host entry inline: { host, tierName: 'manufacturer', sourceId: 'brand_<host>', displayName, crawlConfig, fieldCoverage: null, robotsTxtCompliant: true, baseUrl }",
+        "Adds entry to categoryConfig.sourceHosts and sourceHostMap (if not already present)",
+        "approvedRootDomains updated with extractRootDomain(host)"
+      ]
+    },
+    "not_returned_by_function": [
+      "status — caller-computed from brandResolution",
+      "skip_reason — caller-computed"
+    ],
+    "artifact_note": "There is no dedicated brand_resolver.json artifact in the live runtime."
+  }
+}

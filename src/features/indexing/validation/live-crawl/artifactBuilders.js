@@ -8,8 +8,6 @@ import { hasKnownValue } from '../../../../shared/valueNormalizers.js';
 export const REQUIRED_SETTINGS_KEYS = Object.freeze([
   'searchEngines',
   'discoveryEnabled',
-  'preferHttpFetcher',
-  'dynamicCrawleeEnabled',
   'perHostMinDelayMs',
   'pageGotoTimeoutMs',
   'postLoadWaitMs',

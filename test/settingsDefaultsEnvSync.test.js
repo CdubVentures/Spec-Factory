@@ -45,13 +45,9 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmWriteApiKey',
 ]);
 const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
-  'fetchConcurrency',
   'perHostMinDelayMs',
-  'fetchPerHostConcurrencyCap',
   'discoveryEnabled',
   'llmMaxCallsPerProductTotal',
-  'dynamicFetchRetryBudget',
-  'dynamicFetchRetryBackoffMs',
   'frontierBlockedDomainThreshold',
   'pageGotoTimeoutMs',
   'pageNetworkIdleTimeoutMs',
@@ -110,8 +106,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   openaiApiKey: 'LLM_API_KEY',
   outputMode: 'OUTPUT_MODE',
   maxCandidateUrls: 'MAX_CANDIDATE_URLS_PER_PRODUCT',
-  dynamicFetchPolicyMap: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
-  dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
   categoryAuthorityRoot: 'HELPER_FILES_ROOT',
 });
@@ -223,14 +217,9 @@ test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', ()
 
 test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
   const rows = [
-    { settingsKey: 'fetchConcurrency', configKey: 'concurrency', envKey: 'CONCURRENCY' },
     { settingsKey: 'perHostMinDelayMs', configKey: 'perHostMinDelayMs', envKey: 'PER_HOST_MIN_DELAY_MS' },
-    { settingsKey: 'fetchPerHostConcurrencyCap', configKey: 'fetchPerHostConcurrencyCap', envKey: 'FETCH_PER_HOST_CONCURRENCY_CAP' },
     { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
-    // serpTriageMinScore removed — convergence registry is empty
     { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },
-    { settingsKey: 'dynamicFetchRetryBudget', configKey: 'dynamicFetchRetryBudget', envKey: 'DYNAMIC_FETCH_RETRY_BUDGET' },
-    { settingsKey: 'dynamicFetchRetryBackoffMs', configKey: 'dynamicFetchRetryBackoffMs', envKey: 'DYNAMIC_FETCH_RETRY_BACKOFF_MS' },
     { settingsKey: 'frontierBlockedDomainThreshold', configKey: 'frontierBlockedDomainThreshold', envKey: 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD' },
     { settingsKey: 'pageGotoTimeoutMs', configKey: 'pageGotoTimeoutMs', envKey: 'PAGE_GOTO_TIMEOUT_MS' },
     { settingsKey: 'postLoadWaitMs', configKey: 'postLoadWaitMs', envKey: 'POST_LOAD_WAIT_MS' },

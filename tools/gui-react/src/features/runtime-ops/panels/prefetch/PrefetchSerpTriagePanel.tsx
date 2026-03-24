@@ -3,7 +3,7 @@ import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import type { PrefetchLlmCall, SerpTriageResult, TriageCandidate, PrefetchLiveSettings } from '../../types';
 import { formatMs, triageDecisionBadgeClass, domainRoleBadgeClass, scoreBarSegments } from '../../helpers';
-import { resolveIdentityBadge } from '../../badgeRegistries';
+import { resolveIdentityBadge, resolveApprovalBadge } from '../../badgeRegistries';
 import { KanbanLane, KanbanCard } from '../../components/KanbanLane';
 import { StackedScoreBar } from '../../components/StackedScoreBar';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
@@ -23,6 +23,7 @@ import {
   buildTriageDecisionSegments,
   buildTriageFunnelBullets,
 } from '../../selectors/serpTriageHelpers.js';
+import { PrefetchEmptyState } from './PrefetchEmptyState';
 import type { RuntimeIdxBadge } from '../../types';
 
 interface PrefetchSerpTriagePanelProps {
@@ -31,12 +32,6 @@ interface PrefetchSerpTriagePanelProps {
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
-}
-
-/* ── Theme-aligned helpers ── */
-
-function approvalBadgeClass(bucket: string): string {
-  return bucket === 'approved' ? 'sf-chip-success' : 'sf-chip-neutral';
 }
 
 /* ── Candidate Detail Drawer ── */
@@ -87,7 +82,7 @@ function CandidateDrawer({
           <div className="flex flex-wrap gap-1.5">
             {candidate.primary_lane !== null && <Chip label={`lane ${candidate.primary_lane}`} className="sf-chip-info" />}
             {candidate.triage_disposition && <Chip label={candidate.triage_disposition.replace(/_/g, ' ')} className="sf-chip-accent" />}
-            {candidate.approval_bucket && <Chip label={candidate.approval_bucket} className={approvalBadgeClass(candidate.approval_bucket)} />}
+            {candidate.approval_bucket && <Chip label={candidate.approval_bucket} className={resolveApprovalBadge(candidate.approval_bucket)} />}
           </div>
         </DrawerSection>
       )}
@@ -192,16 +187,13 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
       <div className="flex flex-col gap-5 p-5 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">SERP Selector</h3>
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="text-3xl opacity-60">&#9878;</div>
-          <div className="text-sm font-medium sf-text-muted">Waiting for SERP selection</div>
-          <p className="max-w-md leading-relaxed sf-text-caption sf-text-subtle">
-            Selection results will appear after search result candidates are sent to the LLM selector.
-            Each URL is classified as approved (fetch now), candidate (backup), or reject (skip)
-            based on product identity match, source authority, and field coverage signals.
-          </p>
+        <PrefetchEmptyState
+          icon="&#9878;"
+          heading="Waiting for SERP selection"
+          description="Selection results will appear after search result candidates are sent to the LLM selector. Each URL is classified as approved (fetch now), candidate (backup), or reject (skip) based on product identity match, source authority, and field coverage signals."
+        >
           <Chip label="LLM Selector" className="sf-chip-warning" />
-        </div>
+        </PrefetchEmptyState>
       </div>
     );
   }

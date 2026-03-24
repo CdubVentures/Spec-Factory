@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { ruleUnit } from '../engine/ruleAccessors.js';
 import { generateStableSnippetId } from '../index/evidenceIndexDb.js';
 import { toTierNumber, parseTierPreferenceFromRule, parseTierPreferenceFromNeedRow } from '../utils/tierHelpers.js';
+import { isObject, toArray } from '../shared/primitives.js';
 
 const DEFAULT_TIER_WEIGHTS = new Map([
   [1, 3],
@@ -46,14 +47,6 @@ const FIELD_HINT_SYNONYMS = {
   connection: ['connection', 'connectivity', 'wireless', 'wired'],
   connectivity: ['connectivity', 'wireless', 'wired', 'bluetooth', '2.4ghz']
 };
-
-function isObject(value) {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toArray(value) {
-  return Array.isArray(value) ? value : [];
-}
 
 function normalizeText(value) {
   return String(value || '')

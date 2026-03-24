@@ -20,11 +20,10 @@ import {
 
 test('CHAR apply: applyRuntimeSettingsToConfig modifies config in-place', () => {
   const config = loadConfig();
-  const originalConcurrency = config.concurrency;
-  applyRuntimeSettingsToConfig(config, { fetchConcurrency: 8 });
-  // fetchConcurrency maps to concurrency via settingsKeyMap
-  // The apply function uses sanitized keys, so check if any key was applied
-  assert.equal(typeof config.concurrency, 'number');
+  const originalMax = config.maxUrlsPerProduct;
+  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 33 });
+  // maxUrlsPerProduct maps directly via settingsKeyMap
+  assert.equal(config.maxUrlsPerProduct, 33);
 });
 
 test('CHAR apply: applyRuntimeSettingsToConfig with empty settings is no-op', () => {

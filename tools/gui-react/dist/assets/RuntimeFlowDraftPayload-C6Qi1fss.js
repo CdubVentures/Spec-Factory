@@ -1,0 +1,1 @@
+import{an as l}from"./index-DNjdlzym.js";function o({nextRuntimeDraft:t,runtimeManifestDefaults:a,resolveModelTokenDefaults:e}){return l({...t,runtimeSettingsFallbackBaseline:a,resolveModelTokenDefaults:e})}export{o as c};

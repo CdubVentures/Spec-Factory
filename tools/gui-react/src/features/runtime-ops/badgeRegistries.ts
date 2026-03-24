@@ -268,3 +268,63 @@ export const BLOCKER_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze
 export function resolveBlockerBadge(key: string): string {
   return BLOCKER_BADGE_MAP[key] ?? 'sf-chip-neutral';
 }
+
+// ── Brand resolution (from PrefetchBrandResolverPanel) ──────────────
+
+export const BRAND_RESOLUTION_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
+  resolved:       'sf-chip-success',
+  resolved_empty: 'sf-chip-warning',
+  failed:         'sf-chip-danger',
+  skipped:        'sf-chip-warning',
+});
+
+export function resolveBrandResolutionBadge(status: string): string {
+  return BRAND_RESOLUTION_BADGE_MAP[status] ?? 'sf-chip-neutral';
+}
+
+export const SKIP_REASON_LABEL_MAP: Readonly<Record<string, string>> = Object.freeze({
+  no_brand_in_identity_lock: 'No brand name was found in the product identity lock.',
+  no_api_key_for_triage_role: 'No API key is configured for the triage LLM role.',
+});
+
+export function resolveSkipReasonLabel(reason: string): string {
+  return SKIP_REASON_LABEL_MAP[reason] ?? reason;
+}
+
+export function resolveConfidenceRingClass(confidence: number | null): string {
+  if (confidence == null) return 'sf-metric-ring-muted';
+  if (confidence >= 0.8) return 'sf-metric-ring-success';
+  if (confidence >= 0.5) return 'sf-metric-ring-warning';
+  return 'sf-metric-ring-danger';
+}
+
+export function resolveConfidenceTextClass(confidence: number | null): string {
+  if (confidence == null) return 'sf-text-muted';
+  if (confidence >= 0.8) return 'text-[var(--sf-state-success-fg)]';
+  if (confidence >= 0.5) return 'text-[var(--sf-state-warning-fg)]';
+  return 'text-[var(--sf-state-error-fg)]';
+}
+
+// ── Approval / gate badges (from SerpTriagePanel, SearchProfilePanel) ─
+
+export const APPROVAL_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
+  approved:  'sf-chip-success',
+  candidate: 'sf-chip-neutral',
+  reject:    'sf-chip-danger',
+});
+
+export function resolveApprovalBadge(bucket: string): string {
+  return APPROVAL_BADGE_MAP[bucket] ?? 'sf-chip-neutral';
+}
+
+export function resolveGateBadge(active: boolean): string {
+  return active ? 'sf-chip-success' : 'sf-chip-neutral';
+}
+
+// ── LLM reason badges (from PrefetchSearchPlannerPanel) ─────────────
+
+export function resolveLlmReasonBadge(reason: string): string {
+  const normalized = String(reason || '').trim().toLowerCase();
+  if (normalized.startsWith('discovery_planner')) return 'sf-chip-info';
+  return 'sf-chip-neutral';
+}

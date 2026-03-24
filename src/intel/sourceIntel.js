@@ -916,7 +916,7 @@ export async function persistSourceIntel({
   const perDomainRunSeen = new Set();
   const perPathRunSeen = new Set();
   const seenAt = new Date().toISOString();
-  const halfLifeDays = Math.max(1, Number.parseFloat(String(config.fieldRewardHalfLifeDays || 45)) || 45);
+  const halfLifeDays = 45;
   const acceptedEvidenceIndex = buildAcceptedEvidenceIndex(provenance);
   const contradictionFieldSet = new Set(
     (constraintAnalysis?.contradictions || [])
