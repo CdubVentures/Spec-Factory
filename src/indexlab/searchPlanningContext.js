@@ -64,8 +64,8 @@ function derivePlannerLimits(config) {
   return {
     discoveryEnabled: true,
     searchProfileQueryCap: configInt(config, 'searchProfileQueryCap'),
-    maxUrlsPerProduct: 50,
-    maxCandidateUrls: 80,
+    domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
+    serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
     maxPagesPerDomain: configInt(config, 'maxPagesPerDomain'),
     maxRunSeconds: configInt(config, 'maxRunSeconds'),
     llmModelPlan: resolvePhaseModel(config, 'needset') || String(configValue(config, 'llmModelPlan')),

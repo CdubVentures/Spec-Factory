@@ -105,7 +105,6 @@ function makeInput(
     indexingResumeSeedLimit: 100,
     indexingResumePersistLimit: 1000,
     searchProfileCapMapJson: '',
-    userAgent: '',
     capturePageScreenshotFormat: 'jpeg',
     capturePageScreenshotSelectors: '',
     runtimeControlFile: '',

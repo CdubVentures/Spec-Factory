@@ -1,17 +1,10 @@
 import { SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.js';
 
 import type {
-  RuntimeProfile,
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
   SearxngEngine,
 } from './runtimeSettingsManifestTypes.ts';
-
-export const RUNTIME_PROFILE_OPTIONS = Object.freeze(['standard'] as RuntimeProfile[]);
-
-export const SEARXNG_ENGINE_OPTIONS: readonly SearxngEngine[] = Object.freeze([
-  'google', 'bing', 'google-proxy', 'duckduckgo', 'brave',
-] as const);
 
 export const SEARXNG_ENGINE_LABELS: Record<SearxngEngine, string> = {
   google: 'Google (Crawlee)',

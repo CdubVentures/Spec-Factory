@@ -2,6 +2,15 @@
   "category": "keyboard",
   "version": "1.0.0",
   "approved": {
+    "manufacturer": [
+      "corsair.com",
+      "duckychannel.com.tw",
+      "keychron.com",
+      "logitechg.com",
+      "razer.com",
+      "steelseries.com",
+      "wooting.io"
+    ],
     "lab": [
       "rtings.com",
       "techpowerup.com",

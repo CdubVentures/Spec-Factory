@@ -6,7 +6,7 @@
 // Output: writes tools/gui-react/src/stores/runtimeSettingsManifestTypes.ts
 //         writes src/shared/settingsDefaults.d.ts
 
-import { RUNTIME_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, STORAGE_SETTINGS_REGISTRY } from '../../../src/shared/settingsRegistry.js';
+import { RUNTIME_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, STORAGE_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from '../../../src/shared/settingsRegistry.js';
 
 const REGISTRY_TYPE_TO_TS = {
   int: 'number',
@@ -81,7 +81,9 @@ export function generateManifestTypes(registry) {
   lines.push('}');
   lines.push('');
   lines.push("export type RuntimeProfile = 'standard';");
-  lines.push("export type SearxngEngine = 'google' | 'bing' | 'google-proxy' | 'duckduckgo' | 'brave';");
+  // WHY: Derived from SEARXNG_AVAILABLE_ENGINES so new engines auto-appear in the union.
+  const engineMembers = SEARXNG_AVAILABLE_ENGINES.map((e) => `'${e}'`).join(' | ');
+  lines.push(`export type SearxngEngine = ${engineMembers};`);
   lines.push('');
 
   return lines.join('\n');

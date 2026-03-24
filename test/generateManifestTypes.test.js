@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import { ok, strictEqual } from 'node:assert';
 import { generateManifestTypes } from '../tools/gui-react/scripts/generateManifestTypes.js';
-import { RUNTIME_SETTINGS_REGISTRY } from '../src/shared/settingsRegistry.js';
+import { RUNTIME_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from '../src/shared/settingsRegistry.js';
 
 describe('generateManifestTypes', () => {
   const output = generateManifestTypes(RUNTIME_SETTINGS_REGISTRY);
@@ -82,5 +82,26 @@ describe('generateManifestTypes', () => {
 
   it('contains the auto-generated header comment', () => {
     ok(output.includes('AUTO-GENERATED'), 'should have auto-generated comment');
+  });
+
+  // --- Ghost key / SSOT drift guards ---
+
+  it('does not contain ghost key concurrency', () => {
+    const lines = output.split('\n').filter((l) => /^\s+concurrency:/.test(l));
+    strictEqual(lines.length, 0,
+      'concurrency is not in the registry — must not appear in generated types');
+  });
+
+  it('does not contain ghost key userAgent', () => {
+    const lines = output.split('\n').filter((l) => /^\s+userAgent:/.test(l));
+    strictEqual(lines.length, 0,
+      'userAgent is not in the registry — must not appear in generated types');
+  });
+
+  it('SearxngEngine type is derived from SEARXNG_AVAILABLE_ENGINES', () => {
+    const expectedMembers = SEARXNG_AVAILABLE_ENGINES.map((e) => `'${e}'`).join(' | ');
+    const expectedLine = `export type SearxngEngine = ${expectedMembers};`;
+    ok(output.includes(expectedLine),
+      `SearxngEngine must be derived from registry. Expected:\n  ${expectedLine}`);
   });
 });

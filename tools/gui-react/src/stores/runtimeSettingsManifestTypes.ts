@@ -25,7 +25,6 @@ export interface RuntimeSettingDefaults {
   domainClassifierUrlCap: number;
   dryRun: boolean;
   eventsJsonWrite: boolean;
-  concurrency: number;
   frontierBackoffMaxExponent: number;
   frontierBlockedDomainThreshold: number;
   frontierCooldown403BaseSeconds: number;
@@ -92,8 +91,6 @@ export interface RuntimeSettingDefaults {
   perHostMinDelayMs: number;
   pipelineSchemaEnforcementMode: string;
   postLoadWaitMs: number;
-  indexingReextractAfterHours: number;
-  indexingReextractEnabled: boolean;
   repairDedupeRule: RuntimeRepairDedupeRule;
   indexingResumeMode: RuntimeResumeMode;
   resumeMode: RuntimeResumeMode;
@@ -122,7 +119,6 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
-  userAgent: string;
   writeMarkdownSummary: boolean;
   discoveryEnabled: boolean;
 }

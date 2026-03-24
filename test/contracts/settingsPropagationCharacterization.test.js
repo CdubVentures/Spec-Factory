@@ -340,7 +340,8 @@ describe('buildRoundConfig — round override characterization', () => {
     const result = buildRoundConfig(base, { round: 1 });
 
     strictEqual(result.discoveryEnabled, true, 'round 1 enables discovery');
-    ok(result.maxUrlsPerProduct >= 60, `round 1 should floor maxUrlsPerProduct, got ${result.maxUrlsPerProduct}`);
+    // WHY: maxUrlsPerProduct removed from roundConfigBuilder — planner owns its own caps.
+    strictEqual(result.maxUrlsPerProduct, undefined, 'maxUrlsPerProduct no longer set by roundConfigBuilder');
     ok(result.searchProfileQueryCap >= 1, `round 1 should preserve searchProfileQueryCap, got ${result.searchProfileQueryCap}`);
   });
 

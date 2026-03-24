@@ -5,7 +5,6 @@ export type PipelineSectionId =
   | 'flow'
   | 'planner'
   | 'fetcher'
-  | 'extraction'
   | 'validation'
   | 'convergence'
   | 'source-strategy';
@@ -14,7 +13,6 @@ export const PIPELINE_SECTION_IDS = [
   'flow',
   'planner',
   'fetcher',
-  'extraction',
   'validation',
   'convergence',
   'source-strategy',
@@ -38,12 +36,6 @@ const PIPELINE_SECTIONS = [
     label: 'Runtime Fetcher',
     subtitle: 'Throughput, frontier, browser, screenshots, pacing',
     tip: 'Owns fetch-layer knobs: concurrency, host pacing, frontier persistence, cooldowns, browser fallback, headless mode, scroll behavior, and screenshot capture.',
-  },
-  {
-    id: 'extraction' as const,
-    label: 'Runtime Extraction',
-    subtitle: 'LLM providers, models, tokens, budgets',
-    tip: 'Owns extraction-layer knobs: LLM provider selection, API keys, model assignments, token limits, reasoning mode, call limits, cost budgets, cache, and advanced overrides.',
   },
   {
     id: 'validation' as const,
@@ -104,13 +96,6 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <path d="M12 4v12" />
             <path d="m8 12 4 4 4-4" />
             <path d="M4 18h16" />
-          </>
-        )}
-        {/* Extraction — beaker */}
-        {id === 'extraction' && (
-          <>
-            <path d="M9 3h6M10 3v5l-4 8a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l-4-8V3" />
-            <path d="M8.5 14h7" />
           </>
         )}
         {/* Validation — checkmark shield */}

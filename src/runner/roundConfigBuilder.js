@@ -279,39 +279,16 @@ export function buildRoundConfig(baseConfig, {
     missingExpectedCount !== undefined;
   // WHY: Pipeline settings are the single source of truth. No round-mode
   // overrides — the user's configured values pass through unchanged.
-  // The dynamic discovery toggle (below) and effort-based boosts are the
-  // only round-aware adjustments that remain.
+  // URL caps (maxUrlsPerProduct, maxCandidateUrls) removed — planner owns
+  // its own internal caps. The dynamic discovery toggle and LLM call floor
+  // are the only round-aware adjustments that remain.
   const next = {
     ...baseConfig,
     llmMaxCallsPerRound: Math.max(1, baseConfig.llmMaxCallsPerRound || 4),
-    maxUrlsPerProduct: 50,
-    maxCandidateUrls: 80,
   };
 
   if (round > 0) {
-    next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, Math.max(120, 25));
-    next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, Math.max(180, toInt(baseConfig.maxCandidateUrls, 50) + 40));
     next.maxPagesPerDomain = Math.max(next.maxPagesPerDomain || 0, Math.max(3, 6));
-  }
-
-  if (expectedCount > 0) {
-    next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, 90 + Math.min(140, expectedCount * 12));
-    next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, 130 + Math.min(200, expectedCount * 16));
-  } else if (rareCount > 0 && sometimesCount === 0) {
-    next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 60, 70);
-    next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 90, 90);
-  }
-
-  const contractTotalEffort = Math.max(0, toInt(contractEffort.total_effort, 0));
-  const hardMissingCount = Math.max(0, toInt(contractEffort.hard_missing_count, 0));
-  const contractCriticalMissingCount = Math.max(0, toInt(contractEffort.critical_missing_count, 0));
-  const expectedRequiredCount = Math.max(0, toInt(contractEffort.expected_required_count, 0));
-  if (round > 0 && contractTotalEffort > 0) {
-    const effortTier = Math.min(4, Math.floor(contractTotalEffort / 8));
-    const urlBoost = (effortTier * 20) + (hardMissingCount * 14) + (contractCriticalMissingCount * 10);
-    const candidateBoost = (effortTier * 30) + (hardMissingCount * 18) + (contractCriticalMissingCount * 12);
-    next.maxUrlsPerProduct = Math.max(next.maxUrlsPerProduct || 0, (next.maxUrlsPerProduct || 0) + urlBoost);
-    next.maxCandidateUrls = Math.max(next.maxCandidateUrls || 0, (next.maxCandidateUrls || 0) + candidateBoost);
   }
 
   {
@@ -357,10 +334,7 @@ export function buildRoundConfig(baseConfig, {
   const keepRoundOpen =
     resolvedMissingCritical > 0 ||
     resolvedPreviousValidated === false;
-  if (hasExplicitMissingCounts && round > 0 && resolvedMissingRequired === 0 && resolvedMissingExpected === 0 && !keepRoundOpen) {
-    next.maxUrlsPerProduct = Math.min(next.maxUrlsPerProduct || 60, 48);
-    next.maxCandidateUrls = Math.min(next.maxCandidateUrls || 90, 48);
-  }
+  // WHY: URL cap clamping removed — planner owns its own internal caps.
 
   {
     const roundCallFloor = 16;

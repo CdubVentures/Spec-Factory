@@ -1,6 +1,5 @@
-// WHY: Renders all settings for a specific section within a category.
-// Hero settings render standalone above the group block; regular settings
-// are wrapped in a SettingGroupBlock with the section label.
+// WHY: Renders all settings for a specific section as a SettingGroupBlock card.
+// Hero settings render above the block; regular settings inside the bordered card.
 
 import { SettingGroupBlock } from './RuntimeFlowPrimitives';
 import { GenericSettingRenderer } from './GenericSettingRenderer';
@@ -51,23 +50,21 @@ export function GenericSectionPanel({
       ))}
       {regularEntries.length > 0 && (
         <SettingGroupBlock title={sectionLabel}>
-          <div className="space-y-2.5">
-            {regularEntries.map((entry) => {
-              const parentKey = getDisabledByKey(entry.key);
-              const isDisabled = parentKey ? !runtimeDraft[parentKey] : false;
-              return (
-                <GenericSettingRenderer
-                  key={entry.key}
-                  entry={entry}
-                  value={runtimeDraft[entry.key]}
-                  onBoolChange={onBoolChange}
-                  onNumberChange={onNumberChange}
-                  onStringChange={onStringChange}
-                  disabled={disabled || isDisabled}
-                />
-              );
-            })}
-          </div>
+          {regularEntries.map((entry) => {
+            const parentKey = getDisabledByKey(entry.key);
+            const isDisabled = parentKey ? !runtimeDraft[parentKey] : false;
+            return (
+              <GenericSettingRenderer
+                key={entry.key}
+                entry={entry}
+                value={runtimeDraft[entry.key]}
+                onBoolChange={onBoolChange}
+                onNumberChange={onNumberChange}
+                onStringChange={onStringChange}
+                disabled={disabled || isDisabled}
+              />
+            );
+          })}
         </SettingGroupBlock>
       )}
     </>

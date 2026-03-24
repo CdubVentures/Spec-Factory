@@ -331,9 +331,8 @@ export function applyRuntimeOverridesToPlanner(planner, overrides = {}) {
   if (!planner || typeof planner !== 'object') {
     return;
   }
-  if (Number.isFinite(Number(overrides.max_urls_per_product)) && Number(overrides.max_urls_per_product) > 0) {
-    planner.maxUrls = Math.max(1, Number(overrides.max_urls_per_product));
-  }
+  // WHY: maxUrls override removed — planner caps are now internal hardcodes
+  // pending the full sourcePlanner rewrite. Only blockHost survives.
   for (const host of overrides.blocked_domains || []) {
     planner.blockHost(host, 'runtime_override_blocked_domain');
   }

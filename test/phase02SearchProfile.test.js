@@ -1,73 +1,15 @@
-import { describe, it } from 'node:test';
+﻿import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildDeterministicAliases,
   buildSearchProfile,
   buildTargetedQueries,
-  determineQueryModes,
-  buildTier1Queries,
-  buildTier2Queries,
-  buildTier3Queries,
-} from '../src/features/indexing/search/queryBuilder.js';
-import { normalizeQueryRows } from '../src/research/queryPlanner.js';
+  normalizeQueryRows,
+  makeJob,
+  makeCategoryConfig,
+} from './helpers/phase02SearchProfileHarness.js';
 
-function makeJob(overrides = {}) {
-  return {
-    category: 'mouse',
-    productId: 'mouse-razer-viper-v3-pro',
-    identityLock: {
-      brand: 'Razer',
-      model: 'Viper V3 Pro',
-      variant: '',
-      ...overrides.identityLock
-    },
-    ...overrides
-  };
-}
-
-function makeCategoryConfig(overrides = {}) {
-  return {
-    category: 'mouse',
-    fieldOrder: ['weight', 'sensor', 'dpi', 'polling_rate', 'click_latency', 'switch', 'connection', 'battery_hours', 'lift'],
-    sourceHosts: [
-      { host: 'razer.com', tierName: 'manufacturer', role: 'manufacturer' },
-      { host: 'rtings.com', tierName: 'lab', role: 'lab' },
-      { host: 'techpowerup.com', tierName: 'lab', role: 'lab' }
-    ],
-    searchTemplates: [],
-    fieldRules: {
-      fields: {
-        weight: {
-          required_level: 'critical',
-          search_hints: {
-            query_terms: ['weight grams'],
-            domain_hints: ['razer.com'],
-            preferred_content_types: ['spec']
-          },
-          ui: { tooltip_md: 'Weight in grams without cable' }
-        },
-        sensor: {
-          required_level: 'critical',
-          search_hints: {
-            query_terms: ['optical sensor model'],
-            preferred_content_types: ['teardown_review', 'lab_review']
-          }
-        },
-        click_latency: {
-          required_level: 'required',
-          search_hints: {
-            query_terms: ['click latency ms', 'end to end latency'],
-            domain_hints: ['rtings.com'],
-            preferred_content_types: ['lab_review', 'benchmark']
-          }
-        }
-      }
-    },
-    ...overrides
-  };
-}
-
-describe('Phase 02 — Deterministic Aliases', () => {
+describe('Phase 02 â€” Deterministic Aliases', () => {
   it('generates spacing and hyphen variants for alphanumeric models', () => {
     const aliases = buildDeterministicAliases({
       brand: 'Alienware',
@@ -140,7 +82,7 @@ describe('Phase 02 — Deterministic Aliases', () => {
       variant: 'Wireless'
     });
 
-    console.log('[ALIAS] SteelSeries Aerox 5 Wireless — weights:', aliases.map((a) => `${a.alias}:${a.weight}`));
+    console.log('[ALIAS] SteelSeries Aerox 5 Wireless â€” weights:', aliases.map((a) => `${a.alias}:${a.weight}`));
 
     for (const alias of aliases) {
       assert.ok(typeof alias.alias === 'string' && alias.alias.length > 0, 'alias is non-empty string');
@@ -150,7 +92,7 @@ describe('Phase 02 — Deterministic Aliases', () => {
   });
 });
 
-describe('Phase 02 — SearchProfile Shape', () => {
+describe('Phase 02 â€” SearchProfile Shape', () => {
   it('produces all spec-required top-level keys', () => {
     const profile = buildSearchProfile({
       job: makeJob(),
@@ -275,7 +217,7 @@ describe('Phase 02 — SearchProfile Shape', () => {
   });
 });
 
-describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
+describe('Phase 02 â€” Field Studio Hint Wiring (Spec Â§2.5)', () => {
   it('search_hints.query_terms are consumed before fallback synonym expansion', () => {
     // WHY: Tier-only pipeline generates field-targeted queries via focusGroups (tier3 keys).
     // Tier3 rows have hint_source='tier3_key' and target_fields with the key name.
@@ -323,7 +265,7 @@ describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
       focusGroups: [],
     });
 
-    // WHY: soft domain bias — hosts appear as plain text in query, not site: operator
+    // WHY: soft domain bias â€” hosts appear as plain text in query, not site: operator
     const razerHostQueries = profile.queries.filter((q) => q.includes('razer.com') && !q.includes('site:'));
     const rtingsHostQueries = profile.queries.filter((q) => q.includes('rtings.com') && !q.includes('site:'));
 
@@ -355,10 +297,10 @@ describe('Phase 02 — Field Studio Hint Wiring (Spec §2.5)', () => {
   });
 });
 
-describe('Phase 02 — normalizeQueryRows Coercion', () => {
+describe('Phase 02 â€” normalizeQueryRows Coercion', () => {
   it('converts flat string array to structured rows', () => {
     const result = normalizeQueryRows(['q1', 'q2', 'q3']);
-    console.log('[NORMALIZE] strings →', JSON.stringify(result));
+    console.log('[NORMALIZE] strings â†’', JSON.stringify(result));
 
     assert.equal(result.length, 3);
     assert.deepEqual(result[0], { query: 'q1', target_fields: [] });
@@ -372,7 +314,7 @@ describe('Phase 02 — normalizeQueryRows Coercion', () => {
     ];
     const result = normalizeQueryRows(input);
 
-    console.log('[NORMALIZE] structured →', JSON.stringify(result));
+    console.log('[NORMALIZE] structured â†’', JSON.stringify(result));
 
     assert.deepEqual(result[0].target_fields, ['weight', 'sensor']);
     assert.deepEqual(result[1].target_fields, []);
@@ -385,7 +327,7 @@ describe('Phase 02 — normalizeQueryRows Coercion', () => {
       ''
     ]);
 
-    console.log('[NORMALIZE] mixed → count:', result.length);
+    console.log('[NORMALIZE] mixed â†’ count:', result.length);
 
     assert.equal(result.length, 2, 'empty string filtered out');
     assert.equal(result[0].query, 'plain query');
@@ -395,7 +337,7 @@ describe('Phase 02 — normalizeQueryRows Coercion', () => {
   it('strips whitespace and normalizes spacing', () => {
     const result = normalizeQueryRows(['  spaced   query  ', { query: '  another   one  ', target_fields: [' dpi '] }]);
 
-    console.log('[NORMALIZE] whitespace → queries:', result.map((r) => `"${r.query}"`));
+    console.log('[NORMALIZE] whitespace â†’ queries:', result.map((r) => `"${r.query}"`));
 
     assert.equal(result[0].query, 'spaced query');
     assert.equal(result[1].query, 'another one');
@@ -403,7 +345,7 @@ describe('Phase 02 — normalizeQueryRows Coercion', () => {
   });
 });
 
-describe('Phase 02 — Variant Guard Terms', () => {
+describe('Phase 02 â€” Variant Guard Terms', () => {
   it('includes identity tokens and digit groups in variant_guard_terms', () => {
     const profile = buildSearchProfile({
       job: makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
@@ -421,7 +363,7 @@ describe('Phase 02 — Variant Guard Terms', () => {
   });
 });
 
-describe('Phase 02 — BRAND_HOST_HINTS Sync (Fixed)', () => {
+describe('Phase 02 â€” BRAND_HOST_HINTS Sync (Fixed)', () => {
   it('FIXED: queryBuilder BRAND_HOST_HINTS now includes alienware/dell brands', () => {
     // WHY: Tier-only pipeline produces host-biased queries via brandResolution domains
     // and source_seeds. Use both to verify alienware.com and dell.com appear in queries.
@@ -449,7 +391,7 @@ describe('Phase 02 — BRAND_HOST_HINTS Sync (Fixed)', () => {
       focusGroups: [],
     });
 
-    // WHY: soft domain bias — manufacturer hosts appear as plain-text in queries
+    // WHY: soft domain bias â€” manufacturer hosts appear as plain-text in queries
     const alienwareHostQueries = profile.queries.filter((q) => q.includes('alienware.com') && !q.includes('site:'));
     const dellHostQueries = profile.queries.filter((q) => q.includes('dell.com') && !q.includes('site:'));
 
@@ -461,7 +403,7 @@ describe('Phase 02 — BRAND_HOST_HINTS Sync (Fixed)', () => {
   });
 });
 
-describe('Phase 02 — Query Cap and Reject Log', () => {
+describe('Phase 02 â€” Query Cap and Reject Log', () => {
   it('respects maxQueries cap and logs rejections', () => {
     const cap = 6;
     const profile = buildSearchProfile({
@@ -471,7 +413,7 @@ describe('Phase 02 — Query Cap and Reject Log', () => {
       maxQueries: cap
     });
 
-    console.log(`[CAP] maxQueries=${cap} → queries.length=${profile.queries.length}`);
+    console.log(`[CAP] maxQueries=${cap} â†’ queries.length=${profile.queries.length}`);
     console.log(`[CAP] query_reject_log entries: ${profile.query_reject_log.length}`);
 
     const capRejects = profile.query_reject_log.filter((r) => r.reason === 'max_query_cap');
@@ -497,7 +439,7 @@ describe('Phase 02 — Query Cap and Reject Log', () => {
   });
 });
 
-describe('Phase 02 — buildTargetedQueries integration', () => {
+describe('Phase 02 â€” buildTargetedQueries integration', () => {
   it('returns string array bounded by maxQueries', () => {
     const queries = buildTargetedQueries({
       job: makeJob(),
@@ -515,7 +457,7 @@ describe('Phase 02 — buildTargetedQueries integration', () => {
   });
 });
 
-describe('Phase 02 — Archetype Integration', () => {
+describe('Phase 02 â€” Archetype Integration', () => {
   function makeArchetypeConfig() {
     return makeCategoryConfig({
       sourceRegistry: {
@@ -704,557 +646,3 @@ describe('Phase 02 — Archetype Integration', () => {
   });
 });
 
-// ── Tier-Aware Query Generation Factories ──
-
-function makeSeedStatus(overrides = {}) {
-  return {
-    specs_seed: {
-      is_needed: false,
-      last_status: 'never_run',
-      last_completed_at_ms: null,
-      cooldown_until_ms: null,
-      new_fields_closed_last_run: 0,
-      ...(overrides.specs_seed || {}),
-    },
-    source_seeds: overrides.source_seeds || {},
-    query_completion_summary: {
-      total_queries: 0,
-      complete: 0,
-      incomplete: 0,
-      pending_scrapes: 0,
-      ...(overrides.query_completion_summary || {}),
-    },
-  };
-}
-
-function makeFocusGroup(overrides = {}) {
-  return {
-    key: overrides.key || 'dimensions',
-    label: overrides.label || 'Dimensions',
-    desc: overrides.desc || 'Physical dimensions',
-    phase: overrides.phase || 'now',
-    group_search_worthy: overrides.group_search_worthy ?? true,
-    skip_reason: overrides.skip_reason || null,
-    productivity_score: overrides.productivity_score ?? 50,
-    group_description_short: overrides.group_description_short || 'physical dimensions',
-    group_description_long: overrides.group_description_long || 'physical dimensions length width height',
-    normalized_key_queue: overrides.normalized_key_queue || ['length', 'width', 'height'],
-    unresolved_field_keys: overrides.unresolved_field_keys || overrides.normalized_key_queue || ['length', 'width', 'height'],
-    field_keys: overrides.field_keys || overrides.normalized_key_queue || ['length', 'width', 'height'],
-    satisfied_field_keys: overrides.satisfied_field_keys || [],
-    query_terms_union: overrides.query_terms_union || [],
-    domain_hints_union: overrides.domain_hints_union || [],
-    preferred_content_types_union: overrides.preferred_content_types_union || [],
-    domains_tried_union: overrides.domains_tried_union || [],
-    aliases_union: overrides.aliases_union || [],
-    total_field_count: overrides.total_field_count ?? 3,
-    resolved_field_count: overrides.resolved_field_count ?? 0,
-    coverage_ratio: overrides.coverage_ratio ?? 0,
-  };
-}
-
-// ── determineQueryModes ──
-
-describe('Phase 02 — determineQueryModes', () => {
-  it('returns runTier1Seeds=true when specs_seed.is_needed', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus({ specs_seed: { is_needed: true } }),
-      [],
-    );
-    assert.equal(modes.runTier1Seeds, true);
-    assert.equal(modes.runTier2Groups, false);
-    assert.equal(modes.runTier3Keys, false);
-  });
-
-  it('returns runTier1Seeds=true when any source seed is_needed', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus({
-        source_seeds: {
-          'razer.com': { is_needed: true },
-          'rtings.com': { is_needed: false },
-        },
-      }),
-      [],
-    );
-    assert.equal(modes.runTier1Seeds, true);
-  });
-
-  it('returns runTier1Seeds=false when no seeds needed', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus({ specs_seed: { is_needed: false } }),
-      [],
-    );
-    assert.equal(modes.runTier1Seeds, false);
-  });
-
-  it('returns runTier2Groups=true when any group has group_search_worthy=true', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus(),
-      [makeFocusGroup({ group_search_worthy: true })],
-    );
-    assert.equal(modes.runTier2Groups, true);
-  });
-
-  it('returns runTier2Groups=false when no group has group_search_worthy=true', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus(),
-      [makeFocusGroup({ group_search_worthy: false, normalized_key_queue: ['a'] })],
-    );
-    assert.equal(modes.runTier2Groups, false);
-  });
-
-  it('returns runTier3Keys=true when any group has group_search_worthy=false with unresolved keys', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus(),
-      [makeFocusGroup({ group_search_worthy: false, normalized_key_queue: ['length', 'width'] })],
-    );
-    assert.equal(modes.runTier3Keys, true);
-  });
-
-  it('returns runTier3Keys=false when groups have empty key queues', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus(),
-      [makeFocusGroup({ group_search_worthy: false, normalized_key_queue: [] })],
-    );
-    assert.equal(modes.runTier3Keys, false);
-  });
-
-  it('all three tiers can be true simultaneously', () => {
-    const modes = determineQueryModes(
-      makeSeedStatus({ specs_seed: { is_needed: true } }),
-      [
-        makeFocusGroup({ key: 'g1', group_search_worthy: true }),
-        makeFocusGroup({ key: 'g2', group_search_worthy: false, normalized_key_queue: ['a'] }),
-      ],
-    );
-    assert.equal(modes.runTier1Seeds, true);
-    assert.equal(modes.runTier2Groups, true);
-    assert.equal(modes.runTier3Keys, true);
-  });
-
-  it('handles null seedStatus gracefully', () => {
-    const modes = determineQueryModes(null, []);
-    assert.equal(modes.runTier1Seeds, false);
-    assert.equal(modes.runTier2Groups, false);
-    assert.equal(modes.runTier3Keys, false);
-  });
-
-  it('handles undefined focusGroups gracefully', () => {
-    const modes = determineQueryModes(makeSeedStatus(), undefined);
-    assert.equal(modes.runTier1Seeds, false);
-    assert.equal(modes.runTier2Groups, false);
-    assert.equal(modes.runTier3Keys, false);
-  });
-});
-
-// ── buildTier1Queries ──
-
-describe('Phase 02 — buildTier1Queries', () => {
-  it('emits specs seed query when specs_seed.is_needed', () => {
-    const rows = buildTier1Queries(
-      makeJob(),
-      makeSeedStatus({ specs_seed: { is_needed: true } }),
-      null,
-    );
-    assert.ok(rows.length >= 1, 'at least one row');
-    const specsRow = rows.find((r) => r.query.includes('specifications'));
-    assert.ok(specsRow, 'specs seed query present');
-    assert.equal(specsRow.hint_source, 'tier1_seed');
-    assert.equal(specsRow.tier, 'seed');
-  });
-
-  it('emits source seed queries for each needed source', () => {
-    const rows = buildTier1Queries(
-      makeJob(),
-      makeSeedStatus({
-        source_seeds: {
-          'razer.com': { is_needed: true },
-          'rtings.com': { is_needed: true },
-          'amazon.com': { is_needed: false },
-        },
-      }),
-      null,
-    );
-    const sourceRows = rows.filter((r) => !r.query.includes('specifications'));
-    assert.ok(sourceRows.length >= 2, 'at least 2 source seed rows');
-    assert.ok(rows.some((r) => r.query.includes('razer.com')), 'razer.com source present');
-    assert.ok(rows.some((r) => r.query.includes('rtings.com')), 'rtings.com source present');
-    assert.ok(!rows.some((r) => r.query.includes('amazon.com')), 'amazon.com not emitted');
-  });
-
-  it('returns empty array when no seeds needed', () => {
-    const rows = buildTier1Queries(
-      makeJob(),
-      makeSeedStatus({ specs_seed: { is_needed: false } }),
-      null,
-    );
-    assert.equal(rows.length, 0);
-  });
-
-  it('includes brand model variant in query string', () => {
-    const rows = buildTier1Queries(
-      makeJob({ identityLock: { brand: 'Logitech', model: 'G Pro X', variant: 'Superlight 2' } }),
-      makeSeedStatus({ specs_seed: { is_needed: true } }),
-      null,
-    );
-    const specsRow = rows.find((r) => r.query.includes('specifications'));
-    assert.ok(specsRow.query.includes('Logitech'), 'brand in query');
-    assert.ok(specsRow.query.includes('G Pro X'), 'model in query');
-    assert.ok(specsRow.query.includes('Superlight 2'), 'variant in query');
-  });
-
-  it('all rows tagged with tier1_seed and seed tier', () => {
-    const rows = buildTier1Queries(
-      makeJob(),
-      makeSeedStatus({
-        specs_seed: { is_needed: true },
-        source_seeds: { 'razer.com': { is_needed: true } },
-      }),
-      null,
-    );
-    assert.ok(rows.length >= 2);
-    assert.ok(rows.every((r) => r.hint_source === 'tier1_seed'), 'all hint_source tier1_seed');
-    assert.ok(rows.every((r) => r.tier === 'seed'), 'all tier seed');
-  });
-});
-
-// ── buildTier2Queries ──
-
-describe('Phase 02 — buildTier2Queries', () => {
-  it('emits one query per group_search_worthy group', () => {
-    const groups = [
-      makeFocusGroup({ key: 'dimensions', group_search_worthy: true }),
-      makeFocusGroup({ key: 'performance', label: 'Performance', group_search_worthy: true, group_description_long: 'performance metrics response' }),
-      makeFocusGroup({ key: 'connectivity', group_search_worthy: false }),
-    ];
-    const rows = buildTier2Queries(makeJob(), groups);
-    assert.equal(rows.length, 2, 'only 2 worthy groups emit queries');
-    assert.ok(rows.every((r) => r.hint_source === 'tier2_group'));
-    assert.ok(rows.every((r) => r.tier === 'group_search'));
-  });
-
-  it('includes group_key in each row', () => {
-    const groups = [
-      makeFocusGroup({ key: 'dimensions', group_search_worthy: true }),
-    ];
-    const rows = buildTier2Queries(makeJob(), groups);
-    assert.equal(rows[0].group_key, 'dimensions');
-  });
-
-  it('sorts output by productivity_score descending', () => {
-    const groups = [
-      makeFocusGroup({ key: 'low', productivity_score: 10, group_search_worthy: true }),
-      makeFocusGroup({ key: 'high', productivity_score: 90, group_search_worthy: true }),
-      makeFocusGroup({ key: 'mid', productivity_score: 50, group_search_worthy: true }),
-    ];
-    const rows = buildTier2Queries(makeJob(), groups);
-    assert.equal(rows[0].group_key, 'high');
-    assert.equal(rows[1].group_key, 'mid');
-    assert.equal(rows[2].group_key, 'low');
-  });
-
-  it('returns empty array when no groups are search-worthy', () => {
-    const rows = buildTier2Queries(makeJob(), [
-      makeFocusGroup({ group_search_worthy: false }),
-    ]);
-    assert.equal(rows.length, 0);
-  });
-
-  it('query includes brand model label and group_description_long', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'dimensions',
-        label: 'Dimensions',
-        group_search_worthy: true,
-        group_description_long: 'physical dimensions length width height',
-      }),
-    ];
-    const rows = buildTier2Queries(
-      makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
-      groups,
-    );
-    assert.ok(rows[0].query.includes('Razer'), 'brand in query');
-    assert.ok(rows[0].query.includes('Viper V3 Pro'), 'model in query');
-    assert.ok(rows[0].query.includes('Dimensions'), 'label in query');
-    assert.ok(rows[0].query.includes('physical dimensions'), 'description_long in query');
-  });
-});
-
-// ── buildTier3Queries ──
-
-describe('Phase 02 — buildTier3Queries', () => {
-  it('emits queries for groups with group_search_worthy=false and unresolved keys', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'dimensions',
-        group_search_worthy: false,
-        normalized_key_queue: ['length', 'width', 'height'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 3, 'one row per key');
-    assert.ok(rows.every((r) => r.hint_source === 'tier3_key'));
-    assert.ok(rows.every((r) => r.tier === 'key_search'));
-  });
-
-  it('skips groups where group_search_worthy=true', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'dimensions',
-        group_search_worthy: true,
-        normalized_key_queue: ['length', 'width'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 0);
-  });
-
-  it('includes normalized_key and group_key in each row', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'sensor_perf',
-        group_search_worthy: false,
-        normalized_key_queue: ['sensor'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.ok(rows.length >= 1);
-    assert.equal(rows[0].group_key, 'sensor_perf');
-    assert.equal(rows[0].normalized_key, 'sensor');
-  });
-
-  it('preserves normalized_key_queue order', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'dims',
-        group_search_worthy: false,
-        normalized_key_queue: ['alpha', 'beta', 'gamma'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    const keys = rows.map((r) => r.normalized_key);
-    assert.deepEqual(keys, ['alpha', 'beta', 'gamma']);
-  });
-
-  it('query includes brand model variant and normalized_key', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'sensor_perf',
-        group_search_worthy: false,
-        normalized_key_queue: ['sensor'],
-      }),
-    ];
-    const rows = buildTier3Queries(
-      makeJob({ identityLock: { brand: 'Razer', model: 'Viper V3 Pro', variant: '' } }),
-      groups,
-      makeCategoryConfig(),
-      null,
-    );
-    assert.ok(rows[0].query.includes('Razer'), 'brand in query');
-    assert.ok(rows[0].query.includes('Viper V3 Pro'), 'model in query');
-    assert.ok(rows[0].query.includes('sensor'), 'normalized_key in query');
-  });
-
-  it('returns empty array when no unresolved keys', () => {
-    const groups = [
-      makeFocusGroup({
-        group_search_worthy: false,
-        normalized_key_queue: [],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 0);
-  });
-
-  it('target_fields includes the normalized_key', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'sensor_perf',
-        group_search_worthy: false,
-        normalized_key_queue: ['weight', 'sensor'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.deepEqual(rows[0].target_fields, ['weight']);
-    assert.deepEqual(rows[1].target_fields, ['sensor']);
-  });
-});
-
-// ── Tier 3 Progressive Enrichment ──
-
-describe('Phase 02 — buildTier3Queries progressive enrichment', () => {
-  it('repeat_count 0: bare query with just product + key', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'connectivity',
-        group_search_worthy: false,
-        normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 0, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
-        ],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 1);
-    assert.ok(rows[0].query.includes('battery hours'), 'query has key');
-    assert.ok(!rows[0].query.includes('battery life'), 'round 0: no aliases yet');
-    assert.ok(!rows[0].query.includes('rtings.com'), 'round 0: no domain hints yet');
-  });
-
-  it('repeat_count 1: adds aliases to query', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'connectivity',
-        group_search_worthy: false,
-        normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 1, all_aliases: ['battery life', 'battery runtime'], domain_hints: ['rtings.com'], preferred_content_types: ['review'], domains_tried_for_key: [] },
-        ],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 1);
-    assert.ok(rows[0].query.includes('battery life') || rows[0].query.includes('battery runtime'), 'round 1: aliases added');
-  });
-
-  it('repeat_count 2: adds domain hints to query', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'connectivity',
-        group_search_worthy: false,
-        normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 2, all_aliases: ['battery life'], domain_hints: ['rtings.com', 'mousespecs.org'], preferred_content_types: ['review'], domains_tried_for_key: ['rtings.com'] },
-        ],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 1);
-    // Should prefer untried domain hints
-    assert.ok(rows[0].query.includes('mousespecs.org') || rows[0].query.includes('rtings.com'), 'round 2: domain hints added');
-  });
-
-  it('repeat_count 3+: adds content type hints', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'connectivity',
-        group_search_worthy: false,
-        normalized_key_queue: [
-          { normalized_key: 'battery hours', repeat_count: 3, all_aliases: ['battery life'], domain_hints: ['rtings.com'], preferred_content_types: ['review', 'spec sheet'], domains_tried_for_key: ['rtings.com'] },
-        ],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 1);
-    assert.ok(rows[0].query.includes('review') || rows[0].query.includes('spec sheet'), 'round 3+: content types added');
-  });
-
-  it('backward compat: plain string keys still work', () => {
-    const groups = [
-      makeFocusGroup({
-        key: 'g1',
-        group_search_worthy: false,
-        normalized_key_queue: ['weight', 'sensor'],
-      }),
-    ];
-    const rows = buildTier3Queries(makeJob(), groups, makeCategoryConfig(), null);
-    assert.equal(rows.length, 2);
-    assert.ok(rows[0].query.includes('weight'));
-    assert.ok(rows[1].query.includes('sensor'));
-  });
-});
-
-// ── Tier-Aware buildSearchProfile Integration ──
-
-describe('Phase 02 — Tier-Aware buildSearchProfile Integration', () => {
-  it('tier1-only: emits seed queries when seedStatus has specs_seed.is_needed', () => {
-    const profile = buildSearchProfile({
-      job: makeJob(),
-      categoryConfig: makeCategoryConfig(),
-      missingFields: ['weight', 'sensor'],
-      maxQueries: 24,
-      seedStatus: makeSeedStatus({ specs_seed: { is_needed: true } }),
-      focusGroups: [],
-    });
-
-    assert.ok(profile.queries.length > 0, 'queries emitted');
-    const tierRows = profile.query_rows.filter((r) => r.tier === 'seed');
-    assert.ok(tierRows.length > 0, 'seed tier rows present');
-  });
-
-  it('tier2-only: emits group queries when groups are search-worthy', () => {
-    const profile = buildSearchProfile({
-      job: makeJob(),
-      categoryConfig: makeCategoryConfig(),
-      missingFields: ['weight', 'sensor'],
-      maxQueries: 24,
-      seedStatus: makeSeedStatus(),
-      focusGroups: [
-        makeFocusGroup({ key: 'dims', group_search_worthy: true, productivity_score: 80 }),
-      ],
-    });
-
-    assert.ok(profile.queries.length > 0);
-    const tierRows = profile.query_rows.filter((r) => r.tier === 'group_search');
-    assert.ok(tierRows.length > 0, 'group_search tier rows present');
-  });
-
-  it('mixed tier2+tier3: emits both group and key queries simultaneously', () => {
-    const profile = buildSearchProfile({
-      job: makeJob(),
-      categoryConfig: makeCategoryConfig(),
-      missingFields: ['weight', 'sensor', 'dpi'],
-      maxQueries: 48,
-      seedStatus: makeSeedStatus(),
-      focusGroups: [
-        makeFocusGroup({ key: 'sensor_perf', group_search_worthy: true, productivity_score: 90 }),
-        makeFocusGroup({ key: 'connectivity', group_search_worthy: false, normalized_key_queue: ['bluetooth', 'dongle'] }),
-      ],
-    });
-
-    const groupRows = profile.query_rows.filter((r) => r.tier === 'group_search');
-    const keyRows = profile.query_rows.filter((r) => r.tier === 'key_search');
-    assert.ok(groupRows.length > 0, 'group_search rows present');
-    assert.ok(keyRows.length > 0, 'key_search rows present');
-  });
-
-  it('preserves output shape when seedStatus provided', () => {
-    const profile = buildSearchProfile({
-      job: makeJob(),
-      categoryConfig: makeCategoryConfig(),
-      missingFields: ['weight'],
-      maxQueries: 24,
-      seedStatus: makeSeedStatus({ specs_seed: { is_needed: true } }),
-      focusGroups: [],
-    });
-
-    assert.ok(profile.category);
-    assert.ok(profile.identity);
-    assert.ok(Array.isArray(profile.variant_guard_terms));
-    assert.ok(Array.isArray(profile.identity_aliases));
-    assert.ok(Array.isArray(profile.alias_reject_log));
-    assert.ok(Array.isArray(profile.query_reject_log));
-    assert.ok(Array.isArray(profile.focus_fields));
-    assert.ok(Array.isArray(profile.base_templates));
-    assert.ok(Array.isArray(profile.query_rows));
-    assert.ok(Array.isArray(profile.queries));
-    assert.ok(Array.isArray(profile.targeted_queries));
-    assert.ok(typeof profile.field_target_queries === 'object');
-    assert.ok(Array.isArray(profile.doc_hint_queries));
-    assert.ok(typeof profile.hint_source_counts === 'object');
-  });
-
-  it('backward compat: no seedStatus synthesizes default so Tier 1 always fires', () => {
-    // WHY: When seedStatus is null, buildSearchProfile synthesizes
-    // { specs_seed: { is_needed: true }, source_seeds: {} } so Tier 1 always fires.
-    const profile = buildSearchProfile({
-      job: makeJob(),
-      categoryConfig: makeCategoryConfig(),
-      missingFields: ['weight', 'sensor'],
-      maxQueries: 24,
-    });
-
-    assert.ok(profile.queries.length > 0, 'queries emitted via synthesized seedStatus');
-    // All rows have a tier tag in tier-only mode
-    const seedRows = profile.query_rows.filter((r) => r.tier === 'seed');
-    assert.ok(seedRows.length > 0, 'seed tier rows present from synthesized seedStatus');
-    assert.ok(profile.query_rows.every((r) => r.tier), 'all rows have tier tag');
-  });
-});

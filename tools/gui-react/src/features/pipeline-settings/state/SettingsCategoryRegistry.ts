@@ -2,7 +2,9 @@
 // Adding a new category or section = one entry here. O(1) scaling.
 // Pattern mirrors PREFETCH_STAGE_REGISTRY.
 
-export type SettingsCategoryId = 'flow' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+// WHY: extraction settings are owned by the LLM Config page (dedicated rich UI).
+// Pipeline Settings only covers flow, planner, fetcher, and validation.
+export type SettingsCategoryId = 'flow' | 'planner' | 'fetcher' | 'validation';
 
 export interface SettingsSectionDef {
   readonly id: string;
@@ -19,7 +21,7 @@ export interface SettingsCategoryDef {
   readonly sections: readonly SettingsSectionDef[];
 }
 
-export const SETTINGS_CATEGORY_KEYS = ['flow', 'planner', 'fetcher', 'extraction', 'validation'] as const;
+export const SETTINGS_CATEGORY_KEYS = ['flow', 'planner', 'fetcher', 'validation'] as const;
 
 export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object.freeze([
   {
@@ -27,13 +29,10 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Runtime Flow',
     subtitle: 'Run setup, timeouts, budgets, resume, output config',
     sections: Object.freeze([
-      { id: 'timeout', label: 'Run Timeout', tip: 'Maximum run duration and deadline controls' },
-      { id: 'resume', label: 'Resume', tip: 'Resume mode, window, and seed limits' },
-      { id: 'output', label: 'Output', tip: 'Output destinations and artifact controls' },
-      { id: 'cloud', label: 'Cloud & S3', tip: 'AWS region, S3 bucket, and mirror settings' },
-      { id: 'storage', label: 'Storage', tip: 'Local database and frontier paths' },
-      { id: 'automation', label: 'Automation', tip: 'Category authority and helper file config' },
-      { id: 'observability', label: 'Observability', tip: 'Trace, events, and screencast capture' },
+      { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout, resume mode, seed limits, and persist limits' },
+      { id: 'output', label: 'Output & Automation', tip: 'Output destinations, artifact controls, and category authority' },
+      { id: 'storage-cloud', label: 'Storage & Cloud', tip: 'Local database paths, AWS region, S3 bucket, and mirror settings' },
+      { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
     ]),
   },
   {
@@ -41,11 +40,8 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Runtime Planner',
     subtitle: 'Discovery, search engines, query caps, NeedSet tuning',
     sections: Object.freeze([
-      { id: 'discovery', label: 'Discovery', tip: 'Master toggle and provider selection' },
-      { id: 'engines', label: 'Search Engines', tip: 'Engine selection, fallbacks, and provider config', customComponent: 'PlannerEnginesSection' },
-      { id: 'budgets', label: 'URL Budgets', tip: 'Query caps, URL limits, domain caps' },
-      { id: 'planner-llm', label: 'Planner LLM', tip: 'LLM retry and enhancement settings' },
-      { id: 'network', label: 'Network', tip: 'User agent and network identity' },
+      { id: 'discovery', label: 'Discovery & Search', tip: 'Discovery toggle, search engine providers, proxy config, and planner LLM settings' },
+      { id: 'budgets', label: 'Budgets & Caps', tip: 'Query caps, URL limits, domain limits, and per-product maximums' },
     ]),
   },
   {
@@ -53,29 +49,13 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Runtime Fetcher',
     subtitle: 'Throughput, frontier, browser, screenshots, pacing',
     sections: Object.freeze([
-      { id: 'throughput', label: 'Throughput', tip: 'Concurrency, delays, and timeout tuning' },
-      { id: 'frontier', label: 'Frontier', tip: 'Frontier DB path, cooldowns, and repair rules' },
-      { id: 'cooldowns', label: 'Cooldowns', tip: 'Per-status-code cooldown durations and backoff' },
-      { id: 'browser', label: 'Browser', tip: 'Headless mode, scroll, robots.txt compliance' },
-      { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, and selectors' },
+      { id: 'network', label: 'Network & Pacing', tip: 'Concurrency, host delays, frontier cooldowns, repair rules, and backoff config' },
+      { id: 'browser', label: 'Browser & Rendering', tip: 'Headless mode, auto-scroll, robots.txt compliance, and request timeouts' },
+      { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, selectors, and size limits' },
     ]),
   },
-  {
-    id: 'extraction',
-    label: 'Runtime Extraction',
-    subtitle: 'LLM providers, models, tokens, budgets',
-    sections: Object.freeze([
-      { id: 'provider', label: 'Provider', tip: 'LLM provider selection and base URLs' },
-      { id: 'api-keys', label: 'API Keys', tip: 'Provider API keys (stored securely)' },
-      { id: 'models', label: 'Models', tip: 'Model selection for plan, reasoning, and fallbacks' },
-      { id: 'tokens', label: 'Tokens', tip: 'Max output tokens per model and phase' },
-      { id: 'reasoning', label: 'Reasoning', tip: 'Reasoning mode and plan-level reasoning toggle' },
-      { id: 'limits', label: 'Limits', tip: 'Call limits per product/round and timeout' },
-      { id: 'budget', label: 'Budget', tip: 'Cost per token, monthly cap, per-product cap' },
-      { id: 'cache', label: 'Cache', tip: 'Extraction cache directory' },
-      { id: 'advanced', label: 'Advanced', tip: 'Phase overrides JSON and provider registry' },
-    ]),
-  },
+  // WHY: extraction/LLM settings are managed by the dedicated LLM Config page
+  // (tools/gui-react/src/features/llm-config/). Not duplicated here.
   {
     id: 'validation',
     label: 'Runtime Validation',

@@ -53,8 +53,8 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.discoveryEnabled, true);
       // WHY: Registry defaults are SSOT â€” no hardcoded fallbacks
       assert.equal(result.planner_limits.searchProfileQueryCap, 10);
-      assert.equal(result.planner_limits.maxUrlsPerProduct, 50);
-      assert.equal(result.planner_limits.maxCandidateUrls, 80);
+      assert.equal(result.planner_limits.domainClassifierUrlCap, 50);
+      assert.equal(result.planner_limits.serpSelectorUrlCap, 50);
       assert.equal(result.planner_limits.maxPagesPerDomain, 5);
       assert.equal(result.planner_limits.maxRunSeconds, 480);
       assert.equal(result.planner_limits.llmModelPlan, 'gemini-2.5-flash');
@@ -442,8 +442,8 @@ describe('buildSearchPlanningContext', () => {
 
       assert.equal(result.planner_limits.discoveryEnabled, true);
       assert.equal(result.planner_limits.searchProfileQueryCap, 10);
-      assert.equal(result.planner_limits.maxUrlsPerProduct, 50);
-      assert.equal(result.planner_limits.maxCandidateUrls, 80);
+      assert.equal(result.planner_limits.domainClassifierUrlCap, 50);
+      assert.equal(result.planner_limits.serpSelectorUrlCap, 50);
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
       assert.equal(result.planner_limits.maxRunSeconds, 600);
       assert.equal(result.planner_limits.llmModelPlan, 'gpt-4o');

@@ -294,10 +294,11 @@ test('normalizeRuntimeOverrides deduplicates blocked domains', () => {
 
 // --- applyRuntimeOverridesToPlanner ---
 
-test('applyRuntimeOverridesToPlanner sets maxUrls', () => {
+test('applyRuntimeOverridesToPlanner no longer overrides maxUrls (cap removed)', () => {
   const planner = { maxUrls: 100, blockHost: () => {} };
   applyRuntimeOverridesToPlanner(planner, { max_urls_per_product: 50 });
-  assert.equal(planner.maxUrls, 50);
+  // WHY: maxUrls override was removed — planner caps are internal hardcodes now.
+  assert.equal(planner.maxUrls, 100);
 });
 
 test('applyRuntimeOverridesToPlanner calls blockHost for each domain', () => {

@@ -1,22 +1,19 @@
-import { RUNTIME_SETTINGS_ROUTE_PUT } from './runtimeSettingsRoutePut.js';
+// WHY: Derived from registry SSOT via deriveValueTypeMap(). No manual patching
+// needed for readOnly entries (awsRegion, s3Bucket) — the derivation includes them.
+// defaultsOnly entries are filtered to preserve the existing RUNTIME_SETTINGS_KEYS contract.
 
-const runtimeValueTypeMap = {};
-for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringEnumMap)) {
-  runtimeValueTypeMap[value.configKey] = 'string';
-}
-for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap)) {
-  runtimeValueTypeMap[value] = 'string';
-}
-for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.intRangeMap)) {
-  runtimeValueTypeMap[value.configKey] = 'integer';
-}
-for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.floatRangeMap)) {
-  runtimeValueTypeMap[value.configKey] = 'number';
-}
-for (const value of Object.values(RUNTIME_SETTINGS_ROUTE_PUT.boolMap)) {
-  runtimeValueTypeMap[value] = 'boolean';
-}
-runtimeValueTypeMap.awsRegion = 'string';
-runtimeValueTypeMap.s3Bucket = 'string';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveValueTypeMap } from '../../shared/settingsRegistryDerivations.js';
 
-export const RUNTIME_SETTINGS_VALUE_TYPES = Object.freeze(runtimeValueTypeMap);
+const fullMap = deriveValueTypeMap(RUNTIME_SETTINGS_REGISTRY);
+const defaultsOnlyCfgKeys = new Set(
+  RUNTIME_SETTINGS_REGISTRY
+    .filter((e) => e.defaultsOnly)
+    .map((e) => e.configKey || e.key)
+);
+const filtered = {};
+for (const [k, v] of Object.entries(fullMap)) {
+  if (!defaultsOnlyCfgKeys.has(k)) filtered[k] = v;
+}
+
+export const RUNTIME_SETTINGS_VALUE_TYPES = Object.freeze(filtered);

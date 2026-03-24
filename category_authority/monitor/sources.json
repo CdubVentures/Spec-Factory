@@ -2,6 +2,14 @@
   "category": "monitor",
   "version": "1.0.0",
   "approved": {
+    "manufacturer": [
+      "asus.com",
+      "benq.com",
+      "dell.com",
+      "lg.com",
+      "msi.com",
+      "samsung.com"
+    ],
     "lab": [
       "rtings.com",
       "tftcentral.co.uk",

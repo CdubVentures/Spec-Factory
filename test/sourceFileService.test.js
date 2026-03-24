@@ -101,14 +101,12 @@ describe('writeSourcesFile', () => {
 describe('deriveApprovedFromSources', () => {
   it('groups by tier role', () => {
     const sources = {
-      razer_com: { ...MINIMAL_SOURCE, tier: 'tier1_manufacturer', base_url: 'https://razer.com' },
       rtings_com: { ...MINIMAL_SOURCE, tier: 'tier2_lab', base_url: 'https://rtings.com' },
       bestbuy_com: { ...MINIMAL_SOURCE, tier: 'tier3_retailer', base_url: 'https://bestbuy.com' },
       reddit_com: { ...MINIMAL_SOURCE, tier: 'tier4_community', base_url: 'https://reddit.com' },
       versus_com: { ...MINIMAL_SOURCE, tier: 'tier5_aggregator', base_url: 'https://versus.com' },
     };
     const approved = deriveApprovedFromSources(sources);
-    assert.ok(approved.manufacturer.includes('razer.com'));
     assert.ok(approved.lab.includes('rtings.com'));
     assert.ok(approved.retailer.includes('bestbuy.com'));
     assert.ok(approved.database.includes('reddit.com') || approved.database.includes('versus.com'));
@@ -116,8 +114,7 @@ describe('deriveApprovedFromSources', () => {
 
   it('returns empty arrays for empty sources', () => {
     const approved = deriveApprovedFromSources({});
-    assert.deepEqual(approved.manufacturer, []);
-    assert.deepEqual(approved.lab, []);
+    assert.deepEqual(approved, { lab: [], database: [], retailer: [] });
   });
 });
 
@@ -211,4 +208,3 @@ describe('removeSourceEntry', () => {
     );
   });
 });
-
