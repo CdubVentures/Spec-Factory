@@ -21,9 +21,8 @@ describe('projectShape', () => {
     { key: 'raw', coerce: 'passthrough' },
   ]);
 
-  it('returns defaults when source is null', () => {
-    const result = projectShape(null, MIXED_SHAPE);
-    deepStrictEqual(result, {
+  function makeMixedDefaults() {
+    return {
       name: '',
       count: 0,
       score: 0,
@@ -32,35 +31,22 @@ describe('projectShape', () => {
       meta: null,
       config: {},
       raw: null,
-    });
+    };
+  }
+
+  it('returns defaults when source is null', () => {
+    const result = projectShape(null, MIXED_SHAPE);
+    deepStrictEqual(result, makeMixedDefaults());
   });
 
   it('returns defaults when source is undefined', () => {
     const result = projectShape(undefined, MIXED_SHAPE);
-    deepStrictEqual(result, {
-      name: '',
-      count: 0,
-      score: 0,
-      active: false,
-      tags: [],
-      meta: null,
-      config: {},
-      raw: null,
-    });
+    deepStrictEqual(result, makeMixedDefaults());
   });
 
   it('returns defaults when source is empty object', () => {
     const result = projectShape({}, MIXED_SHAPE);
-    deepStrictEqual(result, {
-      name: '',
-      count: 0,
-      score: 0,
-      active: false,
-      tags: [],
-      meta: null,
-      config: {},
-      raw: null,
-    });
+    deepStrictEqual(result, makeMixedDefaults());
   });
 
   it('coerces a fully populated source', () => {
@@ -90,8 +76,11 @@ describe('projectShape', () => {
   it('only includes keys from the descriptor (no extra keys)', () => {
     const source = { name: 'test', extra_field: 'should not appear', count: 5 };
     const result = projectShape(source, MIXED_SHAPE);
-    strictEqual('extra_field' in result, false);
-    strictEqual(Object.keys(result).length, MIXED_SHAPE.length);
+    deepStrictEqual(result, {
+      ...makeMixedDefaults(),
+      name: 'test',
+      count: 5,
+    });
   });
 });
 

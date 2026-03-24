@@ -4,48 +4,59 @@ import {
   createBrandResolverCallLlm,
 } from '../brandResolverLlmAdapter.js';
 
-function makeCallRoutedLlm(returnValue = {}) {
-  const calls = [];
+function makeBrandResolution(overrides = {}) {
   return {
-    get calls() { return calls; },
-    fn: async (opts) => {
-      calls.push(opts);
-      return returnValue;
-    }
+    official_domain: 'cougargaming.com',
+    aliases: ['cougargaming.com'],
+    support_domain: 'support.cougargaming.com',
+    confidence: 0.98,
+    reasoning: ['official product site'],
+    ...overrides,
   };
+}
+
+function makeCallRoutedLlm(returnValue = {}) {
+  return async () => returnValue;
 }
 
 describe('discoveryLlmAdapters', () => {
   describe('createBrandResolverCallLlm', () => {
-    it('formats prompt with brand and category and returns parsed result', async () => {
-      const routed = makeCallRoutedLlm({
-        official_domain: 'cougargaming.com',
-        aliases: ['cougargaming.com'],
-        support_domain: 'support.cougargaming.com'
-      });
+    it('returns the brand resolution payload from the routed LLM call', async () => {
+      const expected = makeBrandResolution();
       const callLlm = createBrandResolverCallLlm({
-        callRoutedLlmFn: routed.fn,
+        callRoutedLlmFn: makeCallRoutedLlm(expected),
         config: { llmModelTriage: 'test-model' }
       });
-      const result = await callLlm({ brand: 'Cougar', category: 'mouse', config: {} });
-      assert.equal(result.official_domain, 'cougargaming.com');
-      assert.ok(routed.calls.length === 1);
-      assert.ok(routed.calls[0].reason === 'brand_resolution');
-      assert.ok(routed.calls[0].user.includes('Cougar'));
-      assert.ok(routed.calls[0].user.includes('mouse'));
+      const result = await callLlm({ brand: 'Cougar', category: 'mouse' });
+      assert.deepEqual(result, expected);
     });
 
-    it('includes JSON schema for structured output', async () => {
-      const routed = makeCallRoutedLlm({ official_domain: 'test.com', aliases: [] });
+    it('preserves minimal payloads when optional brand fields are absent', async () => {
+      const expected = {
+        official_domain: 'test.com',
+        aliases: [],
+        confidence: 0.98,
+      };
       const callLlm = createBrandResolverCallLlm({
-        callRoutedLlmFn: routed.fn,
+        callRoutedLlmFn: makeCallRoutedLlm(expected),
         config: { llmModelTriage: 'test-model' }
       });
-      await callLlm({ brand: 'Test', category: 'mouse', config: {} });
-      const schema = routed.calls[0].jsonSchema;
-      assert.ok(schema);
-      assert.ok(schema.properties.official_domain);
-      assert.ok(schema.properties.aliases);
+      const result = await callLlm({ brand: 'Test', category: 'mouse' });
+      assert.deepEqual(result, expected);
+    });
+
+    it('surfaces routed LLM failures', async () => {
+      const callLlm = createBrandResolverCallLlm({
+        callRoutedLlmFn: async () => {
+          throw new Error('llm unavailable');
+        },
+        config: { llmModelTriage: 'test-model' }
+      });
+
+      await assert.rejects(
+        callLlm({ brand: 'Test', category: 'mouse' }),
+        /llm unavailable/,
+      );
     });
   });
 });

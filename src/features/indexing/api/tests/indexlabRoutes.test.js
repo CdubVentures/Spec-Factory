@@ -99,6 +99,77 @@ function createArchivedS3StorageStub(files = {}) {
   };
 }
 
+function createRunMeta(overrides = {}) {
+  return {
+    run_id: 'run-1',
+    category: 'mouse',
+    product_id: 'mouse-run-1',
+    status: 'completed',
+    started_at: '2026-02-22T00:00:00.000Z',
+    ended_at: '2026-02-22T00:01:00.000Z',
+    ...overrides,
+  };
+}
+
+function createIndexlabRouteHandler(overrides = {}) {
+  return registerIndexlabRoutes({
+    jsonRes,
+    toInt,
+    toFloat,
+    safeJoin: (base, sub) => {
+      const token = String(sub || '').trim();
+      if (!token) return '';
+      return path.join(base, token);
+    },
+    safeReadJson: async (filePath) => {
+      try {
+        const content = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(content);
+      } catch {
+        return null;
+      }
+    },
+    path,
+    INDEXLAB_ROOT: '/tmp/indexlab',
+    processStatus: () => ({ running: false, run_id: null }),
+    readIndexLabRunMeta: () => null,
+    resolveIndexLabRunDirectory: () => '',
+    readIndexLabRunEvents: () => [],
+    readIndexLabRunNeedSet: () => null,
+    readIndexLabRunSearchProfile: () => null,
+    readIndexLabRunPhase07Retrieval: () => null,
+    readIndexLabRunPhase08Extraction: () => null,
+    readIndexLabRunDynamicFetchDashboard: () => null,
+    readIndexLabRunSourceIndexingPackets: () => null,
+    readIndexLabRunItemIndexingPacket: () => null,
+    readIndexLabRunRunMetaPacket: () => null,
+    readIndexLabRunSerpExplorer: () => null,
+    readIndexLabRunLlmTraces: () => null,
+    readIndexLabRunAutomationQueue: () => null,
+    readIndexLabRunEvidenceIndex: () => null,
+    listIndexLabRuns: () => [],
+    buildRoundSummaryFromEvents: () => ({}),
+    buildSearchHints: () => [],
+    buildAnchorsSuggestions: () => [],
+    buildKnownValuesSuggestions: () => [],
+    queryIndexSummary: () => null,
+    urlIndexSummary: () => null,
+    highYieldUrls: () => [],
+    promptIndexSummary: () => null,
+    readKnobSnapshots: () => null,
+    evaluateAllSections: () => null,
+    buildEvidenceReport: () => null,
+    buildEffectiveSettingsSnapshot: () => null,
+    buildScreenshotManifestFromEvents: () => null,
+    computeCompoundCurve: () => null,
+    diffRunPlans: () => null,
+    buildFieldMapFromPacket: () => null,
+    aggregateCrossRunMetrics: () => null,
+    aggregateHostHealth: () => null,
+    ...overrides,
+  });
+}
+
 test('indexlabRoutes: relocated local run meta remains readable after source indexlab directory is removed', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-routes-relocated-'));
   const indexLabRoot = path.join(tempRoot, 'indexlab');
@@ -110,16 +181,14 @@ test('indexlabRoutes: relocated local run meta remains readable after source ind
   const runId = 'run-relocated-meta';
   const category = 'mouse';
   const productId = 'mouse-run-relocated-meta';
-  const archivedIndexLabRoot = path.join(archiveRoot, category, productId, runId, 'indexlab');
-  await fs.mkdir(archivedIndexLabRoot, { recursive: true });
-  await fs.writeFile(path.join(archivedIndexLabRoot, 'run.json'), `${JSON.stringify({
+  const expectedMeta = createRunMeta({
     run_id: runId,
     category,
     product_id: productId,
-    status: 'completed',
-    started_at: '2026-02-22T00:00:00.000Z',
-    ended_at: '2026-02-22T00:01:00.000Z',
-  })}\n`, 'utf8');
+  });
+  const archivedIndexLabRoot = path.join(archiveRoot, category, productId, runId, 'indexlab');
+  await fs.mkdir(archivedIndexLabRoot, { recursive: true });
+  await fs.writeFile(path.join(archivedIndexLabRoot, 'run.json'), `${JSON.stringify(expectedMeta)}\n`, 'utf8');
 
   initIndexLabDataBuilders({
     indexLabRoot,
@@ -136,58 +205,16 @@ test('indexlabRoutes: relocated local run meta remains readable after source ind
   });
 
   try {
-    const handler = registerIndexlabRoutes({
-      jsonRes,
-      toInt,
-      toFloat,
-      safeJoin: (base, sub) => {
-        const token = String(sub || '').trim();
-        if (!token) return '';
-        return path.join(base, token);
-      },
-      safeReadJson: async (filePath) => {
-        try {
-          const content = await fs.readFile(filePath, 'utf8');
-          return JSON.parse(content);
-        } catch {
-          return null;
-        }
-      },
-      path,
+    const handler = createIndexlabRouteHandler({
       INDEXLAB_ROOT: indexLabRoot,
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
-      readIndexLabRunEvents: async () => [],
-      readIndexLabRunNeedSet: async () => null,
-      readIndexLabRunSearchProfile: async () => null,
-      readIndexLabRunPhase07Retrieval: async () => null,
-      readIndexLabRunPhase08Extraction: async () => null,
-      readIndexLabRunDynamicFetchDashboard: async () => null,
-      readIndexLabRunSourceIndexingPackets: async () => null,
-      readIndexLabRunItemIndexingPacket: async () => null,
-      readIndexLabRunRunMetaPacket: async () => null,
-      readIndexLabRunSerpExplorer: async () => null,
-      readIndexLabRunLlmTraces: async () => null,
-      readIndexLabRunAutomationQueue: async () => null,
-      readIndexLabRunEvidenceIndex: async () => null,
-      listIndexLabRuns: async () => [],
-      buildRoundSummaryFromEvents: () => ({}),
-      buildSearchHints: () => [],
-      buildAnchorsSuggestions: () => [],
-      buildKnownValuesSuggestions: () => [],
     });
 
     const res = createMockRes();
     await handler(['indexlab', 'run', runId], new URLSearchParams(), 'GET', null, res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(parseResBody(res), {
-      run_id: runId,
-      category,
-      product_id: productId,
-      status: 'completed',
-      started_at: '2026-02-22T00:00:00.000Z',
-      ended_at: '2026-02-22T00:01:00.000Z',
-    });
+    assert.deepEqual(parseResBody(res), expectedMeta);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
@@ -204,16 +231,14 @@ test('indexlabRoutes: relocated s3 run meta remains readable after source indexl
   const category = 'mouse';
   const productId = 'mouse-run-relocated-s3-meta';
   const s3Prefix = 'spec-factory-runs';
+  const expectedMeta = createRunMeta({
+    run_id: runId,
+    category,
+    product_id: productId,
+  });
   const archiveBase = `${s3Prefix}/${category}/${productId}/${runId}/indexlab`;
   const archiveStorage = createArchivedS3StorageStub({
-    [`${archiveBase}/run.json`]: JSON.stringify({
-      run_id: runId,
-      category,
-      product_id: productId,
-      status: 'completed',
-      started_at: '2026-02-22T00:00:00.000Z',
-      ended_at: '2026-02-22T00:01:00.000Z',
-    }),
+    [`${archiveBase}/run.json`]: JSON.stringify(expectedMeta),
   });
 
   initIndexLabDataBuilders({
@@ -234,118 +259,46 @@ test('indexlabRoutes: relocated s3 run meta remains readable after source indexl
   });
 
   try {
-    const handler = registerIndexlabRoutes({
-      jsonRes,
-      toInt,
-      toFloat,
-      safeJoin: (base, sub) => {
-        const token = String(sub || '').trim();
-        if (!token) return '';
-        return path.join(base, token);
-      },
-      safeReadJson: async (filePath) => {
-        try {
-          const content = await fs.readFile(filePath, 'utf8');
-          return JSON.parse(content);
-        } catch {
-          return null;
-        }
-      },
-      path,
+    const handler = createIndexlabRouteHandler({
       INDEXLAB_ROOT: indexLabRoot,
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
-      readIndexLabRunEvents: async () => [],
-      readIndexLabRunNeedSet: async () => null,
-      readIndexLabRunSearchProfile: async () => null,
-      readIndexLabRunPhase07Retrieval: async () => null,
-      readIndexLabRunPhase08Extraction: async () => null,
-      readIndexLabRunDynamicFetchDashboard: async () => null,
-      readIndexLabRunSourceIndexingPackets: async () => null,
-      readIndexLabRunItemIndexingPacket: async () => null,
-      readIndexLabRunRunMetaPacket: async () => null,
-      readIndexLabRunSerpExplorer: async () => null,
-      readIndexLabRunLlmTraces: async () => null,
-      readIndexLabRunAutomationQueue: async () => null,
-      readIndexLabRunEvidenceIndex: async () => null,
-      listIndexLabRuns: async () => [],
-      buildRoundSummaryFromEvents: () => ({}),
-      buildSearchHints: () => [],
-      buildAnchorsSuggestions: () => [],
-      buildKnownValuesSuggestions: () => [],
     });
 
     const res = createMockRes();
     await handler(['indexlab', 'run', runId], new URLSearchParams(), 'GET', null, res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(parseResBody(res), {
-      run_id: runId,
-      category,
-      product_id: productId,
-      status: 'completed',
-      started_at: '2026-02-22T00:00:00.000Z',
-      ended_at: '2026-02-22T00:01:00.000Z',
-    });
+    assert.deepEqual(parseResBody(res), expectedMeta);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
 
-test('indexlabRoutes: run listing forwards category scope alongside limit', async () => {
-  const calls = [];
-  const handler = registerIndexlabRoutes({
-    jsonRes,
-    toInt,
-    toFloat,
-    safeJoin: () => '',
-    safeReadJson: async () => null,
-    path,
-    INDEXLAB_ROOT: '/tmp/indexlab',
-    processStatus: () => ({ running: false }),
-    readIndexLabRunMeta: async () => null,
-    resolveIndexLabRunDirectory: async () => '',
-    readIndexLabRunEvents: async () => [],
-    readIndexLabRunNeedSet: async () => null,
-    readIndexLabRunSearchProfile: async () => null,
-    readIndexLabRunPhase07Retrieval: async () => null,
-    readIndexLabRunPhase08Extraction: async () => null,
-    readIndexLabRunDynamicFetchDashboard: async () => null,
-    readIndexLabRunSourceIndexingPackets: async () => null,
-    readIndexLabRunItemIndexingPacket: async () => null,
-    readIndexLabRunRunMetaPacket: async () => null,
-    readIndexLabRunSerpExplorer: async () => null,
-    readIndexLabRunLlmTraces: async () => null,
-    readIndexLabRunAutomationQueue: async () => null,
-    readIndexLabRunEvidenceIndex: async () => null,
-    listIndexLabRuns: async (args) => {
-      calls.push(args);
-      return [];
-    },
-    buildRoundSummaryFromEvents: () => ({}),
-    buildSearchHints: () => [],
-    buildAnchorsSuggestions: () => [],
-    buildKnownValuesSuggestions: () => [],
-    queryIndexSummary: async () => null,
-    urlIndexSummary: async () => null,
-    highYieldUrls: async () => [],
-    promptIndexSummary: async () => null,
-    readKnobSnapshots: async () => null,
-    evaluateAllSections: async () => null,
-    buildEvidenceReport: async () => null,
-    buildEffectiveSettingsSnapshot: async () => null,
-    buildScreenshotManifestFromEvents: async () => null,
-    computeCompoundCurve: async () => null,
-    diffRunPlans: async () => null,
-    buildFieldMapFromPacket: async () => null,
-    aggregateCrossRunMetrics: async () => null,
-    aggregateHostHealth: async () => null,
+test('indexlabRoutes: run listing reflects category scope and limit in the returned rows', async () => {
+  const handler = createIndexlabRouteHandler({
+    listIndexLabRuns: ({ limit, category }) => [
+      createRunMeta({
+        run_id: `run-${category}-${limit}`,
+        category,
+        product_id: `${category}-run-${limit}`,
+      }),
+    ],
   });
 
   const res = createMockRes();
   await handler(['indexlab', 'runs'], new URLSearchParams('limit=25&category=mouse'), 'GET', null, res);
 
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(calls, [{ limit: 25, category: 'mouse' }]);
+  assert.deepEqual(parseResBody(res), {
+    root: '/tmp/indexlab',
+    runs: [
+      createRunMeta({
+        run_id: 'run-mouse-25',
+        category: 'mouse',
+        product_id: 'mouse-run-25',
+      }),
+    ],
+  });
 });
 
 test('indexlabRoutes: inactive run with stale running meta resolves to failed terminal payload', async () => {
@@ -385,24 +338,7 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
   });
 
   try {
-    const handler = registerIndexlabRoutes({
-      jsonRes,
-      toInt,
-      toFloat,
-      safeJoin: (base, sub) => {
-        const token = String(sub || '').trim();
-        if (!token) return '';
-        return path.join(base, token);
-      },
-      safeReadJson: async (filePath) => {
-        try {
-          const content = await fs.readFile(filePath, 'utf8');
-          return JSON.parse(content);
-        } catch {
-          return null;
-        }
-      },
-      path,
+    const handler = createIndexlabRouteHandler({
       INDEXLAB_ROOT: indexLabRoot,
       processStatus: () => ({ running: false, run_id: null }),
       readIndexLabRunMeta,
@@ -423,11 +359,6 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
       readIndexLabRunLlmTraces: async () => null,
       readIndexLabRunAutomationQueue: async () => null,
       readIndexLabRunEvidenceIndex: async () => null,
-      listIndexLabRuns: async () => [],
-      buildRoundSummaryFromEvents: () => ({}),
-      buildSearchHints: () => [],
-      buildAnchorsSuggestions: () => [],
-      buildKnownValuesSuggestions: () => [],
     });
 
     const res = createMockRes();

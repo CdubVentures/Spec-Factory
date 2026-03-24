@@ -2,24 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCliCommandDispatcher } from '../commandDispatch.js';
 
+function createCommandInvocation(overrides = {}) {
+  return {
+    config: { runProfile: 'test' },
+    storage: { name: 'stub-storage' },
+    args: { local: true },
+    ...overrides,
+  };
+}
+
 test('cli command dispatcher routes command to matching handler', async () => {
-  const config = { runProfile: 'test' };
-  const storage = { name: 'stub-storage' };
-  const args = { local: true };
-  let seen = null;
+  const invocation = createCommandInvocation();
 
   const dispatchCliCommand = createCliCommandDispatcher({
     handlers: {
       'run-one': ({ config, storage, args }) => {
-        seen = { config, storage, args };
-        return { ok: true };
+        return { config, storage, args };
       }
     }
   });
 
-  const result = await dispatchCliCommand({ command: 'run-one', config, storage, args });
-  assert.deepEqual(result, { ok: true });
-  assert.deepEqual(seen, { config, storage, args });
+  const result = await dispatchCliCommand({ command: 'run-one', ...invocation });
+  assert.deepEqual(result, invocation);
 });
 
 test('cli command dispatcher throws for unknown command', async () => {

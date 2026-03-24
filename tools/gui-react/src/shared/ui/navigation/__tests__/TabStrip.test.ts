@@ -1,12 +1,34 @@
-import { describe, it } from 'node:test';
+import { before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 /*
  * TabStrip is a React component — full DOM testing would require jsdom/vitest.
  * Per project conventions (node --test, no Jest/Vitest), we test the logic layer:
  * the class-string builder and label formatter that TabStrip uses.
  */
-import { buildTabItemClass, formatTabLabel } from '../TabStrip.tsx';
+
+let buildTabItemClass: (active: boolean) => string;
+let formatTabLabel: (label: string, count?: number) => string;
+
+before(async () => {
+  const mod = await loadBundledModule(
+    'tools/gui-react/src/shared/ui/navigation/TabStrip.tsx',
+    {
+      prefix: 'tab-strip-',
+      stubs: {
+        'react/jsx-runtime': `
+          export function jsx(type, props) {
+            return { type, props: props || {} };
+          }
+          export const jsxs = jsx;
+          export const Fragment = Symbol.for('fragment');
+        `,
+      },
+    },
+  );
+  ({ buildTabItemClass, formatTabLabel } = mod);
+});
 
 describe('TabStrip logic', () => {
   describe('buildTabItemClass', () => {

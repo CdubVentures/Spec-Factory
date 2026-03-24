@@ -6,6 +6,7 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { skipIfSpawnEperm } from '../../../../../../src/shared/tests/helpers/spawnEperm.js';
 import {
   seedFieldRules,
   seedComponentDb,
@@ -58,7 +59,7 @@ async function readRootThemeState(page) {
   }));
 }
 
-test('app-shell appearance controls hydrate persisted theme profile and persist runtime changes', { timeout: 300_000 }, async () => {
+test('app-shell appearance controls hydrate persisted theme profile and persist runtime changes', { timeout: 300_000 }, async (t) => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'theme-profile-gui-'));
   const categoryAuthorityRoot = path.join(tempRoot, 'category_authority');
   const localOutputRoot = path.join(tempRoot, 'out');
@@ -75,24 +76,34 @@ test('app-shell appearance controls hydrate persisted theme profile and persist 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
     const guiServerPath = path.join(REPO_ROOT, 'src', 'api', 'guiServer.js');
-    child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
-      cwd: tempRoot,
-      env: {
-        ...process.env,
-        HELPER_FILES_ROOT: categoryAuthorityRoot,
-        LOCAL_OUTPUT_ROOT: localOutputRoot,
-        LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
-        OUTPUT_MODE: 'local',
-        LOCAL_MODE: 'true',
-        __GUI_DIST_ROOT: guiDistRoot,
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    try {
+      child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
+        cwd: tempRoot,
+        env: {
+          ...process.env,
+          HELPER_FILES_ROOT: categoryAuthorityRoot,
+          LOCAL_OUTPUT_ROOT: localOutputRoot,
+          LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
+          OUTPUT_MODE: 'local',
+          LOCAL_MODE: 'true',
+          __GUI_DIST_ROOT: guiDistRoot,
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } catch (error) {
+      if (skipIfSpawnEperm(t, error)) return;
+      throw error;
+    }
     child.stdout.on('data', (chunk) => logs.push(String(chunk)));
     child.stderr.on('data', (chunk) => logs.push(String(chunk)));
     await waitForServerReady(baseUrl, child);
 
-    browser = await chromium.launch({ headless: true });
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (error) {
+      if (skipIfSpawnEperm(t, error, 'sandbox blocks Playwright browser launch')) return;
+      throw error;
+    }
     const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
     await context.addInitScript(() => {
       if (!localStorage.getItem('ui:themeColorProfile')) {

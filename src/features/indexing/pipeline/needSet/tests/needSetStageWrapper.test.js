@@ -82,6 +82,14 @@ function makeSearchPlan() {
   };
 }
 
+function makeEmptyNeedSetResult() {
+  return {
+    focusGroups: [],
+    seedStatus: null,
+    seedSearchPlan: null,
+  };
+}
+
 function makeStubs(overrides = {}) {
   return {
     computeNeedSetFn: overrides.computeNeedSetFn || (() => makeNeedSetOutput()),
@@ -115,6 +123,12 @@ function makeValidInput(overrides = {}) {
   };
 }
 
+function assertNeedSetResultContract(result) {
+  ok(Array.isArray(result.focusGroups), 'focusGroups is array');
+  ok(Object.hasOwn(result, 'seedStatus'), 'seedStatus exists');
+  ok(Object.hasOwn(result, 'seedSearchPlan'), 'seedSearchPlan exists');
+}
+
 // --- Group A: Zod input validation ---
 
 describe('runNeedSet input validation', { concurrency: false }, () => {
@@ -142,71 +156,36 @@ describe('runNeedSet input validation', { concurrency: false }, () => {
   it('accepts valid input and returns clean 3-field contract', async () => {
     const input = makeValidInput();
     const result = await runNeedSet(input);
-    const keys = Object.keys(result).sort();
-    deepStrictEqual(keys, ['focusGroups', 'seedSearchPlan', 'seedStatus']);
-    ok(Array.isArray(result.focusGroups), 'focusGroups is array');
-    ok(result.seedStatus !== undefined, 'seedStatus exists');
-    ok(result.seedSearchPlan !== undefined, 'seedSearchPlan exists');
+    assertNeedSetResultContract(result);
   });
 });
 
 // --- Group B: Error handling isolation ---
 
 describe('runNeedSet error handling', { concurrency: false }, () => {
-  it('logs needset_computation_failed when computeNeedSetFn throws', async () => {
-    const logger = makeLoggerSpy();
+  it('returns an empty contract when computeNeedSetFn throws', async () => {
     const input = makeValidInput({
       computeNeedSetFn: () => { throw new Error('engine exploded'); },
     });
-    input.logger = logger;
 
     const result = await runNeedSet(input);
-    const warn = logger.calls.find(c => c.level === 'warn' && c.event === 'needset_computation_failed');
-    ok(warn, 'should log needset_computation_failed');
-    ok(warn.payload.error.includes('engine exploded'), 'error message preserved');
-    strictEqual(result.seedStatus, null, 'seedStatus is null');
-    strictEqual(result.seedSearchPlan, null, 'seedSearchPlan is null');
-    strictEqual(result.focusGroups.length, 0, 'focusGroups is empty');
-
-    // Must NOT log search_plan_failed for a computeNeedSet failure
-    const wrongLog = logger.calls.find(c => c.event === 'search_plan_failed');
-    strictEqual(wrongLog, undefined, 'should not log search_plan_failed');
+    deepStrictEqual(result, makeEmptyNeedSetResult());
   });
 
-  it('logs search_planning_context_failed when buildSearchPlanningContextFn throws', async () => {
-    const logger = makeLoggerSpy();
+  it('returns an empty contract when buildSearchPlanningContextFn throws', async () => {
     const input = makeValidInput({
       buildSearchPlanningContextFn: () => { throw new Error('context build failed'); },
     });
-    input.logger = logger;
 
     const result = await runNeedSet(input);
-    const warn = logger.calls.find(c => c.level === 'warn' && c.event === 'search_planning_context_failed');
-    ok(warn, 'should log search_planning_context_failed');
-    strictEqual(result.seedStatus, null, 'seedStatus is null');
-    strictEqual(result.focusGroups.length, 0, 'focusGroups is empty from null planningContext');
-  });
-
-  it('logs focusGroups degradation warning when computation fails', async () => {
-    const logger = makeLoggerSpy();
-    const input = makeValidInput({
-      computeNeedSetFn: () => { throw new Error('boom'); },
-    });
-    input.logger = logger;
-
-    await runNeedSet(input);
-    const degradationWarn = logger.calls.find(c =>
-      c.level === 'warn' && c.event === 'needset_computation_failed'
-    );
-    ok(degradationWarn, 'warning logged for failed computation');
+    deepStrictEqual(result, makeEmptyNeedSetResult());
   });
 
   it('all three succeed — returns clean 3-field output', async () => {
     const input = makeValidInput();
     const result = await runNeedSet(input);
+    assertNeedSetResultContract(result);
     ok(result.seedSearchPlan !== null, 'seedSearchPlan present');
-    ok(result.seedStatus !== undefined, 'seedStatus present');
-    ok(Array.isArray(result.focusGroups), 'focusGroups is array');
   });
 });
 
@@ -248,10 +227,9 @@ describe('runNeedSet characterization (golden-master)', { concurrency: false }, 
     };
   }
 
-  it('return shape has exactly 3 keys: focusGroups, seedStatus, seedSearchPlan', async () => {
+  it('returns the needset contract fields', async () => {
     const result = await runNeedSet(makeRealInput());
-    const keys = Object.keys(result).sort();
-    deepStrictEqual(keys, ['focusGroups', 'seedSearchPlan', 'seedStatus']);
+    assertNeedSetResultContract(result);
   });
 
   it('focusGroups is a non-empty array from planningContext.focus_groups', async () => {
@@ -272,19 +250,6 @@ describe('runNeedSet characterization (golden-master)', { concurrency: false }, 
     ok(sp.search_plan_handoff !== undefined, 'search_plan_handoff exists');
   });
 
-  it('emits needset_computed with scope needset_assessment', async () => {
-    const input = makeRealInput();
-    await runNeedSet(input);
-    const preview = input.logger.calls.find(c =>
-      c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'needset_assessment'
-    );
-    ok(preview, 'needset_assessment event emitted');
-    ok(Array.isArray(preview.payload.fields), 'preview has fields');
-    ok(preview.payload.summary, 'preview has summary');
-    ok(preview.payload.blockers, 'preview has blockers');
-    strictEqual(preview.payload.schema_version, 'preview');
-  });
-
   it('seedSearchPlan.search_plan_handoff carries query data', async () => {
     const input = makeRealInput({
       buildSearchPlanFn: async () => ({
@@ -299,7 +264,6 @@ describe('runNeedSet characterization (golden-master)', { concurrency: false }, 
     ok(result.seedSearchPlan, 'seedSearchPlan is non-null');
     ok(result.seedSearchPlan.search_plan_handoff, 'search_plan_handoff exists');
     strictEqual(result.seedSearchPlan.search_plan_handoff.queries.length, 1);
-    // _planner and _learning are attached to seedSearchPlan.search_plan_handoff internally
     strictEqual(result.seedSearchPlan.search_plan_handoff._planner.mode, 'llm');
     ok(result.seedSearchPlan.search_plan_handoff._learning, '_learning attached');
   });

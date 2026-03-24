@@ -70,6 +70,7 @@ export function rowDefaultsComparable(row: LlmRouteRow) {
   // WHY: O(1) — uses generated column keys instead of manual 32-field enumeration.
   const result: Record<string, unknown> = {};
   for (const key of LLM_ROUTE_COLUMN_KEYS) {
+    if (key === 'route_key') continue;
     result[key] = row[key];
   }
   return result;

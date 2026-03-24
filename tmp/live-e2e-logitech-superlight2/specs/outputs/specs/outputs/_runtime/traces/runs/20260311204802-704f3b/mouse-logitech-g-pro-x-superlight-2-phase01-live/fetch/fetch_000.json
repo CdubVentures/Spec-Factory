@@ -1,9 +1,0 @@
-{
-  "url": "https://www.logitechg.com/en-us/shop/p/pro-x2-superlight-wireless-mouse",
-  "host": "logitechg.com",
-  "status": 0,
-  "fetch_ms": 358,
-  "outcome": "fetch_error",
-  "error": "HTTP fetch failed: fetch failed",
-  "bytes": 0
-}

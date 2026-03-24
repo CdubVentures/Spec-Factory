@@ -300,6 +300,15 @@ UI drift and one-off styling are forbidden.
 
 ---
 
+## Temporary files & scratch data
+
+- **One temp directory:** `.specfactory_tmp/` is the sole scratch/runtime directory. Do not create `tmp/`, `temp/`, `scratch/`, or any other temp folder.
+- `.specfactory_tmp/` contains **only** per-category SQLite runtime databases (`mouse/`, `keyboard/`, `monitor/`, `gaming_mice/`).
+- Do not dump logs, scripts, audit outputs, reinstall attempts, or debug artifacts into `.specfactory_tmp/`. Use OS temp (`$TMPDIR` / `%TEMP%`) for throwaway work.
+- The root `tmp/` directory is banned and gitignored.
+
+---
+
 ## Data persistence & schemas
 
 - No local file “databases” for mutable state (`.json/.csv/.txt`).

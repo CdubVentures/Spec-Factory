@@ -1,72 +1,98 @@
-function normalizeForComparison(value) {
-  return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+function clamp01(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.min(1, Math.max(0, num));
 }
 
-export function computeCalibrationReport({ predictions, groundTruth }) {
-  if (!Array.isArray(predictions) || predictions.length === 0) {
-    return {
-      total_fields: 0,
-      buckets: [],
-      brier_score: null,
-      error: 'no_predictions'
-    };
-  }
-  if (!groundTruth || typeof groundTruth !== 'object') {
-    return {
-      total_fields: 0,
-      buckets: [],
-      brier_score: null,
-      error: 'no_ground_truth'
-    };
-  }
+function round(value, digits = 6) {
+  if (value == null) return null;
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
 
-  const bucketDefs = [
-    { label: '0.0-0.5', min: 0, max: 0.5 },
-    { label: '0.5-0.7', min: 0.5, max: 0.7 },
-    { label: '0.7-0.85', min: 0.7, max: 0.85 },
-    { label: '0.85-0.95', min: 0.85, max: 0.95 },
-    { label: '0.95-1.0', min: 0.95, max: 1.01 }
-  ];
+function normalizeToken(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
 
-  const buckets = bucketDefs.map((def) => ({
-    ...def,
+function isCorrectPrediction(prediction, expectedValue) {
+  return normalizeToken(prediction?.value) === normalizeToken(expectedValue);
+}
+
+function createBins() {
+  return Array.from({ length: 10 }, (_, index) => ({
+    start: index / 10,
+    end: (index + 1) / 10,
     count: 0,
-    correct: 0,
-    mean_confidence: 0,
-    actual_accuracy: 0,
-    sum_confidence: 0
+    covered_count: 0,
+    correct_count: 0,
+    avg_confidence: null,
+    accuracy: null,
+    calibration_gap: null,
   }));
+}
 
-  let totalBrier = 0;
-  let totalMatched = 0;
+function binIndexFor(confidence) {
+  const bounded = clamp01(confidence);
+  return Math.min(9, Math.floor(bounded * 10));
+}
 
-  for (const pred of predictions) {
-    const { field, value, confidence } = pred;
-    const truth = groundTruth[field];
-    if (truth === undefined) continue;
+export function computeCalibrationReport({ predictions = [], groundTruth = {} } = {}) {
+  const bins = createBins();
 
-    totalMatched += 1;
-    const isCorrect = normalizeForComparison(value) === normalizeForComparison(truth);
-    const brierTerm = Math.pow((isCorrect ? 1 : 0) - confidence, 2);
-    totalBrier += brierTerm;
+  let coveredCount = 0;
+  let correctCount = 0;
+  let confidenceSum = 0;
+  let coveredConfidenceSum = 0;
+  let brierSum = 0;
 
-    const bucket = buckets.find((b) => confidence >= b.min && confidence < b.max);
-    if (bucket) {
-      bucket.count += 1;
-      bucket.sum_confidence += confidence;
-      if (isCorrect) bucket.correct += 1;
+  for (const prediction of predictions) {
+    const confidence = clamp01(prediction?.confidence);
+    const bin = bins[binIndexFor(confidence)];
+    bin.count += 1;
+    bin.avg_confidence = round(((bin.avg_confidence ?? 0) * (bin.count - 1) + confidence) / bin.count);
+
+    const field = String(prediction?.field || '').trim();
+    if (!Object.prototype.hasOwnProperty.call(groundTruth, field)) {
+      continue;
     }
+
+    const correct = isCorrectPrediction(prediction, groundTruth[field]) ? 1 : 0;
+    coveredCount += 1;
+    correctCount += correct;
+    confidenceSum += confidence;
+    coveredConfidenceSum += confidence;
+    brierSum += (confidence - correct) ** 2;
+
+    bin.covered_count += 1;
+    bin.correct_count += correct;
   }
 
-  for (const bucket of buckets) {
-    bucket.mean_confidence = bucket.count > 0 ? bucket.sum_confidence / bucket.count : 0;
-    bucket.actual_accuracy = bucket.count > 0 ? bucket.correct / bucket.count : 0;
-    delete bucket.sum_confidence;
+  let ece = 0;
+  for (const bin of bins) {
+    if (bin.covered_count === 0) continue;
+    const binConfidenceSum = predictions
+      .filter((prediction) => {
+        const field = String(prediction?.field || '').trim();
+        return Object.prototype.hasOwnProperty.call(groundTruth, field)
+          && binIndexFor(prediction?.confidence) === binIndexFor(bin.start + 0.000001);
+      })
+      .reduce((sum, prediction) => sum + clamp01(prediction?.confidence), 0);
+    const avgConfidence = binConfidenceSum / bin.covered_count;
+    const accuracy = bin.correct_count / bin.covered_count;
+    bin.avg_confidence = round(bin.count > 0 ? (bin.avg_confidence ?? 0) : avgConfidence);
+    bin.accuracy = round(accuracy);
+    bin.calibration_gap = round(Math.abs(avgConfidence - accuracy));
+    ece += (bin.covered_count / Math.max(1, coveredCount)) * Math.abs(avgConfidence - accuracy);
   }
 
   return {
-    total_fields: totalMatched,
-    buckets: buckets.filter((b) => b.count > 0),
-    brier_score: totalMatched > 0 ? totalBrier / totalMatched : null
+    total_predictions: predictions.length,
+    covered_predictions: coveredCount,
+    correct_predictions: correctCount,
+    accuracy: coveredCount > 0 ? round(correctCount / coveredCount) : null,
+    mean_confidence: predictions.length > 0 ? round(confidenceSum / Math.max(1, coveredCount)) : null,
+    brier_score: coveredCount > 0 ? round(brierSum / coveredCount) : null,
+    expected_calibration_error: coveredCount > 0 ? round(ece) : null,
+    bins,
   };
 }

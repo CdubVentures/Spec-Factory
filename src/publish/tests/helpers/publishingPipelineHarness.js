@@ -199,3 +199,173 @@ export async function seedApprovedOverride(helperRoot, category, productId, valu
     }
   });
 }
+
+export async function createBlockerFixtureRoot() {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'publish-blocker-'));
+  const helperRoot = path.join(root, 'category_authority');
+  const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+
+  await writeJson(path.join(generatedRoot, 'field_rules.json'), {
+    category: 'mouse',
+    fields: {
+      weight: {
+        required_level: 'required',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'number', shape: 'scalar', unit: 'g', range: { min: 20, max: 120 } },
+        priority: {
+          block_publish_when_unk: true,
+          publish_gate: true,
+          publish_gate_reason: 'missing_required'
+        }
+      },
+      dpi: {
+        required_level: 'required',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'number', shape: 'scalar' },
+        priority: {
+          block_publish_when_unk: true,
+          publish_gate: true,
+          publish_gate_reason: 'missing_required'
+        }
+      },
+      sensor: {
+        required_level: 'expected',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'string', shape: 'scalar' },
+        priority: {
+          block_publish_when_unk: false,
+          publish_gate: false
+        }
+      },
+      coating: {
+        required_level: 'optional',
+        availability: 'sometimes',
+        difficulty: 'easy',
+        contract: { type: 'string', shape: 'scalar' }
+      }
+    }
+  });
+
+  await writeJson(path.join(generatedRoot, 'known_values.json'), {
+    category: 'mouse',
+    enums: {}
+  });
+  await writeJson(path.join(generatedRoot, 'parse_templates.json'), {
+    category: 'mouse',
+    templates: {}
+  });
+  await writeJson(path.join(generatedRoot, 'cross_validation_rules.json'), {
+    category: 'mouse',
+    rules: []
+  });
+  await writeJson(path.join(generatedRoot, 'ui_field_catalog.json'), {
+    category: 'mouse',
+    fields: [
+      { key: 'weight', group: 'general', label: 'Weight', order: 1 },
+      { key: 'dpi', group: 'sensor', label: 'DPI', order: 2 },
+      { key: 'sensor', group: 'sensor', label: 'Sensor', order: 3 },
+      { key: 'coating', group: 'physical', label: 'Coating', order: 4 }
+    ]
+  });
+
+  return { root, helperRoot };
+}
+
+export async function createPublishGateFixtureRoot() {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'publish-gate-'));
+  const helperRoot = path.join(root, 'category_authority');
+  const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+
+  await writeJson(path.join(generatedRoot, 'field_rules.json'), {
+    category: 'mouse',
+    fields: {
+      brand_name: {
+        required_level: 'identity',
+        availability: 'always',
+        difficulty: 'easy',
+        contract: { type: 'string', shape: 'scalar' },
+        evidence_required: true,
+        evidence: { required: true, min_evidence_refs: 1 },
+        ui: { label: 'Brand Name', group: 'Identity', order: 1 }
+      },
+      weight: {
+        required_level: 'required',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'number', shape: 'scalar', unit: 'g', range: { min: 20, max: 120 } },
+        evidence_required: true,
+        evidence: { required: true, min_evidence_refs: 1 },
+        ui: { label: 'Weight', group: 'General', order: 2 }
+      },
+      dpi: {
+        required_level: 'expected',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'number', shape: 'scalar' },
+        evidence_required: true,
+        evidence: { required: true, min_evidence_refs: 1 },
+        ui: { label: 'DPI', group: 'Sensor', order: 3 }
+      },
+      sensor: {
+        required_level: 'expected',
+        availability: 'expected',
+        difficulty: 'easy',
+        contract: { type: 'string', shape: 'scalar' },
+        evidence_required: false,
+        evidence: { required: false },
+        ui: { label: 'Sensor', group: 'Sensor', order: 4 }
+      },
+      coating: {
+        required_level: 'optional',
+        availability: 'sometimes',
+        difficulty: 'easy',
+        contract: { type: 'string', shape: 'scalar' },
+        ui: { label: 'Coating', group: 'Physical', order: 5 }
+      }
+    }
+  });
+
+  await writeJson(path.join(generatedRoot, 'known_values.json'), {
+    category: 'mouse',
+    enums: {}
+  });
+  await writeJson(path.join(generatedRoot, 'parse_templates.json'), {
+    category: 'mouse',
+    templates: {}
+  });
+  await writeJson(path.join(generatedRoot, 'cross_validation_rules.json'), {
+    category: 'mouse',
+    rules: []
+  });
+  await writeJson(path.join(generatedRoot, 'ui_field_catalog.json'), {
+    category: 'mouse',
+    fields: [
+      { key: 'brand_name', group: 'identity', label: 'Brand Name', order: 1 },
+      { key: 'weight', group: 'general', label: 'Weight', order: 2 },
+      { key: 'dpi', group: 'sensor', label: 'DPI', order: 3 },
+      { key: 'sensor', group: 'sensor', label: 'Sensor', order: 4 },
+      { key: 'coating', group: 'physical', label: 'Coating', order: 5 }
+    ]
+  });
+
+  return { root, helperRoot };
+}
+
+export const FULL_FIELDS = {
+  brand_name: 'Razer',
+  weight: 59,
+  dpi: 26000,
+  sensor: 'Focus Pro',
+  coating: 'PTFE'
+};
+
+export const GOOD_PROVENANCE = {
+  brand_name: { evidence: [{ url: 'https://razer.com', snippet_id: 's1', quote: 'Razer' }] },
+  weight: { evidence: [{ url: 'https://razer.com', snippet_id: 's2', quote: '59g' }] },
+  dpi: { evidence: [{ url: 'https://razer.com', snippet_id: 's3', quote: '26000 DPI' }] }
+};
+
+export const CLEAN_RUNTIME_GATE = { failures: [], warnings: [] };

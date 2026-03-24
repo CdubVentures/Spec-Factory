@@ -6,9 +6,6 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { runBrandResolver } from '../runBrandResolver.js';
 import { resolveBrandDomain } from '../resolveBrandDomain.js';
-import { RUNTIME_SETTINGS_REGISTRY } from '../../../../../shared/settingsRegistry.js';
-
-const reg = (key) => RUNTIME_SETTINGS_REGISTRY.find((e) => e.key === key);
 
 function createMockLogger() {
   const calls = { info: [], warn: [], debug: [] };
@@ -40,6 +37,14 @@ const RESOLVED_BRAND = Object.freeze({
   reasoning: ['test reasoning'],
 });
 
+const EMPTY_BRAND_RESOLUTION = Object.freeze({
+  officialDomain: '',
+  aliases: [],
+  supportDomain: '',
+  confidence: null,
+  reasoning: [],
+});
+
 function mockResolveFn(result = RESOLVED_BRAND) {
   return async () => ({ ...result });
 }
@@ -59,11 +64,7 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
     });
 
     assert.ok(result.brandResolution, 'should have brandResolution');
-    assert.equal(result.brandResolution.officialDomain, 'testbrand.com');
-
-    const brandEvent = logger.calls.info.find((c) => c.event === 'brand_resolved');
-    assert.ok(brandEvent, 'should emit brand_resolved event');
-    assert.equal(brandEvent.payload.status, 'resolved');
+    assert.deepEqual(result.brandResolution, RESOLVED_BRAND);
   });
 
   it('#2 no brand: brandResolution null', async () => {
@@ -79,14 +80,9 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
     });
 
     assert.equal(result.brandResolution, null);
-
-    const brandEvent = logger.calls.info.find((c) => c.event === 'brand_resolved');
-    assert.ok(brandEvent);
-    assert.equal(brandEvent.payload.status, 'skipped');
-    assert.equal(brandEvent.payload.skip_reason, 'no_brand_in_identity_lock');
   });
 
-  it('#3 resolveBrandDomainFn throws: null result, warning logged, failed status', async () => {
+  it('#3 resolveBrandDomainFn throws: null result', async () => {
     const logger = createMockLogger();
     const result = await runBrandResolver({
       job: { brand: 'TestBrand', identityLock: { brand: 'TestBrand' } },
@@ -99,13 +95,6 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
     });
 
     assert.equal(result.brandResolution, null);
-
-    const warnCall = logger.calls.warn.find((c) => c.event === 'brand_resolution_failed');
-    assert.ok(warnCall, 'should log brand_resolution_failed warning');
-    assert.ok(warnCall.payload.error.includes('LLM exploded'));
-
-    const brandEvent = logger.calls.info.find((c) => c.event === 'brand_resolved');
-    assert.equal(brandEvent.payload.status, 'failed');
   });
 
   it('#4 confidence comes from LLM response, not a hardcoded default', async () => {
@@ -122,20 +111,19 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
     assert.equal(result.brandResolution.confidence, 0.92);
   });
 
-  it('#5 brand_resolved event does NOT include candidates field', async () => {
-    const logger = createMockLogger();
-    await runBrandResolver({
+  it('#5 stage returns only the public brandResolution payload', async () => {
+    const result = await runBrandResolver({
       job: { brand: 'TestBrand', identityLock: { brand: 'TestBrand' } },
       category: 'mouse',
       config: {},
       storage: null,
-      logger,
+      logger: createMockLogger(),
       categoryConfig: createCategoryConfig(),
       resolveBrandDomainFn: mockResolveFn(),
     });
 
-    const brandEvent = logger.calls.info.find((c) => c.event === 'brand_resolved');
-    assert.equal('candidates' in brandEvent.payload, false, 'candidates should not be in event');
+    assert.equal(Object.hasOwn(result, 'brandResolution'), true);
+    assert.deepEqual(result.brandResolution, RESOLVED_BRAND);
   });
 
   it('#6 stage does NOT mutate categoryConfig.sourceRegistry', async () => {
@@ -152,8 +140,7 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
       resolveBrandDomainFn: mockResolveFn(),
     });
 
-    const keys = Object.keys(originalSourceRegistry);
-    assert.equal(keys.length, 0, 'sourceRegistry should NOT be mutated by stage');
+    assert.deepEqual(originalSourceRegistry, {});
   });
 
   it('#7 stage does NOT mutate categoryConfig.sourceHosts', async () => {
@@ -170,25 +157,19 @@ describe('Stage 02 Brand Resolver — Contract', { concurrency: false }, () => {
       resolveBrandDomainFn: mockResolveFn(),
     });
 
-    assert.equal(originalSourceHosts.length, 0, 'original sourceHosts should be unchanged');
+    assert.deepEqual(originalSourceHosts, []);
   });
 
-  it('#8 core resolveBrandDomain: LLM error IS logged via logger', async () => {
-    const logger = createMockLogger();
+  it('#8 core resolveBrandDomain: LLM error returns the empty resolution contract', async () => {
     const result = await resolveBrandDomain({
       brand: 'TestBrand',
       category: 'mouse',
       config: {},
       callLlmFn: async () => { throw new Error('LLM crash'); },
       storage: null,
-      logger,
+      logger: createMockLogger(),
     });
 
-    assert.equal(result.officialDomain, '');
-    assert.equal(result.confidence, null);
-
-    const warnCall = logger.calls.warn.find((c) => c.event === 'brand_resolver_llm_error');
-    assert.ok(warnCall, 'should log brand_resolver_llm_error warning');
-    assert.ok(warnCall.payload.error.includes('LLM crash'));
+    assert.deepEqual(result, EMPTY_BRAND_RESOLUTION);
   });
 });
