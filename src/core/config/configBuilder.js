@@ -123,7 +123,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const explicitLlmPlanProvider = explicitEnvValue('LLM_PLAN_PROVIDER', explicitEnvKeys).trim().toLowerCase();
   const explicitLlmPlanBaseUrl = explicitEnvValue('LLM_PLAN_BASE_URL', explicitEnvKeys);
 
-  const parsedCandidateUrls = Number.parseInt(String(process.env.MAX_CANDIDATE_URLS || ''), 10);
   const registryDefaults = resolveRegistryDefaults();
   const defaultModel = explicitLlmModelExtract || registryDefaults.model;
   const resolvedApiKey = resolveBootstrapApiKey(registryDefaults.provider);
@@ -158,7 +157,6 @@ export function buildRawConfig({ manifestApplicator }) {
     capturePageScreenshotSelectors: String(process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS || 'table,[data-spec-table],.specs-table,.spec-table,.specifications').trim(),
 
     // --- Computed / multi-env values ---
-    maxCandidateUrls: Number.isFinite(parsedCandidateUrls) ? parsedCandidateUrls : runtimeSettingDefault('maxCandidateUrls'),
     userAgent: process.env.USER_AGENT || SETTINGS_DEFAULTS.runtime.userAgent || DEFAULT_USER_AGENT,
     outputMode: envOutputMode,
     mirrorToS3: parseBoolEnv('MIRROR_TO_S3', runtimeSettingDefault('mirrorToS3')),

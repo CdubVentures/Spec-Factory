@@ -73,15 +73,10 @@ export function normalizeRuntimeArtifactWorkspaceDefaults({
   const currentWorkspaceRoot = path.dirname(path.resolve(currentDefaultOutputRoot));
   const previousSpecDbDir = path.join(previousWorkspaceRoot, '.specfactory_tmp');
   const currentSpecDbDir = path.join(currentWorkspaceRoot, '.specfactory_tmp');
-  const previousLlmCacheDir = path.join(previousSpecDbDir, 'llm_cache');
-  const currentLlmCacheDir = path.join(currentSpecDbDir, 'llm_cache');
 
   config.localOutputRoot = currentDefaultOutputRoot;
   if (sameResolvedPath(config.specDbDir, previousSpecDbDir)) {
     config.specDbDir = currentSpecDbDir;
-  }
-  if (sameResolvedPath(config.llmExtractionCacheDir, previousLlmCacheDir)) {
-    config.llmExtractionCacheDir = currentLlmCacheDir;
   }
 }
 
@@ -149,7 +144,6 @@ export function resolveStorageBackedWorkspaceRoots({
       outputRoot: null,
       indexLabRoot: null,
       specDbDir: workspaceRoot,
-      llmExtractionCacheDir: path.join(workspaceRoot, 'llm_cache'),
     };
   }
   if (destinationType !== 'local') return null;
@@ -161,7 +155,6 @@ export function resolveStorageBackedWorkspaceRoots({
     outputRoot: path.join(root, 'output'),
     indexLabRoot: path.join(root, 'indexlab'),
     specDbDir: workspaceRoot,
-    llmExtractionCacheDir: path.join(workspaceRoot, 'llm_cache'),
   };
 }
 

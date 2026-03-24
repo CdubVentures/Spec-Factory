@@ -67,7 +67,7 @@ export function createMigrateToSqliteCommand({
 
       if (!phase || phase === 3) {
         let imported = 0;
-        const cacheDir = config.llmExtractionCacheDir || '.specfactory_tmp/llm_cache';
+        const cacheDir = '.specfactory_tmp/llm_cache';
         try {
           const files = await fsNode.readdir(cacheDir);
           for (const file of files) {

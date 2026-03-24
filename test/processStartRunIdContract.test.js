@@ -227,7 +227,6 @@ test('process/start uses enabled local storage root as canonical run-data destin
       localOutputRoot: path.resolve('ignored-local-output-root'),
       indexlabOut: path.resolve('ignored-indexlab-root'),
       specDbDir: path.resolve('ignored-spec-db-root'),
-      llmExtractionCacheDir: path.resolve('ignored-llm-cache-root'),
     }),
     fs: {
       access: async () => {},
@@ -244,17 +243,15 @@ test('process/start uses enabled local storage root as canonical run-data destin
   assert.equal(result.status, 200);
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, expectedOutputRoot);
   assert.equal(capturedEnv?.SPEC_DB_DIR, expectedSpecDbDir);
-  assert.equal(capturedEnv?.LLM_EXTRACTION_CACHE_DIR, expectedLlmCacheDir);
   assert.ok(Array.isArray(capturedArgs), 'startProcess should receive CLI args');
   const outIndex = capturedArgs.indexOf('--out');
   assert.equal(outIndex >= 0, true, 'CLI args should include --out when local storage is enabled');
   assert.equal(capturedArgs[outIndex + 1], expectedIndexLabRoot);
 });
 
-test('process/start uses temp staging db and cache roots when enabled s3 storage is active', async () => {
+test('process/start uses temp staging db roots when enabled s3 storage is active', async () => {
   let capturedEnv = null;
   const expectedSpecDbDir = path.join(os.tmpdir(), 'spec-factory', '.specfactory_tmp');
-  const expectedLlmCacheDir = path.join(expectedSpecDbDir, 'llm_cache');
   const handler = registerInfraRoutes(makeCtx({
     OUTPUT_ROOT: path.join(os.tmpdir(), 'spec-factory', 'output'),
     runDataStorageState: {
@@ -273,7 +270,6 @@ test('process/start uses temp staging db and cache roots when enabled s3 storage
       mode: 'indexlab',
       productId: 'mouse-razer-viper-v3-pro',
       specDbDir: path.resolve('ignored-spec-db-root'),
-      llmExtractionCacheDir: path.resolve('ignored-llm-cache-root'),
     }),
     fs: {
       access: async () => {},
@@ -288,7 +284,6 @@ test('process/start uses temp staging db and cache roots when enabled s3 storage
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
   assert.equal(capturedEnv?.SPEC_DB_DIR, expectedSpecDbDir);
-  assert.equal(capturedEnv?.LLM_EXTRACTION_CACHE_DIR, expectedLlmCacheDir);
 });
 
 test('process/start defaults child run roots to GUI runtime roots when request omits overrides', async () => {

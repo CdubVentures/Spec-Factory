@@ -40,23 +40,6 @@ export {
   type RuntimeLlmTokenProfileLookup,
 } from './state/RuntimeFlowModelTokenDefaults';
 
-// --- Flow state derivations ---
-export {
-  deriveRuntimeFlowControlLocks,
-  deriveRuntimeStepEnabledMap,
-  type RuntimeFlowControlLocks,
-} from './state/RuntimeFlowStateDerivations';
-
-// --- Step registry ---
-export {
-  RUNTIME_STEP_IDS,
-  RUNTIME_STEPS,
-  RUNTIME_SUB_STEPS,
-  type RuntimeStepEntry,
-  type RuntimeStepId,
-  type RuntimeSubStepEntry,
-} from './state/RuntimeFlowStepRegistry';
-
 // --- Runtime settings authority (helpers + hooks) ---
 export {
   readRuntimeSettingsBootstrap,

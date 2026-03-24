@@ -53,7 +53,6 @@ export interface RuntimeSettingDefaults {
   llmCostCachedInputPer1M: number;
   llmCostInputPer1M: number;
   llmCostOutputPer1M: number;
-  llmExtractionCacheDir: string;
   llmMaxCallsPerProductTotal: number;
   llmMaxCallsPerRound: number;
   llmMaxOutputTokens: number;
@@ -82,10 +81,8 @@ export interface RuntimeSettingDefaults {
   localInputRoot: string;
   localMode: boolean;
   localOutputRoot: string;
-  maxCandidateUrls: number;
   maxPagesPerDomain: number;
   maxRunSeconds: number;
-  maxUrlsPerProduct: number;
   mirrorToS3: boolean;
   mirrorToS3Input: boolean;
   openaiApiKey: string;

@@ -103,7 +103,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     const EXPECTED_DIRECT_LAUNCH_ENV_KEYS = new Set([
       'DYNAMIC_CRAWLEE_ENABLED',
       'SPEC_DB_DIR',
-      'LLM_EXTRACTION_CACHE_DIR',
       'HELPER_FILES_ENABLED',
       'HELPER_FILES_ROOT',
       'CATEGORY_AUTHORITY_ROOT',
@@ -186,14 +185,13 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold',
       // Discovery
       'searchProfileQueryCap',
-      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
+      'maxPagesPerDomain',
       'maxRunSeconds',
       // LLM settings
       'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmMaxTokens',
       'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M', 'llmCostCachedInputPer1M',
       'llmReasoningMode', 'llmReasoningBudget',
       'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd', 'llmMaxCallsPerProductTotal',
-      'llmExtractionCacheDir',
       // Model / provider
       'llmPlanProvider', 'llmPlanBaseUrl',
       'llmReasoningFallbackModel', 'llmMaxOutputTokensReasoningFallback',
@@ -307,8 +305,6 @@ describe('buildRoundConfig — round override characterization', () => {
       pageNetworkIdleTimeoutMs: 2000,
       postLoadWaitMs: 200,
       maxRunSeconds: 480,
-      maxUrlsPerProduct: 50,
-      maxCandidateUrls: 80,
       maxPagesPerDomain: 5,
       searchProfileQueryCap: 10,
       perHostMinDelayMs: 1500,

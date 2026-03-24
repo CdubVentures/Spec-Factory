@@ -36,7 +36,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
   const cachedRuntimeSettings = {
     searchEngines: '',
     categoryAuthorityRoot: 'helper-root-canonical',
-    maxUrlsPerProduct: 9999,
+    maxPagesPerDomain: 9999,
     discardMe: { nested: true },
   };
   const queryClient = {
@@ -50,7 +50,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
   assert.deepEqual(snapshot, {
     searchEngines: '',
     categoryAuthorityRoot: 'helper-root-canonical',
-    maxUrlsPerProduct: 9999,
+    maxPagesPerDomain: 9999,
   });
 
   const bootstrap = readRuntimeSettingsBootstrap(queryClient, RUNTIME_SETTING_DEFAULTS);
@@ -61,14 +61,14 @@ test('settings surface normalizes cached runtime settings through the public GUI
     snapshot,
     RUNTIME_SETTINGS_NUMERIC_BASELINE_DEFAULTS,
   );
-  assert.equal(numericBaseline.maxUrlsPerProduct, 9999);
+  assert.equal(numericBaseline.maxPagesPerDomain, 9999);
 
   const normalized = normalizeRuntimeDraft(snapshot, RUNTIME_SETTING_DEFAULTS);
   assert.equal(normalized.categoryAuthorityRoot, 'helper-root-canonical');
   assert.equal(normalized.searchEngines, RUNTIME_SETTING_DEFAULTS.searchEngines);
   assert.equal(
-    normalized.maxUrlsPerProduct,
-    RUNTIME_NUMBER_BOUNDS.maxUrlsPerProduct.max,
+    normalized.maxPagesPerDomain,
+    RUNTIME_NUMBER_BOUNDS.maxPagesPerDomain.max,
   );
 });
 

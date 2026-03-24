@@ -22,7 +22,6 @@ test('buildEffectiveSettingsSnapshot captures required keys', () => {
     postLoadWaitMs: 1500,
     capturePageScreenshotEnabled: true,
     runProfile: 'default',
-    maxUrlsPerProduct: 40,
     maxRunSeconds: 600
   };
   const snap = buildEffectiveSettingsSnapshot(config);

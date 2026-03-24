@@ -26,7 +26,6 @@ function resolveStorageBackedRunRoots({
     const workspaceRoot = pathApi.join(stagingRoot, '.specfactory_tmp');
     return {
       specDbDir: workspaceRoot,
-      llmExtractionCacheDir: pathApi.join(workspaceRoot, 'llm_cache'),
     };
   }
 
@@ -40,7 +39,6 @@ function resolveStorageBackedRunRoots({
     outputRoot: pathApi.join(root, 'output'),
     indexLabRoot: pathApi.join(root, 'indexlab'),
     specDbDir: workspaceRoot,
-    llmExtractionCacheDir: pathApi.join(workspaceRoot, 'llm_cache'),
   };
 }
 
@@ -139,7 +137,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     llmFallbackEnabled,
     llmPlanFallbackModel,
     llmMaxOutputTokensPlanFallback,
-    llmExtractionCacheDir,
     llmPolicy: rawLlmPolicy,
     seed,
     fields,
@@ -189,7 +186,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   const effectiveIndexLabOut = storageBackedRunRoots?.indexLabRoot || indexlabOut || indexLabRoot || '';
   const effectiveLocalOutputRoot = storageBackedRunRoots?.outputRoot || localOutputRoot || outputRoot || '';
   const effectiveSpecDbDir = storageBackedRunRoots?.specDbDir || specDbDir || '';
-  const effectiveLlmExtractionCacheDir = storageBackedRunRoots?.llmExtractionCacheDir || llmExtractionCacheDir || '';
 
   const cliArgs = ['indexlab', '--local', '--run-id', requestedRunId, '--category', cat];
   if (productId) {
@@ -229,7 +225,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   };
 
   assignString(envOverrides, 'SPEC_DB_DIR', effectiveSpecDbDir);
-  assignString(envOverrides, 'LLM_EXTRACTION_CACHE_DIR', effectiveLlmExtractionCacheDir);
   assignBoolean(envOverrides, 'HELPER_FILES_ENABLED', categoryAuthorityEnabled);
   if (categoryAuthorityRoot) {
     envOverrides.HELPER_FILES_ROOT = categoryAuthorityRoot;

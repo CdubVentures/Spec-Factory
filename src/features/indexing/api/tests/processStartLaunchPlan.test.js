@@ -54,7 +54,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       localOutputRoot: path.resolve('ignored-local-output-root'),
       indexlabOut: path.resolve('ignored-indexlab-root'),
       specDbDir: path.resolve('ignored-spec-db-root'),
-      llmExtractionCacheDir: path.resolve('ignored-cache-root'),
       runtimeTraceFetchRing: 9_999,
       llmFallbackEnabled: false,
     }, {
@@ -100,10 +99,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
 
     assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.join(localStorageRoot, 'output'));
     assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, '.specfactory_tmp'));
-    assert.equal(
-      result.envOverrides.LLM_EXTRACTION_CACHE_DIR,
-      path.join(localStorageRoot, '.specfactory_tmp', 'llm_cache'),
-    );
     assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
     assert.equal(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');

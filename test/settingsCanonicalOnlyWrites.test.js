@@ -73,7 +73,7 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   const runtimeRes = await fetch(`${baseUrl}/runtime-settings`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ maxUrlsPerProduct: 11 }),
+    body: JSON.stringify({ maxPagesPerDomain: 11 }),
   });
   assert.equal(runtimeRes.status, 200, `runtime put failed; stdout=${stdout} stderr=${stderr}`);
 
@@ -109,14 +109,14 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   const userSettings = await readJsonFileUntil(
     userSettingsPath,
     (json) => (
-      json?.runtime?.maxUrlsPerProduct === 11
+      json?.runtime?.maxPagesPerDomain === 11
       && json?.convergence != null
       && json?.storage?.destinationType === 'local'
       && json?.storage?.localDirectory === storageDirectory
     ),
     12_000,
   );
-  assert.equal(userSettings.runtime.maxUrlsPerProduct, 11);
+  assert.equal(userSettings.runtime.maxPagesPerDomain, 11);
   assert.deepStrictEqual(userSettings.convergence, {});
   assert.equal(userSettings.storage.destinationType, 'local');
   assert.equal(userSettings.storage.localDirectory, storageDirectory);

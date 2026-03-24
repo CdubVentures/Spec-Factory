@@ -20,7 +20,7 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'repairDedupeRule',
 
   // Computed from multi-env chains or earlier variables
-  'maxCandidateUrls', 'userAgent', 'outputMode',
+  'userAgent', 'outputMode',
   'localInputRoot', 'localOutputRoot',
   'mirrorToS3',
   'searchEngines', 'searchEnginesFallback',

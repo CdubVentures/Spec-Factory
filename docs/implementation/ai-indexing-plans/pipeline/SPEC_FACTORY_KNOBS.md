@@ -2,7 +2,7 @@
 
 > **Source of truth:** `src/shared/settingsRegistry.js`
 > **Excel companion:** `SPEC_FACTORY_KNOBS.xlsx` (14 tabs + Overview)
-> **Last updated:** 2026-03-23
+> **Last updated:** 2026-03-24
 
 ---
 
@@ -15,7 +15,7 @@
 | Fetch & Network | 17 | Timeouts, frontier cooldowns, per-host delay |
 | Parsing & Storage | 1 | Spec DB directory |
 | Run Output | 14 | Output mode, paths, S3 mirroring, markdown summary |
-| Automation | 16 | Drift detection, self-improve, category authority, daemon, imports |
+| Automation | 4 | Category authority and resume |
 | Observability | 10 | Tracing, event logging, screencast streaming |
 | LLM Global | 19 | Models, costs, budgets, call limits, API keys, timeout |
 | LLM Phase Overrides | 8 | Per-phase model, token cap, and reasoning overrides |
@@ -23,8 +23,8 @@
 | Storage Settings | 10 | Persistent storage destination (local / S3), credentials |
 | UI Settings | 5 | Auto-save toggles for Studio, Runtime, Storage panels |
 | Convergence | 0 | Empty |
-| Not in GUI | 9 | Backend-only or internally-managed knobs |
-| **TOTAL** | **145** | |
+| Not in GUI | 8 | Backend-only or internally-managed knobs |
+| **TOTAL** | **132** | |
 
 ---
 
@@ -34,7 +34,7 @@ All knobs live in one of four registries in `settingsRegistry.js`:
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 130 | Pipeline runtime config (env vars, route API, GUI) |
+| `RUNTIME_SETTINGS_REGISTRY` | 117 | Pipeline runtime config (env vars, route API, GUI) |
 | `CONVERGENCE_SETTINGS_REGISTRY` | 0 | Empty — reserved for future knobs |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
@@ -147,28 +147,16 @@ Output destinations, paths, and S3 mirroring.
 
 ---
 
-## Automation (16 knobs)
+## Automation (4 knobs)
 
-Drift detection, self-improvement, category authority, daemon, and imports.
+Category authority and resume settings.
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `driftDetectionEnabled` | bool | true | — | `DRIFT_DETECTION_ENABLED` |
-| `driftPollSeconds` | int | 86,400 | 60–604,800 | `DRIFT_POLL_SECONDS` |
-| `driftScanMaxProducts` | int | 250 | 1–10,000 | `DRIFT_SCAN_MAX_PRODUCTS` |
-| `driftAutoRepublish` | bool | true | — | `DRIFT_AUTO_REPUBLISH` |
-| `reCrawlStaleAfterDays` | int | 30 | 1–3,650 | `RECRAWL_STALE_AFTER_DAYS` |
-| `selfImproveEnabled` | bool | true | — | `SELF_IMPROVE_ENABLED` |
-| `batchStrategy` | string | bandit | — | `BATCH_STRATEGY` |
-| `fieldRewardHalfLifeDays` | int | 45 | 1–365 | `FIELD_REWARD_HALF_LIFE_DAYS` |
 | `categoryAuthorityEnabled` | bool | true | — | `HELPER_FILES_ENABLED` |
 | `categoryAuthorityRoot` | string | category_authority | — | `CATEGORY_AUTHORITY_ROOT` |
-| `helperSupportiveFillMissing` | bool | true | — | `HELPER_SUPPORTIVE_FILL_MISSING` |
-| `daemonConcurrency` | int | 1 | 1–128 | `DAEMON_CONCURRENCY` |
 | `indexingResumeSeedLimit` | int | 24 | 1–10,000 | `INDEXING_RESUME_SEED_LIMIT` |
 | `indexingResumePersistLimit` | int | 160 | 1–100,000 | `INDEXING_RESUME_PERSIST_LIMIT` |
-| `importsRoot` | string | imports | — | `IMPORTS_ROOT` |
-| `importsPollSeconds` | int | 10 | 1–3,600 | `IMPORTS_POLL_SECONDS` |
 
 ---
 
@@ -289,7 +277,7 @@ Managed via `LlmProviderRegistrySection` — provider URLs, models, and costs.
 
 ---
 
-## Not in GUI (9 knobs)
+## Not in GUI (8 knobs)
 
 Backend-only or defaultsOnly knobs not exposed in any GUI panel.
 
@@ -303,7 +291,6 @@ Backend-only or defaultsOnly knobs not exposed in any GUI panel.
 | `maxUrlsPerProduct` | int | 50 | `MAX_URLS_PER_PRODUCT` | Fetch URL cap per product |
 | `searxngMinQueryIntervalMs` | int | 3,000 | `SEARXNG_MIN_QUERY_INTERVAL_MS` | SearXNG throttle |
 | `discoveryEnabled` | bool | true | `DISCOVERY_ENABLED` | defaultsOnly master switch |
-| `daemonGracefulShutdownTimeoutMs` | int | 30,000 | — | defaultsOnly |
 
 ---
 

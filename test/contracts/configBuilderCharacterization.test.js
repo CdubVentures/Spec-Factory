@@ -96,7 +96,7 @@ describe('configBuilder characterization — golden master', () => {
 
   it('all integer keys are numbers', () => {
     const expectedInts = [
-      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
+      'maxPagesPerDomain',
       'serpSelectorUrlCap', 'domainClassifierUrlCap',
       'maxRunSeconds',
       'perHostMinDelayMs',

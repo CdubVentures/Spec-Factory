@@ -284,8 +284,8 @@ export function buildRoundConfig(baseConfig, {
   const next = {
     ...baseConfig,
     llmMaxCallsPerRound: Math.max(1, baseConfig.llmMaxCallsPerRound || 4),
-    maxUrlsPerProduct: baseConfig.maxUrlsPerProduct || 20,
-    maxCandidateUrls: baseConfig.maxCandidateUrls || 50,
+    maxUrlsPerProduct: 50,
+    maxCandidateUrls: 80,
   };
 
   if (round > 0) {

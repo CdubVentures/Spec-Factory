@@ -15,8 +15,6 @@ import { loadConfig, validateConfig } from '../src/config.js';
 
 test('C.1 config defaults: loadConfig returns valid defaults', () => {
   const config = loadConfig();
-  assert.equal(typeof config.maxUrlsPerProduct, 'number');
-  assert.equal(config.maxUrlsPerProduct > 0, true);
   assert.equal(config.runProfile, 'standard');
 });
 
@@ -137,9 +135,7 @@ test('C.1 overrides: localMode forces outputMode to local', () => {
 
 test('C.1 edge: negative values handled gracefully', () => {
   const config = loadConfig({
-    maxUrlsPerProduct: -5,
     maxRunSeconds: -100
   });
-  assert.equal(typeof config.maxUrlsPerProduct, 'number');
   assert.equal(typeof config.maxRunSeconds, 'number');
 });

@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertDefaultsValid } from '../src/core/config/settingsClassification.js';
+import {
+  assertDefaultsValid,
+  SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS,
+  CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS
+} from '../src/core/config/settingsClassification.js';
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
 import { RUNTIME_SETTINGS_ROUTE_GET, CONVERGENCE_SETTINGS_KEYS } from '../src/core/config/settingsKeyMap.js';
+import { RUNTIME_SETTINGS_REGISTRY } from '../src/shared/settingsRegistry.js';
 
 // ---------------------------------------------------------------------------
 // Phase 10 — Tests for defaults validation
@@ -68,18 +73,61 @@ test('defaultsValidation: all convergence keys exist in convergence defaults', (
   }
 });
 
+// ---------------------------------------------------------------------------
+// Secret key exclusion — SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS must match
+// every secret: true entry in the registry so canonical defaults never
+// overwrite an explicitly-set API key with "".
+// ---------------------------------------------------------------------------
+
+test('defaultsValidation: SECRET set matches all secret: true registry entries', () => {
+  const registrySecrets = RUNTIME_SETTINGS_REGISTRY
+    .filter((e) => e.secret)
+    .map((e) => e.key);
+
+  assert.ok(registrySecrets.length >= 3, 'registry should have at least 3 secret keys');
+
+  const missing = registrySecrets.filter((k) => !SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS.has(k));
+  assert.deepStrictEqual(
+    missing,
+    [],
+    `SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS is missing registry secrets: ${missing.join(', ')}`
+  );
+
+  const extra = [...SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS].filter(
+    (k) => !registrySecrets.includes(k)
+  );
+  assert.deepStrictEqual(
+    extra,
+    [],
+    `SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS has keys not in registry: ${extra.join(', ')}`
+  );
+});
+
+test('defaultsValidation: no secret key appears in CANONICAL set', () => {
+  const registrySecrets = RUNTIME_SETTINGS_REGISTRY
+    .filter((e) => e.secret)
+    .map((e) => e.key);
+
+  const leaked = registrySecrets.filter((k) => CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS.has(k));
+  assert.deepStrictEqual(
+    leaked,
+    [],
+    `Secret keys leaked into CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS: ${leaked.join(', ')}`
+  );
+});
+
 test('defaultsValidation: assertDefaultsValid catches wrong type', () => {
   const badDefaults = {
     ...SETTINGS_DEFAULTS,
     runtime: Object.freeze({
       ...SETTINGS_DEFAULTS.runtime,
-      maxUrlsPerProduct: 'not-a-number' // intMap key with wrong type
+      maxPagesPerDomain: 'not-a-number' // intMap key with wrong type
     })
   };
   assert.throws(
     () => assertDefaultsValid(badDefaults),
     (err) => {
-      assert.ok(err.message.includes('maxUrlsPerProduct'));
+      assert.ok(err.message.includes('maxPagesPerDomain'));
       return true;
     }
   );

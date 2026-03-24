@@ -36,6 +36,7 @@ import {
   LLM_CALL_ROW_KEYS,
   LLM_DASHBOARD_SUMMARY_KEYS,
   LLM_CALL_STATUS_VALUES,
+  WORKER_ROW_BASE_SHAPE,
 } from '../../src/features/indexing/api/contracts/runtimeOpsContract.js';
 
 import {
@@ -48,6 +49,25 @@ import {
 } from '../../src/features/indexing/api/contracts/prefetchContract.js';
 
 const sorted = (arr) => [...arr].sort();
+
+// ── Worker state literals ──
+
+describe('runtimeOpsShapeContract — WORKER_ROW_BASE_SHAPE state literals', () => {
+  const stateEntry = WORKER_ROW_BASE_SHAPE.find((s) => s.key === 'state');
+
+  it('state field exists in shape', () => {
+    ok(stateEntry, 'WORKER_ROW_BASE_SHAPE must include a state field');
+  });
+
+  it('state literals include all builder-produced states', () => {
+    // WHY: The builder (runtimeOpsWorkerPoolBuilders.js) assigns these 6 states.
+    // If the shape descriptor omits any, codegen produces incomplete TS union types.
+    const builderStates = ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha'];
+    const missing = builderStates.filter((s) => !stateEntry.literals.includes(s));
+    deepStrictEqual(missing, [],
+      `WORKER_ROW_BASE_SHAPE state literals missing builder states: ${missing.join(', ')}`);
+  });
+});
 
 // ── Summary ──
 

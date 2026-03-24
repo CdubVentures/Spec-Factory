@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react';
 import {
   CONVERGENCE_KNOB_GROUPS,
   parseConvergenceNumericInput,
@@ -24,11 +24,30 @@ import {
   type SourceFormEntryField,
 } from '../sections/PipelineSourceStrategySection';
 import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFormEntryByPath } from '../state/sourceEntryDerived';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
+import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority';
+import { RuntimeFlowHeaderControls } from './RuntimeFlowHeaderControls';
+import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps';
+import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization';
+import {
+  RUNTIME_SETTING_DEFAULTS,
+  SETTINGS_AUTOSAVE_DEBOUNCE_MS,
+} from '../../../stores/settingsManifest';
+import { deriveRuntimeFlowStatus } from '../state/RuntimeFlowStatus';
+import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload';
+import {
+  buildRuntimeLlmTokenProfileLookup,
+  createRuntimeModelTokenDefaultsResolver,
+  deriveRuntimeLlmTokenContractPresetMax,
+} from '../state/RuntimeFlowModelTokenDefaults';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../../api/client';
+import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types';
+import type { RuntimeSettings } from '../state/runtimeSettingsAuthority';
+import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry';
+import { SETTINGS_CATEGORY_KEYS } from '../state/SettingsCategoryRegistry';
+import { CategoryPanel } from './CategoryPanel';
 
-const RuntimeSettingsFlowCard = lazy(async () => {
-  const module = await import('./RuntimeSettingsFlowCard');
-  return { default: module.RuntimeSettingsFlowCard };
-});
 const SourceStrategySection = lazy(async () => {
   const module = await import('../sections/PipelineSourceStrategySection');
   return { default: module.PipelineSourceStrategySection };
@@ -192,6 +211,11 @@ function KnobInput({
   );
 }
 
+// WHY: Helper to test whether a section ID belongs to a runtime category panel.
+function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategoryId {
+  return (SETTINGS_CATEGORY_KEYS as readonly string[]).includes(id);
+}
+
 export function PipelineSettingsPage() {
   const category = useUiStore((s) => s.category);
   const isAll = category === 'all';
@@ -199,7 +223,111 @@ export function PipelineSettingsPage() {
   const sourceStrategySettingsReady = useSettingsAuthorityStore(
     (s) => s.snapshot.sourceStrategyReady,
   );
+  const runtimeReadyFlag = useSettingsAuthorityStore((s) => s.snapshot.runtimeReady);
 
+  /* ── Runtime settings store ── */
+  const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
+  const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
+  const storeValues = useRuntimeSettingsValueStore((s) => s.values);
+  const storeDirty = useRuntimeSettingsValueStore((s) => s.dirty);
+  const storeHydrated = useRuntimeSettingsValueStore((s) => s.hydrated);
+
+  const runtimeManifestDefaults = useMemo(() => toRuntimeDraft(RUNTIME_SETTING_DEFAULTS), []);
+  const runtimeDraft = (storeValues ?? runtimeManifestDefaults) as Record<string, unknown>;
+
+  const [runtimeSaveStatus, setRuntimeSaveStatus] = useState<RuntimeEditorSaveStatus>({ kind: 'idle', message: '' });
+  const storePayload = (storeValues ?? {}) as RuntimeSettings;
+  const {
+    isLoading: runtimeSettingsLoading,
+    isSaving: runtimeSettingsSaving,
+    saveNow,
+  } = useRuntimeSettingsAuthority({
+    payload: storePayload,
+    dirty: storeDirty,
+    autoSaveEnabled: runtimeAutoSaveEnabled,
+    initialHydrationApplied: storeHydrated,
+    onPersisted: (result) => {
+      if (result.ok) {
+        setRuntimeSaveStatus({ kind: 'ok', message: 'Runtime settings saved.' });
+      } else {
+        setRuntimeSaveStatus({ kind: 'error', message: 'Runtime settings save failed.' });
+      }
+    },
+    onError: (error) => {
+      setRuntimeSaveStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Runtime settings save failed.',
+      });
+    },
+  });
+
+  const runtimeSettingsReady = runtimeReadyFlag && !runtimeSettingsLoading;
+  const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
+
+  const { runtimeStatusClass, runtimeStatusText } = deriveRuntimeFlowStatus({
+    runtimeSettingsSaving,
+    runtimeSettingsReady,
+    runtimeSaveState: runtimeSaveStatus.kind,
+    runtimeSaveMessage: runtimeSaveStatus.message,
+    runtimeDirty: storeDirty,
+    runtimeAutoSaveEnabled,
+    runtimeAutoSaveDelaySeconds,
+  });
+
+  // WHY: LLM config query + token resolver needed for reset-to-defaults.
+  const { data: indexingLlmConfig } = useQuery({
+    queryKey: ['indexing', 'llm-config'],
+    queryFn: () => api.get<RuntimeSettingsLlmConfigResponse>('/indexing/llm-config'),
+  });
+
+  const llmTokenProfileLookup = useMemo(() => buildRuntimeLlmTokenProfileLookup({
+    indexingLlmConfig,
+  }), [indexingLlmConfig]);
+
+  const llmTokenContractPresetMax = useMemo(() => deriveRuntimeLlmTokenContractPresetMax({
+    indexingLlmConfig,
+    runtimeManifestDefaults,
+  }), [indexingLlmConfig, runtimeManifestDefaults]);
+
+  const resolveModelTokenDefaults = useMemo(() => createRuntimeModelTokenDefaultsResolver({
+    indexingLlmConfig,
+    llmTokenProfileLookup,
+    llmTokenContractPresetMax,
+    runtimeManifestDefaults,
+  }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
+
+  function resetToDefaults() {
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Reset all runtime settings to defaults? This overwrites current unsaved runtime edits.',
+      );
+      if (!confirmed) return;
+    }
+    const resetPayload = collectRuntimeFlowDraftPayload({
+      nextRuntimeDraft: runtimeManifestDefaults,
+      runtimeManifestDefaults,
+      resolveModelTokenDefaults,
+    });
+    useRuntimeSettingsValueStore.getState().updateKeys(resetPayload as Partial<RuntimeSettings>);
+  }
+
+  /* ── CategoryPanel change handlers ── */
+  const onBoolChange = useCallback((key: string, next: boolean) => {
+    useRuntimeSettingsValueStore.getState().updateKey(key, next);
+  }, []);
+
+  const onNumberChange = useCallback((key: string, eventValue: string, bounds: NumberBound) => {
+    const current = (storeValues as Record<string, unknown> | null)?.[key];
+    const fallback = typeof current === 'number' ? current : 0;
+    const next = parseBoundedNumber(eventValue, fallback, bounds);
+    useRuntimeSettingsValueStore.getState().updateKey(key, next);
+  }, [storeValues]);
+
+  const onStringChange = useCallback((key: string, value: string) => {
+    useRuntimeSettingsValueStore.getState().updateKey(key, value);
+  }, []);
+
+  /* ── Source strategy state ── */
   const [sourceStrategySaveState, setSourceStrategySaveState] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -208,15 +336,15 @@ export function PipelineSettingsPage() {
   const [sourceDraftSourceId, setSourceDraftSourceId] = useState<string | null>(null);
   const [sourceDraft, setSourceDraft] = useState<SourceFormEntry>(() => defaultSourceFormEntry());
 
-  const [saveStatus, setSaveStatus] = useState<{
+  /* ── Convergence state ── */
+  const [convergenceSaveStatus, setConvergenceSaveStatus] = useState<{
     kind: 'idle' | 'ok' | 'partial' | 'error';
     message: string;
   }>({ kind: 'idle', message: '' });
-  const [runtimeHeaderActionMount, setRuntimeHeaderActionMount] = useState<HTMLDivElement | null>(null);
 
   const [activeSection, setActiveSection] = usePersistedTab<PipelineSectionId>(
     'pipeline-settings:active-section',
-    'runtime-flow',
+    'flow',
     { validValues: PIPELINE_SECTION_IDS },
   );
 
@@ -234,20 +362,20 @@ export function PipelineSettingsPage() {
       onPersisted: (result) => {
         const rejectedKeys = Object.keys(result.rejected);
         if (rejectedKeys.length === 0 && result.ok) {
-          setSaveStatus({ kind: 'ok', message: 'Scoring settings saved.' });
+          setConvergenceSaveStatus({ kind: 'ok', message: 'Scoring settings saved.' });
           return;
         }
         if (rejectedKeys.length > 0) {
-          setSaveStatus({
+          setConvergenceSaveStatus({
             kind: 'partial',
             message: `Partially saved. Rejected ${rejectedKeys.length} key(s): ${rejectedKeys.join(', ')}`,
           });
           return;
         }
-        setSaveStatus({ kind: 'error', message: 'Scoring settings save failed.' });
+        setConvergenceSaveStatus({ kind: 'error', message: 'Scoring settings save failed.' });
       },
       onError: (error) => {
-        setSaveStatus({
+        setConvergenceSaveStatus({
           kind: 'error',
           message: error instanceof Error ? error.message : 'Scoring settings save failed.',
         });
@@ -292,14 +420,14 @@ export function PipelineSettingsPage() {
 
   const convergenceStatusText = resolvePipelineConvergenceStatusText({
     isSaving,
-    saveState: saveStatus.kind,
-    saveMessage: saveStatus.message,
+    saveState: convergenceSaveStatus.kind,
+    saveMessage: convergenceSaveStatus.message,
     dirty,
   });
 
   const convergenceStatusClass = resolvePipelineConvergenceStatusClass({
     isSaving,
-    saveState: saveStatus.kind,
+    saveState: convergenceSaveStatus.kind,
     dirty,
   });
   const sourceStrategyStatus = resolveSourceStrategyStatus({
@@ -348,13 +476,30 @@ export function PipelineSettingsPage() {
 
   const sourceInputCls = 'w-full rounded sf-input px-2.5 py-2 sf-text-label';
 
+  /* ── Runtime header controls (shared across all 5 runtime category sections) ── */
+  const runtimeHeaderControls = (
+    <RuntimeFlowHeaderControls
+      runtimeSettingsReady={runtimeSettingsReady}
+      runtimeSettingsSaving={runtimeSettingsSaving}
+      runtimeAutoSaveEnabled={runtimeAutoSaveEnabled}
+      runtimeAutoSaveDelaySeconds={runtimeAutoSaveDelaySeconds}
+      onSaveNow={saveNow}
+      onToggleRuntimeAutoSaveEnabled={() => setRuntimeAutoSaveEnabled(!runtimeAutoSaveEnabled)}
+      onResetToDefaults={resetToDefaults}
+    />
+  );
+
   const headerActions = (
     <>
-            {activeSection === 'runtime-flow' ? (
-              <div
-                ref={setRuntimeHeaderActionMount}
-                className="flex flex-wrap items-center gap-2"
-              />
+            {isRuntimeCategorySection(activeSection) ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {runtimeStatusText ? (
+                  <p className={`sf-text-label font-semibold ${runtimeStatusClass}`}>
+                    {runtimeStatusText}
+                  </p>
+                ) : null}
+                {runtimeHeaderControls}
+              </div>
             ) : null}
             {activeSection === 'convergence' ? (
               <div className="flex items-center gap-2">
@@ -405,17 +550,19 @@ export function PipelineSettingsPage() {
 
   const activePanel = (
     <>
-        {/* â”€â”€ Runtime Flow â”€â”€ */}
-        {activeSection === 'runtime-flow' && (
-          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading runtime flow...</p>}>
-            <RuntimeSettingsFlowCard
-              actionPortalTarget={runtimeHeaderActionMount}
-              suppressInlineHeaderControls
-            />
-          </Suspense>
+        {/* Runtime category panels (flow, planner, fetcher, extraction, validation) */}
+        {isRuntimeCategorySection(activeSection) && (
+          <CategoryPanel
+            categoryId={activeSection}
+            runtimeDraft={runtimeDraft}
+            onBoolChange={onBoolChange}
+            onNumberChange={onNumberChange}
+            onStringChange={onStringChange}
+            disabled={!runtimeSettingsReady}
+          />
         )}
 
-        {/* â”€â”€ Convergence â”€â”€ */}
+        {/* Convergence */}
         {activeSection === 'convergence' && (
           <div
             className={`grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-[280px_minmax(0,1fr)] ${

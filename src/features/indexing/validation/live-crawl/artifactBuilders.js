@@ -12,7 +12,6 @@ export const REQUIRED_SETTINGS_KEYS = Object.freeze([
   'pageGotoTimeoutMs',
   'postLoadWaitMs',
   'capturePageScreenshotEnabled',
-  'maxUrlsPerProduct',
   'maxRunSeconds'
 ]);
 

@@ -580,3 +580,40 @@ export function deriveStorageClearFlags(registry) {
   }
   return flags;
 }
+
+// --- UI category derivations (pipeline settings reorganization) ---
+
+/**
+ * Derive the UI category map from registry.
+ * Produces: { [uiCategory]: { [uiSection]: RegistryEntry[] } }
+ * Entries without uiCategory are excluded.
+ */
+export function deriveUiCategoryMap(registry) {
+  const map = {};
+  for (const entry of registry) {
+    if (!entry.uiCategory) continue;
+    if (!map[entry.uiCategory]) map[entry.uiCategory] = {};
+    const section = entry.uiSection || '_default';
+    if (!map[entry.uiCategory][section]) map[entry.uiCategory][section] = [];
+    map[entry.uiCategory][section].push(entry);
+  }
+  // Sort entries within each section by uiOrder
+  for (const cat of Object.values(map)) {
+    for (const entries of Object.values(cat)) {
+      entries.sort((a, b) => (a.uiOrder ?? 999) - (b.uiOrder ?? 999));
+    }
+  }
+  return map;
+}
+
+/**
+ * Derive the disabledBy dependency map from registry.
+ * Produces: { [key]: parentKey } for entries with disabledBy.
+ */
+export function deriveDisabledByMap(registry) {
+  const map = {};
+  for (const entry of registry) {
+    if (entry.disabledBy) map[entry.key] = entry.disabledBy;
+  }
+  return Object.freeze(map);
+}

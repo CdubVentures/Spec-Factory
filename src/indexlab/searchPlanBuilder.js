@@ -302,7 +302,7 @@ export async function buildSearchPlan({
     missing_critical_fields: ctx.needset?.missing_critical_fields || [], // GAP-12
     limits: {
       searchProfileQueryCap: plannerLimits.searchProfileQueryCap || 6,
-      maxUrlsPerProduct: plannerLimits.maxUrlsPerProduct || 20,
+      maxUrlsPerProduct: 50,
     },
     // WHY: Truncate union arrays to top 5 and drop display-only metrics to keep
     // the payload small enough for gemini-2.5-flash-lite's output budget.

@@ -426,8 +426,6 @@ describe('buildSearchPlanningContext', () => {
       const config = {
         discoveryEnabled: true,
         searchProfileQueryCap: 10,
-        maxUrlsPerProduct: 30,
-        maxCandidateUrls: 60,
         maxPagesPerDomain: 3,
         maxRunSeconds: 600,
         llmModelPlan: 'gpt-4o',
@@ -444,8 +442,8 @@ describe('buildSearchPlanningContext', () => {
 
       assert.equal(result.planner_limits.discoveryEnabled, true);
       assert.equal(result.planner_limits.searchProfileQueryCap, 10);
-      assert.equal(result.planner_limits.maxUrlsPerProduct, 30);
-      assert.equal(result.planner_limits.maxCandidateUrls, 60);
+      assert.equal(result.planner_limits.maxUrlsPerProduct, 50);
+      assert.equal(result.planner_limits.maxCandidateUrls, 80);
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
       assert.equal(result.planner_limits.maxRunSeconds, 600);
       assert.equal(result.planner_limits.llmModelPlan, 'gpt-4o');

@@ -11,8 +11,7 @@ export function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useDebouncedCallback<T extends (...args: any[]) => void>(
+export function useDebouncedCallback<T extends (...args: never[]) => void>(
   callback: T,
   delay: number,
 ): { fn: (...args: Parameters<T>) => void; flush: () => void; cancel: () => void } {

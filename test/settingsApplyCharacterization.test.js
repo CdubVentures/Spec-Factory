@@ -20,10 +20,10 @@ import {
 
 test('CHAR apply: applyRuntimeSettingsToConfig modifies config in-place', () => {
   const config = loadConfig();
-  const originalMax = config.maxUrlsPerProduct;
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 33 });
-  // maxUrlsPerProduct maps directly via settingsKeyMap
-  assert.equal(config.maxUrlsPerProduct, 33);
+  const originalMax = config.maxPagesPerDomain;
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 33 });
+  // maxPagesPerDomain maps directly via settingsKeyMap
+  assert.equal(config.maxPagesPerDomain, 33);
 });
 
 test('CHAR apply: applyRuntimeSettingsToConfig with empty settings is no-op', () => {
@@ -40,13 +40,13 @@ test('CHAR apply: applyRuntimeSettingsToConfig with empty settings is no-op', ()
 
 test('CHAR apply: applyRuntimeSettingsToConfig with null config is silent no-op', () => {
   // Should not throw
-  applyRuntimeSettingsToConfig(null, { maxUrlsPerProduct: 10 });
-  applyRuntimeSettingsToConfig(undefined, { maxUrlsPerProduct: 10 });
+  applyRuntimeSettingsToConfig(null, { maxPagesPerDomain: 10 });
+  applyRuntimeSettingsToConfig(undefined, { maxPagesPerDomain: 10 });
 });
 
 test('CHAR apply: applyRuntimeSettingsToConfig with non-object config is silent no-op', () => {
-  applyRuntimeSettingsToConfig('not-an-object', { maxUrlsPerProduct: 10 });
-  applyRuntimeSettingsToConfig(42, { maxUrlsPerProduct: 10 });
+  applyRuntimeSettingsToConfig('not-an-object', { maxPagesPerDomain: 10 });
+  applyRuntimeSettingsToConfig(42, { maxPagesPerDomain: 10 });
 });
 
 test('CHAR apply: applyRuntimeSettingsToConfig only updates keys that exist in config', () => {
@@ -58,9 +58,9 @@ test('CHAR apply: applyRuntimeSettingsToConfig only updates keys that exist in c
 
 test('CHAR apply: applyRuntimeSettingsToConfig applies known settings keys', () => {
   const config = loadConfig();
-  // Apply a direct config key (maxUrlsPerProduct maps directly)
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 99 });
-  assert.equal(config.maxUrlsPerProduct, 99);
+  // Apply a direct config key (maxPagesPerDomain maps directly)
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 99 });
+  assert.equal(config.maxPagesPerDomain, 99);
 });
 
 // =========================================================================
@@ -118,8 +118,8 @@ test('CHAR apply: applyRuntimeSettingsToConfig handles string numbers', () => {
   const config = loadConfig();
   // After sanitization, numeric strings may or may not be coerced
   // This test captures the current behavior
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 42 });
-  assert.equal(config.maxUrlsPerProduct, 42);
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 42 });
+  assert.equal(config.maxPagesPerDomain, 42);
 });
 
 test('CHAR apply: applyConvergenceSettingsToConfig with empty payload is no-op', () => {
@@ -139,17 +139,17 @@ test('CHAR apply: applyConvergenceSettingsToConfig with empty payload is no-op',
 
 test('CHAR apply: multiple applyRuntimeSettingsToConfig calls stack', () => {
   const config = loadConfig();
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 10 });
-  assert.equal(config.maxUrlsPerProduct, 10);
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 20 });
-  assert.equal(config.maxUrlsPerProduct, 20);
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 10 });
+  assert.equal(config.maxPagesPerDomain, 10);
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 20 });
+  assert.equal(config.maxPagesPerDomain, 20);
 });
 
 test('CHAR apply: runtime and convergence apply functions can be mixed', () => {
   const config = loadConfig();
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 42 });
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 42 });
   applyConvergenceSettingsToConfig(config, {});
-  assert.equal(config.maxUrlsPerProduct, 42);
+  assert.equal(config.maxPagesPerDomain, 42);
   // No convergence keys to verify — convergence apply is a no-op
 });
 
@@ -274,9 +274,9 @@ test('applyRuntimeSettingsToConfig does NOT rebuild _registryLookup when unrelat
 
 test('CHAR apply: in-place mutation has no rollback — values are permanently changed', () => {
   const config = loadConfig();
-  const original = config.maxUrlsPerProduct;
-  applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 999 });
-  assert.equal(config.maxUrlsPerProduct, 999);
+  const original = config.maxPagesPerDomain;
+  applyRuntimeSettingsToConfig(config, { maxPagesPerDomain: 999 });
+  assert.equal(config.maxPagesPerDomain, 999);
   // There is no way to rollback — this characterizes F16
-  assert.notEqual(config.maxUrlsPerProduct, original);
+  assert.notEqual(config.maxPagesPerDomain, original);
 });

@@ -1,3 +1,0 @@
-import{r as s,j as t}from"./vendor-ui-ComJg1Ad.js";import{ar as n,as as c}from"./index-DNjdlzym.js";import"./vendor-react-yyJz49DP.js";import"./vendor-query-B32LnyU-.js";const d=s.memo(function({runtimeDraft:e,runtimeSettingsReady:r,inputCls:a,updateDraft:i}){return t.jsx(t.Fragment,{children:t.jsx(n,{title:"Storage",children:t.jsx(c,{label:"Spec DB Dir",tip:`Phase coverage: 13 Validation To Output and durable storage.
-Lives in: final artifact persistence rather than the extraction stage itself.
-What this controls: the root directory used for per-category spec SQLite databases.`,children:t.jsx("input",{type:"text",value:e.specDbDir,onChange:o=>i("specDbDir",o.target.value),disabled:!r,className:a})})})})});export{d as RuntimeFlowParsingSection};

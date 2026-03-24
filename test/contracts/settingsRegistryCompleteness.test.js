@@ -223,3 +223,69 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     ok(counts.csv_enum >= 2, `expected >= 2 csv_enums, got ${counts.csv_enum}`);
   });
 });
+
+// WHY: These tests lock down the UI metadata contract added for the registry-driven
+// settings page. Every user-facing setting must route to exactly one category/section.
+const VALID_UI_CATEGORIES = new Set(['flow', 'planner', 'fetcher', 'extraction', 'validation']);
+
+describe('settingsRegistry — UI metadata contract', () => {
+
+  it('every non-defaultsOnly, non-readOnly entry has a uiCategory', () => {
+    const missing = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (entry.defaultsOnly || entry.readOnly) continue;
+      if (!entry.uiCategory) missing.push(entry.key);
+    }
+    deepStrictEqual(missing, [], `entries missing uiCategory: ${missing.join(', ')}`);
+  });
+
+  it('every entry with uiCategory also has uiSection', () => {
+    const missing = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.uiCategory) continue;
+      if (!entry.uiSection) missing.push(entry.key);
+    }
+    deepStrictEqual(missing, [], `entries with uiCategory but missing uiSection: ${missing.join(', ')}`);
+  });
+
+  it('uiCategory values are from the allowed set', () => {
+    const invalid = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.uiCategory) continue;
+      if (!VALID_UI_CATEGORIES.has(entry.uiCategory)) {
+        invalid.push(`${entry.key} has uiCategory "${entry.uiCategory}"`);
+      }
+    }
+    deepStrictEqual(invalid, [], `invalid uiCategory values: ${invalid.join(', ')}`);
+  });
+
+  it('every disabledBy value references an existing setting key', () => {
+    const allKeys = new Set(RUNTIME_SETTINGS_REGISTRY.map(e => e.key));
+    const broken = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.disabledBy) continue;
+      if (!allKeys.has(entry.disabledBy)) {
+        broken.push(`${entry.key} disabledBy "${entry.disabledBy}" does not exist`);
+      }
+    }
+    deepStrictEqual(broken, [], `broken disabledBy refs: ${broken.join(', ')}`);
+  });
+
+  it('readOnly entries also have uiCategory and uiSection', () => {
+    const missing = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.readOnly) continue;
+      if (!entry.uiCategory || !entry.uiSection) missing.push(entry.key);
+    }
+    deepStrictEqual(missing, [], `readOnly entries missing UI metadata: ${missing.join(', ')}`);
+  });
+
+  it('defaultsOnly entries also have uiCategory and uiSection', () => {
+    const missing = [];
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.defaultsOnly) continue;
+      if (!entry.uiCategory || !entry.uiSection) missing.push(entry.key);
+    }
+    deepStrictEqual(missing, [], `defaultsOnly entries missing UI metadata: ${missing.join(', ')}`);
+  });
+});

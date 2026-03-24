@@ -180,10 +180,7 @@ export function createPipelineCommands({
       && discoveryEnabledArg === false
       && !runConfig.searchEngines
     ) {
-      runConfig.maxUrlsPerProduct = Math.min(
-        configInt(runConfig, 'maxUrlsPerProduct'),
-        4
-      );
+      runConfig.maxUrlsPerProduct = Math.min(50, 4);
       runConfig.maxPagesPerDomain = Math.min(
         configInt(runConfig, 'maxPagesPerDomain'),
         2

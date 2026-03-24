@@ -25,7 +25,7 @@ test('loadUserSettingsSync records stale-read + migration telemetry for outdated
   await fs.writeFile(path.join(runtimeRoot, 'user-settings.json'), JSON.stringify({
     schemaVersion: 1,
     runtime: {
-      maxUrlsPerProduct: 7,
+      maxPagesPerDomain: 7,
     },
   }, null, 2), 'utf8');
 
@@ -33,7 +33,7 @@ test('loadUserSettingsSync records stale-read + migration telemetry for outdated
   const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root });
   const counters = getSettingsPersistenceCountersSnapshot();
 
-  assert.equal(snapshot.runtime.maxUrlsPerProduct, 7);
+  assert.equal(snapshot.runtime.maxPagesPerDomain, 7);
   assert.equal(counters.stale_reads.total, 1);
   assert.equal(counters.stale_reads.by_reason.schema_version_outdated, 1);
   assert.equal(counters.migrations.total, 1);
@@ -46,12 +46,12 @@ test('persistUserSettingsSections records write attempt/success telemetry for us
   const saved = await persistUserSettingsSections({
     categoryAuthorityRoot: root,
     runtime: {
-      maxUrlsPerProduct: 5,
+      maxPagesPerDomain: 5,
     },
   });
   const counters = getSettingsPersistenceCountersSnapshot();
 
-  assert.equal(saved.runtime.maxUrlsPerProduct, 5);
+  assert.equal(saved.runtime.maxPagesPerDomain, 5);
   assert.equal(counters.writes.attempt_total, 1);
   assert.equal(counters.writes.success_total, 1);
   assert.equal(counters.writes.failed_total, 0);
@@ -68,7 +68,7 @@ test('persistUserSettingsSections serializes concurrent section writes without d
     persistUserSettingsSections({
       categoryAuthorityRoot: root,
       runtime: {
-        maxUrlsPerProduct: 9,
+        maxPagesPerDomain: 9,
       },
     }),
     persistUserSettingsSections({
@@ -85,7 +85,7 @@ test('persistUserSettingsSections serializes concurrent section writes without d
   ]);
 
   const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
-  assert.equal(snapshot.runtime.maxUrlsPerProduct, 9);
+  assert.equal(snapshot.runtime.maxPagesPerDomain, 9);
   assert.deepStrictEqual(snapshot.convergence, {});
   assert.equal(snapshot.ui.runtimeAutoSaveEnabled, false);
   assert.equal(snapshot.ui.storageAutoSaveEnabled, true);
@@ -176,9 +176,9 @@ test('drainPersistQueue waits for in-flight persist operations to complete', asy
   const { root } = await makeHelperRoot('settings-drain-');
   persistUserSettingsSections({
     categoryAuthorityRoot: root,
-    runtime: { maxUrlsPerProduct: 11 },
+    runtime: { maxPagesPerDomain: 11 },
   });
   await drainPersistQueue();
   const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
-  assert.equal(snapshot.runtime.maxUrlsPerProduct, 11);
+  assert.equal(snapshot.runtime.maxPagesPerDomain, 11);
 });

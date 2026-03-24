@@ -44,7 +44,6 @@ test('normalizeRuntimeArtifactWorkspaceDefaults migrates known-default workspace
   const config = {
     localOutputRoot: previousOutputRoot,
     specDbDir: previousSpecDbDir,
-    llmExtractionCacheDir: path.join(previousSpecDbDir, 'llm_cache'),
   };
 
   normalizeRuntimeArtifactWorkspaceDefaults({
@@ -60,10 +59,6 @@ test('normalizeRuntimeArtifactWorkspaceDefaults migrates known-default workspace
 
   assert.equal(config.localOutputRoot, nextOutputRoot);
   assert.equal(config.specDbDir, nextSpecDbDir);
-  assert.equal(
-    config.llmExtractionCacheDir,
-    path.join(nextSpecDbDir, 'llm_cache'),
-  );
 });
 
 test('assertNoShadowHelperRuntime rejects legacy helper runtime shadows', () => {
@@ -103,21 +98,11 @@ test('resolveStorageBackedWorkspaceRoots maps local and s3 storage to workspace 
     outputRoot: path.resolve('run-data', 'output'),
     indexLabRoot: path.resolve('run-data', 'indexlab'),
     specDbDir: path.resolve('run-data', '.specfactory_tmp'),
-    llmExtractionCacheDir: path.resolve(
-      'run-data',
-      '.specfactory_tmp',
-      'llm_cache',
-    ),
   });
   assert.deepEqual(s3Roots, {
     outputRoot: null,
     indexLabRoot: null,
     specDbDir: path.resolve('workspace', '.specfactory_tmp'),
-    llmExtractionCacheDir: path.resolve(
-      'workspace',
-      '.specfactory_tmp',
-      'llm_cache',
-    ),
   });
 });
 

@@ -23,8 +23,8 @@ describe('manifest characterization (golden master)', () => {
     );
   });
 
-  it('has exactly 216 total keys', () => {
-    assert.equal(CONFIG_MANIFEST_KEYS.length, 216);
+  it('has exactly 213 total keys', () => {
+    assert.equal(CONFIG_MANIFEST_KEYS.length, 213);
   });
 
   it('per-group entry counts match snapshot', () => {
@@ -34,12 +34,12 @@ describe('manifest characterization (golden master)', () => {
       caching: 3,
       storage: 17,
       security: 2,
-      llm: 70,
+      llm: 69,
       discovery: 4,
       runtime: 53,
       observability: 1,
       paths: 20,
-      misc: 41,
+      misc: 39,
     });
   });
 
@@ -60,8 +60,8 @@ describe('manifest characterization (golden master)', () => {
     }
   });
 
-  it('CONFIG_MANIFEST_DEFAULTS has exactly 216 keys', () => {
-    assert.equal(Object.keys(CONFIG_MANIFEST_DEFAULTS).length, 216);
+  it('CONFIG_MANIFEST_DEFAULTS has exactly 213 keys', () => {
+    assert.equal(Object.keys(CONFIG_MANIFEST_DEFAULTS).length, 213);
   });
 
   it('no duplicate keys across groups', () => {

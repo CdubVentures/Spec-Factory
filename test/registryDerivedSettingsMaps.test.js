@@ -102,7 +102,7 @@ describe('registry-derived settings maps — characterization', () => {
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs', 'runtimeScreencastFps', 'runtimeScreencastQuality',
       'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight', 'searchProfileQueryCap',
-      'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain', 'maxRunSeconds',
+      'maxPagesPerDomain', 'maxRunSeconds',
       'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
       'llmMaxCallsPerProductTotal',
       'llmReasoningBudget', 'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd',

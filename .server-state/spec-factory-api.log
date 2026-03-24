@@ -464,3 +464,14 @@
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= undefined
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= undefined
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= undefined
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-C99fWioL.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DYhxoQtu.js, CategoryManager-DDeGdinu.js, Chip-DT26XC1B.js, ComponentReviewPage-D4b6W2uQ.js, DataTable-BmrjKX2I.js, DrawerShell-CzxdzV_r.js, fieldNormalize-BfWKSrbu.js, FlagsSection-CKKZOLHb.js, formatting-B6A_RRxb.js, index-DlecRE--.css, index-u8CrG9TS.js, IndexingPage-D1y8W2yB.js, indexlabRunsQuery-aC5Zb35W.js, invalidateFieldRulesQueries-Bin8ucn0.js, LlmConfigPage-Biy6tVtO.js, LlmGlobalSection-DpM4g22F.js, LlmPhaseSection-DeefAnGy.js, llmPolicyDefaults-BHb7H6r3.js, LlmProviderRegistrySection-DDTiyFFi.js, llmRouteTaxonomy-2KjCH4Ad.js, LlmSettingsPage-Buyelu3b.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-BB8f_cAt.js, PipelineSettingsPage-BnNJaqAy.js, PipelineSourceStrategySection-D9ag53xg.js, ProductPage-CvZdcH2V.js, ReviewPage-CO4_zRHL.js, RuntimeFlowAutomationSection-BNAgPyS4.js, RuntimeFlowBrowserRenderingSection-B0mf7Soy.js, RuntimeFlowDraftPayload-DLzlH0S9.js, RuntimeFlowFetchNetworkSection-CwmTgXGp.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-CDhVMJKe.js, RuntimeFlowParsingSection-BEpKwpg1.js, RuntimeFlowRunOutputSection-vQpfMD8t.js, RuntimeFlowRunSetupSection-GRsWbZ6_.js, RuntimeOpsPage-BoGd-7WO.js, RuntimeSettingsFlowCard-BPMT9GTw.js, settingsStatus-BVm315aX.js, SidebarShell-BREWcqae.js, StoragePage-C92oqozu.js, StudioPage-Df3DgRm4.js, TabStrip-Klqv926z.js, TestModePage-Djk5eBGa.js, TrafficLight-DMoC2UTI.js, useFieldLabels-DnJoVfR3.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js

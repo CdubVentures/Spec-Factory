@@ -199,9 +199,5 @@ describe('settingsAccessor', () => {
     it('searchProfileQueryCap default is 10 (was hardcoded as 6, 8, 12 in various files)', () => {
       strictEqual(configInt({}, 'searchProfileQueryCap'), 10);
     });
-
-    it('maxUrlsPerProduct default is 50 (was hardcoded as 12 in pipelineCommands, 20 in configBuilder)', () => {
-      strictEqual(configInt({}, 'maxUrlsPerProduct'), 50);
-    });
   });
 });

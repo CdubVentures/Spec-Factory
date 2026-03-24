@@ -126,9 +126,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     if (storageBackedWorkspaceRoots.specDbDir) {
       config.specDbDir = storageBackedWorkspaceRoots.specDbDir;
     }
-    if (storageBackedWorkspaceRoots.llmExtractionCacheDir) {
-      config.llmExtractionCacheDir = storageBackedWorkspaceRoots.llmExtractionCacheDir;
-    }
   }
   // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
   const configGate = createConfigMutationGate(config);

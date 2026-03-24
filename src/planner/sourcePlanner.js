@@ -70,8 +70,8 @@ export class SourcePlanner {
     // after Brand Resolver phase provides LLM-resolved aliases and domains.
     this.brandHostHints = [];
 
-    this.maxUrls = configInt(config, 'maxUrlsPerProduct');
-    this.maxCandidateUrls = configInt(config, 'maxCandidateUrls');
+    this.maxUrls = 50;
+    this.maxCandidateUrls = 80;
     this.maxPagesPerDomain = configInt(config, 'maxPagesPerDomain');
 
     this.manufacturerQueue = [];

@@ -105,7 +105,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   llmBaseUrl: 'LLM_BASE_URL',
   openaiApiKey: 'LLM_API_KEY',
   outputMode: 'OUTPUT_MODE',
-  maxCandidateUrls: 'MAX_CANDIDATE_URLS_PER_PRODUCT',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
   categoryAuthorityRoot: 'HELPER_FILES_ROOT',
 });

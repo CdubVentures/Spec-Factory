@@ -9,16 +9,17 @@ import {
   assertDualKeyConsistency
 } from './settingsKeyMap.js';
 import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
 
 const RUNTIME_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.runtime || {});
 const CONVERGENCE_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.convergence || {});
 const LEGACY_HELPER_ROOT_ENV = `HELPER${'_FILES'}_ROOT`;
 
-export const SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
-  'llmPlanApiKey',
-  'openaiApiKey',
-  'anthropicApiKey',
-]);
+// WHY: Derived from registry SSOT so new secret keys are automatically excluded
+// from canonical defaults application (prevents overwriting API keys with "").
+export const SECRET_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set(
+  RUNTIME_SETTINGS_REGISTRY.filter((e) => e.secret).map((e) => e.key)
+);
 
 export const NON_CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'localOutputRoot',

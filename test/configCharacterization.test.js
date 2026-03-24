@@ -19,10 +19,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   const cfg = loadConfig();
 
   // Core pipeline defaults
-  assert.equal(typeof cfg.maxUrlsPerProduct, 'number');
-  assert.ok(cfg.maxUrlsPerProduct > 0);
-  assert.equal(typeof cfg.maxCandidateUrls, 'number');
-  assert.ok(cfg.maxCandidateUrls > 0);
   assert.equal(cfg.runProfile, 'standard');
   assert.equal(cfg.discoveryEnabled, true);
 
@@ -185,16 +181,14 @@ test('CHAR config: llmMaxOutputTokens chain produces valid numbers', () => {
 
 test('CHAR config: explicit overrides take precedence over defaults', () => {
   const cfg = loadConfig({
-    maxUrlsPerProduct: 77,
     maxPagesPerDomain: 11,
   });
-  assert.equal(cfg.maxUrlsPerProduct, 77);
   assert.equal(cfg.maxPagesPerDomain, 11);
 });
 
 test('CHAR config: undefined overrides are filtered out', () => {
-  const cfg = loadConfig({ maxUrlsPerProduct: undefined });
-  assert.ok(cfg.maxUrlsPerProduct > 0);
+  const cfg = loadConfig({ maxPagesPerDomain: undefined });
+  assert.ok(cfg.maxPagesPerDomain > 0);
 });
 
 // =========================================================================

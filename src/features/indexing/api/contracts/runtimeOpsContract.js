@@ -182,7 +182,7 @@ export const PIPELINE_TRANSITION_KEYS = Object.freeze(PIPELINE_TRANSITION_SHAPE.
 export const WORKER_ROW_BASE_SHAPE = Object.freeze([
   { key: 'worker_id', coerce: 'string' },
   { key: 'pool', coerce: 'string' },
-  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued'] },
+  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha'] },
   { key: 'stage', coerce: 'string', literals: ['search', 'fetch', 'parse', 'index', 'llm'] },
   { key: 'current_url', coerce: 'string' },
   { key: 'started_at', coerce: 'string' },

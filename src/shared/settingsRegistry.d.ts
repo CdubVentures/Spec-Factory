@@ -21,6 +21,15 @@ export interface RegistryEntry {
   clampModelFallbackKey?: string;
   aliases?: readonly string[];
   deprecated?: boolean;
+  // UI presentation metadata (pipeline settings reorganization)
+  uiCategory?: 'flow' | 'planner' | 'fetcher' | 'extraction' | 'validation';
+  uiSection?: string;
+  uiLabel?: string;
+  uiTip?: string;
+  uiOrder?: number;
+  uiHero?: boolean;
+  uiAdvanced?: boolean;
+  disabledBy?: string;
 }
 
 export declare const SEARXNG_AVAILABLE_ENGINES: readonly string[];
