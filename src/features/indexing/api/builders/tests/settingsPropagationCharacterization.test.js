@@ -1,274 +1,133 @@
-import { after, describe, it } from 'node:test';
-import { ok, strictEqual, deepStrictEqual } from 'node:assert';
+import { describe, it } from 'node:test';
+import { ok, strictEqual } from 'node:assert';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { readRuntimeSettingsSnapshot } from '../../../../../core/config/runtimeSettingsSnapshot.js';
 import { buildProcessStartLaunchPlan } from '../processStartLaunchPlan.js';
-import { RUNTIME_SETTINGS_REGISTRY } from '../../../../../shared/settingsRegistry.js';
 
-// WHY: Golden-master characterization tests for settings propagation.
-// These lock down current behavior before the SSOT rewrite (Plan 02).
-// Every assertion here documents the CURRENT state, not the desired state.
-
-// --- Helpers ---
-
-const TEST_CATEGORY_AUTHORITY_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-settings-propagation-'));
-
-function cleanup(dir) {
-  try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
-}
-
-after(() => {
-  cleanup(TEST_CATEGORY_AUTHORITY_ROOT);
-});
-
-function buildFullBody() {
-  // Build a POST body with all registry keys set to recognizable test values
-  const body = {
-    category: 'mouse',
-    mode: 'indexlab',
-    productId: 'mouse-test-product-1',
-    replaceRunning: true,
-  };
-  for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-    if (entry.secret) continue; // Skip API keys
-    switch (entry.type) {
-      case 'bool':
-        body[entry.key] = !entry.default; // Invert default to verify propagation
-        break;
-      case 'int':
-        body[entry.key] = entry.min != null ? entry.min + 1 : 42;
-        break;
-      case 'float':
-        body[entry.key] = entry.min != null ? entry.min + 0.1 : 0.42;
-        break;
-      case 'enum':
-        body[entry.key] = entry.allowed?.[0] ?? entry.default;
-        break;
-      case 'csv_enum':
-        body[entry.key] = entry.allowed?.[0] ?? entry.default;
-        break;
-      case 'string':
-        // WHY: JSON map fields must contain valid JSON, not arbitrary strings
-        if (entry.key.endsWith('Json')) {
-          body[entry.key] = entry.default || '';
-        } else if (entry.key === 'categoryAuthorityRoot') {
-          body[entry.key] = TEST_CATEGORY_AUTHORITY_ROOT;
-        } else {
-          body[entry.key] = `test-${entry.key}`;
-        }
-        break;
-    }
+function cleanup(dirPath) {
+  try {
+    fs.rmSync(dirPath, { recursive: true, force: true });
+  } catch {
+    // Best-effort test cleanup.
   }
-  return body;
 }
 
-function buildPlan(bodyOverrides = {}, optionOverrides = {}) {
-  return buildProcessStartLaunchPlan({
-    body: {
-      ...buildFullBody(),
-      ...bodyOverrides,
-    },
-    helperRoot: path.resolve('category_authority'),
-    outputRoot: path.resolve('test-output'),
-    indexLabRoot: path.resolve('test-indexlab'),
-    runDataStorageState: { enabled: false, destinationType: 'local', localDirectory: '' },
-    env: {},
-    pathApi: path,
-    buildRunIdFn: () => 'test-run-id-000',
-    ...optionOverrides,
-  });
-}
+function createLaunchPlanHarness() {
+  const categoryAuthorityRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-launch-plan-'));
 
-// --- Launch Plan Golden Master ---
-
-describe('processStartLaunchPlan — propagation characterization', () => {
-
-  it('produces ok: true with valid full body', () => {
-    const result = buildPlan();
-    strictEqual(result.ok, true, `launch plan failed: ${JSON.stringify(result.body)}`);
-  });
-
-  it('envOverrides contains exactly the known direct-launch keys', () => {
-    const result = buildPlan();
-    ok(result.ok);
-    const envKeys = new Set(Object.keys(result.envOverrides));
-
-    // WHY: These are the 42+ env vars that processStartLaunchPlan currently sets.
-    // This is the golden master — any change to this set must be intentional.
-    const EXPECTED_DIRECT_LAUNCH_ENV_KEYS = new Set([
-      'DYNAMIC_CRAWLEE_ENABLED',
-      'SPEC_DB_DIR',
-      'HELPER_FILES_ENABLED',
-      'HELPER_FILES_ROOT',
-      'CATEGORY_AUTHORITY_ROOT',
-      'OUTPUT_MODE',
-      'LOCAL_MODE',
-      'DRY_RUN',
-      'MIRROR_TO_S3',
-      'MIRROR_TO_S3_INPUT',
-      'LOCAL_INPUT_ROOT',
-      'LOCAL_OUTPUT_ROOT',
-      'RUNTIME_EVENTS_KEY',
-      'WRITE_MARKDOWN_SUMMARY',
-      'LLM_PROVIDER',
-      'LLM_BASE_URL',
-      'CAPTURE_PAGE_SCREENSHOT_ENABLED',
-      'CAPTURE_PAGE_SCREENSHOT_FORMAT',
-      'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-      'RUNTIME_TRACE_FETCH_RING',
-      'RUNTIME_TRACE_LLM_RING',
-      'RUNTIME_TRACE_LLM_PAYLOADS',
-      'EVENTS_JSON_WRITE',
-      'RUNTIME_SCREENCAST_ENABLED',
-      'RUNTIME_SCREENCAST_FPS',
-      'RUNTIME_SCREENCAST_QUALITY',
-      'RUNTIME_SCREENCAST_MAX_WIDTH',
-      'RUNTIME_SCREENCAST_MAX_HEIGHT',
-      'LLM_MODEL_PLAN',
-      'LLM_MODEL_REASONING',
-      'LLM_MAX_OUTPUT_TOKENS_PLAN',
-      'LLM_MAX_OUTPUT_TOKENS_REASONING',
-      'LLM_PLAN_FALLBACK_MODEL',
-      'LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK',
-    ]);
-
-    // Check every expected key is present
-    for (const expectedKey of EXPECTED_DIRECT_LAUNCH_ENV_KEYS) {
-      ok(envKeys.has(expectedKey), `expected env key ${expectedKey} not found in envOverrides`);
-    }
-
-    // Document any EXTRA keys not in the expected set (new additions since audit)
-    const extraKeys = [];
-    for (const key of envKeys) {
-      if (!EXPECTED_DIRECT_LAUNCH_ENV_KEYS.has(key)) {
-        extraKeys.push(key);
-      }
-    }
-    // If there are extra keys, that's OK — just document them. Don't fail.
-    if (extraKeys.length > 0) {
-      // This is informational — update EXPECTED_DIRECT_LAUNCH_ENV_KEYS if these are intentional
-      ok(true, `Extra env keys found (update golden master if intentional): ${extraKeys.join(', ')}`);
-    }
-  });
-
-  it('registry keys NOT in envOverrides are payload-only or save-only (the propagation gap)', () => {
-    const result = buildPlan();
-    ok(result.ok);
-    const envKeys = new Set(Object.keys(result.envOverrides));
-
-    // These registry keys are sent in the GUI POST body but processStartLaunchPlan
-    // does NOT convert them to env vars. On the happy path, the child reads them from
-    // the RUNTIME_SETTINGS_SNAPSHOT file (Plan 05). If the snapshot write fails,
-    // these fall back to user-settings.json (stale-start risk).
-    const KNOWN_PAYLOAD_ONLY_GAPS = [
-      // Browser/rendering
-      'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
-      'autoScrollEnabled', 'autoScrollPasses', 'autoScrollDelayMs',
-      'robotsTxtCompliant', 'robotsTxtTimeoutMs',
-      'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
-      // Discovery
-      'searchProfileQueryCap',
-      'maxPagesPerDomain',
-      'maxRunSeconds',
-      // LLM settings
-      'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmMaxTokens',
-      'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M', 'llmCostCachedInputPer1M',
-      'llmReasoningMode', 'llmReasoningBudget',
-      'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd', 'llmMaxCallsPerProductTotal',
-      // Model / provider
-      'llmPlanProvider', 'llmPlanBaseUrl',
-      'llmReasoningFallbackModel', 'llmMaxOutputTokensReasoningFallback',
-      'llmMaxOutputTokensPlanFallback',
-      'llmProviderRegistryJson', 'llmPhaseOverridesJson',
-      'llmPlanUseReasoning',
-      // Automation
-      'categoryAuthorityEnabled', 'categoryAuthorityRoot',
-      'indexingResumeSeedLimit', 'indexingResumePersistLimit',
-      // Run output/control
-      'runtimeControlFile', 'specDbDir',
-      'runtimeTraceEnabled',
-      'outputMode', 'localMode', 'dryRun',
-      'localInputRoot', 'localOutputRoot', 'runtimeEventsKey',
-      'writeMarkdownSummary',
-      'mirrorToS3', 'mirrorToS3Input',
-      's3InputPrefix', 's3OutputPrefix',
-      // Search
-      'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
-      'repairDedupeRule',
-      // Resume
-      'resumeMode', 'resumeWindowHours',
-      // Google
-      'googleSearchMaxRetries', 'googleSearchMinQueryIntervalMs',
-      'googleSearchProxyUrlsJson', 'googleSearchScreenshotsEnabled',
-      'googleSearchTimeoutMs',
-      // Learning
-      'userAgent',
-    ];
-
-    // This documents the gap — these are sent by GUI but dropped before child launch
-    // After the rewrite, ALL of these should travel via snapshot
-    ok(
-      KNOWN_PAYLOAD_ONLY_GAPS.length > 25,
-      `Expected > 25 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
-    );
-  });
-
-  it('boolean env values are string true/false', () => {
-    const result = buildPlan({ dryRun: false, localMode: true });
-    ok(result.ok);
-    strictEqual(result.envOverrides.DRY_RUN, 'false');
-    strictEqual(result.envOverrides.LOCAL_MODE, 'true');
-  });
-
-  it('integer env values are clamped string numbers', () => {
-    // WHY: Use minimal body to avoid JSON validation failures on full body
-    const result = buildProcessStartLaunchPlan({
-      body: {
+  return {
+    categoryAuthorityRoot,
+    buildRequest(overrides = {}) {
+      return {
         category: 'mouse',
         mode: 'indexlab',
-        productId: 'mouse-test-1',
-        runtimeTraceFetchRing: 9999,
-      },
-      helperRoot: path.resolve('category_authority'),
-      outputRoot: path.resolve('test-output'),
-      indexLabRoot: path.resolve('test-indexlab'),
-      runDataStorageState: { enabled: false },
-      env: {},
-      pathApi: path,
-      buildRunIdFn: () => 'test-run-clamp',
+        productId: 'mouse-test-product-1',
+        replaceRunning: true,
+        categoryAuthorityRoot,
+        ...overrides,
+      };
+    },
+    buildPlan(bodyOverrides = {}, optionOverrides = {}) {
+      return buildProcessStartLaunchPlan({
+        body: this.buildRequest(bodyOverrides),
+        helperRoot: path.resolve('category_authority'),
+        outputRoot: path.resolve('test-output'),
+        indexLabRoot: path.resolve('test-indexlab'),
+        runDataStorageState: { enabled: false, destinationType: 'local', localDirectory: '' },
+        env: {},
+        pathApi: path,
+        buildRunIdFn: () => 'test-run-id-000',
+        ...optionOverrides,
+      });
+    },
+    cleanup() {
+      cleanup(categoryAuthorityRoot);
+    },
+  };
+}
+
+describe('buildProcessStartLaunchPlan contract', () => {
+  it('returns a runnable launch plan for a valid request', (t) => {
+    const harness = createLaunchPlanHarness();
+    t.after(() => harness.cleanup());
+
+    const result = harness.buildPlan({
+      localMode: true,
+      indexlabOut: path.resolve('custom-indexlab-output'),
     });
-    ok(result.ok, `plan failed: ${JSON.stringify(result.body)}`);
-    // Clamped to max 2000
+
+    strictEqual(result.ok, true);
+    strictEqual(result.requestedRunId, 'test-run-id-000');
+    strictEqual(result.replaceRunning, true);
+    strictEqual(result.effectiveHelperRoot, path.resolve(harness.categoryAuthorityRoot));
+    ok(result.cliArgs.includes('indexlab'));
+    ok(result.cliArgs.includes('--local'));
+    ok(result.cliArgs.includes('--product-id'));
+    ok(result.cliArgs.includes('mouse-test-product-1'));
+    ok(result.cliArgs.includes('--out'));
+    ok(result.cliArgs.includes(path.resolve('custom-indexlab-output')));
+  });
+
+  it('writes a runtime settings snapshot with settings but not run-control fields', (t) => {
+    const harness = createLaunchPlanHarness();
+    t.after(() => harness.cleanup());
+
+    const result = harness.buildPlan({
+      dryRun: true,
+      maxRunSeconds: 600,
+      searchEngines: 'google',
+    });
+
+    strictEqual(result.ok, true);
+    ok(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT);
+
+    const snapshot = readRuntimeSettingsSnapshot(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT);
+    strictEqual(snapshot.snapshotId, 'test-run-id-000');
+    strictEqual(snapshot.source, 'gui');
+    strictEqual(snapshot.settings.dryRun, true);
+    strictEqual(snapshot.settings.maxRunSeconds, 600);
+    strictEqual(snapshot.settings.searchEngines, 'google');
+    strictEqual(snapshot.settings.category, undefined);
+    strictEqual(snapshot.settings.productId, undefined);
+    strictEqual(snapshot.settings.mode, undefined);
+  });
+
+  it('serializes direct-launch booleans and clamped integers into env overrides', (t) => {
+    const harness = createLaunchPlanHarness();
+    t.after(() => harness.cleanup());
+
+    const result = harness.buildPlan({
+      dryRun: false,
+      localMode: true,
+      runtimeTraceFetchRing: 9999,
+    });
+
+    strictEqual(result.ok, true);
+    strictEqual(result.envOverrides.DRY_RUN, 'false');
+    strictEqual(result.envOverrides.LOCAL_MODE, 'true');
     strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
   });
 
-  it('assignInt skips values below minInput threshold', () => {
-    // WHY: assignInt in processStartLaunchPlan skips entirely when value < minInput
-    const result = buildProcessStartLaunchPlan({
-      body: {
-        category: 'mouse',
-        mode: 'indexlab',
-        productId: 'mouse-test-1',
-        runtimeTraceFetchRing: 5, // Below minInput of 10
-      },
-      helperRoot: path.resolve('category_authority'),
-      outputRoot: path.resolve('test-output'),
-      indexLabRoot: path.resolve('test-indexlab'),
-      runDataStorageState: { enabled: false },
-      env: {},
-      pathApi: path,
-      buildRunIdFn: () => 'test-run-skip',
+  it('omits direct-launch integers that fall below the supported minimum', (t) => {
+    const harness = createLaunchPlanHarness();
+    t.after(() => harness.cleanup());
+
+    const result = harness.buildPlan({
+      runtimeTraceFetchRing: 5,
     });
-    ok(result.ok);
-    // Value below minInput is SKIPPED entirely — env var not set
+
+    strictEqual(result.ok, true);
     strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, undefined);
   });
 
-  it('unsupported mode rejects with 400', () => {
-    const result = buildPlan({ mode: 'unsupported' });
+  it('rejects unsupported modes', (t) => {
+    const harness = createLaunchPlanHarness();
+    t.after(() => harness.cleanup());
+
+    const result = harness.buildPlan({ mode: 'unsupported' });
     strictEqual(result.ok, false);
     strictEqual(result.status, 400);
   });
 });
-

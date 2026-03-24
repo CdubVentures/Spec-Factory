@@ -9,6 +9,7 @@ import {
   getFreePort,
   waitForHttpReady,
 } from '../../api/tests/helpers/guiServerHttpHarness.js';
+import { skipIfSpawnEperm } from './helpers/spawnEperm.js';
 
 async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();
@@ -43,28 +44,33 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   _outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-output-'));
   await fs.mkdir(path.join(_helperRoot, '_runtime'), { recursive: true });
   _port = await getFreePort();
-  _proc = spawn(
-    process.execPath,
-    ['src/api/guiServer.js', '--port', String(_port), '--local'],
-    {
-      cwd: process.cwd(),
-      stdio: ['ignore', 'ignore', 'pipe'],
-      env: {
-        ...process.env,
-        HELPER_FILES_ROOT: _helperRoot,
-        LOCAL_OUTPUT_ROOT: _outputRoot,
-        OUTPUT_MODE: 'local',
-        LOCAL_MODE: 'true',
-      },
-    }
-  );
-  let stderr = '';
-  _proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
   t.after(() => { if (_proc && !_proc.killed) _proc.kill('SIGTERM'); });
   t.after(async () => {
     await fs.rm(_helperRoot, { recursive: true, force: true }).catch(() => {});
     await fs.rm(_outputRoot, { recursive: true, force: true }).catch(() => {});
   });
+  try {
+    _proc = spawn(
+      process.execPath,
+      ['src/api/guiServer.js', '--port', String(_port), '--local'],
+      {
+        cwd: process.cwd(),
+        stdio: ['ignore', 'ignore', 'pipe'],
+        env: {
+          ...process.env,
+          HELPER_FILES_ROOT: _helperRoot,
+          LOCAL_OUTPUT_ROOT: _outputRoot,
+          OUTPUT_MODE: 'local',
+          LOCAL_MODE: 'true',
+        },
+      }
+    );
+  } catch (error) {
+    if (skipIfSpawnEperm(t, error)) return;
+    throw error;
+  }
+  let stderr = '';
+  _proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
 
   _baseUrl = `http://127.0.0.1:${_port}/api/v1`;
   await waitForHttpReady(`${_baseUrl}/health`);

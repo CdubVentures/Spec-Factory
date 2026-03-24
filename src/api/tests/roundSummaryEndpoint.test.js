@@ -1,12 +1,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildRoundSummaryFromEvents } from '../roundSummary.js';
+import {
+  createNeedsetComputedEvent,
+  createRunCompletedEvent,
+  createWrappedEvent,
+} from './helpers/evidencePayloadFactories.js';
 
 describe('buildRoundSummaryFromEvents', () => {
   it('builds round summary from run_completed event', () => {
     const events = [
-      { event: 'needset_computed', needset_size: 25, total_fields: 60 },
-      { event: 'run_completed', confidence: 0.82, validated: true, missing_required_fields: ['weight', 'sensor'], critical_fields_below_pass_target: ['dpi'] }
+      createNeedsetComputedEvent(),
+      createRunCompletedEvent(),
     ];
     const result = buildRoundSummaryFromEvents(events);
     assert.equal(result.round_count, 1);
@@ -36,7 +41,12 @@ describe('buildRoundSummaryFromEvents', () => {
 
   it('handles run_completed without needset_computed', () => {
     const events = [
-      { event: 'run_completed', confidence: 0.7, validated: false, missing_required_fields: [], critical_fields_below_pass_target: [] }
+      createRunCompletedEvent({
+        confidence: 0.7,
+        validated: false,
+        missing_required_fields: [],
+        critical_fields_below_pass_target: [],
+      }),
     ];
     const result = buildRoundSummaryFromEvents(events);
     assert.equal(result.round_count, 1);
@@ -46,8 +56,15 @@ describe('buildRoundSummaryFromEvents', () => {
 
   it('handles wrapped run_completed with payload envelope', () => {
     const events = [
-      { event: 'needset_computed', payload: { needset_size: 30, total_fields: 55 } },
-      { event: 'run_completed', payload: { confidence: 0.85, validated: true, missing_required_fields: ['weight'], critical_fields_below_pass_target: [] } }
+      createWrappedEvent('needset_computed', createNeedsetComputedEvent({ needset_size: 30, total_fields: 55 })),
+      createWrappedEvent(
+        'run_completed',
+        createRunCompletedEvent({
+          confidence: 0.85,
+          missing_required_fields: ['weight'],
+          critical_fields_below_pass_target: [],
+        }),
+      ),
     ];
     const result = buildRoundSummaryFromEvents(events);
     assert.equal(result.round_count, 1);

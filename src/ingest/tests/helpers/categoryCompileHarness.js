@@ -9,7 +9,7 @@ import {
   saveFieldStudioMap,
   validateFieldStudioMap,
 } from '../../categoryCompile.js';
-import { getMouseFieldStudioSourcePath } from '../../../field-rules/tests/fixtures/mouseFieldStudioWorkbookFixture.js';
+import { createMouseFieldStudioSourcePath } from '../../../field-rules/tests/fixtures/mouseFieldStudioWorkbookFixture.js';
 
 export {
   compileCategoryFieldStudio,
@@ -18,8 +18,11 @@ export {
   validateFieldStudioMap,
 };
 
-export function mouseFieldStudioSourcePath() {
-  return getMouseFieldStudioSourcePath();
+export function mouseFieldStudioSourcePath(rootDir) {
+  if (rootDir) {
+    return createMouseFieldStudioSourcePath(rootDir);
+  }
+  return createMouseFieldStudioSourcePath(fs.mkdtempSync(path.join(os.tmpdir(), 'spec-factory-field-studio-')));
 }
 
 export function buildMouseFieldStudioMap(fieldStudioSourcePath) {
@@ -126,7 +129,7 @@ export async function createMouseCompileWorkspace({
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
 
-  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const fieldStudioSourcePath = localWorkbook
     ? path.join(categoryRoot, 'mouseData.xlsm')
     : sourceFieldStudioSourcePath;

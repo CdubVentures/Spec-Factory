@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -33,12 +33,42 @@ function makeS3Storage(keyMap = {}) {
   };
 }
 
+function configureArchivedRunLocation({
+  outputRoot = '/tmp',
+  runDataArchiveStorage = null,
+  runDataStorageState = null,
+} = {}) {
+  initArchivedRunLocationHelpers({
+    outputRoot,
+    runDataArchiveStorage,
+    runDataStorageState,
+  });
+}
+
+function createLocalArchiveState(overrides = {}) {
+  return {
+    enabled: true,
+    destinationType: 'local',
+    localDirectory: '/archive',
+    ...overrides,
+  };
+}
+
+function createS3ArchiveState(overrides = {}) {
+  return {
+    enabled: true,
+    destinationType: 's3',
+    s3Prefix: 'runs',
+    ...overrides,
+  };
+}
+
 // --- tests ---
 
 describe('initArchivedRunLocationHelpers', () => {
   it('sets state without throwing', () => {
     assert.doesNotThrow(() =>
-      initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null }),
+      configureArchivedRunLocation(),
     );
   });
 
@@ -46,15 +76,14 @@ describe('initArchivedRunLocationHelpers', () => {
     const tmpDir = await makeTmpDir();
     try {
       await writeRunMeta(tmpDir, 'mouse', 'prod-a', 'run-1');
-      initArchivedRunLocationHelpers({
+      configureArchivedRunLocation({
         outputRoot: tmpDir,
-        runDataArchiveStorage: null,
-        runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: tmpDir },
+        runDataStorageState: createLocalArchiveState({ localDirectory: tmpDir }),
       });
       const idx1 = await refreshArchivedRunDirIndex(true);
       assert.ok(idx1.size > 0, 'should have entries after scan');
 
-      initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
+      configureArchivedRunLocation();
       const idx2 = await refreshArchivedRunDirIndex(false);
       assert.equal(idx2.size, 0, 'should be empty after re-init with no archive');
     } finally {
@@ -64,46 +93,35 @@ describe('initArchivedRunLocationHelpers', () => {
 });
 
 describe('resolveArchivedLocalRoot', () => {
-  beforeEach(() => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
-  });
-
   it('returns empty string when state is null', () => {
+    configureArchivedRunLocation();
     assert.equal(resolveArchivedLocalRoot(), '');
   });
 
   it('returns empty string when enabled is false', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
-      runDataArchiveStorage: null,
-      runDataStorageState: { enabled: false, destinationType: 'local', localDirectory: '/archive' },
+    configureArchivedRunLocation({
+      runDataStorageState: createLocalArchiveState({ enabled: false }),
     });
     assert.equal(resolveArchivedLocalRoot(), '');
   });
 
   it('returns empty string when type is not local', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
-      runDataArchiveStorage: null,
-      runDataStorageState: { enabled: true, destinationType: 's3', localDirectory: '/archive' },
+    configureArchivedRunLocation({
+      runDataStorageState: createS3ArchiveState({ localDirectory: '/archive' }),
     });
     assert.equal(resolveArchivedLocalRoot(), '');
   });
 
   it('returns empty string when localDirectory is empty', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
-      runDataArchiveStorage: null,
-      runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: '' },
+    configureArchivedRunLocation({
+      runDataStorageState: createLocalArchiveState({ localDirectory: '' }),
     });
     assert.equal(resolveArchivedLocalRoot(), '');
   });
 
   it('returns resolved path for valid local config', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
-      runDataArchiveStorage: null,
-      runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: '/some/archive' },
+    configureArchivedRunLocation({
+      runDataStorageState: createLocalArchiveState({ localDirectory: '/some/archive' }),
     });
     const result = resolveArchivedLocalRoot();
     assert.equal(result, path.resolve('/some/archive'));
@@ -111,56 +129,48 @@ describe('resolveArchivedLocalRoot', () => {
 });
 
 describe('resolveArchivedS3Settings', () => {
-  beforeEach(() => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
-  });
-
   it('returns null when state is null', () => {
+    configureArchivedRunLocation();
     assert.equal(resolveArchivedS3Settings(), null);
   });
 
   it('returns null when enabled is false', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: makeS3Storage(),
-      runDataStorageState: { enabled: false, destinationType: 's3', s3Prefix: 'runs' },
+      runDataStorageState: createS3ArchiveState({ enabled: false }),
     });
     assert.equal(resolveArchivedS3Settings(), null);
   });
 
   it('returns null when type is not s3', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: makeS3Storage(),
-      runDataStorageState: { enabled: true, destinationType: 'local', s3Prefix: 'runs' },
+      runDataStorageState: createLocalArchiveState({ s3Prefix: 'runs' }),
     });
     assert.equal(resolveArchivedS3Settings(), null);
   });
 
   it('returns null when s3Prefix is empty', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: makeS3Storage(),
-      runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: '' },
+      runDataStorageState: createS3ArchiveState({ s3Prefix: '' }),
     });
     assert.equal(resolveArchivedS3Settings(), null);
   });
 
   it('returns null when storage has no listKeys', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: {},
-      runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: 'runs' },
+      runDataStorageState: createS3ArchiveState(),
     });
     assert.equal(resolveArchivedS3Settings(), null);
   });
 
   it('returns settings for valid s3 config', () => {
     const storage = makeS3Storage();
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: storage,
-      runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: 'data/runs' },
+      runDataStorageState: createS3ArchiveState({ s3Prefix: 'data/runs' }),
     });
     const result = resolveArchivedS3Settings();
     assert.deepEqual(result, { s3Prefix: 'data/runs', storage });
@@ -169,15 +179,13 @@ describe('resolveArchivedS3Settings', () => {
 
 describe('buildArchivedRunIndexRootToken', () => {
   it('returns empty string when no archive is configured', () => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
+    configureArchivedRunLocation();
     assert.equal(buildArchivedRunIndexRootToken(), '');
   });
 
   it('returns local token when only local is configured', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
-      runDataArchiveStorage: null,
-      runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: '/archive' },
+    configureArchivedRunLocation({
+      runDataStorageState: createLocalArchiveState(),
     });
     const token = buildArchivedRunIndexRootToken();
     assert.ok(token.startsWith('local:'), `expected local: prefix, got: ${token}`);
@@ -185,10 +193,9 @@ describe('buildArchivedRunIndexRootToken', () => {
   });
 
   it('returns s3 token when only s3 is configured', () => {
-    initArchivedRunLocationHelpers({
-      outputRoot: '/tmp',
+    configureArchivedRunLocation({
       runDataArchiveStorage: makeS3Storage(),
-      runDataStorageState: { enabled: true, destinationType: 's3', s3Prefix: 'data/runs' },
+      runDataStorageState: createS3ArchiveState({ s3Prefix: 'data/runs' }),
     });
     const token = buildArchivedRunIndexRootToken();
     assert.ok(token.startsWith('s3:'), `expected s3: prefix, got: ${token}`);
@@ -197,11 +204,8 @@ describe('buildArchivedRunIndexRootToken', () => {
 });
 
 describe('buildArchivedS3CacheRoot', () => {
-  beforeEach(() => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp/output', runDataArchiveStorage: null, runDataStorageState: null });
-  });
-
   it('builds correct path', () => {
+    configureArchivedRunLocation({ outputRoot: '/tmp/output' });
     const result = buildArchivedS3CacheRoot('run-abc-123');
     assert.ok(result.includes('_runtime'));
     assert.ok(result.includes('archived_runs'));
@@ -210,11 +214,13 @@ describe('buildArchivedS3CacheRoot', () => {
   });
 
   it('sanitizes special characters', () => {
+    configureArchivedRunLocation({ outputRoot: '/tmp/output' });
     const result = buildArchivedS3CacheRoot('run/with\\special chars!');
     assert.ok(!result.includes('!'), 'should not contain special chars in the runId segment');
   });
 
   it('falls back to "run" for empty runId', () => {
+    configureArchivedRunLocation({ outputRoot: '/tmp/output' });
     const result = buildArchivedS3CacheRoot('');
     assert.ok(result.endsWith(path.join('s3', 'run')));
   });
@@ -222,19 +228,23 @@ describe('buildArchivedS3CacheRoot', () => {
 
 describe('materializeArchivedRunLocation', () => {
   it('returns empty string for null location', async () => {
+    configureArchivedRunLocation();
     assert.equal(await materializeArchivedRunLocation(null, 'run-1'), '');
   });
 
   it('returns empty string for non-object location', async () => {
+    configureArchivedRunLocation();
     assert.equal(await materializeArchivedRunLocation('string', 'run-1'), '');
   });
 
   it('returns runDir for local type', async () => {
+    configureArchivedRunLocation();
     const result = await materializeArchivedRunLocation({ type: 'local', runDir: '/some/path' }, 'run-1');
     assert.equal(result, '/some/path');
   });
 
   it('returns empty string for unknown type', async () => {
+    configureArchivedRunLocation();
     const result = await materializeArchivedRunLocation({ type: 'unknown' }, 'run-1');
     assert.equal(result, '');
   });
@@ -242,7 +252,7 @@ describe('materializeArchivedRunLocation', () => {
 
 describe('refreshArchivedRunDirIndex', () => {
   it('returns empty Map when no archive configured', async () => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
+    configureArchivedRunLocation();
     const idx = await refreshArchivedRunDirIndex(false);
     assert.ok(idx instanceof Map);
     assert.equal(idx.size, 0);
@@ -254,10 +264,9 @@ describe('refreshArchivedRunDirIndex', () => {
       await writeRunMeta(tmpDir, 'mouse', 'prod-a', 'run-001');
       await writeRunMeta(tmpDir, 'mouse', 'prod-b', 'run-002');
 
-      initArchivedRunLocationHelpers({
+      configureArchivedRunLocation({
         outputRoot: tmpDir,
-        runDataArchiveStorage: null,
-        runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: tmpDir },
+        runDataStorageState: createLocalArchiveState({ localDirectory: tmpDir }),
       });
 
       const idx = await refreshArchivedRunDirIndex(true);
@@ -274,10 +283,9 @@ describe('refreshArchivedRunDirIndex', () => {
     const tmpDir = await makeTmpDir();
     try {
       await writeRunMeta(tmpDir, 'mouse', 'prod-a', 'run-ttl');
-      initArchivedRunLocationHelpers({
+      configureArchivedRunLocation({
         outputRoot: tmpDir,
-        runDataArchiveStorage: null,
-        runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: tmpDir },
+        runDataStorageState: createLocalArchiveState({ localDirectory: tmpDir }),
       });
 
       const idx1 = await refreshArchivedRunDirIndex(true);
@@ -291,7 +299,7 @@ describe('refreshArchivedRunDirIndex', () => {
 
 describe('resolveArchivedIndexLabRunDirectory', () => {
   it('returns empty string for empty runId', async () => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
+    configureArchivedRunLocation();
     assert.equal(await resolveArchivedIndexLabRunDirectory(''), '');
   });
 
@@ -299,10 +307,9 @@ describe('resolveArchivedIndexLabRunDirectory', () => {
     const tmpDir = await makeTmpDir();
     try {
       const runDir = await writeRunMeta(tmpDir, 'mouse', 'prod-a', 'run-resolve');
-      initArchivedRunLocationHelpers({
+      configureArchivedRunLocation({
         outputRoot: tmpDir,
-        runDataArchiveStorage: null,
-        runDataStorageState: { enabled: true, destinationType: 'local', localDirectory: tmpDir },
+        runDataStorageState: createLocalArchiveState({ localDirectory: tmpDir }),
       });
 
       const result = await resolveArchivedIndexLabRunDirectory('run-resolve');
@@ -313,7 +320,7 @@ describe('resolveArchivedIndexLabRunDirectory', () => {
   });
 
   it('returns empty string for unknown runId with no archive', async () => {
-    initArchivedRunLocationHelpers({ outputRoot: '/tmp', runDataArchiveStorage: null, runDataStorageState: null });
+    configureArchivedRunLocation();
     assert.equal(await resolveArchivedIndexLabRunDirectory('nonexistent'), '');
   });
 });

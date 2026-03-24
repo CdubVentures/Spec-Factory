@@ -18,7 +18,7 @@ test('compileCategoryFieldStudio accepts component_reference when component type
   const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const localFieldStudioSourcePath = path.join(categoryRoot, 'mouseData.xlsm');
   await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
   const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
@@ -59,7 +59,7 @@ test('saveFieldStudioMap writes canonical field studio control map', async () =>
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-save-'));
   const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
@@ -133,7 +133,7 @@ test('compileCategoryFieldStudio does not write legacy field studio map mirror',
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-field-studio-map-compile-only-'));
   const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
@@ -171,7 +171,7 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-'));
   const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
@@ -260,7 +260,7 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
   const helperRoot = path.join(tempRoot, 'category_authority');
   const categoryRoot = path.join(helperRoot, 'mouse');
   await fs.mkdir(categoryRoot, { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
 
   try {
@@ -320,7 +320,7 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-scratch-guard-'));
   const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
-  const fieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
   const workbookModeSensorSource = {
     type: 'sensor',
     mode: 'sheet',

@@ -28,9 +28,17 @@ function ensureRelativeSpecifier(fromFile, toFile) {
 function resolveSourceModule(baseDir, specifier) {
   const rawTarget = path.resolve(baseDir, specifier);
   const candidates = [rawTarget];
+  const parsedTarget = path.parse(rawTarget);
+  const hasExplicitJsLikeExtension = ['.js', '.jsx', '.mjs', '.cjs'].includes(parsedTarget.ext);
 
   for (const extension of SOURCE_EXTENSIONS) {
     candidates.push(`${rawTarget}${extension}`);
+  }
+
+  if (hasExplicitJsLikeExtension) {
+    for (const extension of SOURCE_EXTENSIONS) {
+      candidates.push(path.join(parsedTarget.dir, `${parsedTarget.name}${extension}`));
+    }
   }
 
   for (const extension of SOURCE_EXTENSIONS) {
@@ -48,6 +56,16 @@ function resolveSourceModule(baseDir, specifier) {
 
 function shouldStubAsset(specifier) {
   return ASSET_EXTENSIONS.some((extension) => specifier.endsWith(extension));
+}
+
+function stripSourceLikeExtension(specifier) {
+  const text = String(specifier || '');
+  for (const extension of SOURCE_EXTENSIONS) {
+    if (text.endsWith(extension)) {
+      return text.slice(0, -extension.length);
+    }
+  }
+  return text;
 }
 
 function transpileModule(source, filePath) {
@@ -91,6 +109,7 @@ function createReactStubWrapper(rawSpecifier) {
     `export const useEffect = inner.useEffect ?? (() => {});`,
     `export const useMemo = inner.useMemo ?? ((factory) => factory());`,
     `export const useRef = inner.useRef ?? ((value = null) => ({ current: value }));`,
+    `export const useId = inner.useId ?? (() => 'stub-id');`,
     `export const useState = inner.useState ?? ((initialValue) => [typeof initialValue === 'function' ? initialValue() : initialValue, () => {}]);`,
     `export const useCallback = inner.useCallback ?? ((fn) => fn);`,
     `export const useDeferredValue = inner.useDeferredValue ?? ((value) => value);`,
@@ -104,6 +123,7 @@ function createReactStubWrapper(rawSpecifier) {
     `  useEffect,`,
     `  useMemo,`,
     `  useRef,`,
+    `  useId,`,
     `  useState,`,
     `  useCallback,`,
     `  useDeferredValue,`,
@@ -387,6 +407,20 @@ export async function loadBundledModule(entryRelativePath, {
   const stubFiles = new Map();
   const genericBareStubRequirements = new Map();
 
+  function resolveStubSource(specifier) {
+    if (Object.prototype.hasOwnProperty.call(stubs, specifier)) {
+      return stubs[specifier];
+    }
+    const strippedSpecifier = stripSourceLikeExtension(specifier);
+    if (
+      strippedSpecifier !== specifier
+      && Object.prototype.hasOwnProperty.call(stubs, strippedSpecifier)
+    ) {
+      return stubs[strippedSpecifier];
+    }
+    return null;
+  }
+
   function stubOutputPath(specifier) {
     const hash = crypto.createHash('sha1').update(String(specifier || '')).digest('hex').slice(0, 12);
     return path.join(tmpDir, '__stubs__', `${hash}.mjs`);
@@ -418,8 +452,9 @@ export async function loadBundledModule(entryRelativePath, {
       if (importedSpecifier === specifier) continue;
       if (importedSpecifier.startsWith('node:') || isResolvedExternalSpecifier(importedSpecifier)) continue;
 
-      if (Object.prototype.hasOwnProperty.call(stubs, importedSpecifier)) {
-        const dependencyPath = await writeStub(importedSpecifier, stubs[importedSpecifier]);
+      const importedStubSource = resolveStubSource(importedSpecifier);
+      if (importedStubSource !== null) {
+        const dependencyPath = await writeStub(importedSpecifier, importedStubSource);
         stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
         continue;
       }
@@ -500,8 +535,9 @@ export async function loadBundledModule(entryRelativePath, {
       if (replacements.has(specifier)) continue;
       if (specifier.startsWith('node:') || isResolvedExternalSpecifier(specifier)) continue;
 
-      if (Object.prototype.hasOwnProperty.call(stubs, specifier)) {
-        const stubPath = await writeStub(specifier, stubs[specifier]);
+      const stubSource = resolveStubSource(specifier);
+      if (stubSource !== null) {
+        const stubPath = await writeStub(specifier, stubSource);
         replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
         continue;
       }

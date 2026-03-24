@@ -440,9 +440,8 @@ describe('Step 2: Relaxed contradiction detection', () => {
 describe('Step 4: Performance tuning defaults', () => {
   it('standard profile has tuned defaults', () => {
     const config = loadConfig({ runProfile: 'standard' });
-    assert.equal(config.perHostMinDelayMs, 1500);
-    assert.equal(config.pageGotoTimeoutMs, 12000);
-    assert.equal(config.pageNetworkIdleTimeoutMs, 2000);
+    // WHY: perHostMinDelayMs, pageGotoTimeoutMs, pageNetworkIdleTimeoutMs retired from registry —
+    // now hardcoded in crawl/frontier modules.
     assert.equal(config.searchProfileQueryCap, 10);
   });
 });

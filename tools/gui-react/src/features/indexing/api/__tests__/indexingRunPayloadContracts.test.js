@@ -189,12 +189,12 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
     category: 'mouse',
     productId: 'mouse-acme-orbit-x1',
     runtimeSettingsPayload: createPayload({
-      perHostMinDelayMs: 1500,
+      maxPagesPerDomain: 15,
     }),
     parsedValues: createParsedValues(),
     runControlPayload: {},
   });
 
   // WHY: These keys now flow through via the runtimeSettingsPayload spread
-  assert.equal(payload.perHostMinDelayMs, 1500);
+  assert.equal(payload.maxPagesPerDomain, 15);
 });

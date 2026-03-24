@@ -1,23 +1,23 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildEvidenceSearchPayload } from '../evidenceSearch.js';
+import {
+  createDedupeEvent,
+  createFtsResult,
+  createInventory,
+  createWrappedEvent,
+} from './helpers/evidencePayloadFactories.js';
 
 describe('buildEvidenceSearchPayload', () => {
   it('returns correct shape from inventory and dedupe events', () => {
     const result = buildEvidenceSearchPayload({
-      inventory: {
-        documentCount: 5,
-        chunkCount: 42,
-        factCount: 10,
-        uniqueHashes: 4,
-        dedupeHits: 3
-      },
+      inventory: createInventory(),
       dedupeEvents: [
-        { dedupe_outcome: 'new', chunks_indexed: 8 },
-        { dedupe_outcome: 'reused', chunks_indexed: 0 },
-        { dedupe_outcome: 'updated', chunks_indexed: 3 },
-        { dedupe_outcome: 'new', chunks_indexed: 5 },
-        { dedupe_outcome: 'reused', chunks_indexed: 0 }
+        createDedupeEvent(),
+        createDedupeEvent({ dedupe_outcome: 'reused', chunks_indexed: 0 }),
+        createDedupeEvent({ dedupe_outcome: 'updated', chunks_indexed: 3 }),
+        createDedupeEvent({ chunks_indexed: 5 }),
+        createDedupeEvent({ dedupe_outcome: 'reused', chunks_indexed: 0 }),
       ],
       query: 'weight'
     });
@@ -48,7 +48,7 @@ describe('buildEvidenceSearchPayload', () => {
 
   it('handles empty dedupeEvents', () => {
     const result = buildEvidenceSearchPayload({
-      inventory: { documentCount: 2, chunkCount: 10, factCount: 0, uniqueHashes: 2, dedupeHits: 0 },
+      inventory: createInventory({ documentCount: 2, chunkCount: 10, factCount: 0, uniqueHashes: 2, dedupeHits: 0 }),
       dedupeEvents: [],
       query: ''
     });
@@ -63,8 +63,8 @@ describe('buildEvidenceSearchPayload', () => {
       dedupeEvents: [],
       query: 'sensor',
       ftsResults: [
-        { snippet_id: 'sn_abc', url: 'https://example.com', tier: 1, text: 'PAW3950 sensor used', rank: -5.2 },
-        { snippet_id: 'sn_def', url: 'https://review.com', tier: 2, text: 'the sensor model is PAW3950', rank: -3.1 }
+        createFtsResult(),
+        createFtsResult({ snippet_id: 'sn_def', url: 'https://review.com', tier: 2, text: 'the sensor model is PAW3950', rank: -3.1 }),
       ]
     });
     assert.equal(result.fts_search.count, 2);
@@ -88,9 +88,9 @@ describe('buildEvidenceSearchPayload', () => {
     const result = buildEvidenceSearchPayload({
       inventory: null,
       dedupeEvents: [
-        { event: 'indexed_new', payload: { dedupe_outcome: 'new', chunks_indexed: 4 } },
-        { event: 'dedupe_hit', payload: { dedupe_outcome: 'reused', chunks_indexed: 0 } },
-        { event: 'dedupe_updated', payload: { dedupe_outcome: 'updated', chunks_indexed: 2 } }
+        createWrappedEvent('indexed_new', createDedupeEvent({ chunks_indexed: 4 })),
+        createWrappedEvent('dedupe_hit', createDedupeEvent({ dedupe_outcome: 'reused', chunks_indexed: 0 })),
+        createWrappedEvent('dedupe_updated', createDedupeEvent({ dedupe_outcome: 'updated', chunks_indexed: 2 })),
       ],
       query: 'weight'
     });
@@ -105,8 +105,8 @@ describe('buildEvidenceSearchPayload', () => {
     const result = buildEvidenceSearchPayload({
       inventory: null,
       dedupeEvents: [
-        { dedupe_outcome: 'new', chunks_indexed: 3 },
-        { event: 'dedupe_hit', payload: { dedupe_outcome: 'reused', chunks_indexed: 0 } }
+        createDedupeEvent({ chunks_indexed: 3 }),
+        createWrappedEvent('dedupe_hit', createDedupeEvent({ dedupe_outcome: 'reused', chunks_indexed: 0 })),
       ],
       query: ''
     });
@@ -122,7 +122,7 @@ describe('buildEvidenceSearchPayload', () => {
       dedupeEvents: [],
       query: 'test',
       ftsResults: [
-        { snippet_id: 'sn_long', url: 'https://example.com', tier: 1, text: longText, rank: -1.0 }
+        createFtsResult({ snippet_id: 'sn_long', text: longText, rank: -1.0 })
       ]
     });
     assert.equal(result.fts_search.rows[0].text.length, 500);
@@ -133,9 +133,9 @@ describe('buildEvidenceSearchPayload', () => {
     const result = buildEvidenceSearchPayload({
       inventory: null,
       dedupeEvents: [
-        { dedupe_outcome: 'new', chunks_indexed: 2 },
-        { dedupe_outcome: 'error', chunks_indexed: 0 },
-        { dedupe_outcome: '', chunks_indexed: 0 }
+        createDedupeEvent({ chunks_indexed: 2 }),
+        createDedupeEvent({ dedupe_outcome: 'error', chunks_indexed: 0 }),
+        createDedupeEvent({ dedupe_outcome: '', chunks_indexed: 0 }),
       ],
       query: ''
     });

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 
 import { createReviewCandidateRuntime } from '../reviewCandidateRuntime.js';
 
-test('candidateLooksReference recognizes reference and component-db candidates', () => {
-  const runtime = createReviewCandidateRuntime({
+function createReviewCandidateRuntimeHarness(overrides = {}) {
+  return createReviewCandidateRuntime({
     componentReviewPath: () => 'component_review.json',
     safeReadJson: async () => ({}),
     fs: { writeFile: async () => {} },
@@ -14,7 +14,12 @@ test('candidateLooksReference recognizes reference and component-db candidates',
     buildComponentReviewSyntheticCandidateId: ({ productId, fieldKey, reviewId, value }) => (
       `${productId}::${fieldKey}::${reviewId || 'pending'}::${value}`
     ),
+    ...overrides,
   });
+}
+
+test('candidateLooksReference recognizes reference and component-db candidates', () => {
+  const runtime = createReviewCandidateRuntimeHarness();
 
   assert.equal(runtime.candidateLooksReference('ref_sensor_1'), true);
   assert.equal(runtime.candidateLooksReference('cand-1', 'component_db'), true);
@@ -22,17 +27,7 @@ test('candidateLooksReference recognizes reference and component-db candidates',
 });
 
 test('annotateCandidatePrimaryReviews marks accepted and pending candidates from review rows', () => {
-  const runtime = createReviewCandidateRuntime({
-    componentReviewPath: () => 'component_review.json',
-    safeReadJson: async () => ({}),
-    fs: { writeFile: async () => {} },
-    getSpecDb: () => null,
-    config: {},
-    normalizePathToken: (value) => String(value || '').trim(),
-    buildComponentReviewSyntheticCandidateId: ({ productId, fieldKey, reviewId, value }) => (
-      `${productId}::${fieldKey}::${reviewId || 'pending'}::${value}`
-    ),
-  });
+  const runtime = createReviewCandidateRuntimeHarness();
   const candidates = [
     { candidate_id: 'cand-1', value: 'PAW3395' },
     { candidate_id: 'cand-2', value: 'HERO 25K' },
@@ -59,17 +54,7 @@ test('annotateCandidatePrimaryReviews marks accepted and pending candidates from
 });
 
 test('getPendingItemPrimaryCandidateIds excludes resolved reviews and empty values', () => {
-  const runtime = createReviewCandidateRuntime({
-    componentReviewPath: () => 'component_review.json',
-    safeReadJson: async () => ({}),
-    fs: { writeFile: async () => {} },
-    getSpecDb: () => null,
-    config: {},
-    normalizePathToken: (value) => String(value || '').trim(),
-    buildComponentReviewSyntheticCandidateId: ({ productId, fieldKey, reviewId, value }) => (
-      `${productId}::${fieldKey}::${reviewId || 'pending'}::${value}`
-    ),
-  });
+  const runtime = createReviewCandidateRuntimeHarness();
 
   const result = runtime.getPendingItemPrimaryCandidateIds({
     getCandidatesForProduct: () => ({

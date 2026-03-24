@@ -112,7 +112,6 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
       S3_BUCKET: 'spec-factory-bucket',
     },
   });
-  const calls = [];
   const archiveStorage = createRunDataArchiveStorage({
     runDataStorageState: {
       enabled: true,
@@ -127,14 +126,14 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
       localOutputRoot: path.resolve('workspace', 'output'),
     },
     createStorage(input) {
-      calls.push(input);
       return { ok: true, input };
     },
   });
 
   assert.equal(destinationType, 's3');
-  assert.deepEqual(calls, [
-    {
+  assert.deepEqual(archiveStorage, {
+    ok: true,
+    input: {
       outputMode: 's3',
       localMode: false,
       awsRegion: 'us-east-2',
@@ -144,10 +143,6 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
       localInputRoot: path.resolve('fixtures', 's3'),
       localOutputRoot: path.resolve('workspace', 'output'),
     },
-  ]);
-  assert.deepEqual(archiveStorage, {
-    ok: true,
-    input: calls[0],
   });
 });
 

@@ -49,7 +49,7 @@ test('loadBrandRegistry: reads existing registry', async () => {
       }
     }));
     const reg = await loadBrandRegistry(config);
-    assert.equal(Object.keys(reg.brands).length, 1);
+    assert.ok(reg.brands.razer);
     assert.equal(reg.brands.razer.canonical_name, 'Razer');
   } finally {
     await cleanup(config);

@@ -2,21 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudioRouteContext } from '../studioRouteContext.js';
 
-const EXPECTED_KEYS = [
-  'jsonRes', 'readJsonBody', 'config', 'HELPER_ROOT', 'OUTPUT_ROOT', 'safeReadJson',
-  'safeStat', 'listFiles', 'fs', 'path', 'sessionCache', 'loadFieldStudioMap',
-  'saveFieldStudioMap', 'validateFieldStudioMap', 'invalidateFieldRulesCache',
-  'buildFieldLabelsMap', 'getSpecDbReady', 'storage', 'loadCategoryConfig',
-  'startProcess', 'broadcastWs', 'reviewLayoutByCategory', 'loadProductCatalog',
-  'cleanVariant', 'runEnumConsistencyReview',
-];
-
-const CORE_KEYS = [
+const INJECTED_KEYS = [
   'jsonRes', 'readJsonBody', 'config', 'HELPER_ROOT', 'OUTPUT_ROOT', 'safeReadJson',
   'safeStat', 'listFiles', 'fs', 'path', 'sessionCache', 'invalidateFieldRulesCache',
   'getSpecDbReady', 'storage', 'loadCategoryConfig', 'startProcess', 'broadcastWs',
   'reviewLayoutByCategory', 'loadProductCatalog',
 ];
+
+const HELPER_KEYS = [
+  'loadFieldStudioMap', 'saveFieldStudioMap', 'validateFieldStudioMap',
+  'buildFieldLabelsMap', 'cleanVariant', 'runEnumConsistencyReview',
+];
+
+function createOptions(keys) {
+  return Object.fromEntries(keys.map((key) => [key, { key }]));
+}
 
 test('createStudioRouteContext throws TypeError on non-object input', () => {
   assert.throws(() => createStudioRouteContext(null), TypeError);
@@ -24,29 +24,26 @@ test('createStudioRouteContext throws TypeError on non-object input', () => {
   assert.throws(() => createStudioRouteContext([1]), TypeError);
 });
 
-test('createStudioRouteContext returns exactly the expected keys', () => {
-  const options = {};
-  for (const k of EXPECTED_KEYS) options[k] = { _sentinel: k };
-  options.extraProp = 'should not appear';
+test('createStudioRouteContext returns the required injected and helper surface', () => {
+  const options = createOptions(INJECTED_KEYS);
 
   const ctx = createStudioRouteContext(options);
-  assert.deepEqual(Object.keys(ctx).sort(), [...EXPECTED_KEYS].sort());
-});
 
-test('createStudioRouteContext preserves identity references for core props', () => {
-  const options = {};
-  for (const k of CORE_KEYS) options[k] = { _sentinel: k };
-
-  const ctx = createStudioRouteContext(options);
-  for (const k of CORE_KEYS) {
-    assert.equal(ctx[k], options[k], `${k} should be same reference`);
+  for (const key of INJECTED_KEYS) {
+    assert.equal(ctx[key], options[key], `${key} should preserve the injected reference`);
+  }
+  for (const key of HELPER_KEYS) {
+    assert.equal(typeof ctx[key], 'function', `${key} should be exposed as a helper function`);
   }
 });
 
 test('createStudioRouteContext does not forward extra properties', () => {
-  const options = {};
-  for (const k of EXPECTED_KEYS) options[k] = () => {};
-  options.extra = 'nope';
+  const options = {
+    ...createOptions(INJECTED_KEYS),
+    extra: 'nope',
+  };
+
   const ctx = createStudioRouteContext(options);
+
   assert.equal(Object.hasOwn(ctx, 'extra'), false);
 });

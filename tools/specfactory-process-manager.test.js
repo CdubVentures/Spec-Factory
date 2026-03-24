@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { skipIfSpawnEperm } from '../src/shared/tests/helpers/spawnEperm.js';
 
 import {
   buildProcessRows,
@@ -39,7 +40,7 @@ function findRow(rows, pid) {
   return rows.find((row) => row.pid === pid) || null;
 }
 
-function readShortcut(shortcutPath) {
+function readShortcut(t, shortcutPath) {
   const script = [
     '$w = New-Object -ComObject WScript.Shell',
     `$s = $w.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')`,
@@ -54,6 +55,7 @@ function readShortcut(shortcutPath) {
     encoding: 'utf8',
   });
 
+  if (skipIfSpawnEperm(t, run, 'sandbox blocks PowerShell shortcut inspection')) return null;
   assert.equal(run.status, 0, `expected shortcut inspection to succeed, stderr was: ${run.stderr || '(empty)'}`);
   return JSON.parse(run.stdout.trim());
 }
@@ -200,14 +202,15 @@ test('parseCliRequest requires a valid pid for kill and restart actions', () => 
   });
 });
 
-test('process manager ships as a root shortcut with a dedicated icon and no root bat', { skip: process.platform !== 'win32' }, () => {
+test('process manager ships as a root shortcut with a dedicated icon and no root bat', { skip: process.platform !== 'win32' }, (t) => {
   assert.equal(fs.existsSync(ROOT_BAT), false, 'expected the old root batch launcher to be removed');
   assert.equal(fs.existsSync(ROOT_PYW), false, 'expected the root pyw launcher to be moved out of the repo root');
   assert.equal(fs.existsSync(LAUNCHER_PYW), true, 'expected the hidden python launcher to live under tools\\launchers');
   assert.equal(fs.existsSync(LAUNCHER_ICON), true, 'expected the process manager icon to live under tools\\launchers\\icons');
   assert.equal(fs.existsSync(ROOT_SHORTCUT), true, 'expected a root shortcut for the process manager');
 
-  const shortcut = readShortcut(ROOT_SHORTCUT);
+  const shortcut = readShortcut(t, ROOT_SHORTCUT);
+  if (!shortcut) return;
   assert.equal(path.normalize(shortcut.TargetPath), path.normalize(LAUNCHER_PYW));
   assert.equal(path.normalize(shortcut.WorkingDirectory), path.normalize(ROOT));
   assert.ok(

@@ -3,94 +3,110 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const EXPECTED_KEYS = [
-  // Config & paths
-  'config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD',
-  'storage', 'runDataStorageState', 'getIndexLabRoot',
-  // Session & SpecDb
-  'sessionCache', 'resolveCategoryAlias',
-  'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady',
-  // Realtime
-  'broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame',
-  // Process
-  'processStatus', 'startProcess', 'stopProcess', 'isProcessRunning',
-  'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack',
-  // HTTP primitives (pass-through)
-  'jsonRes', 'corsHeaders', 'readJsonBody',
-  'toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue',
-  // File I/O (pass-through)
-  'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin',
-  'canonicalSlugify', 'invalidateFieldRulesCache',
-  // Shared domain (pass-through)
-  'loadProductCatalog', 'loadCategoryConfig',
-  // Review grid state
-  'ensureGridKeyReviewState', 'resolveKeyReviewForLaneMutation',
-  'markPrimaryLaneReviewedInItemState', 'syncItemFieldStateFromPrimaryLaneAccept',
-  'syncPrimaryLaneAcceptFromItemSelection',
-  'purgeTestModeCategoryState', 'resetTestModeSharedReviewState',
-  'resetTestModeProductReviewState',
-  // Review candidate
-  'normalizeLower', 'isMeaningfulValue', 'candidateLooksReference',
-  'annotateCandidatePrimaryReviews', 'getPendingItemPrimaryCandidateIds',
-  'getPendingComponentSharedCandidateIdsAsync', 'getPendingEnumSharedCandidateIds',
-  'syncSyntheticCandidatesFromComponentReview',
-  'remapPendingComponentReviewItemsForNameChange', 'propagateSharedLaneDecision',
+const REQUIRED_BOOTSTRAP_KEYS = [
+  'config',
+  'configGate',
+  'PORT',
+  'HELPER_ROOT',
+  'OUTPUT_ROOT',
+  'INDEXLAB_ROOT',
+  'LAUNCH_CWD',
+  'storage',
+  'runDataStorageState',
+  'getIndexLabRoot',
+  'broadcastWs',
+  'setupWatchers',
+  'attachWebSocketUpgrade',
+  'getLastScreencastFrame',
+  'processStatus',
+  'startProcess',
+  'stopProcess',
+  'isProcessRunning',
+  'waitForProcessExit',
+  'getSearxngStatus',
+  'startSearxngStack',
+  'jsonRes',
+  'corsHeaders',
+  'readJsonBody',
+  'safeReadJson',
+  'safeStat',
+  'listFiles',
+  'listDirs',
+  'readJsonlEvents',
+  'safeJoin',
+  'canonicalSlugify',
+  'invalidateFieldRulesCache',
+  'loadProductCatalog',
+  'loadCategoryConfig',
+  'buildCatalog',
+  'patchCompiledComponentDb',
   'markEnumSuggestionStatusBound',
-  // Catalog
-  'buildCatalog', 'patchCompiledComponentDb',
 ];
 
-// WHY: serverBootstrap uses `...domain` spread for phase 3 keys,
-// so we parse both the assembler return and the domain module return.
-function extractReturnKeys(src) {
-  const returnMatch = src.match(/return\s*\{([\s\S]*?)\};\s*\}/);
+const REQUIRED_ENVIRONMENT_KEYS = [
+  'config',
+  'configGate',
+  'PORT',
+  'HELPER_ROOT',
+  'OUTPUT_ROOT',
+  'INDEXLAB_ROOT',
+  'LAUNCH_CWD',
+  'storage',
+  'runDataStorageState',
+  'runDataArchiveStorage',
+  'getRunDataArchiveStorage',
+  'resolveProjectPath',
+  'cleanVariant',
+  'catalogKey',
+  'markEnumSuggestionStatusBound',
+  'userSettings',
+];
+
+function extractReturnKeys(sourceText) {
+  const returnMatch = sourceText.match(/return\s*\{([\s\S]*?)\};\s*\}/);
   if (!returnMatch) return { keys: [], spreads: [] };
-  const returnBody = returnMatch[1];
-  const stripped = returnBody.replace(/\/\/.*$/gm, '');
-  const spreads = [...stripped.matchAll(/\.\.\.(\w+)/g)].map(m => m[1]);
-  const withoutSpreads = stripped.replace(/\.\.\.\w+/g, '');
-  const keyMatches = withoutSpreads.match(/\b([a-zA-Z_]\w*)\b/g) || [];
-  return { keys: [...new Set(keyMatches)], spreads };
+  const returnBody = returnMatch[1].replace(/\/\/.*$/gm, '');
+  const spreads = [...returnBody.matchAll(/\.\.\.(\w+)/g)].map((match) => match[1]);
+  const withoutSpreads = returnBody.replace(/\.\.\.\w+/g, '');
+  const keys = withoutSpreads.match(/\b([a-zA-Z_]\w*)\b/g) || [];
+  return { keys: [...new Set(keys)], spreads };
 }
 
-test('characterization: serverBootstrap return object has exactly 65 keys', () => {
-  const assemblerSrc = fs.readFileSync(
-    path.resolve('src/api/serverBootstrap.js'), 'utf8'
-  );
-  const { keys: directKeys, spreads } = extractReturnKeys(assemblerSrc);
-
+function collectBootstrapReturnKeys() {
+  const assemblerSource = fs.readFileSync(path.resolve('src/api/serverBootstrap.js'), 'utf8');
+  const { keys: directKeys, spreads } = extractReturnKeys(assemblerSource);
   const spreadKeys = [];
+
   for (const spreadName of spreads) {
-    if (spreadName === 'domain') {
-      const domainSrc = fs.readFileSync(
-        path.resolve('src/api/bootstrap/createBootstrapDomainRuntimes.js'), 'utf8'
-      );
-      const { keys } = extractReturnKeys(domainSrc);
-      spreadKeys.push(...keys);
-    }
+    if (spreadName !== 'domain') continue;
+    const domainSource = fs.readFileSync(
+      path.resolve('src/api/bootstrap/createBootstrapDomainRuntimes.js'),
+      'utf8',
+    );
+    spreadKeys.push(...extractReturnKeys(domainSource).keys);
   }
 
-  const actualKeys = [...new Set([...directKeys, ...spreadKeys])];
-  assert.equal(actualKeys.length, 65, `expected 65 keys, got ${actualKeys.length}: ${actualKeys.join(', ')}`);
-  const expectedSet = new Set(EXPECTED_KEYS);
-  const actualSet = new Set(actualKeys);
-  for (const k of expectedSet) {
-    assert.ok(actualSet.has(k), `missing key: ${k}`);
-  }
-  for (const k of actualSet) {
-    assert.ok(expectedSet.has(k), `unexpected key: ${k}`);
+  return [...new Set([...directKeys, ...spreadKeys])];
+}
+
+test('serverBootstrap exposes the required route-context contract', () => {
+  const bootstrapKeys = collectBootstrapReturnKeys();
+
+  assert.equal(bootstrapKeys.length, new Set(bootstrapKeys).size, 'bootstrap return keys must be unique');
+  for (const key of REQUIRED_BOOTSTRAP_KEYS) {
+    assert.ok(bootstrapKeys.includes(key), `missing bootstrap capability: ${key}`);
   }
 });
 
-test('characterization: EXPECTED_KEYS has exactly 65 entries', () => {
-  assert.equal(EXPECTED_KEYS.length, 65);
-  assert.equal(new Set(EXPECTED_KEYS).size, 65, 'duplicate keys in EXPECTED_KEYS');
-});
-
-test('characterization: createBootstrapEnvironment returns configGate with gate API', () => {
-  const envSrc = fs.readFileSync(
-    path.resolve('src/api/bootstrap/createBootstrapEnvironment.js'), 'utf8'
+test('createBootstrapEnvironment exposes the required environment contract', () => {
+  const source = fs.readFileSync(
+    path.resolve('src/api/bootstrap/createBootstrapEnvironment.js'),
+    'utf8',
   );
-  assert.ok(envSrc.includes('configGate'), 'createBootstrapEnvironment must export configGate');
-  assert.ok(envSrc.includes('createConfigMutationGate'), 'must import createConfigMutationGate');
+  const environmentKeys = extractReturnKeys(source).keys;
+
+  assert.equal(environmentKeys.length, new Set(environmentKeys).size, 'environment return keys must be unique');
+  for (const key of REQUIRED_ENVIRONMENT_KEYS) {
+    assert.ok(environmentKeys.includes(key), `missing environment capability: ${key}`);
+  }
 });

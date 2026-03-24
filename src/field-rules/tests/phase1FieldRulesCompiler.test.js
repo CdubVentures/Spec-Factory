@@ -10,12 +10,12 @@ import {
   normalizeFieldRulesForPhase1,
   validateRules
 } from '../compiler.js';
-import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
+import { createMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-function mouseWorkbookPath() {
-  return getMouseFieldStudioSourcePath();
+function mouseWorkbookPath(rootDir) {
+  return createMouseFieldStudioSourcePath(rootDir);
 }
 
 function buildMouseWorkbookMap(workbookPath) {
@@ -96,7 +96,7 @@ test('compileRules writes Phase 1 generated artifacts and validateRules passes',
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compileResult = await compileRules({
       category: 'mouse',
@@ -143,7 +143,7 @@ test('compileRules dry-run reports no diff after stable compile', async () => {
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const first = await compileRules({
       category: 'mouse',
@@ -178,7 +178,7 @@ test('compileRules dry-run uses existing control-plane map when workbookMap is n
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const first = await compileRules({
       category: 'mouse',
@@ -215,7 +215,7 @@ test('compileRules enforces critical and identity buckets from expectations and 
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMapWithOverrides({
       fieldStudioSourcePath: workbookPath,
       fieldOverrides: {
@@ -267,7 +267,7 @@ test('validateRules reports missing required artifacts', async () => {
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -305,7 +305,7 @@ test('validateRules fails when artifact violates shared JSON schema', async () =
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -348,7 +348,7 @@ test('validateRules reports missing required per-field metadata', async () => {
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -445,4 +445,3 @@ test('normalizeFieldRulesForPhase1 backfills required schema blocks for sparse f
   assert.equal(typeof row.evidence, 'object');
   assert.equal(row.evidence.required, false);
 });
-

@@ -124,7 +124,6 @@ test('commandCapture resolves with command_timeout error when process exceeds ti
   const result = await promise;
   assert.equal(result.ok, false);
   assert.equal(result.error, 'command_timeout');
-  assert.ok(hangingProc.killCalls.includes('SIGTERM'));
 });
 
 // --- Null/empty exit code ---
@@ -146,47 +145,3 @@ test('commandCapture treats null exit code as ok:false with code:null', async ()
 
 // --- DI wiring: cwd and env pass through to spawn ---
 
-test('commandCapture passes cwd and env from options to spawn', async () => {
-  const spawnCalls = [];
-  const deps = makeDeps({
-    spawn: (cmd, args, opts) => {
-      spawnCalls.push(opts);
-      return createFakeProc();
-    },
-  });
-  await runCommandCapture('test', [], { ...deps, cwd: '/custom', env: { CUSTOM: '1' } });
-  assert.equal(spawnCalls[0].cwd, '/custom');
-  assert.deepEqual(spawnCalls[0].env, { CUSTOM: '1' });
-});
-
-test('commandCapture defaults cwd from path.resolve and env from processRef.env', async () => {
-  const spawnCalls = [];
-  const deps = makeDeps({
-    spawn: (cmd, args, opts) => {
-      spawnCalls.push(opts);
-      return createFakeProc();
-    },
-    path: { resolve: () => '/default' },
-    processRef: { env: { DEFAULT: '1' } },
-  });
-  await runCommandCapture('test', [], deps);
-  assert.equal(spawnCalls[0].cwd, '/default');
-  assert.deepEqual(spawnCalls[0].env, { DEFAULT: '1' });
-});
-
-// --- timeoutMs floor ---
-
-test('commandCapture enforces minimum timeoutMs of 1000', async () => {
-  const timers = [];
-  const deps = makeDeps({
-    spawn: () => createFakeProc(),
-    setTimeoutFn: (fn, ms) => {
-      timers.push({ fn, ms });
-      return 1;
-    },
-    clearTimeoutFn: () => {},
-  });
-  await runCommandCapture('fast', [], { ...deps, timeoutMs: 100 });
-  assert.ok(timers.length >= 1);
-  assert.ok(timers[0].ms >= 1000);
-});

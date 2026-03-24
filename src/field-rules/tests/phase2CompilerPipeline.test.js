@@ -13,12 +13,12 @@ import {
   rulesDiff,
   watchCompileRules
 } from '../compiler.js';
-import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
+import { createMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-function mouseWorkbookPath() {
-  return getMouseFieldStudioSourcePath();
+function mouseWorkbookPath(rootDir) {
+  return createMouseFieldStudioSourcePath(rootDir);
 }
 
 function buildMouseWorkbookMap(workbookPath) {
@@ -69,7 +69,7 @@ test('compileRulesAll discovers and compiles initialized categories', async () =
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const single = await compileRules({
       category: 'mouse',
@@ -117,7 +117,7 @@ test('readCompileReport returns report and rulesDiff classifies change safety', 
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -157,7 +157,7 @@ test('compileRules emits key_migrations with semver metadata and migration list'
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -183,7 +183,7 @@ test('watchCompileRules runs initial compile and stops on maxEvents', async () =
   const helperRoot = path.join(root, 'category_authority');
   const categoriesRoot = path.join(root, 'categories');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -211,4 +211,3 @@ test('watchCompileRules runs initial compile and stops on maxEvents', async () =
     await fs.rm(root, { recursive: true, force: true });
   }
 });
-

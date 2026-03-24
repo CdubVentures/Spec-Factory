@@ -3,32 +3,31 @@ import assert from 'node:assert/strict';
 
 import { createInfraRouteContext } from '../infraRouteContext.js';
 
-test('characterization: createInfraRouteContext returns exactly 21 keys', () => {
-  const infraPropNames = [
-    'jsonRes', 'readJsonBody', 'listDirs', 'canonicalSlugify', 'HELPER_ROOT',
-    'DIST_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'fs', 'path',
-    'runDataStorageState', 'getSearxngStatus', 'startSearxngStack', 'startProcess',
-    'stopProcess', 'processStatus', 'isProcessRunning', 'waitForProcessExit',
-    'broadcastWs',
-  ];
+const INJECTED_KEYS = [
+  'jsonRes', 'readJsonBody', 'listDirs', 'canonicalSlugify', 'HELPER_ROOT',
+  'DIST_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'fs', 'path',
+  'runDataStorageState', 'getSearxngStatus', 'startSearxngStack', 'startProcess',
+  'stopProcess', 'processStatus', 'isProcessRunning', 'waitForProcessExit',
+  'broadcastWs',
+];
 
-  const options = {};
-  for (const name of infraPropNames) {
-    options[name] = { _sentinel: name };
-  }
+function createOptions(keys) {
+  return Object.fromEntries(keys.map((key) => [key, { key }]));
+}
+
+test('createInfraRouteContext returns the required injected surface and defaults', () => {
+  const options = createOptions(INJECTED_KEYS);
 
   const ctx = createInfraRouteContext(options);
-  const keys = Object.keys(ctx);
 
-  // 19 from options + fetchApi + processRef defaults = 21
-  assert.equal(keys.length, 21, `expected 21 keys, got ${keys.length}`);
-
-  for (const name of infraPropNames) {
-    assert.equal(ctx[name], options[name], `${name} should be same reference`);
+  for (const key of INJECTED_KEYS) {
+    assert.equal(ctx[key], options[key], `${key} should preserve the injected reference`);
   }
+  assert.equal(ctx.fetchApi, globalThis.fetch);
+  assert.equal(ctx.processRef, process);
 });
 
-test('characterization: createInfraRouteContext throws TypeError on non-object input', () => {
+test('createInfraRouteContext throws TypeError on non-object input', () => {
   assert.throws(() => createInfraRouteContext(null), TypeError);
   assert.throws(() => createInfraRouteContext('string'), TypeError);
   assert.throws(() => createInfraRouteContext([1, 2]), TypeError);

@@ -1,43 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function loadSettingsStatusModule() {
-  const esbuild = await import('esbuild');
-  const entryPath = path.resolve(
-    __dirname,
-    '../../../../../../..',
-    'tools',
-    'gui-react',
-    'src',
-    'shared',
-    'ui',
-    'feedback',
-    'settingsStatus.ts',
+  return loadBundledModule(
+    'tools/gui-react/src/shared/ui/feedback/settingsStatus.ts',
+    { prefix: 'settings-status-contract-' },
   );
-  const result = await esbuild.build({
-    entryPoints: [entryPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts' },
-  });
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'settings-status-contract-'));
-  const tmpFile = path.join(tmpDir, 'settingsStatus.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-
-  try {
-    return await import(`file://${tmpFile.replace(/\\/g, '/')}?v=${Date.now()}-${Math.random()}`);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
 }
 
 test('indexed runtime and convergence status text keeps error and partial ahead of dirty labels', async () => {

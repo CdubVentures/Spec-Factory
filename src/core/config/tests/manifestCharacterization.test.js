@@ -2,50 +2,45 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONFIG_MANIFEST,
-  CONFIG_MANIFEST_VERSION,
-  CONFIG_MANIFEST_KEYS,
   CONFIG_MANIFEST_DEFAULTS,
+  CONFIG_MANIFEST_KEYS,
+  CONFIG_MANIFEST_VERSION,
 } from '../manifest.js';
 
-// WHY: Golden-master characterization test. Locks the EXACT manifest output
-// before the P1 registry-derives-manifest refactor. Any change to manifest
-// shape, key count, group assignment, or defaults will fail here first.
+const REQUIRED_GROUP_IDS = [
+  'core',
+  'caching',
+  'storage',
+  'security',
+  'llm',
+  'discovery',
+  'runtime',
+  'observability',
+  'paths',
+  'misc',
+];
 
-describe('manifest characterization (golden master)', () => {
-  it('version is 1', () => {
+describe('manifest contract', () => {
+  it('publishes the current manifest version', () => {
     assert.equal(CONFIG_MANIFEST_VERSION, 1);
   });
 
-  it('has exactly 10 groups in canonical order', () => {
-    assert.deepStrictEqual(
-      CONFIG_MANIFEST.map(g => g.id),
-      ['core', 'caching', 'storage', 'security', 'llm', 'discovery', 'runtime', 'observability', 'paths', 'misc']
-    );
+  it('includes each required manifest group', () => {
+    const groupIds = CONFIG_MANIFEST.map((group) => group.id);
+
+    for (const id of REQUIRED_GROUP_IDS) {
+      assert.ok(groupIds.includes(id), `missing manifest group: ${id}`);
+    }
   });
 
-  it('has exactly 209 total keys', () => {
-    assert.equal(CONFIG_MANIFEST_KEYS.length, 209);
-  });
-
-  it('per-group entry counts match snapshot', () => {
-    const counts = Object.fromEntries(CONFIG_MANIFEST.map(g => [g.id, g.entries.length]));
-    assert.deepStrictEqual(counts, {
-      core: 5,
-      caching: 3,
-      storage: 17,
-      security: 2,
-      llm: 69,
-      discovery: 4,
-      runtime: 49,
-      observability: 1,
-      paths: 20,
-      misc: 39,
-    });
-  });
-
-  it('every entry has the required manifest shape', () => {
+  it('publishes well-formed entries with unique keys', () => {
     const requiredFields = ['key', 'defaultValue', 'type', 'secret', 'userMutable', 'description'];
+    const allKeys = [];
+
     for (const group of CONFIG_MANIFEST) {
+      assert.ok(group.title.length > 0, `${group.id} has empty title`);
+      assert.ok(group.notes.length > 0, `${group.id} has empty notes`);
+
       for (const entry of group.entries) {
         for (const field of requiredFields) {
           assert.ok(field in entry, `${group.id}/${entry.key} missing ${field}`);
@@ -56,23 +51,25 @@ describe('manifest characterization (golden master)', () => {
         assert.equal(typeof entry.secret, 'boolean');
         assert.equal(typeof entry.userMutable, 'boolean');
         assert.equal(typeof entry.description, 'string');
+        allKeys.push(entry.key);
       }
     }
+
+    assert.equal(allKeys.length, new Set(allKeys).size, 'manifest keys must be unique');
   });
 
-  it('CONFIG_MANIFEST_DEFAULTS has exactly 209 keys', () => {
-    assert.equal(Object.keys(CONFIG_MANIFEST_DEFAULTS).length, 209);
+  it('keeps CONFIG_MANIFEST_KEYS aligned with the manifest entry keys', () => {
+    const manifestKeys = CONFIG_MANIFEST.flatMap((group) => group.entries.map((entry) => entry.key));
+    const manifestKeySet = new Set(manifestKeys);
+    const exportedKeySet = new Set(CONFIG_MANIFEST_KEYS);
+
+    assert.equal(CONFIG_MANIFEST_KEYS.length, exportedKeySet.size, 'CONFIG_MANIFEST_KEYS must be unique');
+    assert.deepEqual([...exportedKeySet].sort(), [...manifestKeySet].sort());
   });
 
-  it('no duplicate keys across groups', () => {
-    const allKeys = CONFIG_MANIFEST.flatMap(g => g.entries.map(e => e.key));
-    assert.equal(allKeys.length, new Set(allKeys).size);
-  });
-
-  it('group titles and notes are non-empty strings', () => {
-    for (const group of CONFIG_MANIFEST) {
-      assert.ok(group.title.length > 0, `${group.id} has empty title`);
-      assert.ok(group.notes.length > 0, `${group.id} has empty notes`);
+  it('provides defaults for every exported manifest key', () => {
+    for (const key of CONFIG_MANIFEST_KEYS) {
+      assert.ok(Object.hasOwn(CONFIG_MANIFEST_DEFAULTS, key), `missing default for ${key}`);
     }
   });
 });

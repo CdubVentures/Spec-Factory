@@ -93,7 +93,7 @@ describe('deriveMiscGroupEntries', () => {
     const spot = [
       // WHY: CONCURRENCY removed — fetchConcurrency retired from registry.
       { envKey: 'MAX_RUN_SECONDS', expectedDefault: '480' },
-      { envKey: 'PAGE_GOTO_TIMEOUT_MS', expectedDefault: '12000' },
+      { envKey: 'GOOGLE_SEARCH_TIMEOUT_MS', expectedDefault: '30000' },
       { envKey: 'DISCOVERY_ENABLED', expectedDefault: 'true' },
       { envKey: 'SEARCH_PROFILE_QUERY_CAP', expectedDefault: '10' },
     ];

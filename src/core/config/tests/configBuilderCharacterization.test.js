@@ -1,19 +1,10 @@
-// WHY: Golden-master characterization test for buildRawConfig.
-// Captures the SHAPE and default VALUES of the cfg object before Phase 3 rewrite.
-// Any key missing or value changed after the rewrite will be caught here.
-
-import { describe, it, before, after } from 'node:test';
-import { ok, strictEqual, deepStrictEqual } from 'node:assert';
+import { describe, it } from 'node:test';
+import { ok, strictEqual } from 'node:assert';
 import { buildRawConfig, createManifestApplicator } from '../configBuilder.js';
-
-// WHY: buildRawConfig reads process.env. We must control it for deterministic output.
-// Save the full env, clear it, set only the minimum needed, then restore.
 
 const SAVED_ENV = { ...process.env };
 
 function withCleanEnv(overrides = {}) {
-  // WHY: Can't fully wipe process.env on Windows (some vars are required).
-  // Instead, clear all SPEC_FACTORY / app-relevant vars and set overrides.
   const appPrefixes = [
     'AWS_', 'S3_', 'MAX_', 'LLM_', 'OPENAI_', 'DEEPSEEK_', 'GEMINI_',
     'ANTHROPIC_', 'SEARCH_', 'SEARXNG_', 'SERPER_', 'FRONTIER_', 'CRAWLEE_',
@@ -26,8 +17,9 @@ function withCleanEnv(overrides = {}) {
     'PREFER_', 'CONCURRENCY', 'PER_HOST_', 'USER_AGENT', 'ELO_', 'SERP_',
     'CHART_', 'DISCOVERY_', 'RECRAWL_', 'WRITE_',
   ];
+
   for (const key of Object.keys(process.env)) {
-    if (appPrefixes.some(p => key.startsWith(p))) {
+    if (appPrefixes.some((prefix) => key.startsWith(prefix))) {
       delete process.env[key];
     }
   }
@@ -35,44 +27,41 @@ function withCleanEnv(overrides = {}) {
 }
 
 function restoreEnv() {
-  // Remove any keys we added
   for (const key of Object.keys(process.env)) {
     if (!(key in SAVED_ENV)) {
       delete process.env[key];
     }
   }
-  // Restore original values
   Object.assign(process.env, SAVED_ENV);
 }
 
-describe('configBuilder characterization — golden master', () => {
-  let cfg;
-  let explicitEnvKeys;
+function createConfigBuilderHarness(overrides = {}) {
+  withCleanEnv(overrides);
+  const manifestApplicator = createManifestApplicator({});
+  const result = buildRawConfig({ manifestApplicator });
 
-  before(() => {
-    withCleanEnv();
-    const manifestApplicator = createManifestApplicator({});
-    const result = buildRawConfig({ manifestApplicator });
-    cfg = result.cfg;
-    explicitEnvKeys = result.explicitEnvKeys;
+  return {
+    cfg: result.cfg,
+    explicitEnvKeys: result.explicitEnvKeys,
+    cleanup() {
+      restoreEnv();
+    },
+  };
+}
+
+describe('configBuilder characterization contract', () => {
+  it('returns a non-null config object with the expected baseline size', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
+    ok(harness.cfg && typeof harness.cfg === 'object');
+    ok(Object.keys(harness.cfg).length >= 107);
   });
 
-  after(() => {
-    restoreEnv();
-  });
+  it('exposes the expected string config fields as strings', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
 
-  it('cfg is a non-null object', () => {
-    ok(cfg && typeof cfg === 'object', 'cfg must be a non-null object');
-  });
-
-  it('cfg has at least 120 keys', () => {
-    const keyCount = Object.keys(cfg).length;
-    ok(keyCount >= 107, `expected >= 107 cfg keys, got ${keyCount}`);
-  });
-
-  // --- Shape verification: every key has the expected type ---
-
-  it('all string keys are strings', () => {
     const expectedStrings = [
       'awsRegion', 's3Bucket', 's3InputPrefix', 's3OutputPrefix',
       'userAgent',
@@ -89,12 +78,16 @@ describe('configBuilder characterization — golden master', () => {
       'chatmockDir', 'chatmockComposeFile', 'categoryAuthorityRoot',
       'automationQueueStorageEngine',
     ];
+
     for (const key of expectedStrings) {
-      strictEqual(typeof cfg[key], 'string', `cfg.${key} should be string, got ${typeof cfg[key]}`);
+      strictEqual(typeof harness.cfg[key], 'string', `cfg.${key} should be string`);
     }
   });
 
-  it('all integer keys are numbers', () => {
+  it('exposes the expected integer config fields as finite numbers', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
     const expectedInts = [
       'maxPagesPerDomain',
       'serpSelectorUrlCap', 'domainClassifierUrlCap',
@@ -108,13 +101,17 @@ describe('configBuilder characterization — golden master', () => {
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs',
     ];
+
     for (const key of expectedInts) {
-      strictEqual(typeof cfg[key], 'number', `cfg.${key} should be number, got ${typeof cfg[key]}`);
-      ok(Number.isFinite(cfg[key]), `cfg.${key} should be finite, got ${cfg[key]}`);
+      strictEqual(typeof harness.cfg[key], 'number', `cfg.${key} should be number`);
+      ok(Number.isFinite(harness.cfg[key]), `cfg.${key} should be finite`);
     }
   });
 
-  it('all boolean keys are booleans', () => {
+  it('exposes the expected boolean config fields as booleans', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
     const expectedBools = [
       'localMode', 'dryRun', 'mirrorToS3', 'mirrorToS3Input',
       'writeMarkdownSummary', 'discoveryEnabled',
@@ -127,55 +124,64 @@ describe('configBuilder characterization — golden master', () => {
       'eventsJsonWrite', 'runtimeScreencastEnabled',
       'chartExtractionEnabled',
     ];
+
     for (const key of expectedBools) {
-      strictEqual(typeof cfg[key], 'boolean', `cfg.${key} should be boolean, got ${typeof cfg[key]}`);
+      strictEqual(typeof harness.cfg[key], 'boolean', `cfg.${key} should be boolean`);
     }
   });
 
-  it('all object keys are objects', () => {
-    const expectedObjects = [
+  it('exposes the expected object config fields as objects', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
+    for (const key of [
       'retrievalInternalsMap',
       'searchProfileCapMap',
       'llmModelPricingMap',
       'llmModelOutputTokenMap',
-    ];
-    for (const key of expectedObjects) {
-      ok(cfg[key] && typeof cfg[key] === 'object', `cfg.${key} should be object, got ${typeof cfg[key]}`);
+    ]) {
+      ok(harness.cfg[key] && typeof harness.cfg[key] === 'object', `cfg.${key} should be object`);
     }
   });
 
-  // --- Spot-check key default values (clean env, no manifest) ---
+  it('preserves the observed numeric defaults', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
 
-  it('spot-check: numeric defaults match registry', () => {
-    // These are the values that were drifted — verify they now use registry SSOT
-    strictEqual(cfg.searchProfileQueryCap, 10, 'searchProfileQueryCap');
-    strictEqual(cfg.maxRunSeconds, 480, 'maxRunSeconds');
+    strictEqual(harness.cfg.searchProfileQueryCap, 10);
+    strictEqual(harness.cfg.maxRunSeconds, 480);
   });
 
-  it('spot-check: hardcoded values', () => {
-    strictEqual(cfg.runProfile, 'standard');
-    strictEqual(cfg.searchGlobalRps, 0);
-    strictEqual(cfg.searchGlobalBurst, 0);
-    strictEqual(cfg.searchPerHostRps, 0);
-    strictEqual(cfg.searchPerHostBurst, 0);
-    strictEqual(cfg.automationQueueStorageEngine, 'sqlite');
-    strictEqual(cfg.runtimeScreenshotMode, 'last_only');
-    strictEqual(cfg.accuracyMode, 'production');
+  it('preserves the observed hardcoded defaults', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
+    strictEqual(harness.cfg.runProfile, 'standard');
+    strictEqual(harness.cfg.searchGlobalRps, 0);
+    strictEqual(harness.cfg.searchGlobalBurst, 0);
+    strictEqual(harness.cfg.searchPerHostRps, 0);
+    strictEqual(harness.cfg.searchPerHostBurst, 0);
+    strictEqual(harness.cfg.automationQueueStorageEngine, 'sqlite');
+    strictEqual(harness.cfg.runtimeScreenshotMode, 'last_only');
+    strictEqual(harness.cfg.accuracyMode, 'production');
   });
 
-  it('spot-check: string defaults', () => {
-    strictEqual(cfg.outputMode, 'dual');
-    strictEqual(cfg.repairDedupeRule, 'domain_once');
+  it('preserves the observed string and boolean defaults', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
+
+    strictEqual(harness.cfg.outputMode, 'dual');
+    strictEqual(harness.cfg.repairDedupeRule, 'domain_once');
+    strictEqual(harness.cfg.discoveryEnabled, true);
+    strictEqual(harness.cfg.robotsTxtCompliant, true);
+    strictEqual(harness.cfg.dryRun, false);
+    strictEqual(harness.cfg.localMode, true);
   });
 
-  it('spot-check: boolean defaults', () => {
-    strictEqual(cfg.discoveryEnabled, true);
-    strictEqual(cfg.robotsTxtCompliant, true);
-    strictEqual(cfg.dryRun, false);
-    strictEqual(cfg.localMode, true); // WHY: registry default is true; configBuilder had wrong fallback (false)
-  });
+  it('returns explicitEnvKeys as a Set', (t) => {
+    const harness = createConfigBuilderHarness();
+    t.after(() => harness.cleanup());
 
-  it('explicitEnvKeys is a Set', () => {
-    ok(explicitEnvKeys instanceof Set, 'explicitEnvKeys must be a Set');
+    ok(harness.explicitEnvKeys instanceof Set);
   });
 });

@@ -344,7 +344,6 @@ test('process/start forwards representative runtime override families into child
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
       anthropicApiKey: 'sk-anthropic',
-      frontierDbPath: 'runtime/frontier.json',
       capturePageScreenshotEnabled: true,
       capturePageScreenshotFormat: 'png',
       capturePageScreenshotSelectors: 'main,.spec-sheet',
@@ -388,7 +387,7 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');
   assert.equal(capturedEnv?.ANTHROPIC_API_KEY, 'sk-anthropic');
 
-  assert.equal(capturedEnv?.FRONTIER_DB_PATH, 'runtime/frontier.json');
+  // WHY: frontierDbPath removed from registry — no longer propagated as env override.
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_SELECTORS, 'main,.spec-sheet');
@@ -412,8 +411,6 @@ test('process/start clamps representative runtime numeric env overrides before s
       category: 'mouse',
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
-      pageGotoTimeoutMs: 999999,
-      frontierBlockedDomainThreshold: 999,
       runtimeTraceFetchRing: 999999,
       runtimeTraceLlmRing: 999999,
       runtimeScreencastFps: 999,
@@ -434,8 +431,8 @@ test('process/start clamps representative runtime numeric env overrides before s
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
 
-  assert.equal(capturedEnv?.PAGE_GOTO_TIMEOUT_MS, '120000');
-  assert.equal(capturedEnv?.FRONTIER_BLOCKED_DOMAIN_THRESHOLD, '50');
+  // WHY: pageGotoTimeoutMs, frontierBlockedDomainThreshold removed from registry —
+  // no longer propagated as env overrides.
   assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '2000');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '2000');
   assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '60');

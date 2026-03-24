@@ -2,20 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestModeRouteContext } from '../testModeRouteContext.js';
 
-const EXPECTED_KEYS = [
-  'jsonRes', 'readJsonBody', 'toInt', 'toUnitRatio', 'config', 'storage',
-  'HELPER_ROOT', 'OUTPUT_ROOT', 'getSpecDb', 'getSpecDbReady', 'fs', 'path',
-  'safeReadJson', 'safeStat', 'listFiles', 'resolveCategoryAlias', 'broadcastWs',
-  'buildTrafficLight', 'deriveTrafficLightCounts', 'readLatestArtifacts',
-  'analyzeContract', 'buildTestProducts', 'generateTestSourceResults',
-  'buildDeterministicSourceResults', 'buildSeedComponentDB', 'buildValidationChecks',
-  'loadComponentIdentityPools', 'runTestProduct', 'runComponentReviewBatch',
-  'purgeTestModeCategoryState', 'resetTestModeSharedReviewState',
-  'resetTestModeProductReviewState', 'addBrand', 'loadBrandRegistry',
-  'saveBrandRegistry', 'invalidateFieldRulesCache', 'sessionCache',
-];
-
-const CORE_KEYS = [
+const INJECTED_KEYS = [
   'jsonRes', 'readJsonBody', 'toInt', 'toUnitRatio', 'config', 'storage',
   'HELPER_ROOT', 'OUTPUT_ROOT', 'getSpecDb', 'getSpecDbReady', 'fs', 'path',
   'safeReadJson', 'safeStat', 'listFiles', 'resolveCategoryAlias', 'broadcastWs',
@@ -23,35 +10,44 @@ const CORE_KEYS = [
   'resetTestModeProductReviewState', 'invalidateFieldRulesCache', 'sessionCache',
 ];
 
+const HELPER_KEYS = [
+  'buildTrafficLight', 'deriveTrafficLightCounts', 'readLatestArtifacts',
+  'analyzeContract', 'buildTestProducts', 'generateTestSourceResults',
+  'buildDeterministicSourceResults', 'buildSeedComponentDB',
+  'buildValidationChecks', 'loadComponentIdentityPools', 'runTestProduct',
+  'runComponentReviewBatch', 'addBrand', 'loadBrandRegistry', 'saveBrandRegistry',
+];
+
+function createOptions(keys) {
+  return Object.fromEntries(keys.map((key) => [key, { key }]));
+}
+
 test('createTestModeRouteContext throws TypeError on non-object input', () => {
   assert.throws(() => createTestModeRouteContext(null), TypeError);
   assert.throws(() => createTestModeRouteContext('str'), TypeError);
   assert.throws(() => createTestModeRouteContext([1]), TypeError);
 });
 
-test('createTestModeRouteContext returns exactly the expected keys', () => {
-  const options = {};
-  for (const k of EXPECTED_KEYS) options[k] = { _sentinel: k };
-  options.extraProp = 'should not appear';
+test('createTestModeRouteContext returns the required injected and helper surface', () => {
+  const options = createOptions(INJECTED_KEYS);
 
   const ctx = createTestModeRouteContext(options);
-  assert.deepEqual(Object.keys(ctx).sort(), [...EXPECTED_KEYS].sort());
-});
 
-test('createTestModeRouteContext preserves identity references for core props', () => {
-  const options = {};
-  for (const k of CORE_KEYS) options[k] = { _sentinel: k };
-
-  const ctx = createTestModeRouteContext(options);
-  for (const k of CORE_KEYS) {
-    assert.equal(ctx[k], options[k], `${k} should be same reference`);
+  for (const key of INJECTED_KEYS) {
+    assert.equal(ctx[key], options[key], `${key} should preserve the injected reference`);
+  }
+  for (const key of HELPER_KEYS) {
+    assert.equal(typeof ctx[key], 'function', `${key} should be exposed as a helper function`);
   }
 });
 
 test('createTestModeRouteContext does not forward extra properties', () => {
-  const options = {};
-  for (const k of EXPECTED_KEYS) options[k] = () => {};
-  options.extra = 'nope';
+  const options = {
+    ...createOptions(INJECTED_KEYS),
+    extra: 'nope',
+  };
+
   const ctx = createTestModeRouteContext(options);
+
   assert.equal(Object.hasOwn(ctx, 'extra'), false);
 });

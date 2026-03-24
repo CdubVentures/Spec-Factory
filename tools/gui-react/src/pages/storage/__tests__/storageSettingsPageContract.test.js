@@ -221,7 +221,7 @@ async function loadPageModule() {
         export function getExpandedRowModel() { return () => ({}); }
         export function flexRender(cell) { return cell; }
       `,
-      '../../api/client': `
+      '../../api/client.ts': `
         export const api = {
           get: async () => ({}),
           post: async () => ({}),
@@ -229,35 +229,40 @@ async function loadPageModule() {
           del: async () => ({}),
         };
       `,
-      '../../api/ws': `
+      '../../api/ws.ts': `
         export const wsManager = {
           onMessage() {
             return () => {};
           },
         };
       `,
-      '../../components/common/Spinner': `
+      '../../components/common/Spinner.tsx': `
         export function Spinner(props) {
           return { type: 'Spinner', props: props || {} };
         }
       `,
-      '../../shared/ui/feedback/settingsStatus': `
+      '../../shared/ui/feedback/settingsStatus.ts': `
         export function resolveStorageSettingsStatusText({ storageSettingsReady, autoSaveEnabled }) {
           return storageSettingsReady ? (autoSaveEnabled ? 'autosave-ready' : 'manual-ready') : 'waiting';
         }
       `,
-      '../../stores/tabStore': `
+      '../../features/storage-manager/index.ts': `
+        export function StorageManagerPanel() {
+          return { type: 'StorageManagerPanel', props: {} };
+        }
+      `,
+      '../../stores/tabStore.ts': `
         import { useState } from 'react';
         export function usePersistedTab(_key, initialValue) {
           return useState(initialValue);
         }
       `,
-      '../../stores/uiStore': `
+      '../../stores/uiStore.ts': `
         export function useUiStore(selector) {
           return selector(globalThis.__storageSettingsPageHarness.uiState);
         }
       `,
-      '../../stores/settingsAuthorityStore': `
+      '../../stores/settingsAuthorityStore.ts': `
         export function useSettingsAuthorityStore(selector) {
           return selector({
             snapshot: {
@@ -266,7 +271,7 @@ async function loadPageModule() {
           });
         }
       `,
-      '../../stores/settingsManifest': `
+      '../../stores/settingsManifest.ts': `
         export const STORAGE_DESTINATION_OPTIONS = ['local', 's3'];
         export const STORAGE_SETTING_DEFAULTS = {
           enabled: false,
@@ -278,7 +283,7 @@ async function loadPageModule() {
           s3AccessKeyId: '',
         };
       `,
-      '../../stores/storageSettingsAuthority': `
+      '../../stores/storageSettingsAuthority.ts': `
         export function useStorageSettingsBootstrap() {
           return globalThis.__storageSettingsPageHarness.bootstrap;
         }

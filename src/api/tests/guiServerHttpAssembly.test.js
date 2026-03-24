@@ -3,65 +3,51 @@ import assert from 'node:assert/strict';
 
 import { createGuiServerHttpAssembly } from '../guiServerHttpAssembly.js';
 
-test('createGuiServerHttpAssembly preserves canonical route registration and pipeline wiring', () => {
-  const routeCtx = { id: 'route-context' };
-  const routeDefinitions = [
-    { key: 'infra', registrar: 'register-infra' },
-    { key: 'config', registrar: 'register-config' },
-  ];
-  const serveStatic = () => 'served';
-  const registerCalls = [];
-  const pipelineCalls = [];
-  const createGuiApiRouteRegistry = () => ({ id: 'registry' });
-  const createRegisteredGuiApiRouteHandlers = (input) => {
-    registerCalls.push(input);
-    return ['handler-a', 'handler-b'];
-  };
-  const createGuiApiPipeline = (input) => {
-    pipelineCalls.push(input);
-    return {
-      handleApi: 'handle-api',
-      handleHttpRequest: 'handle-http-request',
-    };
-  };
-
-  const result = createGuiServerHttpAssembly({
-    routeCtx,
-    routeDefinitions,
-    serveStatic,
+function createGuiServerHttpAssemblyHarness({
+  registeredApiRouteHandlers = ['handler-a', 'handler-b'],
+  handleApi = 'handle-api',
+  handleHttpRequest = 'handle-http-request',
+} = {}) {
+  return createGuiServerHttpAssembly({
+    routeCtx: { id: 'route-context' },
+    routeDefinitions: [
+      { key: 'infra', registrar: 'register-infra' },
+      { key: 'config', registrar: 'register-config' },
+    ],
+    serveStatic: () => 'served',
     resolveCategoryAlias: 'resolve-category-alias',
-    createGuiApiRouteRegistry,
-    createRegisteredGuiApiRouteHandlers,
-    createGuiApiPipeline,
+    createGuiApiRouteRegistry: () => ({ id: 'registry' }),
+    createRegisteredGuiApiRouteHandlers: () => registeredApiRouteHandlers,
+    createGuiApiPipeline: () => ({
+      handleApi,
+      handleHttpRequest,
+    }),
     createApiPathParser: 'create-api-path-parser',
     createApiRouteDispatcher: 'create-api-route-dispatcher',
     createApiHttpRequestHandler: 'create-api-http-request-handler',
     corsHeaders: { 'access-control-allow-origin': '*' },
     jsonRes: 'json-responder',
   });
+}
 
-  assert.deepEqual(registerCalls, [
-    {
-      routeCtx,
-      createGuiApiRouteRegistry,
-      routeDefinitions,
-    },
-  ]);
-  assert.deepEqual(pipelineCalls, [
-    {
-      resolveCategoryAlias: 'resolve-category-alias',
-      routeHandlers: ['handler-a', 'handler-b'],
-      createApiPathParser: 'create-api-path-parser',
-      createApiRouteDispatcher: 'create-api-route-dispatcher',
-      createApiHttpRequestHandler: 'create-api-http-request-handler',
-      corsHeaders: { 'access-control-allow-origin': '*' },
-      jsonRes: 'json-responder',
-      serveStatic,
-    },
-  ]);
+test('createGuiServerHttpAssembly returns the registered handlers and HTTP handlers', () => {
+  const result = createGuiServerHttpAssemblyHarness();
+
   assert.deepEqual(result, {
     registeredApiRouteHandlers: ['handler-a', 'handler-b'],
     handleApi: 'handle-api',
     handleHttpRequest: 'handle-http-request',
   });
+});
+
+test('createGuiServerHttpAssembly preserves empty route handler sets in the returned contract', () => {
+  const result = createGuiServerHttpAssemblyHarness({
+    registeredApiRouteHandlers: [],
+    handleApi: () => false,
+    handleHttpRequest: () => false,
+  });
+
+  assert.deepEqual(result.registeredApiRouteHandlers, []);
+  assert.equal(typeof result.handleApi, 'function');
+  assert.equal(typeof result.handleHttpRequest, 'function');
 });

@@ -193,20 +193,35 @@ AAB4bC93b3JrYm9vay54bWxQSwECFAAUAAAACAB5e1lcBRFzdt8AAACNBgAAGgAAAAAAAAAAAAAAgAEN
 SwECFAAUAAAACAB5e1lcvk6tzzsBAAAfCAAAEwAAAAAAAAAAAAAAgAEkPAAAW0NvbnRlbnRfVHlwZXNdLnhtbFBLBQYAAAAAEQARAG4EAACQPQAAAAA=
 `;
 
-let cachedMouseFieldStudioSourcePath = '';
-
-export function getMouseFieldStudioSourcePath() {
-  if (cachedMouseFieldStudioSourcePath) {
-    return cachedMouseFieldStudioSourcePath;
-  }
-
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'spec-factory-field-studio-'));
-  const fieldStudioSourcePath = path.join(tempRoot, 'mouse-field-studio-source.bin');
-  const workbookBuffer = Buffer.from(
+function decodeMouseFieldStudioWorkbook() {
+  return Buffer.from(
     MOUSE_FIELD_STUDIO_WORKBOOK_BASE64.replace(/\s+/g, ''),
     'base64',
   );
-  fs.writeFileSync(fieldStudioSourcePath, workbookBuffer);
-  cachedMouseFieldStudioSourcePath = fieldStudioSourcePath;
-  return cachedMouseFieldStudioSourcePath;
+}
+
+export function writeMouseFieldStudioSource(filePath) {
+  const resolvedPath = path.resolve(filePath);
+  fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
+  fs.writeFileSync(resolvedPath, decodeMouseFieldStudioWorkbook());
+  return resolvedPath;
+}
+
+export function createMouseFieldStudioSourcePath(rootDir, fileName = 'mouse-field-studio-source.bin') {
+  return writeMouseFieldStudioSource(path.join(rootDir, fileName));
+}
+
+export function createMouseFieldStudioSourceFixture(prefix = 'spec-factory-field-studio-') {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  return {
+    tempRoot,
+    fieldStudioSourcePath: createMouseFieldStudioSourcePath(tempRoot),
+    cleanup() {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    },
+  };
+}
+
+export function getMouseFieldStudioSourcePath() {
+  return createMouseFieldStudioSourceFixture().fieldStudioSourcePath;
 }

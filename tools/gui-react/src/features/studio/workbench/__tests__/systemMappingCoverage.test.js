@@ -3,112 +3,82 @@ import assert from 'node:assert/strict';
 import { FIELD_SYSTEM_MAP as BACKEND_FIELD_SYSTEM_MAP } from '../../../../../../../src/field-rules/consumerGate.js';
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
-function loadSystemMapping() {
-  return loadBundledModule('tools/gui-react/src/features/studio/workbench/systemMapping.ts', {
+async function createSystemMappingHarness() {
+  const mod = await loadBundledModule('tools/gui-react/src/features/studio/workbench/systemMapping.ts', {
     prefix: 'sysmapping-',
   });
+  return {
+    fieldSystemMap: mod.FIELD_SYSTEM_MAP,
+    consumerTooltips: mod.CONSUMER_TOOLTIPS,
+    parseFormattedConsumerTooltip: mod.parseFormattedConsumerTooltip,
+    parseFormattedStaticConsumerTooltip: mod.parseFormattedStaticConsumerTooltip,
+    formatConsumerTooltip: mod.formatConsumerTooltip,
+    formatStaticConsumerTooltip: mod.formatStaticConsumerTooltip,
+  };
 }
 
-let FIELD_SYSTEM_MAP;
-let CONSUMER_TOOLTIPS;
-let parseFormattedConsumerTooltip;
-let parseFormattedStaticConsumerTooltip;
+test('systemMapping exports the public contract used by the workbench', async () => {
+  const harness = await createSystemMappingHarness();
 
-test('systemMapping coverage — load module', async () => {
-  const mod = await loadSystemMapping();
-  FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-  CONSUMER_TOOLTIPS = mod.CONSUMER_TOOLTIPS;
-  parseFormattedConsumerTooltip = mod.parseFormattedConsumerTooltip;
-  parseFormattedStaticConsumerTooltip = mod.parseFormattedStaticConsumerTooltip;
-  assert.ok(FIELD_SYSTEM_MAP, 'FIELD_SYSTEM_MAP exported');
-  assert.ok(CONSUMER_TOOLTIPS, 'CONSUMER_TOOLTIPS exported');
-  assert.equal(typeof parseFormattedConsumerTooltip, 'function', 'parseFormattedConsumerTooltip exported');
-  assert.equal(typeof parseFormattedStaticConsumerTooltip, 'function', 'parseFormattedStaticConsumerTooltip exported');
+  assert.ok(harness.fieldSystemMap);
+  assert.ok(harness.consumerTooltips);
+  assert.equal(typeof harness.parseFormattedConsumerTooltip, 'function');
+  assert.equal(typeof harness.parseFormattedStaticConsumerTooltip, 'function');
 });
 
-test('every FIELD_SYSTEM_MAP key has CONSUMER_TOOLTIPS for all listed systems', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-    CONSUMER_TOOLTIPS = mod.CONSUMER_TOOLTIPS;
-  }
-
+test('every mapped field exposes tooltips for each listed system', async () => {
+  const harness = await createSystemMappingHarness();
   const missing = [];
-  for (const [field, systems] of Object.entries(FIELD_SYSTEM_MAP)) {
-    const tips = CONSUMER_TOOLTIPS[field];
-    for (const sys of systems) {
-      if (!tips || !tips[sys]) {
-        missing.push(`${field} → ${sys}: no tooltip entry`);
-      } else {
-        if (!tips[sys].on) missing.push(`${field} → ${sys}: missing .on`);
-        if (!tips[sys].off) missing.push(`${field} → ${sys}: missing .off`);
+
+  for (const [field, systems] of Object.entries(harness.fieldSystemMap)) {
+    const tips = harness.consumerTooltips[field];
+    for (const system of systems) {
+      if (!tips || !tips[system]) {
+        missing.push(`${field} -> ${system}: no tooltip entry`);
+        continue;
+      }
+      if (!tips[system].on) missing.push(`${field} -> ${system}: missing .on`);
+      if (!tips[system].off) missing.push(`${field} -> ${system}: missing .off`);
+    }
+  }
+
+  assert.deepEqual(missing, []);
+});
+
+test('tooltip fields do not drift away from the mapped field set', async () => {
+  const harness = await createSystemMappingHarness();
+  const orphanFields = Object.keys(harness.consumerTooltips).filter((field) => !harness.fieldSystemMap[field]);
+
+  assert.deepEqual(orphanFields, []);
+});
+
+test('tooltip systems do not drift away from each field mapping', async () => {
+  const harness = await createSystemMappingHarness();
+  const orphanSystems = [];
+
+  for (const [field, tips] of Object.entries(harness.consumerTooltips)) {
+    const systems = harness.fieldSystemMap[field] || [];
+    for (const system of Object.keys(tips)) {
+      if (!systems.includes(system)) {
+        orphanSystems.push(`${field} -> ${system}`);
       }
     }
   }
 
-  assert.deepEqual(missing, [], `Missing tooltip entries:\n${missing.join('\n')}`);
+  assert.deepEqual(orphanSystems, []);
 });
 
-test('no orphan tooltip entries — every CONSUMER_TOOLTIPS field exists in FIELD_SYSTEM_MAP', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-    CONSUMER_TOOLTIPS = mod.CONSUMER_TOOLTIPS;
-  }
+test('enum.additional_values stays present in the published field map', async () => {
+  const harness = await createSystemMappingHarness();
 
-  const orphans = [];
-  for (const field of Object.keys(CONSUMER_TOOLTIPS)) {
-    if (!FIELD_SYSTEM_MAP[field]) {
-      orphans.push(field);
-    }
-  }
-
-  assert.deepEqual(orphans, [], `Orphan tooltip fields not in FIELD_SYSTEM_MAP:\n${orphans.join('\n')}`);
+  assert.ok(harness.fieldSystemMap['enum.additional_values']);
+  assert.ok(harness.fieldSystemMap['enum.additional_values'].length >= 1);
 });
 
-test('no orphan tooltip systems — each tooltip system is listed in the field map', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-    CONSUMER_TOOLTIPS = mod.CONSUMER_TOOLTIPS;
-  }
+test('frontend and backend field maps remain in parity', async () => {
+  const harness = await createSystemMappingHarness();
 
-  const orphans = [];
-  for (const [field, tips] of Object.entries(CONSUMER_TOOLTIPS)) {
-    const systems = FIELD_SYSTEM_MAP[field] || [];
-    for (const sys of Object.keys(tips)) {
-      if (!systems.includes(sys)) {
-        orphans.push(`${field} → ${sys}: tooltip exists but system not in FIELD_SYSTEM_MAP`);
-      }
-    }
-  }
-
-  assert.deepEqual(orphans, [], `Orphan tooltip systems:\n${orphans.join('\n')}`);
-});
-
-test('enum.additional_values exists in FIELD_SYSTEM_MAP', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-  }
-
-  assert.ok(
-    FIELD_SYSTEM_MAP['enum.additional_values'],
-    'enum.additional_values must be present in FIELD_SYSTEM_MAP'
-  );
-  assert.ok(
-    FIELD_SYSTEM_MAP['enum.additional_values'].length >= 1,
-    'enum.additional_values must map to at least one system'
-  );
-});
-
-test('frontend and backend FIELD_SYSTEM_MAP stay in parity', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-  }
-
-  const frontendEntries = Object.entries(FIELD_SYSTEM_MAP)
+  const frontendEntries = Object.entries(harness.fieldSystemMap)
     .map(([fieldPath, systems]) => [fieldPath, [...systems].sort()]);
   const backendEntries = Object.entries(BACKEND_FIELD_SYSTEM_MAP)
     .map(([fieldPath, systems]) => [fieldPath, [...systems].sort()]);
@@ -119,29 +89,13 @@ test('frontend and backend FIELD_SYSTEM_MAP stay in parity', async () => {
   assert.deepEqual(backendEntries, frontendEntries);
 });
 
-test('authorable compile-time knobs stay out of consumer maps when no downstream system reads them', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-  }
-
-  assert.equal(FIELD_SYSTEM_MAP['contract.rounding.decimals'], undefined, 'frontend FIELD_SYSTEM_MAP should omit contract.rounding.decimals when no downstream system consumes it');
-  assert.equal(BACKEND_FIELD_SYSTEM_MAP['contract.rounding.decimals'], undefined, 'backend FIELD_SYSTEM_MAP should omit contract.rounding.decimals when no downstream system consumes it');
-  assert.equal(FIELD_SYSTEM_MAP['contract.rounding.mode'], undefined, 'frontend FIELD_SYSTEM_MAP should omit contract.rounding.mode when no downstream system consumes it');
-  assert.equal(BACKEND_FIELD_SYSTEM_MAP['contract.rounding.mode'], undefined, 'backend FIELD_SYSTEM_MAP should omit contract.rounding.mode when no downstream system consumes it');
-  assert.equal(FIELD_SYSTEM_MAP['priority.publish_gate'], undefined, 'frontend FIELD_SYSTEM_MAP should omit priority.publish_gate when no downstream system consumes it');
-  assert.equal(BACKEND_FIELD_SYSTEM_MAP['priority.publish_gate'], undefined, 'backend FIELD_SYSTEM_MAP should omit priority.publish_gate when no downstream system consumes it');
-  assert.equal(FIELD_SYSTEM_MAP['parse.unit'], undefined, 'frontend FIELD_SYSTEM_MAP should omit parse.unit when no downstream system consumes it');
-  assert.equal(BACKEND_FIELD_SYSTEM_MAP['parse.unit'], undefined, 'backend FIELD_SYSTEM_MAP should omit parse.unit when no downstream system consumes it');
-});
-
-test('IDX-only dead knobs are removed while verified live runtime knobs stay mapped', async () => {
-  if (!FIELD_SYSTEM_MAP) {
-    const mod = await loadSystemMapping();
-    FIELD_SYSTEM_MAP = mod.FIELD_SYSTEM_MAP;
-  }
-
-  const removedKnobs = [
+test('dead knobs stay out of the published field maps', async () => {
+  const harness = await createSystemMappingHarness();
+  const omittedKnobs = [
+    'contract.rounding.decimals',
+    'contract.rounding.mode',
+    'priority.publish_gate',
+    'parse.unit',
     'parse.unit_accepts',
     'parse.allow_unitless',
     'parse.allow_ranges',
@@ -149,38 +103,39 @@ test('IDX-only dead knobs are removed while verified live runtime knobs stay map
     'ai_assist.max_calls',
   ];
 
-  for (const knob of removedKnobs) {
-    assert.equal(FIELD_SYSTEM_MAP[knob], undefined, `frontend FIELD_SYSTEM_MAP should remove dead IDX knob ${knob}`);
-    assert.equal(BACKEND_FIELD_SYSTEM_MAP[knob], undefined, `backend FIELD_SYSTEM_MAP should remove dead IDX knob ${knob}`);
+  for (const knob of omittedKnobs) {
+    assert.equal(harness.fieldSystemMap[knob], undefined);
+    assert.equal(BACKEND_FIELD_SYSTEM_MAP[knob], undefined);
   }
-
-  assert.deepEqual(FIELD_SYSTEM_MAP['contract.range'], ['indexlab'], 'frontend FIELD_SYSTEM_MAP should expose contract.range to IDX');
-  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.range'], ['indexlab'], 'backend FIELD_SYSTEM_MAP should expose contract.range to IDX');
-  assert.deepEqual(FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab'], 'frontend FIELD_SYSTEM_MAP should expose contract.list_rules to IDX');
-  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab'], 'backend FIELD_SYSTEM_MAP should expose contract.list_rules to IDX');
 });
 
-test('IDX tooltips point users back to the exact Field Studio key navigation path', async () => {
-  const mod = await loadSystemMapping();
-  const tooltip = mod.formatConsumerTooltip('search_hints.query_terms', 'indexlab', true);
+test('live IDX knobs remain mapped in both frontend and backend contracts', async () => {
+  const harness = await createSystemMappingHarness();
+
+  assert.deepEqual(harness.fieldSystemMap['contract.range'], ['indexlab']);
+  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.range'], ['indexlab']);
+  assert.deepEqual(harness.fieldSystemMap['contract.list_rules'], ['indexlab']);
+  assert.deepEqual(BACKEND_FIELD_SYSTEM_MAP['contract.list_rules'], ['indexlab']);
+});
+
+test('IDX tooltips point users to the field studio navigation path', async () => {
+  const harness = await createSystemMappingHarness();
+  const tooltip = harness.formatConsumerTooltip('search_hints.query_terms', 'indexlab', true);
 
   assert.match(tooltip, /Key Navigation > Search Hints > Query Terms/);
   assert.match(tooltip, /When enabled:/);
   assert.match(tooltip, /When disabled:/);
 });
 
-test('all formatted dynamic consumer tooltips parse into structured sections', async () => {
-  const mod = await loadSystemMapping();
-  const parseFn = mod.parseFormattedConsumerTooltip;
-  const formatFn = mod.formatConsumerTooltip;
-  const map = mod.FIELD_SYSTEM_MAP;
-
+test('formatted dynamic consumer tooltips remain parseable into structured sections', async () => {
+  const harness = await createSystemMappingHarness();
   const failures = [];
-  for (const [fieldPath, systems] of Object.entries(map)) {
+
+  for (const [fieldPath, systems] of Object.entries(harness.fieldSystemMap)) {
     for (const system of systems) {
       for (const enabled of [true, false]) {
-        const formatted = formatFn(fieldPath, system, enabled);
-        const parsed = parseFn(formatted);
+        const formatted = harness.formatConsumerTooltip(fieldPath, system, enabled);
+        const parsed = harness.parseFormattedConsumerTooltip(formatted);
         if (!parsed || !parsed.title || !parsed.whenEnabled || !parsed.whenDisabled || !parsed.action) {
           failures.push(`${fieldPath} -> ${system} (${enabled ? 'enabled' : 'disabled'})`);
         }
@@ -191,17 +146,14 @@ test('all formatted dynamic consumer tooltips parse into structured sections', a
   assert.deepEqual(failures, []);
 });
 
-test('all formatted static consumer tooltips parse into structured sections', async () => {
-  const mod = await loadSystemMapping();
-  const parseFn = mod.parseFormattedStaticConsumerTooltip;
-  const formatFn = mod.formatStaticConsumerTooltip;
-  const map = mod.FIELD_SYSTEM_MAP;
-
+test('formatted static consumer tooltips remain parseable into structured sections', async () => {
+  const harness = await createSystemMappingHarness();
   const failures = [];
-  for (const [fieldPath, systems] of Object.entries(map)) {
+
+  for (const [fieldPath, systems] of Object.entries(harness.fieldSystemMap)) {
     for (const system of systems) {
-      const formatted = formatFn(fieldPath, system);
-      const parsed = parseFn(formatted);
+      const formatted = harness.formatStaticConsumerTooltip(fieldPath, system);
+      const parsed = harness.parseFormattedStaticConsumerTooltip(formatted);
       if (!parsed || !parsed.title || !parsed.summary) {
         failures.push(`${fieldPath} -> ${system}`);
       }

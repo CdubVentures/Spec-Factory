@@ -60,7 +60,7 @@ async function loadWorkbenchDrawerTabContentModule() {
           export const jsxs = jsx;
           export const Fragment = Symbol.for('fragment');
         `,
-        './WorkbenchDrawerTabPanels': `
+        './WorkbenchDrawerTabPanels.tsx': `
           export function ContractTab(props) {
             return { type: 'ContractTab', props };
           }

@@ -105,13 +105,14 @@ describe('createCrawlSession lifecycle', () => {
     assert.equal(crawler.getTeardownCount(), 1);
   });
 
-  it('exposes slotCount from settings', () => {
+  it('exposes hardcoded slotCount', () => {
     const session = createCrawlSession({
-      settings: { crawlSessionCount: 6 },
+      settings: {},
       plugins: [],
       _crawlerFactory: createCrawlerFactoryDouble().factory,
     });
 
-    assert.equal(session.slotCount, 6);
+    // WHY: crawlSessionCount retired from registry — slotCount is now hardcoded to 4
+    assert.equal(session.slotCount, 4);
   });
 });

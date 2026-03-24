@@ -75,6 +75,12 @@ async function loadRuntimeOpsPageModule() {
           }
           return { data: undefined, isLoading: false, isFetching: false };
         }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {}, removeQueries() {} };
+        }
       `,
       '../../../api/client': `
         export const api = {
@@ -241,6 +247,12 @@ test('runtime ops page builds active fallback label from live run identity and t
           }
           return { data: undefined, isLoading: false, isFetching: false };
         }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {}, removeQueries() {} };
+        }
       `,
       '../../../api/client': `
         export const api = {
@@ -390,6 +402,12 @@ test('runtime ops page shows loading status above the picker when live fallback 
           }
           return { data: undefined, isLoading: false, isFetching: false };
         }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {}, removeQueries() {} };
+        }
       `,
       '../../../api/client': `
         export const api = {
@@ -536,6 +554,12 @@ test('runtime ops page loading fallback row does not duplicate the category when
             };
           }
           return { data: undefined, isLoading: false, isFetching: false };
+        }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {}, removeQueries() {} };
         }
       `,
       '../../../api/client': `

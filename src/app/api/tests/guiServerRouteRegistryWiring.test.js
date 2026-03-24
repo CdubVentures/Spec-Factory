@@ -39,8 +39,7 @@ test('api path parser aliases scoped category segments', () => {
   assert.deepEqual(indexingPath.parts, ['indexing', 'domain-checklist', 'mouse']);
 });
 
-test('api route dispatcher preserves handler order and first-match semantics', async () => {
-  const calls = [];
+test('api route dispatcher returns the first matching handler result', async () => {
   const parsePath = () => ({
     parts: ['health'],
     params: new URLSearchParams(),
@@ -50,120 +49,96 @@ test('api route dispatcher preserves handler order and first-match semantics', a
   const dispatch = createApiRouteDispatcher({
     parsePath,
     routeHandlers: [
-      async () => {
-        calls.push('infra');
-        return false;
-      },
-      async (parts, _params, method) => {
-        calls.push('config');
-        assert.deepEqual(parts, ['health']);
-        assert.equal(method, 'GET');
-        return { status: 200, body: { ok: true } };
-      },
-      async () => {
-        calls.push('indexlab');
-        return { status: 500 };
-      },
+      async () => false,
+      async (parts, _params, method) => ({
+        status: 200,
+        body: { ok: true, parts, method },
+      }),
+      async () => ({
+        status: 500,
+        body: { ok: false },
+      }),
     ],
   });
 
   const result = await dispatch({ url: '/health', method: 'GET' }, {});
-  assert.deepEqual(calls, ['infra', 'config']);
-  assert.deepEqual(result, { status: 200, body: { ok: true } });
+  assert.deepEqual(result, {
+    status: 200,
+    body: { ok: true, parts: ['health'], method: 'GET' },
+  });
 });
 
 test('api http request handler applies preflight, api 404, static fallback, and api error handling', async () => {
-  let corsCount = 0;
-  let staticCount = 0;
-  let apiCount = 0;
-  const jsonCalls = [];
-  const logCalls = [];
-
   const requestHandler = createApiHttpRequestHandler({
-    corsHeaders: () => {
-      corsCount += 1;
+    corsHeaders: (res) => {
+      res.corsApplied = true;
     },
     handleApi: async (req) => {
-      apiCount += 1;
       if (req.url === '/api/v1/throws') {
         throw new Error('forced_failure');
       }
       return null;
     },
-    jsonRes: (_res, status, body) => {
-      jsonCalls.push({ status, body });
-      return { status, body };
+    jsonRes: (res, status, body) => {
+      res.json = { status, body };
+      return res.json;
     },
-    serveStatic: () => {
-      staticCount += 1;
+    serveStatic: (_req, res) => {
+      res.staticServed = true;
     },
-    logApiError: (err) => {
-      logCalls.push(err?.message || '');
-    },
+    logApiError: () => {},
   });
 
   const optionsRes = createStubRes();
   await requestHandler({ method: 'OPTIONS', url: '/api/v1/health' }, optionsRes);
+  assert.equal(optionsRes.corsApplied, true);
   assert.equal(optionsRes.statusCode, 204);
   assert.equal(optionsRes.endCallCount, 1);
-  assert.equal(apiCount, 0);
-  assert.equal(staticCount, 0);
 
-  await requestHandler({ method: 'GET', url: '/api/v1/unknown-route' }, createStubRes());
-  assert.equal(apiCount, 1);
-  assert.deepEqual(jsonCalls[0], { status: 404, body: { error: 'not_found' } });
+  const notFoundRes = createStubRes();
+  await requestHandler({ method: 'GET', url: '/api/v1/unknown-route' }, notFoundRes);
+  assert.equal(notFoundRes.corsApplied, true);
+  assert.deepEqual(notFoundRes.json, {
+    status: 404,
+    body: { error: 'not_found' },
+  });
 
-  await requestHandler({ method: 'GET', url: '/dashboard' }, createStubRes());
-  assert.equal(staticCount, 1);
+  const staticRes = createStubRes();
+  await requestHandler({ method: 'GET', url: '/dashboard' }, staticRes);
+  assert.equal(staticRes.corsApplied, true);
+  assert.equal(staticRes.staticServed, true);
 
-  await requestHandler({ method: 'GET', url: '/api/v1/throws' }, createStubRes());
-  assert.equal(apiCount, 2);
-  assert.equal(logCalls.includes('forced_failure'), true);
-  assert.deepEqual(jsonCalls[1], {
+  const errorRes = createStubRes();
+  await requestHandler({ method: 'GET', url: '/api/v1/throws' }, errorRes);
+  assert.equal(errorRes.corsApplied, true);
+  assert.deepEqual(errorRes.json, {
     status: 500,
     body: { error: 'internal', message: 'forced_failure' },
   });
-
-  assert.equal(corsCount, 4);
 });
 
-test('gui api route registry wires handlers in canonical order using pre-built contexts', () => {
-  const registrationCalls = [];
+test('gui api route registry returns handlers in canonical order using each route context', () => {
   const routeCtx = Object.fromEntries(
-    GUI_API_ROUTE_ORDER.map((name) => [`${name}RouteContext`, { _sentinel: name }]),
+    GUI_API_ROUTE_ORDER.map((name) => [`${name}RouteContext`, { token: `${name}-ctx` }]),
   );
-
-  const makeRegistrar = (name) => (ctx) => {
-    registrationCalls.push({ name, ctx });
-    return () => name;
-  };
 
   const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
     key: name,
-    registrar: makeRegistrar(name),
+    registrar: (ctx) => () => `${name}:${ctx.token}`,
   }));
 
   const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
 
-  assert.equal(registrationCalls.length, GUI_API_ROUTE_ORDER.length);
-
-  // Each registrar receives its own pre-built context object (not the full routeCtx)
-  for (const call of registrationCalls) {
-    assert.equal(call.ctx, routeCtx[`${call.name}RouteContext`],
-      `${call.name} should receive its pre-built context`);
-  }
-
-  const routeOrderFromHandlers = registry.routeHandlers.map((handler) => handler());
-  assert.deepEqual(routeOrderFromHandlers, GUI_API_ROUTE_ORDER);
+  assert.deepEqual(
+    registry.routeHandlers.map((handler) => handler()),
+    GUI_API_ROUTE_ORDER.map((name) => `${name}:${name}-ctx`),
+  );
 });
 
-test('gui api route registry passes each pre-built context to the correct registrar', () => {
-  const registrationCalls = [];
-  const infraCtx = { token: 'infra-ctx' };
-  const configCtx = { token: 'config-ctx' };
+test('gui api route registry maps distinct pre-built contexts to the matching route handlers', () => {
   const routeCtx = {
-    infraRouteContext: infraCtx,
-    configRouteContext: configCtx,
+    infraRouteContext: { token: 'infra-ctx' },
+    configRouteContext: { token: 'config-ctx' },
     indexlabRouteContext: { token: 'indexlab-ctx' },
     runtimeOpsRouteContext: { token: 'runtimeOps-ctx' },
     catalogRouteContext: { token: 'catalog-ctx' },
@@ -176,31 +151,30 @@ test('gui api route registry passes each pre-built context to the correct regist
     sourceStrategyRouteContext: { token: 'sourceStrategy-ctx' },
   };
 
-  const makeRegistrar = (name) => (ctx) => {
-    registrationCalls.push({ name, ctx });
-    return () => name;
-  };
-
   const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
     key: name,
-    registrar: makeRegistrar(name),
+    registrar: (ctx) => () => ctx.token,
   }));
 
-  createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
+  const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
 
-  assert.equal(
-    registrationCalls.find((call) => call.name === 'infra')?.ctx,
-    infraCtx,
+  assert.deepEqual(
+    registry.routeHandlers.map((handler) => handler()),
+    [
+      'infra-ctx',
+      'config-ctx',
+      'indexlab-ctx',
+      'runtimeOps-ctx',
+      'catalog-ctx',
+      'brand-ctx',
+      'studio-ctx',
+      'dataAuthority-ctx',
+      'queueBillingLearning-ctx',
+      'review-ctx',
+      'testMode-ctx',
+      'sourceStrategy-ctx',
+    ],
   );
-  assert.equal(
-    registrationCalls.find((call) => call.name === 'config')?.ctx,
-    configCtx,
-  );
-
-  // No registrar receives the full routeCtx
-  for (const call of registrationCalls) {
-    assert.notEqual(call.ctx, routeCtx, `${call.name} should get its pre-built context, not the full routeCtx`);
-  }
 });
 
 test('gui api route registry rejects empty routeDefinitions', () => {

@@ -50,7 +50,7 @@ async function loadStudioFieldRulesControllerModule(harness) {
     {
       prefix: 'studio-field-rules-controller-',
       stubs: {
-        './useFieldRulesStore': `
+        './useFieldRulesStore.ts': `
           export const useFieldRulesStore = globalThis.__studioFieldRulesStoreHarness;
         `,
       },

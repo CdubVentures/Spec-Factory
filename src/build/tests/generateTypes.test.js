@@ -5,10 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { compileRules } from '../../field-rules/compiler.js';
 import { generateTypesForCategory } from '../generate-types.js';
-import { getMouseFieldStudioSourcePath } from '../../field-rules/tests/fixtures/mouseFieldStudioWorkbookFixture.js';
+import { createMouseFieldStudioSourcePath } from '../../field-rules/tests/fixtures/mouseFieldStudioWorkbookFixture.js';
 
-function mouseWorkbookPath() {
-  return getMouseFieldStudioSourcePath();
+function mouseWorkbookPath(rootDir) {
+  return createMouseFieldStudioSourcePath(rootDir);
 }
 
 function buildMouseWorkbookMap(workbookPath) {
@@ -60,7 +60,7 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
   const categoriesRoot = path.join(root, 'categories');
   const outDir = path.join(root, 'src', 'generated');
   try {
-    const workbookPath = mouseWorkbookPath();
+    const workbookPath = mouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -94,4 +94,3 @@ test('generateTypesForCategory writes Zod and TS artifacts from field rules', as
     await fs.rm(root, { recursive: true, force: true });
   }
 });
-

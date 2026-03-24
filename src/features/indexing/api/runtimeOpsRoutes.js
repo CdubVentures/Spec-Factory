@@ -74,6 +74,13 @@ function resolveInactiveRunMeta(meta = {}, events = [], runId = '', processStatu
   };
 }
 
+function isInvalidAssetFilename(filename, path) {
+  if (!filename) return true;
+  if (path.isAbsolute(filename)) return true;
+  const normalized = String(filename).replaceAll('\\', '/');
+  return normalized.split('/').includes('..');
+}
+
 // ---------------------------------------------------------------------------
 // Asset fast-path: serves screenshot files without run resolution / event read
 // ---------------------------------------------------------------------------
@@ -86,11 +93,7 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
     jsonRes(res, 400, { error: 'invalid_filename' });
     return true;
   }
-  if (!filename || filename.includes('../index.js')) {
-    jsonRes(res, 400, { error: 'invalid_filename' });
-    return true;
-  }
-  if (path.isAbsolute(filename)) {
+  if (isInvalidAssetFilename(filename, path)) {
     jsonRes(res, 400, { error: 'invalid_filename' });
     return true;
   }
@@ -398,11 +401,8 @@ export function registerRuntimeOpsRoutes(ctx) {
       } catch {
         return jsonRes(res, 400, { error: 'invalid_filename' });
       }
-      if (!filename || filename.includes('../index.js')) {
-        return jsonRes(res, 400, { error: 'invalid_filename' });
-      }
       const fs = await import('node:fs');
-      if (path.isAbsolute(filename)) {
+      if (isInvalidAssetFilename(filename, path)) {
         return jsonRes(res, 400, { error: 'invalid_filename' });
       }
 

@@ -95,6 +95,9 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
     `Frontend payload contains keys NOT accepted by backend PUT handler (would be rejected as unknown_key): ${unknownKeys.join(', ')}`,
   );
 
-  // Sanity: payload should have at least 100 keys
-  assert.ok(payloadKeys.length >= 100, `payload should have 100+ keys, got ${payloadKeys.length}`);
+  assert.equal(
+    payloadKeys.length,
+    ALL_KNOWN_KEYS.size,
+    `payload should cover the exact backend PUT contract size: expected ${ALL_KNOWN_KEYS.size}, got ${payloadKeys.length}`,
+  );
 });

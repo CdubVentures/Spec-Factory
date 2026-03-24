@@ -22,7 +22,7 @@ async function loadStudioPageQueriesModule() {
             return { data: globalThis.__studioPageQueryHarness.queryData };
           }
         `,
-        '../../../api/client': `
+        '../../../api/client.ts': `
           export const api = {
             get(url) {
               globalThis.__studioPageQueryHarness.apiCalls.push(url);
@@ -81,7 +81,7 @@ async function loadStudioPageMutationsModule() {
             return handle;
           }
         `,
-        '../../../api/client': `
+        '../../../api/client.ts': `
           export const api = {
             async get(url) {
               globalThis.__studioPageMutationHarness.apiCalls.push({ method: 'GET', url });
@@ -96,7 +96,7 @@ async function loadStudioPageMutationsModule() {
             },
           };
         `,
-        './invalidateFieldRulesQueries': `
+        './invalidateFieldRulesQueries.ts': `
           export function invalidateFieldRulesQueries(queryClient, category) {
             globalThis.__studioPageMutationHarness.invalidations.push({
               kind: 'field-rules',

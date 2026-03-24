@@ -105,6 +105,9 @@ test('normalizeRuntimeSaveResult prefers response.snapshot over applied merge', 
     `,
     '../../../stores/settingsManifest': `
       export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = { runtime: 25 };
+      export const LLM_SETTING_LIMITS = {
+        maxTokens: { min: 1, max: 128000 },
+      };
       export const RUNTIME_SETTING_DEFAULTS = new Proxy({}, {
         get() { return 0; },
       });

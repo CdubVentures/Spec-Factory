@@ -68,6 +68,12 @@ async function loadRuntimeOpsPageModule() {
           }
           return { data: undefined };
         }
+        export function useMutation() {
+          return { mutate() {}, mutateAsync: async () => ({}), isPending: false };
+        }
+        export function useQueryClient() {
+          return { invalidateQueries() {}, removeQueries() {} };
+        }
       `,
       '../../../api/client': `
         export const api = {

@@ -200,7 +200,7 @@ async function loadStudioPageDocsControllerModule() {
             return harness.refs[idx];
           }
         `,
-        './useFieldRulesStore': `
+        './useFieldRulesStore.ts': `
           export function useFieldRulesStore(selector) {
             const store = globalThis.__studioDocsHarness.fieldRulesStore;
             return typeof selector === 'function' ? selector(store) : store;
@@ -209,7 +209,7 @@ async function loadStudioPageDocsControllerModule() {
             return globalThis.__studioDocsHarness.fieldRulesStore;
           };
         `,
-        './studioPersistenceAuthority': `
+        './studioPersistenceAuthority.ts': `
           export function useStudioPersistenceAuthority(options) {
             globalThis.__studioDocsHarness.persistenceOptions = options;
             return {
@@ -230,12 +230,12 @@ async function loadStudioPageDocsControllerModule() {
             return JSON.stringify(input);
           }
         `,
-        '../../../stores/autoSaveFingerprint': `
+        '../../../stores/autoSaveFingerprint.ts': `
           export function autoSaveFingerprint(value) {
             return JSON.stringify(value);
           }
         `,
-        '../../../stores/settingsManifest': `
+        '../../../stores/settingsManifest.ts': `
           export const SETTINGS_AUTOSAVE_DEBOUNCE_MS = {
             studioDocs: 25,
             studioMap: 25,
@@ -244,7 +244,7 @@ async function loadStudioPageDocsControllerModule() {
             studioSavedIndicatorReset: 25,
           };
         `,
-        './invalidateFieldRulesQueries': `
+        './invalidateFieldRulesQueries.ts': `
           export function invalidateFieldRulesQueries(queryClient, category) {
             globalThis.__studioDocsHarness.invalidateCalls.push({ queryClient, category });
           }

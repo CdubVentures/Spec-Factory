@@ -116,9 +116,9 @@ describe('buildIndexingRunStartPayload — spread', () => {
 
   it('includes string settings from payload', () => {
     const result = buildIndexingRunStartPayload(makeInput({
-      settingsOverrides: { frontierDbPath: '/tmp/test.db' },
+      settingsOverrides: { runtimeControlFile: '/tmp/overrides.json' },
     }));
-    strictEqual(result.frontierDbPath, '/tmp/test.db');
+    strictEqual(result.runtimeControlFile, '/tmp/overrides.json');
   });
 
   it('includes numeric settings from payload', () => {
@@ -218,12 +218,7 @@ describe('buildIndexingRunStartPayload — main body clamping', () => {
     strictEqual(result.robotsTxtTimeoutMs, 100);
   });
 
-  it('clamps frontierBackoffMaxExponent to min 1', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedFrontierBackoffMaxExponent: 0 },
-    }));
-    strictEqual(result.frontierBackoffMaxExponent, 1);
-  });
+  // WHY: frontierBackoffMaxExponent removed from registry — no longer clamped.
 
 });
 

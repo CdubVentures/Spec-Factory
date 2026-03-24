@@ -2,26 +2,40 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
-// WHY: Characterization + boundary tests for the prefetch stage registry.
-// These lock down the data-extraction logic from the current renderPrefetchPanel switch
-// statement (WorkersTab.tsx lines 266-308). Each selectProps function must produce
-// identical output to the old switch case for the same tab key.
-
 const EXPECTED_KEYS = [
-  'needset', 'brand_resolver', 'search_profile', 'search_planner',
-  'query_journey', 'search_results', 'serp_selector', 'domain_classifier',
+  'needset',
+  'brand_resolver',
+  'search_profile',
+  'search_planner',
+  'query_journey',
+  'search_results',
+  'serp_selector',
+  'domain_classifier',
 ];
 
 const EMPTY_NEEDSET = { total_fields: 0 };
 const EMPTY_SEARCH_PROFILE = {
-  query_count: 0, provider: '', llm_query_planning: false,
-  identity_aliases: [], variant_guard_terms: [], query_rows: [], query_guard: {},
+  query_count: 0,
+  provider: '',
+  llm_query_planning: false,
+  identity_aliases: [],
+  variant_guard_terms: [],
+  query_rows: [],
+  query_guard: {},
 };
 
-function makeMockData() {
+function createPrefetchData(overrides = {}) {
   return {
     needset: { total_fields: 12 },
-    search_profile: { query_count: 5, provider: 'google', llm_query_planning: true, identity_aliases: ['a1'], variant_guard_terms: ['v1'], query_rows: [{ q: 'test' }], query_guard: { max: 10 } },
+    search_profile: {
+      query_count: 5,
+      provider: 'google',
+      llm_query_planning: true,
+      identity_aliases: ['a1'],
+      variant_guard_terms: ['v1'],
+      query_rows: [{ q: 'test' }],
+      query_guard: { max: 10 },
+    },
     brand_resolution: { brand: 'Logitech', confidence: 0.95 },
     search_plans: [{ pass: 'A', queries: [] }],
     search_results: [{ url: 'https://example.com', status: 'ok' }],
@@ -46,155 +60,230 @@ function makeMockData() {
       serp_selector: [{ state: 'active' }],
       domain_classifier: [{ state: 'active' }],
     },
+    ...overrides,
   };
 }
 
-const PS = 'test-category';
-const LS = { searchRoute: 'searxng' };
-const RID = 'run-123';
-
-let PREFETCH_STAGE_KEYS;
-let selectProps;
-
-test('prefetch stage modules load', async () => {
+async function createPrefetchHarness() {
   const keysModule = await loadBundledModule(
     'tools/gui-react/src/features/runtime-ops/panels/prefetch/prefetchStageKeys.ts',
     { prefix: 'prefetch-keys-' },
   );
-  PREFETCH_STAGE_KEYS = keysModule.PREFETCH_STAGE_KEYS;
-
   const propsModule = await loadBundledModule(
     'tools/gui-react/src/features/runtime-ops/panels/prefetch/prefetchStageSelectProps.ts',
     { prefix: 'prefetch-select-props-' },
   );
-  selectProps = propsModule.PREFETCH_SELECT_PROPS;
+
+  return {
+    keys: keysModule.PREFETCH_STAGE_KEYS,
+    selectProps: propsModule.PREFETCH_SELECT_PROPS,
+    persistScope: 'test-category',
+    liveSettings: { searchRoute: 'searxng' },
+    runId: 'run-123',
+  };
+}
+
+test('prefetch stage registry exports the published key order', async () => {
+  const harness = await createPrefetchHarness();
+  assert.deepStrictEqual([...harness.keys], EXPECTED_KEYS);
 });
 
-// -- Boundary: Key completeness --
-
-test('PREFETCH_STAGE_KEYS has exactly 8 keys in pipeline order', () => {
-  assert.deepStrictEqual([...PREFETCH_STAGE_KEYS], EXPECTED_KEYS);
+test('prefetch select props cover each published stage exactly once', async () => {
+  const harness = await createPrefetchHarness();
+  assert.strictEqual(Object.keys(harness.selectProps).length, EXPECTED_KEYS.length);
+  assert.deepStrictEqual(Object.keys(harness.selectProps).sort(), [...EXPECTED_KEYS].sort());
 });
 
-test('PREFETCH_SELECT_PROPS has exactly 8 entries', () => {
-  assert.strictEqual(Object.keys(selectProps).length, 8);
+test('needset select props surface the current needset contract', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.needset({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+    runId: harness.runId,
+  });
+
+  assert.deepStrictEqual(props.data, data.needset);
+  assert.strictEqual(props.persistScope, harness.persistScope);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.needset);
+  assert.deepStrictEqual(props.needsetPlannerCalls, data.llm_calls.needset_planner);
 });
 
-test('selectProps keys match PREFETCH_STAGE_KEYS', () => {
-  assert.deepStrictEqual(Object.keys(selectProps).sort(), [...EXPECTED_KEYS].sort());
+test('needset select props fall back to the empty contract', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.needset({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+
+  assert.deepStrictEqual(props.data, EMPTY_NEEDSET);
 });
 
-// -- Characterization: selectProps equivalence with current switch logic --
+test('search_profile select props surface the current search profile contract', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.search_profile({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
 
-test('needset selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.needset({ data: d, persistScope: PS, liveSettings: LS, runId: RID });
-  assert.deepStrictEqual(p.data, d.needset);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.needset);
-  assert.deepStrictEqual(p.needsetPlannerCalls, d.llm_calls.needset_planner);
+  assert.deepStrictEqual(props.data, data.search_profile);
+  assert.strictEqual(props.persistScope, harness.persistScope);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_profile);
 });
 
-test('needset selectProps uses empty default when data is undefined', () => {
-  const p = selectProps.needset({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.data, EMPTY_NEEDSET);
+test('search_profile select props fall back to the empty profile contract', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.search_profile({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+
+  assert.deepStrictEqual(props.data, EMPTY_SEARCH_PROFILE);
 });
 
-test('search_profile selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.search_profile({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.data, d.search_profile);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.search_profile);
+test('brand_resolver select props surface brand resolution inputs', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.brand_resolver({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
+
+  assert.deepStrictEqual(props.calls, data.llm_calls.brand_resolver);
+  assert.deepStrictEqual(props.brandResolution, data.brand_resolution);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.brand_resolver);
 });
 
-test('search_profile selectProps uses empty default when data is undefined', () => {
-  const p = selectProps.search_profile({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.data, EMPTY_SEARCH_PROFILE);
+test('brand_resolver select props fall back to empty calls', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.brand_resolver({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+
+  assert.deepStrictEqual(props.calls, []);
 });
 
-test('brand_resolver selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.brand_resolver({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.calls, d.llm_calls.brand_resolver);
-  assert.deepStrictEqual(p.brandResolution, d.brand_resolution);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.brand_resolver);
+test('search_planner select props surface planner results', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.search_planner({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
+
+  assert.deepStrictEqual(props.calls, data.llm_calls.search_planner);
+  assert.deepStrictEqual(props.searchPlans, data.search_plans);
+  assert.deepStrictEqual(props.searchResults, data.search_results);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_planner);
+  assert.strictEqual(props.persistScope, harness.persistScope);
 });
 
-test('brand_resolver selectProps uses empty calls array when data is undefined', () => {
-  const p = selectProps.brand_resolver({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.calls, []);
+test('query_journey select props surface the full query journey contract', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.query_journey({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
+
+  assert.deepStrictEqual(props.searchProfile, data.search_profile);
+  assert.deepStrictEqual(props.searchPlans, data.search_plans);
+  assert.deepStrictEqual(props.searchResults, data.search_results);
+  assert.deepStrictEqual(props.searchResultDetails, data.search_result_details);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.query_journey);
 });
 
-test('search_planner selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.search_planner({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.calls, d.llm_calls.search_planner);
-  assert.deepStrictEqual(p.searchPlans, d.search_plans);
-  assert.deepStrictEqual(p.searchResults, d.search_results);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.search_planner);
-  assert.strictEqual(p.persistScope, PS);
+test('query_journey select props fall back to the empty profile contract', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.query_journey({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+
+  assert.deepStrictEqual(props.searchProfile, EMPTY_SEARCH_PROFILE);
 });
 
-test('query_journey selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.query_journey({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.searchProfile, d.search_profile);
-  assert.deepStrictEqual(p.searchPlans, d.search_plans);
-  assert.deepStrictEqual(p.searchResults, d.search_results);
-  assert.deepStrictEqual(p.searchResultDetails, d.search_result_details);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.query_journey);
+test('search_results select props surface result payloads including run id', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.search_results({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+    runId: harness.runId,
+  });
+
+  assert.deepStrictEqual(props.results, data.search_results);
+  assert.deepStrictEqual(props.searchResultDetails, data.search_result_details);
+  assert.deepStrictEqual(props.searchPlans, data.search_plans);
+  assert.deepStrictEqual(props.crossQueryUrlCounts, data.cross_query_url_counts);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_results);
+  assert.strictEqual(props.runId, harness.runId);
 });
 
-test('query_journey selectProps uses empty profile default when data is undefined', () => {
-  const p = selectProps.query_journey({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.searchProfile, EMPTY_SEARCH_PROFILE);
+test('search_results select props fall back to empty results', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.search_results({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+
+  assert.deepStrictEqual(props.results, []);
 });
 
-test('search_results selectProps extracts correct data including runId', () => {
-  const d = makeMockData();
-  const p = selectProps.search_results({ data: d, persistScope: PS, liveSettings: LS, runId: RID });
-  assert.deepStrictEqual(p.results, d.search_results);
-  assert.deepStrictEqual(p.searchResultDetails, d.search_result_details);
-  assert.deepStrictEqual(p.searchPlans, d.search_plans);
-  assert.deepStrictEqual(p.crossQueryUrlCounts, d.cross_query_url_counts);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.search_results);
-  assert.strictEqual(p.runId, RID);
+test('serp_selector select props surface SERP triage payloads', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.serp_selector({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
+
+  assert.deepStrictEqual(props.calls, data.llm_calls.serp_selector);
+  assert.deepStrictEqual(props.serpTriage, data.serp_selector);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.serp_selector);
 });
 
-test('search_results selectProps uses empty results array when data is undefined', () => {
-  const p = selectProps.search_results({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.results, []);
+test('domain_classifier select props surface domain health payloads', async () => {
+  const harness = await createPrefetchHarness();
+  const data = createPrefetchData();
+  const props = harness.selectProps.domain_classifier({
+    data,
+    persistScope: harness.persistScope,
+    liveSettings: harness.liveSettings,
+  });
+
+  assert.deepStrictEqual(props.calls, data.llm_calls.domain_classifier);
+  assert.deepStrictEqual(props.domainHealth, data.domain_health);
+  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.domain_classifier);
 });
 
-test('serp_selector selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.serp_selector({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.calls, d.llm_calls.serp_selector);
-  assert.deepStrictEqual(p.serpTriage, d.serp_selector);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.serp_selector);
-});
+test('domain_classifier select props fall back to empty calls', async () => {
+  const harness = await createPrefetchHarness();
+  const props = harness.selectProps.domain_classifier({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
 
-test('domain_classifier selectProps extracts correct data', () => {
-  const d = makeMockData();
-  const p = selectProps.domain_classifier({ data: d, persistScope: PS, liveSettings: LS });
-  assert.deepStrictEqual(p.calls, d.llm_calls.domain_classifier);
-  assert.deepStrictEqual(p.domainHealth, d.domain_health);
-  assert.strictEqual(p.persistScope, PS);
-  assert.deepStrictEqual(p.liveSettings, LS);
-  assert.deepStrictEqual(p.idxRuntime, d.idx_runtime.domain_classifier);
-});
-
-test('domain_classifier selectProps uses empty calls array when data is undefined', () => {
-  const p = selectProps.domain_classifier({ data: undefined, persistScope: PS, liveSettings: undefined });
-  assert.deepStrictEqual(p.calls, []);
+  assert.deepStrictEqual(props.calls, []);
 });

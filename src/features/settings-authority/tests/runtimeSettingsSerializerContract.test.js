@@ -4,21 +4,17 @@ import { loadBundledModule } from '../../../shared/tests/helpers/loadBundledModu
 
 import { RUNTIME_SETTINGS_ROUTE_PUT } from '../settingsContract.js';
 
-let runtimeSettingsDomainModulePromise;
+async function createRuntimeSettingsDomainHarness() {
+  const runtimeSettingsDomainModule = await loadBundledModule(
+    'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
+    { prefix: 'runtime-settings-domain-' },
+  );
 
-async function loadRuntimeSettingsDomain() {
-  if (!runtimeSettingsDomainModulePromise) {
-    runtimeSettingsDomainModulePromise = loadBundledModule(
-      'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
-      { prefix: 'runtime-settings-domain-' },
-    );
-  }
-  return runtimeSettingsDomainModulePromise;
+  return {
+    collectRuntimeSettingsPayload: runtimeSettingsDomainModule.collectRuntimeSettingsPayload,
+  };
 }
 
-// WHY: Per-role token cap keys remain in the PUT intRangeMap (clamping ranges)
-// for backward compatibility, but the frontend serializer no longer emits them
-// after the LLM model stack simplification. Exclude from the coverage check.
 const SERIALIZER_EXCLUDED_PUT_KEYS = new Set([
   'llmMaxOutputTokensTriage',
   'llmMaxOutputTokensExtract',
@@ -65,9 +61,9 @@ function createSerializerInput(overrides = {}) {
   };
 }
 
-test('runtime settings serializer emits every runtime PUT frontend key without source-text shims', async () => {
-  const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
-  const payload = collectRuntimeSettingsPayload(createSerializerInput());
+test('runtime settings serializer emits every runtime PUT frontend key', async () => {
+  const harness = await createRuntimeSettingsDomainHarness();
+  const payload = harness.collectRuntimeSettingsPayload(createSerializerInput());
   const missing = Array.from(getRuntimePutFrontendKeys()).filter(
     (key) => !Object.prototype.hasOwnProperty.call(payload, key),
   );
@@ -77,18 +73,18 @@ test('runtime settings serializer emits every runtime PUT frontend key without s
     [],
     `runtime settings serializer must emit every runtime PUT frontend key (missing: ${missing.join(', ')})`,
   );
-  assert.equal(Object.hasOwn(payload, 'profile'), false, 'profile is not a runtime PUT key — must not be in payload');
-  assert.equal(Object.hasOwn(payload, 'runProfile'), false, 'runProfile is not a runtime PUT key — must not be in payload');
-  assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false, 'discoveryEnabled is a hardcoded invariant — must not be in payload');
+  assert.equal(Object.hasOwn(payload, 'profile'), false);
+  assert.equal(Object.hasOwn(payload, 'runProfile'), false);
+  assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false);
   assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
   assert.equal(payload.llmPlanApiKey, 'key-live');
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
 });
 
-test('runtime settings serializer applies fallback baselines and shared model-token defaults at runtime', async () => {
-  const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
-  const payload = collectRuntimeSettingsPayload(createSerializerInput({
+test('runtime settings serializer applies fallback baselines and shared token defaults', async () => {
+  const harness = await createRuntimeSettingsDomainHarness();
+  const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmMaxOutputTokens: 'bad-token-count',
     llmMaxOutputTokensPlan: 'bad-plan-tokens',
     llmMaxOutputTokensPlanFallback: 'bad-fallback-plan-tokens',
@@ -99,9 +95,9 @@ test('runtime settings serializer applies fallback baselines and shared model-to
   assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
 });
 
-test('runtime settings serializer preserves budget and reasoning knobs as parsed runtime payload', async () => {
-  const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
-  const payload = collectRuntimeSettingsPayload(createSerializerInput({
+test('runtime settings serializer preserves parsed budget and reasoning knobs', async () => {
+  const harness = await createRuntimeSettingsDomainHarness();
+  const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmReasoningMode: true,
     llmReasoningBudget: '3072',
     llmMonthlyBudgetUsd: '7.5',

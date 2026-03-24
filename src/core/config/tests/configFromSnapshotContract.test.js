@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it } from 'node:test';
 import { ok, strictEqual } from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,19 +10,17 @@ import {
 } from '../resolveEffectiveRuntimeConfig.js';
 import { loadConfigWithUserSettings } from '../../../config.js';
 
-// WHY: Plan 06 contract test. Validates the effective config resolver.
-
-describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
-
+describe('resolveEffectiveRuntimeConfig contract', () => {
   it('applySnapshotToConfig overlays values onto config', () => {
     const config = { maxRunSeconds: 300, autoScrollEnabled: false, concurrency: 4 };
     const patches = applySnapshotToConfig(config, {
       maxRunSeconds: 600,
       autoScrollEnabled: true,
     });
+
     strictEqual(config.maxRunSeconds, 600);
     strictEqual(config.autoScrollEnabled, true);
-    strictEqual(config.concurrency, 4); // Unchanged
+    strictEqual(config.concurrency, 4);
     ok(patches.length === 2, `expected 2 patches, got ${patches.length}`);
     strictEqual(patches[0].key, 'maxRunSeconds');
     strictEqual(patches[0].originalValue, 300);
@@ -30,42 +28,39 @@ describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
     strictEqual(patches[0].source, 'snapshot');
   });
 
-  it('applySnapshotToConfig handles aliased keys (resumeMode → indexingResumeMode)', () => {
+  it('applySnapshotToConfig remaps aliased keys onto the config keys consumers read', () => {
     const config = { indexingResumeMode: 'auto' };
     const patches = applySnapshotToConfig(config, { resumeMode: 'force_resume' });
-    strictEqual(config.indexingResumeMode, 'force_resume', 'configKey should be updated');
-    strictEqual(config.resumeMode, 'force_resume', 'setting key should also be set');
+
+    strictEqual(config.indexingResumeMode, 'force_resume');
+    strictEqual(config.resumeMode, 'force_resume');
     ok(patches.length === 1);
     strictEqual(patches[0].configKey, 'indexingResumeMode');
   });
 
-  it('applySnapshotToConfig skips null/undefined values', () => {
+  it('applySnapshotToConfig ignores nullish values', () => {
     const config = { maxRunSeconds: 300 };
-    const patches = applySnapshotToConfig(config, { maxRunSeconds: null, autoScrollEnabled: undefined });
-    strictEqual(config.maxRunSeconds, 300); // Unchanged
-    strictEqual(patches.length, 0);
-  });
+    const patches = applySnapshotToConfig(config, {
+      maxRunSeconds: null,
+      autoScrollEnabled: undefined,
+    });
 
-  it('applySnapshotToConfig records no patch when value is unchanged', () => {
-    const config = { maxRunSeconds: 300 };
-    const patches = applySnapshotToConfig(config, { maxRunSeconds: 300 });
-    strictEqual(patches.length, 0);
-  });
-
-  it('applySnapshotToConfig handles empty snapshot', () => {
-    const config = { maxRunSeconds: 300 };
-    const patches = applySnapshotToConfig(config, {});
-    strictEqual(patches.length, 0);
     strictEqual(config.maxRunSeconds, 300);
-  });
-
-  it('applySnapshotToConfig handles null snapshot', () => {
-    const config = { maxRunSeconds: 300 };
-    const patches = applySnapshotToConfig(config, null);
     strictEqual(patches.length, 0);
   });
 
-  it('isRegistrySetting identifies known settings', () => {
+  it('applySnapshotToConfig skips unchanged and empty snapshots', () => {
+    const unchangedConfig = { maxRunSeconds: 300 };
+    strictEqual(applySnapshotToConfig(unchangedConfig, { maxRunSeconds: 300 }).length, 0);
+
+    const emptyConfig = { maxRunSeconds: 300 };
+    strictEqual(applySnapshotToConfig(emptyConfig, {}).length, 0);
+    strictEqual(emptyConfig.maxRunSeconds, 300);
+
+    strictEqual(applySnapshotToConfig({ maxRunSeconds: 300 }, null).length, 0);
+  });
+
+  it('isRegistrySetting identifies known settings only', () => {
     ok(isRegistrySetting('autoScrollEnabled'));
     ok(isRegistrySetting('resumeMode'));
     ok(isRegistrySetting('llmModelPlan'));
@@ -73,59 +68,60 @@ describe('resolveEffectiveRuntimeConfig — Plan 06', () => {
     ok(!isRegistrySetting(''));
   });
 
-  it('getConfigKey returns configKey for aliased entries', () => {
+  it('getConfigKey returns the effective config key for aliased entries', () => {
     strictEqual(getConfigKey('resumeMode'), 'indexingResumeMode');
     strictEqual(getConfigKey('resumeWindowHours'), 'indexingResumeMaxAgeHours');
     strictEqual(getConfigKey('autoScrollEnabled'), 'autoScrollEnabled');
   });
 });
 
-// WHY: Integration test proving loadConfigWithUserSettings remaps alias keys
-// from the snapshot. This is the critical path: GUI sends canonical setting keys
-// (fetchConcurrency, resumeMode, etc.) but runtime consumers read the config keys
-// (concurrency, indexingResumeMode, etc.). If the remap is missing, consumers
-// get stale defaults.
-describe('loadConfigWithUserSettings — snapshot alias remap', () => {
-  let tmpDir;
-  let snapshotPath;
-  let origEnv;
+function createSnapshotHarness(settings = {}) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-alias-test-'));
+  const snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
+  const originalEnv = process.env.RUNTIME_SETTINGS_SNAPSHOT;
+  const snapshot = {
+    snapshotId: 'alias-test',
+    schemaVersion: '1.0',
+    createdAt: Date.now(),
+    source: 'test',
+    settings,
+  };
 
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-alias-test-'));
-    origEnv = process.env.RUNTIME_SETTINGS_SNAPSHOT;
-    const snapshot = {
-      snapshotId: 'alias-test',
-      schemaVersion: '1.0',
-      createdAt: Date.now(),
-      source: 'test',
-      settings: {
-        resumeMode: 'force_resume',
-        resumeWindowHours: 72,
-        maxRunSeconds: 600,
-        autoScrollEnabled: false,
-      },
-    };
-    snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8');
-    process.env.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
-  });
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8');
+  process.env.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
 
-  afterEach(() => {
-    if (origEnv === undefined) delete process.env.RUNTIME_SETTINGS_SNAPSHOT;
-    else process.env.RUNTIME_SETTINGS_SNAPSHOT = origEnv;
-    try { fs.rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
-  });
+  return {
+    cleanup() {
+      if (originalEnv === undefined) delete process.env.RUNTIME_SETTINGS_SNAPSHOT;
+      else process.env.RUNTIME_SETTINGS_SNAPSHOT = originalEnv;
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch {
+        // Best-effort test cleanup.
+      }
+    },
+  };
+}
 
-  it('alias keys in snapshot are remapped to config keys consumers read', () => {
-    const config = loadConfigWithUserSettings();
+describe('loadConfigWithUserSettings snapshot contract', () => {
+  it('remaps alias keys from the snapshot onto the consumer-facing config surface', () => {
+    const harness = createSnapshotHarness({
+      resumeMode: 'force_resume',
+      resumeWindowHours: 72,
+      maxRunSeconds: 600,
+      autoScrollEnabled: false,
+    });
 
-    // Config keys (what consumers read) must have the snapshot values
-    strictEqual(config.indexingResumeMode, 'force_resume', 'config.indexingResumeMode from resumeMode');
-    strictEqual(config.indexingResumeMaxAgeHours, 72, 'config.indexingResumeMaxAgeHours from resumeWindowHours');
-    strictEqual(config.maxRunSeconds, 600, 'config.maxRunSeconds from snapshot');
-    strictEqual(config.autoScrollEnabled, false, 'config.autoScrollEnabled from snapshot');
+    try {
+      const config = loadConfigWithUserSettings();
 
-    // Canonical setting keys should also be set (dual-key compat)
-    strictEqual(config.resumeMode, 'force_resume', 'canonical key should also be set');
+      strictEqual(config.indexingResumeMode, 'force_resume');
+      strictEqual(config.indexingResumeMaxAgeHours, 72);
+      strictEqual(config.maxRunSeconds, 600);
+      strictEqual(config.autoScrollEnabled, false);
+      strictEqual(config.resumeMode, 'force_resume');
+    } finally {
+      harness.cleanup();
+    }
   });
 });

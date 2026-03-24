@@ -73,22 +73,22 @@ async function loadStudioPageActivePanelModule() {
           export const jsxs = jsx;
           export const Fragment = Symbol.for('fragment');
         `,
-        './MappingStudioTab': `
+        './MappingStudioTab.tsx': `
           export function MappingStudioTab(props) {
             return { type: 'MappingStudioTab', props };
           }
         `,
-        './KeyNavigatorTab': `
+        './KeyNavigatorTab.tsx': `
           export function KeyNavigatorTab(props) {
             return { type: 'KeyNavigatorTab', props };
           }
         `,
-        '../workbench/FieldRulesWorkbench': `
+        '../workbench/FieldRulesWorkbench.tsx': `
           export function FieldRulesWorkbench(props) {
             return { type: 'FieldRulesWorkbench', props };
           }
         `,
-        '../tabs/CompileReportsTab': `
+        '../tabs/CompileReportsTab.tsx': `
           export function CompileReportsTab(props) {
             return { type: 'CompileReportsTab', props };
           }

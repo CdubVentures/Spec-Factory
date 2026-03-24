@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { skipIfSpawnEperm } from '../../src/shared/tests/helpers/spawnEperm.js';
 
 const SCRIPT_PATH = path.join(process.cwd(), 'tools', 'launchers', 'ReStartSearXng.bat');
 const COMPOSE_PATH = path.join(process.cwd(), 'tools', 'searxng', 'docker-compose.yml');
@@ -11,7 +12,7 @@ const ROOT_SHORTCUT = path.join(process.cwd(), 'Restart SearXNG.lnk');
 const ICON_PATH = path.join(process.cwd(), 'tools', 'launchers', 'icons', 'restart-searxng.ico');
 const OLD_ROOT_ICON = path.join(process.cwd(), 'restart-searxng.ico');
 
-function readShortcut(shortcutPath) {
+function readShortcut(t, shortcutPath) {
   const script = [
     '$w = New-Object -ComObject WScript.Shell',
     `$s = $w.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')`,
@@ -26,17 +27,19 @@ function readShortcut(shortcutPath) {
     encoding: 'utf8',
   });
 
+  if (skipIfSpawnEperm(t, run, 'sandbox blocks PowerShell shortcut inspection')) return null;
   assert.equal(run.status, 0, `expected shortcut inspection to succeed, stderr was: ${run.stderr || '(empty)'}`);
   return JSON.parse(run.stdout.trim());
 }
 
-test('Restart SearXNG shortcut points to the moved launcher and icon', { skip: process.platform !== 'win32' }, () => {
+test('Restart SearXNG shortcut points to the moved launcher and icon', { skip: process.platform !== 'win32' }, (t) => {
   assert.equal(fs.existsSync(SCRIPT_PATH), true, 'expected the restart launcher to live under tools\\launchers');
   assert.equal(fs.existsSync(ROOT_SHORTCUT), true, 'expected the root shortcut to remain available');
   assert.equal(fs.existsSync(ICON_PATH), true, 'expected the icon to move under tools\\launchers\\icons');
   assert.equal(fs.existsSync(OLD_ROOT_ICON), false, 'expected the old root icon file to be removed');
 
-  const shortcut = readShortcut(ROOT_SHORTCUT);
+  const shortcut = readShortcut(t, ROOT_SHORTCUT);
+  if (!shortcut) return;
   assert.equal(path.normalize(shortcut.TargetPath), path.normalize(SCRIPT_PATH));
   assert.equal(path.normalize(shortcut.WorkingDirectory), path.normalize(process.cwd()));
   assert.ok(
@@ -45,7 +48,7 @@ test('Restart SearXNG shortcut points to the moved launcher and icon', { skip: p
   );
 });
 
-test('restart-searxng.bat restarts the repo searxng compose stack', { skip: process.platform !== 'win32' }, () => {
+test('restart-searxng.bat restarts the repo searxng compose stack', { skip: process.platform !== 'win32' }, (t) => {
   assert.equal(fs.existsSync(SCRIPT_PATH), true, 'expected the restart launcher to exist under tools\\launchers');
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restart-searxng-bat-'));
@@ -73,6 +76,7 @@ test('restart-searxng.bat restarts the repo searxng compose stack', { skip: proc
     encoding: 'utf8',
   });
 
+  if (skipIfSpawnEperm(t, run, 'sandbox blocks cmd launcher execution')) return;
   assert.equal(run.status, 0, `expected script to exit cleanly, stderr was: ${run.stderr || '(empty)'}`);
   assert.equal(fs.existsSync(logPath), true, 'expected fake docker to capture invocations');
 

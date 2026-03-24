@@ -8,6 +8,7 @@ import {
   getFreePort,
   waitForHttpReady,
 } from './helpers/guiServerHttpHarness.js';
+import { skipIfSpawnEperm } from '../../shared/tests/helpers/spawnEperm.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -108,29 +109,34 @@ test('characterization: live-style 404 and blocked failures surface as domain_ba
   ]);
 
   const port = await getFreePort();
-  const proc = spawn(
-    process.execPath,
-    ['src/api/guiServer.js', '--port', String(port), '--local', '--indexlab-root', indexlabRoot],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        LOCAL_MODE: 'true',
-        HELPER_FILES_ROOT: helperRoot,
-        CATEGORY_AUTHORITY_ROOT: helperRoot,
-      },
-      stdio: ['ignore', 'ignore', 'pipe']
-    }
-  );
+  let proc = null;
+  t.after(async () => {
+    if (proc && !proc.killed) proc.kill('SIGTERM');
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  });
+  try {
+    proc = spawn(
+      process.execPath,
+      ['src/api/guiServer.js', '--port', String(port), '--local', '--indexlab-root', indexlabRoot],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          LOCAL_MODE: 'true',
+          HELPER_FILES_ROOT: helperRoot,
+          CATEGORY_AUTHORITY_ROOT: helperRoot,
+        },
+        stdio: ['ignore', 'ignore', 'pipe']
+      }
+    );
+  } catch (error) {
+    if (skipIfSpawnEperm(t, error)) return;
+    throw error;
+  }
 
   let stderr = '';
   proc.stderr.on('data', (chunk) => {
     stderr += chunk.toString();
-  });
-
-  t.after(async () => {
-    if (!proc.killed) proc.kill('SIGTERM');
-    await fs.rm(tempRoot, { recursive: true, force: true });
   });
 
   await waitForHttpReady(`http://127.0.0.1:${port}/api/v1/health`);

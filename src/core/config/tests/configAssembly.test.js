@@ -145,9 +145,9 @@ describe('assembleConfigFromRegistry', () => {
 
   it('env override propagates for string settings', () => {
     clearAppEnv();
-    process.env.SEARXNG_BASE_URL = 'http://custom:9090';
+    process.env.RUNTIME_CONTROL_FILE = '/custom/runtime_overrides.json';
     const overrideCfg = assembleConfigFromRegistry(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(overrideCfg.searxngBaseUrl, 'http://custom:9090');
-    delete process.env.SEARXNG_BASE_URL;
+    strictEqual(overrideCfg.runtimeControlFile, '/custom/runtime_overrides.json');
+    delete process.env.RUNTIME_CONTROL_FILE;
   });
 });

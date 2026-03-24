@@ -27,28 +27,28 @@ async function loadIndexingRunMutationsModule() {
             };
           }
         `,
-        '../../../api/client': `
+        '../../../api/client.ts': `
           export const api = {
             post() {
               throw new Error('api.post should not run during onMutate contract tests');
             },
           };
         `,
-        './indexingRunStartParsedValues': `
+        './indexingRunStartParsedValues.ts': `
           export function deriveIndexingRunStartParsedValues() {
             return {};
           }
         `,
-        './indexingRunStartPayload': `
+        './indexingRunStartPayload.ts': `
           export function buildIndexingRunStartPayload() {
             return {};
           }
         `,
-        './indexingRunMutationCallbacks': `
+        './indexingRunMutationCallbacks.ts': `
           export function handleStartIndexLabMutationError() {}
           export function handleStartIndexLabMutationSuccess() {}
         `,
-        './indexingRunId': `
+        './indexingRunId.ts': `
           export function buildRequestedRunId() {
             return 'mouse-logitech-g-pro-wireless-run-1234567';
           }

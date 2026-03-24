@@ -7,13 +7,13 @@ async function loadStudioPublicApi() {
   return loadBundledModule('tools/gui-react/src/features/studio/index.ts', {
     prefix: 'studio-public-api-',
     stubs: {
-      './components/BrandManager': `
+      './components/BrandManager.tsx': `
         export const BrandManager = Symbol.for('BrandManager');
       `,
-      './components/StudioPage': `
+      './components/StudioPage.tsx': `
         export const StudioPage = Symbol.for('StudioPage');
       `,
-      './state/invalidateFieldRulesQueries': `
+      './state/invalidateFieldRulesQueries.ts': `
         export function invalidateFieldRulesQueries() {
           return 'invalidated';
         }

@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 import { SpecDb } from '../specDb.js';
 import { seedSpecDb } from '../seed.js';
 import { buildComponentIdentifier } from '../../utils/componentIdentifier.js';
+import { skipIfSpawnEperm } from '../../shared/tests/helpers/spawnEperm.js';
 import {
   PRODUCT_A,
   PRODUCT_B,
@@ -362,18 +363,23 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
     const guiServerPath = path.resolve('src/api/guiServer.js');
-    child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
-      cwd: tempRoot,
-      env: {
-        ...process.env,
-        HELPER_FILES_ROOT: config.categoryAuthorityRoot,
-        LOCAL_OUTPUT_ROOT: config.localOutputRoot,
-        LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
-        OUTPUT_MODE: 'local',
-        LOCAL_MODE: 'true',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    try {
+      child = spawn('node', [guiServerPath, '--port', String(port), '--local'], {
+        cwd: tempRoot,
+        env: {
+          ...process.env,
+          HELPER_FILES_ROOT: config.categoryAuthorityRoot,
+          LOCAL_OUTPUT_ROOT: config.localOutputRoot,
+          LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
+          OUTPUT_MODE: 'local',
+          LOCAL_MODE: 'true',
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } catch (error) {
+      if (skipIfSpawnEperm(t, error)) return;
+      throw error;
+    }
     child.stdout.on('data', (chunk) => logs.push(String(chunk)));
     child.stderr.on('data', (chunk) => logs.push(String(chunk)));
     await waitForServerReady(baseUrl, child);
@@ -1450,4 +1456,3 @@ test('lane contract matrix: grid + component + enum endpoints stay decoupled and
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
-

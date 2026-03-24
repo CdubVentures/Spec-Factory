@@ -8,6 +8,7 @@ import {
   getFreePort,
   waitForHttpReady,
 } from './helpers/guiServerHttpHarness.js';
+import { skipIfSpawnEperm } from '../../shared/tests/helpers/spawnEperm.js';
 
 async function readJsonFileUntil(filePath, predicate, timeoutMs = 4_000) {
   const started = Date.now();
@@ -46,24 +47,29 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
 
   const port = await getFreePort();
   const guiServerPath = path.join(repoRoot, 'src', 'api', 'guiServer.js');
-  child = spawn(
-    process.execPath,
-    [guiServerPath, '--port', String(port), '--local'],
-    {
-      cwd: tempRoot,
-      env: {
-        ...process.env,
-        HELPER_FILES_ROOT: helperRoot,
-        CATEGORY_AUTHORITY_ROOT: helperRoot,
-        LOCAL_OUTPUT_ROOT: outputRoot,
-        LOCAL_INPUT_ROOT: inputRoot,
-        OUTPUT_MODE: 'local',
-        LOCAL_MODE: 'true',
-        SETTINGS_CANONICAL_ONLY_WRITES: 'true',
+  try {
+    child = spawn(
+      process.execPath,
+      [guiServerPath, '--port', String(port), '--local'],
+      {
+        cwd: tempRoot,
+        env: {
+          ...process.env,
+          HELPER_FILES_ROOT: helperRoot,
+          CATEGORY_AUTHORITY_ROOT: helperRoot,
+          LOCAL_OUTPUT_ROOT: outputRoot,
+          LOCAL_INPUT_ROOT: inputRoot,
+          OUTPUT_MODE: 'local',
+          LOCAL_MODE: 'true',
+          SETTINGS_CANONICAL_ONLY_WRITES: 'true',
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
       },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  );
+    );
+  } catch (error) {
+    if (skipIfSpawnEperm(t, error)) return;
+    throw error;
+  }
   child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
   child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
 

@@ -1,52 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function loadModule(entryRelativePath, stubs) {
-  const esbuild = await import('esbuild');
-  const entryPath = path.resolve(__dirname, '../../../../../../..', entryRelativePath);
-  const result = await esbuild.build({
-    entryPoints: [entryPath],
-    bundle: true,
-    write: false,
-    format: 'esm',
-    platform: 'node',
-    loader: { '.ts': 'ts', '.tsx': 'tsx' },
-    plugins: [
-      {
-        name: 'stub-modules',
-        setup(build) {
-          build.onResolve({ filter: /.*/ }, (args) => {
-            if (Object.prototype.hasOwnProperty.call(stubs, args.path)) {
-              return { path: args.path, namespace: 'stub' };
-            }
-            return null;
-          });
-
-          build.onLoad({ filter: /.*/, namespace: 'stub' }, (args) => ({
-            contents: stubs[args.path],
-            loader: 'js',
-          }));
-        },
-      },
-    ],
+  return loadBundledModule(entryRelativePath, {
+    prefix: 'autosave-flush-contract-',
+    stubs,
   });
-
-  const code = result.outputFiles[0].text;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'autosave-flush-contract-'));
-  const tmpFile = path.join(tmpDir, 'module.mjs');
-  fs.writeFileSync(tmpFile, code, 'utf8');
-
-  try {
-    return await import(`file://${tmpFile.replace(/\\/g, '/')}?v=${Date.now()}-${Math.random()}`);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
 }
 
 function createHookHarness() {

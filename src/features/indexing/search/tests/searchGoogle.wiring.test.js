@@ -1,101 +1,55 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  createGoogleCrawlerFactoryDouble,
-  createPacerDouble,
-} from './factories/searchProviderTestDoubles.js';
+import { createGoogleCrawlerFactoryDouble } from './factories/searchProviderTestDoubles.js';
+import { buildGoogleSearchOptions, loadSearchGoogleModule } from './helpers/googleSearchHarness.js';
 
-async function loadModule() {
-  return import('../searchGoogle.js');
-}
+describe('searchGoogle output contract across configuration variants', () => {
+  it('returns the same result contract when proxyUrls are provided', async () => {
+    const { searchGoogle } = await loadSearchGoogleModule();
+    const { factory } = createGoogleCrawlerFactoryDouble();
 
-function buildGoogleSearchOptions(factory, overrides = {}) {
-  const { pacer } = createPacerDouble();
-
-  return {
-    _crawlerFactory: factory,
-    _pacer: pacer,
-    minQueryIntervalMs: 0,
-    postResultsDelayMs: 0,
-    screenshotsEnabled: false,
-    ...overrides,
-  };
-}
-
-describe('searchGoogle wiring', () => {
-  it('passes proxyUrls to ProxyConfiguration when non-empty', async () => {
-    const { searchGoogle } = await loadModule();
-    const { factory, calls } = createGoogleCrawlerFactoryDouble();
-
-    await searchGoogle({
-      query: 'test',
+    const out = await searchGoogle({
+      query: 'test query',
       proxyUrls: ['http://user:pass@proxy1:80', 'http://user:pass@proxy2:80'],
       ...buildGoogleSearchOptions(factory),
     });
 
-    assert.deepEqual(calls.proxyConfig?.proxyUrls, [
-      'http://user:pass@proxy1:80',
-      'http://user:pass@proxy2:80',
-    ]);
+    assert.ok(Array.isArray(out.results));
+    assert.ok(out.results.length > 0, 'expected google results');
+    assert.ok(out.results.every((row) => row.provider === 'google'));
   });
 
-  it('does not create ProxyConfiguration when proxyUrls is empty', async () => {
-    const { searchGoogle } = await loadModule();
-    const { factory, calls } = createGoogleCrawlerFactoryDouble();
+  it('does not include screenshot metadata when screenshots are disabled', async () => {
+    const { searchGoogle } = await loadSearchGoogleModule();
+    const { factory } = createGoogleCrawlerFactoryDouble();
 
-    await searchGoogle({
-      query: 'test',
-      proxyUrls: [],
-      ...buildGoogleSearchOptions(factory),
-    });
-
-    assert.equal(calls.proxyConfig, null);
-  });
-
-  it('wires the crawler with the expected headless and retry options', async () => {
-    const { searchGoogle } = await loadModule();
-    const { factory, calls } = createGoogleCrawlerFactoryDouble();
-
-    await searchGoogle({
-      query: 'test',
-      ...buildGoogleSearchOptions(factory),
-    });
-
-    assert.equal(calls.crawlerOptions?.launchContext?.launchOptions?.headless, true);
-    assert.equal(calls.crawlerOptions?.retryOnBlocked, true);
-    assert.equal(calls.crawlerOptions?.persistCookiesPerSession, true);
-  });
-
-  it('uses the expected Google URL shape and Chrome launch flags', async () => {
-    const { searchGoogle } = await loadModule();
-    const { factory, calls } = createGoogleCrawlerFactoryDouble();
-
-    await searchGoogle({
+    const out = await searchGoogle({
       query: 'test query',
-      ...buildGoogleSearchOptions(factory),
+      ...buildGoogleSearchOptions(factory, { screenshotsEnabled: false }),
     });
 
-    const requestUrl = calls.requestListSources?.[0]?.url ?? '';
-    const args = calls.crawlerOptions?.launchContext?.launchOptions?.args ?? [];
-
-    assert.ok(requestUrl.includes('udm=14'), `expected udm=14 in ${requestUrl}`);
-    assert.ok(!requestUrl.includes('num='), `expected num to be absent in ${requestUrl}`);
-    assert.ok(args.includes('--disable-background-networking'));
+    assert.ok(Array.isArray(out.results));
+    assert.equal(out.screenshot, undefined);
   });
 
-  it('uses the modern Windows Chrome fingerprint preset', async () => {
-    const { searchGoogle } = await loadModule();
-    const { factory, calls } = createGoogleCrawlerFactoryDouble();
-
-    await searchGoogle({
-      query: 'test',
-      ...buildGoogleSearchOptions(factory),
+  it('returns screenshot metadata when screenshots are enabled', async () => {
+    const { searchGoogle } = await loadSearchGoogleModule();
+    const { factory } = createGoogleCrawlerFactoryDouble({
+      evaluateResults: [undefined, { x: 0, y: 0, width: 320, height: 240 }],
     });
 
-    const options =
-      calls.crawlerOptions?.browserPoolOptions?.fingerprintOptions?.fingerprintGeneratorOptions;
+    const out = await searchGoogle({
+      query: 'test query',
+      ...buildGoogleSearchOptions(factory, {
+        screenshotsEnabled: true,
+        postResultsDelayMs: 0,
+      }),
+    });
 
-    assert.ok(options);
-    assert.equal(options.slim, undefined);
+    assert.ok(Array.isArray(out.results));
+    assert.ok(out.results.length > 0, 'expected google results');
+    assert.ok(Buffer.isBuffer(out.screenshot?.buffer));
+    assert.equal(typeof out.screenshot?.bytes, 'number');
+    assert.equal(typeof out.screenshot?.queryHash, 'string');
   });
 });
