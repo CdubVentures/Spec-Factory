@@ -78,9 +78,7 @@ export const PARSING_CONFIDENCE_BASE_DEFAULTS = parseRuntimeJsonDefault('parsing
 });
 
 export const REPAIR_DEDUPE_RULE_DEFAULT = 'domain_once';
-export const DEFAULT_USER_AGENT = runtimeSettingDefault(
-  'userAgent'
-);
+export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
 // ---------------------------------------------------------------------------
 // Map normalizers (moved from config.js Phase 2)

@@ -185,6 +185,9 @@ async function loadSerpTriageModule() {
         export function triageDecisionBadgeClass() {
           return 'sf-chip-neutral';
         }
+        export function domainRoleBadgeClass() {
+          return 'sf-chip-neutral';
+        }
         export function scoreBarSegments() {
           return [];
         }
@@ -411,4 +414,3 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     'triage should show LLM badge (deterministic/llm toggle retired)',
   );
 });
-

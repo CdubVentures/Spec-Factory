@@ -7,7 +7,7 @@ import { deriveApprovedFromSources } from '../src/features/indexing/sources/sour
 import {
   loadSourceRegistry,
   registrySparsityReport,
-} from '../src/features/indexing/discovery/sourceRegistry.js';
+} from '../src/features/indexing/pipeline/shared/sourceRegistry.js';
 
 // WHY: Manufacturer hosts are no longer static source entries — they are
 // auto-promoted at runtime from brand resolver output. Static requiredHosts

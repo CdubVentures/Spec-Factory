@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createBrandResolverCallLlm,
-} from '../src/features/indexing/discovery/discoveryLlmAdapters.js';
+} from '../src/features/indexing/pipeline/brandResolver/brandResolverLlmAdapter.js';
 
 function makeCallRoutedLlm(returnValue = {}) {
   const calls = [];

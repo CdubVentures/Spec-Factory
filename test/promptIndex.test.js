@@ -8,7 +8,7 @@ import {
   recordPromptResult,
   lookupPromptHistory,
   promptIndexSummary
-} from '../src/features/indexing/discovery/promptIndex.js';
+} from '../src/features/indexing/pipeline/shared/promptIndex.js';
 
 async function withTempLog(fn) {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pi-test-'));

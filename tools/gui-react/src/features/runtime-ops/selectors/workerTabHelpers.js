@@ -90,7 +90,12 @@ function compareSearchWorkers(a, b) {
 
 function hasFetchAssignment(worker) {
   return String(worker?.assigned_search_slot || '').trim() !== ''
-    && positiveIntOrMax(worker?.assigned_search_attempt_no) !== Number.MAX_SAFE_INTEGER;
+    && positiveIntOrMax(worker?.assigned_result_rank) !== Number.MAX_SAFE_INTEGER;
+}
+
+function numericWorkerIdSuffix(workerId) {
+  const match = String(workerId || '').match(/(\d+)$/);
+  return match ? Number.parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
 }
 
 function compareFetchWorkers(a, b) {
@@ -100,10 +105,10 @@ function compareFetchWorkers(a, b) {
   const bySlot = slotIndex(a.assigned_search_slot) - slotIndex(b.assigned_search_slot);
   if (bySlot !== 0) return bySlot;
 
-  const byAttempt = positiveIntOrMax(a.assigned_search_attempt_no) - positiveIntOrMax(b.assigned_search_attempt_no);
-  if (byAttempt !== 0) return byAttempt;
+  const byRank = positiveIntOrMax(a.assigned_result_rank) - positiveIntOrMax(b.assigned_result_rank);
+  if (byRank !== 0) return byRank;
 
-  return compareText(a.worker_id, b.worker_id);
+  return numericWorkerIdSuffix(a.worker_id) - numericWorkerIdSuffix(b.worker_id);
 }
 
 export function sortWorkersForTabs(workers = []) {

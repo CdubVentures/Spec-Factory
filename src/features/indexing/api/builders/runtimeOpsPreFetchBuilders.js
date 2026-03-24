@@ -30,11 +30,11 @@ export function buildPreFetchPhases(events, meta, artifacts) {
 
   const needsetSnapshots = [];
   let lastNeedset = null;
-  // WHY: Schema 4 panel data (bundles with queries, profile_influence, deltas)
+  // WHY: Search plan panel data (bundles with queries, profile_influence, deltas)
   // is emitted mid-run by runDiscoverySeedPlan. The finalization emits a second
-  // needset_computed with Schema 2 data that lacks this. Preserve the best
-  // Schema 4 panel data across events so the GUI always shows it.
-  let bestSchema4Panel = null;
+  // needset_computed with NeedSet assessment data that lacks this. Preserve the best
+  // search plan panel data across events so the GUI always shows it.
+  let bestPlannerPanel = null;
 
   const llmPending = {};
   // WHY: O(1) — group keys derived from contract SSOT, not hardcoded.
@@ -68,9 +68,9 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       const eventBundles = Array.isArray(payload.bundles) ? payload.bundles : [];
       const eventPi = payload.profile_influence && typeof payload.profile_influence === 'object' ? payload.profile_influence : null;
       const eventDeltas = Array.isArray(payload.deltas) ? payload.deltas : [];
-      const eventHasSchema4Queries = eventBundles.some((b) => Array.isArray(b.queries) && b.queries.length > 0);
-      if (eventHasSchema4Queries) {
-        bestSchema4Panel = { bundles: eventBundles, profile_influence: eventPi, deltas: eventDeltas };
+      const eventHasPlannerQueries = eventBundles.some((b) => Array.isArray(b.queries) && b.queries.length > 0);
+      if (eventHasPlannerQueries) {
+        bestPlannerPanel = { bundles: eventBundles, profile_influence: eventPi, deltas: eventDeltas };
       }
       lastNeedset = {
         needset_size: snap.needset_size,
@@ -237,7 +237,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
       queryJourney = {
         selected_query_count: toInt(payload.selected_query_count, 0),
         selected_queries: Array.isArray(payload.selected_queries) ? payload.selected_queries : [],
-        schema4_query_count: toInt(payload.schema4_query_count, 0),
+        search_plan_query_count: toInt(payload.search_plan_query_count, 0),
         deterministic_query_count: toInt(payload.deterministic_query_count, 0),
         rejected_count: toInt(payload.rejected_count, 0),
       };
@@ -299,14 +299,14 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     }
   }
 
-  // WHY: If the last needset_computed event (finalization) lost Schema 4 panel
+  // WHY: If the last needset_computed event (finalization) lost search plan panel
   // data, restore it from the best mid-run emission that had queries.
-  if (lastNeedset && bestSchema4Panel) {
+  if (lastNeedset && bestPlannerPanel) {
     const lastHasQueries = lastNeedset.bundles.some((b) => Array.isArray(b.queries) && b.queries.length > 0);
     if (!lastHasQueries) {
-      lastNeedset.bundles = bestSchema4Panel.bundles;
-      lastNeedset.profile_influence = bestSchema4Panel.profile_influence;
-      lastNeedset.deltas = bestSchema4Panel.deltas;
+      lastNeedset.bundles = bestPlannerPanel.bundles;
+      lastNeedset.profile_influence = bestPlannerPanel.profile_influence;
+      lastNeedset.deltas = bestPlannerPanel.deltas;
     }
   }
 

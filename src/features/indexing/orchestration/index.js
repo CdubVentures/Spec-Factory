@@ -9,5 +9,5 @@ export function getIndexingOrchestrationFeatureInfo() {
 }
 
 export * from './bootstrap/index.js';
-export * from './discovery/index.js';
+export * from '../pipeline/orchestration/index.js';
 export * from './shared/index.js';

@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js';
+import { runDiscoverySeedPlan } from '../src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js';
 
 // --- helpers ---
 
@@ -228,7 +228,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
 
     assert.ok(capturedArgs, 'planner still called despite schema4 failure');
     assert.ok(capturedArgs.searchProfileBase, 'searchProfileBase passed to planner');
-    assert.ok(logs.some(l => l.msg === 'schema4_computation_failed'), 'should log warning');
+    assert.ok(logs.some(l => l.msg === 'search_plan_failed'), 'should log warning');
   });
 
   it('final result is a fresh object, not a mutated discoveryResult reference', async () => {

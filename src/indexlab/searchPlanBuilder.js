@@ -1,6 +1,6 @@
-// Logic Box 3+4: SearchPlanningContext (Schema 3) → LLM → SearchPlanOutput (Schema 4)
+// Logic Box 3+4: Search planning context → LLM → Search plan (LLM-annotated)
 // Calls the planner LLM to generate targeted search queries from focus_groups,
-// applies anti-garbage filtering, and assembles Schema 4.
+// applies anti-garbage filtering, and assembles the search plan.
 
 import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
@@ -82,14 +82,14 @@ export function computeDeltas(ctx) {
 }
 
 function makeDisabledResult(ctx) {
-  return assembleSchema4(ctx, [], { mode: 'disabled', plannerComplete: true });
+  return assembleSearchPlan(ctx, [], { mode: 'disabled', plannerComplete: true });
 }
 
 function makeErrorResult(ctx, error) {
-  return assembleSchema4(ctx, [], { mode: 'error', plannerComplete: false, error });
+  return assembleSearchPlan(ctx, [], { mode: 'error', plannerComplete: false, error });
 }
 
-function assembleSchema4(ctx, queries, {
+function assembleSearchPlan(ctx, queries, {
   mode, plannerComplete, error = null, model = null,
   llmResult = null, dupesDropped = 0,
 } = {}) {
@@ -143,7 +143,7 @@ function assembleSchema4(ctx, queries, {
     overflow_keys: alloc?.overflow_key_count ?? 0,
   };
 
-  // Group bundles — read from Schema 3 focus_groups, include display fields
+  // Group bundles — read from search planning context focus_groups, include display fields
   const bundleMap = new Map();
   for (const fg of (ctx.focus_groups || [])) {
     const gk = fg.key || fg.group_key || '';
@@ -373,6 +373,6 @@ export async function buildSearchPlan({
 
   // WHY: NeedSet LLM no longer generates queries — query authoring belongs
   // to Search Profile (tiers) and Search Planner (LLM). We pass empty
-  // queries to assembleSchema4; group annotations flow via llmResult.
-  return assembleSchema4(ctx, [], { mode: 'llm', plannerComplete: true, model: resolvePhaseModel(config, 'needset'), llmResult, dupesDropped: 0 });
+  // queries to assembleSearchPlan; group annotations flow via llmResult.
+  return assembleSearchPlan(ctx, [], { mode: 'llm', plannerComplete: true, model: resolvePhaseModel(config, 'needset'), llmResult, dupesDropped: 0 });
 }

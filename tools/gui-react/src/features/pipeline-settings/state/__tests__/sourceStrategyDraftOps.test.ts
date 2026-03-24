@@ -15,7 +15,7 @@ import {
   CRAWL_CONFIG_FIELD_KEYS,
   DISCOVERY_FIELD_KEYS,
   FIELD_COVERAGE_KEYS,
-} from '../../../../../../../src/features/indexing/discovery/contracts/sourceEntryContract.js';
+} from '../../../../../../../src/features/indexing/pipeline/shared/contracts/sourceEntryContract.js';
 
 // -- Helpers --
 

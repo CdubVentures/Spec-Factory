@@ -5,7 +5,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { executeSearchQueries } from '../src/features/indexing/discovery/discoverySearchExecution.js';
+import { executeSearchQueries } from '../src/features/indexing/pipeline/searchExecution/executeSearchQueries.js';
 
 // ---------------------------------------------------------------------------
 // Helpers: minimal mocks

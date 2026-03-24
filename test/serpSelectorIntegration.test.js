@@ -4,7 +4,7 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { processDiscoveryResults } from '../src/features/indexing/discovery/discoveryResultProcessor.js';
+import { processDiscoveryResults } from '../src/features/indexing/pipeline/resultProcessing/processDiscoveryResults.js';
 
 // ---------------------------------------------------------------------------
 // Fixture factories

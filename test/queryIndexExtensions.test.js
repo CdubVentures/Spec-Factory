@@ -9,7 +9,7 @@ import {
   queryIndexSummary,
   urlIndexSummary,
   highYieldUrls
-} from '../src/features/indexing/discovery/queryIndex.js';
+} from '../src/features/indexing/pipeline/shared/queryIndex.js';
 
 // Helper: create temp dir + NDJSON file
 async function withTempLog(lines, fn) {

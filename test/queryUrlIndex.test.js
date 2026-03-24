@@ -8,7 +8,7 @@ import {
   lookupQueryHistory,
   recordUrlVisit,
   lookupUrlHistory,
-} from '../src/features/indexing/discovery/queryIndex.js';
+} from '../src/features/indexing/pipeline/shared/queryIndex.js';
 
 let tmpDir;
 

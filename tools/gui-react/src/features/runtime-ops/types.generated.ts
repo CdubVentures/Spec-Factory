@@ -351,7 +351,7 @@ export interface SearchPlanPassBase {
 export interface QueryJourneyData {
   selected_query_count: number;
   selected_queries: unknown[];
-  schema4_query_count: number;
+  search_plan_query_count: number;
   deterministic_query_count: number;
   rejected_count: number;
 }

@@ -1,4 +1,4 @@
-// Logic Box 2: Schema 2 (NeedSetOutput) → Schema 3 (SearchPlanningContext)
+// Logic Box 2: NeedSet assessment (NeedSetOutput) → Search planning context (SearchPlanningContext)
 // Groups per-field data into per-group focus_groups[], attaches group_catalog metadata,
 // aggregates hints/history with SET semantics (unresolved fields only).
 

@@ -13,8 +13,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runQueryJourney } from '../src/features/indexing/discovery/stages/queryJourney.js';
-import { buildSerpSelectorInput } from '../src/features/indexing/discovery/serpSelector.js';
+import { runQueryJourney } from '../src/features/indexing/pipeline/queryJourney/runQueryJourney.js';
+import { buildSerpSelectorInput } from '../src/features/indexing/pipeline/resultProcessing/serpSelector.js';
 
 // ---------------------------------------------------------------------------
 // Shared factories
@@ -202,7 +202,7 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
 // domainClassifierUrlCap: Stage 08 enqueue cap
 // ---------------------------------------------------------------------------
 
-import { runDomainClassifier } from '../src/features/indexing/discovery/stages/domainClassifier.js';
+import { runDomainClassifier } from '../src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js';
 
 describe('runDomainClassifier respects domainClassifierUrlCap', () => {
   function makePlanner() {

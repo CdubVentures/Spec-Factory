@@ -5,7 +5,7 @@ import {
   applyTierAcceptancePolicy,
   clusterDeepNumericClaims,
   applyCoreDeepGates,
-} from '../src/features/indexing/discovery/coreDeepGate.js';
+} from '../src/features/indexing/pipeline/shared/coreDeepGate.js';
 
 // Minimal mock fieldRulesEngine
 function makeMockEngine(overrides = {}) {

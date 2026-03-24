@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js';
+import { runDiscoverySeedPlan } from '../src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js';
 
 function makeConfig(overrides = {}) {
   return { discoveryEnabled: true, searchEngines: 'bing,google', maxCandidateUrls: 10, ...overrides };

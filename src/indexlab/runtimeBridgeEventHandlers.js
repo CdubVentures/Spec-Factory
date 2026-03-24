@@ -488,7 +488,7 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
   state.prefetchData.query_journey = {
     selected_query_count: asInt(row.selected_query_count, 0),
     selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
-    schema4_query_count: asInt(row.schema4_query_count, 0),
+    search_plan_query_count: asInt(row.search_plan_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
     rejected_count: asInt(row.rejected_count, 0),
   };
@@ -496,7 +496,7 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
     scope: 'journey',
     selected_query_count: asInt(row.selected_query_count, 0),
     selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
-    schema4_query_count: asInt(row.schema4_query_count, 0),
+    search_plan_query_count: asInt(row.search_plan_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
   }, ts);
 
@@ -766,7 +766,7 @@ async function handleLlmEvent(state, deps, { eventName, ts, row }) {
   }, ts);
 }
 
-// WHY: search_queued events are emitted by the orchestrator BEFORE Stage 06
+// WHY: search_queued events are emitted by the orchestrator BEFORE Search Execution phase
 // starts. They pre-populate search worker slots so the GUI renders all planned
 // workers immediately. The bridge must call prePopulateSlots to reserve the
 // letter (a, b, c...) before discovery_query_started fires for each query.

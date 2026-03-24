@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js';
+import { runDiscoverySeedPlan } from '../src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js';
 
 // ---------------------------------------------------------------------------
 // Realistic Schema 2 output (needsetEngine.computeNeedSet return shape)
@@ -381,18 +381,18 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
     ...makeStageStubs(),
   });
 
-  // WHY: needSet.js now emits two needset_computed events — a schema2_preview
-  // early, then the full schema4_planner one after the LLM call completes.
+  // WHY: needSet.js now emits two needset_computed events — a needset_assessment
+  // early, then the full search_plan one after the LLM call completes.
   const needsetCalls = logger.calls.filter(
     (c) => c.level === 'info' && c.event === 'needset_computed',
   );
-  const schema4Calls = needsetCalls.filter((c) => c.payload?.scope === 'schema4_planner');
-  assert.equal(schema4Calls.length, 1, 'exactly one schema4_planner needset_computed emitted');
+  const schema4Calls = needsetCalls.filter((c) => c.payload?.scope === 'search_plan');
+  assert.equal(schema4Calls.length, 1, 'exactly one search_plan needset_computed emitted');
 
   const payload = schema4Calls[0].payload;
 
   // -- scope and schema_version --
-  assert.equal(payload.scope, 'schema4_planner', 'scope must be schema4_planner');
+  assert.equal(payload.scope, 'search_plan', 'scope must be search_plan');
   assert.equal(payload.schema_version, 'needset_planner_output.v2', 'schema_version from Schema 4');
 
   // -- profile_influence (every family count) --
@@ -492,7 +492,7 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   assert.ok(payload.identity, 'identity must exist');
   assert.equal(payload.identity.state, 'locked');
 
-  // WHY: schema4_handoff_ready no longer emitted — _planner/_learning/_panel
+  // WHY: search_plan_ready no longer emitted — _planner/_learning/_panel
   // attachment removed in Search Planner redesign. needset_computed still fires.
 });
 
@@ -526,18 +526,18 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
     ...makeStageStubs(),
   });
 
-  // No schema4_planner needset_computed because the LLM call failed.
-  // The early schema2_preview may still fire before the failure.
+  // No search_plan needset_computed because the LLM call failed.
+  // The early needset_assessment may still fire before the failure.
   const schema4Calls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'schema4_planner',
+    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'search_plan',
   );
-  assert.equal(schema4Calls.length, 0, 'no schema4_planner needset_computed on failure');
+  assert.equal(schema4Calls.length, 0, 'no search_plan needset_computed on failure');
 
   // But a warning was logged
   const warnCalls = logger.calls.filter(
-    (c) => c.level === 'warn' && c.event === 'schema4_computation_failed',
+    (c) => c.level === 'warn' && c.event === 'search_plan_failed',
   );
-  assert.equal(warnCalls.length, 1, 'schema4_computation_failed warning logged');
+  assert.equal(warnCalls.length, 1, 'search_plan_failed warning logged');
   assert.equal(warnCalls[0].payload.error, 'LLM unavailable');
 });
 
@@ -576,10 +576,10 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
     ...makeStageStubs(),
   });
 
-  // No schema4_planner needset_computed when panel is null.
-  // The early schema2_preview may still fire.
+  // No search_plan needset_computed when panel is null.
+  // The early needset_assessment may still fire.
   const schema4Calls = logger.calls.filter(
-    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'schema4_planner',
+    (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'search_plan',
   );
-  assert.equal(schema4Calls.length, 0, 'no schema4_planner needset_computed when panel is null');
+  assert.equal(schema4Calls.length, 0, 'no search_plan needset_computed when panel is null');
 });

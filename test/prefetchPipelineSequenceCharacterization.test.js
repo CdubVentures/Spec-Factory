@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runDiscoverySeedPlan } from '../src/features/indexing/orchestration/discovery/runDiscoverySeedPlan.js';
+import { runDiscoverySeedPlan } from '../src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -347,13 +347,13 @@ describe('Prefetch pipeline sequence characterization', () => {
     });
   });
 
-  describe('needset_computed and schema4_handoff_ready events', () => {
+  describe('needset_computed and search_plan_ready events', () => {
 
     it('needset_computed emitted by runNeedSet stage with panel data and fields', async () => {
       const logger = makeLogger();
 
       // Use the real runNeedSet stage (not stubbed) since it emits the events
-      const { runNeedSet } = await import('../src/features/indexing/discovery/stages/needSet.js');
+      const { runNeedSet } = await import('../src/features/indexing/pipeline/needSet/runNeedSet.js');
 
       await runDiscoverySeedPlan(makeBaseArgs({
         runId: 'run-event-1',
@@ -366,21 +366,21 @@ describe('Prefetch pipeline sequence characterization', () => {
         }),
       }));
 
-      // WHY: needSet.js now emits two needset_computed events — a schema2_preview
-      // early, then the full schema4_planner one after the LLM call completes.
+      // WHY: needSet.js now emits two needset_computed events — a needset_assessment
+      // early, then the full search_plan one after the LLM call completes.
       const needsetEvents = logger.events.filter((e) => e.event === 'needset_computed');
       assert.ok(needsetEvents.length >= 1, 'at least one needset_computed emitted');
-      const schema4Event = needsetEvents.find((e) => e.data.scope === 'schema4_planner');
-      assert.ok(schema4Event, 'schema4_planner needset_computed emitted');
+      const schema4Event = needsetEvents.find((e) => e.data.scope === 'search_plan');
+      assert.ok(schema4Event, 'search_plan needset_computed emitted');
       assert.equal(schema4Event.data.schema_version, 'needset_planner_output.v2');
       assert.ok(Array.isArray(schema4Event.data.fields), 'fields array present');
       assert.ok(schema4Event.data.planner_seed, 'planner_seed present');
       assert.ok(Array.isArray(schema4Event.data.bundles), 'bundles from panel present');
     });
 
-    it('schema4_handoff_ready emitted when handoff has queries', async () => {
+    it('search_plan_ready emitted when handoff has queries', async () => {
       const logger = makeLogger();
-      const { runNeedSet } = await import('../src/features/indexing/discovery/stages/needSet.js');
+      const { runNeedSet } = await import('../src/features/indexing/pipeline/needSet/runNeedSet.js');
 
       await runDiscoverySeedPlan(makeBaseArgs({
         runId: 'run-event-2',
@@ -395,10 +395,10 @@ describe('Prefetch pipeline sequence characterization', () => {
 
       const eventNames = logger.events.map((e) => e.event);
       assert.ok(eventNames.includes('needset_computed'), 'needset_computed emitted');
-      assert.ok(eventNames.includes('schema4_handoff_ready'), 'schema4_handoff_ready emitted');
+      assert.ok(eventNames.includes('search_plan_ready'), 'search_plan_ready emitted');
       const needsetIdx = eventNames.indexOf('needset_computed');
-      const handoffIdx = eventNames.indexOf('schema4_handoff_ready');
-      assert.ok(needsetIdx < handoffIdx, 'needset_computed fires before schema4_handoff_ready');
+      const handoffIdx = eventNames.indexOf('search_plan_ready');
+      assert.ok(needsetIdx < handoffIdx, 'needset_computed fires before search_plan_ready');
     });
   });
 
@@ -502,7 +502,7 @@ describe('Prefetch pipeline sequence characterization', () => {
       };
 
       // Use real domain classifier to test enqueue behavior
-      const { runDomainClassifier } = await import('../src/features/indexing/discovery/stages/domainClassifier.js');
+      const { runDomainClassifier } = await import('../src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js');
 
       await runDiscoverySeedPlan(makeBaseArgs({
         runId: 'run-domain-1',

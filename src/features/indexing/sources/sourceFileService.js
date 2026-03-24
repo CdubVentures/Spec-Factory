@@ -9,15 +9,15 @@ import path from 'node:path';
 export {
   DISCOVERY_DEFAULTS,
   sourceEntryMutableKeys,
-} from '../discovery/contracts/sourceEntryContract.js';
-import { DISCOVERY_DEFAULTS, sourceEntryMutableKeys } from '../discovery/contracts/sourceEntryContract.js';
+} from '../pipeline/shared/contracts/sourceEntryContract.js';
+import { DISCOVERY_DEFAULTS, sourceEntryMutableKeys } from '../pipeline/shared/contracts/sourceEntryContract.js';
 
 // WHY: Frozen Set for backward compat — existing callers expect a Set, not a function.
 export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(sourceEntryMutableKeys());
 
 // WHY: Derived from Zod schema — O(1), auto-includes new object-typed fields.
 // Parse a populated entry to discover which fields resolve to plain objects.
-import { sourceEntrySchema } from '../discovery/sourceRegistry.js';
+import { sourceEntrySchema } from '../pipeline/shared/sourceRegistry.js';
 
 const _probeParsed = sourceEntrySchema.parse({
   host: '_probe', tier: 'tier2_lab',

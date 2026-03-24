@@ -4,8 +4,8 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { runBrandResolver } from '../src/features/indexing/discovery/stages/brandResolver.js';
-import { resolveBrandDomain } from '../src/features/indexing/discovery/brandResolver.js';
+import { runBrandResolver } from '../src/features/indexing/pipeline/brandResolver/runBrandResolver.js';
+import { resolveBrandDomain } from '../src/features/indexing/pipeline/brandResolver/resolveBrandDomain.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../src/shared/settingsRegistry.js';
 
 const reg = (key) => RUNTIME_SETTINGS_REGISTRY.find((e) => e.key === key);

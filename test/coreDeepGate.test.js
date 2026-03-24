@@ -4,7 +4,7 @@ import {
   classifyFieldCoreDeep,
   applyTierAcceptancePolicy,
   clusterDeepNumericClaims,
-} from '../src/features/indexing/discovery/coreDeepGate.js';
+} from '../src/features/indexing/pipeline/shared/coreDeepGate.js';
 
 function makeFieldRules(overrides = {}) {
   return {

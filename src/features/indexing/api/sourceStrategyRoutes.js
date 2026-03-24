@@ -10,7 +10,7 @@ import {
   validateSourceEntryPatch,
   DISCOVERY_DEFAULTS,
 } from '../sources/sourceFileService.js';
-import { SOURCE_ENTRY_DEFAULTS } from '../discovery/contracts/sourceEntryContract.js';
+import { SOURCE_ENTRY_DEFAULTS } from '../pipeline/shared/contracts/sourceEntryContract.js';
 
 export function registerSourceStrategyRoutes(ctx) {
   const {

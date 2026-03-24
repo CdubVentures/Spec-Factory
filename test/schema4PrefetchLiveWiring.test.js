@@ -159,7 +159,7 @@ function makeSchema4NeedsetComputedPayload() {
   return {
     ...panel,
     schema_version: 'needset_planner_output.v2',
-    scope: 'schema4_planner',
+    scope: 'search_plan',
     fields: makeSchema4Fields(),
     planner_seed: makePlannerSeed(),
   };

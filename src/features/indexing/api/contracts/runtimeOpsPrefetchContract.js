@@ -65,7 +65,7 @@ export const SEARCH_PLAN_PASS_KEYS = Object.freeze(SEARCH_PLAN_PASS_SHAPE.map(s 
 export const QUERY_JOURNEY_SHAPE = Object.freeze([
   { key: 'selected_query_count', coerce: 'int' },
   { key: 'selected_queries', coerce: 'array' },
-  { key: 'schema4_query_count', coerce: 'int' },
+  { key: 'search_plan_query_count', coerce: 'int' },
   { key: 'deterministic_query_count', coerce: 'int' },
   { key: 'rejected_count', coerce: 'int' },
 ]);

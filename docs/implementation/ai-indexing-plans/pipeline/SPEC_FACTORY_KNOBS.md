@@ -10,7 +10,7 @@
 
 | GUI Panel | Knob Count | Description |
 |---|---|---|
-| Run Setup | 23 | Search engines, query caps, resume, re-extract, schema enforcement |
+| Run Setup | 22 | Search engines, query caps, resume, re-extract, schema enforcement |
 | Browser Rendering | 16 | Crawlee, auto-scroll, robots.txt, page screenshots |
 | Fetch & Network | 25 | Concurrency, rate limits, timeouts, frontier cooldowns |
 | Parsing & Storage | 1 | Spec DB directory |
@@ -24,7 +24,7 @@
 | UI Settings | 5 | Auto-save toggles for Studio, Runtime, Storage panels |
 | Convergence | 0 | Empty |
 | Not in GUI | 14 | Backend-only, deprecated, or internally-managed knobs |
-| **TOTAL** | **170** | |
+| **TOTAL** | **169** | |
 
 ---
 
@@ -34,14 +34,14 @@ All knobs live in one of four registries in `settingsRegistry.js`:
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 155 | Pipeline runtime config (env vars, route API, GUI) |
+| `RUNTIME_SETTINGS_REGISTRY` | 154 | Pipeline runtime config (env vars, route API, GUI) |
 | `CONVERGENCE_SETTINGS_REGISTRY` | 0 | Empty — reserved for future knobs |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
 
 ---
 
-## Run Setup (23 knobs)
+## Run Setup (22 knobs)
 
 Settings for search configuration, pipeline limits, and resume behavior.
 
@@ -64,7 +64,6 @@ Settings for search configuration, pipeline limits, and resume behavior.
 | `domainClassifierUrlCap` | int | 50 | 1–500 | `DOMAIN_CLASSIFIER_URL_CAP` |
 | `llmEnhancerMaxRetries` | int | 2 | 1–5 | `LLM_ENHANCER_MAX_RETRIES` |
 | `maxJsonBytes` | int | 6,000,000 | 1,024–100,000,000 | `MAX_JSON_BYTES` |
-| `userAgent` | string | Chrome 125 UA | — | `USER_AGENT` |
 | `pipelineSchemaEnforcementMode` | enum | warn | off, warn, enforce | `PIPELINE_SCHEMA_ENFORCEMENT_MODE` |
 | `resumeMode` | enum | auto | auto, force_resume, start_over | `INDEXING_RESUME_MODE` |
 | `resumeWindowHours` | int | 48 | 1–8,760 | `INDEXING_RESUME_MAX_AGE_HOURS` |

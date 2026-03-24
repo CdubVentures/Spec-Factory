@@ -13,7 +13,7 @@ import {
   DISCOVERY_METHOD_VALUES,
   FIELD_COVERAGE_KEYS,
   sourceEntryMutableKeys,
-} from '../../src/features/indexing/discovery/contracts/sourceEntryContract.js';
+} from '../../src/features/indexing/pipeline/shared/contracts/sourceEntryContract.js';
 
 describe('sourceEntryContract', () => {
 

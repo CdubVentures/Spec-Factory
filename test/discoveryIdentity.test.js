@@ -22,7 +22,7 @@ import {
   extractQueryModelLikeTokens,
   isLikelyUnitToken,
   GENERIC_MODEL_TOKENS,
-} from '../src/features/indexing/discovery/discoveryIdentity.js';
+} from '../src/features/indexing/pipeline/shared/discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
 // normalizeHost

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveBrandDomain } from '../src/features/indexing/discovery/brandResolver.js';
+import { resolveBrandDomain } from '../src/features/indexing/pipeline/brandResolver/resolveBrandDomain.js';
 
 function makeMockStorage() {
   const rows = new Map();

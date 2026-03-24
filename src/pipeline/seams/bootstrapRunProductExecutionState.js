@@ -30,7 +30,7 @@ import {
 import {
   buildDiscoverySeedPlanContext,
   runDiscoverySeedPlan,
-} from '../../features/indexing/orchestration/discovery/index.js';
+} from '../../features/indexing/pipeline/orchestration/index.js';
 // WHY: Adapter subsystem removed — baseline LLM extraction handles all sources.
 // No-op factory preserves DI shape while adapters are retired.
 function createNoOpAdapterManager() {
@@ -47,7 +47,7 @@ import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { normalizeCostRates } from '../../billing/costRates.js';
 import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../indexlab/needsetEngine.js';
-import { recordPromptResult } from '../../features/indexing/discovery/index.js';
+import { recordPromptResult } from '../../features/indexing/pipeline/shared/index.js';
 import { appendCostLedgerEntry } from '../../billing/costLedger.js';
 import { initializeIndexingResume } from './initializeIndexingResume.js';
 

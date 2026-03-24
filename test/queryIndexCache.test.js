@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createQueryIndex } from '../src/features/indexing/discovery/createQueryIndex.js';
-import { createPromptIndex } from '../src/features/indexing/discovery/createPromptIndex.js';
+import { createQueryIndex } from '../src/features/indexing/pipeline/shared/createQueryIndex.js';
+import { createPromptIndex } from '../src/features/indexing/pipeline/shared/createPromptIndex.js';
 
 function withTempLog(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'idx-cache-'));

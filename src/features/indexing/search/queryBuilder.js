@@ -312,7 +312,7 @@ export function determineQueryModes(seedStatus, focusGroups) {
 /**
  * WHY: Tier 1 — broad seed queries. Cast the wide net first.
  * Uses both seed_status.source_seeds (from NeedSet history) and
- * brandResolution (from Stage 02) for source domains.
+ * brandResolution (from Brand Resolver phase) for source domains.
  * @returns {Array<object>} queryRow[]
  */
 export function buildTier1Queries(job, seedStatus, brandResolution) {
@@ -355,7 +355,7 @@ export function buildTier1Queries(job, seedStatus, brandResolution) {
     });
   }
 
-  // WHY: Brand Resolver (Stage 02) runs before Search Profile (Stage 03).
+  // WHY: Brand Resolver phase runs before Search Profile phase.
   // Add official/support domains as source seeds if not already covered
   // by seed_status.source_seeds.
   const brandDomains = [

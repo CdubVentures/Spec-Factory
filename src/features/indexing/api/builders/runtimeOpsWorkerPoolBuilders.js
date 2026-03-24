@@ -42,9 +42,9 @@ function searchQueryKey(query) {
 
 function fetchAssignmentDisplayLabel(workerId, assignment) {
   const slot = String(assignment?.slot || '').trim().toLowerCase();
-  const attemptNo = toInt(assignment?.attempt_no, 0);
-  if (!slot || attemptNo <= 0) return workerId;
-  return `fetch-${slot}${attemptNo}`;
+  const rank = toInt(assignment?.result_rank, 0);
+  if (!slot || rank <= 0) return workerId;
+  return `fetch-${slot}${rank}`;
 }
 
 function resolveFetchAssignment(assignments, referenceTsMs) {
@@ -116,6 +116,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         urlSearchAssignments[resultUrl].push({
           ...assignment,
           collected_ts_ms: collectedTsMs,
+          result_rank: toInt(result?.rank, 0),
         });
       }
     }
@@ -130,6 +131,7 @@ export function buildRuntimeOpsWorkers(events, options) {
     const assignment = resolveFetchAssignment(urlSearchAssignments[url], referenceTsMs);
     worker.assigned_search_slot = assignment?.slot ?? null;
     worker.assigned_search_attempt_no = assignment?.attempt_no ?? null;
+    worker.assigned_result_rank = assignment?.result_rank ?? null;
     worker.assigned_search_worker_id = assignment?.search_worker_id ?? null;
     worker.assigned_search_query = assignment?.query ?? null;
     worker.display_label = fetchAssignmentDisplayLabel(worker.worker_id, assignment);
@@ -165,6 +167,7 @@ export function buildRuntimeOpsWorkers(events, options) {
       if (resolvedPool === 'fetch') {
         base.assigned_search_slot = null;
         base.assigned_search_attempt_no = null;
+        base.assigned_result_rank = null;
         base.assigned_search_worker_id = null;
         base.assigned_search_query = null;
         base.display_label = workerId;

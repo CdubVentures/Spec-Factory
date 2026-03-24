@@ -306,7 +306,7 @@ function Schema4PlannerView({
 }
 
 
-/* ── Tier Enhancement View (Stage 04 before/after) ─────────────────── */
+/* ── Tier Enhancement View (Search Planner before/after) ───────────── */
 
 function isTierEnhancePath(plans: SearchPlanPass[]): boolean {
   return plans.some((p) => p.mode === 'tier_enhance');
@@ -362,7 +362,7 @@ function TierEnhanceView({
           />
         </>}
         trailing={<>
-          <Chip label="Stage 04" className="sf-chip-info" />
+          <Chip label="Search Planner" className="sf-chip-info" />
           {isLlm && <Chip label="LLM" className="sf-chip-warning" />}
           <Tip text="The Search Planner takes deterministic queries from Search Profile and optionally enhances them via LLM. Each row shows the original query and the enhanced version." />
         </>}

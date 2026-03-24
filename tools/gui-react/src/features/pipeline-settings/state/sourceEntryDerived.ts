@@ -11,7 +11,7 @@ import {
   DISCOVERY_FIELD_KEYS,
   CRAWL_CONFIG_DEFAULTS,
   DISCOVERY_DEFAULTS,
-} from '../../../../../../src/features/indexing/discovery/contracts/sourceEntryContract.js';
+} from '../../../../../../src/features/indexing/pipeline/shared/contracts/sourceEntryContract.js';
 
 // --- Enum option arrays for UI dropdowns (derived from contract) ---
 

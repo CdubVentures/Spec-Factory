@@ -32,7 +32,7 @@ import { createBatchCommand } from '../app/cli/commands/batchCommand.js';
 import { createPipelineCommands } from '../app/cli/commands/pipelineCommands.js';
 import { runProduct } from '../pipeline/runProduct.js';
 import { loadCategoryConfig } from '../categories/loader.js';
-import { discoverCandidateSources } from '../features/indexing/discovery/index.js';
+import { discoverCandidateSources } from '../features/indexing/discovery/searchDiscovery.js';
 import { rebuildCategoryIndex } from '../indexer/rebuildIndex.js';
 import { buildRunId } from '../utils/common.js';
 import { EventLogger } from '../logger.js';

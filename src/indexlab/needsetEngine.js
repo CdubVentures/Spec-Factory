@@ -120,7 +120,7 @@ function deriveFieldState({ missing, conflict, confidence, passTarget }) {
   return 'covered';
 }
 
-// WHY: Schema 2 uses "accepted"/"unknown" instead of "covered"/"missing"
+// WHY: NeedSet assessment uses "accepted"/"unknown" instead of "covered"/"missing"
 function mapInternalToSchemaState(internalState) {
   if (internalState === 'covered') return 'accepted';
   if (internalState === 'missing') return 'unknown';
@@ -308,7 +308,7 @@ function selectFocusFields(eligibleFields, maxFocus = 10) {
   return sorted.slice(0, maxFocus).map((f) => f.field_key);
 }
 
-// --- Schema 2: Identity derivation ---
+// --- NeedSet assessment: Identity derivation ---
 
 function deriveSourceLabelState(identityContext) {
   const status = String(identityContext?.status || '').toLowerCase();
@@ -329,7 +329,7 @@ function mapIdentityState(identityContext) {
   return 'unknown';
 }
 
-// --- Schema 2: Reasons derivation ---
+// --- NeedSet assessment: Reasons derivation ---
 
 function deriveFieldReasons({ field, internalState, value, confidence, passTarget, refsFound, minEvidenceRefs, rule, fieldReasoning, constraintAnalysis }) {
   const reasons = [];
@@ -361,7 +361,7 @@ function deriveFieldReasons({ field, internalState, value, confidence, passTarge
   return reasons;
 }
 
-// --- Schema 2: History derivation ---
+// --- NeedSet assessment: History derivation ---
 
 function deriveFieldHistory({ round, provenance, previousFieldHistories, field }) {
   const prev = previousFieldHistories?.[field] || {};
@@ -415,7 +415,7 @@ export function computeNeedSet({
   identityContext = {},
   now = new Date().toISOString(),
 
-  // Schema 2 new params
+  // NeedSet assessment new params
   round = 0,
   brand = '',
   model = '',
@@ -475,7 +475,7 @@ export function computeNeedSet({
       });
     }
 
-    // --- Build Schema 2 field entry ---
+    // --- Build NeedSet assessment field entry ---
     const evidence = Array.isArray(prov.evidence) ? prov.evidence : [];
     const refsFound = evidence.length || toNumber(prov.confirmations, 0);
     const minEvidenceRefs = toNumber(rule.min_evidence_refs, 0);
@@ -601,7 +601,7 @@ export function computeNeedSet({
   // --- Focus fields (backward compat) ---
   const focusFields = selectFocusFields(eligibleFields);
 
-  // --- Blockers (Schema 2: 5 fields) ---
+  // --- Blockers (NeedSet assessment: 5 fields) ---
   const missingCount = rows.filter((r) => r.state === 'missing').length;
   const weakCount = rows.filter((r) => r.state === 'weak').length;
   const conflictCount = rows.filter((r) => r.state === 'conflict').length;
@@ -619,7 +619,7 @@ export function computeNeedSet({
     return attempts >= EXHAUSTION_MIN_ATTEMPTS && classCount >= EXHAUSTION_MIN_EVIDENCE_CLASSES;
   }).length;
 
-  // --- Summary (Schema 2: 9 fields + backward compat) ---
+  // --- Summary (NeedSet assessment: 9 fields + backward compat) ---
   const coreUnresolved = rows.filter((r) => r.priority_bucket === 'core').length;
   const secondaryUnresolved = rows.filter((r) => r.priority_bucket === 'secondary').length;
   const optionalUnresolved = rows.filter((r) => r.priority_bucket === 'optional').length;
@@ -638,7 +638,7 @@ export function computeNeedSet({
     bundles_planned: bundles.length
   };
 
-  // --- Identity block (Schema 2) ---
+  // --- Identity block (NeedSet assessment) ---
   const identity = {
     state: mapIdentityState(identityContext),
     source_label_state: deriveSourceLabelState(identityContext),
@@ -649,7 +649,7 @@ export function computeNeedSet({
     support_domain: identityContext?.support_domain || null
   };
 
-  // --- Planner seed (Schema 2) ---
+  // --- Planner seed (NeedSet assessment) ---
   const missingCriticalFields = schema2Fields
     .filter((f) => (f.required_level === 'identity' || f.required_level === 'critical') && f.state !== 'accepted')
     .map((f) => f.field_key);
@@ -709,7 +709,7 @@ export function computeNeedSet({
   };
 
   return {
-    // Schema 2 additions
+    // NeedSet assessment additions
     schema_version: 'needset_output.v2.1',
     round,
     identity,

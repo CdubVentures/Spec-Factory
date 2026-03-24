@@ -70,7 +70,7 @@ export class SourcePlanner {
     this.sourceIntelDomains = options.sourceIntel?.domains || {};
     this.brandKey = slug(job.identityLock?.brand || '');
     // WHY: brandHostHints starts empty — populated dynamically via updateBrandHints()
-    // after Stage 02 (Brand Resolver) provides LLM-resolved aliases and domains.
+    // after Brand Resolver phase provides LLM-resolved aliases and domains.
     this.brandHostHints = [];
 
     this.maxUrls = configInt(config, 'maxUrlsPerProduct');
@@ -312,7 +312,7 @@ export class SourcePlanner {
     }
   }
 
-  // WHY: Called after Stage 02 (Brand Resolver) provides LLM-resolved brand data.
+  // WHY: Called after Brand Resolver phase provides LLM-resolved brand data.
   // Replaces the old hardcoded BRAND_HOST_HINTS with dynamic resolution.
   updateBrandHints(brandResolution) {
     if (!brandResolution) return;

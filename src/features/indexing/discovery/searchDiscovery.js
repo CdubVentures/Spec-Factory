@@ -185,7 +185,7 @@ export async function discoverCandidateSources({
     runId
   });
 
-  // === Stage 03: Search Profile (ALWAYS runs — deterministic query generation) ===
+  // === Search Profile phase (ALWAYS runs — deterministic query generation) ===
   const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
   const searchProfileBase = buildSearchProfile({
     job,
@@ -201,8 +201,8 @@ export async function discoverCandidateSources({
     fieldYieldByDomain: learning.fieldYield?.by_domain || null,
   });
 
-  // WHY: Emit search_profile_generated HERE (Stage 03) with deterministic-only
-  // data. The merged count belongs to query_journey_completed (Stage 05).
+  // WHY: Emit search_profile_generated HERE (Search Profile phase) with deterministic-only
+  // data. The merged count belongs to query_journey_completed (Query Journey phase).
   logger?.info?.('search_profile_generated', {
     run_id: runId,
     category: categoryConfig.category,
@@ -227,7 +227,7 @@ export async function discoverCandidateSources({
     })),
   });
 
-  // === Stage 04: Search Planner (LLM enrichment) ===
+  // === Search Planner phase (LLM enrichment) ===
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
   const profileQueryRowsByQuery = new Map(
@@ -238,7 +238,7 @@ export async function discoverCandidateSources({
   );
   const resolveProfileQueryRow = (query) => profileQueryRowsByQuery.get(String(query || '').trim().toLowerCase()) || null;
 
-  // WHY: enhanceQueryRows is the Search Planner's LLM call (Stage 04).
+  // WHY: enhanceQueryRows is the Search Planner phase's LLM call.
   // It enriches deterministic query rows with LLM-refined queries.
   // Enhanced rows get hint_source suffixed with '_llm'.
   const enhancedResult = await enhanceQueryRows({
@@ -278,7 +278,7 @@ export async function discoverCandidateSources({
     })),
   });
 
-  // === Stage 05: Query Journey (merge ALL streams — no branching) ===
+  // === Query Journey phase (merge ALL streams — no branching) ===
   // WHY: Two input streams merged into one candidate list:
   // 1. Deterministic base + targeted queries (from search profile)
   // 2. LLM-enhanced query rows (from enhanceQueryRows)
@@ -431,7 +431,7 @@ export async function discoverCandidateSources({
     rejected_count: queryRejectLogCombined.length,
   });
 
-  // === Stage 06: Search Results ===
+  // === Search Execution phase ===
   const resultsPerQuery = 10;
   const discoveryCap = configInt(config, 'serpSelectorUrlCap');
   const queryConcurrency = 1;

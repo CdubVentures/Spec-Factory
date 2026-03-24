@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStorage } from '../src/s3/storage.js';
 import { discoverCandidateSources } from '../src/features/indexing/discovery/searchDiscovery.js';
-import { loadSourceRegistry } from '../src/features/indexing/discovery/sourceRegistry.js';
+import { loadSourceRegistry } from '../src/features/indexing/pipeline/shared/sourceRegistry.js';
 
 const TEST_HOSTS = {
   manufacturer: 'acme.test',

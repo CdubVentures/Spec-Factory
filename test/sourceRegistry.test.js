@@ -12,7 +12,7 @@ import {
   registrySparsityReport,
   sourceEntrySchema,
   TIER_ENUM,
-} from '../src/features/indexing/discovery/sourceRegistry.js';
+} from '../src/features/indexing/pipeline/shared/sourceRegistry.js';
 
 function loadMouseRaw() {
   const raw = readFileSync(

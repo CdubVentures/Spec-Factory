@@ -22,7 +22,7 @@ import {
   detectSiblingManufacturerProductPage,
   isRelevantSearchResult,
   collectDomainClassificationSeeds,
-} from '../src/features/indexing/discovery/discoveryUrlClassifier.js';
+} from '../src/features/indexing/pipeline/shared/urlClassifier.js';
 
 // ---------------------------------------------------------------------------
 // computeIdentityMatchLevel

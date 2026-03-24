@@ -461,7 +461,7 @@ export interface NeedSetFieldHistory {
   refs_found?: number;
 }
 
-/** Schema 2 field entry from computeNeedSet (includes per-field history) */
+/** NeedSet assessment field entry from computeNeedSet (includes per-field history) */
 export interface NeedSetField {
   field_key: string;
   state: string;
@@ -470,14 +470,14 @@ export interface NeedSetField {
   history?: NeedSetFieldHistory;
 }
 
-/** Schema 4 bundle field entry */
+/** Search plan bundle field entry */
 export interface PrefetchNeedSetBundleField {
   key: string;
   state: 'satisfied' | 'missing' | 'weak' | 'conflict';
   bucket: 'core' | 'secondary' | 'expected' | 'optional';
 }
 
-/** Schema 4 bundle shape (from searchPlanBuilder) */
+/** Search plan bundle shape (from searchPlanBuilder) */
 export interface PrefetchSchema4Bundle {
   key: string;
   label: string;
@@ -647,7 +647,7 @@ export interface PreFetchPhasesResponse {
   query_journey?: {
     selected_query_count: number;
     selected_queries: string[];
-    schema4_query_count: number;
+    search_plan_query_count: number;
     llm_enhanced_count?: number;
     deterministic_query_count: number;
     rejected_count: number;

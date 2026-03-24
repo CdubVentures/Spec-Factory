@@ -19,12 +19,12 @@ import {
   TIER_ENUM,
   TIER_TO_ROLE,
   checkCategoryPopulationHardGate,
-} from '../src/features/indexing/discovery/sourceRegistry.js';
+} from '../src/features/indexing/pipeline/shared/sourceRegistry.js';
 import {
   parseHost,
   normalizeHost,
   isValidDomain,
-} from '../src/features/indexing/discovery/hostParser.js';
+} from '../src/features/indexing/pipeline/shared/hostParser.js';
 
 function loadCategoryRaw(category) {
   return JSON.parse(

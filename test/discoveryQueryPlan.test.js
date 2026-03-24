@@ -14,8 +14,8 @@ import {
   buildIdentityQueryGuardContext,
   validateQueryAgainstIdentity,
   enforceIdentityQueryGuard,
-} from '../src/features/indexing/discovery/discoveryQueryPlan.js';
-import { toArray } from '../src/features/indexing/discovery/discoveryIdentity.js';
+} from '../src/features/indexing/pipeline/shared/queryPlan.js';
+import { toArray } from '../src/features/indexing/pipeline/shared/discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
 // buildManufacturerPlanUrls

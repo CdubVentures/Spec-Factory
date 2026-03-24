@@ -162,7 +162,6 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "searxngMinQueryIntervalMs", type: "int", default: 3000, min: 0, max: 30000, configKey: "searxngMinQueryIntervalMs", envKey: "SEARXNG_MIN_QUERY_INTERVAL_MS" },
   { key: "selfImproveEnabled", type: "bool", default: true, configKey: "selfImproveEnabled", envKey: "SELF_IMPROVE_ENABLED" },
   { key: "specDbDir", type: "string", default: ".specfactory_tmp", allowEmpty: true, configKey: "specDbDir", envKey: "SPEC_DB_DIR" },
-  { key: "userAgent", type: "string", default: DEFAULT_USER_AGENT, configKey: "userAgent", envKey: "USER_AGENT" },
   { key: "writeMarkdownSummary", type: "bool", default: true, configKey: "writeMarkdownSummary", envKey: "WRITE_MARKDOWN_SUMMARY" },
 
   // --- Non-route keys: exist in SETTINGS_DEFAULTS.runtime but not in route maps ---

@@ -16,7 +16,7 @@ import {
   normalizeTriageScore,
   normalizeSourceEntryDiscovery,
   resolveEnabledSourceEntries,
-} from '../src/features/indexing/discovery/discoveryHelpers.js';
+} from '../src/features/indexing/pipeline/shared/helpers.js';
 
 // ---------------------------------------------------------------------------
 // 1. runWithConcurrency

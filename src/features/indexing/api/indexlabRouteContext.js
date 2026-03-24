@@ -9,7 +9,7 @@ import {
   listIndexLabRuns,
 } from './index.js';
 import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from '../learning/index.js';
-import { queryIndexSummary, urlIndexSummary, highYieldUrls, promptIndexSummary } from '../discovery/index.js';
+import { queryIndexSummary, urlIndexSummary, highYieldUrls, promptIndexSummary } from '../pipeline/shared/index.js';
 import { readKnobSnapshots } from '../telemetry/index.js';
 import {
   evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,

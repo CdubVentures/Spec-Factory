@@ -6,7 +6,7 @@ import {
   isSubdomainOf,
   hostMatchesDomain,
   isValidDomain
-} from '../src/features/indexing/discovery/hostParser.js';
+} from '../src/features/indexing/pipeline/shared/hostParser.js';
 
 describe('hostParser', () => {
   describe('parseHost', () => {

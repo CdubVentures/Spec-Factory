@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { runSearchProfile } from '../src/features/indexing/discovery/stages/searchProfile.js';
+import { runSearchProfile } from '../src/features/indexing/pipeline/searchProfile/runSearchProfile.js';
 
 function createMockLogger() {
   const calls = { info: [], warn: [], debug: [] };

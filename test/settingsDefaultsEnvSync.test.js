@@ -61,7 +61,6 @@ const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'runtimeScreencastQuality',
   'runtimeScreencastMaxWidth',
   'runtimeScreencastMaxHeight',
-  'userAgent',
 ]);
 // WHY: NeedSet scoring knobs (requiredWeightMap, multipliers, identity thresholds)
 // were removed in Phase 12 NeedSet Legacy Removal. No runtime defaults needed.
@@ -90,6 +89,10 @@ function readEnvKeysFromFile(filePath) {
   return keys;
 }
 
+function listExistingRepoEnvFiles() {
+  return ['.env', '.env.example'].filter((filePath) => fs.existsSync(filePath));
+}
+
 function isSecretEnvKey(key) {
   return (
     /(API_KEY|SECRET|TOKEN|ACCESS_KEY_ID|SECRET_ACCESS_KEY|ANON_KEY)$/.test(key)
@@ -106,7 +109,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   llmBaseUrl: 'LLM_BASE_URL',
   openaiApiKey: 'LLM_API_KEY',
   outputMode: 'OUTPUT_MODE',
-  userAgent: 'USER_AGENT',
   maxCandidateUrls: 'MAX_CANDIDATE_URLS_PER_PRODUCT',
   dynamicFetchPolicyMap: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
   dynamicFetchPolicyMapJson: 'DYNAMIC_FETCH_POLICY_MAP_JSON',
@@ -232,7 +234,6 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
     { settingsKey: 'frontierBlockedDomainThreshold', configKey: 'frontierBlockedDomainThreshold', envKey: 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD' },
     { settingsKey: 'pageGotoTimeoutMs', configKey: 'pageGotoTimeoutMs', envKey: 'PAGE_GOTO_TIMEOUT_MS' },
     { settingsKey: 'postLoadWaitMs', configKey: 'postLoadWaitMs', envKey: 'POST_LOAD_WAIT_MS' },
-    { settingsKey: 'userAgent', configKey: 'userAgent', envKey: 'USER_AGENT' },
   ];
 
   const getSharedDefault = (settingsKey) =>
@@ -317,7 +318,9 @@ test('retired bing endpoint stays removed from settings defaults and config', ()
 });
 
 test('.env files are secret-only', () => {
-  for (const filePath of ['.env', '.env.example']) {
+  const envFiles = listExistingRepoEnvFiles();
+  assert.equal(envFiles.length > 0, true, 'expected at least one repo env file');
+  for (const filePath of envFiles) {
     const envKeys = readEnvKeysFromFile(filePath);
     for (const envKey of envKeys) {
       assert.equal(
@@ -369,7 +372,9 @@ test('repo env files remove retired Google CSE declarations', () => {
     'CSE_RESCUE_REQUIRED_ITERATION',
   ];
 
-  for (const filePath of ['.env', '.env.example']) {
+  const envFiles = listExistingRepoEnvFiles();
+  assert.equal(envFiles.length > 0, true, 'expected at least one repo env file');
+  for (const filePath of envFiles) {
     const envKeys = readEnvKeysFromFile(filePath);
     for (const envKey of retiredEnvKeys) {
       assert.equal(

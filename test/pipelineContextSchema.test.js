@@ -27,7 +27,7 @@ import {
   serpExplorerSchema,
   discoveryResultSchema,
   validatePipelineCheckpoint,
-} from '../src/features/indexing/discovery/pipelineContextSchema.js';
+} from '../src/features/indexing/pipeline/orchestration/pipelineContextSchema.js';
 
 // ---------------------------------------------------------------------------
 // Factories

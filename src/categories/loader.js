@@ -10,7 +10,7 @@ import {
 import {
   loadSourceRegistry,
   checkCategoryPopulationHardGate,
-} from '../features/indexing/discovery/index.js';
+} from '../features/indexing/pipeline/shared/index.js';
 
 const cache = new Map();
 
