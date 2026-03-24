@@ -1,5 +1,5 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
-import type { ProcessStatus } from '../../../types/events';
+import type { ProcessStatus } from '../../../types/events.ts';
 
 function buildRunScopedQueryKeyMatrix(runId: string): Array<{ queryKey: QueryKey; exact: true }> {
   return [

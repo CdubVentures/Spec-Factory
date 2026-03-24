@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
  * Per project conventions (node --test, no Jest/Vitest), we test the logic layer:
  * the class-string builder and label formatter that TabStrip uses.
  */
-import { buildTabItemClass, formatTabLabel } from '../TabStrip';
+import { buildTabItemClass, formatTabLabel } from '../TabStrip.tsx';
 
 describe('TabStrip logic', () => {
   describe('buildTabItemClass', () => {

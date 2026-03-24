@@ -1,1 +1,1 @@
-export * from '../../../components/common/ReviewValueCell';
+export * from '../../../components/common/ReviewValueCell.tsx';

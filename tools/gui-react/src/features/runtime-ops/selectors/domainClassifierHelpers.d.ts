@@ -1,4 +1,4 @@
-import type { DomainHealthRow, PrefetchLlmCall } from '../types';
+import type { DomainHealthRow, PrefetchLlmCall } from '../types.ts';
 
 export interface SafetyClassCounts {
   safe: number;

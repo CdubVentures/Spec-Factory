@@ -15,7 +15,7 @@ import {
   KNOWN_VALUES_RESPONSE_KEYS,
   COMPONENT_DB_ITEM_KEYS,
 } from '../studioShapes.js';
-import { assertContractKeysInInterface } from '../../../../../test/contracts/helpers/tsInterfaceParser.js';
+import { assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/studio.ts');

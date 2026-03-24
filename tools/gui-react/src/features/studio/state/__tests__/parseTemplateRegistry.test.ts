@@ -5,7 +5,7 @@ import {
   UNIT_BEARING_TEMPLATES,
   isUnitBearingTemplate,
   resolveOutputType,
-} from '../parseTemplateRegistry';
+} from '../parseTemplateRegistry.ts';
 
 describe('parseTemplateRegistry', () => {
   it('PARSE_TEMPLATES has exactly 12 entries', () => {

@@ -1,18 +1,18 @@
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { PrefetchLlmCall, BrandResolutionData, PrefetchLiveSettings } from '../../types';
-import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers';
-import { resolveBrandResolutionBadge, resolveSkipReasonLabel, resolveConfidenceRingClass, resolveConfidenceTextClass } from '../../badgeRegistries';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { LlmCallCard } from '../../components/LlmCallCard';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { PrefetchLlmCall, BrandResolutionData, PrefetchLiveSettings } from '../../types.ts';
+import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers.ts';
+import { resolveBrandResolutionBadge, resolveSkipReasonLabel, resolveConfidenceRingClass, resolveConfidenceTextClass } from '../../badgeRegistries.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { LlmCallCard } from '../../components/LlmCallCard.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

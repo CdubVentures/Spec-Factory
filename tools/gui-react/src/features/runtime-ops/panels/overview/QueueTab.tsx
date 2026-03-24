@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { QueueStateResponse, LaneSummary, BlockedHostEntry } from '../../types';
-import { queueStatusBadgeClass, truncateUrl, METRIC_TIPS, timeUntil } from '../../helpers';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { relativeTime } from '../../../../utils/formatting';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import type { QueueStateResponse, LaneSummary, BlockedHostEntry } from '../../types.ts';
+import { queueStatusBadgeClass, truncateUrl, METRIC_TIPS, timeUntil } from '../../helpers.ts';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { relativeTime } from '../../../../utils/formatting.ts';
 
 interface QueueTabProps {
   queueState: QueueStateResponse | undefined;

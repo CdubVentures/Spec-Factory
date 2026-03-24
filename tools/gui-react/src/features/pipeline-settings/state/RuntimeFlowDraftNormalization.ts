@@ -1,2 +1,2 @@
-export * from './RuntimeFlowDraftContracts';
-export * from './RuntimeFlowDraftNormalizer';
+export * from './RuntimeFlowDraftContracts.ts';
+export * from './RuntimeFlowDraftNormalizer.ts';

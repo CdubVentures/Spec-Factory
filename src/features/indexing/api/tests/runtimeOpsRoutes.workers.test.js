@@ -12,7 +12,7 @@ import {
   createRuntimeOpsRoot,
   parseResBody,
   statOrNull,
-} from '../../../../../test/integration/runtime/runtime-ops/runtimeOpsRoutesHarness.js';
+} from './helpers/runtimeOpsRoutesHarness.js';
 
 test('runtimeOpsRoutes: worker detail hydrates screenshot metadata from resolved local artifact when event payload omits it', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-worker-detail-');

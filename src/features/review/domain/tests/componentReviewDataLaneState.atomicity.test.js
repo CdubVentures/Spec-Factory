@@ -8,7 +8,7 @@ import {
   cleanupTempSpecDb,
   createTempSpecDb,
   getComponentValueId,
-} from '../../../../../test/helpers/componentReviewHarness.js';
+} from '../../tests/helpers/componentReviewHarness.js';
 
 test('G8 - applySharedLaneState returned row matches DB state (atomic write)', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();

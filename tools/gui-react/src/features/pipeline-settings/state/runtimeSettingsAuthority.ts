@@ -1,2 +1,2 @@
-export * from './runtimeSettingsAuthorityHelpers';
-export * from './runtimeSettingsAuthorityHooks';
+export * from './runtimeSettingsAuthorityHelpers.ts';
+export * from './runtimeSettingsAuthorityHooks.ts';

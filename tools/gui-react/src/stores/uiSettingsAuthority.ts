@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api } from '../api/client';
-import { UI_SETTING_DEFAULTS } from './settingsManifest';
-import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
-import { publishSettingsPropagation } from './settingsPropagationContract';
+import { api } from '../api/client.ts';
+import { UI_SETTING_DEFAULTS } from './settingsManifest.ts';
+import { createSettingsOptimisticMutationContract } from './settingsMutationContract.ts';
+import { publishSettingsPropagation } from './settingsPropagationContract.ts';
 
 export interface UiSettingsPayload {
   studioAutoSaveAllEnabled: boolean;

@@ -1,6 +1,6 @@
 import type {
   RuntimeSettingDefaults,
-} from '../../../stores/settingsManifest';
+} from '../../../stores/settingsManifest.ts';
 import {
   collectRuntimeFlowDraftPayload,
   normalizeRuntimeDraft,
@@ -9,7 +9,7 @@ import {
   type RuntimeModelTokenDefaultsResolver,
   type RuntimeSettings,
   type RuntimeSettingsNumericBaseline,
-} from '../../pipeline-settings';
+} from '../../pipeline-settings/index.ts';
 
 export interface Phase05RuntimeSettings {
   perHostMinDelayMs: string;

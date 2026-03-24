@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import type { RuntimeOpsWorkerRow } from '../../types';
-import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBadgeClass } from '../../helpers';
-import { resolvePoolStage } from '../../poolStageRegistry';
+import type { RuntimeOpsWorkerRow } from '../../types.ts';
+import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBadgeClass } from '../../helpers.ts';
+import { resolvePoolStage } from '../../poolStageRegistry.ts';
 import { buildWorkerButtonLabel, buildWorkerButtonSubtitle, sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
-import { SearchProviderIcon } from '../../../../shared/ui/icons/SearchProviderIcon';
+import { SearchProviderIcon } from '../../../../shared/ui/icons/SearchProviderIcon.tsx';
 
 interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];

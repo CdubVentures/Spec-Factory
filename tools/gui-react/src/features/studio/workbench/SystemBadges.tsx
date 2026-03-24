@@ -7,7 +7,7 @@ import {
   isConsumerEnabled,
   formatConsumerTooltip,
   parseFormattedConsumerTooltip,
-} from './systemMapping';
+} from './systemMapping.ts';
 
 interface Props {
   fieldPath: string;

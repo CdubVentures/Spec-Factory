@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { useUiStore } from '../../stores/uiStore';
-import { DataTable } from '../../components/common/DataTable';
-import { StatusBadge } from '../../components/common/StatusBadge';
-import { relativeTime } from '../../utils/formatting';
-import type { QueueProduct } from '../../types/product';
+import { api } from '../../api/client.ts';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { DataTable } from '../../components/common/DataTable.tsx';
+import { StatusBadge } from '../../components/common/StatusBadge.tsx';
+import { relativeTime } from '../../utils/formatting.ts';
+import type { QueueProduct } from '../../types/product.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<QueueProduct, unknown>[] = [

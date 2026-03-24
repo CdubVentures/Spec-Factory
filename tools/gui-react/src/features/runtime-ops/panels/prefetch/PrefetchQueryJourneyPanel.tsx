@@ -1,22 +1,22 @@
 import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
+import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import type {
   PrefetchSearchProfileData,
   SearchPlanPass,
   PrefetchSearchResult,
   SearchResultDetail,
   RuntimeIdxBadge,
-} from '../../types';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import { relativeTime } from '../../../../utils/formatting';
+} from '../../types.ts';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import { relativeTime } from '../../../../utils/formatting.ts';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import {
   buildQueryJourneyRows,

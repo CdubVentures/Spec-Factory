@@ -8,7 +8,7 @@ import {
   isGroupSearchWorthy,
   buildNormalizedKeyQueue,
   deriveSeedStatus,
-} from '../../../test/helpers/searchPlanningContextHarness.js';
+} from './helpers/searchPlanningContextHarness.js';
 
 describe('V4 - buildGroupDescriptionShort', () => {
   it('extracts search-safe tokens from catalog desc', () => {

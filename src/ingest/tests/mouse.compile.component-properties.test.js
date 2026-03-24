@@ -8,7 +8,7 @@ import {
   createMouseCompileWorkspace,
   saveFieldStudioMap,
   seedComponentDb,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('compileCategoryFieldStudio includes component property keys even when missing from extracted key list', async () => {
   const workspace = await createMouseCompileWorkspace({

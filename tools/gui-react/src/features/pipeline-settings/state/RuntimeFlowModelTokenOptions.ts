@@ -1,5 +1,5 @@
-import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain';
-import { normalizeToken, type RuntimeDraft } from './RuntimeFlowDraftContracts';
+import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain.ts';
+import { normalizeToken, type RuntimeDraft } from './RuntimeFlowDraftContracts.ts';
 
 // WHY: Single canonical contract — no local duplicates.
 import type { IndexingLlmConfigResponse } from '../../indexing/types.ts';

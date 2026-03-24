@@ -145,9 +145,9 @@ describe('assembleConfigFromRegistry', () => {
 
   it('env override propagates for string settings', () => {
     clearAppEnv();
-    process.env.FRONTIER_DB_PATH = '/custom/path';
+    process.env.SEARXNG_BASE_URL = 'http://custom:9090';
     const overrideCfg = assembleConfigFromRegistry(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(overrideCfg.frontierDbPath, '/custom/path');
-    delete process.env.FRONTIER_DB_PATH;
+    strictEqual(overrideCfg.searxngBaseUrl, 'http://custom:9090');
+    delete process.env.SEARXNG_BASE_URL;
   });
 });

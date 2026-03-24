@@ -1,8 +1,8 @@
 import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { ensureValueInOptions } from '../state/llmModelDropdownOptions';
-import type { DropdownModelOption } from '../state/llmModelDropdownOptions';
-import { ROLE_BADGE_STYLE, ROLE_LABEL } from '../state/llmRoleBadgeStyles';
-import type { LlmModelRole } from '../types/llmProviderRegistryTypes';
+import { ensureValueInOptions } from '../state/llmModelDropdownOptions.ts';
+import type { DropdownModelOption } from '../state/llmModelDropdownOptions.ts';
+import { ROLE_BADGE_STYLE, ROLE_LABEL } from '../state/llmRoleBadgeStyles.ts';
+import type { LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 
 /** Small "inherit from global" indicator rendered next to a dropdown when using the global default. */
 export function GlobalDefaultIcon() {

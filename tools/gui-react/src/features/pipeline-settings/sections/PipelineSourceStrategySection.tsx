@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
-import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
-import { type SourceEntry } from '../state/sourceStrategyAuthority';
-import { SectionNavIcon } from '../components/PipelineSettingsPageShell';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore.ts';
+import { type SourceEntry } from '../state/sourceStrategyAuthority.ts';
+import { SectionNavIcon } from '../components/PipelineSettingsPageShell.tsx';
 // WHY: O(1) — types and enum options derived from backend contract SSOT.
 import {
   TIER_OPTIONS,
@@ -9,8 +9,8 @@ import {
   DISCOVERY_METHOD_OPTIONS,
   type SourceFormEntry,
   type SourceFormEntryField,
-} from '../state/sourceEntryDerived';
-export type { SourceFormEntry, SourceFormEntryField } from '../state/sourceEntryDerived';
+} from '../state/sourceEntryDerived.ts';
+export type { SourceFormEntry, SourceFormEntryField } from '../state/sourceEntryDerived.ts';
 
 type SortColumn = 'host' | 'name' | 'tier' | 'authority' | 'discovery' | 'priority' | 'enabled';
 type SortDirection = 'asc' | 'desc';

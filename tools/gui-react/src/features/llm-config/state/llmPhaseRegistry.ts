@@ -1,4 +1,4 @@
-import type { LlmPhaseDefinition, LlmPhaseId } from '../types/llmPhaseTypes';
+import type { LlmPhaseDefinition, LlmPhaseId } from '../types/llmPhaseTypes.ts';
 
 export const LLM_PHASE_IDS = [
   'global',

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RuntimeEvent } from '../types/events';
+import type { RuntimeEvent } from '../types/events.ts';
 
 interface EventsState {
   events: RuntimeEvent[];

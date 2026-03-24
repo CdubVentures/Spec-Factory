@@ -1,22 +1,22 @@
 ﻿import { useState, useMemo, useCallback, useEffect } from "react";
-import { KeyPrioritySection } from "./key-sections/KeyPrioritySection";
-import { KeyComponentsSection } from "./key-sections/KeyComponentsSection";
-import { KeyContractSection } from "./key-sections/KeyContractSection";
-import { KeyParseRulesSection } from "./key-sections/KeyParseRulesSection";
-import { KeyEvidenceSection } from "./key-sections/KeyEvidenceSection";
-import { KeyStickyHeader } from "./key-sections/KeyStickyHeader";
-import { KeyHintsSection } from "./key-sections/KeyHintsSection";
-import { KeyBulkPasteModal } from "./KeyBulkPasteModal";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { usePersistedTab } from "../../../stores/tabStore";
-import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
-import { EnumConfigurator } from "./EnumConfigurator";
-import { SystemBadges } from "../workbench/SystemBadges";
-import type { DownstreamSystem } from "../workbench/systemMapping";
+import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
+import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
+import { KeyContractSection } from "./key-sections/KeyContractSection.tsx";
+import { KeyParseRulesSection } from "./key-sections/KeyParseRulesSection.tsx";
+import { KeyEvidenceSection } from "./key-sections/KeyEvidenceSection.tsx";
+import { KeyStickyHeader } from "./key-sections/KeyStickyHeader.tsx";
+import { KeyHintsSection } from "./key-sections/KeyHintsSection.tsx";
+import { KeyBulkPasteModal } from "./KeyBulkPasteModal.tsx";
+import { usePersistedToggle } from "../../../stores/collapseStore.ts";
+import { usePersistedTab } from "../../../stores/tabStore.ts";
+import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
+import { EnumConfigurator } from "./EnumConfigurator.tsx";
+import { SystemBadges } from "../workbench/SystemBadges.tsx";
+import type { DownstreamSystem } from "../workbench/systemMapping.ts";
 import {
   useStudioFieldRulesActions,
   useStudioFieldRulesState,
-} from "../state/studioFieldRulesController";
+} from "../state/studioFieldRulesController.ts";
 import {
   validateNewKeyTs,
   rewriteConstraintsTs,
@@ -25,31 +25,31 @@ import {
   validateNewGroupTs,
   validateBulkRows,
   type BulkKeyRow,
-} from "../state/keyUtils";
-import DraggableKeyList from "./DraggableKeyList";
-import { Section } from "./Section";
+} from "../state/keyUtils.ts";
+import DraggableKeyList from "./DraggableKeyList.tsx";
+import { Section } from "./Section.tsx";
 import {
   type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid";
+} from "../../../components/common/BulkPasteGrid.tsx";
 import {
   arrN,
   strN,
-} from "../state/nestedValueHelpers";
+} from "../state/nestedValueHelpers.ts";
 import {
   buildNextConsumerOverrides,
-} from "../state/studioBehaviorContracts";
-import { displayLabel } from "../state/studioDisplayLabel";
-import { KeyConstraintEditor } from "./KeyConstraintEditor";
+} from "../state/studioBehaviorContracts.ts";
+import { displayLabel } from "../state/studioDisplayLabel.ts";
+import { KeyConstraintEditor } from "./KeyConstraintEditor.tsx";
 import {
   selectCls,
   inputCls,
   STUDIO_TIPS,
-} from "./studioConstants";
-import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts";
+} from "./studioConstants.ts";
+import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts.ts";
 import {
   btnPrimary,
   btnSecondary,
-} from "./studioSharedTypes";
+} from "./studioSharedTypes.ts";
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Property row type ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 // Legacy property key ÃƒÂ¢Ã¢â‚¬Â ' product field key mapping (used during migration)

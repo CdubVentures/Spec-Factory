@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { executeCli } from '../spec.js';
-import { runCliJson as runCli } from '../../../test/support/cliJsonHarness.js';
+import { createCliJsonHarness } from './helpers/cliJsonHarness.js';
 
 function localArgs({ inputRoot, outputRoot, importsRoot }) {
   return [
@@ -67,6 +67,7 @@ test('retired phase10 bootstrap alias is rejected at the CLI dispatcher boundary
 });
 
 test('expansion bootstrap/harness/report CLI commands execute with expected outputs', async () => {
+  const runCli = createCliJsonHarness();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-expansion-cli-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');
@@ -77,6 +78,8 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
   const complianceRoot = path.join(tempRoot, 'compliance_repo');
 
   try {
+    const env = { CATEGORY_AUTHORITY_ROOT: tempRoot };
+
     const bootstrap = await runCli([
       'expansion-bootstrap',
       '--categories', 'monitor,keyboard',
@@ -84,7 +87,7 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
       '--categories-root', categoriesRoot,
       '--golden-root', goldenRoot,
       ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(bootstrap.command, 'expansion-bootstrap');
     assert.equal(bootstrap.categories_count, 2);
     assert.equal(Array.isArray(bootstrap.rows), true);
@@ -98,7 +101,7 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
       '--seed', '17',
       '--failure-attempts', '2',
       ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(harness.command, 'hardening-harness');
     assert.equal(harness.passed, true);
     assert.equal(harness.queue_load.select_cycles_completed > 0, true);
@@ -127,7 +130,7 @@ test('expansion bootstrap/harness/report CLI commands execute with expected outp
       'hardening-report',
       '--root-dir', complianceRoot,
       ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ]);
+    ], { env });
     assert.equal(report.command, 'hardening-report');
     assert.equal(report.passed, true);
     assert.equal(report.docs_missing_count, 0);

@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
-import { api } from '../api/client';
+import { api } from '../api/client.ts';
 import {
   CONVERGENCE_SETTING_DEFAULTS,
   type ConvergenceKnob,
   type ConvergenceNumericKnob,
-} from './settingsManifest';
-import { createSettingsOptimisticMutationContract } from './settingsMutationContract';
-import { publishSettingsPropagation } from './settingsPropagationContract';
-export { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS } from './settingsManifest';
+} from './settingsManifest.ts';
+import { createSettingsOptimisticMutationContract } from './settingsMutationContract.ts';
+import { publishSettingsPropagation } from './settingsPropagationContract.ts';
+export { CONVERGENCE_KNOB_GROUPS, CONVERGENCE_SETTING_DEFAULTS } from './settingsManifest.ts';
 
 export type ConvergenceSettings = Record<string, number | boolean>;
 

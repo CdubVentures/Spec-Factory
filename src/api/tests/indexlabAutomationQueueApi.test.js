@@ -7,7 +7,7 @@ import os from 'node:os';
 import {
   getFreePort,
   waitForHttpReady,
-} from '../../../test/integration/helpers/guiServerHttpHarness.js';
+} from './helpers/guiServerHttpHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

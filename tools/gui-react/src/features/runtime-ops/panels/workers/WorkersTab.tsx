@@ -1,23 +1,23 @@
 import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore';
-import { useRuntimeSettingsReader } from '../../../pipeline-settings';
-import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../../types';
-import { getRefetchInterval } from '../../helpers';
-import { WorkerSubTabs } from './WorkerSubTabs';
-import { WorkerLivePanel } from './WorkerLivePanel';
-import { WorkerDataDrawer } from './WorkerDataDrawer';
-import { SearchWorkerPanel } from './SearchWorkerPanel';
-import { LlmCallsDashboard } from './LlmCallsDashboard';
-import { PrefetchTabRow } from '../prefetch/PrefetchTabRow';
-import { PREFETCH_STAGE_REGISTRY, PREFETCH_STAGE_KEYS } from '../prefetch/prefetchStageRegistry';
+import { api } from '../../../../api/client.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
+import { useRuntimeSettingsReader } from '../../../pipeline-settings/index.ts';
+import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../../types.ts';
+import { getRefetchInterval } from '../../helpers.ts';
+import { WorkerSubTabs } from './WorkerSubTabs.tsx';
+import { WorkerLivePanel } from './WorkerLivePanel.tsx';
+import { WorkerDataDrawer } from './WorkerDataDrawer.tsx';
+import { SearchWorkerPanel } from './SearchWorkerPanel.tsx';
+import { LlmCallsDashboard } from './LlmCallsDashboard.tsx';
+import { PrefetchTabRow } from '../prefetch/PrefetchTabRow.tsx';
+import { PREFETCH_STAGE_REGISTRY, PREFETCH_STAGE_KEYS } from '../prefetch/prefetchStageRegistry.ts';
 import { buildBusyPrefetchTabs } from '../../selectors/prefetchTabBusyHelpers.js';
 import {
   buildDisabledPrefetchTabs,
   normalizeActivePrefetchTab,
-} from '../../selectors/prefetchUiContracts';
+} from '../../selectors/prefetchUiContracts.ts';
 import { sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
 
 interface WorkersTabProps {

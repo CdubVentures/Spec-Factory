@@ -4,7 +4,7 @@
  * Tests the actual user workflow: change → save → reload → verify.
  */
 
-import { test, expect } from '../settings/fixtures';
+import { test, expect } from './fixtures.ts';
 
 test.describe('Pipeline Settings — runtime setting round-trip', () => {
   test('change resumeMode, save, reload — verify value persists in UI', async ({ page, settingsApi }) => {

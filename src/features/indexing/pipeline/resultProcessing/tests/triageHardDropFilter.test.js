@@ -25,17 +25,6 @@ function makeCategoryConfig(overrides = {}) {
   };
 }
 
-function makeStubFrontierDb(cooldownUrls = []) {
-  const cooldownSet = new Set(cooldownUrls);
-  return {
-    canonicalize: (url) => ({ canonical_url: url }),
-    shouldSkipUrl: (url) => ({
-      skip: cooldownSet.has(url),
-      reason: cooldownSet.has(url) ? 'frontier_cooldown' : '',
-    }),
-  };
-}
-
 function makeResult(url, overrides = {}) {
   return {
     url,
@@ -56,7 +45,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://razer.com/gaming-mice/viper-v3-pro')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -70,7 +59,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('http://razer.com/gaming-mice/viper-v3-pro')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -87,7 +76,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: results,
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -101,7 +90,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://spam-site.biz/razer-viper')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -113,7 +102,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('http://spam-site.biz/razer-viper')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -121,24 +110,11 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     assert.equal(hardDrops[0].hard_drop_reason, 'denied_host');
   });
 
-  it('URL in cooldown is hard-dropped', () => {
-    const url = 'https://example.com/page';
-    const { survivors, hardDrops } = applyHardDropFilter({
-      dedupedResults: [makeResult(url)],
-      categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb([url]),
-    });
-
-    assert.equal(survivors.length, 0);
-    assert.equal(hardDrops.length, 1);
-    assert.equal(hardDrops[0].hard_drop_reason, 'url_cooldown');
-  });
-
   it('malformed URL is hard-dropped', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('not-a-url'), makeResult('://broken')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -158,7 +134,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: results,
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -176,7 +152,7 @@ describe('triageHardDropFilter — hard-drop criteria', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: results,
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -192,7 +168,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://razer.com/')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -203,7 +179,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://razer.com/index.html')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -221,7 +197,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://community.razer.com/topic/viper-v3-pro')],
       categoryConfig: config,
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -232,7 +208,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [makeResult('https://logitech.com/mice/g-pro-x-superlight')],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
       identityLock: { brand: 'Razer', model: 'Viper V3 Pro' },
     });
 
@@ -248,7 +224,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
         }),
       ],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -263,7 +239,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
         }),
       ],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -279,7 +255,7 @@ describe('triageHardDropFilter — must NOT hard-drop (soft labels instead)', ()
         }),
       ],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 1);
@@ -292,7 +268,7 @@ describe('triageHardDropFilter — edge cases', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: [],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -303,7 +279,7 @@ describe('triageHardDropFilter — edge cases', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: null,
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 0);
@@ -323,7 +299,7 @@ describe('triageHardDropFilter — edge cases', () => {
     const { survivors } = applyHardDropFilter({
       dedupedResults: [result],
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors[0].title, 'Razer Viper V3 Pro');
@@ -343,7 +319,7 @@ describe('triageHardDropFilter — edge cases', () => {
     const { survivors, hardDrops } = applyHardDropFilter({
       dedupedResults: results,
       categoryConfig: makeCategoryConfig(),
-      frontierDb: makeStubFrontierDb(),
+
     });
 
     assert.equal(survivors.length, 2, 'two valid URLs survive');

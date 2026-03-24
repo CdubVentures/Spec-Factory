@@ -1,5 +1,5 @@
-import { computeActivityStats } from '../helpers';
-import type { TimedIndexLabEvent } from '../types';
+import { computeActivityStats } from '../helpers.tsx';
+import type { TimedIndexLabEvent } from '../types.ts';
 
 interface ActivitySelectorInput {
   timedIndexlabEvents: TimedIndexLabEvent[];

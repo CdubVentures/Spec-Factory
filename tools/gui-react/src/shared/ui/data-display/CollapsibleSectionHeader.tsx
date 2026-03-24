@@ -1,1 +1,1 @@
-export * from '../../../components/common/CollapsibleSectionHeader';
+export * from '../../../components/common/CollapsibleSectionHeader.tsx';

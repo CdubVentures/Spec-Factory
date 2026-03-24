@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { deriveCompileReportsViewState } from "../state/compileReportsState";
-import { STUDIO_TIPS } from "../components/studioConstants";
-import type { StudioPageActivePanelReportsProps as CompileReportsTabProps } from "../components/studioPagePanelContracts";
+import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
+import { deriveCompileReportsViewState } from "../state/compileReportsState.ts";
+import { STUDIO_TIPS } from "../components/studioConstants.ts";
+import type { StudioPageActivePanelReportsProps as CompileReportsTabProps } from "../components/studioPagePanelContracts.ts";
 
-import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses';
+import { btnPrimary, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 
 export function CompileReportsTab({
   artifacts,

@@ -1,17 +1,17 @@
-import { resolveStudioSaveStatus, type StudioAutoSaveStatus } from '../../../shared/ui/feedback/settingsStatus';
-import type { ProcessStatus } from '../../../types/events';
+import { resolveStudioSaveStatus, type StudioAutoSaveStatus } from '../../../shared/ui/feedback/settingsStatus.ts';
+import type { ProcessStatus } from '../../../types/events.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
   ComponentSource,
   FieldRule,
   StudioConfig,
-} from '../../../types/studio';
-import type { StudioPageActivePanelProps } from '../components/studioPagePanelContracts';
+} from '../../../types/studio.ts';
+import type { StudioPageActivePanelProps } from '../components/studioPagePanelContracts.ts';
 import {
   buildStudioPageActivePanelProps,
-} from './studioPagePanelProps';
-import type { StudioTabId } from './studioPageTabs';
+} from './studioPagePanelProps.ts';
+import type { StudioTabId } from './studioPageTabs.ts';
 import {
   deriveStudioCompileStatus,
   deriveStudioEnumListsWithValues,
@@ -19,7 +19,7 @@ import {
   deriveStudioPageRootDerivedState,
   deriveStudioPageShellState,
   type StudioKnownValuesSource,
-} from './studioPageDerivedState';
+} from './studioPageDerivedState.ts';
 
 export const STUDIO_CATEGORY_GUARD_MESSAGE =
   'Select a specific category from the sidebar to configure field rules.';

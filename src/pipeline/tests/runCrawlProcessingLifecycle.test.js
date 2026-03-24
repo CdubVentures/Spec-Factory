@@ -29,14 +29,9 @@ function createMockSession(statusOverride) {
   };
 }
 
-function createMockFrontierDb(skipUrls = new Set()) {
+function createMockFrontierDb() {
   const recorded = [];
   return {
-    shouldSkipUrl(url) {
-      return skipUrls.has(url)
-        ? { skip: true, reason: 'cooldown' }
-        : { skip: false, reason: null };
-    },
     recordFetch(args) { recorded.push(args); },
     getRecorded() { return recorded; },
   };
@@ -59,22 +54,6 @@ describe('runCrawlProcessingLifecycle', () => {
     assert.equal(crawlResults[0].url, 'http://a.com');
     assert.equal(crawlResults[1].url, 'http://b.com');
     assert.equal(crawlResults[0].success, true);
-  });
-
-  it('skips URLs on frontier cooldown', async () => {
-    const planner = createMockPlanner([
-      { url: 'http://hot.com' },
-      { url: 'http://cool.com' },
-    ]);
-    const session = createMockSession();
-    const frontierDb = createMockFrontierDb(new Set(['http://cool.com']));
-
-    const { crawlResults } = await runCrawlProcessingLifecycle({
-      planner, session, frontierDb, settings: {}, startMs: Date.now(), maxRunMs: 0,
-    });
-
-    assert.equal(crawlResults.length, 1);
-    assert.equal(crawlResults[0].url, 'http://hot.com');
   });
 
   it('respects time budget', async () => {

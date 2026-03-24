@@ -1,8 +1,8 @@
 // AUTO-GENERATED from registry policyGroup/policyField metadata — do not edit manually.
 // Run: node tools/gui-react/scripts/generateLlmPolicyAdapter.js
 
-import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
+import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes.ts';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 
 export interface LlmPolicyApiKeys {
   anthropic: string;

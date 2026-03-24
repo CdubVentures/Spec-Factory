@@ -1,5 +1,5 @@
-import type { RuntimeIdxBadge } from '../types';
-import { TooltipBadge } from './PrefetchTooltip';
+import type { RuntimeIdxBadge } from '../types.ts';
+import { TooltipBadge } from './PrefetchTooltip.tsx';
 
 interface RuntimeIdxBadgeStripProps {
   badges?: RuntimeIdxBadge[];

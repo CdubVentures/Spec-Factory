@@ -1,4 +1,4 @@
-import type { LlmModelRole } from '../types/llmProviderRegistryTypes';
+import type { LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 
 export const ROLE_BADGE_STYLE: Record<LlmModelRole, { fg: string; bg: string }> = {
   primary: { fg: 'rgb(var(--sf-color-text-muted-rgb))', bg: 'rgb(var(--sf-color-text-muted-rgb) / 0.10)' },

@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmModelRole } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry, LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 import { compareModelsByRoleTokensCost } from './llmModelDropdownOptions.ts';
 
 export interface ModelCatalogEntry {

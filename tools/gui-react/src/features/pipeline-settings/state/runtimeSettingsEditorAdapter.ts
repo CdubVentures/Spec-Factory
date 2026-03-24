@@ -10,9 +10,9 @@ import {
 import {
   useRuntimeSettingsAuthority,
   type RuntimeSettings,
-} from './runtimeSettingsAuthority';
-import { shouldForceHydration } from './settingsAutoSaveGate';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
+} from './runtimeSettingsAuthority.ts';
+import { shouldForceHydration } from './settingsAutoSaveGate.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 
 type RuntimeEditorSaveStatusKind = 'idle' | 'ok' | 'partial' | 'error';
 

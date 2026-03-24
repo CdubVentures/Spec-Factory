@@ -1,14 +1,14 @@
 // ── Workbench helpers: nested accessors + row builder ────────────────
-import { humanizeField } from '../../../utils/fieldNormalize';
-import type { WorkbenchRow } from './workbenchTypes';
-export { arrN, boolN, getN, numN, strN } from '../state/nestedValueHelpers';
+import { humanizeField } from '../../../utils/fieldNormalize.ts';
+import type { WorkbenchRow } from './workbenchTypes.ts';
+export { arrN, boolN, getN, numN, strN } from '../state/nestedValueHelpers.ts';
 import {
   arrN,
   boolN,
   numN,
   strN,
-} from '../state/nestedValueHelpers';
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds';
+} from '../state/nestedValueHelpers.ts';
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
 
 // ── Nested accessor helpers (shared with KeyNavigatorTab) ────────────
 const CONSTRAINT_KEYWORDS = new Set(['requires', 'and', 'or', 'not', 'if', 'then', 'else', 'true', 'false', 'null']);

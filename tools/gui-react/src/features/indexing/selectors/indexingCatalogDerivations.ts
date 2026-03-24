@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import type { CatalogRow } from '../../../types/product';
-import { normalizeToken } from '../helpers';
+import type { CatalogRow } from '../../../types/product.ts';
+import { normalizeToken } from '../helpers.tsx';
 import {
   deriveBrandOptions,
   deriveCatalogFamilyCountLookup,
@@ -9,7 +9,7 @@ import {
   deriveSelectedAmbiguityMeter,
   deriveSelectedCatalogProduct,
   deriveVariantOptions,
-} from './indexingCatalogSelectors';
+} from './indexingCatalogSelectors.ts';
 
 interface UseIndexingCatalogDerivationsInput {
   catalog: CatalogRow[];

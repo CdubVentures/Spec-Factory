@@ -1,1 +1,1 @@
-export * from '../../../components/common/Tip';
+export * from '../../../components/common/Tip.tsx';

@@ -4,7 +4,7 @@ import {
   SYSTEM_BADGE_CONFIGS,
   formatStaticConsumerTooltip,
   parseFormattedStaticConsumerTooltip,
-} from "../workbench/systemMapping";
+} from "../workbench/systemMapping.ts";
 
 interface StaticBadgesProps {
   fieldPath: string;

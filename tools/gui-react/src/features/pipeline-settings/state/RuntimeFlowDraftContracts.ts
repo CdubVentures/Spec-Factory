@@ -6,12 +6,12 @@ import {
   REGISTRY_BOUNDS,
   REGISTRY_ENUM_MAP,
   type NumberBound,
-} from '../../../shared/registryDerivedSettingsMaps';
+} from '../../../shared/registryDerivedSettingsMaps.ts';
 import {
   type RuntimeSettingDefaults,
   type RuntimeResumeMode,
   type RuntimeRepairDedupeRule,
-} from '../../../stores/settingsManifest';
+} from '../../../stores/settingsManifest.ts';
 
 // WHY: Re-export registry-derived bounds as the canonical GUI bounds map.
 // Previously 104 hand-typed entries; now auto-derived from settingsRegistry.js.

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import type { QueueJobRow } from '../../types';
-import { queueStatusBadgeClass, truncateUrl, timeUntil } from '../../helpers';
-import { relativeTime } from '../../../../utils/formatting';
+import type { QueueJobRow } from '../../types.ts';
+import { queueStatusBadgeClass, truncateUrl, timeUntil } from '../../helpers.ts';
+import { relativeTime } from '../../../../utils/formatting.ts';
 
 interface DrawerQueueTabProps {
   jobs: QueueJobRow[];

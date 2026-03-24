@@ -1,8 +1,8 @@
 import {
   DEFAULT_PRIORITY_PROFILE,
   normalizeAiAssistConfig,
-} from "./studioPriority";
-import type { ComponentSource, FieldRule } from "../../../types/studio";
+} from "./studioPriority.ts";
+import type { ComponentSource, FieldRule } from "../../../types/studio.ts";
 
 export interface PropertyMapping {
   field_key: string;

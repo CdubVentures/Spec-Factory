@@ -1,7 +1,7 @@
-import { usePersistedTab } from '../../../stores/tabStore';
-import { TabStrip } from '../../../shared/ui/navigation/TabStrip';
-import { BrandManager } from '../../studio';
-import { ProductManager } from './ProductManager';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { TabStrip } from '../../../shared/ui/navigation/TabStrip.tsx';
+import { BrandManager } from '../../studio/index.ts';
+import { ProductManager } from './ProductManager.tsx';
 
 const TAB_IDS = ['brands', 'models'] as const;
 type CatalogTab = (typeof TAB_IDS)[number];

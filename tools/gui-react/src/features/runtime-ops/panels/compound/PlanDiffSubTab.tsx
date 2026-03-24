@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedTab } from '../../../../stores/tabStore';
-import type { PlanDiffResponse, PlanDiffWinner } from '../../types';
+import { api } from '../../../../api/client.ts';
+import { usePersistedTab } from '../../../../stores/tabStore.ts';
+import type { PlanDiffResponse, PlanDiffWinner } from '../../types.ts';
 
 interface PlanDiffSubTabProps {
   runs: Array<{ run_id: string; category: string; started_at: string; status: string }>;

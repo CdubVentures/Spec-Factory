@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, PrefetchLiveSettings } from '../../types';
-import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
+import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, PrefetchLiveSettings } from '../../types.ts';
+import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
 import {
   shouldShowSearchProfileGateBadges,
   normalizeIdentityAliasEntries,
@@ -19,7 +19,7 @@ import {
   buildGateSummary,
   normalizeFieldRuleGateCounts,
 } from '../../selectors/prefetchSearchProfileGateHelpers.js';
-import { resolveGateBadge } from '../../badgeRegistries';
+import { resolveGateBadge } from '../../badgeRegistries.ts';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
 import {
   classifyQueryTier,
@@ -29,11 +29,11 @@ import {
   buildTierBudgetSummary,
   enrichmentStrategyLabel,
 } from '../../selectors/searchProfileTierHelpers.js';
-import { formatTooltip, TooltipBadge } from '../../components/PrefetchTooltip';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
+import { formatTooltip, TooltipBadge } from '../../components/PrefetchTooltip.tsx';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
 
 interface PrefetchSearchProfilePanelProps {
   data: PrefetchSearchProfileData;

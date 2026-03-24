@@ -1,46 +1,46 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { useUiStore } from '../../../stores/uiStore';
-import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore';
-import { useIndexLabStore } from '../state/indexlabStore';
-import { useCollapseStore, usePersistedToggle } from '../../../stores/collapseStore';
+import { api } from '../../../api/client.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore.ts';
+import { useIndexLabStore } from '../state/indexlabStore.ts';
+import { useCollapseStore, usePersistedToggle } from '../../../stores/collapseStore.ts';
 import {
   readRuntimeSettingsBootstrap,
   useRuntimeSettingsReader,
-} from '../../pipeline-settings';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
+} from '../../pipeline-settings/index.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
-} from '../../../stores/settingsManifest';
-import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
-import type { ProcessStatus } from '../../../types/events';
-import { parseCatalogRows } from '../../catalog/api/catalogParsers';
+} from '../../../stores/settingsManifest.ts';
+import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
+import type { ProcessStatus } from '../../../types/events.ts';
+import { parseCatalogRows } from '../../catalog/api/catalogParsers.ts';
 import {
   displayVariant,
-} from '../helpers';
+} from '../helpers.tsx';
 import type {
   IndexingLlmConfigResponse,
   PanelKey,
-} from '../types';
-import { DEFAULT_PANEL_COLLAPSED } from '../types';
-import { deriveIndexingPanelCollapsed } from '../state/indexingPanelState';
-import { deriveProcessStatusFlags } from '../selectors/indexingStatusSelectors';
-import { useIndexingRunSelectionState } from '../state/indexingRunSelectionState';
-import { useIndexingRunQueries } from '../api/indexingRunQueries';
-import { useIndexingRunViewHandlers } from '../state/indexingRunViewHandlers';
-import { useIndexingProcessUnloadStop } from '../state/indexingProcessUnloadStop';
-import { useIndexingEventActivityDerivations } from '../selectors/indexingEventActivityDerivations';
-import { useIndexingCatalogDerivations } from '../selectors/indexingCatalogDerivations';
-import { useIndexingRunMutations } from '../api/indexingRunMutations';
-import { useIndexingLlmModelDerivations } from '../selectors/indexingLlmModelDerivations';
-import { deriveRunControlPayload } from '../selectors/indexingRunControlSelectors';
-import { toRuntimeDraft } from '../../pipeline-settings';
+} from '../types.ts';
+import { DEFAULT_PANEL_COLLAPSED } from '../types.ts';
+import { deriveIndexingPanelCollapsed } from '../state/indexingPanelState.ts';
+import { deriveProcessStatusFlags } from '../selectors/indexingStatusSelectors.ts';
+import { useIndexingRunSelectionState } from '../state/indexingRunSelectionState.ts';
+import { useIndexingRunQueries } from '../api/indexingRunQueries.ts';
+import { useIndexingRunViewHandlers } from '../state/indexingRunViewHandlers.ts';
+import { useIndexingProcessUnloadStop } from '../state/indexingProcessUnloadStop.ts';
+import { useIndexingEventActivityDerivations } from '../selectors/indexingEventActivityDerivations.ts';
+import { useIndexingCatalogDerivations } from '../selectors/indexingCatalogDerivations.ts';
+import { useIndexingRunMutations } from '../api/indexingRunMutations.ts';
+import { useIndexingLlmModelDerivations } from '../selectors/indexingLlmModelDerivations.ts';
+import { deriveRunControlPayload } from '../selectors/indexingRunControlSelectors.ts';
+import { toRuntimeDraft } from '../../pipeline-settings/index.ts';
 import {
   buildIndexingRuntimeDraft,
   buildIndexingRuntimeSettingsProjection,
-} from '../state/indexingRuntimeSettingsProjection';
-import { PickerPanel } from '../panels/PickerPanel';
+} from '../state/indexingRuntimeSettingsProjection.ts';
+import { PickerPanel } from '../panels/PickerPanel.tsx';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);

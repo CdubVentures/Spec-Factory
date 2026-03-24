@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors';
-import { pct } from '../../utils/formatting';
-import { ActionTooltip } from './ActionTooltip';
+import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors.ts';
+import { pct } from '../../utils/formatting.ts';
+import { ActionTooltip } from './ActionTooltip.tsx';
 
 interface DrawerShellProps {
   title: string;

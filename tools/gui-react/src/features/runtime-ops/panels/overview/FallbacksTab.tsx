@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore';
-import type { FallbacksResponse, FallbackEventRow } from '../../types';
+import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
+import type { FallbacksResponse, FallbackEventRow } from '../../types.ts';
 import {
   fallbackResultBadgeClass,
   fetchModeBadgeClass,
@@ -8,8 +8,8 @@ import {
   formatMs,
   pctString,
   METRIC_TIPS,
-} from '../../helpers';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
+} from '../../helpers.ts';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 
 interface FallbacksTabProps {
   fallbacks: FallbacksResponse | undefined;

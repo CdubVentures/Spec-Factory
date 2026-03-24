@@ -1,5 +1,5 @@
-import { normalizeToken } from '../helpers';
-import type { IndexLabRunSummary, IndexLabRunsResponse } from '../types';
+import { normalizeToken } from '../helpers.tsx';
+import type { IndexLabRunSummary, IndexLabRunsResponse } from '../types.ts';
 
 interface DeriveIndexLabRunsInput {
   indexlabRunsResp: IndexLabRunsResponse | undefined;

@@ -1,1 +1,1 @@
-export * from '../features/pipeline-settings/state/storageSettingsAuthority';
+export * from '../features/pipeline-settings/state/storageSettingsAuthority.ts';

@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
+import { api } from '../../../api/client.ts';
 import type {
   DeleteRunResponse,
   BulkDeleteResponse,
   PruneResponse,
   PurgeResponse,
   RecalculateResponse,
-} from '../types';
+} from '../types.ts';
 
 function useInvalidateStorage() {
   const queryClient = useQueryClient();

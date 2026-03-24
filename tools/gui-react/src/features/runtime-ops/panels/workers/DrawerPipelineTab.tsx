@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
-import type { WorkerDetailResponse, PhaseStats } from '../../types';
-import { methodBadgeClass, friendlyMethod } from '../../helpers';
-import { ConfidenceBar } from '../../components/ConfidenceBar';
+import type { WorkerDetailResponse, PhaseStats } from '../../types.ts';
+import { methodBadgeClass, friendlyMethod } from '../../helpers.ts';
+import { ConfidenceBar } from '../../components/ConfidenceBar.tsx';
 import {
   PHASE_REGISTRY,
   CROSS_CUTTING_METHODS,
   computePhaseLineage,
   normalizePhaseLineagePhases,
-} from '../../selectors/phaseLineageHelpers';
+} from '../../selectors/phaseLineageHelpers.ts';
 
 interface DrawerPipelineTabProps {
   data: WorkerDetailResponse | undefined;

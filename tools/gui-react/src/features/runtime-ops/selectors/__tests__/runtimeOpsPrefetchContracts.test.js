@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function loadPrefetchUiContracts() {
   return loadBundledModule('tools/gui-react/src/features/runtime-ops/selectors/prefetchUiContracts.ts', {

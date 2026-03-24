@@ -1,4 +1,4 @@
-import type { SearchResultDetail, SearchPlanPass, PrefetchLiveSettings } from '../types';
+import type { SearchResultDetail, SearchPlanPass, PrefetchLiveSettings } from '../types.ts';
 
 export interface SearchDecisionCounts {
   keep: number;

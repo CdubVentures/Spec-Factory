@@ -1,5 +1,5 @@
-export { ContractTab } from './WorkbenchDrawerContractTab';
-export { DepsTab } from './WorkbenchDrawerDepsTab';
+export { ContractTab } from './WorkbenchDrawerContractTab.tsx';
+export { DepsTab } from './WorkbenchDrawerDepsTab.tsx';
 export {
   EnumTab,
   EvidenceTab,
@@ -7,4 +7,4 @@ export {
   PreviewTab,
   SearchTab,
   type BadgeSlot,
-} from './WorkbenchDrawerSimpleTabs';
+} from './WorkbenchDrawerSimpleTabs.tsx';

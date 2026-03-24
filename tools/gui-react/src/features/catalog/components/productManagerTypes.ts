@@ -1,4 +1,4 @@
-import type { CatalogProduct } from '../../../types/product';
+import type { CatalogProduct } from '../../../types/product.ts';
 
 export interface MutationResult {
   ok: boolean;

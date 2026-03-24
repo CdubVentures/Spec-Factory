@@ -17,7 +17,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   's3InputPrefix', 's3OutputPrefix',
   'indexingResumeMode',
   'capturePageScreenshotFormat', 'capturePageScreenshotSelectors',
-  'repairDedupeRule',
 
   // Computed from multi-env chains or earlier variables
   'userAgent', 'outputMode',

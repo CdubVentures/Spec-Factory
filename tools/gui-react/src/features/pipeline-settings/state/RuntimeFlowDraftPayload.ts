@@ -4,8 +4,8 @@
 import {
   collectRuntimeSettingsPayload,
   type RuntimeModelTokenDefaultsResolver,
-} from './runtimeSettingsDomain';
-import { type RuntimeDraft } from './RuntimeFlowDraftContracts';
+} from './runtimeSettingsDomain.ts';
+import { type RuntimeDraft } from './RuntimeFlowDraftContracts.ts';
 
 interface CollectRuntimeFlowDraftPayloadParams {
   nextRuntimeDraft: RuntimeDraft;

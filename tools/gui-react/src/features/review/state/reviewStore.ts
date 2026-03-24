@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CellMode, SaveStatus, BrandFilter } from '../../../types/review';
+import type { CellMode, SaveStatus, BrandFilter } from '../../../types/review.ts';
 
 export type SortMode = 'brand' | 'recent' | 'confidence' | 'flags';
 

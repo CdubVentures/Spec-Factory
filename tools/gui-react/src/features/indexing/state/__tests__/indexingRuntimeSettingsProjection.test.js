@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function loadProjectionModule() {
   return loadBundledModule(
@@ -36,7 +36,7 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
   const projection = buildIndexingRuntimeSettingsProjection({
     runtimeSettings: {
       llmModelPlan: 'planner-live',
-      perHostMinDelayMs: '1250',
+      maxPagesPerDomain: '12',
     },
     ...defaults,
     resolveModelTokenDefaults: () => ({
@@ -46,11 +46,11 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
   });
 
   assert.equal(projection.runtimeDraft.llmModelPlan, 'planner-live');
-  assert.equal(projection.runtimeDraft.perHostMinDelayMs, 1250);
-  assert.equal(projection.runtimeSettingsPayload.perHostMinDelayMs, 1250);
-  assert.equal(projection.runtimeSettingsBaseline.perHostMinDelayMs, 1250);
+  assert.equal(projection.runtimeDraft.maxPagesPerDomain, 12);
+  assert.equal(projection.runtimeSettingsPayload.maxPagesPerDomain, 12);
+  assert.equal(projection.runtimeSettingsBaseline.maxPagesPerDomain, 12);
   assert.deepEqual(projection.phase05RuntimeSettings, {
-    perHostMinDelayMs: '1250',
+    maxPagesPerDomain: '12',
   });
 });
 
@@ -62,7 +62,7 @@ test('buildIndexingRuntimeSettingsProjection falls back to runtime defaults when
 
   const projection = buildIndexingRuntimeSettingsProjection({
     runtimeSettings: {
-      perHostMinDelayMs: 'not-a-number',
+      maxPagesPerDomain: 'not-a-number',
     },
     ...defaults,
     resolveModelTokenDefaults: () => ({
@@ -72,11 +72,11 @@ test('buildIndexingRuntimeSettingsProjection falls back to runtime defaults when
   });
 
   assert.equal(
-    projection.runtimeDraft.perHostMinDelayMs,
-    defaults.runtimeBootstrap.perHostMinDelayMs,
+    projection.runtimeDraft.maxPagesPerDomain,
+    defaults.runtimeBootstrap.maxPagesPerDomain,
   );
   assert.equal(
-    projection.runtimeSettingsPayload.perHostMinDelayMs,
-    defaults.runtimeBootstrap.perHostMinDelayMs,
+    projection.runtimeSettingsPayload.maxPagesPerDomain,
+    defaults.runtimeBootstrap.maxPagesPerDomain,
   );
 });

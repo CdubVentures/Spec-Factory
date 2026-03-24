@@ -1,7 +1,7 @@
 // WHY: O(1) Feature Scaling — types are generic, not per-field. Adding a new
 // setting to the registry requires zero changes to this file.
 
-import type { RuntimeSettingsNumericBaseline } from './runtimeSettingsAuthority';
+import type { RuntimeSettingsNumericBaseline } from './runtimeSettingsAuthority.ts';
 
 // --- Hydration binding types (structural, not per-field) ---
 

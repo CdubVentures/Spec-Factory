@@ -7,13 +7,13 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { shouldAutoSave, shouldFlushOnUnmount } from './settingsAutoSaveGate';
-import { teardownFetch } from '../../../api/teardownFetch';
+import { shouldAutoSave, shouldFlushOnUnmount } from './settingsAutoSaveGate.ts';
+import { teardownFetch } from '../../../api/teardownFetch.ts';
 import {
   registerUnloadGuard,
   markDomainFlushedByUnmount,
   isDomainFlushedByUnload,
-} from '../../../stores/settingsUnloadGuard';
+} from '../../../stores/settingsUnloadGuard.ts';
 
 export interface UseSettingsAutoSaveOptions {
   domain: string;

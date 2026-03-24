@@ -2,7 +2,7 @@ import type {
   PriorityProfile,
   AiAssistConfig,
   StudioConfig,
-} from "../../../types/studio";
+} from "../../../types/studio.ts";
 
 export interface DataListEntry {
   field: string;
@@ -45,5 +45,5 @@ export {
   btnDanger,
   sectionCls,
   actionBtnWidth,
-} from '../../../shared/ui/buttonClasses';
-export { btnDangerSolid } from '../../../shared/ui/buttonClasses';
+} from '../../../shared/ui/buttonClasses.ts';
+export { btnDangerSolid } from '../../../shared/ui/buttonClasses.ts';

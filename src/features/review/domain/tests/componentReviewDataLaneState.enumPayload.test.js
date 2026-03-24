@@ -8,7 +8,7 @@ import {
   createTempSpecDb,
   getEnumSlot,
   makeCategoryAuthorityConfig,
-} from '../../../../../test/helpers/componentReviewHarness.js';
+} from '../../tests/helpers/componentReviewHarness.js';
 
 test('enum payload keeps pending when AI shared lane is pending even if user accepted', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();

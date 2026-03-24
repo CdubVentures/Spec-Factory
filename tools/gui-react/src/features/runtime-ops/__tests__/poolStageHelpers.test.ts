@@ -9,7 +9,7 @@ import {
   stageBadgeClass,
   stageMeterFillClass,
   stageLabel,
-} from '../helpers';
+} from '../helpers.ts';
 
 /**
  * Characterization tests — lock down current pool/stage mapping behavior

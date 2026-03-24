@@ -1,4 +1,4 @@
-import type { EnumEntry, FieldRule } from '../../../types/studio';
+import type { EnumEntry, FieldRule } from '../../../types/studio.ts';
 
 export interface StudioPageRootDerivedStateOptions {
   fieldOrder: string[];

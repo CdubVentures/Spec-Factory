@@ -1,8 +1,8 @@
 import { memo, useMemo } from 'react';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { buildModelCatalogEntries } from '../state/llmModelCatalog';
-import type { ModelPricingEntry, ModelTokenProfileEntry } from '../state/llmModelCatalog';
-import { ModelRoleBadge } from '../components/ModelRoleBadge';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import { buildModelCatalogEntries } from '../state/llmModelCatalog.ts';
+import type { ModelPricingEntry, ModelTokenProfileEntry } from '../state/llmModelCatalog.ts';
+import { ModelRoleBadge } from '../components/ModelRoleBadge.tsx';
 
 const tokenFormatter = new Intl.NumberFormat('en-US');
 

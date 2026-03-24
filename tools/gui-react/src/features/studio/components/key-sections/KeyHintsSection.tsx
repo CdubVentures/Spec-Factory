@@ -1,8 +1,8 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { TagPicker } from "../../../../shared/ui/forms/TagPicker";
-import { strN, arrN } from "../../state/nestedValueHelpers";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { TagPicker } from "../../../../shared/ui/forms/TagPicker.tsx";
+import { strN, arrN } from "../../state/nestedValueHelpers.ts";
 import {
   selectCls,
   inputCls,
@@ -10,7 +10,7 @@ import {
   DOMAIN_HINT_SUGGESTIONS,
   CONTENT_TYPE_SUGGESTIONS,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 
 export interface KeyHintsSectionProps extends KeySectionBaseProps {
   // No extra props -- all derived from currentRule

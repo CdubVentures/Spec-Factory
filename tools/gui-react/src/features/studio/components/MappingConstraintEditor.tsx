@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { CONSTRAINT_OPS } from "../state/studioConstraintGroups";
-import { selectCls, STUDIO_TIPS } from "./studioConstants";
-import { displayLabel } from "../state/studioDisplayLabel";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { StaticBadges } from "./StaticBadges";
-import type { FieldRule } from "../../../types/studio";
+import { CONSTRAINT_OPS } from "../state/studioConstraintGroups.ts";
+import { selectCls, STUDIO_TIPS } from "./studioConstants.ts";
+import { displayLabel } from "../state/studioDisplayLabel.ts";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
+import { StaticBadges } from "./StaticBadges.tsx";
+import type { FieldRule } from "../../../types/studio.ts";
 
 export interface MappingConstraintEditorProps {
   constraints: string[];

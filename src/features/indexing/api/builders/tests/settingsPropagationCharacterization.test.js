@@ -113,9 +113,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'WRITE_MARKDOWN_SUMMARY',
       'LLM_PROVIDER',
       'LLM_BASE_URL',
-      'FRONTIER_DB_PATH',
-      'FRONTIER_BLOCKED_DOMAIN_THRESHOLD',
-      'PAGE_GOTO_TIMEOUT_MS',
       'CAPTURE_PAGE_SCREENSHOT_ENABLED',
       'CAPTURE_PAGE_SCREENSHOT_FORMAT',
       'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
@@ -165,20 +162,11 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // the RUNTIME_SETTINGS_SNAPSHOT file (Plan 05). If the snapshot write fails,
     // these fall back to user-settings.json (stale-start risk).
     const KNOWN_PAYLOAD_ONLY_GAPS = [
-      // Fetch network (sent in POST body but dropped before child launch)
-      'perHostMinDelayMs',
-      'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       // Browser/rendering
       'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
       'autoScrollEnabled', 'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtCompliant', 'robotsTxtTimeoutMs',
       'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
-      // Frontier
-      'frontierStripTrackingParams', 'frontierQueryCooldownSeconds',
-      'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
-      'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds',
-      'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
-      'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold',
       // Discovery
       'searchProfileQueryCap',
       'maxPagesPerDomain',
@@ -221,8 +209,8 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // This documents the gap — these are sent by GUI but dropped before child launch
     // After the rewrite, ALL of these should travel via snapshot
     ok(
-      KNOWN_PAYLOAD_ONLY_GAPS.length > 40,
-      `Expected > 40 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
+      KNOWN_PAYLOAD_ONLY_GAPS.length > 25,
+      `Expected > 25 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
     );
   });
 

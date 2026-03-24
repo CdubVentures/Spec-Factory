@@ -1,4 +1,4 @@
-import type { PrefetchLiveSettings, PrefetchTabKey, WorkerExtractionField } from '../types';
+import type { PrefetchLiveSettings, PrefetchTabKey, WorkerExtractionField } from '../types.ts';
 
 export function buildPrefetchTabState({
   activeTab,

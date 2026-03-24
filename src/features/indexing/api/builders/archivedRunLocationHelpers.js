@@ -165,7 +165,7 @@ async function hydrateArchivedS3RunDirectory(location = {}, runId = '') {
       const token = String(key || '').trim().replace(/\\/g, '/');
       if (!token.startsWith(prefix)) continue;
       const relativePath = token.slice(prefix.length).replace(/^\/+/, '');
-      if (!relativePath || relativePath.includes('..')) continue;
+      if (!relativePath || relativePath.includes('../index.js')) continue;
       const destinationPath = path.join(cacheRoot, ...relativePath.split('/'));
       const resolvedDestinationPath = path.resolve(destinationPath);
       if (!resolvedDestinationPath.startsWith(path.resolve(cacheRoot))) continue;

@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
+import { api } from '../../../api/client.ts';
 import {
   assertFieldStudioMapValidationOrThrow,
   resolveFieldStudioMapPayloadForSave,
 } from './mapValidationPreflight.js';
-import type { StudioConfig } from '../../../types/studio';
-import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes';
+import type { StudioConfig } from '../../../types/studio.ts';
+import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes.ts';
 
 interface StudioPersistenceAuthorityOptions {
   category: string;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStorage, nextTick, withWindowStub } from '../../../../../test/helpers/browserStorageHarness.js';
-import { loadBundledModule } from '../../../../../test/helpers/loadBundledModule.js';
+import { createStorage, nextTick, withWindowStub } from '../../shared/test-utils/browserStorageHarness.js';
+import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 test('collapse store hydrates from sessionStorage (migration) and persists to localStorage', async () => {
   // Module migrated from sessionStorage → localStorage with automatic migration.

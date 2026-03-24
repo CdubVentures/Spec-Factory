@@ -1,8 +1,8 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppShell } from './pages/layout/AppShell';
-import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AppShell } from './pages/layout/AppShell.tsx';
+import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
   return lazy(async () => {
@@ -15,21 +15,21 @@ function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportNam
   });
 }
 
-const OverviewPage = lazyNamedPage(() => import('./pages/overview/OverviewPage'), 'OverviewPage');
-const ProductPage = lazyNamedPage(() => import('./pages/product/ProductPage'), 'ProductPage');
-const LlmSettingsPage = lazyNamedPage(() => import('./pages/llm-settings/LlmSettingsPage'), 'LlmSettingsPage');
-const BillingPage = lazyNamedPage(() => import('./pages/billing/BillingPage'), 'BillingPage');
-const StudioPage = lazyNamedPage(() => import('./features/studio/components/StudioPage'), 'StudioPage');
-const CatalogPage = lazyNamedPage(() => import('./features/catalog/components/CatalogPage'), 'CatalogPage');
-const CategoryManager = lazyNamedPage(() => import('./features/catalog/components/CategoryManager'), 'CategoryManager');
-const ReviewPage = lazyNamedPage(() => import('./features/review/components/ReviewPage'), 'ReviewPage');
-const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage'), 'ComponentReviewPage');
-const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage'), 'TestModePage');
-const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/IndexingPage'), 'IndexingPage');
-const PipelineSettingsPage = lazyNamedPage(() => import('./features/pipeline-settings/components/PipelineSettingsPage'), 'PipelineSettingsPage');
-const RuntimeOpsPage = lazyNamedPage(() => import('./features/runtime-ops/components/RuntimeOpsPage'), 'RuntimeOpsPage');
-const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage'), 'StoragePage');
-const LlmConfigPage = lazyNamedPage(() => import('./features/llm-config/components/LlmConfigPage'), 'LlmConfigPage');
+const OverviewPage = lazyNamedPage(() => import('./pages/overview/OverviewPage.tsx'), 'OverviewPage');
+const ProductPage = lazyNamedPage(() => import('./pages/product/ProductPage.tsx'), 'ProductPage');
+const LlmSettingsPage = lazyNamedPage(() => import('./pages/llm-settings/LlmSettingsPage.tsx'), 'LlmSettingsPage');
+const BillingPage = lazyNamedPage(() => import('./pages/billing/BillingPage.tsx'), 'BillingPage');
+const StudioPage = lazyNamedPage(() => import('./features/studio/components/StudioPage.tsx'), 'StudioPage');
+const CatalogPage = lazyNamedPage(() => import('./features/catalog/components/CatalogPage.tsx'), 'CatalogPage');
+const CategoryManager = lazyNamedPage(() => import('./features/catalog/components/CategoryManager.tsx'), 'CategoryManager');
+const ReviewPage = lazyNamedPage(() => import('./features/review/components/ReviewPage.tsx'), 'ReviewPage');
+const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage.tsx'), 'ComponentReviewPage');
+const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage.tsx'), 'TestModePage');
+const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/IndexingPage.tsx'), 'IndexingPage');
+const PipelineSettingsPage = lazyNamedPage(() => import('./features/pipeline-settings/components/PipelineSettingsPage.tsx'), 'PipelineSettingsPage');
+const RuntimeOpsPage = lazyNamedPage(() => import('./features/runtime-ops/components/RuntimeOpsPage.tsx'), 'RuntimeOpsPage');
+const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage.tsx'), 'StoragePage');
+const LlmConfigPage = lazyNamedPage(() => import('./features/llm-config/components/LlmConfigPage.tsx'), 'LlmConfigPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {

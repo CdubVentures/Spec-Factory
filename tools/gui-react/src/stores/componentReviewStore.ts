@@ -1,1 +1,1 @@
-export * from '../features/review/state/componentReviewStore';
+export * from '../features/review/state/componentReviewStore.ts';

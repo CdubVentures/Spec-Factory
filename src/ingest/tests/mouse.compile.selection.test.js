@@ -7,7 +7,7 @@ import {
   compileCategoryFieldStudio,
   createMouseCompileWorkspace,
   saveFieldStudioMap,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('compileCategoryFieldStudio honors selected_keys scope from field studio map', async () => {
   const workspace = await createMouseCompileWorkspace({

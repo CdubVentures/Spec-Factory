@@ -1,4 +1,4 @@
-import { humanizeField } from '../../../utils/fieldNormalize';
+import { humanizeField } from '../../../utils/fieldNormalize.ts';
 
 export function displayLabel(
   key: string,

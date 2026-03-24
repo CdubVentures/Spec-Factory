@@ -1,4 +1,4 @@
-import { trafficColor } from '../../utils/colors';
+import { trafficColor } from '../../utils/colors.ts';
 
 export function TrafficLight({ color }: { color: string }) {
   return (

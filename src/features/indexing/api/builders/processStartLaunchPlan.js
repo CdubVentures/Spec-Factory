@@ -92,8 +92,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     profile,
     dryRun,
     pageGotoTimeoutMs,
-    frontierDbPath,
-    frontierBlockedDomainThreshold,
     runtimeTraceFetchRing,
     runtimeTraceLlmRing,
     runtimeTraceLlmPayloads,
@@ -252,8 +250,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);
   assignString(envOverrides, 'ANTHROPIC_API_KEY', anthropicApiKey);
 
-  assignString(envOverrides, 'FRONTIER_DB_PATH', frontierDbPath);
-  assignInt(envOverrides, 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD', frontierBlockedDomainThreshold, { minInput: 1, minClamp: 1, maxClamp: 50 });
   assignInt(envOverrides, 'PAGE_GOTO_TIMEOUT_MS', pageGotoTimeoutMs, { minInput: 0, minClamp: 0, maxClamp: 120_000 });
 
   assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);

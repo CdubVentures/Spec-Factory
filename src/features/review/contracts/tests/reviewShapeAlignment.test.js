@@ -20,7 +20,7 @@ import {
   PRODUCTS_INDEX_RESPONSE_KEYS,
   CANDIDATE_RESPONSE_KEYS,
 } from '../reviewFieldContract.js';
-import { assertContractKeysInInterface } from '../../../../../test/contracts/helpers/tsInterfaceParser.js';
+import { assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/review.ts');

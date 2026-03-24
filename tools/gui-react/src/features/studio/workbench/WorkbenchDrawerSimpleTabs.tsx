@@ -1,22 +1,22 @@
-import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer';
-import { Tip } from '../../../shared/ui/feedback/Tip';
-import { ComboSelect } from '../../../shared/ui/forms/ComboSelect';
-import { EnumConfigurator } from '../components/EnumConfigurator';
-import { TagPicker } from '../../../shared/ui/forms/TagPicker';
-import { TierPicker } from '../../../shared/ui/forms/TierPicker';
+import { JsonViewer } from '../../../shared/ui/data-display/JsonViewer.tsx';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
+import { EnumConfigurator } from '../components/EnumConfigurator.tsx';
+import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
+import { TierPicker } from '../../../shared/ui/forms/TierPicker.tsx';
 import {
   parseBoundedIntInput,
-} from '../state/numericInputHelpers';
-import { PARSE_TEMPLATES, isUnitBearingTemplate, resolveOutputType } from '../state/parseTemplateRegistry';
+} from '../state/numericInputHelpers.ts';
+import { PARSE_TEMPLATES, isUnitBearingTemplate, resolveOutputType } from '../state/parseTemplateRegistry.ts';
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
-} from '../state/studioNumericKnobBounds';
+} from '../state/studioNumericKnobBounds.ts';
 import {
   arrN,
   boolN,
   numN,
   strN,
-} from './workbenchHelpers';
+} from './workbenchHelpers.ts';
 import {
   CONTENT_TYPE_SUGGESTIONS,
   DOMAIN_HINT_SUGGESTIONS,
@@ -26,11 +26,11 @@ import {
   STUDIO_TIPS,
   UNITS,
   UNIT_ACCEPTS_SUGGESTIONS,
-} from '../components/studioConstants';
+} from '../components/studioConstants.ts';
 import type {
   ComponentDbResponse,
   EnumEntry,
-} from '../../../types/studio';
+} from '../../../types/studio.ts';
 import type { ComponentType } from 'react';
 
 export type BadgeSlot = ComponentType<{ p: string }>;

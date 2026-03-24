@@ -6,7 +6,7 @@ import {
   buildProvenance,
   makeEvidence,
   minRefsEvidencePack,
-} from '../../../test/helpers/runtimeGateHarness.js';
+} from './helpers/runtimeGateHarness.js';
 
 test('min-refs: min=2 with 1 distinct ref -> fail', async () => {
   await withMinRefsEngine((engine) => {

@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedTab } from '../../../../stores/tabStore';
+import { api } from '../../../../api/client.ts';
+import { usePersistedTab } from '../../../../stores/tabStore.ts';
 import type {
   RuntimeOpsDocumentRow,
   RuntimeOpsDocumentDetailResponse,
@@ -9,7 +9,7 @@ import type {
   WorkerScreenshot,
   QueueJobRow,
   DocDetailSubTab,
-} from '../../types';
+} from '../../types.ts';
 import {
   formatBytes,
   truncateUrl,
@@ -19,10 +19,10 @@ import {
   formatMs,
   getRefetchInterval,
   queueStatusBadgeClass,
-} from '../../helpers';
-import { relativeTime } from '../../../../utils/formatting';
-import { ConfidenceBar } from '../../components/ConfidenceBar';
-import { contentTypeGroup, CT_LABEL, CT_BADGE, dedupeBadgeClass, STATUS_FLOW } from './DrawerDocsTab';
+} from '../../helpers.ts';
+import { relativeTime } from '../../../../utils/formatting.ts';
+import { ConfidenceBar } from '../../components/ConfidenceBar.tsx';
+import { contentTypeGroup, CT_LABEL, CT_BADGE, dedupeBadgeClass, STATUS_FLOW } from './DrawerDocsTab.tsx';
 
 interface DrawerDocDetailViewProps {
   document: RuntimeOpsDocumentRow;

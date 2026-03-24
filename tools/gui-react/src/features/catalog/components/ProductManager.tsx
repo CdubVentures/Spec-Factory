@@ -1,25 +1,25 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { useUiStore } from '../../../stores/uiStore';
-import { useProductStore } from '../state/productStore';
-import { usePersistedToggle } from '../../../stores/collapseStore';
-import { usePersistedTab } from '../../../stores/tabStore';
-import { DataTable } from '../../../shared/ui/data-display/DataTable';
-import { Spinner } from '../../../shared/ui/feedback/Spinner';
-import BulkPasteGrid, { type BulkGridRow } from '../../../components/common/BulkPasteGrid';
-import { invalidateFieldRulesQueries } from '../../studio';
+import { api } from '../../../api/client.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { useProductStore } from '../state/productStore.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import BulkPasteGrid, { type BulkGridRow } from '../../../components/common/BulkPasteGrid.tsx';
+import { invalidateFieldRulesQueries } from '../../studio/index.ts';
 
-import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses';
+import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
 const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
 const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';
 
 // ── Types ──────────────────────────────────────────────────────────
-import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product';
-import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes';
-import { PRODUCT_STATUS_VALUES, BULK_VARIANT_PLACEHOLDERS, slugToken, cleanVariantToken, isFabricatedVariantToken, normalizeVariantForPreview, buildPreviewProductId, isHeaderRow, relativeTime } from './productHelpers';
-import { PRODUCT_TABLE_COLUMNS } from './productTableColumns';
+import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product.ts';
+import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes.ts';
+import { PRODUCT_STATUS_VALUES, BULK_VARIANT_PLACEHOLDERS, slugToken, cleanVariantToken, isFabricatedVariantToken, normalizeVariantForPreview, buildPreviewProductId, isHeaderRow, relativeTime } from './productHelpers.ts';
+import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 
 // ── Component ──────────────────────────────────────────────────────
 export function ProductManager() {

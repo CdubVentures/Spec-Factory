@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import type { RunDetailResponse } from '../types';
+import { api } from '../../../api/client.ts';
+import type { RunDetailResponse } from '../types.ts';
 
 export function useRunDetail(runId: string | null) {
   return useQuery({

@@ -1,1 +1,1 @@
-export * from '../../../components/common/ProgressBar';
+export * from '../../../components/common/ProgressBar.tsx';

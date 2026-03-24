@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../../../../api/client';
-import { formatMs } from '../../helpers';
+import { api } from '../../../../api/client.ts';
+import { formatMs } from '../../helpers.ts';
 
 interface BrowserStreamProps {
   runId: string;

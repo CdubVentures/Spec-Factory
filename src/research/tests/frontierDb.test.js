@@ -18,18 +18,12 @@ function createStorage(initial = {}) {
   };
 }
 
-test('FrontierDb deduplicates queries per product during cooldown window', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: 'specs/outputs/_intel/frontier/frontier.json',
-    config: {
-      frontierQueryCooldownSeconds: 3600
-    }
-  });
-  await db.load();
+// ── recordQuery + getQueryRecord ──
 
-  assert.equal(db.shouldSkipQuery({ productId: 'p1', query: 'razer viper specs' }), false);
+test('FrontierDb.recordQuery stores and retrieves query record', () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json' });
+
   db.recordQuery({
     productId: 'p1',
     query: 'razer viper specs',
@@ -37,133 +31,25 @@ test('FrontierDb deduplicates queries per product during cooldown window', async
     fields: ['weight'],
     results: [{ url: 'https://example.com/spec' }]
   });
-  assert.equal(db.shouldSkipQuery({ productId: 'p1', query: 'razer viper specs' }), true);
-  assert.equal(db.shouldSkipQuery({ productId: 'p2', query: 'razer viper specs' }), false);
+
+  const record = db.getQueryRecord({ productId: 'p1', query: 'razer viper specs' });
+  assert.ok(record);
+  assert.equal(record.query_text, 'razer viper specs');
+  assert.equal(record.provider, 'searxng');
+  assert.equal(record.results.length, 1);
 });
 
-test('FrontierDb enforces URL cooldown for repeated 404 responses', async () => {
+test('FrontierDb.getQueryRecord returns null for unknown query', () => {
   const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: 'specs/outputs/_intel/frontier/frontier.json',
-    config: {
-      frontierCooldown404Seconds: 60,
-      frontierCooldown404RepeatSeconds: 120
-    }
-  });
-  await db.load();
+  const db = new FrontierDb({ storage, key: 'frontier.json' });
 
-  const url = 'https://example.com/spec?utm_source=x';
-  assert.equal(db.shouldSkipUrl(url).skip, false);
-  db.recordFetch({
-    productId: 'p1',
-    url,
-    status: 404
-  });
-  const first = db.shouldSkipUrl(url);
-  assert.equal(first.skip, true);
-  assert.equal(first.reason, 'cooldown');
-
-  db.recordFetch({
-    productId: 'p1',
-    url,
-    status: 404
-  });
-  db.recordFetch({
-    productId: 'p1',
-    url,
-    status: 404
-  });
-  const row = db.getUrlRow(url);
-  assert.equal(row.cooldown.reason, 'status_404_repeated');
+  const record = db.getQueryRecord({ productId: 'p1', query: 'unknown query' });
+  assert.equal(record, null);
 });
 
-test('FrontierDb applies cooldown for 403 with backoff reason', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: 'specs/outputs/_intel/frontier/frontier.json',
-    config: {
-      frontierCooldown403BaseSeconds: 60
-    }
-  });
-  await db.load();
-
-  const url = 'https://example.com/forbidden';
-  db.recordFetch({
-    productId: 'p1',
-    url,
-    status: 403
-  });
-  const first = db.shouldSkipUrl(url);
-  assert.equal(first.skip, true);
-  const row = db.getUrlRow(url);
-  assert.equal(row.cooldown.reason, 'status_403_backoff');
-});
-
-test('FrontierDb respects custom frontierBackoffMaxExponent caps', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: 'specs/outputs/_intel/frontier/frontier.json',
-    config: {
-      frontierCooldown403BaseSeconds: 60,
-      frontierBackoffMaxExponent: 2,
-    }
-  });
-  await db.load();
-
-  const url = 'https://example.com/rate-limited';
-  for (let idx = 0; idx < 6; idx += 1) {
-    db.recordFetch({
-      productId: 'p1',
-      url,
-      status: 403
-    });
-  }
-
-  const row = db.getUrlRow(url);
-  assert.equal(row.cooldown.reason, 'status_403_backoff');
-  assert.equal(row.cooldown.seconds, 240);
-});
-
-test('FrontierDb records yields and produces product snapshot', async () => {
-  const storage = createStorage();
-  const key = 'specs/outputs/_intel/frontier/frontier.json';
-  const db = new FrontierDb({ storage, key });
-  await db.load();
-
-  db.recordQuery({
-    productId: 'mouse-1',
-    query: 'mouse weight specs',
-    provider: 'searxng',
-    fields: ['weight'],
-    results: [{ url: 'https://example.com/p1' }]
-  });
-  db.recordFetch({
-    productId: 'mouse-1',
-    url: 'https://example.com/p1',
-    status: 200,
-    contentType: 'text/html',
-    fieldsFound: ['weight', 'dpi'],
-    confidence: 0.9
-  });
-
-  const snapshot = db.snapshotForProduct('mouse-1');
-  assert.equal(snapshot.query_count, 1);
-  assert.equal(snapshot.url_count >= 1, true);
-  assert.equal(snapshot.field_yield.weight >= 1, true);
-
-  await db.save();
-  assert.equal(Boolean(storage.snapshot(key)), true);
-});
-
-// ── Tier metadata on query recording ──
-
-test('FrontierDb.recordQuery persists tier metadata when provided', async () => {
+test('FrontierDb.recordQuery persists tier metadata when provided', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
-  await db.load();
 
   db.recordQuery({
     productId: 'p1',
@@ -183,10 +69,9 @@ test('FrontierDb.recordQuery persists tier metadata when provided', async () => 
   assert.equal(record.hint_source, 'tier1_seed');
 });
 
-test('FrontierDb.recordQuery defaults tier fields to null when not provided', async () => {
+test('FrontierDb.recordQuery defaults tier fields to null when not provided', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
-  await db.load();
 
   db.recordQuery({
     productId: 'p1',
@@ -203,21 +88,73 @@ test('FrontierDb.recordQuery defaults tier fields to null when not provided', as
   assert.equal(record.hint_source, null);
 });
 
+// ── recordFetch + getUrlRow ──
+
+test('FrontierDb.recordFetch stores and retrieves URL row', () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json' });
+
+  db.recordFetch({
+    productId: 'p1',
+    url: 'https://example.com/spec',
+    status: 200,
+    contentType: 'text/html',
+    fieldsFound: ['weight', 'dpi'],
+    confidence: 0.9
+  });
+
+  const row = db.getUrlRow('https://example.com/spec');
+  assert.ok(row);
+  assert.equal(row.last_status, 200);
+  assert.ok(row.fields_found.includes('weight'));
+  assert.ok(row.fields_found.includes('dpi'));
+});
+
+test('FrontierDb.getUrlRow returns empty object for unknown URL', () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json' });
+
+  const row = db.getUrlRow('https://unknown.com/page');
+  assert.deepStrictEqual(row, {});
+});
+
+test('FrontierDb.recordFetch merges fields_found across multiple fetches', () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: 'frontier.json' });
+
+  db.recordFetch({
+    productId: 'p1',
+    url: 'https://example.com/spec',
+    status: 200,
+    fieldsFound: ['weight'],
+  });
+  db.recordFetch({
+    productId: 'p1',
+    url: 'https://example.com/spec',
+    status: 200,
+    fieldsFound: ['dpi', 'polling_rate'],
+  });
+
+  const row = db.getUrlRow('https://example.com/spec');
+  assert.ok(row.fields_found.includes('weight'));
+  assert.ok(row.fields_found.includes('dpi'));
+  assert.ok(row.fields_found.includes('polling_rate'));
+  assert.equal(row.fetch_count, 2);
+});
+
 // ── buildQueryExecutionHistory ──
 
-test('FrontierDb.buildQueryExecutionHistory returns empty for unknown product', async () => {
+test('FrontierDb.buildQueryExecutionHistory returns empty for unknown product', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
-  await db.load();
 
   const history = db.buildQueryExecutionHistory('unknown');
   assert.deepStrictEqual(history, { queries: [] });
 });
 
-test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded queries', async () => {
+test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded queries', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
-  await db.load();
 
   db.recordQuery({
     productId: 'p1', query: 'brand model specs', provider: 'google',
@@ -251,10 +188,9 @@ test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded que
   assert.equal(key.normalized_key, 'battery hours');
 });
 
-test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier', async () => {
+test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
-  await db.load();
 
   db.recordQuery({
     productId: 'p1', query: 'old query', provider: 'bing',
@@ -270,18 +206,16 @@ test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier'
 // aggregateDomainStats
 // ---------------------------------------------------------------------------
 
-test('aggregateDomainStats returns empty map for no domains', async () => {
+test('aggregateDomainStats returns empty map for no domains', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, config: {} });
-  await db.load();
   const stats = db.aggregateDomainStats([]);
   assert.equal(stats.size, 0);
 });
 
-test('aggregateDomainStats returns zeros for unknown domain', async () => {
+test('aggregateDomainStats returns zeros for unknown domain', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, config: {} });
-  await db.load();
   const stats = db.aggregateDomainStats(['unknown.com']);
   assert.equal(stats.size, 1);
   const s = stats.get('unknown.com');
@@ -294,7 +228,7 @@ test('aggregateDomainStats returns zeros for unknown domain', async () => {
   assert.equal(s.last_blocked_ts, null);
 });
 
-test('aggregateDomainStats aggregates fetch history from recorded URLs', async () => {
+test('aggregateDomainStats aggregates fetch history from recorded URLs', () => {
   const storage = createStorage();
   const db = new FrontierDb({
     storage,
@@ -309,7 +243,6 @@ test('aggregateDomainStats aggregates fetch history from recorded URLs', async (
       frontierPathPenaltyNotfoundThreshold: 3,
     },
   });
-  await db.load();
 
   db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page1', status: 200, elapsedMs: 100 });
   db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page2', status: 200, elapsedMs: 200 });

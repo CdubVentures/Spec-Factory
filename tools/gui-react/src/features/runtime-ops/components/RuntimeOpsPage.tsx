@@ -1,23 +1,23 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { Spinner } from '../../../shared/ui/feedback/Spinner';
-import type { ProcessStatus } from '../../../types/events';
-import { useUiStore } from '../../../stores/uiStore';
-import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
-import { useIndexLabStore } from '../../indexing/state/indexlabStore';
-import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery';
-import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types';
+import { api } from '../../../api/client.ts';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import type { ProcessStatus } from '../../../types/events.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore.ts';
+import { useIndexLabStore } from '../../indexing/state/indexlabStore.ts';
+import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery.ts';
+import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types.ts';
 import { resolveRunActiveScope } from '../selectors/runActivityScopeHelpers.js';
-import { BootProgressBar } from './BootProgressBar';
-import { MetricsRail } from '../panels/overview/MetricsRail';
-import { OverviewTab } from '../panels/overview/OverviewTab';
-import { WorkersTab } from '../panels/workers/WorkersTab';
-import { DocumentsTab } from '../panels/overview/DocumentsTab';
-import { FallbacksTab } from '../panels/overview/FallbacksTab';
-import { QueueTab } from '../panels/overview/QueueTab';
-import { CompoundTab } from '../panels/compound/CompoundTab';
-import { RuntimeOpsRunPicker } from './RuntimeOpsRunPicker';
+import { BootProgressBar } from './BootProgressBar.tsx';
+import { MetricsRail } from '../panels/overview/MetricsRail.tsx';
+import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
+import { WorkersTab } from '../panels/workers/WorkersTab.tsx';
+import { DocumentsTab } from '../panels/overview/DocumentsTab.tsx';
+import { FallbacksTab } from '../panels/overview/FallbacksTab.tsx';
+import { QueueTab } from '../panels/overview/QueueTab.tsx';
+import { CompoundTab } from '../panels/compound/CompoundTab.tsx';
+import { RuntimeOpsRunPicker } from './RuntimeOpsRunPicker.tsx';
 import type {
   RuntimeOpsTab,
   RuntimeOpsSummaryResponse,
@@ -26,7 +26,7 @@ import type {
   RuntimeOpsMetricsResponse,
   FallbacksResponse,
   QueueStateResponse,
-} from '../types';
+} from '../types.ts';
 
 const TAB_DEFS = [
   { id: 'overview', label: 'Overview', description: 'Health cards, throughput, blockers' },
@@ -46,7 +46,7 @@ const RUNTIME_OPS_TAB_KEYS = [
   'compound',
 ] as const satisfies ReadonlyArray<RuntimeOpsTab>;
 
-import { TabStrip } from '../../../shared/ui/navigation/TabStrip';
+import { TabStrip } from '../../../shared/ui/navigation/TabStrip.tsx';
 
 function getRefetchInterval(
   isRunning: boolean,

@@ -3,36 +3,36 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { useAuthoritySnapshot } from '../../../hooks/useAuthoritySnapshot.js';
 import { buildAuthorityVersionToken } from '../../../hooks/authoritySnapshotHelpers.js';
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
 import {
   SETTINGS_AUTOSAVE_DEBOUNCE_MS,
   SETTINGS_AUTOSAVE_STATUS_MS,
-} from '../../../stores/settingsManifest';
-import type { FieldRule, StudioConfig } from '../../../types/studio';
+} from '../../../stores/settingsManifest.ts';
+import type { FieldRule, StudioConfig } from '../../../types/studio.ts';
 import {
   decideStudioAuthorityAction,
   shouldOpenStudioAuthorityConflict,
 } from './authoritySync.js';
-import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
+import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries.ts';
 import {
   shouldFlushStudioDocsOnUnmount,
-} from './studioBehaviorContracts';
+} from './studioBehaviorContracts.ts';
 import {
   registerUnloadGuard,
   markDomainFlushedByUnmount,
   isDomainFlushedByUnload,
-} from '../../../stores/settingsUnloadGuard';
-import { deriveStudioPageViewState } from './studioPageDerivedState';
+} from '../../../stores/settingsUnloadGuard.ts';
+import { deriveStudioPageViewState } from './studioPageDerivedState.ts';
 import {
   buildStudioPersistMap as buildStudioPersistMapPayload,
   shouldPersistStudioDocsAttempt,
-} from './studioPagePersistence';
-import { useStudioPersistenceAuthority } from './studioPersistenceAuthority';
+} from './studioPagePersistence.ts';
+import { useStudioPersistenceAuthority } from './studioPersistenceAuthority.ts';
 import {
   getStudioFieldRulesSnapshot,
   useStudioFieldRulesActions,
   useStudioFieldRulesState,
-} from './studioFieldRulesController';
+} from './studioFieldRulesController.ts';
 
 export interface UseStudioPageDocsControllerInput {
   category: string;

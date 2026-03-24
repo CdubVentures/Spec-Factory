@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
-import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
+import { api } from '../../../api/client.ts';
+import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
+import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
 // WHY: O(1) — types and envelope extractor derived from backend contract SSOT.
-import { extractSourceEntryFromEnvelope } from './sourceEntryDerived';
-import type { SourceEntry, SourceEntryEnvelope } from './sourceEntryDerived';
-export type { SourceEntry, DiscoveryConfig, CrawlConfig, FieldCoverage } from './sourceEntryDerived';
+import { extractSourceEntryFromEnvelope } from './sourceEntryDerived.ts';
+import type { SourceEntry, SourceEntryEnvelope } from './sourceEntryDerived.ts';
+export type { SourceEntry, DiscoveryConfig, CrawlConfig, FieldCoverage } from './sourceEntryDerived.ts';
 
 interface SourceStrategyAuthorityOptions {
   category: string;

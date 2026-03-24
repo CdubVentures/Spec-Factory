@@ -2,14 +2,14 @@ import {
   clampNumber,
   parseBoundedIntInput,
   parseOptionalPositiveIntInput,
-} from "./numericInputHelpers";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "./studioNumericKnobBounds";
+} from "./numericInputHelpers.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "./studioNumericKnobBounds.ts";
 import type {
   AiAssistConfig,
   ComponentSource,
   FieldRule,
   PriorityProfile,
-} from "../../../types/studio";
+} from "../../../types/studio.ts";
 import {
   REQUIRED_LEVEL_OPTIONS,
   REQUIRED_LEVEL_RANK,

@@ -5,7 +5,7 @@ import {
   makeField,
   makeNeedSetOutput,
   makeRunContext,
-} from '../../../test/helpers/searchPlanningContextHarness.js';
+} from './helpers/searchPlanningContextHarness.js';
 
 describe('V4 - focus_groups carry V4 fields', () => {
   it('every focus_group has V4 coverage and description fields', () => {

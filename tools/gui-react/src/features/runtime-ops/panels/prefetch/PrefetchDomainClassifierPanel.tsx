@@ -1,18 +1,18 @@
 import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings } from '../../types';
-import { formatMs, domainRoleBadgeClass, safetyClassBadgeClass, pctString } from '../../helpers';
-import { ScoreBar } from '../../components/ScoreBar';
-import { StackedScoreBar } from '../../components/StackedScoreBar';
-import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { ProgressRing } from '../../components/ProgressRing';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
+import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings } from '../../types.ts';
+import { formatMs, domainRoleBadgeClass, safetyClassBadgeClass, pctString } from '../../helpers.ts';
+import { ScoreBar } from '../../components/ScoreBar.tsx';
+import { StackedScoreBar } from '../../components/StackedScoreBar.tsx';
+import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { ProgressRing } from '../../components/ProgressRing.tsx';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
 import {
   computeSafetyClassCounts,
   computeRoleCounts,
@@ -22,8 +22,8 @@ import {
   computeCooldownSummary,
   computeFetchSummary,
 } from '../../selectors/domainClassifierHelpers.js';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
 
 interface PrefetchDomainClassifierPanelProps {
   calls: PrefetchLlmCall[];

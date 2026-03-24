@@ -3,20 +3,20 @@
 // stage = add one entry here + create one panel component file.
 
 import { createElement, type ReactElement } from 'react';
-import { type PrefetchTabKey } from './prefetchStageKeys';
-import { PREFETCH_SELECT_PROPS, type PrefetchPanelContext } from './prefetchStageSelectProps';
-import { PrefetchNeedSetPanel } from './PrefetchNeedSetPanel';
-import { PrefetchSearchProfilePanel } from './PrefetchSearchProfilePanel';
-import { PrefetchBrandResolverPanel } from './PrefetchBrandResolverPanel';
-import { PrefetchSearchPlannerPanel } from './PrefetchSearchPlannerPanel';
-import { PrefetchQueryJourneyPanel } from './PrefetchQueryJourneyPanel';
-import { PrefetchSearchResultsPanel } from './PrefetchSearchResultsPanel';
-import { PrefetchSerpTriagePanel } from './PrefetchSerpTriagePanel';
-import { PrefetchDomainClassifierPanel } from './PrefetchDomainClassifierPanel';
+import { type PrefetchTabKey } from './prefetchStageKeys.ts';
+import { PREFETCH_SELECT_PROPS, type PrefetchPanelContext } from './prefetchStageSelectProps.ts';
+import { PrefetchNeedSetPanel } from './PrefetchNeedSetPanel.tsx';
+import { PrefetchSearchProfilePanel } from './PrefetchSearchProfilePanel.tsx';
+import { PrefetchBrandResolverPanel } from './PrefetchBrandResolverPanel.tsx';
+import { PrefetchSearchPlannerPanel } from './PrefetchSearchPlannerPanel.tsx';
+import { PrefetchQueryJourneyPanel } from './PrefetchQueryJourneyPanel.tsx';
+import { PrefetchSearchResultsPanel } from './PrefetchSearchResultsPanel.tsx';
+import { PrefetchSerpTriagePanel } from './PrefetchSerpTriagePanel.tsx';
+import { PrefetchDomainClassifierPanel } from './PrefetchDomainClassifierPanel.tsx';
 
 // Re-export for consumers
-export { PREFETCH_STAGE_KEYS, type PrefetchTabKey } from './prefetchStageKeys';
-export { PREFETCH_SELECT_PROPS, type PrefetchPanelContext } from './prefetchStageSelectProps';
+export { PREFETCH_STAGE_KEYS, type PrefetchTabKey } from './prefetchStageKeys.ts';
+export { PREFETCH_SELECT_PROPS, type PrefetchPanelContext } from './prefetchStageSelectProps.ts';
 
 // ── Contracts ──
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { LinkedProduct } from '../../types/componentReview';
+import type { LinkedProduct } from '../../types/componentReview.ts';
 
 /**
  * Parse a product_id like "mouse-corsair-m75-air-wireless" into display parts.

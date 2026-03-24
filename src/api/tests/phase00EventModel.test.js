@@ -12,7 +12,7 @@ import {
   makeNeedsetComputedEvent,
   makeRunCompletedEvent,
   makeEvidenceIndexEvent,
-} from '../../../test/helpers/phase00AuditHarness.js';
+} from '../../indexlab/tests/helpers/phase00AuditHarness.js';
 import { buildRoundSummaryFromEvents } from '../roundSummary.js';
 import { buildEvidenceSearchPayload } from '../evidenceSearch.js';
 

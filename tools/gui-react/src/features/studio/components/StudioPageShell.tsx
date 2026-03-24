@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { labelCls } from "./studioConstants";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
+import { labelCls } from "./studioConstants.ts";
 import {
   STUDIO_TAB_IDS,
   type StudioTabId,
-} from "../state/studioPageTabs";
+} from "../state/studioPageTabs.ts";
 
 export { STUDIO_TAB_IDS };
 export type { StudioTabId };
@@ -17,7 +17,7 @@ const subTabs: Array<{ id: StudioTabId; label: string }> = [
   { id: "reports", label: "4) Compile & Reports" },
 ];
 
-import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses';
+import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses.ts';
 
 export interface StudioPageShellProps {
   category: string;

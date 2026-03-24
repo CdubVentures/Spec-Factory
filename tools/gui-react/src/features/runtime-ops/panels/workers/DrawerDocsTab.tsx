@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import { usePersistedTab, usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { RuntimeOpsDocumentRow, WorkerExtractionField, WorkerScreenshot, QueueJobRow } from '../../types';
+import { usePersistedTab, usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import type { RuntimeOpsDocumentRow, WorkerExtractionField, WorkerScreenshot, QueueJobRow } from '../../types.ts';
 import {
   formatBytes,
   truncateUrl,
   statusBadgeClass,
   methodBadgeClass,
   friendlyMethod,
-} from '../../helpers';
-import { DrawerDocDetailView } from './DrawerDocDetailView';
+} from '../../helpers.ts';
+import { DrawerDocDetailView } from './DrawerDocDetailView.tsx';
 
 interface DrawerDocsTabProps {
   documents: RuntimeOpsDocumentRow[];

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { Tip } from "../../../shared/ui/feedback/Tip";
+import { usePersistedToggle } from "../../../stores/collapseStore.ts";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 
 interface SectionProps {
   title: ReactNode;

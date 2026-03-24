@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedTab } from '../../../../stores/tabStore';
-import { getRefetchInterval } from '../../helpers';
-import { KpiStrip } from '../../components/KpiStrip';
-import { CompoundCurveSubTab } from './CompoundCurveSubTab';
-import { QueryIndexSubTab } from './QueryIndexSubTab';
-import { UrlIndexSubTab } from './UrlIndexSubTab';
-import { PlanDiffSubTab } from './PlanDiffSubTab';
-import { KnobTelemetrySubTab } from './KnobTelemetrySubTab';
+import { api } from '../../../../api/client.ts';
+import { usePersistedTab } from '../../../../stores/tabStore.ts';
+import { getRefetchInterval } from '../../helpers.ts';
+import { KpiStrip } from '../../components/KpiStrip.tsx';
+import { CompoundCurveSubTab } from './CompoundCurveSubTab.tsx';
+import { QueryIndexSubTab } from './QueryIndexSubTab.tsx';
+import { UrlIndexSubTab } from './UrlIndexSubTab.tsx';
+import { PlanDiffSubTab } from './PlanDiffSubTab.tsx';
+import { KnobTelemetrySubTab } from './KnobTelemetrySubTab.tsx';
 import type {
   CompoundSubTab,
   CompoundCurveResponse,
@@ -16,7 +16,7 @@ import type {
   UrlSummaryResponse,
   HostHealthResponse,
   KnobSnapshotsResponse,
-} from '../../types';
+} from '../../types.ts';
 
 interface CompoundTabProps {
   category: string;
@@ -26,7 +26,7 @@ interface CompoundTabProps {
 
 const COMPOUND_SUB_TAB_KEYS = ['curve', 'queries', 'urls', 'plan-diff', 'knobs'] as const;
 
-import { TabStrip } from '../../../../shared/ui/navigation/TabStrip';
+import { TabStrip } from '../../../../shared/ui/navigation/TabStrip.tsx';
 
 const SUB_TAB_DEFS = [
   { id: 'curve', label: 'Compound Curve' },

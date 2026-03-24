@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { api } from '../../../api/client';
+import { api } from '../../../api/client.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -8,7 +8,7 @@ import type {
   KnownValuesResponse,
   StudioPayload,
   TooltipBankResponse,
-} from '../../../types/studio';
+} from '../../../types/studio.ts';
 
 export interface UseStudioPageQueriesInput {
   category: string;

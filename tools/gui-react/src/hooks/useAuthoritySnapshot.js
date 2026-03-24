@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api/client';
+import { api } from '../api/client.ts';
 import { useDataChangeSubscription } from './useDataChangeSubscription.js';
 import {
   AUTHORITY_SNAPSHOT_DOMAINS,

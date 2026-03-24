@@ -1,8 +1,8 @@
-import { FlagIcon } from './FlagIcon';
-import { DrawerSection, DrawerCard } from './DrawerShell';
-import { getFlagInfo } from '../../utils/flagDescriptions';
-import { humanizeField } from '../../utils/fieldNormalize';
-import { usePersistedToggle } from '../../hooks/useSessionPersistence';
+import { FlagIcon } from './FlagIcon.tsx';
+import { DrawerSection, DrawerCard } from './DrawerShell.tsx';
+import { getFlagInfo } from '../../utils/flagDescriptions.ts';
+import { humanizeField } from '../../utils/fieldNormalize.ts';
+import { usePersistedToggle } from '../../hooks/useSessionPersistence.ts';
 
 interface FlagsSectionProps {
   reasonCodes: string[];

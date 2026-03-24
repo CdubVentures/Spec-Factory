@@ -1,44 +1,44 @@
 import { useState, useMemo } from "react";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { ComboSelect } from "../../../shared/ui/forms/ComboSelect";
-import { TagPicker } from "../../../shared/ui/forms/TagPicker";
-import { StaticBadges } from "./StaticBadges";
+import { usePersistedToggle } from "../../../stores/collapseStore.ts";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
+import { ComboSelect } from "../../../shared/ui/forms/ComboSelect.tsx";
+import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
+import { StaticBadges } from "./StaticBadges.tsx";
 import {
   clampNumber,
   parseBoundedIntInput,
   parseOptionalPositiveIntInput,
-} from "../state/numericInputHelpers";
+} from "../state/numericInputHelpers.ts";
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
-} from "../state/studioNumericKnobBounds";
+} from "../state/studioNumericKnobBounds.ts";
 import {
   deriveAiCallsFromEffort,
   deriveAiModeFromPriority,
   normalizeAiAssistConfig,
   normalizePriorityProfile,
-} from "../state/studioPriority";
+} from "../state/studioPriority.ts";
 import {
   VARIANCE_POLICIES,
   migrateProperty,
   type PropertyMapping,
-} from "../state/studioComponentSources";
-import { displayLabel } from "../state/studioDisplayLabel";
+} from "../state/studioComponentSources.ts";
+import { displayLabel } from "../state/studioDisplayLabel.ts";
 import {
   selectCls,
   inputCls,
   labelCls,
   COMPONENT_TYPES,
   STUDIO_TIPS,
-} from "./studioConstants";
+} from "./studioConstants.ts";
 import type {
   FieldRule,
   ComponentSource,
   PriorityProfile,
   AiAssistConfig,
-} from "../../../types/studio";
-import { btnDanger } from "./studioSharedTypes";
-import type { RoleId } from "./studioSharedTypes";
+} from "../../../types/studio.ts";
+import { btnDanger } from "./studioSharedTypes.ts";
+import type { RoleId } from "./studioSharedTypes.ts";
 
 export interface EditableComponentSourceProps {
   index: number;

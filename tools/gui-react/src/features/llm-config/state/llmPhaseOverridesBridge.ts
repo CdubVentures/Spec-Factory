@@ -1,5 +1,5 @@
-import type { LlmOverridePhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
-import type { LlmPhaseId } from '../types/llmPhaseTypes';
+import type { LlmOverridePhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
 
 export function parsePhaseOverrides(json: string): LlmPhaseOverrides {
   if (!json || !json.trim() || json.trim() === '{}') return {};

@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
-import { inputCls, selectCls } from "./studioConstants";
+import { inputCls, selectCls } from "./studioConstants.ts";
 import {
   areTypesCompatible,
   CONSTRAINT_OPS,
   deriveTypeGroup,
   groupRangeConstraints,
   TYPE_GROUP_OPS,
-} from "../state/studioConstraintGroups";
+} from "../state/studioConstraintGroups.ts";
 
 interface KeyConstraintEditorProps {
   currentKey: string;

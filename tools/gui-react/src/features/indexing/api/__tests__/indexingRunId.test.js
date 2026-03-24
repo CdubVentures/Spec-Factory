@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 test('buildRequestedRunId emits a punctuation-free UTC timestamp prefix plus hex suffix', async () => {
   const { buildRequestedRunId } = await loadBundledModule(

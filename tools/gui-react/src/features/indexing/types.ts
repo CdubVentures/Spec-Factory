@@ -1,4 +1,4 @@
-import type { IndexLabEvent } from './state/indexlabStore';
+import type { IndexLabEvent } from './state/indexlabStore.ts';
 
 export interface IndexLabRunSummary {
   run_id: string;

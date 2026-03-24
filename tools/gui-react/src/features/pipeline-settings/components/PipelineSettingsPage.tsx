@@ -4,52 +4,52 @@ import {
   parseConvergenceNumericInput,
   readConvergenceKnobValue,
   useConvergenceSettingsAuthority,
-} from '../../../stores/convergenceSettingsAuthority';
+} from '../../../stores/convergenceSettingsAuthority.ts';
 import {
   useSourceStrategyAuthority,
   type SourceEntry,
-} from '../state/sourceStrategyAuthority';
-import { useUiStore } from '../../../stores/uiStore';
-import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
-import { PIPELINE_SECTION_IDS, PipelineSettingsPageShell, type PipelineSectionId } from './PipelineSettingsPageShell';
-import { usePersistedTab } from '../../../stores/tabStore';
-import { Tip } from '../../../shared/ui/feedback/Tip';
+} from '../state/sourceStrategyAuthority.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
+import { PIPELINE_SECTION_IDS, PipelineSettingsPageShell, type PipelineSectionId } from './PipelineSettingsPageShell.tsx';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
   resolvePipelineConvergenceStatusClass,
   resolvePipelineConvergenceStatusText,
   resolveSourceStrategyStatus,
-} from '../../../shared/ui/feedback/settingsStatus';
+} from '../../../shared/ui/feedback/settingsStatus.ts';
 import {
   type SourceFormEntry,
   type SourceFormEntryField,
-} from '../sections/PipelineSourceStrategySection';
-import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFormEntryByPath } from '../state/sourceEntryDerived';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
-import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority';
-import { RuntimeFlowHeaderControls } from './RuntimeFlowHeaderControls';
-import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps';
-import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization';
+} from '../sections/PipelineSourceStrategySection.tsx';
+import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFormEntryByPath } from '../state/sourceEntryDerived.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority.ts';
+import { RuntimeFlowHeaderControls } from './RuntimeFlowHeaderControls.tsx';
+import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
+import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
   SETTINGS_AUTOSAVE_DEBOUNCE_MS,
-} from '../../../stores/settingsManifest';
-import { deriveRuntimeFlowStatus } from '../state/RuntimeFlowStatus';
-import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload';
+} from '../../../stores/settingsManifest.ts';
+import { deriveRuntimeFlowStatus } from '../state/RuntimeFlowStatus.ts';
+import { collectRuntimeFlowDraftPayload } from '../state/RuntimeFlowDraftPayload.ts';
 import {
   buildRuntimeLlmTokenProfileLookup,
   createRuntimeModelTokenDefaultsResolver,
   deriveRuntimeLlmTokenContractPresetMax,
-} from '../state/RuntimeFlowModelTokenDefaults';
+} from '../state/RuntimeFlowModelTokenDefaults.ts';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types';
-import type { RuntimeSettings } from '../state/runtimeSettingsAuthority';
-import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry';
-import { SETTINGS_CATEGORY_KEYS } from '../state/SettingsCategoryRegistry';
-import { CategoryPanel } from './CategoryPanel';
+import { api } from '../../../api/client.ts';
+import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
+import type { RuntimeSettings } from '../state/runtimeSettingsAuthority.ts';
+import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry.ts';
+import { SETTINGS_CATEGORY_KEYS } from '../state/SettingsCategoryRegistry.ts';
+import { CategoryPanel } from './CategoryPanel.tsx';
 
 const SourceStrategySection = lazy(async () => {
-  const module = await import('../sections/PipelineSourceStrategySection');
+  const module = await import('../sections/PipelineSourceStrategySection.tsx');
   return { default: module.PipelineSourceStrategySection };
 });
 

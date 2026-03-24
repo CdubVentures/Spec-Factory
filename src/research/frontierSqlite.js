@@ -8,12 +8,7 @@
 
 import Database from 'better-sqlite3';
 import { canonicalizeUrl } from './urlNormalize.js';
-import { configInt } from '../shared/settingsAccessor.js';
 import { toInt } from '../shared/valueNormalizers.js';
-
-function nowMs() {
-  return Date.now();
-}
 
 function nowIso() {
   return new Date().toISOString();
@@ -96,16 +91,6 @@ export class FrontierDbSqlite {
     this.db.pragma('synchronous = NORMAL');
     this.db.exec(SCHEMA);
     this._migrateTierColumns();
-
-    this._queryCooldownMs = configInt(config, 'frontierQueryCooldownSeconds') * 1000;
-    this._cooldown404Ms = configInt(config, 'frontierCooldown404Seconds') * 1000;
-    this._cooldown404RepeatMs = configInt(config, 'frontierCooldown404RepeatSeconds') * 1000;
-    this._cooldown410Ms = configInt(config, 'frontierCooldown410Seconds') * 1000;
-    this._cooldownTimeoutMs = configInt(config, 'frontierCooldownTimeoutSeconds') * 1000;
-    this._cooldown403BaseMs = configInt(config, 'frontierCooldown403BaseSeconds') * 1000;
-    this._cooldown429BaseMs = configInt(config, 'frontierCooldown429BaseSeconds') * 1000;
-    this._backoffMaxExponent = configInt(config, 'frontierBackoffMaxExponent');
-    this._pathPenaltyThreshold = configInt(config, 'frontierPathPenaltyNotfoundThreshold');
   }
 
   // WHY: Idempotent migration — adds tier metadata columns to existing databases.
@@ -126,15 +111,6 @@ export class FrontierDbSqlite {
   }
 
   // --- Queries ---
-
-  shouldSkipQuery({ productId, query, force = false, now = nowMs() } = {}) {
-    if (force) return false;
-    const hash = makeQueryHash(productId, query);
-    const row = this.db.prepare('SELECT last_ts FROM queries WHERE query_hash = ?').get(hash);
-    if (!row) return false;
-    const lastMs = Date.parse(row.last_ts);
-    return Number.isFinite(lastMs) && (now - lastMs) < this._queryCooldownMs;
-  }
 
   getQueryRecord({ productId, query } = {}) {
     const hash = makeQueryHash(productId, query);
@@ -200,46 +176,7 @@ export class FrontierDbSqlite {
     return {
       ...row,
       fields_found: JSON.parse(row.fields_found || '[]'),
-      cooldown: {
-        next_retry_ts: row.cooldown_next_retry_ts || '',
-        reason: row.cooldown_reason || '',
-        seconds: row.cooldown_seconds || 0
-      }
     };
-  }
-
-  shouldSkipUrl(url, { force = false, now = nowMs() } = {}) {
-    if (force) return { skip: false, reason: null, next_retry_ts: null };
-    const normalized = this.canonicalize(url);
-    if (!normalized.canonical_url) return { skip: false, reason: null, next_retry_ts: null };
-
-    const row = this.db.prepare(
-      'SELECT cooldown_next_retry_ts, cooldown_reason FROM urls WHERE canonical_url = ?'
-    ).get(normalized.canonical_url);
-
-    if (row && row.cooldown_next_retry_ts) {
-      const retryMs = Date.parse(row.cooldown_next_retry_ts);
-      if (Number.isFinite(retryMs) && now < retryMs) {
-        return {
-          skip: true,
-          reason: 'cooldown',
-          next_retry_ts: row.cooldown_next_retry_ts
-        };
-      }
-    }
-
-    if (normalized.domain && normalized.path_sig) {
-      const pathStats = this.db.prepare(
-        'SELECT SUM(notfound_count) AS notfound_total, SUM(ok_count) AS ok_total FROM urls WHERE domain = ? AND path_sig = ?'
-      ).get(normalized.domain, normalized.path_sig);
-      const notfoundTotal = toInt(pathStats?.notfound_total, 0);
-      const okTotal = toInt(pathStats?.ok_total, 0);
-      if (notfoundTotal >= this._pathPenaltyThreshold && okTotal === 0) {
-        return { skip: true, reason: 'path_dead_pattern', next_retry_ts: null };
-      }
-    }
-
-    return { skip: false, reason: null, next_retry_ts: null };
   }
 
   recordFetch({
@@ -252,40 +189,8 @@ export class FrontierDbSqlite {
 
     const canonicalUrl = normalized.canonical_url;
     const statusCode = toInt(status, 0);
-    const fieldsJson = JSON.stringify([...new Set(fieldsFound.filter(Boolean))]);
 
     const existing = this.db.prepare('SELECT * FROM urls WHERE canonical_url = ?').get(canonicalUrl);
-
-    // Compute cooldown
-    const fetchCount = existing ? existing.fetch_count + 1 : 1;
-    let cooldownReason = '';
-    let cooldownSeconds = 0;
-    let cooldownNextRetryTs = '';
-
-    if (statusCode === 404) {
-      const isRepeat = fetchCount >= 3;
-      cooldownSeconds = isRepeat
-        ? Math.round(this._cooldown404RepeatMs / 1000)
-        : Math.round(this._cooldown404Ms / 1000);
-      cooldownReason = isRepeat ? 'status_404_repeated' : 'status_404';
-      cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
-    } else if (statusCode === 410) {
-      cooldownSeconds = Math.round(this._cooldown410Ms / 1000);
-      cooldownReason = 'status_410';
-      cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
-    } else if (statusCode === 403) {
-      cooldownSeconds = Math.round(this._cooldown403BaseMs * Math.pow(2, Math.min(this._backoffMaxExponent, fetchCount - 1)) / 1000);
-      cooldownReason = 'status_403_backoff';
-      cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
-    } else if (statusCode === 429) {
-      cooldownSeconds = Math.round(this._cooldown429BaseMs * Math.pow(2, Math.min(this._backoffMaxExponent, fetchCount - 1)) / 1000);
-      cooldownReason = 'status_429_backoff';
-      cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
-    } else if (statusCode === 0 && error) {
-      cooldownSeconds = Math.round(this._cooldownTimeoutMs / 1000);
-      cooldownReason = 'network_timeout';
-      cooldownNextRetryTs = new Date(Date.parse(ts) + cooldownSeconds * 1000).toISOString();
-    }
 
     // Merge fields_found
     let mergedFields = fieldsFound.filter(Boolean);
@@ -293,6 +198,8 @@ export class FrontierDbSqlite {
       const prev = JSON.parse(existing.fields_found || '[]');
       mergedFields = [...new Set([...prev, ...mergedFields])];
     }
+
+    const fetchCount = existing ? existing.fetch_count + 1 : 1;
 
     if (existing) {
       const okDelta = (statusCode >= 200 && statusCode < 300) ? 1 : 0;
@@ -313,14 +220,12 @@ export class FrontierDbSqlite {
           notfound_count = notfound_count + ?, gone_count = gone_count + ?,
           blocked_count = blocked_count + ?, server_error_count = server_error_count + ?,
           timeout_count = timeout_count + ?,
-          fields_found = ?, conflict_count = conflict_count + ?,
-          cooldown_next_retry_ts = ?, cooldown_reason = ?, cooldown_seconds = ?
+          fields_found = ?, conflict_count = conflict_count + ?
         WHERE canonical_url = ?
       `).run(
         ts, statusCode, finalUrl || '', contentType, contentHash, bytes, elapsedMs,
         okDelta, redirectDelta, notfoundDelta, goneDelta, blockedDelta, serverErrDelta, timeoutDelta,
         JSON.stringify(mergedFields), conflictDelta,
-        cooldownNextRetryTs, cooldownReason, cooldownSeconds,
         canonicalUrl
       );
     } else {
@@ -331,9 +236,8 @@ export class FrontierDbSqlite {
           content_type, content_hash, bytes, elapsed_ms,
           fetch_count, ok_count, redirect_count, notfound_count, gone_count,
           blocked_count, server_error_count, timeout_count,
-          fields_found, avg_confidence, conflict_count,
-          cooldown_next_retry_ts, cooldown_reason, cooldown_seconds
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          fields_found, avg_confidence, conflict_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         canonicalUrl, url, normalized.domain || '', normalized.path_sig || '', productId,
         ts, ts, statusCode, finalUrl || '',
@@ -345,8 +249,7 @@ export class FrontierDbSqlite {
         (statusCode === 403 || statusCode === 429) ? 1 : 0,
         statusCode >= 500 ? 1 : 0,
         (statusCode === 0 && error) ? 1 : 0,
-        JSON.stringify(mergedFields), confidence, conflictFlag ? 1 : 0,
-        cooldownNextRetryTs, cooldownReason, cooldownSeconds
+        JSON.stringify(mergedFields), confidence, conflictFlag ? 1 : 0
       );
     }
 
@@ -365,58 +268,6 @@ export class FrontierDbSqlite {
       fields_found: mergedFields,
       avg_confidence: confidence,
       conflict_count: existing ? existing.conflict_count + (conflictFlag ? 1 : 0) : (conflictFlag ? 1 : 0),
-      cooldown: {
-        next_retry_ts: cooldownNextRetryTs,
-        reason: cooldownReason,
-        seconds: cooldownSeconds
-      }
-    };
-  }
-
-  recordYield({ url, fieldKey, valueHash = '', confidence = 0, conflictFlag = false } = {}) {
-    const normalized = this.canonicalize(url);
-    if (!normalized.canonical_url || !fieldKey) return null;
-    const ts = nowIso();
-
-    this.db.prepare(
-      'INSERT INTO yields (canonical_url, field_key, value_hash, confidence, conflict_flag, ts) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(normalized.canonical_url, fieldKey, valueHash, confidence, conflictFlag ? 1 : 0, ts);
-
-    return {
-      field_key: fieldKey,
-      value_hash: valueHash,
-      confidence,
-      conflict_flag: Boolean(conflictFlag),
-      ts
-    };
-  }
-
-  snapshotForProduct(productId) {
-    const product = String(productId || '').trim();
-    const queries = this.db.prepare('SELECT * FROM queries WHERE product_id = ?').all(product);
-    const urls = this.db.prepare('SELECT * FROM urls WHERE product_id = ?').all(product);
-
-    const fieldYield = {};
-    for (const row of urls) {
-      for (const field of JSON.parse(row.fields_found || '[]')) {
-        fieldYield[field] = (fieldYield[field] || 0) + 1;
-      }
-    }
-
-    return {
-      product_id: product,
-      query_count: queries.length,
-      url_count: urls.length,
-      recent_fetch_count: urls.length,
-      field_yield: fieldYield,
-      cooldowns: urls
-        .filter((r) => r.cooldown_next_retry_ts)
-        .map((r) => ({
-          canonical_url: r.canonical_url,
-          reason: r.cooldown_reason || '',
-          next_retry_ts: r.cooldown_next_retry_ts || ''
-        }))
-        .slice(0, 200)
     };
   }
 
@@ -481,27 +332,6 @@ export class FrontierDbSqlite {
       });
     }
     return results;
-  }
-
-  frontierSnapshot({ limit = 120 } = {}) {
-    const rows = this.db.prepare(
-      'SELECT * FROM urls ORDER BY last_seen_ts DESC LIMIT ?'
-    ).all(Math.max(1, toInt(limit, 120)));
-
-    return {
-      updated_at: nowIso(),
-      urls: rows.map((r) => ({
-        ...r,
-        fields_found: JSON.parse(r.fields_found || '[]'),
-        cooldown: {
-          next_retry_ts: r.cooldown_next_retry_ts || '',
-          reason: r.cooldown_reason || '',
-          seconds: r.cooldown_seconds || 0
-        }
-      })),
-      domain_stats_count: 0,
-      path_stats_count: 0
-    };
   }
 
   buildQueryExecutionHistory(productId) {

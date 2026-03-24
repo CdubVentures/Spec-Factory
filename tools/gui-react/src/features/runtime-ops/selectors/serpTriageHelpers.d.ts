@@ -1,4 +1,4 @@
-import type { SerpTriageResult, PrefetchLlmCall } from '../types';
+import type { SerpTriageResult, PrefetchLlmCall } from '../types.ts';
 
 export interface TriageDecisionCounts {
   keep: number;

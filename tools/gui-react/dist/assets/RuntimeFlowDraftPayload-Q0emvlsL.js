@@ -1,1 +1,0 @@
-import{ai as l}from"./index-RnUvHPkN.js";function n({nextRuntimeDraft:t,runtimeManifestDefaults:a,resolveModelTokenDefaults:e}){return l({...t,runtimeSettingsFallbackBaseline:a,resolveModelTokenDefaults:e})}export{n as c};

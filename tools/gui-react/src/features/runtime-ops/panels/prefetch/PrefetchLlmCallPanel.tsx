@@ -1,6 +1,6 @@
-import type { PrefetchLlmCall } from '../../types';
-import { llmCallStatusBadgeClass, formatMs } from '../../helpers';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
+import type { PrefetchLlmCall } from '../../types.ts';
+import { llmCallStatusBadgeClass, formatMs } from '../../helpers.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 
 interface PrefetchLlmCallPanelProps {
   title: string;

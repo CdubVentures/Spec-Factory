@@ -1,1 +1,1 @@
-export * from '../../../utils/studioConstants';
+export * from '../../../utils/studioConstants.ts';

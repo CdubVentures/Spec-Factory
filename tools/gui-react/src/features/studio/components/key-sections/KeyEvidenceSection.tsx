@@ -1,16 +1,16 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { TierPicker } from "../../../../shared/ui/forms/TierPicker";
-import { numN, boolN, strN, arrN } from "../../state/nestedValueHelpers";
-import { parseBoundedIntInput } from "../../state/numericInputHelpers";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { TierPicker } from "../../../../shared/ui/forms/TierPicker.tsx";
+import { numN, boolN, strN, arrN } from "../../state/nestedValueHelpers.ts";
+import { parseBoundedIntInput } from "../../state/numericInputHelpers.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
   inputCls,
   labelCls,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 
 export interface KeyEvidenceSectionProps extends KeySectionBaseProps {}
 

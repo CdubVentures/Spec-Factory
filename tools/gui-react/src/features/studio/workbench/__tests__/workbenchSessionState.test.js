@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStorage, withWindowStub } from '../../../../../../../test/helpers/browserStorageHarness.js';
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { createStorage, withWindowStub } from '../../../../shared/test-utils/browserStorageHarness.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function loadWorkbenchSessionStateModule() {
   return loadBundledModule('tools/gui-react/src/features/studio/workbench/workbenchSessionState.ts', {

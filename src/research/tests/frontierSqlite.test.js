@@ -48,31 +48,6 @@ test('sqlite frontier: recordQuery stores and retrieves query', () => {
   }
 });
 
-test('sqlite frontier: shouldSkipQuery respects cooldown', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath, config: { frontierQueryCooldownSeconds: 3600 } });
-    frontier.recordQuery({ productId: 'p1', query: 'test query', provider: 'google' });
-    assert.equal(frontier.shouldSkipQuery({ productId: 'p1', query: 'test query' }), true);
-    assert.equal(frontier.shouldSkipQuery({ productId: 'p1', query: 'different query' }), false);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: shouldSkipQuery force overrides cooldown', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    frontier.recordQuery({ productId: 'p1', query: 'test', provider: 'google' });
-    assert.equal(frontier.shouldSkipQuery({ productId: 'p1', query: 'test', force: true }), false);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
 test('sqlite frontier: getQueryRecord returns cached query results', () => {
   const dbPath = tmpDbPath();
   try {
@@ -139,84 +114,6 @@ test('sqlite frontier: recordFetch increments fetch count', () => {
   }
 });
 
-test('sqlite frontier: 404 triggers cooldown', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    frontier.recordFetch({ productId: 'p1', url: 'https://example.com/missing', status: 404 });
-    const skip = frontier.shouldSkipUrl('https://example.com/missing');
-    assert.equal(skip.skip, true);
-    assert.equal(skip.reason, 'cooldown');
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: 403 triggers cooldown', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath, config: { frontierCooldown403BaseSeconds: 60 } });
-    frontier.recordFetch({ productId: 'p1', url: 'https://example.com/forbidden', status: 403 });
-    const skip = frontier.shouldSkipUrl('https://example.com/forbidden');
-    assert.equal(skip.skip, true);
-    const row = frontier.getUrlRow('https://example.com/forbidden');
-    assert.equal(row?.cooldown?.reason, 'status_403_backoff');
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: frontierBackoffMaxExponent caps repeated 403 cooldown growth', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({
-      dbPath,
-      config: {
-        frontierCooldown403BaseSeconds: 60,
-        frontierBackoffMaxExponent: 2,
-      }
-    });
-    for (let idx = 0; idx < 6; idx += 1) {
-      frontier.recordFetch({ productId: 'p1', url: 'https://example.com/rate-limited', status: 403 });
-    }
-    const row = frontier.getUrlRow('https://example.com/rate-limited');
-    assert.equal(row?.cooldown?.reason, 'status_403_backoff');
-    assert.equal(row?.cooldown?.seconds, 240);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: path dead pattern skips sibling URLs', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath, config: { frontierPathPenaltyNotfoundThreshold: 2 } });
-    frontier.recordFetch({ productId: 'p1', url: 'https://example.com/support/123', status: 404 });
-    frontier.recordFetch({ productId: 'p1', url: 'https://example.com/support/456', status: 404 });
-    const skip = frontier.shouldSkipUrl('https://example.com/support/789');
-    assert.equal(skip.skip, true);
-    assert.equal(skip.reason, 'path_dead_pattern');
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: shouldSkipUrl returns false for unknown URLs', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    const skip = frontier.shouldSkipUrl('https://unknown.com');
-    assert.equal(skip.skip, false);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
 test('sqlite frontier: getUrlRow returns stored data', () => {
   const dbPath = tmpDbPath();
   try {
@@ -237,55 +134,6 @@ test('sqlite frontier: getUrlRow returns null for unknown URL', () => {
   try {
     const frontier = new FrontierDbSqlite({ dbPath });
     assert.equal(frontier.getUrlRow('https://unknown.com'), null);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: snapshotForProduct returns product data', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    frontier.recordQuery({ productId: 'p1', query: 'test', provider: 'google' });
-    frontier.recordFetch({ productId: 'p1', url: 'https://a.com', status: 200, fieldsFound: ['weight'] });
-    const snap = frontier.snapshotForProduct('p1');
-    assert.equal(snap.product_id, 'p1');
-    assert.equal(snap.query_count, 1);
-    assert.equal(snap.url_count, 1);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: frontierSnapshot returns recent URLs', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    frontier.recordFetch({ productId: 'p1', url: 'https://a.com', status: 200 });
-    frontier.recordFetch({ productId: 'p1', url: 'https://b.com', status: 200 });
-    const snap = frontier.frontierSnapshot({ limit: 10 });
-    assert.equal(snap.urls.length, 2);
-    frontier.close();
-  } finally {
-    cleanup(dbPath);
-  }
-});
-
-test('sqlite frontier: recordYield tracks field extractions', () => {
-  const dbPath = tmpDbPath();
-  try {
-    const frontier = new FrontierDbSqlite({ dbPath });
-    frontier.recordFetch({ productId: 'p1', url: 'https://a.com', status: 200 });
-    const result = frontier.recordYield({
-      url: 'https://a.com',
-      fieldKey: 'weight',
-      valueHash: 'abc',
-      confidence: 0.95
-    });
-    assert.ok(result);
-    assert.equal(result.field_key, 'weight');
     frontier.close();
   } finally {
     cleanup(dbPath);
@@ -459,10 +307,6 @@ test('sqlite frontier: schema migration adds tier columns to existing database',
 
     // Now open with FrontierDbSqlite — migration should add tier columns
     const frontier = new FrontierDbSqlite({ dbPath });
-
-    // Verify old row survived migration via snapshot
-    const snap = frontier.snapshotForProduct('p1');
-    assert.equal(snap.query_count, 1, 'existing row should survive migration');
 
     // Verify new tier-aware recording works on migrated DB
     frontier.recordQuery({

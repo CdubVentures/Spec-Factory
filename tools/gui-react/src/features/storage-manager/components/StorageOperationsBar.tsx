@@ -6,9 +6,9 @@ import {
   usePruneRuns,
   usePurgeRuns,
   useRecalculateMetrics,
-} from '../state/useStorageActions';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
-import { PurgeConfirmModal } from './PurgeConfirmModal';
+} from '../state/useStorageActions.ts';
+import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
+import { PurgeConfirmModal } from './PurgeConfirmModal.tsx';
 
 interface StorageOperationsBarProps {
   selectedRunIds: Set<string>;

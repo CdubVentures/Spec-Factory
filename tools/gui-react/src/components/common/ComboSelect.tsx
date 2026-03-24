@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { inputCls } from '../../utils/studioConstants';
+import { inputCls } from '../../utils/studioConstants.ts';
 
 interface ComboSelectProps {
   value: string;

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import type { PrefetchNeedSetData } from '../../types';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import type { PrefetchNeedSetData } from '../../types.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

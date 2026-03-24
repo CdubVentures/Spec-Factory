@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
-import type { ProcessStatus } from '../../../types/events';
+import type { ProcessStatus } from '../../../types/events.ts';
 import {
   invalidateRunScopedQueries as invalidateRunScopedQueriesAction,
   publishProcessStatus as publishProcessStatusAction,
   refreshIndexingPageData,
   removeRunScopedQueries as removeRunScopedQueriesAction,
-} from './indexingRunViewActions';
+} from './indexingRunViewActions.ts';
 
 interface UseIndexingRunViewHandlersInput {
   queryClient: QueryClient;

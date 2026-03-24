@@ -1,1 +1,1 @@
-export * from '../../../components/common/HeroBand';
+export * from '../../../components/common/HeroBand.tsx';

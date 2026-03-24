@@ -1,26 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { api } from '../../api/client';
-import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
-import { InlineCellEditor } from '../../shared/ui/forms/InlineCellEditor';
-import { ReviewValueCell, type ReviewValueCellState } from '../../shared/ui/data-display/ReviewValueCell';
-import { CellDrawer } from '../../shared/ui/overlay/CellDrawer';
-import { FlagIcon } from '../../components/common/FlagIcon';
-import { FlagsSection } from '../../components/common/FlagsSection';
-import { usePersistedToggle } from '../../stores/collapseStore';
-import { usePersistedTab } from '../../stores/tabStore';
-import { LinkedProductsList } from '../../components/common/LinkedProductsList';
-import { useComponentReviewStore } from '../../stores/componentReviewStore';
-import { hasKnownValue } from '../../utils/fieldNormalize';
-import { useFieldLabels } from '../../hooks/useFieldLabels';
-import { sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors';
+import { api } from '../../api/client.ts';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
+import { InlineCellEditor } from '../../shared/ui/forms/InlineCellEditor.tsx';
+import { ReviewValueCell, type ReviewValueCellState } from '../../shared/ui/data-display/ReviewValueCell.tsx';
+import { CellDrawer } from '../../shared/ui/overlay/CellDrawer.tsx';
+import { FlagIcon } from '../../components/common/FlagIcon.tsx';
+import { FlagsSection } from '../../components/common/FlagsSection.tsx';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
+import { usePersistedTab } from '../../stores/tabStore.ts';
+import { LinkedProductsList } from '../../components/common/LinkedProductsList.tsx';
+import { useComponentReviewStore } from '../../stores/componentReviewStore.ts';
+import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
+import { sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors.ts';
 import {
   invalidateEnumAuthorityQueries,
   invalidateEnumReviewDataQuery,
   setEnumReviewQueryData,
 } from './enumReviewStore.js';
-import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem } from '../../types/componentReview';
+import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem } from '../../types/componentReview.ts';
 
 interface EnumSubTabProps {
   data: EnumReviewPayload;

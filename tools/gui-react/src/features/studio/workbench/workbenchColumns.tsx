@@ -1,8 +1,8 @@
 // ── Column defs, presets, cell renderers for the workbench table ──────
 import type { ColumnDef } from '@tanstack/react-table';
-import type { WorkbenchRow, ColumnPreset } from './workbenchTypes';
+import type { WorkbenchRow, ColumnPreset } from './workbenchTypes.ts';
 
-import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
 import {
   REQUIRED_LEVEL_OPTIONS,
   AI_MODE_OPTIONS as _AI_MODE_VALUES,

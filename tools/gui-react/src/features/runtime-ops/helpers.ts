@@ -1,4 +1,4 @@
-import { resolvePoolStage, POOL_STAGE_KEYS } from './poolStageRegistry';
+import { resolvePoolStage, POOL_STAGE_KEYS } from './poolStageRegistry.ts';
 import {
   resolveMethodBadge,
   resolveTierBadge,
@@ -12,7 +12,7 @@ import {
   resolveTriageDecisionBadge,
   resolveDomainRoleBadge,
   resolveSafetyClassBadge,
-} from './badgeRegistries';
+} from './badgeRegistries.ts';
 
 export { POOL_STAGE_KEYS as STAGE_ORDER };
 
@@ -165,7 +165,7 @@ export function triageDecisionBadgeClass(decision: string): string { return reso
 export function domainRoleBadgeClass(role: string): string { return resolveDomainRoleBadge(role); }
 export function safetyClassBadgeClass(safetyClass: string): string { return resolveSafetyClassBadge(safetyClass); }
 
-import type { TriageScoreComponents } from './types';
+import type { TriageScoreComponents } from './types.ts';
 
 export function scoreBarSegments(components: TriageScoreComponents): { label: string; value: number; color: string }[] {
   return [

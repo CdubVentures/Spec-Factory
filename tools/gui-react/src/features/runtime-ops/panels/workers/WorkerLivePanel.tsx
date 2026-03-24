@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import type { RuntimeOpsWorkerRow } from '../../types';
-import { BrowserStream } from '../overview/BrowserStream';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import type { RuntimeOpsWorkerRow } from '../../types.ts';
+import { BrowserStream } from '../overview/BrowserStream.tsx';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 import {
   workerStateBadgeClass,
   poolBadgeClass,
@@ -10,7 +10,7 @@ import {
   stageMeterFillClass,
   stageLabel,
   STAGE_ORDER,
-} from '../../helpers';
+} from '../../helpers.ts';
 
 interface WorkerLivePanelProps {
   worker: RuntimeOpsWorkerRow;

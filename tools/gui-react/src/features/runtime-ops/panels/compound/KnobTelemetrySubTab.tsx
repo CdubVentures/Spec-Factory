@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { usePersistedNumber } from '../../../../stores/tabStore';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { KnobSnapshotsResponse } from '../../types';
+import { usePersistedNumber } from '../../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { KnobSnapshotsResponse } from '../../types.ts';
 
 interface KnobTelemetrySubTabProps {
   data: KnobSnapshotsResponse | undefined;

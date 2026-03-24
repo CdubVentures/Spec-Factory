@@ -1,12 +1,12 @@
 // WHY: Renders all settings for a specific section as a SettingGroupBlock card.
 // Hero settings render above the block; regular settings inside the bordered card.
 
-import { SettingGroupBlock } from './RuntimeFlowPrimitives';
-import { GenericSettingRenderer } from './GenericSettingRenderer';
-import { getSettingsForSection, isHeroSetting, getDisabledByKey } from '../state/settingsCategoryMaps';
-import { findSection } from '../state/SettingsCategoryRegistry';
-import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry';
-import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps';
+import { SettingGroupBlock } from './RuntimeFlowPrimitives.tsx';
+import { GenericSettingRenderer } from './GenericSettingRenderer.tsx';
+import { getSettingsForSection, isHeroSetting, getDisabledByKey } from '../state/settingsCategoryMaps.ts';
+import { findSection } from '../state/SettingsCategoryRegistry.ts';
+import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry.ts';
+import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 
 export interface GenericSectionPanelProps {
   categoryId: SettingsCategoryId;

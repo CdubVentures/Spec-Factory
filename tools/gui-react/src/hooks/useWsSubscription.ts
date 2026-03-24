@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { wsManager } from '../api/ws';
+import { wsManager } from '../api/ws.ts';
 
 type WsChannel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'indexlab-event';
 type WsMessageHandler = (channel: WsChannel, data: unknown) => void;

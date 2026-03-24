@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { stageBadgeClass, stageLabel, getRefetchInterval, STAGE_ORDER } from '../../helpers';
-import { resolvePoolStage } from '../../poolStageRegistry';
-import type { PipelineFlowResponse } from '../../types';
+import { api } from '../../../../api/client.ts';
+import { stageBadgeClass, stageLabel, getRefetchInterval, STAGE_ORDER } from '../../helpers.ts';
+import { resolvePoolStage } from '../../poolStageRegistry.ts';
+import type { PipelineFlowResponse } from '../../types.ts';
 
 interface PipelineFlowStripProps {
   runId: string;

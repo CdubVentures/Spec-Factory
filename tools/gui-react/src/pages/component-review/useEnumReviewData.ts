@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
+import { api } from '../../api/client.ts';
 import {
   getEnumReviewQueryKey,
   normalizeEnumReviewCategory,
   shouldEnableEnumReviewQuery,
 } from './enumReviewStore.js';
-import type { EnumReviewPayload } from '../../types/componentReview';
+import type { EnumReviewPayload } from '../../types/componentReview.ts';
 
 interface UseEnumReviewDataOptions {
   category: string;

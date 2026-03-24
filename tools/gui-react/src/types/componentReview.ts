@@ -1,4 +1,4 @@
-import type { ReviewCandidate } from './review';
+import type { ReviewCandidate } from './review.ts';
 
 export type VariancePolicy = 'authoritative' | 'upper_bound' | 'lower_bound' | 'range' | 'override_allowed';
 

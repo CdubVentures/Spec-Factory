@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { pct } from '../../utils/formatting';
-import { hasKnownValue } from '../../utils/fieldNormalize';
-import { Spinner } from './Spinner';
-import { ActionTooltip } from './ActionTooltip';
+import { pct } from '../../utils/formatting.ts';
+import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { Spinner } from './Spinner.tsx';
+import { ActionTooltip } from './ActionTooltip.tsx';
 import {
   DrawerShell,
   DrawerSection,
@@ -11,8 +11,8 @@ import {
   DrawerBadges,
   DrawerManualOverride,
   DrawerActionStack,
-} from './DrawerShell';
-import type { ReviewCandidate } from '../../types/review';
+} from './DrawerShell.tsx';
+import type { ReviewCandidate } from '../../types/review.ts';
 
 // ── Shared sub-components ───────────────────────────────────────────
 

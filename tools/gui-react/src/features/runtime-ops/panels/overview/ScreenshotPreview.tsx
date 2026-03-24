@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { WorkerScreenshot } from '../../types';
-import { formatBytes } from '../../helpers';
+import type { WorkerScreenshot } from '../../types.ts';
+import { formatBytes } from '../../helpers.ts';
 
 interface ScreenshotPreviewProps {
   screenshot: WorkerScreenshot;

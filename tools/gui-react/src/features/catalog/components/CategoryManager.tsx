@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { useUiStore } from '../../../stores/uiStore';
+import { api } from '../../../api/client.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
 import { coerceCategories } from '../../../utils/categoryStoreSync.js';
 
-import { btnPrimary } from '../../../shared/ui/buttonClasses';
+import { btnPrimary } from '../../../shared/ui/buttonClasses.ts';
 
 const sectionCls = 'sf-surface-card rounded p-4';
 const chipCls = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm';

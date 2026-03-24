@@ -1,4 +1,4 @@
-import type { WorkerExtractionField, RuntimeOpsDocumentRow, PhaseStats } from '../types';
+import type { WorkerExtractionField, RuntimeOpsDocumentRow, PhaseStats } from '../types.ts';
 
 export interface PhaseDefinition {
   id: string;

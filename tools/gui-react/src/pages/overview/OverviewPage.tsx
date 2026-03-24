@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { useUiStore } from '../../stores/uiStore';
-import { MetricRow } from '../../shared/ui/data-display/MetricRow';
-import { ProgressBar } from '../../shared/ui/data-display/ProgressBar';
-import { DataTable } from '../../shared/ui/data-display/DataTable';
-import { StatusBadge } from '../../shared/ui/feedback/StatusBadge';
-import { TrafficLight } from '../../shared/ui/feedback/TrafficLight';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { pct, usd, relativeTime } from '../../utils/formatting';
-import { useProductStore } from '../../stores/productStore';
-import type { CatalogRow } from '../../types/product';
-import { parseCatalogRows } from '../../features/catalog/api/catalogParsers';
+import { api } from '../../api/client.ts';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
+import { ProgressBar } from '../../shared/ui/data-display/ProgressBar.tsx';
+import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
+import { StatusBadge } from '../../shared/ui/feedback/StatusBadge.tsx';
+import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { pct, usd, relativeTime } from '../../utils/formatting.ts';
+import { useProductStore } from '../../stores/productStore.ts';
+import type { CatalogRow } from '../../types/product.ts';
+import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 
 const columns: ColumnDef<CatalogRow, unknown>[] = [

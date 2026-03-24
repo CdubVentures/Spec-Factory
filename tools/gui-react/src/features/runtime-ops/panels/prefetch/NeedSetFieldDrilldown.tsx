@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import type { PrefetchNeedSetPlannerRow } from '../../types';
-import { resolveNeedsetState, resolveNeedsetBucket } from '../../badgeRegistries';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { sortPlannerRows, nextAction } from './needSetHelpers';
-import type { PlannerSortKey } from './needSetHelpers';
+import type { PrefetchNeedSetPlannerRow } from '../../types.ts';
+import { resolveNeedsetState, resolveNeedsetBucket } from '../../badgeRegistries.ts';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { sortPlannerRows, nextAction } from './needSetHelpers.ts';
+import type { PlannerSortKey } from './needSetHelpers.ts';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 

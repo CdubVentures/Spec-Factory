@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { runCliJson as runCli } from '../../../../test/support/cliJsonHarness.js';
+import { createCliJsonHarness } from '../../../cli/tests/helpers/cliJsonHarness.js';
 
 function localArgs({ inputRoot, outputRoot, importsRoot }) {
   return [
@@ -16,6 +16,7 @@ function localArgs({ inputRoot, outputRoot, importsRoot }) {
 }
 
 test('review CLI suggest appends a suggestion file through the top-level command surface', async () => {
+  const runCli = createCliJsonHarness();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-cli-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');

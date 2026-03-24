@@ -11,7 +11,7 @@ import {
   mouseFieldStudioSourcePath,
   saveFieldStudioMap,
   seedComponentDb,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('compileCategoryFieldStudio accepts component_reference when component types are declared in map sources (app-driven)', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-ref-map-types-'));

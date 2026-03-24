@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, STORAGE_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
-import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
-import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect';
+import { api } from '../../../api/client.ts';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS, STORAGE_SETTING_DEFAULTS } from '../../../stores/settingsManifest.ts';
+import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
+import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
+import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect.ts';
 
 export type StorageDestination = 'local' | 's3';
 

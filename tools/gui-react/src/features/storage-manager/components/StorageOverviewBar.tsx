@@ -1,8 +1,8 @@
 import { HeroBand } from '@/shared/ui/data-display/HeroBand';
-import { HeroStat, HeroStatGrid } from '../../runtime-ops/components/HeroStat';
+import { HeroStat, HeroStatGrid } from '../../runtime-ops/components/HeroStat.tsx';
 import { Chip } from '@/shared/ui/feedback/Chip';
 import { Tip } from '@/shared/ui/feedback/Tip';
-import type { StorageOverviewResponse } from '../types';
+import type { StorageOverviewResponse } from '../types.ts';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';

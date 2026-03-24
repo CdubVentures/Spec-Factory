@@ -1,26 +1,26 @@
 import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { api } from '../../../api/client';
-import { useUiStore } from '../../../stores/uiStore';
-import { useReviewStore } from '../state/reviewStore';
-import type { SortMode } from '../state/reviewStore';
-import { ReviewMatrix } from './ReviewMatrix';
-import { CellDrawer } from '../../../components/common/CellDrawer';
-import { FlagsSection } from '../../../components/common/FlagsSection';
-import { BrandFilterBar } from './BrandFilterBar';
-import { MetricRow } from '../../../components/common/MetricRow';
-import { Spinner } from '../../../components/common/Spinner';
-import { ActionTooltip } from '../../../components/common/ActionTooltip';
-import { pct } from '../../../utils/formatting';
-import { hasKnownValue } from '../../../utils/fieldNormalize';
-import { useFieldLabels } from '../../../hooks/useFieldLabels';
-import { useDebouncedCallback } from '../../../hooks/useDebounce';
-import { usePersistedToggle } from '../../../stores/collapseStore';
-import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState';
-import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review';
-import { parseCatalogProducts } from '../../catalog/api/catalogParsers';
-import type { KeyReviewLaneState } from '../../../types/review';
+import { api } from '../../../api/client.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { useReviewStore } from '../state/reviewStore.ts';
+import type { SortMode } from '../state/reviewStore.ts';
+import { ReviewMatrix } from './ReviewMatrix.tsx';
+import { CellDrawer } from '../../../components/common/CellDrawer.tsx';
+import { FlagsSection } from '../../../components/common/FlagsSection.tsx';
+import { BrandFilterBar } from './BrandFilterBar.tsx';
+import { MetricRow } from '../../../components/common/MetricRow.tsx';
+import { Spinner } from '../../../components/common/Spinner.tsx';
+import { ActionTooltip } from '../../../components/common/ActionTooltip.tsx';
+import { pct } from '../../../utils/formatting.ts';
+import { hasKnownValue } from '../../../utils/fieldNormalize.ts';
+import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
+import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
+import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
+import type { ReviewLayout, ProductReviewPayload, ProductsIndexResponse, CandidateResponse, ReviewCandidate } from '../../../types/review.ts';
+import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
+import type { KeyReviewLaneState } from '../../../types/review.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },

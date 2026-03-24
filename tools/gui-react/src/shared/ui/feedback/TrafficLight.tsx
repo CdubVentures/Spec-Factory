@@ -1,1 +1,1 @@
-export * from '../../../components/common/TrafficLight';
+export * from '../../../components/common/TrafficLight.tsx';

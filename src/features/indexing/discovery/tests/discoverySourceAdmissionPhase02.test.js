@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStorage } from '../../../../s3/storage.js';
 import { discoverCandidateSources } from '../searchDiscovery.js';
-import { buildMockSerpSelectorResponse, isLlmEndpoint } from '../../../../../test/helpers/discoverySelectorHarness.js';
+import { buildMockSerpSelectorResponse, isLlmEndpoint } from './helpers/discoverySelectorHarness.js';
 
 function makeConfig(tempRoot, overrides = {}) {
   return {

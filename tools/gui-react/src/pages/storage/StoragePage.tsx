@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { wsManager } from '../../api/ws';
-import { Spinner } from '../../components/common/Spinner';
-import { StorageManagerPanel } from '../../features/storage-manager';
-import { resolveStorageSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
-import { usePersistedTab } from '../../stores/tabStore';
-import { useUiStore } from '../../stores/uiStore';
-import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
-import { STORAGE_DESTINATION_OPTIONS, STORAGE_SETTING_DEFAULTS, type StorageDestinationOption } from '../../stores/settingsManifest';
+import { api } from '../../api/client.ts';
+import { wsManager } from '../../api/ws.ts';
+import { Spinner } from '../../components/common/Spinner.tsx';
+import { StorageManagerPanel } from '../../features/storage-manager/index.ts';
+import { resolveStorageSettingsStatusText } from '../../shared/ui/feedback/settingsStatus.ts';
+import { usePersistedTab } from '../../stores/tabStore.ts';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore.ts';
+import { STORAGE_DESTINATION_OPTIONS, STORAGE_SETTING_DEFAULTS, type StorageDestinationOption } from '../../stores/settingsManifest.ts';
 import {
   useStorageSettingsAuthority,
   useStorageSettingsBootstrap,
   type StorageSettingsPayload,
   type StorageSettingsResponse,
-} from '../../stores/storageSettingsAuthority';
+} from '../../stores/storageSettingsAuthority.ts';
 
 interface StorageBrowseDirectoryRow {
   name: string;

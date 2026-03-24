@@ -6,13 +6,13 @@ import {
   MasterSwitchRow,
   SettingToggle,
   SettingNumberInput,
-} from './RuntimeFlowPrimitives';
+} from './RuntimeFlowPrimitives.tsx';
 import {
   REGISTRY_BOUNDS,
   REGISTRY_ENUM_MAP,
   type RegistryEntry,
   type NumberBound,
-} from '../../../shared/registryDerivedSettingsMaps';
+} from '../../../shared/registryDerivedSettingsMaps.ts';
 
 export interface GenericSettingRendererProps {
   entry: RegistryEntry;
@@ -75,7 +75,7 @@ function renderNumberControl(
   return (
     <SettingRow label={label} tip={tip} disabled={disabled}>
       <SettingNumberInput
-        draftKey={entry.key as keyof import('../types/settingPrimitiveTypes').RuntimeDraft}
+        draftKey={entry.key as keyof import('../types/settingPrimitiveTypes.ts').RuntimeDraft}
         value={numValue}
         bounds={bounds}
         disabled={disabled}

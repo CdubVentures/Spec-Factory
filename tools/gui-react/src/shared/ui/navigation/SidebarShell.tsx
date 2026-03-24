@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Tip } from '../feedback/Tip';
+import { Tip } from '../feedback/Tip.tsx';
 
 /* ── Types ────────────────────────────────────────────────────────── */
 

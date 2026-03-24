@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { useUiStore } from '../../stores/uiStore';
-import { MetricRow } from '../../shared/ui/data-display/MetricRow';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { usd, compactNumber } from '../../utils/formatting';
+import { api } from '../../api/client.ts';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { usd, compactNumber } from '../../utils/formatting.ts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface MonthlyBilling {

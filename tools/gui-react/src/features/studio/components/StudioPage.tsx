@@ -1,19 +1,19 @@
-﻿import { usePersistedTab } from "../../../stores/tabStore";
+﻿import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUiStore } from "../../../stores/uiStore";
-import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore";
-import { Spinner } from "../../../shared/ui/feedback/Spinner";
-import { StudioPageActivePanel } from "./StudioPageActivePanel";
-import { useStudioPageDocsController } from "../state/useStudioPageDocsController";
-import { useStudioPageMutations } from "../state/useStudioPageMutations";
+import { useUiStore } from "../../../stores/uiStore.ts";
+import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore.ts";
+import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
+import { StudioPageActivePanel } from "./StudioPageActivePanel.tsx";
+import { useStudioPageDocsController } from "../state/useStudioPageDocsController.ts";
+import { useStudioPageMutations } from "../state/useStudioPageMutations.ts";
 import {
   buildStudioPageShellControllerState,
   STUDIO_CATEGORY_GUARD_MESSAGE,
-} from "../state/studioPageShellController";
-import { STUDIO_TAB_IDS, type StudioTabId } from "../state/studioPageTabs";
-import { useStudioPageQueries } from "../state/useStudioPageQueries";
-import { StudioPageShell } from "./StudioPageShell";
-import type { StudioConfig } from "../../../types/studio";
+} from "../state/studioPageShellController.ts";
+import { STUDIO_TAB_IDS, type StudioTabId } from "../state/studioPageTabs.ts";
+import { useStudioPageQueries } from "../state/useStudioPageQueries.ts";
+import { StudioPageShell } from "./StudioPageShell.tsx";
+import type { StudioConfig } from "../../../types/studio.ts";
 
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Shared styles ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬

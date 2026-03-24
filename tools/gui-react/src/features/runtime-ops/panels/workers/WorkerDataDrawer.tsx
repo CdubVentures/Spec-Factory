@@ -1,19 +1,19 @@
 import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedTab } from '../../../../stores/tabStore';
+import { api } from '../../../../api/client.ts';
+import { usePersistedTab } from '../../../../stores/tabStore.ts';
 import type {
   RuntimeOpsWorkerRow,
   WorkerDataTab,
   WorkerDetailResponse,
-} from '../../types';
-import { truncateUrl, poolBadgeClass, workerStateBadgeClass, formatMs } from '../../helpers';
-import { DrawerDocsTab } from './DrawerDocsTab';
-import { DrawerExtractTab } from './DrawerExtractTab';
-import { DrawerQueueTab } from './DrawerQueueTab';
-import { DrawerShotsTab } from './DrawerShotsTab';
-import { DrawerMetricsTab } from './DrawerMetricsTab';
-import { DrawerPipelineTab } from './DrawerPipelineTab';
+} from '../../types.ts';
+import { truncateUrl, poolBadgeClass, workerStateBadgeClass, formatMs } from '../../helpers.ts';
+import { DrawerDocsTab } from './DrawerDocsTab.tsx';
+import { DrawerExtractTab } from './DrawerExtractTab.tsx';
+import { DrawerQueueTab } from './DrawerQueueTab.tsx';
+import { DrawerShotsTab } from './DrawerShotsTab.tsx';
+import { DrawerMetricsTab } from './DrawerMetricsTab.tsx';
+import { DrawerPipelineTab } from './DrawerPipelineTab.tsx';
 
 interface WorkerDataDrawerProps {
   runId: string;

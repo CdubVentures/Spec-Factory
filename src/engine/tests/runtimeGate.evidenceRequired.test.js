@@ -10,7 +10,7 @@ import {
   withEvidenceEngine,
   goodProvenance,
   goodEvidencePack,
-} from '../../../test/helpers/runtimeGateHarness.js';
+} from './helpers/runtimeGateHarness.js';
 
 test('per-field: evidence_required=true field becomes unk when provenance missing (enforceEvidence=false)', async () => {
   await withEvidenceEngine((engine) => {

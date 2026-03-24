@@ -1,1 +1,1 @@
-export * from '../../../components/common/MetricRow';
+export * from '../../../components/common/MetricRow.tsx';

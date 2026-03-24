@@ -12,7 +12,7 @@ import {
   FRONTIER_ENTRY_KEYS,
   LLM_TRACE_ENTRY_KEYS,
 } from '../runtimeTypeShapes.js';
-import { assertContractKeysInInterface } from '../../../../../test/contracts/helpers/tsInterfaceParser.js';
+import { assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/runtime.ts');

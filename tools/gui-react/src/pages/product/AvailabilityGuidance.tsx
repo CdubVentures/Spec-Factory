@@ -1,4 +1,4 @@
-import { humanizeField } from '../../utils/fieldNormalize';
+import { humanizeField } from '../../utils/fieldNormalize.ts';
 
 interface AvailabilityGuidanceProps {
   fieldsBelow: string[];

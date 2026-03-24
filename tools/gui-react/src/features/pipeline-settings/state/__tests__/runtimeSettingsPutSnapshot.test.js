@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 /**
  * Contract: PUT /api/v1/runtime-settings returns a `snapshot` field
@@ -19,7 +19,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
 
   const config = {
     searchEngines: 'bing,google',
-    perHostMinDelayMs: 500,
+    maxPagesPerDomain: 5,
   };
 
   let persistedSections = null;
@@ -45,7 +45,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
     responseBody = body;
     return true;
   };
-  const readJsonBody = async () => ({ perHostMinDelayMs: 800 });
+  const readJsonBody = async () => ({ maxPagesPerDomain: 8 });
   const toInt = (v, d) => {
     const n = Number.parseInt(String(v ?? ''), 10);
     return Number.isFinite(n) ? n : d;
@@ -69,7 +69,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
   assert.ok(responseBody.snapshot !== undefined, 'response must include snapshot');
   assert.ok(typeof responseBody.snapshot === 'object', 'snapshot must be an object');
   // Snapshot should reflect the updated value
-  assert.equal(responseBody.snapshot.perHostMinDelayMs, 800);
+  assert.equal(responseBody.snapshot.maxPagesPerDomain, 8);
 });
 
 // --- Client-side: normalizeRuntimeSaveResult prefers snapshot ---

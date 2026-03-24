@@ -1,4 +1,4 @@
-import type { ProcessStatus } from '../../../types/events';
+import type { ProcessStatus } from '../../../types/events.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -6,9 +6,9 @@ import type {
   EnumEntry,
   FieldRule,
   StudioConfig,
-} from '../../../types/studio';
-import type { StudioPageActivePanelProps } from '../components/studioPagePanelContracts';
-import type { StudioTabId } from './studioPageTabs';
+} from '../../../types/studio.ts';
+import type { StudioPageActivePanelProps } from '../components/studioPagePanelContracts.ts';
+import type { StudioTabId } from './studioPageTabs.ts';
 
 function normalizeKnownValuesFields(
   knownValuesFields: Record<string, string[]> | undefined,

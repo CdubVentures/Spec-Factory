@@ -1,1 +1,1 @@
-export * from '../features/indexing/state/indexlabStore';
+export * from '../features/indexing/state/indexlabStore.ts';

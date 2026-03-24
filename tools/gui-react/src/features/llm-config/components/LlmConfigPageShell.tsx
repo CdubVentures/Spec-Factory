@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell';
-import { LLM_PHASES } from '../state/llmPhaseRegistry';
-import type { LlmPhaseId } from '../types/llmPhaseTypes';
+import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
+import { LLM_PHASES } from '../state/llmPhaseRegistry.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
 
 interface LlmConfigPageShellProps {
   activePhase: LlmPhaseId;

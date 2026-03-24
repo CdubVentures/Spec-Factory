@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
-import type { LlmProviderEntry, LlmProviderModel } from '../types/llmProviderRegistryTypes';
-import { ModelRoleBadge } from '../components/ModelRoleBadge';
+import type { LlmProviderEntry, LlmProviderModel } from '../types/llmProviderRegistryTypes.ts';
+import { ModelRoleBadge } from '../components/ModelRoleBadge.tsx';
 
 interface FlatModel extends LlmProviderModel {
   providerName: string;

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Tip } from '../../../shared/ui/feedback/Tip';
-import { TagPicker } from '../../../shared/ui/forms/TagPicker';
-import { selectCls, inputCls, labelCls, STUDIO_TIPS } from './studioConstants';
-import { usePersistedTab } from '../../../hooks/useSessionPersistence';
-import type { EnumEntry } from '../../../types/studio';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
+import { selectCls, inputCls, labelCls, STUDIO_TIPS } from './studioConstants.ts';
+import { usePersistedTab } from '../../../hooks/useSessionPersistence.ts';
+import type { EnumEntry } from '../../../types/studio.ts';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface EnumConfiguratorProps {

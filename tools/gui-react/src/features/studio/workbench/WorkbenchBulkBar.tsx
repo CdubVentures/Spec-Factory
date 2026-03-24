@@ -1,7 +1,7 @@
 // ── Bulk edit floating bar for selected rows ─────────────────────────
 import { useState } from 'react';
-import { parseBoundedIntInput } from '../state/numericInputHelpers';
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds';
+import { parseBoundedIntInput } from '../state/numericInputHelpers.ts';
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
 
 interface Props {
   selectedCount: number;
@@ -10,7 +10,7 @@ interface Props {
 }
 
 import { REQUIRED_LEVEL_OPTIONS as REQUIRED_OPTIONS, ENUM_POLICY_OPTIONS as POLICY_OPTIONS } from '../../../registries/fieldRuleTaxonomy.ts';
-import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
 
 const TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 

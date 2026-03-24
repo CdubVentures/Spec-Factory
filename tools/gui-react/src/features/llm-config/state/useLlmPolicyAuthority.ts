@@ -6,18 +6,18 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
-import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import { useSettingsAutoSaveEffect } from '../../pipeline-settings/state/useSettingsAutoSaveEffect';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
-import type { RuntimeSettings } from '../../pipeline-settings';
-import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/llmPolicyApi';
-import type { LlmPolicy, LlmPolicyGroup } from './llmPolicyAdapter.generated';
-import { flattenLlmPolicy, flattenPolicyGroup } from './llmPolicyAdapter';
-import { assembleLlmPolicyFromFlat } from './llmPolicyDefaults';
-import { validateModelExistence } from './llmModelValidation';
-import { LLM_MODEL_ROLES } from './llmModelRoleRegistry';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest.ts';
+import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
+import { useSettingsAutoSaveEffect } from '../../pipeline-settings/state/useSettingsAutoSaveEffect.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import type { RuntimeSettings } from '../../pipeline-settings/index.ts';
+import { LLM_POLICY_QUERY_KEY, fetchLlmPolicy, persistLlmPolicy } from '../api/llmPolicyApi.ts';
+import type { LlmPolicy, LlmPolicyGroup } from './llmPolicyAdapter.generated.ts';
+import { flattenLlmPolicy, flattenPolicyGroup } from './llmPolicyAdapter.ts';
+import { assembleLlmPolicyFromFlat } from './llmPolicyDefaults.ts';
+import { validateModelExistence } from './llmModelValidation.ts';
+import { LLM_MODEL_ROLES } from './llmModelRoleRegistry.ts';
 
 interface UseLlmPolicyAuthorityOptions {
   autoSaveEnabled?: boolean;

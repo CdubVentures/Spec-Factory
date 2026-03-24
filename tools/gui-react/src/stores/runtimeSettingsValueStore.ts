@@ -8,7 +8,7 @@
 // (runtimeReady, etc.), not values. This store holds the actual settings.
 
 import { create } from 'zustand';
-import type { RuntimeSettings } from '../features/pipeline-settings';
+import type { RuntimeSettings } from '../features/pipeline-settings/index.ts';
 
 interface RuntimeSettingsValueState {
   /** The canonical runtime settings values. Every consumer reads from here. */

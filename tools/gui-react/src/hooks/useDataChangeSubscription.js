@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { wsManager } from '../api/ws';
+import { wsManager } from '../api/ws.ts';
 import {
   collectDataChangeDomains,
   resolveDataChangeEventName,

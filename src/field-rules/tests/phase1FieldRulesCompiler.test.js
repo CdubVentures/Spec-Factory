@@ -10,7 +10,7 @@ import {
   normalizeFieldRulesForPhase1,
   validateRules
 } from '../compiler.js';
-import { getMouseFieldStudioSourcePath } from '../../../test/fixtures/mouseFieldStudioWorkbookFixture.js';
+import { getMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 

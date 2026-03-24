@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import type { PrefetchSchema4Bundle } from '../../types';
-import { resolveNeedsetState, resolveNeedsetBucket } from '../../badgeRegistries';
-import { phaseBadgeCls, nextAction } from './needSetHelpers';
+import type { PrefetchSchema4Bundle } from '../../types.ts';
+import { resolveNeedsetState, resolveNeedsetBucket } from '../../badgeRegistries.ts';
+import { phaseBadgeCls, nextAction } from './needSetHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

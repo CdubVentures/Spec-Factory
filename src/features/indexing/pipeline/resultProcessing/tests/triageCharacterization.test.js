@@ -133,7 +133,6 @@ function makeStubStorage() {
 function makeStubFrontierDb() {
   return {
     canonicalize: (url) => ({ canonical_url: url }),
-    shouldSkipUrl: () => ({ skip: false }),
   };
 }
 

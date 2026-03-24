@@ -1,5 +1,5 @@
-import type { IndexLabEvent } from '../state/indexlabStore';
-import type { TimedIndexLabEvent } from '../types';
+import type { IndexLabEvent } from '../state/indexlabStore.ts';
+import type { TimedIndexLabEvent } from '../types.ts';
 
 interface DeriveIndexLabLiveEventsInput {
   liveIndexLabByRun: Record<string, IndexLabEvent[]>;

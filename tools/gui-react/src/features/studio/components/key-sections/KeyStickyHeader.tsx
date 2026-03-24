@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { displayLabel } from "../../state/studioDisplayLabel";
-import { validateNewKeyTs } from "../../state/keyUtils";
+import { displayLabel } from "../../state/studioDisplayLabel.ts";
+import { validateNewKeyTs } from "../../state/keyUtils.ts";
 import {
   inputCls,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 import {
   btnPrimary,
-} from "../studioSharedTypes";
+} from "../studioSharedTypes.ts";
 
 export interface KeyStickyHeaderProps {
   selectedKey: string;

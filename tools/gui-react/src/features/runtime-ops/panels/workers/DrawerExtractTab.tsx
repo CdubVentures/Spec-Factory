@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore';
-import type { WorkerExtractionField } from '../../types';
-import { methodBadgeClass, friendlyMethod } from '../../helpers';
-import { ConfidenceBar } from '../../components/ConfidenceBar';
-import { resolveIndexedFieldHydrationNotice } from '../../selectors/prefetchUiContracts';
+import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import type { WorkerExtractionField } from '../../types.ts';
+import { methodBadgeClass, friendlyMethod } from '../../helpers.ts';
+import { ConfidenceBar } from '../../components/ConfidenceBar.tsx';
+import { resolveIndexedFieldHydrationNotice } from '../../selectors/prefetchUiContracts.ts';
 
 interface DrawerExtractTabProps {
   fields: WorkerExtractionField[];

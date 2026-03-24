@@ -46,7 +46,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('registry is a frozen non-empty array', () => {
     ok(Array.isArray(RUNTIME_SETTINGS_REGISTRY));
     ok(Object.isFrozen(RUNTIME_SETTINGS_REGISTRY));
-    ok(RUNTIME_SETTINGS_REGISTRY.length >= 110, `expected >= 110, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
+    ok(RUNTIME_SETTINGS_REGISTRY.length >= 90, `expected >= 90, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
   });
 
   it('every entry has a unique key', () => {
@@ -207,7 +207,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('total registry count baseline', () => {
     const total = RUNTIME_SETTINGS_REGISTRY.length;
     // WHY: Lock down the count so adding/removing entries requires updating this test.
-    ok(total >= 110 && total <= 130, `expected 110-130 entries, got ${total}`);
+    ok(total >= 90 && total <= 110, `expected 90-110 entries, got ${total}`);
   });
 
   it('type distribution baseline', () => {
@@ -215,10 +215,10 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       counts[entry.type] = (counts[entry.type] || 0) + 1;
     }
-    ok(counts.string >= 28, `expected >= 28 strings, got ${counts.string}`);
-    ok(counts.int >= 50, `expected >= 50 ints, got ${counts.int}`);
+    ok(counts.string >= 25, `expected >= 25 strings, got ${counts.string}`);
+    ok(counts.int >= 35, `expected >= 35 ints, got ${counts.int}`);
     ok(counts.float >= 5, `expected >= 5 floats, got ${counts.float}`);
-    ok(counts.bool >= 18, `expected >= 18 bools, got ${counts.bool}`);
+    ok(counts.bool >= 17, `expected >= 17 bools, got ${counts.bool}`);
     ok(counts.enum >= 3, `expected >= 3 enums, got ${counts.enum}`);
     ok(counts.csv_enum >= 2, `expected >= 2 csv_enums, got ${counts.csv_enum}`);
   });

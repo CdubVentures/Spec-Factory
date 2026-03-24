@@ -1,1 +1,1 @@
-export * from '../../../components/common/DataTable';
+export * from '../../../components/common/DataTable.tsx';

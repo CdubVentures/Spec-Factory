@@ -1,5 +1,5 @@
-import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio';
-import type { DrawerTab } from './workbenchTypes';
+import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio.ts';
+import type { DrawerTab } from './workbenchTypes.ts';
 import {
   ContractTab,
   DepsTab,
@@ -9,7 +9,7 @@ import {
   PreviewTab,
   SearchTab,
   type BadgeSlot,
-} from './WorkbenchDrawerTabPanels';
+} from './WorkbenchDrawerTabPanels.tsx';
 
 export interface WorkbenchDrawerTabContentProps {
   activeTab: DrawerTab;

@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { IndexLabEvent } from '../state/indexlabStore';
+import type { IndexLabEvent } from '../state/indexlabStore.ts';
 import {
   deriveIndexLabEvents,
   deriveIndexLabLiveEvents,
   deriveTimedIndexLabEvents,
-} from './indexingEventSelectors';
+} from './indexingEventSelectors.ts';
 import {
   deriveProductPickerActivity,
-} from './indexingActivitySelectors';
+} from './indexingActivitySelectors.ts';
 import type {
   IndexLabRunEventsResponse,
   IndexLabRunSummary,
-} from '../types';
+} from '../types.ts';
 
 interface UseIndexingEventActivityDerivationsInput {
   liveIndexLabByRun: Record<string, IndexLabEvent[]>;

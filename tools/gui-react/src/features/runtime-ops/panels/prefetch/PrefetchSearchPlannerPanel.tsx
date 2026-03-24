@@ -1,18 +1,18 @@
 import { useMemo } from 'react';
-import { usePersistedExpandMap } from '../../../../stores/tabStore';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types';
-import { formatMs } from '../../helpers';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { LlmCallCard } from '../../components/LlmCallCard';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
+import { usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types.ts';
+import { formatMs } from '../../helpers.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { LlmCallCard } from '../../components/LlmCallCard.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
 import {
   normalizeToken,
   normalizeQuery,
@@ -20,11 +20,11 @@ import {
   isSchema4PlannerPath,
   isTierEnhancePath,
   buildPlannerInputSummary,
-} from './searchPlannerHelpers';
-import { SearchPlannerSchema4View } from './SearchPlannerSchema4View';
-import { SearchPlannerTierEnhanceView } from './SearchPlannerTierEnhanceView';
-import { SearchPlannerPassResults } from './SearchPlannerPassResults';
-import { SearchPlannerContextSection } from './SearchPlannerContextSection';
+} from './searchPlannerHelpers.ts';
+import { SearchPlannerSchema4View } from './SearchPlannerSchema4View.tsx';
+import { SearchPlannerTierEnhanceView } from './SearchPlannerTierEnhanceView.tsx';
+import { SearchPlannerPassResults } from './SearchPlannerPassResults.tsx';
+import { SearchPlannerContextSection } from './SearchPlannerContextSection.tsx';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

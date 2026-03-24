@@ -3,21 +3,21 @@ import {
   SettingGroupBlock,
   type NumberBound,
   type RuntimeDraft,
-} from '../../pipeline-settings';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolveProviderForModel, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
-import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
-import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../state/llmMixDetection';
-import { detectEmptyModelFields } from '../state/llmModelValidation';
-import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
-import { usePersistedExpandMap } from '../../../stores/tabStore';
-import { validatePhaseTokenLimits } from '../state/llmTokenLimitValidation';
-import { HealthDot } from '../../../shared/ui/feedback/HealthDot';
-import { LlmAllModelsSection } from './LlmAllModelsSection';
-import { ModelSelectDropdown } from '../components/ModelSelectDropdown';
+} from '../../pipeline-settings/index.ts';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import { resolveProviderForModel, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
+import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
+import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../state/llmMixDetection.ts';
+import { detectEmptyModelFields } from '../state/llmModelValidation.ts';
+import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
+import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
+import { validatePhaseTokenLimits } from '../state/llmTokenLimitValidation.ts';
+import { HealthDot } from '../../../shared/ui/feedback/HealthDot.tsx';
+import { LlmAllModelsSection } from './LlmAllModelsSection.tsx';
+import { ModelSelectDropdown } from '../components/ModelSelectDropdown.tsx';
 
 const LlmProviderRegistrySection = lazy(async () => {
-  const module = await import('./LlmProviderRegistrySection');
+  const module = await import('./LlmProviderRegistrySection.tsx');
   return { default: module.LlmProviderRegistrySection };
 });
 

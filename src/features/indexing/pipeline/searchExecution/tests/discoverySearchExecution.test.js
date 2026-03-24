@@ -302,13 +302,12 @@ test('executeSearchQueries: internet search applies zero-result fallback', async
 // 8. Internet search: frontier cache during internet mode
 // ---------------------------------------------------------------------------
 
-test('executeSearchQueries: uses frontier cache during internet search', async () => {
+test('executeSearchQueries: falls back to frontier cache when provider returns zero results', async () => {
   const logger = makeLogger();
   const cachedResults = [
     { url: 'https://example.com/cached', title: 'Cached', provider: 'google' },
   ];
   const frontierDb = {
-    shouldSkipQuery: ({ query }) => query === 'cached query',
     getQueryRecord: () => ({ provider: 'google', results: cachedResults }),
     recordQuery: () => null,
   };
@@ -332,13 +331,11 @@ test('executeSearchQueries: uses frontier cache during internet search', async (
     providerState: makeProviderState({ provider: 'google', internet_ready: true }),
     requiredOnlySearch: false,
     missingRequiredFields: [],
-    _runSearchProvidersFn: async () => { throw new Error('should not call provider'); },
+    _runSearchProvidersFn: async () => [],
   });
 
   assert.equal(result.rawResults.length, 1);
-  assert.equal(result.searchAttempts[0].reason_code, 'frontier_query_cache');
-  const cacheEvents = logger.events.filter((e) => e.event === 'discovery_query_started' && e.data?.cache_hit);
-  assert.ok(cacheEvents.length > 0, 'should emit cache hit lifecycle events');
+  assert.equal(result.searchAttempts[0].reason_code, 'internet_search_zero_frontier_reuse');
 });
 
 // ---------------------------------------------------------------------------
@@ -443,46 +440,7 @@ test('executeSearchQueries: internet search populates searchJournal', async () =
 });
 
 // ---------------------------------------------------------------------------
-// 12. Internal-first: frontier cache during internal mode
-// ---------------------------------------------------------------------------
-
-test('executeSearchQueries: internal-first uses frontier cache', async () => {
-  const cachedResults = [
-    { url: 'https://example.com/cached', title: 'Cached Internal', provider: 'frontier_cache' },
-  ];
-  const frontierDb = {
-    shouldSkipQuery: () => true,
-    getQueryRecord: () => ({ provider: 'frontier_cache', results: cachedResults }),
-    recordQuery: () => null,
-  };
-
-  const result = await executeSearchQueries({
-    config: makeConfig({ discoveryInternalFirst: true, searchEngines: '' }),
-    storage: { readJsonOrNull: async () => null },
-    logger: makeLogger(),
-    runtimeTraceWriter: null,
-    frontierDb,
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'mouse-test', category: 'mouse' },
-    runId: 'run-001',
-    queries: ['test query'],
-    executionQueryLimit: 1,
-    queryLimit: 4,
-    missingFields: [],
-    variables: { brand: 'Test', model: 'Mouse', variant: '', category: 'mouse' },
-    selectedQueryRowMap: new Map(),
-    profileQueryRowMap: new Map(),
-    providerState: makeProviderState({ provider: 'none', internet_ready: false }),
-    requiredOnlySearch: false,
-    missingRequiredFields: [],
-  });
-
-  assert.equal(result.rawResults.length, 1);
-  assert.equal(result.searchAttempts[0].reason_code, 'frontier_query_cache');
-});
-
-// ---------------------------------------------------------------------------
-// 13. Empty queries returns empty results
+// 12. Empty queries returns empty results
 // ---------------------------------------------------------------------------
 
 test('executeSearchQueries: empty queries with available provider produces empty results', async () => {

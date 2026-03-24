@@ -1,4 +1,4 @@
-import { parseIntegerInput } from './numericInputHelpers';
+import { parseIntegerInput } from './numericInputHelpers.ts';
 
 export function getN(obj: Record<string, unknown>, path: string): unknown {
   return path.split('.').reduce(

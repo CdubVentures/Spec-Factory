@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useCollapseStore } from '../../stores/collapseStore';
+import { useCollapseStore } from '../../stores/collapseStore.ts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { wsManager } from '../../api/ws';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { useUiStore } from '../../stores/uiStore';
+import { api } from '../../api/client.ts';
+import { wsManager } from '../../api/ws.ts';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { useUiStore } from '../../stores/uiStore.ts';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ interface ImportProgress {
 
 // ── Styles ──────────────────────────────────────────────────────────
 
-import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../shared/ui/buttonClasses';
+import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../shared/ui/buttonClasses.ts';
 
 const btnCls = 'px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors';
 const cardCls = 'border sf-border-default rounded-lg p-3 sf-surface-card';

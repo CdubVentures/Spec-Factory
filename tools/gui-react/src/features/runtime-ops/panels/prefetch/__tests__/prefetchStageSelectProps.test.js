@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 // WHY: Characterization + boundary tests for the prefetch stage registry.
 // These lock down the data-extraction logic from the current renderPrefetchPanel switch

@@ -112,28 +112,6 @@ export async function executeSearchQueries({
 
   if (internalFirst) {
     for (const query of queries.slice(0, executionQueryLimit)) {
-      if (frontierDb?.shouldSkipQuery?.({ productId: job.productId, query })) {
-        const cached = getCachedFrontierQueryResults(query);
-        if (cached.results.length > 0) {
-          emitCachedQueryLifecycle(query, cached);
-          rawResults.push(...cached.results.map((row) => ({ ...row, query })));
-          searchAttempts.push({
-            query,
-            provider: cached.provider,
-            result_count: cached.results.length,
-            reason_code: 'frontier_query_cache'
-          });
-          searchJournal.push({
-            ts: new Date().toISOString(),
-            query,
-            provider: 'frontier',
-            action: 'reuse',
-            reason: 'query_cooldown_cached_results',
-            result_count: cached.results.length
-          });
-          continue;
-        }
-      }
       const internalRows = await searchSourceCorpusFn({
         storage,
         config,
@@ -203,53 +181,6 @@ export async function executeSearchQueries({
       queries.slice(0, executionQueryLimit),
       1,
       async (query) => {
-        if (frontierDb?.shouldSkipQuery?.({ productId: job.productId, query })) {
-          const cached = getCachedFrontierQueryResults(query);
-          if (cached.results.length > 0) {
-            emitCachedQueryLifecycle(query, cached);
-            logger?.info?.('search_results_collected', {
-              scope: 'frontier_cache',
-              query,
-              provider: cached.provider,
-              dedupe_count: 0,
-              results: cached.results.map((r, idx) => {
-                const rawUrl = String(r?.url || '').trim();
-                let domain = '';
-                try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
-                return {
-                  title: String(r?.title || '').trim(),
-                  url: rawUrl,
-                  domain,
-                  snippet: String(r?.snippet || '').trim(),
-                  rank: Number.parseInt(String(r?.rank || idx + 1), 10) || (idx + 1),
-                  relevance_score: 0,
-                  decision: '',
-                  reason: 'frontier_query_cache',
-                  provider: cached.provider,
-                  already_crawled: Boolean(frontierDb?.getUrlRow?.(rawUrl)?.fetch_count > 0),
-                };
-              })
-            });
-            return {
-              providerResults: cached.results,
-              attempt: {
-                query,
-                provider: cached.provider,
-                result_count: cached.results.length,
-                reason_code: 'frontier_query_cache'
-              },
-              journal: {
-                ts: new Date().toISOString(),
-                query,
-                provider: 'frontier',
-                action: 'reuse',
-                reason: 'query_cooldown_cached_results',
-                result_count: cached.results.length
-              }
-            };
-          }
-        }
-
         const startedAt = Date.now();
         logger?.info?.('discovery_query_started', {
           query,

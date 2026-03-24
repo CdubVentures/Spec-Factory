@@ -3,15 +3,15 @@ import {
   SettingGroupBlock,
   SettingRow,
   SettingToggle,
-} from '../../pipeline-settings';
-import type { LlmPhaseId } from '../types/llmPhaseTypes';
-import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge';
-import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions';
-import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner';
-import { resolveProviderForModel } from '../state/llmProviderRegistryBridge';
-import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown';
+} from '../../pipeline-settings/index.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
+import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.ts';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.ts';
+import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
+import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
+import { resolveProviderForModel } from '../state/llmProviderRegistryBridge.ts';
+import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
 
 interface LlmPhaseSectionProps {
   phaseId: LlmPhaseId;

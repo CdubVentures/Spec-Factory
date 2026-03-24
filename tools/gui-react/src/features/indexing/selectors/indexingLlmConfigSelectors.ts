@@ -1,6 +1,6 @@
-import { parseRuntimeLlmTokenCap } from '../../pipeline-settings';
-import { normalizeToken, providerFromModelToken } from '../helpers';
-import type { IndexingLlmConfigResponse } from '../types';
+import { parseRuntimeLlmTokenCap } from '../../pipeline-settings/index.ts';
+import { normalizeToken, providerFromModelToken } from '../helpers.tsx';
+import type { IndexingLlmConfigResponse } from '../types.ts';
 
 const FALLBACK_BOOTSTRAP_MODEL = 'gemini-2.5-flash-lite';
 

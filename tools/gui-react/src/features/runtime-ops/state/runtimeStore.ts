@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { RuntimeOverrides } from '../../../types/runtime';
-import type { ProcessStatus } from '../../../types/events';
+import type { RuntimeOverrides } from '../../../types/runtime.ts';
+import type { ProcessStatus } from '../../../types/events.ts';
 
 interface RuntimeState {
   overrides: RuntimeOverrides;

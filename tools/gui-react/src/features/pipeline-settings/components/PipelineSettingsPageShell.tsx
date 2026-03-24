@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell';
+import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
 
 export type PipelineSectionId =
   | 'flow'

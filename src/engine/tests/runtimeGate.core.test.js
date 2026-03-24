@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applyRuntimeFieldRules } from '../runtimeGate.js';
-import { withBaseEngine } from '../../../test/helpers/runtimeGateHarness.js';
+import { withBaseEngine } from './helpers/runtimeGateHarness.js';
 
 test('applyRuntimeFieldRules normalizes values via engine contracts', async () => {
   await withBaseEngine((engine) => {

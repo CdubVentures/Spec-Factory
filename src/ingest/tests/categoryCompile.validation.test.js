@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   validateFieldStudioMap,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('validateFieldStudioMap reports key_list errors', () => {
   const checked = validateFieldStudioMap({

@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
+import { api } from '../../../api/client.ts';
 import {
   deriveRuntimeLlmModelOptions,
   parseBoundedNumber,
@@ -8,34 +8,34 @@ import {
   toRuntimeDraft,
   type NumberBound,
   type RuntimeDraft,
-} from '../../pipeline-settings';
+} from '../../pipeline-settings/index.ts';
 import {
   RUNTIME_SETTING_DEFAULTS,
   SETTINGS_AUTOSAVE_DEBOUNCE_MS,
-} from '../../../stores/settingsManifest';
-import { RuntimeFlowHeaderControls } from '../../pipeline-settings/components/RuntimeFlowHeaderControls';
-import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore';
-import { useUiStore } from '../../../stores/uiStore';
-import { usePersistedTab } from '../../../stores/tabStore';
-import { LlmConfigPageShell } from './LlmConfigPageShell';
-import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry';
-import type { LlmPhaseId } from '../types/llmPhaseTypes';
-import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge';
-import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry';
-import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
-import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes';
-import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority';
-import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults';
-import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter';
+} from '../../../stores/settingsManifest.ts';
+import { RuntimeFlowHeaderControls } from '../../pipeline-settings/components/RuntimeFlowHeaderControls.tsx';
+import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
+import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
+import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
+import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry.ts';
+import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate.ts';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.ts';
+import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
+import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults.ts';
+import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter.ts';
 
 const LlmGlobalSection = lazy(async () => {
-  const module = await import('../sections/LlmGlobalSection');
+  const module = await import('../sections/LlmGlobalSection.tsx');
   return { default: module.LlmGlobalSection };
 });
 
 const LlmPhaseSection = lazy(async () => {
-  const module = await import('../sections/LlmPhaseSection');
+  const module = await import('../sections/LlmPhaseSection.tsx');
   return { default: module.LlmPhaseSection };
 });
 

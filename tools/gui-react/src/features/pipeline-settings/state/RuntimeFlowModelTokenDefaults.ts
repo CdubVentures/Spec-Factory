@@ -1,10 +1,10 @@
-import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest';
+import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest.ts';
 import {
   parseRuntimeLlmTokenCap,
   type RuntimeModelTokenDefaultsResolver,
-} from './runtimeSettingsDomain';
-import { normalizeToken, type RuntimeDraft } from './RuntimeFlowDraftContracts';
-import type { RuntimeSettingsLlmConfigResponse } from './RuntimeFlowModelTokenOptions';
+} from './runtimeSettingsDomain.ts';
+import { normalizeToken, type RuntimeDraft } from './RuntimeFlowDraftContracts.ts';
+import type { RuntimeSettingsLlmConfigResponse } from './RuntimeFlowModelTokenOptions.ts';
 
 interface RuntimeLlmTokenProfile {
   default_output_tokens: number;

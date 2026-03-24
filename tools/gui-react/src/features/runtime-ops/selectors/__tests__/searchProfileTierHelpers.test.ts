@@ -8,7 +8,7 @@ import {
   buildTierBudgetSummary,
   enrichmentStrategyLabel,
 } from '../searchProfileTierHelpers.js';
-import type { PrefetchSearchProfileQueryRow } from '../../types';
+import type { PrefetchSearchProfileQueryRow } from '../../types.ts';
 
 function makeRow(overrides: Partial<PrefetchSearchProfileQueryRow> = {}): PrefetchSearchProfileQueryRow {
   return { query: 'test query', ...overrides };

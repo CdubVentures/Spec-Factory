@@ -35,23 +35,13 @@ function createStorage(initial = {}) {
 const FRONTIER_KEY = 'specs/outputs/_intel/frontier/frontier.json';
 
 // =========================================================================
-// SECTION 1: Core interface contract (must pass for both JSON and SQLite)
+// SECTION 1: recordQuery + getQueryRecord
 // =========================================================================
 
-test('A.2 interface: load() initializes empty state without error', async () => {
+test('A.2 query: recordQuery stores and getQueryRecord retrieves', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  // Verify basic state initialized
-  const snapshot = db.snapshotForProduct('nonexistent');
-  assert.equal(snapshot.query_count, 0);
-  assert.equal(snapshot.url_count, 0);
-});
 
-test('A.2 interface: save() persists state to storage', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
   db.recordQuery({
     productId: 'p1',
     query: 'test query',
@@ -59,103 +49,29 @@ test('A.2 interface: save() persists state to storage', async () => {
     fields: ['weight'],
     results: [{ url: 'https://example.com' }]
   });
-  await db.save();
-  assert.ok(storage.snapshot(FRONTIER_KEY) !== undefined);
+
+  const record = db.getQueryRecord({ productId: 'p1', query: 'test query' });
+  assert.ok(record);
+  assert.equal(record.query_text, 'test query');
+  assert.equal(record.results.length, 1);
 });
 
-test('A.2 interface: load() restores previously saved state', async () => {
+test('A.2 query: getQueryRecord returns null for unknown query', () => {
   const storage = createStorage();
-  const db1 = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db1.load();
-  db1.recordQuery({
-    productId: 'p1',
-    query: 'test query',
-    provider: 'searxng',
-    fields: ['weight'],
-    results: [{ url: 'https://example.com' }]
-  });
-  db1.recordFetch({
-    productId: 'p1',
-    url: 'https://example.com',
-    status: 200,
-    fieldsFound: ['weight']
-  });
-  await db1.save();
+  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
-  // Reload from storage
-  const db2 = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db2.load();
-  assert.equal(db2.shouldSkipQuery({ productId: 'p1', query: 'test query' }), true);
+  const record = db.getQueryRecord({ productId: 'p1', query: 'nonexistent' });
+  assert.equal(record, null);
 });
 
-// =========================================================================
-// SECTION 2: Query deduplication
-// =========================================================================
-
-test('A.2 query dedupe: first query is NOT skipped', async () => {
+test('A.2 query: case-insensitive query normalization', () => {
   const storage = createStorage();
   const db = new FrontierDb({
     storage,
     key: FRONTIER_KEY,
     config: { frontierQueryCooldownSeconds: 3600 }
   });
-  await db.load();
-  assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit x1 weight' }),
-    false
-  );
-});
 
-test('A.2 query dedupe: repeated query for SAME product IS skipped during cooldown', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierQueryCooldownSeconds: 3600 }
-  });
-  await db.load();
-  db.recordQuery({
-    productId: 'p1',
-    query: 'acme orbit x1 weight',
-    provider: 'searxng',
-    fields: ['weight'],
-    results: []
-  });
-  assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit x1 weight' }),
-    true
-  );
-});
-
-test('A.2 query dedupe: same query for DIFFERENT product is NOT skipped', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierQueryCooldownSeconds: 3600 }
-  });
-  await db.load();
-  db.recordQuery({
-    productId: 'p1',
-    query: 'acme orbit specs',
-    provider: 'searxng',
-    fields: ['weight'],
-    results: []
-  });
-  assert.equal(
-    db.shouldSkipQuery({ productId: 'p2', query: 'acme orbit specs' }),
-    false
-  );
-});
-
-test('A.2 query dedupe: case-insensitive query normalization', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierQueryCooldownSeconds: 3600 }
-  });
-  await db.load();
   db.recordQuery({
     productId: 'p1',
     query: 'Acme Orbit SPECS',
@@ -163,20 +79,20 @@ test('A.2 query dedupe: case-insensitive query normalization', async () => {
     fields: [],
     results: []
   });
-  assert.equal(
-    db.shouldSkipQuery({ productId: 'p1', query: 'acme orbit specs' }),
-    true
-  );
+
+  const record = db.getQueryRecord({ productId: 'p1', query: 'acme orbit specs' });
+  assert.ok(record, 'case-insensitive lookup should find the record');
+  assert.equal(record.query_text, 'acme orbit specs');
 });
 
-test('A.2 query cache: stored query row exposes cached results for same product/query', async () => {
+test('A.2 query cache: stored query row exposes cached results for same product/query', () => {
   const storage = createStorage();
   const db = new FrontierDb({
     storage,
     key: FRONTIER_KEY,
     config: { frontierQueryCooldownSeconds: 3600 }
   });
-  await db.load();
+
   db.recordQuery({
     productId: 'p1',
     query: 'Acme Orbit X1 specs',
@@ -202,111 +118,29 @@ test('A.2 query cache: stored query row exposes cached results for same product/
 });
 
 // =========================================================================
-// SECTION 3: URL cooldown enforcement
+// SECTION 2: recordFetch + getUrlRow
 // =========================================================================
 
-test('A.2 url cooldown: new URL is NOT skipped', async () => {
+test('A.2 fetch: recordFetch stores and getUrlRow retrieves', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  const result = db.shouldSkipUrl('https://example.com/specs');
-  assert.equal(result.skip, false);
-});
 
-test('A.2 url cooldown: 404 URL is skipped', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierCooldown404Seconds: 3600 }
-  });
-  await db.load();
-  db.recordFetch({
-    productId: 'p1',
-    url: 'https://example.com/specs',
-    status: 404
-  });
-  const result = db.shouldSkipUrl('https://example.com/specs');
-  assert.equal(result.skip, true);
-  assert.equal(result.reason, 'cooldown');
-});
-
-test('A.2 url cooldown: repeated 404 gets longer cooldown', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: {
-      frontierCooldown404Seconds: 60,
-      frontierCooldown404RepeatSeconds: 600
-    }
-  });
-  await db.load();
-  const url = 'https://example.com/dead-page';
-  db.recordFetch({ productId: 'p1', url, status: 404 });
-  db.recordFetch({ productId: 'p2', url, status: 404 });
-  db.recordFetch({ productId: 'p3', url, status: 404 });
-  const row = db.getUrlRow(url);
-  assert.equal(row.cooldown.reason, 'status_404_repeated');
-});
-
-test('A.2 url cooldown: 200 response does NOT create cooldown', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
   db.recordFetch({
     productId: 'p1',
     url: 'https://example.com/good-page',
     status: 200,
     fieldsFound: ['weight']
   });
-  const result = db.shouldSkipUrl('https://example.com/good-page');
-  assert.equal(result.skip, false);
+
+  const row = db.getUrlRow('https://example.com/good-page');
+  assert.ok(row);
+  assert.equal(row.last_status, 200);
 });
 
-test('A.2 url cooldown: 410 (Gone) gets long cooldown', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierCooldown410Seconds: 7776000 }
-  });
-  await db.load();
-  db.recordFetch({
-    productId: 'p1',
-    url: 'https://example.com/removed',
-    status: 410
-  });
-  const result = db.shouldSkipUrl('https://example.com/removed');
-  assert.equal(result.skip, true);
-});
-
-// =========================================================================
-// SECTION 4: Domain and path statistics
-// =========================================================================
-
-test('A.2 domain stats: records domain-level fetch outcomes in internal state', async () => {
+test('A.2 yield tracking: records field yields per URL via fields_found', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page1', status: 200, fieldsFound: ['weight'] });
-  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page2', status: 200, fieldsFound: ['dpi'] });
-  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page3', status: 404 });
-  // Domain stats are stored internally; verify via snapshot which includes url data
-  const snapshot = db.snapshotForProduct('p1');
-  assert.ok(snapshot.url_count >= 3);
-  // Save and verify internal state persisted
-  await db.save();
-  const saved = storage.snapshot(FRONTIER_KEY);
-  assert.ok(saved);
-  // domain_stats should exist in serialized state
-  assert.ok(saved.domain_stats || Object.keys(saved.urls || {}).length >= 3);
-});
 
-test('A.2 yield tracking: records field yields per URL via fields_found', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
   db.recordFetch({
     productId: 'p1',
     url: 'https://rtings.com/mouse/viper',
@@ -316,7 +150,6 @@ test('A.2 yield tracking: records field yields per URL via fields_found', async 
   });
   const row = db.getUrlRow('https://rtings.com/mouse/viper');
   assert.ok(row);
-  // Fields are tracked in fields_found array
   assert.ok(Array.isArray(row.fields_found));
   assert.equal(row.fields_found.length >= 3, true);
   assert.ok(row.fields_found.includes('weight'));
@@ -325,105 +158,84 @@ test('A.2 yield tracking: records field yields per URL via fields_found', async 
 });
 
 // =========================================================================
-// SECTION 5: Product snapshot
+// SECTION 3: buildQueryExecutionHistory
 // =========================================================================
 
-test('A.2 snapshot: returns aggregate stats for a product', async () => {
+test('A.2 history: buildQueryExecutionHistory returns empty for unknown product', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
+
+  const history = db.buildQueryExecutionHistory('unknown');
+  assert.deepStrictEqual(history, { queries: [] });
+});
+
+test('A.2 history: buildQueryExecutionHistory maps tier metadata from recorded queries', () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
+
   db.recordQuery({
-    productId: 'mouse-acme-orbit-x1',
-    query: 'acme orbit x1 specs',
-    provider: 'google',
-    fields: ['weight', 'dpi'],
-    results: [
-      { url: 'https://reviews.example.com/orbit-x1' },
-      { url: 'https://example.com/acme-orbit-x1' }
-    ]
+    productId: 'p1', query: 'brand model specs', provider: 'google',
+    fields: ['weight'], results: [{ url: 'https://a.com', title: '', host: 'a.com', snippet: '' }],
+    tier: 'seed', group_key: null, normalized_key: null,
   });
-  db.recordFetch({
-    productId: 'mouse-acme-orbit-x1',
-    url: 'https://reviews.example.com/orbit-x1',
-    status: 200,
-    fieldsFound: ['weight', 'dpi']
-  });
-  db.recordFetch({
-    productId: 'mouse-acme-orbit-x1',
-    url: 'https://example.com/acme-orbit-x1',
-    status: 200,
-    fieldsFound: ['sensor']
+  db.recordQuery({
+    productId: 'p1', query: 'brand model sensor dpi', provider: 'google',
+    fields: ['sensor', 'dpi'], results: [{ url: 'https://b.com', title: '', host: 'b.com', snippet: '' }],
+    tier: 'group_search', group_key: 'sensor_performance', normalized_key: null,
   });
 
-  const snapshot = db.snapshotForProduct('mouse-acme-orbit-x1');
-  assert.equal(snapshot.query_count, 1);
-  assert.equal(snapshot.url_count >= 2, true);
-  assert.ok(snapshot.field_yield);
+  const history = db.buildQueryExecutionHistory('p1');
+  assert.equal(history.queries.length, 2);
+
+  const seed = history.queries.find(q => q.tier === 'seed');
+  assert.ok(seed);
+  assert.equal(seed.group_key, null);
+
+  const group = history.queries.find(q => q.tier === 'group_search');
+  assert.ok(group);
+  assert.equal(group.group_key, 'sensor_performance');
 });
 
-test('A.2 snapshot: empty snapshot for unknown product', async () => {
+// =========================================================================
+// SECTION 4: aggregateDomainStats
+// =========================================================================
+
+test('A.2 domain stats: aggregateDomainStats returns data for recorded domains', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  const snapshot = db.snapshotForProduct('nonexistent-product');
-  assert.equal(snapshot.query_count, 0);
+
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page1', status: 200, fieldsFound: ['weight'] });
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page2', status: 200, fieldsFound: ['dpi'] });
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page3', status: 404 });
+
+  const stats = db.aggregateDomainStats(['rtings.com']);
+  assert.equal(stats.size, 1);
+  const rtings = stats.get('rtings.com');
+  assert.ok(rtings.fetch_count >= 3);
 });
 
 // =========================================================================
-// SECTION 6: URL canonicalization integration
+// SECTION 5: Factory
 // =========================================================================
 
-test('A.2 url canon: tracking params are stripped for deduplication', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: {
-      frontierStripTrackingParams: true,
-      frontierCooldown404Seconds: 3600
-    }
-  });
-  await db.load();
-  db.recordFetch({
-    productId: 'p1',
-    url: 'https://example.com/spec?utm_source=google&utm_medium=cpc',
-    status: 404
-  });
-  // Same base URL without tracking params should be recognized as same
-  const result = db.shouldSkipUrl('https://example.com/spec?utm_source=bing');
-  assert.equal(result.skip, true);
-});
-
-// =========================================================================
-// SECTION 7: SQLite-specific tests (will pass once FrontierDbSqlite exists)
-//   These tests verify SQLite-specific behavior. Until Pass 3 implements
-//   FrontierDbSqlite, they serve as interface documentation.
-// =========================================================================
-
-test('A.2 factory: createFrontier returns FrontierDb (fallback when SQLite unavailable)', async () => {
+test('A.2 factory: createFrontier returns FrontierDb (fallback when SQLite unavailable)', () => {
   const storage = createStorage();
   const db = createFrontier({
     storage,
     key: FRONTIER_KEY,
     config: {}
   });
-  // Until SQLite is implemented, factory falls back to JSON FrontierDb
   assert.ok(db instanceof FrontierDb);
-  await db.load();
-  const snapshot = db.snapshotForProduct('test');
-  assert.equal(snapshot.query_count, 0);
 });
 
 // =========================================================================
-// SECTION 8: Concurrency safety (daemon with multiple products)
+// SECTION 6: Concurrency safety (daemon with multiple products)
 // =========================================================================
 
-test('A.2 concurrency: two products recording simultaneously do not corrupt state', async () => {
+test('A.2 concurrency: two products recording simultaneously do not corrupt state', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
 
-  // Simulate concurrent product runs
   db.recordQuery({
     productId: 'p1',
     query: 'product 1 specs',
@@ -441,33 +253,22 @@ test('A.2 concurrency: two products recording simultaneously do not corrupt stat
   db.recordFetch({ productId: 'p1', url: 'https://a.com/p1', status: 200, fieldsFound: ['weight'] });
   db.recordFetch({ productId: 'p2', url: 'https://b.com/p2', status: 200, fieldsFound: ['dpi'] });
 
-  const snap1 = db.snapshotForProduct('p1');
-  const snap2 = db.snapshotForProduct('p2');
-  assert.equal(snap1.query_count, 1);
-  assert.equal(snap2.query_count, 1);
-  assert.ok(snap1.field_yield.weight >= 1);
-  assert.ok(snap2.field_yield.dpi >= 1);
+  const record1 = db.getQueryRecord({ productId: 'p1', query: 'product 1 specs' });
+  const record2 = db.getQueryRecord({ productId: 'p2', query: 'product 2 specs' });
+  assert.ok(record1);
+  assert.ok(record2);
+  assert.equal(record1.product_id, 'p1');
+  assert.equal(record2.product_id, 'p2');
 });
 
 // =========================================================================
-// SECTION 9: Edge cases
+// SECTION 7: Edge cases
 // =========================================================================
 
-test('A.2 edge: empty URL is not skipped (canonical URL resolves to empty)', async () => {
+test('A.2 edge: undefined productId does not crash', () => {
   const storage = createStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  const result = db.shouldSkipUrl('');
-  // Current behavior: empty canonical_url returns {skip: false}
-  // This is acceptable because the caller should validate URL before passing
-  assert.equal(result.skip, false);
-});
 
-test('A.2 edge: undefined productId does not crash', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  // Should not throw
   db.recordQuery({
     productId: undefined,
     query: 'orphan query',
@@ -476,28 +277,4 @@ test('A.2 edge: undefined productId does not crash', async () => {
     results: []
   });
   assert.ok(true);
-});
-
-test('A.2 edge: very long URL is handled', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({ storage, key: FRONTIER_KEY });
-  await db.load();
-  const longUrl = `https://example.com/${'a'.repeat(5000)}`;
-  db.recordFetch({ productId: 'p1', url: longUrl, status: 200, fieldsFound: [] });
-  const result = db.shouldSkipUrl(longUrl);
-  assert.equal(result.skip, false);
-});
-
-test('A.2 edge: 429 status with exponential backoff', async () => {
-  const storage = createStorage();
-  const db = new FrontierDb({
-    storage,
-    key: FRONTIER_KEY,
-    config: { frontierCooldown429BaseSeconds: 60 }
-  });
-  await db.load();
-  const url = 'https://rate-limited.com/api';
-  db.recordFetch({ productId: 'p1', url, status: 429 });
-  const first = db.shouldSkipUrl(url);
-  assert.equal(first.skip, true);
 });

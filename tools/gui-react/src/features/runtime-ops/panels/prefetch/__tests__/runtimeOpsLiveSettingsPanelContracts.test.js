@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function renderElement(node) {
   if (Array.isArray(node)) {
@@ -118,7 +118,7 @@ async function loadSearchPlannerModule() {
     prefix: 'runtime-ops-search-planner-contract-',
     stubs: {
       ...createCommonUiStubs(),
-      '../../../../../../../../test/integration/helpers': `
+      '../../helpers.ts': `
         export function llmCallStatusBadgeClass() {
           return 'sf-chip-neutral';
         }
@@ -175,7 +175,7 @@ async function loadSerpTriageModule() {
     prefix: 'runtime-ops-serp-triage-contract-',
     stubs: {
       ...createCommonUiStubs(),
-      '../../../../../../../../test/integration/helpers': `
+      '../../helpers.ts': `
         export function llmCallStatusBadgeClass() {
           return 'sf-chip-neutral';
         }

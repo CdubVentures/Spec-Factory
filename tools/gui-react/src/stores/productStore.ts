@@ -1,1 +1,1 @@
-export * from '../features/catalog/state/productStore';
+export * from '../features/catalog/state/productStore.ts';

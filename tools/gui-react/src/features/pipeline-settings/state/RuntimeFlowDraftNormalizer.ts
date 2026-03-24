@@ -3,20 +3,20 @@
 
 import {
   type RuntimeSettingDefaults,
-} from '../../../stores/settingsManifest';
+} from '../../../stores/settingsManifest.ts';
 import {
   RUNTIME_SETTINGS_REGISTRY,
   REGISTRY_BOUNDS,
   REGISTRY_ENUM_MAP,
   REGISTRY_ALLOW_EMPTY,
   type RegistryEntry,
-} from '../../../shared/registryDerivedSettingsMaps';
-import { type RuntimeSettings } from './runtimeSettingsAuthority';
-import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain';
+} from '../../../shared/registryDerivedSettingsMaps.ts';
+import { type RuntimeSettings } from './runtimeSettingsAuthority.ts';
+import { parseRuntimeLlmTokenCap } from './runtimeSettingsDomain.ts';
 import {
   SEARXNG_ENGINE_OPTIONS,
   type RuntimeDraft,
-} from './RuntimeFlowDraftContracts';
+} from './RuntimeFlowDraftContracts.ts';
 
 // --- Parse helpers (unchanged from original) ---
 

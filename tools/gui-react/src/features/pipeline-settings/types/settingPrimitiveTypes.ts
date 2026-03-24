@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type { NumberBound, RuntimeDraft } from '../state/RuntimeFlowDraftContracts';
+export type { NumberBound, RuntimeDraft } from '../state/RuntimeFlowDraftContracts.ts';
 
 export interface SettingGroupBlockProps {
   title: string;

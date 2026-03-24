@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { runCliJson as runCli } from '../../../../test/support/cliJsonHarness.js';
+import { createCliJsonHarness } from '../../../cli/tests/helpers/cliJsonHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -119,6 +119,7 @@ async function seedApprovedOverride(helperRoot, productId, overrideValue) {
 }
 
 test('publish CLI publishes approved overrides and exposes provenance/changelog queries', async () => {
+  const runCli = createCliJsonHarness();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-publish-cli-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');

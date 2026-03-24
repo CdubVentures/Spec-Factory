@@ -1,1 +1,1 @@
-export * from '../../../components/common/InlineCellEditor';
+export * from '../../../components/common/InlineCellEditor.tsx';

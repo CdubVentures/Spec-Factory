@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
+import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest.ts';
 import type { RuntimeSettingDefaults } from '../../../stores/runtimeSettingsManifestTypes.ts';
 
 type RuntimeSettingValue = string | number | boolean;

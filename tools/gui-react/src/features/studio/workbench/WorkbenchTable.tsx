@@ -9,7 +9,7 @@ import {
   type SortingState,
   type ColumnDef,
 } from '@tanstack/react-table';
-import type { WorkbenchRow } from './workbenchTypes';
+import type { WorkbenchRow } from './workbenchTypes.ts';
 
 interface Props {
   rows: WorkbenchRow[];

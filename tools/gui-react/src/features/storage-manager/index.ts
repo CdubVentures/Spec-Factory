@@ -1,8 +1,8 @@
-export { StorageManagerPanel } from './components/StorageManagerPanel';
+export { StorageManagerPanel } from './components/StorageManagerPanel.tsx';
 export type {
   StorageOverviewResponse,
   RunInventoryRow,
   RunDetailResponse,
   StorageMetrics,
   StorageArtifactBreakdown,
-} from './types';
+} from './types.ts';

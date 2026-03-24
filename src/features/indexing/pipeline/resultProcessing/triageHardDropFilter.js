@@ -9,9 +9,8 @@
  * 2. Non-HTTP(S) protocol
  * 3. HTTP → normalize to HTTPS; drop only if normalization fails or host blocked
  * 4. Denied/blocked host
- * 5. URL in cooldown
- * 6. Obvious utility shell pages (login, cart, account, checkout, search results)
- * 7. Video hosting platforms (YouTube, Vimeo, etc. — never produce extractable spec data)
+ * 5. Obvious utility shell pages (login, cart, account, checkout, search results)
+ * 6. Video hosting platforms (YouTube, Vimeo, etc. — never produce extractable spec data)
  */
 import { isDeniedHost } from '../../../../categories/loader.js';
 import { isVideoUrl } from '../shared/urlClassifier.js';
@@ -29,14 +28,12 @@ function normalizeHost(value) {
  * @param {object} options
  * @param {Array} options.dedupedResults — raw search results after dedup
  * @param {object} options.categoryConfig — category config with denylist
- * @param {object} options.frontierDb — frontier DB for cooldown checks
  * @param {object} [options.identityLock] — identity lock (unused here; soft labeler handles identity)
  * @returns {{ survivors: object[], hardDrops: object[] }}
  */
 export function applyHardDropFilter({
   dedupedResults,
   categoryConfig,
-  frontierDb,
   identityLock,
 } = {}) {
   const survivors = [];
@@ -84,14 +81,7 @@ export function applyHardDropFilter({
       continue;
     }
 
-    // Step 4: Cooldown
-    const cooldownResult = frontierDb?.shouldSkipUrl?.(canonicalUrl) || { skip: false };
-    if (cooldownResult.skip) {
-      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'url_cooldown' });
-      continue;
-    }
-
-    // Step 5: Utility shell pages (login, cart, account, checkout, search results)
+    // Step 4: Utility shell pages (login, cart, account, checkout, search results)
     const pathname = String(parsed.pathname || '').toLowerCase();
     const search = String(parsed.search || '').toLowerCase();
     const pathAndQuery = `${pathname}${search}`;
@@ -101,7 +91,7 @@ export function applyHardDropFilter({
       continue;
     }
 
-    // Step 6: Video hosting platforms (never produce extractable spec data)
+    // Step 5: Video hosting platforms (never produce extractable spec data)
     if (isVideoUrl(canonicalUrl)) {
       hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'video_platform' });
       continue;

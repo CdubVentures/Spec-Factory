@@ -1,5 +1,5 @@
-import { PIPELINE_STAGE_DEFS } from '../../utils/constants';
-import type { RuntimeEvent } from '../../types/events';
+import { PIPELINE_STAGE_DEFS } from '../../utils/constants.ts';
+import type { RuntimeEvent } from '../../types/events.ts';
 
 interface PipelineProgressProps {
   events: RuntimeEvent[];

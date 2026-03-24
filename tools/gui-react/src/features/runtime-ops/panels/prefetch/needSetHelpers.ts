@@ -1,4 +1,4 @@
-import type { PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow } from '../../types';
+import type { PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow } from '../../types.ts';
 
 /* ── Sort logic ─────────────────────────────────────────────────────── */
 

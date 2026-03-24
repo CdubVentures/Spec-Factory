@@ -8,7 +8,7 @@
  * No browser required — uses Playwright's APIRequestContext directly.
  */
 
-import { test, expect } from '../settings/fixtures';
+import { test, expect } from './fixtures.ts';
 
 // ---------------------------------------------------------------------------
 // Runtime settings

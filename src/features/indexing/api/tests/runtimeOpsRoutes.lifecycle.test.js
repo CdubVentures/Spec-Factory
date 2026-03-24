@@ -17,7 +17,7 @@ import {
   readIndexLabRunMeta,
   resolveIndexLabRunDirectory,
   setupFixture,
-} from '../../../../../test/integration/runtime/runtime-ops/runtimeOpsRoutesHarness.js';
+} from './helpers/runtimeOpsRoutesHarness.js';
 
 test('runtimeOpsRoutes: feature flag off returns false for all routes', async () => {
   const { tempRoot, indexLabRoot, runId } = await setupFixture();

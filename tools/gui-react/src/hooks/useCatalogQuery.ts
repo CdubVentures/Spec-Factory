@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../api/client';
-import { parseCatalogRows } from '../features/catalog/api/catalogParsers';
+import { api } from '../api/client.ts';
+import { parseCatalogRows } from '../features/catalog/api/catalogParsers.ts';
 
 interface UseCatalogQueryOptions {
   category: string;

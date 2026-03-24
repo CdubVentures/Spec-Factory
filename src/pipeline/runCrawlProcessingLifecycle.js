@@ -108,11 +108,6 @@ export async function runCrawlProcessingLifecycle({
     const batch = [];
     while (batch.length < batchSize && offset < allSources.length) {
       const source = allSources[offset++];
-      const skip = frontierDb?.shouldSkipUrl?.(source.url);
-      if (skip?.skip) {
-        logger?.info?.('crawl_url_skipped', { url: source.url, reason: skip.reason });
-        continue;
-      }
       batch.push(source.url);
     }
     if (batch.length === 0) continue;

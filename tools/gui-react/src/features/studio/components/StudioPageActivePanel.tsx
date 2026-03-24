@@ -1,8 +1,8 @@
-import { FieldRulesWorkbench } from '../workbench/FieldRulesWorkbench';
-import { CompileReportsTab } from '../tabs/CompileReportsTab';
-import { KeyNavigatorTab } from './KeyNavigatorTab';
-import { MappingStudioTab } from './MappingStudioTab';
-import type { StudioPageActivePanelProps } from './studioPagePanelContracts';
+import { FieldRulesWorkbench } from '../workbench/FieldRulesWorkbench.tsx';
+import { CompileReportsTab } from '../tabs/CompileReportsTab.tsx';
+import { KeyNavigatorTab } from './KeyNavigatorTab.tsx';
+import { MappingStudioTab } from './MappingStudioTab.tsx';
+import type { StudioPageActivePanelProps } from './studioPagePanelContracts.ts';
 
 export function StudioPageActivePanel({
   activeTab,

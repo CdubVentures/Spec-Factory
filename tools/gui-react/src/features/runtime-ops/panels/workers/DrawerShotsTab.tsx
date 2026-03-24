@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import type { WorkerScreenshot, RuntimeOpsWorkerLastFrameResponse } from '../../types';
-import { formatBytes } from '../../helpers';
-import { relativeTime } from '../../../../utils/formatting';
+import { api } from '../../../../api/client.ts';
+import type { WorkerScreenshot, RuntimeOpsWorkerLastFrameResponse } from '../../types.ts';
+import { formatBytes } from '../../helpers.ts';
+import { relativeTime } from '../../../../utils/formatting.ts';
 
 interface DrawerShotsTabProps {
   screenshots: WorkerScreenshot[];

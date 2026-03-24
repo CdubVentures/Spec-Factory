@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
-import { SerpScreenshotOverlay } from './SerpScreenshotOverlay';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
-import type { PrefetchSearchResult, SearchResultDetail, SerpResultRow, SearchPlanPass, PrefetchLiveSettings } from '../../types';
-import { formatMs } from '../../helpers';
-import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
+import { SerpScreenshotOverlay } from './SerpScreenshotOverlay.tsx';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import type { PrefetchSearchResult, SearchResultDetail, SerpResultRow, SearchPlanPass, PrefetchLiveSettings } from '../../types.ts';
+import { formatMs } from '../../helpers.ts';
+import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import {
   computeUniqueUrls,
   queryPassName,
@@ -21,8 +21,8 @@ import {
   resolveRuntimeDomainCapSummary,
   isVideoUrl,
 } from '../../selectors/searchResultsHelpers.js';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
 
 interface PrefetchSearchResultsPanelProps {
   results: PrefetchSearchResult[];

@@ -4,7 +4,7 @@ import {
   computeTierAllocation,
   makeFocusGroup,
   makeSeedStatus,
-} from '../../../test/helpers/searchPlanningContextHarness.js';
+} from './helpers/searchPlanningContextHarness.js';
 
 describe('V4 - computeTierAllocation', () => {
   it('allocates seeds first, then groups, then keys', () => {

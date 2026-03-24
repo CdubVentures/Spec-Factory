@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmProviderModel, LlmProviderType, LlmModelRole } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry, LlmProviderModel, LlmProviderType, LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 
 let nextProviderId = 1;
 let nextModelId = 1;

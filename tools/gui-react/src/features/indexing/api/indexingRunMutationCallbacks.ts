@@ -1,4 +1,4 @@
-import type { ProcessStatus } from '../../../types/events';
+import type { ProcessStatus } from '../../../types/events.ts';
 
 interface StartIndexLabMutationVariablesLike {
   requestedRunId?: string;

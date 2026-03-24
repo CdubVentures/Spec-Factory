@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { DataTable } from '../../shared/ui/data-display/DataTable';
-import { TrafficLight } from '../../shared/ui/feedback/TrafficLight';
-import { pct } from '../../utils/formatting';
-import { humanizeField, hasKnownValue } from '../../utils/fieldNormalize';
+import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
+import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
+import { pct } from '../../utils/formatting.ts';
+import { humanizeField, hasKnownValue } from '../../utils/fieldNormalize.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 
 export interface FieldRow {

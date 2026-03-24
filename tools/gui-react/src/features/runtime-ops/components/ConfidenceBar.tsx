@@ -1,4 +1,4 @@
-import { pctString } from '../helpers';
+import { pctString } from '../helpers.ts';
 
 interface ConfidenceBarProps {
   value: number;

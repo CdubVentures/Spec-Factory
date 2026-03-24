@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { WorkerDetailResponse } from '../../types';
-import { formatBytes, pctString, methodBadgeClass, friendlyMethod, statusBadgeClass } from '../../helpers';
+import type { WorkerDetailResponse } from '../../types.ts';
+import { formatBytes, pctString, methodBadgeClass, friendlyMethod, statusBadgeClass } from '../../helpers.ts';
 
 interface DrawerMetricsTabProps {
   data: WorkerDetailResponse | undefined;

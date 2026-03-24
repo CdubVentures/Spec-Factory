@@ -151,7 +151,6 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     const SPECIAL = [
       { key: 'categoryAuthorityEnabled', envKey: 'HELPER_FILES_ENABLED' },
       { key: 'categoryAuthorityRoot', envKey: 'CATEGORY_AUTHORITY_ROOT' },
-      { key: 'frontierCooldown404Seconds', envKey: 'FRONTIER_COOLDOWN_404' },
     ];
     for (const { key, envKey } of SPECIAL) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);

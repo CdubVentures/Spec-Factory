@@ -1,15 +1,15 @@
 // WHY: O(1) Feature Scaling — hydration bindings are registry-driven. Adding a new
 // setting to settingsRegistry.js auto-generates its hydration binding. Zero per-field code.
 
-import type { RuntimeSettings } from './runtimeSettingsAuthority';
+import type { RuntimeSettings } from './runtimeSettingsAuthority.ts';
 import type {
   RuntimeHydrationBindingSetters,
   RuntimeHydrationBindings,
-} from './runtimeSettingsDomainTypes';
+} from './runtimeSettingsDomainTypes.ts';
 import {
   RUNTIME_SETTINGS_REGISTRY,
   REGISTRY_ALLOW_EMPTY,
-} from '../../../shared/registryDerivedSettingsMaps';
+} from '../../../shared/registryDerivedSettingsMaps.ts';
 
 function hasSnapshotData(
   source: RuntimeSettings | Record<string, unknown> | undefined,

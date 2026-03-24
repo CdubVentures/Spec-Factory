@@ -1,4 +1,4 @@
-import { statusBg } from '../../utils/colors';
+import { statusBg } from '../../utils/colors.ts';
 
 export function StatusBadge({ status }: { status: string }) {
   return (

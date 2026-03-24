@@ -7,7 +7,7 @@ import {
   normalizeQueryRows,
   makeJob,
   makeCategoryConfig,
-} from '../../../../../test/helpers/phase02SearchProfileHarness.js';
+} from './helpers/phase02SearchProfileHarness.js';
 
 describe('Phase 02 â€” Deterministic Aliases', () => {
   it('generates spacing and hyphen variants for alphanumeric models', () => {

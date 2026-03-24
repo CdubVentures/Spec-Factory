@@ -4,7 +4,7 @@ import {
   approvedDomainsFromSources,
   createCategoryAuthorityHarness,
   mapSourcesByHost,
-} from '../../../test/helpers/categoryAuthorityContractHarness.js';
+} from '../../tests/helpers/categoryAuthorityContractHarness.js';
 
 const CATEGORY = 'mouse';
 const harness = createCategoryAuthorityHarness({ category: CATEGORY, importMetaUrl: import.meta.url });

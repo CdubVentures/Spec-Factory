@@ -1,8 +1,8 @@
 import {
   parseRuntimeInt,
   type RuntimeSettingsNumericBaseline,
-} from '../../pipeline-settings';
-import type { RuntimeResumeMode } from '../../../stores/settingsManifest';
+} from '../../pipeline-settings/index.ts';
+import type { RuntimeResumeMode } from '../../../stores/settingsManifest.ts';
 
 interface DeriveRunControlPayloadInput {
   runtimeSettingsBaseline: RuntimeSettingsNumericBaseline;

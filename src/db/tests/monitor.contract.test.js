@@ -12,7 +12,7 @@ import {
   createCategoryAuthorityHarness,
   createCategoryAuthorityWorkspace,
   readJson,
-} from '../../../test/helpers/categoryAuthorityContractHarness.js';
+} from '../../../category_authority/tests/helpers/categoryAuthorityContractHarness.js';
 
 const CATEGORY = 'monitor';
 const harness = createCategoryAuthorityHarness({ category: CATEGORY, importMetaUrl: import.meta.url });

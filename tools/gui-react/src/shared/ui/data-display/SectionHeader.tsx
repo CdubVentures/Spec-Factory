@@ -1,1 +1,1 @@
-export * from '../../../components/common/SectionHeader';
+export * from '../../../components/common/SectionHeader.tsx';

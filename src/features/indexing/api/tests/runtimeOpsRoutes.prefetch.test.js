@@ -10,7 +10,7 @@ import {
   createRuntimeOpsHandler,
   createRuntimeOpsRoot,
   parseResBody,
-} from '../../../../../test/integration/runtime/runtime-ops/runtimeOpsRoutesHarness.js';
+} from './helpers/runtimeOpsRoutesHarness.js';
 
 test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from field rules payload', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-prefetch-gates-');

@@ -2,8 +2,8 @@
 // A new setting with uiCategory + uiSection auto-appears in the correct UI panel.
 // No per-setting .tsx code needed.
 
-import { RUNTIME_SETTINGS_REGISTRY, type RegistryEntry } from '../../../shared/registryDerivedSettingsMaps';
-import type { SettingsCategoryId } from './SettingsCategoryRegistry';
+import { RUNTIME_SETTINGS_REGISTRY, type RegistryEntry } from '../../../shared/registryDerivedSettingsMaps.ts';
+import type { SettingsCategoryId } from './SettingsCategoryRegistry.ts';
 
 export interface CategorySettingsMap {
   [sectionId: string]: RegistryEntry[];

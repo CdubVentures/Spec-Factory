@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { getRefetchInterval } from '../helpers';
+import { api } from '../../../api/client.ts';
+import { getRefetchInterval } from '../helpers.tsx';
 import type {
   IndexLabRunEventsResponse,
-} from '../types';
+} from '../types.ts';
 
 interface UseIndexingRunQueriesInput {
   selectedIndexLabRunId: string;

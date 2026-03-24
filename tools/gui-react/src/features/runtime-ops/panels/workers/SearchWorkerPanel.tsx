@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { formatMs, getRefetchInterval, triageDecisionBadgeClass } from '../../helpers';
+import { api } from '../../../../api/client.ts';
+import { formatMs, getRefetchInterval, triageDecisionBadgeClass } from '../../helpers.ts';
 import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
-import type { RuntimeOpsWorkerRow, WorkerDetailResponse, SearchWorkerAttempt, SearchResultEntry, PrefetchTabKey } from '../../types';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
+import type { RuntimeOpsWorkerRow, WorkerDetailResponse, SearchWorkerAttempt, SearchResultEntry, PrefetchTabKey } from '../../types.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 

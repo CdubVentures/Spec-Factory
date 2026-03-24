@@ -86,7 +86,7 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
     jsonRes(res, 400, { error: 'invalid_filename' });
     return true;
   }
-  if (!filename || filename.includes('..')) {
+  if (!filename || filename.includes('../index.js')) {
     jsonRes(res, 400, { error: 'invalid_filename' });
     return true;
   }
@@ -398,7 +398,7 @@ export function registerRuntimeOpsRoutes(ctx) {
       } catch {
         return jsonRes(res, 400, { error: 'invalid_filename' });
       }
-      if (!filename || filename.includes('..')) {
+      if (!filename || filename.includes('../index.js')) {
         return jsonRes(res, 400, { error: 'invalid_filename' });
       }
       const fs = await import('node:fs');

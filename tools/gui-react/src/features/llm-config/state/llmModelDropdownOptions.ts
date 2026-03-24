@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmModelRole } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry, LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 
 export interface DropdownModelOption {
   value: string;

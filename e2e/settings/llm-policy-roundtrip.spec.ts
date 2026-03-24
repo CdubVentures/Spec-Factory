@@ -6,7 +6,7 @@
  * full cycle: API round-trip + UI interaction.
  */
 
-import { test, expect } from '../settings/fixtures';
+import { test, expect } from './fixtures.ts';
 
 const API_BASE = 'http://localhost:8788';
 

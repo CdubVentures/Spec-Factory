@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../api/client";
-import { useUiStore } from "../../../stores/uiStore";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { usePersistedTab } from "../../../stores/tabStore";
-import { DataTable } from "../../../shared/ui/data-display/DataTable";
-import { Spinner } from "../../../shared/ui/feedback/Spinner";
-import { inputCls, labelCls } from "./studioConstants";
-import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries";
+import { api } from "../../../api/client.ts";
+import { useUiStore } from "../../../stores/uiStore.ts";
+import { usePersistedToggle } from "../../../stores/collapseStore.ts";
+import { usePersistedTab } from "../../../stores/tabStore.ts";
+import { DataTable } from "../../../shared/ui/data-display/DataTable.tsx";
+import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
+import { inputCls, labelCls } from "./studioConstants.ts";
+import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries.ts";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { BrandImpactAnalysis, Brand, BrandMutationResult } from "../../../types/product";
+import type { BrandImpactAnalysis, Brand, BrandMutationResult } from "../../../types/product.ts";
 
-import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../../shared/ui/buttonClasses';
+import { btnPrimary, btnSecondary, btnDangerSolid as btnDanger } from '../../../shared/ui/buttonClasses.ts';
 const borderPanelCls = "sf-border-default";
 const textMutedCls = "sf-text-subtle";
 const textSubtleCls = "sf-text-subtle";

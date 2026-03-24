@@ -1,4 +1,4 @@
-import type { DownstreamSystem } from '../workbench/systemMapping';
+import type { DownstreamSystem } from '../workbench/systemMapping.ts';
 
 export function buildNextConsumerOverrides(
   currentConsumers: Record<string, Record<string, boolean>> | undefined,

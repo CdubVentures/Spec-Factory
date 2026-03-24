@@ -1,7 +1,7 @@
-import type { NeedSetField } from '../../types';
-import { resolveNeedsetState } from '../../badgeRegistries';
-import { queryFamilyBadge } from '../../../indexing/helpers';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
+import type { NeedSetField } from '../../types.ts';
+import { resolveNeedsetState } from '../../badgeRegistries.ts';
+import { queryFamilyBadge } from '../../../indexing/helpers.tsx';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

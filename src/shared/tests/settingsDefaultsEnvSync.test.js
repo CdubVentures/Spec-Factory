@@ -45,13 +45,8 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmWriteApiKey',
 ]);
 const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
-  'perHostMinDelayMs',
   'discoveryEnabled',
   'llmMaxCallsPerProductTotal',
-  'frontierBlockedDomainThreshold',
-  'pageGotoTimeoutMs',
-  'pageNetworkIdleTimeoutMs',
-  'postLoadWaitMs',
   'runtimeScreencastEnabled',
   'runtimeScreencastFps',
   'runtimeScreencastQuality',
@@ -216,12 +211,8 @@ test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', ()
 
 test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
   const rows = [
-    { settingsKey: 'perHostMinDelayMs', configKey: 'perHostMinDelayMs', envKey: 'PER_HOST_MIN_DELAY_MS' },
     { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
     { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },
-    { settingsKey: 'frontierBlockedDomainThreshold', configKey: 'frontierBlockedDomainThreshold', envKey: 'FRONTIER_BLOCKED_DOMAIN_THRESHOLD' },
-    { settingsKey: 'pageGotoTimeoutMs', configKey: 'pageGotoTimeoutMs', envKey: 'PAGE_GOTO_TIMEOUT_MS' },
-    { settingsKey: 'postLoadWaitMs', configKey: 'postLoadWaitMs', envKey: 'POST_LOAD_WAIT_MS' },
   ];
 
   const getSharedDefault = (settingsKey) =>

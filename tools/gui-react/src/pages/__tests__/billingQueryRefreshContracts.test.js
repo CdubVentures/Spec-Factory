@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function loadGuiModule(entryRelativePath, stubModules) {
   return loadBundledModule(entryRelativePath, {
@@ -88,84 +88,84 @@ function buildCommonStubs() {
         }));
       }
     `,
-    '../../api/client': `
+    '../../api/client.ts': `
       export const api = {
         get: async () => ({})
       };
     `,
-    '../../stores/uiStore': `
+    '../../stores/uiStore.ts': `
       export function useUiStore(selector) {
         return selector(globalThis.__queryHarness.uiState);
       }
     `,
-    '../../stores/productStore': `
+    '../../stores/productStore.ts': `
       export function useProductStore(selector) {
         return selector({
           setSelectedProduct() {},
         });
       }
     `,
-    '../../components/common/MetricRow': `
+    '../../components/common/MetricRow.tsx': `
       export function MetricRow(props) {
         return { type: 'MetricRow', props };
       }
     `,
-    '../../shared/ui/data-display/MetricRow': `
+    '../../shared/ui/data-display/MetricRow.tsx': `
       export function MetricRow(props) {
         return { type: 'MetricRow', props };
       }
     `,
-    '../../components/common/Spinner': `
+    '../../components/common/Spinner.tsx': `
       export function Spinner(props) {
         return { type: 'Spinner', props };
       }
     `,
-    '../../shared/ui/feedback/Spinner': `
+    '../../shared/ui/feedback/Spinner.tsx': `
       export function Spinner(props) {
         return { type: 'Spinner', props };
       }
     `,
-    '../../components/common/ProgressBar': `
+    '../../components/common/ProgressBar.tsx': `
       export function ProgressBar(props) {
         return { type: 'ProgressBar', props };
       }
     `,
-    '../../shared/ui/data-display/ProgressBar': `
+    '../../shared/ui/data-display/ProgressBar.tsx': `
       export function ProgressBar(props) {
         return { type: 'ProgressBar', props };
       }
     `,
-    '../../components/common/DataTable': `
+    '../../components/common/DataTable.tsx': `
       export function DataTable(props) {
         return { type: 'DataTable', props };
       }
     `,
-    '../../shared/ui/data-display/DataTable': `
+    '../../shared/ui/data-display/DataTable.tsx': `
       export function DataTable(props) {
         return { type: 'DataTable', props };
       }
     `,
-    '../../components/common/StatusBadge': `
+    '../../components/common/StatusBadge.tsx': `
       export function StatusBadge(props) {
         return { type: 'StatusBadge', props };
       }
     `,
-    '../../shared/ui/feedback/StatusBadge': `
+    '../../shared/ui/feedback/StatusBadge.tsx': `
       export function StatusBadge(props) {
         return { type: 'StatusBadge', props };
       }
     `,
-    '../../components/common/TrafficLight': `
+    '../../components/common/TrafficLight.tsx': `
       export function TrafficLight(props) {
         return { type: 'TrafficLight', props };
       }
     `,
-    '../../shared/ui/feedback/TrafficLight': `
+    '../../shared/ui/feedback/TrafficLight.tsx': `
       export function TrafficLight(props) {
         return { type: 'TrafficLight', props };
       }
     `,
-    '../../utils/formatting': `
+    '../../utils/formatting.ts': `
       export function usd(value) {
         return String(value ?? '');
       }

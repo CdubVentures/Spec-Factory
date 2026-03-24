@@ -8,7 +8,7 @@ import {
   compileCategoryFieldStudio,
   createMouseCompileWorkspace,
   saveFieldStudioMap,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('compileCategoryFieldStudio preserves saved map field_overrides consumers in generated field rules', async () => {
   const workspace = await createMouseCompileWorkspace({

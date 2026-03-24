@@ -108,7 +108,7 @@ export async function verifyGeneratedFieldRules({
   const generatedPath = path.join(helperRoot, normalizedCategory, '_generated', 'field_rules.json');
   const resolvedFixturePath = String(fixturePath || '').trim()
     ? path.resolve(fixturePath)
-    : path.resolve('test', 'fixtures', normalizedCategory, 'field_rules.golden.json');
+    : path.resolve('fixtures', 'field-rules', normalizedCategory, 'field_rules.golden.json');
 
   const [generatedBuffer, fixtureBuffer] = await Promise.all([
     readFileOrThrow(generatedPath, 'generated_field_rules'),
@@ -146,4 +146,3 @@ export async function verifyGeneratedFieldRules({
     diff
   };
 }
-

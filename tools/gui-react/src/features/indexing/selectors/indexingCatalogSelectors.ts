@@ -1,5 +1,5 @@
-import type { CatalogRow } from '../../../types/product';
-import { ambiguityLevelFromFamilyCount, cleanVariant, displayVariant, normalizeToken } from '../helpers';
+import type { CatalogRow } from '../../../types/product.ts';
+import { ambiguityLevelFromFamilyCount, cleanVariant, displayVariant, normalizeToken } from '../helpers.tsx';
 
 export interface CatalogVariantOption {
   productId: string;

@@ -1,1 +1,1 @@
-export * from '../../../components/common/CellDrawer';
+export * from '../../../components/common/CellDrawer.tsx';

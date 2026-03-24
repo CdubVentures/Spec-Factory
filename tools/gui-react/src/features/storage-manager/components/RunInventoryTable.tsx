@@ -3,8 +3,8 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/shared/ui/data-display/DataTable';
 import { TrafficLight } from '@/shared/ui/feedback/TrafficLight';
 import { Chip } from '@/shared/ui/feedback/Chip';
-import type { RunInventoryRow } from '../types';
-import { RunDetailDrawer } from './RunDetailDrawer';
+import type { RunInventoryRow } from '../types.ts';
+import { RunDetailDrawer } from './RunDetailDrawer.tsx';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';

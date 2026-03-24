@@ -1,1 +1,1 @@
-export * from '../../../components/common/ActionTooltip';
+export * from '../../../components/common/ActionTooltip.tsx';

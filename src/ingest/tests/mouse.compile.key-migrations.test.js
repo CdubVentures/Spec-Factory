@@ -7,7 +7,7 @@ import {
   compileCategoryFieldStudio,
   createMouseCompileWorkspace,
   saveFieldStudioMap,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('compileCategoryFieldStudio rejects cyclic key migration maps', async () => {
   const workspace = await createMouseCompileWorkspace({

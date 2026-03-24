@@ -6,7 +6,7 @@ import {
   makeNeedSetOutput,
   makeFieldGroupsData,
   makeRunContext,
-} from '../../../test/helpers/searchPlanningContextHarness.js';
+} from './helpers/searchPlanningContextHarness.js';
 
 // --- Tests ---
 

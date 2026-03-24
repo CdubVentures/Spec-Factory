@@ -1,1 +1,1 @@
-export * from '../../../components/common/DrawerShell';
+export * from '../../../components/common/DrawerShell.tsx';

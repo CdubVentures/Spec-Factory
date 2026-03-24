@@ -3,11 +3,11 @@ import type {
   LlmProviderEntry,
   LlmProviderModel,
   LlmModelRole,
-} from '../types/llmProviderRegistryTypes';
-import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge';
-import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles';
-import { isDefaultProvider } from '../state/llmDefaultProviderRegistry';
-import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon';
+} from '../types/llmProviderRegistryTypes.ts';
+import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge.ts';
+import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles.ts';
+import { isDefaultProvider } from '../state/llmDefaultProviderRegistry.ts';
+import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
 
 /* ── Model row ─────────────────────────────────────────── */
 

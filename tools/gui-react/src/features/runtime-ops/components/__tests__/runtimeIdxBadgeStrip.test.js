@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function loadRuntimeIdxBadgeStripModule() {
   return loadBundledModule('tools/gui-react/src/features/runtime-ops/components/RuntimeIdxBadgeStrip.tsx', {

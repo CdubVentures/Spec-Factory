@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../shared/tests/helpers/loadBundledModule.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,
@@ -103,11 +103,11 @@ test('runtime hydration bindings apply canonical runtime setting aliases for con
 
   const snapshot = {
     categoryAuthorityRoot: 'category_authority',
-    perHostMinDelayMs: 500,
+    maxPagesPerDomain: 7,
   };
 
   assert.equal(hydrateRuntimeSettingsFromBindings(snapshot, false, bindings), true);
 
   assert.equal(state.setCategoryAuthorityRoot, 'category_authority');
-  assert.equal(state.setPerHostMinDelayMs, '500');
+  assert.equal(state.setMaxPagesPerDomain, '7');
 });

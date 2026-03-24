@@ -16,12 +16,10 @@ import {
   convergenceSettingDefault,
   normalizeSearchProfileCapMap,
   normalizeRetrievalInternalsMap,
-  normalizeRepairDedupeRule,
   normalizeModelPricingMap,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
   normalizeOutputMode,
-  REPAIR_DEDUPE_RULE_DEFAULT,
   DEFAULT_USER_AGENT
 } from './configNormalizers.js';
 import {
@@ -150,7 +148,6 @@ export function buildRawConfig({ manifestApplicator }) {
     // --- Post-processed strings ---
     s3InputPrefix: (process.env.S3_INPUT_PREFIX || runtimeSettingDefault('s3InputPrefix')).replace(/\/+$/, ''),
     s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || runtimeSettingDefault('s3OutputPrefix')).replace(/\/+$/, ''),
-    repairDedupeRule: normalizeRepairDedupeRule(process.env['REPAIR_DEDUPE_RULE'] || REPAIR_DEDUPE_RULE_DEFAULT),
     indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode')).trim().toLowerCase(),
     batchStrategy: 'bandit',
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',

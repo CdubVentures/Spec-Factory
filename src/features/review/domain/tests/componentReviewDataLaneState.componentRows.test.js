@@ -12,7 +12,7 @@ import {
   getComponentValueId,
   makeCategoryAuthorityConfig,
   writeComponentReviewItems,
-} from '../../../../../test/helpers/componentReviewHarness.js';
+} from '../../tests/helpers/componentReviewHarness.js';
 
 test('component payload hydrates __name/__maker accepted_candidate_id from key_review_state', async () => {
   const { tempRoot, specDb } = await createTempSpecDb();

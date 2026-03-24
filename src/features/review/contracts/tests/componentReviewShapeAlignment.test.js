@@ -17,7 +17,7 @@ import {
   COMPONENT_REVIEW_DOCUMENT_KEYS,
   COMPONENT_REVIEW_BATCH_RESULT_KEYS,
 } from '../componentReviewShapes.js';
-import { assertContractKeysInInterface } from '../../../../../test/contracts/helpers/tsInterfaceParser.js';
+import { assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/componentReview.ts');

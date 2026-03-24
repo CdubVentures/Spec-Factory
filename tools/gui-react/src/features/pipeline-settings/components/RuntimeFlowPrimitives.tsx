@@ -1,6 +1,6 @@
 import { memo, useState, type ReactNode } from 'react';
-import type { NumberBound, RuntimeDraft } from '../types/settingPrimitiveTypes';
-import { Tip } from '../../../shared/ui/feedback/Tip';
+import type { NumberBound, RuntimeDraft } from '../types/settingPrimitiveTypes.ts';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 
 function settingLabel(label: string, tip: string) {
   return (

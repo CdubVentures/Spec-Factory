@@ -1,6 +1,6 @@
-import { Tip } from '../../../components/common/Tip';
-import { ActivityGauge, formatNumber } from '../helpers';
-import type { CatalogRow } from '../../../types/product';
+import { Tip } from '../../../components/common/Tip.tsx';
+import { ActivityGauge, formatNumber } from '../helpers.tsx';
+import type { CatalogRow } from '../../../types/product.ts';
 
 interface AmbiguityMeterShape {
   count: number;

@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmProviderType } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry, LlmProviderType } from '../types/llmProviderRegistryTypes.ts';
 
 export interface RuntimeApiKeySlice {
   geminiApiKey: string;

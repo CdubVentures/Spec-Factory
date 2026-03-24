@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBundledModule } from '../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../shared/tests/helpers/loadBundledModule.js';
 
 import { RUNTIME_SETTINGS_ROUTE_PUT } from '../settingsContract.js';
 

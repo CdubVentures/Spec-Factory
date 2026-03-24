@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { useStorageOverview } from '../state/useStorageOverview';
-import { useStorageRuns } from '../state/useStorageRuns';
-import { StorageOverviewBar } from './StorageOverviewBar';
-import { RunInventoryTable } from './RunInventoryTable';
-import { StorageOperationsBar } from './StorageOperationsBar';
+import { useStorageOverview } from '../state/useStorageOverview.ts';
+import { useStorageRuns } from '../state/useStorageRuns.ts';
+import { StorageOverviewBar } from './StorageOverviewBar.tsx';
+import { RunInventoryTable } from './RunInventoryTable.tsx';
+import { StorageOperationsBar } from './StorageOperationsBar.tsx';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
 
 export function StorageManagerPanel() {

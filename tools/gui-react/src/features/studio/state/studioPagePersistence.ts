@@ -2,7 +2,7 @@ import type {
   ComponentSource,
   ComponentSourceProperty,
   StudioConfig,
-} from '../../../types/studio';
+} from '../../../types/studio.ts';
 
 export interface StudioPersistSnapshot {
   rules: Record<string, Record<string, unknown>>;

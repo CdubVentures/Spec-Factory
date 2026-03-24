@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { clampTokenForModel as clampRuntimeTokenForModel } from '../../pipeline-settings';
-import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest';
+import { clampTokenForModel as clampRuntimeTokenForModel } from '../../pipeline-settings/index.ts';
+import { LLM_SETTING_LIMITS } from '../../../stores/settingsManifest.ts';
 import {
   deriveLlmModelOptions,
   deriveLlmModelOptionsWithCurrent,
@@ -8,8 +8,8 @@ import {
   deriveLlmTokenPresetOptions,
   deriveLlmTokenProfileLookup,
   deriveModelTokenDefaults,
-} from './indexingLlmConfigSelectors';
-import type { IndexingLlmConfigResponse } from '../types';
+} from './indexingLlmConfigSelectors.ts';
+import type { IndexingLlmConfigResponse } from '../types.ts';
 
 const LLM_MIN_OUTPUT_TOKENS = LLM_SETTING_LIMITS.maxTokens.min;
 

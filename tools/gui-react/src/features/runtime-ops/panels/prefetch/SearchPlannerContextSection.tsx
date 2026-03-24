@@ -1,6 +1,6 @@
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import type { PlannerInputSummary } from './searchPlannerHelpers';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import type { PlannerInputSummary } from './searchPlannerHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

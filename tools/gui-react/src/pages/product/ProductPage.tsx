@@ -1,20 +1,20 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { useUiStore } from '../../stores/uiStore';
-import { useProductStore } from '../../stores/productStore';
-import { MetricRow } from '../../shared/ui/data-display/MetricRow';
-import { DataTable } from '../../shared/ui/data-display/DataTable';
-import { TrafficLight } from '../../shared/ui/feedback/TrafficLight';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { pct, relativeTime } from '../../utils/formatting';
-import { hasKnownValue } from '../../utils/fieldNormalize';
-import { useFieldLabels } from '../../hooks/useFieldLabels';
-import { PIPELINE_STAGE_DEFS } from '../../utils/constants';
-import { useEventsStore } from '../../stores/eventsStore';
-import type { ProductSummary, NormalizedProduct } from '../../types/product';
+import { api } from '../../api/client.ts';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { useProductStore } from '../../stores/productStore.ts';
+import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
+import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
+import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { pct, relativeTime } from '../../utils/formatting.ts';
+import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
+import { PIPELINE_STAGE_DEFS } from '../../utils/constants.ts';
+import { useEventsStore } from '../../stores/eventsStore.ts';
+import type { ProductSummary, NormalizedProduct } from '../../types/product.ts';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { FieldRow } from './FieldStatusTable';
+import type { FieldRow } from './FieldStatusTable.tsx';
 
 interface ProductDetail {
   summary: ProductSummary;

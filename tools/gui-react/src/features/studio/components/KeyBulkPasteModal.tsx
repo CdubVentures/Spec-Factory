@@ -1,15 +1,15 @@
 import BulkPasteGrid, {
   type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid";
-import type { BulkKeyRow } from "../state/keyUtils";
+} from "../../../components/common/BulkPasteGrid.tsx";
+import type { BulkKeyRow } from "../state/keyUtils.ts";
 import {
   selectCls,
   labelCls,
-} from "./studioConstants";
+} from "./studioConstants.ts";
 import {
   btnPrimary,
   btnSecondary,
-} from "./studioSharedTypes";
+} from "./studioSharedTypes.ts";
 
 export interface KeyBulkPasteModalProps {
   bulkGridRows: BulkGridRow[];

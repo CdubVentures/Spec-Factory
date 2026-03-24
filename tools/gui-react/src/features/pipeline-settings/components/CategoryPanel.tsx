@@ -2,11 +2,11 @@
 // Column 1: styled nav sidebar with icons (select one section).
 // Column 2: header card + settings for the SELECTED section only.
 
-import { GenericSectionPanel } from './GenericSectionPanel';
-import { findCategory } from '../state/SettingsCategoryRegistry';
-import type { SettingsCategoryId, SettingsSectionDef } from '../state/SettingsCategoryRegistry';
-import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps';
-import { usePersistedTab } from '../../../stores/tabStore';
+import { GenericSectionPanel } from './GenericSectionPanel.tsx';
+import { findCategory } from '../state/SettingsCategoryRegistry.ts';
+import type { SettingsCategoryId, SettingsSectionDef } from '../state/SettingsCategoryRegistry.ts';
+import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 export interface CategoryPanelProps {
   categoryId: SettingsCategoryId;

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../api/client';
-import { humanizeField } from '../utils/fieldNormalize';
+import { api } from '../api/client.ts';
+import { humanizeField } from '../utils/fieldNormalize.ts';
 
 export function useFieldLabels(category: string) {
   const { data } = useQuery({

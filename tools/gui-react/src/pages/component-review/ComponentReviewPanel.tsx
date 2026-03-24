@@ -1,12 +1,12 @@
-import { usePersistedToggle } from '../../stores/collapseStore';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
+import { api } from '../../api/client.ts';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
 import type {
   ComponentReviewFlaggedItem,
   ComponentReviewDocument,
   ComponentReviewBatchResult,
-} from '../../types/componentReview';
+} from '../../types/componentReview.ts';
 
 interface ComponentReviewPanelProps {
   category: string;

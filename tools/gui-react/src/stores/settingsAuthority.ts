@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { readConvergenceSettingsSnapshot, useConvergenceSettingsReader } from './convergenceSettingsAuthority';
-import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings';
-import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority';
-import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings';
-import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority';
-import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest';
-import { useUiStore } from './uiStore';
-import { autoSaveFingerprint } from './autoSaveFingerprint';
-import { useSettingsAuthorityStore } from './settingsAuthorityStore';
-import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract';
+import { readConvergenceSettingsSnapshot, useConvergenceSettingsReader } from './convergenceSettingsAuthority.ts';
+import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings/index.ts';
+import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority.ts';
+import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings/index.ts';
+import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority.ts';
+import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority.ts';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest.ts';
+import { useUiStore } from './uiStore.ts';
+import { autoSaveFingerprint } from './autoSaveFingerprint.ts';
+import { useSettingsAuthorityStore } from './settingsAuthorityStore.ts';
+import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract.ts';
 import {
   registerUnloadGuard,
-} from './settingsUnloadGuard';
+} from './settingsUnloadGuard.ts';
 
 export interface SettingsAuthoritySnapshot {
   category: string;

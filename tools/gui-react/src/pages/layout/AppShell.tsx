@@ -1,29 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { TabNav } from './TabNav';
-import { Sidebar } from './Sidebar';
-import { useUiStore } from '../../stores/uiStore';
-import { useRuntimeStore } from '../../stores/runtimeStore';
-import { isTestCategory } from '../../utils/testMode';
-import { useEventsStore } from '../../stores/eventsStore';
-import { useIndexLabStore, type IndexLabEvent } from '../../stores/indexlabStore';
-import { useSettingsAuthorityBootstrap, isSettingsAuthoritySnapshotReady } from '../../stores/settingsAuthority';
-import { useRuntimeSettingsStoreHydration } from '../../features/pipeline-settings';
-import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
-import type { ProcessStatus } from '../../types/events';
-import type { RuntimeEvent } from '../../types/events';
-import { useCategoriesQuery } from '../../hooks/useCategoriesQuery';
-import { useProcessStatusQuery } from '../../hooks/useProcessStatusQuery';
-import { useWsSubscription } from '../../hooks/useWsSubscription';
+import { TabNav } from './TabNav.tsx';
+import { Sidebar } from './Sidebar.tsx';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { useRuntimeStore } from '../../stores/runtimeStore.ts';
+import { isTestCategory } from '../../utils/testMode.ts';
+import { useEventsStore } from '../../stores/eventsStore.ts';
+import { useIndexLabStore, type IndexLabEvent } from '../../stores/indexlabStore.ts';
+import { useSettingsAuthorityBootstrap, isSettingsAuthoritySnapshotReady } from '../../stores/settingsAuthority.ts';
+import { useRuntimeSettingsStoreHydration } from '../../features/pipeline-settings/index.ts';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore.ts';
+import type { ProcessStatus } from '../../types/events.ts';
+import type { RuntimeEvent } from '../../types/events.ts';
+import { useCategoriesQuery } from '../../hooks/useCategoriesQuery.ts';
+import { useProcessStatusQuery } from '../../hooks/useProcessStatusQuery.ts';
+import { useWsSubscription } from '../../hooks/useWsSubscription.ts';
 import {
   resolveDataChangeScopedCategories,
   recordDataChangeInvalidationFlush,
   createDataChangeInvalidationScheduler,
 } from '../../features/data-change/index.js';
 import { coerceCategories, resolveActiveCategory, DEFAULT_CATEGORY } from '../../utils/categoryStoreSync.js';
-import { usePersistedToggle } from '../../stores/collapseStore';
-import { usePersistedTab } from '../../stores/tabStore';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
+import { usePersistedTab } from '../../stores/tabStore.ts';
 import {
   SF_THEME_RADIUS_PROFILES,
   SF_LIGHT_THEME_PROFILES,
@@ -31,7 +31,7 @@ import {
   SF_THEME_COLOR_META,
   type SfThemeColorProfileId,
   type SfThemeRadiusProfileId,
-} from '../../stores/uiThemeProfiles';
+} from '../../stores/uiThemeProfiles.ts';
 
 function ThemeSwatchCard({
   themeId,

@@ -15,7 +15,7 @@ import {
   CATALOG_ROW_KEYS,
   BRAND_KEYS,
 } from '../catalogShapes.js';
-import { extractInterfaceKeys, assertContractKeysInInterface } from '../../../../../test/contracts/helpers/tsInterfaceParser.js';
+import { extractInterfaceKeys, assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/product.ts');

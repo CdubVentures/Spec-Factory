@@ -1,4 +1,4 @@
-import { UNKNOWN_VALUES } from './constants';
+import { UNKNOWN_VALUES } from './constants.ts';
 
 export function normalizeField(field: string): string {
   return field

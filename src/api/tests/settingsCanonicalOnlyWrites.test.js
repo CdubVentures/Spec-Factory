@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import {
   getFreePort,
   waitForHttpReady,
-} from '../../../test/integration/helpers/guiServerHttpHarness.js';
+} from './helpers/guiServerHttpHarness.js';
 
 async function readJsonFileUntil(filePath, predicate, timeoutMs = 4_000) {
   const started = Date.now();

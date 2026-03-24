@@ -14,7 +14,7 @@ import {
   parseResBody,
   statOrNull,
   waitForStreamFinish,
-} from '../../../../../test/integration/runtime/runtime-ops/runtimeOpsRoutesHarness.js';
+} from './helpers/runtimeOpsRoutesHarness.js';
 
 test('runtimeOpsRoutes: screencast endpoint returns cached last frame for run worker', async () => {
   const { tempRoot, indexLabRoot, outputRoot, runId } = await (async () => {

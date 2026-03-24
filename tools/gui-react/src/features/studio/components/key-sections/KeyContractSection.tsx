@@ -1,14 +1,14 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect";
-import { strN, numN, boolN } from "../../state/nestedValueHelpers";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect.tsx";
+import { strN, numN, boolN } from "../../state/nestedValueHelpers.ts";
 import {
   parseIntegerInput,
   parseBoundedIntInput,
-} from "../../state/numericInputHelpers";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds";
-import { isStudioContractFieldDeferredLocked } from "../../state/studioBehaviorContracts";
+} from "../../state/numericInputHelpers.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
+import { isStudioContractFieldDeferredLocked } from "../../state/studioBehaviorContracts.ts";
 import {
   selectCls,
   inputCls,
@@ -16,7 +16,7 @@ import {
   UNITS,
   UNKNOWN_TOKENS,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 
 export interface KeyContractSectionProps extends KeySectionBaseProps {}
 

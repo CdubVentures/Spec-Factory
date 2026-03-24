@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { DrawerSection } from './DrawerShell';
-import { useRunComponentReviewBatchMutation } from '../../hooks/useRunComponentReviewBatchMutation';
-import type { ComponentReviewFlaggedItem } from '../../types/componentReview';
+import { DrawerSection } from './DrawerShell.tsx';
+import { useRunComponentReviewBatchMutation } from '../../hooks/useRunComponentReviewBatchMutation.ts';
+import type { ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 interface PendingAIReviewSectionProps {
   items: ComponentReviewFlaggedItem[];

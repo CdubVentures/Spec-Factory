@@ -1,4 +1,4 @@
-import type { PrefetchTabKey, PreFetchPhasesResponse } from '../types';
+import type { PrefetchTabKey, PreFetchPhasesResponse } from '../types.ts';
 
 export declare const DEFAULT_PREFETCH_TAB_KEYS: PrefetchTabKey[];
 

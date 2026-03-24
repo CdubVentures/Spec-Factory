@@ -1,14 +1,12 @@
-import { configValue } from '../../../../shared/settingsAccessor.js';
-
 function validateFunctionArg(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`createResearchBootstrap requires ${name}`);
   }
 }
 
-function resolveFrontierKey({ storage, config = {} } = {}) {
-  const rawFrontierKey = String(configValue(config, 'frontierDbPath')).trim();
-  const outputPrefix = `${config.s3OutputPrefix || 'specs/outputs'}/`;
+function resolveFrontierKey({ storage } = {}) {
+  const rawFrontierKey = '_intel/frontier/frontier.json';
+  const outputPrefix = `specs/outputs/`;
   if (rawFrontierKey.startsWith(outputPrefix)) {
     return rawFrontierKey;
   }
@@ -31,7 +29,6 @@ export async function createResearchBootstrap({
     key: frontierKey,
     config: { ...config, _logger: logger },
   });
-  await frontierDb.load();
   const uberOrchestrator = createUberAggressiveOrchestratorFn({
     config,
     logger,
@@ -43,4 +40,3 @@ export async function createResearchBootstrap({
     uberOrchestrator,
   };
 }
-

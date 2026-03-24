@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types';
-import type { RuntimeIdxBadge } from '../../types';
-import { llmCallStatusBadgeClass, formatMs } from '../../helpers';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { LlmCallCard } from '../../components/LlmCallCard';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { normalizeToken, normalizeQuery } from './searchPlannerHelpers';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types.ts';
+import type { RuntimeIdxBadge } from '../../types.ts';
+import { llmCallStatusBadgeClass, formatMs } from '../../helpers.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { LlmCallCard } from '../../components/LlmCallCard.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { normalizeToken, normalizeQuery } from './searchPlannerHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

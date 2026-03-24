@@ -13,7 +13,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
   const workerIds = new Map();
   let crawler = null;
 
-  const slotCount = Number(settings.crawlSessionCount) || 4;
+  const slotCount = 4;
   let globalSeq = 0;
 
   function assignWorkerId(uniqueKey) {
@@ -163,7 +163,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
 
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
     const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 75;
-    const navTimeoutMs = Number(settings.pageGotoTimeoutMs) || 12000;
+    const navTimeoutMs = 12000;
 
     crawler = new PlaywrightCrawler({
       ...config,

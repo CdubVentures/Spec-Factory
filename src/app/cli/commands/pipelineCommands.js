@@ -141,13 +141,6 @@ export function createPipelineCommands({
         )
       );
       runConfig.pageGotoTimeoutMs = boundedFetchTimeoutMs;
-      runConfig.pageNetworkIdleTimeoutMs = Math.max(
-        500,
-        Math.min(
-          configInt(runConfig, 'pageNetworkIdleTimeoutMs'),
-          Math.floor(boundedFetchTimeoutMs / 2)
-        )
-      );
       runConfig.robotsTxtTimeoutMs = Math.max(
         500,
         Math.min(

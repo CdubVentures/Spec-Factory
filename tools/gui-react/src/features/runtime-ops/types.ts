@@ -32,7 +32,7 @@ import type {
   SearchPlanPassBase,
   SerpTriageEnvelope,
   SerpSearchResultDetail,
-} from './types.generated';
+} from './types.generated.ts';
 
 // ── Pure re-exports (identical to generated) ──
 
@@ -408,7 +408,7 @@ export interface PipelineFlowResponse {
 
 // ── Pre-Fetch Phases (Workers tab pinned row) ──
 
-import type { PrefetchTabKey as _PrefetchTabKey } from './panels/prefetch/prefetchStageKeys';
+import type { PrefetchTabKey as _PrefetchTabKey } from './panels/prefetch/prefetchStageKeys.ts';
 export type PrefetchTabKey = _PrefetchTabKey;
 
 export interface PrefetchNeedSetBundle {

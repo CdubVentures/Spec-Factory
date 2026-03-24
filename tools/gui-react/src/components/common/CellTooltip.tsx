@@ -1,6 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { pct } from '../../utils/formatting';
-import { trafficColor, sourceBadgeDarkClass, SOURCE_BADGE_DARK_FALLBACK } from '../../utils/colors';
+import { pct } from '../../utils/formatting.ts';
+import { trafficColor, sourceBadgeDarkClass, SOURCE_BADGE_DARK_FALLBACK } from '../../utils/colors.ts';
 
 /**
  * Generic state interface that both FieldState (review grid) and

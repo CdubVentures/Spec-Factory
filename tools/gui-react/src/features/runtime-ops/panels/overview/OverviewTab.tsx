@@ -1,8 +1,8 @@
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
-import type { RuntimeOpsSummaryResponse, RuntimeOpsBlocker } from '../../types';
-import { statusBadgeClass, METRIC_TIPS } from '../../helpers';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { PipelineFlowStrip } from './PipelineFlowStrip';
+import type { RuntimeOpsSummaryResponse, RuntimeOpsBlocker } from '../../types.ts';
+import { statusBadgeClass, METRIC_TIPS } from '../../helpers.ts';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { PipelineFlowStrip } from './PipelineFlowStrip.tsx';
 
 interface ThroughputPoint {
   ts: string;

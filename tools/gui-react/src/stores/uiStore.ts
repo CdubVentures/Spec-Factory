@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { coerceCategories, DEFAULT_CATEGORY } from '../utils/categoryStoreSync.js';
-import { UI_SETTING_DEFAULTS } from './settingsManifest';
+import { UI_SETTING_DEFAULTS } from './settingsManifest.ts';
 import {
   DEFAULT_SF_THEME_PROFILE,
   coerceThemeColorProfile,
@@ -11,7 +11,7 @@ import {
   type SfThemeDensityProfileId,
   type SfThemeProfile,
   type SfThemeRadiusProfileId,
-} from './uiThemeProfiles';
+} from './uiThemeProfiles.ts';
 
 const UI_CATEGORY_KEY = 'ui:selectedCategory';
 const DARK_MODE_KEY = 'ui:darkMode';

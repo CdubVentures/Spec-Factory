@@ -1,5 +1,5 @@
-import { normalizeToken } from '../helpers';
-import type { IndexLabRunSummary } from '../types';
+import { normalizeToken } from '../helpers.tsx';
+import type { IndexLabRunSummary } from '../types.ts';
 
 interface DeriveRunAutoSelectionDecisionInput {
   indexlabRuns: IndexLabRunSummary[];

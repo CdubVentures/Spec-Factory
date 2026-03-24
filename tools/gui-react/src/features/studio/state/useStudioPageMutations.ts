@@ -5,12 +5,12 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query';
 
-import { api } from '../../../api/client';
-import type { ProcessStatus } from '../../../types/events';
-import type { FieldStudioMapResponse } from '../../../types/studio';
-import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes';
-import type { StudioTabId } from './studioPageTabs';
-import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
+import { api } from '../../../api/client.ts';
+import type { ProcessStatus } from '../../../types/events.ts';
+import type { FieldStudioMapResponse } from '../../../types/studio.ts';
+import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes.ts';
+import type { StudioTabId } from './studioPageTabs.ts';
+import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries.ts';
 import { assertFieldStudioMapValidationOrThrow } from './mapValidationPreflight.js';
 
 export interface StudioProcessStatusSnapshot {

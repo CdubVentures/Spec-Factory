@@ -4,14 +4,14 @@ export {
   parseRuntimeInt,
   parseRuntimeLlmTokenCap,
   parseRuntimeString,
-} from './runtimeSettingsParsing';
+} from './runtimeSettingsParsing.ts';
 
 export {
   createRuntimeHydrationBindings,
   hydrateRuntimeSettingsFromBindings,
-} from './runtimeSettingsHydration';
+} from './runtimeSettingsHydration.ts';
 
-export { collectRuntimeSettingsPayload } from './runtimeSettingsPayload';
+export { collectRuntimeSettingsPayload } from './runtimeSettingsPayload.ts';
 
 export type {
   RuntimeHydrationBindings,
@@ -19,4 +19,4 @@ export type {
   RuntimeModelTokenDefaults,
   RuntimeModelTokenDefaultsResolver,
   RuntimeSettingsPayloadSerializerInput,
-} from './runtimeSettingsDomainTypes';
+} from './runtimeSettingsDomainTypes.ts';

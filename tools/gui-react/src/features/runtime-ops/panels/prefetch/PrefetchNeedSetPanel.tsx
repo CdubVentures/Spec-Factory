@@ -1,25 +1,25 @@
 import { useMemo } from 'react';
-import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchLlmCall, NeedSetField } from '../../types';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
-import { PrefetchEmptyState } from './PrefetchEmptyState';
-import type { RuntimeIdxBadge } from '../../types';
-import { formatNumber } from '../../../indexing/helpers';
-import { resolveBlockerBadge } from '../../badgeRegistries';
-import { usePersistedTab, usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import { derivePlannerRows, groupBundlesByPhase, categorizeDeltas } from './needSetHelpers';
-import type { PlannerSortKey } from './needSetHelpers';
-import { NeedSetBundleCard } from './NeedSetBundleCard';
-import { NeedSetFieldDrilldown } from './NeedSetFieldDrilldown';
-import type { DrilldownRow } from './NeedSetFieldDrilldown';
-import { NeedSetFieldHistory } from './NeedSetFieldHistory';
-import { NeedSetDeltasSummary } from './NeedSetDeltasSummary';
-import { NeedSetProfileInfluence } from './NeedSetProfileInfluence';
+import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchLlmCall, NeedSetField } from '../../types.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
+import type { RuntimeIdxBadge } from '../../types.ts';
+import { formatNumber } from '../../../indexing/helpers.tsx';
+import { resolveBlockerBadge } from '../../badgeRegistries.ts';
+import { usePersistedTab, usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { derivePlannerRows, groupBundlesByPhase, categorizeDeltas } from './needSetHelpers.ts';
+import type { PlannerSortKey } from './needSetHelpers.ts';
+import { NeedSetBundleCard } from './NeedSetBundleCard.tsx';
+import { NeedSetFieldDrilldown } from './NeedSetFieldDrilldown.tsx';
+import type { DrilldownRow } from './NeedSetFieldDrilldown.tsx';
+import { NeedSetFieldHistory } from './NeedSetFieldHistory.tsx';
+import { NeedSetDeltasSummary } from './NeedSetDeltasSummary.tsx';
+import { NeedSetProfileInfluence } from './NeedSetProfileInfluence.tsx';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

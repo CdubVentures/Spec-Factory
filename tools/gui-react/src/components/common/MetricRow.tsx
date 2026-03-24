@@ -1,4 +1,4 @@
-import { MetricCard } from './MetricCard';
+import { MetricCard } from './MetricCard.tsx';
 
 interface Metric {
   label: string;

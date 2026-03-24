@@ -1,29 +1,29 @@
 import { useState } from "react";
-import { usePersistedToggle } from "../../../stores/collapseStore";
-import { Tip } from "../../../shared/ui/feedback/Tip";
-import { TagPicker } from "../../../shared/ui/forms/TagPicker";
+import { usePersistedToggle } from "../../../stores/collapseStore.ts";
+import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
+import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import {
   selectCls,
   inputCls,
   labelCls,
   STUDIO_TIPS,
   NORMALIZE_MODES,
-} from "./studioConstants";
-import { btnDanger, type DataListEntry } from "./studioSharedTypes";
-import { displayLabel } from "../state/studioDisplayLabel";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../state/studioNumericKnobBounds";
+} from "./studioConstants.ts";
+import { btnDanger, type DataListEntry } from "./studioSharedTypes.ts";
+import { displayLabel } from "../state/studioDisplayLabel.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../state/studioNumericKnobBounds.ts";
 import {
   clampNumber,
   parseBoundedIntInput,
   parseOptionalPositiveIntInput,
-} from "../state/numericInputHelpers";
+} from "../state/numericInputHelpers.ts";
 import {
   normalizeAiAssistConfig,
   normalizePriorityProfile,
   deriveAiModeFromPriority,
   deriveAiCallsFromEffort,
-} from "../state/studioPriority";
-import type { PriorityProfile, AiAssistConfig } from "../../../types/studio";
+} from "../state/studioPriority.ts";
+import type { PriorityProfile, AiAssistConfig } from "../../../types/studio.ts";
 
 export interface EditableDataListProps {
   entry: DataListEntry;

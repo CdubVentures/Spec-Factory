@@ -1,4 +1,4 @@
-import type { ProcessStatus } from '../../../types/events';
+import type { ProcessStatus } from '../../../types/events.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -6,8 +6,8 @@ import type {
   EnumEntry,
   FieldRule,
   StudioConfig,
-} from '../../../types/studio';
-import type { StudioTabId } from '../state/studioPageTabs';
+} from '../../../types/studio.ts';
+import type { StudioTabId } from '../state/studioPageTabs.ts';
 
 export interface StudioPageActivePanelMappingProps {
   wbMap: StudioConfig;

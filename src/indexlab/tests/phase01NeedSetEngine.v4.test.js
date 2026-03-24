@@ -10,7 +10,7 @@ import {
   requiredLevelRank,
   makeBaseInput,
   makeBaseRules,
-} from '../../../test/helpers/phase01NeedSetHarness.js';
+} from './helpers/phase01NeedSetHarness.js';
 
 describe('V4 - normalizeFieldKey', () => {
   it('replaces underscores with spaces', () => {

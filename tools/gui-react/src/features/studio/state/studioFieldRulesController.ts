@@ -1,4 +1,4 @@
-import { useFieldRulesStore } from './useFieldRulesStore';
+import { useFieldRulesStore } from './useFieldRulesStore.ts';
 
 export function useStudioFieldRulesState() {
   const editedRules = useFieldRulesStore((state) => state.editedRules);

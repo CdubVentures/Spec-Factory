@@ -1,6 +1,6 @@
 import { memo } from 'react';
-import type { LlmModelRole } from '../types/llmProviderRegistryTypes';
-import { ROLE_BADGE_STYLE, ROLE_LABEL } from '../state/llmRoleBadgeStyles';
+import type { LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
+import { ROLE_BADGE_STYLE, ROLE_LABEL } from '../state/llmRoleBadgeStyles.ts';
 
 interface ModelRoleBadgeProps {
   role: LlmModelRole;

@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { PrefetchLlmCall, SearchPlanPass, SearchPlanEnhancementRow, PrefetchSearchResult } from '../../types';
-import type { RuntimeIdxBadge } from '../../types';
-import { formatMs } from '../../helpers';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { LlmCallCard } from '../../components/LlmCallCard';
-import { HeroStat, HeroStatGrid } from '../../components/HeroStat';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails';
-import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader';
-import { HeroBand } from '../../../../shared/ui/data-display/HeroBand';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { PrefetchLlmCall, SearchPlanPass, SearchPlanEnhancementRow, PrefetchSearchResult } from '../../types.ts';
+import type { RuntimeIdxBadge } from '../../types.ts';
+import { formatMs } from '../../helpers.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { LlmCallCard } from '../../components/LlmCallCard.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDetails.tsx';
+import { CollapsibleSectionHeader } from '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
 import { classifyQueryTier, tierLabel as tierLabelSsot, tierChipClass } from '../../selectors/searchProfileTierHelpers.js';
-import { normalizeToken, normalizeQuery } from './searchPlannerHelpers';
+import { normalizeToken, normalizeQuery } from './searchPlannerHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

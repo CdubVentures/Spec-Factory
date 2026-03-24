@@ -1,1 +1,1 @@
-export * from '../../../components/common/JsonViewer';
+export * from '../../../components/common/JsonViewer.tsx';

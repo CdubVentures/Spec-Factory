@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { EnumReviewPayload } from '../../types/componentReview';
+import type { EnumReviewPayload } from '../../types/componentReview.ts';
 
 export declare function normalizeEnumReviewCategory(category: unknown): string;
 export declare function getEnumReviewQueryKey(category: unknown): [string, string];

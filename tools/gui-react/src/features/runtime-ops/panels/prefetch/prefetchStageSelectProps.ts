@@ -3,8 +3,8 @@
 // PreFetchPhasesResponse. These match the old renderPrefetchPanel switch
 // statement verbatim (WorkersTab.tsx lines 266-308).
 
-import type { PrefetchTabKey } from './prefetchStageKeys';
-import type { PreFetchPhasesResponse, PrefetchLiveSettings, PrefetchNeedSetData } from '../../types';
+import type { PrefetchTabKey } from './prefetchStageKeys.ts';
+import type { PreFetchPhasesResponse, PrefetchLiveSettings, PrefetchNeedSetData } from '../../types.ts';
 
 export interface PrefetchPanelContext {
   data: PreFetchPhasesResponse | undefined;

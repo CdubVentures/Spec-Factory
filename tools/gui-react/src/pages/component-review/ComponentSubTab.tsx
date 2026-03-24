@@ -2,19 +2,19 @@ import { useMemo, useCallback, useRef } from 'react';
 import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { DataTable } from '../../shared/ui/data-display/DataTable';
-import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
-import { InlineCellEditor } from '../../shared/ui/forms/InlineCellEditor';
-import { ReviewValueCell } from '../../shared/ui/data-display/ReviewValueCell';
-import { LinkedProductsList } from '../../components/common/LinkedProductsList';
-import { useComponentReviewStore } from '../../stores/componentReviewStore';
-import { api } from '../../api/client';
-import { hasKnownValue, humanizeField } from '../../utils/fieldNormalize';
-import { useFieldLabels } from '../../hooks/useFieldLabels';
-import { FlagIcon } from '../../components/common/FlagIcon';
-import { ComponentReviewDrawer } from './ComponentReviewDrawer';
-import { ComponentReviewPanel } from './ComponentReviewPanel';
-import type { ComponentReviewPayload, ComponentReviewItem, ComponentPropertyState, ComponentReviewDocument, ComponentReviewFlaggedItem } from '../../types/componentReview';
+import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
+import { InlineCellEditor } from '../../shared/ui/forms/InlineCellEditor.tsx';
+import { ReviewValueCell } from '../../shared/ui/data-display/ReviewValueCell.tsx';
+import { LinkedProductsList } from '../../components/common/LinkedProductsList.tsx';
+import { useComponentReviewStore } from '../../stores/componentReviewStore.ts';
+import { api } from '../../api/client.ts';
+import { hasKnownValue, humanizeField } from '../../utils/fieldNormalize.ts';
+import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
+import { FlagIcon } from '../../components/common/FlagIcon.tsx';
+import { ComponentReviewDrawer } from './ComponentReviewDrawer.tsx';
+import { ComponentReviewPanel } from './ComponentReviewPanel.tsx';
+import type { ComponentReviewPayload, ComponentReviewItem, ComponentPropertyState, ComponentReviewDocument, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 /** Extended item type that can carry synthetic-row metadata */
 type ExtendedComponentReviewItem = ComponentReviewItem & {

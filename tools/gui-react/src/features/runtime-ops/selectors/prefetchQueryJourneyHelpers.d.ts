@@ -3,7 +3,7 @@ import type {
   SearchPlanPass,
   PrefetchSearchResult,
   SearchResultDetail,
-} from '../types';
+} from '../types.ts';
 
 export interface QueryJourneyRow {
   query: string;

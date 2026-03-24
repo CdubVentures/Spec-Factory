@@ -1,10 +1,10 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
-import type { PrefetchTabKey } from '../../types';
-import { PREFETCH_STAGE_REGISTRY } from './prefetchStageRegistry';
+import type { PrefetchTabKey } from '../../types.ts';
+import { PREFETCH_STAGE_REGISTRY } from './prefetchStageRegistry.ts';
 import {
   buildPrefetchTabState,
   resolveNextPrefetchTabSelection,
-} from '../../selectors/prefetchUiContracts';
+} from '../../selectors/prefetchUiContracts.ts';
 
 interface PrefetchTabRowProps {
   activeTab: PrefetchTabKey | null;

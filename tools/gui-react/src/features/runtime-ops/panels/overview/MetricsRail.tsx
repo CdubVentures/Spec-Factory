@@ -1,6 +1,6 @@
-import type { RuntimeOpsMetricsRailData, PoolMetric } from '../../types';
-import { poolBadgeClass, poolMeterFillClass, pctString, METRIC_TIPS } from '../../helpers';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
+import type { RuntimeOpsMetricsRailData, PoolMetric } from '../../types.ts';
+import { poolBadgeClass, poolMeterFillClass, pctString, METRIC_TIPS } from '../../helpers.ts';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 
 interface MetricsRailProps {
   data: RuntimeOpsMetricsRailData | undefined;

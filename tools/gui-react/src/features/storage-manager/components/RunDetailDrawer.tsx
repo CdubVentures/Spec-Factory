@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { SectionHeader } from '@/shared/ui/data-display/SectionHeader';
 import { Spinner } from '@/shared/ui/feedback/Spinner';
-import { useRunDetail } from '../state/useRunDetail';
-import { useDeleteRun } from '../state/useStorageActions';
-import { DeleteConfirmModal } from './DeleteConfirmModal';
-import type { StorageArtifactBreakdown, StageTimestamp } from '../types';
+import { useRunDetail } from '../state/useRunDetail.ts';
+import { useDeleteRun } from '../state/useStorageActions.ts';
+import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
+import type { StorageArtifactBreakdown, StageTimestamp } from '../types.ts';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';

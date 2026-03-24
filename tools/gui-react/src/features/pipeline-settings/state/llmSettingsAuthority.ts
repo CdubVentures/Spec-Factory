@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import type { LlmRouteResponse, LlmRouteRow } from '../../../types/llmSettings';
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
-import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
-import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect';
+import { api } from '../../../api/client.ts';
+import type { LlmRouteResponse, LlmRouteRow } from '../../../types/llmSettings.ts';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest.ts';
+import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
+import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
+import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect.ts';
 
 interface LlmSettingsSavePayload {
   rows: LlmRouteRow[];

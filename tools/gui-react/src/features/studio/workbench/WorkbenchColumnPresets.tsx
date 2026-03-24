@@ -1,7 +1,7 @@
 // ── Preset toolbar: preset buttons, column picker, global filter ─────
 import { useState, useRef, useEffect } from 'react';
-import type { ColumnPreset } from './workbenchTypes';
-import { PRESET_LABELS, ALL_COLUMN_IDS_WITH_LABELS } from './workbenchColumns';
+import type { ColumnPreset } from './workbenchTypes.ts';
+import { PRESET_LABELS, ALL_COLUMN_IDS_WITH_LABELS } from './workbenchColumns.tsx';
 
 interface Props {
   activePreset: ColumnPreset;

@@ -1,4 +1,4 @@
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 
 const DEFAULT_PREFIX = 'default-';
 

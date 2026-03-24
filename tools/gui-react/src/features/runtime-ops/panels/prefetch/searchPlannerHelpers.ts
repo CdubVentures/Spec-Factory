@@ -1,4 +1,4 @@
-import type { PrefetchLlmCall, SearchPlanPass } from '../../types';
+import type { PrefetchLlmCall, SearchPlanPass } from '../../types.ts';
 
 /* ── Normalize helpers ─────────────────────────────────────────────── */
 

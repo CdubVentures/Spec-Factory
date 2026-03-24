@@ -1,4 +1,4 @@
-import type { RuntimeEvent } from '../../types/events';
+import type { RuntimeEvent } from '../../types/events.ts';
 
 interface HelperLlmStatusProps {
   events: RuntimeEvent[];

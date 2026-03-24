@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { usePersistedTab } from '../../stores/tabStore';
-import { TabStrip } from '../../shared/ui/navigation/TabStrip';
-import { useUiStore } from '../../stores/uiStore';
-import { useLlmSettingsAuthority, useLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority';
-import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { resolveLlmSettingsStatusText } from '../../shared/ui/feedback/settingsStatus';
-import type { LlmRouteRow, LlmScope } from '../../types/llmSettings';
+import { usePersistedTab } from '../../stores/tabStore.ts';
+import { TabStrip } from '../../shared/ui/navigation/TabStrip.tsx';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { useLlmSettingsAuthority, useLlmSettingsBootstrapRows } from '../../stores/llmSettingsAuthority.ts';
+import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore.ts';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { resolveLlmSettingsStatusText } from '../../shared/ui/feedback/settingsStatus.ts';
+import type { LlmRouteRow, LlmScope } from '../../types/llmSettings.ts';
 import {
   type SortBy,
   SORT_BY_KEYS,
@@ -22,7 +22,7 @@ import {
   INSUFFICIENT_EVIDENCE_OPTIONS,
   rankForSort,
   tagCls,
-} from './llmRouteTaxonomy';
+} from './llmRouteTaxonomy.ts';
 import {
   EFFORT_BOUNDS,
   MAX_TOKEN_BOUNDS,
@@ -35,7 +35,7 @@ import {
   applyContextPack,
   rowDefaultsComparable,
   applyRoutePreset,
-} from './llmRouteDomain';
+} from './llmRouteDomain.ts';
 import {
   SCOPE_KEYS,
   scopes,
@@ -43,7 +43,7 @@ import {
   flagLabel,
   selectedRouteTone,
   selectedRouteToneStyle,
-} from './llmRoutePresentation';
+} from './llmRoutePresentation.ts';
 
 const inputCls = 'sf-input';
 const selectCls = inputCls;

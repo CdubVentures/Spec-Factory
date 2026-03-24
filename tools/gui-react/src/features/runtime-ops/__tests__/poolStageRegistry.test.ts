@@ -4,8 +4,8 @@ import {
   POOL_STAGE_KEYS,
   POOL_STAGE_REGISTRY,
   resolvePoolStage,
-} from '../poolStageRegistry';
-import type { PoolStageVisuals } from '../poolStageRegistry';
+} from '../poolStageRegistry.ts';
+import type { PoolStageVisuals } from '../poolStageRegistry.ts';
 
 const REQUIRED_PROPS: (keyof PoolStageVisuals)[] = [
   'badge', 'dot', 'meterFill', 'selectedTab', 'outlineTab',

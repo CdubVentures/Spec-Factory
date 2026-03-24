@@ -5,7 +5,7 @@ import path from 'node:path';
 import {
   loadFieldStudioMap,
   validateFieldStudioMap,
-} from '../../../test/helpers/categoryCompileHarness.js';
+} from './helpers/categoryCompileHarness.js';
 
 test('FRC-05-D - compiler coerces string property variance_policy to authoritative', () => {
   const rawMap = {

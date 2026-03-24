@@ -13,7 +13,7 @@ const COMPONENT_TEMPLATE_TYPES: Record<string, string> = {
   material: 'material',
 };
 
-import { UNIT_BEARING_TEMPLATES as NUMBER_PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+import { UNIT_BEARING_TEMPLATES as NUMBER_PARSE_TEMPLATES } from '../state/parseTemplateRegistry.ts';
 
 const PRIORITY_SIGNAL_PATHS = new Set([
   'priority.required_level',

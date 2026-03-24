@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, beforeEach } from 'node:test';
-import { loadBundledModule } from '../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 // WHY: These tests prove the hydration race condition and dirty-state
 // contamination bugs are fixed. The store must support three distinct

@@ -1,22 +1,22 @@
-import { ComboSelect } from '../../../shared/ui/forms/ComboSelect';
-import { Tip } from '../../../shared/ui/feedback/Tip';
+import { ComboSelect } from '../../../shared/ui/forms/ComboSelect.tsx';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
   clampNumber,
   parseBoundedIntInput,
   parseIntegerInput,
   parseOptionalPositiveIntInput,
-} from '../state/numericInputHelpers';
+} from '../state/numericInputHelpers.ts';
 import {
   STUDIO_NUMERIC_KNOB_BOUNDS,
-} from '../state/studioNumericKnobBounds';
+} from '../state/studioNumericKnobBounds.ts';
 import {
   isStudioContractFieldDeferredLocked,
-} from '../state/studioBehaviorContracts';
+} from '../state/studioBehaviorContracts.ts';
 import {
   boolN,
   numN,
   strN,
-} from './workbenchHelpers';
+} from './workbenchHelpers.ts';
 import {
   inputCls,
   labelCls,
@@ -24,8 +24,8 @@ import {
   STUDIO_TIPS,
   UNITS,
   UNKNOWN_TOKENS,
-} from '../components/studioConstants';
-import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs';
+} from '../components/studioConstants.ts';
+import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs.tsx';
 
 const TEXT_GRAY_400 = 'sf-text-subtle';
 const TEXT_GRAY_500 = 'sf-text-subtle';

@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createStorage } from '../../../../s3/storage.js';
 import { discoverCandidateSources } from '../searchDiscovery.js';
 import { loadSourceRegistry } from '../../pipeline/shared/sourceRegistry.js';
-import { buildMockSerpSelectorResponse, isLlmEndpoint } from '../../../../../test/helpers/discoverySelectorHarness.js';
+import { buildMockSerpSelectorResponse, isLlmEndpoint } from './helpers/discoverySelectorHarness.js';
 
 const TEST_CATEGORY = 'mouse';
 const TEST_IDENTITY = {

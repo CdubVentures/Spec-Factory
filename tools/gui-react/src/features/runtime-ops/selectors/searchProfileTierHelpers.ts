@@ -1,7 +1,7 @@
 // WHY: O(1) tier registry — single source for tier metadata.
 // Adding a new tier = 1 entry in TIER_REGISTRY. All maps derived.
 
-import type { PrefetchSearchProfileQueryRow } from '../types';
+import type { PrefetchSearchProfileQueryRow } from '../types.ts';
 
 export type TierKey = 'seed' | 'group' | 'key';
 

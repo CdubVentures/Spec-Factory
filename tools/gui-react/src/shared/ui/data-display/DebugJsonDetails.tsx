@@ -1,1 +1,1 @@
-export * from '../../../components/common/DebugJsonDetails';
+export * from '../../../components/common/DebugJsonDetails.tsx';

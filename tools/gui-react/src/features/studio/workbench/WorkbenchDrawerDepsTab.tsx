@@ -1,30 +1,30 @@
 import { useState } from 'react';
 
-import { TagPicker } from '../../../shared/ui/forms/TagPicker';
-import { Tip } from '../../../shared/ui/feedback/Tip';
+import { TagPicker } from '../../../shared/ui/forms/TagPicker.tsx';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import {
   parseBoundedFloatInput,
-} from '../state/numericInputHelpers';
+} from '../state/numericInputHelpers.ts';
 import {
   STUDIO_COMPONENT_MATCH_DEFAULTS,
   STUDIO_NUMERIC_KNOB_BOUNDS,
-} from '../state/studioNumericKnobBounds';
-import { useStudioFieldRulesState } from '../state/studioFieldRulesController';
+} from '../state/studioNumericKnobBounds.ts';
+import { useStudioFieldRulesState } from '../state/studioFieldRulesController.ts';
 import {
   arrN,
   extractConstraintVariables,
   numN,
   strN,
-} from './workbenchHelpers';
+} from './workbenchHelpers.ts';
 import {
   COMPONENT_TYPES,
   inputCls,
   labelCls,
   selectCls,
   STUDIO_TIPS,
-} from '../components/studioConstants';
-import type { ComponentSource } from '../../../types/studio';
-import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs';
+} from '../components/studioConstants.ts';
+import type { ComponentSource } from '../../../types/studio.ts';
+import type { BadgeSlot } from './WorkbenchDrawerSimpleTabs.tsx';
 
 const TEXT_GRAY_400 = 'sf-text-subtle';
 const MUTED_ITALIC_TEXT_CLASS = `text-xs ${TEXT_GRAY_400} italic`;

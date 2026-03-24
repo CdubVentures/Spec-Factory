@@ -1,5 +1,5 @@
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import type { DeltaCategories } from './needSetHelpers';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import type { DeltaCategories } from './needSetHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

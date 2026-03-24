@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { compileRules } from '../../field-rules/compiler.js';
 import { generateTypesForCategory } from '../generate-types.js';
-import { getMouseFieldStudioSourcePath } from '../../../test/fixtures/mouseFieldStudioWorkbookFixture.js';
+import { getMouseFieldStudioSourcePath } from '../../field-rules/tests/fixtures/mouseFieldStudioWorkbookFixture.js';
 
 function mouseWorkbookPath() {
   return getMouseFieldStudioSourcePath();

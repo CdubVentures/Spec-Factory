@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { trafficColor, trafficTextColor } from '../../utils/colors';
-import { pct } from '../../utils/formatting';
-import { hasKnownValue } from '../../utils/fieldNormalize';
-import { CellTooltip, type CellTooltipState } from './CellTooltip';
-import { FlagIcon } from './FlagIcon';
+import { trafficColor, trafficTextColor } from '../../utils/colors.ts';
+import { pct } from '../../utils/formatting.ts';
+import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { CellTooltip, type CellTooltipState } from './CellTooltip.tsx';
+import { FlagIcon } from './FlagIcon.tsx';
 
 export interface ReviewValueCellState extends CellTooltipState {
   selected: CellTooltipState['selected'] & {

@@ -17,20 +17,20 @@ export {
   toRuntimeDraft,
   type NumberBound,
   type RuntimeDraft,
-} from './state/RuntimeFlowDraftContracts';
+} from './state/RuntimeFlowDraftContracts.ts';
 
 // --- Draft normalizer ---
-export { normalizeRuntimeDraft } from './state/RuntimeFlowDraftNormalizer';
+export { normalizeRuntimeDraft } from './state/RuntimeFlowDraftNormalizer.ts';
 
 // --- Draft payload builder ---
-export { collectRuntimeFlowDraftPayload } from './state/RuntimeFlowDraftPayload';
+export { collectRuntimeFlowDraftPayload } from './state/RuntimeFlowDraftPayload.ts';
 
 // --- Model token options ---
 export {
   deriveRuntimeLlmModelOptions,
   deriveRuntimeLlmTokenPresetOptions,
   type RuntimeSettingsLlmConfigResponse,
-} from './state/RuntimeFlowModelTokenOptions';
+} from './state/RuntimeFlowModelTokenOptions.ts';
 
 // --- Model token defaults ---
 export {
@@ -38,7 +38,7 @@ export {
   createRuntimeModelTokenDefaultsResolver,
   deriveRuntimeLlmTokenContractPresetMax,
   type RuntimeLlmTokenProfileLookup,
-} from './state/RuntimeFlowModelTokenDefaults';
+} from './state/RuntimeFlowModelTokenDefaults.ts';
 
 // --- Runtime settings authority (helpers + hooks) ---
 export {
@@ -54,7 +54,7 @@ export {
   useRuntimeSettingsStoreHydration,
   type RuntimeSettings,
   type RuntimeSettingsNumericBaseline,
-} from './state/runtimeSettingsAuthority';
+} from './state/runtimeSettingsAuthority.ts';
 
 // --- Runtime settings domain (parsing, hydration, payload, types) ---
 export {
@@ -71,13 +71,13 @@ export {
   type RuntimeModelTokenDefaults,
   type RuntimeModelTokenDefaultsResolver,
   type RuntimeSettingsPayloadSerializerInput,
-} from './state/runtimeSettingsDomain';
+} from './state/runtimeSettingsDomain.ts';
 
 // --- Runtime settings editor adapter ---
 export {
   useRuntimeSettingsEditorAdapter,
   type RuntimeEditorSaveStatus,
-} from './state/runtimeSettingsEditorAdapter';
+} from './state/runtimeSettingsEditorAdapter.ts';
 
 // --- Source strategy authority ---
 export {
@@ -89,14 +89,14 @@ export {
   type DiscoveryConfig,
   type FieldCoverage,
   type SourceEntry,
-} from './state/sourceStrategyAuthority';
+} from './state/sourceStrategyAuthority.ts';
 
 // --- Auto-save effect (generic) ---
 export {
   useSettingsAutoSaveEffect,
   type UseSettingsAutoSaveOptions,
   type UseSettingsAutoSaveResult,
-} from './state/useSettingsAutoSaveEffect';
+} from './state/useSettingsAutoSaveEffect.ts';
 
 // --- UI primitives (shared across pipeline-settings, llm-config) ---
 export {
@@ -107,7 +107,7 @@ export {
   SettingNumberInput,
   SettingRow,
   SettingToggle,
-} from './components/RuntimeFlowPrimitives';
+} from './components/RuntimeFlowPrimitives.tsx';
 
 // --- Primitive types re-exported from the types directory ---
 export type {
@@ -117,4 +117,4 @@ export type {
   SettingGroupBlockProps,
   SettingRowProps,
   SettingToggleProps,
-} from './types/settingPrimitiveTypes';
+} from './types/settingPrimitiveTypes.ts';

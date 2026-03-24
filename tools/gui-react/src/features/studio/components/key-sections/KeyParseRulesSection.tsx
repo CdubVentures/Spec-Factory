@@ -1,17 +1,17 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect";
-import { TagPicker } from "../../../../shared/ui/forms/TagPicker";
-import { strN, boolN, arrN } from "../../state/nestedValueHelpers";
-import { PARSE_TEMPLATES, isUnitBearingTemplate } from "../../state/parseTemplateRegistry";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { ComboSelect } from "../../../../shared/ui/forms/ComboSelect.tsx";
+import { TagPicker } from "../../../../shared/ui/forms/TagPicker.tsx";
+import { strN, boolN, arrN } from "../../state/nestedValueHelpers.ts";
+import { PARSE_TEMPLATES, isUnitBearingTemplate } from "../../state/parseTemplateRegistry.ts";
 import {
   selectCls,
   labelCls,
   UNITS,
   UNIT_ACCEPTS_SUGGESTIONS,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 
 export interface KeyParseRulesSectionProps extends KeySectionBaseProps {}
 

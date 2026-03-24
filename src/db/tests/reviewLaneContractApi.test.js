@@ -36,7 +36,7 @@ import {
   upsertStrictKeyReviewState,
   getStrictKeyReviewState,
   stopProcess,
-} from '../../../test/fixtures/reviewLaneFixtures.js';
+} from '../../features/review/tests/fixtures/reviewLaneFixtures.js';
 
 const CATEGORY = 'mouse_contract_lane_matrix';
 

@@ -1,5 +1,5 @@
-import { useReviewStore } from '../state/reviewStore';
-import type { ProductReviewPayload } from '../../../types/review';
+import { useReviewStore } from '../state/reviewStore.ts';
+import type { ProductReviewPayload } from '../../../types/review.ts';
 
 interface BrandFilterBarProps {
   brands: string[];

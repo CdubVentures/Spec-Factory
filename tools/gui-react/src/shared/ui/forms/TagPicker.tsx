@@ -1,1 +1,1 @@
-export * from '../../../components/common/TagPicker';
+export * from '../../../components/common/TagPicker.tsx';

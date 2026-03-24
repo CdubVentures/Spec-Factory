@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react';
-import { useUiStore } from '../../stores/uiStore';
-import { useProductStore } from '../../stores/productStore';
-import { useRuntimeStore } from '../../stores/runtimeStore';
-import { usePersistedTab } from '../../stores/tabStore';
-import { useCatalogQuery } from '../../hooks/useCatalogQuery';
-import { StatusBadge } from '../../shared/ui/feedback/StatusBadge';
-import { Spinner } from '../../shared/ui/feedback/Spinner';
-import { isTestCategory, formatTestCategory } from '../../utils/testMode';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { useProductStore } from '../../stores/productStore.ts';
+import { useRuntimeStore } from '../../stores/runtimeStore.ts';
+import { usePersistedTab } from '../../stores/tabStore.ts';
+import { useCatalogQuery } from '../../hooks/useCatalogQuery.ts';
+import { StatusBadge } from '../../shared/ui/feedback/StatusBadge.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { isTestCategory, formatTestCategory } from '../../utils/testMode.ts';
 
 const VARIANT_PLACEHOLDERS = new Set(['unk', 'unknown', 'na', 'n/a', 'none', 'null', '']);
 function cleanVariant(v: string): string {

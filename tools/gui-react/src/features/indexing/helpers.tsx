@@ -1,5 +1,5 @@
-import { Tip } from '../../components/common/Tip';
-import type { TimedIndexLabEvent } from './types';
+import { Tip } from '../../components/common/Tip.tsx';
+import type { TimedIndexLabEvent } from './types.ts';
 
 export function normalizeToken(value: unknown) {
   return String(value || '').trim().toLowerCase();

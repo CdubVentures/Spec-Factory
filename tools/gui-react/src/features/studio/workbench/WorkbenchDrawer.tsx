@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 
-import { api } from '../../../api/client';
-import { usePersistedTab } from '../../../stores/tabStore';
-import { humanizeField } from '../../../utils/fieldNormalize';
-import { buildNextConsumerOverrides } from '../state/studioBehaviorContracts';
-import { useStudioFieldRulesActions } from '../state/studioFieldRulesController';
-import { SystemBadges } from './SystemBadges';
-import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent';
-import { strN } from './workbenchHelpers';
-import type { DownstreamSystem } from './systemMapping';
-import type { DrawerTab } from './workbenchTypes';
+import { api } from '../../../api/client.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { humanizeField } from '../../../utils/fieldNormalize.ts';
+import { buildNextConsumerOverrides } from '../state/studioBehaviorContracts.ts';
+import { useStudioFieldRulesActions } from '../state/studioFieldRulesController.ts';
+import { SystemBadges } from './SystemBadges.tsx';
+import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent.tsx';
+import { strN } from './workbenchHelpers.ts';
+import type { DownstreamSystem } from './systemMapping.ts';
+import type { DrawerTab } from './workbenchTypes.ts';
 import type {
   ComponentDbResponse,
   ComponentSource,
   EnumEntry,
-} from '../../../types/studio';
+} from '../../../types/studio.ts';
 
 interface Props {
   category: string;

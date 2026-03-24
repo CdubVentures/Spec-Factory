@@ -3,8 +3,8 @@
 // This is the Strangler Fig boundary — children see flat keys, authority holds composite.
 // Maps are auto-generated from backend LLM_POLICY_GROUPS SSOT.
 
-import type { LlmPolicy, LlmPolicyGroup } from './llmPolicyAdapter.generated';
-import { FLAT_TO_GROUP, FLAT_TOP_LEVEL } from './llmPolicyAdapter.generated';
+import type { LlmPolicy, LlmPolicyGroup } from './llmPolicyAdapter.generated.ts';
+import { FLAT_TO_GROUP, FLAT_TOP_LEVEL } from './llmPolicyAdapter.generated.ts';
 
 /**
  * Flatten an LlmPolicy into a flat key-value object matching RuntimeDraft shape.

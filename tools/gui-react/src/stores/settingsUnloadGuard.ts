@@ -10,7 +10,7 @@
  * survives page teardown.
  */
 
-import { teardownFetch } from '../api/teardownFetch';
+import { teardownFetch } from '../api/teardownFetch.ts';
 
 export interface UnloadGuardRegistration {
   domain: string;

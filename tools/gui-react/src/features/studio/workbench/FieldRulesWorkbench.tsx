@@ -1,21 +1,21 @@
 // ── FieldRulesWorkbench: top-level orchestrator for Tab 3 ────────────
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { SortingState } from '@tanstack/react-table';
-import type { ColumnPreset } from './workbenchTypes';
-import { usePersistedTab } from '../../../stores/tabStore';
-import { buildWorkbenchRows } from './workbenchHelpers';
-import { buildColumns, getPresetVisibility } from './workbenchColumns';
-import { readWorkbenchSessionState, writeWorkbenchSessionState } from './workbenchSessionState';
-import { resolveWorkbenchInlineEditPath } from './workbenchInlineEditContracts';
-import { WorkbenchColumnPresets } from './WorkbenchColumnPresets';
-import { WorkbenchTable } from './WorkbenchTable';
-import { WorkbenchDrawer } from './WorkbenchDrawer';
-import { WorkbenchBulkBar } from './WorkbenchBulkBar';
+import type { ColumnPreset } from './workbenchTypes.ts';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { buildWorkbenchRows } from './workbenchHelpers.ts';
+import { buildColumns, getPresetVisibility } from './workbenchColumns.tsx';
+import { readWorkbenchSessionState, writeWorkbenchSessionState } from './workbenchSessionState.ts';
+import { resolveWorkbenchInlineEditPath } from './workbenchInlineEditContracts.ts';
+import { WorkbenchColumnPresets } from './WorkbenchColumnPresets.tsx';
+import { WorkbenchTable } from './WorkbenchTable.tsx';
+import { WorkbenchDrawer } from './WorkbenchDrawer.tsx';
+import { WorkbenchBulkBar } from './WorkbenchBulkBar.tsx';
 import {
   useStudioFieldRulesActions,
   useStudioFieldRulesState,
-} from '../state/studioFieldRulesController';
-import type { StudioPageActivePanelContractProps as Props } from '../components/studioPagePanelContracts';
+} from '../state/studioFieldRulesController.ts';
+import type { StudioPageActivePanelContractProps as Props } from '../components/studioPagePanelContracts.ts';
 
 const PRESET_TAB_IDS = [
   'minimal',

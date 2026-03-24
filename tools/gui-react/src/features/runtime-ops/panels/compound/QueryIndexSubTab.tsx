@@ -1,5 +1,5 @@
-import { truncateUrl } from '../../helpers';
-import type { QuerySummaryResponse } from '../../types';
+import { truncateUrl } from '../../helpers.ts';
+import type { QuerySummaryResponse } from '../../types.ts';
 
 interface QueryIndexSubTabProps {
   data: QuerySummaryResponse | undefined;

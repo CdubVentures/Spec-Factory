@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { CatalogProduct } from '../../../types/product';
+import type { CatalogProduct } from '../../../types/product.ts';
 
 export const PRODUCT_TABLE_COLUMNS: ColumnDef<CatalogProduct, unknown>[] = [
   {

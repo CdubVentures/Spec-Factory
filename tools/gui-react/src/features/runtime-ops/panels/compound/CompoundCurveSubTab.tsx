@@ -1,7 +1,7 @@
-import { ConfidenceBar } from '../../components/ConfidenceBar';
-import { Sparkline } from '../../components/Sparkline';
-import { truncateUrl } from '../../helpers';
-import type { CompoundCurveResponse, CompoundVerdict } from '../../types';
+import { ConfidenceBar } from '../../components/ConfidenceBar.tsx';
+import { Sparkline } from '../../components/Sparkline.tsx';
+import { truncateUrl } from '../../helpers.ts';
+import type { CompoundCurveResponse, CompoundVerdict } from '../../types.ts';
 
 interface CompoundCurveSubTabProps {
   data: CompoundCurveResponse | undefined;

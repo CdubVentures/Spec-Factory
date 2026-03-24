@@ -39,7 +39,7 @@ describe('registry-derived settings maps — characterization', () => {
   it('every registry int/float with min+max produces a bounds entry', () => {
     const bounds = deriveBounds(RUNTIME_SETTINGS_REGISTRY);
     const boundsKeys = Object.keys(bounds).sort();
-    ok(boundsKeys.length >= 48, `expected >=48 bounds keys, got ${boundsKeys.length}`);
+    ok(boundsKeys.length >= 35, `expected >=35 bounds keys, got ${boundsKeys.length}`);
 
     // Spot-check known values against current hardcoded RuntimeFlowDraftContracts.ts
     deepStrictEqual(bounds.llmTimeoutMs, { min: 1000, max: 600000, int: true });
@@ -93,12 +93,8 @@ describe('registry-derived settings maps — characterization', () => {
 
     // These are the keys currently hardcoded in RuntimeFlowDraftContracts.ts RUNTIME_NUMBER_BOUNDS
     const hardcodedKeys = [
-      'perHostMinDelayMs', 'searxngMinQueryIntervalMs',
-      'crawleeRequestHandlerTimeoutSecs', 'pageGotoTimeoutMs',
-      'pageNetworkIdleTimeoutMs', 'postLoadWaitMs', 'frontierQueryCooldownSeconds',
-      'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds', 'frontierCooldown410Seconds',
-      'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
-      'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold', 'frontierBlockedDomainThreshold',
+      'searxngMinQueryIntervalMs',
+      'crawleeRequestHandlerTimeoutSecs',
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs', 'runtimeScreencastFps', 'runtimeScreencastQuality',
       'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight', 'searchProfileQueryCap',

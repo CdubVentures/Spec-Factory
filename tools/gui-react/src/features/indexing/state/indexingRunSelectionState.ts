@@ -1,15 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client';
-import { getRefetchInterval } from '../helpers';
+import { api } from '../../../api/client.ts';
+import { getRefetchInterval } from '../helpers.tsx';
 import {
   deriveDomainChecklistCategory,
   deriveIndexLabRuns,
   deriveSelectedRunForChecklist,
-} from '../selectors/indexingRunSelectors';
-import { deriveRunAutoSelectionDecision } from './indexingRunSelection';
-import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from './indexlabRunsQuery';
-import type { IndexLabRunsResponse } from '../types';
+} from '../selectors/indexingRunSelectors.ts';
+import { deriveRunAutoSelectionDecision } from './indexingRunSelection.ts';
+import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from './indexlabRunsQuery.ts';
+import type { IndexLabRunsResponse } from '../types.ts';
 
 interface UseIndexingRunSelectionStateInput {
   isProcessRunning: boolean;

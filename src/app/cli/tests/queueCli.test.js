@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { runCliJson as runCli } from '../../../../test/support/cliJsonHarness.js';
+import { createCliJsonHarness } from '../../../cli/tests/helpers/cliJsonHarness.js';
 
 function baseCliArgs({ inputRoot, outputRoot, importsRoot }) {
   return [
@@ -16,6 +16,7 @@ function baseCliArgs({ inputRoot, outputRoot, importsRoot }) {
 }
 
 test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () => {
+  const runCli = createCliJsonHarness();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-queue-cli-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');
@@ -92,6 +93,7 @@ test('queue CLI supports add/list/stats/pause/retry/clear lifecycle', async () =
 });
 
 test('queue add-batch imports csv and writes queue rows', async () => {
+  const runCli = createCliJsonHarness();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-queue-cli-batch-'));
   const inputRoot = path.join(tempRoot, 'fixtures');
   const outputRoot = path.join(tempRoot, 'out');

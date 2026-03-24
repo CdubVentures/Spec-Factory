@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import { reorderFieldOrder } from './keyUtils';
+import { reorderFieldOrder } from './keyUtils.ts';
 import {
   applyStudioRuleCommand,
   createSetFieldValueCommand,
-} from '../rules/ruleCommands';
-import type { FieldRule } from '../../../types/studio';
+} from '../rules/ruleCommands.ts';
+import type { FieldRule } from '../../../types/studio.ts';
 
 type RuleMap = Record<string, FieldRule>;
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../../../../../test/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function createJsxRuntimeStub() {
   return `
@@ -42,7 +42,7 @@ async function loadBrowserStreamModule() {
           },
         };
       `,
-      '../../../../../../../../test/integration/helpers': `
+      '../../helpers.ts': `
         export function formatMs(value) {
           return String(value ?? 0);
         }
@@ -67,7 +67,7 @@ async function loadWorkerLivePanelModule() {
           return null;
         }
       `,
-      '../../../../../../../../test/integration/helpers': `
+      '../../helpers.ts': `
         export const STAGE_ORDER = ['queued', 'fetch', 'parse'];
         export function workerStateBadgeClass() {
           return 'state';

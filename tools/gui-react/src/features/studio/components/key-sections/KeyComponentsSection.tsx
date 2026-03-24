@@ -1,19 +1,19 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import type { ComponentSource } from "../../../../types/studio";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { strN, numN } from "../../state/nestedValueHelpers";
-import { parseBoundedFloatInput } from "../../state/numericInputHelpers";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import type { ComponentSource } from "../../../../types/studio.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { strN, numN } from "../../state/nestedValueHelpers.ts";
+import { parseBoundedFloatInput } from "../../state/numericInputHelpers.ts";
 import {
   STUDIO_COMPONENT_MATCH_DEFAULTS,
   STUDIO_NUMERIC_KNOB_BOUNDS,
-} from "../../state/studioNumericKnobBounds";
+} from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
   labelCls,
   COMPONENT_TYPES,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 
 export interface KeyComponentsSectionProps extends KeySectionBaseProps {
   componentSources: ComponentSource[];

@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { api } from '../../../api/client';
-import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint';
-import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest';
-import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract';
-import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract';
-import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore';
-import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest';
+import { api } from '../../../api/client.ts';
+import { autoSaveFingerprint } from '../../../stores/autoSaveFingerprint.ts';
+import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from '../../../stores/settingsManifest.ts';
+import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
+import { publishSettingsPropagation } from '../../../stores/settingsPropagationContract.ts';
+import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest.ts';
 import {
   readRuntimeSettingsBootstrap,
   RUNTIME_SETTINGS_QUERY_KEY,
   type RuntimeSettings,
-} from './runtimeSettingsAuthorityHelpers';
-import { normalizeRuntimeDraft } from './RuntimeFlowDraftNormalization';
-import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect';
+} from './runtimeSettingsAuthorityHelpers.ts';
+import { normalizeRuntimeDraft } from './RuntimeFlowDraftNormalization.ts';
+import { useSettingsAutoSaveEffect } from './useSettingsAutoSaveEffect.ts';
 
 type RuntimeSettingsPersistResult = {
   ok: boolean;

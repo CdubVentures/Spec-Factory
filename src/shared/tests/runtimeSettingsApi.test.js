@@ -8,7 +8,7 @@ import { SETTINGS_DEFAULTS } from '../settingsDefaults.js';
 import {
   getFreePort,
   waitForHttpReady,
-} from '../../../test/integration/helpers/guiServerHttpHarness.js';
+} from '../../api/tests/helpers/guiServerHttpHarness.js';
 
 async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();
@@ -77,7 +77,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const STRING_KEYS = [
       'searchEngines',
       'searxngBaseUrl',
-      'frontierDbPath',
       'llmModelPlan', 'llmModelReasoning',
       'resumeMode',
     ];
@@ -86,15 +85,10 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     const INT_KEYS = [
-      'perHostMinDelayMs',
       'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
       'llmMaxOutputTokensPlanFallback',
       'resumeWindowHours',
       'crawleeRequestHandlerTimeoutSecs',
-      'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
-      'frontierQueryCooldownSeconds', 'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
-      'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds',
-      'frontierCooldown429BaseSeconds', 'frontierBlockedDomainThreshold',
       'autoScrollPasses', 'autoScrollDelayMs', 'robotsTxtTimeoutMs',
       'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
       'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
@@ -106,7 +100,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const BOOL_KEYS = [
       'crawleeHeadless', 'runtimeScreencastEnabled',
-      'frontierStripTrackingParams',
       'autoScrollEnabled', 'robotsTxtCompliant',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite',
@@ -134,11 +127,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
 
     const expected = {
-      pageGotoTimeoutMs: SETTINGS_DEFAULTS.runtime.pageGotoTimeoutMs,
-      postLoadWaitMs: SETTINGS_DEFAULTS.runtime.postLoadWaitMs,
-      frontierCooldown403BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown403BaseSeconds,
-      frontierCooldown429BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown429BaseSeconds,
-      frontierBlockedDomainThreshold: SETTINGS_DEFAULTS.runtime.frontierBlockedDomainThreshold,
       userAgent: SETTINGS_DEFAULTS.runtime.userAgent,
     };
 
@@ -150,7 +138,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
-    const payload = { perHostMinDelayMs: 500, searchEngines: 'google' };
+    const payload = { maxPagesPerDomain: 7, searchEngines: 'google' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -159,17 +147,17 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.ok, true);
-    assert.equal(body.applied.perHostMinDelayMs, 500);
+    assert.equal(body.applied.maxPagesPerDomain, 7);
     assert.equal(body.applied.searchEngines, 'google');
 
     const getRes = await fetch(`${_baseUrl}/runtime-settings`);
     const getBody = await getRes.json();
-    assert.equal(getBody.perHostMinDelayMs, 500);
+    assert.equal(getBody.maxPagesPerDomain, 7);
     assert.equal(getBody.searchEngines, 'google');
   });
 
   await t.test('PUT with invalid values returns rejected for those keys', async () => {
-    const payload = { perHostMinDelayMs: 'not_a_number', llmMaxOutputTokensPlan: 'abc' };
+    const payload = { maxPagesPerDomain: 'not_a_number', llmMaxOutputTokensPlan: 'abc' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -179,14 +167,14 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.ok, true);
     assert.ok(body.rejected);
-    assert.equal(body.rejected.perHostMinDelayMs, 'invalid_integer');
+    assert.equal(body.rejected.maxPagesPerDomain, 'invalid_integer');
     assert.equal(body.rejected.llmMaxOutputTokensPlan, 'invalid_integer');
   });
 
   await t.test('PUT clamps out-of-range values', async () => {
     const payload = {
-      perHostMinDelayMs: -5,
-      pageGotoTimeoutMs: 999999,
+      maxPagesPerDomain: -5,
+      maxRunSeconds: 999999,
     };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
@@ -195,8 +183,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.applied.perHostMinDelayMs, 0);
-    assert.equal(body.applied.pageGotoTimeoutMs, 120000);
+    assert.equal(body.applied.maxPagesPerDomain, 1);
+    assert.equal(body.applied.maxRunSeconds, 86400);
   });
 
   await t.test('PUT validates active string enums', async () => {
@@ -226,7 +214,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT persists runtime settings to canonical user-settings snapshot', async () => {
-    const payload = { llmModelPlan: 'test-persist-model-xyz', perHostMinDelayMs: 1234 };
+    const payload = { llmModelPlan: 'test-persist-model-xyz', maxPagesPerDomain: 9 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -235,7 +223,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
     assert.equal(putBody.applied.llmModelPlan, 'test-persist-model-xyz');
-    assert.equal(putBody.applied.perHostMinDelayMs, 1234);
+    assert.equal(putBody.applied.maxPagesPerDomain, 9);
 
     const userSettingsPaths = [
       path.join(_helperRoot, '_runtime', 'user-settings.json'),
@@ -246,12 +234,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
         json
         && json.runtime
         && json.runtime.llmModelPlan === 'test-persist-model-xyz'
-        && json.runtime.perHostMinDelayMs === 1234
+        && json.runtime.maxPagesPerDomain === 9
       ),
       8_000,
     );
     assert.equal(userSettings.runtime.llmModelPlan, 'test-persist-model-xyz');
-    assert.equal(userSettings.runtime.perHostMinDelayMs, 1234);
+    assert.equal(userSettings.runtime.maxPagesPerDomain, 9);
 
     const legacySettingsExists = await Promise.all([
       fs.access(path.join(_helperRoot, '_runtime', 'settings.json')).then(() => true).catch(() => false),

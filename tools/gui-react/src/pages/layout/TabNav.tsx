@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { useUiStore } from '../../stores/uiStore';
-import { isTestCategory } from '../../utils/testMode';
+import { useUiStore } from '../../stores/uiStore.ts';
+import { isTestCategory } from '../../utils/testMode.ts';
 
 interface TabDef {
   path: string;

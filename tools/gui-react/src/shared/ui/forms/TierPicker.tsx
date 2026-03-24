@@ -1,1 +1,1 @@
-export * from '../../../components/common/TierPicker';
+export * from '../../../components/common/TierPicker.tsx';

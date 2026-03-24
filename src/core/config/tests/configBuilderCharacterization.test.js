@@ -83,7 +83,7 @@ describe('configBuilder characterization — golden master', () => {
       'llmModelExtract', 'llmModelPlan', 'llmModelReasoning',
       'llmPhaseOverridesJson', 'llmProviderRegistryJson',
       'openaiApiKey', 'openaiBaseUrl', 'openaiModelExtract', 'openaiModelPlan', 'openaiModelWrite',
-      'specDbDir', 'frontierDbPath', 'repairDedupeRule',
+      'specDbDir', 'repairDedupeRule',
       'indexingResumeMode', 'runtimeControlFile', 'runtimeScreenshotMode',
       'accuracyMode',
       'chatmockDir', 'chatmockComposeFile', 'categoryAuthorityRoot',
@@ -99,14 +99,12 @@ describe('configBuilder characterization — golden master', () => {
       'maxPagesPerDomain',
       'serpSelectorUrlCap', 'domainClassifierUrlCap',
       'maxRunSeconds',
-      'perHostMinDelayMs',
       'searchProfileQueryCap',
       'searxngMinQueryIntervalMs',
       'llmTimeoutMs', 'openaiTimeoutMs', 'openaiMaxInputChars',
       'llmMaxTokens', 'llmMaxOutputTokens', 'llmMaxOutputTokensPlan',
       'llmMaxOutputTokensReasoning', 'llmMaxOutputTokensPlanFallback',
       'llmReasoningBudget', 'llmMaxCallsPerRound', 'llmMaxCallsPerProductTotal',
-      'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs',
     ];
@@ -127,7 +125,6 @@ describe('configBuilder characterization — golden master', () => {
       'runtimeTraceLlmPayloads',
       'llmPlanUseReasoning', 'llmReasoningMode',
       'eventsJsonWrite', 'runtimeScreencastEnabled',
-      'frontierStripTrackingParams',
       'chartExtractionEnabled',
     ];
     for (const key of expectedBools) {

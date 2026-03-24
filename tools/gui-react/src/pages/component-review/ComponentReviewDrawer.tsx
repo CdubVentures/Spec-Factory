@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useMutation, useQuery, type QueryClient } from '@tanstack/react-query';
-import { api } from '../../api/client';
-import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors';
-import { hasKnownValue } from '../../utils/fieldNormalize';
-import { useFieldLabels } from '../../hooks/useFieldLabels';
-import { pct } from '../../utils/formatting';
+import { api } from '../../api/client.ts';
+import { trafficColor, trafficTextColor, sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors.ts';
+import { hasKnownValue } from '../../utils/fieldNormalize.ts';
+import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
+import { pct } from '../../utils/formatting.ts';
 import {
   DrawerShell,
   DrawerSection,
@@ -12,13 +12,13 @@ import {
   DrawerValueRow,
   DrawerBadges,
   DrawerManualOverride,
-} from '../../shared/ui/overlay/DrawerShell';
-import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip';
-import { CellDrawer } from '../../shared/ui/overlay/CellDrawer';
-import { FlagsSection, FlagsOverviewSection } from '../../components/common/FlagsSection';
-import { PendingAIReviewSection } from '../../components/common/PendingAIReviewSection';
-import { LinkedProductsList } from '../../components/common/LinkedProductsList';
-import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview';
+} from '../../shared/ui/overlay/DrawerShell.tsx';
+import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
+import { CellDrawer } from '../../shared/ui/overlay/CellDrawer.tsx';
+import { FlagsSection, FlagsOverviewSection } from '../../components/common/FlagsSection.tsx';
+import { PendingAIReviewSection } from '../../components/common/PendingAIReviewSection.tsx';
+import { LinkedProductsList } from '../../components/common/LinkedProductsList.tsx';
+import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 interface ComponentImpactResult {
   affected_products: Array<{ productId: string; field: string; value: string; match_type: string }>;
@@ -831,7 +831,7 @@ export function ComponentReviewDrawer({
     candidates,
   }: {
     hasSharedPending: boolean;
-    candidates: import('../../types/review').ReviewCandidate[];
+    candidates: import('../../types/review.ts').ReviewCandidate[];
   }): string[] {
     if (!hasSharedPending) return [];
     const allCandidates = (candidates || []).filter((candidate) => {

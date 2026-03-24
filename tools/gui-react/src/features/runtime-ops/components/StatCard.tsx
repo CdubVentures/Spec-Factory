@@ -1,4 +1,4 @@
-import { Tip } from '../../../shared/ui/feedback/Tip';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 
 interface StatCardProps {
   label: string;

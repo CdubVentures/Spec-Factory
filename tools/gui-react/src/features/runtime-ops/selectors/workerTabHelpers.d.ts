@@ -1,4 +1,4 @@
-import type { RuntimeOpsWorkerRow } from '../types';
+import type { RuntimeOpsWorkerRow } from '../types.ts';
 
 export declare function sortWorkersForTabs(
   workers?: RuntimeOpsWorkerRow[],

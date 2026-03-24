@@ -17,13 +17,13 @@ import {
   domainRoleBadgeClass,
   safetyClassBadgeClass,
   friendlyMethod,
-} from '../helpers';
+} from '../helpers.ts';
 import {
   resolveNeedsetState,
   resolveNeedsetBucket,
   resolveIdentityBadge,
   resolveBlockerBadge,
-} from '../badgeRegistries';
+} from '../badgeRegistries.ts';
 
 // ── Table-driven helper ──────────────────────────────────────────────
 function assertTable(fn: (k: string) => string, table: [string, string][]) {

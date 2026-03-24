@@ -1,6 +1,6 @@
-import { ConfidenceBar } from '../../components/ConfidenceBar';
-import { truncateUrl } from '../../helpers';
-import type { UrlSummaryResponse, HostHealthResponse, HostHealthStatus } from '../../types';
+import { ConfidenceBar } from '../../components/ConfidenceBar.tsx';
+import { truncateUrl } from '../../helpers.ts';
+import type { UrlSummaryResponse, HostHealthResponse, HostHealthStatus } from '../../types.ts';
 
 interface UrlIndexSubTabProps {
   urlData: UrlSummaryResponse | undefined;

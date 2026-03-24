@@ -1,12 +1,12 @@
 import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { getRefetchInterval } from '../../helpers';
-import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabStore';
-import { usePersistedToggle } from '../../../../stores/collapseStore';
-import type { LlmCallsDashboardResponse, LlmCallRow, PrefetchTabKey, RuntimeIdxBadge } from '../../types';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip';
-import { shortModel, modelChipClass } from '../../selectors/llmModelHelpers';
+import { api } from '../../../../api/client.ts';
+import { getRefetchInterval } from '../../helpers.ts';
+import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import type { LlmCallsDashboardResponse, LlmCallRow, PrefetchTabKey, RuntimeIdxBadge } from '../../types.ts';
+import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { shortModel, modelChipClass } from '../../selectors/llmModelHelpers.ts';
 
 // ── Call type metadata ───────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
-import type { PrefetchLlmCall } from '../types';
-import { llmCallStatusBadgeClass, formatMs } from '../helpers';
-import { Chip } from '../../../shared/ui/feedback/Chip';
+import type { PrefetchLlmCall } from '../types.ts';
+import { llmCallStatusBadgeClass, formatMs } from '../helpers.ts';
+import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 
 interface LlmCallCardProps {
   call: PrefetchLlmCall;

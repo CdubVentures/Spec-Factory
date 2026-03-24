@@ -1,19 +1,19 @@
-import type { KeySectionBaseProps } from "./keySectionContracts";
-import { Section } from "../Section";
-import { Tip } from "../../../../shared/ui/feedback/Tip";
-import { strN, numN, boolN } from "../../state/nestedValueHelpers";
+import type { KeySectionBaseProps } from "./keySectionContracts.ts";
+import { Section } from "../Section.tsx";
+import { Tip } from "../../../../shared/ui/feedback/Tip.tsx";
+import { strN, numN, boolN } from "../../state/nestedValueHelpers.ts";
 import {
   clampNumber,
   parseBoundedIntInput,
   parseOptionalPositiveIntInput,
-} from "../../state/numericInputHelpers";
-import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds";
+} from "../../state/numericInputHelpers.ts";
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../state/studioNumericKnobBounds.ts";
 import {
   selectCls,
   inputCls,
   labelCls,
   STUDIO_TIPS,
-} from "../studioConstants";
+} from "../studioConstants.ts";
 import {
   REQUIRED_LEVEL_OPTIONS,
   AVAILABILITY_OPTIONS,

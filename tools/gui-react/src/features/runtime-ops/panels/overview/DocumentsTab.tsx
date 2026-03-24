@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../../api/client';
-import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore';
-import type { RuntimeOpsDocumentRow, RuntimeOpsDocumentDetailResponse } from '../../types';
-import { statusBadgeClass, formatBytes, truncateUrl, formatMs, getRefetchInterval, METRIC_TIPS } from '../../helpers';
-import { Tip } from '../../../../shared/ui/feedback/Tip';
-import { relativeTime } from '../../../../utils/formatting';
+import { api } from '../../../../api/client.ts';
+import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
+import type { RuntimeOpsDocumentRow, RuntimeOpsDocumentDetailResponse } from '../../types.ts';
+import { statusBadgeClass, formatBytes, truncateUrl, formatMs, getRefetchInterval, METRIC_TIPS } from '../../helpers.ts';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
+import { relativeTime } from '../../../../utils/formatting.ts';
 
 interface DocumentsTabProps {
   documents: RuntimeOpsDocumentRow[];

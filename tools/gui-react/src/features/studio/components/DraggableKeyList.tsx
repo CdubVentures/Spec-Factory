@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { validateNewGroupTs } from '../state/keyUtils';
+import { validateNewGroupTs } from '../state/keyUtils.ts';
 import {
   DndContext,
   closestCenter,

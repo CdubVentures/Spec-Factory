@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runSearchProviders } from '../searchProviders.js';
-import { makeJsonResponse, makeSearchConfig } from '../../../../../test/helpers/searchProviderHarness.js';
+import { makeJsonResponse, makeSearchConfig } from './helpers/searchProviderHarness.js';
 
 test('runSearchProviders with searchEngines sends one fetch with engines param', async () => {
   const originalFetch = global.fetch;

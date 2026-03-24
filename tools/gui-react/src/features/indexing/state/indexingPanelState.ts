@@ -1,4 +1,4 @@
-import { DEFAULT_PANEL_COLLAPSED, PANEL_KEYS, type PanelKey } from '../types';
+import { DEFAULT_PANEL_COLLAPSED, PANEL_KEYS, type PanelKey } from '../types.ts';
 
 export function deriveIndexingPanelCollapsed(collapseValues: Record<string, boolean>) {
   const result = {} as Record<PanelKey, boolean>;

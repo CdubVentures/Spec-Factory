@@ -1,8 +1,8 @@
-import type { SearchPlanPass } from '../../types';
-import { resolveLlmReasonBadge } from '../../badgeRegistries';
-import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader';
-import { Chip } from '../../../../shared/ui/feedback/Chip';
-import { normalizeToken, normalizeQuery, planReason } from './searchPlannerHelpers';
+import type { SearchPlanPass } from '../../types.ts';
+import { resolveLlmReasonBadge } from '../../badgeRegistries.ts';
+import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { normalizeToken, normalizeQuery, planReason } from './searchPlannerHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 

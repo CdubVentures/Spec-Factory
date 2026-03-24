@@ -1,12 +1,12 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { pct } from '../../../utils/formatting';
-import { isKeyReviewLanePending } from '../../../utils/keyReview';
-import { InlineCellEditor } from '../../../components/common/InlineCellEditor';
-import { ReviewValueCell } from '../../../components/common/ReviewValueCell';
-import { FlagIcon } from '../../../components/common/FlagIcon';
-import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review';
+import { pct } from '../../../utils/formatting.ts';
+import { isKeyReviewLanePending } from '../../../utils/keyReview.ts';
+import { InlineCellEditor } from '../../../components/common/InlineCellEditor.tsx';
+import { ReviewValueCell } from '../../../components/common/ReviewValueCell.tsx';
+import { FlagIcon } from '../../../components/common/FlagIcon.tsx';
+import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
   layout: ReviewLayout;
