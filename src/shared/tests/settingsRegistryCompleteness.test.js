@@ -46,7 +46,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('registry is a frozen non-empty array', () => {
     ok(Array.isArray(RUNTIME_SETTINGS_REGISTRY));
     ok(Object.isFrozen(RUNTIME_SETTINGS_REGISTRY));
-    ok(RUNTIME_SETTINGS_REGISTRY.length >= 90, `expected >= 90, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
+    ok(RUNTIME_SETTINGS_REGISTRY.length >= 85, `expected >= 85, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
   });
 
   it('every entry has a unique key', () => {
@@ -180,15 +180,11 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
 
   // --- Known aliases ---
 
-  it('known cfgKey aliases exist in registry', () => {
-    const KNOWN_ALIASES = {
-      resumeMode: 'indexingResumeMode',
-      resumeWindowHours: 'indexingResumeMaxAgeHours',
-    };
-    for (const [key, cfgKey] of Object.entries(KNOWN_ALIASES)) {
+  it('known cfgKey aliases no longer include retired resume settings', () => {
+    const RETIRED_ALIASES = ['resumeMode', 'resumeWindowHours'];
+    for (const key of RETIRED_ALIASES) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
-      ok(entry, `alias key ${key} not found in registry`);
-      strictEqual(entry.configKey, cfgKey, `${key} configKey mismatch: expected ${cfgKey}, got ${entry.configKey}`);
+      ok(!entry, `retired alias key ${key} should not be in registry`);
     }
   });
 
@@ -207,7 +203,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('total registry count baseline', () => {
     const total = RUNTIME_SETTINGS_REGISTRY.length;
     // WHY: Lock down the count so adding/removing entries requires updating this test.
-    ok(total >= 90 && total <= 110, `expected 90-110 entries, got ${total}`);
+    ok(total >= 85 && total <= 110, `expected 85-110 entries, got ${total}`);
   });
 
   it('type distribution baseline', () => {
@@ -216,7 +212,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       counts[entry.type] = (counts[entry.type] || 0) + 1;
     }
     ok(counts.string >= 25, `expected >= 25 strings, got ${counts.string}`);
-    ok(counts.int >= 35, `expected >= 35 ints, got ${counts.int}`);
+    ok(counts.int >= 32, `expected >= 32 ints, got ${counts.int}`);
     ok(counts.float >= 5, `expected >= 5 floats, got ${counts.float}`);
     ok(counts.bool >= 17, `expected >= 17 bools, got ${counts.bool}`);
     ok(counts.enum >= 3, `expected >= 3 enums, got ${counts.enum}`);

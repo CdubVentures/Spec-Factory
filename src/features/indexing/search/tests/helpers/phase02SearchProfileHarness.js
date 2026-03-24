@@ -7,7 +7,7 @@ import {
   buildTier2Queries,
   buildTier3Queries,
 } from '../../../pipeline/searchProfile/queryBuilder.js';
-import { normalizeQueryRows } from '../../../../../research/queryPlanner.js';
+import { normalizeQueryRows } from '../../../pipeline/searchPlanner/queryPlanner.js';
 
 export {
   buildDeterministicAliases,

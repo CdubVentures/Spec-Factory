@@ -2,7 +2,7 @@
 // Receives tier-tagged query_rows from Search Profile, enhances query strings via LLM.
 // Tier metadata (tier, hint_source, group_key, normalized_key, target_fields) is passthrough.
 
-import { enhanceQueryRows } from '../../../../research/queryPlanner.js';
+import { enhanceQueryRows } from './queryPlanner.js';
 import { toArray } from '../shared/discoveryIdentity.js';
 
 /**

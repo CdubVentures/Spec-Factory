@@ -287,13 +287,14 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
     strictEqual(derived.llmModelReasoning, 'deepseek-reasoner');
     strictEqual(derived.maxRunSeconds, 480);
     strictEqual(derived.autoScrollEnabled, true);
-    strictEqual(derived.resumeMode, 'auto');
     strictEqual(derived.discoveryEnabled, true);
   });
 
-  it('cfgKey aliases are emitted under both names', () => {
-    strictEqual(derived.resumeMode, derived.indexingResumeMode);
-    strictEqual(derived.resumeWindowHours, derived.indexingResumeMaxAgeHours);
+  it('retired resume aliases are no longer emitted', () => {
+    ok(!('resumeMode' in derived));
+    ok(!('indexingResumeMode' in derived));
+    ok(!('resumeWindowHours' in derived));
+    ok(!('indexingResumeMaxAgeHours' in derived));
   });
 
   it('google search keys from registry appear in derived (gap closed)', () => {
@@ -304,7 +305,7 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
 
   it('deriveOptionValues produces correct enum options', () => {
     const options = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
-    deepStrictEqual([...options.resumeMode], ['auto', 'force_resume', 'start_over']);
+    ok(!options.resumeMode, 'retired resumeMode should not appear in options');
     deepStrictEqual([...options.repairDedupeRule], ['domain_once', 'domain_and_status', 'none']);
     ok(options.searchEngines.includes('google'));
   });

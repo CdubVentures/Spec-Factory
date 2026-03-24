@@ -84,7 +84,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'searchEngines',
       'searxngBaseUrl',
       'llmModelPlan', 'llmModelReasoning',
-      'resumeMode',
     ];
     for (const key of STRING_KEYS) {
       assert.equal(typeof body[key], 'string', `expected string for ${key}, got ${typeof body[key]}`);
@@ -93,7 +92,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const INT_KEYS = [
       'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
       'llmMaxOutputTokensPlanFallback',
-      'resumeWindowHours',
       'crawleeRequestHandlerTimeoutSecs',
       'autoScrollPasses', 'autoScrollDelayMs', 'robotsTxtTimeoutMs',
       'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
@@ -121,6 +119,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'disableGoogleCse',
       'cseRescueOnlyMode',
       'cseRescueRequiredIteration',
+      'phase3LlmTriageEnabled',
+      'llmSerpRerankEnabled',
     ];
     for (const key of RETIRED_KEYS) {
       assert.equal(Object.hasOwn(body, key), false, `retired key should not be surfaced: ${key}`);
@@ -141,6 +141,16 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     assert.equal(Object.hasOwn(body, 'bingSearchEndpoint'), false, 'retired bingSearchEndpoint should stay removed');
+  });
+
+  await t.test('GET /convergence-settings does not surface retired stage-2 knobs', async () => {
+    const res = await fetch(`${_baseUrl}/convergence-settings`);
+    assert.equal(res.status, 200, `unexpected status ${res.status} stderr=${stderr}`);
+    const body = await res.json();
+
+    assert.equal(typeof body, 'object');
+    assert.equal(Array.isArray(body), false);
+    assert.equal(Object.hasOwn(body, 'serpTriageEnabled'), false, 'retired convergence key should not be surfaced');
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
@@ -194,7 +204,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT validates active string enums', async () => {
-    const payload = { searchEngines: 'invalid_provider', resumeMode: 'bogus' };
+    const payload = { searchEngines: 'invalid_provider' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -202,9 +212,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.ok(body.rejected);
     assert.equal(body.applied.searchEngines, '');
-    assert.equal(body.rejected.resumeMode, 'invalid_enum');
   });
 
   await t.test('PUT with empty body returns ok with empty applied', async () => {

@@ -29,4 +29,4 @@ Proof log:
 | --- | --- |
 | Targeted review lane API tests | `node --test src/features/review/api/tests/reviewLaneReadContracts.test.js src/features/review/api/tests/reviewLaneGridContracts.test.js src/features/review/api/tests/reviewLaneComponentContracts.test.js src/features/review/api/tests/reviewLaneEnumContracts.test.js src/features/review/api/tests/reviewLaneGuardContracts.test.js` -> pass |
 | Surrounding review API tests | `node --test src/features/review/api/tests/*.test.js` -> pass |
-| Full suite | `npm test` -> fail outside scope in `src/app/cli/commands/tests/queueCommand.test.js`, `src/core/config/tests/*`, `src/features/settings-authority/tests/runtimeSettingsValueTypesSsot.test.js`, and `src/shared/tests/settingsRegistry*.test.js` |
+| Full suite | `npm test` passed |

@@ -14,7 +14,6 @@ import {
 // Grouped by reason — see configBuilder.js for the actual logic.
 export const CUSTOM_KEYS = Object.freeze(new Set([
   // Post-processed strings (.replace, .trim, .toLowerCase)
-  'indexingResumeMode',
   'capturePageScreenshotFormat', 'capturePageScreenshotSelectors',
 
   // Computed from multi-env chains or earlier variables
@@ -73,8 +72,7 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   // Chatmock (path.join computation)
   'chatmockDir', 'chatmockComposeFile',
 
-  // Resume persist limits (hardcoded, no runtimeSettingDefault)
-  'indexingResumeRetryPersistLimit', 'indexingResumeSuccessPersistLimit',
+  // Reextract + schema packets (hardcoded, no runtimeSettingDefault)
   'indexingReextractSeedLimit',
   'indexingSchemaPacketsSchemaRoot',
 

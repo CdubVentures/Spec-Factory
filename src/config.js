@@ -41,8 +41,7 @@ export function loadConfigWithUserSettings(overrides = {}) {
       // WHY: Use the alias-aware resolver to overlay snapshot settings onto config.
       // Snapshot values win for all keys because they represent the exact editor state
       // at the moment the user clicked Start. applySnapshotToConfig maps setting keys
-      // (fetchConcurrency, resumeMode, etc.) to config keys (concurrency,
-      // indexingResumeMode, etc.) so runtime consumers read the correct values.
+      // (e.g. setting keys to config keys) so runtime consumers read the correct values.
       applySnapshotToConfig(config, snapshot.settings || {});
       // WHY: applyRuntimeSettingsToConfig handles dual-key sync + phase override
       // re-resolution. We call it with the snapshot settings to ensure _resolved*

@@ -71,7 +71,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
     deepseekApiKey: '',
     llmPlanProvider: '',
     llmPlanBaseUrl: '',
-    resumeMode: 'auto',
     runtimeSettingsFallbackBaseline: new Proxy({}, { get: () => 0 }),
     resolveModelTokenDefaults: () => ({ max_output_tokens: 4096, default_output_tokens: 2048 }),
   };

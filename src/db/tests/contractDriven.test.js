@@ -24,8 +24,8 @@ import {
   buildValidationChecks,
   getScenarioDefs,
 } from '../../testing/testDataProvider.js';
-import { buildProductReviewPayload } from '../../review/reviewGridData.js';
-import { buildComponentReviewPayloads, buildEnumReviewPayloads } from '../../review/componentReviewData.js';
+import { buildProductReviewPayload } from '../../features/review/domain/reviewGridData.js';
+import { buildComponentReviewPayloads, buildEnumReviewPayloads } from '../../features/review/domain/componentReviewData.js';
 
 const CATEGORY = 'mouse';
 const HELPER_ROOT = path.resolve('category_authority');

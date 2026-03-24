@@ -35,9 +35,11 @@ describe('cfgKey → configKey Unification Contract', () => {
     }
   });
 
-  it('deriveRuntimeDefaults still emits dual keys for key≠configKey entries', () => {
+  it('retired resume dual keys are no longer emitted', () => {
     const derived = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(derived.resumeMode, derived.indexingResumeMode, 'resumeMode !== indexingResumeMode');
-    strictEqual(derived.resumeWindowHours, derived.indexingResumeMaxAgeHours);
+    ok(!('resumeMode' in derived), 'retired resumeMode should not be in derived defaults');
+    ok(!('indexingResumeMode' in derived), 'retired indexingResumeMode should not be in derived defaults');
+    ok(!('resumeWindowHours' in derived), 'retired resumeWindowHours should not be in derived defaults');
+    ok(!('indexingResumeMaxAgeHours' in derived), 'retired indexingResumeMaxAgeHours should not be in derived defaults');
   });
 });

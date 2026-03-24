@@ -6,11 +6,11 @@ import { createStorage } from '../../../../s3/storage.js';
 import {
   buildProductReviewPayload,
   buildFieldState,
-} from '../../../../review/reviewGridData.js';
+} from '../../domain/reviewGridData.js';
 import {
   buildComponentReviewPayloads,
   buildEnumReviewPayloads,
-} from '../../../../review/componentReviewData.js';
+} from '../../domain/componentReviewData.js';
 
 export {
   buildProductReviewPayload,

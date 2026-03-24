@@ -101,7 +101,7 @@ describe('brandResolver', () => {
   });
 
   it('resolved aliases flow through selectManufacturerHosts', async () => {
-    const { buildSearchProfile } = await import('../../../search/queryBuilder.js');
+    const { buildSearchProfile } = await import('../../../search/index.js');
     const profile = buildSearchProfile({
       job: {
         identityLock: { brand: 'Cougar', model: 'AirBlader Tournament', variant: '' },

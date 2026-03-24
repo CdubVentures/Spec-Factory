@@ -23,4 +23,4 @@ Proof log:
 | --- | --- |
 | Targeted component-impact tests | `node --test src/features/review/domain/tests/componentImpact.referenceLookup.test.js src/features/review/domain/tests/componentImpact.authoritativeCascade.test.js src/features/review/domain/tests/componentImpact.overrideAllowedCascade.test.js src/features/review/domain/tests/componentImpact.enumCascade.test.js` -> pass |
 | Surrounding review domain tests | `node --test src/features/review/domain/tests/*.test.js` -> pass |
-| Full suite | `npm test` -> fail outside scope in queue/config/settings-registry areas |
+| Full suite | `npm test` passed |

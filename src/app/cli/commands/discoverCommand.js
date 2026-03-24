@@ -3,7 +3,7 @@ import { configValue } from '../../../shared/settingsAccessor.js';
 
 export function createDiscoverCommand({
   loadCategoryConfig,
-  discoverCandidateSources,
+  runDiscoverySeedPlan,
   EventLogger,
   buildRunId,
 }) {
@@ -24,18 +24,16 @@ export function createDiscoverCommand({
     for (const key of keys) {
       const job = await storage.readJson(key);
       const runId = buildRunId();
-      const result = await discoverCandidateSources({
-        config: {
-          ...config,
-          discoveryEnabled: true,
-        },
+      const result = await runDiscoverySeedPlan({
+        config,
         storage,
+        category,
         categoryConfig,
         job,
         runId,
         logger,
-        planningHints: {
-          missingCriticalFields: categoryConfig.schema?.critical_fields || [],
+        roundContext: {
+          missing_critical_fields: categoryConfig.schema?.critical_fields || [],
         },
       });
 

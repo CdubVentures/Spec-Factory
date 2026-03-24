@@ -19,8 +19,6 @@ export function buildPreviousFieldHistories(roundResult) {
   return result;
 }
 
-// Re-exports for backward compatibility (consumed by tests and other modules)
-export { normalizeFieldContractToken, calcProgressDelta, isIdentityOrEditorialField } from './convergenceHelpers.js';
 
 export async function runUntilComplete({
   storage,

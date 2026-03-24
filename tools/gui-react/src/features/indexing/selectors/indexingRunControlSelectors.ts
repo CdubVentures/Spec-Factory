@@ -1,25 +1,7 @@
-import {
-  parseRuntimeInt,
-  type RuntimeSettingsNumericBaseline,
-} from '../../pipeline-settings/index.ts';
-import type { RuntimeResumeMode } from '../../../stores/settingsManifest.ts';
+// WHY: Resume settings (resumeMode, resumeWindowHours) have been retired from
+// the registry. This module is preserved as an empty shell to avoid breaking
+// imports. The deriveRunControlPayload function now returns an empty object.
 
-interface DeriveRunControlPayloadInput {
-  runtimeSettingsBaseline: RuntimeSettingsNumericBaseline;
-  resumeMode: RuntimeResumeMode;
-  values: Record<string, unknown>;
-}
-
-export function deriveRunControlPayload(input: DeriveRunControlPayloadInput) {
-  const { runtimeSettingsBaseline, resumeMode } = input;
-  const {
-    resumeWindowHours,
-  } = input.values;
-  const parsedResumeWindowHours = parseRuntimeInt(resumeWindowHours, runtimeSettingsBaseline.resumeWindowHours);
-  return {
-    resumeMode,
-    resumeWindowHours: Number.isFinite(parsedResumeWindowHours) && parsedResumeWindowHours >= 0
-      ? parsedResumeWindowHours
-      : runtimeSettingsBaseline.resumeWindowHours,
-  };
+export function deriveRunControlPayload(_input: Record<string, unknown>) {
+  return {};
 }

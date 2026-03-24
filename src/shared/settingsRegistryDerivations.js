@@ -4,9 +4,8 @@
 /**
  * Derive the runtime defaults object from registry.
  * Produces: { [configKey]: default } for every entry.
- * WHY: When an alias exists (configKey != key), BOTH forms are emitted to match
- * the existing SETTINGS_DEFAULTS.runtime shape where both `resumeMode` and
- * `indexingResumeMode` coexist with identical values.
+ * WHY: When an alias exists (configKey != key), BOTH forms are emitted so
+ * downstream consumers can read either name with identical values.
  */
 export function deriveRuntimeDefaults(registry) {
   const defaults = {};

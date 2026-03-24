@@ -24,6 +24,6 @@ Proof log:
 
 | Step | Result |
 | --- | --- |
-| Targeted component-review metadata tests | Pending |
-| Surrounding review domain tests | Pending |
-| Full suite | Pending |
+| Targeted component-review metadata tests | `node --test src/features/review/domain/tests/componentReviewDataLaneState.fieldMeta.test.js src/features/review/domain/tests/componentReviewDataLaneState.payloadMetadata.test.js src/features/review/domain/tests/componentReviewDataLaneState.varianceMetadata.test.js` passed |
+| Surrounding review domain tests | `node --test src/features/review/domain/tests/*.test.js` passed |
+| Full suite | `npm test` passed |

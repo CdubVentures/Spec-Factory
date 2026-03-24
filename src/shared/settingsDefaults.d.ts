@@ -40,7 +40,6 @@ export declare const SETTINGS_OPTION_VALUES: {
     fetcherAdapter: readonly string[];
     pipelineSchemaEnforcementMode: readonly string[];
     repairDedupeRule: readonly string[];
-    resumeMode: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];
   }>;

@@ -69,8 +69,6 @@ describe('settingsDefaults.runtime — characterization', () => {
   });
 
   it('contains only the current live alias pairs', () => {
-    strictEqual(runtime.resumeMode, runtime.indexingResumeMode);
-    strictEqual(runtime.resumeWindowHours, runtime.indexingResumeMaxAgeHours);
     strictEqual(Object.hasOwn(runtime, 'fetchConcurrency'), false);
     strictEqual(Object.hasOwn(runtime, 'reextractAfterHours'), false);
     strictEqual(Object.hasOwn(runtime, 'reextractIndexed'), false);
@@ -126,7 +124,6 @@ describe('settingsClampingRanges — characterization', () => {
   it('STRING_ENUM_MAP csv flags are correct', () => {
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.searchEngines.csv, true);
     strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.searchEnginesFallback.csv, true);
-    strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.csv, undefined);
   });
 });
 
@@ -180,8 +177,6 @@ describe('RUNTIME_SETTINGS_ROUTE_GET — characterization', () => {
   });
 
   it('known live aliases are correct in GET', () => {
-    strictEqual(RUNTIME_SETTINGS_ROUTE_GET.stringMap.resumeMode, 'indexingResumeMode');
-    strictEqual(RUNTIME_SETTINGS_ROUTE_GET.intMap.resumeWindowHours, 'indexingResumeMaxAgeHours');
     strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'fetchConcurrency'), false);
     strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.intMap, 'reextractAfterHours'), false);
     strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_GET.boolMap, 'reextractIndexed'), false);
@@ -233,8 +228,6 @@ describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
   });
 
   it('known live aliases are correct in PUT', () => {
-    strictEqual(SETTINGS_CLAMPING_STRING_ENUM_MAP.resumeMode.configKey, 'indexingResumeMode');
-    strictEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.resumeWindowHours.configKey, 'indexingResumeMaxAgeHours');
     strictEqual(Object.hasOwn(SETTINGS_CLAMPING_INT_RANGE_MAP, 'fetchConcurrency'), false);
     strictEqual(Object.hasOwn(SETTINGS_CLAMPING_INT_RANGE_MAP, 'reextractAfterHours'), false);
     strictEqual(Object.hasOwn(RUNTIME_SETTINGS_ROUTE_PUT.boolMap, 'reextractIndexed'), false);

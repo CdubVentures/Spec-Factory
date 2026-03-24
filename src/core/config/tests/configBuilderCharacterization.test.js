@@ -72,7 +72,7 @@ describe('configBuilder characterization contract', () => {
       'llmPhaseOverridesJson', 'llmProviderRegistryJson',
       'openaiApiKey', 'openaiBaseUrl', 'openaiModelExtract', 'openaiModelPlan', 'openaiModelWrite',
       'specDbDir', 'repairDedupeRule',
-      'indexingResumeMode', 'runtimeControlFile', 'runtimeScreenshotMode',
+      'runtimeControlFile', 'runtimeScreenshotMode',
       'accuracyMode',
       'chatmockDir', 'chatmockComposeFile', 'categoryAuthorityRoot',
       'automationQueueStorageEngine',

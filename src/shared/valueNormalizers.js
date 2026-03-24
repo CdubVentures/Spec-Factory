@@ -124,3 +124,39 @@ export function addTokensFromText(set, value) {
     }
   }
 }
+
+export function parseNumber(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const match = String(value).replace(/,/g, '.').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number.parseFloat(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function splitListValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  }
+  return String(value || '')
+    .split(/[,;|\/]+/)
+    .map((part) => String(part || '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
+export function extractRootDomain(hostname) {
+  const host = (hostname || '').toLowerCase();
+  const parts = host.split('.').filter(Boolean);
+  if (parts.length <= 2) return host;
+  return parts.slice(-2).join('.');
+}
+
+const LOW_VALUE_SUBDOMAIN_PREFIXES = new Set([
+  'mysupport', 'support', 'help', 'community', 'forum', 'forums',
+  'status', 'blog', 'careers', 'jobs', 'investor', 'ir',
+]);
+
+export function isLowValueSubdomain(host) {
+  const parts = String(host || '').toLowerCase().split('.');
+  return parts.length > 2 && LOW_VALUE_SUBDOMAIN_PREFIXES.has(parts[0]);
+}

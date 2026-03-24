@@ -6,7 +6,7 @@ import { createDiscoverCommand } from '../discoverCommand.js';
 function createDeps(overrides = {}) {
   return {
     loadCategoryConfig: async () => ({ schema: { critical_fields: ['dpi', 'sensor'] } }),
-    discoverCandidateSources: async ({ job, runId }) => ({
+    runDiscoverySeedPlan: async ({ job, runId }) => ({
       candidatesKey: `_discovery/${runId}/${job.productId}.json`,
       candidates: [{ url: 'https://example.com/product' }],
     }),
@@ -56,7 +56,7 @@ test('discover command applies brand filter and returns selected run summaries',
 
   const commandDiscover = createDiscoverCommand(createDeps({
     EventLogger: EventLoggerRecorder,
-    discoverCandidateSources: async (payload) => {
+    runDiscoverySeedPlan: async (payload) => {
       discoverCalls.push(payload);
       return {
         candidatesKey: `_discovery/${payload.runId}.json`,
@@ -74,8 +74,7 @@ test('discover command applies brand filter and returns selected run summaries',
   });
 
   assert.equal(discoverCalls.length, 1);
-  assert.equal(discoverCalls[0].config.discoveryEnabled, true);
-  assert.deepEqual(discoverCalls[0].planningHints, { missingCriticalFields: ['dpi', 'sensor'] });
+  assert.deepEqual(discoverCalls[0].roundContext, { missing_critical_fields: ['dpi', 'sensor'] });
 
   assert.equal(loggerInstances.length, 1);
   assert.equal(loggerInstances[0].flushCount, 1);

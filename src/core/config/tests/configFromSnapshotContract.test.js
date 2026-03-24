@@ -28,16 +28,6 @@ describe('resolveEffectiveRuntimeConfig contract', () => {
     strictEqual(patches[0].source, 'snapshot');
   });
 
-  it('applySnapshotToConfig remaps aliased keys onto the config keys consumers read', () => {
-    const config = { indexingResumeMode: 'auto' };
-    const patches = applySnapshotToConfig(config, { resumeMode: 'force_resume' });
-
-    strictEqual(config.indexingResumeMode, 'force_resume');
-    strictEqual(config.resumeMode, 'force_resume');
-    ok(patches.length === 1);
-    strictEqual(patches[0].configKey, 'indexingResumeMode');
-  });
-
   it('applySnapshotToConfig ignores nullish values', () => {
     const config = { maxRunSeconds: 300 };
     const patches = applySnapshotToConfig(config, {
@@ -62,15 +52,12 @@ describe('resolveEffectiveRuntimeConfig contract', () => {
 
   it('isRegistrySetting identifies known settings only', () => {
     ok(isRegistrySetting('autoScrollEnabled'));
-    ok(isRegistrySetting('resumeMode'));
     ok(isRegistrySetting('llmModelPlan'));
     ok(!isRegistrySetting('notARealSetting'));
     ok(!isRegistrySetting(''));
   });
 
   it('getConfigKey returns the effective config key for aliased entries', () => {
-    strictEqual(getConfigKey('resumeMode'), 'indexingResumeMode');
-    strictEqual(getConfigKey('resumeWindowHours'), 'indexingResumeMaxAgeHours');
     strictEqual(getConfigKey('autoScrollEnabled'), 'autoScrollEnabled');
   });
 });
@@ -106,8 +93,6 @@ function createSnapshotHarness(settings = {}) {
 describe('loadConfigWithUserSettings snapshot contract', () => {
   it('remaps alias keys from the snapshot onto the consumer-facing config surface', () => {
     const harness = createSnapshotHarness({
-      resumeMode: 'force_resume',
-      resumeWindowHours: 72,
       maxRunSeconds: 600,
       autoScrollEnabled: false,
     });
@@ -115,11 +100,8 @@ describe('loadConfigWithUserSettings snapshot contract', () => {
     try {
       const config = loadConfigWithUserSettings();
 
-      strictEqual(config.indexingResumeMode, 'force_resume');
-      strictEqual(config.indexingResumeMaxAgeHours, 72);
       strictEqual(config.maxRunSeconds, 600);
       strictEqual(config.autoScrollEnabled, false);
-      strictEqual(config.resumeMode, 'force_resume');
     } finally {
       harness.cleanup();
     }

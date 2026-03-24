@@ -49,8 +49,6 @@ import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 import { recordPromptResult } from '../../features/indexing/pipeline/shared/index.js';
 import { appendCostLedgerEntry } from '../../billing/costLedger.js';
-import { initializeIndexingResume } from './initializeIndexingResume.js';
-
 const DEFAULT_DEPS = {
   loadCategoryConfigFn: loadCategoryConfig,
   buildIndexlabRuntimeCategoryConfigFn: buildIndexlabRuntimeCategoryConfig,
@@ -60,7 +58,6 @@ const DEFAULT_DEPS = {
   loadSourceIntelFn: loadSourceIntel,
   SourcePlannerClass: SourcePlanner,
   applyRuntimeOverridesToPlannerFn: applyRuntimeOverridesToPlanner,
-  initializeIndexingResumeFn: initializeIndexingResume,
   loadLearningProfileFn: loadLearningProfile,
   applyLearningSeedsFn: applyLearningSeeds,
   readBillingSnapshotFn: readBillingSnapshot,
@@ -157,16 +154,6 @@ export async function bootstrapRunProductExecutionState({
     createSourcePlannerFn: (...args) => new runtimeDeps.SourcePlannerClass(...args),
     syncRuntimeOverridesFn: syncRuntimeOverrides,
     applyRuntimeOverridesToPlannerFn: runtimeDeps.applyRuntimeOverridesToPlannerFn,
-  });
-
-  const indexingResumeState = await runtimeDeps.initializeIndexingResumeFn({
-    storage,
-    config,
-    category,
-    productId,
-    logger,
-    planner,
-    frontierDb,
   });
 
   const learningProfile = await runtimeDeps.loadLearningProfileFn({

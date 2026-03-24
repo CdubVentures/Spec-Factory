@@ -10,7 +10,7 @@ import _p4aPath from 'node:path';
 import _p4aFs from 'node:fs';
 import { recordQueryResult as _p4aRecordQueryResult } from '../shared/queryIndex.js';
 import { defaultIndexLabRoot as _p4aDefaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
-import { runSearchProviders as _defaultRunSearchProviders } from '../../search/searchProviders.js';
+import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../../intel/sourceCorpus.js';
 import { configValue } from '../../../../shared/settingsAccessor.js';
 import {

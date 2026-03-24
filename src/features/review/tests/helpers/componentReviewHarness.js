@@ -9,8 +9,8 @@ import {
   buildComponentReviewPayloads,
   buildEnumReviewPayloads,
   resolvePropertyFieldMeta,
-} from '../../../../review/componentReviewData.js';
-import { applySharedLaneState } from '../../../../review/keyReviewState.js';
+} from '../../domain/componentReviewData.js';
+import { applySharedLaneState } from '../../domain/keyReviewState.js';
 
 export const CATEGORY = 'mouse';
 

@@ -2,7 +2,6 @@ import { SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.
 
 import type {
   RuntimeRepairDedupeRule,
-  RuntimeResumeMode,
   SearxngEngine,
 } from './runtimeSettingsManifestTypes.ts';
 
@@ -25,10 +24,6 @@ export const RUNTIME_SEARCH_TRIPLE_HELP =
 
 export const RUNTIME_SEARCH_FALLBACK_HELP =
   'Backup engine. Tried only if primary + dual + triple return zero usable results or all results are garbage-filtered.';
-
-export const RUNTIME_RESUME_MODE_OPTIONS = Object.freeze(
-  [...SETTINGS_OPTION_VALUES.runtime.resumeMode] as RuntimeResumeMode[],
-);
 
 export const RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS = Object.freeze(
   [...SETTINGS_OPTION_VALUES.runtime.repairDedupeRule] as RuntimeRepairDedupeRule[],

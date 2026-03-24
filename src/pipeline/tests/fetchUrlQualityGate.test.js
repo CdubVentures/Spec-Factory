@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { dedupeSerpResults } from '../../features/indexing/search/serpDedupe.js';
+import { dedupeSerpResults } from '../../features/indexing/pipeline/searchExecution/serpDedupe.js';
 import { validateFetchUrl, isLowValueHost } from '../urlQualityGate.js';
 
 // ---------------------------------------------------------------------------

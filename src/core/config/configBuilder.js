@@ -142,7 +142,6 @@ export function buildRawConfig({ manifestApplicator }) {
     ...simpleCfg,
 
     // --- Post-processed strings ---
-    indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode')).trim().toLowerCase(),
     batchStrategy: 'bandit',
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',
     capturePageScreenshotSelectors: String(process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS || 'table,[data-spec-table],.specs-table,.spec-table,.specifications').trim(),
@@ -259,8 +258,6 @@ export function buildRawConfig({ manifestApplicator }) {
     helperAutoSeedTargets: true,
     helperActiveSyncLimit: 0,
     daemonGracefulShutdownTimeoutMs: 60000,
-    indexingResumeRetryPersistLimit: parseIntEnv('INDEXING_RESUME_RETRY_PERSIST_LIMIT', 80),
-    indexingResumeSuccessPersistLimit: parseIntEnv('INDEXING_RESUME_SUCCESS_PERSIST_LIMIT', 240),
     indexingReextractSeedLimit: parseIntEnv('INDEXING_REEXTRACT_SEED_LIMIT', 8),
     indexingSchemaPacketsSchemaRoot: process.env.INDEXING_SCHEMA_PACKETS_SCHEMA_ROOT || '',
   };

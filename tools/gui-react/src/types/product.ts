@@ -85,24 +85,6 @@ export interface NormalizedProduct {
   fields: Record<string, unknown>;
 }
 
-export interface ProvenanceRow {
-  value: unknown;
-  confidence: number;
-  pass_target?: number;
-  approved_confirmations?: number;
-  meets_pass_target?: boolean;
-  evidence?: Array<{
-    url: string;
-    host: string;
-    rootDomain: string;
-    tier: number;
-    tierName: string;
-    method: string;
-    keyPath: string;
-    approvedDomain: boolean;
-  }>;
-}
-
 export interface TrafficLight {
   color: 'green' | 'yellow' | 'red' | 'gray';
   field: string;

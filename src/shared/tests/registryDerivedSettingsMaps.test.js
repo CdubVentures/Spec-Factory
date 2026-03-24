@@ -60,8 +60,6 @@ describe('registry-derived settings maps — characterization', () => {
     const enumMap = deriveEnumMap(RUNTIME_SETTINGS_REGISTRY);
     ok(enumMap.searchEngines.includes('google'));
     ok(enumMap.searchEngines.includes('google-proxy'));
-    ok(enumMap.resumeMode.includes('auto'));
-    ok(enumMap.resumeMode.includes('force_resume'));
     ok(enumMap.repairDedupeRule.includes('domain_once'));
   });
 
@@ -105,8 +103,6 @@ describe('registry-derived settings maps — characterization', () => {
       'llmMaxTokens', 'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M',
       'llmCostCachedInputPer1M',
       'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
-      'indexingResumeSeedLimit', 'indexingResumePersistLimit',
-      'resumeWindowHours',
       'llmMaxOutputTokensReasoningFallback',
       'googleSearchTimeoutMs', 'googleSearchMinQueryIntervalMs', 'googleSearchMaxRetries',
       'searchMaxRetries', 'serpSelectorUrlCap', 'domainClassifierUrlCap',

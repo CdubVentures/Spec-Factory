@@ -2,7 +2,6 @@
 // Run: node tools/gui-react/scripts/generateManifestTypes.js
 
 export type RuntimeRepairDedupeRule = 'domain_once' | 'domain_and_status' | 'none';
-export type RuntimeResumeMode = 'auto' | 'force_resume' | 'start_over';
 
 export interface RuntimeSettingDefaults {
   anthropicApiKey: string;
@@ -33,8 +32,6 @@ export interface RuntimeSettingDefaults {
   googleSearchTimeoutMs: number;
   serperApiKey: string;
   serperEnabled: boolean;
-  indexingResumePersistLimit: number;
-  indexingResumeSeedLimit: number;
   llmEnhancerMaxRetries: number;
   llmBaseUrl: string;
   llmCostCachedInputPer1M: number;
@@ -73,10 +70,6 @@ export interface RuntimeSettingDefaults {
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
   repairDedupeRule: RuntimeRepairDedupeRule;
-  indexingResumeMode: RuntimeResumeMode;
-  resumeMode: RuntimeResumeMode;
-  indexingResumeMaxAgeHours: number;
-  resumeWindowHours: number;
   robotsTxtCompliant: boolean;
   robotsTxtTimeoutMs: number;
   runtimeControlFile: string;

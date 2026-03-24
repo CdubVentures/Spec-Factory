@@ -18,7 +18,6 @@ describe('buildSearchPlanningContext', () => {
         discoveryEnabled: true,
         searchProfileQueryCap: 10,
         maxPagesPerDomain: 3,
-        maxRunSeconds: 600,
         llmModelPlan: 'gpt-4o',
         llmProvider: 'openai',
         llmMaxOutputTokensPlan: 4096,
@@ -36,7 +35,8 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.domainClassifierUrlCap, 50);
       assert.equal(result.planner_limits.serpSelectorUrlCap, 50);
       assert.equal(result.planner_limits.maxPagesPerDomain, 3);
-      assert.equal(result.planner_limits.maxRunSeconds, 600);
+      // WHY: maxRunSeconds retired from planner_limits (runtime-only concern)
+      assert.equal(result.planner_limits.maxRunSeconds, undefined);
       assert.equal(result.planner_limits.llmModelPlan, 'gpt-4o');
       assert.equal(result.planner_limits.llmProvider, 'openai');
       assert.equal(result.planner_limits.llmMaxOutputTokensPlan, 4096);

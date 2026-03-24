@@ -16,7 +16,7 @@ import {
   ensureCategorySourceLookups,
 } from '../shared/helpers.js';
 import { extractRootDomain } from '../../../../utils/common.js';
-import { searchEngineAvailability } from '../../search/searchProviders.js';
+import { searchEngineAvailability } from '../searchExecution/searchProviders.js';
 import { executeSearchQueries } from '../searchExecution/executeSearchQueries.js';
 import { processDiscoveryResults } from '../resultProcessing/processDiscoveryResults.js';
 

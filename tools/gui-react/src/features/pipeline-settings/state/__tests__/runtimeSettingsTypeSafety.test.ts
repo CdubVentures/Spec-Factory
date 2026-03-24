@@ -10,11 +10,10 @@ function assertKnownKeys(s: RuntimeSettings) {
   // These must compile — proves autocomplete works for registry keys
   const _fc: string | number | boolean | undefined = s.maxPagesPerDomain;
   const _se: string | number | boolean | undefined = s.searchEngines;
-  const _rm: string | number | boolean | undefined = s.resumeMode;
   const _ak: string | number | boolean | undefined = s.anthropicApiKey;
 
   // Suppress unused-variable warnings
-  void _fc; void _se; void _rm; void _ak;
+  void _fc; void _se; void _ak;
 }
 
 // --- Happy: dynamic string key access compiles (Record tail) ---

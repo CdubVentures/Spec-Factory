@@ -1,6 +1,5 @@
-// WHY: Characterization tests for Search Profile (Stage 03) before Phase 4 refactoring.
-// Locks down: return shape, deterministic-only queries, focusGroups null fallback,
-// dead negative_terms field, and tier data flow.
+// WHY: Contract tests for the runSearchProfile wrapper. Query construction details
+// belong to buildSearchProfile tests; this file only protects the wrapper boundary.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -55,38 +54,46 @@ function makeBaseArgs(overrides = {}) {
   };
 }
 
-describe('Stage 03 Search Profile — Characterization', { concurrency: false }, () => {
-
-  it('#1 returns expected shape { searchProfileBase }', () => {
-    const result = runSearchProfile(makeBaseArgs());
+describe('Stage 03 Search Profile wrapper contract', { concurrency: false }, () => {
+  it('returns searchProfileBase and emits the planned profile event', () => {
+    const logger = createMockLogger();
+    const result = runSearchProfile(makeBaseArgs({ logger }));
 
     assert.ok(result.searchProfileBase, 'has searchProfileBase');
-    assert.ok(Array.isArray(result.searchProfileBase.queries), 'has queries array');
-    assert.ok(Array.isArray(result.searchProfileBase.query_rows), 'has query_rows array');
+    assert.ok(Array.isArray(result.searchProfileBase.queries), 'queries array is returned');
+    assert.ok(Array.isArray(result.searchProfileBase.query_rows), 'query_rows array is returned');
+
+    const emitted = logger.calls.info.find((call) => call.event === 'search_profile_generated');
+    assert.ok(emitted, 'search_profile_generated should be emitted');
+    assert.equal(emitted.payload.run_id, 'test-run');
+    assert.equal(emitted.payload.category, 'mouse');
+    assert.equal(emitted.payload.product_id, 'test-prod');
+    assert.equal(emitted.payload.source, 'deterministic');
+    assert.equal(emitted.payload.query_count, result.searchProfileBase.queries.length);
+    assert.equal(emitted.payload.alias_count, result.searchProfileBase.identity_aliases.length);
+    assert.equal(emitted.payload.query_rows.length, result.searchProfileBase.query_rows.length);
   });
 
-  it('#2 all queries are deterministic — no hint_source contains llm', () => {
-    const result = runSearchProfile(makeBaseArgs());
+  it('warns with the fallback reason when focus groups are missing', () => {
+    const logger = createMockLogger();
 
-    for (const row of result.searchProfileBase.query_rows) {
-      const source = String(row.hint_source || '');
-      assert.ok(!source.includes('llm'), `hint_source "${source}" should not contain llm`);
-    }
+    const result = runSearchProfile(makeBaseArgs({
+      focusGroups: null,
+      seedStatus: null,
+      logger,
+    }));
+
+    assert.ok(result.searchProfileBase, 'returns a profile when focus groups are missing');
+    assert.deepEqual(logger.calls.warn, [
+      {
+        event: 'search_profile_tier_fallback',
+        payload: { reason: 'focusGroups_null' },
+      },
+    ]);
   });
 
-  it('#3 focusGroups null → legacy archetype fallback, no crash', () => {
-    const result = runSearchProfile(makeBaseArgs({ focusGroups: null, seedStatus: null }));
-
-    assert.ok(result.searchProfileBase, 'returns valid profile');
-    assert.ok(result.searchProfileBase.queries.length >= 0, 'has queries (may be 0 with minimal config)');
-  });
-
-  it('#4 negative_terms removed from output (dead code deleted)', () => {
-    const result = runSearchProfile(makeBaseArgs());
-    assert.equal('negative_terms' in result.searchProfileBase, false, 'negative_terms should not exist');
-  });
-
-  it('#5 tier data flows through when focusGroups has worthy groups', () => {
+  it('does not emit the fallback warning when focus groups are present', () => {
+    const logger = createMockLogger();
     const focusGroups = [
       {
         key: 'sensor_performance',
@@ -97,33 +104,12 @@ describe('Stage 03 Search Profile — Characterization', { concurrency: false },
         unresolved_field_keys: ['sensor_model', 'dpi'],
         normalized_key_queue: [],
       },
-      {
-        key: 'physical',
-        label: 'Physical',
-        group_description_long: 'Weight and dimensions',
-        group_search_worthy: false,
-        productivity_score: 40,
-        unresolved_field_keys: ['weight'],
-        normalized_key_queue: [
-          { normalized_key: 'weight', repeat_count: 0, all_aliases: [], alias_shards: [], domain_hints: [], preferred_content_types: [], domains_tried_for_key: [], content_types_tried_for_key: [] },
-        ],
-      },
     ];
     const seedStatus = { specs_seed: { is_needed: true }, source_seeds: {} };
 
-    const result = runSearchProfile(makeBaseArgs({ focusGroups, seedStatus }));
-    const rows = result.searchProfileBase.query_rows;
+    const result = runSearchProfile(makeBaseArgs({ focusGroups, seedStatus, logger }));
 
-    const tier1Rows = rows.filter((r) => r.tier === 'seed');
-    const tier2Rows = rows.filter((r) => r.tier === 'group_search');
-    const tier3Rows = rows.filter((r) => r.tier === 'key_search');
-
-    assert.ok(tier1Rows.length > 0, 'should have tier1 seed queries');
-    assert.ok(tier2Rows.length > 0, 'should have tier2 group queries');
-    assert.ok(tier3Rows.length > 0, 'should have tier3 key queries');
-  });
-
-  it('#6 does not crash with minimal config', () => {
-    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs()));
+    assert.ok(result.searchProfileBase, 'returns a profile when focus groups are provided');
+    assert.deepEqual(logger.calls.warn, []);
   });
 });

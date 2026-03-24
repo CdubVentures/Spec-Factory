@@ -27,9 +27,9 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
   {
     id: 'flow',
     label: 'Runtime Flow',
-    subtitle: 'Run setup, timeouts, budgets, resume, output config',
+    subtitle: 'Run setup, timeouts, budgets, output config',
     sections: Object.freeze([
-      { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout, resume mode, seed limits, and persist limits' },
+      { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout and execution limits' },
       { id: 'output', label: 'Output & Automation', tip: 'Output destinations, artifact controls, and category authority' },
       { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
     ]),

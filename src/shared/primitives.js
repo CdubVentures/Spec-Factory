@@ -3,6 +3,7 @@
 // reviewNormalization, compileUtils, convergenceHelpers, runtimeOpsEventPrimitives)
 // must import from here instead of defining its own copy.
 
+import crypto from 'node:crypto';
 import { toFloat } from './valueNormalizers.js';
 
 export function clamp01(value, fallback = 0) {
@@ -33,4 +34,45 @@ export function normalizeFieldKey(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+export function nowIso() {
+  return new Date().toISOString();
+}
+
+export function buildRunId(date = new Date()) {
+  const stamp = date.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const suffix = crypto.randomBytes(3).toString('hex');
+  return `${stamp}-${suffix}`;
+}
+
+export function safeJsonParse(value, fallback = null) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+export function normalizeWhitespace(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// WHY: Strips non-alphanumeric chars and lowercases. Different from normalizeToken
+// which only lowercases. Used by identity/validation subsystem for fuzzy matching.
+export function normalizeAlphanumToken(value) {
+  return normalizeWhitespace(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+export function clamp(num, min, max) {
+  return Math.max(min, Math.min(max, num));
+}
+
+export function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

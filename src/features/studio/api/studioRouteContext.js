@@ -1,5 +1,5 @@
 import { loadFieldStudioMap, saveFieldStudioMap, validateFieldStudioMap } from '../../../ingest/categoryCompile.js';
-import { buildFieldLabelsMap } from '../../../review/index.js';
+import { buildFieldLabelsMap } from '../../review/domain/index.js';
 import { cleanVariant } from '../../catalog/index.js';
 import { runEnumConsistencyReview } from '../../indexing/index.js';
 

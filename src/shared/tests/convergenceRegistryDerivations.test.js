@@ -4,7 +4,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { CONVERGENCE_SETTINGS_REGISTRY } from '../settingsRegistry.js';
 import {
   deriveConvergenceDefaults,
   deriveConvergenceRouteContract,
@@ -14,26 +13,12 @@ import {
 
 describe('convergence registry derivations', () => {
   describe('deriveConvergenceDefaults', () => {
-    it('produces exact match with golden master', () => {
-      assert.deepStrictEqual(
-        deriveConvergenceDefaults(CONVERGENCE_SETTINGS_REGISTRY),
-        {},
-      );
-    });
-
     it('returns empty object for empty registry', () => {
       assert.deepStrictEqual(deriveConvergenceDefaults([]), {});
     });
   });
 
   describe('deriveConvergenceRouteContract', () => {
-    it('produces exact match with golden master', () => {
-      const contract = deriveConvergenceRouteContract(CONVERGENCE_SETTINGS_REGISTRY);
-      assert.deepStrictEqual([...contract.intKeys], []);
-      assert.deepStrictEqual([...contract.floatKeys], []);
-      assert.deepStrictEqual([...contract.boolKeys], []);
-    });
-
     it('separates int, float, and bool types correctly', () => {
       const mixed = [
         { key: 'a', type: 'int', default: 1 },
@@ -55,13 +40,6 @@ describe('convergence registry derivations', () => {
   });
 
   describe('deriveConvergenceValueTypes', () => {
-    it('produces exact match with golden master', () => {
-      assert.deepStrictEqual(
-        deriveConvergenceValueTypes(CONVERGENCE_SETTINGS_REGISTRY),
-        {},
-      );
-    });
-
     it('maps types correctly for mixed registry', () => {
       const mixed = [
         { key: 'a', type: 'int', default: 1 },
@@ -80,13 +58,6 @@ describe('convergence registry derivations', () => {
   });
 
   describe('deriveConvergenceKeySet', () => {
-    it('produces exact match with golden master', () => {
-      assert.deepStrictEqual(
-        deriveConvergenceKeySet(CONVERGENCE_SETTINGS_REGISTRY),
-        [],
-      );
-    });
-
     it('returns empty array for empty registry', () => {
       assert.deepStrictEqual(deriveConvergenceKeySet([]), []);
     });

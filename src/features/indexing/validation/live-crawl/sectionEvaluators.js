@@ -83,7 +83,6 @@ export function evaluateCrawlAlive(runData) {
   const duration = hasMeta && meta.started_at && meta.ended_at
     ? (Date.parse(meta.ended_at) - Date.parse(meta.started_at)) / 1000
     : 0;
-  const maxRunSeconds = runData.settings_snapshot?.maxRunSeconds || 600;
   const status = meta?.status || '';
 
   return [

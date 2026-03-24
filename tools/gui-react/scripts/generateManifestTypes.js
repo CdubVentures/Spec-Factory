@@ -20,7 +20,6 @@ const REGISTRY_TYPE_TO_TS = {
 // WHY: Enum entries get named union types for type safety.
 // The type name is derived from the registry key by convention.
 const ENUM_TYPE_NAMES = {
-  resumeMode: 'RuntimeResumeMode',
   repairDedupeRule: 'RuntimeRepairDedupeRule',
   searchEngines: 'string', // csv_enum — stored as comma-separated string
   searchEnginesFallback: 'string',

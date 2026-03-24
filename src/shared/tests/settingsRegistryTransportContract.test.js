@@ -95,7 +95,6 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     ok(Object.isFrozen(map));
     // Spot checks
     strictEqual(map.categoryAuthorityEnabled, 'HELPER_FILES_ENABLED');
-    strictEqual(map.resumeMode, 'INDEXING_RESUME_MODE');
     strictEqual(map.autoScrollEnabled, 'AUTO_SCROLL_ENABLED');
     // Empty envKey entries should NOT appear
     strictEqual(map.llmPhaseOverridesJson, undefined);
@@ -107,9 +106,6 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
     ok(Object.isFrozen(map));
     // Every entry must be present
     strictEqual(Object.keys(map).length, RUNTIME_SETTINGS_REGISTRY.length);
-    // Spot checks for aliased keys
-    strictEqual(map.resumeMode, 'indexingResumeMode');
-    strictEqual(map.resumeWindowHours, 'indexingResumeMaxAgeHours');
     // Non-aliased key
     strictEqual(map.autoScrollEnabled, 'autoScrollEnabled');
   });
@@ -133,15 +129,11 @@ describe('settingsRegistryTransportContract — Plan 03', () => {
 
   // --- Known alias configKey mapping ---
 
-  it('known cfgKey aliases have correct configKey', () => {
-    const KNOWN = [
-      { key: 'resumeMode', configKey: 'indexingResumeMode' },
-      { key: 'resumeWindowHours', configKey: 'indexingResumeMaxAgeHours' },
-    ];
-    for (const { key, configKey } of KNOWN) {
+  it('retired resume aliases are no longer in registry', () => {
+    const RETIRED = ['resumeMode', 'resumeWindowHours'];
+    for (const key of RETIRED) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
-      ok(entry, `${key} not found`);
-      strictEqual(entry.configKey, configKey, `${key} configKey mismatch`);
+      ok(!entry, `retired key ${key} should not be in registry`);
     }
   });
 

@@ -14,4 +14,4 @@ Proof log:
 | --- | --- |
 | Targeted review lane GUI tests | `node --test tools/gui-react/src/features/review/__tests__/reviewGridLaneGuiContracts.test.js tools/gui-react/src/features/review/__tests__/reviewComponentLaneGuiContracts.test.js tools/gui-react/src/features/review/__tests__/reviewEnumLaneGuiContracts.test.js` -> pass |
 | Surrounding GUI review tests | `node --test tools/gui-react/src/features/review/**/__tests__/*.test.js` -> pass |
-| Full suite | `npm test` -> fail outside scope in queue/config/settings-registry areas |
+| Full suite | `npm test` passed |

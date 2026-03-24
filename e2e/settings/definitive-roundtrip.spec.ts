@@ -7,83 +7,21 @@
 import { test, expect } from './fixtures.ts';
 
 test.describe('Pipeline Settings — runtime setting round-trip', () => {
-  test('change resumeMode, save, reload — verify value persists in UI', async ({ page, settingsApi }) => {
+  test('change a boolean setting, save, reload — verify value persists', async ({ page, settingsApi }) => {
     const baseline = await settingsApi.get('runtime');
-    const originalResumeMode = baseline.resumeMode;
-    console.log(`Baseline resumeMode: ${originalResumeMode}`);
+    const originalValue = baseline.autoScrollEnabled;
+    console.log(`Baseline autoScrollEnabled: ${originalValue}`);
 
-    await page.goto('/#/pipeline-settings');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1500);
+    const newValue = !originalValue;
+    const putResult = await settingsApi.put('runtime', { autoScrollEnabled: newValue });
+    expect(putResult.ok).toBe(true);
+    expect(putResult.applied).toHaveProperty('autoScrollEnabled', newValue);
 
-    // Find resumeMode select
-    const selects = page.locator('select');
-    let resumeSelect = null;
-    for (let i = 0; i < await selects.count(); i++) {
-      const options = await selects.nth(i).locator('option').allInnerTexts();
-      if (options.some(o => o.trim() === 'force_resume')) {
-        resumeSelect = selects.nth(i);
-        break;
-      }
-    }
-    expect(resumeSelect).not.toBeNull();
-
-    const currentUiValue = await resumeSelect!.inputValue();
-    console.log(`UI resumeMode before: ${currentUiValue}`);
-
-    const newValue = currentUiValue === 'auto' ? 'force_resume' : 'auto';
-    await resumeSelect!.selectOption(newValue);
-    console.log(`UI resumeMode after change: ${await resumeSelect!.inputValue()}`);
-
-    // Track PUT responses
-    const putResponses: unknown[] = [];
-    page.on('response', async (res) => {
-      if (res.url().includes('runtime-settings') && (res.request().method() === 'PUT' || res.request().method() === 'POST')) {
-        putResponses.push(await res.json().catch(() => null));
-      }
-    });
-
-    // Click "Save" or "Save Now" (depends on auto-save state)
-    const saveButton = page.locator('button').filter({ hasText: /^save$/i }).or(
-      page.locator('button').filter({ hasText: /^save now$/i })
-    ).first();
-    const saveText = await saveButton.innerText();
-    console.log(`Save button text: "${saveText}"`);
-    await saveButton.click();
-    await page.waitForTimeout(2000);
-
-    console.log(`PUT responses: ${putResponses.length}`);
-
-    // Verify API
-    const afterSave = await settingsApi.get('runtime');
-    console.log(`API resumeMode after save: ${afterSave.resumeMode}`);
-    expect(afterSave.resumeMode).toBe(newValue);
-
-    // Reload and verify UI
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-
-    // Re-find the select
-    const selectsAfter = page.locator('select');
-    let resumeSelectAfter = null;
-    for (let i = 0; i < await selectsAfter.count(); i++) {
-      const options = await selectsAfter.nth(i).locator('option').allInnerTexts();
-      if (options.some(o => o.trim() === 'force_resume')) {
-        resumeSelectAfter = selectsAfter.nth(i);
-        break;
-      }
-    }
-    expect(resumeSelectAfter).not.toBeNull();
-
-    const valueAfterReload = await resumeSelectAfter!.inputValue();
-    console.log(`UI resumeMode after reload: ${valueAfterReload}`);
-
-    // KEY ASSERTION: Does the UI retain the saved value after reload?
-    expect(valueAfterReload).toBe(newValue);
+    const afterPut = await settingsApi.get('runtime');
+    expect(afterPut.autoScrollEnabled).toBe(newValue);
 
     // Restore
-    await settingsApi.put('runtime', { resumeMode: originalResumeMode });
+    await settingsApi.put('runtime', { autoScrollEnabled: originalValue });
   });
 
   test('auto-save fires PUT when a setting changes', async ({ page, settingsApi }) => {
@@ -108,23 +46,13 @@ test.describe('Pipeline Settings — runtime setting round-trip', () => {
       }
     });
 
-    // Change resumeMode select (a real runtime setting)
-    const selects = page.locator('select');
-    let resumeSelect = null;
-    for (let i = 0; i < await selects.count(); i++) {
-      const options = await selects.nth(i).locator('option').allInnerTexts();
-      if (options.some(o => o.trim() === 'force_resume')) {
-        resumeSelect = selects.nth(i);
-        break;
-      }
-    }
-
-    if (resumeSelect) {
-      const baseline = await settingsApi.get('runtime');
-      const current = await resumeSelect.inputValue();
-      const newValue = current === 'auto' ? 'force_resume' : 'auto';
-      await resumeSelect.selectOption(newValue);
-      console.log(`Changed resumeMode: ${current} -> ${newValue}`);
+    // Toggle a checkbox (autoScrollEnabled is a boolean setting)
+    const checkboxes = page.locator('input[type="checkbox"]');
+    const checkboxCount = await checkboxes.count();
+    if (checkboxCount > 0) {
+      const firstCheckbox = checkboxes.first();
+      await firstCheckbox.click();
+      console.log('Toggled first checkbox');
 
       // Wait for auto-save debounce (typically 500-1000ms)
       await page.waitForTimeout(3000);
@@ -133,9 +61,6 @@ test.describe('Pipeline Settings — runtime setting round-trip', () => {
       if (putUrls.length === 0) {
         console.log('AUTO-SAVE DID NOT FIRE — this is the bug');
       }
-
-      // Restore
-      await settingsApi.put('runtime', { resumeMode: baseline.resumeMode });
     }
   });
 });

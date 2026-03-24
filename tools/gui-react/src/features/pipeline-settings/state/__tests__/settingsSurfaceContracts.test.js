@@ -87,7 +87,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
   } = settingsManifest;
   const {
     REPAIR_DEDUPE_RULE_OPTIONS,
-    RESUME_MODE_OPTIONS,
     SEARXNG_ENGINE_OPTIONS,
   } = pipelineSettingsFeature;
 
@@ -119,7 +118,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
   );
 
   const runtimeDefaultOptionSets = [
-    [RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
     [REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
   ];
   for (const [options, defaultValue, label] of runtimeDefaultOptionSets) {

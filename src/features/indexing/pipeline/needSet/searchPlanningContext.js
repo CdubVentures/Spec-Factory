@@ -67,7 +67,6 @@ function derivePlannerLimits(config) {
     domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
     serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
     maxPagesPerDomain: configInt(config, 'maxPagesPerDomain'),
-    maxRunSeconds: configInt(config, 'maxRunSeconds'),
     llmModelPlan: resolvePhaseModel(config, 'needset') || String(configValue(config, 'llmModelPlan')),
     llmProvider: String(configValue(config, 'llmProvider')),
     llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),

@@ -58,7 +58,6 @@ export function makePlannerLimits(overrides = {}) {
     maxUrlsPerProduct: 20,
     maxCandidateUrls: 50,
     maxPagesPerDomain: 2,
-    maxRunSeconds: 300,
     llmModelPlan: 'gemini-2.5-flash-lite',
     llmMaxOutputTokensPlan: 2048,
     searchProfileCapMap: null,

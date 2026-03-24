@@ -1,7 +1,7 @@
 import { z, toJSONSchema } from 'zod';
-import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
-import { configInt } from '../shared/settingsAccessor.js';
-import { toArray } from '../shared/primitives.js';
+import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../../core/llm/client/routing.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
+import { toArray } from '../../../../shared/primitives.js';
 
 function normalizeQuery(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');

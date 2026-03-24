@@ -5,16 +5,12 @@ Product indexing pipeline orchestrator: coordinates the full fetch → parse →
 ## Public API (The Contract)
 
 - `runProduct.js` → `runProduct({ category, productId, config, storage, specDb, logger, ... })` — main pipeline entry point (async)
-- `automationQueue.js` → `class AutomationQueue` — SQLite-backed job queue (create, query, update, dedupe)
-- `automationWorker.js` → `class AutomationWorker` — queue consumer (consumeNext, markComplete, markFailed)
 - `fetchParseWorker.js` → `normalizeHostToken`, `hostFromHttpUrl`, `compactQueryText`, `buildRepairSearchQuery`, `classifyFetchOutcome`, `FETCH_OUTCOME_KEYS`, `createFetchOutcomeCounters`, `createHostBudgetRow`, `ensureHostBudgetRow`, `bumpHostOutcome`, `applyHostBudgetBackoff`, `resolveHostBudgetState`
 - `consensusPhase.js` → `executeConsensusPhase({ sourceResults, categoryConfig, ... })`
 - `learningGatePhase.js` → `evaluateFieldLearningGates`, `emitLearningGateEvents`, `populateLearningStores`
 - `learningExportPhase.js` → `runLearningExportPhase({ specDb, ... })`
 - `identityGateExtraction.js` → `isIdentityGatedField`, `resolveIdentityLabel`, `applyIdentityGateToCandidates`
 - `urlQualityGate.js` → `isLowValueHost`, `validateFetchUrl`
-- `pipelineSharedHelpers.js` → `runWithRetry`, `clamp01`, `normalizeToken`, `resultSuccess`, `resultSkip`, `resultError`
-- `summaryContract.js` → `validateRoundSummary` (zod schema)
 - `dedupeOutcomeEvent.js` → `dedupeOutcomeToEventKey`, `buildDedupeOutcomeEvent`
 - `componentReviewBatch.js` → `runComponentReviewBatch`
 

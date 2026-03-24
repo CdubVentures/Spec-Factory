@@ -10,7 +10,6 @@ export {
   normalizeToken,
   parseBoundedNumber,
   REPAIR_DEDUPE_RULE_OPTIONS,
-  RESUME_MODE_OPTIONS,
   RUNTIME_NUMBER_BOUNDS,
   runtimeDraftEqual,
   SEARXNG_ENGINE_OPTIONS,
