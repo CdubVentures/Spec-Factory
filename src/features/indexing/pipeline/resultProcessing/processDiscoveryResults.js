@@ -7,6 +7,7 @@ import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
 import {
   normalizeHost,
   toArray,
+  SLOT_LABELS,
 } from '../shared/discoveryIdentity.js';
 import {
   createCandidateTraceMap,
@@ -41,7 +42,7 @@ export async function processDiscoveryResults({
   // LLM & planning
   llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
-  queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
+  queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency = 1, discoveryCap,
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -52,11 +53,10 @@ export async function processDiscoveryResults({
 
   // WHY: Build query→slot and (url,query)→rank maps for slot-ordered fetch queue.
   // queries array is ordered: index 0 = slot 'a', index 1 = slot 'b', etc.
-  const slotLabels = 'abcdefghijklmnopqrstuvwxyz';
   const queryToSlot = new Map();
-  for (let i = 0; i < queries.length && i < slotLabels.length; i++) {
+  for (let i = 0; i < queries.length && i < SLOT_LABELS.length; i++) {
     const q = String(queries[i] || '').trim().toLowerCase();
-    if (q && !queryToSlot.has(q)) queryToSlot.set(q, { slot: slotLabels[i], index: i });
+    if (q && !queryToSlot.has(q)) queryToSlot.set(q, { slot: SLOT_LABELS[i], index: i });
   }
   const serpRankByUrlQuery = new Map();
   for (const raw of rawResults) {
@@ -195,7 +195,6 @@ export async function processDiscoveryResults({
           url: row.url,
           host: row.host,
           tier: row.tierName || '',
-          primary_lane: row.primary_lane || null,
           reason: row.triage_disposition || ''
         }))
       },
@@ -246,7 +245,6 @@ export async function processDiscoveryResults({
           role: '',
           identity_prelim: enriched?.identity_prelim || 'uncertain',
           host_trust_class: enriched?.host_trust_class || 'unknown',
-          primary_lane: enriched?.primary_lane || null,
           triage_disposition: enriched?.triage_disposition || 'fetch_low',
           doc_kind_guess: enriched?.doc_kind_guess || 'unknown',
           approval_bucket: isKept ? 'approved' : '',
@@ -264,7 +262,6 @@ export async function processDiscoveryResults({
         role: '',
         identity_prelim: '',
         host_trust_class: '',
-        primary_lane: null,
         triage_disposition: drop.hard_drop_reason || 'hard_drop',
         doc_kind_guess: '',
         approval_bucket: '',
@@ -350,7 +347,7 @@ export async function processDiscoveryResults({
     queries, llmQueries, missingFields,
     internalSatisfied, externalSearchReason,
     searchAttempts, searchJournal,
-    providerState, queryConcurrency,
+    providerState,
     searchProfileFinal, serpExplorer,
     candidateRowsFinal, discovered,
     selectedUrls, searchProfileKeys,

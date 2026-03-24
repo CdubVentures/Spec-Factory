@@ -151,26 +151,10 @@ export function classifyDomains({
       const tier = Number(resolveTierForHost(domain, categoryConfig) || 0);
       const stats = frontierStats.get(domain) || null;
 
-      // WHY: Budget score combines static tier info with runtime block history.
-      const tierBase = blocked ? 10
-        : approved ? 90
-        : tier === 1 ? 80
-        : tier === 2 ? 70
-        : tier === 3 ? 60
-        : 50;
-      const blockPenalty = stats && stats.blocked_count > 3 ? -20
-        : stats && stats.blocked_count > 0 ? -10
-        : 0;
-      const successBoost = stats && stats.success_rate > 0.8 ? 5
-        : stats && stats.success_rate < 0.3 && stats.fetch_count > 0 ? -15
-        : 0;
-      const budgetScore = Math.max(0, Math.min(100, tierBase + blockPenalty + successBoost));
-
       domainClassificationRows.push({
         domain,
         role: String(inferRoleForHost(domain, categoryConfig) || '').trim(),
         safety_class: blocked ? 'blocked' : (approved ? 'safe' : 'caution'),
-        budget_score: budgetScore,
         cooldown_remaining: stats ? Math.round(stats.cooldown_remaining_ms / 1000) : 0,
         success_rate: stats ? stats.success_rate : 0,
         avg_latency_ms: stats ? stats.avg_latency_ms : 0,

@@ -432,10 +432,10 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
     // -- Domain classification --
     makeEvent('domains_classified', {
       classifications: [
-        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', budget_score: 98, cooldown_remaining: 0, success_rate: 0.99, avg_latency_ms: 380, notes: 'Primary manufacturer domain' },
-        { domain: 'support.razer.com', role: 'support', safety_class: 'safe', budget_score: 90, cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 520, notes: 'Support subdomain' },
-        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', budget_score: 85, cooldown_remaining: 0, success_rate: 0.92, avg_latency_ms: 750, notes: 'Trusted lab review site' },
-        { domain: 'amazon.com', role: 'e_commerce', safety_class: 'low_value', budget_score: 20, cooldown_remaining: 0, success_rate: 0.80, avg_latency_ms: 1200, notes: 'Low spec yield' },
+        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.99, avg_latency_ms: 380, notes: 'Primary manufacturer domain' },
+        { domain: 'support.razer.com', role: 'support', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 520, notes: 'Support subdomain' },
+        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.92, avg_latency_ms: 750, notes: 'Trusted lab review site' },
+        { domain: 'amazon.com', role: 'e_commerce', safety_class: 'low_value', cooldown_remaining: 0, success_rate: 0.80, avg_latency_ms: 1200, notes: 'Low spec yield' },
       ],
     }, { ts: '2026-03-16T00:00:26.000Z' }),
 
@@ -608,7 +608,6 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.equal(result.domain_health[0].domain, 'razer.com');
   assert.equal(result.domain_health[0].role, 'manufacturer');
   assert.equal(result.domain_health[0].safety_class, 'safe');
-  assert.equal(result.domain_health[0].budget_score, 98);
   assert.equal(result.domain_health[0].success_rate, 0.99);
   assert.equal(result.domain_health[0].avg_latency_ms, 380);
   assert.equal(result.domain_health[1].domain, 'support.razer.com');
@@ -616,7 +615,6 @@ test('buildPreFetchPhases: full live-run simulation populates every prefetch tab
   assert.equal(result.domain_health[2].role, 'lab_review');
   assert.equal(result.domain_health[3].domain, 'amazon.com');
   assert.equal(result.domain_health[3].safety_class, 'low_value');
-  assert.equal(result.domain_health[3].budget_score, 20);
 });
 
 // ---------------------------------------------------------------------------

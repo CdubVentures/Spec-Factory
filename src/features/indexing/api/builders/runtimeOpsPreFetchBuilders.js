@@ -285,7 +285,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           domain: String(cls?.domain || '').trim(),
           role: String(cls?.role || '').trim(),
           safety_class: String(cls?.safety_class || '').trim(),
-          budget_score: toFloat(cls?.budget_score, 0),
           cooldown_remaining: toInt(cls?.cooldown_remaining, 0),
           success_rate: toFloat(cls?.success_rate, 0),
           avg_latency_ms: toInt(cls?.avg_latency_ms, 0),

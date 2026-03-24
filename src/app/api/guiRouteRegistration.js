@@ -1,38 +1,13 @@
 export function createRegisteredGuiApiRouteHandlers({
   routeCtx,
   createGuiApiRouteRegistry,
-  registerInfraRoutes,
-  registerConfigRoutes,
-  registerIndexlabRoutes,
-  registerRuntimeOpsRoutes,
-  registerCatalogRoutes,
-  registerBrandRoutes,
-  registerStudioRoutes,
-  registerDataAuthorityRoutes,
-  registerQueueBillingLearningRoutes,
-  registerReviewRoutes,
-  registerTestModeRoutes,
-  registerSourceStrategyRoutes,
+  routeDefinitions,
 } = {}) {
   if (typeof createGuiApiRouteRegistry !== 'function') {
     throw new TypeError('createGuiApiRouteRegistry must be a function');
   }
 
-  const registry = createGuiApiRouteRegistry({
-    routeCtx,
-    registerInfraRoutes,
-    registerConfigRoutes,
-    registerIndexlabRoutes,
-    registerRuntimeOpsRoutes,
-    registerCatalogRoutes,
-    registerBrandRoutes,
-    registerStudioRoutes,
-    registerDataAuthorityRoutes,
-    registerQueueBillingLearningRoutes,
-    registerReviewRoutes,
-    registerTestModeRoutes,
-    registerSourceStrategyRoutes,
-  });
+  const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
 
   if (!registry || !Array.isArray(registry.routeHandlers)) {
     throw new TypeError('createGuiApiRouteRegistry must return an object with routeHandlers array');

@@ -12,7 +12,6 @@ import {
   buildSearchProfileKeys,
   writeSearchProfileArtifacts,
   buildQueryAttemptStats,
-  resolveSearchProfileCaps,
   normalizeTriageScore,
   normalizeSourceEntryDiscovery,
   resolveEnabledSourceEntries,
@@ -232,29 +231,7 @@ test('buildQueryAttemptStats: sorts by result_count desc', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. resolveSearchProfileCaps
-// ---------------------------------------------------------------------------
-
-test('resolveSearchProfileCaps: returns defaults with empty config', () => {
-  const caps = resolveSearchProfileCaps({});
-  assert.equal(caps.deterministicAliasCap, 6);
-  assert.equal(caps.llmAliasValidationCap, 12);
-  assert.equal(caps.llmDocHintQueriesCap, 3);
-  assert.equal(caps.llmFieldTargetQueriesCap, 3);
-  assert.equal(caps.dedupeQueriesCap, 24);
-});
-
-test('resolveSearchProfileCaps: returns hardcoded defaults regardless of input', () => {
-  const caps = resolveSearchProfileCaps();
-  assert.equal(caps.deterministicAliasCap, 6);
-  assert.equal(caps.llmAliasValidationCap, 12);
-  assert.equal(caps.llmDocHintQueriesCap, 3);
-  assert.equal(caps.llmFieldTargetQueriesCap, 3);
-  assert.equal(caps.dedupeQueriesCap, 24);
-});
-
-// ---------------------------------------------------------------------------
-// 8. normalizeTriageScore
+// 7. normalizeTriageScore
 // ---------------------------------------------------------------------------
 
 test('normalizeTriageScore: returns rerank_score when present', () => {
@@ -272,7 +249,7 @@ test('normalizeTriageScore: returns 0 when none present', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 9. normalizeSourceEntryDiscovery
+// 8. normalizeSourceEntryDiscovery
 // ---------------------------------------------------------------------------
 
 test('normalizeSourceEntryDiscovery: fills defaults for object input', () => {
@@ -291,7 +268,7 @@ test('normalizeSourceEntryDiscovery: returns all defaults for non-object', () =>
 });
 
 // ---------------------------------------------------------------------------
-// 10. resolveEnabledSourceEntries
+// 9. resolveEnabledSourceEntries
 // ---------------------------------------------------------------------------
 
 test('resolveEnabledSourceEntries: returns empty for null/undefined', () => {

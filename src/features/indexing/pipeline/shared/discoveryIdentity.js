@@ -5,6 +5,11 @@
  * All functions are pure — zero module state, zero side effects.
  */
 
+// WHY: Shared constant for query→slot mapping. 26 letters = max 26 parallel
+// search worker slots. Used by orchestrator (search_queued events) and
+// result processing (search_slot enrichment).
+export const SLOT_LABELS = 'abcdefghijklmnopqrstuvwxyz';
+
 // ---------------------------------------------------------------------------
 // Core text utilities
 // ---------------------------------------------------------------------------

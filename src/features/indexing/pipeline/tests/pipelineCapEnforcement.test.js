@@ -62,7 +62,6 @@ function makeMinimalJourneyCtx(overrides = {}) {
     enhancedRows: makeEnhancedRows(25),
     variables: { brand: 'TestBrand', model: 'TestModel', variant: '', category: 'mouse' },
     config: makeConfig(),
-    searchProfileCaps: { dedupeQueriesCap: 200, llmAliasValidationCap: 12, llmFieldTargetQueriesCap: 3, llmDocHintQueriesCap: 3 },
     missingFields: ['weight', 'sensor'],
     planningHints: { missingCriticalFields: ['weight'], missingRequiredFields: ['sensor'] },
     categoryConfig: { category: 'mouse', sourceHostMap: new Map(), fieldOrder: [] },
@@ -226,7 +225,6 @@ describe('runDomainClassifier respects domainClassifierUrlCap', () => {
         host: `example-${i}.com`,
         score: urlCount - i,
         triage_disposition: 'fetch_high',
-        selection_priority: 'high',
       });
     }
     return { selectedUrls, allCandidateUrls: selectedUrls, candidates };

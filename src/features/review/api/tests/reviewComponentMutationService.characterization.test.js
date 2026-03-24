@@ -13,6 +13,7 @@ import {
   buildComponentMutationContextArgs,
   resolveComponentIdentityMutationPlan,
 } from '../componentMutationRoutes.js';
+import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../contracts/componentReviewShapes.js';
 
 // --- validateComponentPropertyCandidate ---
 
@@ -84,6 +85,22 @@ test('isIdentityPropertyKey rejects non-identity keys', () => {
   assert.equal(isIdentityPropertyKey(''), false);
   assert.equal(isIdentityPropertyKey(null), false);
   assert.equal(isIdentityPropertyKey(undefined), false);
+});
+
+// --- COMPONENT_IDENTITY_PROPERTY_KEYS SSOT ---
+
+test('COMPONENT_IDENTITY_PROPERTY_KEYS is the canonical set', () => {
+  assert.deepEqual(
+    [...COMPONENT_IDENTITY_PROPERTY_KEYS],
+    ['__name', '__maker', '__links', '__aliases'],
+  );
+  assert.ok(Object.isFrozen(COMPONENT_IDENTITY_PROPERTY_KEYS));
+});
+
+test('isIdentityPropertyKey accepts every key in COMPONENT_IDENTITY_PROPERTY_KEYS', () => {
+  for (const key of COMPONENT_IDENTITY_PROPERTY_KEYS) {
+    assert.equal(isIdentityPropertyKey(key), true, `Expected true for '${key}'`);
+  }
 });
 
 // --- normalizeStringEntries ---

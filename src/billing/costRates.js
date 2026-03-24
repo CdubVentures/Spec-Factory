@@ -1,9 +1,5 @@
 import { configFloat } from '../shared/settingsAccessor.js';
-
-function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { toFloat } from '../shared/valueNormalizers.js';
 
 function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -15,9 +11,9 @@ function normalizeModel(value) {
 
 function normalizePricingEntry(entry = {}) {
   if (!entry || typeof entry !== 'object') return null;
-  const inputPer1M = toNumber(entry.inputPer1M ?? entry.input_per_1m ?? entry.input, NaN);
-  const outputPer1M = toNumber(entry.outputPer1M ?? entry.output_per_1m ?? entry.output, NaN);
-  const cachedInputPer1M = toNumber(
+  const inputPer1M = toFloat(entry.inputPer1M ?? entry.input_per_1m ?? entry.input, NaN);
+  const outputPer1M = toFloat(entry.outputPer1M ?? entry.output_per_1m ?? entry.output, NaN);
+  const cachedInputPer1M = toFloat(
     entry.cachedInputPer1M ?? entry.cached_input_per_1m ?? entry.cached_input ?? entry.cached,
     NaN
   );
@@ -76,13 +72,13 @@ function resolveModelSpecificRates(rates = {}, model = '') {
   const token = normalizeModel(model);
   // WHY: inputPer1M alias is a non-registry passthrough from costRates objects
   const output = {
-    inputPer1M: rates.inputPer1M != null ? toNumber(rates.inputPer1M, 1.25) : configFloat(rates, 'llmCostInputPer1M'),
-    outputPer1M: rates.outputPer1M != null ? toNumber(rates.outputPer1M, 10) : configFloat(rates, 'llmCostOutputPer1M'),
-    cachedInputPer1M: rates.cachedInputPer1M != null ? toNumber(rates.cachedInputPer1M, 0.125) : configFloat(rates, 'llmCostCachedInputPer1M')
+    inputPer1M: rates.inputPer1M != null ? toFloat(rates.inputPer1M, 1.25) : configFloat(rates, 'llmCostInputPer1M'),
+    outputPer1M: rates.outputPer1M != null ? toFloat(rates.outputPer1M, 10) : configFloat(rates, 'llmCostOutputPer1M'),
+    cachedInputPer1M: rates.cachedInputPer1M != null ? toFloat(rates.cachedInputPer1M, 0.125) : configFloat(rates, 'llmCostCachedInputPer1M')
   };
 
   const applyIfValid = (value, setter) => {
-    const num = toNumber(value, -1);
+    const num = toFloat(value, -1);
     if (num >= 0) {
       setter(num);
     }
@@ -90,9 +86,9 @@ function resolveModelSpecificRates(rates = {}, model = '') {
 
   const fromMap = resolveModelPricingFromMap(rates, model);
   if (fromMap) {
-    output.inputPer1M = toNumber(fromMap.inputPer1M, output.inputPer1M);
-    output.outputPer1M = toNumber(fromMap.outputPer1M, output.outputPer1M);
-    output.cachedInputPer1M = toNumber(fromMap.cachedInputPer1M, output.cachedInputPer1M);
+    output.inputPer1M = toFloat(fromMap.inputPer1M, output.inputPer1M);
+    output.outputPer1M = toFloat(fromMap.outputPer1M, output.outputPer1M);
+    output.cachedInputPer1M = toFloat(fromMap.cachedInputPer1M, output.cachedInputPer1M);
     return output;
   }
 
@@ -101,9 +97,9 @@ function resolveModelSpecificRates(rates = {}, model = '') {
 
 export function normalizeCostRates(config = {}) {
   return {
-    llmCostInputPer1M: config.inputPer1M != null ? toNumber(config.inputPer1M, 1.25) : configFloat(config, 'llmCostInputPer1M'),
-    llmCostOutputPer1M: config.outputPer1M != null ? toNumber(config.outputPer1M, 10) : configFloat(config, 'llmCostOutputPer1M'),
-    llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toNumber(config.cachedInputPer1M, 0.125) : configFloat(config, 'llmCostCachedInputPer1M'),
+    llmCostInputPer1M: config.inputPer1M != null ? toFloat(config.inputPer1M, 1.25) : configFloat(config, 'llmCostInputPer1M'),
+    llmCostOutputPer1M: config.outputPer1M != null ? toFloat(config.outputPer1M, 10) : configFloat(config, 'llmCostOutputPer1M'),
+    llmCostCachedInputPer1M: config.cachedInputPer1M != null ? toFloat(config.cachedInputPer1M, 0.125) : configFloat(config, 'llmCostCachedInputPer1M'),
     llmModelPricingMap: resolveModelPricingMap(config)
   };
 }

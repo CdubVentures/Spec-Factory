@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { loadProductCatalog } from '../../../catalog/products/productCatalog.js';
+import { loadProductCatalog } from '../../../catalog/index.js';
 import { createPhaseDataReaders } from './phaseDataReaders.js';
 import { createRunArtifactReaders } from './runArtifactReaders.js';
 import { createEvidenceIndexReader } from './evidenceIndexReader.js';

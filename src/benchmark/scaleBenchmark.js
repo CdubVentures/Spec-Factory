@@ -1,11 +1,6 @@
 import { toPosixKey } from '../s3/storage.js';
-import { toInt } from '../shared/valueNormalizers.js';
+import { toInt, toFloat } from '../shared/valueNormalizers.js';
 import { toArray } from '../shared/primitives.js';
-
-function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -84,13 +79,13 @@ function rowFromSummary({ productId, summary }) {
   return {
     product_id: productId,
     validated: Boolean(summary?.validated),
-    confidence: toNumber(summary?.confidence, 0),
-    coverage_overall: toNumber(summary?.coverage_overall, 0),
-    completeness_required: toNumber(summary?.completeness_required, 0),
+    confidence: toFloat(summary?.confidence, 0),
+    coverage_overall: toFloat(summary?.coverage_overall, 0),
+    completeness_required: toFloat(summary?.completeness_required, 0),
     missing_required_count: toArray(summary?.missing_required_fields).length,
     critical_missing_count: toArray(summary?.critical_fields_below_pass_target).length,
     unknown_due_weakness_count: unknownWeaknessCount(summary),
-    llm_cost_usd_run: toNumber(summary?.llm?.cost_usd_run, 0),
+    llm_cost_usd_run: toFloat(summary?.llm?.cost_usd_run, 0),
     run_profile: String(summary?.run_profile || ''),
     validated_reason: String(summary?.validated_reason || summary?.reason || ''),
     summary_generated_at: String(summary?.generated_at || '')

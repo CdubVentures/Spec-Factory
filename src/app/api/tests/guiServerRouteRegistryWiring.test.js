@@ -138,21 +138,12 @@ test('gui api route registry wires handlers in canonical order using pre-built c
     return () => name;
   };
 
-  const registry = createGuiApiRouteRegistry({
-    routeCtx,
-    registerInfraRoutes: makeRegistrar('infra'),
-    registerConfigRoutes: makeRegistrar('config'),
-    registerIndexlabRoutes: makeRegistrar('indexlab'),
-    registerRuntimeOpsRoutes: makeRegistrar('runtimeOps'),
-    registerCatalogRoutes: makeRegistrar('catalog'),
-    registerBrandRoutes: makeRegistrar('brand'),
-    registerStudioRoutes: makeRegistrar('studio'),
-    registerDataAuthorityRoutes: makeRegistrar('dataAuthority'),
-    registerQueueBillingLearningRoutes: makeRegistrar('queueBillingLearning'),
-    registerReviewRoutes: makeRegistrar('review'),
-    registerTestModeRoutes: makeRegistrar('testMode'),
-    registerSourceStrategyRoutes: makeRegistrar('sourceStrategy'),
-  });
+  const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
+    key: name,
+    registrar: makeRegistrar(name),
+  }));
+
+  const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
 
   assert.equal(registrationCalls.length, GUI_API_ROUTE_ORDER.length);
 
@@ -190,21 +181,12 @@ test('gui api route registry passes each pre-built context to the correct regist
     return () => name;
   };
 
-  createGuiApiRouteRegistry({
-    routeCtx,
-    registerInfraRoutes: makeRegistrar('infra'),
-    registerConfigRoutes: makeRegistrar('config'),
-    registerIndexlabRoutes: makeRegistrar('indexlab'),
-    registerRuntimeOpsRoutes: makeRegistrar('runtimeOps'),
-    registerCatalogRoutes: makeRegistrar('catalog'),
-    registerBrandRoutes: makeRegistrar('brand'),
-    registerStudioRoutes: makeRegistrar('studio'),
-    registerDataAuthorityRoutes: makeRegistrar('dataAuthority'),
-    registerQueueBillingLearningRoutes: makeRegistrar('queueBillingLearning'),
-    registerReviewRoutes: makeRegistrar('review'),
-    registerTestModeRoutes: makeRegistrar('testMode'),
-    registerSourceStrategyRoutes: makeRegistrar('sourceStrategy'),
-  });
+  const routeDefinitions = GUI_API_ROUTE_ORDER.map((name) => ({
+    key: name,
+    registrar: makeRegistrar(name),
+  }));
+
+  createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
 
   assert.equal(
     registrationCalls.find((call) => call.name === 'infra')?.ctx,
@@ -219,4 +201,31 @@ test('gui api route registry passes each pre-built context to the correct regist
   for (const call of registrationCalls) {
     assert.notEqual(call.ctx, routeCtx, `${call.name} should get its pre-built context, not the full routeCtx`);
   }
+});
+
+test('gui api route registry rejects empty routeDefinitions', () => {
+  assert.throws(
+    () => createGuiApiRouteRegistry({ routeCtx: {}, routeDefinitions: [] }),
+    { message: /routeDefinitions must be a non-empty array/ },
+  );
+});
+
+test('gui api route registry rejects non-function registrar with key in message', () => {
+  assert.throws(
+    () => createGuiApiRouteRegistry({
+      routeCtx: { badRouteContext: {} },
+      routeDefinitions: [{ key: 'bad', registrar: 'not-a-function' }],
+    }),
+    { message: /registrar for "bad" must be a function/ },
+  );
+});
+
+test('gui api route registry rejects missing context key', () => {
+  assert.throws(
+    () => createGuiApiRouteRegistry({
+      routeCtx: {},
+      routeDefinitions: [{ key: 'missing', registrar: () => () => {} }],
+    }),
+    { message: /missingRouteContext.*missing/ },
+  );
 });

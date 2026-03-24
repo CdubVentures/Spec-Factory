@@ -6,8 +6,8 @@ import { loadBundledModule } from '../../../../../../../test/helpers/loadBundled
 async function loadSettingsSurfaceModules() {
   return Promise.all([
     loadBundledModule(
-      'tools/gui-react/src/features/pipeline-settings/state/RuntimeFlowDraftNormalization.ts',
-      { prefix: 'settings-surface-runtime-flow-' },
+      'tools/gui-react/src/features/pipeline-settings/index.ts',
+      { prefix: 'settings-surface-feature-' },
     ),
     loadBundledModule(
       'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts',
@@ -73,21 +73,23 @@ test('settings surface normalizes cached runtime settings through the public GUI
 });
 
 test('settings manifest surface keeps concrete option defaults and labels aligned', async () => {
-  const [, , settingsManifest] = await loadSettingsSurfaceModules();
+  const [pipelineSettingsFeature, , settingsManifest] = await loadSettingsSurfaceModules();
   const {
     CONVERGENCE_KNOB_GROUPS,
     LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,
-    RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS,
-    RUNTIME_RESUME_MODE_OPTIONS,
     RUNTIME_SETTING_DEFAULTS,
-    SEARXNG_ENGINE_OPTIONS,
     SEARXNG_ENGINE_LABELS,
     SETTINGS_AUTOSAVE_DEBOUNCE_MS,
     SETTINGS_AUTOSAVE_STATUS_MS,
     STORAGE_DESTINATION_OPTIONS,
     STORAGE_SETTING_DEFAULTS,
   } = settingsManifest;
+  const {
+    REPAIR_DEDUPE_RULE_OPTIONS,
+    RESUME_MODE_OPTIONS,
+    SEARXNG_ENGINE_OPTIONS,
+  } = pipelineSettingsFeature;
 
   assert.deepEqual(
     [...SEARXNG_ENGINE_OPTIONS].sort(),
@@ -117,8 +119,8 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
   );
 
   const runtimeDefaultOptionSets = [
-    [RUNTIME_RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
-    [RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
+    [RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
+    [REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
   ];
   for (const [options, defaultValue, label] of runtimeDefaultOptionSets) {
     assert.equal(
@@ -130,6 +132,16 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
 
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
   assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);
+  assert.equal(
+    Array.isArray(CONVERGENCE_KNOB_GROUPS),
+    true,
+  );
+  assert.equal(
+    CONVERGENCE_KNOB_GROUPS.every(
+      (group) => typeof group.label === 'string' && Array.isArray(group.knobs),
+    ),
+    true,
+  );
   assert.equal(
     STORAGE_DESTINATION_OPTIONS.includes(STORAGE_SETTING_DEFAULTS.destinationType),
     true,

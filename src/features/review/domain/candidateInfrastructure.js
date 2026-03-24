@@ -5,6 +5,7 @@
 // SpecDb conversion, review lookups, and attribution context.
 
 import { UNKNOWN_VALUE_TOKENS } from '../../../shared/valueNormalizers.js';
+import { clamp01 } from '../../../shared/primitives.js';
 import { confidenceColor } from './confidenceColor.js';
 import {
   isObject,
@@ -38,13 +39,7 @@ export function hasKnownValue(value) {
   return token !== '' && !UNKNOWN_VALUE_TOKENS.has(token);
 }
 
-export function clamp01(value, fallback = 0) {
-  const n = Number.parseFloat(String(value ?? ''));
-  if (!Number.isFinite(n)) return fallback;
-  if (n < 0) return 0;
-  if (n > 1) return 1;
-  return n;
-}
+export { clamp01 };
 
 // ── Source Normalization ────────────────────────────────────────────
 

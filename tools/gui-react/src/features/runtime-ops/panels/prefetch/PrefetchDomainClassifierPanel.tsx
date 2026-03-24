@@ -19,7 +19,6 @@ import {
   computeUniqueDomains,
   buildSafetyClassSegments,
   buildDomainFunnelBullets,
-  computeAvgBudgetScore,
   computeCooldownSummary,
   computeFetchSummary,
 } from '../../selectors/domainClassifierHelpers.js';
@@ -53,9 +52,6 @@ function DomainDetailDrawer({
           <Chip label={domain.role || 'unknown'} className={domainRoleBadgeClass(domain.role)} />
           <Chip label={domain.safety_class} className={safetyClassBadgeClass(domain.safety_class)} />
         </div>
-      </DrawerSection>
-      <DrawerSection title="Budget Score">
-        <ScoreBar value={domain.budget_score} max={100} label={String(Math.round(domain.budget_score))} />
       </DrawerSection>
       <DrawerSection title="Success Rate">
         <ScoreBar value={domain.success_rate * 100} max={100} label={pctString(domain.success_rate)} />
@@ -103,7 +99,6 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
   const uniqueDomains = useMemo(() => computeUniqueDomains(health), [health]);
   const safetySegments = useMemo(() => buildSafetyClassSegments(safetyCounts), [safetyCounts]);
   const funnelBullets = useMemo(() => buildDomainFunnelBullets(health, calls), [health, calls]);
-  const avgBudget = useMemo(() => computeAvgBudgetScore(health), [health]);
   const cooldownSummary = useMemo(() => computeCooldownSummary(health), [health]);
   const fetchSummary = useMemo(() => computeFetchSummary(health), [health]);
   const hasSafetyData = safetyCounts.safe + safetyCounts.caution + safetyCounts.blocked > 0;
@@ -180,7 +175,6 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
           <Tip text="The Domain Classifier assesses each discovered domain for safety, source tier, and pacing constraints using deterministic heuristics (deny-lists, approved hosts, tier resolution). Routes URLs to priority, manufacturer, general, or candidate queues. No LLM call." />
         </>}
         footer={<>
-          <span>avg budget <strong className="sf-text-primary">{avgBudget}</strong></span>
           {cooldownSummary.totalInCooldown > 0 && <span>in cooldown <strong className="text-[var(--sf-state-warning-fg)]">{cooldownSummary.totalInCooldown}</strong></span>}
         </>}
       >
@@ -301,7 +295,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
             <table className="min-w-full text-xs">
               <thead className="sf-surface-elevated sticky top-0">
                 <tr>
-                  {['domain', 'role', 'safety', 'budget', 'fetches', 'blocks', 'success', 'latency', 'cooldown', 'notes'].map((h) => (
+                  {['domain', 'role', 'safety', 'fetches', 'blocks', 'success', 'latency', 'cooldown', 'notes'].map((h) => (
                     <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
                   ))}
                 </tr>
@@ -321,9 +315,6 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
                     </td>
                     <td className="py-1.5 px-4">
                       <Chip label={d.safety_class} className={safetyClassBadgeClass(d.safety_class)} />
-                    </td>
-                    <td className="py-1.5 px-4">
-                      <ScoreBar value={d.budget_score} max={100} label={String(Math.round(d.budget_score))} />
                     </td>
                     <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
                       {d.fetch_count > 0 ? d.fetch_count : '-'}

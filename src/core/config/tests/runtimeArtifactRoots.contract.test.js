@@ -6,7 +6,7 @@ import path from 'node:path';
 
 function isWithin(rootPath, candidatePath) {
   const relative = path.relative(path.resolve(rootPath), path.resolve(candidatePath));
-  return relative === '' || (!relative.startsWith('../../../..') && !path.isAbsolute(relative));
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
 // WHY: Persistent storage — defaults must survive reboots. On Windows

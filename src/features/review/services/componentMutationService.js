@@ -1,6 +1,7 @@
 import {
   resolveCandidateConfidence,
 } from '../api/routeSharedHelpers.js';
+import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../contracts/componentReviewShapes.js';
 
 export function validateComponentPropertyCandidate({
   candidateRow,
@@ -129,9 +130,10 @@ export function runComponentIdentityUpdateTx({
   };
 }
 
+const _identityKeySet = new Set(COMPONENT_IDENTITY_PROPERTY_KEYS);
 export function isIdentityPropertyKey(propertyKey) {
   const key = String(propertyKey || '').trim();
-  return key === '__name' || key === '__maker' || key === '__links' || key === '__aliases';
+  return _identityKeySet.has(key);
 }
 
 export function normalizeStringEntries(value) {

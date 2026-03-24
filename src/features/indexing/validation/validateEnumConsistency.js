@@ -1,18 +1,10 @@
 import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
-import { normalizeToken } from '../../../shared/primitives.js';
+import { normalizeToken, clamp01 } from '../../../shared/primitives.js';
 
 function hasMeaningfulValue(value) {
   const token = normalizeToken(value);
   return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null';
-}
-
-function clamp01(value, fallback = 0) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  if (parsed < 0) return 0;
-  if (parsed > 1) return 1;
-  return parsed;
 }
 
 function dedupeValues(values = []) {

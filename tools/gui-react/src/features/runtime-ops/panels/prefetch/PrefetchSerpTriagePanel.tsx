@@ -77,10 +77,9 @@ function CandidateDrawer({
           </div>
         </DrawerSection>
       )}
-      {(candidate.primary_lane !== null || candidate.triage_disposition || candidate.approval_bucket) && (
+      {(candidate.triage_disposition || candidate.approval_bucket) && (
         <DrawerSection title="Routing">
           <div className="flex flex-wrap gap-1.5">
-            {candidate.primary_lane !== null && <Chip label={`lane ${candidate.primary_lane}`} className="sf-chip-info" />}
             {candidate.triage_disposition && <Chip label={candidate.triage_disposition.replace(/_/g, ' ')} className="sf-chip-accent" />}
             {candidate.approval_bucket && <Chip label={candidate.approval_bucket} className={resolveApprovalBadge(candidate.approval_bucket)} />}
           </div>

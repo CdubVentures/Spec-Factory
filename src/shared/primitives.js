@@ -3,6 +3,14 @@
 // reviewNormalization, compileUtils, convergenceHelpers, runtimeOpsEventPrimitives)
 // must import from here instead of defining its own copy.
 
+import { toFloat } from './valueNormalizers.js';
+
+export function clamp01(value, fallback = 0) {
+  const parsed = toFloat(value, fallback);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.min(1, parsed));
+}
+
 export function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }

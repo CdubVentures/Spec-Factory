@@ -89,12 +89,6 @@ export function buildDomainFunnelBullets(health, calls) {
   return bullets;
 }
 
-export function computeAvgBudgetScore(health) {
-  if (health.length === 0) return 0;
-  const sum = health.reduce((acc, d) => acc + d.budget_score, 0);
-  return Math.round(sum / health.length);
-}
-
 export function computeCooldownSummary(health) {
   let totalInCooldown = 0;
   let maxRemainingSeconds = 0;

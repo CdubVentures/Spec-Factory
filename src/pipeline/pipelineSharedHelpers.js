@@ -1,12 +1,6 @@
-import { toFloat } from '../shared/valueNormalizers.js';
+import { clamp01 } from '../shared/primitives.js';
 
-export function clamp01(value, fallback = 0) {
-  const parsed = toFloat(value, fallback);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.max(0, Math.min(1, parsed));
-}
+export { clamp01 };
 
 export function normalizeToken(value = '') {
   return String(value || '')

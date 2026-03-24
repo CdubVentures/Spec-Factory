@@ -1,18 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { compileRules } from '../../field-rules/compiler.js';
 import { loadFieldRules } from '../../field-rules/loader.js';
 import { seedSpecDb } from '../seed.js';
 import { SpecDb } from '../specDb.js';
 import { validateFieldStudioMap } from '../../ingest/categoryCompile.js';
+import {
+  approvedDomainsFromSources,
+  createCategoryAuthorityHarness,
+  createCategoryAuthorityWorkspace,
+  readJson,
+} from '../../../test/helpers/categoryAuthorityContractHarness.js';
 
 const CATEGORY = 'keyboard';
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../test', '../../../test');
+const harness = createCategoryAuthorityHarness({ category: CATEGORY, importMetaUrl: import.meta.url });
 
 const EXPECTED_GROUPS = {
   identity: [
@@ -291,33 +294,11 @@ function sorted(values) {
   return [...values].sort();
 }
 
-function categoryRoot(root = REPO_ROOT) {
-  return path.join(root, 'category_authority', CATEGORY);
-}
-
-async function readJson(filePath) {
-  return JSON.parse(await fs.readFile(filePath, 'utf8'));
-}
-
-function approvedDomainsFromSources(sources) {
-  const approved = new Set();
-  for (const values of Object.values(sources.approved || {})) {
-    for (const value of values || []) {
-      approved.add(String(value).trim().toLowerCase());
-    }
-  }
-  for (const source of Object.values(sources.sources || {})) {
-    if (!source?.base_url) {
-      continue;
-    }
-    approved.add(new URL(source.base_url).hostname.replace(/^www\./, '').toLowerCase());
-  }
-  return approved;
-}
-
 test('keyboard control-plane contract matches the curated field map', async () => {
-  const full = await readJson(path.join(categoryRoot(), '_control_plane', 'field_rules.full.json'));
-  const seed = await readJson(path.join(categoryRoot(), '_source', 'field_catalog.seed.json'));
+  const [full, seed] = await Promise.all([
+    harness.readCategoryJson('_control_plane', 'field_rules.full.json'),
+    harness.readCategoryJson('_source', 'field_catalog.seed.json'),
+  ]);
 
   assert.deepEqual(seed.groups, EXPECTED_GROUPS);
   assert.equal(Object.keys(full.fields || {}).length, FIELD_ORDER.length);
@@ -342,7 +323,7 @@ test('keyboard control-plane contract matches the curated field map', async () =
 });
 
 test('keyboard field studio map mirrors the contract and seeds curated enums/components', async () => {
-  const map = await readJson(path.join(categoryRoot(), '_control_plane', 'field_studio_map.json'));
+  const map = await harness.readCategoryJson('_control_plane', 'field_studio_map.json');
 
   assert.equal(map.version, 2);
   assert.equal(map.field_studio_source_path, '');
@@ -383,7 +364,7 @@ test('keyboard field studio map mirrors the contract and seeds curated enums/com
 });
 
 test('keyboard field studio map passes Studio validation for scratch-backed component sources', async () => {
-  const map = await readJson(path.join(categoryRoot(), '_control_plane', 'field_studio_map.json'));
+  const map = await harness.readCategoryJson('_control_plane', 'field_studio_map.json');
 
   const checked = validateFieldStudioMap(map);
 
@@ -392,9 +373,11 @@ test('keyboard field studio map passes Studio validation for scratch-backed comp
 });
 
 test('keyboard search hints use approved real hostnames instead of tier tokens', async () => {
-  const full = await readJson(path.join(categoryRoot(), '_control_plane', 'field_rules.full.json'));
-  const map = await readJson(path.join(categoryRoot(), '_control_plane', 'field_studio_map.json'));
-  const sources = await readJson(path.join(categoryRoot(), 'sources.json'));
+  const [full, map, sources] = await Promise.all([
+    harness.readCategoryJson('_control_plane', 'field_rules.full.json'),
+    harness.readCategoryJson('_control_plane', 'field_studio_map.json'),
+    harness.readCategoryJson('sources.json'),
+  ]);
   const approvedDomains = approvedDomainsFromSources(sources);
   const forbiddenTokens = new Set(['manufacturer', 'lab', 'retailer', 'database', 'community', 'support', 'manual', 'pdf']);
 
@@ -417,13 +400,16 @@ test('keyboard search hints use approved real hostnames instead of tier tokens',
 });
 
 test('keyboard compile and seed pipeline produces the expected runtime contract', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'keyboard-contract-'));
-  const helperRoot = path.join(tempRoot, 'category_authority');
-  const localCategoryRoot = path.join(helperRoot, CATEGORY);
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-
-  await fs.mkdir(helperRoot, { recursive: true });
-  await fs.cp(categoryRoot(), localCategoryRoot, { recursive: true });
+  const {
+    tempRoot,
+    helperRoot,
+    localCategoryRoot,
+    dbPath,
+    cleanup,
+  } = await createCategoryAuthorityWorkspace({
+    category: CATEGORY,
+    categoryRoot: harness.categoryRoot,
+  });
 
   try {
     const compileResult = await compileRules({
@@ -476,6 +462,6 @@ test('keyboard compile and seed pipeline produces the expected runtime contract'
       db.close();
     }
   } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
+    await cleanup();
   }
 });

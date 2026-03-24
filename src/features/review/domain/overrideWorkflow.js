@@ -3,7 +3,9 @@ import { nowIso } from '../../../utils/common.js';
 import { createFieldRulesEngine } from '../../../engine/fieldRulesEngine.js';
 import { applyRuntimeFieldRules } from '../../../engine/runtimeGate.js';
 import { buildProductReviewPayload } from './reviewGridData.js';
-import { isObject, toArray, normalizeToken, toNumber, parseDateMs } from './reviewNormalization.js';
+import { isObject, toArray, normalizeToken } from './reviewNormalization.js';
+import { toFloat } from '../../../shared/valueNormalizers.js';
+import { parseDateMs } from '../../../publish/publishPrimitives.js';
 import {
   normalizeField,
   hasKnownValue,
@@ -139,12 +141,12 @@ export async function setOverrideFromCandidate({
       candidate_id: targetCandidateId,
       field: normalizedField,
       value: String(candidateValue).trim(),
-      score: Number.isFinite(toNumber(candidateScore, NaN)) ? toNumber(candidateScore, 0) : 0,
+      score: Number.isFinite(toFloat(candidateScore, NaN)) ? toFloat(candidateScore, 0) : 0,
       candidate_index: null,
       source_id: String(fallbackEvidence.source_id || fallbackSource).trim() || null,
       source: fallbackSource,
       host: fallbackSource,
-      tier: Number.isFinite(toNumber(candidateTier, NaN)) ? toNumber(candidateTier, null) : null,
+      tier: Number.isFinite(toFloat(candidateTier, NaN)) ? toFloat(candidateTier, null) : null,
       method: String(candidateMethod || 'synthetic_candidate_accept').trim(),
       evidence_key: String(fallbackEvidence.url || '').trim() || null,
       evidence: {
@@ -457,7 +459,7 @@ export async function buildReviewMetrics({
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const rows = await listOverrideDocs(helperRoot, category);
   const now = Date.now();
-  const cutoff = now - (Math.max(1, toNumber(windowHours, 24)) * 60 * 60 * 1000);
+  const cutoff = now - (Math.max(1, toFloat(windowHours, 24)) * 60 * 60 * 1000);
   let reviewedProducts = 0;
   let inProgressProducts = 0;
   let overridesTotal = 0;
@@ -470,7 +472,7 @@ export async function buildReviewMetrics({
     const overrideCount = Object.keys(overrides).length;
     const reviewedAtMs = parseDateMs(payload.reviewed_at);
     const status = normalizeToken(payload.review_status || '');
-    const reviewTimeSeconds = toNumber(payload.review_time_seconds, NaN);
+    const reviewTimeSeconds = toFloat(payload.review_time_seconds, NaN);
 
     if (status === 'in_progress') {
       inProgressProducts += 1;
@@ -489,7 +491,7 @@ export async function buildReviewMetrics({
   const avgReviewTime = reviewTimeCount > 0
     ? (reviewTimeTotalSeconds / reviewTimeCount)
     : 0;
-  const safeWindowHours = Math.max(1, toNumber(windowHours, 24));
+  const safeWindowHours = Math.max(1, toFloat(windowHours, 24));
   const productsPerHour = reviewedProducts / safeWindowHours;
   const overridesPerProduct = reviewedProducts > 0
     ? (overridesTotal / reviewedProducts)

@@ -1,13 +1,6 @@
 import { extractRootDomain, nowIso } from '../utils/common.js';
 import { toRawFieldKey } from '../utils/fieldKeys.js';
-import { toInt } from '../shared/valueNormalizers.js';
-
-function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-import { hasKnownValue } from '../shared/valueNormalizers.js';
+import { toInt, toFloat, hasKnownValue } from '../shared/valueNormalizers.js';
 
 function precisionRank(precision) {
   if (precision === 'day') return 3;

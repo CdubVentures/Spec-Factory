@@ -8,7 +8,6 @@ import {
   computeUniqueDomains,
   buildSafetyClassSegments,
   buildDomainFunnelBullets,
-  computeAvgBudgetScore,
   computeCooldownSummary,
 } from '../domainClassifierHelpers.js';
 
@@ -17,7 +16,6 @@ function makeDomain(overrides = {}) {
     domain: 'example.com',
     role: 'manufacturer',
     safety_class: 'safe',
-    budget_score: 80,
     cooldown_remaining: 0,
     success_rate: 0.95,
     avg_latency_ms: 250,
@@ -249,31 +247,6 @@ describe('buildDomainFunnelBullets', () => {
     ];
     const bullets = buildDomainFunnelBullets(health, []);
     assert.ok(bullets.some((b) => b.toLowerCase().includes('role') || b.toLowerCase().includes('manufacturer')));
-  });
-});
-
-// ── computeAvgBudgetScore ──
-
-describe('computeAvgBudgetScore', () => {
-  it('returns 0 for empty array', () => {
-    assert.equal(computeAvgBudgetScore([]), 0);
-  });
-
-  it('computes rounded average of budget scores', () => {
-    const health = [
-      makeDomain({ budget_score: 80 }),
-      makeDomain({ budget_score: 60 }),
-      makeDomain({ budget_score: 70 }),
-    ];
-    assert.equal(computeAvgBudgetScore(health), 70);
-  });
-
-  it('rounds to nearest integer', () => {
-    const health = [
-      makeDomain({ budget_score: 33 }),
-      makeDomain({ budget_score: 34 }),
-    ];
-    assert.equal(computeAvgBudgetScore(health), 34);
   });
 });
 

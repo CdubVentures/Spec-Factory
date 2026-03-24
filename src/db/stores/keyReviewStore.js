@@ -1,5 +1,8 @@
 import { toPositiveInteger, hydrateRow, hydrateRows } from '../specDbHelpers.js';
 import { KEY_REVIEW_STATE_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../features/review/contracts/componentReviewShapes.js';
+
+const IDENTITY_KEYS_SQL = COMPONENT_IDENTITY_PROPERTY_KEYS.map(k => `'${k}'`).join(', ');
 
 /**
  * Key Review store — extracted from SpecDb.
@@ -40,7 +43,7 @@ export function createKeyReviewStore({ db, category, stmts }) {
         updated_at = datetime('now')
         WHERE target_kind = 'component_key'
           AND component_value_id IS NULL
-          AND COALESCE(property_key, '') NOT IN ('__name', '__maker', '__links', '__aliases')
+          AND COALESCE(property_key, '') NOT IN (${IDENTITY_KEYS_SQL})
       `).run();
 
       db.prepare(`
@@ -555,7 +558,7 @@ export function createKeyReviewStore({ db, category, stmts }) {
             )
             OR (
               target_kind = 'component_key'
-              AND property_key NOT IN ('__name', '__maker', '__links', '__aliases')
+              AND property_key NOT IN (${IDENTITY_KEYS_SQL})
               AND (
                 key_review_state.component_value_id IS NULL
                 OR NOT EXISTS (
@@ -575,7 +578,7 @@ export function createKeyReviewStore({ db, category, stmts }) {
             )
             OR (
               target_kind = 'component_key'
-              AND property_key IN ('__name', '__maker', '__links', '__aliases')
+              AND property_key IN (${IDENTITY_KEYS_SQL})
               AND key_review_state.component_identity_id IS NULL
             )
           )

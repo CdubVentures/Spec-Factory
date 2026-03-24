@@ -51,10 +51,6 @@ export declare function buildDomainFunnelBullets(
   calls: PrefetchLlmCall[],
 ): string[];
 
-export declare function computeAvgBudgetScore(
-  health: DomainHealthRow[],
-): number;
-
 export declare function computeCooldownSummary(
   health: DomainHealthRow[],
 ): CooldownSummary;

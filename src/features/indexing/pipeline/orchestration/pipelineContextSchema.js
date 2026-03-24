@@ -150,7 +150,6 @@ export const pipelineContextAfterBootstrap = pipelineContextSeed.extend({
   missingFields: z.array(z.string()),
   learning: z.object({}).passthrough(),
   enrichedLexicon: z.object({}).passthrough(),
-  searchProfileCaps: z.object({}).passthrough(),
   planningHints: z.object({}).passthrough(),
   queryExecutionHistory: z.object({}).passthrough(),
 });
@@ -192,9 +191,7 @@ export const pipelineContextAfterJourney = pipelineContextAfterPlanner.extend({
 
 export const pipelineContextAfterExecution = pipelineContextAfterJourney.extend({
   // Computed by orchestrator before Search Execution phase
-  resultsPerQuery: z.number(),
   discoveryCap: z.number(),
-  queryConcurrency: z.number(),
   providerState: z.object({}).passthrough(),
   requiredOnlySearch: z.boolean(),
   missingRequiredFields: z.array(z.string()),

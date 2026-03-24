@@ -1,6 +1,12 @@
 // WHY: O(1) Feature Scaling — SSOT for component review API response shapes.
 // Adding a field = add one entry here. Alignment test catches TS drift.
 
+// WHY: SSOT for component identity property keys (synthetic __-prefixed keys).
+// Used by keyReviewStore SQL, componentMutationService, and test fixtures.
+export const COMPONENT_IDENTITY_PROPERTY_KEYS = Object.freeze([
+  '__name', '__maker', '__links', '__aliases',
+]);
+
 export const COMPONENT_REVIEW_ITEM_KEYS = Object.freeze([
   'component_identity_id', 'name', 'maker', 'discovered', 'discovery_source',
   'aliases', 'aliases_overridden', 'links',

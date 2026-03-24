@@ -164,7 +164,7 @@ export function buildQueryAttemptStats(rows = []) {
 }
 
 // ---------------------------------------------------------------------------
-// resolveSearchProfileCaps — returns hardcoded caps for search profile
+// resolveSearchProfileCaps — preserves the public cap contract for discovery
 // ---------------------------------------------------------------------------
 
 export function resolveSearchProfileCaps() {
@@ -176,6 +176,7 @@ export function resolveSearchProfileCaps() {
     dedupeQueriesCap: 24,
   };
 }
+
 
 // ---------------------------------------------------------------------------
 // normalizeTriageScore — extracts best available score from a row

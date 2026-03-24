@@ -105,7 +105,6 @@ export interface LlmCallsDashboardSummary extends LlmCallsDashboardSummaryGen {
 
 export interface TriageCandidate extends TriageCandidateGen {
   score_components: TriageScoreComponents;
-  primary_lane: number | null;
 }
 
 export interface SearchPlanPass extends SearchPlanPassBase {

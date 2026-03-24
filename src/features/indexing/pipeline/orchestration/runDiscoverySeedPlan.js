@@ -9,11 +9,10 @@ import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
 import { buildSearchPlanningContext } from '../../../../indexlab/searchPlanningContext.js';
 import { buildSearchPlan } from '../../../../indexlab/searchPlanBuilder.js';
 import { resolveBrandDomain } from '../brandResolver/resolveBrandDomain.js';
-import { resolveJobIdentity, toArray, normalizeHost } from '../shared/discoveryIdentity.js';
+import { resolveJobIdentity, toArray, normalizeHost, SLOT_LABELS } from '../shared/discoveryIdentity.js';
 import {
   mergeLearningStoreHintsIntoLexicon,
   loadLearningArtifacts,
-  resolveSearchProfileCaps,
   ensureCategorySourceLookups,
 } from '../shared/helpers.js';
 import { extractRootDomain } from '../../../../utils/common.js';
@@ -176,7 +175,6 @@ export async function runDiscoverySeedPlan({
     category: categoryConfig?.category,
   });
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
-  const searchProfileCaps = resolveSearchProfileCaps();
   const identityLock = {
     brand: resolvedIdentity.brand,
     model: resolvedIdentity.model,
@@ -192,7 +190,7 @@ export async function runDiscoverySeedPlan({
     seedSearchPlan: needset.seedSearchPlan,
     brandResolution: brand.brandResolution,
     variables, identityLock, missingFields,
-    learning, enrichedLexicon, searchProfileCaps,
+    learning, enrichedLexicon,
     planningHints, queryExecutionHistory,
   };
   validatePipelineCheckpoint('afterBootstrap', ctx, logger, discoveryConfig);
@@ -202,7 +200,7 @@ export async function runDiscoverySeedPlan({
     job, categoryConfig, missingFields,
     learning: { ...learning, enrichedLexicon },
     brandResolution: brand.brandResolution,
-    config: discoveryConfig, searchProfileCaps, variables,
+    config: discoveryConfig, variables,
     focusGroups: needset.focusGroups,
     seedStatus: needset.seedStatus,
     logger, runId,
@@ -225,7 +223,7 @@ export async function runDiscoverySeedPlan({
   const journey = await runQueryJourneyFn({
     searchProfileBase: profile.searchProfileBase,
     enhancedRows: plannerResult.enhancedRows,
-    variables, config: discoveryConfig, searchProfileCaps, missingFields,
+    variables, config: discoveryConfig, missingFields,
     planningHints,
     categoryConfig, job, runId, logger, storage,
     brandResolution: brand.brandResolution,
@@ -241,9 +239,8 @@ export async function runDiscoverySeedPlan({
   const plannedQueries = journey.queries.slice(0, journey.executionQueryLimit);
   if (plannedQueries.length > 0) {
     const provider = String(discoveryConfig.searchEngines || '').trim();
-    const slotLabels = 'abcdefghijklmnopqrstuvwxyz';
-    for (let i = 0; i < plannedQueries.length && i < slotLabels.length; i++) {
-      const letter = slotLabels[i];
+    for (let i = 0; i < plannedQueries.length && i < SLOT_LABELS.length; i++) {
+      const letter = SLOT_LABELS[i];
       logger?.info?.('search_queued', {
         scope: 'query',
         worker_id: `search-${letter}`,
@@ -256,11 +253,8 @@ export async function runDiscoverySeedPlan({
   }
 
   // === Search Execution phase ===
-  const resultsPerQuery = 10;
   // WHY: discoveryCap derives from serpSelectorUrlCap (a URL count).
   const discoveryCap = configInt(discoveryConfig, 'serpSelectorUrlCap');
-  // WHY: Strict sequential execution — search-b must not start until search-a finishes.
-  const queryConcurrency = 1;
   const providerState = searchEngineAvailability(discoveryConfig);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
   const missingRequiredFields = normalizeFieldListFn(
@@ -272,8 +266,8 @@ export async function runDiscoverySeedPlan({
     config: discoveryConfig, storage, logger, runtimeTraceWriter: traceWriter, frontierDb,
     categoryConfig, job, runId,
     queries: journey.queries, executionQueryLimit: journey.executionQueryLimit,
-    queryConcurrency, resultsPerQuery, queryLimit: journey.queryLimit,
-    searchProfileCaps, missingFields, variables,
+    queryLimit: journey.queryLimit,
+    missingFields, variables,
     selectedQueryRowMap: journey.selectedQueryRowMap,
     // WHY: Query Journey exports profileQueryRowsByQuery; Search Execution expects profileQueryRowMap.
     // Intentional boundary rename — both names are semantically accurate.
@@ -283,7 +277,7 @@ export async function runDiscoverySeedPlan({
   const { rawResults, searchAttempts, searchJournal,
     internalSatisfied, externalSearchReason } = searchResult;
   ctx = {
-    ...ctx, resultsPerQuery, discoveryCap, queryConcurrency,
+    ...ctx, discoveryCap,
     providerState, requiredOnlySearch, missingRequiredFields,
     ...searchResult,
   };
@@ -299,7 +293,7 @@ export async function runDiscoverySeedPlan({
     searchProfileBase: profile.searchProfileBase,
     llmQueries: [],
     queries: journey.queries, searchProfilePlanned: journey.searchProfilePlanned,
-    searchProfileKeys: journey.searchProfileKeys, providerState, queryConcurrency, discoveryCap,
+    searchProfileKeys: journey.searchProfileKeys, providerState, discoveryCap,
   });
 
   // === Domain Classifier phase ===

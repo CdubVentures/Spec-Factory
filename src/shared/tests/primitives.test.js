@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey } from '../primitives.js';
+import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey, clamp01 } from '../primitives.js';
 
 describe('isObject', () => {
   const trueCases = [
@@ -102,6 +102,34 @@ describe('normalizeToken', () => {
       strictEqual(normalizeToken(input), expected);
     });
   }
+});
+
+describe('clamp01', () => {
+  const cases = [
+    [0.5,       0.5,  'mid-range passthrough'],
+    [0,         0,    'zero passthrough'],
+    [1,         1,    'one passthrough'],
+    [-1,        0,    'negative clamped to 0'],
+    [2,         1,    'above 1 clamped to 1'],
+    ['0.75',    0.75, 'string float parsed and passed through'],
+    ['-0.5',    0,    'string negative clamped to 0'],
+    ['1.5',     1,    'string above 1 clamped to 1'],
+    [null,      0,    'null returns fallback (0)'],
+    [undefined, 0,    'undefined returns fallback (0)'],
+    ['abc',     0,    'non-numeric string returns fallback (0)'],
+    ['',        0,    'empty string returns fallback (0)'],
+  ];
+
+  for (const [input, expected, label] of cases) {
+    it(label, () => {
+      strictEqual(clamp01(input), expected);
+    });
+  }
+
+  it('uses custom fallback for non-finite input', () => {
+    strictEqual(clamp01('abc', 0.5), 0.5);
+    strictEqual(clamp01(null, 0.25), 0.25);
+  });
 });
 
 describe('normalizeFieldKey', () => {

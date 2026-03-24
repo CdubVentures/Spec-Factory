@@ -1,17 +1,12 @@
 import { nowIso } from '../utils/common.js';
 import { applyRuntimeFieldRules } from '../engine/runtimeGate.js';
-import { toInt } from '../shared/valueNormalizers.js';
+import { toInt, toFloat } from '../shared/valueNormalizers.js';
 
 function slug(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function dedupeUrls(urls = [], limit = 50) {
@@ -61,15 +56,15 @@ function runSnapshot(summary = {}, runId = '') {
     runId,
     validated: Boolean(summary.validated),
     validated_reason: summary.validated_reason || '',
-    confidence: toNumber(summary.confidence, 0),
-    completeness_required: toNumber(summary.completeness_required, 0),
-    coverage_overall: toNumber(summary.coverage_overall, 0),
+    confidence: toFloat(summary.confidence, 0),
+    completeness_required: toFloat(summary.completeness_required, 0),
+    coverage_overall: toFloat(summary.coverage_overall, 0),
     contradiction_count: toInt(summary.constraint_analysis?.contradiction_count, 0),
     missing_required_fields: summary.missing_required_fields || [],
     critical_fields_below_pass_target: summary.critical_fields_below_pass_target || [],
     publishable: resolvePublishable(summary, true),
     publish_blockers: Array.isArray(summary.publish_blockers) ? summary.publish_blockers : [],
-    llm_cost_usd_run: toNumber(summary.llm?.cost_usd_run, 0),
+    llm_cost_usd_run: toFloat(summary.llm?.cost_usd_run, 0),
     duration_ms: toInt(summary.duration_ms, 0)
   };
 }
@@ -78,9 +73,9 @@ function compactSummary(summary = {}) {
   return {
     validated: Boolean(summary.validated),
     validated_reason: summary.validated_reason || '',
-    confidence: toNumber(summary.confidence, 0),
-    completeness_required: toNumber(summary.completeness_required, 0),
-    coverage_overall: toNumber(summary.coverage_overall, 0),
+    confidence: toFloat(summary.confidence, 0),
+    completeness_required: toFloat(summary.completeness_required, 0),
+    coverage_overall: toFloat(summary.coverage_overall, 0),
     missing_required_fields: summary.missing_required_fields || [],
     fields_below_pass_target: summary.fields_below_pass_target || [],
     critical_fields_below_pass_target: summary.critical_fields_below_pass_target || [],
@@ -106,8 +101,8 @@ function resolvePublishable(summary = {}, fallback = true) {
 
 function finalSummaryScore(summary = {}) {
   return {
-    completeness: toNumber(summary.completeness_required, toNumber(summary.completeness_required_percent, 0) / 100),
-    confidence: toNumber(summary.confidence, 0),
+    completeness: toFloat(summary.completeness_required, toFloat(summary.completeness_required_percent, 0) / 100),
+    confidence: toFloat(summary.confidence, 0),
     contradictions: toInt(summary.contradiction_count ?? summary.constraint_analysis?.contradiction_count, 0),
     generatedAt: String(summary.generated_at || '')
   };
@@ -181,7 +176,7 @@ function sourceRowsForHistory(sourceResults = [], runId = '') {
     candidate_source: Boolean(row.candidateSource),
     status: row.status ?? null,
     identity_match: Boolean(row.identity?.match),
-    identity_score: toNumber(row.identity?.score, 0),
+    identity_score: toFloat(row.identity?.score, 0),
     anchor_status: row.anchorStatus || row.anchor_status || ''
   }));
 }

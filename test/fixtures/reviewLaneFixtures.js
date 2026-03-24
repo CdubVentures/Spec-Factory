@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import net from 'node:net';
 import { createStorage } from '../../src/s3/storage.js';
+import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../src/features/review/contracts/componentReviewShapes.js';
 
 export const PRODUCT_A = 'mouse-razer-viper-v3-pro';
 export const PRODUCT_B = 'mouse-pulsar-x2-v3';
@@ -352,7 +353,7 @@ export function resolveStrictKeyReviewSlotIds(db, category, row = {}) {
 
   if (targetKind === 'component_key') {
     const propertyKey = String(resolved.propertyKey || resolved.property_key || '').trim();
-    const isIdentityProperty = ['__name', '__maker', '__links', '__aliases'].includes(propertyKey);
+    const isIdentityProperty = COMPONENT_IDENTITY_PROPERTY_KEYS.includes(propertyKey);
     const parsed = parseComponentIdentifier(resolved.componentIdentifier || resolved.component_identifier);
     if (isIdentityProperty) {
       resolved.componentIdentityId = resolved.componentIdentityId

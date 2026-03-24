@@ -92,7 +92,6 @@ export const SERP_TRIAGE_CANDIDATE_SHAPE = Object.freeze([
   { key: 'role', coerce: 'string' },
   { key: 'identity_prelim', coerce: 'string' },
   { key: 'host_trust_class', coerce: 'string' },
-  { key: 'primary_lane', coerce: 'passthrough' },
   { key: 'triage_disposition', coerce: 'string' },
   { key: 'doc_kind_guess', coerce: 'string' },
   { key: 'approval_bucket', coerce: 'string' },

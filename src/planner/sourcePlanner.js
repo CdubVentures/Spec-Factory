@@ -18,7 +18,8 @@ import {
   canonicalizeQueueUrl,
   hostInSet,
   tokenize,
-  countQueueHost
+  countQueueHost,
+  lookupTriageMeta,
 } from './sourcePlannerUrlUtils.js';
 
 export class SourcePlanner {
@@ -31,6 +32,8 @@ export class SourcePlanner {
     // after Brand Resolver phase provides LLM-resolved aliases and domains.
     this.brandHostHints = [];
 
+    // WHY: Runtime overrides no longer mutate this cap, but legacy consumers still
+    // read the exposed contract fields on the planner and stats payload.
     this.maxUrls = 50;
     this.maxPagesPerDomain = configInt(config, 'maxPagesPerDomain');
 
@@ -236,24 +239,9 @@ export class SourcePlanner {
 
   seedCandidates(urls, { triageMetaMap = null } = {}) {
     for (const url of urls || []) {
-      const meta = triageMetaMap ? this._lookupTriageMeta(url, triageMetaMap) : null;
+      const meta = triageMetaMap ? lookupTriageMeta(url, triageMetaMap) : null;
       this.enqueue(url, 'discovery', { forceCandidate: true, triageMeta: meta });
     }
-  }
-
-  _lookupTriageMeta(url, triageMetaMap) {
-    if (!triageMetaMap || triageMetaMap.size === 0) return null;
-    try {
-      const parsed = new URL(url);
-      const canonical = canonicalizeQueueUrl(parsed);
-      if (triageMetaMap.has(canonical)) return triageMetaMap.get(canonical);
-      const normalized = parsed.toString();
-      if (triageMetaMap.has(normalized)) return triageMetaMap.get(normalized);
-    } catch {
-      // Fall through to raw lookup
-    }
-    if (triageMetaMap.has(url)) return triageMetaMap.get(url);
-    return null;
   }
 
   // ── Core enqueue logic ──

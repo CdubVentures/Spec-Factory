@@ -312,7 +312,6 @@ export interface IndexLabSerpCandidateRow {
   tier_name?: string;
   doc_kind?: string;
   triage_score?: number;
-  triage_reason?: string;
   decision?: string;
   reason_codes?: string[];
   providers?: string[];

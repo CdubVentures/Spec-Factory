@@ -8,6 +8,7 @@ import {
   crawlConfigSchema,
   discoverySchema,
   TIER_ENUM,
+  AUTHORITY_ENUM,
 } from '../sourceRegistry.js';
 
 // WHY: Zod v4 exposes shape as a property on the schema object.
@@ -18,9 +19,7 @@ export const SOURCE_ENTRY_FIELD_KEYS = Object.freeze(Object.keys(schemaShape));
 
 export const TIER_VALUES = Object.freeze([...TIER_ENUM]);
 
-export const AUTHORITY_VALUES = Object.freeze([
-  'authoritative', 'instrumented', 'aggregator', 'community', 'unknown',
-]);
+export const AUTHORITY_VALUES = Object.freeze([...AUTHORITY_ENUM]);
 
 export const DISCOVERY_METHOD_VALUES = Object.freeze([
   'manual', 'search_first',

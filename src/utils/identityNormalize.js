@@ -48,19 +48,10 @@ const IDENTITY_LOCK_THRESHOLD = 0.95;
 const IDENTITY_PROVISIONAL_THRESHOLD = 0.70;
 const IDENTITY_DEFAULT_AUDIT_LIMIT = 24;
 
+import { clamp01 } from '../shared/primitives.js';
+import { toFloat } from '../shared/valueNormalizers.js';
+
 // --- Helpers (used by identity normalization) ---
-
-function clamp01(value) {
-  if (!Number.isFinite(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
-}
-
-function toNumber(value, fallback = null) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
 
 function toIso(value, fallback = '') {
   const raw = String(value || '').trim();
@@ -99,8 +90,8 @@ function normalizeIdentityEvidenceRow(row = {}, index = 0) {
     tier: Math.max(0, Number.parseInt(String(row?.tier ?? 0), 10) || 0),
     candidate_brand: String(row?.candidate_brand || row?.candidateBrand || '').trim(),
     candidate_model: String(row?.candidate_model || row?.candidateModel || '').trim(),
-    identity_score: clamp01(toNumber(row?.identity_score ?? row?.identityScore, 0)),
-    identity_confidence: clamp01(toNumber(row?.identity_confidence ?? row?.identityConfidence ?? row?.identity_score ?? row?.identityScore, 0)),
+    identity_score: clamp01(toFloat(row?.identity_score ?? row?.identityScore, 0)),
+    identity_confidence: clamp01(toFloat(row?.identity_confidence ?? row?.identityConfidence ?? row?.identity_score ?? row?.identityScore, 0)),
     reason_codes: reasonCodes,
   };
 }
@@ -132,7 +123,7 @@ export function normalizeIdentityState(input = {}) {
   if (token === 'locked' || token === 'provisional' || token === 'unlocked' || token === 'conflict') {
     return token;
   }
-  const confidence = clamp01(toNumber(input?.confidence, 0));
+  const confidence = clamp01(toFloat(input?.confidence, 0));
   const gateValidated = Boolean(input?.identity_gate_validated);
   const reasonCodes = uniqueReasonCodes(input?.reason_codes || []);
   const hasConflictCode = reasonCodes.some((code) =>
@@ -183,8 +174,8 @@ export function normalizeIdentityContext(identityContext = {}, now = '') {
     ...identityContext,
     reason_codes: reasonCodes
   });
-  const confidence = clamp01(toNumber(identityContext.confidence, 0));
-  const maxMatchScore = clamp01(toNumber(identityContext.max_match_score, confidence));
+  const confidence = clamp01(toFloat(identityContext.confidence, 0));
+  const maxMatchScore = clamp01(toFloat(identityContext.max_match_score, confidence));
   const familyModelCount = Math.max(0, Number.parseInt(String(identityContext.family_model_count || 0), 10) || 0);
   const ambiguityLevel = normalizeAmbiguityLevel(identityContext.ambiguity_level, familyModelCount);
   const extractionGateOpen =
@@ -197,7 +188,7 @@ export function normalizeIdentityContext(identityContext = {}, now = '') {
       url: String(row?.url || '').trim(),
       host: String(row?.host || '').trim(),
       decision: String(row?.decision || '').trim().toUpperCase(),
-      confidence: clamp01(toNumber(row?.confidence, 0)),
+      confidence: clamp01(toFloat(row?.confidence, 0)),
       reason_codes: uniqueReasonCodes(row?.reason_codes || row?.reasonCodes || []),
       ts: toIso(row?.ts || row?.updated_at || normalizedNow, normalizedNow)
     }))

@@ -13,71 +13,34 @@ export const GUI_API_ROUTE_ORDER = [
   'sourceStrategy',
 ];
 
-function assertRegistrar(name, registrar) {
-  if (typeof registrar !== 'function') {
-    throw new TypeError(`${name} must be a function`);
-  }
-}
-
-function assertRouteHandler(name, handler) {
-  if (typeof handler !== 'function') {
-    throw new TypeError(`${name} must return a route handler function`);
-  }
-}
-
-export function createGuiApiRouteRegistry({
-  routeCtx,
-  registerInfraRoutes,
-  registerConfigRoutes,
-  registerIndexlabRoutes,
-  registerRuntimeOpsRoutes,
-  registerCatalogRoutes,
-  registerBrandRoutes,
-  registerStudioRoutes,
-  registerDataAuthorityRoutes,
-  registerQueueBillingLearningRoutes,
-  registerReviewRoutes,
-  registerTestModeRoutes,
-  registerSourceStrategyRoutes,
-} = {}) {
+export function createGuiApiRouteRegistry({ routeCtx, routeDefinitions } = {}) {
   if (!routeCtx || typeof routeCtx !== 'object') {
     throw new TypeError('routeCtx must be an object');
   }
+  if (!Array.isArray(routeDefinitions) || routeDefinitions.length === 0) {
+    throw new TypeError('routeDefinitions must be a non-empty array');
+  }
 
-  assertRegistrar('registerInfraRoutes', registerInfraRoutes);
-  assertRegistrar('registerConfigRoutes', registerConfigRoutes);
-  assertRegistrar('registerIndexlabRoutes', registerIndexlabRoutes);
-  assertRegistrar('registerRuntimeOpsRoutes', registerRuntimeOpsRoutes);
-  assertRegistrar('registerCatalogRoutes', registerCatalogRoutes);
-  assertRegistrar('registerBrandRoutes', registerBrandRoutes);
-  assertRegistrar('registerStudioRoutes', registerStudioRoutes);
-  assertRegistrar('registerDataAuthorityRoutes', registerDataAuthorityRoutes);
-  assertRegistrar('registerQueueBillingLearningRoutes', registerQueueBillingLearningRoutes);
-  assertRegistrar('registerReviewRoutes', registerReviewRoutes);
-  assertRegistrar('registerTestModeRoutes', registerTestModeRoutes);
-  assertRegistrar('registerSourceStrategyRoutes', registerSourceStrategyRoutes);
+  const handlersByKey = {};
 
-  const handlersByKey = {
-    infra: registerInfraRoutes(routeCtx.infraRouteContext),
-    config: registerConfigRoutes(routeCtx.configRouteContext),
-    indexlab: registerIndexlabRoutes(routeCtx.indexlabRouteContext),
-    runtimeOps: registerRuntimeOpsRoutes(routeCtx.runtimeOpsRouteContext),
-    catalog: registerCatalogRoutes(routeCtx.catalogRouteContext),
-    brand: registerBrandRoutes(routeCtx.brandRouteContext),
-    studio: registerStudioRoutes(routeCtx.studioRouteContext),
-    dataAuthority: registerDataAuthorityRoutes(routeCtx.dataAuthorityRouteContext),
-    queueBillingLearning: registerQueueBillingLearningRoutes(routeCtx.queueBillingLearningRouteContext),
-    review: registerReviewRoutes(routeCtx.reviewRouteContext),
-    testMode: registerTestModeRoutes(routeCtx.testModeRouteContext),
-    sourceStrategy: registerSourceStrategyRoutes(routeCtx.sourceStrategyRouteContext),
-  };
-
-  for (const routeKey of GUI_API_ROUTE_ORDER) {
-    assertRouteHandler(routeKey, handlersByKey[routeKey]);
+  for (const { key, registrar } of routeDefinitions) {
+    if (typeof registrar !== 'function') {
+      throw new TypeError(`registrar for "${key}" must be a function`);
+    }
+    const ctxKey = `${key}RouteContext`;
+    const ctx = routeCtx[ctxKey];
+    if (ctx === undefined) {
+      throw new TypeError(`routeCtx.${ctxKey} is missing for route "${key}"`);
+    }
+    const handler = registrar(ctx);
+    if (typeof handler !== 'function') {
+      throw new TypeError(`registrar for "${key}" must return a route handler function`);
+    }
+    handlersByKey[key] = handler;
   }
 
   return {
     ...handlersByKey,
-    routeHandlers: GUI_API_ROUTE_ORDER.map((routeKey) => handlersByKey[routeKey]),
+    routeHandlers: routeDefinitions.map(({ key }) => handlersByKey[key]),
   };
 }

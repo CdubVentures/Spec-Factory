@@ -123,7 +123,6 @@ function makeBaseArgs(overrides = {}) {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    queryConcurrency: 1,
     discoveryCap: 20,
     ...overrides,
   };

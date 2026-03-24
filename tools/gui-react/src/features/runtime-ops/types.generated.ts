@@ -235,7 +235,6 @@ export interface TriageCandidateGen {
   role: string;
   identity_prelim: string;
   host_trust_class: string;
-  primary_lane: unknown;
   triage_disposition: string;
   doc_kind_guess: string;
   approval_bucket: string;
@@ -371,7 +370,6 @@ export interface DomainHealthRow {
   domain: string;
   role: string;
   safety_class: string;
-  budget_score: number;
   cooldown_remaining: number;
   success_rate: number;
   avg_latency_ms: number;

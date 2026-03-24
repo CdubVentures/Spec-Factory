@@ -3,7 +3,7 @@
 // Builds triage metadata map so planner.enqueue() can look up triage labels.
 // Enforces domainClassifierUrlCap — the per-run URL count limit for enqueuing.
 
-import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
+import { canonicalizeQueueUrl, lookupTriageMeta } from '../../../../planner/sourcePlannerUrlUtils.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 
 /**
@@ -71,7 +71,7 @@ export function runDomainClassifier({
 
   const candidateUrls = discoveryResult.allCandidateUrls || [];
   for (const url of approvedUrls) {
-    const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
+    const meta = triageMetaMap.size > 0 ? lookupTriageMeta(url, triageMetaMap) : null;
     planner.enqueue(url, 'discovery_approved', {
       forceApproved: true,
       forceBrandBypass: false,
@@ -107,24 +107,9 @@ function _applyUrlCap(urls, cap, triageMetaMap) {
   if (!cap || cap <= 0 || urls.length <= cap) return urls;
   // WHY: Sort by triage_score descending so the highest-ranked URLs survive.
   const scored = urls.map((url) => {
-    const meta = _lookupTriageMeta(url, triageMetaMap);
+    const meta = lookupTriageMeta(url, triageMetaMap);
     return { url, score: meta?.triage_score ?? 0 };
   });
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, cap).map((entry) => entry.url);
-}
-
-function _lookupTriageMeta(url, triageMetaMap) {
-  if (!triageMetaMap || triageMetaMap.size === 0) return null;
-  try {
-    const parsed = new URL(url);
-    const canonical = canonicalizeQueueUrl(parsed);
-    if (triageMetaMap.has(canonical)) return triageMetaMap.get(canonical);
-    const normalized = parsed.toString();
-    if (triageMetaMap.has(normalized)) return triageMetaMap.get(normalized);
-  } catch {
-    // Fall through
-  }
-  if (triageMetaMap.has(url)) return triageMetaMap.get(url);
-  return null;
 }

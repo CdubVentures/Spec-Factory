@@ -21,7 +21,7 @@ export const TIER_TO_ROLE = {
   community: 'tier4_community',
 };
 
-const AUTHORITY_ENUM = [
+export const AUTHORITY_ENUM = [
   'authoritative', 'instrumented', 'aggregator', 'community', 'unknown',
 ];
 

@@ -33,8 +33,8 @@ export async function executeSearchQueries({
   // Job context
   categoryConfig, job, runId,
   // Query plan outputs
-  queries, executionQueryLimit, queryConcurrency, resultsPerQuery, queryLimit,
-  searchProfileCaps, missingFields, variables,
+  queries, executionQueryLimit, queryLimit,
+  missingFields, variables,
   // Lookup maps
   selectedQueryRowMap, profileQueryRowMap,
   // Provider state
@@ -139,7 +139,6 @@ export async function executeSearchQueries({
         config,
         category: categoryConfig.category,
         query,
-        limit: resultsPerQuery,
         missingFields,
         fieldOrder: categoryConfig.fieldOrder || [],
         logger
@@ -199,9 +198,10 @@ export async function executeSearchQueries({
     providerState.provider !== 'none' && Boolean(providerState.internet_ready);
 
   if (canSearchInternet && !(internalFirst && internalSatisfied)) {
+    // WHY: Strict sequential execution — search-b must not start until search-a finishes.
     const queryResults = await runWithConcurrency(
       queries.slice(0, executionQueryLimit),
-      queryConcurrency,
+      1,
       async (query) => {
         if (frontierDb?.shouldSkipQuery?.({ productId: job.productId, query })) {
           const cached = getCachedFrontierQueryResults(query);
@@ -275,7 +275,6 @@ export async function executeSearchQueries({
         const searchProviderResult = await runSearchProvidersFn({
           config,
           query,
-          limit: resultsPerQuery,
           logger,
           screenshotSink,
         });
@@ -414,8 +413,7 @@ export async function executeSearchQueries({
       categoryConfig,
       queries,
       variables,
-      maxQueries: Math.min(queryLimit, 12),
-      deterministicAliasCap: searchProfileCaps.deterministicAliasCap,
+      maxQueries: queryLimit,
     });
     rawResults.push(...planned);
     searchAttempts.push({

@@ -22,7 +22,6 @@ export async function runQueryJourney({
   enhancedRows = [],
   variables,
   config,
-  searchProfileCaps,
   missingFields,
   planningHints,
   categoryConfig,
@@ -54,7 +53,7 @@ export async function runQueryJourney({
 
   // WHY: searchProfileQueryCap is the sole controller for total search queries per run.
   const queryLimit = configInt(config, 'searchProfileQueryCap');
-  const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
+  const mergedQueries = dedupeQueryRows(queryCandidates);
 
   // WHY: Tier order from Search Profile IS the execution priority.
   // No re-ranking — seeds first, groups by productivity, keys by availability/difficulty.

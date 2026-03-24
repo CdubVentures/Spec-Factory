@@ -4,7 +4,7 @@ import {
   normalizeAmbiguityLevel
 } from '../../../../utils/identityNormalize.js';
 import { sha256 } from './cryptoHelpers.js';
-import { loadProductCatalog } from '../../../catalog/products/productCatalog.js';
+import { loadProductCatalog } from '../../../catalog/index.js';
 import { toFloat } from './typeHelpers.js';
 
 export async function resolveIdentityAmbiguitySnapshot({ config, category = '', identityLock = {} } = {}) {

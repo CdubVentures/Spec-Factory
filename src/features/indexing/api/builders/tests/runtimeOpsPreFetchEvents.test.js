@@ -248,9 +248,9 @@ test('domains_classified events populate domain_health array', () => {
   const events = [
     makeEvent('domains_classified', {
       classifications: [
-        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', budget_score: 95, cooldown_remaining: 0, success_rate: 0.98, avg_latency_ms: 450, notes: 'Primary manufacturer' },
-        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', budget_score: 88, cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 800, notes: 'Trusted lab review' },
-        { domain: 'sketchy.site', role: 'unknown', safety_class: 'blocked', budget_score: 5, cooldown_remaining: 1800, success_rate: 0.1, avg_latency_ms: 5000, notes: 'Repeated 403s' },
+        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.98, avg_latency_ms: 450, notes: 'Primary manufacturer' },
+        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 800, notes: 'Trusted lab review' },
+        { domain: 'sketchy.site', role: 'unknown', safety_class: 'blocked', cooldown_remaining: 1800, success_rate: 0.1, avg_latency_ms: 5000, notes: 'Repeated 403s' },
       ],
     }),
   ];
@@ -260,7 +260,6 @@ test('domains_classified events populate domain_health array', () => {
   assert.equal(result.domain_health[0].domain, 'razer.com');
   assert.equal(result.domain_health[0].role, 'manufacturer');
   assert.equal(result.domain_health[0].safety_class, 'safe');
-  assert.equal(result.domain_health[0].budget_score, 95);
   assert.equal(result.domain_health[0].cooldown_remaining, 0);
   assert.equal(result.domain_health[0].success_rate, 0.98);
   assert.equal(result.domain_health[0].avg_latency_ms, 450);
@@ -277,12 +276,12 @@ test('multiple domains_classified events merge into single domain_health array',
   const events = [
     makeEvent('domains_classified', {
       classifications: [
-        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', budget_score: 95, cooldown_remaining: 0, success_rate: 0.98, avg_latency_ms: 450, notes: '' },
+        { domain: 'razer.com', role: 'manufacturer', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.98, avg_latency_ms: 450, notes: '' },
       ],
     }),
     makeEvent('domains_classified', {
       classifications: [
-        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', budget_score: 88, cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 800, notes: '' },
+        { domain: 'rtings.com', role: 'lab_review', safety_class: 'safe', cooldown_remaining: 0, success_rate: 0.95, avg_latency_ms: 800, notes: '' },
       ],
     }),
   ];

@@ -41,7 +41,6 @@ export function createCandidateTraceMap() {
         target_fields: uniqueTokens(seed.target_fields || []),
         domain_hints: uniqueTokens(seed.domain_hints || []),
         triage_score: null,
-        triage_reason: '',
         decision: String(seed.decision || 'pending').trim() || 'pending',
         reason_codes: uniqueTokens(seed.reason_codes || []),
       });
@@ -110,7 +109,6 @@ export function enrichCandidateTraces({
     trace.approved_domain = Boolean(candidateRow.approvedDomain || trace.approved_domain);
     trace.doc_kind_guess = String(candidateRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
     trace.triage_score = Number(candidateRow.score || 0);
-    trace.triage_reason = String(candidateRow.triage_disposition || '').trim();
 
     const haystack = `${trace.title || ''} ${trace.snippet || ''} ${trace.url || ''}`.toLowerCase();
     const reasonCodes = [...(trace.reason_codes || [])];

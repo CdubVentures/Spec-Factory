@@ -193,3 +193,20 @@ export function extractFirstHttpUrlToken(value = '') {
   const match = decoded.match(/https?:\/\/[^\s<>"']+/i);
   return String(match?.[0] || '').trim();
 }
+
+// WHY: Shared triage metadata lookup — canonical URL first, then normalized,
+// then raw fallback. Used by both SourcePlanner and Domain Classifier.
+export function lookupTriageMeta(url, triageMetaMap) {
+  if (!triageMetaMap || triageMetaMap.size === 0) return null;
+  try {
+    const parsed = new URL(url);
+    const canonical = canonicalizeQueueUrl(parsed);
+    if (triageMetaMap.has(canonical)) return triageMetaMap.get(canonical);
+    const normalized = parsed.toString();
+    if (triageMetaMap.has(normalized)) return triageMetaMap.get(normalized);
+  } catch {
+    // Fall through to raw lookup
+  }
+  if (triageMetaMap.has(url)) return triageMetaMap.get(url);
+  return null;
+}

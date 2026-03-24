@@ -55,19 +55,8 @@ export { availabilityRank, difficultyRank, requiredLevelRank, deriveQueryFamilie
 
 const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
 
-import { isObject } from '../shared/primitives.js';
-
-function clamp01(value) {
-  if (!Number.isFinite(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
-}
-
-function toNumber(value, fallback = null) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { isObject, clamp01 } from '../shared/primitives.js';
+import { toFloat } from '../shared/valueNormalizers.js';
 
 function normalizeRequiredLevel(value) {
   const token = String(value || '').trim().toLowerCase();
@@ -310,8 +299,8 @@ function selectFocusFields(eligibleFields, maxFocus = 10) {
 
 function deriveSourceLabelState(identityContext) {
   const status = String(identityContext?.status || '').toLowerCase();
-  const confidence = toNumber(identityContext?.confidence, 0);
-  const contradictionCount = toNumber(identityContext?.contradiction_count, 0);
+  const confidence = toFloat(identityContext?.confidence, 0);
+  const contradictionCount = toFloat(identityContext?.contradiction_count, 0);
 
   if (status === 'conflict' || contradictionCount > 0) return 'different';
   if (status === 'locked' && confidence >= 0.95) return 'matched';
@@ -392,11 +381,11 @@ function deriveFieldHistory({ round, provenance, previousFieldHistories, field }
     domains_tried: [...domainsTried].sort(),
     host_classes_tried: Array.isArray(prev.host_classes_tried) ? prev.host_classes_tried : [],
     evidence_classes_tried: Array.isArray(prev.evidence_classes_tried) ? prev.evidence_classes_tried : [],
-    query_count: toNumber(prev.query_count, 0),
-    urls_examined_count: toNumber(prev.urls_examined_count, 0),
+    query_count: toFloat(prev.query_count, 0),
+    urls_examined_count: toFloat(prev.urls_examined_count, 0),
     refs_found: evidence.length,
-    no_value_attempts: toNumber(prev.no_value_attempts, 0),
-    duplicate_attempts_suppressed: toNumber(prev.duplicate_attempts_suppressed, 0),
+    no_value_attempts: toFloat(prev.no_value_attempts, 0),
+    duplicate_attempts_suppressed: toFloat(prev.duplicate_attempts_suppressed, 0),
     query_modes_tried_for_key: Array.isArray(prev.query_modes_tried_for_key) ? prev.query_modes_tried_for_key : [],
   };
 }
@@ -438,8 +427,8 @@ export function computeNeedSet({
     const rule = rulesMap?.[field] || {};
     const requiredLevel = normalizeRequiredLevel(ruleRequiredLevel(rule));
     const value = prov.value ?? 'unk';
-    const confidence = toNumber(prov.confidence, null);
-    const passTarget = clamp01(toNumber(prov.pass_target, 0.8));
+    const confidence = toFloat(prov.confidence, null);
+    const passTarget = clamp01(toFloat(prov.pass_target, 0.8));
     const missing = !hasKnownFieldValue(value);
     const conflict = isFieldConflict(field, fieldReasoning, constraintAnalysis);
 
@@ -475,13 +464,13 @@ export function computeNeedSet({
 
     // --- Build NeedSet assessment field entry ---
     const evidence = Array.isArray(prov.evidence) ? prov.evidence : [];
-    const refsFound = evidence.length || toNumber(prov.confirmations, 0);
-    const minEvidenceRefs = toNumber(rule.min_evidence_refs, 0);
-    const effectiveConfidence = clamp01(toNumber(confidence, 0));
+    const refsFound = evidence.length || toFloat(prov.confirmations, 0);
+    const minEvidenceRefs = toFloat(rule.min_evidence_refs, 0);
+    const effectiveConfidence = clamp01(toFloat(confidence, 0));
     const meetsPassTarget = internalState === 'covered' || (confidence !== null && confidence >= passTarget);
 
     // WHY: Guard against Math.min(...[]) returning Infinity when all tiers are >= 99.
-    const validTiers = evidence.map((e) => toNumber(e?.tier, 99)).filter((t) => t !== null && t < 99);
+    const validTiers = evidence.map((e) => toFloat(e?.tier, 99)).filter((t) => t !== null && t < 99);
     const bestTierSeen = validTiers.length > 0 ? Math.min(...validTiers) : null;
 
     const reasons = deriveFieldReasons({
@@ -542,7 +531,7 @@ export function computeNeedSet({
       },
       state: schemaState,
       value: value,
-      confidence: toNumber(confidence, 0),
+      confidence: toFloat(confidence, 0),
       effective_confidence: effectiveConfidence,
       refs_found: refsFound,
       min_refs: minEvidenceRefs,
@@ -560,7 +549,7 @@ export function computeNeedSet({
       availability: fieldAvailability,
       difficulty: fieldDifficulty,
       search_intent: exactMatchRequired ? 'exact_match' : 'broad',
-      repeat_count: toNumber(history.query_count, 0),
+      repeat_count: toFloat(history.query_count, 0),
       query_modes_tried_for_key: history.query_modes_tried_for_key || [],
       domains_tried_for_key: history.domains_tried || [],
       content_types_tried_for_key: history.evidence_classes_tried || [],
@@ -612,7 +601,7 @@ export function computeNeedSet({
   const searchExhaustedCount = schema2Fields.filter((f) => {
     if (f.state === 'accepted') return false;
     const hist = f.history || {};
-    const attempts = toNumber(hist.no_value_attempts, 0);
+    const attempts = toFloat(hist.no_value_attempts, 0);
     const classCount = Array.isArray(hist.evidence_classes_tried) ? hist.evidence_classes_tried.length : 0;
     return attempts >= EXHAUSTION_MIN_ATTEMPTS && classCount >= EXHAUSTION_MIN_EVIDENCE_CLASSES;
   }).length;
@@ -642,7 +631,7 @@ export function computeNeedSet({
     source_label_state: deriveSourceLabelState(identityContext),
     manufacturer: String(brand || identityContext?.manufacturer || '').trim() || null,
     model: String(model || '').trim() || null,
-    confidence: toNumber(identityContext?.confidence, 0),
+    confidence: toFloat(identityContext?.confidence, 0),
     official_domain: identityContext?.official_domain || null,
     support_domain: identityContext?.support_domain || null
   };
@@ -681,7 +670,7 @@ export function computeNeedSet({
       field_key: f.field_key,
       avail: availabilityRank(f.availability),
       diff: difficultyRank(f.difficulty),
-      repeat: toNumber(f.repeat_count, 0),
+      repeat: toFloat(f.repeat_count, 0),
       need: f.need_score,
       req: requiredLevelRank(f.required_level),
     }));

@@ -143,7 +143,6 @@ function makeBootstrap(overrides = {}) {
     missingFields: ['dpi', 'weight'],
     learning: { lexicon: {}, queryTemplates: [] },
     enrichedLexicon: {},
-    searchProfileCaps: { deterministicAliasCap: 6 },
     planningHints: { missingRequiredFields: ['dpi'], missingCriticalFields: [] },
     queryExecutionHistory: { queries: [] },
     ...overrides,
@@ -194,9 +193,7 @@ function makeJourney(overrides = {}) {
 function makeExecution(overrides = {}) {
   return {
     ...makeJourney(),
-    resultsPerQuery: 8,
     discoveryCap: 20,
-    queryConcurrency: 1,
     providerState: { provider: 'bing', internet_ready: true },
     requiredOnlySearch: false,
     missingRequiredFields: ['dpi'],

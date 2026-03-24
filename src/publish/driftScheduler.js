@@ -3,6 +3,7 @@ import { upsertQueueProduct } from '../queue/queueState.js';
 import { publishProducts } from './publishingPipeline.js';
 import { hasKnownValue } from '../shared/valueNormalizers.js';
 import { normalizeToken } from '../shared/primitives.js';
+import { parseDateMs } from './publishPrimitives.js';
 
 function normalizeCategory(value) {
   return String(value || '')
@@ -23,10 +24,6 @@ function slug(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function parseDateMs(value) {
-  const parsed = Date.parse(String(value || ''));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function parseJsonLines(text = '') {
   const rows = [];

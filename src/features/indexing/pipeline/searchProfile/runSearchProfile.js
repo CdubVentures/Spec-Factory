@@ -18,7 +18,6 @@ export function runSearchProfile({
   learning,
   brandResolution,
   config,
-  searchProfileCaps,
   variables,
   focusGroups,
   seedStatus = null,
@@ -32,7 +31,6 @@ export function runSearchProfile({
   }
 
   const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
-  const safeCaps = searchProfileCaps ?? {};
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -41,9 +39,6 @@ export function runSearchProfile({
     learnedQueries: learning?.queryTemplates || [],
     maxQueries: profileMaxQueries,
     brandResolution,
-    aliasValidationCap: safeCaps.llmAliasValidationCap,
-    fieldTargetQueriesCap: safeCaps.llmFieldTargetQueriesCap,
-    docHintQueriesCap: safeCaps.llmDocHintQueriesCap,
     fieldYieldByDomain: learning?.fieldYield?.by_domain || null,
     seedStatus,
     focusGroups,
@@ -59,7 +54,7 @@ export function runSearchProfile({
     alias_count: toArray(searchProfileBase?.identity_aliases).length,
     query_count: toArray(searchProfileBase?.queries).length,
     source: 'deterministic',
-    query_rows: toArray(searchProfileBase?.query_rows).slice(0, 220).map((row) => ({
+    query_rows: toArray(searchProfileBase?.query_rows).map((row) => ({
       query: String(row?.query || '').trim(),
       hint_source: String(row?.hint_source || '').trim(),
       target_fields: Array.isArray(row?.target_fields) ? row.target_fields : [],

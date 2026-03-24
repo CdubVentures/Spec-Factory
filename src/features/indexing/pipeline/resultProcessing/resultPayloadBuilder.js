@@ -69,11 +69,9 @@ export function buildSerpExplorer({
         triage_score: Number.isFinite(Number(trace.triage_score))
           ? Number(Number(trace.triage_score).toFixed(3))
           : 0,
-        triage_reason: trace.triage_reason || '',
         decision: trace.decision || 'pending',
         reason_codes: uniqueTokens(trace.reason_codes || []),
         providers: uniqueTokens(trace.providers || []),
-        primary_lane: candidateByUrl.get(trace.url)?.primary_lane || null,
         triage_disposition: candidateByUrl.get(trace.url)?.triage_disposition || null,
         identity_prelim: candidateByUrl.get(trace.url)?.identity_prelim || null,
         host_trust_class: candidateByUrl.get(trace.url)?.host_trust_class || null,
@@ -137,7 +135,6 @@ export async function writeDiscoveryPayloads({
   searchAttempts,
   searchJournal,
   providerState,
-  queryConcurrency,
   searchProfileFinal,
   serpExplorer,
   candidateRowsFinal,
@@ -166,7 +163,6 @@ export async function writeDiscoveryPayloads({
     generated_at: new Date().toISOString(),
     provider: config.searchEngines,
     provider_state: providerState,
-    query_concurrency: queryConcurrency,
     llm_query_planning: true,
     llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
     llm_serp_selector: true,

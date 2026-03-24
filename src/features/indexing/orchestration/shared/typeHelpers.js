@@ -1,12 +1,4 @@
-export function toInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-export function toFloat(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+export { toInt, toFloat } from '../../../../shared/valueNormalizers.js';
 
 export function toBool(value, fallback = false) {
   if (value === undefined || value === null || value === '') {

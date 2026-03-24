@@ -15,16 +15,6 @@ import {
   inferRoleForHost,
 } from '../../../../categories/loader.js';
 
-const HOST_TRUST_TO_LANE = {
-  official: 1,
-  support: 1,
-  trusted_specdb: 4,
-  trusted_review: 3,
-  retailer: 5,
-  community: 7,
-  unknown: 6,
-};
-
 // ---------------------------------------------------------------------------
 // serpSelectorOutputSchema — just keep_ids
 // ---------------------------------------------------------------------------
@@ -161,7 +151,6 @@ function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig
     identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
     host_trust_class: hostTrust,
     doc_kind_guess: docKind,
-    primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
     score_source: 'llm_selector',
   };
 }
@@ -193,7 +182,6 @@ export function adaptSerpSelectorOutput({
       ...enrich(originalRow),
       triage_disposition: 'fetch_high',
       approval_bucket: 'approved',
-      selection_priority: rank < Math.ceil(totalKept / 3) ? 'high' : 'medium',
       soft_reason_codes: ['llm_selected'],
       score,
       score_breakdown: { score_source: 'llm_selector', rank: rank + 1 },
@@ -205,7 +193,6 @@ export function adaptSerpSelectorOutput({
     notSelected.push({
       ...enrich(originalRow),
       triage_disposition: 'fetch_low',
-      selection_priority: 'low',
       score: 0,
       score_breakdown: { score_source: 'llm_selector', reason: 'not_selected' },
     });
@@ -215,7 +202,6 @@ export function adaptSerpSelectorOutput({
     notSelected.push({
       ...enrich(row),
       triage_disposition: 'selector_input_capped',
-      selection_priority: 'low',
       score: 0,
       score_breakdown: { score_source: 'llm_selector', reason: 'selector_input_capped' },
     });

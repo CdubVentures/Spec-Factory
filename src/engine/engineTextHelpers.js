@@ -27,10 +27,4 @@ export function isValidIsoDateTime(value) {
   return Number.isFinite(parsed) && text.includes('T');
 }
 
-export function safeJsonParse(raw = '') {
-  try {
-    return JSON.parse(String(raw || ''));
-  } catch {
-    return null;
-  }
-}
+export { safeJsonParse } from '../utils/common.js';

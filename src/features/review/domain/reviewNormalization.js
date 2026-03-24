@@ -47,14 +47,12 @@ export function normalizePathToken(value, fallback = 'unknown') {
   return token || fallback;
 }
 
-export function toNumber(value, fallback = 0) {
-  const parsed = Number.parseFloat(String(value ?? ''));
-  return Number.isFinite(parsed) ? parsed : fallback;
+export function parseDateMs(value) {
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function parseDateMs(value) {
-  const text = String(value || '').trim();
-  if (!text) return 0;
-  const parsed = Date.parse(text);
-  return Number.isFinite(parsed) ? parsed : 0;
+export function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }

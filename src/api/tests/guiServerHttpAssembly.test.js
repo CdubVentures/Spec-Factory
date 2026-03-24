@@ -5,6 +5,10 @@ import { createGuiServerHttpAssembly } from '../guiServerHttpAssembly.js';
 
 test('createGuiServerHttpAssembly preserves canonical route registration and pipeline wiring', () => {
   const routeCtx = { id: 'route-context' };
+  const routeDefinitions = [
+    { key: 'infra', registrar: 'register-infra' },
+    { key: 'config', registrar: 'register-config' },
+  ];
   const serveStatic = () => 'served';
   const registerCalls = [];
   const pipelineCalls = [];
@@ -23,21 +27,10 @@ test('createGuiServerHttpAssembly preserves canonical route registration and pip
 
   const result = createGuiServerHttpAssembly({
     routeCtx,
+    routeDefinitions,
     serveStatic,
     resolveCategoryAlias: 'resolve-category-alias',
     createGuiApiRouteRegistry,
-    registerInfraRoutes: 'register-infra',
-    registerConfigRoutes: 'register-config',
-    registerIndexlabRoutes: 'register-indexlab',
-    registerRuntimeOpsRoutes: 'register-runtime-ops',
-    registerCatalogRoutes: 'register-catalog',
-    registerBrandRoutes: 'register-brand',
-    registerStudioRoutes: 'register-studio',
-    registerDataAuthorityRoutes: 'register-data-authority',
-    registerQueueBillingLearningRoutes: 'register-queue-billing-learning',
-    registerReviewRoutes: 'register-review',
-    registerTestModeRoutes: 'register-test-mode',
-    registerSourceStrategyRoutes: 'register-source-strategy',
     createRegisteredGuiApiRouteHandlers,
     createGuiApiPipeline,
     createApiPathParser: 'create-api-path-parser',
@@ -51,18 +44,7 @@ test('createGuiServerHttpAssembly preserves canonical route registration and pip
     {
       routeCtx,
       createGuiApiRouteRegistry,
-      registerInfraRoutes: 'register-infra',
-      registerConfigRoutes: 'register-config',
-      registerIndexlabRoutes: 'register-indexlab',
-      registerRuntimeOpsRoutes: 'register-runtime-ops',
-      registerCatalogRoutes: 'register-catalog',
-      registerBrandRoutes: 'register-brand',
-      registerStudioRoutes: 'register-studio',
-      registerDataAuthorityRoutes: 'register-data-authority',
-      registerQueueBillingLearningRoutes: 'register-queue-billing-learning',
-      registerReviewRoutes: 'register-review',
-      registerTestModeRoutes: 'register-test-mode',
-      registerSourceStrategyRoutes: 'register-source-strategy',
+      routeDefinitions,
     },
   ]);
   assert.deepEqual(pipelineCalls, [

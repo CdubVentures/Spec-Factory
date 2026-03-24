@@ -7,7 +7,7 @@ import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { confidenceColor } from './confidenceColor.js';
 import { buildFallbackFieldCandidateId } from '../../../utils/candidateIdentifier.js';
-import { resolveAuthoritativeProductIdentity } from '../../catalog/identity/productIdentityAuthority.js';
+import { resolveAuthoritativeProductIdentity } from '../../catalog/index.js';
 import {
   isKnownSlotValue,
   normalizeSlotValueForShape,

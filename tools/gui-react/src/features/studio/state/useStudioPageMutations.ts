@@ -8,6 +8,7 @@ import {
 import { api } from '../../../api/client';
 import type { ProcessStatus } from '../../../types/events';
 import type { FieldStudioMapResponse } from '../../../types/studio';
+import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes';
 import type { StudioTabId } from './studioPageTabs';
 import { invalidateFieldRulesQueries } from './invalidateFieldRulesQueries';
 import { assertFieldStudioMapValidationOrThrow } from './mapValidationPreflight.js';
@@ -15,13 +16,6 @@ import { assertFieldStudioMapValidationOrThrow } from './mapValidationPreflight.
 export interface StudioProcessStatusSnapshot {
   running?: boolean;
   exitCode?: number | null;
-}
-
-export interface FieldStudioMapValidationResponse {
-  valid?: boolean;
-  ok?: boolean;
-  errors?: string[];
-  warnings?: string[];
 }
 
 export interface RunEnumConsistencyOptions {

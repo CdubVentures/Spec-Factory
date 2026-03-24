@@ -180,7 +180,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 2,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -234,7 +233,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -277,7 +275,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -339,7 +336,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -368,7 +364,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     assert.equal(typeof candidate.host, 'string');
     assert.equal(typeof candidate.doc_kind, 'string');
     assert.equal(typeof candidate.triage_score, 'number');
-    assert.equal(typeof candidate.triage_reason, 'string');
     assert.equal(typeof candidate.decision, 'string');
     assert.ok(Array.isArray(candidate.reason_codes), 'reason_codes is array');
     assert.ok(Array.isArray(candidate.providers), 'providers is array');
@@ -401,7 +396,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -449,7 +443,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -492,7 +485,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -530,7 +522,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -608,7 +599,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -657,7 +647,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
@@ -673,8 +662,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
     for (const row of rows) {
       assert.equal(typeof row.domain, 'string');
       assert.ok(['blocked', 'safe', 'caution'].includes(row.safety_class), `valid safety_class: ${row.safety_class}`);
-      assert.equal(typeof row.budget_score, 'number');
-      assert.ok(row.budget_score >= 10 && row.budget_score <= 90, `budget_score in range: ${row.budget_score}`);
     }
   });
 
@@ -719,7 +706,6 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       searchProfilePlanned: makeSearchProfilePlanned(),
       searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
       providerState: {},
-      queryConcurrency: 1,
       discoveryCap: 20,
 
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),

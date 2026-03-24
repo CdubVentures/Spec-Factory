@@ -14,6 +14,7 @@ import { PIPELINE_STAGE_DEFS } from '../../utils/constants';
 import { useEventsStore } from '../../stores/eventsStore';
 import type { ProductSummary, NormalizedProduct } from '../../types/product';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { FieldRow } from './FieldStatusTable';
 
 interface ProductDetail {
   summary: ProductSummary;
@@ -21,14 +22,6 @@ interface ProductDetail {
   provenance: Record<string, { confidence: number; value: unknown; meets_pass_target?: boolean }>;
   trafficLight: { by_field: Record<string, string> };
   fieldOrder?: string[] | null;
-}
-
-interface FieldRow {
-  field: string;
-  value: string;
-  confidence: number;
-  color: string;
-  meetsTarget: boolean;
 }
 
 function computePipelineStage(events: Array<{ event: string }>) {

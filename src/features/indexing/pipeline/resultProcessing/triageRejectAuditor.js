@@ -57,7 +57,6 @@ export function sampleRejectAudit({
       identity_prelim: String(item.identity_prelim || ''),
       host_trust_class: String(item.host_trust_class || ''),
       score: Number(item.score || 0),
-      lane: Number(item.primary_lane || 0),
     });
   }
 

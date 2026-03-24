@@ -9,9 +9,9 @@ import {
   slugify,
   splitCandidateParts,
   normalizePathToken,
-  toNumber,
-  parseDateMs,
 } from '../reviewNormalization.js';
+import { toFloat } from '../../shared/valueNormalizers.js';
+import { parseDateMs } from '../../publish/publishPrimitives.js';
 
 // ── isObject ────────────────────────────────────────────────────────
 
@@ -166,9 +166,9 @@ test('normalizePathToken uses default fallback when not specified', () => {
   assert.equal(normalizePathToken(null), 'unknown');
 });
 
-// ── toNumber ────────────────────────────────────────────────────────
+// ── toFloat ────────────────────────────────────────────────────────
 
-test('toNumber parses floats with fallback', () => {
+test('toFloat parses floats with fallback', () => {
   const cases = [
     [['42', undefined], 42],
     [['3.14', undefined], 3.14],
@@ -185,7 +185,7 @@ test('toNumber parses floats with fallback', () => {
     [[0, undefined], 0],
   ];
   for (const [args, expected] of cases) {
-    assert.equal(toNumber(args[0], args[1]), expected, `toNumber(${JSON.stringify(args[0])}, ${JSON.stringify(args[1])})`);
+    assert.equal(toFloat(args[0], args[1]), expected, `toFloat(${JSON.stringify(args[0])}, ${JSON.stringify(args[1])})`);
   }
 });
 

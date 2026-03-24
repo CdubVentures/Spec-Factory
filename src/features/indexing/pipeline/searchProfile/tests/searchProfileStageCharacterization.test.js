@@ -38,14 +38,6 @@ function makeCategoryConfig() {
   };
 }
 
-function makeSearchProfileCaps() {
-  return {
-    llmAliasValidationCap: 12,
-    llmFieldTargetQueriesCap: 3,
-    llmDocHintQueriesCap: 3,
-  };
-}
-
 function makeBaseArgs(overrides = {}) {
   return {
     job: makeJob(),
@@ -54,7 +46,6 @@ function makeBaseArgs(overrides = {}) {
     learning: { lexicon: {}, queryTemplates: [], fieldYield: null },
     brandResolution: null,
     config: { searchProfileQueryCap: 10, searchEngines: 'bing,google' },
-    searchProfileCaps: makeSearchProfileCaps(),
     variables: { brand: 'TestBrand', model: 'TestModel', variant: '', category: 'mouse' },
     focusGroups: null,
     seedStatus: null,
@@ -132,11 +123,7 @@ describe('Stage 03 Search Profile — Characterization', { concurrency: false },
     assert.ok(tier3Rows.length > 0, 'should have tier3 key queries');
   });
 
-  it('#6 does not crash when searchProfileCaps is null', () => {
-    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs({ searchProfileCaps: null })));
-  });
-
-  it('#7 does not crash when searchProfileCaps is undefined', () => {
-    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs({ searchProfileCaps: undefined })));
+  it('#6 does not crash with minimal config', () => {
+    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs()));
   });
 });

@@ -5,14 +5,7 @@ import {
   resolveFieldStudioMapPayloadForSave,
 } from './mapValidationPreflight.js';
 import type { StudioConfig } from '../../../types/studio';
-
-interface FieldStudioMapValidationResponse {
-  valid?: boolean;
-  ok?: boolean;
-  errors?: string[];
-  warnings?: string[];
-  normalized?: StudioConfig | null;
-}
+import type { FieldStudioMapValidationResponse } from '../components/studioSharedTypes';
 
 interface StudioPersistenceAuthorityOptions {
   category: string;

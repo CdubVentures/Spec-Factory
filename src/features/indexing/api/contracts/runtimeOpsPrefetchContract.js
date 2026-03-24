@@ -91,7 +91,6 @@ export const DOMAIN_HEALTH_ROW_SHAPE = Object.freeze([
   { key: 'domain', coerce: 'string' },
   { key: 'role', coerce: 'string' },
   { key: 'safety_class', coerce: 'string' },
-  { key: 'budget_score', coerce: 'float' },
   { key: 'cooldown_remaining', coerce: 'int' },
   { key: 'success_rate', coerce: 'float' },
   { key: 'avg_latency_ms', coerce: 'float' },

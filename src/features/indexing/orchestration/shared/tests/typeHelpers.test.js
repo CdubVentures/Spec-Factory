@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { toInt, toFloat, toBool } from '../typeHelpers.js';
+import {
+  toInt as canonicalToInt,
+  toFloat as canonicalToFloat,
+} from '../../../../../shared/valueNormalizers.js';
+
+test('toInt and toFloat are re-exports from valueNormalizers SSOT', () => {
+  assert.equal(toInt, canonicalToInt, 'toInt should be the same reference as valueNormalizers.toInt');
+  assert.equal(toFloat, canonicalToFloat, 'toFloat should be the same reference as valueNormalizers.toFloat');
+});
 
 // --- toInt ---
 

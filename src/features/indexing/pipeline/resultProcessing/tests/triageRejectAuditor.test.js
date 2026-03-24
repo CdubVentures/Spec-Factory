@@ -22,9 +22,9 @@ describe('triageRejectAuditor — sampleRejectAudit', () => {
 
   it('samples highest-score misses from notSelected', () => {
     const notSelected = [
-      { url: 'https://a.com', score: 100, primary_lane: 1, identity_prelim: 'exact', host_trust_class: 'official' },
-      { url: 'https://b.com', score: 50, primary_lane: 3, identity_prelim: 'family', host_trust_class: 'trusted_review' },
-      { url: 'https://c.com', score: 10, primary_lane: 7, identity_prelim: 'uncertain', host_trust_class: 'community' },
+      { url: 'https://a.com', score: 100, identity_prelim: 'exact', host_trust_class: 'official' },
+      { url: 'https://b.com', score: 50, identity_prelim: 'family', host_trust_class: 'trusted_review' },
+      { url: 'https://c.com', score: 10, identity_prelim: 'uncertain', host_trust_class: 'community' },
     ];
 
     const samples = sampleRejectAudit({ hardDrops: [], notSelected, sampleSize: 2 });
