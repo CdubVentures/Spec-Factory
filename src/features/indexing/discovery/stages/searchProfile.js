@@ -3,17 +3,13 @@
 
 import {
   buildSearchProfile,
-  buildScoredQueryRowsFromHostPlan,
-  collectHostPlanHintTokens,
 } from '../../search/queryBuilder.js';
-import { lookupFieldRule } from '../../search/queryFieldRuleGates.js';
-import { buildEffectiveHostPlan } from '../domainHintResolver.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../discoveryIdentity.js';
 
 /**
  * @param {object} ctx
- * @returns {{ searchProfileBase: object, effectiveHostPlan: object|null, hostPlanQueryRows: Array }}
+ * @returns {{ searchProfileBase: object }}
  */
 export function runSearchProfile({
   job,
@@ -89,45 +85,5 @@ export function runSearchProfile({
     })),
   });
 
-  const brandResolutionHints = [...new Set(
-    [
-      brandResolution?.officialDomain,
-      ...toArray(brandResolution?.aliases),
-    ]
-      .map((value) => String(value || '').trim().toLowerCase())
-      .filter(Boolean),
-  )];
-
-  let effectiveHostPlan = null;
-  let hostPlanQueryRows = [];
-  if (categoryConfig?.validatedRegistry) {
-    const hostPlanHintTokens = collectHostPlanHintTokens({
-      categoryConfig,
-      focusFields: missingFields,
-    });
-    effectiveHostPlan = buildEffectiveHostPlan({
-      domainHints: hostPlanHintTokens,
-      registry: categoryConfig.validatedRegistry,
-      providerName: config.searchEngines,
-      brandResolutionHints,
-      config,
-    });
-    if (!effectiveHostPlan?.blocked) {
-      const focusTermsCap = configInt(config, 'hostPlanFocusTermsCap');
-      const hostPlanFocusTerms = missingFields.slice(0, focusTermsCap).map((field) => {
-        const rule = lookupFieldRule(categoryConfig, field);
-        const terms = toArray(rule?.search_hints?.query_terms)
-          .map((t) => String(t || '').trim()).filter(Boolean);
-        return terms[0] || field.replace(/_/g, ' ');
-      });
-      hostPlanQueryRows = buildScoredQueryRowsFromHostPlan(
-        effectiveHostPlan,
-        { brand: variables.brand, model: variables.model, variant: variables.variant },
-        missingFields,
-        { resolvedTerms: hostPlanFocusTerms },
-      );
-    }
-  }
-
-  return { searchProfileBase, effectiveHostPlan, hostPlanQueryRows };
+  return { searchProfileBase };
 }

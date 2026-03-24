@@ -131,11 +131,11 @@ async function loadSearchPlannerModule() {
         export function tierLabel() { return 'Legacy'; }
         export function tierChipClass() { return 'sf-chip-neutral'; }
         export function groupByTier(rows) {
-          return { seed: [], group: [], key: [], host_plan: rows || [], legacy: rows || [] };
+          return { seed: [], group: [], key: [], legacy: rows || [] };
         }
         export function buildTierBudgetSummary(rows, cap) {
           const n = (rows||[]).length;
-          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, host_plan: { count: n, pct: 100 }, legacy: { count: n, pct: 100 }, total: n, cap };
+          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, legacy: { count: n, pct: 100 }, total: n, cap };
         }
         export function enrichmentStrategyLabel() { return ''; }
       `,
@@ -316,11 +316,11 @@ async function loadSearchProfileModule() {
         export function tierLabel() { return 'Legacy'; }
         export function tierChipClass() { return 'sf-chip-neutral'; }
         export function groupByTier(rows) {
-          return { seed: [], group: [], key: [], host_plan: rows || [], legacy: rows || [] };
+          return { seed: [], group: [], key: [], legacy: rows || [] };
         }
         export function buildTierBudgetSummary(rows, cap) {
           const n = (rows||[]).length;
-          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, host_plan: { count: n, pct: 100 }, legacy: { count: n, pct: 100 }, total: n, cap };
+          return { seed: { count: 0, pct: 0 }, group: { count: 0, pct: 0 }, key: { count: 0, pct: 0 }, legacy: { count: n, pct: 100 }, total: n, cap };
         }
         export function enrichmentStrategyLabel() { return ''; }
       `,

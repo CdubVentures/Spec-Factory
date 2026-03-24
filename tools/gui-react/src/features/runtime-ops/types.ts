@@ -174,7 +174,6 @@ export interface PrefetchSearchProfileData {
   source?: string;
   query_reject_log?: Array<{ query?: string; source?: string; reason: string; stage?: string; detail?: string }>;
   alias_reject_log?: Array<{ alias?: string; source?: string; reason?: string; stage?: string }>;
-  effective_host_plan?: Record<string, unknown> | null;
   brand_resolution?: {
     officialDomain: string;
     supportDomain: string;
@@ -652,7 +651,6 @@ export interface PreFetchPhasesResponse {
     schema4_query_count: number;
     llm_enhanced_count?: number;
     deterministic_query_count: number;
-    host_plan_query_count: number;
     rejected_count: number;
   } | null;
   search_result_details: SearchResultDetail[];

@@ -161,7 +161,7 @@ describe('prefetchContract', () => {
   });
 
   describe('SEARCH_PROFILE_SHAPE', () => {
-    assertFrozenDescriptor(SEARCH_PROFILE_SHAPE, 'SEARCH_PROFILE_SHAPE', 28);
+    assertFrozenDescriptor(SEARCH_PROFILE_SHAPE, 'SEARCH_PROFILE_SHAPE', 27);
     it('has expected keys', () => {
       const keys = SEARCH_PROFILE_SHAPE.map((d) => d.key);
       for (const k of ['query_count', 'selected_query_count', 'provider', 'llm_query_planning',
@@ -169,7 +169,7 @@ describe('prefetchContract', () => {
                         'focus_fields', 'query_rows', 'query_guard', 'hint_source_counts',
                         'field_rule_gate_counts', 'field_rule_hint_counts_by_field',
                         'generated_at', 'product_id', 'source', 'query_reject_log',
-                        'alias_reject_log', 'effective_host_plan', 'brand_resolution',
+                        'alias_reject_log', 'brand_resolution',
                         'base_model', 'aliases', 'discovered_count', 'approved_count',
                         'candidate_count', 'llm_serp_selector', 'serp_explorer']) {
         ok(keys.includes(k), `missing key: ${k}`);

@@ -23,10 +23,7 @@ function parseFirstNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
-function hasKnownFieldValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue as hasKnownFieldValue } from '../../../../shared/valueNormalizers.js';
 
 export { METHOD_PRIORITY, parseFirstNumber, hasKnownFieldValue };
 

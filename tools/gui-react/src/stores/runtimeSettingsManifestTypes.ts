@@ -83,12 +83,6 @@ export interface RuntimeSettingDefaults {
   serperEnabled: boolean;
   graphqlReplayEnabled: boolean;
   helperSupportiveFillMissing: boolean;
-  hostHealthDownrankBlockRate: number;
-  hostHealthDownrankSuccessRate: number;
-  hostHealthExcludeSuccessRate: number;
-  hostPlanFocusTermsCap: number;
-  hostPlanSearchableThreshold: number;
-  hostPlanSparsityThreshold: number;
   hypothesisAutoFollowupRounds: number;
   hypothesisFollowupUrlsPerRound: number;
   importsPollSeconds: number;
@@ -98,6 +92,7 @@ export interface RuntimeSettingDefaults {
   indexingResumeSeedLimit: number;
   indexingSchemaPacketsValidationEnabled: boolean;
   indexingSchemaPacketsValidationStrict: boolean;
+  llmEnhancerMaxRetries: number;
   llmBaseUrl: string;
   llmCostCachedInputPer1M: number;
   llmCostInputPer1M: number;

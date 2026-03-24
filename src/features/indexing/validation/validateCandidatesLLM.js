@@ -3,10 +3,7 @@ import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { buildExtractionContextMatrix, buildPrimeSourcesFromProvenance } from '../extraction/extractionContext.js';
 
-function hasKnownValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue } from '../../../shared/valueNormalizers.js';
 
 export const candidateValidatorResponseZodSchema = z.object({
   accept: z.array(z.object({

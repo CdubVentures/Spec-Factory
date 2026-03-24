@@ -18,6 +18,5 @@ export {
   incrementMapCounter,
   countMapValuesAbove,
   UNKNOWN_VALUE_TOKENS,
-  isKnownValue,
   addTokensFromText,
 } from '../../shared/valueNormalizers.js';

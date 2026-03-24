@@ -172,7 +172,7 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: [normalRow, pinnedRow],
       categoryConfig: makeCategoryConfig(),
-      effectiveHostPlan: { policy_map: { 'razer.com': {} } },
+
       discoveryCap: 60,
     });
     assert.equal(selectorInput.candidates[0].host, 'razer.com');

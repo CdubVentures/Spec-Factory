@@ -8,13 +8,10 @@ function normalizeField(value) {
     .replace(/^_+|_+$/g, '');
 }
 
+import { hasKnownValue } from '../../../shared/valueNormalizers.js';
+
 function normalizeText(value) {
   return String(value || '').trim();
-}
-
-function hasKnownValue(value) {
-  const token = normalizeText(value).toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a';
 }
 
 const PROPERTY_FIELD_MAP = {

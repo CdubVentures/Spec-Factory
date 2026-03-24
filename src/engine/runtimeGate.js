@@ -1,9 +1,10 @@
+import { hasKnownValue as _hasKnownToken } from '../shared/valueNormalizers.js';
+
 function hasKnownValue(value) {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return String(value.value || '').trim().toLowerCase() !== 'unk';
+    return _hasKnownToken(value.value);
   }
-  const token = String(value ?? '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a';
+  return _hasKnownToken(value);
 }
 
 function countDistinctEvidenceRefs(fieldProvenance) {

@@ -136,7 +136,6 @@ export const SEARCH_PROFILE_SHAPE = Object.freeze([
   { key: 'source', coerce: 'string' },
   { key: 'query_reject_log', coerce: 'array' },
   { key: 'alias_reject_log', coerce: 'array' },
-  { key: 'effective_host_plan', coerce: 'object_or_null' },
   { key: 'brand_resolution', coerce: 'object_or_null' },
   { key: 'base_model', coerce: 'string' },
   { key: 'aliases', coerce: 'array' },

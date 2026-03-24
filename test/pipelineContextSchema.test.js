@@ -164,8 +164,6 @@ function makeProfile(overrides = {}) {
       focus_fields: ['dpi'],
       query_reject_log: [],
     },
-    effectiveHostPlan: null,
-    hostPlanQueryRows: [],
     ...overrides,
   };
 }
@@ -293,10 +291,6 @@ test('pipelineContextAfterProfile — rejects missing searchProfileBase', () => 
   assert.equal(result.success, false);
 });
 
-test('pipelineContextAfterProfile — accepts null effectiveHostPlan', () => {
-  const result = pipelineContextAfterProfile.safeParse(makeProfile({ effectiveHostPlan: null }));
-  assert.equal(result.success, true);
-});
 
 // ---------------------------------------------------------------------------
 // AfterPlanner checkpoint

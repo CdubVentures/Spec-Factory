@@ -388,24 +388,9 @@ test('collectDomainClassificationSeeds: from search result rows', () => {
   assert.equal(seeds.length, 2); // deduplicated
 });
 
-test('collectDomainClassificationSeeds: falls back to host plan', () => {
-  const seeds = collectDomainClassificationSeeds({
-    searchResultRows: [],
-    effectiveHostPlan: {
-      host_groups: [
-        { host: 'rtings.com', searchable: true },
-        { host: 'blocked.com', searchable: false }
-      ]
-    }
-  });
-  assert.ok(seeds.includes('rtings.com'));
-  assert.ok(!seeds.includes('blocked.com'));
-});
-
 test('collectDomainClassificationSeeds: falls back to brand resolution', () => {
   const seeds = collectDomainClassificationSeeds({
     searchResultRows: [],
-    effectiveHostPlan: null,
     brandResolution: {
       officialDomain: 'razer.com',
       supportDomain: 'support.razer.com',

@@ -31,10 +31,7 @@ export function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-export function hasKnownValue(value) {
-  const token = normalizeToken(value);
-  return token && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null' && token !== '-';
-}
+export { hasKnownValue } from '../shared/valueNormalizers.js';
 
 export function parseDateMs(value) {
   const parsed = Date.parse(String(value || ''));

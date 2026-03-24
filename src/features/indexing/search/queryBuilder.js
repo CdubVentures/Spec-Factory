@@ -1,20 +1,13 @@
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { resolveConsumerGate } from '../../../field-rules/consumerGate.js';
-import {
-  buildLogicalPlansFromHostPlan,
-  compileLogicalPlans,
-  buildScoredQueryRowsFromHostPlan
-} from './queryHostPlanScorer.js';
 import { selectManufacturerHosts } from './queryBrandHostResolver.js';
 import {
   fieldSynonyms,
   lookupFieldRule,
   contentTypeSuffixes,
   domainHintsForField,
-  hostPlanIntentTokensForField,
   buildFieldRuleGateCounts,
   buildFieldRuleHintCountsByField,
-  collectHostPlanHintTokens
 } from './queryFieldRuleGates.js';
 import {
   clean,
@@ -506,10 +499,3 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
   return rows;
 }
 
-export { collectHostPlanHintTokens } from './queryFieldRuleGates.js';
-
-export {
-  buildLogicalPlansFromHostPlan,
-  compileLogicalPlans,
-  buildScoredQueryRowsFromHostPlan
-} from './queryHostPlanScorer.js';

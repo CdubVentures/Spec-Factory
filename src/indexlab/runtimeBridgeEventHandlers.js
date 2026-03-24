@@ -473,7 +473,6 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
     selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
     schema4_query_count: asInt(row.schema4_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
-    host_plan_query_count: asInt(row.host_plan_query_count, 0),
     rejected_count: asInt(row.rejected_count, 0),
   };
   await emit(state, 'search', 'query_journey_completed', {
@@ -482,7 +481,6 @@ async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
     selected_queries: Array.isArray(row.selected_queries) ? row.selected_queries : [],
     schema4_query_count: asInt(row.schema4_query_count, 0),
     deterministic_query_count: asInt(row.deterministic_query_count, 0),
-    host_plan_query_count: asInt(row.host_plan_query_count, 0),
   }, ts);
 
 }

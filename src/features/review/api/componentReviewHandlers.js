@@ -4,7 +4,7 @@
 // Handles: component layout, components, enums, enum-consistency,
 // component-impact, component-review, component-review-action, batch.
 
-import { normalizeFieldKey } from '../../../review/index.js';
+import { normalizeFieldKey } from '../domain/reviewNormalization.js';
 import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
 import {
   normalizeEnumToken,

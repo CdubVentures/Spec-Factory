@@ -1,6 +1,7 @@
 import { nowIso } from '../utils/common.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 import { publishProducts } from './publishingPipeline.js';
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function normalizeToken(value) {
   return String(value || '').trim().toLowerCase();
@@ -211,11 +212,6 @@ async function readSourceHistoryRows(storage, category, identity = {}) {
     return parseJsonLines(text);
   }
   return [];
-}
-
-function hasKnownValue(value) {
-  const token = normalizeToken(value);
-  return token && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null' && token !== '-';
 }
 
 function coerceComparable(value) {

@@ -35,10 +35,7 @@ function tokenize(value) {
     .filter((token) => token.length >= 2);
 }
 
-function hasKnownValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'null';
-}
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function buildSnippetFromCandidates(candidates = [], limit = 12) {
   const parts = [];

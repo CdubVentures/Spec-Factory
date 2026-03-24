@@ -1,5 +1,6 @@
 import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../core/llm/client/routing.js';
+import { configInt } from '../shared/settingsAccessor.js';
 
 function toArray(value) {
   return Array.isArray(value) ? value : [];
@@ -115,8 +116,8 @@ export async function enhanceQueryRows({
       model: String(identityLock.model || ''),
       variant: String(identityLock.variant || ''),
     },
-    query_history: toArray(queryHistory).slice(0, 50),
-    missing_fields: toArray(missingFields).slice(0, 60),
+    query_history: toArray(queryHistory),
+    missing_fields: toArray(missingFields),
     rows: rows.map((row, i) => {
       const base = {
         index: i,
@@ -130,18 +131,18 @@ export async function enhanceQueryRows({
       // The LLM uses this to craft materially different queries at each repeat level.
       if (row.tier === 'key_search') {
         base.repeat_count = row.repeat_count ?? 0;
-        base.all_aliases = toArray(row.all_aliases).slice(0, 8);
-        base.domain_hints = toArray(row.domain_hints).slice(0, 5);
-        base.preferred_content_types = toArray(row.preferred_content_types).slice(0, 5);
-        base.domains_tried = toArray(row.domains_tried_for_key).slice(0, 10);
-        base.content_types_tried = toArray(row.content_types_tried_for_key).slice(0, 5);
+        base.all_aliases = toArray(row.all_aliases);
+        base.domain_hints = toArray(row.domain_hints);
+        base.preferred_content_types = toArray(row.preferred_content_types);
+        base.domains_tried = toArray(row.domains_tried_for_key);
+        base.content_types_tried = toArray(row.content_types_tried_for_key);
       }
       return base;
     }),
   };
 
   const systemPrompt = buildEnhancerSystemPrompt(rows.length);
-  const maxRetries = 2;
+  const maxRetries = configInt(config, 'llmEnhancerMaxRetries');
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {

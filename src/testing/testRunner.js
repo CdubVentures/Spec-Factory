@@ -40,11 +40,7 @@ import { buildHypothesisQueue } from '../features/indexing/learning/index.js';
 import { buildMarkdownSummary } from '../exporter/summaryWriter.js';
 import { EventLogger } from '../logger.js';
 import { configValue } from '../shared/settingsAccessor.js';
-
-function hasKnownFieldValue(val) {
-  const s = String(val ?? '').trim().toLowerCase();
-  return s !== '' && s !== 'unk' && s !== 'unknown' && s !== 'n/a';
-}
+import { hasKnownValue as hasKnownFieldValue } from '../shared/valueNormalizers.js';
 
 function ensureProvenanceField(provenance, field, defaultValue = 'unk') {
   if (!provenance[field]) {

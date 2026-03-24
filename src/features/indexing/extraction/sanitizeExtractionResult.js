@@ -22,10 +22,7 @@ function filterEvidenceRefs(refs, validRefs) {
   return [...new Set((refs || []).filter((id) => validRefs.has(id)))];
 }
 
-export function hasKnownValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue } from '../../../shared/valueNormalizers.js';
 
 function normalizeCandidateValue(value) {
   if (value === null || value === undefined) {

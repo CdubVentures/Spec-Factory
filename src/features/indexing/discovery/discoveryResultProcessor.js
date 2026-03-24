@@ -42,8 +42,6 @@ export async function processDiscoveryResults({
   llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
   queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-  // Host plan
-  effectiveHostPlan,
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -83,7 +81,6 @@ export async function processDiscoveryResults({
 
   const { domainSafetyResults } = classifyDomains({
     candidateRows,
-    effectiveHostPlan,
     brandResolution,
     categoryConfig,
     logger,
@@ -96,7 +93,6 @@ export async function processDiscoveryResults({
   const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
     runId, category: categoryConfig.category, productId: job.productId,
     variables, brandResolution,
-    effectiveHostPlan,
     candidateRows,
     categoryConfig,
     discoveryCap,

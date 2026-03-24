@@ -184,7 +184,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 2,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -238,7 +238,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -281,7 +281,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -343,7 +343,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -405,7 +405,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -453,7 +453,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -496,7 +496,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -534,7 +534,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -612,7 +612,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -661,7 +661,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 
@@ -723,7 +723,7 @@ describe('Characterization — processDiscoveryResults output contract shape', (
       providerState: {},
       queryConcurrency: 1,
       discoveryCap: 20,
-      effectiveHostPlan: null,
+
       _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
     });
 

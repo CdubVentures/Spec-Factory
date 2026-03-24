@@ -7,69 +7,7 @@ import type {
 import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge';
 import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry';
-
-/* ── Provider SVG icons (14x14, sized to match sf-text-caption) ── */
-
-function GeminiIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2C12.5 7 17 11.5 22 12C17 12.5 12.5 17 12 22C11.5 17 7 12.5 2 12C7 11.5 11.5 7 12 2Z" fill="#4285F4" />
-    </svg>
-  );
-}
-
-function DeepSeekIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" fill="#0066FF" />
-      <path d="M7 13C9 9 15 9 17 13" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
-      <circle cx="9" cy="10" r="1.5" fill="#fff" />
-      <circle cx="15" cy="10" r="1.5" fill="#fff" />
-    </svg>
-  );
-}
-
-function AnthropicIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <rect x="2" y="2" width="20" height="20" rx="4" fill="#D4A27F" />
-      <path d="M12 6L17 18H14.5L12 12.5L9.5 18H7L12 6Z" fill="#fff" />
-    </svg>
-  );
-}
-
-function OpenAIIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" fill="#10A37F" />
-      <path d="M12 6V12L16 14M12 12L8 14M12 12V18" stroke="#fff" strokeWidth="2" strokeLinecap="round" fill="none" />
-    </svg>
-  );
-}
-
-function OllamaIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" fill="#1A1A1A" />
-      <ellipse cx="12" cy="13" rx="5" ry="4" fill="#fff" />
-      <circle cx="10" cy="12" r="1" fill="#1A1A1A" />
-      <circle cx="14" cy="12" r="1" fill="#1A1A1A" />
-      <ellipse cx="12" cy="8" rx="3" ry="2" fill="#fff" />
-    </svg>
-  );
-}
-
-function ProviderIcon({ name }: { name: string }) {
-  const key = name.toLowerCase();
-  switch (key) {
-    case 'gemini': return <GeminiIcon />;
-    case 'deepseek': return <DeepSeekIcon />;
-    case 'anthropic': return <AnthropicIcon />;
-    case 'openai': return <OpenAIIcon />;
-    case 'ollama': return <OllamaIcon />;
-    default: return null;
-  }
-}
+import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon';
 
 /* ── Model row ─────────────────────────────────────────── */
 
@@ -253,7 +191,6 @@ function ProviderPanel({
     onProviderChange({ ...provider, models: [...provider.models, createDefaultModel()] });
   }, [provider, onProviderChange]);
 
-  const icon = ProviderIcon({ name: provider.name });
   const expanded = provider.expanded;
 
   return (
@@ -263,7 +200,7 @@ function ProviderPanel({
     >
       {/* Title row */}
       <div className="flex items-center gap-1.5">
-        {icon && <span className="shrink-0">{icon}</span>}
+        <LlmProviderIcon provider={provider.name} className="shrink-0" />
         <button
           type="button"
           className="sf-text-caption font-semibold cursor-pointer"

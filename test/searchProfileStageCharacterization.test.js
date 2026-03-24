@@ -66,14 +66,12 @@ function makeBaseArgs(overrides = {}) {
 
 describe('Stage 03 Search Profile — Characterization', { concurrency: false }, () => {
 
-  it('#1 returns expected shape { searchProfileBase, effectiveHostPlan, hostPlanQueryRows }', () => {
+  it('#1 returns expected shape { searchProfileBase }', () => {
     const result = runSearchProfile(makeBaseArgs());
 
     assert.ok(result.searchProfileBase, 'has searchProfileBase');
     assert.ok(Array.isArray(result.searchProfileBase.queries), 'has queries array');
     assert.ok(Array.isArray(result.searchProfileBase.query_rows), 'has query_rows array');
-    assert.equal(result.effectiveHostPlan, null, 'effectiveHostPlan null without validatedRegistry');
-    assert.ok(Array.isArray(result.hostPlanQueryRows), 'has hostPlanQueryRows array');
   });
 
   it('#2 all queries are deterministic — no hint_source contains llm', () => {

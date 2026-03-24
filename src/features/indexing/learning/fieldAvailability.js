@@ -10,10 +10,7 @@ function round(value, digits = 6) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
 }
 
-function hasKnownValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue } from '../../../shared/valueNormalizers.js';
 
 function normalizeDomain(value) {
   return String(value || '').trim().toLowerCase();

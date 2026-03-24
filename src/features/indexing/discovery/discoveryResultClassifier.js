@@ -125,7 +125,6 @@ export function classifyAndDeduplicateCandidates({
  *
  * @param {object} ctx
  * @param {Array} ctx.candidateRows - classified candidate rows
- * @param {object|null} ctx.effectiveHostPlan - host plan from domain classifier
  * @param {object|null} ctx.brandResolution - brand resolver output
  * @param {object} ctx.categoryConfig - tier definitions, denylist
  * @param {object|null} ctx.logger
@@ -133,14 +132,12 @@ export function classifyAndDeduplicateCandidates({
  */
 export function classifyDomains({
   candidateRows,
-  effectiveHostPlan,
   brandResolution,
   categoryConfig,
   logger,
 }) {
   const domainClassificationSeeds = collectDomainClassificationSeeds({
     searchResultRows: candidateRows,
-    effectiveHostPlan,
     brandResolution,
   });
 

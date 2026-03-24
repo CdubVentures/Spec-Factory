@@ -1,7 +1,7 @@
 // WHY: Builders for the 4 recommended artifacts from TESTING-LIVE-CRAWL-VALIDATION-MEGA-V2.
 // effective_settings_snapshot, fetch_decision_ledger, screenshot_manifest, runtime_vs_final_diff.
 
-const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
+import { hasKnownValue } from '../../../../shared/valueNormalizers.js';
 
 // ── Effective Settings Snapshot ──────────────────────────────
 
@@ -107,11 +107,6 @@ export function buildScreenshotManifestFromEvents(events, runId) {
 
 // ── Runtime vs Final Diff ───────────────────────────────────
 
-function isKnownValue(v) {
-  if (v === null || v === undefined) return false;
-  return !UNKNOWN_VALUE_TOKENS.has(String(v).trim().toLowerCase());
-}
-
 export function buildRuntimeVsFinalDiff(runtimeFields, finalSpec) {
   const runtime = runtimeFields || {};
   const spec = finalSpec || {};
@@ -119,12 +114,12 @@ export function buildRuntimeVsFinalDiff(runtimeFields, finalSpec) {
   const runtimeFilledKeys = Object.keys(runtime).filter((k) => {
     const v = runtime[k];
     const val = typeof v === 'object' && v !== null ? v.value : v;
-    return isKnownValue(val);
+    return hasKnownValue(val);
   });
 
   const finalFilledKeys = Object.keys(spec).filter((k) => {
     if (k === 'publishable' || k === 'identity_outcome') return false;
-    return isKnownValue(spec[k]);
+    return hasKnownValue(spec[k]);
   });
 
   const runtimeSet = new Set(runtimeFilledKeys);

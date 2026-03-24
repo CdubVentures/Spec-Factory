@@ -277,14 +277,9 @@ export function evaluateRepairRetryQueue(runData) {
 export function evaluatePhase3IndexAlignment(runData) {
   return [
     passIf('IX-01', true, 'SourceRegistry path check'),
-    passIf('IX-02', true, 'QueryCompiler path check'),
-    passIf('IX-03', true, 'Core/Deep gates check'),
-    passIf('IX-04', true, 'Phase-3 resolver inputs'),
-    passIf('IX-05', true, 'effective_host_plan truth'),
-    manual('IX-06'),
-    passIf('IX-07', true, 'category source mix'),
-    passIf('IX-08', true, 'host-plan gaps'),
-    passIf('IX-09', true, 'flag-off regression'),
+    passIf('IX-02', true, 'Core/Deep gates check'),
+    passIf('IX-03', true, 'category source mix'),
+    passIf('IX-04', true, 'flag-off regression'),
     passIf('IX-10', true, 'after-Phase-3 claims separated'),
   ];
 }

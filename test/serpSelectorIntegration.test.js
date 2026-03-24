@@ -125,7 +125,6 @@ function makeBaseArgs(overrides = {}) {
     providerState: {},
     queryConcurrency: 1,
     discoveryCap: 20,
-    effectiveHostPlan: null,
     ...overrides,
   };
 }

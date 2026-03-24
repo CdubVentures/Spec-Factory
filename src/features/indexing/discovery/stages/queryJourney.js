@@ -1,8 +1,7 @@
 // WHY: Stage 05 of the prefetch pipeline — Query Journey.
-// Receives enhanced query rows from Search Planner + host-plan rows,
+// Receives enhanced query rows from Search Planner,
 // dedupes, ranks, guards, and produces the final selected query list.
 
-import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import {
   dedupeQueryRows,
   enforceIdentityQueryGuard,
@@ -12,7 +11,6 @@ import { toArray } from '../discoveryIdentity.js';
 import {
   buildSearchProfileKeys,
   writeSearchProfileArtifacts,
-  resolveSearchProfileCaps,
 } from '../discoveryHelpers.js';
 
 /**
@@ -22,13 +20,11 @@ import {
 export async function runQueryJourney({
   searchProfileBase,
   enhancedRows = [],
-  hostPlanQueryRows,
   variables,
   config,
   searchProfileCaps,
   missingFields,
   planningHints,
-  effectiveHostPlan,
   categoryConfig,
   job,
   runId,
@@ -43,9 +39,6 @@ export async function runQueryJourney({
     }),
   );
 
-  // WHY: Two input streams merged into one candidate list:
-  // 1. Enhanced rows from Search Planner (tier-tagged, LLM-enhanced or deterministic fallback)
-  // 2. Host-plan rows (appended after guard)
   const queryCandidates = toArray(enhancedRows).map((row) => ({
     query: String(row?.query || '').trim(),
     source: String(row?.hint_source || 'enhanced').trim(),
@@ -61,57 +54,28 @@ export async function runQueryJourney({
 
   // WHY: searchProfileQueryCap is the sole controller for total search queries per run.
   const queryLimit = configInt(config, 'searchProfileQueryCap');
-  const mergedQueryCap = queryLimit;
   const mergedQueries = dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap);
 
   // WHY: Tier order from Search Profile IS the execution priority.
   // No re-ranking — seeds first, groups by productivity, keys by availability/difficulty.
-  const cappedQueries = mergedQueries.rows.slice(0, mergedQueryCap);
-  const capRejectLog = mergedQueries.rows.slice(mergedQueryCap).map((row) => ({
+  const cappedQueries = mergedQueries.rows.slice(0, queryLimit);
+  const capRejectLog = mergedQueries.rows.slice(queryLimit).map((row) => ({
     query: String(row?.query || '').trim(),
     source: toArray(row?.sources),
     reason: 'max_query_cap',
     stage: 'pre_execution_cap',
-    detail: `cap:${mergedQueryCap}`,
+    detail: `cap:${queryLimit}`,
   }));
   const guardedQueries = enforceIdentityQueryGuard({
     rows: cappedQueries,
     variables,
     variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms),
   });
-  const guardedSelectedRows = guardedQueries.rows.map((row) => ({
+  const selectedQueryRows = guardedQueries.rows.map((row) => ({
     ...row,
     hint_source: String(row?.hint_source || '').trim(),
   }));
 
-  let appendedHostPlanRows = [];
-  let hostPlanRejectLog = [];
-  if (hostPlanQueryRows.length > 0) {
-    const guardedHostPlanRows = enforceIdentityQueryGuard({
-      rows: hostPlanQueryRows,
-      variables,
-      variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms),
-    });
-    hostPlanRejectLog = guardedHostPlanRows.rejectLog;
-    const seenQueries = new Set(
-      guardedSelectedRows.map((row) => String(row?.query || '').trim().toLowerCase()).filter(Boolean),
-    );
-    appendedHostPlanRows = guardedHostPlanRows.rows.filter((row) => {
-      const token = String(row?.query || '').trim().toLowerCase();
-      if (!token || seenQueries.has(token)) return false;
-      seenQueries.add(token);
-      return true;
-    });
-  }
-
-  // WHY: Tier/planner rows fill first — they carry NeedSet-driven intent.
-  // Host-plan rows are supplementary and fill remaining budget only.
-  const reservedTierCount = Math.min(guardedSelectedRows.length, mergedQueryCap);
-  const remainingBudget = Math.max(0, mergedQueryCap - reservedTierCount);
-  const selectedQueryRows = [
-    ...guardedSelectedRows.slice(0, reservedTierCount),
-    ...appendedHostPlanRows.slice(0, remainingBudget),
-  ];
   let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && cappedQueries.length > 0) {
     const fallback = String(cappedQueries[0]?.query || '').trim();
@@ -133,8 +97,7 @@ export async function runQueryJourney({
     ...toArray(mergedQueries.rejectLog),
     ...toArray(capRejectLog),
     ...toArray(guardedQueries.rejectLog),
-    ...toArray(hostPlanRejectLog),
-  ].slice(0, 300);
+  ];
 
   const executionQueryLimit = Math.min(queryLimit, queries.length);
   const selectedQueryRowMap = new Map(
@@ -172,12 +135,11 @@ export async function runQueryJourney({
       model_tokens: toArray(guardedQueries.guardContext?.modelTokens),
       required_digit_groups: toArray(guardedQueries.guardContext?.requiredDigitGroups),
       accepted_query_count: queries.length,
-      rejected_query_count: toArray(guardedQueries.rejectLog).length + toArray(hostPlanRejectLog).length,
+      rejected_query_count: toArray(guardedQueries.rejectLog).length,
     },
     selected_queries: queries.slice(0, executionQueryLimit),
     selected_query_count: Math.min(executionQueryLimit, queries.length),
     query_rows: selectedQueryRows.slice(0, executionQueryLimit),
-    effective_host_plan: effectiveHostPlan,
     brand_resolution: brandResolution ? {
       officialDomain: brandResolution.officialDomain || '',
       supportDomain: brandResolution.supportDomain || '',
@@ -196,11 +158,10 @@ export async function runQueryJourney({
   });
   logger?.info?.('query_journey_completed', {
     selected_query_count: queries.length,
-    selected_queries: queries.slice(0, 50),
+    selected_queries: queries,
     deterministic_query_count: toArray(enhancedRows).filter((r) => !String(r?.hint_source || '').endsWith('_llm')).length,
     llm_enhanced_count: llmQueries.length,
     schema4_query_count: llmQueries.length,
-    host_plan_query_count: appendedHostPlanRows.length,
     rejected_count: queryRejectLogCombined.length,
   });
 

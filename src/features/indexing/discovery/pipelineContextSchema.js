@@ -161,8 +161,6 @@ export const pipelineContextAfterBootstrap = pipelineContextSeed.extend({
 
 export const pipelineContextAfterProfile = pipelineContextAfterBootstrap.extend({
   searchProfileBase: searchProfileBaseSchema,
-  effectiveHostPlan: z.object({}).passthrough().nullable(),
-  hostPlanQueryRows: z.array(z.unknown()),
 });
 
 // ---------------------------------------------------------------------------

@@ -209,50 +209,6 @@ export interface EffectiveHostGroupEntry {
   health_action: 'normal' | 'downranked' | 'excluded';
 }
 
-export interface EffectiveHostPlanExplainEntry {
-  host: string;
-  action: string;
-  reason: string;
-}
-
-export interface EffectiveHostPlanClassificationSummary {
-  host_count: number;
-  tier_count: number;
-  intent_count: number;
-  unresolved_count: number;
-  searchable_host_count: number;
-}
-
-export interface EffectiveHostPlanProviderCaps {
-  name: string;
-  supports_site: boolean;
-  supports_filetype: boolean;
-  supports_intitle: boolean;
-  supports_inurl: boolean;
-  supports_exact_phrase: boolean;
-  supports_boolean_or: boolean;
-  supports_boolean_not: boolean;
-  max_query_length: number;
-  max_results_per_request: number;
-  auth_required: boolean;
-}
-
-export interface EffectiveHostPlanResponse {
-  manufacturer_hosts: string[];
-  tier_hosts: Record<string, string[]>;
-  explicit_hosts: string[];
-  content_intents: string[];
-  unresolved_tokens: string[];
-  host_groups: EffectiveHostGroupEntry[];
-  host_health: Record<string, Record<string, unknown>>;
-  policy_map: Record<string, Record<string, unknown>>;
-  provider_caps: EffectiveHostPlanProviderCaps;
-  explain: EffectiveHostPlanExplainEntry[];
-  classification_summary: EffectiveHostPlanClassificationSummary;
-  blocked?: boolean;
-  reason?: string;
-}
-
 export interface ScoreBreakdownV2 {
   base_score: number;
   frontier_penalty: number;
@@ -345,7 +301,6 @@ export interface IndexLabSearchProfileResponse {
   candidate_count?: number;
   source?: string;
   serp_explorer?: IndexLabSerpExplorerResponse;
-  effective_host_plan?: EffectiveHostPlanResponse;
 }
 
 export interface IndexLabSerpCandidateRow {

@@ -222,9 +222,8 @@ export async function runDiscoverySeedPlan({
   const journey = await runQueryJourneyFn({
     searchProfileBase: profile.searchProfileBase,
     enhancedRows: plannerResult.enhancedRows,
-    hostPlanQueryRows: profile.hostPlanQueryRows,
     variables, config: discoveryConfig, searchProfileCaps, missingFields,
-    planningHints, effectiveHostPlan: profile.effectiveHostPlan,
+    planningHints,
     categoryConfig, job, runId, logger, storage,
     brandResolution: brand.brandResolution,
   });
@@ -300,7 +299,6 @@ export async function runDiscoverySeedPlan({
     llmQueries: [],
     queries: journey.queries, searchProfilePlanned: journey.searchProfilePlanned,
     searchProfileKeys: journey.searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-    effectiveHostPlan: profile.effectiveHostPlan,
   });
 
   // === Stage 08: Domain Classifier ===

@@ -46,7 +46,6 @@ function makeStageStubs(overrides = {}) {
     runBrandResolverFn: overrides.runBrandResolverFn || (async () => JSON.parse(JSON.stringify(STUB_BRAND_RETURN))),
     runSearchProfileFn: overrides.runSearchProfileFn || (() => ({
       searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
-      effectiveHostPlan: null, hostPlanQueryRows: [],
     })),
     runSearchPlannerFn: overrides.runSearchPlannerFn || (async () => ({ enhancedRows: [], source: 'deterministic_fallback' })),
     runQueryJourneyFn: overrides.runQueryJourneyFn || (async () => ({
@@ -114,7 +113,7 @@ describe('Pipeline orchestrator — characterization', { concurrency: false }, (
     await runDiscoverySeedPlan(makeBaseArgs({
       runSearchProfileFn: (args) => {
         capturedProfileArgs = args;
-        return { searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] }, effectiveHostPlan: null, hostPlanQueryRows: [] };
+        return { searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] } };
       },
     }));
 
@@ -129,7 +128,7 @@ describe('Pipeline orchestrator — characterization', { concurrency: false }, (
     await runDiscoverySeedPlan(makeBaseArgs({
       runSearchProfileFn: (args) => {
         profileCategoryConfig = args.categoryConfig;
-        return { searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] }, effectiveHostPlan: null, hostPlanQueryRows: [] };
+        return { searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] } };
       },
     }));
 

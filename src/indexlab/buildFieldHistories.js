@@ -2,7 +2,7 @@
 // so the next round's NeedSet (Schema 1) carries memory of what was tried.
 // Without this, the planner has no anti-garbage data and repeats searches.
 
-const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 const BENCHMARK_HOST_PATTERNS = /benchmark|versus|compare|cpuboss|gpuboss|userbenchmark/i;
 const SUPPORT_HOST_PATTERNS = /^support\.|\/support\b/i;
@@ -78,10 +78,6 @@ export function classifyEvidenceClass(evidence) {
   if (tier === 3) return 'fallback_web';
 
   return 'fallback_web';
-}
-
-function hasKnownValue(value) {
-  return !UNKNOWN_VALUE_TOKENS.has(String(value ?? '').trim().toLowerCase());
 }
 
 function safeArray(value) {

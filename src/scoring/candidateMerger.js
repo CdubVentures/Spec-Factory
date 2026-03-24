@@ -6,10 +6,7 @@ function normalizeField(value) {
     .replace(/^_+|_+$/g, '');
 }
 
-function hasKnownValue(value) {
-  const token = String(value ?? '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a';
-}
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function parseNumber(value) {
   const match = String(value || '').match(/-?\d+(?:\.\d+)?/);

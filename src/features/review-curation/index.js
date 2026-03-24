@@ -29,4 +29,4 @@ export {
   appendReviewSuggestion,
   evaluateVariance,
   evaluateVarianceBatch,
-} from '../../review/index.js';
+} from '../review/domain/index.js';

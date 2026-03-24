@@ -4,12 +4,8 @@ import { searchEngineAvailability } from '../search/searchProviders.js';
 import { enhanceQueryRows } from '../../../research/queryPlanner.js';
 import {
   buildSearchProfile,
-  buildScoredQueryRowsFromHostPlan,
-  collectHostPlanHintTokens,
 } from '../search/queryBuilder.js';
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
-import { lookupFieldRule } from '../search/queryFieldRuleGates.js';
-import { buildEffectiveHostPlan } from './domainHintResolver.js';
 import { resolveBrandDomain } from './brandResolver.js';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
 import {
@@ -231,44 +227,6 @@ export async function discoverCandidateSources({
     })),
   });
 
-  const brandResolutionHints = [...new Set(
-    [
-      brandResolution?.officialDomain,
-      ...toArray(brandResolution?.aliases),
-    ]
-      .map((value) => String(value || '').trim().toLowerCase())
-      .filter(Boolean)
-  )];
-  let effectiveHostPlan = null;
-  let hostPlanQueryRows = [];
-  if (categoryConfig?.validatedRegistry) {
-    const hostPlanHintTokens = collectHostPlanHintTokens({
-      categoryConfig,
-      focusFields: missingFields,
-    });
-    effectiveHostPlan = buildEffectiveHostPlan({
-      domainHints: hostPlanHintTokens,
-      registry: categoryConfig.validatedRegistry,
-      providerName: config.searchEngines,
-      brandResolutionHints,
-      config,
-    });
-    if (!effectiveHostPlan?.blocked) {
-      const hostPlanFocusTerms = missingFields.slice(0, 3).map(field => {
-        const rule = lookupFieldRule(categoryConfig, field);
-        const terms = toArray(rule?.search_hints?.query_terms)
-          .map(t => String(t || '').trim()).filter(Boolean);
-        return terms[0] || field.replace(/_/g, ' ');
-      });
-      hostPlanQueryRows = buildScoredQueryRowsFromHostPlan(
-        effectiveHostPlan,
-        { brand: variables.brand, model: variables.model, variant: variables.variant },
-        missingFields,
-        { resolvedTerms: hostPlanFocusTerms }
-      );
-    }
-  }
-
   // === Stage 04: Search Planner (LLM enrichment) ===
   const baseQueries = toArray(searchProfileBase?.base_templates);
   const targetedQueries = toArray(searchProfileBase?.queries);
@@ -321,10 +279,9 @@ export async function discoverCandidateSources({
   });
 
   // === Stage 05: Query Journey (merge ALL streams — no branching) ===
-  // WHY: Three input streams merged into one candidate list:
+  // WHY: Two input streams merged into one candidate list:
   // 1. Deterministic base + targeted queries (from search profile)
   // 2. LLM-enhanced query rows (from enhanceQueryRows)
-  // 3. Host-plan rows (appended after guard)
   const queryCandidates = [
     ...baseQueries.map((query) => ({ query, source: 'base_template', target_fields: [] })),
     ...targetedQueries.map((query) => {
@@ -362,8 +319,7 @@ export async function discoverCandidateSources({
   }
   const hostFieldFit = new Map();
   for (const [host, entry] of categoryConfig.sourceHostMap || new Map()) {
-    const policy = effectiveHostPlan?.policy_map?.[host];
-    const coverage = policy?.field_coverage || entry?.fieldCoverage;
+    const coverage = entry?.fieldCoverage;
     if (!coverage) {
       const tierName = entry?.tierName || '';
       hostFieldFit.set(host, {
@@ -398,32 +354,7 @@ export async function discoverCandidateSources({
     hint_source: String(row?.hint_source || '').trim(),
   }));
 
-  let appendedHostPlanRows = [];
-  let hostPlanRejectLog = [];
-  if (hostPlanQueryRows.length > 0) {
-    const guardedHostPlanRows = enforceIdentityQueryGuard({
-      rows: hostPlanQueryRows,
-      variables,
-      variantGuardTerms: toArray(searchProfileBase?.variant_guard_terms)
-    });
-    hostPlanRejectLog = guardedHostPlanRows.rejectLog;
-    const seenQueries = new Set(
-      guardedSelectedRows.map((row) => String(row?.query || '').trim().toLowerCase()).filter(Boolean)
-    );
-    appendedHostPlanRows = guardedHostPlanRows.rows.filter((row) => {
-      const token = String(row?.query || '').trim().toLowerCase();
-      if (!token || seenQueries.has(token)) return false;
-      seenQueries.add(token);
-      return true;
-    });
-  }
-
-  const reservedHostPlanRows = appendedHostPlanRows.slice(0, mergedQueryCap);
-  const reservedGuardedCount = Math.max(0, mergedQueryCap - reservedHostPlanRows.length);
-  const selectedQueryRows = [
-    ...guardedSelectedRows.slice(0, reservedGuardedCount),
-    ...reservedHostPlanRows,
-  ];
+  const selectedQueryRows = guardedSelectedRows.slice(0, mergedQueryCap);
   let queries = selectedQueryRows.map((row) => String(row?.query || '').trim()).filter(Boolean);
   if (!queries.length && rankedCappedQueries.length > 0) {
     const fallback = String(rankedCappedQueries[0]?.query || '').trim();
@@ -445,7 +376,6 @@ export async function discoverCandidateSources({
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
-    ...toArray(hostPlanRejectLog),
   ].slice(0, 300);
 
   const queryLimit = mergedQueryCap;
@@ -471,12 +401,11 @@ export async function discoverCandidateSources({
       model_tokens: toArray(guardedQueries.guardContext?.modelTokens),
       required_digit_groups: toArray(guardedQueries.guardContext?.requiredDigitGroups),
       accepted_query_count: queries.length,
-      rejected_query_count: toArray(guardedQueries.rejectLog).length + toArray(hostPlanRejectLog).length
+      rejected_query_count: toArray(guardedQueries.rejectLog).length
     },
     selected_queries: queries.slice(0, executionQueryLimit),
     selected_query_count: Math.min(executionQueryLimit, queries.length),
     query_rows: selectedQueryRows.slice(0, executionQueryLimit),
-    effective_host_plan: effectiveHostPlan,
     brand_resolution: brandResolution ? {
       officialDomain: brandResolution.officialDomain || '',
       supportDomain: brandResolution.supportDomain || '',
@@ -499,7 +428,6 @@ export async function discoverCandidateSources({
     selected_query_count: queries.length,
     selected_queries: queries.slice(0, 50),
     deterministic_query_count: baseQueries.length + targetedQueries.length,
-    host_plan_query_count: appendedHostPlanRows.length,
     rejected_count: queryRejectLogCombined.length,
   });
 
@@ -567,6 +495,5 @@ export async function discoverCandidateSources({
     variables, identityLock, brandResolution, missingFields, learning,
     llmContext, searchProfileBase, llmQueries: [],
     queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
-    effectiveHostPlan,
   });
 }

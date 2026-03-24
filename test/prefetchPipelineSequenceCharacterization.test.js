@@ -201,8 +201,6 @@ function makeBrandResult(overrides = {}) {
 function makeSearchProfileResult() {
   return {
     searchProfileBase: { base_templates: [], queries: [], query_rows: [] },
-    effectiveHostPlan: null,
-    hostPlanQueryRows: [],
   };
 }
 

@@ -1,7 +1,7 @@
 // WHY: Contract test verifying that the TS interfaces in runtime-ops/types.ts
 // declare every field from the canonical contract key arrays. If a contract key
 // is missing from the TS interface, the builder can emit data the frontend silently
-// ignores — this is the exact drift that produced the effective_host_plan bug.
+// ignores.
 //
 // Direction: contract keys ⊆ TS interface keys (superset check).
 // The TS interface may have extra UI-only optional fields — that's fine.

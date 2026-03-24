@@ -239,7 +239,6 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         selected_queries: Array.isArray(payload.selected_queries) ? payload.selected_queries : [],
         schema4_query_count: toInt(payload.schema4_query_count, 0),
         deterministic_query_count: toInt(payload.deterministic_query_count, 0),
-        host_plan_query_count: toInt(payload.host_plan_query_count, 0),
         rejected_count: toInt(payload.rejected_count, 0),
       };
     }

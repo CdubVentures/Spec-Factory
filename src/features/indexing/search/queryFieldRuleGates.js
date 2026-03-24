@@ -38,28 +38,6 @@ const CONTENT_TYPE_SUFFIX = {
   benchmark: 'benchmark'
 };
 
-const CONTENT_TYPE_TO_HOST_PLAN_INTENT = Object.freeze({
-  manual: 'manual',
-  manual_pdf: 'manual',
-  support: 'manual',
-  spec: 'spec',
-  spec_sheet: 'spec',
-  spec_pdf: 'spec',
-  specification: 'spec',
-  specifications: 'spec',
-  datasheet: 'datasheet',
-  datasheet_pdf: 'datasheet',
-  review: 'review',
-  lab_review: 'review',
-  benchmark: 'benchmark',
-  teardown: 'teardown',
-  teardown_review: 'teardown',
-  product_page: 'product_page',
-  firmware: 'firmware',
-  software: 'software',
-  driver: 'driver',
-});
-
 const SEARCH_HINT_GATE_SPECS = [
   { key: 'search_hints.query_terms', name: 'query_terms', path: ['search_hints', 'query_terms'] },
   { key: 'search_hints.domain_hints', name: 'domain_hints', path: ['search_hints', 'domain_hints'] },
@@ -237,38 +215,3 @@ export function domainHintsForField(fieldRule = {}) {
     .filter((value) => value.includes('.'));
 }
 
-export function hostPlanIntentTokensForField(fieldRule = {}) {
-  const values = toArray(fieldRule?.search_hints?.preferred_content_types)
-    .map((value) => String(value || '').trim().toLowerCase())
-    .filter(Boolean);
-  const intents = [];
-  for (const value of values) {
-    const mapped = CONTENT_TYPE_TO_HOST_PLAN_INTENT[value];
-    if (mapped) {
-      intents.push(mapped);
-    }
-  }
-  return [...new Set(intents)];
-}
-
-export function collectHostPlanHintTokens({ categoryConfig, focusFields = [] } = {}) {
-  const tokens = [];
-  for (const field of toArray(focusFields)) {
-    const fieldRule = lookupFieldRule(categoryConfig, field);
-    if (!fieldRule) continue;
-
-    const domainHintsGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.domain_hints', 'indexlab').enabled;
-    if (domainHintsGateEnabled) {
-      for (const value of toArray(fieldRule?.search_hints?.domain_hints)) {
-        const token = String(value || '').trim().toLowerCase();
-        if (token) tokens.push(token);
-      }
-    }
-
-    const contentTypesGateEnabled = resolveConsumerGate(fieldRule, 'search_hints.preferred_content_types', 'indexlab').enabled;
-    if (contentTypesGateEnabled) {
-      tokens.push(...hostPlanIntentTokensForField(fieldRule));
-    }
-  }
-  return [...new Set(tokens.filter(Boolean))];
-}

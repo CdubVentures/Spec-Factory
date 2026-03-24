@@ -52,7 +52,7 @@ export async function runSearchPlanner({
         .filter((r) => r.query && Array.isArray(r.target_fields) && r.target_fields.length > 0)
         .map((r) => [String(r.query).trim(), r.target_fields])
     ),
-    missing_critical_fields: toArray(missingFields).slice(0, 30),
+    missing_critical_fields: toArray(missingFields),
     stop_condition: result.source === 'llm' ? 'planner_complete' : 'deterministic_fallback',
     plan_rationale: result.source === 'llm'
       ? `LLM enhanced ${llmCount} of ${result.rows.length} queries`

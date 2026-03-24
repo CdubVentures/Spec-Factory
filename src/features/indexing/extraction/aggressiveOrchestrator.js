@@ -2,10 +2,7 @@ import { EvidenceAuditor } from './evidenceAudit.js';
 import { AggressiveDomExtractor } from './aggressiveDom.js';
 import { AggressiveReasoningResolver } from './aggressiveReasoning.js';
 import { SearchTracker } from './searchTracker.js';
-function isKnownValue(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue as isKnownValue } from '../../../shared/valueNormalizers.js';
 
 function fieldPath(field) {
   return `fields.${String(field || '').trim()}`;

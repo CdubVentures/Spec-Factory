@@ -4,7 +4,7 @@
  * Extracted from indexingSchemaPackets.js (P4 decomposition).
  */
 import crypto from 'node:crypto';
-import { toFloat } from '../shared/valueNormalizers.js';
+import { toFloat, hasKnownValue } from '../shared/valueNormalizers.js';
 
 export function sha256(value = '') {
   return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
@@ -24,10 +24,7 @@ export function clamp01(value, fallback = 0) {
   return Math.max(0, Math.min(1, n));
 }
 
-export function hasKnownValue(value) {
-  const token = String(value ?? '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a' && token !== 'null' && token !== 'undefined';
-}
+export { hasKnownValue };
 
 export function firstKnownValue(candidates = [], fallback = '') {
   for (const candidate of candidates) {

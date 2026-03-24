@@ -79,8 +79,6 @@ function makeStageStubs({ captureSearchPlannerArgs } = {}) {
     runBrandResolverFn: async () => ({ brandResolution: null, promotions: { hostEntries: [], registryEntries: {} } }),
     runSearchProfileFn: () => ({
       searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
-      effectiveHostPlan: null,
-      hostPlanQueryRows: [],
     }),
     runSearchPlannerFn: async (args) => {
       if (captureSearchPlannerArgs) captureSearchPlannerArgs(args);
@@ -277,8 +275,6 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       capturedCategoryConfig = args.categoryConfig;
       return {
         searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
-        effectiveHostPlan: null,
-        hostPlanQueryRows: [],
       };
     };
 

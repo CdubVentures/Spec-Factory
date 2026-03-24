@@ -112,8 +112,6 @@ export {
 
 export { runExtractionVerification } from './runExtractionVerification.js';
 
-export {
-  hasKnownValue,
-  sanitizeExtractionResult,
-} from './sanitizeExtractionResult.js';
+export { hasKnownValue } from '../../../shared/valueNormalizers.js';
+export { sanitizeExtractionResult } from './sanitizeExtractionResult.js';
 

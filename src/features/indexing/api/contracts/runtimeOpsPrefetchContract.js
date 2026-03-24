@@ -67,7 +67,6 @@ export const QUERY_JOURNEY_SHAPE = Object.freeze([
   { key: 'selected_queries', coerce: 'array' },
   { key: 'schema4_query_count', coerce: 'int' },
   { key: 'deterministic_query_count', coerce: 'int' },
-  { key: 'host_plan_query_count', coerce: 'int' },
   { key: 'rejected_count', coerce: 'int' },
 ]);
 export const QUERY_JOURNEY_KEYS = Object.freeze(QUERY_JOURNEY_SHAPE.map(s => s.key));

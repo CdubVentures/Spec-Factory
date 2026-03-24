@@ -14,10 +14,7 @@ function normalizeText(value) {
   return String(value ?? '').trim().replace(/\s+/g, ' ');
 }
 
-function hasKnownValue(value) {
-  const token = String(value ?? '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a';
-}
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function resolveSnippet(snippetId, evidencePack) {
   if (!snippetId || !evidencePack) return null;

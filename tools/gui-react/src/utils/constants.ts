@@ -56,4 +56,5 @@ export const PIPELINE_STAGE_DEFS = [
   { id: 'complete', label: 'Run Complete', events: new Set(['run_completed']) },
 ] as const;
 
-export const UNKNOWN_VALUES = new Set(['', 'unk', 'unknown', 'na', 'n/a', 'none', 'null']);
+// SSOT: must match src/shared/valueNormalizers.js UNKNOWN_VALUE_TOKENS
+export const UNKNOWN_VALUES = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);

@@ -5,11 +5,6 @@ import assert from 'node:assert/strict';
 // B1: Search providers stay on the supported allowlist
 // ---------------------------------------------------------------------------
 describe('B1: Search provider allowlist stays constrained', () => {
-  it('providerCapabilities exposes only supported providers', async () => {
-    const { listProviders } = await import('../src/features/indexing/discovery/providerCapabilities.js');
-    assert.deepEqual(listProviders().slice().sort(), ['bing', 'brave', 'dual', 'duckduckgo', 'google', 'google-proxy', 'none', 'searxng']);
-  });
-
   it('unknown provider tokens normalize to none', async () => {
     const { searchProviderAvailability } = await import('../src/features/indexing/search/searchProviders.js');
     const result = searchProviderAvailability({

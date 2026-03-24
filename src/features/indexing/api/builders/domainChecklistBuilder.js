@@ -2,7 +2,7 @@ import path from 'node:path';
 import {
   toInt, toFloat, parseTsMs, normalizeDomainToken, domainFromUrl, urlPathToken,
   addTokensFromText, incrementMapCounter, countMapValuesAbove, percentileFromSorted,
-  isKnownValue,
+  hasKnownValue,
 } from '../../../../shared/valueNormalizers.js';
 import {
   classifySiteKind, isHelperPseudoDomain, createDomainBucket, createUrlStat,
@@ -469,7 +469,7 @@ export function createDomainChecklistBuilder({
         if (!row || typeof row !== 'object') continue;
         const evidence = Array.isArray(row.evidence) ? row.evidence : [];
         if (evidence.length === 0) continue;
-        const known = isKnownValue(row.value);
+        const known = hasKnownValue(row.value);
         const passTarget = toInt(row.pass_target, 0);
         const meetsTarget = row.meets_pass_target === true;
         const used = known && (meetsTarget || passTarget > 0 || Number(row.confidence || 0) > 0);

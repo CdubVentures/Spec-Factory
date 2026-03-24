@@ -17,7 +17,7 @@ import {
   dedupeEnumValues,
   readEnumConsistencyFormatHint,
 } from '../services/enumMutationService.js';
-import { normalizeFieldKey } from '../../../review/index.js';
+import { normalizeFieldKey } from '../domain/reviewNormalization.js';
 import { handleFieldReviewRoute } from './fieldReviewHandlers.js';
 import { handleComponentReviewRoute } from './componentReviewHandlers.js';
 

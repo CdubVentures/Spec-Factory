@@ -37,7 +37,8 @@
       "Bash(npx jest --passWithNoTests)",
       "Bash(npx @yao-pkg/pkg:*)",
       "Bash(cmd.exe //c \"taskkill /IM SpecFactory.exe /F\")",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   }
 }

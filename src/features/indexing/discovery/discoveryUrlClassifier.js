@@ -449,7 +449,6 @@ export function isRelevantSearchResult({
 
 export function collectDomainClassificationSeeds({
   searchResultRows = [],
-  effectiveHostPlan = null,
   brandResolution = null,
 }) {
   const seeds = new Set(
@@ -459,12 +458,6 @@ export function collectDomainClassificationSeeds({
   );
   if (seeds.size > 0) {
     return [...seeds];
-  }
-
-  for (const group of toArray(effectiveHostPlan?.host_groups)) {
-    if (group?.searchable === false) continue;
-    const host = normalizeHost(group?.host || '');
-    if (host) seeds.add(host);
   }
 
   for (const domain of [

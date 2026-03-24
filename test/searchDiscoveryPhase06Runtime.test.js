@@ -191,57 +191,6 @@ function makeLogger(events) {
   };
 }
 
-test('discoverCandidateSources attaches effective_host_plan and scored host-plan rows when v2 discovery flags are enabled', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-'));
-  const config = makeConfig(tempRoot);
-  const storage = createStorage(config);
-  const categoryConfig = makeCategoryConfig();
-  const job = makeJob();
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return { results: [] };
-    },
-  });
-
-  try {
-    const result = await discoverCandidateSources({
-      config,
-      storage,
-      categoryConfig,
-      job,
-      runId: 'run-phase06-v2-on',
-      logger: null,
-      planningHints: {
-        missingRequiredFields: ['sensor', 'weight'],
-      },
-      llmContext: {},
-    });
-
-    const plan = result.search_profile?.effective_host_plan;
-    assert.ok(plan, 'expected effective_host_plan on the runtime search profile');
-    assert.equal(plan.host_groups.some((group) => group.host === TEST_HOSTS.retailer), true);
-    assert.equal(plan.host_groups.some((group) => group.host === TEST_HOSTS.lab), true);
-    assert.equal(plan.unresolved_tokens.includes('mystery-token'), true);
-
-    const v2Rows = (result.search_profile?.query_rows || []).filter((row) => row.hint_source === 'v2.host_plan');
-    assert.ok(v2Rows.length > 0, 'expected compiled host-plan query rows');
-    assert.ok(v2Rows.every((row) => typeof row.score_breakdown?.needset_coverage_bonus === 'number'));
-    assert.ok(v2Rows.every((row) => typeof row.score_breakdown?.field_affinity_bonus === 'number'));
-    // WHY: Non-manufacturer hosts get soft doc_hint anchors (plain-text host name)
-    // instead of site: operators. Verify host name appears as soft anchor.
-    assert.ok(v2Rows.some((row) => {
-      const q = String(row.query || '');
-      return q.includes(TEST_HOSTS.retailer) || q.includes(TEST_HOSTS.lab);
-    }), 'expected soft host anchor (plain-text host name) in host-plan query rows');
-  } finally {
-    global.fetch = originalFetch;
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-
 test('discoverCandidateSources accepts zero results when internet search returns empty and no frontier cache exists', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-zero-results-'));
   const config = makeConfig(tempRoot);
@@ -627,58 +576,6 @@ test('discoverCandidateSources reuses cached frontier query results during same-
       row?.action === 'reuse'
     );
     assert.ok(cachedJournalEntry, 'cached query reuse should be visible in search_journal');
-  } finally {
-    global.fetch = originalFetch;
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-test('discoverCandidateSources produces non-null effective_host_plan from brand resolution even with empty focusFields', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-empty-focus-'));
-  const config = makeConfig(tempRoot);
-  const storage = createStorage(config);
-  storage.getBrandDomain = (brand, category) => {
-    if (String(brand) === TEST_IDENTITY.brand && String(category) === TEST_CATEGORY) {
-      return {
-        official_domain: TEST_HOSTS.manufacturer,
-        aliases: JSON.stringify([TEST_HOSTS.manufacturerAlias]),
-        support_domain: `support.${TEST_HOSTS.manufacturer}`,
-        confidence: 0.95,
-      };
-    }
-    return null;
-  };
-  const categoryConfig = makeCategoryConfig({ fieldRules: {} });
-  const job = makeJob();
-  const events = [];
-  const logger = makeLogger(events);
-  const originalFetch = global.fetch;
-  global.fetch = async () => ({
-    ok: true,
-    async json() {
-      return { results: [] };
-    },
-  });
-
-  try {
-    const result = await discoverCandidateSources({
-      config,
-      storage,
-      categoryConfig,
-      job,
-      runId: 'run-phase06-empty-focus',
-      logger,
-      planningHints: {},
-      llmContext: {},
-    });
-
-    const plan = result.search_profile?.effective_host_plan;
-    assert.ok(plan, 'expected effective_host_plan even with empty focusFields');
-    assert.ok(!plan.blocked, 'effective_host_plan should not be blocked');
-    assert.ok(
-      plan.manufacturer_hosts.includes(TEST_HOSTS.manufacturer),
-      'expected brand-resolved manufacturer host in effective_host_plan',
-    );
   } finally {
     global.fetch = originalFetch;
     await fs.rm(tempRoot, { recursive: true, force: true });

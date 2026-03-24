@@ -312,8 +312,6 @@ function makeStageStubs() {
     runBrandResolverFn: async () => ({ brandResolution: null, promotedHosts: [] }),
     runSearchProfileFn: () => ({
       searchProfileBase: { base_templates: [], queries: [], query_rows: [], query_reject_log: [] },
-      effectiveHostPlan: null,
-      hostPlanQueryRows: [],
     }),
     runSearchPlannerFn: async () => ({ enhancedRows: [], source: 'deterministic_fallback' }),
     runQueryJourneyFn: async () => ({

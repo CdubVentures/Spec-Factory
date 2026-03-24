@@ -85,7 +85,6 @@ const EXPECTED_PROFILE_KEYS = [
   'category', 'product_id', 'run_id', 'base_model', 'aliases',
   'status', 'provider',
   'selected_queries', 'query_rows', 'query_guard', 'query_reject_log',
-  'effective_host_plan',
   'brand_resolution',
   'key', 'run_key', 'latest_key',
   'query_stats', 'discovered_count', 'approved_count', 'candidate_count',
@@ -230,33 +229,6 @@ describe('searchProfileFinal shape regression', () => {
       assert.ok(typeof sp.key === 'string' && sp.key.length > 0, 'key must be non-empty');
       assert.ok(typeof sp.run_key === 'string' && sp.run_key.length > 0, 'run_key must be non-empty');
       assert.ok(typeof sp.latest_key === 'string' && sp.latest_key.length > 0, 'latest_key must be non-empty');
-    } finally {
-      global.fetch = originalFetch;
-      await fs.rm(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  it('effective_host_plan present when v2 flags enabled', async () => {
-    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'profile-seam-hostplan-'));
-    const config = makeConfig(tempRoot);
-    const storage = createStorage(config);
-    const originalFetch = global.fetch;
-    global.fetch = async () => ({ ok: true, async json() { return { results: [] }; } });
-    try {
-      const result = await discoverCandidateSources({
-        config,
-        storage,
-        categoryConfig: makeCategoryConfig(),
-        job: { productId: 'mouse-acme-orbit-x1', category: 'mouse',
-          identityLock: { brand: 'Acme', model: 'Orbit X1', variant: '' } },
-        runId: 'run-seam-hostplan',
-        logger: null,
-        planningHints: { missingRequiredFields: ['sensor', 'weight'] },
-        llmContext: {},
-      });
-
-      assert.ok(result.search_profile?.effective_host_plan != null,
-        'effective_host_plan should be non-null when v2 flags enabled');
     } finally {
       global.fetch = originalFetch;
       await fs.rm(tempRoot, { recursive: true, force: true });

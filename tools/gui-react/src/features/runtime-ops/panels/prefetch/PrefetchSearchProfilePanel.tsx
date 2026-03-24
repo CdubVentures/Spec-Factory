@@ -206,7 +206,7 @@ function TierQueryTable({
       ? ['query', 'tier', 'group', 'target fields', 'results']
       : tier === 'key'
         ? ['query', 'tier', 'key', 'repeat', 'enrichment', 'results']
-        : ['query', 'tier', 'site', 'results'];
+        : ['query', 'tier', 'results'];
 
   return (
     <div className="overflow-x-auto border sf-border-soft rounded-sm">
@@ -241,9 +241,6 @@ function TierQueryTable({
                   <td className={`${TD_CLS} sf-text-muted italic`}>{enrichmentStrategyLabel(r) || '-'}</td>
                 </>
               )}
-              {tier === 'host_plan' && (
-                <td className={`${TD_CLS} sf-text-muted font-mono`}>{r.source_host || r.domain_hint || '-'}</td>
-              )}
               <td className={`${TD_CLS} text-right font-mono`}>{r.result_count ?? '-'}</td>
             </tr>
           ))}
@@ -261,9 +258,6 @@ function TierBudgetBar({ budget }: { budget: ReturnType<typeof buildTierBudgetSu
     { key: 'group', label: 'T2 Groups', count: budget.group.count, pct: budget.group.pct, cls: 'sf-chip-warning' },
     { key: 'key', label: 'T3 Keys', count: budget.key.count, pct: budget.key.pct, cls: 'sf-chip-info' },
   ];
-  if (budget.host_plan.count > 0) {
-    segments.push({ key: 'host_plan', label: 'Host Plan', count: budget.host_plan.count, pct: budget.host_plan.pct, cls: 'sf-chip-neutral' });
-  }
   const used = budget.total;
   const unusedPct = budget.cap > 0 ? Math.max(0, ((budget.cap - used) / budget.cap) * 100) : 0;
 
@@ -379,7 +373,6 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
           {budget.seed.count > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{budget.seed.count}</strong> seeds</>}
           {budget.group.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.group.count}</strong> group searches</>}
           {budget.key.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.key.count}</strong> key searches</>}
-          {budget.host_plan.count > 0 && <>, <strong className="sf-text-primary not-italic">{budget.host_plan.count}</strong> host plan</>}
           {' '}from a cap of <strong className="sf-text-primary not-italic">{budget.cap}</strong>
           {(data.selected_count ?? data.discovered_count ?? 0) > 0 && (
             <> &mdash; selected <strong className="sf-text-primary not-italic">{data.selected_count ?? data.discovered_count}</strong> URLs for extraction</>
@@ -420,24 +413,6 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
         <div>
           <SectionHeader>tier 3 &mdash; keys &middot; {tiers.key.length} queries</SectionHeader>
           <TierQueryTable rows={tiers.key} tier="key" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════
-          HOST PLAN (supplementary site-targeted queries)
-          ══════════════════════════════════════════════════════════════════ */}
-      {tiers.host_plan.length > 0 && (
-        <div>
-          <SectionHeader>host plan &middot; {tiers.host_plan.length} queries</SectionHeader>
-          <TierQueryTable rows={tiers.host_plan} tier="host_plan" selectedQueryText={selectedQueryText} onSelect={setSelectedQueryText} />
-
-          {(guardTotal !== null || guardAccepted !== null) && (
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] sf-text-muted pt-2 mt-2">
-              {guardAccepted !== null && <span>accepted <strong className="sf-text-primary">{guardAccepted}</strong></span>}
-              {guardRejected !== null && <span>rejected <strong className="sf-text-primary">{guardRejected}</strong></span>}
-              {guardTotal !== null && <span>guard total <strong className="sf-text-primary">{guardGuarded ?? 0}/{guardTotal}</strong></span>}
-            </div>
-          )}
         </div>
       )}
 

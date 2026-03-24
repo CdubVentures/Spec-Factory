@@ -10,7 +10,7 @@ import {
   uniqueTokens
 } from './batchEvidenceSelection.js';
 import { executeExtractionBatch } from './executeExtractionBatch.js';
-import { hasKnownValue } from './sanitizeExtractionResult.js';
+import { hasKnownValue } from '../../../shared/valueNormalizers.js';
 import {
   buildCompletedPhase08BatchRow,
   buildPhase08ExtractionPayload,

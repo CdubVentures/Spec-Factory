@@ -7,17 +7,7 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeToken(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function hasKnownValue(value) {
-  const token = normalizeToken(value);
-  return token !== '' && token !== 'unk' && token !== 'null' && token !== 'undefined' && token !== 'n/a';
-}
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function precisionRank(precision) {
   if (precision === 'day') return 3;

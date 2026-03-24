@@ -279,7 +279,6 @@ export interface PrefetchSearchProfileBase {
   source: string;
   query_reject_log: unknown[];
   alias_reject_log: unknown[];
-  effective_host_plan: Record<string, unknown> | null;
   brand_resolution: Record<string, unknown> | null;
   base_model: string;
   aliases: unknown[];
@@ -343,7 +342,6 @@ export interface QueryJourneyData {
   selected_queries: unknown[];
   schema4_query_count: number;
   deterministic_query_count: number;
-  host_plan_query_count: number;
   rejected_count: number;
 }
 

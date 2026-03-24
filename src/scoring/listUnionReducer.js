@@ -17,10 +17,7 @@ import { splitListValue } from '../utils/common.js';
 
 const SUPPORTED_POLICIES = new Set(['set_union', 'ordered_union']);
 
-function hasKnownValue(value) {
-  const token = String(value ?? '').trim().toLowerCase();
-  return token !== '' && token !== 'unk' && token !== 'unknown' && token !== 'n/a';
-}
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 function dedupeKey(item) {
   return String(item).trim().toLowerCase();

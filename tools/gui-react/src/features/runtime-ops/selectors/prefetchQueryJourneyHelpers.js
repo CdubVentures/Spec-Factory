@@ -4,20 +4,20 @@
 // WHY: Tier maps derived from the same registry as searchProfileTierHelpers.ts.
 // Inline here because .js files can't import .ts under plain node --test.
 // SSOT is TIER_REGISTRY in searchProfileTierHelpers.ts — keep in sync.
-const TIER_MAP = { seed: 'seed', group_search: 'group', key_search: 'key', host_plan: 'host_plan' };
-const HINT_SOURCE_TIER_MAP = { tier1_seed: 'seed', tier2_group: 'group', tier3_key: 'key', 'v2.host_plan': 'host_plan' };
-const TIER_LABELS = { seed: 'Seed', group: 'Group', key: 'Key', host_plan: 'Host Plan' };
+const TIER_MAP = { seed: 'seed', group_search: 'group', key_search: 'key' };
+const HINT_SOURCE_TIER_MAP = { tier1_seed: 'seed', tier2_group: 'group', tier3_key: 'key' };
+const TIER_LABELS = { seed: 'Seed', group: 'Group', key: 'Key' };
 
 function classifyQueryTier(row) {
   const tier = String(row?.tier ?? '').trim();
   if (tier && TIER_MAP[tier]) return TIER_MAP[tier];
   const hint = String(row?.hint_source ?? '').trim();
   if (hint && HINT_SOURCE_TIER_MAP[hint]) return HINT_SOURCE_TIER_MAP[hint];
-  return 'host_plan';
+  return 'key';
 }
 
 function tierLabel(tierKey) {
-  return TIER_LABELS[tierKey] ?? 'Host Plan';
+  return TIER_LABELS[tierKey] ?? 'Key';
 }
 
 function normalizeText(value) {
@@ -89,7 +89,7 @@ function statusForRow(row) {
 }
 
 // WHY: Tier priority order matches the pipeline budget allocation.
-const TIER_SORT_ORDER = { seed: 0, group: 1, key: 2, host_plan: 3 };
+const TIER_SORT_ORDER = { seed: 0, group: 1, key: 2 };
 
 export function queryJourneyStatusLabel(status) {
   const token = normalizeToken(status);

@@ -89,7 +89,6 @@ export function validateSelectorOutput({ selectorOutput, candidateIds, maxTotalK
 export function buildSerpSelectorInput({
   runId, category, productId,
   variables, brandResolution,
-  effectiveHostPlan,
   candidateRows,
   categoryConfig,
   discoveryCap,
@@ -104,7 +103,6 @@ export function buildSerpSelectorInput({
     const host = normalizeHost(String(row?.host || ''));
     if (officialDomain && host === officialDomain) return true;
     if (supportDomain && host === supportDomain) return true;
-    if (effectiveHostPlan?.policy_map?.[host]) return true;
     if (categoryConfig?.validatedRegistry?.[host]) return true;
     return false;
   };

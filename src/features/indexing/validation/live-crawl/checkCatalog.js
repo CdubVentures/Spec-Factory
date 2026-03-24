@@ -28,7 +28,7 @@ const SECTION_META = Object.freeze({
   'S8':   { title: 'Runtime GUI Proof Gate', check_count: 14 },
   'S9':   { title: 'Screenshots / Screencast Proof Gate', check_count: 10 },
   'S10':  { title: 'Repair / Retry / Queue Proof Gate', check_count: 8 },
-  'S11':  { title: 'Phase-3 Index Alignment Gate', check_count: 10 },
+  'S11':  { title: 'Phase-3 Index Alignment Gate', check_count: 5 },
   'S12':  { title: 'Optimization Gate', check_count: 12 },
 });
 
@@ -199,16 +199,11 @@ const RAW_CHECKS = [
   ['RQ-06', 'S10', 'Terminal state reached', 'Completed or failed with reason', true],
   ['RQ-07', 'S10', 'Dedupe effective', 'Repeated identical repair signals do not explode queue', true],
   ['RQ-08', 'S10', 'Repair results tied back to yield', 'Can tell whether repair produced usable docs/evidence', true],
-  // S11: Phase-3 Index Alignment Gate (10)
+  // S11: Phase-3 Index Alignment Gate (5)
   ['IX-01', 'S11', 'SourceRegistry path is active when enabled', 'Category registry loads and is inspectable', true],
-  ['IX-02', 'S11', 'QueryCompiler path is active when enabled', 'Query planning reflects compiled/provider-aware behavior', true],
-  ['IX-03', 'S11', 'Core/Deep gates are active when enabled', 'Core fact acceptance behaves safely', true],
-  ['IX-04', 'S11', 'Phase-3 resolver inputs are visible', 'Domain hints / host groups / unresolved tokens inspectable', true],
-  ['IX-05', 'S11', 'effective_host_plan truth is honest', 'Present when real, null when not yet primary live path', true],
-  ['IX-06', 'S11', 'Runtime panels do not overclaim v2', 'GUI labels/status reflect actual path, not future intent', false],
-  ['IX-07', 'S11', 'Category source mix is sensible', 'Manufacturer/lab/retailer mix consistent with category authority', true],
-  ['IX-08', 'S11', 'Host-plan gaps recorded', 'If live path still uses source rows more than host plan, report it plainly', true],
-  ['IX-09', 'S11', 'Flag-off regression understood', 'Legacy behavior still characterized when relevant', true],
+  ['IX-02', 'S11', 'Core/Deep gates are active when enabled', 'Core fact acceptance behaves safely', true],
+  ['IX-03', 'S11', 'Category source mix is sensible', 'Manufacturer/lab/retailer mix consistent with category authority', true],
+  ['IX-04', 'S11', 'Flag-off regression understood', 'Legacy behavior still characterized when relevant', true],
   ['IX-10', 'S11', 'After-Phase-3 claims separated', 'QueryIndex/URLIndex/late compounding claims not used as current blockers unless live', true],
   // S12: Optimization Gate (12)
   ['OP-01', 'S12', 'Baseline recorded', 'Before values captured', true],

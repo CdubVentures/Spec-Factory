@@ -25,10 +25,8 @@ describe('classifyQueryTier', () => {
     ['hint_source fallback: tier1_seed', { hint_source: 'tier1_seed' }, 'seed'],
     ['hint_source fallback: tier2_group', { hint_source: 'tier2_group' }, 'group'],
     ['hint_source fallback: tier3_key', { hint_source: 'tier3_key' }, 'key'],
-    ['tier field: host_plan', { tier: 'host_plan' }, 'host_plan'],
-    ['hint_source: v2.host_plan', { hint_source: 'v2.host_plan' }, 'host_plan'],
-    ['unknown hint_source → host_plan', { hint_source: 'field_rules.search_hints' }, 'host_plan'],
-    ['empty row → host_plan', {}, 'host_plan'],
+    ['unknown hint_source → key', { hint_source: 'field_rules.search_hints' }, 'key'],
+    ['empty row → key', {}, 'key'],
     ['tier takes precedence over hint_source', { tier: 'seed', hint_source: 'tier3_key' }, 'seed'],
   ];
   for (const [label, overrides, expected] of cases) {
@@ -46,9 +44,8 @@ describe('tierLabel', () => {
     ['seed', 'Seed'],
     ['group', 'Group'],
     ['key', 'Key'],
-    ['host_plan', 'Host Plan'],
-    ['unknown', 'Host Plan'],
-    ['', 'Host Plan'],
+    ['unknown', 'Key'],
+    ['', 'Key'],
   ];
   for (const [input, expected] of cases) {
     it(`${input || '(empty)'} → ${expected}`, () => {
@@ -65,7 +62,6 @@ describe('tierChipClass', () => {
     ['seed', 'sf-chip-accent'],
     ['group', 'sf-chip-warning'],
     ['key', 'sf-chip-info'],
-    ['host_plan', 'sf-chip-neutral'],
     ['', 'sf-chip-neutral'],
   ];
   for (const [input, expected] of cases) {
@@ -90,13 +86,12 @@ describe('groupByTier', () => {
     const result = groupByTier(rows);
     assert.equal(result.seed.length, 2);
     assert.equal(result.group.length, 1);
-    assert.equal(result.key.length, 1);
-    assert.equal(result.host_plan.length, 1);
+    assert.equal(result.key.length, 2);
   });
 
   it('returns empty arrays for no rows', () => {
     const result = groupByTier([]);
-    assert.deepEqual(result, { seed: [], group: [], key: [], host_plan: [] });
+    assert.deepEqual(result, { seed: [], group: [], key: [] });
   });
 });
 
@@ -117,7 +112,6 @@ describe('buildTierBudgetSummary', () => {
     assert.equal(result.seed.count, 2);
     assert.equal(result.group.count, 1);
     assert.equal(result.key.count, 3);
-    assert.equal(result.host_plan.count, 0);
     assert.equal(result.total, 6);
     assert.equal(result.cap, 24);
     assert.ok(Math.abs(result.seed.pct - (2 / 6) * 100) < 0.01);
@@ -157,7 +151,7 @@ describe('enrichmentStrategyLabel', () => {
     assert.equal(enrichmentStrategyLabel(makeRow({ tier: 'group_search' })), '');
   });
 
-  it('returns empty string for host_plan rows', () => {
-    assert.equal(enrichmentStrategyLabel(makeRow({ hint_source: 'field_rules.search_hints' })), '');
+  it('returns enrichment label for unrecognized hint_source (falls to key tier)', () => {
+    assert.equal(enrichmentStrategyLabel(makeRow({ hint_source: 'field_rules.search_hints' })), 'bare search');
   });
 });

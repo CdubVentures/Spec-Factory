@@ -61,13 +61,11 @@ function makeMinimalJourneyCtx(overrides = {}) {
   return {
     searchProfileBase: makeSearchProfileBase(20),
     enhancedRows: makeEnhancedRows(25),
-    hostPlanQueryRows: [],
     variables: { brand: 'TestBrand', model: 'TestModel', variant: '', category: 'mouse' },
     config: makeConfig(),
     searchProfileCaps: { dedupeQueriesCap: 200, llmAliasValidationCap: 12, llmFieldTargetQueriesCap: 3, llmDocHintQueriesCap: 3 },
     missingFields: ['weight', 'sensor'],
     planningHints: { missingCriticalFields: ['weight'], missingRequiredFields: ['sensor'] },
-    effectiveHostPlan: null,
     categoryConfig: { category: 'mouse', sourceHostMap: new Map(), fieldOrder: [] },
     job: { productId: 'test-product' },
     runId: 'run-cap-test',
@@ -152,7 +150,7 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-      effectiveHostPlan: null,
+
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: 30,         // historically derived from searchPlannerQueryCap
@@ -173,7 +171,7 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-      effectiveHostPlan: null,
+
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: undefined,
@@ -193,7 +191,7 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-      effectiveHostPlan: null,
+
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: 999,

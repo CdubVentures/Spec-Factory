@@ -15,8 +15,7 @@ import {
   requiredLevelRank,
   mapRequiredLevelToBucket,
 } from '../shared/discoveryRankConstants.js';
-
-const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined']);
+import { hasKnownValue } from '../shared/valueNormalizers.js';
 
 // ── V4 helpers ──
 
@@ -80,9 +79,7 @@ function normalizeRequiredLevel(value) {
   return 'optional';
 }
 
-function hasKnownFieldValue(value) {
-  return !UNKNOWN_VALUE_TOKENS.has(String(value ?? '').trim().toLowerCase());
-}
+const hasKnownFieldValue = hasKnownValue;
 
 function isFieldConflict(field, fieldReasoning = {}, constraintAnalysis = {}) {
   const reasoning = fieldReasoning?.[field] || {};

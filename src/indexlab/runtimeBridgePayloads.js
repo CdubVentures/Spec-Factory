@@ -168,7 +168,6 @@ export function toSearchProfileBaseline({
     query_stats: [],
     queries: [],
     source: 'runtime_bridge_baseline',
-    effective_host_plan: null
   };
 }
 
