@@ -27,18 +27,6 @@ export interface LlmPolicyBudget {
   perProductUsd: number;
 }
 
-export interface LlmPolicyExtraction {
-  maxSnippetChars: number;
-  maxSnippetsPerBatch: number;
-  skipLowSignal: boolean;
-  cacheDir: string;
-  cacheTtlMs: number;
-  maxBatchesPerProduct: number;
-  maxCallsPerProductTotal: number;
-  maxCallsPerRound: number;
-  maxEvidenceChars: number;
-}
-
 export interface LlmPolicyTokens {
   maxOutput: number;
   plan: number;
@@ -61,26 +49,18 @@ export interface LlmPolicyReasoning {
   mode: boolean;
 }
 
-export interface LlmPolicyVerify {
-  mode: boolean;
-  sampleRate: number;
-}
-
-export type LlmPolicyGroup = 'apiKeys' | 'provider' | 'budget' | 'extraction' | 'tokens' | 'models' | 'reasoning' | 'verify';
+export type LlmPolicyGroup = 'apiKeys' | 'provider' | 'budget' | 'tokens' | 'models' | 'reasoning';
 
 export interface LlmPolicy {
   apiKeys: LlmPolicyApiKeys;
   provider: LlmPolicyProvider;
   budget: LlmPolicyBudget;
-  extraction: LlmPolicyExtraction;
   tokens: LlmPolicyTokens;
   models: LlmPolicyModels;
   reasoning: LlmPolicyReasoning;
-  verify: LlmPolicyVerify;
   phaseOverrides: Record<string, Partial<LlmPhaseOverride>>;
   providerRegistry: LlmProviderEntry[];
   timeoutMs: number;
-  writeSummary: boolean;
 }
 
 export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: string }> = {
@@ -98,15 +78,6 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   llmCostOutputPer1M:                        { group: 'budget', field: 'costOutputPer1M' },
   llmMonthlyBudgetUsd:                       { group: 'budget', field: 'monthlyUsd' },
   llmPerProductBudgetUsd:                    { group: 'budget', field: 'perProductUsd' },
-  llmExtractMaxSnippetChars:                 { group: 'extraction', field: 'maxSnippetChars' },
-  llmExtractMaxSnippetsPerBatch:             { group: 'extraction', field: 'maxSnippetsPerBatch' },
-  llmExtractSkipLowSignal:                   { group: 'extraction', field: 'skipLowSignal' },
-  llmExtractionCacheDir:                     { group: 'extraction', field: 'cacheDir' },
-  llmExtractionCacheTtlMs:                   { group: 'extraction', field: 'cacheTtlMs' },
-  llmMaxBatchesPerProduct:                   { group: 'extraction', field: 'maxBatchesPerProduct' },
-  llmMaxCallsPerProductTotal:                { group: 'extraction', field: 'maxCallsPerProductTotal' },
-  llmMaxCallsPerRound:                       { group: 'extraction', field: 'maxCallsPerRound' },
-  llmMaxEvidenceChars:                       { group: 'extraction', field: 'maxEvidenceChars' },
   llmMaxOutputTokens:                        { group: 'tokens', field: 'maxOutput' },
   llmMaxOutputTokensPlan:                    { group: 'tokens', field: 'plan' },
   llmMaxOutputTokensPlanFallback:            { group: 'tokens', field: 'planFallback' },
@@ -120,13 +91,10 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   llmPlanUseReasoning:                       { group: 'reasoning', field: 'enabled' },
   llmReasoningBudget:                        { group: 'reasoning', field: 'budget' },
   llmReasoningMode:                          { group: 'reasoning', field: 'mode' },
-  llmVerifyMode:                             { group: 'verify', field: 'mode' },
-  llmVerifySampleRate:                       { group: 'verify', field: 'sampleRate' },
 };
 
 export const FLAT_TOP_LEVEL: Record<string, string> = {
   llmTimeoutMs: 'timeoutMs',
-  llmWriteSummary: 'writeSummary',
 };
 
 export const LLM_POLICY_MANAGED_KEYS = [
@@ -144,15 +112,6 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmCostOutputPer1M',
   'llmMonthlyBudgetUsd',
   'llmPerProductBudgetUsd',
-  'llmExtractMaxSnippetChars',
-  'llmExtractMaxSnippetsPerBatch',
-  'llmExtractSkipLowSignal',
-  'llmExtractionCacheDir',
-  'llmExtractionCacheTtlMs',
-  'llmMaxBatchesPerProduct',
-  'llmMaxCallsPerProductTotal',
-  'llmMaxCallsPerRound',
-  'llmMaxEvidenceChars',
   'llmMaxOutputTokens',
   'llmMaxOutputTokensPlan',
   'llmMaxOutputTokensPlanFallback',
@@ -166,10 +125,7 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmPlanUseReasoning',
   'llmReasoningBudget',
   'llmReasoningMode',
-  'llmVerifyMode',
-  'llmVerifySampleRate',
   'llmTimeoutMs',
-  'llmWriteSummary',
   'llmPhaseOverridesJson',
   'llmProviderRegistryJson',
 ] as const;
@@ -218,17 +174,6 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
       monthlyUsd: readNum(source, 'llmMonthlyBudgetUsd'),
       perProductUsd: readNum(source, 'llmPerProductBudgetUsd'),
     },
-    extraction: {
-      maxSnippetChars: readNum(source, 'llmExtractMaxSnippetChars'),
-      maxSnippetsPerBatch: readNum(source, 'llmExtractMaxSnippetsPerBatch'),
-      skipLowSignal: readBool(source, 'llmExtractSkipLowSignal'),
-      cacheDir: readStr(source, 'llmExtractionCacheDir'),
-      cacheTtlMs: readNum(source, 'llmExtractionCacheTtlMs'),
-      maxBatchesPerProduct: readNum(source, 'llmMaxBatchesPerProduct'),
-      maxCallsPerProductTotal: readNum(source, 'llmMaxCallsPerProductTotal'),
-      maxCallsPerRound: readNum(source, 'llmMaxCallsPerRound'),
-      maxEvidenceChars: readNum(source, 'llmMaxEvidenceChars'),
-    },
     tokens: {
       maxOutput: readNum(source, 'llmMaxOutputTokens'),
       plan: readNum(source, 'llmMaxOutputTokensPlan'),
@@ -248,13 +193,8 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
       budget: readNum(source, 'llmReasoningBudget'),
       mode: readBool(source, 'llmReasoningMode'),
     },
-    verify: {
-      mode: readBool(source, 'llmVerifyMode'),
-      sampleRate: readNum(source, 'llmVerifySampleRate'),
-    },
     phaseOverrides: safeJsonParse(source.llmPhaseOverridesJson, {}),
     providerRegistry: safeJsonParse(source.llmProviderRegistryJson, []),
     timeoutMs: readNum(source, 'llmTimeoutMs'),
-    writeSummary: readBool(source, 'llmWriteSummary'),
   };
 }

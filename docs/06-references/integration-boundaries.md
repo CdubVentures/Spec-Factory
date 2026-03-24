@@ -12,10 +12,10 @@
 | SearXNG search sidecar | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/searxngRoutes.js`, `tools/searxng/docker-compose.yml` | local HTTP service, default `http://127.0.0.1:8080` | HTTP status probes plus local Docker Compose start | `/api/v1/searxng/status` or `/api/v1/searxng/start` returns failure metadata |
 | Intel Graph helper API | `src/app/api/routes/infra/graphqlRoutes.js`, `src/api/intelGraphApi.js` | local GraphQL server on `http://localhost:8787/graphql` | JSON GraphQL POST proxy | proxy returns `502 graphql_proxy_failed` when helper is absent or unhealthy |
 | LLM providers / Cortex routing | `src/core/llm/`, `src/features/settings/api/configRoutes.js`, `src/cli/spec.js` | provider APIs selected by model/provider settings | provider/model strings, token caps, routing matrix, health checks | runtime commands or health checks fail; fallback routes may engage if configured |
-| Structured metadata sidecar | `src/features/indexing/extraction/structuredMetadataClient.js` | local HTTP extractor, default `http://127.0.0.1:8011/extract/structured` | structured metadata extraction POSTs | extraction degrades to best-effort behavior when sidecar is unavailable |
-| Browser crawling stack | `playwright`, `crawlee`, runtime fetch/extraction code | external websites | browser/http fetch plus runtime event capture | fetch failures are logged into runtime events and Runtime Ops |
+| Structured metadata sidecar | formerly `src/features/indexing/extraction/structuredMetadataClient.js` (extraction pipeline deleted in rework) | local HTTP extractor, default `http://127.0.0.1:8011/extract/structured` | config keys remain but consumer is deleted | config-only after pipeline rework |
+| Browser crawling stack | `src/features/crawl/index.js`, `playwright`, `crawlee` | external websites | plugin-based browser automation via crawl session with stealth/auto-scroll plugins, block detection, screenshot capture, frontier DB recording | crawl failures are logged and recorded to frontier DB; block classification triggers bypass strategies |
 | Category-authority control plane | `category_authority/`, `src/features/settings-authority/index.js`, `src/api/services/specDbSyncService.js` | authored JSON control-plane content on disk | compiled rules, catalogs, sources, user settings | stale or missing authority artifacts produce compile-stale states, `specdb_not_ready`, or sync drift |
-| Excluded schema assets | `src/indexlab/indexingSchemaPacketsValidator.js` | JSON schemas under the excluded `docs/implementation/ai-indexing-plans/schema/` subtree | schema packet validation at runtime | validator/runtime code fails if required schema assets are missing or malformed |
+| Excluded schema assets | formerly `src/indexlab/indexingSchemaPacketsValidator.js` (deleted in pipeline rework) | JSON schemas under the excluded `docs/implementation/ai-indexing-plans/schema/` subtree | schema packet validation was removed | no longer a runtime dependency |
 
 ## Retry And Recovery Notes
 
@@ -43,10 +43,10 @@
 | source | `src/app/api/processRuntime.js` | SearXNG probing and child-process integration |
 | source | `src/app/api/routes/infra/graphqlRoutes.js` | GraphQL proxy contract |
 | source | `src/api/intelGraphApi.js` | local GraphQL helper endpoint |
-| source | `src/features/indexing/extraction/structuredMetadataClient.js` | structured metadata sidecar endpoint |
+| source | `src/features/crawl/index.js` | crawl module public API (replaces extraction pipeline) |
 | source | `src/features/settings-authority/index.js` | file-backed settings/control-plane contract |
 | source | `src/api/services/specDbSyncService.js` | authority-to-SQLite sync boundary |
-| source | `src/indexlab/indexingSchemaPacketsValidator.js` | runtime dependency on docs schema JSON |
+| source | formerly `src/indexlab/indexingSchemaPacketsValidator.js` (deleted) | schema packet validation removed in pipeline rework |
 
 ## Related Documents
 

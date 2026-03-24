@@ -1,3 +1,17 @@
+// WHY: Video platforms (YouTube, Vimeo, etc.) never produce extractable spec data.
+const VIDEO_HOSTS = new Set([
+  'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
+  'twitch.tv', 'tiktok.com', 'rumble.com',
+]);
+
+export function isVideoUrl(url) {
+  if (!url) return false;
+  try {
+    const host = new URL(String(url)).hostname.replace(/^www\./, '').toLowerCase();
+    return VIDEO_HOSTS.has(host);
+  } catch { return false; }
+}
+
 export function computeDecisionCounts(details) {
   const counts = { keep: 0, maybe: 0, drop: 0, other: 0 };
   for (const detail of details) {
@@ -264,23 +278,17 @@ function profileCapDefaults(profile) {
     return {
       domainCapValue: '2',
       domainCapSource: 'fast profile clamp',
-      queryCap: 6,
-      discoveredCap: 60,
     };
   }
   if (profile === 'thorough') {
     return {
       domainCapValue: '>=8',
       domainCapSource: 'thorough profile floor',
-      queryCap: 20,
-      discoveredCap: 300,
     };
   }
   return {
     domainCapValue: 'env',
     domainCapSource: 'MAX_PAGES_PER_DOMAIN (default 2)',
-    queryCap: 10,
-    discoveredCap: 80,
   };
 }
 
@@ -288,8 +296,6 @@ export function resolveDomainCapSummary(liveSettings = {}) {
   const profile = normalizeProfileToken(liveSettings?.profile);
   const defaults = profileCapDefaults(profile);
   const maxPagesPerDomain = toPositiveInt(liveSettings?.maxPagesPerDomain, 0);
-  const discoveryResultsPerQuery = toPositiveInt(liveSettings?.discoveryResultsPerQuery, defaults.queryCap);
-  const discoveredCap = toPositiveInt(liveSettings?.searchPlannerQueryCap, defaults.discoveredCap);
   const value = maxPagesPerDomain > 0 ? String(maxPagesPerDomain) : defaults.domainCapValue;
   const source = maxPagesPerDomain > 0 ? 'runtime maxPagesPerDomain knob' : defaults.domainCapSource;
   const profileLabel = profile.charAt(0).toUpperCase() + profile.slice(1);
@@ -300,19 +306,14 @@ export function resolveDomainCapSummary(liveSettings = {}) {
     `Current domain cap display: ${value} (${source}).`,
     '',
     'How caps work:',
-    '- Fast profile: clamps discovery results/query to 6 and max pages/domain to 2.',
-    '- Standard profile: uses configured env/runtime knobs (DISCOVERY_RESULTS_PER_QUERY, MAX_PAGES_PER_DOMAIN).',
-    '- Thorough profile: raises floors to at least 20 results/query and at least 8 pages/domain.',
-    `- Discovery total cap keeps up to ${discoveredCap} URLs overall (DISCOVERY_MAX_DISCOVERED).`,
-    '',
-    `Current results/query cap for this profile is ${discoveryResultsPerQuery} before dedupe and triage.`,
+    '- Fast profile: clamps max pages/domain to 2.',
+    '- Standard profile: uses configured env/runtime knobs (MAX_PAGES_PER_DOMAIN).',
+    '- Thorough profile: raises floors to at least 8 pages/domain.',
   ].join('\n');
   return {
     value,
     tooltip,
     profile,
-    queryCap: discoveryResultsPerQuery,
-    discoveredCap,
     uberDomainFloor: 6,
   };
 }
@@ -327,8 +328,6 @@ export function resolveRuntimeDomainCapSummary(liveSettings) {
   const hasRuntimeSnapshot = Boolean(
     liveSettings.profile !== undefined
     || liveSettings.maxPagesPerDomain !== undefined
-    || liveSettings.discoveryResultsPerQuery !== undefined
-    || liveSettings.searchPlannerQueryCap !== undefined
   );
   if (!hasRuntimeSnapshot) {
     return {

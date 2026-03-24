@@ -1,6 +1,6 @@
 import {
   resolveCandidateConfidence,
-} from '../../../api/reviewRouteSharedHelpers.js';
+} from '../api/routeSharedHelpers.js';
 
 export function normalizeEnumToken(value) {
   return String(value ?? '').trim().toLowerCase();

@@ -12,7 +12,7 @@ import {
   dedupeEnumValues,
   readEnumConsistencyFormatHint,
 } from '../services/enumMutationService.js';
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
 function resolveSessionFieldRule(session = null, fieldKey = '') {
   const mergedFields = session?.mergedFields;

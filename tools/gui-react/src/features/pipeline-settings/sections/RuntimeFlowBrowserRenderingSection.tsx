@@ -93,13 +93,6 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
         <SettingRow label="Auto Scroll Passes" tip={`${BROWSER_PHASE_TIP}\nLives in: auto-scroll execution loop.\nWhat this controls: how many scroll passes the browser performs when auto-scroll is enabled.`} disabled={!runtimeDraft.autoScrollEnabled}>
           <SettingNumberInput draftKey="autoScrollPasses" value={runtimeDraft.autoScrollPasses} bounds={getNumberBounds('autoScrollPasses')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.autoScrollEnabled} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <SettingRow label="GraphQL Replay Enabled" tip={`${BROWSER_PHASE_TIP}\nLives in: browser-network capture during rendered fetch.\nWhat this controls: whether captured GraphQL responses can be replayed into the extraction context.`}>
-          <SettingToggle
-            checked={runtimeDraft.graphqlReplayEnabled}
-            onChange={(next) => updateDraft('graphqlReplayEnabled', next)}
-            disabled={!runtimeSettingsReady}
-          />
-        </SettingRow>
         <SettingRow label="Robots.txt Compliant" tip={`${BROWSER_PHASE_TIP}\nLives in: fetch admission and browser scheduling.\nWhat this controls: whether robots.txt allow and deny rules must be respected before visiting a page.`}>
           <SettingToggle
             checked={runtimeDraft.robotsTxtCompliant}
@@ -107,15 +100,9 @@ export const RuntimeFlowBrowserRenderingSection = memo(function RuntimeFlowBrows
             disabled={!runtimeSettingsReady}
           />
         </SettingRow>
-        <AdvancedSettingsBlock title="Scroll & Replay Internals" count={4}>
+        <AdvancedSettingsBlock title="Scroll Internals" count={2}>
           <SettingRow label="Auto Scroll Delay (ms)" tip={`${BROWSER_PHASE_TIP}\nLives in: auto-scroll pacing.\nWhat this controls: the wait inserted between successive scroll passes.`} disabled={!runtimeDraft.autoScrollEnabled}>
             <SettingNumberInput draftKey="autoScrollDelayMs" value={runtimeDraft.autoScrollDelayMs} bounds={getNumberBounds('autoScrollDelayMs')} step={50} disabled={!runtimeSettingsReady || !runtimeDraft.autoScrollEnabled} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Max GraphQL Replays" tip={`${BROWSER_PHASE_TIP}\nLives in: GraphQL replay budget enforcement.\nWhat this controls: the maximum number of replay attempts allowed per page when GraphQL replay is enabled.`} disabled={!runtimeDraft.graphqlReplayEnabled}>
-            <SettingNumberInput draftKey="maxGraphqlReplays" value={runtimeDraft.maxGraphqlReplays} bounds={getNumberBounds('maxGraphqlReplays')} step={1} disabled={!runtimeSettingsReady || !runtimeDraft.graphqlReplayEnabled} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Max Network Responses / Page" tip={`${BROWSER_PHASE_TIP}\nLives in: browser-network capture buffering.\nWhat this controls: the hard cap on how many network responses are retained from a single page.`}>
-            <SettingNumberInput draftKey="maxNetworkResponsesPerPage" value={runtimeDraft.maxNetworkResponsesPerPage} bounds={getNumberBounds('maxNetworkResponsesPerPage')} step={10} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
           <SettingRow label="Robots.txt Timeout (ms)" tip={`${BROWSER_PHASE_TIP}\nLives in: robots.txt verification requests.\nWhat this controls: how long the runtime waits for robots.txt checks before treating them as timed out.`} disabled={!runtimeDraft.robotsTxtCompliant}>
             <SettingNumberInput draftKey="robotsTxtTimeoutMs" value={runtimeDraft.robotsTxtTimeoutMs} bounds={getNumberBounds('robotsTxtTimeoutMs')} step={100} disabled={!runtimeSettingsReady || !runtimeDraft.robotsTxtCompliant} className={inputCls} onNumberChange={onNumberChange} />

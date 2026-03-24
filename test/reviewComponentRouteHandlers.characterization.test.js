@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, ok } from 'node:assert';
-import { handleReviewComponentMutationRoute } from '../src/api/reviewComponentMutationRoutes.js';
+import { handleReviewComponentMutationRoute } from '../src/features/review/api/componentMutationRoutes.js';
 
 /* ------------------------------------------------------------------ */
 /*  WHY: Characterization tests for component handler dispatch layer.   */

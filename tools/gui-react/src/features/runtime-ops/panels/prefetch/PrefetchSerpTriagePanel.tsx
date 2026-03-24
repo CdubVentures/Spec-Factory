@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import type { PrefetchLlmCall, SerpTriageResult, TriageCandidate, PrefetchLiveSettings } from '../../types';
-import { formatMs, triageDecisionBadgeClass, scoreBarSegments } from '../../helpers';
+import { formatMs, triageDecisionBadgeClass, domainRoleBadgeClass, scoreBarSegments } from '../../helpers';
+import { resolveIdentityBadge } from '../../badgeRegistries';
 import { KanbanLane, KanbanCard } from '../../components/KanbanLane';
 import { StackedScoreBar } from '../../components/StackedScoreBar';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell';
@@ -33,24 +34,6 @@ interface PrefetchSerpTriagePanelProps {
 }
 
 /* ── Theme-aligned helpers ── */
-
-function roleBadgeClass(role: string): string {
-  if (role === 'manufacturer') return 'sf-chip-success';
-  if (role === 'review' || role === 'lab_review') return 'sf-chip-info';
-  if (role === 'retail') return 'sf-chip-warning';
-  if (role === 'database' || role === 'spec_database') return 'sf-chip-accent';
-  if (role === 'community' || role === 'forum') return 'sf-chip-neutral';
-  return 'sf-chip-neutral';
-}
-
-function identityBadgeClass(identity: string): string {
-  if (identity === 'exact') return 'sf-chip-success';
-  if (identity === 'family') return 'sf-chip-info';
-  if (identity === 'variant') return 'sf-chip-warning';
-  if (identity === 'multi_model') return 'sf-chip-danger';
-  if (identity === 'off_target') return 'sf-chip-danger';
-  return 'sf-chip-neutral';
-}
 
 function approvalBadgeClass(bucket: string): string {
   return bucket === 'approved' ? 'sf-chip-success' : 'sf-chip-neutral';
@@ -92,8 +75,8 @@ function CandidateDrawer({
       {(candidate.role || candidate.identity_prelim || candidate.host_trust_class || candidate.doc_kind_guess) && (
         <DrawerSection title="Classification">
           <div className="flex flex-wrap gap-1.5">
-            {candidate.role && <Chip label={candidate.role} className={roleBadgeClass(candidate.role)} />}
-            {candidate.identity_prelim && <Chip label={candidate.identity_prelim} className={identityBadgeClass(candidate.identity_prelim)} />}
+            {candidate.role && <Chip label={candidate.role} className={domainRoleBadgeClass(candidate.role)} />}
+            {candidate.identity_prelim && <Chip label={candidate.identity_prelim} className={resolveIdentityBadge(candidate.identity_prelim)} />}
             {candidate.host_trust_class && <Chip label={candidate.host_trust_class.replace(/_/g, ' ')} className="sf-chip-info" />}
             {candidate.doc_kind_guess && <Chip label={candidate.doc_kind_guess.replace(/_/g, ' ')} className="sf-chip-accent" />}
           </div>
@@ -566,8 +549,8 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
                             >
                               <td className="py-1.5 px-4 sf-text-primary truncate max-w-[16rem]">{c.title || '-'}</td>
                               <td className="py-1.5 px-4 sf-text-subtle">{c.domain}</td>
-                              <td className="py-1.5 px-4">{c.role ? <Chip label={c.role} className={roleBadgeClass(c.role)} /> : <span className="sf-text-subtle">-</span>}</td>
-                              <td className="py-1.5 px-4">{c.identity_prelim ? <Chip label={c.identity_prelim} className={identityBadgeClass(c.identity_prelim)} /> : <span className="sf-text-subtle">-</span>}</td>
+                              <td className="py-1.5 px-4">{c.role ? <Chip label={c.role} className={domainRoleBadgeClass(c.role)} /> : <span className="sf-text-subtle">-</span>}</td>
+                              <td className="py-1.5 px-4">{c.identity_prelim ? <Chip label={c.identity_prelim} className={resolveIdentityBadge(c.identity_prelim)} /> : <span className="sf-text-subtle">-</span>}</td>
                               <td className="py-1.5 px-4 font-mono">{c.score.toFixed(3)}</td>
                               <td className="py-1.5 px-4">
                                 <Chip label={c.decision} className={triageDecisionBadgeClass(c.decision)} />

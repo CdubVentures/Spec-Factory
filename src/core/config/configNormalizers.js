@@ -53,13 +53,6 @@ export const SEARCH_PROFILE_CAP_DEFAULTS = parseRuntimeJsonDefault('searchProfil
   dedupeQueriesCap: 24
 });
 
-export const FETCH_SCHEDULER_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('fetchSchedulerInternalsMapJson', {
-  defaultDelayMs: 300,
-  defaultConcurrency: 3,
-  defaultMaxRetries: 1,
-  retryWaitMs: 15000
-});
-
 export const RETRIEVAL_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('retrievalInternalsMapJson', {
   evidenceTierWeightMultiplier: 2.6,
   evidenceDocWeightMultiplier: 1.5,
@@ -73,12 +66,6 @@ export const RETRIEVAL_INTERNALS_DEFAULTS = parseRuntimeJsonDefault('retrievalIn
   primeSourcesMaxCap: 20,
   fallbackEvidenceMaxRows: 6000,
   provenanceOnlyMinRows: 24
-});
-
-export const EVIDENCE_PACK_LIMITS_DEFAULTS = parseRuntimeJsonDefault('evidencePackLimitsMapJson', {
-  headingsLimit: 120,
-  chunkMaxLength: 3000,
-  specSectionsLimit: 8
 });
 
 export const PARSING_CONFIDENCE_BASE_DEFAULTS = parseRuntimeJsonDefault('parsingConfidenceBaseMapJson', {
@@ -96,76 +83,6 @@ export const DEFAULT_USER_AGENT = runtimeSettingDefault(
 );
 
 // ---------------------------------------------------------------------------
-// Article extractor normalizers (original to this file)
-// ---------------------------------------------------------------------------
-
-function policyToInt(value, fallback = 0) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function policyToBoolOrNull(value) {
-  if (value === undefined || value === null || value === '') {
-    return null;
-  }
-  const token = String(value).trim().toLowerCase();
-  if (['1', 'true', 'yes', 'on'].includes(token)) {
-    return true;
-  }
-  if (['0', 'false', 'no', 'off'].includes(token)) {
-    return false;
-  }
-  return null;
-}
-
-export function normalizeArticleHostToken(host) {
-  return String(host || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/^www\./, '');
-}
-
-export function normalizeArticleExtractorMode(value, fallback = 'auto') {
-  const token = String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[-\s]+/g, '_');
-  if (!token) return fallback;
-  if (token === 'auto') return 'auto';
-  if (token === 'prefer_readability' || token === 'readability' || token === 'readability_preferred') {
-    return 'prefer_readability';
-  }
-  if (token === 'prefer_fallback' || token === 'fallback' || token === 'heuristic') {
-    return 'prefer_fallback';
-  }
-  return fallback;
-}
-
-export function normalizeArticleExtractorPolicyMap(input = {}) {
-  const output = {};
-  if (!input || typeof input !== 'object') {
-    return output;
-  }
-
-  for (const [rawHost, rawPolicy] of Object.entries(input)) {
-    const host = normalizeArticleHostToken(rawHost);
-    if (!host || !rawPolicy || typeof rawPolicy !== 'object') {
-      continue;
-    }
-    output[host] = {
-      mode: normalizeArticleExtractorMode(rawPolicy.mode || rawPolicy.preference || 'auto', 'auto'),
-      enabled: policyToBoolOrNull(rawPolicy.enabled),
-      minChars: policyToInt(rawPolicy.minChars ?? rawPolicy.min_chars, 0),
-      minScore: policyToInt(rawPolicy.minScore ?? rawPolicy.min_score, 0),
-      maxChars: policyToInt(rawPolicy.maxChars ?? rawPolicy.max_chars, 0)
-    };
-  }
-  return output;
-}
-
-// ---------------------------------------------------------------------------
 // Map normalizers (moved from config.js Phase 2)
 // ---------------------------------------------------------------------------
 
@@ -177,16 +94,6 @@ export function normalizeSearchProfileCapMap(input = {}) {
     llmDocHintQueriesCap: clampIntFromMap(source, 'llmDocHintQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmDocHintQueriesCap, 1, 20),
     llmFieldTargetQueriesCap: clampIntFromMap(source, 'llmFieldTargetQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.llmFieldTargetQueriesCap, 1, 20),
     dedupeQueriesCap: clampIntFromMap(source, 'dedupeQueriesCap', SEARCH_PROFILE_CAP_DEFAULTS.dedupeQueriesCap, 1, 200),
-  };
-}
-
-export function normalizeFetchSchedulerInternalsMap(input = {}) {
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  return {
-    defaultDelayMs: clampIntFromMap(source, 'defaultDelayMs', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultDelayMs, 0, 600000),
-    defaultConcurrency: clampIntFromMap(source, 'defaultConcurrency', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultConcurrency, 1, 128),
-    defaultMaxRetries: clampIntFromMap(source, 'defaultMaxRetries', FETCH_SCHEDULER_INTERNALS_DEFAULTS.defaultMaxRetries, 0, 20),
-    retryWaitMs: clampIntFromMap(source, 'retryWaitMs', FETCH_SCHEDULER_INTERNALS_DEFAULTS.retryWaitMs, 0, 600000),
   };
 }
 
@@ -205,15 +112,6 @@ export function normalizeRetrievalInternalsMap(input = {}) {
     primeSourcesMaxCap: clampIntFromMap(source, 'primeSourcesMaxCap', RETRIEVAL_INTERNALS_DEFAULTS.primeSourcesMaxCap, 1, 50),
     fallbackEvidenceMaxRows: clampIntFromMap(source, 'fallbackEvidenceMaxRows', RETRIEVAL_INTERNALS_DEFAULTS.fallbackEvidenceMaxRows, 200, 20000),
     provenanceOnlyMinRows: clampIntFromMap(source, 'provenanceOnlyMinRows', RETRIEVAL_INTERNALS_DEFAULTS.provenanceOnlyMinRows, 0, 500),
-  };
-}
-
-export function normalizeEvidencePackLimitsMap(input = {}) {
-  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
-  return {
-    headingsLimit: clampIntFromMap(source, 'headingsLimit', EVIDENCE_PACK_LIMITS_DEFAULTS.headingsLimit, 1, 1000),
-    chunkMaxLength: clampIntFromMap(source, 'chunkMaxLength', EVIDENCE_PACK_LIMITS_DEFAULTS.chunkMaxLength, 200, 20000),
-    specSectionsLimit: clampIntFromMap(source, 'specSectionsLimit', EVIDENCE_PACK_LIMITS_DEFAULTS.specSectionsLimit, 1, 200),
   };
 }
 
@@ -351,37 +249,3 @@ export function normalizeUserAgent(value, fallback = DEFAULT_USER_AGENT) {
   return normalized || fallback;
 }
 
-export function normalizeStaticDomMode(value, fallback = 'cheerio') {
-  const token = String(value || '').trim().toLowerCase();
-  if (token === 'regex_fallback') {
-    return 'regex_fallback';
-  }
-  if (token === 'cheerio') {
-    return 'cheerio';
-  }
-  return fallback;
-}
-
-export function normalizePdfBackend(value, fallback = 'auto') {
-  const token = String(value || '').trim().toLowerCase();
-  if (['auto', 'pdfplumber', 'pymupdf', 'camelot', 'tabula', 'legacy'].includes(token)) {
-    return token;
-  }
-  const fallbackToken = String(fallback || '').trim().toLowerCase();
-  if (['auto', 'pdfplumber', 'pymupdf', 'camelot', 'tabula', 'legacy'].includes(fallbackToken)) {
-    return fallbackToken;
-  }
-  return 'auto';
-}
-
-export function normalizeScannedPdfOcrBackend(value, fallback = 'auto') {
-  const token = String(value || '').trim().toLowerCase();
-  if (['auto', 'tesseract', 'none'].includes(token)) {
-    return token;
-  }
-  const fallbackToken = String(fallback || '').trim().toLowerCase();
-  if (['auto', 'tesseract', 'none'].includes(fallbackToken)) {
-    return fallbackToken;
-  }
-  return 'auto';
-}

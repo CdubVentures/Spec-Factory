@@ -289,6 +289,10 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           cooldown_remaining: toInt(cls?.cooldown_remaining, 0),
           success_rate: toFloat(cls?.success_rate, 0),
           avg_latency_ms: toInt(cls?.avg_latency_ms, 0),
+          fetch_count: toInt(cls?.fetch_count, 0),
+          blocked_count: toInt(cls?.blocked_count, 0),
+          timeout_count: toInt(cls?.timeout_count, 0),
+          last_blocked_ts: cls?.last_blocked_ts ? String(cls.last_blocked_ts).trim() : null,
           notes: String(cls?.notes || '').trim(),
         });
       }

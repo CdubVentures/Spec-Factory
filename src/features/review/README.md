@@ -33,9 +33,17 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 ### Pre-Wired Contracts (not enforced)
 - `contracts/reviewFieldContract.js` — canonical key lists for FieldState, ReviewCandidate, KeyReviewLaneState, ProductReviewPayload.
 
+### Route Layer (self-contained HTTP handling)
+- `api/reviewRoutes.js` — thin dispatcher delegating to extracted handler modules.
+- `api/fieldReviewHandlers.js`, `api/componentReviewHandlers.js` — query/read handlers.
+- `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers.
+- `api/routeSharedHelpers.js` — shared mutation response/validation helpers.
+- `api/mutationResolvers.js` — SpecDb context resolution for mutations.
+- `api/reviewRouteContext.js` — DI context factory.
+
 ## Dependencies
-- Allowed: `src/core/`, `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`.
-- Forbidden: deep imports into other feature internals.
+- Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`, `src/pipeline/componentReviewBatch.js`.
+- Forbidden: `src/api/` (all HTTP handling is self-contained), deep imports into other feature internals.
 - Legacy: `src/review/*.js` shims re-export from `domain/` for backward compatibility. New consumers should use `src/features/review/index.js`.
 
 ## Domain Invariants

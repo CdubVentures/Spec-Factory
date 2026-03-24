@@ -1,6 +1,5 @@
 // WHY: Post-merge normalization extracted from config.js (Phase 6).
-// Applies canonical defaults, overrides, coercions, clamping, and fallback chains.
-// Clamping ranges derive from shared SSOT (settingsClampingRanges).
+// Applies canonical defaults, overrides, coercions, and fallback chains.
 
 import { assembleLlmPolicy } from '../llm/llmPolicySchema.js';
 import { providerFromModelToken } from '../llm/providerMeta.js';
@@ -11,46 +10,16 @@ import {
   normalizeModelOutputTokenMap,
   normalizeOutputMode,
   normalizeUserAgent,
-  normalizeStaticDomMode,
-  normalizePdfBackend,
-  normalizeScannedPdfOcrBackend,
-  normalizeBaseUrl,
   DEFAULT_USER_AGENT,
 } from './configNormalizers.js';
 import { toTokenInt, parseTokenPresetList, parseBoolEnv } from './envParsers.js';
 import { applyCanonicalSettingsDefaults } from './settingsClassification.js';
-import {
-  SETTINGS_CLAMPING_INT_RANGE_MAP,
-  SETTINGS_CLAMPING_FLOAT_RANGE_MAP,
-} from '../../shared/settingsClampingRanges.js';
 import {
   buildDefaultModelPricingMap,
   LLM_PRICING_AS_OF,
   LLM_PRICING_SOURCES,
   mergeModelPricingMaps,
 } from '../../billing/modelPricingCatalog.js';
-
-// ---------------------------------------------------------------------------
-// SSOT clamping helpers — derive min/max from route contract
-// ---------------------------------------------------------------------------
-
-function clampIntFromRoute(merged, key, routeKey) {
-  const range = SETTINGS_CLAMPING_INT_RANGE_MAP[routeKey];
-  if (!range) return;
-  const val = Number.parseInt(String(merged[key] ?? ''), 10);
-  merged[key] = Number.isFinite(val)
-    ? Math.max(range.min, Math.min(range.max, val))
-    : merged[key];
-}
-
-function clampFloatFromRoute(merged, key, routeKey) {
-  const range = SETTINGS_CLAMPING_FLOAT_RANGE_MAP[routeKey];
-  if (!range) return;
-  const val = Number.parseFloat(String(merged[key] ?? ''));
-  merged[key] = Number.isFinite(val)
-    ? Math.max(range.min, Math.min(range.max, val))
-    : merged[key];
-}
 
 // ---------------------------------------------------------------------------
 // Main export
@@ -97,23 +66,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   // WHY: Model stack simplified — one base model, one reasoning model.
   // Phase overrides still allow per-phase model selection via llmPhaseOverridesJson.
   merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelPlan;
-
-  // --- Normalizer calls ---
-  merged.staticDomMode = normalizeStaticDomMode(merged.staticDomMode, 'cheerio');
-  merged.pdfPreferredBackend = normalizePdfBackend(merged.pdfPreferredBackend || 'auto', 'auto');
-  merged.scannedPdfOcrBackend = normalizeScannedPdfOcrBackend(merged.scannedPdfOcrBackend || 'auto', 'auto');
-  // --- Route-contract-derived clamping (11 keys) ---
-  clampFloatFromRoute(merged, 'staticDomTargetMatchThreshold', 'staticDomTargetMatchThreshold');
-  clampIntFromRoute(merged, 'staticDomMaxEvidenceSnippets', 'staticDomMaxEvidenceSnippets');
-  clampIntFromRoute(merged, 'pdfBackendRouterTimeoutMs', 'pdfBackendRouterTimeoutMs');
-  clampIntFromRoute(merged, 'pdfBackendRouterMaxPages', 'pdfBackendRouterMaxPages');
-  clampIntFromRoute(merged, 'pdfBackendRouterMaxPairs', 'pdfBackendRouterMaxPairs');
-  clampIntFromRoute(merged, 'pdfBackendRouterMaxTextPreviewChars', 'pdfBackendRouterMaxTextPreviewChars');
-  clampIntFromRoute(merged, 'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPages');
-  clampIntFromRoute(merged, 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMaxPairs');
-  clampIntFromRoute(merged, 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinCharsPerPage');
-  clampIntFromRoute(merged, 'scannedPdfOcrMinLinesPerPage', 'scannedPdfOcrMinLinesPerPage');
-  clampFloatFromRoute(merged, 'scannedPdfOcrMinConfidence', 'scannedPdfOcrMinConfidence');
 
   // --- LLM provider/baseUrl/apiKey fallbacks ---
   merged.llmPlanProvider = merged.llmPlanProvider || merged.llmProvider;

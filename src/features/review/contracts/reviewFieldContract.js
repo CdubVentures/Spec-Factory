@@ -91,3 +91,26 @@ export const PRODUCT_IDENTITY_KEYS = Object.freeze([
 export const PRODUCT_METRICS_KEYS = Object.freeze([
   'confidence', 'coverage', 'flags', 'missing', 'has_run', 'updated_at',
 ]);
+
+// WHY: Envelope types for review API responses.
+// Adding a new response field = add it here. Alignment test catches TS drift.
+
+export const REVIEW_LAYOUT_ROW_KEYS = Object.freeze([
+  'group', 'key', 'label', 'field_rule',
+]);
+
+export const REVIEW_LAYOUT_KEYS = Object.freeze([
+  'category', 'rows',
+]);
+
+export const RUN_METRICS_KEYS = Object.freeze([
+  'confidence', 'coverage', 'flags', 'missing', 'count',
+]);
+
+export const PRODUCTS_INDEX_RESPONSE_KEYS = Object.freeze([
+  'products', 'brands', 'total', 'metrics_run',
+]);
+
+export const CANDIDATE_RESPONSE_KEYS = Object.freeze([
+  'product_id', 'field', 'candidates', 'candidate_count', 'keyReview',
+]);

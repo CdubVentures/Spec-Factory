@@ -19,6 +19,9 @@ function stateAnimClass(state: string): string {
   switch (state) {
     case 'stuck': return 'animate-pulse';
     case 'running': return 'animate-dot-bounce';
+    case 'retrying': return 'animate-pulse';
+    case 'blocked': return '';
+    case 'captcha': return '';
     case 'queued': return '';
     default: return '';
   }
@@ -110,12 +113,27 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                       </span>
                     )}
                   </span>
-                  {w.pool === 'search' && (w.current_provider ?? w.last_provider) && (
-                    <SearchProviderIcon provider={(w.current_provider ?? w.last_provider)!} size={14} className="sf-text-muted shrink-0 opacity-70" />
+                  {w.pool === 'search' && w.current_provider && (
+                    <SearchProviderIcon provider={w.current_provider} size={14} className="sf-text-muted shrink-0 opacity-70" />
                   )}
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>
                       STUCK
+                    </span>
+                  )}
+                  {w.state === 'blocked' && (
+                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('blocked')}`}>
+                      BLOCKED
+                    </span>
+                  )}
+                  {w.state === 'captcha' && (
+                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('captcha')}`}>
+                      CAPTCHA
+                    </span>
+                  )}
+                  {w.state === 'retrying' && (
+                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('retrying')}`}>
+                      RETRY
                     </span>
                   )}
                   {isQueued && (

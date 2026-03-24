@@ -1,3 +1,6 @@
+import { LEARNING_PROFILE_BOOLEAN_KEYS, SOURCE_CORPUS_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 /**
  * Source Intelligence store — extracted from SpecDb.
  * Owns: source_intel_domains, source_intel_field_rewards,
@@ -53,7 +56,7 @@ export function createSourceIntelStore({ db, category, stmts }) {
   }
 
   function getLearningProfile(profileId) {
-    const row = db.prepare('SELECT * FROM learning_profiles WHERE profile_id = ?').get(profileId);
+    const row = hydrateRow(LEARNING_PROFILE_BOOLEAN_KEYS, db.prepare('SELECT * FROM learning_profiles WHERE profile_id = ?').get(profileId));
     if (!row) return null;
     try { row.preferred_urls = JSON.parse(row.preferred_urls); } catch { row.preferred_urls = []; }
     try { row.feedback_urls = JSON.parse(row.feedback_urls); } catch { row.feedback_urls = []; }
@@ -125,13 +128,11 @@ export function createSourceIntelStore({ db, category, stmts }) {
   }
 
   function getSourceCorpusByCategory(cat) {
-    const rows = db.prepare('SELECT * FROM source_corpus WHERE category = ? ORDER BY last_seen_at DESC').all(cat);
+    const rows = hydrateRows(SOURCE_CORPUS_BOOLEAN_KEYS, db.prepare('SELECT * FROM source_corpus WHERE category = ? ORDER BY last_seen_at DESC').all(cat));
     for (const row of rows) {
       try { row.fields = JSON.parse(row.fields); } catch { row.fields = []; }
       try { row.methods = JSON.parse(row.methods); } catch { row.methods = []; }
       row.rootDomain = row.root_domain;
-      row.identity_match = Boolean(row.identity_match);
-      row.approved_domain = Boolean(row.approved_domain);
     }
     return rows;
   }

@@ -1,7 +1,6 @@
 import { SETTINGS_OPTION_VALUES } from '../../../../src/shared/settingsDefaults.js';
 
 import type {
-  RuntimeOcrBackend,
   RuntimeProfile,
   RuntimeRepairDedupeRule,
   RuntimeResumeMode,
@@ -36,10 +35,6 @@ export const RUNTIME_SEARCH_FALLBACK_HELP =
 
 export const RUNTIME_RESUME_MODE_OPTIONS = Object.freeze(
   [...SETTINGS_OPTION_VALUES.runtime.resumeMode] as RuntimeResumeMode[],
-);
-
-export const RUNTIME_OCR_BACKEND_OPTIONS = Object.freeze(
-  [...SETTINGS_OPTION_VALUES.runtime.scannedPdfOcrBackend] as RuntimeOcrBackend[],
 );
 
 export const RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS = Object.freeze(

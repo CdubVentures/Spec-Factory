@@ -3,7 +3,7 @@ import path from 'node:path';
 import {
   resolveExplicitPositiveId,
   resolveGridFieldStateForMutation,
-} from '../reviewMutationResolvers.js';
+} from '../../features/review/api/mutationResolvers.js';
 import { createReviewCandidateRuntime } from '../reviewCandidateRuntime.js';
 import { createReviewGridStateRuntime } from '../reviewGridStateRuntime.js';
 import { componentReviewPath } from '../../engine/curationSuggestions.js';

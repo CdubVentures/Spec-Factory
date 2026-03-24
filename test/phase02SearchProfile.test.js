@@ -688,9 +688,8 @@ describe('Phase 02 — Archetype Integration', () => {
     assert.ok(profile.base_templates.length > 0, 'base_templates is non-empty');
   });
 
-  it('archetype_summary is empty object in tier-only mode', () => {
-    // WHY: The legacy archetype pipeline was removed. archetype_summary is always {}
-    // in the tier-only query generation path.
+  it('archetype_summary removed from tier-only output', () => {
+    // WHY: archetype_summary was dead code (always empty {}). Deleted in P5 cleanup.
     const profile = buildSearchProfile({
       job: makeJob(),
       categoryConfig: makeArchetypeConfig(),
@@ -700,9 +699,8 @@ describe('Phase 02 — Archetype Integration', () => {
       focusGroups: [],
     });
 
-    console.log('[TIER] archetype_summary:', JSON.stringify(profile.archetype_summary));
-    assert.ok(typeof profile.archetype_summary === 'object', 'archetype_summary is object');
-    assert.deepEqual(profile.archetype_summary, {}, 'archetype_summary is empty in tier-only mode');
+    assert.equal(profile.archetype_summary, undefined, 'archetype_summary no longer in output');
+    assert.equal(profile.coverage_analysis, undefined, 'coverage_analysis no longer in output');
   });
 });
 
@@ -1241,8 +1239,6 @@ describe('Phase 02 — Tier-Aware buildSearchProfile Integration', () => {
     assert.ok(typeof profile.field_target_queries === 'object');
     assert.ok(Array.isArray(profile.doc_hint_queries));
     assert.ok(typeof profile.hint_source_counts === 'object');
-    assert.ok(typeof profile.archetype_summary === 'object');
-    assert.ok(typeof profile.coverage_analysis === 'object');
   });
 
   it('backward compat: no seedStatus synthesizes default so Tier 1 always fires', () => {

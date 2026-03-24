@@ -11,7 +11,7 @@ This file remains in the preserved `docs/implementation/ai-indexing-plans/` subt
 
 - The old follow-up link `docs/category-source-authority-guide.md` was broken. The current maintained category/source authority doc is [../../../04-features/category-authority.md](../../../04-features/category-authority.md).
 - The earlier source inventory counts in this file were stale. Current `sources.json` counts are `keyboard=23`, `monitor=23`, `mouse=22`.
-- The older statement that the live path still failed to emit a non-null `search_profile.effective_host_plan` is no longer safe as current truth. Current code and tests prove `discoverCandidateSources()` can emit a non-null host plan when `categoryConfig.validatedRegistry` is present.
+- The host plan concept (`effectiveHostPlan`, `hostPlanQueryRows`, `buildEffectiveHostPlan`, `domainHintResolver`, `queryHostPlanScorer`) has been entirely deleted as of 2026-03-23. All historical references to host plan assembly in this file are obsolete.
 - `priority.block_publish_when_unk` remains live in publish-time behavior through `src/publish/publishingPipeline.js`.
 - Runtime Ops still derives IDX runtime badges from `src/features/indexing/runtime/idxRuntimeMetadata.js`.
 - LLM dashboard rows intentionally omit `input_summary` and `output_summary`, but runtime-ops worker/detail payloads still carry those fields. The old wording should not be read as a repo-wide telemetry removal.
@@ -23,8 +23,8 @@ This file remains in the preserved `docs/implementation/ai-indexing-plans/` subt
 | field-rule gating | `src/field-rules/consumerGate.js`, `src/features/indexing/orchestration/shared/indexlabRuntimeFieldRules.js`, `src/pipeline/runProduct.js` | field rules are projected for the `indexlab` consumer before runtime execution |
 | file-backed source authority | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/orchestration/shared/runProductOrchestrationHelpers.js` | `sources.json` is the live category source-strategy SSOT and source entries are loaded from it |
 | category host metadata | `src/categories/loader.js` | `loadCategoryConfig()` still builds `sourceHosts`, `sourceHostMap`, and `validatedRegistry` |
-| discovery and host-plan assembly | `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/domainHintResolver.js`, `src/features/indexing/discovery/sourceRegistry.js`, `src/features/indexing/search/queryBuilder.js` | the discovery path can build and persist `effective_host_plan` when registry-backed planning is active |
-| runtime bridge artifact propagation | `src/indexlab/runtimeBridge.js`, `src/features/indexing/api/builders/runtimeOpsPreFetchBuilders.js` | search-profile artifacts preserve `effective_host_plan` into runtime-ops surfaces |
+| discovery pipeline | `src/features/indexing/discovery/searchDiscovery.js`, `src/features/indexing/discovery/sourceRegistry.js`, `src/features/indexing/search/queryBuilder.js` | the discovery path builds deterministic search profiles with tier-tagged query rows |
+| runtime bridge artifact propagation | `src/indexlab/runtimeBridge.js`, `src/features/indexing/api/builders/runtimeOpsPreFetchBuilders.js` | search-profile artifacts propagated into runtime-ops surfaces |
 | runtime badge generation | `src/features/indexing/api/runtimeOpsRoutes.js`, `src/features/indexing/runtime/idxRuntimeMetadata.js` | runtime surfaces still expose IDX usage badges by surface and worker pool |
 | publish-time field blockers | `src/publish/publishingPipeline.js` | `priority.block_publish_when_unk` still blocks publication when configured fields remain unknown |
 
@@ -70,12 +70,10 @@ The following should now be read as historical observations only:
 | source | `src/features/indexing/orchestration/shared/indexlabRuntimeFieldRules.js` | runtime field-rule projection still exists |
 | source | `src/features/indexing/sources/sourceFileService.js` | source file I/O and `DISCOVERY_DEFAULTS` |
 | source | `src/categories/loader.js` | category config still builds `sourceHostMap` and `validatedRegistry` |
-| source | `src/features/indexing/discovery/searchDiscovery.js` | discovery path and host-plan generation |
-| source | `src/features/indexing/discovery/domainHintResolver.js` | effective host-plan construction seam |
+| source | `src/features/indexing/discovery/searchDiscovery.js` | discovery path and deterministic search profile generation |
 | source | `src/features/indexing/runtime/idxRuntimeMetadata.js` | current runtime IDX badge surface definitions |
 | source | `src/publish/publishingPipeline.js` | `block_publish_when_unk` publish-time behavior |
-| test | `test/searchDiscoveryPhase06Runtime.test.js` | host-plan generation is exercised under registry-backed discovery |
-| test | `test/runtimeBridgeV2HostPlan.test.js` | runtime bridge preserves `effective_host_plan` |
+| test | `test/searchDiscoveryPhase06Runtime.test.js` | discovery pipeline exercised under registry-backed discovery |
 | test | `test/publishingPipeline.test.js` | publish blocker behavior remains covered |
 | test | `test/llmCallsDashboard.test.js` | dashboard-specific `input_summary` / `output_summary` omission remains intentional |
 

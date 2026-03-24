@@ -3,7 +3,7 @@ Source planning, URL queuing, and crawl prioritization. Manages multi-tier queue
 
 ## Public API (The Contract)
 - `sourcePlanner.js`: `SourcePlanner` class — stateful planner with queue management (`.enqueue()`, `.dequeue()`, `.isEmpty()`, `.size()`), manufacturer host selection, and discovery integration.
-- `sourcePlannerBrandConfig.js`: `BRAND_HOST_HINTS`, `BRAND_DOMAIN_OVERRIDES`, `BRAND_PREFIXED_CATEGORY_HOSTS` — static brand-to-host mapping. `manufacturerHostHintsForBrand()`, `manufacturerSeedHostsForBrand()`, `buildAllowedCategoryProductSlugs()`.
+- `sourcePlanner.js`: `.updateBrandHints(brandResolution)` — called after Stage 02 (Brand Resolver) to wire LLM-resolved brand aliases into manufacturer host filtering.
 - `sourcePlannerDiscovery.js`: `createSourceDiscovery(options)` — factory returning discovery object with `.discoverFromHtml()`, `.discoverFromSitemap()` for extracting URLs from fetched pages.
 - `sourcePlannerScoring.js`: `scoreRequiredFieldBoost()`, `scoreFieldRewardBoost()`, `computePathHeuristicBoost()`, `computeSourcePriority()`, `computeDomainPriority()` — URL/source priority scoring.
 - `sourcePlannerValidation.js`: `checkShouldUseApprovedQueue()`, `checkIsResumeSeed()`, `checkMatchesAllowedLockedProductSlug()`, `checkHasQueuedOrVisitedComparableUrl()` — URL qualification gates.

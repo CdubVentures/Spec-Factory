@@ -58,7 +58,7 @@ test('GET /indexlab/live-crawl/check-catalog returns catalog metadata', async ()
   const params = new Map();
   await handler(['indexlab', 'live-crawl', 'check-catalog'], params, 'GET', {}, {});
   assert.equal(responses[0].status, 200);
-  assert.equal(responses[0].body.total_checks, 143);
+  assert.equal(responses[0].body.total_checks, 142);
   assert.ok(Array.isArray(responses[0].body.sections));
   assert.ok(Array.isArray(responses[0].body.verdicts));
 });

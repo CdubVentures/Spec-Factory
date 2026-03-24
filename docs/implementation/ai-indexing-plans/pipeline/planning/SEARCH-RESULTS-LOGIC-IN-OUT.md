@@ -42,7 +42,7 @@ Primary owners:
 Important caller nuance:
 
 - canonical `runDiscoverySeedPlan()` forces `queryConcurrency = 1`
-- compatibility `discoverCandidateSources()` still passes `max(1, config.discoveryQueryConcurrency || 1)`
+- compatibility `discoverCandidateSources()` also hardcodes `queryConcurrency` to 1
 
 ## Live logic
 

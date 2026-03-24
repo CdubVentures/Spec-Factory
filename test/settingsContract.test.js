@@ -39,7 +39,8 @@ test('migration normalizes legacy top-level runtime/convergence/ui keys into sec
   });
   assert.equal(migrated.schemaVersion, SETTINGS_DOCUMENT_SCHEMA_VERSION);
   assert.equal(migrated.migratedFrom, 1);
-  assert.equal(migrated.convergence.serpTriageMinScore, 5);
+  // serpTriageMinScore is no longer a convergence key — migration drops it
+  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), false);
   assert.equal(migrated.ui.runtimeAutoSaveEnabled, false);
   assert.equal(Object.hasOwn(migrated, 'unknownRootValue'), false);
 });
@@ -62,12 +63,13 @@ test('migration keeps only canonical runtime/convergence/ui keys', () => {
   assert.equal(Object.hasOwn(migrated.runtime, 'searchEngines'), true);
   assert.equal(Object.hasOwn(migrated.runtime, 'unknownRuntimeKey'), false);
   assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), false);
-  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), true);
+  // serpTriageMinScore removed from convergence registry — migration drops it
+  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), false);
   assert.equal(Object.hasOwn(migrated.convergence, 'unknownConvergenceKey'), false);
   assert.equal(Object.hasOwn(migrated.ui, 'studioAutoSaveEnabled'), true);
   assert.equal(Object.hasOwn(migrated.ui, 'unknownUiKey'), false);
   assert.equal(RUNTIME_SETTINGS_KEYS.length > 0, true);
-  assert.equal(CONVERGENCE_SETTINGS_KEYS.length > 0, true);
+  assert.equal(CONVERGENCE_SETTINGS_KEYS.length, 0);
   assert.equal(UI_SETTINGS_KEYS.length > 0, true);
 });
 
@@ -141,7 +143,7 @@ test('validateUserSettingsSnapshot enforces canonical envelope and rejects unkno
   const validPayload = {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     runtime: { searchEngines: 'bing,brave,duckduckgo' },
-    convergence: { serpTriageMinScore: 3 },
+    convergence: {},
     storage: {
       enabled: false,
       destinationType: 'local',

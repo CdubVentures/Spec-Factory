@@ -212,7 +212,7 @@ export async function executeSearchQueries({
               query,
               provider: cached.provider,
               dedupe_count: 0,
-              results: cached.results.slice(0, 30).map((r, idx) => {
+              results: cached.results.map((r, idx) => {
                 const rawUrl = String(r?.url || '').trim();
                 let domain = '';
                 try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
@@ -220,7 +220,7 @@ export async function executeSearchQueries({
                   title: String(r?.title || '').trim(),
                   url: rawUrl,
                   domain,
-                  snippet: String(r?.snippet || '').trim().slice(0, 300),
+                  snippet: String(r?.snippet || '').trim(),
                   rank: Number.parseInt(String(r?.rank || idx + 1), 10) || (idx + 1),
                   relevance_score: 0,
                   decision: '',
@@ -331,7 +331,7 @@ export async function executeSearchQueries({
               query,
               provider: configValue(config, 'searchEngines'),
               result_count: providerResults.length,
-              results: providerResults.slice(0, 20)
+              results: providerResults
             },
             ringSize: 80
           });
@@ -357,7 +357,7 @@ export async function executeSearchQueries({
             provider: resolvedProvider,
             dedupe_count: 0,
             screenshot_filename: _googleScreenshotFilename || '',
-            results: providerResults.slice(0, 30).map((r, idx) => {
+            results: providerResults.map((r, idx) => {
               const rawUrl = String(r?.url || '').trim();
               let domain = '';
               try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
@@ -365,7 +365,7 @@ export async function executeSearchQueries({
                 title: String(r?.title || '').trim(),
                 url: rawUrl,
                 domain,
-                snippet: String(r?.snippet || '').trim().slice(0, 300),
+                snippet: String(r?.snippet || '').trim(),
                 rank: idx + 1,
                 relevance_score: 0,
                 decision: '',
@@ -450,7 +450,7 @@ export async function executeSearchQueries({
           query,
           provider: 'plan',
           dedupe_count: 0,
-          results: rows.slice(0, 30).map((result, index) => {
+          results: rows.map((result, index) => {
             const rawUrl = String(result?.url || '').trim();
             let domain = '';
             try {
@@ -462,7 +462,7 @@ export async function executeSearchQueries({
               title: String(result?.title || '').trim(),
               url: rawUrl,
               domain,
-              snippet: String(result?.snippet || '').trim().slice(0, 300),
+              snippet: String(result?.snippet || '').trim(),
               rank: index + 1,
               relevance_score: 0,
               decision: '',

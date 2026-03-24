@@ -11,7 +11,7 @@
       "llm_queries": "query texts from enhanced rows where hint_source ends with _llm (Search Planner LLM-enhanced only). Empty when LLM failed.",
       "selected_queries": "string[]",
       "selected_query_count": "number",
-      "query_rows": "selected query rows after merge/rank/guard and host-plan append",
+      "query_rows": "selected query rows after merge/rank/guard",
       "query_reject_log": "combined reject log",
       "query_guard": {
         "brand_tokens": "string[]",
@@ -20,7 +20,6 @@
         "accepted_query_count": "number",
         "rejected_query_count": "number"
       },
-      "effective_host_plan": "object|null",
       "brand_resolution": "object|null",
       "schema4_planner": "object|null",
       "schema4_learning": "object|null",
@@ -47,7 +46,7 @@
   },
   "canonical_query_concurrency_note": {
     "runDiscoverySeedPlan": 1,
-    "discoverCandidateSources_compatibility_path": "max(1, config.discoveryQueryConcurrency || 1)"
+    "discoverCandidateSources_compatibility_path": "hardcoded to 1"
   },
   "triage_outputs": {
     "searchProfileFinal": {

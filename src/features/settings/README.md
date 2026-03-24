@@ -7,7 +7,7 @@ This boundary exposes the HTTP layer for settings while delegating canonical per
 - Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies
-- Allowed: `src/features/settings-authority/index.js`, `src/api/events/dataChangeContract.js`, `src/api/services/runDataRelocationService.js`, and `src/observability/settingsPersistenceCounters.js`.
+- Allowed: `src/features/settings-authority/index.js`, `src/core/events/dataChangeContract.js`, `src/api/services/runDataRelocationService.js`, and `src/observability/settingsPersistenceCounters.js`.
 - Forbidden: ad hoc settings persistence paths that bypass the settings-authority contract.
 
 ## Domain Invariants

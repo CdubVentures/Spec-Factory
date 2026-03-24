@@ -93,7 +93,7 @@
    npm test
    ```
 
-   Observed on 2026-03-23: `npm test` reported `7509` pass, `123` fail, `11` cancelled. See [../05-operations/known-issues.md](../05-operations/known-issues.md) for the active failing clusters.
+   Observed on 2026-03-23: `npm test` reported `6555` pass, `77` fail (6632 total). See [../05-operations/known-issues.md](../05-operations/known-issues.md) for the active failing clusters.
 
 ## Useful Local Commands
 
@@ -117,7 +117,7 @@
 | source | `tools/specfactory-launcher.mjs` | launcher-based setup path |
 | command | `npm run env:check` | env-check passes on the current audit baseline |
 | command | `npm run gui:build` | GUI build succeeded during the audit |
-| command | `npm test` | full test suite currently reports 123 failures (7509 pass, 11 cancelled) |
+| command | `npm test` | full test suite currently reports 77 failures (6555 pass, 6632 total) |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live server health endpoint responded with `ok: true` |
 
 ## Related Documents

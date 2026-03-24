@@ -74,8 +74,6 @@ test('discoverCandidateSources filters unrelated manufacturer domains for locked
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
     searchProfileQueryCap: 3,
-    discoveryResultsPerQuery: 4,
-    searchPlannerQueryCap: 20,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,

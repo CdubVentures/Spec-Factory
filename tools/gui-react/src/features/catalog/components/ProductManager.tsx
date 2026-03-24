@@ -8,7 +8,6 @@ import { usePersistedTab } from '../../../stores/tabStore';
 import { DataTable } from '../../../shared/ui/data-display/DataTable';
 import { Spinner } from '../../../shared/ui/feedback/Spinner';
 import BulkPasteGrid, { type BulkGridRow } from '../../../components/common/BulkPasteGrid';
-import type { ColumnDef } from '@tanstack/react-table';
 import { invalidateFieldRulesQueries } from '../../studio';
 
 import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses';
@@ -18,189 +17,9 @@ const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft roun
 
 // ── Types ──────────────────────────────────────────────────────────
 import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product';
-
-interface MutationResult {
-  ok: boolean;
-  error?: string;
-  productId?: string;
-  previousProductId?: string;
-  product?: CatalogProduct;
-  seeded?: number;
-  skipped?: number;
-  total?: number;
-  fields_imported?: number;
-  migration?: {
-    ok: boolean;
-    migrated_count: number;
-    failed_count: number;
-  };
-}
-
-type BulkPreviewStatus = 'ready' | 'already_exists' | 'duplicate_in_paste' | 'invalid';
-
-interface BulkPreviewRow {
-  rowNumber: number;
-  raw: string;
-  brand: string;
-  model: string;
-  variant: string;
-  status: BulkPreviewStatus;
-  reason: string;
-  productId: string;
-}
-
-interface BulkImportResultRow {
-  index: number;
-  brand: string;
-  model: string;
-  variant: string;
-  productId?: string;
-  status: 'created' | 'skipped_existing' | 'skipped_duplicate' | 'invalid' | 'failed';
-  reason?: string;
-}
-
-interface BulkImportResult {
-  ok: boolean;
-  error?: string;
-  total?: number;
-  created?: number;
-  skipped_existing?: number;
-  skipped_duplicate?: number;
-  invalid?: number;
-  failed?: number;
-  total_catalog?: number;
-  results?: BulkImportResultRow[];
-}
-
-const PRODUCT_STATUS_VALUES = ['active', 'inactive'] as const;
-
-const BULK_VARIANT_PLACEHOLDERS = new Set([
-  '', 'unk', 'unknown', 'na', 'n/a', 'none', 'null', '-', 'default'
-]);
-
-function slugToken(value: string): string {
-  if (!value) return '';
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-_]/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function cleanVariantToken(variant: string): string {
-  const trimmed = String(variant || '').trim();
-  if (!trimmed) return '';
-  return BULK_VARIANT_PLACEHOLDERS.has(trimmed.toLowerCase()) ? '' : trimmed;
-}
-
-function isFabricatedVariantToken(model: string, variant: string): boolean {
-  const cleanedVariant = cleanVariantToken(variant);
-  if (!cleanedVariant) return false;
-  const modelSlug = slugToken(model);
-  const variantSlug = slugToken(cleanedVariant);
-  if (!modelSlug || !variantSlug) return false;
-  if (modelSlug.includes(variantSlug)) return true;
-  const modelTokens = new Set(modelSlug.split('-'));
-  const variantTokens = variantSlug.split('-');
-  return variantTokens.length > 0 && variantTokens.every((token) => modelTokens.has(token));
-}
-
-function normalizeVariantForPreview(model: string, variant: string): string {
-  const cleanedVariant = cleanVariantToken(variant);
-  if (!cleanedVariant) return '';
-  if (isFabricatedVariantToken(model, cleanedVariant)) return '';
-  return cleanedVariant;
-}
-
-function buildPreviewProductId(category: string, brand: string, model: string, variant: string): string {
-  return [category, brand, model, variant]
-    .map((value) => slugToken(value))
-    .filter(Boolean)
-    .join('-');
-}
-
-function isHeaderRow(model: string, variant: string): boolean {
-  const m = String(model || '').trim().toLowerCase();
-  const v = String(variant || '').trim().toLowerCase();
-  return (m === 'model' || m === 'models') && (v === 'variant' || v === 'varaint' || v === 'variants');
-}
-
-// ── Columns ────────────────────────────────────────────────────────
-const columns: ColumnDef<CatalogProduct, unknown>[] = [
-  {
-    accessorKey: 'brand',
-    header: 'Brand',
-    cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span>,
-    size: 120,
-  },
-  {
-    accessorKey: 'model',
-    header: 'Model',
-    size: 200,
-  },
-  {
-    accessorKey: 'variant',
-    header: 'Variant',
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
-    },
-    size: 100,
-  },
-  {
-    accessorKey: 'id',
-    header: 'ID#',
-    size: 55,
-    cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as number}</span>,
-  },
-  {
-    accessorKey: 'identifier',
-    header: 'Identifier',
-    size: 90,
-    cell: ({ getValue }) => {
-      const v = getValue() as string;
-      return v ? <span className="font-mono text-xs" title={v}>{v.length > 6 ? v.slice(0, 6) + '...' : v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
-    },
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ getValue }) => {
-      const s = getValue() as string;
-      const cls = s === 'active'
-        ? 'sf-bg-surface-soft-strong sf-bg-surface-soft sf-status-text-success sf-status-text-success'
-        : 'sf-bg-surface-soft-strong sf-bg-surface-soft-strong sf-text-muted sf-text-subtle';
-      return <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${cls}`}>{s}</span>;
-    },
-    size: 80,
-  },
-  {
-    accessorKey: 'seed_urls',
-    header: 'URLs',
-    cell: ({ getValue }) => {
-      const urls = getValue() as string[];
-      return <span className="text-xs sf-text-muted">{urls?.length || 0}</span>;
-    },
-    size: 50,
-  },
-];
-
-function relativeTime(iso: string): string {
-  if (!iso) return '';
-  const diff = Date.now() - new Date(iso).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes';
+import { PRODUCT_STATUS_VALUES, BULK_VARIANT_PLACEHOLDERS, slugToken, cleanVariantToken, isFabricatedVariantToken, normalizeVariantForPreview, buildPreviewProductId, isHeaderRow, relativeTime } from './productHelpers';
+import { PRODUCT_TABLE_COLUMNS } from './productTableColumns';
 
 // ── Component ──────────────────────────────────────────────────────
 export function ProductManager() {
@@ -714,7 +533,7 @@ export function ProductManager() {
         <div className={sectionCls}>
           <DataTable
             data={products}
-            columns={columns}
+            columns={PRODUCT_TABLE_COLUMNS}
             searchable
             persistKey={`catalog:products:table:${category}`}
             onRowClick={openEdit}

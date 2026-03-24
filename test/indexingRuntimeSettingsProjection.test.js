@@ -42,13 +42,6 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
       dynamicFetchRetryBudget: '4',
       dynamicFetchRetryBackoffMs: '875',
       reextractIndexed: false,
-      scannedPdfOcrEnabled: true,
-      scannedPdfOcrBackend: 'tesseract',
-      scannedPdfOcrMaxPages: '12',
-      scannedPdfOcrMaxPairs: '900',
-      scannedPdfOcrMinCharsPerPage: '40',
-      scannedPdfOcrMinLinesPerPage: '3',
-      scannedPdfOcrMinConfidence: '0.75',
     },
     ...defaults,
     resolveModelTokenDefaults: () => ({
@@ -59,26 +52,16 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
 
   assert.equal(projection.runtimeDraft.llmModelPlan, 'planner-live');
   assert.equal(projection.runtimeDraft.fetchConcurrency, 7);
-  assert.equal(projection.runtimeDraft.scannedPdfOcrMaxPairs, 900);
   assert.equal(projection.runtimeSettingsPayload.fetchConcurrency, 7);
   assert.equal(projection.runtimeSettingsPayload.dynamicFetchRetryBudget, 4);
-  assert.equal(projection.runtimeSettingsPayload.scannedPdfOcrMaxPairs, 900);
   assert.equal(projection.runtimeSettingsBaseline.fetchConcurrency, 7);
   assert.equal(projection.runtimeSettingsBaseline.dynamicFetchRetryBudget, 4);
-  assert.equal(projection.runtimeSettingsBaseline.scannedPdfOcrMaxPairs, 900);
   assert.deepEqual(projection.phase05RuntimeSettings, {
     fetchConcurrency: '7',
     perHostMinDelayMs: '1250',
     dynamicCrawleeEnabled: false,
     dynamicFetchRetryBudget: '4',
     dynamicFetchRetryBackoffMs: '875',
-    scannedPdfOcrEnabled: true,
-    scannedPdfOcrBackend: 'tesseract',
-    scannedPdfOcrMaxPages: '12',
-    scannedPdfOcrMaxPairs: '900',
-    scannedPdfOcrMinCharsPerPage: '40',
-    scannedPdfOcrMinLinesPerPage: '3',
-    scannedPdfOcrMinConfidence: '0.75',
   });
 });
 
@@ -91,9 +74,7 @@ test('buildIndexingRuntimeSettingsProjection falls back to runtime defaults when
   const projection = buildIndexingRuntimeSettingsProjection({
     runtimeSettings: {
       fetchConcurrency: 'not-a-number',
-      scannedPdfOcrBackend: 'not-a-real-backend',
       dynamicCrawleeEnabled: 'yes',
-      scannedPdfOcrMinConfidence: 'not-a-float',
     },
     ...defaults,
     resolveModelTokenDefaults: () => ({
@@ -109,17 +90,5 @@ test('buildIndexingRuntimeSettingsProjection falls back to runtime defaults when
   assert.equal(
     projection.runtimeSettingsPayload.fetchConcurrency,
     defaults.runtimeBootstrap.fetchConcurrency,
-  );
-  assert.equal(
-    projection.runtimeDraft.scannedPdfOcrBackend,
-    defaults.runtimeBootstrap.scannedPdfOcrBackend,
-  );
-  assert.equal(
-    projection.phase05RuntimeSettings.scannedPdfOcrBackend,
-    defaults.runtimeBootstrap.scannedPdfOcrBackend,
-  );
-  assert.equal(
-    projection.phase05RuntimeSettings.scannedPdfOcrMinConfidence,
-    String(defaults.runtimeBootstrap.scannedPdfOcrMinConfidence),
   );
 });

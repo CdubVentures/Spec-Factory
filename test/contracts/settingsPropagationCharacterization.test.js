@@ -121,18 +121,15 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'LOCAL_OUTPUT_ROOT',
       'RUNTIME_EVENTS_KEY',
       'WRITE_MARKDOWN_SUMMARY',
-      'LLM_WRITE_SUMMARY',
       'LLM_PROVIDER',
       'LLM_BASE_URL',
       'FETCH_PER_HOST_CONCURRENCY_CAP',
       'FRONTIER_DB_PATH',
       'FRONTIER_BLOCKED_DOMAIN_THRESHOLD',
       'PAGE_GOTO_TIMEOUT_MS',
-      'PDF_PREFERRED_BACKEND',
       'CAPTURE_PAGE_SCREENSHOT_ENABLED',
       'CAPTURE_PAGE_SCREENSHOT_FORMAT',
       'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-      'STATIC_DOM_MODE',
       'RUNTIME_TRACE_FETCH_RING',
       'RUNTIME_TRACE_LLM_RING',
       'RUNTIME_TRACE_LLM_PAYLOADS',
@@ -188,13 +185,11 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       // Fetch network (sent in POST body but dropped before child launch)
       'fetchConcurrency', 'perHostMinDelayMs', 'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst', 'fetchBudgetMs',
-      'fetchSchedulerMaxRetries',
-      'fetchSchedulerInternalsMapJson', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
+      'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       // Browser/rendering
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'crawleeRequestHandlerTimeoutSecs',
       'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
       'autoScrollEnabled', 'autoScrollPasses', 'autoScrollDelayMs',
-      'graphqlReplayEnabled', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage',
       'robotsTxtCompliant', 'robotsTxtTimeoutMs',
       'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
       // Frontier
@@ -204,27 +199,15 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
       'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold',
       // Discovery
-      'searchProfileQueryCap', 'searchPlannerQueryCap',
+      'searchProfileQueryCap',
       'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain',
       'maxRunSeconds', 'maxJsonBytes',
-      // Parsing
-      'articleExtractorMinChars', 'articleExtractorMinScore', 'articleExtractorMaxChars',
-      'articleExtractorDomainPolicyMapJson', 'staticDomTargetMatchThreshold',
-      'staticDomMaxEvidenceSnippets', 'domSnippetMaxChars',
-      // OCR
-      'pdfBackendRouterEnabled', 'pdfBackendRouterTimeoutMs', 'pdfBackendRouterMaxPages',
-      'pdfBackendRouterMaxPairs', 'pdfBackendRouterMaxTextPreviewChars',
-      'scannedPdfOcrEnabled', 'scannedPdfOcrBackend', 'scannedPdfOcrMaxPages',
-      'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
-      'scannedPdfOcrMinConfidence',
       // LLM settings
-      'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmVerifySampleRate',
-      'llmMaxBatchesPerProduct', 'llmMaxEvidenceChars', 'llmMaxTokens',
+      'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmMaxTokens',
       'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M', 'llmCostCachedInputPer1M',
-      'llmVerifyMode', 'llmExtractMaxSnippetsPerBatch', 'llmExtractMaxSnippetChars',
-      'llmExtractSkipLowSignal', 'llmReasoningMode', 'llmReasoningBudget',
+      'llmReasoningMode', 'llmReasoningBudget',
       'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd', 'llmMaxCallsPerProductTotal',
-      'llmExtractionCacheDir', 'llmExtractionCacheTtlMs',
+      'llmExtractionCacheDir',
       'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
       // Model / provider
       'llmPlanProvider', 'llmPlanBaseUrl',
@@ -237,11 +220,9 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       'batchStrategy', 'fieldRewardHalfLifeDays',
       'driftDetectionEnabled', 'driftPollSeconds', 'driftScanMaxProducts', 'driftAutoRepublish',
       'selfImproveEnabled', 'maxHypothesisItems',
-      'hypothesisAutoFollowupRounds', 'hypothesisFollowupUrlsPerRound',
       'helperSupportiveFillMissing', 'reCrawlStaleAfterDays',
       'indexingCategoryAuthorityEnabled',
       'indexingResumeSeedLimit', 'indexingResumePersistLimit',
-      'indexingSchemaPacketsValidationEnabled', 'indexingSchemaPacketsValidationStrict',
       // Run output/control
       'runtimeControlFile', 'specDbDir',
       'runtimeTraceEnabled',
@@ -252,7 +233,6 @@ describe('processStartLaunchPlan — propagation characterization', () => {
       's3InputPrefix', 's3OutputPrefix',
       // Search
       'searchEnginesFallback', 'searxngBaseUrl', 'searxngMinQueryIntervalMs',
-      'searchProfileCapMapJson',
       'repairDedupeRule', 'parsingConfidenceBaseMapJson',
       // Resume
       'resumeMode', 'resumeWindowHours', 'reextractIndexed', 'reextractAfterHours',
@@ -267,8 +247,8 @@ describe('processStartLaunchPlan — propagation characterization', () => {
     // This documents the gap — these are sent by GUI but dropped before child launch
     // After the rewrite, ALL of these should travel via snapshot
     ok(
-      KNOWN_PAYLOAD_ONLY_GAPS.length > 80,
-      `Expected > 80 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
+      KNOWN_PAYLOAD_ONLY_GAPS.length > 50,
+      `Expected > 50 payload-only gaps, got ${KNOWN_PAYLOAD_ONLY_GAPS.length}`
     );
   });
 
@@ -356,18 +336,11 @@ describe('buildRoundConfig — round override characterization', () => {
       maxCandidateUrls: 80,
       maxPagesPerDomain: 5,
       maxJsonBytes: 6000000,
-      maxNetworkResponsesPerPage: 2500,
-      maxGraphqlReplays: 20,
       maxHypothesisItems: 120,
-      hypothesisAutoFollowupRounds: 2,
-      hypothesisFollowupUrlsPerRound: 24,
       endpointSignalLimit: 120,
       endpointSuggestionLimit: 36,
       endpointNetworkScanLimit: 1800,
       searchProfileQueryCap: 10,
-      discoveryResultsPerQuery: 10,
-      searchPlannerQueryCap: 60,
-      discoveryQueryConcurrency: 2,
       perHostMinDelayMs: 1500,
       llmMaxCallsPerRound: 5,
       llmMaxCallsPerProductTotal: 14,

@@ -1,5 +1,5 @@
 // WHY: Adapter that bridges the composite LlmPolicy store to the flat-key
-// interface that child sections (LlmGlobalSection, LlmExtractionSection) expect.
+// interface that child sections (LlmGlobalSection) expect.
 // This is the Strangler Fig boundary — children see flat keys, authority holds composite.
 // Maps are auto-generated from backend LLM_POLICY_GROUPS SSOT.
 

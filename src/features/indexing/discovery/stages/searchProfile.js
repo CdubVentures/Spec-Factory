@@ -32,6 +32,7 @@ export function runSearchProfile({
   }
 
   const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
+  const safeCaps = searchProfileCaps ?? {};
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -40,9 +41,9 @@ export function runSearchProfile({
     learnedQueries: learning?.queryTemplates || [],
     maxQueries: profileMaxQueries,
     brandResolution,
-    aliasValidationCap: searchProfileCaps.llmAliasValidationCap,
-    fieldTargetQueriesCap: searchProfileCaps.llmFieldTargetQueriesCap,
-    docHintQueriesCap: searchProfileCaps.llmDocHintQueriesCap,
+    aliasValidationCap: safeCaps.llmAliasValidationCap,
+    fieldTargetQueriesCap: safeCaps.llmFieldTargetQueriesCap,
+    docHintQueriesCap: safeCaps.llmDocHintQueriesCap,
     fieldYieldByDomain: learning?.fieldYield?.by_domain || null,
     seedStatus,
     focusGroups,

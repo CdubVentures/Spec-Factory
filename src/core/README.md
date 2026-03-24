@@ -14,6 +14,7 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/providers/index.js`: `selectLlmProvider()`.
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
 - `src/core/llm/prompts/{planner,extractor,validator}.js`: prompt builders.
+- `src/core/events/dataChangeContract.js`: `createDataChangePayload`, `emitDataChange`, `isDataChangePayload`, `dataChangeMatchesCategory`, `DATA_CHANGE_EVENT_DOMAIN_MAP`, `DATA_CHANGE_EVENT_NAMES`.
 
 ## Dependencies
 - Allowed: Node built-ins, internal `src/core/**`, `src/billing/**`, `src/shared/**`, and existing low-level helpers in `src/utils/**`.
@@ -24,3 +25,4 @@ This boundary is the canonical home for low-level configuration and model-routin
 - Runtime artifact roots resolve deterministically from the local temp root plus fixed `output` and `indexlab` subpaths.
 - Prompt builders stay pure; provider selection, HTTP concerns, caching, and health checks stay inside `src/core/llm/**`.
 - Secrets and provider credentials must not leak out of this boundary through logs or higher-level contracts.
+- `src/core/events/dataChangeContract.js`: shared mutation broadcast infrastructure consumed by all features — not feature-specific.

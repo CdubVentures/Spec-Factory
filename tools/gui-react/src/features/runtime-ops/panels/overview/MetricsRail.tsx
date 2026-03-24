@@ -36,16 +36,7 @@ function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
 
 export function MetricsRail({ data }: MetricsRailProps) {
   const pools = data?.pool_metrics ?? {};
-  const quality = data?.quality_metrics ?? { identity_status: 'unlocked', acceptance_rate: 0, mean_confidence: 0 };
   const failure = data?.failure_metrics ?? { total_fetches: 0, fallback_count: 0, fallback_rate: 0, blocked_hosts: 0, retry_total: 0, no_progress_streak: 0 };
-
-  const identityBadge = quality.identity_status === 'locked'
-    ? 'sf-chip-success'
-    : quality.identity_status === 'provisional'
-      ? 'sf-chip-warning'
-      : quality.identity_status === 'unlocked'
-        ? 'sf-chip-info'
-        : 'sf-chip-neutral';
 
   return (
     <aside className="w-60 shrink-0 border-r sf-border-default overflow-y-auto p-3 space-y-4">
@@ -61,26 +52,6 @@ export function MetricsRail({ data }: MetricsRailProps) {
               pool={pools[key] ?? { active: 0, queued: 0, completed: 0, failed: 0 }}
             />
           ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="sf-text-caption font-semibold sf-text-subtle uppercase tracking-wide mb-2">
-          Quality
-        </h3>
-        <div className="space-y-1.5 sf-text-caption">
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Identity<Tip text={METRIC_TIPS.identity_status} /></span>
-            <span className={`px-1.5 py-0.5 rounded ${identityBadge}`}>{quality.identity_status}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Confidence<Tip text={METRIC_TIPS.confidence} /></span>
-            <span className="font-mono">{pctString(quality.mean_confidence)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Acceptance<Tip text={METRIC_TIPS.acceptance_rate} /></span>
-            <span className="font-mono">{pctString(quality.acceptance_rate)}</span>
-          </div>
         </div>
       </div>
 

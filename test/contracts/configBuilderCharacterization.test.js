@@ -65,9 +65,9 @@ describe('configBuilder characterization — golden master', () => {
     ok(cfg && typeof cfg === 'object', 'cfg must be a non-null object');
   });
 
-  it('cfg has at least 160 keys', () => {
+  it('cfg has at least 120 keys', () => {
     const keyCount = Object.keys(cfg).length;
-    ok(keyCount >= 160, `expected >= 160 cfg keys, got ${keyCount}`);
+    ok(keyCount >= 120, `expected >= 120 cfg keys, got ${keyCount}`);
   });
 
   // --- Shape verification: every key has the expected type ---
@@ -75,7 +75,7 @@ describe('configBuilder characterization — golden master', () => {
   it('all string keys are strings', () => {
     const expectedStrings = [
       'awsRegion', 's3Bucket', 's3InputPrefix', 's3OutputPrefix',
-      'pdfPreferredBackend', 'scannedPdfOcrBackend', 'userAgent',
+      'userAgent',
       'outputMode', 'localInputRoot', 'localOutputRoot', 'runtimeEventsKey',
       'runProfile', 'searchEngines', 'searchEnginesFallback',
       'searxngBaseUrl', 'searxngDefaultBaseUrl',
@@ -85,7 +85,7 @@ describe('configBuilder characterization — golden master', () => {
       'openaiApiKey', 'openaiBaseUrl', 'openaiModelExtract', 'openaiModelPlan', 'openaiModelWrite',
       'specDbDir', 'frontierDbPath', 'repairDedupeRule',
       'indexingResumeMode', 'runtimeControlFile', 'runtimeScreenshotMode',
-      'staticDomMode', 'batchStrategy', 'accuracyMode',
+      'batchStrategy', 'accuracyMode',
       'chatmockDir', 'chatmockComposeFile', 'categoryAuthorityRoot',
       'importsRoot', 'automationQueueStorageEngine',
     ];
@@ -102,25 +102,17 @@ describe('configBuilder characterization — golden master', () => {
       'concurrency', 'perHostMinDelayMs',
       'domainRequestRps', 'domainRequestBurst',
       'globalRequestRps', 'globalRequestBurst',
-      'fetchPerHostConcurrencyCap', 'fetchSchedulerMaxRetries',
-      'searchProfileQueryCap', 'searchPlannerQueryCap',
-      'discoveryResultsPerQuery', 'discoveryQueryConcurrency',
+      'fetchPerHostConcurrencyCap',
+      'searchProfileQueryCap',
       'searxngMinQueryIntervalMs',
       'llmTimeoutMs', 'openaiTimeoutMs', 'openaiMaxInputChars',
       'llmMaxTokens', 'llmMaxOutputTokens', 'llmMaxOutputTokensPlan',
       'llmMaxOutputTokensReasoning', 'llmMaxOutputTokensPlanFallback',
       'llmReasoningBudget', 'llmMaxCallsPerRound', 'llmMaxCallsPerProductTotal',
-      'llmMaxEvidenceChars', 'llmMaxBatchesPerProduct',
-      'llmExtractMaxSnippetsPerBatch', 'llmExtractMaxSnippetChars',
       'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       'fetchBudgetMs', 'endpointSignalLimit', 'endpointSuggestionLimit',
       'endpointNetworkScanLimit',
-      'pdfBackendRouterTimeoutMs', 'pdfBackendRouterMaxPages',
-      'pdfBackendRouterMaxPairs', 'pdfBackendRouterMaxTextPreviewChars',
-      'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs',
-      'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
-      'articleExtractorMinChars', 'articleExtractorMinScore', 'articleExtractorMaxChars',
-      'domSnippetMaxChars', 'autoScrollPasses', 'autoScrollDelayMs',
+      'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs',
       'daemonConcurrency', 'driftPollSeconds', 'driftScanMaxProducts',
       'reCrawlStaleAfterDays', 'importsPollSeconds',
@@ -133,20 +125,17 @@ describe('configBuilder characterization — golden master', () => {
 
   it('all boolean keys are booleans', () => {
     const expectedBools = [
-      'pdfBackendRouterEnabled', 'scannedPdfOcrEnabled',
       'localMode', 'dryRun', 'mirrorToS3', 'mirrorToS3Input',
       'writeMarkdownSummary', 'discoveryEnabled', 'fetchCandidateSources',
       'dynamicCrawleeEnabled', 'crawleeHeadless',
       'preferHttpFetcher', 'capturePageScreenshotEnabled',
       'autoScrollEnabled', 'robotsTxtCompliant',
-      'graphqlReplayEnabled', 'driftDetectionEnabled', 'driftAutoRepublish',
+      'driftDetectionEnabled', 'driftAutoRepublish',
       'categoryAuthorityEnabled', 'runtimeTraceEnabled',
       'runtimeTraceLlmPayloads', 'selfImproveEnabled',
-      'llmWriteSummary', 'llmPlanUseReasoning', 'llmReasoningMode',
-      'llmExtractSkipLowSignal', 'llmVerifyMode',
+      'llmPlanUseReasoning', 'llmReasoningMode',
       'eventsJsonWrite', 'runtimeScreencastEnabled',
-      'indexingReextractEnabled', 'indexingSchemaPacketsValidationEnabled',
-      'indexingSchemaPacketsValidationStrict',
+      'indexingReextractEnabled',
       'frontierStripTrackingParams', 'helperSupportiveFillMissing',
       'chartExtractionEnabled',
     ];
@@ -157,10 +146,10 @@ describe('configBuilder characterization — golden master', () => {
 
   it('all object keys are objects', () => {
     const expectedObjects = [
-      'fetchSchedulerInternalsMap', 'dynamicFetchPolicyMap',
-      'retrievalInternalsMap', 'evidencePackLimitsMap', 'parsingConfidenceBaseMap',
+      'dynamicFetchPolicyMap',
+      'retrievalInternalsMap', 'parsingConfidenceBaseMap',
       'searchProfileCapMap',
-      'articleExtractorDomainPolicyMap', 'llmModelPricingMap',
+      'llmModelPricingMap',
       'llmModelOutputTokenMap',
     ];
     for (const key of expectedObjects) {
@@ -173,11 +162,8 @@ describe('configBuilder characterization — golden master', () => {
   it('spot-check: numeric defaults match registry', () => {
     // These are the values that were drifted — verify they now use registry SSOT
     strictEqual(cfg.searchProfileQueryCap, 10, 'searchProfileQueryCap');
-    strictEqual(cfg.searchPlannerQueryCap, 30, 'searchPlannerQueryCap');
     strictEqual(cfg.maxRunSeconds, 480, 'maxRunSeconds');
     strictEqual(cfg.concurrency, 4, 'concurrency (fetchConcurrency)');
-    strictEqual(cfg.discoveryResultsPerQuery, 10, 'discoveryResultsPerQuery');
-    strictEqual(cfg.discoveryQueryConcurrency, 2, 'discoveryQueryConcurrency');
   });
 
   it('spot-check: hardcoded values', () => {
@@ -195,7 +181,6 @@ describe('configBuilder characterization — golden master', () => {
   it('spot-check: string defaults', () => {
     strictEqual(cfg.outputMode, 'dual');
     strictEqual(cfg.repairDedupeRule, 'domain_once');
-    strictEqual(cfg.staticDomMode, 'cheerio');
   });
 
   it('spot-check: boolean defaults', () => {

@@ -1,6 +1,6 @@
 import {
   resolveCandidateConfidence,
-} from '../../../api/reviewRouteSharedHelpers.js';
+} from '../api/routeSharedHelpers.js';
 
 export function validateComponentPropertyCandidate({
   candidateRow,

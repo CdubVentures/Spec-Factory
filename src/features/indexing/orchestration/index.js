@@ -10,7 +10,4 @@ export function getIndexingOrchestrationFeatureInfo() {
 
 export * from './bootstrap/index.js';
 export * from './discovery/index.js';
-export * from './execution/index.js';
-export * from './finalize/index.js';
-export * from './quality/index.js';
 export * from './shared/index.js';

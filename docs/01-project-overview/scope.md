@@ -10,7 +10,7 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 
 - A single-repo operator tool for product-spec discovery, indexing, review, and curation.
 - A local HTTP/WebSocket runtime that serves a GUI and exposes `/api/v1/*` plus `/ws`.
-- A pipeline that can run discovery, retrieval, extraction, review, billing, and learning workflows against category/product data.
+- A crawl-first pipeline (`src/features/crawl/`, `src/pipeline/runProduct.js`) that runs discovery, browser-based crawling with plugin automation, and review workflows against category/product data. The former extraction-heavy monolith (consensus, learning gates, evidence audit) has been replaced by a lean crawl-and-record architecture.
 - A desktop/local-workstation oriented toolchain with launcher scripts, `.bat` wrappers, and optional packaged executables.
 
 ## What This Project Is Not
@@ -42,7 +42,7 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 - Evidence:
   - `npm run gui:build` succeeds.
   - `npm run env:check` returns `[env-check] OK (3 referenced keys covered)`.
-  - `npm test` reported `7509` pass, `123` fail, `11` cancelled on 2026-03-23; the failing clusters are tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
+  - `npm test` reported `6555` pass, `77` fail on 2026-03-23 (6632 total; reduced from ~7693 after pipeline rework deleted ~130 test files). The failing clusters are tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
   - `http://127.0.0.1:8788/api/v1/categories` returns `["gaming_mice","keyboard","monitor","mouse"]` for the live category inventory.
   - `Dockerfile` references `src/cli/run-batch.js`, which does not exist in the live repo.
 
@@ -57,7 +57,7 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 | config | `Dockerfile` | Confirms checked-in deployment artifact divergence |
 | command | `npm run gui:build` | GUI build passes on the current audit baseline |
 | command | `npm run env:check` | env-sync script currently reports `OK (3 referenced keys covered)` |
-| command | `npm test` | current suite baseline is red with 123 failures (7509 pass, 11 cancelled) |
+| command | `npm test` | current suite baseline is red with 77 failures (6555 pass, 6632 total) |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | Live category inventory available from the running server |
 
 ## Related Documents

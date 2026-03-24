@@ -18,7 +18,7 @@ export const SECTION_IDS = Object.freeze([
 const SECTION_META = Object.freeze({
   'RB-0': { title: 'CP-0 GUI lane contract', check_count: 5 },
   'RB-1': { title: 'CP-1 repair queue handoff', check_count: 8 },
-  'S1':   { title: 'Defaults-Aligned Gate', check_count: 9 },
+  'S1':   { title: 'Defaults-Aligned Gate', check_count: 8 },
   'S2':   { title: 'Crawl Alive Gate', check_count: 12 },
   'S3':   { title: 'Crawlee / Fetch Strategy Attribution Gate', check_count: 12 },
   'S4':   { title: 'Document Collection Gate', check_count: 10 },
@@ -82,8 +82,7 @@ const RAW_CHECKS = [
   ['DA-03', 'S1', 'UI values captured', 'Runtime settings panel shows same effective values', false],
   ['DA-04', 'S1', 'Fresh-session proof', 'Same values after reload / cleared stale overrides', false],
   ['DA-05', 'S1', 'searchProvider aligned', 'Claimed provider matches live run', true],
-  ['DA-07', 'S1', 'Fetch strategy knobs aligned', 'preferHttpFetcher, dynamicCrawleeEnabled, retry limits, pacing values captured', true],
-  ['DA-08', 'S1', 'Parsing knobs aligned', 'structured metadata, PDF, OCR, chart-related settings captured', true],
+  ['DA-07', 'S1', 'Fetch strategy knobs aligned', 'preferHttpFetcher, dynamicCrawleeEnabled, pacing values captured', true],
   ['DA-09', 'S1', 'Screenshot knobs aligned', 'capture enabled + format/quality values captured', true],
   ['DA-10', 'S1', 'Drift disposition recorded', 'Any mismatch marked promoted, temporary, or reverted', true],
   // S2: Crawl Alive Gate (12)

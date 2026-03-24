@@ -244,20 +244,13 @@ test('resolveSearchProfileCaps: returns defaults with empty config', () => {
   assert.equal(caps.dedupeQueriesCap, 24);
 });
 
-test('resolveSearchProfileCaps: reads values from searchProfileCapMap', () => {
-  const caps = resolveSearchProfileCaps({
-    searchProfileCapMap: { deterministicAliasCap: 10, dedupeQueriesCap: 50 },
-  });
-  assert.equal(caps.deterministicAliasCap, 10);
-  assert.equal(caps.dedupeQueriesCap, 50);
-});
-
-test('resolveSearchProfileCaps: clamps values to min/max', () => {
-  const caps = resolveSearchProfileCaps({
-    searchProfileCapMap: { deterministicAliasCap: 0, dedupeQueriesCap: 999 },
-  });
-  assert.equal(caps.deterministicAliasCap, 1);
-  assert.equal(caps.dedupeQueriesCap, 200);
+test('resolveSearchProfileCaps: returns hardcoded defaults regardless of input', () => {
+  const caps = resolveSearchProfileCaps();
+  assert.equal(caps.deterministicAliasCap, 6);
+  assert.equal(caps.llmAliasValidationCap, 12);
+  assert.equal(caps.llmDocHintQueriesCap, 3);
+  assert.equal(caps.llmFieldTargetQueriesCap, 3);
+  assert.equal(caps.dedupeQueriesCap, 24);
 });
 
 // ---------------------------------------------------------------------------

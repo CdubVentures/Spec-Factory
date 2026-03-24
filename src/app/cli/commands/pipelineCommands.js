@@ -15,18 +15,14 @@ export function createPipelineCommands({
       args.s3key || `${configValue(config, 's3InputPrefix')}/mouse/products/mouse-razer-viper-v3-pro.json`;
 
     const result = await runProduct({ storage, config, s3Key });
+    const urlsCrawled = result.crawlResults?.length ?? 0;
+    const urlsSuccessful = result.crawlResults?.filter((r) => r.success).length ?? 0;
     return {
       command: 'run-one',
       productId: result.productId,
       runId: result.runId,
-      validated: result.summary.validated,
-      validated_reason: result.summary.validated_reason,
-      confidence: result.summary.confidence,
-      completeness_required_percent: result.summary.completeness_required_percent,
-      coverage_overall_percent: result.summary.coverage_overall_percent,
-      runBase: result.exportInfo.runBase,
-      latestBase: result.exportInfo.latestBase,
-      finalBase: result.finalExport?.final_base || null
+      urls_crawled: urlsCrawled,
+      urls_successful: urlsSuccessful,
     };
   }
 
@@ -161,8 +157,6 @@ export function createPipelineCommands({
       );
       runConfig.dynamicFetchRetryBudget = 0;
       runConfig.dynamicFetchRetryBackoffMs = 0;
-      runConfig.fetchSchedulerMaxRetries = 0;
-      runConfig.fetchSchedulerDefaultMaxRetries = 0;
       runConfig.sourceFetchWrapperAttempts = 1;
       runConfig.sourceFetchWrapperBackoffMs = 0;
     }
@@ -224,12 +218,12 @@ export function createPipelineCommands({
       productId: result.productId,
       runId: result.runId,
       s3Key,
-      validated: result.summary.validated,
-      confidence: result.summary.confidence,
-      completeness_required_percent: result.summary.completeness_required_percent,
-      coverage_overall_percent: result.summary.coverage_overall_percent,
-      runBase: result.exportInfo.runBase,
-      latestBase: result.exportInfo.latestBase,
+      validated: result.summary?.validated,
+      confidence: result.summary?.confidence,
+      completeness_required_percent: result.summary?.completeness_required_percent,
+      coverage_overall_percent: result.summary?.coverage_overall_percent,
+      runBase: result.exportInfo?.runBase,
+      latestBase: result.exportInfo?.latestBase,
       indexlab: {
         out_root: pathNode.resolve(outRoot),
         run_dir: pathNode.resolve(outRoot, result.runId),
@@ -313,13 +307,13 @@ export function createPipelineCommands({
       s3Key,
       productId: result.productId,
       runId: result.runId,
-      validated: result.summary.validated,
-      validated_reason: result.summary.validated_reason,
-      confidence: result.summary.confidence,
-      completeness_required_percent: result.summary.completeness_required_percent,
-      coverage_overall_percent: result.summary.coverage_overall_percent,
-      runBase: result.exportInfo.runBase,
-      latestBase: result.exportInfo.latestBase,
+      validated: result.summary?.validated,
+      validated_reason: result.summary?.validated_reason,
+      confidence: result.summary?.confidence,
+      completeness_required_percent: result.summary?.completeness_required_percent,
+      coverage_overall_percent: result.summary?.coverage_overall_percent,
+      runBase: result.exportInfo?.runBase,
+      latestBase: result.exportInfo?.latestBase,
       finalBase: result.finalExport?.final_base || null
     };
   }

@@ -1,40 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  buildBraveResponse,
+  createFetchDouble,
+} from './factories/searchProviderTestDoubles.js';
 
 async function loadModule() {
   return import('../searchBrave.js');
-}
-
-function createMockFetch({ status = 200, body = {}, shouldThrow = false } = {}) {
-  const calls = [];
-  const fn = async (url, opts) => {
-    calls.push({ url: typeof url === 'string' ? url : url.toString(), opts });
-    if (shouldThrow) throw new Error('Network error');
-    return {
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => body,
-    };
-  };
-  return { fn, calls };
-}
-
-function braveResponse(count = 10) {
-  return {
-    query: { original: 'test', more_results_available: true },
-    web: {
-      results: Array.from({ length: count }, (_, i) => ({
-        title: `Brave Result ${i + 1}`,
-        url: `https://example.com/brave-${i + 1}`,
-        description: `Description for brave result ${i + 1}`,
-        meta_url: { hostname: 'example.com' },
-        extra_snippets: [`Extra snippet ${i + 1}`],
-        age: '2 days ago',
-        page_age: '2025-12-15',
-        language: 'en',
-      })),
-    },
-  };
 }
 
 describe('searchBrave', () => {
@@ -55,7 +27,7 @@ describe('searchBrave', () => {
   describe('happy path', () => {
     it('returns results with correct shape', async () => {
       const { searchBrave } = await loadModule();
-      const { fn } = createMockFetch({ body: braveResponse(10) });
+      const { fn } = createFetchDouble({ body: buildBraveResponse(10) });
       const out = await searchBrave({
         query: 'razer viper v3 pro specs',
         apiKey: 'k',
@@ -72,14 +44,14 @@ describe('searchBrave', () => {
 
     it('maps description to snippet', async () => {
       const { searchBrave } = await loadModule();
-      const { fn } = createMockFetch({ body: braveResponse(1) });
+      const { fn } = createFetchDouble({ body: buildBraveResponse(1) });
       const out = await searchBrave({ query: 'test', apiKey: 'k', _fetchFn: fn });
       assert.equal(out[0].snippet, 'Description for brave result 1');
     });
 
     it('includes extraSnippets', async () => {
       const { searchBrave } = await loadModule();
-      const { fn } = createMockFetch({ body: braveResponse(1) });
+      const { fn } = createFetchDouble({ body: buildBraveResponse(1) });
       const out = await searchBrave({ query: 'test', apiKey: 'k', _fetchFn: fn });
       assert.ok(Array.isArray(out[0].extraSnippets));
       assert.equal(out[0].extraSnippets[0], 'Extra snippet 1');
@@ -87,7 +59,7 @@ describe('searchBrave', () => {
 
     it('sends correct request', async () => {
       const { searchBrave } = await loadModule();
-      const { fn, calls } = createMockFetch({ body: braveResponse(5) });
+      const { fn, calls } = createFetchDouble({ body: buildBraveResponse(5) });
       await searchBrave({ query: 'test query', apiKey: 'my-key', count: 20, _fetchFn: fn });
       assert.equal(calls.length, 1);
       const url = calls[0].url;
@@ -100,7 +72,7 @@ describe('searchBrave', () => {
 
     it('respects count cap of 20', async () => {
       const { searchBrave } = await loadModule();
-      const { fn, calls } = createMockFetch({ body: braveResponse(20) });
+      const { fn, calls } = createFetchDouble({ body: buildBraveResponse(20) });
       await searchBrave({ query: 'test', apiKey: 'k', count: 50, _fetchFn: fn });
       const url = calls[0].url;
       assert.ok(url.includes('count=20'), 'capped at 20');
@@ -110,14 +82,14 @@ describe('searchBrave', () => {
   describe('error handling', () => {
     it('returns empty on HTTP error', async () => {
       const { searchBrave } = await loadModule();
-      const { fn } = createMockFetch({ status: 429 });
+      const { fn } = createFetchDouble({ status: 429 });
       const out = await searchBrave({ query: 'test', apiKey: 'k', _fetchFn: fn });
       assert.deepEqual(out, []);
     });
 
     it('returns empty on network error', async () => {
       const { searchBrave } = await loadModule();
-      const { fn } = createMockFetch({ shouldThrow: true });
+      const { fn } = createFetchDouble({ shouldThrow: true });
       const out = await searchBrave({ query: 'test', apiKey: 'k', _fetchFn: fn });
       assert.deepEqual(out, []);
     });

@@ -3,5 +3,4 @@ export { buildSearchPlanningContext } from './searchPlanningContext.js';
 export { buildSearchPlan } from './searchPlanBuilder.js';
 export { buildFieldHistories, classifyHostClass, classifyEvidenceClass } from './buildFieldHistories.js';
 export { IndexLabRuntimeBridge } from './runtimeBridge.js';
-export { buildIndexingSchemaPackets } from './indexingSchemaPackets.js';
-export { validateIndexingSchemaPackets } from './indexingSchemaPacketsValidator.js';
+// WHY: indexingSchemaPackets and validator deleted during pipeline rework.

@@ -2,19 +2,16 @@ import type { RuntimeStepId } from './RuntimeFlowStepRegistry';
 
 interface RuntimeFlowControlLockInputs {
   dynamicCrawleeEnabled: boolean;
-  scannedPdfOcrEnabled: boolean;
   reextractIndexed: boolean;
   runtimeTraceEnabled: boolean;
 }
 
 interface RuntimeFlowStepEnabledInputs {
   dynamicCrawleeEnabled: boolean;
-  scannedPdfOcrEnabled: boolean;
 }
 
 export interface RuntimeFlowControlLocks {
   dynamicFetchControlsLocked: boolean;
-  ocrControlsLocked: boolean;
   plannerControlsLocked: boolean;
   plannerModelLocked: boolean;
   triageModelLocked: boolean;
@@ -24,13 +21,11 @@ export interface RuntimeFlowControlLocks {
 
 export function deriveRuntimeFlowControlLocks({
   dynamicCrawleeEnabled,
-  scannedPdfOcrEnabled,
   reextractIndexed,
   runtimeTraceEnabled,
 }: RuntimeFlowControlLockInputs): RuntimeFlowControlLocks {
   return {
     dynamicFetchControlsLocked: !dynamicCrawleeEnabled,
-    ocrControlsLocked: !scannedPdfOcrEnabled,
     plannerControlsLocked: false,
     plannerModelLocked: false,
     triageModelLocked: false,
@@ -41,7 +36,6 @@ export function deriveRuntimeFlowControlLocks({
 
 export function deriveRuntimeStepEnabledMap({
   dynamicCrawleeEnabled,
-  scannedPdfOcrEnabled,
 }: RuntimeFlowStepEnabledInputs): Record<RuntimeStepId, boolean> {
   return {
     'run-setup': true,
@@ -51,6 +45,5 @@ export function deriveRuntimeStepEnabledMap({
     'fetch-network': true,
     'browser-rendering': dynamicCrawleeEnabled,
     'parsing': true,
-    ocr: scannedPdfOcrEnabled,
   };
 }

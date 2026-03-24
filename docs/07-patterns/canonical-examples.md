@@ -59,12 +59,12 @@ If you are creating a brand-new route family instead of extending an existing on
 
 ## Adding A New Page Or View
 
-Based on `tools/gui-react/src/App.tsx`, `tools/gui-react/src/pages/catalog/CatalogPage.tsx`, and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
+Based on `tools/gui-react/src/App.tsx` and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
 
 The live pattern is:
 
 1. Put real UI ownership in `tools/gui-react/src/features/<feature>/components/`.
-2. Re-export it from `tools/gui-react/src/pages/<route>/`.
+2. Optionally re-export from `tools/gui-react/src/pages/<route>/` (some routes import directly from features).
 3. Register the route lazily in `tools/gui-react/src/App.tsx`.
 
 ```tsx
@@ -270,7 +270,7 @@ export async function addExampleItem({ config, name, tags = [] }) {
 | source | `src/app/api/routes/infra/categoryRoutes.js` | injected route-factory shape and `return false` non-match contract |
 | source | `src/features/settings/api/configRoutes.js` | live route-family registrar pattern |
 | source | `tools/gui-react/src/App.tsx` | lazy route registration and `wrap()` pattern |
-| source | `tools/gui-react/src/pages/catalog/CatalogPage.tsx` | page-level re-export shim pattern |
+| source | `tools/gui-react/src/App.tsx` (line 23) | direct feature import pattern (some routes skip pages/ re-export) |
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
 | source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |

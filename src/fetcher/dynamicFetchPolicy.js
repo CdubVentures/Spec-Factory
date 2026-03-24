@@ -44,8 +44,6 @@ export function normalizeDynamicFetchPolicyMap(input = {}) {
       autoScrollEnabled: toBool(rawPolicy.autoScrollEnabled, false),
       autoScrollPasses: toInt(rawPolicy.autoScrollPasses, 0),
       autoScrollDelayMs: toInt(rawPolicy.autoScrollDelayMs, 0),
-      graphqlReplayEnabled: toBool(rawPolicy.graphqlReplayEnabled, true),
-      maxGraphqlReplays: toInt(rawPolicy.maxGraphqlReplays, 0),
       retryBudget: toInt(
         rawPolicy.retryBudget ?? rawPolicy.retry_budget,
         0
@@ -98,8 +96,6 @@ export function resolveDynamicFetchPolicy(config = {}, source = {}) {
     autoScrollEnabled: configBool(config, 'autoScrollEnabled'),
     autoScrollPasses: configInt(config, 'autoScrollPasses'),
     autoScrollDelayMs: configInt(config, 'autoScrollDelayMs'),
-    graphqlReplayEnabled: configBool(config, 'graphqlReplayEnabled'),
-    maxGraphqlReplays: configInt(config, 'maxGraphqlReplays'),
     retryBudget: configInt(config, 'dynamicFetchRetryBudget'),
     retryBackoffMs: configInt(config, 'dynamicFetchRetryBackoffMs')
   };
@@ -129,10 +125,6 @@ export function resolveDynamicFetchPolicy(config = {}, source = {}) {
   policy.autoScrollDelayMs = matchedPolicy.autoScrollDelayMs > 0
     ? matchedPolicy.autoScrollDelayMs
     : policy.autoScrollDelayMs;
-  policy.graphqlReplayEnabled = matchedPolicy.graphqlReplayEnabled;
-  policy.maxGraphqlReplays = matchedPolicy.maxGraphqlReplays > 0
-    ? matchedPolicy.maxGraphqlReplays
-    : policy.maxGraphqlReplays;
   policy.retryBudget = matchedPolicy.retryBudget > 0
     ? matchedPolicy.retryBudget
     : policy.retryBudget;

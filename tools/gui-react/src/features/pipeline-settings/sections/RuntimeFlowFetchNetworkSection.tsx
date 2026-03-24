@@ -47,7 +47,7 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
         <SettingRow label="Fetch Budget (ms)" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: round-level fetch budgeting before extraction can continue.\nWhat this controls: the total time budget available for fetch work in a single round before the runtime stops admitting more fetch activity.`}>
           <SettingNumberInput draftKey="fetchBudgetMs" value={runtimeDraft.fetchBudgetMs} bounds={getNumberBounds('fetchBudgetMs')} step={1000} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <AdvancedSettingsBlock title="Rate Limits & Scheduler Internals" count={12}>
+        <AdvancedSettingsBlock title="Rate Limits & Scheduler Internals" count={13}>
           <SettingRow label="Domain Request RPS" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: per-host rate limiting.\nWhat this controls: the sustained requests-per-second ceiling applied to each domain.`}>
             <SettingNumberInput draftKey="domainRequestRps" value={runtimeDraft.domainRequestRps} bounds={getNumberBounds('domainRequestRps')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
@@ -62,21 +62,6 @@ export const RuntimeFlowFetchNetworkSection = memo(function RuntimeFlowFetchNetw
           </SettingRow>
           <SettingRow label="Fetch Per-Host Concurrency Cap" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: host-level queue dispatch.\nWhat this controls: the hard cap on how many simultaneous fetches one host may own at once.`}>
             <SettingNumberInput draftKey="fetchPerHostConcurrencyCap" value={runtimeDraft.fetchPerHostConcurrencyCap} bounds={getNumberBounds('fetchPerHostConcurrencyCap')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow label="Fetch Scheduler Max Retries" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler retry loop before fallback handling.\nWhat this controls: how many scheduler-managed retries a fetch may consume before the runtime waits for fallback or gives up on that attempt.`}>
-            <SettingNumberInput draftKey="fetchSchedulerMaxRetries" value={runtimeDraft.fetchSchedulerMaxRetries} bounds={getNumberBounds('fetchSchedulerMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-          </SettingRow>
-          <SettingRow
-            label="Fetch Scheduler Internals Map (JSON)"
-            tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: scheduler internal defaults override layer.\nWhat this controls: an optional JSON map for low-level delay, concurrency, retry, and fallback-wait defaults used by the fetch scheduler.`}
-          >
-            <textarea
-              value={runtimeDraft.fetchSchedulerInternalsMapJson}
-              onChange={(event) => updateDraft('fetchSchedulerInternalsMapJson', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={`${inputCls} min-h-[88px] font-mono sf-text-label`}
-              spellCheck={false}
-            />
           </SettingRow>
           <SettingRow label="Prefer HTTP Fetcher" tip={`${FETCH_ENTRY_PHASE_TIP}\nLives in: fetch mode selection before browser fallback is considered.\nWhat this controls: whether the runtime should prefer the lightweight HTTP lane and only escalate to browser-backed fetch when needed.`}>
             <SettingToggle

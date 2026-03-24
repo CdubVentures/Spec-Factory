@@ -8,7 +8,7 @@ import { createReviewGridStateRuntime } from '../src/api/reviewGridStateRuntime.
 import {
   resolveExplicitPositiveId,
   resolveGridFieldStateForMutation,
-} from '../src/api/reviewMutationResolvers.js';
+} from '../src/features/review/api/mutationResolvers.js';
 import { SpecDb } from '../src/db/specDb.js';
 
 function makePreparedStatement({ get = () => null, all = () => [], run = () => ({ changes: 0 }) } = {}) {
@@ -755,8 +755,8 @@ describe('store methods — markItemFieldStateReviewComplete', () => {
       specDb.markItemFieldStateReviewComplete('p1', 'f1');
 
       const row = specDb.getItemFieldStateByProductAndField('p1', 'f1');
-      assert.equal(row.needs_ai_review, 0);
-      assert.equal(row.ai_review_complete, 1);
+      assert.equal(Boolean(row.needs_ai_review), false);
+      assert.equal(Boolean(row.ai_review_complete), true);
     } finally {
       await cleanupTempSpecDb(tempRoot, specDb);
     }
@@ -771,7 +771,7 @@ describe('store methods — markItemFieldStateReviewComplete', () => {
       specDb.markItemFieldStateReviewComplete('p1', '');
 
       const row = specDb.getItemFieldStateByProductAndField('p1', 'f1');
-      assert.equal(row.needs_ai_review, 1);
+      assert.equal(Boolean(row.needs_ai_review), true);
     } finally {
       await cleanupTempSpecDb(tempRoot, specDb);
     }

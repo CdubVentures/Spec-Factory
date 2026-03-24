@@ -1,50 +1,16 @@
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  buildSerperResponse,
+  createFetchDouble,
+  createPacerDouble,
+} from './factories/searchProviderTestDoubles.js';
 
 async function loadModule() {
   return import('../searchSerper.js');
 }
 
-// ---------------------------------------------------------------------------
-// Mock fetch factory
-// ---------------------------------------------------------------------------
-
-function createMockFetch({ status = 200, body = {}, shouldThrow = false } = {}) {
-  const calls = [];
-  const fn = async (url, opts) => {
-    calls.push({ url, opts });
-    if (shouldThrow) throw new Error('Network error');
-    return {
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => body,
-    };
-  };
-  return { fn, calls };
-}
-
-function serperResponse(resultCount = 10) {
-  return {
-    searchParameters: { q: 'test', gl: 'us', hl: 'en', num: resultCount },
-    organic: Array.from({ length: resultCount }, (_, i) => ({
-      title: `Result ${i + 1}`,
-      link: `https://example.com/page-${i + 1}`,
-      snippet: `Snippet for result ${i + 1}`,
-      position: i + 1,
-    })),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('searchSerper', () => {
-  beforeEach(async () => {
-    const { resetSerperPacingForTests } = await loadModule();
-    resetSerperPacingForTests();
-  });
-
   describe('empty / invalid input', () => {
     it('returns empty results when query is empty', async () => {
       const { searchSerper } = await loadModule();
@@ -62,11 +28,13 @@ describe('searchSerper', () => {
   describe('happy path', () => {
     it('returns results with correct shape', async () => {
       const { searchSerper } = await loadModule();
-      const { fn } = createMockFetch({ body: serperResponse(10) });
+      const { fn } = createFetchDouble({ body: buildSerperResponse(10) });
+      const { pacer } = createPacerDouble();
       const out = await searchSerper({
         query: 'razer viper v3 pro specifications',
         apiKey: 'test-key',
         _fetchFn: fn,
+        _pacer: pacer,
       });
       assert.ok(Array.isArray(out.results), 'results is an array');
       assert.equal(out.results.length, 10);
@@ -81,21 +49,24 @@ describe('searchSerper', () => {
 
     it('maps link to url', async () => {
       const { searchSerper } = await loadModule();
-      const { fn } = createMockFetch({ body: serperResponse(1) });
-      const out = await searchSerper({ query: 'test', apiKey: 'k', _fetchFn: fn });
+      const { fn } = createFetchDouble({ body: buildSerperResponse(1) });
+      const { pacer } = createPacerDouble();
+      const out = await searchSerper({ query: 'test', apiKey: 'k', _fetchFn: fn, _pacer: pacer });
       assert.equal(out.results[0].url, 'https://example.com/page-1');
     });
 
     it('sends correct request to Serper API', async () => {
       const { searchSerper } = await loadModule();
-      const { fn, calls } = createMockFetch({ body: serperResponse(5) });
+      const { fn, calls } = createFetchDouble({ body: buildSerperResponse(5) });
+      const { pacer } = createPacerDouble();
       await searchSerper({
         query: 'test query',
         apiKey: 'my-key',
-        limit: 20,
+        limit: 10,
         gl: 'us',
         hl: 'en',
         _fetchFn: fn,
+        _pacer: pacer,
       });
       assert.equal(calls.length, 1);
       assert.equal(calls[0].url, 'https://google.serper.dev/search');
@@ -105,32 +76,36 @@ describe('searchSerper', () => {
       assert.equal(opts.headers['Content-Type'], 'application/json');
       const body = JSON.parse(opts.body);
       assert.equal(body.q, 'test query');
-      assert.equal(body.num, 20);
+      assert.equal(body.num, 10);
       assert.equal(body.gl, 'us');
       assert.equal(body.hl, 'en');
     });
 
     it('proxyKB is always 0', async () => {
       const { searchSerper } = await loadModule();
-      const { fn } = createMockFetch({ body: serperResponse(5) });
-      const out = await searchSerper({ query: 'test', apiKey: 'k', _fetchFn: fn });
+      const { fn } = createFetchDouble({ body: buildSerperResponse(5) });
+      const { pacer } = createPacerDouble();
+      const out = await searchSerper({ query: 'test', apiKey: 'k', _fetchFn: fn, _pacer: pacer });
       assert.equal(out.proxyKB, 0);
     });
 
-    it('respects limit parameter', async () => {
+    it('respects limit parameter (capped at 10)', async () => {
       const { searchSerper } = await loadModule();
-      const { fn } = createMockFetch({ body: serperResponse(50) });
-      const out = await searchSerper({ query: 'test', apiKey: 'k', limit: 20, _fetchFn: fn });
-      assert.equal(out.results.length, 20);
+      const { fn } = createFetchDouble({ body: buildSerperResponse(50) });
+      const { pacer } = createPacerDouble();
+      // WHY: Serper hard caps at 10 organic results regardless of num param
+      const out = await searchSerper({ query: 'test', apiKey: 'k', limit: 10, _fetchFn: fn, _pacer: pacer });
+      assert.equal(out.results.length, 10);
     });
   });
 
   describe('error handling', () => {
     it('returns empty on 401 (bad key) without retry', async () => {
       const { searchSerper } = await loadModule();
-      const { fn, calls } = createMockFetch({ status: 401 });
+      const { fn, calls } = createFetchDouble({ status: 401 });
+      const { pacer } = createPacerDouble();
       const out = await searchSerper({
-        query: 'test', apiKey: 'bad-key', _fetchFn: fn, maxRetries: 3,
+        query: 'test', apiKey: 'bad-key', _fetchFn: fn, _pacer: pacer, maxRetries: 3,
       });
       assert.deepEqual(out.results, []);
       assert.equal(calls.length, 1, 'no retries on 401');
@@ -138,35 +113,59 @@ describe('searchSerper', () => {
 
     it('returns empty on 402 (credits exhausted) without retry', async () => {
       const { searchSerper } = await loadModule();
-      const { fn, calls } = createMockFetch({ status: 402 });
+      const { fn, calls } = createFetchDouble({ status: 402 });
+      const { pacer } = createPacerDouble();
       const out = await searchSerper({
-        query: 'test', apiKey: 'k', _fetchFn: fn, maxRetries: 3,
+        query: 'test', apiKey: 'k', _fetchFn: fn, _pacer: pacer, maxRetries: 3,
       });
       assert.deepEqual(out.results, []);
       assert.equal(calls.length, 1, 'no retries on 402');
     });
 
     it('retries on 429 (rate limited)', async () => {
-      const { searchSerper } = await loadModule();
-      let callCount = 0;
-      const fn = async (url, opts) => {
-        callCount++;
-        if (callCount <= 2) return { ok: false, status: 429, json: async () => ({}) };
-        return { ok: true, status: 200, json: async () => serperResponse(5) };
-      };
-      const out = await searchSerper({
-        query: 'test', apiKey: 'k', _fetchFn: fn, maxRetries: 3,
-        minQueryIntervalMs: 0,
+      const timeoutMock = mock.method(globalThis, 'setTimeout', (callback, ms = 0) => {
+        if (Number(ms) < 5000) {
+          queueMicrotask(() => callback());
+        }
+        return 1;
       });
-      assert.equal(callCount, 3, 'retried twice then succeeded');
-      assert.equal(out.results.length, 5);
+      const clearTimeoutMock = mock.method(globalThis, 'clearTimeout', () => {});
+
+      try {
+        const { searchSerper } = await loadModule();
+        const { pacer } = createPacerDouble();
+        const { fn, calls } = createFetchDouble({
+          sequence: [
+            { status: 429, body: {} },
+            { status: 429, body: {} },
+            { status: 200, body: buildSerperResponse(5) },
+          ],
+        });
+
+        const searchPromise = searchSerper({
+          query: 'test',
+          apiKey: 'k',
+          _fetchFn: fn,
+          _pacer: pacer,
+          maxRetries: 3,
+          minQueryIntervalMs: 0,
+        });
+        const out = await searchPromise;
+
+        assert.equal(calls.length, 3, 'retried twice then succeeded');
+        assert.equal(out.results.length, 5);
+      } finally {
+        timeoutMock.mock.restore();
+        clearTimeoutMock.mock.restore();
+      }
     });
 
     it('returns empty on network error', async () => {
       const { searchSerper } = await loadModule();
-      const { fn } = createMockFetch({ shouldThrow: true });
+      const { fn } = createFetchDouble({ shouldThrow: true });
+      const { pacer } = createPacerDouble();
       const out = await searchSerper({
-        query: 'test', apiKey: 'k', _fetchFn: fn, maxRetries: 0,
+        query: 'test', apiKey: 'k', _fetchFn: fn, _pacer: pacer, maxRetries: 0,
       });
       assert.deepEqual(out.results, []);
     });

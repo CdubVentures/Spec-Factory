@@ -6,7 +6,9 @@ import {
   analyzeContract, buildTestProducts, buildValidationChecks,
   loadComponentIdentityPools,
 } from '../../../testing/testDataProvider.js';
-import { runTestProduct } from '../../../testing/testRunner.js';
+// WHY: testRunner.js removed during crawl pipeline rework (consensus pipeline deleted).
+// Stub preserves API shape. Test-mode product runs will error until rebuilt.
+const runTestProduct = async () => { throw new Error('test mode pipeline removed — use crawl pipeline'); };
 import { runComponentReviewBatch } from '../../../pipeline/componentReviewBatch.js';
 import { addBrand, loadBrandRegistry, saveBrandRegistry } from '../../../features/catalog/index.js';
 

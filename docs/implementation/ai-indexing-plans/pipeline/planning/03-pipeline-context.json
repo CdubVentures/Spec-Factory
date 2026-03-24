@@ -32,7 +32,7 @@
       "fieldYieldByDomain": "object -- from loadLearningArtifacts()"
     },
     "enrichedLexicon": "object -- mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints)",
-    "searchProfileCaps": "object -- from resolveSearchProfileCaps(config)",
+    "searchProfileCaps": "object -- from resolveSearchProfileCaps() (no config param, returns hardcoded defaults)",
     "identityLock": {
       "brand": "string",
       "model": "string",
@@ -64,9 +64,7 @@
   "stage_additions": {
     "03_search_profile": {
       "_doc": "CONVERGENCE POINT. First stage that requires output from both NeedSet (focusGroups, seedStatus) and Brand Resolver (brandResolution). Fully deterministic, no LLM.",
-      "searchProfileBase": "object -- deterministic query profile with tier-tagged query_rows, base_templates, variant_guard_terms, coverage_analysis, etc.",
-      "effectiveHostPlan": "object | null -- from buildEffectiveHostPlan() when categoryConfig.validatedRegistry exists",
-      "hostPlanQueryRows": "Array<object> -- from buildScoredQueryRowsFromHostPlan() or []"
+      "searchProfileBase": "object -- deterministic query profile with tier-tagged query_rows, base_templates, variant_guard_terms, coverage_analysis, etc."
     },
     "04_search_planner": {
       "_doc": "LLM-enhanced query rows. Tier metadata (tier, hint_source, group_key, normalized_key, target_fields) passes through unchanged.",
@@ -74,7 +72,7 @@
       "source": "string -- 'llm' | 'deterministic_fallback'"
     },
     "05_query_journey": {
-      "_doc": "Final selected query list after dedupe, rank, guard, cap, host-plan append.",
+      "_doc": "Final selected query list after dedupe, rank, guard, cap.",
       "queries": "string[] -- final query strings for execution",
       "selectedQueryRowMap": "Map<string, object> -- lowercase query -> row",
       "profileQueryRowsByQuery": "Map<string, object> -- original profile rows by lowercase query",
@@ -132,7 +130,7 @@
       "Normalize missingFields from planningHints + job.requirements",
       "loadLearningArtifacts() -> learning",
       "mergeLearningStoreHintsIntoLexicon() -> enrichedLexicon",
-      "resolveSearchProfileCaps(config) -> searchProfileCaps",
+      "resolveSearchProfileCaps() -> searchProfileCaps (hardcoded defaults, no config param)",
       "Build identityLock from job fields"
     ],
     "between_05_and_06": [

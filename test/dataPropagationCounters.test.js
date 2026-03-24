@@ -5,7 +5,7 @@ import {
   recordQueueCleanupOutcome,
   resetDataPropagationCounters,
 } from '../src/observability/dataPropagationCounters.js';
-import { emitDataChange } from '../src/api/events/dataChangeContract.js';
+import { emitDataChange } from '../src/core/events/dataChangeContract.js';
 
 test('data propagation counters: emitDataChange increments broadcast counters by event and category', () => {
   resetDataPropagationCounters();

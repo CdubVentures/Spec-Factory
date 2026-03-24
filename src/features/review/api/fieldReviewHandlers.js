@@ -4,7 +4,7 @@
 // Handles: layout, product, products, products-index, candidates, suggest.
 
 import { resolveProductIdentity } from '../../catalog/index.js';
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
 async function applyCatalogIdentity(payload, category, productId, { catalogEntry = null, specDb = null, config, loadProductCatalog }) {
   if (!payload || typeof payload !== 'object') return payload;

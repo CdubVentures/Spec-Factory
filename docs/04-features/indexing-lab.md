@@ -16,15 +16,27 @@
 
 ## Dependencies
 
-- `src/features/indexing/orchestration/index.js`
-- `src/features/indexing/discovery/pipelineContextSchema.js` — Zod schema for the context object threading through discovery stages
-- `src/features/indexing/extraction/parsers/tableParsing.js` — table extraction parser (moved from `src/adapters/tableParsing.js`)
+- `src/features/crawl/index.js` — crawl session, plugin runner, screenshot capture, block classification
+- `src/features/crawl/plugins/stealthPlugin.js`, `autoScrollPlugin.js` — built-in browser automation plugins
+- `src/pipeline/runProduct.js` (248 LOC) — crawl-first orchestrator
+- `src/pipeline/runCrawlProcessingLifecycle.js` — batch-oriented crawl processing with frontier DB recording
+- `src/features/indexing/orchestration/index.js` — bootstrap and discovery orchestration
+- `src/features/indexing/discovery/pipelineContextSchema.js` — 8 progressive Zod checkpoints for discovery context validation
 - `src/indexlab/needsetEngine.js`
-- `src/runner/runUntilComplete.js`
 - `src/logger.js`
 - `src/db/specDb.js`
 - `src/app/api/realtimeBridge.js`
 - local IndexLab root from `src/core/config/runtimeArtifactRoots.js`
+
+## Pipeline Architecture (Crawl-First)
+
+The pipeline was reworked from an extraction-heavy monolith to a crawl-first architecture:
+
+- **Before**: fetch → parse → extract (LLM) → verify → consensus → validation → learning export
+- **After**: bootstrap → create crawl session → crawl URLs → record to frontier DB
+
+Removed: extraction pipeline, consensus engine, learning gates, evidence audit, field aggregation, identity candidate merging.
+Added: `src/features/crawl/` (plugin-based browser automation), frontier DB integration, block detection/bypass.
 
 ## Flow
 
@@ -32,16 +44,17 @@
 2. The page posts a launch request to `/api/v1/process/start`.
 3. `src/app/api/routes/infra/processRoutes.js` builds a launch plan with `buildProcessStartLaunchPlan()` and rejects invalid or incomplete inputs.
 4. `src/app/api/processRuntime.js` spawns `node src/cli/spec.js ...` with the computed CLI args and env overrides.
-5. The CLI run writes runtime events, IndexLab run files, output artifacts, and SpecDb changes while `src/app/api/realtimeBridge.js` streams `process` and `indexlab-event` updates to the GUI.
-6. The GUI replays run artifacts through `/api/v1/indexlab/run/:runId/*` endpoints in `src/features/indexing/api/indexlabRoutes.js`.
-7. On process exit, `src/api/services/indexLabProcessCompletion.js` finalizes run-data relocation/archive behavior.
+5. `src/pipeline/runProduct.js` bootstraps identity/planner, creates a crawl session with `createCrawlSession({ plugins: [stealthPlugin, autoScrollPlugin] })`, starts the session, and runs `runCrawlProcessingLifecycle()` against the frontier DB.
+6. The crawl session opens URLs in a persistent browser, captures screenshots, classifies block status, and records results to the frontier DB.
+7. The GUI replays run artifacts through `/api/v1/indexlab/run/:runId/*` endpoints in `src/features/indexing/api/indexlabRoutes.js`.
+8. On process exit, `src/api/services/indexLabProcessCompletion.js` finalizes run-data relocation/archive behavior.
 
 ## Side Effects
 
 - Writes IndexLab run folders under the configured IndexLab root.
-- Writes output artifacts under the configured output root or mirrored storage destination.
+- Writes crawl results and screenshots to frontier DB and output storage.
 - Appends runtime telemetry through `EventLogger` to NDJSON and/or `runtime_events` SQLite rows.
-- May update queue, billing, learning, evidence, and source-intel tables during a run.
+- May update queue and billing tables during a run.
 
 ## Error Paths
 

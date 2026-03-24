@@ -34,26 +34,26 @@ export function createCandidateTraceMap() {
         role: String(seed.role || '').trim(),
         doc_kind_guess: String(seed.doc_kind_guess || '').trim(),
         approved_domain: Boolean(seed.approved_domain),
-        providers: uniqueTokens(seed.providers || [], 8),
-        queries: uniqueTokens(seed.queries || [], 20),
-        query_hints: uniqueTokens(seed.query_hints || [], 12),
-        hint_sources: uniqueTokens(seed.hint_sources || [], 8),
-        target_fields: uniqueTokens(seed.target_fields || [], 20),
-        domain_hints: uniqueTokens(seed.domain_hints || [], 10),
+        providers: uniqueTokens(seed.providers || []),
+        queries: uniqueTokens(seed.queries || []),
+        query_hints: uniqueTokens(seed.query_hints || []),
+        hint_sources: uniqueTokens(seed.hint_sources || []),
+        target_fields: uniqueTokens(seed.target_fields || []),
+        domain_hints: uniqueTokens(seed.domain_hints || []),
         triage_score: null,
         triage_reason: '',
         decision: String(seed.decision || 'pending').trim() || 'pending',
-        reason_codes: uniqueTokens(seed.reason_codes || [], 16),
+        reason_codes: uniqueTokens(seed.reason_codes || []),
       });
     }
     const row = candidateTraceByUrl.get(key);
-    row.providers = uniqueTokens([...(row.providers || []), ...(seed.providers || [])], 8);
-    row.queries = uniqueTokens([...(row.queries || []), ...(seed.queries || [])], 20);
-    row.query_hints = uniqueTokens([...(row.query_hints || []), ...(seed.query_hints || [])], 12);
-    row.hint_sources = uniqueTokens([...(row.hint_sources || []), ...(seed.hint_sources || [])], 8);
-    row.target_fields = uniqueTokens([...(row.target_fields || []), ...(seed.target_fields || [])], 20);
-    row.domain_hints = uniqueTokens([...(row.domain_hints || []), ...(seed.domain_hints || [])], 10);
-    row.reason_codes = uniqueTokens([...(row.reason_codes || []), ...(seed.reason_codes || [])], 16);
+    row.providers = uniqueTokens([...(row.providers || []), ...(seed.providers || [])]);
+    row.queries = uniqueTokens([...(row.queries || []), ...(seed.queries || [])]);
+    row.query_hints = uniqueTokens([...(row.query_hints || []), ...(seed.query_hints || [])]);
+    row.hint_sources = uniqueTokens([...(row.hint_sources || []), ...(seed.hint_sources || [])]);
+    row.target_fields = uniqueTokens([...(row.target_fields || []), ...(seed.target_fields || [])]);
+    row.domain_hints = uniqueTokens([...(row.domain_hints || []), ...(seed.domain_hints || [])]);
+    row.reason_codes = uniqueTokens([...(row.reason_codes || []), ...(seed.reason_codes || [])]);
     if (!row.title && seed.title) row.title = String(seed.title || '').trim();
     if (!row.snippet && seed.snippet) row.snippet = String(seed.snippet || '').trim();
     if (!row.host && seed.host) row.host = String(seed.host || '').trim();
@@ -96,7 +96,7 @@ export function enrichCandidateTraces({
     if (!candidateRow) {
       if (trace.decision !== 'rejected') {
         trace.decision = 'rejected';
-        trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'triage_excluded'], 16);
+        trace.reason_codes = uniqueTokens([...(trace.reason_codes || []), 'triage_excluded']);
       }
       continue;
     }
@@ -138,6 +138,6 @@ export function enrichCandidateTraces({
       }
     }
     reasonCodes.push(isSelected ? 'selected_top_k' : 'below_top_k_cutoff');
-    trace.reason_codes = uniqueTokens(reasonCodes, 16);
+    trace.reason_codes = uniqueTokens(reasonCodes);
   }
 }

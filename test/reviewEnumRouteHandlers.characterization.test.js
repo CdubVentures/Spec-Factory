@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, ok } from 'node:assert';
-import { handleReviewEnumMutationRoute } from '../src/api/reviewEnumMutationRoutes.js';
+import { handleReviewEnumMutationRoute } from '../src/features/review/api/enumMutationRoutes.js';
 
 /* ------------------------------------------------------------------ */
 /*  WHY: Characterization tests for enum handler dispatch layer.        */

@@ -30,24 +30,12 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
     llmReasoningMode: true,
     llmPhaseOverridesJson: '{}',
     llmProviderRegistryJson: '[]',
-    llmExtractionCacheDir: '.specfactory_tmp/llm_cache',
-    llmExtractionCacheTtlMs: 604800000,
-    llmExtractMaxSnippetChars: 700,
-    llmExtractMaxSnippetsPerBatch: 4,
-    llmExtractSkipLowSignal: true,
-    llmMaxBatchesPerProduct: 4,
-    llmMaxCallsPerProductTotal: 14,
-    llmMaxCallsPerRound: 5,
-    llmMaxEvidenceChars: 60000,
     llmMonthlyBudgetUsd: 300,
     llmPerProductBudgetUsd: 0.35,
     llmCostInputPer1M: 1.25,
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
-    llmVerifyMode: true,
-    llmVerifySampleRate: 25,
     llmTimeoutMs: 30000,
-    llmWriteSummary: false,
     ...configOverrides,
   };
 
@@ -136,11 +124,8 @@ test('PUT /llm-policy applies composite and returns updated policy', async () =>
     reasoning: { enabled: true, budget: 32768, mode: true },
     phaseOverrides: {},
     providerRegistry: [],
-    extraction: { cacheDir: 'cache', cacheTtlMs: 100000, maxSnippetChars: 700, maxSnippetsPerBatch: 4, skipLowSignal: true, maxBatchesPerProduct: 4, maxCallsPerProductTotal: 14, maxCallsPerRound: 5, maxEvidenceChars: 60000 },
     budget: { monthlyUsd: 300, perProductUsd: 0.35, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
-    verify: { mode: true, sampleRate: 25 },
     timeoutMs: 30000,
-    writeSummary: false,
   });
 
   assert.equal(res.status, 200);
@@ -160,11 +145,8 @@ test('PUT /llm-policy persists flat keys to canonical sections', async () => {
     reasoning: { enabled: false, budget: 32768, mode: true },
     phaseOverrides: {},
     providerRegistry: [],
-    extraction: { cacheDir: '', cacheTtlMs: 100000, maxSnippetChars: 700, maxSnippetsPerBatch: 4, skipLowSignal: true, maxBatchesPerProduct: 4, maxCallsPerProductTotal: 14, maxCallsPerRound: 5, maxEvidenceChars: 60000 },
     budget: { monthlyUsd: 300, perProductUsd: 0.35, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
-    verify: { mode: true, sampleRate: 25 },
     timeoutMs: 30000,
-    writeSummary: false,
   });
 
   const persisted = ctx.getPersistedRuntime();
@@ -182,11 +164,8 @@ test('PUT /llm-policy emits data change broadcast', async () => {
     reasoning: { enabled: false, budget: 0, mode: false },
     phaseOverrides: {},
     providerRegistry: [],
-    extraction: { cacheDir: '', cacheTtlMs: 0, maxSnippetChars: 0, maxSnippetsPerBatch: 0, skipLowSignal: false, maxBatchesPerProduct: 0, maxCallsPerProductTotal: 0, maxCallsPerRound: 0, maxEvidenceChars: 0 },
     budget: { monthlyUsd: 0, perProductUsd: 0, costInputPer1M: 0, costOutputPer1M: 0, costCachedInputPer1M: 0 },
-    verify: { mode: false, sampleRate: 0 },
     timeoutMs: 0,
-    writeSummary: false,
   });
 
   const broadcasts = ctx.getBroadcasts();

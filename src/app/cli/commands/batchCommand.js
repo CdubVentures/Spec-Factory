@@ -215,8 +215,8 @@ export function createBatchCommand({
           key,
           productId: result.productId,
           runId: result.runId,
-          validated: result.summary.validated,
-          validated_reason: result.summary.validated_reason
+          urls_crawled: result.crawlResults?.length ?? 0,
+          urls_successful: result.crawlResults?.filter((r) => r.success).length ?? 0
         };
       } catch (error) {
         return {

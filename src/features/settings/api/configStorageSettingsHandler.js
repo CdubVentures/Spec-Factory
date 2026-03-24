@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   defaultRunDataLocalDirectory,
   listLocalStorageDirectories,

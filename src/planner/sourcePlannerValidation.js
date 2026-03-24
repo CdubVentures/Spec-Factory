@@ -11,7 +11,6 @@ import {
   CATEGORY_PRODUCT_PATH_RE,
   BENIGN_LOCKED_PRODUCT_SUFFIX_TOKENS
 } from './sourcePlannerUrlUtils.js';
-import { BRAND_PREFIXED_CATEGORY_HOSTS } from './sourcePlannerBrandConfig.js';
 import { isApprovedHost, inferRoleForHost } from '../categories/loader.js';
 
 export function checkShouldUseApprovedQueue(host, forceApproved, forceCandidate, validationCtx) {
@@ -208,25 +207,6 @@ export function checkIsRelevantDiscoveredUrl(parsed, context, validationCtx) {
     if (!categoryProductSlug || !validationCtx.allowedCategoryProductSlugs.has(categoryProductSlug)) {
       return false;
     }
-  }
-
-  const requiresBrandPrefixedFollowups =
-    Boolean(context.manufacturerContext) &&
-    validationCtx.brandKey.length >= 4 &&
-    BRAND_PREFIXED_CATEGORY_HOSTS.has(host);
-  const isNonPdfManufacturerFollowupPath =
-    !pathname.endsWith('.pdf') &&
-    (
-      CATEGORY_PRODUCT_PATH_RE.test(pathname) ||
-      /\/(?:support|manual|specs?|product|products)\//.test(pathname)
-    );
-  if (
-    requiresBrandPrefixedFollowups &&
-    hasModelToken &&
-    isNonPdfManufacturerFollowupPath &&
-    !pathname.includes(validationCtx.brandKey)
-  ) {
-    return false;
   }
 
   if (hasModelToken) {

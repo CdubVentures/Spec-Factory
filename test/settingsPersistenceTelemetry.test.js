@@ -73,9 +73,7 @@ test('persistUserSettingsSections serializes concurrent section writes without d
     }),
     persistUserSettingsSections({
       categoryAuthorityRoot: root,
-      convergence: {
-        serpTriageMinScore: 3,
-      },
+      convergence: {},
     }),
     persistUserSettingsSections({
       categoryAuthorityRoot: root,
@@ -88,7 +86,7 @@ test('persistUserSettingsSections serializes concurrent section writes without d
 
   const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root, strictRead: true });
   assert.equal(snapshot.runtime.concurrency, 9);
-  assert.equal(snapshot.convergence.serpTriageMinScore, 3);
+  assert.deepStrictEqual(snapshot.convergence, {});
   assert.equal(snapshot.ui.runtimeAutoSaveEnabled, false);
   assert.equal(snapshot.ui.storageAutoSaveEnabled, true);
 });

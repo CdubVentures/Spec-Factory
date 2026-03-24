@@ -134,3 +134,21 @@ export function buildDefaultLlmRoutes(category) {
 
   return rows;
 }
+
+// WHY: Generic boolean hydration for DB rows. SQLite stores booleans as
+// INTEGER 0/1 — this converts them back to JS booleans on read.
+// Pattern proven by _hydrateLlmRouteRow in llmRouteSourceStore.js.
+export function hydrateRow(booleanKeys, row) {
+  if (!row) return row;
+  const out = { ...row };
+  for (const key of booleanKeys) {
+    if (key in out) {
+      out[key] = Number(out[key]) === 1;
+    }
+  }
+  return out;
+}
+
+export function hydrateRows(booleanKeys, rows) {
+  return rows.map(row => hydrateRow(booleanKeys, row));
+}

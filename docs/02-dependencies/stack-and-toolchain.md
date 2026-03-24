@@ -74,7 +74,7 @@
 - The GUI route model is `HashRouter`, not filesystem routing.
 - The audit observed resolved versions from lockfiles, which are newer than some declared semver ranges.
 - The GUI build used `tsc -b && vite build` successfully on 2026-03-17.
-- The current `node --test` baseline under Node `v24.13.1` is not green: `7509` pass, `123` fail, `11` cancelled on 2026-03-23. The failing clusters span indexing payload/verification expectations, GUI TypeScript state-module import resolution, and various contract drift; see [../05-operations/known-issues.md](../05-operations/known-issues.md).
+- The current `node --test` baseline under Node `v24.13.1` is not green: `6555` pass, `77` fail on 2026-03-23 (6632 total; reduced from ~7693 after the pipeline rework deleted ~130 test files along with the extraction pipeline). See [../05-operations/known-issues.md](../05-operations/known-issues.md).
 
 ## Validated Against
 
@@ -86,7 +86,7 @@
 | config | `tools/gui-react/package-lock.json` | Exact resolved GUI dependency versions |
 | config | `tools/gui-react/vite.config.ts` | Vite usage and dev proxy boundary |
 | command | `npm run gui:build` | GUI build works on the current toolchain |
-| command | `npm test` | current Node `v24.13.1` suite baseline is red with 123 failures (7509 pass, 11 cancelled) |
+| command | `npm test` | current Node `v24.13.1` suite baseline is red with 77 failures (6555 pass, 6632 total) |
 
 ## Related Documents
 

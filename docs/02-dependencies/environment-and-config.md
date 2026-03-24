@@ -40,7 +40,7 @@
 | `security` | `src/core/config/manifest/securityGroup.js` | security-related config | contains JWT keys, but no audited auth middleware consumer |
 | `llm` | `src/core/config/manifest/llmGroup.js` | provider routing, budgets, Cortex, models | largest env surface |
 | `discovery` | `src/core/config/manifest/discoveryGroup.js` | search-provider config | includes SearXNG base URLs |
-| `retrieval` | `src/core/config/manifest/retrievalGroup.js` | scoring, convergence, evidence knobs | overlaps with runtime/convergence settings semantics |
+| `retrieval` | formerly `src/core/config/manifest/retrievalGroup.js` (deleted in pipeline rework) | scoring, convergence, evidence knobs | settings migrated to `CONVERGENCE_SETTINGS_REGISTRY` in `src/shared/settingsRegistry.js` |
 | `runtime` | `src/core/config/manifest/runtimeGroup.js` | fetch/ocr/screenshot/runtime ops knobs | large operator-tunable runtime set |
 | `observability` | `src/core/config/manifest/observabilityGroup.js` | JSON-write flags, daemon/import loops, drift | runtime housekeeping and write-mode knobs |
 | `paths` | `src/core/config/manifest/pathsGroup.js` | local roots and authority/frontier paths | includes `CATEGORY_AUTHORITY_ROOT` and `SPEC_DB_DIR` |

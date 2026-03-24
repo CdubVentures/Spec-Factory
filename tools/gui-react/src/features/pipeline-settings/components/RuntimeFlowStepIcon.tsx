@@ -5,8 +5,7 @@ export type RuntimeStepId =
   | 'observability-trace'
   | 'fetch-network'
   | 'browser-rendering'
-  | 'parsing'
-  | 'ocr';
+  | 'parsing';
 
 interface RuntimeFlowStepIconProps {
   id: RuntimeStepId;
@@ -87,13 +86,6 @@ export function RuntimeFlowStepIcon({
             <path d="M7 4h10v16H7z" />
             <path d="M5 6l2-2M5 18l2 2M19 6l-2-2M19 18l-2 2" />
             <path d="M10 9h4M10 12h4M10 15h2" />
-          </>
-        ) : null}
-        {id === 'ocr' ? (
-          <>
-            <path d="M5 4h4M15 4h4M5 20h4M15 20h4" />
-            <path d="M4 5v4M4 15v4M20 5v4M20 15v4" />
-            <path d="M8 9h8M8 12h6M8 15h8" />
           </>
         ) : null}
       </svg>

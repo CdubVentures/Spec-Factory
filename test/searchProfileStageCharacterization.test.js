@@ -131,4 +131,12 @@ describe('Stage 03 Search Profile — Characterization', { concurrency: false },
     assert.ok(tier2Rows.length > 0, 'should have tier2 group queries');
     assert.ok(tier3Rows.length > 0, 'should have tier3 key queries');
   });
+
+  it('#6 does not crash when searchProfileCaps is null', () => {
+    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs({ searchProfileCaps: null })));
+  });
+
+  it('#7 does not crash when searchProfileCaps is undefined', () => {
+    assert.doesNotThrow(() => runSearchProfile(makeBaseArgs({ searchProfileCaps: undefined })));
+  });
 });

@@ -73,10 +73,10 @@
 | `src/cli/` | main operator CLI surface | `spec.js` |
 | `src/core/` | config manifest, LLM routing, and shared infrastructure | `config/manifest/index.js`, `config/runtimeArtifactRoots.js`, `llm/` |
 | `src/db/` | SQLite schema, migrations, and stores | `specDb.js`, `specDbSchema.js`, `specDbMigrations.js`, `stores/`, `DOMAIN.md` |
-| `src/features/` | feature-first backend boundaries | `catalog/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/`, `review-curation/`, `expansion-hardening/` |
-| `src/pipeline/` | run orchestration and batch review workers | `runProduct.js`, `componentReviewBatch.js` |
+| `src/features/` | feature-first backend boundaries | `catalog/`, `crawl/` (NEW — browser automation with plugins), `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/`, `review-curation/`, `expansion-hardening/` |
+| `src/pipeline/` | crawl-first run orchestration and batch review workers | `runProduct.js` (248 LOC, crawl-based), `runCrawlProcessingLifecycle.js`, `componentReviewBatch.js` |
 | `src/daemon/` | recurring watch/queue runner | `daemon.js` |
-| `src/indexlab/` | run-artifact readers and packet validation helpers | `indexingSchemaPacketsValidator.js` and packet readers |
+| `src/indexlab/` | run-artifact readers and runtime bridge event handlers | `runtimeBridgeEventHandlers.js`, `needsetEngine.js`, `searchPlanningContext.js` |
 | `src/field-rules/` | compiled rule/session helpers used by studio and review | `sessionCache.js`, consumer gates, compile-time support |
 | `src/categories/` | category loader boundary | `loader.js` |
 | `src/ingest/` | CSV/category ingest and compile helpers | compile/ingest support for authority updates |

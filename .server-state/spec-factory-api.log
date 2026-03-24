@@ -1831,3 +1831,571 @@ Node.js v22.14.0
 [SETTINGS-DEBUG] PUT /runtime-settings keys= 211 fetchConcurrency= 11
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
 [SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\testing\testRunner.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\app\api\routes\testModeRouteContext.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/testing/testRunner.js'
+}
+
+Node.js v22.14.0
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\testing\testRunner.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\app\api\routes\testModeRouteContext.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/testing/testRunner.js'
+}
+
+Node.js v22.14.0
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\testing\testRunner.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\app\api\routes\testModeRouteContext.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/testing/testRunner.js'
+}
+
+Node.js v22.14.0
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\testing\testRunner.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\app\api\routes\testModeRouteContext.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/testing/testRunner.js'
+}
+
+Node.js v22.14.0
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\testing\testRunner.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\app\api\routes\testModeRouteContext.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:685:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:634:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:617:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:273:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:135:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/testing/testRunner.js'
+}
+
+Node.js v22.14.0
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-x57dw9wJ.js, buttonClasses-x-rUW2Cc.js, CatalogPage-m3DNnSpS.js, CategoryManager-DGTxthhC.js, Chip-DT26XC1B.js, ComponentReviewPage-fhy2in0C.js, DataTable-BmrjKX2I.js, DrawerShell-C_9j9Y_x.js, fieldNormalize-BfWKSrbu.js, FlagsSection-B5uSiI2J.js, formatting-B6A_RRxb.js, index-BTB-I1KN.js, index-DG6IV-ny.css, IndexingPage-D1i7iqqR.js, indexlabRunsQuery-D0lhB-hU.js, invalidateFieldRulesQueries-CTKFbvpR.js, LlmConfigPage-IEAegymO.js, LlmExtractionSection-DELy7cQb.js, LlmGlobalSection-rUZ9gspU.js, LlmPhaseSection-D4xrf0Jf.js, llmPolicyDefaults-Bja_cWvL.js, LlmProviderRegistrySection-h3kUfhaJ.js, LlmSettingsPage-J1nRKQN7.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-mx1CM8iI.js, PipelineSettingsPage-BFq3Y_eS.js, PipelineSourceStrategySection-DlfERBNk.js, ProductPage-CdL3hHCa.js, ReviewPage-Cb_9qFZe.js, RuntimeFlowAutomationSection-D2GCk-NA.js, RuntimeFlowBrowserRenderingSection-DXDbqtcJ.js, RuntimeFlowDraftPayload-u9JP41GY.js, RuntimeFlowFetchNetworkSection-2aY7Orlw.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-sC-xSRmJ.js, RuntimeFlowOcrSection-B6DTjUFR.js, RuntimeFlowParsingSection-BYCVpY-s.js, RuntimeFlowRunOutputSection-bIHYlNyZ.js, RuntimeFlowRunSetupSection-BOWDAQvh.js, RuntimeOpsPage-DcFYrGO0.js, RuntimeSettingsFlowCard-cCc-bpHJ.js, settingsStatus-BVm315aX.js, SidebarShell-DIPPKYu3.js, StoragePage-C-rK0QKF.js, StudioPage-CcR6gsm_.js, TabStrip-Klqv926z.js, TestModePage-vnBQmQlS.js, TrafficLight-A5G0gURN.js, useFieldLabels-Dtu2w2Ol.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 211 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 195 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-Cxlx3kUz.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CKEB06an.js, CategoryManager-BrqtksvB.js, Chip-DT26XC1B.js, ComponentReviewPage-DtaJDkbU.js, DataTable-BmrjKX2I.js, DrawerShell-Qg769hMX.js, fieldNormalize-BfWKSrbu.js, FlagsSection-BXbh3VYS.js, formatting-B6A_RRxb.js, index-DbeOq9PX.js, index-DG6IV-ny.css, IndexingPage-CKQdD5uz.js, indexlabRunsQuery-B87p4CIZ.js, invalidateFieldRulesQueries-ONdJNdxT.js, LlmConfigPage-B0z_qhGe.js, LlmExtractionSection-Z7SBzVzV.js, LlmGlobalSection-3PaFTgN5.js, LlmPhaseSection-D_pVoNFC.js, llmPolicyDefaults-Drop9aad.js, LlmProviderRegistrySection-D-Il5nh0.js, LlmSettingsPage-SfR5wxfv.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-D07UKbrq.js, PipelineSettingsPage-bU7CVyLp.js, PipelineSourceStrategySection-XkvHyZSf.js, ProductPage-BWMiJaZ6.js, ReviewPage-C4VnrB86.js, RuntimeFlowAutomationSection-CjHqYXCR.js, RuntimeFlowBrowserRenderingSection-BrA-NpmX.js, RuntimeFlowDraftPayload-BfYI9_SX.js, RuntimeFlowFetchNetworkSection-BVxLVfMe.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-CU-MROtg.js, RuntimeFlowOcrSection-EZA4bcUL.js, RuntimeFlowParsingSection-BLsgwCT0.js, RuntimeFlowRunOutputSection-Cc102izO.js, RuntimeFlowRunSetupSection-DrHWcz9O.js, RuntimeOpsPage-6SDpm796.js, RuntimeSettingsFlowCard-DIKnYGVf.js, settingsStatus-BVm315aX.js, SidebarShell-6SugHpfL.js, StoragePage-DkxGhUbd.js, StudioPage-CpjK_RmX.js, TabStrip-Klqv926z.js, TestModePage-BFWRFJvJ.js, TrafficLight-FWtNnP1m.js, useFieldLabels-Dge5ZnfM.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 195 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-B_mdbg8D.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CLLMVCyz.js, CategoryManager-Jxsi4e-F.js, Chip-DT26XC1B.js, ComponentReviewPage-CwhPQIHm.js, DataTable-BmrjKX2I.js, DrawerShell-CF7k_8Zr.js, fieldNormalize-BfWKSrbu.js, FlagsSection-sKjswuLL.js, formatting-B6A_RRxb.js, index-CBr2dvG_.js, index-DG6IV-ny.css, IndexingPage-DMsJY3L9.js, indexlabRunsQuery-BveHeN20.js, invalidateFieldRulesQueries-Rpjk0vlI.js, LlmConfigPage-DDGied2Z.js, LlmExtractionSection-CHycMrtQ.js, LlmGlobalSection-tYTCeBUf.js, LlmPhaseSection-avQNQyH2.js, llmPolicyDefaults-ZUE2n-Kb.js, LlmProviderRegistrySection-Bx3iDq4Y.js, LlmSettingsPage-ErC72d2D.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-Bb5fasm_.js, PipelineSettingsPage-By5ElLMy.js, PipelineSourceStrategySection-752TGBQC.js, ProductPage-6t2hTmI8.js, ReviewPage-B_iMsJCX.js, RuntimeFlowAutomationSection-DbBOhGzF.js, RuntimeFlowBrowserRenderingSection-yH0s8_Jo.js, RuntimeFlowDraftPayload-BMdNPdcL.js, RuntimeFlowFetchNetworkSection-DEHx1yGS.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-CoCn80Uz.js, RuntimeFlowOcrSection-DahSZzhO.js, RuntimeFlowParsingSection-B2sPgMO0.js, RuntimeFlowRunOutputSection-BrQRI2nJ.js, RuntimeFlowRunSetupSection-DlLeHp2l.js, RuntimeOpsPage-CBUqnNtI.js, RuntimeSettingsFlowCard-BNobmK7Y.js, settingsStatus-BVm315aX.js, SidebarShell-rY-eAkLU.js, StoragePage-Da6Wq0qh.js, StudioPage-BfHpWC4M.js, TabStrip-Klqv926z.js, TestModePage-B-LISWlC.js, TrafficLight-U-3QpgVG.js, useFieldLabels-BIVHkp_N.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DXhpDR2N.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DxLqvfbZ.js, CategoryManager-DbMLOxYh.js, Chip-DT26XC1B.js, ComponentReviewPage-I6XJqZq8.js, DataTable-BmrjKX2I.js, DrawerShell-BTk8hygQ.js, fieldNormalize-BfWKSrbu.js, FlagsSection-Sm7P2Scn.js, formatting-B6A_RRxb.js, index-BdVqCk62.js, index-DG6IV-ny.css, IndexingPage-D95m8W0z.js, indexlabRunsQuery-BPzAaRcQ.js, invalidateFieldRulesQueries-QVfSHRZo.js, LlmConfigPage-DsbqNsAA.js, LlmExtractionSection-eE-91KvL.js, LlmGlobalSection-ChA4vXWp.js, LlmPhaseSection-YsRRMWTT.js, llmPolicyDefaults-Mv-88tq8.js, LlmProviderRegistrySection-D1EOYxcf.js, LlmSettingsPage-BDzRFsRJ.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-DLCc3F2y.js, PipelineSettingsPage-DI7trEJ1.js, PipelineSourceStrategySection-BXS9T3fU.js, ProductPage-BjBwR-dA.js, ReviewPage-BElqHXW6.js, RuntimeFlowAutomationSection-CW9e9HkX.js, RuntimeFlowBrowserRenderingSection-5BeZF9nE.js, RuntimeFlowDraftPayload-BmXaG_g6.js, RuntimeFlowFetchNetworkSection-vKy9b1K8.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-BbbNheqJ.js, RuntimeFlowOcrSection-CbGWfieU.js, RuntimeFlowParsingSection-BU5PwUkx.js, RuntimeFlowRunOutputSection-Q7m7fqWo.js, RuntimeFlowRunSetupSection-BRstCsNN.js, RuntimeOpsPage-rerrfxjT.js, RuntimeSettingsFlowCard-CWf5K_Zp.js, settingsStatus-BVm315aX.js, SidebarShell-CrV2MntU.js, StoragePage-C37bbO2t.js, StudioPage-B27Vx_eB.js, TabStrip-Klqv926z.js, TestModePage-CIWO-tpW.js, TrafficLight-nKjypmRG.js, useFieldLabels-BMjIgkF0.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 195 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-C8rO3hav.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CE7xPfs0.js, CategoryManager-9DZg_azI.js, Chip-DT26XC1B.js, ComponentReviewPage-ZaSwtnsd.js, DataTable-BmrjKX2I.js, DrawerShell-DS43L9S3.js, fieldNormalize-BfWKSrbu.js, FlagsSection-Bb-HphM3.js, formatting-B6A_RRxb.js, index-CxmGwra9.js, index-DhgSpwVj.css, IndexingPage-DWmoYzRu.js, indexlabRunsQuery-57fjXwx3.js, invalidateFieldRulesQueries-CZOa39NI.js, LlmConfigPage-B1Bf04CK.js, LlmGlobalSection-_XuWW88V.js, LlmPhaseSection-nfDQAao8.js, llmPolicyDefaults-C-qrAUMR.js, LlmProviderRegistrySection-DBp1qpQy.js, llmRouteTaxonomy-CBgxInd4.js, LlmSettingsPage-DpmsbTqE.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-Dnt2wPKT.js, PipelineSettingsPage-F2AuSHiJ.js, PipelineSourceStrategySection-DyQXpSDW.js, ProductPage-B08VuALG.js, ReviewPage-BUB6VZJe.js, RuntimeFlowAutomationSection-iC0z2jha.js, RuntimeFlowBrowserRenderingSection-BnsEwuEC.js, RuntimeFlowDraftPayload-BlZGKCOH.js, RuntimeFlowFetchNetworkSection-BS2BgRWy.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-DznW18fe.js, RuntimeFlowParsingSection-Cr7tUxlf.js, RuntimeFlowRunOutputSection-DE2rUCjM.js, RuntimeFlowRunSetupSection-D3NglsjK.js, RuntimeOpsPage-CckjLtNw.js, RuntimeSettingsFlowCard-eAGaAHgB.js, settingsStatus-BVm315aX.js, SidebarShell-Cq9nNJas.js, StoragePage-gbJBuI8_.js, StudioPage-3YwEYcj-.js, TabStrip-Klqv926z.js, TestModePage-i4MP9wUi.js, TrafficLight-BAZeLVmv.js, useFieldLabels-6SJOrgoh.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 155 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-kZ495gCI.js, buttonClasses-x-rUW2Cc.js, CatalogPage-C9n33FKo.js, CategoryManager-BL0qDjaG.js, Chip-DT26XC1B.js, ComponentReviewPage-Ctk-D9r0.js, DataTable-BmrjKX2I.js, DrawerShell-DhllvsBF.js, fieldNormalize-BfWKSrbu.js, FlagsSection-BNHr2h54.js, formatting-B6A_RRxb.js, index-D4DiEuUm.js, index-DhgSpwVj.css, IndexingPage-B4dT0d5k.js, indexlabRunsQuery-DkEgSBlZ.js, invalidateFieldRulesQueries-C9UTtqhR.js, LlmConfigPage-CGaWgJwX.js, LlmGlobalSection-K0mL5sMB.js, LlmPhaseSection-Cri7Zznk.js, llmPolicyDefaults-BePFIgIb.js, LlmProviderRegistrySection-DRxmK8zq.js, llmRouteTaxonomy-FG-JHdJ8.js, LlmSettingsPage--JvsJ8n-.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-rt6cI9eE.js, PipelineSettingsPage-Bj7rPGQn.js, PipelineSourceStrategySection-BhXu5cAJ.js, ProductPage-mk8UjbUa.js, ReviewPage-C2b5RdFJ.js, RuntimeFlowAutomationSection-Qo1kWqnr.js, RuntimeFlowBrowserRenderingSection-D9OGKkJe.js, RuntimeFlowDraftPayload-CGi0zhun.js, RuntimeFlowFetchNetworkSection-T4emZgRn.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-BPbqzWNP.js, RuntimeFlowParsingSection-BeNtv0gW.js, RuntimeFlowRunOutputSection-DdPprpiY.js, RuntimeFlowRunSetupSection-C7iQf5nU.js, RuntimeOpsPage-BL6LGPWV.js, RuntimeSettingsFlowCard-q_-Y3oTY.js, settingsStatus-BVm315aX.js, SidebarShell-DU_CxgZs.js, StoragePage-Dzx13dSr.js, StudioPage-CKcEXcPI.js, TabStrip-Klqv926z.js, TestModePage-DOh9Edgh.js, TrafficLight-BK9DubuY.js, useFieldLabels-DYSl0jLU.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 155 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-e8LZAeyv.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CuaKQHnO.js, CategoryManager-jG2p_WDV.js, Chip-DT26XC1B.js, ComponentReviewPage-DuPJDety.js, DataTable-BmrjKX2I.js, DrawerShell-DUriSDLa.js, fieldNormalize-BfWKSrbu.js, FlagsSection-B7ON1_xq.js, formatting-B6A_RRxb.js, index-C0dj62De.js, index-DlecRE--.css, IndexingPage-BT2j4-OE.js, indexlabRunsQuery-BJggBIG8.js, invalidateFieldRulesQueries-DT_ZTDqW.js, LlmConfigPage-ia0LRbAQ.js, LlmGlobalSection-C7sziMnW.js, LlmPhaseSection-B9iVkgGs.js, llmPolicyDefaults-CNgII8dk.js, LlmProviderRegistrySection-DHkWOtQd.js, llmRouteTaxonomy-CuK6dHn6.js, LlmSettingsPage-D0WX3znE.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-B4Ani4_7.js, PipelineSettingsPage-C3Rz3fhe.js, PipelineSourceStrategySection-DxrXy2Fj.js, ProductPage-Djx41g1K.js, ReviewPage-CxeOrHEl.js, RuntimeFlowAutomationSection-DFlBMuPw.js, RuntimeFlowBrowserRenderingSection-VUk7A6Gt.js, RuntimeFlowDraftPayload-BYbWCAHN.js, RuntimeFlowFetchNetworkSection-3-Myx2A2.js, RuntimeFlowHeaderControls-geQNK-0G.js, RuntimeFlowObservabilitySection-Du248x2d.js, RuntimeFlowParsingSection-B7snmrWI.js, RuntimeFlowRunOutputSection-5K202xyo.js, RuntimeFlowRunSetupSection-D1rnOrzP.js, RuntimeOpsPage-Nv8u56Km.js, RuntimeSettingsFlowCard-R1nBeJMs.js, settingsStatus-BVm315aX.js, SidebarShell-CEerWo61.js, StoragePage-CYj1DcAZ.js, StudioPage-DBGDgKMJ.js, TabStrip-Klqv926z.js, TestModePage-AuwPSXDA.js, TrafficLight-DkfoJANC.js, useFieldLabels-T8KFbZ6i.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[source-registry] mouse: 9 sparsity warning(s)
+[SETTINGS-DEBUG] PUT /runtime-settings keys= 155 fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11
+[SETTINGS-DEBUG] GET /runtime-settings fetchConcurrency= 11

@@ -44,6 +44,7 @@ export async function runLlmHealthCheck({
   config,
   provider = '',
   model = '',
+  providerHealth,
   logger = null
 }) {
   const explicitModel = normalized(model);
@@ -73,6 +74,7 @@ export async function runLlmHealthCheck({
   const effectiveCostRates = buildEffectiveCostRates(route._registryEntry, normalizeCostRates(config));
 
   const response = await callOpenAI({
+    providerHealth,
     model: resolvedModel,
     system: [
       'You are validating model connectivity and JSON schema output.',

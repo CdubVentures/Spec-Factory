@@ -68,10 +68,12 @@ test('CHAR apply: applyRuntimeSettingsToConfig applies known settings keys', () 
 // SECTION 2: applyConvergenceSettingsToConfig basic behavior
 // =========================================================================
 
-test('CHAR apply: applyConvergenceSettingsToConfig modifies config in-place', () => {
+test('CHAR apply: applyConvergenceSettingsToConfig with unknown key is no-op', () => {
   const config = loadConfig();
+  const before = config.serpTriageMinScore;
   applyConvergenceSettingsToConfig(config, { serpTriageMinScore: 5 });
-  assert.equal(config.serpTriageMinScore, 5);
+  // serpTriageMinScore is no longer a convergence key — apply ignores it
+  assert.equal(config.serpTriageMinScore, before);
 });
 
 test('CHAR apply: applyConvergenceSettingsToConfig with empty settings is no-op', () => {
@@ -86,8 +88,8 @@ test('CHAR apply: applyConvergenceSettingsToConfig with empty settings is no-op'
 });
 
 test('CHAR apply: applyConvergenceSettingsToConfig with null config is silent no-op', () => {
-  applyConvergenceSettingsToConfig(null, { serpTriageMinScore: 5 });
-  applyConvergenceSettingsToConfig(undefined, { serpTriageMinScore: 5 });
+  applyConvergenceSettingsToConfig(null, {});
+  applyConvergenceSettingsToConfig(undefined, {});
 });
 
 test('CHAR apply: applyConvergenceSettingsToConfig only updates keys that exist in config', () => {
@@ -97,12 +99,16 @@ test('CHAR apply: applyConvergenceSettingsToConfig only updates keys that exist 
   assert.equal(Object.hasOwn(config, nonexistentKey), false);
 });
 
-test('CHAR apply: applyConvergenceSettingsToConfig applies convergence keys', () => {
+test('CHAR apply: applyConvergenceSettingsToConfig with empty registry is no-op', () => {
   const config = loadConfig();
-  applyConvergenceSettingsToConfig(config, {
-    serpTriageMinScore: 5,
-  });
-  assert.equal(config.serpTriageMinScore, 5);
+  const snapshot = { ...config };
+  applyConvergenceSettingsToConfig(config, {});
+  // No convergence keys in registry — config unchanged
+  for (const key of Object.keys(snapshot)) {
+    if (typeof snapshot[key] !== 'object') {
+      assert.equal(config[key], snapshot[key], `${key} should not change`);
+    }
+  }
 });
 
 // =========================================================================
@@ -117,10 +123,15 @@ test('CHAR apply: applyRuntimeSettingsToConfig handles string numbers', () => {
   assert.equal(config.maxUrlsPerProduct, 42);
 });
 
-test('CHAR apply: applyConvergenceSettingsToConfig handles int values', () => {
+test('CHAR apply: applyConvergenceSettingsToConfig with empty payload is no-op', () => {
   const config = loadConfig();
-  applyConvergenceSettingsToConfig(config, { serpTriageMinScore: 7 });
-  assert.equal(config.serpTriageMinScore, 7);
+  const snapshot = { ...config };
+  applyConvergenceSettingsToConfig(config, {});
+  for (const key of Object.keys(snapshot)) {
+    if (typeof snapshot[key] !== 'object') {
+      assert.equal(config[key], snapshot[key], `${key} should not change`);
+    }
+  }
 });
 
 // =========================================================================
@@ -138,9 +149,9 @@ test('CHAR apply: multiple applyRuntimeSettingsToConfig calls stack', () => {
 test('CHAR apply: runtime and convergence apply functions can be mixed', () => {
   const config = loadConfig();
   applyRuntimeSettingsToConfig(config, { maxUrlsPerProduct: 42 });
-  applyConvergenceSettingsToConfig(config, { serpTriageMinScore: 7 });
+  applyConvergenceSettingsToConfig(config, {});
   assert.equal(config.maxUrlsPerProduct, 42);
-  assert.equal(config.serpTriageMinScore, 7);
+  // No convergence keys to verify — convergence apply is a no-op
 });
 
 // =========================================================================

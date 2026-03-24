@@ -134,43 +134,43 @@ describe('settingsAccessor', () => {
 
   describe('configFloat', () => {
     it('returns float config value directly', () => {
-      const config = { scannedPdfOcrMinConfidence: 0.75 };
-      strictEqual(configFloat(config, 'scannedPdfOcrMinConfidence'), 0.75);
+      const config = { llmCostInputPer1M: 0.75 };
+      strictEqual(configFloat(config, 'llmCostInputPer1M'), 0.75);
     });
 
     it('coerces string to float', () => {
-      const config = { scannedPdfOcrMinConfidence: '0.75' };
-      strictEqual(configFloat(config, 'scannedPdfOcrMinConfidence'), 0.75);
+      const config = { llmCostInputPer1M: '0.75' };
+      strictEqual(configFloat(config, 'llmCostInputPer1M'), 0.75);
     });
 
     it('returns registry default when absent', () => {
       const config = {};
-      strictEqual(configFloat(config, 'scannedPdfOcrMinConfidence'), 0.5);
+      strictEqual(configFloat(config, 'llmCostInputPer1M'), 1.25);
     });
 
     it('returns registry default when value is non-numeric string (NaN)', () => {
-      const entry = registryEntry('scannedPdfOcrMinConfidence');
-      strictEqual(configFloat({ scannedPdfOcrMinConfidence: 'xyz' }, 'scannedPdfOcrMinConfidence'), entry.default);
+      const entry = registryEntry('llmCostInputPer1M');
+      strictEqual(configFloat({ llmCostInputPer1M: 'xyz' }, 'llmCostInputPer1M'), entry.default);
     });
 
     it('clamps to registry max when value exceeds ceiling', () => {
-      const entry = registryEntry('scannedPdfOcrMinConfidence');
-      strictEqual(configFloat({ scannedPdfOcrMinConfidence: 5.0 }, 'scannedPdfOcrMinConfidence'), entry.max);
+      const entry = registryEntry('llmCostInputPer1M');
+      strictEqual(configFloat({ llmCostInputPer1M: 5000.0 }, 'llmCostInputPer1M'), entry.max);
     });
 
     it('clamps to registry min when value is below floor', () => {
-      const entry = registryEntry('scannedPdfOcrMinConfidence');
-      strictEqual(configFloat({ scannedPdfOcrMinConfidence: -0.5 }, 'scannedPdfOcrMinConfidence'), entry.min);
+      const entry = registryEntry('llmCostInputPer1M');
+      strictEqual(configFloat({ llmCostInputPer1M: -0.5 }, 'llmCostInputPer1M'), entry.min);
     });
 
     it('preserves value at exact min boundary', () => {
-      const entry = registryEntry('scannedPdfOcrMinConfidence');
-      strictEqual(configFloat({ scannedPdfOcrMinConfidence: entry.min }, 'scannedPdfOcrMinConfidence'), entry.min);
+      const entry = registryEntry('llmCostInputPer1M');
+      strictEqual(configFloat({ llmCostInputPer1M: entry.min }, 'llmCostInputPer1M'), entry.min);
     });
 
     it('preserves value at exact max boundary', () => {
-      const entry = registryEntry('scannedPdfOcrMinConfidence');
-      strictEqual(configFloat({ scannedPdfOcrMinConfidence: entry.max }, 'scannedPdfOcrMinConfidence'), entry.max);
+      const entry = registryEntry('llmCostInputPer1M');
+      strictEqual(configFloat({ llmCostInputPer1M: entry.max }, 'llmCostInputPer1M'), entry.max);
     });
   });
 
@@ -198,10 +198,6 @@ describe('settingsAccessor', () => {
 
     it('searchProfileQueryCap default is 10 (was hardcoded as 6, 8, 12 in various files)', () => {
       strictEqual(configInt({}, 'searchProfileQueryCap'), 10);
-    });
-
-    it('searchPlannerQueryCap default is 30 (was hardcoded as 120 in searchDiscovery)', () => {
-      strictEqual(configInt({}, 'searchPlannerQueryCap'), 30);
     });
 
     it('maxUrlsPerProduct default is 50 (was hardcoded as 12 in pipelineCommands, 20 in configBuilder)', () => {

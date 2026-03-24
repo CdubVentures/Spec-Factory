@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { loadUserSettings, persistUserSettingsSections, readStudioMapFromUserSettings } from '../../settings-authority/index.js';
 import {

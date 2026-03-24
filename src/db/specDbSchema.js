@@ -851,3 +851,16 @@ export const LLM_ROUTE_COLUMN_REGISTRY = Object.freeze([
 export const LLM_ROUTE_BOOLEAN_KEYS = LLM_ROUTE_COLUMN_REGISTRY
   .filter(c => c.type === 'bool')
   .map(c => c.key);
+
+// WHY: Per-table boolean key lists — SSOT for which columns are boolean.
+// Used by hydrateRow/hydrateRows in specDbHelpers.js to convert 0/1 → true/false on read.
+export const CANDIDATE_BOOLEAN_KEYS = Object.freeze(['approved_domain', 'is_component_field', 'is_list_field']);
+export const CANDIDATE_REVIEW_BOOLEAN_KEYS = Object.freeze(['human_accepted', 'human_override_ai']);
+export const COMPONENT_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
+export const LIST_VALUE_BOOLEAN_KEYS = Object.freeze(['needs_review', 'overridden']);
+export const ITEM_FIELD_STATE_BOOLEAN_KEYS = Object.freeze(['overridden', 'needs_ai_review', 'ai_review_complete']);
+export const KEY_REVIEW_STATE_BOOLEAN_KEYS = Object.freeze(['ai_confirm_primary_interrupted', 'ai_confirm_shared_interrupted', 'user_override_ai_primary', 'user_override_ai_shared']);
+export const PRODUCT_RUN_BOOLEAN_KEYS = Object.freeze(['is_latest', 'validated']);
+export const SOURCE_CORPUS_BOOLEAN_KEYS = Object.freeze(['identity_match', 'approved_domain']);
+export const LEARNING_PROFILE_BOOLEAN_KEYS = Object.freeze(['validated']);
+export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);

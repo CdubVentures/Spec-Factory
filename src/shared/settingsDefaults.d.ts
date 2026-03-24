@@ -38,9 +38,9 @@ export declare const SETTINGS_DEFAULTS: {
 export declare const SETTINGS_OPTION_VALUES: {
   readonly runtime: Readonly<{
     outputMode: readonly string[];
+    pipelineSchemaEnforcementMode: readonly string[];
     repairDedupeRule: readonly string[];
     resumeMode: readonly string[];
-    scannedPdfOcrBackend: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];
   }>;

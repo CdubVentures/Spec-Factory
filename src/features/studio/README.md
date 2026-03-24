@@ -7,7 +7,7 @@ This boundary coordinates studio-facing control-plane actions while delegating s
 - Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies
-- Allowed: `src/features/settings-authority/index.js`, `src/features/indexing/index.js`, `src/api/events/dataChangeContract.js`, and `src/field-rules/consumerGate.js`.
+- Allowed: `src/features/settings-authority/index.js`, `src/features/indexing/index.js`, `src/core/events/dataChangeContract.js`, and `src/field-rules/consumerGate.js`.
 - Forbidden: deep imports into other feature internals beyond those explicit contracts.
 
 ## Domain Invariants

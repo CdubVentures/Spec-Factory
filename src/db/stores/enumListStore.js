@@ -1,3 +1,6 @@
+import { LIST_VALUE_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 /**
  * Enum/List store — extracted from SpecDb.
  * Owns: enum_lists, list_values tables.
@@ -59,18 +62,18 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
   }
 
   function getListValues(fieldKey) {
-    return db
+    return hydrateRows(LIST_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM list_values WHERE category = ? AND field_key = ?')
-      .all(category, fieldKey);
+      .all(category, fieldKey));
   }
 
   function getListValueByFieldAndValue(fieldKey, value) {
-    const exact = db
+    const exact = hydrateRow(LIST_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM list_values WHERE category = ? AND field_key = ? AND value = ?')
-      .get(category, fieldKey, value);
+      .get(category, fieldKey, value));
     if (exact) return exact;
     if (value == null) return null;
-    return db
+    return hydrateRow(LIST_VALUE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT *
         FROM list_values
@@ -78,15 +81,15 @@ export function createEnumListStore({ db, category, stmts, deleteKeyReviewStateR
         ORDER BY id
         LIMIT 1
       `)
-      .get(category, fieldKey, value) || null;
+      .get(category, fieldKey, value)) || null;
   }
 
   function getListValueById(listValueId) {
     const id = Number(listValueId);
     if (!Number.isFinite(id) || id <= 0) return null;
-    return db
+    return hydrateRow(LIST_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM list_values WHERE category = ? AND id = ?')
-      .get(category, id) || null;
+      .get(category, id)) || null;
   }
 
   function getAllEnumFields() {

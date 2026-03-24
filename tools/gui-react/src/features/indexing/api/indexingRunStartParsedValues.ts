@@ -4,10 +4,10 @@
 import {
   parseRuntimeFloat,
   parseRuntimeInt,
-  type RuntimeSettings,
-  type RuntimeSettingsNumericBaseline,
-} from '../../pipeline-settings';
-import { RUNTIME_SETTINGS_REGISTRY } from '../../../shared/registryDerivedSettingsMaps';
+} from '../../pipeline-settings/state/runtimeSettingsParsing.ts';
+import type { RuntimeSettings } from '../../pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts';
+import type { RuntimeSettingsNumericBaseline } from '../../pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../../shared/registryDerivedSettingsMaps.ts';
 
 type DeriveIndexingRunStartParsedValuesInput = {
   runtimeSettingsPayload: RuntimeSettings;
@@ -21,11 +21,9 @@ const KEY_NAME_OVERRIDES: Record<string, string> = {
   crawleeRequestHandlerTimeoutSecs: 'parsedCrawleeTimeout',
   dynamicFetchRetryBudget: 'parsedRetryBudget',
   dynamicFetchRetryBackoffMs: 'parsedRetryBackoff',
-  scannedPdfOcrMinCharsPerPage: 'parsedScannedPdfOcrMinChars',
-  scannedPdfOcrMinLinesPerPage: 'parsedScannedPdfOcrMinLines',
 };
 
-function parsedKeyName(registryKey: string): string {
+export function parsedKeyName(registryKey: string): string {
   if (registryKey in KEY_NAME_OVERRIDES) return KEY_NAME_OVERRIDES[registryKey];
   return `parsed${registryKey.charAt(0).toUpperCase()}${registryKey.slice(1)}`;
 }

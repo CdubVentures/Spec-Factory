@@ -64,10 +64,10 @@ export async function runBrandResolver({
     status: brandStatus,
     skip_reason: brandSkipReason,
     official_domain: brandResolution?.officialDomain || '',
-    aliases: brandResolution?.aliases?.slice(0, 5) || [],
+    aliases: brandResolution?.aliases || [],
     support_domain: brandResolution?.supportDomain || '',
     confidence: brandResolution?.confidence ?? null,
-    reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning.slice(0, 10) : [],
+    reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning : [],
   });
 
   return { brandResolution };

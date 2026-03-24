@@ -14,6 +14,7 @@ graph TD
   Realtime["Realtime Bridge /ws (src/app/api/realtimeBridge.js)"]
   Proc["Process Runtime (src/app/api/processRuntime.js)"]
   Cli["CLI Commands (src/cli/spec.js)"]
+  Crawl["Crawl Module (src/features/crawl/index.js)"]
   SpecDb["SQLite Boundary (src/db/specDb.js)"]
   Authority["Category Authority Files (category_authority/)"]
   Output["Runtime Artifact Roots (src/core/config/runtimeArtifactRoots.js)"]
@@ -21,7 +22,7 @@ graph TD
   Searxng["Optional SearXNG Stack (tools/searxng/docker-compose.yml)"]
   Graphql["Local GraphQL Upstream :8787 (src/app/api/routes/infra/graphqlRoutes.js)"]
   Llm["Provider-Routed LLM Clients (src/core/llm/*)"]
-  Elo["EloShapes Adapter (src/adapters/eloShapesAdapter.js)"]
+  Elo["EloShapes Adapter (deleted — config keys remain)"]
   Sidecar["Structured Metadata Sidecar (tools/structured-metadata-sidecar/)"]
 
   Browser --> GuiServer
@@ -34,6 +35,8 @@ graph TD
   Routes --> Output
   Routes --> Proc
   Proc --> Cli
+  Cli --> Crawl
+  Crawl --> SpecDb
   Cli --> SpecDb
   Cli --> Authority
   Cli --> Output
@@ -58,6 +61,7 @@ graph TD
 | WebSocket bridge | `src/app/api/realtimeBridge.js` |
 | Process runtime | `src/app/api/processRuntime.js` |
 | CLI entrypoint | `src/cli/spec.js` |
+| Crawl module | `src/features/crawl/index.js` |
 | SQLite boundary | `src/db/specDb.js` |
 | Authority content root | `category_authority/` |
 | S3 abstraction | `src/s3/storage.js` |
@@ -70,7 +74,7 @@ graph TD
 - The browser only talks to the local Node runtime; the GUI is not a separately deployed frontend service in the checked-in repo.
 - `src/api/guiServer.js` is both the API host and static-file host for the built GUI assets.
 - WebSocket traffic goes through `/ws` and is backed by `src/app/api/realtimeBridge.js`.
-- Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`.
+- Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`. The pipeline uses a crawl-first architecture via `src/features/crawl/` with plugin-based browser automation.
 - Canonical persistent state is split between SQLite (`src/db/`) and the category authority content root.
 - The default local artifact roots are under the OS temp directory (`.../spec-factory/output` and `.../spec-factory/indexlab`), not a checked-in top-level `storage/` folder.
 

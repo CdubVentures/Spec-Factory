@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { emitDataChange } from '../events/dataChangeContract.js';
+import { emitDataChange } from '../../core/events/dataChangeContract.js';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
 import {
   shouldRelocateRunData,

@@ -1,5 +1,3 @@
-import { configInt } from '../../../../shared/settingsAccessor.js';
-
 export function createRunLlmRuntime({
   storage,
   config = {},
@@ -11,7 +9,6 @@ export function createRunLlmRuntime({
   traceWriter = null,
   routeMatrixPolicy = {},
   runtimeOverrides = {},
-  stableHashFn = () => 0,
   normalizeCostRatesFn = () => ({}),
   appendCostLedgerEntryFn = async () => {},
   recordPromptResultFn = () => {},
@@ -26,15 +23,6 @@ export function createRunLlmRuntime({
   let llmEstimatedUsageCount = 0;
   let llmRetryWithoutSchemaCount = 0;
 
-  const llmVerifySampleRate = configInt(config, 'llmVerifySampleRate');
-  const llmVerifySampled = (stableHashFn(`${productId}:${runId}`) % llmVerifySampleRate) === 0;
-  const llmVerifyForced = Boolean(roundContext?.force_verify_llm);
-  const llmVerifyAggressiveAlways = Boolean(config.llmVerifyAggressiveAlways);
-  const llmVerifyEnabled = Boolean(
-    llmVerifyAggressiveAlways ||
-    (config.llmVerifyMode && (llmVerifySampled || llmVerifyForced)),
-  );
-
   const escalatedFromRound = Array.isArray(roundContext?.escalated_fields)
     ? roundContext.escalated_fields.filter(Boolean)
     : [];
@@ -46,13 +34,6 @@ export function createRunLlmRuntime({
     runId,
     round: Number.parseInt(String(roundContext?.round ?? 0), 10) || 0,
     mode: runtimeMode,
-    verification: {
-      enabled: llmVerifyEnabled,
-      done: false,
-      trigger: llmVerifyAggressiveAlways
-        ? 'aggressive_always'
-        : (llmVerifyForced ? 'missing_required_fields' : (llmVerifySampled ? 'sampling' : 'disabled')),
-    },
     costRates: llmCostRates,
     traceWriter,
     route_matrix_policy: routeMatrixPolicy,

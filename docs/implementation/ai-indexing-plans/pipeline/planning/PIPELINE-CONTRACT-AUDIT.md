@@ -5,6 +5,7 @@ P0 completed: 2026-03-22. P1 completed: 2026-03-22. P2 re-audited: 2026-03-22. P
 P4 post-audit fixes (2026-03-22): NEW-1 focusGroups immutability, N5 bucket mapping SSOT, B3+B4 confidence/docs.
 P5 schema enforcement (2026-03-23): Cumulative pipeline context schema, per-stage schemas deleted, LLM adapter schemas unified to Zod, enforcement mode with registry knob, orchestrator mutation + hardcoded config fixed. Live-tested in enforce mode.
 P6 re-audit (2026-03-23): Full pipeline re-audited against live code. Documentation inaccuracies fixed (event order, discoveryResult field names, Search Planner input contract, crawl config registry status). See P6 section below.
+P7 host plan removal + dead settings cleanup (2026-03-23): Entire host plan concept deleted. 6 dead registry settings removed. Domain classification ordering fixed. See P7 section below.
 
 ---
 
@@ -124,7 +125,7 @@ One schema grows as data flows through the pipeline. 8 progressive Zod checkpoin
 |------------|-------------|---------------------|
 | `seed` | Before stages | config, job, category, categoryConfig, runId |
 | `afterBootstrap` | 01+02 parallel | focusGroups (typed elements), seedStatus, seedSearchPlan, brandResolution, variables, identityLock |
-| `afterProfile` | 03 | searchProfileBase (typed: query_rows, identity, queries), effectiveHostPlan, hostPlanQueryRows |
+| `afterProfile` | 03 | searchProfileBase (typed: query_rows, identity, queries) |
 | `afterPlanner` | 04 | enhancedRows |
 | `afterJourney` | 05 | queries, selectedQueryRowMap, executionQueryLimit, queryLimit |
 | `afterExecution` | 06 | rawResults (typed elements), searchAttempts (typed), searchJournal (typed), internalSatisfied, externalSearchReason |
@@ -161,7 +162,7 @@ Re-audited 2026-03-22 against current `searchDiscovery.js`. All 5 original findi
 | `search_queued` event emission | Already resolved | Not found in searchDiscovery.js |
 | `normalizeFieldListFn` called twice | False positive | Two calls use different inputs (critical+required+focus vs required-only) — both intentional |
 | `discoveryEnabled` forced true | False positive | Properly gated at entry point (line 75) — returns early with `enabled: false` if disabled |
-| `queryConcurrency` hardcoded to 1 | False positive | Read from `configInt(config, 'discoveryQueryConcurrency')` — config-driven, not hardcoded |
+| `queryConcurrency` hardcoded to 1 | Resolved (P7) | `discoveryQueryConcurrency` registry setting deleted. Now hardcoded to 1 everywhere. |
 
 ---
 
@@ -235,11 +236,13 @@ All changes verified: 7,696 tests pass, live pipeline tested in enforce mode wit
 
 **Fix:** Replaced with fresh `finalResult = { ...discoveryResult, seed_search_plan_output, enqueue_summary }` merge. Stage 08 still receives original discoveryResult (reads only). No behavior change.
 
-### P5-4: Hardcoded Crawl Config → Registry
+### P5-4: Hardcoded Crawl Config → Registry (SUPERSEDED by P7)
 
 **Problem:** Brand promotion crawlConfig in orchestrator had `rate_limit_ms: 2000, timeout_ms: 12000` hardcoded.
 
-**Fix:** Added `manufacturerCrawlRateLimitMs` (default 2000, range 100-30000) and `manufacturerCrawlTimeoutMs` (default 12000, range 1000-120000) to settings registry. Orchestrator reads via `configInt()`.
+**Original fix (P5):** Added `manufacturerCrawlRateLimitMs` and `manufacturerCrawlTimeoutMs` to settings registry.
+
+**P7 update (2026-03-23):** Both registry settings deleted. CrawlConfig simplified to `{ method: 'http', robots_txt_compliant: true }` -- no rate_limit_ms or timeout_ms.
 
 ### P5-5: LLM Adapter Schema Unification
 
@@ -281,14 +284,14 @@ Re-audited all 8 stages against live code. The cumulative Zod checkpoint system 
 | `03-pipeline-context.json` | Same field name error in Stage 07 section | Fixed to match live `discoveryResultProcessor.js:321-341` |
 | `SEARCH-PLANNER-LOGIC-IN-OUT.md` | Listed `variables`, `job` as inputs to `runSearchPlanner()` | Removed: not in the actual function signature. Added `queryExecutionHistory`. |
 | `SEARCH-PLANNER-LOGIC-IN-OUT.md` | `queryHistory` described as only `base_templates` | Fixed: union of `base_templates` + `queryExecutionHistory.queries[].query_text` |
-| `02-brand-resolver-input.json` | Crawl config described as "hardcoded inline" | Fixed: now registry-driven via `manufacturerCrawlRateLimitMs` + `manufacturerCrawlTimeoutMs` (P5-4) |
-| `BRAND-RESOLVER-LOGIC-IN-OUT.md` | Same crawl config inaccuracy | Fixed |
+| `02-brand-resolver-input.json` | Crawl config described as "hardcoded inline" | Fixed (P5-4), then simplified to static shape in P7 |
+| `BRAND-RESOLVER-LOGIC-IN-OUT.md` | Same crawl config inaccuracy | Fixed (P5-4), then simplified to static shape in P7 |
 
 ### P6-2: Top 5 Live Code Findings (Ranked)
 
 | Rank | ID | Phase | Finding | Severity |
 |------|-----|-------|---------|----------|
-| 1 | QJ1 | Query Journey | `hostPlanQueryRows` missing default `= []` — will throw `TypeError` on `undefined` | BUG |
+| 1 | QJ1 | Query Journey | ~~`hostPlanQueryRows` missing default `= []`~~ — RESOLVED (P7): host plan concept deleted entirely | CLOSED |
 | 2 | SP5+SP6 | Search Planner | 8+ hardcoded slice caps (50, 60, 8, 5, 5, 10, 5, 2) controlling LLM payload shaping — not registry-driven | MEDIUM |
 | 3 | SS-DRY | SERP Selector | `adaptSerpSelectorOutput()` repeats same 15-line enrichment block 3x (selected, notSelected, overflow) | MEDIUM |
 | 4 | SP8 | Search Planner | `passesIdentityLock` uses loose substring match — false positives possible for short model names | LOW |
@@ -301,7 +304,6 @@ The cumulative checkpoint architecture (P5) is correct and maintainable. Intenti
 | Field | Checkpoint | Reason for `z.unknown()` |
 |-------|-----------|-------------------------|
 | `enhancedRows` | AfterPlanner | Array of tier-tagged rows with variable tier-specific extensions |
-| `hostPlanQueryRows` | AfterProfile | Same variability |
 | `selectedQueryRowMap` | AfterJourney | `Map` instance — Zod can't deeply validate Maps |
 | `profileQueryRowsByQuery` | AfterJourney | Same — `Map` instance |
 | `queryRejectLogCombined` | AfterJourney | Forward-investment reject log with varying shapes per source |
@@ -330,5 +332,45 @@ Frontier tables (queries, urls, yields) are separate from SpecDb. Long-term: mer
 
 - ~~**Tier Row Central Schema (SP2)**~~ — `queryRowSchema` in cumulative pipeline context schema validates `query`, `hint_source`, `tier`, `target_fields` with `.passthrough()` for tier-specific extensions.
 - ~~**SERP Selector Schema Inconsistency (S2)**~~ — All 11 LLM adapter schemas converted to Zod SSOT (P5-5).
-- ~~**Orchestrator hardcoded crawlConfig**~~ — Extracted to registry settings (P5-4).
+- ~~**Orchestrator hardcoded crawlConfig**~~ — Extracted to registry settings (P5-4), then simplified to static shape and registry settings deleted (P7).
 - ~~**Orchestrator discoveryResult mutation**~~ — Replaced with fresh merge (P5-3).
+
+---
+
+## P7 — Host Plan Removal & Dead Settings Cleanup (2026-03-23)
+
+### P7-1: Host Plan Concept Deleted
+
+**Problem:** The entire host plan subsystem (`effectiveHostPlan`, `hostPlanQueryRows`, `buildEffectiveHostPlan`, `buildScoredQueryRowsFromHostPlan`, `collectHostPlanHintTokens`, `queryHostPlanScorer`, `domainHintResolver`, `queryCompiler`, `hintTokenResolver`, `hostPolicy`, `providerCapabilities`) added complexity without proportional value.
+
+**Fix:** All host plan code, files, and references deleted:
+- `domainHintResolver.js` — deleted
+- `queryHostPlanScorer.js` — deleted
+- Stage 03 (Search Profile) now returns `{ searchProfileBase }` only
+- Stage 05 (Query Journey) no longer accepts or appends host plan rows
+- `afterProfile` Zod checkpoint no longer validates `effectiveHostPlan` or `hostPlanQueryRows`
+- `searchProfilePlanned.effective_host_plan` removed from planned artifact
+- QJ1 finding (missing `= []` default) resolved by deletion
+
+### P7-2: Dead Registry Settings Removed
+
+6 registry settings deleted (never needed as config-driven knobs):
+- `searchPlannerQueryCap` — unused
+- `discoveryQueryConcurrency` — hardcoded to 1 everywhere
+- `discoveryResultsPerQuery` — hardcoded to 10 everywhere
+- `searchProfileCapMapJson` — unused
+- `manufacturerCrawlRateLimitMs` — brand promotion crawlConfig simplified to `{ method: 'http', robots_txt_compliant: true }`
+- `manufacturerCrawlTimeoutMs` — same
+
+`resolveSearchProfileCaps()` no longer takes a `config` param — returns hardcoded defaults.
+
+### P7-3: New Registry Settings
+
+- `llmEnhancerMaxRetries` (int, default 2, min 1, max 5) — controls Search Planner LLM retry count. Wired to GUI.
+- `pipelineSchemaEnforcementMode` and `fetchDrainTimeoutMs` — already existed in registry, now wired to GUI.
+
+### P7-4: Domain Classification Ordering Fix
+
+**Problem:** `classifyDomains()` ran BEFORE the SERP selector inside `processDiscoveryResults()`, violating the pipeline contract (SERP Selector should run first, then Domain Classifier).
+
+**Fix:** `classifyDomains()` now runs AFTER the SERP selector. `domains_classified` event fires after `serp_selector_completed`. This enforces the documented pipeline contract: SERP Selector then Domain Classifier.

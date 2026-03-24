@@ -2,14 +2,6 @@ export { WorkerPool } from './workerPool.js';
 export { BudgetEnforcer, DEFAULT_BUDGETS } from './budgetEnforcer.js';
 export { AsyncDeepJob, AsyncDeepJobQueue } from './asyncDeepJob.js';
 export { HostPacer } from './hostPacer.js';
-export {
-  classifyFallbackAction,
-  resolveFallbackModes,
-  buildFallbackDecision,
-  FETCH_OUTCOME_KEYS,
-  FALLBACK_ACTIONS,
-  FETCHER_MODES
-} from './fallbackPolicy.js';
-export { createFetchScheduler } from './fetchScheduler.js';
+// WHY: fallbackPolicy.js and fetchScheduler.js deleted during pipeline rework.
 export { LaneManager } from './laneManager.js';
 export { createRequestThrottler, createHostConcurrencyGate } from './requestThrottler.js';

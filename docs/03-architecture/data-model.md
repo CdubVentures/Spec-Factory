@@ -872,6 +872,26 @@
 | `reason` | `TEXT` |  |  |
 | `classified_at` | `TEXT` | `DEFAULT (datetime('now'))` |  |
 
+## Field history (learning persistence)
+
+### `field_history`
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |  |
+| `category` | `TEXT` | `NOT NULL` | Category slug. |
+| `product_id` | `TEXT` | `NOT NULL` | Product identifier. |
+| `field_key` | `TEXT` | `NOT NULL` | Field under tracking. |
+| `round` | `INTEGER` | `NOT NULL` | Pipeline round number. |
+| `run_id` | `TEXT` | `NOT NULL` | IndexLab run identifier. |
+| `history_json` | `TEXT` | `NOT NULL DEFAULT '{}'` | JSON-encoded field history payload. |
+| `created_at` | `TEXT` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Timestamp. |
+| `updated_at` | `TEXT` | `NOT NULL DEFAULT CURRENT_TIMESTAMP` | Timestamp. |
+
+Unique constraint: `(category, product_id, field_key)`. Index: `idx_fh_product ON field_history(category, product_id)`.
+
+Store module: `src/db/stores/fieldHistoryStore.js`. Wired into SpecDb class. Portable SQL for PostgreSQL migration path.
+
 ## Validated Against
 
 | Source | Path | What was verified |

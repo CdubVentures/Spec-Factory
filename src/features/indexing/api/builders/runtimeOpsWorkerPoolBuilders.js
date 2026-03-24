@@ -227,6 +227,10 @@ export function buildRuntimeOpsWorkers(events, options) {
       const rawQ = payload.query != null ? String(payload.query) : w.current_query;
       w.current_query = rawQ;
       w.tasks_started = 0;
+    } else if (type === 'fetch_queued' && resolvedPool === 'fetch') {
+      w.state = 'queued';
+      w.current_url = extractUrl(evt) || w.current_url;
+      applyFetchAssignment(w, parseTsMs(evt?.ts));
     } else if (isStartEvent(type)) {
       w.state = 'running';
       w.current_url = extractUrl(evt) || w.current_url;
@@ -268,6 +272,13 @@ export function buildRuntimeOpsWorkers(events, options) {
         const code = fetchStatusCode(payload, 0);
         if (code >= 400 || code === 0) {
           w.last_error = String(payload.error || `HTTP ${code}`).trim();
+          // WHY: Detect blocked/captcha for GUI badge display
+          const errLower = w.last_error.toLowerCase();
+          if (code === 403 || code === 429 || errLower.includes('blocked') || errLower.includes('forbidden')) {
+            w.state = 'blocked';
+          } else if (errLower.includes('captcha') || errLower.includes('challenge') || errLower.includes('cloudflare')) {
+            w.state = 'captcha';
+          }
         }
       }
       if (type === 'index_finished') {

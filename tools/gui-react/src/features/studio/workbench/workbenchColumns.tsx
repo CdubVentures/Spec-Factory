@@ -3,17 +3,17 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkbenchRow, ColumnPreset } from './workbenchTypes';
 
 import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
+import {
+  REQUIRED_LEVEL_OPTIONS,
+  AI_MODE_OPTIONS as _AI_MODE_VALUES,
+  AI_MODEL_STRATEGY_OPTIONS,
+  ENUM_POLICY_OPTIONS,
+} from '../../../registries/fieldRuleTaxonomy.ts';
 
 const PARSE_TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
 
-const REQUIRED_LEVEL_OPTIONS = [
-  'identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce',
-];
-
-const ENUM_POLICY_OPTIONS = ['open', 'closed', 'open_prefer_known'];
-
-const AI_MODE_OPTIONS = ['', 'off', 'advisory', 'planner', 'judge'];
-const AI_MODEL_STRATEGY_OPTIONS = ['auto', 'force_fast', 'force_deep'];
+// WHY: Workbench AI mode dropdown includes blank option for "auto/unset"
+const AI_MODE_OPTIONS = ['', ..._AI_MODE_VALUES];
 
 // ── AI Mode badge colors ────────────────────────────────────────────
 const aiModeBadge: Record<string, string> = {

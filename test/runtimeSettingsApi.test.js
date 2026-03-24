@@ -2,40 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import net from 'node:net';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { SETTINGS_DEFAULTS } from '../src/shared/settingsDefaults.js';
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      server.close((err) => {
-        if (err) reject(err);
-        else resolve(port);
-      });
-    });
-  });
-}
-
-async function waitForHttpReady(url, timeoutMs = 25_000) {
-  const started = Date.now();
-  while ((Date.now() - started) < timeoutMs) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // not ready yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`timeout_waiting_for_http_ready:${url}`);
-}
+import {
+  getFreePort,
+  waitForHttpReady,
+} from './integration/helpers/guiServerHttpHarness.js';
 
 async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();
@@ -106,7 +79,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'searxngBaseUrl',
       'frontierDbPath',
       'llmModelPlan', 'llmModelReasoning',
-      'resumeMode', 'scannedPdfOcrBackend',
+      'resumeMode',
     ];
     for (const key of STRING_KEYS) {
       assert.equal(typeof body[key], 'string', `expected string for ${key}, got ${typeof body[key]}`);
@@ -120,13 +93,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
       'llmMaxOutputTokensPlanFallback',
       'resumeWindowHours', 'reextractAfterHours',
-      'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage', 'scannedPdfOcrMinLinesPerPage',
       'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget', 'dynamicFetchRetryBackoffMs',
-      'fetchSchedulerMaxRetries', 'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
+      'pageGotoTimeoutMs', 'pageNetworkIdleTimeoutMs', 'postLoadWaitMs',
       'frontierQueryCooldownSeconds', 'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds',
       'frontierCooldown410Seconds', 'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds',
       'frontierCooldown429BaseSeconds', 'frontierBlockedDomainThreshold',
-      'autoScrollPasses', 'autoScrollDelayMs', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage', 'robotsTxtTimeoutMs',
+      'autoScrollPasses', 'autoScrollDelayMs', 'robotsTxtTimeoutMs',
       'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
       'endpointSignalLimit', 'endpointSuggestionLimit', 'endpointNetworkScanLimit',
       'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
@@ -136,16 +108,11 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       assert.ok(Number.isInteger(body[key]), `expected integer for ${key}, got ${body[key]}`);
     }
 
-    const FLOAT_KEYS = ['scannedPdfOcrMinConfidence'];
-    for (const key of FLOAT_KEYS) {
-      assert.equal(typeof body[key], 'number', `expected number for ${key}, got ${typeof body[key]}`);
-    }
-
     const BOOL_KEYS = [
-      'reextractIndexed', 'scannedPdfOcrEnabled',
+      'reextractIndexed',
       'dynamicCrawleeEnabled', 'crawleeHeadless', 'preferHttpFetcher', 'runtimeScreencastEnabled',
       'frontierStripTrackingParams',
-      'autoScrollEnabled', 'graphqlReplayEnabled', 'robotsTxtCompliant',
+      'autoScrollEnabled', 'robotsTxtCompliant',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite',
     ];
@@ -174,7 +141,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const expected = {
       fetchConcurrency: SETTINGS_DEFAULTS.runtime.fetchConcurrency,
       fetchPerHostConcurrencyCap: SETTINGS_DEFAULTS.runtime.fetchPerHostConcurrencyCap,
-      searchPlannerQueryCap: SETTINGS_DEFAULTS.runtime.searchPlannerQueryCap,
       pageGotoTimeoutMs: SETTINGS_DEFAULTS.runtime.pageGotoTimeoutMs,
       postLoadWaitMs: SETTINGS_DEFAULTS.runtime.postLoadWaitMs,
       frontierCooldown403BaseSeconds: SETTINGS_DEFAULTS.runtime.frontierCooldown403BaseSeconds,
@@ -182,7 +148,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       frontierBlockedDomainThreshold: SETTINGS_DEFAULTS.runtime.frontierBlockedDomainThreshold,
       dynamicFetchRetryBudget: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBudget,
       dynamicFetchRetryBackoffMs: SETTINGS_DEFAULTS.runtime.dynamicFetchRetryBackoffMs,
-      fetchSchedulerInternalsMapJson: SETTINGS_DEFAULTS.runtime.fetchSchedulerInternalsMapJson,
       preferHttpFetcher: SETTINGS_DEFAULTS.runtime.preferHttpFetcher,
       userAgent: SETTINGS_DEFAULTS.runtime.userAgent,
     };
@@ -309,7 +274,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
   });
 
-  await t.test('PUT persists convergence settings to canonical user-settings snapshot', async () => {
+  await t.test('PUT convergence-settings with empty registry rejects all keys', async () => {
+    // With empty convergence registry, all keys are unknown and rejected
     const payload = { serpTriageMinScore: 5 };
     const putRes = await fetch(`${_baseUrl}/convergence-settings`, {
       method: 'PUT',
@@ -318,25 +284,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
-    assert.equal(putBody.applied.serpTriageMinScore, 5);
-
-    const userSettingsPaths = [
-      path.join(_helperRoot, '_runtime', 'user-settings.json'),
-    ];
-    const userSettings = await readJsonFileUntil(
-      userSettingsPaths,
-      (json) => (
-        json
-        && json.convergence
-        && json.convergence.serpTriageMinScore === 5
-      ),
-      8_000,
-    );
-    assert.equal(userSettings.convergence.serpTriageMinScore, 5);
-
-    const legacyConvergenceExists = await Promise.all([
-      fs.access(path.join(_helperRoot, '_runtime', 'convergence-settings.json')).then(() => true).catch(() => false),
-    ]).then((results) => results.some(Boolean));
-    assert.equal(legacyConvergenceExists, false, 'legacy convergence-settings.json should not be written');
+    // No convergence keys in registry — serpTriageMinScore is rejected
+    assert.deepStrictEqual(putBody.applied, {});
+    assert.equal(putBody.rejected.serpTriageMinScore, 'unknown_key');
   });
 });

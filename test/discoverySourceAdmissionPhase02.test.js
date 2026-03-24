@@ -15,9 +15,6 @@ function makeConfig(tempRoot, overrides = {}) {
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
     searchProfileQueryCap: 1,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
-    discoveryQueryConcurrency: 1,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
@@ -645,7 +642,6 @@ test('discoverCandidateSources keeps only explicit LLM keep URLs when triage omi
     llmProvider: 'openai',
     llmApiKey: 'test-key',
     llmBaseUrl: 'http://localhost:4141',
-    serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
   installCachedBrandAndDomainLookups(storage, {

@@ -1,3 +1,6 @@
+import { PRODUCT_RUN_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 /**
  * Queue, Product, Run, Audit, Curation, Component Review, Stale-marking store.
  * Extracted from SpecDb.
@@ -142,17 +145,17 @@ export function createQueueProductStore({ db, category, stmts }) {
   }
 
   function getLatestProductRun(productId) {
-    const row = db
+    const row = hydrateRow(PRODUCT_RUN_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM product_runs WHERE category = ? AND product_id = ? AND is_latest = 1')
-      .get(category, productId);
+      .get(category, productId));
     if (row?.summary_json) try { row.summary = JSON.parse(row.summary_json); } catch { /* */ }
     return row || null;
   }
 
   function getProductRuns(productId) {
-    return db
+    return hydrateRows(PRODUCT_RUN_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM product_runs WHERE category = ? AND product_id = ? ORDER BY run_at DESC')
-      .all(category, productId);
+      .all(category, productId));
   }
 
   // --- Products ---

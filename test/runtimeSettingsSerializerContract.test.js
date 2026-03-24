@@ -107,44 +107,29 @@ test('runtime settings serializer applies fallback baselines and shared model-to
 
 test('runtime settings serializer preserves budget and reasoning knobs as parsed runtime payload', async () => {
   const { collectRuntimeSettingsPayload } = await loadRuntimeSettingsDomain();
-  // WHY: needsetEvidenceDecayDays removed in Phase 12 NeedSet Legacy Removal
   const payload = collectRuntimeSettingsPayload(createSerializerInput({
-    llmExtractMaxSnippetsPerBatch: '12',
-    llmExtractMaxSnippetChars: '999',
-    llmExtractSkipLowSignal: true,
     llmReasoningMode: true,
     llmReasoningBudget: '3072',
     llmMonthlyBudgetUsd: '7.5',
     llmPerProductBudgetUsd: '1.25',
     llmMaxCallsPerRound: '12',
     llmMaxOutputTokens: '6144',
-    llmVerifySampleRate: '5',
-    llmMaxBatchesPerProduct: '4',
-    llmMaxEvidenceChars: '5000',
     llmMaxTokens: '16000',
     llmTimeoutMs: '45000',
     llmCostInputPer1M: '0.75',
     llmCostOutputPer1M: '1.5',
     llmCostCachedInputPer1M: '0.2',
-    llmVerifyMode: true,
   }));
 
-  assert.equal(payload.llmExtractMaxSnippetsPerBatch, 12);
-  assert.equal(payload.llmExtractMaxSnippetChars, 999);
-  assert.equal(payload.llmExtractSkipLowSignal, true);
   assert.equal(payload.llmReasoningMode, true);
   assert.equal(payload.llmReasoningBudget, 3072);
   assert.equal(payload.llmMonthlyBudgetUsd, 7.5);
   assert.equal(payload.llmPerProductBudgetUsd, 1.25);
   assert.equal(payload.llmMaxCallsPerRound, 12);
   assert.equal(payload.llmMaxOutputTokens, 6144);
-  assert.equal(payload.llmVerifySampleRate, 5);
-  assert.equal(payload.llmMaxBatchesPerProduct, 4);
-  assert.equal(payload.llmMaxEvidenceChars, 5000);
   assert.equal(payload.llmMaxTokens, 16000);
   assert.equal(payload.llmTimeoutMs, 45000);
   assert.equal(payload.llmCostInputPer1M, 0.75);
   assert.equal(payload.llmCostOutputPer1M, 1.5);
   assert.equal(payload.llmCostCachedInputPer1M, 0.2);
-  assert.equal(payload.llmVerifyMode, true);
 });

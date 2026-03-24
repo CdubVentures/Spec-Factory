@@ -58,11 +58,10 @@ export function buildSerpExplorer({
         if (scoreCmp !== 0) return scoreCmp;
         return String(a.url || '').localeCompare(String(b.url || ''));
       })
-      .slice(0, 40)
       .map((trace) => ({
         url: trace.url,
-        title: String(trace.title || '').slice(0, 220),
-        snippet: String(trace.snippet || '').slice(0, 260),
+        title: String(trace.title || ''),
+        snippet: String(trace.snippet || ''),
         host: trace.host,
         tier: trace.tier_guess,
         tier_name: trace.tier_name_guess,
@@ -72,8 +71,8 @@ export function buildSerpExplorer({
           : 0,
         triage_reason: trace.triage_reason || '',
         decision: trace.decision || 'pending',
-        reason_codes: uniqueTokens(trace.reason_codes || [], 8),
-        providers: uniqueTokens(trace.providers || [], 6),
+        reason_codes: uniqueTokens(trace.reason_codes || []),
+        providers: uniqueTokens(trace.providers || []),
         primary_lane: candidateByUrl.get(trace.url)?.primary_lane || null,
         triage_disposition: candidateByUrl.get(trace.url)?.triage_disposition || null,
         identity_prelim: candidateByUrl.get(trace.url)?.identity_prelim || null,
@@ -178,7 +177,7 @@ export async function writeDiscoveryPayloads({
     selected_count: selectedUrls.length,
     queries,
     query_guard: searchProfileFinal.query_guard || null,
-    query_reject_log: toArray(searchProfileFinal.query_reject_log).slice(0, 200),
+    query_reject_log: toArray(searchProfileFinal.query_reject_log),
     llm_queries: llmQueries,
     search_profile_key: searchProfileKeys.inputKey,
     search_profile_run_key: searchProfileKeys.runKey,

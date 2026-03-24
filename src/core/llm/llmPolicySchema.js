@@ -70,18 +70,8 @@ export function assembleLlmPolicy(source = {}) {
     }),
     phaseOverrides: safeJsonParse(source[JSON_KEYS.phaseOverrides], {}),
     providerRegistry: safeJsonParse(source[JSON_KEYS.providerRegistry], []),
-    extraction: assembleGroup(source, LLM_POLICY_GROUPS.extraction, (src, key) => {
-      if (key === 'llmExtractionCacheDir') return readString(src, key);
-      if (key === 'llmExtractSkipLowSignal') return readBool(src, key);
-      return readNumber(src, key);
-    }),
     budget: assembleGroup(source, LLM_POLICY_GROUPS.budget, readNumber),
-    verify: assembleGroup(source, LLM_POLICY_GROUPS.verify, (src, key) => {
-      if (key === 'llmVerifySampleRate') return readNumber(src, key);
-      return readBool(src, key);
-    }),
     timeoutMs: readNumber(source, TOP_LEVEL_KEYS.timeoutMs),
-    writeSummary: readBool(source, TOP_LEVEL_KEYS.writeSummary),
   };
 }
 
@@ -105,11 +95,8 @@ export function disassembleLlmPolicy(policy = {}) {
     ...disassembleGroup(policy, 'apiKeys', LLM_POLICY_GROUPS.apiKeys),
     ...disassembleGroup(policy, 'tokens', LLM_POLICY_GROUPS.tokens),
     ...disassembleGroup(policy, 'reasoning', LLM_POLICY_GROUPS.reasoning),
-    ...disassembleGroup(policy, 'extraction', LLM_POLICY_GROUPS.extraction),
     ...disassembleGroup(policy, 'budget', LLM_POLICY_GROUPS.budget),
-    ...disassembleGroup(policy, 'verify', LLM_POLICY_GROUPS.verify),
     [TOP_LEVEL_KEYS.timeoutMs]: policy.timeoutMs ?? 0,
-    [TOP_LEVEL_KEYS.writeSummary]: policy.writeSummary ?? false,
     [JSON_KEYS.phaseOverrides]: JSON.stringify(policy.phaseOverrides ?? {}),
     [JSON_KEYS.providerRegistry]: JSON.stringify(policy.providerRegistry ?? []),
   };

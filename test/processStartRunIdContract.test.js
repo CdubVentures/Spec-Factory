@@ -341,7 +341,6 @@ test('process/start forwards representative runtime override families into child
       localOutputRoot: path.resolve('fixtures', 'output'),
       runtimeEventsKey: '_runtime/custom-events.jsonl',
       writeMarkdownSummary: false,
-      llmWriteSummary: true,
       awsRegion: 'us-west-2',
       s3Bucket: 'spec-bucket',
       s3InputPrefix: 'specs/input',
@@ -352,11 +351,9 @@ test('process/start forwards representative runtime override families into child
       anthropicApiKey: 'sk-anthropic',
       preferHttpFetcher: true,
       frontierDbPath: 'runtime/frontier.json',
-      pdfPreferredBackend: 'camelot',
       capturePageScreenshotEnabled: true,
       capturePageScreenshotFormat: 'png',
       capturePageScreenshotSelectors: 'main,.spec-sheet',
-      staticDomMode: 'cheerio',
       runtimeTraceFetchRing: 55,
       runtimeTraceLlmRing: 77,
       runtimeTraceLlmPayloads: true,
@@ -391,7 +388,6 @@ test('process/start forwards representative runtime override families into child
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
   assert.equal(capturedEnv?.RUNTIME_EVENTS_KEY, '_runtime/custom-events.jsonl');
   assert.equal(capturedEnv?.WRITE_MARKDOWN_SUMMARY, 'false');
-  assert.equal(capturedEnv?.LLM_WRITE_SUMMARY, 'true');
   assert.equal(capturedEnv?.AWS_REGION, 'us-west-2');
   assert.equal(capturedEnv?.S3_BUCKET, 'spec-bucket');
   assert.equal(capturedEnv?.S3_INPUT_PREFIX, 'specs/input');
@@ -403,11 +399,9 @@ test('process/start forwards representative runtime override families into child
 
   assert.equal(capturedEnv?.PREFER_HTTP_FETCHER, 'true');
   assert.equal(capturedEnv?.FRONTIER_DB_PATH, 'runtime/frontier.json');
-  assert.equal(capturedEnv?.PDF_PREFERRED_BACKEND, 'camelot');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
   assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_SELECTORS, 'main,.spec-sheet');
-  assert.equal(capturedEnv?.STATIC_DOM_MODE, 'cheerio');
 
   assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '55');
   assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '77');
@@ -479,8 +473,6 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
       localMode: true,
-      discoveryResultsPerQuery: 99,
-      discoveryQueryConcurrency: 16,
       phase3LlmTriageEnabled: true,
       workersSearch: 8,
       workersFetch: 6,

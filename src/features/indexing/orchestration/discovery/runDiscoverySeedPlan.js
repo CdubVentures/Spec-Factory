@@ -3,7 +3,6 @@
 // Stage ordering: NeedSet → Brand → SearchProfile → SearchPlanner →
 // QueryJourney → SearchExecution → ResultProcessing → DomainClassifier
 
-import { loadEnabledSourceEntries } from '../shared/runProductOrchestrationHelpers.js';
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { computeNeedSet } from '../../../../indexlab/needsetEngine.js';
@@ -74,7 +73,6 @@ export async function runDiscoverySeedPlan({
   learningStoreHints,
   planner,
   normalizeFieldListFn = normalizeFieldList,
-  loadEnabledSourceEntriesFn = loadEnabledSourceEntries,
   computeNeedSetFn = computeNeedSet,
   buildSearchPlanningContextFn = buildSearchPlanningContext,
   buildSearchPlanFn = buildSearchPlan,
@@ -90,7 +88,6 @@ export async function runDiscoverySeedPlan({
   runDomainClassifierFn = runDomainClassifier,
 } = {}) {
   validateFunctionArg('normalizeFieldListFn', normalizeFieldListFn);
-  validateFunctionArg('loadEnabledSourceEntriesFn', loadEnabledSourceEntriesFn);
 
   // WHY: discoveryEnabled is a pipeline invariant — always on.
   const resolvedSearchEngines = config.searchEngines || 'bing,google';
@@ -99,7 +96,6 @@ export async function runDiscoverySeedPlan({
     discoveryEnabled: true,
     searchEngines: resolvedSearchEngines,
   };
-  const sourceEntries = await loadEnabledSourceEntriesFn({ config, category });
   const planningHints = normalizePlanningHints({
     roundContext,
     requiredFields,
@@ -138,8 +134,6 @@ export async function runDiscoverySeedPlan({
         displayName: `${brand.brandResolution.officialDomain} Official`,
         crawlConfig: {
           method: 'http',
-          rate_limit_ms: configInt(discoveryConfig, 'manufacturerCrawlRateLimitMs'),
-          timeout_ms: configInt(discoveryConfig, 'manufacturerCrawlTimeoutMs'),
           robots_txt_compliant: true,
         },
         fieldCoverage: null,
@@ -149,6 +143,15 @@ export async function runDiscoverySeedPlan({
       categoryConfig.sourceHosts.push(entry);
       categoryConfig.sourceHostMap.set(official, entry);
       categoryConfig.approvedRootDomains?.add?.(extractRootDomain(official));
+    }
+  }
+
+  // WHY: Wire planner to LLM-resolved brand data so manufacturer host filtering
+  // and deep-seed generation use dynamic aliases instead of hardcoded brand maps.
+  if (planner?.updateBrandHints) {
+    planner.updateBrandHints(brand.brandResolution);
+    if (planner.seedManufacturerDeepUrls) {
+      planner.seedManufacturerDeepUrls();
     }
   }
 
@@ -173,7 +176,7 @@ export async function runDiscoverySeedPlan({
     category: categoryConfig?.category,
   });
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
-  const searchProfileCaps = resolveSearchProfileCaps(config);
+  const searchProfileCaps = resolveSearchProfileCaps();
   const identityLock = {
     brand: resolvedIdentity.brand,
     model: resolvedIdentity.model,
@@ -253,12 +256,10 @@ export async function runDiscoverySeedPlan({
   }
 
   // === Stage 06: Search Execution ===
-  const resultsPerQuery = configInt(discoveryConfig, 'discoveryResultsPerQuery');
+  const resultsPerQuery = 10;
   // WHY: discoveryCap derives from serpSelectorUrlCap (a URL count).
   const discoveryCap = configInt(discoveryConfig, 'serpSelectorUrlCap');
   // WHY: Strict sequential execution — search-b must not start until search-a finishes.
-  // discoveryQueryConcurrency exists in the registry but is intentionally not used here.
-  // Fetch/extraction redesign will handle parallelism with proper Zod schema enforcement.
   const queryConcurrency = 1;
   const providerState = searchEngineAvailability(discoveryConfig);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);

@@ -1,0 +1,77 @@
+/**
+ * Screenshot capture for the crawl pipeline.
+ * Takes both targeted selector crops AND a full-page screenshot.
+ * Never throws — returns empty array on failure.
+ */
+
+function parseSelectors(settings) {
+  const raw = String(settings?.capturePageScreenshotSelectors ?? '');
+  const parsed = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  return parsed.length > 0 ? parsed.slice(0, 12) : [];
+}
+
+function resolveFormat(settings) {
+  return String(settings?.capturePageScreenshotFormat ?? '').trim().toLowerCase() === 'png'
+    ? 'png'
+    : 'jpeg';
+}
+
+async function captureOne(page, element, { format, quality, maxBytes }) {
+  const opts = { type: format, fullPage: !element };
+  if (format === 'jpeg') opts.quality = quality;
+
+  const bytes = element
+    ? await element.screenshot(opts)
+    : await page.screenshot(opts);
+
+  if (!Buffer.isBuffer(bytes) || bytes.length === 0) return null;
+  if (bytes.length > maxBytes) return null;
+
+  const viewport = page.viewportSize?.() ?? {};
+  return {
+    kind: element ? 'crop' : 'page',
+    format,
+    selector: null,
+    bytes,
+    width: Number(viewport.width || 0) || null,
+    height: Number(viewport.height || 0) || null,
+    captured_at: new Date().toISOString(),
+  };
+}
+
+export async function captureScreenshots({ page, settings }) {
+  if (!settings?.capturePageScreenshotEnabled) return [];
+
+  const format = resolveFormat(settings);
+  const quality = Number(settings?.capturePageScreenshotQuality) || 50;
+  const maxBytes = Number(settings?.capturePageScreenshotMaxBytes) || 5_000_000;
+  const selectors = parseSelectors(settings);
+  const captureOpts = { format, quality, maxBytes };
+
+  const results = [];
+
+  // Targeted selector crops
+  for (const selector of selectors) {
+    try {
+      const element = await page.$(selector);
+      if (!element) continue;
+      const shot = await captureOne(page, element, captureOpts);
+      if (shot) {
+        shot.selector = selector;
+        results.push(shot);
+      }
+    } catch {
+      // skip failed selector
+    }
+  }
+
+  // Full-page screenshot (always attempted)
+  try {
+    const shot = await captureOne(page, null, captureOpts);
+    if (shot) results.push(shot);
+  } catch {
+    // swallow
+  }
+
+  return results;
+}

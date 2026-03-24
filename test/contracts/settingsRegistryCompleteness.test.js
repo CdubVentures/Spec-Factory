@@ -44,7 +44,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('registry is a frozen non-empty array', () => {
     ok(Array.isArray(RUNTIME_SETTINGS_REGISTRY));
     ok(Object.isFrozen(RUNTIME_SETTINGS_REGISTRY));
-    ok(RUNTIME_SETTINGS_REGISTRY.length >= 190, `expected >= 190, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
+    ok(RUNTIME_SETTINGS_REGISTRY.length >= 150, `expected >= 150, got ${RUNTIME_SETTINGS_REGISTRY.length}`);
   });
 
   it('every entry has a unique key', () => {
@@ -111,21 +111,10 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
       .map(e => e.key)
       .sort();
     deepStrictEqual(defaultsOnlyKeys, [
-      'authoritySnapshotEnabled',
-      'billingJsonWrite',
-      'cacheJsonWrite',
-      'corpusJsonWrite',
       'daemonGracefulShutdownTimeoutMs',
       'discoveryEnabled',
       'fetchCandidateSources',
       'frontierRepairSearchEnabled',
-      'htmlTableExtractorV2',
-      'intelJsonWrite',
-      'learningJsonWrite',
-      'llmExtractionCacheEnabled',
-      'queueJsonWrite',
-      'scannedPdfOcrPromoteCandidates',
-      'staticDomExtractorEnabled',
     ]);
   });
 
@@ -222,8 +211,7 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
   it('total registry count baseline', () => {
     const total = RUNTIME_SETTINGS_REGISTRY.length;
     // WHY: Lock down the count so adding/removing entries requires updating this test.
-    // Current count: 215 lines in settingsRegistry.js, 209 entries (some are comments/constants).
-    ok(total >= 200 && total <= 230, `expected 200-230 entries, got ${total}`);
+    ok(total >= 150 && total <= 170, `expected 150-170 entries, got ${total}`);
   });
 
   it('type distribution baseline', () => {
@@ -231,10 +219,10 @@ describe('settingsRegistryCompleteness — Plan 02 characterization', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       counts[entry.type] = (counts[entry.type] || 0) + 1;
     }
-    ok(counts.string >= 40, `expected >= 40 strings, got ${counts.string}`);
-    ok(counts.int >= 90, `expected >= 90 ints, got ${counts.int}`);
+    ok(counts.string >= 35, `expected >= 35 strings, got ${counts.string}`);
+    ok(counts.int >= 70, `expected >= 70 ints, got ${counts.int}`);
     ok(counts.float >= 5, `expected >= 5 floats, got ${counts.float}`);
-    ok(counts.bool >= 30, `expected >= 30 bools, got ${counts.bool}`);
+    ok(counts.bool >= 25, `expected >= 25 bools, got ${counts.bool}`);
     ok(counts.enum >= 3, `expected >= 3 enums, got ${counts.enum}`);
     ok(counts.csv_enum >= 2, `expected >= 2 csv_enums, got ${counts.csv_enum}`);
   });

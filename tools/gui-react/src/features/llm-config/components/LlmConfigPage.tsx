@@ -39,11 +39,6 @@ const LlmPhaseSection = lazy(async () => {
   return { default: module.LlmPhaseSection };
 });
 
-const LlmExtractionSection = lazy(async () => {
-  const module = await import('../sections/LlmExtractionSection');
-  return { default: module.LlmExtractionSection };
-});
-
 // WHY: Single canonical contract — no local duplicates.
 import type { IndexingLlmConfigResponse as RuntimeSettingsLlmConfigResponse } from '../../indexing/types.ts';
 
@@ -298,6 +293,7 @@ export function LlmConfigPage() {
     activePhase === 'brand-resolver' ||
     activePhase === 'search-planner' ||
     activePhase === 'serp-selector' ||
+    activePhase === 'extraction' ||
     activePhase === 'validate' ||
     activePhase === 'write'
   ) {
@@ -313,30 +309,6 @@ export function LlmConfigPage() {
           globalDraft={globalDraft}
           apiKeyFilter={apiKeyFilter}
         />
-      </Suspense>
-    );
-  } else if (activePhase === 'extraction') {
-    activePanel = (
-      <Suspense fallback={null}>
-        <>
-          <LlmPhaseSection
-            phaseId="extraction"
-            inputCls={inputCls}
-            llmModelOptions={llmModelOptions}
-            phaseOverrides={phaseOverrides}
-            onPhaseOverrideChange={onPhaseOverrideChange}
-            registry={registry}
-            globalDraft={globalDraft}
-            apiKeyFilter={apiKeyFilter}
-          />
-          <LlmExtractionSection
-            runtimeDraft={runtimeDraft}
-            inputCls={inputCls}
-            updateDraft={updateDraft}
-            onNumberChange={onNumberChange}
-            getNumberBounds={getNumberBounds}
-          />
-        </>
       </Suspense>
     );
   }

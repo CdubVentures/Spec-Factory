@@ -265,3 +265,72 @@ test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier'
   assert.equal(history.queries.length, 1);
   assert.equal(history.queries[0].tier, null);
 });
+
+// ---------------------------------------------------------------------------
+// aggregateDomainStats
+// ---------------------------------------------------------------------------
+
+test('aggregateDomainStats returns empty map for no domains', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, config: {} });
+  await db.load();
+  const stats = db.aggregateDomainStats([]);
+  assert.equal(stats.size, 0);
+});
+
+test('aggregateDomainStats returns zeros for unknown domain', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({ storage, config: {} });
+  await db.load();
+  const stats = db.aggregateDomainStats(['unknown.com']);
+  assert.equal(stats.size, 1);
+  const s = stats.get('unknown.com');
+  assert.equal(s.fetch_count, 0);
+  assert.equal(s.ok_count, 0);
+  assert.equal(s.blocked_count, 0);
+  assert.equal(s.success_rate, 0);
+  assert.equal(s.avg_latency_ms, 0);
+  assert.equal(s.cooldown_remaining_ms, 0);
+  assert.equal(s.last_blocked_ts, null);
+});
+
+test('aggregateDomainStats aggregates fetch history from recorded URLs', async () => {
+  const storage = createStorage();
+  const db = new FrontierDb({
+    storage,
+    config: {
+      frontierCooldown403BaseSeconds: 60,
+      frontierCooldown429BaseSeconds: 60,
+      frontierBackoffMaxExponent: 3,
+      frontierCooldown404Seconds: 3600,
+      frontierCooldown404RepeatSeconds: 7200,
+      frontierCooldown410Seconds: 86400,
+      frontierCooldownTimeoutSeconds: 300,
+      frontierPathPenaltyNotfoundThreshold: 3,
+    },
+  });
+  await db.load();
+
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page1', status: 200, elapsedMs: 100 });
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page2', status: 200, elapsedMs: 200 });
+  db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page3', status: 403, elapsedMs: 50 });
+  db.recordFetch({ productId: 'p1', url: 'https://example.com/spec', status: 200, elapsedMs: 300 });
+
+  const stats = db.aggregateDomainStats(['rtings.com', 'example.com']);
+  assert.equal(stats.size, 2);
+
+  const rtings = stats.get('rtings.com');
+  assert.equal(rtings.fetch_count, 3);
+  assert.equal(rtings.ok_count, 2);
+  assert.equal(rtings.blocked_count, 1);
+  assert.ok(rtings.success_rate > 0.6 && rtings.success_rate < 0.7);
+  assert.ok(rtings.avg_latency_ms > 0);
+  assert.ok(rtings.last_blocked_ts !== null);
+
+  const example = stats.get('example.com');
+  assert.equal(example.fetch_count, 1);
+  assert.equal(example.ok_count, 1);
+  assert.equal(example.blocked_count, 0);
+  assert.equal(example.success_rate, 1);
+  assert.equal(example.last_blocked_ts, null);
+});

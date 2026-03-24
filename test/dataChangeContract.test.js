@@ -5,7 +5,7 @@ import {
   dataChangeMatchesCategory,
   emitDataChange,
   isDataChangePayload,
-} from '../src/api/events/dataChangeContract.js';
+} from '../src/core/events/dataChangeContract.js';
 
 test('createDataChangePayload builds canonical data-change shape', () => {
   const payload = createDataChangePayload({

@@ -4,6 +4,9 @@
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: { _insertCandidate: import('better-sqlite3').Statement, _upsertReview: import('better-sqlite3').Statement } }} deps
  */
+import { CANDIDATE_BOOLEAN_KEYS, CANDIDATE_REVIEW_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 export function createCandidateStore({ db, category, stmts }) {
   function insertCandidate(row) {
     const params = {
@@ -50,15 +53,15 @@ export function createCandidateStore({ db, category, stmts }) {
   }
 
   function getCandidatesForField(productId, fieldKey) {
-    return db
+    return hydrateRows(CANDIDATE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM candidates WHERE product_id = ? AND field_key = ? ORDER BY score DESC, rank ASC')
-      .all(productId, fieldKey);
+      .all(productId, fieldKey));
   }
 
   function getCandidatesForProduct(productId) {
-    const rows = db
+    const rows = hydrateRows(CANDIDATE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM candidates WHERE product_id = ? ORDER BY field_key, score DESC, rank ASC')
-      .all(productId);
+      .all(productId));
     const grouped = {};
     for (const row of rows) {
       if (!grouped[row.field_key]) grouped[row.field_key] = [];
@@ -70,9 +73,9 @@ export function createCandidateStore({ db, category, stmts }) {
   function getCandidateById(candidateId) {
     const key = String(candidateId || '').trim();
     if (!key) return null;
-    return db
+    return hydrateRow(CANDIDATE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM candidates WHERE candidate_id = ?')
-      .get(key) || null;
+      .get(key)) || null;
   }
 
   function upsertReview({ candidateId, contextType, contextId, humanAccepted, humanAcceptedAt, aiReviewStatus, aiConfidence, aiReason, aiReviewedAt, aiReviewModel, humanOverrideAi, humanOverrideAiAt }) {
@@ -95,19 +98,19 @@ export function createCandidateStore({ db, category, stmts }) {
   function getReviewsForCandidate(candidateId) {
     const key = String(candidateId || '').trim();
     if (!key) return [];
-    return db
+    return hydrateRows(CANDIDATE_REVIEW_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM candidate_reviews WHERE candidate_id = ?')
-      .all(key);
+      .all(key));
   }
 
   function getReviewsForContext(contextType, contextId) {
-    return db
+    return hydrateRows(CANDIDATE_REVIEW_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM candidate_reviews WHERE context_type = ? AND context_id = ?')
-      .all(contextType, contextId);
+      .all(contextType, contextId));
   }
 
   function getCandidatesForComponentProperty(componentType, componentName, componentMaker, fieldKey) {
-    return db
+    return hydrateRows(CANDIDATE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT c.*
         FROM candidates c
@@ -120,11 +123,11 @@ export function createCandidateStore({ db, category, stmts }) {
           AND c.field_key = ?
         ORDER BY c.score DESC, c.rank ASC, c.product_id
       `)
-      .all(category, componentType, componentName, componentMaker || '', fieldKey);
+      .all(category, componentType, componentName, componentMaker || '', fieldKey));
   }
 
   function getCandidatesByListValue(fieldKey, listValueId) {
-    return db
+    return hydrateRows(CANDIDATE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT c.*
         FROM candidates c
@@ -133,11 +136,11 @@ export function createCandidateStore({ db, category, stmts }) {
         WHERE ill.list_value_id = ? AND c.field_key = ? AND c.category = ?
         ORDER BY c.score DESC, c.rank ASC, c.product_id
       `)
-      .all(listValueId, fieldKey, category);
+      .all(listValueId, fieldKey, category));
   }
 
   function getCandidatesForFieldValue(fieldKey, value) {
-    return db
+    return hydrateRows(CANDIDATE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT *
         FROM candidates
@@ -147,7 +150,7 @@ export function createCandidateStore({ db, category, stmts }) {
           AND LOWER(TRIM(value)) = LOWER(TRIM(?))
         ORDER BY score DESC, rank ASC, product_id
       `)
-      .all(category, fieldKey, value);
+      .all(category, fieldKey, value));
   }
 
   return {

@@ -1,3 +1,6 @@
+import { ITEM_FIELD_STATE_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 /**
  * Item State & Links store — extracted from SpecDb.
  * Owns: item_field_state, item_component_links, item_list_links tables.
@@ -21,17 +24,17 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
   }
 
   function getItemFieldState(productId) {
-    return db
+    return hydrateRows(ITEM_FIELD_STATE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM item_field_state WHERE category = ? AND product_id = ?')
-      .all(category, productId);
+      .all(category, productId));
   }
 
   function getItemFieldStateById(itemFieldStateId) {
     const id = Number(itemFieldStateId);
     if (!Number.isFinite(id) || id <= 0) return null;
-    return db
+    return hydrateRow(ITEM_FIELD_STATE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM item_field_state WHERE category = ? AND id = ?')
-      .get(category, id) || null;
+      .get(category, id)) || null;
   }
 
   function upsertItemComponentLink({ productId, fieldKey, componentType, componentName, componentMaker, matchType, matchScore }) {
@@ -172,12 +175,12 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     if (!productIds.length || !fieldKeys.length) return [];
     const pidPlaceholders = productIds.map(() => '?').join(',');
     const fkPlaceholders = fieldKeys.map(() => '?').join(',');
-    return db
+    return hydrateRows(ITEM_FIELD_STATE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT * FROM item_field_state
         WHERE category = ? AND product_id IN (${pidPlaceholders}) AND field_key IN (${fkPlaceholders})
       `)
-      .all(category, ...productIds, ...fieldKeys);
+      .all(category, ...productIds, ...fieldKeys));
   }
 
   function getDistinctItemFieldValues(fieldKey) {
@@ -236,9 +239,9 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     const pid = String(productId || '').trim();
     const fk = String(fieldKey || '').trim();
     if (!pid || !fk) return null;
-    return db.prepare(
+    return hydrateRow(ITEM_FIELD_STATE_BOOLEAN_KEYS, db.prepare(
       'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
-    ).get(category, pid, fk) || null;
+    ).get(category, pid, fk)) || null;
   }
 
   function markItemFieldStateReviewComplete(productId, fieldKey) {

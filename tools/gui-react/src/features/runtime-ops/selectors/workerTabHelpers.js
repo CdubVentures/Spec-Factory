@@ -6,8 +6,12 @@ const POOL_RANK = {
 
 const STATE_RANK = {
   stuck: 0,
+  captcha: 0.5,
+  blocked: 0.5,
   running: 1,
+  retrying: 1.5,
   idle: 2,
+  queued: 3,
 };
 
 /* WHY: pipeline call-type ordering so LLM workers render in logical stage order */

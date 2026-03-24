@@ -58,7 +58,6 @@ function makePlannerLimits(overrides = {}) {
   return {
     discoveryEnabled: true,
     searchProfileQueryCap: 6,
-    searchPlannerQueryCap: 80,
     maxUrlsPerProduct: 20,
     maxCandidateUrls: 50,
     maxPagesPerDomain: 2,

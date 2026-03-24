@@ -78,18 +78,12 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                     className={inputCls}
                   />
                 </SettingRow>
-                <AdvancedSettingsBlock title="Advanced Learning Settings" count={7}>
+                <AdvancedSettingsBlock title="Advanced Learning Settings" count={5}>
                   <SettingRow label="Field Reward Half-Life (days)" tip={`${AUTOMATION_PHASE_TIP}\nLives in: learning reward decay.\nWhat this controls: how quickly historical field rewards lose influence over time.`}>
                     <SettingNumberInput draftKey="fieldRewardHalfLifeDays" value={runtimeDraft.fieldRewardHalfLifeDays} bounds={getNumberBounds('fieldRewardHalfLifeDays')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                   </SettingRow>
                   <SettingRow label="Max Hypothesis Items" tip={`${AUTOMATION_PHASE_TIP}\nLives in: hypothesis queue sizing.\nWhat this controls: the maximum number of hypothesis rows self-improve will consider in one pass.`}>
                     <SettingNumberInput draftKey="maxHypothesisItems" value={runtimeDraft.maxHypothesisItems} bounds={getNumberBounds('maxHypothesisItems')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-                  </SettingRow>
-                  <SettingRow label="Hypothesis Auto Followup Rounds" tip={`${AUTOMATION_PHASE_TIP}\nLives in: hypothesis follow-up planning.\nWhat this controls: how many automatic follow-up rounds the self-improvement loop may schedule.`}>
-                    <SettingNumberInput draftKey="hypothesisAutoFollowupRounds" value={runtimeDraft.hypothesisAutoFollowupRounds} bounds={getNumberBounds('hypothesisAutoFollowupRounds')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-                  </SettingRow>
-                  <SettingRow label="Hypothesis Followup URLs / Round" tip={`${AUTOMATION_PHASE_TIP}\nLives in: hypothesis follow-up budgeting.\nWhat this controls: the URL budget consumed by each automatic follow-up round.`}>
-                    <SettingNumberInput draftKey="hypothesisFollowupUrlsPerRound" value={runtimeDraft.hypothesisFollowupUrlsPerRound} bounds={getNumberBounds('hypothesisFollowupUrlsPerRound')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                   </SettingRow>
                   <SettingRow label="Endpoint Signal Limit" tip={`${AUTOMATION_PHASE_TIP}\nLives in: endpoint mining and signal retention.\nWhat this controls: how many endpoint signals a page scan may keep.`}>
                     <SettingNumberInput draftKey="endpointSignalLimit" value={runtimeDraft.endpointSignalLimit} bounds={getNumberBounds('endpointSignalLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
@@ -139,26 +133,12 @@ export const RuntimeFlowAutomationSection = memo(function RuntimeFlowAutomationS
                 <SettingRow label="Daemon Concurrency" tip={`${AUTOMATION_PHASE_TIP}\nLives in: daemon orchestration.\nWhat this controls: how many product runs daemon mode may execute concurrently.`}>
                   <SettingNumberInput draftKey="daemonConcurrency" value={runtimeDraft.daemonConcurrency} bounds={getNumberBounds('daemonConcurrency')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                 </SettingRow>
-                <AdvancedSettingsBlock title="Resume & Validation" count={4}>
+                <AdvancedSettingsBlock title="Resume" count={2}>
                   <SettingRow label="Indexing Resume Seed Limit" tip={`${AUTOMATION_PHASE_TIP}\nLives in: daemon and resume bootstrap.\nWhat this controls: the maximum number of seed URLs loaded when resuming prior work.`}>
                     <SettingNumberInput draftKey="indexingResumeSeedLimit" value={runtimeDraft.indexingResumeSeedLimit} bounds={getNumberBounds('indexingResumeSeedLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
                   </SettingRow>
                   <SettingRow label="Indexing Resume Persist Limit" tip={`${AUTOMATION_PHASE_TIP}\nLives in: daemon and resume bootstrap.\nWhat this controls: the maximum number of persisted items loaded while reconstructing resume state.`}>
                     <SettingNumberInput draftKey="indexingResumePersistLimit" value={runtimeDraft.indexingResumePersistLimit} bounds={getNumberBounds('indexingResumePersistLimit')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
-                  </SettingRow>
-                  <SettingRow label="Indexing Schema Validation Enabled" tip={`${AUTOMATION_PHASE_TIP}\nLives in: runtime payload guardrails.\nWhat this controls: whether indexing payloads are validated against schema packets.`}>
-                    <SettingToggle
-                      checked={runtimeDraft.indexingSchemaPacketsValidationEnabled}
-                      onChange={(next) => updateDraft('indexingSchemaPacketsValidationEnabled', next)}
-                      disabled={!runtimeSettingsReady}
-                    />
-                  </SettingRow>
-                  <SettingRow label="Indexing Schema Validation Strict" tip={`${AUTOMATION_PHASE_TIP}\nLives in: runtime payload guardrails.\nWhat this controls: whether schema validation failures should hard-fail instead of being tolerated.`}>
-                    <SettingToggle
-                      checked={runtimeDraft.indexingSchemaPacketsValidationStrict}
-                      onChange={(next) => updateDraft('indexingSchemaPacketsValidationStrict', next)}
-                      disabled={!runtimeSettingsReady}
-                    />
                   </SettingRow>
                 </AdvancedSettingsBlock>
                 <AdvancedSettingsBlock title="Import Watcher" count={2}>

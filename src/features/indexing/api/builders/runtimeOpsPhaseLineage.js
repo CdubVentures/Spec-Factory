@@ -1,4 +1,3 @@
-import { PHASE_IDS, phaseFromMethod } from '../../../../indexlab/indexingSchemaPackets.js';
 import {
   toInt, toFloat, eventType, payloadOf, extractEventUrls, extractPrimaryEventUrl,
 } from './runtimeOpsEventPrimitives.js';
@@ -20,6 +19,31 @@ const PHASE_LABELS = {
   phase_10_office_mixed_doc: 'Office Docs',
   cross_cutting: 'Post-Processing',
 };
+
+// WHY: Inlined from deleted indexingSchemaPackets.js during pipeline rework.
+const PHASE_IDS = Object.keys(PHASE_LABELS).filter((k) => k !== 'cross_cutting');
+
+const METHOD_TO_PHASE = {
+  static_dom: 'phase_01_static_html',
+  html_table: 'phase_04_html_spec_table',
+  html_kv: 'phase_01_static_html',
+  dom: 'phase_01_static_html',
+  json_ld: 'phase_05_embedded_json',
+  microdata: 'phase_05_embedded_json',
+  opengraph: 'phase_05_embedded_json',
+  network_json: 'phase_02_dynamic_js',
+  embedded_state: 'phase_02_dynamic_js',
+  article_text: 'phase_03_main_article',
+  readability: 'phase_03_main_article',
+  pdf_kv: 'phase_06_text_pdf',
+  pdf_table: 'phase_06_text_pdf',
+  scanned_pdf_ocr_kv: 'phase_07_scanned_pdf_ocr',
+  scanned_pdf_ocr_table: 'phase_07_scanned_pdf_ocr',
+};
+
+function phaseFromMethod(method) {
+  return METHOD_TO_PHASE[String(method || '').trim()] || 'phase_01_static_html';
+}
 
 function createPhaseBuckets() {
   const buckets = {};

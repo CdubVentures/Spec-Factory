@@ -92,9 +92,6 @@ function makeConfig(tempRoot, overrides = {}) {
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
     searchProfileQueryCap: 4,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
-    discoveryQueryConcurrency: 1,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
@@ -253,7 +250,6 @@ test('discoverCandidateSources skips conditional triage at the 60 percent determ
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-skip-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 1,
-    serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
   const categoryConfig = makeCategoryConfig();
@@ -330,7 +326,6 @@ test('discoverCandidateSources enters triage flow when deterministic quality sta
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-triage-needed-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 1,
-    serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
   const categoryConfig = makeCategoryConfig();
@@ -405,10 +400,7 @@ test('discoverCandidateSources falls back to top-level job identity for query gu
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-phase06-runtime-top-level-identity-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 1,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 5,
 
-    serpTriageMinScore: 0,
   });
   const storage = createStorage(config);
   const categoryConfig = makeCategoryConfig();

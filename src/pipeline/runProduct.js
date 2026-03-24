@@ -1,124 +1,16 @@
-import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import { buildRunId, normalizeWhitespace, wait } from '../utils/common.js';
-import { runWithRetry } from './pipelineSharedHelpers.js';
-import { createFetchScheduler } from '../concurrency/fetchScheduler.js';
-import { createHostConcurrencyGate, createRequestThrottler } from '../concurrency/requestThrottler.js';
-import {
-  normalizeHostToken,
-  hostFromHttpUrl,
-  compactQueryText,
-  buildRepairSearchQuery,
-  classifyFetchOutcome,
-  FETCH_OUTCOME_KEYS,
-  createFetchOutcomeCounters,
-  createHostBudgetRow,
-  ensureHostBudgetRow,
-  noteHostRetryTs,
-  bumpHostOutcome,
-  applyHostBudgetBackoff,
-  resolveHostBudgetState
-} from './fetchParseWorker.js';
-import { loadCategoryConfig } from '../categories/loader.js';
-import { SourcePlanner, buildSourceSummary } from '../planner/sourcePlanner.js';
-import { PlaywrightFetcher, DryRunFetcher, HttpFetcher, CrawleeFetcher } from '../fetcher/playwrightFetcher.js';
-import { selectFetcherMode } from '../fetcher/fetcherMode.js';
-import {
-  extractCandidatesFromPage,
-  buildEvidenceCandidateFingerprint,
-  buildEvidencePack,
-  extractCandidatesLLM,
-  DeterministicParser,
-  ComponentResolver,
-  retrieveGoldenExamples,
-} from '../features/indexing/extraction/index.js';
-import {
-  evaluateAnchorConflicts,
-  mergeAnchorConflictLists,
-  buildIdentityReport,
-  evaluateSourceIdentity,
-  evaluateIdentityGate,
-  evaluateValidationGate,
-} from '../features/indexing/validation/index.js';
-import {
-  computeCompletenessRequired,
-  computeCoverageOverall,
-  computeConfidence
-} from '../scoring/qualityScoring.js';
-import { runConsensusEngine, applySelectionPolicyReducers } from '../scoring/consensusEngine.js';
-import { applyListUnionReducers } from '../scoring/listUnionReducer.js';
-import { executeConsensusPhase } from './consensusPhase.js';
-import { runLearningExportPhase } from './learningExportPhase.js';
-import { evaluateFieldLearningGates, emitLearningGateEvents, populateLearningStores } from './learningGatePhase.js';
-import {
-  UrlMemoryStore,
-  DomainFieldYieldStore,
-  FieldAnchorsStore,
-  ComponentLexiconStore,
-  readLearningHintsFromStores,
-  applyLearningSeeds,
-  loadLearningProfile,
-  persistLearningProfile,
-  loadCategoryBrain,
-  updateCategoryBrain,
-  availabilityClassForField,
-  undisclosedThresholdForField,
-} from '../features/indexing/learning/index.js';
-import { buildIdentityObject, buildAbortedNormalized, buildValidatedNormalized } from '../normalizer/mouseNormalizer.js';
-import { exportRunArtifacts } from '../exporter/exporter.js';
-import { writeFinalOutputs } from '../exporter/finalExporter.js';
-import { buildMarkdownSummary } from '../exporter/summaryWriter.js';
+import { buildRunId } from '../utils/common.js';
 import { EventLogger } from '../logger.js';
-
-import {
-  loadSourceIntel,
-  persistSourceIntel
-} from '../intel/sourceIntel.js';
-import {
-  aggregateEndpointSignals,
-  mineEndpointSignals
-} from '../intel/endpointMiner.js';
-import {
-  aggregateTemporalSignals,
-  extractTemporalSignals
-} from '../intel/temporalSignals.js';
-import {
-  buildSiteFingerprint,
-  computeParserHealth
-} from '../intel/siteFingerprint.js';
-import { evaluateConstraintGraph } from '../scoring/constraintSolver.js';
-import { appendCostLedgerEntry, readBillingSnapshot } from '../billing/costLedger.js';
-import { recordQueryResult, recordUrlVisit, recordPromptResult } from '../features/indexing/discovery/index.js';
+import { recordQueryResult, recordUrlVisit } from '../features/indexing/discovery/index.js';
 import { captureKnobSnapshot, recordKnobSnapshot } from '../features/indexing/telemetry/index.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
-import { normalizeCostRates } from '../billing/costRates.js';
-// --- orchestration/shared: helpers, scoring, type coercion, identity, runtime ---
 import {
-  sha256, sha256Buffer, stableHash, screenshotMimeType, screenshotExtension,
-  isDiscoveryOnlySourceUrl, isRobotsTxtUrl, isSitemapUrl, hasSitemapXmlSignals,
-  isLikelyIndexableEndpointUrl, isSafeManufacturerFollowupUrl,
-  isHelperSyntheticUrl, isHelperSyntheticSource,
-  createEmptyProvenance, mergePhase08Rows, tsvRowFromFields,
-  METHOD_PRIORITY, parseFirstNumber, candidateScore, plausibilityBoost,
-  buildCandidateFieldMap, dedupeCandidates,
-  selectAggressiveEvidencePack, buildDomSnippetArtifact,
-  normalizedSnippetRows, enrichFieldCandidatesWithEvidenceRefs, buildTopEvidenceReferences,
-  emitFieldDecisionEvents,
-  toInt, toFloat, toBool, isIndexingHelperFlowEnabled,
+  toBool,
   resolveIdentityAmbiguitySnapshot, buildRunIdentityFingerprint,
-  bestIdentityFromSources, isIdentityLockedField,
-  parseMinEvidenceRefs, sendModeIncludesPrime,
-  selectPreferredRouteRow, deriveRouteMatrixPolicy,
-  loadRouteMatrixPolicyForRun, resolveRuntimeControlKey,
-  defaultRuntimeOverrides, normalizeRuntimeOverrides, applyRuntimeOverridesToPlanner,
-  resolveScreencastCallback, createRunProductFetcherFactory,
-  buildIndexlabRuntimeCategoryConfig,
-  PASS_TARGET_EXEMPT_FIELDS, markSatisfiedLlmFields,
-  isAnchorLocked, resolveTargets, resolveLlmTargetFields,
+  resolveRuntimeControlKey, defaultRuntimeOverrides, normalizeRuntimeOverrides,
 } from '../features/indexing/orchestration/shared/index.js';
-// --- orchestration/bootstrap: run setup, logger, trace, planner, fetcher ---
 import {
   createRunRuntime,
   buildRunRuntimePhaseCallsiteContext,
@@ -141,205 +33,21 @@ import {
   createResearchBootstrap,
   buildResearchBootstrapPhaseCallsiteContext,
   buildResearchBootstrapContext,
-  createPlannerBootstrap,
-  buildPlannerBootstrapPhaseCallsiteContext,
-  buildPlannerBootstrapContext,
-  createModeAwareFetcherRegistry,
-  buildFetchSchedulerDrainPhaseCallsiteContext,
-  runFetchSchedulerDrain,
-  buildFetchSchedulerDrainContext,
-  runPlannerQueueSnapshotPhase,
-  buildFetcherStartPhaseCallsiteContext,
-  buildFetcherStartContext,
-  runFetcherStartPhase,
-  createRunLlmRuntime,
   bootstrapRunEventIndexing,
-  loadLearningStoreHintsForRun,
 } from '../features/indexing/orchestration/bootstrap/index.js';
-// --- orchestration/discovery ---
-import {
-  buildDiscoverySeedPlanContext,
-  runDiscoverySeedPlan,
-} from '../features/indexing/orchestration/discovery/index.js';
-// --- orchestration/execution: source processing, planner queue, extraction ---
-import {
-  buildHypothesisFollowupsContext,
-  buildProcessPlannerQueuePhaseCallsiteContext,
-  runProcessPlannerQueuePhase,
-  runHypothesisFollowups,
-  resolveHypothesisFollowupState,
-  runRepairSearchPhase,
-  runPhase08SourceIngestionPhase,
-  runSourceIdentityCandidateMergePhase,
-  runSourceLlmFieldCandidatePhase,
-  runSourceIdentityEvaluationPhase,
-  buildSourceArtifactsContextPhase,
-  buildSourceProcessedPayload,
-  collectKnownCandidatesFromSource,
-  buildSourceFetchClassificationPhase,
-  maybeEmitRepairQuery,
-  maybeApplyBlockedDomainCooldown,
-  buildSourceSkipBeforeFetchPhaseCallsiteContext,
-  buildSourceSkipBeforeFetchPhaseContext,
-  runSourceSkipBeforeFetchPhase,
-  buildSourceSkipDispatchPhaseCallsiteContext,
-  buildSourceSkipDispatchContext,
-  runSourceSkipDispatchPhase,
-  buildSourcePreflightPhaseCallsiteContext,
-  buildSourcePreflightPhaseContext,
-  buildSourcePreflightDispatchContext,
-  buildSourcePreflightDispatchPhaseCallsiteContext,
-  runSourcePreflightPhase,
-  runSourcePreflightDispatchPhase,
-  resolveSourcePreflightDispatchState,
-  buildSourceFetchPhaseCallsiteContext,
-  buildSourceFetchPhaseContext,
-  runSourceFetchDispatchPhase,
-  buildSourceFetchProcessingDispatchPhaseCallsiteContext,
-  buildSourceFetchProcessingDispatchContext,
-  buildSourceQueuePhasePayload,
-  resolveSourceFetchProcessingDispatchState,
-  runSourceFetchProcessingDispatchPhase,
-  runSourceFetchPhase,
-  runSourceArtifactsPhase,
-  runSourceProcessingDispatchPhase,
-  buildSourceProcessingPhaseCallsiteContext,
-  buildSourceProcessingPhaseContext,
-  runSourceProcessingPhase,
-  buildSourceExtractionPhaseCallsiteContext,
-  buildSourceExtractionPhaseContext,
-  runSourceExtractionDispatchPhase,
-  runSourceExtractionPhase,
-  runSourceFinalizationPhase,
-  runSourceEvidenceIndexPhase,
-  runSourcePostFetchStatusPhase,
-  runSourceKnownCandidatesPhase,
-  runSourceConflictTelemetryPhase,
-  runSourceResultsAppendPhase,
-  runSourceFrontierPersistencePhase,
-  runSourceHostBudgetPhase,
-  runSourceArtifactAggregationPhase,
-  runSourceProcessedTelemetryPhase,
-  runPlannerProcessingLifecycle,
-} from '../features/indexing/orchestration/execution/index.js';
-// --- orchestration/finalize: derivation, persistence, telemetry, schema ---
-import {
-  buildDedicatedSyntheticSourceIngestionContext,
-  runDedicatedSyntheticSourceIngestionPhase,
-  buildIndexingResumePersistenceContext,
-  runIndexingResumePersistencePhase,
-  resolveIndexingResumePersistenceState,
-  createProductFinalizationPipelineRuntime,
-  runProductFinalizationPipeline,
-  writeSummaryMarkdownLLM,
-  buildIdentityConsensusPhaseCallsiteContext,
-  buildIdentityConsensusContext,
-  buildIdentityNormalizationPhaseCallsiteContext,
-  buildIdentityNormalizationContext,
-  buildValidationGatePhaseCallsiteContext,
-  buildValidationGateContext,
-  buildConstraintAnalysisPhaseCallsiteContext,
-  buildConstraintAnalysisContext,
-  buildNeedsetReasoningPhaseCallsiteContext,
-  buildRunSummaryPayloadPhaseCallsiteContext,
-  buildRunSummaryPayloadContext,
-  buildRunSummaryPayload,
-  buildNeedsetReasoningContext,
-  buildPhase07PrimeSourcesOptions,
-  buildPhase07PrimeSourcesPhaseCallsiteContext,
-  buildPhase07PrimeSourcesContext,
-  buildPhase08ExtractionPhaseCallsiteContext,
-  buildPhase08ExtractionContext,
-  buildFinalizationMetricsPhaseCallsiteContext,
-  buildFinalizationMetricsContext,
-  buildResearchArtifactsPhaseContext,
-  applyResearchArtifactsContext,
-  buildAnalysisArtifactKeyPhaseContext,
-  buildAnalysisArtifactKeyContext,
-  persistAnalysisArtifacts,
-  buildFinalizationEventPayloads,
-  buildRunCompletedPayloadPhaseCallsiteContext,
-  buildRunCompletedPayloadContext,
-  buildRunCompletedPayload,
-  buildRunResultPayloadPhaseCallsiteContext,
-  buildRunResultPayloadContext,
-  buildRunResultPayload,
-  finalizeRunLifecycle,
-  buildLearningExportPhaseCallsiteContext,
-  buildLearningExportPhaseContext,
-  buildSelfImproveLearningStoresPhaseCallsiteContext,
-  buildSelfImproveLearningStoresContext,
-  persistSelfImproveLearningStores,
-  buildLearningGatePhaseCallsiteContext,
-  buildLearningGateContext,
-  runLearningGatePhase,
-  buildPostLearningUpdatesPhaseCallsiteContext,
-  buildPostLearningUpdatesContext,
-  runPostLearningUpdatesPhase,
-  buildTerminalLearningExportLifecyclePhaseCallsiteContext,
-  buildTerminalLearningExportLifecycleContext,
-  runTerminalLearningExportLifecycle,
-  buildSourceIntelFinalizationPhaseCallsiteContext,
-  buildSourceIntelFinalizationContext,
-  runSourceIntelFinalizationPhase,
-  buildIdentityReportPersistencePhaseCallsiteContext,
-  buildIdentityReportPersistenceContext,
-  runIdentityReportPersistencePhase,
-  buildSummaryArtifactsPhaseCallsiteContext,
-  buildSummaryArtifactsPhaseContext,
-  buildSummaryArtifactsContext,
-  buildFinalizationTelemetryPhaseCallsiteContext,
-  buildFinalizationTelemetryContext,
-  runFinalizationTelemetryPhase,
-  emitFinalizationEvents,
-  buildRunCompletedEventCallsiteContext,
-  buildRunCompletedEventContext,
-  emitRunCompletedEvent,
-  resolveIndexingSchemaValidation,
-  buildIndexingSchemaSummaryPayload,
-  buildIndexingSchemaArtifactsPhaseCallsiteContext,
-  buildIndexingSchemaArtifactsPhaseContext,
-  runIndexingSchemaArtifactsPhase,
-} from '../features/indexing/orchestration/finalize/index.js';
-// --- orchestration/quality: gate, critic, validator, extraction, inference ---
-import {
-  applyRuntimeGateAndCuration,
-  runComponentPriorPhase,
-  runAggressiveExtractionPhase,
-  runInferencePolicyPhase,
-  runDeterministicCriticPhase,
-  runLlmValidatorPhase,
-} from '../features/indexing/orchestration/quality/index.js';
-import { updateComponentLibrary } from '../components/library.js';
-import { normalizeFieldList, toRawFieldKey } from '../utils/fieldKeys.js';
-import { createFieldRulesEngine } from '../engine/fieldRulesEngine.js';
-import {
-  writeCategoryReviewArtifacts,
-  writeProductReviewArtifacts
-} from '../review/index.js';
 import { createFrontier } from '../research/frontierDb.js';
 import { RuntimeTraceWriter } from '../runtime/runtimeTraceWriter.js';
-import { computeNeedSet } from '../indexlab/needsetEngine.js';
-import { buildIndexingSchemaPackets } from '../indexlab/indexingSchemaPackets.js';
-import { validateIndexingSchemaPackets } from '../indexlab/indexingSchemaPacketsValidator.js';
-import { applyIdentityGateToCandidates } from './identityGateExtraction.js';
-import { initializeIndexingResume } from './seams/initializeIndexingResume.js';
-import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
-import { buildRunProductPlannerProcessingContext } from './seams/buildRunProductPlannerProcessingContext.js';
-import { buildRunProductFinalizationContext } from './seams/buildRunProductFinalizationContext.js';
-import {
-  normalizeHttpUrlList,
-  shouldQueueLlmRetry,
-  buildNextLlmRetryRows,
-  collectPlannerPendingUrls,
-  buildNextSuccessRows
-} from '../runtime/indexingResume.js';
-import { UberAggressiveOrchestrator } from '../research/uberAggressiveOrchestrator.js';
-import { applyInferencePolicies } from '../inference/inferField.js';
 import {
   normalizeAmbiguityLevel,
   resolveIdentityLockStatus
 } from '../utils/identityNormalize.js';
+import { UberAggressiveOrchestrator } from '../research/uberAggressiveOrchestrator.js';
+import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
+// --- new crawl pipeline ---
+import { createCrawlSession } from '../features/crawl/index.js';
+import { stealthPlugin } from '../features/crawl/plugins/stealthPlugin.js';
+import { autoScrollPlugin } from '../features/crawl/plugins/autoScrollPlugin.js';
+import { runCrawlProcessingLifecycle } from './runCrawlProcessingLifecycle.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -454,14 +162,9 @@ export async function runProduct({
       }),
     }),
   });
-  const runtimeControlKey = runtimeOverridesLoader.runtimeControlKey;
   let runtimeOverrides = runtimeOverridesLoader.getRuntimeOverrides();
-  const syncRuntimeOverrides = async ({ force = false } = {}) => {
-    runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
-    return runtimeOverrides;
-  };
 
-  const { frontierDb, uberOrchestrator } = await createResearchBootstrap({
+  const { frontierDb } = await createResearchBootstrap({
     ...buildResearchBootstrapContext({
       ...buildResearchBootstrapPhaseCallsiteContext({
         storage,
@@ -472,6 +175,7 @@ export async function runProduct({
       }),
     }),
   });
+
   const executionBootstrapState = await bootstrapRunProductExecutionState({
     storage,
     config,
@@ -486,169 +190,59 @@ export async function runProduct({
     identityLockStatus,
     runArtifactsBase,
     traceWriter,
-    syncRuntimeOverrides,
+    syncRuntimeOverrides: async ({ force = false } = {}) => {
+      runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
+      return runtimeOverrides;
+    },
     frontierDb,
   });
   runtimeOverrides = executionBootstrapState.runtimeOverrides;
-  const {
-    previousFinalSpec,
-    runtimeFieldRulesEngine,
-    fieldOrder,
-    requiredFields,
-    focus_fields,
-    goldenExamples,
-    targets,
-    helperContext,
-    learnedConstraints,
-    learnedFieldYield,
-    learnedFieldAvailability,
-    adapterManager,
-    sourceIntel,
-    planner,
-    indexingResumeKey,
-    resumeMode,
-    resumeMaxAgeHours,
-    previousResumeStateAgeHours,
-    resumeReextractEnabled,
-    resumeReextractAfterHours,
-    resumePersistLimit,
-    resumeRetryPersistLimit,
-    previousResumePendingUnseeded,
-    previousResumeRetryRows,
-    previousResumeSuccessRows,
-    resumeCooldownSkippedUrls,
-    resumeFetchFailedUrls,
-    resumeSeededPendingCount,
-    resumeSeededLlmRetryCount,
-    resumeSeededReextractCount,
-    learningProfile,
-    fetchHostConcurrencyGate,
-    fetcherMode,
-    fetcherStartFallbackReason,
-    sourceResults,
-    attemptedSourceUrls,
-    llmRetryReasonByUrl,
-    successfulSourceMetaByUrl,
-    repairQueryByDomain,
-    blockedDomainHitCount,
-    blockedDomainsApplied,
-    hostBudgetByHost,
-    blockedDomainThreshold,
-    repairSearchEnabled,
-    repairDedupeRule,
-    llmSatisfiedFields,
-    helperSupportiveSyntheticSources,
-    artifactsByHost,
-    llmValidatorDecisions,
-    llmRuntime,
-    llmContext,
-    phase08BatchRows,
-    discoveryResult,
-  } = executionBootstrapState;
-  let {
-    artifactSequence,
-    adapterArtifacts,
-    helperFilledFields,
-    helperFilledByMethod,
-    helperMismatches,
-    llmCandidatesAccepted,
-    llmSourcesUsed,
-    hypothesisFollowupRoundsExecuted,
-    hypothesisFollowupSeededUrls,
-    phase08FieldContexts,
-    phase08PrimeRows,
-  } = executionBootstrapState;
-  let resumePersistedPendingCount = 0;
-  let resumePersistedLlmRetryCount = 0;
-  let resumePersistedSuccessCount = 0;
 
-  const plannerProcessingState = await runPlannerProcessingLifecycle(
-    buildRunProductPlannerProcessingContext({
-      bootstrapState: {
-        ...executionBootstrapState,
-        startMs,
-        runtimeControlKey,
-        syncRuntimeOverrides,
-      },
-      config,
-      getRuntimeOverridesFn: () => runtimeOverrides,
-    }),
-  );
-  artifactSequence = plannerProcessingState.artifactSequence;
-  phase08FieldContexts = plannerProcessingState.phase08FieldContexts;
-  phase08PrimeRows = plannerProcessingState.phase08PrimeRows;
-  llmSourcesUsed = plannerProcessingState.llmSourcesUsed;
-  llmCandidatesAccepted = plannerProcessingState.llmCandidatesAccepted;
-  const terminalReason = plannerProcessingState.terminalReason;
-  hypothesisFollowupRoundsExecuted = plannerProcessingState.hypothesisFollowupRoundsExecuted;
-  hypothesisFollowupSeededUrls = plannerProcessingState.hypothesisFollowupSeededUrls;
+  const { planner, discoveryResult } = executionBootstrapState;
 
-  const resumePersistenceResult = await runIndexingResumePersistencePhase({
-    ...buildIndexingResumePersistenceContext({
-      storage,
+  // Diagnostic: log planner state after bootstrap to verify discovery seeded URLs
+  const plannerHasUrls = planner?.hasNext?.() ?? false;
+  logger.info('crawl_planner_state', {
+    has_urls: plannerHasUrls,
+    priority_queue_length: planner?.priorityQueue?.length ?? 0,
+    manufacturer_queue_length: planner?.manufacturerQueue?.length ?? 0,
+    queue_length: planner?.queue?.length ?? 0,
+    candidate_queue_length: planner?.candidateQueue?.length ?? 0,
+    discovery_selected_count: discoveryResult?.enqueue_summary?.approved_count ?? 0,
+  });
+
+  // --- New crawl pipeline: open pages, screenshot, record to frontier ---
+  const session = createCrawlSession({
+    settings: config,
+    plugins: [stealthPlugin, autoScrollPlugin],
+    logger,
+  });
+  await session.start();
+
+  try {
+    const maxRunMs = (Number(config.maxRunSeconds) || 0) * 1000;
+    const { crawlResults } = await runCrawlProcessingLifecycle({
+      planner,
+      session,
+      frontierDb,
+      settings: config,
       logger,
-      indexingResumeKey,
+      startMs,
+      maxRunMs,
+    });
+
+    logger.info('run_completed', {
+      runId,
       category,
       productId,
-      runId,
-      planner,
-      resumeCooldownSkippedUrls,
-      resumeFetchFailedUrls,
-      previousResumePendingUnseeded,
-      resumePersistLimit,
-      previousResumeRetryRows,
-      llmRetryReasonByUrl,
-      attemptedSourceUrls,
-      resumeRetryPersistLimit,
-      previousResumeSuccessRows,
-      successfulSourceMetaByUrl,
-      resumeSeededPendingCount,
-      resumeSeededLlmRetryCount,
-      resumeSeededReextractCount,
-      indexingResumeSuccessPersistLimit: config.indexingResumeSuccessPersistLimit,
-      toInt,
-      normalizeHttpUrlList,
-      collectPlannerPendingUrls,
-      buildNextLlmRetryRows,
-      buildNextSuccessRows,
-    }),
-  });
-  const indexingResumePersistenceState = resolveIndexingResumePersistenceState({
-    resumePersistenceResult,
-  });
-  resumePersistedPendingCount = indexingResumePersistenceState.resumePersistedPendingCount;
-  resumePersistedLlmRetryCount = indexingResumePersistenceState.resumePersistedLlmRetryCount;
-  resumePersistedSuccessCount = indexingResumePersistenceState.resumePersistedSuccessCount;
+      urls_crawled: crawlResults.length,
+      urls_successful: crawlResults.filter((r) => r.success).length,
+      urls_blocked: crawlResults.filter((r) => r.blocked).length,
+      duration_ms: Date.now() - startMs,
+    });
 
-  const finalizationPipelineRuntime = createProductFinalizationPipelineRuntime({
-    context: buildRunProductFinalizationContext({
-      bootstrapState: {
-        ...executionBootstrapState,
-        dedupeMode: RUN_DEDUPE_MODE,
-      },
-      terminalReason,
-      roundContext,
-      startMs,
-      runtimeMode,
-      identityLock,
-      identityFingerprint,
-      identityLockStatus,
-      helperFilledFields,
-      helperFilledByMethod,
-      helperMismatches,
-      hypothesisFollowupRoundsExecuted,
-      hypothesisFollowupSeededUrls,
-      resumePersistedPendingCount,
-      resumePersistedLlmRetryCount,
-      resumePersistedSuccessCount,
-      frontierDb,
-      uberOrchestrator,
-    }),
-  });
-
-  return await runProductFinalizationPipeline({
-    finalizationPipelineRuntime,
-  });
+    return { crawlResults, runId, category, productId };
+  } finally {
+    await session.shutdown();
+  }
 }
-
-

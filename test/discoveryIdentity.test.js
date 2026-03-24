@@ -17,14 +17,11 @@ import {
   normalizeIdentityTokens,
   buildModelSlugCandidates,
   categoryPathSegments,
-  manufacturerHostHintsForBrand,
-  manufacturerHostMatchesBrand,
   containsGuardToken,
   extractDigitGroups,
   extractQueryModelLikeTokens,
   isLikelyUnitToken,
   GENERIC_MODEL_TOKENS,
-  BRAND_HOST_HINTS,
 } from '../src/features/indexing/discovery/discoveryIdentity.js';
 
 // ---------------------------------------------------------------------------
@@ -201,41 +198,6 @@ test('categoryPathSegments: empty returns empty', () => {
 });
 
 // ---------------------------------------------------------------------------
-// manufacturerHostHintsForBrand
-// ---------------------------------------------------------------------------
-
-test('manufacturerHostHintsForBrand: resolves known brands with aliases', () => {
-  const razer = manufacturerHostHintsForBrand('Razer');
-  assert.ok(razer.includes('razer'));
-
-  const logitech = manufacturerHostHintsForBrand('Logitech');
-  assert.ok(logitech.includes('logitech'));
-  assert.ok(logitech.includes('logitechg'));
-  assert.ok(logitech.includes('logi'));
-});
-
-test('manufacturerHostHintsForBrand: unknown brand returns tokenized brand', () => {
-  const result = manufacturerHostHintsForBrand('Obscure Brand Name');
-  assert.ok(result.includes('obscure'));
-  assert.ok(result.includes('brand'));
-  assert.ok(result.includes('name'));
-});
-
-// ---------------------------------------------------------------------------
-// manufacturerHostMatchesBrand
-// ---------------------------------------------------------------------------
-
-test('manufacturerHostMatchesBrand: matches when host contains hint', () => {
-  assert.equal(manufacturerHostMatchesBrand('razer.com', ['razer']), true);
-  assert.equal(manufacturerHostMatchesBrand('store.razer.com', ['razer']), true);
-  assert.equal(manufacturerHostMatchesBrand('logitech.com', ['razer']), false);
-});
-
-test('manufacturerHostMatchesBrand: returns true for empty hints', () => {
-  assert.equal(manufacturerHostMatchesBrand('anything.com', []), true);
-});
-
-// ---------------------------------------------------------------------------
 // containsGuardToken
 // ---------------------------------------------------------------------------
 
@@ -291,8 +253,3 @@ test('GENERIC_MODEL_TOKENS: contains expected entries', () => {
   assert.ok(!GENERIC_MODEL_TOKENS.has('razer'));
 });
 
-test('BRAND_HOST_HINTS: has expected brand mappings', () => {
-  assert.ok(BRAND_HOST_HINTS.razer);
-  assert.ok(BRAND_HOST_HINTS.logitech);
-  assert.ok(Array.isArray(BRAND_HOST_HINTS.logitech));
-});

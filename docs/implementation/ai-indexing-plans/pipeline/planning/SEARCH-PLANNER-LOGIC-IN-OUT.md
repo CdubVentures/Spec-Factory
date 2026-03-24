@@ -224,6 +224,5 @@ Search Planner feeds Query Journey with `enhancedRows`. Query Journey treats the
 
 1. Query Journey deduplicates, ranks by field priority, applies identity guard
 2. Caps to `searchProfileQueryCap`
-3. Appends host-plan rows
-4. Persists the planned search profile artifact
-5. Feeds Stage 06 Search Execution with the final query list
+3. Persists the planned search profile artifact
+4. Feeds Stage 06 Search Execution with the final query list

@@ -10,8 +10,6 @@ Primary owners:
 
 - `src/features/indexing/discovery/stages/searchProfile.js`
 - `src/features/indexing/search/queryBuilder.js`
-- `src/features/indexing/search/queryHostPlanScorer.js`
-- `src/features/indexing/discovery/domainHintResolver.js`
 - `src/features/indexing/discovery/discoveryHelpers.js`
 
 ## Schema files in this folder
@@ -35,13 +33,6 @@ Primary owners:
 - `focusGroups` — from NeedSet Schema 3 with V4 extensions (`group_search_worthy`, `normalized_key_queue`, `productivity_score`, `group_description_long`)
 - `seedStatus` — from NeedSet Schema 3 (`seed_status.specs_seed`, `seed_status.source_seeds`)
 
-Optional host-plan enrichment also uses:
-
-- `categoryConfig.validatedRegistry`
-- field-rule-derived host-plan hint tokens
-- brand-resolution host hints
-- provider capabilities from configured search engines
-
 ## Live logic
 
 `buildSearchProfile()` currently does this:
@@ -58,12 +49,7 @@ Optional host-plan enrichment also uses:
 8. Dedupe and cap selected queries.
 9. Produce support blocks: `field_target_queries`, `doc_hint_queries`, `coverage_analysis`, `hint_source_counts`, field-rule gate/hint counts.
 
-`runSearchProfile()` then optionally adds:
-
-- `effective_host_plan` through `buildEffectiveHostPlan()`
-- `hostPlanQueryRows` through `buildScoredQueryRowsFromHostPlan()`
-
-Those host-plan rows are not part of `buildSearchProfile()` output. They are appended later during Query Journey after a separate guard pass.
+`runSearchProfile()` returns `{ searchProfileBase }` -- the deterministic profile is the sole output.
 
 ## Important invariants
 
@@ -72,9 +58,8 @@ Those host-plan rows are not part of `buildSearchProfile()` output. They are app
 - `determineQueryModes()` gates which tiers fire. Tiers are independent — all three can be active simultaneously (e.g. Tier 2 for worthy groups + Tier 3 for exhausted groups' keys).
 - The legacy archetype pipeline has been removed. Tier-only is the sole query generation path.
 - Stage 04 Search Planner consumes Search Profile: `base_templates`, targeted query rows, `coverage_analysis`.
-- `effective_host_plan` is optional and can be blocked by registry population rules.
 - Search Profile emits `search_profile_generated` with the deterministic query count and row details.
-- Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, guards, and appends host-plan rows.
+- Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, and guards.
 
 ## Outputs out
 
@@ -102,8 +87,6 @@ Those host-plan rows are not part of `buildSearchProfile()` output. They are app
 `runSearchProfile()` returns:
 
 - `searchProfileBase`
-- `effectiveHostPlan`
-- `hostPlanQueryRows`
 
 Later, Query Journey turns that into a persisted planned artifact by adding:
 
@@ -117,7 +100,6 @@ Later, Query Journey turns that into a persisted planned artifact by adding:
 - `query_guard`
 - `selected_queries`
 - `selected_query_count`
-- `effective_host_plan`
 - `brand_resolution`
 - optional `schema4_planner`, `schema4_learning`, `schema4_panel`
 - artifact keys: `key`, `run_key`, `latest_key`
@@ -149,7 +131,7 @@ The persisted payload family is written later by Query Journey and then rewritte
 Search Profile feeds:
 
 - Stage 04 Search Planner with `searchProfileBase` containing tier-tagged `query_rows` and `base_templates` (query history). Search Planner enhances query strings via LLM while preserving all tier metadata.
-- Stage 05 Query Journey receives the enhanced rows from Search Planner (not directly from Search Profile). Query Journey also reads `variant_guard_terms` and `query_reject_log` from `searchProfileBase`, and appends optional `hostPlanQueryRows`.
+- Stage 05 Query Journey receives the enhanced rows from Search Planner (not directly from Search Profile). Query Journey also reads `variant_guard_terms` and `query_reject_log` from `searchProfileBase`.
 
 The `searchProfileQueryCap` setting is the sole controller for total query count. Search Planner is 1:1 (same row count in/out), so the cap applies at Query Journey.
 

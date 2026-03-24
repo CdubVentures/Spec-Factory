@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { snapshotUiSettings } from '../../settings-authority/index.js';
 import { UI_SETTINGS_REGISTRY } from '../../../shared/settingsRegistry.js';
 import { deriveUiMutableKeys } from '../../../shared/settingsRegistryDerivations.js';

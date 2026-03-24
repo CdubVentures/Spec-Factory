@@ -69,8 +69,7 @@
       "owner": "src/features/indexing/discovery/stages/searchProfile.js",
       "does": [
         "load learning artifacts and merge learningStoreHints into the lexicon",
-        "build deterministic Search Profile",
-        "optionally build Effective Host Plan and host-plan query rows"
+        "build deterministic Search Profile returning { searchProfileBase }"
       ],
       "note": "This stage is in-memory only. The planned search_profile artifact is written by Query Journey."
     },
@@ -95,7 +94,6 @@
         "receive enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically)",
         "dedupe, rank by field priority, cap to searchProfileQueryCap",
         "apply identity guard to the ranked set",
-        "guard host-plan rows separately and append unique survivors",
         "build llm_queries from rows where hint_source ends with _llm",
         "write the planned search_profile artifact",
         "emit query_journey_completed"
@@ -114,7 +112,7 @@
         "plan-only fallback only when no provider path exists and rawResults is still empty"
       ],
       "canonical_query_concurrency": 1,
-      "compatibility_query_concurrency": "discoverCandidateSources() still passes max(1, config.discoveryQueryConcurrency || 1)"
+      "compatibility_query_concurrency": "discoverCandidateSources() hardcodes queryConcurrency to 1"
     },
     {
       "step": 7,
@@ -123,8 +121,8 @@
       "does": [
         "dedupe results",
         "hard drops",
-        "deterministic domain classification",
         "LLM selector path when serpSelectorEnabled and a triage route are both available",
+        "deterministic domain classification (runs AFTER SERP selector)",
         "fallback deterministic soft-label, lane, scoring, and quota selection path",
         "optional rerankSerpResults() annotation on the deterministic path",
         "write executed search_profile and discovery payloads"

@@ -1,3 +1,6 @@
+import { COMPONENT_VALUE_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+
 /**
  * Component store — extracted from SpecDb.
  * Owns: component_identity, component_aliases, component_values tables.
@@ -61,9 +64,9 @@ export function createComponentStore({ db, category, stmts }) {
   }
 
   function getComponentValues(componentType, componentName) {
-    return db
+    return hydrateRows(COMPONENT_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM component_values WHERE category = ? AND component_type = ? AND component_name = ?')
-      .all(category, componentType, componentName);
+      .all(category, componentType, componentName));
   }
 
   function getAllComponentIdentities(componentType) {
@@ -155,26 +158,26 @@ export function createComponentStore({ db, category, stmts }) {
       const aliases = db
         .prepare('SELECT alias, source FROM component_aliases WHERE component_id = ?')
         .all(identity.id);
-      const properties = db
+      const properties = hydrateRows(COMPONENT_VALUE_BOOLEAN_KEYS, db
         .prepare('SELECT * FROM component_values WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?')
-        .all(category, componentType, identity.canonical_name, identity.maker || '');
+        .all(category, componentType, identity.canonical_name, identity.maker || ''));
       result.push({ identity, aliases, properties });
     }
     return result;
   }
 
   function getComponentValuesWithMaker(componentType, componentName, componentMaker) {
-    return db
+    return hydrateRows(COMPONENT_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM component_values WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?')
-      .all(category, componentType, componentName, componentMaker || '');
+      .all(category, componentType, componentName, componentMaker || ''));
   }
 
   function getComponentValueById(componentValueId) {
     const id = Number(componentValueId);
     if (!Number.isFinite(id) || id <= 0) return null;
-    return db
+    return hydrateRow(COMPONENT_VALUE_BOOLEAN_KEYS, db
       .prepare('SELECT * FROM component_values WHERE category = ? AND id = ?')
-      .get(category, id) || null;
+      .get(category, id)) || null;
   }
 
   function updateComponentReviewStatus(componentType, componentName, componentMaker, status) {

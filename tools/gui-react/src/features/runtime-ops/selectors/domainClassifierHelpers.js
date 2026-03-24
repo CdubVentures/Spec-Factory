@@ -108,3 +108,15 @@ export function computeCooldownSummary(health) {
   }
   return { totalInCooldown, maxRemainingSeconds };
 }
+
+export function computeFetchSummary(health) {
+  let totalFetches = 0;
+  let totalBlocks = 0;
+  let totalTimeouts = 0;
+  for (const d of health) {
+    totalFetches += d.fetch_count || 0;
+    totalBlocks += d.blocked_count || 0;
+    totalTimeouts += d.timeout_count || 0;
+  }
+  return { totalFetches, totalBlocks, totalTimeouts };
+}

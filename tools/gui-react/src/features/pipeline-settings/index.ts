@@ -8,7 +8,6 @@
 // --- Draft contracts (constants, types, helpers) ---
 export {
   normalizeToken,
-  OCR_BACKEND_OPTIONS,
   parseBoundedNumber,
   REPAIR_DEDUPE_RULE_OPTIONS,
   RESUME_MODE_OPTIONS,

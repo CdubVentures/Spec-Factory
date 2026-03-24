@@ -19,6 +19,7 @@ import {
   providerDisplayLabel,
   enrichResultDomains,
   resolveRuntimeDomainCapSummary,
+  isVideoUrl,
 } from '../../selectors/searchResultsHelpers.js';
 import type { RuntimeIdxBadge } from '../../types';
 
@@ -41,12 +42,13 @@ interface ResultDetailDrawerProps {
   provider?: string;
   isDuplicate: boolean;
   isCrawled: boolean;
+  isVideo: boolean;
   onClose: () => void;
 }
 
-function ResultDetailDrawer({ result, query, provider, isDuplicate, isCrawled, onClose }: ResultDetailDrawerProps) {
-  const status = isDuplicate ? 'Dup' : isCrawled ? 'Crawled' : 'Pass';
-  const statusClass = isDuplicate ? 'sf-chip-danger' : isCrawled ? 'sf-chip-purple' : 'sf-chip-success';
+function ResultDetailDrawer({ result, query, provider, isDuplicate, isCrawled, isVideo, onClose }: ResultDetailDrawerProps) {
+  const status = isVideo ? 'Video' : isDuplicate ? 'Dup' : isCrawled ? 'Crawled' : 'Pass';
+  const statusClass = isVideo ? 'sf-chip-danger' : isDuplicate ? 'sf-chip-danger' : isCrawled ? 'sf-chip-purple' : 'sf-chip-success';
   return (
     <DrawerShell title={result.title || result.url} subtitle={result.domain} onClose={onClose}>
       <DrawerSection title="Status">
@@ -180,7 +182,17 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
     return count;
   }, [details, urlCounts, firstSeenUrlKey]);
 
-  const uniqueUncrawledCount = Math.max(0, uniqueUrlCount - crawledCount);
+  const videoCount = useMemo(() => {
+    let count = 0;
+    for (const d of details) {
+      for (const r of d.results) {
+        if (isVideoUrl(r.url)) count++;
+      }
+    }
+    return count;
+  }, [details]);
+
+  const uniqueUncrawledCount = Math.max(0, uniqueUrlCount - crawledCount - videoCount);
 
   const hasProviderFailures = results.some((r) => r.result_count === 0 && r.duration_ms > 0);
   const failedQueries = results.filter((r) => r.result_count === 0 && r.duration_ms > 0);
@@ -244,7 +256,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       <HeroBand
         titleRow={<>
           <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Search Results</span>
-          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Dup &amp; Crawl Filter</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Dup, Crawl &amp; Video Filter</span>
           <Chip label={overallStatus.toUpperCase()} className={statusChipClass} />
           {isProgressing && (
             <Chip label={`${details.length}/${results.length} DETAILED`} className="sf-chip-info" />
@@ -259,7 +271,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             <Chip label={providerDisplayLabel(liveSettings.searchEngines)} className="sf-chip-accent" />
           ) : null}
           <Chip label="Deterministic" className="sf-chip-neutral" />
-          <Tip text="Search Results identifies duplicate URLs across queries and flags already-crawled pages. Unique, uncrawled URLs pass to SERP Selector for relevance triage." />
+          <Tip text="Search Results identifies duplicate URLs across queries, flags already-crawled pages, and drops video platforms (YouTube, Vimeo, etc.). Unique, uncrawled, non-video URLs pass to SERP Selector for relevance triage." />
         </>}
         footer={<>
           {uniqueDomains > 0 && <span>domains <strong className="sf-text-primary">{uniqueDomains}</strong></span>}
@@ -276,6 +288,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           <HeroStat value={uniqueUrlCount || '-'} label="unique urls" colorClass={uniqueUrlCount > 0 ? 'text-[var(--sf-token-accent)]' : 'sf-text-muted'} />
           <HeroStat value={dupCount || '-'} label="dups dropped" colorClass={dupCount > 0 ? 'text-[var(--sf-state-danger-fg)]' : 'sf-text-muted'} />
           <HeroStat value={crawledCount || '-'} label="crawled dropped" colorClass={crawledCount > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={videoCount || '-'} label="video dropped" colorClass={videoCount > 0 ? 'text-[var(--sf-state-danger-fg)]' : 'sf-text-muted'} />
           <HeroStat value={uniqueUncrawledCount || '-'} label="unique uncrawled" colorClass={uniqueUncrawledCount > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
@@ -289,6 +302,9 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
           )}
           {crawledCount > 0 && (
             <>, <strong className="sf-text-primary not-italic">{crawledCount}</strong> already crawled</>
+          )}
+          {videoCount > 0 && (
+            <>, <strong className="sf-text-primary not-italic">{videoCount}</strong> video dropped</>
           )}
           {uniqueUncrawledCount > 0 && (
             <>, <strong className="sf-text-primary not-italic">{uniqueUncrawledCount}</strong> unique uncrawled</>
@@ -375,9 +391,10 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
               const siteScope = extractSiteScope(detail.query);
               const isZeroResult = detail.results.length === 0;
 
-              /* per-query dup/crawled/pass counts */
-              let qDup = 0, qCrawled = 0, qPass = 0;
+              /* per-query video/dup/crawled/pass counts */
+              let qVideo = 0, qDup = 0, qCrawled = 0, qPass = 0;
               for (const r of detail.results) {
+                if (isVideoUrl(r.url)) { qVideo++; continue; }
                 const key = `${detail.query}::${r.url}`;
                 const isDup = (urlCounts[r.url] || 1) > 1 && firstSeenUrlKey.get(r.url) !== key;
                 if (isDup) qDup++;
@@ -437,6 +454,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                     <span className="sf-text-caption font-mono sf-text-subtle">{detail.results.length} results</span>
                     {qDup > 0 && <span className="sf-text-caption sf-status-text-danger">{qDup} dup</span>}
                     {qCrawled > 0 && <span className="sf-text-caption sf-text-purple">{qCrawled} crawled</span>}
+                    {qVideo > 0 && <span className="sf-text-caption sf-status-text-danger">{qVideo} video</span>}
                     <span className="sf-text-caption sf-status-text-success">{qPass} pass</span>
                     {matchingBasic && matchingBasic.duration_ms > 0 && (
                       <span className="sf-text-caption font-mono sf-text-subtle">{formatMs(matchingBasic.duration_ms)}</span>
@@ -453,22 +471,24 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                         {showSnippets ? (
                           <>
                             <col className="w-[3%]" />
-                            <col className="w-[16%]" />
-                            <col className="w-[20%]" />
+                            <col className="w-[15%]" />
+                            <col className="w-[18%]" />
                             <col className="w-[10%]" />
                             <col className="w-[5%]" />
-                            <col className="w-[6%]" />
-                            <col className="w-[20%]" />
+                            <col className="w-[5%]" />
+                            <col className="w-[5%]" />
+                            <col className="w-[19%]" />
                             <col className="w-[8%]" />
                           </>
                         ) : (
                           <>
                             <col className="w-[4%]" />
-                            <col className="w-[22%]" />
-                            <col className="w-[28%]" />
-                            <col className="w-[14%]" />
-                            <col className="w-[6%]" />
-                            <col className="w-[6%]" />
+                            <col className="w-[20%]" />
+                            <col className="w-[26%]" />
+                            <col className="w-[12%]" />
+                            <col className="w-[5%]" />
+                            <col className="w-[5%]" />
+                            <col className="w-[5%]" />
                             <col className="w-[10%]" />
                           </>
                         )}
@@ -481,6 +501,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Domain</th>
                           <th className="text-center px-1 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Dup</th>
                           <th className="text-center px-1 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Crawled</th>
+                          <th className="text-center px-1 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Video</th>
                           {showSnippets && <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Snippet</th>}
                           <th className="text-left px-2 py-1 border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">Decision</th>
                         </tr>
@@ -490,7 +511,8 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                           const rowKey = `${detail.query}::${r.url}`;
                           const isDuplicate = (urlCounts[r.url] || 1) > 1 && firstSeenUrlKey.get(r.url) !== rowKey;
                           const isCrawled = Boolean(r.already_crawled);
-                          const rowBg = isDuplicate ? 'sf-danger-bg-soft' : isCrawled ? 'sf-purple-bg-soft' : '';
+                          const isVideo = isVideoUrl(r.url);
+                          const rowBg = isVideo ? 'sf-danger-bg-soft' : isDuplicate ? 'sf-danger-bg-soft' : isCrawled ? 'sf-purple-bg-soft' : '';
                           return (
                           <tr
                             key={ri}
@@ -527,11 +549,20 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
                                 <span className="text-[10px] font-semibold sf-chip-neutral px-1.5 py-0.5 rounded">No</span>
                               )}
                             </td>
+                            <td className="text-center px-1 py-1">
+                              {isVideo ? (
+                                <span className="text-[10px] font-semibold sf-chip-danger px-1.5 py-0.5 rounded">Yes</span>
+                              ) : (
+                                <span className="text-[10px] font-semibold sf-chip-neutral px-1.5 py-0.5 rounded">No</span>
+                              )}
+                            </td>
                             {showSnippets && (
                               <td className="px-2 py-1 sf-text-subtle truncate overflow-hidden">{r.snippet || '-'}</td>
                             )}
                             <td className="px-2 py-1">
-                              {isDuplicate ? (
+                              {isVideo ? (
+                                <Chip label="Video" className="sf-chip-danger" />
+                              ) : isDuplicate ? (
                                 <Chip label="Dup" className="sf-chip-danger" />
                               ) : isCrawled ? (
                                 <Chip label="Crawled" className="sf-chip-purple" />
@@ -594,6 +625,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
         const selKey = `${selectedResultContext.query}::${selectedResultContext.result.url}`;
         const selIsDup = (urlCounts[selectedResultContext.result.url] || 1) > 1 && firstSeenUrlKey.get(selectedResultContext.result.url) !== selKey;
         const selIsCrawled = Boolean(selectedResultContext.result.already_crawled);
+        const selIsVideo = isVideoUrl(selectedResultContext.result.url);
         return (
           <ResultDetailDrawer
             result={selectedResultContext.result}
@@ -601,6 +633,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
             provider={selectedResultContext.provider}
             isDuplicate={selIsDup}
             isCrawled={selIsCrawled}
+            isVideo={selIsVideo}
             onClose={() => setSelectedResultKey(null)}
           />
         );

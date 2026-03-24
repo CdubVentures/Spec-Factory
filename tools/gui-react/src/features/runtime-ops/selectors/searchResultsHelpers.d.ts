@@ -32,6 +32,8 @@ export interface SearchDomainDecisionBreakdown {
   drop: number;
 }
 
+export declare function isVideoUrl(url: string | undefined): boolean;
+
 export declare function computeDecisionCounts(
   details: SearchResultDetail[],
 ): SearchDecisionCounts;

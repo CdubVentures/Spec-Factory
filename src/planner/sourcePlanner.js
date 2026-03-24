@@ -24,12 +24,16 @@ import {
 import { revalidateUrl } from './sourcePlannerRevalidation.js';
 import { resolveHostYieldState } from './sourcePlannerYieldPolicy.js';
 import { compareDiscoveryPriority } from './sourcePlannerComparator.js';
-import {
-  BRAND_PREFIXED_CATEGORY_HOSTS,
-  manufacturerHostHintsForBrand,
-  manufacturerSeedHostsForBrand,
-  buildAllowedCategoryProductSlugs
-} from './sourcePlannerBrandConfig.js';
+// WHY: buildAllowedCategoryProductSlugs inlined — no brand map dependency.
+function buildAllowedCategoryProductSlugs({ brand = '', modelSlug = '' }) {
+  if (!modelSlug) return [];
+  const variants = [modelSlug];
+  const brandSlug = slug(brand);
+  if (brandSlug && !modelSlug.startsWith(`${brandSlug}-`)) {
+    variants.push(`${brandSlug}-${modelSlug}`);
+  }
+  return [...new Set(variants)];
+}
 import {
   computeSourcePriority,
   computePathHeuristicBoost,
@@ -65,7 +69,9 @@ export class SourcePlanner {
       .filter(Boolean);
     this.sourceIntelDomains = options.sourceIntel?.domains || {};
     this.brandKey = slug(job.identityLock?.brand || '');
-    this.brandHostHints = manufacturerHostHintsForBrand(job.identityLock?.brand || '');
+    // WHY: brandHostHints starts empty — populated dynamically via updateBrandHints()
+    // after Stage 02 (Brand Resolver) provides LLM-resolved aliases and domains.
+    this.brandHostHints = [];
 
     this.maxUrls = configInt(config, 'maxUrlsPerProduct');
     this.maxCandidateUrls = configInt(config, 'maxCandidateUrls');
@@ -277,17 +283,10 @@ export class SourcePlanner {
       return;
     }
 
-    const encodedQuery = encodeURIComponent(queryText);
-    const fallbackBrandSeeds = manufacturerSeedHostsForBrand(
-      this.job.identityLock?.brand || '',
-      this.brandHostHints
-    );
     const manufacturerHosts = new Set(
       this.brandManufacturerHostSet.size
         ? [...this.brandManufacturerHostSet]
-        : (this.brandHostHints.length > 0
-          ? fallbackBrandSeeds
-          : [...this.manufacturerHostsFromConfig()])
+        : [...this.manufacturerHostsFromConfig()]
     );
     for (const seedUrl of this.job.seedUrls || []) {
       const host = getHost(seedUrl);
@@ -311,6 +310,31 @@ export class SourcePlanner {
         this.enqueue(url, 'manufacturer_deep_seed', { forceApproved: true });
       }
     }
+  }
+
+  // WHY: Called after Stage 02 (Brand Resolver) provides LLM-resolved brand data.
+  // Replaces the old hardcoded BRAND_HOST_HINTS with dynamic resolution.
+  updateBrandHints(brandResolution) {
+    if (!brandResolution) return;
+    const hints = new Set();
+    for (const alias of (brandResolution.aliases || [])) {
+      const token = String(alias || '').trim().toLowerCase();
+      if (token) hints.add(token);
+    }
+    const official = normalizeHost(String(brandResolution.officialDomain || ''));
+    if (official) {
+      hints.add(official);
+      const domainSlug = official.split('.')[0];
+      if (domainSlug) hints.add(domainSlug);
+    }
+    const support = normalizeHost(String(brandResolution.supportDomain || ''));
+    if (support) {
+      hints.add(support);
+      const supportSlug = support.split('.')[0];
+      if (supportSlug) hints.add(supportSlug);
+    }
+    this.brandHostHints = [...hints];
+    this.brandManufacturerHostSet = this.selectManufacturerHostsForBrand();
   }
 
   seed(urls, options = {}) {
@@ -854,6 +878,16 @@ export class SourcePlanner {
       this.queue.length > 0 ||
       this.candidateQueue.length > 0
     );
+  }
+
+  // WHY: Read-only peek of all queued URLs for pre-populating GUI worker rows.
+  peekAll() {
+    return [
+      ...this.priorityQueue,
+      ...this.manufacturerQueue,
+      ...this.queue,
+      ...this.candidateQueue,
+    ];
   }
 
   next() {

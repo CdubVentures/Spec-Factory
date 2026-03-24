@@ -95,6 +95,10 @@ export const DOMAIN_HEALTH_ROW_SHAPE = Object.freeze([
   { key: 'cooldown_remaining', coerce: 'int' },
   { key: 'success_rate', coerce: 'float' },
   { key: 'avg_latency_ms', coerce: 'float' },
+  { key: 'fetch_count', coerce: 'int' },
+  { key: 'blocked_count', coerce: 'int' },
+  { key: 'timeout_count', coerce: 'int' },
+  { key: 'last_blocked_ts', coerce: 'string', nullable: true },
   { key: 'notes', coerce: 'string' },
 ]);
 export const DOMAIN_HEALTH_ROW_KEYS = Object.freeze(DOMAIN_HEALTH_ROW_SHAPE.map(s => s.key));

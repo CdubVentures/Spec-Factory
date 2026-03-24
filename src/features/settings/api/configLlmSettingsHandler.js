@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
 export function createLlmSettingsHandler({
   jsonRes,

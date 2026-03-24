@@ -2,9 +2,7 @@
   "_doc": "Stage 03 Search Profile output returned by runSearchProfile() and its inner buildSearchProfile().",
   "validated_against": "2026-03-23",
   "runSearchProfile_return": {
-    "searchProfileBase": "object — from buildSearchProfile()",
-    "effectiveHostPlan": "object|null — from buildEffectiveHostPlan() when validatedRegistry exists",
-    "hostPlanQueryRows": "array — from buildScoredQueryRowsFromHostPlan() or []"
+    "searchProfileBase": "object — from buildSearchProfile()"
   },
   "buildSearchProfile_return": {
     "category": "string",
@@ -58,7 +56,7 @@
   },
   "downstream_consumers": [
     "Stage 04 Search Planner — receives searchProfileBase.query_rows and searchProfileBase.base_templates",
-    "Stage 05 Query Journey — receives searchProfileBase (variant_guard_terms, query_reject_log), effectiveHostPlan, hostPlanQueryRows"
+    "Stage 05 Query Journey — receives searchProfileBase (variant_guard_terms, query_reject_log)"
   ],
   "persistence": "Search Profile generation is in-memory only. The persisted artifact is written later by Query Journey."
 }

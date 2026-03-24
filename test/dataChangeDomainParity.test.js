@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DATA_CHANGE_EVENT_DOMAIN_MAP } from '../src/api/events/dataChangeContract.js';
+import { DATA_CHANGE_EVENT_DOMAIN_MAP } from '../src/core/events/dataChangeContract.js';
 import { DATA_CHANGE_EVENT_DOMAIN_FALLBACK } from '../tools/gui-react/src/features/data-change/index.js';
 
 function normalizedDomainSet(value) {

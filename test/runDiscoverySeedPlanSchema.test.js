@@ -268,7 +268,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     assert.ok('enqueue_summary' in result, 'enqueue_summary attached to fresh result');
   });
 
-  it('brand promotion uses manufacturerCrawlRateLimitMs from config', async () => {
+  it('brand promotion adds official domain with default crawlConfig', async () => {
     let capturedCategoryConfig = null;
     const stageStubs = makeStageStubs();
     stageStubs.runSearchProfileFn = (args) => {
@@ -279,10 +279,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
     };
 
     await runDiscoverySeedPlan({
-      config: makeConfig({
-        manufacturerCrawlRateLimitMs: 5000,
-        manufacturerCrawlTimeoutMs: 30000,
-      }),
+      config: makeConfig(),
       storage: makeStorage(),
       category: 'mouse',
       categoryConfig: makeCategoryConfig(),
@@ -309,13 +306,13 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       }),
     });
 
-    // Brand promotion should have added razer.com entry with config-driven crawl values
+    // Brand promotion should have added razer.com entry with simplified crawlConfig
     const entry = capturedCategoryConfig?.sourceHosts?.find(h => h.host === 'razer.com');
     assert.ok(entry, 'razer.com should be promoted into sourceHosts');
-    assert.equal(entry.crawlConfig.rate_limit_ms, 5000,
-      'rate_limit_ms should come from config, not hardcoded 2000');
-    assert.equal(entry.crawlConfig.timeout_ms, 30000,
-      'timeout_ms should come from config, not hardcoded 12000');
+    assert.equal(entry.crawlConfig.method, 'http',
+      'crawlConfig.method should be http');
+    assert.equal(entry.crawlConfig.robots_txt_compliant, true,
+      'crawlConfig.robots_txt_compliant should be true');
   });
 
   it('planner called with searchProfileBase when buildSearchPlan returns no handoff', async () => {

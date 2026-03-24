@@ -29,8 +29,8 @@ describe('settingsDefaults.runtime — characterization', () => {
     ok(Object.isFrozen(runtime));
   });
 
-  it('has at least 200 keys', () => {
-    ok(Object.keys(runtime).length >= 200, `expected >= 200, got ${Object.keys(runtime).length}`);
+  it('has at least 155 keys', () => {
+    ok(Object.keys(runtime).length >= 155, `expected >= 155, got ${Object.keys(runtime).length}`);
   });
 
   it('every value is string, number, boolean, or frozen object', () => {
@@ -58,7 +58,7 @@ describe('settingsDefaults.runtime — characterization', () => {
 describe('settingsClampingRanges — characterization', () => {
   it('INT_RANGE_MAP has expected key count', () => {
     const count = Object.keys(SETTINGS_CLAMPING_INT_RANGE_MAP).length;
-    ok(count >= 90, `expected >= 90, got ${count}`);
+    ok(count >= 70, `expected >= 70, got ${count}`);
   });
 
   it('every INT_RANGE_MAP entry has cfgKey, min, max', () => {
@@ -72,7 +72,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('FLOAT_RANGE_MAP has expected key count', () => {
     const count = Object.keys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP).length;
-    strictEqual(count, 7);
+    strictEqual(count, 5);
   });
 
   it('every FLOAT_RANGE_MAP entry has cfgKey, min, max', () => {
@@ -85,7 +85,7 @@ describe('settingsClampingRanges — characterization', () => {
 
   it('STRING_ENUM_MAP has expected key count', () => {
     const count = Object.keys(SETTINGS_CLAMPING_STRING_ENUM_MAP).length;
-    strictEqual(count, 7);
+    strictEqual(count, 6);
   });
 
   it('every STRING_ENUM_MAP entry has cfgKey and allowed array', () => {
@@ -117,21 +117,21 @@ describe('RUNTIME_SETTINGS_ROUTE_GET — characterization', () => {
 
   it('stringMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.stringMap).length;
-    ok(count >= 48, `expected >= 48, got ${count}`);
+    ok(count >= 38, `expected >= 38, got ${count}`);
   });
 
   it('intMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.intMap).length;
-    ok(count >= 90, `expected >= 90, got ${count}`);
+    ok(count >= 70, `expected >= 70, got ${count}`);
   });
 
   it('floatMap has expected count', () => {
-    strictEqual(Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap).length, 7);
+    strictEqual(Object.keys(RUNTIME_SETTINGS_ROUTE_GET.floatMap).length, 5);
   });
 
   it('boolMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_GET.boolMap).length;
-    ok(count >= 30, `expected >= 30, got ${count}`);
+    ok(count >= 24, `expected >= 24, got ${count}`);
   });
 
   it('every map entry value is a string (config key)', () => {
@@ -192,12 +192,12 @@ describe('RUNTIME_SETTINGS_ROUTE_PUT — characterization', () => {
 
   it('stringFreeMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap).length;
-    ok(count >= 38, `expected >= 38, got ${count}`);
+    ok(count >= 32, `expected >= 32, got ${count}`);
   });
 
   it('boolMap has expected count', () => {
     const count = Object.keys(RUNTIME_SETTINGS_ROUTE_PUT.boolMap).length;
-    ok(count >= 30, `expected >= 30, got ${count}`);
+    ok(count >= 24, `expected >= 24, got ${count}`);
   });
 
   it('known aliases are correct in PUT', () => {

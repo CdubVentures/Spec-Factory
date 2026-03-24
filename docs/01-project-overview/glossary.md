@@ -23,7 +23,11 @@
 | Source strategy | Per-category source/discovery policy records exposed at `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js` |
 | Run data storage | Optional relocation/archive destination for run artifacts separate from the default local output root | `src/api/guiServer.js`, `src/api/services/runDataRelocationService.js` |
 | Test mode | GUI/API surface for generating deterministic category fixtures and validation runs | `src/app/api/routes/testModeRoutes.js`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
-| Pipeline context schema | Zod schema that validates the context object threading through discovery pipeline stages | `src/features/indexing/discovery/pipelineContextSchema.js` |
+| Pipeline context schema | Zod schema with 8 progressive checkpoints that validates the context object threading through discovery pipeline stages | `src/features/indexing/discovery/pipelineContextSchema.js` |
+| Crawl module | Plugin-based browser automation module that opens pages, bypasses blocks, captures screenshots, and records to frontier DB. Replaces the former extraction pipeline | `src/features/crawl/index.js`, `src/features/crawl/README.md` |
+| Crawl session | A persistent browser instance managed by the crawl module; one browser per session, never per-URL | `src/features/crawl/crawlSession.js` |
+| Plugin runner | Sequential plugin lifecycle manager for crawl hooks (stealth, auto-scroll, extensible) | `src/features/crawl/core/pluginRunner.js` |
+| Frontier DB | URL-level crawl state persistence with cooldown, replay, and rate-limiting support | used by `src/pipeline/runCrawlProcessingLifecycle.js` |
 | Catalog product row | The per-product SpecDb row upserted when catalog products are added or updated, linking catalog identity to DB state | `src/features/catalog/products/upsertCatalogProductRow.js` |
 | LLM Config | The GUI page for per-category LLM route matrix configuration, distinct from the LLM Settings page that manages global model routing | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
 

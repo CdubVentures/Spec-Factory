@@ -547,6 +547,7 @@ export async function callOpenAI({
   reasoningBudget = 0,
   maxTokens = 0,
   timeoutMs = 40_000,
+  providerHealth,
   logger
 }) {
   if (!apiKey) {
@@ -557,6 +558,7 @@ export async function callOpenAI({
   const inferredProvider = provider || providerFromModelToken(model);
   const providerClient = selectLlmProvider(inferredProvider);
   const providerLabel = providerClient.name;
+  const health = providerHealth || _providerHealth;
   const deepSeekMode = inferredProvider === 'deepseek';
   const reason = String(usageContext?.reason || 'extract');
   const routeRole = String(usageContext?.route_role || '').trim();
@@ -825,8 +827,8 @@ export async function callOpenAI({
     return usageSummary;
   };
 
-  if (!_providerHealth.canRequest(providerLabel)) {
-    const snap = _providerHealth.snapshot(providerLabel);
+  if (!health.canRequest(providerLabel)) {
+    const snap = health.snapshot(providerLabel);
     const safeMessage = `Provider '${providerLabel}' circuit open (${snap.failure_count} consecutive failures). Retry after cooldown.`;
     logger?.warn?.('llm_provider_circuit_open', {
       provider: providerLabel,
@@ -877,7 +879,7 @@ export async function callOpenAI({
       responseModel: first.responseModel
     });
     const parsed = parseStructuredResult(first.content);
-    _providerHealth.recordSuccess(providerLabel);
+    health.recordSuccess(providerLabel);
     logger?.info?.('llm_call_completed', {
       purpose: reason,
       reason,
@@ -909,7 +911,7 @@ export async function callOpenAI({
   } catch (firstError) {
     if (!jsonSchema || !shouldRetryWithoutJsonSchema(firstError)) {
       if (shouldCountAsProviderFailure(firstError)) {
-        _providerHealth.recordFailure(providerLabel, firstError);
+        health.recordFailure(providerLabel, firstError);
       }
       const safeMessage = sanitizeText(firstError.message, [apiKey]);
       emitFailure(safeMessage);
@@ -941,7 +943,7 @@ export async function callOpenAI({
         retryWithoutSchema: true
       });
       const parsed = parseStructuredResult(retry.content, { fallbackExtraction: true });
-      _providerHealth.recordSuccess(providerLabel);
+      health.recordSuccess(providerLabel);
       logger?.info?.('llm_call_completed', {
         purpose: reason,
         reason,
@@ -972,7 +974,7 @@ export async function callOpenAI({
       return parsed;
     } catch (retryError) {
       if (shouldCountAsProviderFailure(retryError)) {
-        _providerHealth.recordFailure(providerLabel, retryError);
+        health.recordFailure(providerLabel, retryError);
       }
       const safeMessage = sanitizeText(retryError.message, [apiKey]);
       emitFailure(safeMessage);

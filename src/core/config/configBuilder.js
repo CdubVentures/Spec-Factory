@@ -13,28 +13,21 @@ import {
 } from '../../billing/modelPricingCatalog.js';
 import { normalizeDynamicFetchPolicyMap } from '../../fetcher/dynamicFetchPolicy.js';
 import {
-  normalizeArticleExtractorPolicyMap,
   runtimeSettingDefault,
   convergenceSettingDefault,
   normalizeSearchProfileCapMap,
-  normalizeFetchSchedulerInternalsMap,
   normalizeRetrievalInternalsMap,
-  normalizeEvidencePackLimitsMap,
   normalizeParsingConfidenceBaseMap,
   normalizeRepairDedupeRule,
   normalizeModelPricingMap,
   normalizePricingSources,
   normalizeModelOutputTokenMap,
   normalizeOutputMode,
-  normalizeStaticDomMode,
-  normalizePdfBackend,
-  normalizeScannedPdfOcrBackend,
   REPAIR_DEDUPE_RULE_DEFAULT,
   DEFAULT_USER_AGENT
 } from './configNormalizers.js';
 import {
   parseIntEnv,
-  parseFloatEnv,
   parseBoolEnv,
   parseJsonEnv,
   toTokenInt,
@@ -141,18 +134,8 @@ export function buildRawConfig({ manifestApplicator }) {
   const envOutputMode = normalizeOutputMode(process.env.OUTPUT_MODE || 'dual', 'dual');
   const hasS3Creds = hasS3EnvCreds();
   const defaultMirrorToS3 = envOutputMode !== 'local' && hasS3Creds;
-  const normalizedFetchSchedulerInternalsMap = normalizeFetchSchedulerInternalsMap(
-    parseJsonEnv('FETCH_SCHEDULER_INTERNALS_MAP_JSON', {})
-  );
   const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap({});
-  const normalizedEvidencePackLimitsMap = normalizeEvidencePackLimitsMap({});
   const normalizedParsingConfidenceBaseMap = normalizeParsingConfidenceBaseMap({});
-  const normalizedArticleExtractorDomainPolicyMap = normalizeArticleExtractorPolicyMap(
-    parseJsonEnv('ARTICLE_EXTRACTOR_DOMAIN_POLICY_MAP_JSON', {})
-  );
-  const articleExtractorDomainPolicyMapJson = Object.keys(normalizedArticleExtractorDomainPolicyMap).length > 0
-    ? JSON.stringify(normalizedArticleExtractorDomainPolicyMap)
-    : '';
   const normalizedDynamicFetchPolicyMap = normalizeDynamicFetchPolicyMap(
     parseJsonEnv('DYNAMIC_FETCH_POLICY_MAP_JSON', {})
   );
@@ -179,7 +162,6 @@ export function buildRawConfig({ manifestApplicator }) {
     s3OutputPrefix: (process.env.S3_OUTPUT_PREFIX || runtimeSettingDefault('s3OutputPrefix')).replace(/\/+$/, ''),
     repairDedupeRule: normalizeRepairDedupeRule(process.env['REPAIR_DEDUPE_RULE'] || REPAIR_DEDUPE_RULE_DEFAULT),
     indexingResumeMode: (process.env.INDEXING_RESUME_MODE || runtimeSettingDefault('indexingResumeMode')).trim().toLowerCase(),
-    staticDomMode: normalizeStaticDomMode(process.env.STATIC_DOM_MODE || runtimeSettingDefault('staticDomMode')),
     batchStrategy: (process.env.BATCH_STRATEGY || runtimeSettingDefault('batchStrategy')).toLowerCase(),
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',
     capturePageScreenshotSelectors: String(process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS || 'table,[data-spec-table],.specs-table,.spec-table,.specifications').trim(),
@@ -196,8 +178,6 @@ export function buildRawConfig({ manifestApplicator }) {
     searchEnginesFallback: process.env.SEARCH_ENGINES_FALLBACK || runtimeSettingDefault('searchEnginesFallback'),
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),
     searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),
-    serpTriageMinScore: parseIntEnv('SERP_TRIAGE_MIN_SCORE', convergenceSettingDefault('serpTriageMinScore', 3)),
-
     // --- API keys (direct env read) ---
     serperApiKey: process.env.SERPER_API_KEY || runtimeSettingDefault('serperApiKey'),
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -230,8 +210,6 @@ export function buildRawConfig({ manifestApplicator }) {
       process.env.LLM_OUTPUT_TOKEN_PRESETS,
       [256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 8192]
     ),
-    llmVerifyAggressiveAlways: parseBoolEnv('LLM_VERIFY_AGGRESSIVE_ALWAYS', false),
-    llmVerifyAggressiveBatchCount: parseIntEnv('LLM_VERIFY_AGGRESSIVE_BATCH_COUNT', 3),
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
 
     // --- OpenAI aliases (computed from LLM chain) ---
@@ -240,16 +218,10 @@ export function buildRawConfig({ manifestApplicator }) {
     openaiModelExtract: explicitLlmModelExtract || defaultModel,
     openaiModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
     openaiModelWrite: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
-    openaiMaxInputChars: parseIntEnv('OPENAI_MAX_INPUT_CHARS', parseIntEnv('LLM_MAX_EVIDENCE_CHARS', 50_000)),
+    openaiMaxInputChars: parseIntEnv('OPENAI_MAX_INPUT_CHARS', 50_000),
     openaiTimeoutMs: timeoutMs,
 
     // --- JSON map normalization + sub-fields ---
-    fetchSchedulerInternalsMap: normalizedFetchSchedulerInternalsMap,
-    fetchSchedulerInternalsMapJson: JSON.stringify(normalizedFetchSchedulerInternalsMap),
-    fetchSchedulerDefaultDelayMs: parseIntEnv('FETCH_SCHEDULER_DEFAULT_DELAY_MS', normalizedFetchSchedulerInternalsMap.defaultDelayMs),
-    fetchSchedulerDefaultConcurrency: parseIntEnv('FETCH_SCHEDULER_DEFAULT_CONCURRENCY', normalizedFetchSchedulerInternalsMap.defaultConcurrency),
-    fetchSchedulerDefaultMaxRetries: parseIntEnv('FETCH_SCHEDULER_DEFAULT_MAX_RETRIES', normalizedFetchSchedulerInternalsMap.defaultMaxRetries),
-    fetchSchedulerRetryWaitMs: parseIntEnv('FETCH_SCHEDULER_RETRY_WAIT_MS', normalizedFetchSchedulerInternalsMap.retryWaitMs),
     retrievalInternalsMap: normalizedRetrievalInternalsMap,
     retrievalEvidenceTierWeightMultiplier: normalizedRetrievalInternalsMap.evidenceTierWeightMultiplier,
     retrievalEvidenceDocWeightMultiplier: normalizedRetrievalInternalsMap.evidenceDocWeightMultiplier,
@@ -263,13 +235,7 @@ export function buildRawConfig({ manifestApplicator }) {
     retrievalPrimeSourcesMaxCap: normalizedRetrievalInternalsMap.primeSourcesMaxCap,
     retrievalFallbackEvidenceMaxRows: normalizedRetrievalInternalsMap.fallbackEvidenceMaxRows,
     retrievalProvenanceOnlyMinRows: normalizedRetrievalInternalsMap.provenanceOnlyMinRows,
-    evidencePackLimitsMap: normalizedEvidencePackLimitsMap,
     parsingConfidenceBaseMap: normalizedParsingConfidenceBaseMap,
-    evidenceHeadingsLimit: normalizedEvidencePackLimitsMap.headingsLimit,
-    evidenceChunkMaxLength: normalizedEvidencePackLimitsMap.chunkMaxLength,
-    evidenceSpecSectionsLimit: normalizedEvidencePackLimitsMap.specSectionsLimit,
-    articleExtractorDomainPolicyMap: normalizedArticleExtractorDomainPolicyMap,
-    articleExtractorDomainPolicyMapJson,
     dynamicFetchPolicyMap: normalizedDynamicFetchPolicyMap,
     dynamicFetchPolicyMapJson,
     searchProfileCapMap: normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {})),

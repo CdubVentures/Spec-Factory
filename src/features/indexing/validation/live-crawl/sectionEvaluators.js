@@ -65,7 +65,6 @@ export function evaluateDefaultsAligned(runData) {
     manual('DA-04'),
     passIf('DA-05', haSnap && snap.searchProvider != null),
     passIf('DA-07', haSnap && snap.preferHttpFetcher != null && snap.dynamicCrawleeEnabled != null),
-    passIf('DA-08', haSnap && snap.pdfBackendRouterEnabled != null),
     passIf('DA-09', haSnap && snap.capturePageScreenshotEnabled != null),
     passIf('DA-10', haSnap, 'drift disposition check'),
   ];

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import {
   RUNTIME_SEARCH_PRIMARY_HELP,
@@ -59,16 +59,6 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
   getNumberBounds,
   renderDisabledHint,
 }: RuntimeFlowRunSetupSectionProps) {
-  // WHY: On hydration, domainClassifierUrlCap may exceed serpSelectorUrlCap
-  // (e.g. stale saved value of 200 vs serp selector default of 50). Clamp it.
-  useEffect(() => {
-    const serpCap = Number(runtimeDraft.serpSelectorUrlCap) || 0;
-    const dcCap = Number(runtimeDraft.domainClassifierUrlCap) || 0;
-    if (serpCap > 0 && dcCap > serpCap) {
-      updateDraft('domainClassifierUrlCap', serpCap);
-    }
-  }, [runtimeDraft.serpSelectorUrlCap, runtimeDraft.domainClassifierUrlCap, updateDraft]);
-
   const slots = parseEngineSlots(runtimeDraft.searchEngines);
   const fallbackRaw = (runtimeDraft.searchEnginesFallback ?? '').split(',')[0]?.trim() || '';
   const fallbackEngine: EngineSlot = (SEARXNG_ENGINE_OPTIONS as readonly string[]).includes(fallbackRaw) ? fallbackRaw as SearxngEngine : 'none';
@@ -251,7 +241,7 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
         >
           <SettingNumberInput draftKey="maxPagesPerDomain" value={runtimeDraft.maxPagesPerDomain} bounds={getNumberBounds('maxPagesPerDomain')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
         </SettingRow>
-        <AdvancedSettingsBlock title="Query & URL Counts" count={3}>
+        <AdvancedSettingsBlock title="Query & URL Counts" count={4}>
           <SettingRow
             label="Search Query Count / Run"
             tip="Hard cap on the final merged query profile output (deterministic + LLM planner combined). The Query Journey enforces this as the ceiling on total queries sent to search."
@@ -269,29 +259,25 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
               step={1}
               disabled={!runtimeSettingsReady}
               className={inputCls}
-              onNumberChange={(key, rawValue, bounds) => {
-                onNumberChange(key, rawValue, bounds);
-                const parsed = Math.round(Math.min(bounds.max, Math.max(bounds.min, Number(rawValue) || 0)));
-                const currentDc = Number(runtimeDraft.domainClassifierUrlCap) || 0;
-                if (currentDc > parsed) {
-                  updateDraft('domainClassifierUrlCap', parsed);
-                }
-              }}
+              onNumberChange={onNumberChange}
             />
           </SettingRow>
           <SettingRow
             label="Domain Classifier URL Count / Run"
-            tip="Exact number of candidate URLs seeded into the source planner from the domain classifier. Set to 0 to disable candidate seeding entirely. Clamped to Serp Selector URL Count since candidates feed into the selector."
+            tip="Maximum number of URLs the domain classifier enqueues into the planner per run. URLs are ranked by triage score from the SERP selector — highest-value URLs are enqueued first."
           >
             <SettingNumberInput
               draftKey="domainClassifierUrlCap"
               value={runtimeDraft.domainClassifierUrlCap}
-              bounds={{ ...getNumberBounds('domainClassifierUrlCap'), max: Math.max(0, Number(runtimeDraft.serpSelectorUrlCap) || 50) }}
+              bounds={getNumberBounds('domainClassifierUrlCap')}
               step={1}
               disabled={!runtimeSettingsReady}
               className={inputCls}
               onNumberChange={onNumberChange}
             />
+          </SettingRow>
+          <SettingRow label="LLM Enhancer Max Retries" tip="How many times the Search Planner LLM enhancement retries on failure before falling back to deterministic queries.">
+            <SettingNumberInput draftKey="llmEnhancerMaxRetries" value={runtimeDraft.llmEnhancerMaxRetries} bounds={getNumberBounds('llmEnhancerMaxRetries')} step={1} disabled={!runtimeSettingsReady} className={inputCls} onNumberChange={onNumberChange} />
           </SettingRow>
         </AdvancedSettingsBlock>
         <AdvancedSettingsBlock title="Advanced URL Budgets" count={2}>
@@ -306,6 +292,15 @@ export const RuntimeFlowRunSetupSection = memo(function RuntimeFlowRunSetupSecti
             tip={`${BUDGET_PHASE_TIP}\nLives in: outbound HTTP and browser-backed fetch requests.\nWhat this controls: the User-Agent header presented to remote hosts during discovery and fetch.`}
           >
             <input type="text" value={runtimeDraft.userAgent} onChange={(event) => updateDraft('userAgent', event.target.value)} disabled={!runtimeSettingsReady} className={inputCls} />
+          </SettingRow>
+        </AdvancedSettingsBlock>
+        <AdvancedSettingsBlock title="Pipeline Validation" count={1}>
+          <SettingRow label="Schema Enforcement Mode" tip="Controls pipeline schema validation at stage boundaries. 'off' skips validation, 'warn' logs mismatches, 'enforce' rejects invalid states.">
+            <select value={runtimeDraft.pipelineSchemaEnforcementMode} onChange={(event) => updateDraft('pipelineSchemaEnforcementMode', event.target.value as 'off' | 'warn' | 'enforce')} disabled={!runtimeSettingsReady} className={inputCls}>
+              <option value="off">Off</option>
+              <option value="warn">Warn (default)</option>
+              <option value="enforce">Enforce</option>
+            </select>
           </SettingRow>
         </AdvancedSettingsBlock>
       </SettingGroupBlock>

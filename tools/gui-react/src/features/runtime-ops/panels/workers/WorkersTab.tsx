@@ -74,9 +74,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       searchEngines: toOptionalString(runtimeSettingsSnapshot.searchEngines ?? runtimeSettingsSnapshot.searchProvider),
       discoveryEnabled: toOptionalBoolean(runtimeSettingsSnapshot.discoveryEnabled),
       dynamicCrawleeEnabled: toOptionalBoolean(runtimeSettingsSnapshot.dynamicCrawleeEnabled),
-      scannedPdfOcrEnabled: toOptionalBoolean(runtimeSettingsSnapshot.scannedPdfOcrEnabled),
       maxPagesPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.maxPagesPerDomain),
-      discoveryResultsPerQuery: toOptionalPositiveInt(runtimeSettingsSnapshot.discoveryResultsPerQuery),
     };
   }, [runtimeSettingsSnapshot]);
 

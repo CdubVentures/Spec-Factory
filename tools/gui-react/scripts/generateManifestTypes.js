@@ -21,12 +21,9 @@ const REGISTRY_TYPE_TO_TS = {
 // The type name is derived from the registry key by convention.
 const ENUM_TYPE_NAMES = {
   resumeMode: 'RuntimeResumeMode',
-  scannedPdfOcrBackend: 'RuntimeOcrBackend',
   repairDedupeRule: 'RuntimeRepairDedupeRule',
   searchEngines: 'string', // csv_enum — stored as comma-separated string
   searchEnginesFallback: 'string',
-  pdfPreferredBackend: 'string',
-  staticDomMode: 'string',
   batchStrategy: 'string',
 };
 

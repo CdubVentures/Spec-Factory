@@ -64,7 +64,7 @@ export type {
 
 // ── UI-only tab / badge types ──
 
-export type RuntimeOpsTab = 'overview' | 'workers' | 'documents' | 'extraction' | 'fallbacks' | 'queue' | 'compound';
+export type RuntimeOpsTab = 'overview' | 'workers' | 'documents' | 'fallbacks' | 'queue' | 'compound';
 
 export type RuntimeIdxBadgeState = 'active' | 'off';
 
@@ -624,7 +624,6 @@ export interface PrefetchLiveSettings {
   searchEngines?: string;
   discoveryEnabled?: boolean;
   dynamicCrawleeEnabled?: boolean;
-  scannedPdfOcrEnabled?: boolean;
   maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
 }

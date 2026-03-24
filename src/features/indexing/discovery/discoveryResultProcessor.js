@@ -79,13 +79,6 @@ export async function processDiscoveryResults({
   });
   const candidateRows = [...classifiedByUrl.values()];
 
-  const { domainSafetyResults } = classifyDomains({
-    candidateRows,
-    brandResolution,
-    categoryConfig,
-    logger,
-  });
-
   // ── SERP Selector (LLM-only, no deterministic fallback) ──
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
@@ -97,7 +90,6 @@ export async function processDiscoveryResults({
     categoryConfig,
     discoveryCap,
     serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
-    domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
 
@@ -138,6 +130,17 @@ export async function processDiscoveryResults({
   const discovered = selected;
   const candidateRowsFinal = [...selected, ...notSelected];
 
+  // WHY: Domain classification runs AFTER the SERP selector — only classify
+  // URLs that the LLM selected, not the full candidate pool. The domain
+  // classifier panel must reflect the URLs actually entering the planner.
+  classifyDomains({
+    candidateRows: selected,
+    brandResolution,
+    categoryConfig,
+    frontierDb,
+    logger,
+  });
+
   // ── Phase 7: Reject audit ──
   const auditSamples = sampleRejectAudit({ hardDrops, notSelected });
   const auditTrail = buildAuditTrail({ auditSamples, hardDrops, notSelected, selected });
@@ -149,7 +152,7 @@ export async function processDiscoveryResults({
       prefix: 'selected_urls',
       payload: {
         selected_count: discovered.length,
-        selected_urls: discovered.slice(0, 80).map((row) => ({
+        selected_urls: discovered.map((row) => ({
           url: row.url,
           host: row.host,
           tier: row.tierName || '',
@@ -161,7 +164,7 @@ export async function processDiscoveryResults({
     });
     logger?.info?.('discovery_urls_selected', {
       selected_count: discovered.length,
-      selected_hosts_top: [...new Set(discovered.slice(0, 20).map((row) => row.host).filter(Boolean))].slice(0, 10),
+      selected_hosts_top: [...new Set(discovered.map((row) => row.host).filter(Boolean))],
       trace_path: trace.trace_path
     });
   }
@@ -189,14 +192,14 @@ export async function processDiscoveryResults({
       llm_applied: validation.valid,
     },
     candidates: [
-      ...[...candidateMap.entries()].slice(0, 120).map(([id, orig]) => {
+      ...[...candidateMap.entries()].map(([id, orig]) => {
         const isKept = keepIdSet.has(id);
         const enriched = isKept ? selected.find((r) => r.url === orig.url) : null;
         return {
           url: String(orig.url || '').trim(),
           title: String(orig.title || '').trim(),
           domain: String(orig.host || '').trim(),
-          snippet: String(orig.snippet || '').slice(0, 260),
+          snippet: String(orig.snippet || ''),
           score: enriched?.score || 0,
           decision: isKept ? 'keep' : 'drop',
           rationale: isKept ? 'llm_selected' : 'not_selected',
@@ -210,11 +213,11 @@ export async function processDiscoveryResults({
           approval_bucket: isKept ? 'approved' : '',
         };
       }),
-      ...hardDrops.slice(0, 60).map((drop) => ({
+      ...hardDrops.map((drop) => ({
         url: String(drop.url || '').trim(),
         title: String(drop.title || '').trim(),
         domain: String(drop.host || drop.domain || '').trim(),
-        snippet: String(drop.snippet || '').slice(0, 260),
+        snippet: String(drop.snippet || ''),
         score: 0,
         decision: 'hard_drop',
         rationale: drop.hard_drop_reason || 'hard_drop',

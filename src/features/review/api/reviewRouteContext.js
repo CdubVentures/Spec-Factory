@@ -11,7 +11,7 @@ import { runComponentReviewBatch } from '../../../pipeline/componentReviewBatch.
 import {
   resolveGridFieldStateForMutation, resolveComponentMutationContext,
   resolveEnumMutationContext,
-} from '../../../api/reviewMutationResolvers.js';
+} from './mutationResolvers.js';
 import { buildComponentIdentifier } from '../../../utils/componentIdentifier.js';
 import { loadQueueState, saveQueueState } from '../../../queue/queueState.js';
 import { slugify } from '../../catalog/index.js';

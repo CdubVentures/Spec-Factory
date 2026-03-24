@@ -150,6 +150,11 @@ test('manufacturer_brand_restricted becomes routing demotion, not reject', () =>
       { host: 'steelseries.com', tierName: 'manufacturer' },
     ],
   });
+  planner.updateBrandHints({
+    officialDomain: 'razer.com',
+    aliases: ['razer'],
+    supportDomain: null,
+  });
   // WHY: Use a support path so manufacturer_locked_reject doesn't fire
   // (steelseries is manufacturer but not in brand host set)
   const meta = makeTriageMeta({ primary_lane: 3, approval_bucket: 'approved', selection_priority: 'medium' });

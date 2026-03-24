@@ -10,7 +10,7 @@ import {
   sanitizeExistingAcceptedCandidateId,
   resolveEnumRequiredCandidate,
   applyEnumSuggestionStatusByAction,
-} from '../src/api/reviewEnumMutationRoutes.js';
+} from '../src/features/review/api/enumMutationRoutes.js';
 
 import {
   normalizeEnumToken,

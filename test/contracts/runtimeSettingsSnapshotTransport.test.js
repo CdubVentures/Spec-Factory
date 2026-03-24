@@ -34,7 +34,6 @@ describe('runtimeSettingsSnapshotTransport — Plan 05', () => {
         autoScrollEnabled: true,
         fetchConcurrency: 8,
         llmModelPlan: 'gemini-2.5-flash',
-        staticDomTargetMatchThreshold: 0.55,
         searchEngines: 'google,bing',
       };
       const snapshotPath = writeRuntimeSettingsSnapshot('test-run-001', body, tmpDir);
@@ -50,7 +49,6 @@ describe('runtimeSettingsSnapshotTransport — Plan 05', () => {
       strictEqual(snapshot.settings.autoScrollEnabled, true);
       strictEqual(snapshot.settings.fetchConcurrency, 8);
       strictEqual(snapshot.settings.llmModelPlan, 'gemini-2.5-flash');
-      strictEqual(snapshot.settings.staticDomTargetMatchThreshold, 0.55);
       strictEqual(snapshot.settings.searchEngines, 'google,bing');
 
       // Run control fields should be excluded

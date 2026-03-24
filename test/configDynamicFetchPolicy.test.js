@@ -11,7 +11,6 @@ test('config: parses DYNAMIC_FETCH_POLICY_MAP_JSON into normalized map', () => {
       pageGotoTimeoutMs: 9000,
       pageNetworkIdleTimeoutMs: 2500,
       perHostMinDelayMs: 200,
-      graphqlReplayEnabled: false,
       retryBudget: 2,
       retryBackoffMs: 600
     }
@@ -24,7 +23,6 @@ test('config: parses DYNAMIC_FETCH_POLICY_MAP_JSON into normalized map', () => {
     assert.equal(Boolean(config.dynamicFetchPolicyMap), true);
     assert.equal(Boolean(config.dynamicFetchPolicyMap['example.com']), true);
     assert.equal(config.dynamicFetchPolicyMap['example.com'].pageGotoTimeoutMs, 9000);
-    assert.equal(config.dynamicFetchPolicyMap['example.com'].graphqlReplayEnabled, false);
     assert.equal(config.dynamicFetchPolicyMap['example.com'].retryBudget, 2);
     assert.equal(config.dynamicFetchPolicyMap['example.com'].retryBackoffMs, 600);
     assert.equal(config.dynamicFetchRetryBudget, 1);

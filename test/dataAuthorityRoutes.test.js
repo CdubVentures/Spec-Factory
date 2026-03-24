@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { registerDataAuthorityRoutes } from '../src/features/category-authority/api/dataAuthorityRoutes.js';
 import { resetDataPropagationCounters } from '../src/observability/dataPropagationCounters.js';
 import { resetSettingsPersistenceCounters } from '../src/observability/settingsPersistenceCounters.js';
-import { emitDataChange } from '../src/api/events/dataChangeContract.js';
+import { emitDataChange } from '../src/core/events/dataChangeContract.js';
 
 function makeCtx(overrides = {}) {
   const ctx = {

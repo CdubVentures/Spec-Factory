@@ -420,6 +420,69 @@ export class FrontierDbSqlite {
     };
   }
 
+  aggregateDomainStats(domains) {
+    const now = Date.now();
+    const results = new Map();
+    for (const domain of domains || []) {
+      const key = String(domain || '').trim().toLowerCase();
+      if (!key) continue;
+
+      const rows = this.db.prepare(
+        'SELECT fetch_count, ok_count, blocked_count, timeout_count, elapsed_ms, last_status, last_seen_ts, cooldown_next_retry_ts FROM urls WHERE domain = ?'
+      ).all(key);
+
+      let fetchCount = 0;
+      let okCount = 0;
+      let blockedCount = 0;
+      let timeoutCount = 0;
+      let totalElapsedMs = 0;
+      let latencyCount = 0;
+      let maxCooldownMs = 0;
+      let lastBlockedTs = null;
+
+      for (const row of rows) {
+        fetchCount += toInt(row.fetch_count, 0);
+        okCount += toInt(row.ok_count, 0);
+        blockedCount += toInt(row.blocked_count, 0);
+        timeoutCount += toInt(row.timeout_count, 0);
+        const elapsed = toInt(row.elapsed_ms, 0);
+        if (elapsed > 0) {
+          totalElapsedMs += elapsed;
+          latencyCount++;
+        }
+        const nextRetryTs = String(row.cooldown_next_retry_ts || '').trim();
+        if (nextRetryTs) {
+          const nextMs = Date.parse(nextRetryTs);
+          if (Number.isFinite(nextMs) && nextMs > now) {
+            maxCooldownMs = Math.max(maxCooldownMs, nextMs - now);
+          }
+        }
+        const lastStatus = toInt(row.last_status, 0);
+        if (lastStatus === 403 || lastStatus === 429) {
+          const ts = String(row.last_seen_ts || '').trim();
+          if (ts && (!lastBlockedTs || ts > lastBlockedTs)) {
+            lastBlockedTs = ts;
+          }
+        }
+      }
+
+      const successRate = fetchCount > 0 ? okCount / fetchCount : 0;
+      const avgLatencyMs = latencyCount > 0 ? Math.round(totalElapsedMs / latencyCount) : 0;
+
+      results.set(key, {
+        fetch_count: fetchCount,
+        ok_count: okCount,
+        blocked_count: blockedCount,
+        timeout_count: timeoutCount,
+        success_rate: Number.parseFloat(successRate.toFixed(4)),
+        avg_latency_ms: avgLatencyMs,
+        cooldown_remaining_ms: Math.round(maxCooldownMs),
+        last_blocked_ts: lastBlockedTs,
+      });
+    }
+    return results;
+  }
+
   frontierSnapshot({ limit = 120 } = {}) {
     const rows = this.db.prepare(
       'SELECT * FROM urls ORDER BY last_seen_ts DESC LIMIT ?'

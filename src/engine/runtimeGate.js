@@ -106,7 +106,17 @@ export function applyRuntimeFieldRules({
       continue;
     }
     nextFields[field] = normalized.normalized;
-    if (JSON.stringify(before) !== JSON.stringify(normalized.normalized)) {
+    // WHY: Shallow comparison replaces JSON.stringify — contract guarantees
+    // values are scalars or flat arrays of scalars (no nested objects).
+    let changed = false;
+    if (Array.isArray(normalized.normalized)) {
+      changed = !Array.isArray(before)
+        || before.length !== normalized.normalized.length
+        || before.some((v, i) => normalized.normalized[i] !== v);
+    } else {
+      changed = before !== normalized.normalized;
+    }
+    if (changed) {
       changes.push({
         field,
         stage: 'normalize',

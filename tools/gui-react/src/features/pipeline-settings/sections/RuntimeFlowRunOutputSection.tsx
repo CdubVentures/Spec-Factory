@@ -133,24 +133,6 @@ export const RuntimeFlowRunOutputSection = memo(function RuntimeFlowRunOutputSec
               className={inputCls}
             />
           </SettingRow>
-          <SettingRow label="ELO Supabase Anon Key" tip={`${OUTPUT_PHASE_TIP}\nLives in: optional cloud integration wiring.\nWhat this controls: the anonymous key used by optional ELO Supabase integrations.`}>
-            <input
-              type="text"
-              value={runtimeDraft.eloSupabaseAnonKey}
-              onChange={(event) => updateDraft('eloSupabaseAnonKey', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
-          <SettingRow label="ELO Supabase Endpoint" tip={`${OUTPUT_PHASE_TIP}\nLives in: optional cloud integration wiring.\nWhat this controls: the base endpoint used by optional ELO Supabase integrations.`}>
-            <input
-              type="text"
-              value={runtimeDraft.eloSupabaseEndpoint}
-              onChange={(event) => updateDraft('eloSupabaseEndpoint', event.target.value)}
-              disabled={!runtimeSettingsReady}
-              className={inputCls}
-            />
-          </SettingRow>
           <SettingRow label="AWS Region" tip={`${OUTPUT_PHASE_TIP}\nLives in: shared storage configuration.\nWhat this controls: the AWS region token used for S3 and related integrations.`} description="Configured on Storage tab.">
             <span className="sf-text-label">{storageAwsRegion || runtimeDraft.awsRegion || 'us-east-2'}</span>
           </SettingRow>

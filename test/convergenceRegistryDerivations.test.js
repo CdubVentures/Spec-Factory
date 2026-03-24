@@ -17,7 +17,7 @@ describe('convergence registry derivations', () => {
     it('produces exact match with golden master', () => {
       assert.deepStrictEqual(
         deriveConvergenceDefaults(CONVERGENCE_SETTINGS_REGISTRY),
-        { serpTriageMinScore: 3 },
+        {},
       );
     });
 
@@ -29,7 +29,7 @@ describe('convergence registry derivations', () => {
   describe('deriveConvergenceRouteContract', () => {
     it('produces exact match with golden master', () => {
       const contract = deriveConvergenceRouteContract(CONVERGENCE_SETTINGS_REGISTRY);
-      assert.deepStrictEqual([...contract.intKeys], ['serpTriageMinScore']);
+      assert.deepStrictEqual([...contract.intKeys], []);
       assert.deepStrictEqual([...contract.floatKeys], []);
       assert.deepStrictEqual([...contract.boolKeys], []);
     });
@@ -58,7 +58,7 @@ describe('convergence registry derivations', () => {
     it('produces exact match with golden master', () => {
       assert.deepStrictEqual(
         deriveConvergenceValueTypes(CONVERGENCE_SETTINGS_REGISTRY),
-        { serpTriageMinScore: 'integer' },
+        {},
       );
     });
 
@@ -83,7 +83,7 @@ describe('convergence registry derivations', () => {
     it('produces exact match with golden master', () => {
       assert.deepStrictEqual(
         deriveConvergenceKeySet(CONVERGENCE_SETTINGS_REGISTRY),
-        ['serpTriageMinScore'],
+        [],
       );
     });
 

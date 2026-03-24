@@ -58,3 +58,13 @@ export declare function computeAvgBudgetScore(
 export declare function computeCooldownSummary(
   health: DomainHealthRow[],
 ): CooldownSummary;
+
+export interface FetchSummary {
+  totalFetches: number;
+  totalBlocks: number;
+  totalTimeouts: number;
+}
+
+export declare function computeFetchSummary(
+  health: DomainHealthRow[],
+): FetchSummary;

@@ -77,7 +77,6 @@ describe('generateManifestTypes', () => {
 
   it('contains exported union type definitions for enums', () => {
     ok(output.includes('RuntimeResumeMode'), 'should export RuntimeResumeMode');
-    ok(output.includes('RuntimeOcrBackend'), 'should export RuntimeOcrBackend');
     ok(output.includes('RuntimeRepairDedupeRule'), 'should export RuntimeRepairDedupeRule');
   });
 

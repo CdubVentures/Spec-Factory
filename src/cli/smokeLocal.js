@@ -44,14 +44,12 @@ export async function main() {
   await fs.mkdir(path.dirname(normalizedOutPath), { recursive: true });
   await fs.mkdir(path.dirname(summaryOutPath), { recursive: true });
 
-  await fs.writeFile(normalizedOutPath, JSON.stringify(result.normalized, null, 2));
-  await fs.writeFile(summaryOutPath, JSON.stringify(result.summary, null, 2));
-
-  assert(result.summary.validated === false, 'Smoke assertion failed: expected validated=false');
-  assert(
-    result.summary.validated_reason === 'BELOW_CONFIDENCE_THRESHOLD',
-    `Smoke assertion failed: expected BELOW_CONFIDENCE_THRESHOLD, got ${result.summary.validated_reason}`
-  );
+  const crawlSummary = {
+    urls_crawled: result.crawlResults?.length ?? 0,
+    urls_successful: result.crawlResults?.filter((r) => r.success).length ?? 0,
+  };
+  await fs.writeFile(normalizedOutPath, JSON.stringify(crawlSummary, null, 2));
+  await fs.writeFile(summaryOutPath, JSON.stringify(crawlSummary, null, 2));
 
   let llmRun = {
     enabled: false
@@ -77,9 +75,7 @@ export async function main() {
       llmRun = {
         enabled: true,
         runId: llmResult.runId,
-        validated: llmResult.summary.validated,
-        validated_reason: llmResult.summary.validated_reason,
-        llm_summary: llmResult.summary.llm
+        urls_crawled: llmResult.crawlResults?.length ?? 0,
       };
     }
   }
@@ -90,11 +86,8 @@ export async function main() {
         smoke: 'local',
         productId: result.productId,
         runId: result.runId,
-        validated: result.summary.validated,
-        validated_reason: result.summary.validated_reason,
-        confidence: result.summary.confidence,
-        completeness_required_percent: result.summary.completeness_required_percent,
-        coverage_overall_percent: result.summary.coverage_overall_percent,
+        urls_crawled: result.crawlResults?.length ?? 0,
+        urls_successful: result.crawlResults?.filter((r) => r.success).length ?? 0,
         normalized_out: normalizedOutPath,
         summary_out: summaryOutPath,
         llm_mode: llmRun

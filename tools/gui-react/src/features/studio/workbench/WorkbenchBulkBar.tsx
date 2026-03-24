@@ -9,11 +9,10 @@ interface Props {
   onClear: () => void;
 }
 
-const REQUIRED_OPTIONS = ['identity', 'required', 'critical', 'expected', 'optional', 'editorial', 'commerce'];
+import { REQUIRED_LEVEL_OPTIONS as REQUIRED_OPTIONS, ENUM_POLICY_OPTIONS as POLICY_OPTIONS } from '../../../registries/fieldRuleTaxonomy.ts';
 import { PARSE_TEMPLATES } from '../state/parseTemplateRegistry';
 
 const TEMPLATE_OPTIONS = PARSE_TEMPLATES as unknown as string[];
-const POLICY_OPTIONS = ['open', 'closed', 'open_prefer_known'];
 
 export function WorkbenchBulkBar({ selectedCount, onApply, onClear }: Props) {
   const [bulkRequired, setBulkRequired] = useState('');

@@ -12,7 +12,7 @@ import {
   respondMissingComponentIdentityId,
   buildComponentMutationContextArgs,
   resolveComponentIdentityMutationPlan,
-} from '../src/api/reviewComponentMutationRoutes.js';
+} from '../src/features/review/api/componentMutationRoutes.js';
 
 // --- validateComponentPropertyCandidate ---
 

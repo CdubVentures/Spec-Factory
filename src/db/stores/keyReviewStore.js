@@ -1,4 +1,5 @@
-import { toPositiveInteger } from '../specDbHelpers.js';
+import { toPositiveInteger, hydrateRow, hydrateRows } from '../specDbHelpers.js';
+import { KEY_REVIEW_STATE_BOOLEAN_KEYS } from '../specDbSchema.js';
 
 /**
  * Key Review store — extracted from SpecDb.
@@ -304,59 +305,59 @@ export function createKeyReviewStore({ db, category, stmts }) {
     if (targetKind === 'grid_key') {
       const slotId = toPositiveInteger(itemFieldStateId);
       if (!slotId) return null;
-      return db.prepare(
+      return hydrateRow(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
         "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'grid_key' AND item_field_state_id = ?"
-      ).get(c, slotId) || null;
+      ).get(c, slotId)) || null;
     } else if (targetKind === 'enum_key') {
       const slotId = toPositiveInteger(listValueId);
       if (!slotId) return null;
-      return db.prepare(
+      return hydrateRow(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
         "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'enum_key' AND list_value_id = ?"
-      ).get(c, slotId) || null;
+      ).get(c, slotId)) || null;
     } else if (targetKind === 'component_key') {
       const valueSlotId = toPositiveInteger(componentValueId);
       if (valueSlotId) {
-        return db.prepare(
+        return hydrateRow(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
           "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_value_id = ?"
-        ).get(c, valueSlotId) || null;
+        ).get(c, valueSlotId)) || null;
       }
       const identitySlotId = toPositiveInteger(componentIdentityId);
       const normalizedPropertyKey = String(propertyKey || '').trim();
       if (!identitySlotId || !normalizedPropertyKey) return null;
-      return db.prepare(
+      return hydrateRow(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
         "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_identity_id = ? AND property_key = ?"
-      ).get(c, identitySlotId, normalizedPropertyKey) || null;
+      ).get(c, identitySlotId, normalizedPropertyKey)) || null;
     }
     return null;
   }
 
   function getKeyReviewStatesForItem(itemIdentifier) {
-    return db.prepare(
+    return hydrateRows(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
       "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'grid_key' AND item_identifier = ? ORDER BY field_key"
-    ).all(category, itemIdentifier);
+    ).all(category, itemIdentifier));
   }
 
   function getKeyReviewStatesForField(fieldKey, targetKind) {
     if (targetKind) {
-      return db.prepare(
+      return hydrateRows(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
         'SELECT * FROM key_review_state WHERE category = ? AND target_kind = ? AND field_key = ? ORDER BY item_identifier, enum_value_norm'
-      ).all(category, targetKind, fieldKey);
+      ).all(category, targetKind, fieldKey));
     }
-    return db.prepare(
+    return hydrateRows(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
       'SELECT * FROM key_review_state WHERE category = ? AND field_key = ? ORDER BY target_kind, item_identifier, enum_value_norm'
-    ).all(category, fieldKey);
+    ).all(category, fieldKey));
   }
 
   function getKeyReviewStatesForComponent(componentIdentifier) {
-    return db.prepare(
+    return hydrateRows(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
       "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_identifier = ? ORDER BY property_key"
-    ).all(category, componentIdentifier);
+    ).all(category, componentIdentifier));
   }
 
   function getKeyReviewStatesForEnum(fieldKey) {
-    return db.prepare(
+    return hydrateRows(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare(
       "SELECT * FROM key_review_state WHERE category = ? AND target_kind = 'enum_key' AND field_key = ? ORDER BY enum_value_norm"
-    ).all(category, fieldKey);
+    ).all(category, fieldKey));
   }
 
   function updateKeyReviewAiConfirm({ id, lane, status, confidence, at, error }) {
@@ -587,7 +588,7 @@ export function createKeyReviewStore({ db, category, stmts }) {
   function getKeyReviewStateById(id) {
     const parsed = Number(id);
     if (!Number.isFinite(parsed) || parsed <= 0) return null;
-    return db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(parsed) || null;
+    return hydrateRow(KEY_REVIEW_STATE_BOOLEAN_KEYS, db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(parsed)) || null;
   }
 
   function updateKeyReviewSelectedCandidate({ id, selectedCandidateId, selectedValue, confidenceScore }) {

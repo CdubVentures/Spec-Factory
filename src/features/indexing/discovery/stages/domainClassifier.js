@@ -1,12 +1,14 @@
 // WHY: Stage 08 of the prefetch pipeline — Domain Classifier.
 // Enqueues approved URLs and seeds candidate URLs into the planner.
 // Builds triage metadata map so planner.enqueue() can look up triage labels.
+// Enforces domainClassifierUrlCap — the per-run URL count limit for enqueuing.
 
 import { canonicalizeQueueUrl } from '../../../../planner/sourcePlannerUrlUtils.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 
 /**
  * @param {object} ctx
- * @returns {{ enqueuedCount: number, seededCount: number }}
+ * @returns {{ enqueuedCount: number, seededCount: number, overflowCount: number }}
  */
 export function runDomainClassifier({
   discoveryResult,
@@ -57,9 +59,14 @@ export function runDomainClassifier({
     });
   }
 
-  // WHY: Single enqueue path — triage metadata drives queue routing.
-  // No caps, no approved/candidate split. SERP selector already decided what survives.
-  const approvedUrls = discoveryResult.selectedUrls || [];
+  // WHY: domainClassifierUrlCap controls how many URLs this stage enqueues
+  // into the planner per run. URLs are ranked by triage_score (descending)
+  // so the highest-value URLs from the SERP selector survive the cap.
+  const urlCap = configInt(config, 'domainClassifierUrlCap');
+  const allApprovedUrls = discoveryResult.selectedUrls || [];
+  const approvedUrls = _applyUrlCap(allApprovedUrls, urlCap, triageMetaMap);
+  const overflowCount = allApprovedUrls.length - approvedUrls.length;
+
   const candidateUrls = discoveryResult.allCandidateUrls || [];
   for (const url of approvedUrls) {
     const meta = triageMetaMap.size > 0 ? _lookupTriageMeta(url, triageMetaMap) : null;
@@ -79,7 +86,10 @@ export function runDomainClassifier({
     const counters = planner.enqueueCounters;
     logger?.info?.('discovery_enqueue_summary', {
       ...counters,
-      input_selected_count: approvedUrls.length,
+      input_selected_count: allApprovedUrls.length,
+      enqueued_count: approvedUrls.length,
+      overflow_count: overflowCount,
+      domain_classifier_url_cap: urlCap,
       input_candidate_count: candidateUrls.length,
     });
   }
@@ -87,7 +97,19 @@ export function runDomainClassifier({
   return {
     enqueuedCount: approvedUrls.length,
     seededCount,
+    overflowCount,
   };
+}
+
+function _applyUrlCap(urls, cap, triageMetaMap) {
+  if (!cap || cap <= 0 || urls.length <= cap) return urls;
+  // WHY: Sort by triage_score descending so the highest-ranked URLs survive.
+  const scored = urls.map((url) => {
+    const meta = _lookupTriageMeta(url, triageMetaMap);
+    return { url, score: meta?.triage_score ?? 0 };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, cap).map((entry) => entry.url);
 }
 
 function _lookupTriageMeta(url, triageMetaMap) {

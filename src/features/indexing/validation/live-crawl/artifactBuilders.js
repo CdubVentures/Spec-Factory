@@ -10,12 +10,9 @@ export const REQUIRED_SETTINGS_KEYS = Object.freeze([
   'discoveryEnabled',
   'preferHttpFetcher',
   'dynamicCrawleeEnabled',
-  'fetchSchedulerMaxRetries',
   'perHostMinDelayMs',
   'pageGotoTimeoutMs',
   'postLoadWaitMs',
-  'pdfBackendRouterEnabled',
-  'scannedPdfOcrEnabled',
   'capturePageScreenshotEnabled',
   'maxUrlsPerProduct',
   'maxRunSeconds'

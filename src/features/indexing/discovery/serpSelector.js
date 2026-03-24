@@ -15,15 +15,6 @@ import {
   inferRoleForHost,
 } from '../../../categories/loader.js';
 
-// ---------------------------------------------------------------------------
-// Named constants
-// ---------------------------------------------------------------------------
-
-export const SERP_SELECTOR_MAX_CANDIDATES = 80;
-export const SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES = 120;
-export const SERP_SELECTOR_TITLE_MAX_CHARS = 200;
-export const SERP_SELECTOR_SNIPPET_MAX_CHARS = 260;
-
 const HOST_TRUST_TO_LANE = {
   official: 1,
   support: 1,
@@ -93,7 +84,6 @@ export function buildSerpSelectorInput({
   categoryConfig,
   discoveryCap,
   serpSelectorUrlCap,
-  domainClassifierUrlCap,
 }) {
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
@@ -109,25 +99,13 @@ export function buildSerpSelectorInput({
   const isMultiHit = (row) =>
     (toArray(row?.seen_in_queries).length >= 2) || (toArray(row?.seen_by_providers).length >= 2);
 
-  const priorityRows = [];
-  const normalRows = [];
-  for (const row of candidateRows) {
-    if (isPinned(row) || isMultiHit(row)) priorityRows.push(row);
-    else normalRows.push(row);
-  }
-
-  // WHY: max_keep is controlled by serpSelectorUrlCap, but the selector input
-  // list still honors the classifier-stage URL cap when provided.
-  const configuredInputCap = Number(domainClassifierUrlCap);
-  const effectiveCap = Number.isFinite(configuredInputCap) && configuredInputCap > 0
-    ? Math.min(SERP_SELECTOR_MAX_CANDIDATES, configuredInputCap)
-    : SERP_SELECTOR_MAX_CANDIDATES;
-
-  const priorityCapped = priorityRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
-  const normalSlots = Math.max(0, effectiveCap - priorityCapped.length);
-  const normalCapped = normalRows.slice(0, normalSlots);
-  let sentRows = [...priorityCapped, ...normalCapped];
-  sentRows = sentRows.slice(0, SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
+  // WHY: Sort pinned/multi-hit first, then slice to serpSelectorUrlCap.
+  const sorted = [...candidateRows].sort((a, b) => {
+    const aPriority = isPinned(a) || isMultiHit(a) ? 0 : 1;
+    const bPriority = isPinned(b) || isMultiHit(b) ? 0 : 1;
+    return aPriority - bPriority;
+  });
+  const sentRows = sorted.slice(0, serpSelectorUrlCap);
 
   const sentUrlSet = new Set(sentRows.map((r) => r.url));
   const overflowRows = candidateRows.filter((r) => !sentUrlSet.has(r.url));
@@ -143,8 +121,8 @@ export function buildSerpSelectorInput({
       id,
       url,
       host,
-      title: String(row?.title || '').slice(0, SERP_SELECTOR_TITLE_MAX_CHARS),
-      snippet: String(row?.snippet || '').slice(0, SERP_SELECTOR_SNIPPET_MAX_CHARS),
+      title: String(row?.title || ''),
+      snippet: String(row?.snippet || ''),
     };
   });
 
@@ -167,6 +145,28 @@ export function buildSerpSelectorInput({
 }
 
 // ---------------------------------------------------------------------------
+// enrichCandidateRow — shared host trust + doc kind enrichment
+// ---------------------------------------------------------------------------
+
+function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig }) {
+  const host = normalizeHost(String(row.host || ''));
+  const url = String(row.url || '');
+  let pathname = '';
+  try { pathname = new URL(url).pathname; } catch { /* ignore */ }
+  const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
+  const docKind = guessDocKind({ url, pathname, title: row.title || '', snippet: row.snippet || '' });
+  return {
+    ...row,
+    approvedDomain: Boolean(row.approvedDomain),
+    identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
+    host_trust_class: hostTrust,
+    doc_kind_guess: docKind,
+    primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
+    score_source: 'llm_selector',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // adaptSerpSelectorOutput — derive all metadata deterministically
 // ---------------------------------------------------------------------------
 
@@ -181,88 +181,42 @@ export function adaptSerpSelectorOutput({
 
   const totalKept = keepIds.length;
 
+  // WHY: Shared enrichment extracted — host trust, doc kind, identity prelim, and
+  // lane assignment are identical across selected/notSelected/overflow candidates.
+  const enrich = (row) => enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig });
+
   for (let rank = 0; rank < keepIds.length; rank++) {
-    const id = keepIds[rank];
-    const originalRow = candidateMap.get(id);
+    const originalRow = candidateMap.get(keepIds[rank]);
     if (!originalRow) continue;
-
-    const host = normalizeHost(String(originalRow.host || ''));
-    const url = String(originalRow.url || '');
-    let pathname = '';
-    try { pathname = new URL(url).pathname; } catch { /* ignore */ }
-
-    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
-    const docKind = guessDocKind({ url, pathname, title: originalRow.title || '', snippet: originalRow.snippet || '' });
     const score = totalKept > 1 ? Math.round(100 - (rank * (99 / (totalKept - 1)))) : 100;
-
     selected.push({
-      ...originalRow,
-      approvedDomain: Boolean(originalRow.approvedDomain),
-      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
-      host_trust_class: hostTrust,
-      doc_kind_guess: docKind,
-      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
+      ...enrich(originalRow),
       triage_disposition: 'fetch_high',
       approval_bucket: 'approved',
       selection_priority: rank < Math.ceil(totalKept / 3) ? 'high' : 'medium',
       soft_reason_codes: ['llm_selected'],
       score,
-      score_source: 'llm_selector',
       score_breakdown: { score_source: 'llm_selector', rank: rank + 1 },
     });
   }
 
-  // Not-selected: everything in candidateMap not in keepSet
   for (const [id, originalRow] of candidateMap) {
     if (keepSet.has(id)) continue;
-    const host = normalizeHost(String(originalRow.host || ''));
-    let pathname = '';
-    try { pathname = new URL(String(originalRow.url || '')).pathname; } catch { /* ignore */ }
-    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
-    const docKind = guessDocKind({
-      url: String(originalRow.url || ''),
-      pathname,
-      title: originalRow.title || '',
-      snippet: originalRow.snippet || '',
-    });
     notSelected.push({
-      ...originalRow,
-      approvedDomain: Boolean(originalRow.approvedDomain),
-      host_trust_class: hostTrust,
-      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
-      doc_kind_guess: docKind,
-      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
+      ...enrich(originalRow),
       triage_disposition: 'fetch_low',
       selection_priority: 'low',
       score: 0,
-      score_source: 'llm_selector',
       score_breakdown: { score_source: 'llm_selector', reason: 'not_selected' },
     });
   }
 
-  // Overflow rows (capped out of selector input)
   for (const row of overflowRows) {
-    const host = normalizeHost(String(row.host || ''));
-    let pathname = '';
-    try { pathname = new URL(String(row.url || '')).pathname; } catch { /* ignore */ }
-    const hostTrust = deriveHostTrust({ host, officialDomain, supportDomain, categoryConfig });
-    const docKind = guessDocKind({
-      url: String(row.url || ''),
-      pathname,
-      title: row.title || '',
-      snippet: row.snippet || '',
-    });
     notSelected.push({
-      ...row,
-      approvedDomain: Boolean(row.approvedDomain),
-      host_trust_class: hostTrust,
-      identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
-      doc_kind_guess: docKind,
-      primary_lane: HOST_TRUST_TO_LANE[hostTrust] || 6,
+      ...enrich(row),
       triage_disposition: 'selector_input_capped',
       selection_priority: 'low',
       score: 0,
-      score_source: 'llm_selector',
       score_breakdown: { score_source: 'llm_selector', reason: 'selector_input_capped' },
     });
   }

@@ -32,7 +32,7 @@ function HealthCard({ label, value, sub, tip }: { label: string; value: string |
 
 export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, throughputHistory, runId, isRunning, onNavigateToWorkers }: OverviewTabProps) {
   const s = summary ?? {
-    status: 'unknown', round: 0, total_fetches: 0, total_parses: 0,
+    status: 'unknown', total_fetches: 0, total_parses: 0,
     total_llm_calls: 0, error_rate: 0, docs_per_min: 0, fields_per_min: 0, top_blockers: [],
   };
 
@@ -49,7 +49,6 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <HealthCard label="Status" value={s.status} tip={METRIC_TIPS.status} />
-          <HealthCard label="Round" value={s.round} tip={METRIC_TIPS.round} />
           <HealthCard label="Fetches" value={s.total_fetches} tip={METRIC_TIPS.fetches} />
           <HealthCard label="Parses" value={s.total_parses} tip={METRIC_TIPS.parses} />
           <HealthCard label="LLM Calls" value={s.total_llm_calls} tip={METRIC_TIPS.llm_calls} />

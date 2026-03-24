@@ -39,12 +39,11 @@ describe('registry-derived settings maps — characterization', () => {
   it('every registry int/float with min+max produces a bounds entry', () => {
     const bounds = deriveBounds(RUNTIME_SETTINGS_REGISTRY);
     const boundsKeys = Object.keys(bounds).sort();
-    ok(boundsKeys.length >= 100, `expected >=100 bounds keys, got ${boundsKeys.length}`);
+    ok(boundsKeys.length >= 70, `expected >=70 bounds keys, got ${boundsKeys.length}`);
 
     // Spot-check known values against current hardcoded RuntimeFlowDraftContracts.ts
     deepStrictEqual(bounds.fetchConcurrency, { min: 1, max: 64, int: true });
     deepStrictEqual(bounds.llmTimeoutMs, { min: 1000, max: 600000, int: true });
-    deepStrictEqual(bounds.staticDomTargetMatchThreshold, { min: 0, max: 1 }); // float, no int flag
     deepStrictEqual(bounds.llmMonthlyBudgetUsd, { min: 0, max: 100000 }); // float
     deepStrictEqual(bounds.searchProfileQueryCap, { min: 1, max: 100, int: true });
   });
@@ -56,7 +55,7 @@ describe('registry-derived settings maps — characterization', () => {
     strictEqual(typeMap.llmModelPlan, 'string');
     strictEqual(typeMap.autoScrollEnabled, 'bool');
     strictEqual(typeMap.searchEngines, 'csv_enum');
-    strictEqual(typeMap.scannedPdfOcrBackend, 'enum');
+    strictEqual(typeMap.outputMode, 'enum');
     strictEqual(typeMap.llmCostInputPer1M, 'float');
   });
 
@@ -66,7 +65,6 @@ describe('registry-derived settings maps — characterization', () => {
     ok(enumMap.searchEngines.includes('google-proxy'));
     ok(enumMap.resumeMode.includes('auto'));
     ok(enumMap.resumeMode.includes('force_resume'));
-    ok(enumMap.scannedPdfOcrBackend.includes('tesseract'));
     ok(enumMap.repairDedupeRule.includes('domain_once'));
   });
 
@@ -101,30 +99,26 @@ describe('registry-derived settings maps — characterization', () => {
       'fetchBudgetMs', 'fetchConcurrency', 'perHostMinDelayMs', 'searxngMinQueryIntervalMs',
       'domainRequestRps', 'domainRequestBurst', 'globalRequestRps', 'globalRequestBurst',
       'fetchPerHostConcurrencyCap', 'crawleeRequestHandlerTimeoutSecs', 'dynamicFetchRetryBudget',
-      'dynamicFetchRetryBackoffMs', 'fetchSchedulerMaxRetries', 'pageGotoTimeoutMs',
+      'dynamicFetchRetryBackoffMs', 'pageGotoTimeoutMs',
       'pageNetworkIdleTimeoutMs', 'postLoadWaitMs', 'frontierQueryCooldownSeconds',
       'frontierCooldown404Seconds', 'frontierCooldown404RepeatSeconds', 'frontierCooldown410Seconds',
       'frontierCooldownTimeoutSeconds', 'frontierCooldown403BaseSeconds', 'frontierCooldown429BaseSeconds',
       'frontierBackoffMaxExponent', 'frontierPathPenaltyNotfoundThreshold', 'frontierBlockedDomainThreshold',
-      'autoScrollPasses', 'autoScrollDelayMs', 'maxGraphqlReplays', 'maxNetworkResponsesPerPage',
+      'autoScrollPasses', 'autoScrollDelayMs',
       'robotsTxtTimeoutMs', 'runtimeScreencastFps', 'runtimeScreencastQuality',
       'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight', 'fieldRewardHalfLifeDays',
       'driftPollSeconds', 'driftScanMaxProducts', 'endpointSignalLimit', 'endpointSuggestionLimit',
-      'endpointNetworkScanLimit', 'searchProfileQueryCap', 'searchPlannerQueryCap',
+      'endpointNetworkScanLimit', 'searchProfileQueryCap',
       'maxUrlsPerProduct', 'maxCandidateUrls', 'maxPagesPerDomain', 'maxRunSeconds', 'maxJsonBytes',
-      'maxPdfBytes', 'pdfBackendRouterTimeoutMs', 'pdfBackendRouterMaxPages', 'pdfBackendRouterMaxPairs',
-      'pdfBackendRouterMaxTextPreviewChars', 'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
-      'articleExtractorMinChars', 'articleExtractorMinScore', 'articleExtractorMaxChars',
-      'staticDomTargetMatchThreshold', 'staticDomMaxEvidenceSnippets', 'domSnippetMaxChars',
-      'llmExtractionCacheTtlMs', 'llmMaxCallsPerProductTotal', 'llmExtractMaxSnippetsPerBatch',
-      'llmExtractMaxSnippetChars', 'llmReasoningBudget', 'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd',
-      'llmMaxCallsPerRound', 'llmMaxOutputTokens', 'llmVerifySampleRate', 'llmMaxBatchesPerProduct',
-      'llmMaxEvidenceChars', 'llmMaxTokens', 'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M',
-      'llmCostCachedInputPer1M', 'maxHypothesisItems', 'hypothesisAutoFollowupRounds',
-      'hypothesisFollowupUrlsPerRound', 'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
+      'maxPdfBytes', 'capturePageScreenshotQuality', 'capturePageScreenshotMaxBytes',
+      'llmMaxCallsPerProductTotal',
+      'llmReasoningBudget', 'llmMonthlyBudgetUsd', 'llmPerProductBudgetUsd',
+      'llmMaxCallsPerRound', 'llmMaxOutputTokens',
+      'llmMaxTokens', 'llmTimeoutMs', 'llmCostInputPer1M', 'llmCostOutputPer1M',
+      'llmCostCachedInputPer1M', 'maxHypothesisItems',
+      'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
       'daemonConcurrency', 'importsPollSeconds', 'indexingResumeSeedLimit', 'indexingResumePersistLimit',
-      'scannedPdfOcrMaxPages', 'scannedPdfOcrMaxPairs', 'scannedPdfOcrMinCharsPerPage',
-      'scannedPdfOcrMinLinesPerPage', 'scannedPdfOcrMinConfidence', 'resumeWindowHours',
+      'resumeWindowHours',
       'reextractAfterHours', 'reCrawlStaleAfterDays', 'llmMaxOutputTokensReasoningFallback',
       'googleSearchTimeoutMs', 'googleSearchMinQueryIntervalMs', 'googleSearchMaxRetries',
       'searchMaxRetries', 'serpSelectorUrlCap', 'domainClassifierUrlCap',

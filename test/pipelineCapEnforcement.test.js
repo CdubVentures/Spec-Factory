@@ -50,7 +50,6 @@ function makeConfig(overrides = {}) {
   return {
     searchEngines: 'bing',
     searchProfileQueryCap: 10,
-    searchPlannerQueryCap: 30,
     serpSelectorUrlCap: 50,
     domainClassifierUrlCap: 40,
     ...overrides,
@@ -106,7 +105,7 @@ function makeCandidateRows(count) {
 describe('queryJourney respects searchProfileQueryCap as final output cap', () => {
   it('caps merged query output to searchProfileQueryCap, not searchPlannerQueryCap', async () => {
     const ctx = makeMinimalJourneyCtx({
-      config: makeConfig({ searchProfileQueryCap: 10, searchPlannerQueryCap: 30 }),
+      config: makeConfig({ searchProfileQueryCap: 10 }),
       searchProfileBase: makeSearchProfileBase(20),
       enhancedRows: makeEnhancedRows(25),
     });
@@ -125,7 +124,7 @@ describe('queryJourney respects searchProfileQueryCap as final output cap', () =
   it('uses searchPlannerQueryCap only for planner contribution, not final output', async () => {
     // 5 deterministic queries, 30 planner queries, profileCap=8, plannerCap=30
     const ctx = makeMinimalJourneyCtx({
-      config: makeConfig({ searchProfileQueryCap: 8, searchPlannerQueryCap: 30 }),
+      config: makeConfig({ searchProfileQueryCap: 8 }),
       searchProfileBase: makeSearchProfileBase(5),
       enhancedRows: makeEnhancedRows(30),
     });
@@ -150,15 +149,12 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
-      discoveryCap: 30,         // historically derived from searchPlannerQueryCap
+      discoveryCap: 30,
       serpSelectorUrlCap: 50,
-      domainClassifierUrlCap: 40,
     });
 
-    // maxKeep must be serpSelectorUrlCap (50), NOT min(30, 50)=30
     assert.equal(result.selectorInput.max_keep, 50,
       `Expected max_keep=50 (serpSelectorUrlCap), got ${result.selectorInput.max_keep}`);
   });
@@ -171,19 +167,19 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: undefined,
       serpSelectorUrlCap: 25,
-      domainClassifierUrlCap: 60,
     });
 
     assert.equal(result.selectorInput.max_keep, 25,
       `Expected max_keep=25 (serpSelectorUrlCap), got ${result.selectorInput.max_keep}`);
   });
 
-  it('domainClassifierUrlCap controls input candidate count', () => {
+  it('SERP selector input capped at SERP_SELECTOR_MAX_CANDIDATES (80)', () => {
+    // WHY: domainClassifierUrlCap no longer controls SERP selector input.
+    // It now controls Stage 08 enqueue cap. SERP input is always ≤ 80.
     const candidateRows = makeCandidateRows(100);
     const result = buildSerpSelectorInput({
       runId: 'run-3',
@@ -191,16 +187,92 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       productId: 'p1',
       variables: { brand: 'Test', model: 'M1', variant: '' },
       brandResolution: null,
-
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: 999,
       serpSelectorUrlCap: 50,
-      domainClassifierUrlCap: 40,
     });
 
-    // Candidate count should be capped by domainClassifierUrlCap (40)
-    assert.ok(result.selectorInput.candidates.length <= 40,
-      `Expected ≤40 candidates (domainClassifierUrlCap), got ${result.selectorInput.candidates.length}`);
+    assert.ok(result.selectorInput.candidates.length <= 80,
+      `Expected ≤80 candidates (SERP_SELECTOR_MAX_CANDIDATES), got ${result.selectorInput.candidates.length}`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// domainClassifierUrlCap: Stage 08 enqueue cap
+// ---------------------------------------------------------------------------
+
+import { runDomainClassifier } from '../src/features/indexing/discovery/stages/domainClassifier.js';
+
+describe('runDomainClassifier respects domainClassifierUrlCap', () => {
+  function makePlanner() {
+    const enqueued = [];
+    return {
+      enqueue(url, source, opts) { enqueued.push({ url, source, ...opts }); },
+      enqueueCounters: { total: 0 },
+      _enqueued: enqueued,
+    };
+  }
+
+  function makeDiscoveryResult(urlCount) {
+    const selectedUrls = [];
+    const candidates = [];
+    for (let i = 0; i < urlCount; i++) {
+      const url = `https://example-${i}.com/page`;
+      selectedUrls.push(url);
+      candidates.push({
+        url,
+        original_url: url,
+        host: `example-${i}.com`,
+        score: urlCount - i,
+        triage_disposition: 'fetch_high',
+        selection_priority: 'high',
+      });
+    }
+    return { selectedUrls, allCandidateUrls: selectedUrls, candidates };
+  }
+
+  it('caps enqueued URLs to domainClassifierUrlCap', () => {
+    const planner = makePlanner();
+    const result = runDomainClassifier({
+      discoveryResult: makeDiscoveryResult(20),
+      planner,
+      config: { domainClassifierUrlCap: 10 },
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    assert.equal(result.enqueuedCount, 10);
+    assert.equal(result.overflowCount, 10);
+    assert.equal(planner._enqueued.length, 10);
+  });
+
+  it('enqueues all URLs when under cap', () => {
+    const planner = makePlanner();
+    const result = runDomainClassifier({
+      discoveryResult: makeDiscoveryResult(5),
+      planner,
+      config: { domainClassifierUrlCap: 50 },
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    assert.equal(result.enqueuedCount, 5);
+    assert.equal(result.overflowCount, 0);
+    assert.equal(planner._enqueued.length, 5);
+  });
+
+  it('selects highest-scored URLs when capping', () => {
+    const planner = makePlanner();
+    runDomainClassifier({
+      discoveryResult: makeDiscoveryResult(10),
+      planner,
+      config: { domainClassifierUrlCap: 3 },
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    // URLs with scores 10, 9, 8 should be enqueued (highest first)
+    assert.equal(planner._enqueued.length, 3);
+    assert.equal(planner._enqueued[0].url, 'https://example-0.com/page');
+    assert.equal(planner._enqueued[1].url, 'https://example-1.com/page');
+    assert.equal(planner._enqueued[2].url, 'https://example-2.com/page');
   });
 });

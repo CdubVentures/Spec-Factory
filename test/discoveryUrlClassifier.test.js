@@ -14,14 +14,12 @@ import {
   docHintMatchesDocKind,
   classifyUrlCandidate,
   isLowSignalDiscoveryPath,
-  isForumLikeDomainClassification,
   FORUM_SUBDOMAIN_LABELS,
   isForumLikeManufacturerSubdomain,
   DISCOVERY_PRODUCT_PATH_IGNORE_TOKENS,
   resolveProductPathAnchor,
   buildProductPathTokenSignature,
   detectSiblingManufacturerProductPage,
-  resolveDiscoveryAdmissionExclusionReason,
   isRelevantSearchResult,
   collectDomainClassificationSeeds,
 } from '../src/features/indexing/discovery/discoveryUrlClassifier.js';
@@ -210,15 +208,6 @@ test('isLowSignalDiscoveryPath: product path is not low signal', () => {
 // Forum detection
 // ---------------------------------------------------------------------------
 
-test('isForumLikeDomainClassification: recognizes forum types', () => {
-  assert.equal(isForumLikeDomainClassification('forum'), true);
-  assert.equal(isForumLikeDomainClassification('community'), true);
-  assert.equal(isForumLikeDomainClassification('discussion'), true);
-  assert.equal(isForumLikeDomainClassification('user_generated'), true);
-  assert.equal(isForumLikeDomainClassification('manufacturer'), false);
-  assert.equal(isForumLikeDomainClassification(''), false);
-});
-
 test('FORUM_SUBDOMAIN_LABELS: expected entries', () => {
   assert.ok(FORUM_SUBDOMAIN_LABELS.has('community'));
   assert.ok(FORUM_SUBDOMAIN_LABELS.has('forum'));
@@ -287,47 +276,6 @@ test('detectSiblingManufacturerProductPage: returns false for exact match', () =
     row: { role: 'manufacturer', path: '/product/viper-v3-pro' },
     variables: { model: 'Viper V3', variant: 'Pro', brand: 'Razer' }
   }), false);
-});
-
-// ---------------------------------------------------------------------------
-// resolveDiscoveryAdmissionExclusionReason
-// ---------------------------------------------------------------------------
-
-test('resolveDiscoveryAdmissionExclusionReason: empty for normal row', () => {
-  assert.equal(resolveDiscoveryAdmissionExclusionReason({
-    row: { host: 'rtings.com', role: 'review' },
-    variables: { model: 'Viper V3', brand: 'Razer' }
-  }), '');
-});
-
-test('resolveDiscoveryAdmissionExclusionReason: forum_subdomain', () => {
-  assert.equal(resolveDiscoveryAdmissionExclusionReason({
-    row: { host: 'community.razer.com', role: 'manufacturer' },
-    variables: { model: 'Viper V3', brand: 'Razer' }
-  }), 'forum_subdomain');
-});
-
-test('resolveDiscoveryAdmissionExclusionReason: forum_classification', () => {
-  const safetyMap = new Map([['forums.example.com', { classification: 'forum' }]]);
-  assert.equal(resolveDiscoveryAdmissionExclusionReason({
-    row: { host: 'forums.example.com', role: 'review' },
-    domainSafetyResults: safetyMap,
-    variables: { model: 'Viper V3', brand: 'Razer' }
-  }), 'forum_classification');
-});
-
-test('resolveDiscoveryAdmissionExclusionReason: multi_model_hint', () => {
-  assert.equal(resolveDiscoveryAdmissionExclusionReason({
-    row: { host: 'techradar.com', role: 'review', multi_model_hint: true },
-    variables: { model: 'Viper V3', brand: 'Razer' }
-  }), 'multi_model_hint');
-});
-
-test('resolveDiscoveryAdmissionExclusionReason: multi_model_hint allowed for manufacturer', () => {
-  assert.equal(resolveDiscoveryAdmissionExclusionReason({
-    row: { host: 'razer.com', role: 'manufacturer', multi_model_hint: true },
-    variables: { model: 'Viper V3', brand: 'Razer' }
-  }), '');
 });
 
 // ---------------------------------------------------------------------------
@@ -427,4 +375,12 @@ test('classifyUrlCandidate: produces expected shape', () => {
   assert.equal(typeof result.variant_guard_hit, 'boolean');
   assert.equal(typeof result.multi_model_hint, 'boolean');
   assert.ok(['strong', 'partial', 'weak', 'none'].includes(result.identity_match_level));
+});
+
+test('classifyUrlCandidate: returns null for invalid URL', () => {
+  const result = classifyUrlCandidate(
+    { url: 'not-a-valid-url', title: 'Test', snippet: '' },
+    { sourceHosts: [] }
+  );
+  assert.equal(result, null);
 });

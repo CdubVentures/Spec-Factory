@@ -46,7 +46,6 @@ Coverage is split across:
 - `providerState`
 - `queryConcurrency`
 - `discoveryCap`
-- optional `effectiveHostPlan`
 - optional SERP selector DI seams
 
 ## Live logic
@@ -56,9 +55,9 @@ The live triage flow is:
 1. Create candidate trace map via `createCandidateTraceMap()` (in `discoveryResultTraceBuilder.js`).
 2. Apply hard drops with `applyHardDropFilter()`.
 3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `discoveryResultClassifier.js`).
-4. Build deterministic domain safety results via `classifyDomains()` (in `discoveryResultClassifier.js`).
-5. Build selector input with `buildSerpSelectorInput()`.
-6. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, treat as all-reject (no deterministic fallback path).
+4. Build selector input with `buildSerpSelectorInput()`.
+5. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, treat as all-reject (no deterministic fallback path).
+6. Build deterministic domain safety results via `classifyDomains()` (in `discoveryResultClassifier.js`) — runs AFTER the SERP selector (pipeline contract: SERP Selector then Domain Classifier).
 7. Build reject-audit samples and audit trail.
 8. Emit observability events (`serp_selector_completed` with full candidate funnel).
 9. Enrich candidate traces with reason codes via `enrichCandidateTraces()` (in `discoveryResultTraceBuilder.js`).

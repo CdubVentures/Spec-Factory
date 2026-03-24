@@ -34,11 +34,9 @@ function makeIdentityLock() {
 
 function makeConfig(overrides = {}) {
   return {
-    serpTriageMinScore: 0,
     searchProvider: 'dual',
     llmModelPlan: 'test-model',
     s3InputPrefix: '_test',
-    discoveryResultsPerQuery: 10,
     ...overrides,
   };
 }

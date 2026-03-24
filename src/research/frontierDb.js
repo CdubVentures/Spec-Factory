@@ -533,6 +533,78 @@ export class FrontierDb {
     return { queries };
   }
 
+  aggregateDomainStats(domains) {
+    const now = nowMs();
+    const results = new Map();
+    for (const domain of domains || []) {
+      const key = String(domain || '').trim().toLowerCase();
+      if (!key) continue;
+
+      const statKey = `${key}|__all__`;
+      const stat = ensureObject(this.state.domain_stats[statKey]);
+
+      const okCount = toInt(stat.success_count, 0);
+      const blockedCount = toInt(stat.blocked_count, 0);
+      const sampleCount = toInt(stat.sample_count, 0);
+
+      // WHY: Compute latency + cooldown from per-URL records for this domain.
+      let totalElapsedMs = 0;
+      let fetchCountFromUrls = 0;
+      let maxCooldownMs = 0;
+      let lastBlockedTs = null;
+
+      for (const urlRow of Object.values(this.state.urls || {})) {
+        if (String(urlRow?.domain || '').toLowerCase() !== key) continue;
+        fetchCountFromUrls += toInt(urlRow.fetch_count, 0);
+
+        const cooldown = ensureObject(urlRow.cooldown);
+        const nextRetryTs = String(cooldown.next_retry_ts || '').trim();
+        if (nextRetryTs) {
+          const nextMs = Date.parse(nextRetryTs);
+          if (Number.isFinite(nextMs) && nextMs > now) {
+            maxCooldownMs = Math.max(maxCooldownMs, nextMs - now);
+          }
+        }
+
+        const lastStatus = toInt(urlRow.last_status, 0);
+        if (lastStatus === 403 || lastStatus === 429) {
+          const ts = String(urlRow.last_seen_ts || '').trim();
+          if (ts && (!lastBlockedTs || ts > lastBlockedTs)) {
+            lastBlockedTs = ts;
+          }
+        }
+      }
+
+      // WHY: Average latency from recent_fetches for this domain.
+      let latencyCount = 0;
+      for (const fetch of this.state.recent_fetches || []) {
+        const urlRow = ensureObject(this.state.urls[fetch.canonical_url]);
+        if (String(urlRow?.domain || '').toLowerCase() !== key) continue;
+        const elapsed = toInt(fetch.elapsed_ms, 0);
+        if (elapsed > 0) {
+          totalElapsedMs += elapsed;
+          latencyCount++;
+        }
+      }
+
+      const fetchCount = fetchCountFromUrls || sampleCount;
+      const successRate = fetchCount > 0 ? okCount / fetchCount : 0;
+      const avgLatencyMs = latencyCount > 0 ? Math.round(totalElapsedMs / latencyCount) : 0;
+
+      results.set(key, {
+        fetch_count: fetchCount,
+        ok_count: okCount,
+        blocked_count: blockedCount,
+        timeout_count: toInt(stat.other_count, 0),
+        success_rate: Number.parseFloat(successRate.toFixed(4)),
+        avg_latency_ms: avgLatencyMs,
+        cooldown_remaining_ms: Math.round(maxCooldownMs),
+        last_blocked_ts: lastBlockedTs,
+      });
+    }
+    return results;
+  }
+
   frontierSnapshot({ limit = 120 } = {}) {
     const rows = Object.values(this.state.urls || [])
       .sort((a, b) => Date.parse(String(b?.last_seen_ts || '')) - Date.parse(String(a?.last_seen_ts || '')))

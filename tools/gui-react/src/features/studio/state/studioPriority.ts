@@ -10,6 +10,16 @@ import type {
   FieldRule,
   PriorityProfile,
 } from "../../../types/studio";
+import {
+  REQUIRED_LEVEL_OPTIONS,
+  REQUIRED_LEVEL_RANK,
+  AVAILABILITY_OPTIONS,
+  AVAILABILITY_RANK,
+  DIFFICULTY_OPTIONS,
+  DIFFICULTY_RANK,
+  AI_MODE_OPTIONS,
+  AI_MODEL_STRATEGY_OPTIONS,
+} from "../../../registries/fieldRuleTaxonomy.ts";
 
 export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
   required_level: "expected",
@@ -18,51 +28,10 @@ export const DEFAULT_PRIORITY_PROFILE: Required<PriorityProfile> = {
   effort: 3,
 };
 
-const PRIORITY_REQUIRED_LEVELS = [
-  "identity",
-  "critical",
-  "required",
-  "expected",
-  "optional",
-  "editorial",
-  "commerce",
-];
-const PRIORITY_AVAILABILITY_LEVELS = [
-  "always",
-  "expected",
-  "sometimes",
-  "rare",
-  "editorial_only",
-];
-const PRIORITY_DIFFICULTY_LEVELS = ["easy", "medium", "hard", "instrumented"];
-const REQUIRED_LEVEL_RANK: Record<string, number> = {
-  identity: 6,
-  critical: 5,
-  required: 4,
-  expected: 3,
-  optional: 2,
-  editorial: 1,
-  commerce: 1,
-};
-const AVAILABILITY_RANK: Record<string, number> = {
-  always: 5,
-  expected: 4,
-  sometimes: 3,
-  rare: 2,
-  editorial_only: 1,
-};
-const DIFFICULTY_RANK: Record<string, number> = {
-  easy: 1,
-  medium: 2,
-  hard: 3,
-  instrumented: 4,
-};
 const LIST_FIELD_ALIASES: Record<string, string[]> = {
   polling: ["polling_rate"],
   switches: ["switch"],
 };
-const AI_MODES = ["off", "advisory", "planner", "judge"];
-const AI_MODEL_STRATEGIES = ["auto", "force_fast", "force_deep"];
 
 export function normalizePriorityProfile(
   value: unknown,
@@ -87,14 +56,14 @@ export function normalizePriorityProfile(
     DEFAULT_PRIORITY_PROFILE.effort,
   );
   return {
-    required_level: PRIORITY_REQUIRED_LEVELS.includes(required_level)
-      ? required_level
+    required_level: (REQUIRED_LEVEL_OPTIONS as readonly string[]).includes(required_level)
+      ? (required_level as Required<PriorityProfile>['required_level'])
       : DEFAULT_PRIORITY_PROFILE.required_level,
-    availability: PRIORITY_AVAILABILITY_LEVELS.includes(availability)
-      ? availability
+    availability: (AVAILABILITY_OPTIONS as readonly string[]).includes(availability)
+      ? (availability as Required<PriorityProfile>['availability'])
       : DEFAULT_PRIORITY_PROFILE.availability,
-    difficulty: PRIORITY_DIFFICULTY_LEVELS.includes(difficulty)
-      ? difficulty
+    difficulty: (DIFFICULTY_OPTIONS as readonly string[]).includes(difficulty)
+      ? (difficulty as Required<PriorityProfile>['difficulty'])
       : DEFAULT_PRIORITY_PROFILE.difficulty,
     effort,
   };
@@ -258,9 +227,11 @@ export function normalizeAiAssistConfig(
           STUDIO_NUMERIC_KNOB_BOUNDS.aiMaxTokens.max,
         );
   return {
-    mode: AI_MODES.includes(modeToken) ? modeToken : null,
-    model_strategy: AI_MODEL_STRATEGIES.includes(strategyToken)
-      ? strategyToken
+    mode: (AI_MODE_OPTIONS as readonly string[]).includes(modeToken)
+      ? (modeToken as string)
+      : null,
+    model_strategy: (AI_MODEL_STRATEGY_OPTIONS as readonly string[]).includes(strategyToken)
+      ? (strategyToken as NonNullable<AiAssistConfig['model_strategy']>)
       : "auto",
     max_calls: maxCalls,
     max_tokens: maxTokens,

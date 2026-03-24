@@ -1,16 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore';
 import { type SourceEntry } from '../state/sourceStrategyAuthority';
 import { SectionNavIcon } from '../components/PipelineSettingsPageShell';
-// WHY: O(1) — types, draft shape, and enum options derived from backend contract SSOT.
+// WHY: O(1) — types and enum options derived from backend contract SSOT.
 import {
   TIER_OPTIONS,
   AUTHORITY_OPTIONS,
   DISCOVERY_METHOD_OPTIONS,
-  type SourceStrategyDraft,
-  type SourceStrategyDraftField,
+  type SourceFormEntry,
+  type SourceFormEntryField,
 } from '../state/sourceEntryDerived';
-export type { SourceStrategyDraft, SourceStrategyDraftField } from '../state/sourceEntryDerived';
+export type { SourceFormEntry, SourceFormEntryField } from '../state/sourceEntryDerived';
 
 type SortColumn = 'host' | 'name' | 'tier' | 'authority' | 'discovery' | 'priority' | 'enabled';
 type SortDirection = 'asc' | 'desc';
@@ -64,12 +64,12 @@ interface PipelineSourceStrategySectionProps {
   sourceStrategyErrorMessage: string;
   sourceStrategySaving: boolean;
   sourceDraftMode: 'create' | 'edit' | null;
-  sourceDraft: SourceStrategyDraft;
+  sourceDraft: SourceFormEntry;
   sourceInputCls: string;
   onToggleEntry: (entry: SourceEntry) => void;
   onEditEntry: (entry: SourceEntry) => void;
   onDeleteEntry: (sourceId: string) => void;
-  onUpdateSourceDraft: (key: SourceStrategyDraftField, value: string) => void;
+  onUpdateSourceDraft: (key: SourceFormEntryField, value: string | number | boolean | string[]) => void;
   onSaveEntryDraft: () => void;
   onCancelSourceDraft: () => void;
 }
@@ -355,6 +355,40 @@ function FormCheckbox({
   );
 }
 
+function FormCsvInput({
+  label,
+  value,
+  onChange,
+  cls,
+  placeholder,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  cls: string;
+  placeholder?: string;
+}) {
+  const joined = (value ?? []).join(', ');
+  const [text, setText] = useState(joined);
+  useEffect(() => { setText(joined); }, [joined]);
+  return (
+    <label className="space-y-1">
+      <span className="sf-text-label font-semibold" style={{ color: 'var(--sf-text)' }}>{label}</span>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          const arr = text.split(',').map((s) => s.trim()).filter(Boolean);
+          onChange(arr);
+          setText(arr.join(', '));
+        }}
+        className={cls}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
 export function PipelineSourceStrategySection({
   category,
   isAll,
@@ -446,8 +480,8 @@ export function PipelineSourceStrategySection({
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <FormSelect label="Method" value={sourceDraft.discovery.method} options={DISCOVERY_METHOD_OPTIONS} onChange={(v) => onUpdateSourceDraft('discovery.method', v)} cls={sourceInputCls} />
                   <FormInput label="Source Type" value={sourceDraft.discovery.source_type} onChange={(v) => onUpdateSourceDraft('discovery.source_type', v)} cls={sourceInputCls} placeholder="lab_review" />
-                  <FormInput label="Priority" value={sourceDraft.discovery.priority} onChange={(v) => onUpdateSourceDraft('discovery.priority', v)} cls={sourceInputCls} type="number" min={0} max={1000} />
-                  <FormSelect label="Enabled" value={sourceDraft.discovery.enabled} options={['true', 'false']} onChange={(v) => onUpdateSourceDraft('discovery.enabled', v)} cls={sourceInputCls} />
+                  <FormInput label="Priority" value={String(sourceDraft.discovery.priority)} onChange={(v) => onUpdateSourceDraft('discovery.priority', parseInt(v, 10) || 50)} cls={sourceInputCls} type="number" min={0} max={1000} />
+                  <FormCheckbox label="Enabled" checked={sourceDraft.discovery.enabled} onChange={(v) => onUpdateSourceDraft('discovery.enabled', v)} />
                 </div>
                 <FormInput label="Search Pattern" value={sourceDraft.discovery.search_pattern} onChange={(v) => onUpdateSourceDraft('discovery.search_pattern', v)} cls={sourceInputCls} placeholder="{brand} {model} specs" />
                 <label className="space-y-1 block">
@@ -463,8 +497,8 @@ export function PipelineSourceStrategySection({
               <fieldset className="space-y-2">
                 <legend className="sf-text-label font-semibold uppercase tracking-wide" style={{ color: 'var(--sf-muted)' }}>Document Hints</legend>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <FormInput label="Content Types" value={sourceDraft.content_types} onChange={(v) => onUpdateSourceDraft('content_types', v)} cls={sourceInputCls} placeholder="review, spec_sheet, manual_pdf" />
-                  <FormInput label="Doc Kinds" value={sourceDraft.doc_kinds} onChange={(v) => onUpdateSourceDraft('doc_kinds', v)} cls={sourceInputCls} placeholder="review, product_page, support" />
+                  <FormCsvInput label="Content Types" value={sourceDraft.content_types} onChange={(v) => onUpdateSourceDraft('content_types', v)} cls={sourceInputCls} placeholder="review, spec_sheet, manual_pdf" />
+                  <FormCsvInput label="Doc Kinds" value={sourceDraft.doc_kinds} onChange={(v) => onUpdateSourceDraft('doc_kinds', v)} cls={sourceInputCls} placeholder="review, product_page, support" />
                 </div>
               </fieldset>
 
@@ -473,9 +507,9 @@ export function PipelineSourceStrategySection({
                 <legend className="sf-text-label font-semibold uppercase tracking-wide" style={{ color: 'var(--sf-muted)' }}>Crawl Config</legend>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <FormSelect label="Method" value={sourceDraft.crawl_config.method} options={['playwright', 'http']} onChange={(v) => onUpdateSourceDraft('crawl_config.method', v)} cls={sourceInputCls} />
-                  <FormInput label="Rate Limit (ms)" value={sourceDraft.crawl_config.rate_limit_ms} onChange={(v) => onUpdateSourceDraft('crawl_config.rate_limit_ms', v)} cls={sourceInputCls} type="number" min={0} max={60000} />
-                  <FormInput label="Timeout (ms)" value={sourceDraft.crawl_config.timeout_ms} onChange={(v) => onUpdateSourceDraft('crawl_config.timeout_ms', v)} cls={sourceInputCls} type="number" min={0} max={120000} />
-                  <FormCheckbox label="Robots.txt Compliant" checked={sourceDraft.crawl_config.robots_txt_compliant === 'true'} onChange={(v) => onUpdateSourceDraft('crawl_config.robots_txt_compliant', String(v))} />
+                  <FormInput label="Rate Limit (ms)" value={String(sourceDraft.crawl_config.rate_limit_ms)} onChange={(v) => onUpdateSourceDraft('crawl_config.rate_limit_ms', parseInt(v, 10) || 2000)} cls={sourceInputCls} type="number" min={0} max={60000} />
+                  <FormInput label="Timeout (ms)" value={String(sourceDraft.crawl_config.timeout_ms)} onChange={(v) => onUpdateSourceDraft('crawl_config.timeout_ms', parseInt(v, 10) || 12000)} cls={sourceInputCls} type="number" min={0} max={120000} />
+                  <FormCheckbox label="Robots.txt Compliant" checked={sourceDraft.crawl_config.robots_txt_compliant} onChange={(v) => onUpdateSourceDraft('crawl_config.robots_txt_compliant', v)} />
                 </div>
               </fieldset>
 
@@ -483,9 +517,9 @@ export function PipelineSourceStrategySection({
               <fieldset className="space-y-2">
                 <legend className="sf-text-label font-semibold uppercase tracking-wide" style={{ color: 'var(--sf-muted)' }}>Field Coverage</legend>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <FormInput label="High" value={sourceDraft.field_coverage.high} onChange={(v) => onUpdateSourceDraft('field_coverage.high', v)} cls={sourceInputCls} placeholder="weight, sensor" />
-                  <FormInput label="Medium" value={sourceDraft.field_coverage.medium} onChange={(v) => onUpdateSourceDraft('field_coverage.medium', v)} cls={sourceInputCls} placeholder="connection" />
-                  <FormInput label="Low" value={sourceDraft.field_coverage.low} onChange={(v) => onUpdateSourceDraft('field_coverage.low', v)} cls={sourceInputCls} placeholder="battery" />
+                  <FormCsvInput label="High" value={sourceDraft.field_coverage.high} onChange={(v) => onUpdateSourceDraft('field_coverage.high', v)} cls={sourceInputCls} placeholder="weight, sensor" />
+                  <FormCsvInput label="Medium" value={sourceDraft.field_coverage.medium} onChange={(v) => onUpdateSourceDraft('field_coverage.medium', v)} cls={sourceInputCls} placeholder="connection" />
+                  <FormCsvInput label="Low" value={sourceDraft.field_coverage.low} onChange={(v) => onUpdateSourceDraft('field_coverage.low', v)} cls={sourceInputCls} placeholder="battery" />
                 </div>
               </fieldset>
 

@@ -1,4 +1,4 @@
-import { emitDataChange } from '../events/dataChangeContract.js';
+import { emitDataChange } from '../../core/events/dataChangeContract.js';
 
 function categoryFromCliArgs(cliArgs) {
   if (!Array.isArray(cliArgs)) return '';

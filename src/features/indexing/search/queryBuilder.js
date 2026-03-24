@@ -1,6 +1,5 @@
 import { normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { resolveConsumerGate } from '../../../field-rules/consumerGate.js';
-import { selectManufacturerHosts } from './queryBrandHostResolver.js';
 import {
   fieldSynonyms,
   lookupFieldRule,
@@ -258,10 +257,6 @@ export function buildSearchProfile({
   // WHY: Base templates are tier1 seed queries — used by Search Planner as query history.
   const effectiveBaseTemplates = boundedRows.filter((r) => r.tier === 'seed').map((r) => r.query);
 
-  // WHY: Archetype metadata is empty in tier-only mode — no archetype pipeline ran.
-  const archetypeSummary = {};
-  const coverageAnalysis = {};
-
   return {
     category,
     identity,
@@ -276,8 +271,6 @@ export function buildSearchProfile({
     targeted_queries: boundedRows.map((row) => row.query),
     field_target_queries: toFieldTargetMap(boundedRows, fieldTargetQueriesCap),
     doc_hint_queries: toDocHintRows(boundedRows, docHintQueriesCap),
-    archetype_summary: archetypeSummary,
-    coverage_analysis: coverageAnalysis,
     hint_source_counts: hintSourceCounts,
     field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig),
     field_rule_hint_counts_by_field: buildFieldRuleHintCountsByField(categoryConfig)

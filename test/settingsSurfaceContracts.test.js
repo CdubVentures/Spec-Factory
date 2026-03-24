@@ -78,7 +78,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     CONVERGENCE_KNOB_GROUPS,
     LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,
-    RUNTIME_OCR_BACKEND_OPTIONS,
     RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS,
     RUNTIME_RESUME_MODE_OPTIONS,
     RUNTIME_SETTING_DEFAULTS,
@@ -119,7 +118,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
 
   const runtimeDefaultOptionSets = [
     [RUNTIME_RESUME_MODE_OPTIONS, RUNTIME_SETTING_DEFAULTS.resumeMode, 'resumeMode'],
-    [RUNTIME_OCR_BACKEND_OPTIONS, RUNTIME_SETTING_DEFAULTS.scannedPdfOcrBackend, 'scannedPdfOcrBackend'],
     [RUNTIME_REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
   ];
   for (const [options, defaultValue, label] of runtimeDefaultOptionSets) {

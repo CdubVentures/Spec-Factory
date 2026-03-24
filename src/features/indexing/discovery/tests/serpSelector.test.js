@@ -11,10 +11,6 @@ import {
   buildSerpSelectorInput,
   validateSelectorOutput,
   adaptSerpSelectorOutput,
-  SERP_SELECTOR_MAX_CANDIDATES,
-  SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES,
-  SERP_SELECTOR_TITLE_MAX_CHARS,
-  SERP_SELECTOR_SNIPPET_MAX_CHARS,
 } from '../serpSelector.js';
 
 // ---------------------------------------------------------------------------
@@ -137,7 +133,7 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(selectorInput.max_keep, 100);
   });
 
-  it('truncates title and snippet', () => {
+  it('passes full title and snippet without truncation', () => {
     const longTitle = 'A'.repeat(300);
     const longSnippet = 'B'.repeat(400);
     const { selectorInput } = buildSerpSelectorInput({
@@ -147,11 +143,11 @@ describe('buildSerpSelectorInput', () => {
       categoryConfig: makeCategoryConfig(),
       discoveryCap: 60,
     });
-    assert.ok(selectorInput.candidates[0].title.length <= SERP_SELECTOR_TITLE_MAX_CHARS);
-    assert.ok(selectorInput.candidates[0].snippet.length <= SERP_SELECTOR_SNIPPET_MAX_CHARS);
+    assert.equal(selectorInput.candidates[0].title.length, 300);
+    assert.equal(selectorInput.candidates[0].snippet.length, 400);
   });
 
-  it('caps candidates at SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES', () => {
+  it('caps candidates at serpSelectorUrlCap', () => {
     const rows = makeRows(150);
     const { selectorInput, overflowRows } = buildSerpSelectorInput({
       variables: makeVariables(),
@@ -159,9 +155,10 @@ describe('buildSerpSelectorInput', () => {
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
       discoveryCap: 60,
+      serpSelectorUrlCap: 50,
     });
-    assert.ok(selectorInput.candidates.length <= SERP_SELECTOR_ABSOLUTE_MAX_CANDIDATES);
-    assert.ok(overflowRows.length > 0);
+    assert.equal(selectorInput.candidates.length, 50);
+    assert.equal(overflowRows.length, 100);
   });
 
   it('priority rows (pinned/multi-hit) kept before normal rows', () => {
@@ -191,9 +188,8 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(overflowRows.length, 0);
   });
 
-  it('effectiveCap uses SERP_SELECTOR_MAX_CANDIDATES constant', () => {
-    // WHY: domainClassifierUrlCap is retired. Input cap is now fixed at
-    // SERP_SELECTOR_MAX_CANDIDATES (80) regardless of config.
+  it('serpSelectorUrlCap controls the candidate cap', () => {
+    // WHY: serpSelectorUrlCap is the single SSOT for the selector input cap.
     const rows = makeRows(100);
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
@@ -201,8 +197,9 @@ describe('buildSerpSelectorInput', () => {
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
       discoveryCap: 60,
+      serpSelectorUrlCap: 80,
     });
-    assert.ok(selectorInput.candidates.length <= SERP_SELECTOR_MAX_CANDIDATES);
+    assert.equal(selectorInput.candidates.length, 80);
   });
 });
 

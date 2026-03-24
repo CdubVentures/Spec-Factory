@@ -109,6 +109,7 @@ function countEffectiveDomainHintValues(value) {
   const rows = Array.isArray(value) ? value : [value];
   return rows
     .map((entry) => String(entry || '').trim().toLowerCase())
+    .filter(Boolean)
     .filter((entry) => entry.includes('.'))
     .length;
 }

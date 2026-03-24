@@ -444,7 +444,6 @@ describe('Step 4: Performance tuning defaults', () => {
     assert.equal(config.pageGotoTimeoutMs, 12000);
     assert.equal(config.pageNetworkIdleTimeoutMs, 2000);
     assert.equal(config.searchProfileQueryCap, 10);
-    assert.equal(config.searchPlannerQueryCap, 30);
   });
 });
 

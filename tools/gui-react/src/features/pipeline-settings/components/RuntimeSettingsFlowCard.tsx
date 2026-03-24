@@ -73,11 +73,6 @@ const RuntimeFlowObservabilitySection = lazy(async () => {
   return { default: module.RuntimeFlowObservabilitySection };
 });
 
-const RuntimeFlowOcrSection = lazy(async () => {
-  const module = await import('../sections/RuntimeFlowOcrSection');
-  return { default: module.RuntimeFlowOcrSection };
-});
-
 interface RuntimeSettingsFlowCardProps {
   actionPortalTarget?: HTMLElement | null;
   suppressInlineHeaderControls?: boolean;
@@ -164,7 +159,6 @@ export function RuntimeSettingsFlowCard({
   }), [indexingLlmConfig, llmTokenContractPresetMax, llmTokenProfileLookup, runtimeManifestDefaults]);
   const {
     dynamicCrawleeEnabled,
-    scannedPdfOcrEnabled,
     reextractIndexed,
     runtimeTraceEnabled,
   } = runtimeDraft;
@@ -173,23 +167,19 @@ export function RuntimeSettingsFlowCard({
   const runtimeAutoSaveDelaySeconds = (SETTINGS_AUTOSAVE_DEBOUNCE_MS.runtime / 1000).toFixed(1);
   const {
     dynamicFetchControlsLocked,
-    ocrControlsLocked,
     plannerControlsLocked,
     reextractWindowLocked,
     traceControlsLocked,
   } = deriveRuntimeFlowControlLocks({
     dynamicCrawleeEnabled,
-    scannedPdfOcrEnabled,
     reextractIndexed,
     runtimeTraceEnabled,
   });
 
   const stepEnabled = useMemo<Record<RuntimeStepId, boolean>>(() => deriveRuntimeStepEnabledMap({
     dynamicCrawleeEnabled,
-    scannedPdfOcrEnabled,
   }), [
     dynamicCrawleeEnabled,
-    scannedPdfOcrEnabled,
   ]);
   const activeRuntimeStep = useMemo(
     () => RUNTIME_STEPS.find((step) => step.id === activeStep) || RUNTIME_STEPS[0],
@@ -417,35 +407,11 @@ export function RuntimeSettingsFlowCard({
                 runtimeDraft={runtimeDraft}
                 runtimeSettingsReady={runtimeSettingsReady}
                 inputCls={inputCls}
-                runtimeSubStepDomId={runtimeSubStepDomId}
                 updateDraft={updateDraft}
-                onNumberChange={onNumberChange}
-                getNumberBounds={getNumberBounds}
               />
             </Suspense>
           ) : null}
 
-          {activeStep === 'ocr' ? (
-            <Suspense
-              fallback={(
-                <div className="rounded sf-surface-elevated px-3 py-2.5 sf-text-label">
-                  Loading ocr section...
-                </div>
-              )}
-            >
-              <RuntimeFlowOcrSection
-                runtimeDraft={runtimeDraft}
-                runtimeSettingsReady={runtimeSettingsReady}
-                ocrControlsLocked={ocrControlsLocked}
-                inputCls={inputCls}
-                runtimeSubStepDomId={runtimeSubStepDomId}
-                updateDraft={updateDraft}
-                onNumberChange={onNumberChange}
-                getNumberBounds={getNumberBounds}
-                renderDisabledHint={renderDisabledHint}
-              />
-            </Suspense>
-          ) : null}
 
 
         </section>

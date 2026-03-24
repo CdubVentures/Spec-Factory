@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   CONVERGENCE_SETTINGS_ROUTE_PUT,
   snapshotConvergenceSettings,

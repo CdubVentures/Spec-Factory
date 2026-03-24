@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
 
 export function registerBrandRoutes(ctx) {

@@ -1,5 +1,4 @@
 import type {
-  RuntimeOcrBackend,
   RuntimeSettingDefaults,
 } from '../../../stores/settingsManifest';
 import {
@@ -18,13 +17,6 @@ export interface Phase05RuntimeSettings {
   dynamicCrawleeEnabled: boolean;
   dynamicFetchRetryBudget: string;
   dynamicFetchRetryBackoffMs: string;
-  scannedPdfOcrEnabled: boolean;
-  scannedPdfOcrBackend: RuntimeOcrBackend;
-  scannedPdfOcrMaxPages: string;
-  scannedPdfOcrMaxPairs: string;
-  scannedPdfOcrMinCharsPerPage: string;
-  scannedPdfOcrMinLinesPerPage: string;
-  scannedPdfOcrMinConfidence: string;
 }
 
 interface BuildIndexingRuntimeDraftInput {
@@ -65,13 +57,6 @@ export function buildIndexingPhase05RuntimeSettings(
     dynamicCrawleeEnabled: runtimeDraft.dynamicCrawleeEnabled,
     dynamicFetchRetryBudget: toDisplayString(runtimeDraft.dynamicFetchRetryBudget),
     dynamicFetchRetryBackoffMs: toDisplayString(runtimeDraft.dynamicFetchRetryBackoffMs),
-    scannedPdfOcrEnabled: runtimeDraft.scannedPdfOcrEnabled,
-    scannedPdfOcrBackend: runtimeDraft.scannedPdfOcrBackend,
-    scannedPdfOcrMaxPages: toDisplayString(runtimeDraft.scannedPdfOcrMaxPages),
-    scannedPdfOcrMaxPairs: toDisplayString(runtimeDraft.scannedPdfOcrMaxPairs),
-    scannedPdfOcrMinCharsPerPage: toDisplayString(runtimeDraft.scannedPdfOcrMinCharsPerPage),
-    scannedPdfOcrMinLinesPerPage: toDisplayString(runtimeDraft.scannedPdfOcrMinLinesPerPage),
-    scannedPdfOcrMinConfidence: toDisplayString(runtimeDraft.scannedPdfOcrMinConfidence),
   };
 }
 

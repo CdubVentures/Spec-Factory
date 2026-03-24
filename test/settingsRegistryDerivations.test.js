@@ -297,10 +297,8 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
     strictEqual(derived.maxRunSeconds, 480);
     strictEqual(derived.autoScrollEnabled, true);
     strictEqual(derived.resumeMode, 'auto');
-    strictEqual(derived.scannedPdfOcrBackend, 'auto');
     strictEqual(derived.discoveryEnabled, true);
     strictEqual(derived.fetchCandidateSources, true);
-    strictEqual(derived.llmExtractionCacheEnabled, true);
   });
 
   it('cfgKey aliases are emitted under both names', () => {
@@ -320,7 +318,6 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
   it('deriveOptionValues produces correct enum options', () => {
     const options = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
     deepStrictEqual([...options.resumeMode], ['auto', 'force_resume', 'start_over']);
-    deepStrictEqual([...options.scannedPdfOcrBackend], ['auto', 'tesseract', 'none']);
     deepStrictEqual([...options.repairDedupeRule], ['domain_once', 'domain_and_status', 'none']);
     deepStrictEqual([...options.outputMode], ['local', 'dual', 's3']);
     ok(options.searchEngines.includes('google'));
@@ -397,21 +394,11 @@ describe('registry enrichment — deprecated', () => {
 describe('registry enrichment — defaults-only gap closure', () => {
   const registryKeys = new Set(RUNTIME_SETTINGS_REGISTRY.map(e => e.key));
 
-  // WHY: These 12 keys were in SETTINGS_DEFAULTS.runtime but missing from the
-  // registry. Phase 1 adds them as defaultsOnly entries to close the gap.
+  // WHY: These keys were in SETTINGS_DEFAULTS.runtime but missing from the
+  // registry. Phase 1 added them as defaultsOnly entries. Pipeline rework
+  // removed 11 dead knobs — only frontierRepairSearchEnabled survives here.
   const FORMERLY_MISSING = [
-    'authoritySnapshotEnabled',
-    'billingJsonWrite',
-    'cacheJsonWrite',
-    'corpusJsonWrite',
     'frontierRepairSearchEnabled',
-    'htmlTableExtractorV2',
-    'intelJsonWrite',
-    'learningJsonWrite',
-    'llmExtractionCacheEnabled',
-    'queueJsonWrite',
-    'scannedPdfOcrPromoteCandidates',
-    'staticDomExtractorEnabled',
   ];
 
   for (const key of FORMERLY_MISSING) {

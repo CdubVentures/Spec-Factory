@@ -12,11 +12,10 @@ HTTP server composition root: bootstraps the DI context, wires feature route han
 - `helpers/httpPrimitives.js` → `jsonRes`, `corsHeaders`, `readJsonBody`, `safeJoin`
 - `helpers/valueNormalizers.js` → `toInt`, `toFloat`, `toUnitRatio`, `hasKnownValue`, `normalizePathToken`
 - `helpers/fileHelpers.js` → `safeReadJson`, `safeStat`, `listDirs`, `listFiles`, `readJsonlEvents`, `parseNdjson`
-- `events/dataChangeContract.js` → `createDataChangePayload`, `emitDataChange`, `dataChangeMatchesCategory`
-- `reviewMutationResolvers.js` → `resolveExplicitPositiveId`, `resolveGridFieldStateForMutation`
 - `reviewCandidateRuntime.js` → `createReviewCandidateRuntime`
 - `reviewGridStateRuntime.js` → `createReviewGridStateRuntime`
-- Review route handlers: `reviewItemRoutes.js`, `reviewComponentMutationRoutes.js`, `reviewEnumMutationRoutes.js`
+- Event infrastructure moved to `src/core/events/dataChangeContract.js`
+- Review mutation routes moved to `src/features/review/api/` (itemMutationRoutes, componentMutationRoutes, enumMutationRoutes, routeSharedHelpers, mutationResolvers)
 
 ## Dependencies (Allowed Imports)
 

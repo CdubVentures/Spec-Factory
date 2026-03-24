@@ -1,6 +1,6 @@
 # Brand Resolver Logic In And Out
 
-Validated against live code on 2026-03-23. Updated 2026-03-22 post-audit (B3+B4 fixes). Updated 2026-03-23 (crawl config now registry-driven per P5-4).
+Validated against live code on 2026-03-23. Updated 2026-03-22 post-audit (B3+B4 fixes). Updated 2026-03-23 (P7: crawl config simplified to static shape, registry settings deleted).
 
 ## What this stage is
 
@@ -21,7 +21,7 @@ Primary owners:
 
 ## Registry settings
 
-No brand-resolver-specific registry settings exist. Confidence comes from the LLM response (not a registry default). Crawl config for brand promotions uses two registry settings added in P5-4 (2026-03-23): `manufacturerCrawlRateLimitMs` (default 2000, range 100-30000) and `manufacturerCrawlTimeoutMs` (default 12000, range 1000-120000), read via `configInt()` in the orchestrator.
+No brand-resolver-specific registry settings exist. Confidence comes from the LLM response (not a registry default). Crawl config for brand promotions is a static shape: `{ method: 'http', robots_txt_compliant: true }` -- no `rate_limit_ms` or `timeout_ms`. The former `manufacturerCrawlRateLimitMs` and `manufacturerCrawlTimeoutMs` registry settings were deleted on 2026-03-23.
 
 Note: `manufacturerAutoPromote` is retired (deprecated, defaultsOnly, always true).
 
@@ -122,7 +122,7 @@ The orchestrator (`runDiscoverySeedPlan.js`) applies brand promotion inline afte
   - `tierName`: `'manufacturer'`
   - `sourceId`: `'brand_' + normalized_host` (deterministic)
   - `displayName`: `'{officialDomain} Official'`
-  - `crawlConfig`: `{ method: 'http', rate_limit_ms: configInt(config, 'manufacturerCrawlRateLimitMs'), timeout_ms: configInt(config, 'manufacturerCrawlTimeoutMs'), robots_txt_compliant: true }`
+  - `crawlConfig`: `{ method: 'http', robots_txt_compliant: true }`
   - `fieldCoverage`: `null`
   - `robotsTxtCompliant`: `true`
   - `baseUrl`: `'https://{host}'`
@@ -165,7 +165,6 @@ Caller-added status metadata (not part of the resolver return):
 Brand Resolver feeds:
 
 - Stage 03 Search Profile via `brandResolution`
-- Optional Effective Host Plan building via brand host hints
 - Planned/executed `search_profile.brand_resolution`
 - Stage 05 Query Journey via `brandResolution`
 - Stage 07 Result Processing via `brandResolution`

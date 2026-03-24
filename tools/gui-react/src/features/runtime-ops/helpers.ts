@@ -1,4 +1,18 @@
 import { resolvePoolStage, POOL_STAGE_KEYS } from './poolStageRegistry';
+import {
+  resolveMethodBadge,
+  resolveTierBadge,
+  resolveStatusBadge,
+  resolveWorkerStateBadge,
+  resolveFieldStatusBadge,
+  resolveFallbackResultBadge,
+  resolveFetchModeBadge,
+  resolveQueueStatusBadge,
+  resolveLlmCallStatusBadge,
+  resolveTriageDecisionBadge,
+  resolveDomainRoleBadge,
+  resolveSafetyClassBadge,
+} from './badgeRegistries';
 
 export { POOL_STAGE_KEYS as STAGE_ORDER };
 
@@ -11,47 +25,8 @@ export function stageBadgeClass(stage: string): string { return resolvePoolStage
 export function stageMeterFillClass(stage: string): string { return resolvePoolStage(stage).meterFill; }
 export function stageLabel(stage: string): string { return resolvePoolStage(stage).stageLabel || stage; }
 
-export function statusBadgeClass(status: string): string {
-  switch (status) {
-    case 'running':
-      return 'sf-chip-info';
-    case 'fetching':
-      return 'sf-chip-success';
-    case 'parsing':
-      return 'sf-chip-info';
-    case 'indexing':
-      return 'sf-chip-success';
-    case 'completed':
-    case 'fetched':
-    case 'parsed':
-    case 'indexed':
-    case 'idle':
-      return 'sf-chip-success';
-    case 'stuck':
-    case 'fetch_error':
-    case 'failed':
-      return 'sf-chip-danger';
-    case 'skipped':
-      return 'sf-chip-warning';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function workerStateBadgeClass(state: string): string {
-  switch (state) {
-    case 'stuck':
-      return 'sf-chip-danger animate-pulse';
-    case 'running':
-      return 'sf-chip-info';
-    case 'queued':
-      return 'sf-chip-neutral opacity-50';
-    case 'idle':
-      return 'sf-chip-neutral';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
+export function statusBadgeClass(status: string): string { return resolveStatusBadge(status); }
+export function workerStateBadgeClass(state: string): string { return resolveWorkerStateBadge(state); }
 
 export function formatMs(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -85,111 +60,12 @@ export function pctString(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
-export function methodBadgeClass(method: string): string {
-  switch (method) {
-    case 'html_spec_table':
-    case 'html_table':
-      return 'sf-chip-info';
-    case 'embedded_json':
-    case 'json_ld':
-    case 'microdata':
-    case 'opengraph':
-      return 'sf-chip-accent';
-    case 'main_article':
-    case 'dom':
-      return 'sf-chip-info';
-    case 'pdf_text':
-    case 'pdf_kv':
-    case 'pdf_table':
-      return 'sf-chip-warning';
-    case 'scanned_pdf_ocr':
-    case 'scanned_pdf_ocr_table':
-    case 'scanned_pdf_ocr_kv':
-    case 'scanned_pdf_ocr_text':
-    case 'image_ocr':
-      return 'sf-chip-danger';
-    case 'chart_payload':
-    case 'network_json':
-      return 'sf-chip-accent';
-    case 'llm_extract':
-    case 'llm_validate':
-      return 'sf-chip-warning';
-    case 'deterministic_normalizer':
-    case 'consensus_policy_reducer':
-      return 'sf-chip-success';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function fieldStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'accepted':
-      return 'sf-chip-success';
-    case 'conflict':
-      return 'sf-chip-danger';
-    case 'candidate':
-      return 'sf-chip-info';
-    case 'unknown':
-      return 'sf-chip-warning';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function fallbackResultBadgeClass(result: string): string {
-  switch (result) {
-    case 'succeeded':
-      return 'sf-chip-success';
-    case 'exhausted':
-    case 'failed':
-      return 'sf-chip-danger';
-    case 'pending':
-      return 'sf-chip-info';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function fetchModeBadgeClass(mode: string): string {
-  switch (mode) {
-    case 'playwright':
-      return 'sf-chip-accent';
-    case 'crawlee':
-      return 'sf-chip-info';
-    case 'http':
-      return 'sf-chip-success';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function queueStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'queued':
-      return 'sf-chip-info';
-    case 'running':
-      return 'sf-chip-info animate-pulse';
-    case 'done':
-      return 'sf-chip-success';
-    case 'failed':
-      return 'sf-chip-danger';
-    case 'cooldown':
-      return 'sf-chip-warning';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function tierLabel(tier: number | null): string {
-  switch (tier) {
-    case 1: return 'T1 Official';
-    case 2: return 'T2 Lab Review';
-    case 3: return 'T3 Retail';
-    case 4: return 'T4 Unverified';
-    default: return '-';
-  }
-}
+export function methodBadgeClass(method: string): string { return resolveMethodBadge(method).badge; }
+export function fieldStatusBadgeClass(status: string): string { return resolveFieldStatusBadge(status); }
+export function fallbackResultBadgeClass(result: string): string { return resolveFallbackResultBadge(result); }
+export function fetchModeBadgeClass(mode: string): string { return resolveFetchModeBadge(mode); }
+export function queueStatusBadgeClass(status: string): string { return resolveQueueStatusBadge(status); }
+export function tierLabel(tier: number | null): string { return resolveTierBadge(tier).label; }
 
 export const METRIC_TIPS: Record<string, string> = {
   pool_search: 'Search pool: workers sending queries to search engines to discover new source URLs.',
@@ -266,31 +142,7 @@ export const METRIC_TIPS: Record<string, string> = {
 };
 
 export function friendlyMethod(method: string): string {
-  const MAP: Record<string, string> = {
-    html_spec_table: 'HTML Spec Table',
-    html_table: 'HTML Table',
-    embedded_json: 'Embedded JSON',
-    json_ld: 'JSON-LD',
-    microdata: 'Microdata',
-    opengraph: 'OpenGraph',
-    main_article: 'Article Text',
-    dom: 'DOM Selector',
-    pdf_text: 'PDF Text',
-    pdf_kv: 'PDF Key-Value',
-    pdf_table: 'PDF Table',
-    scanned_pdf_ocr: 'Scanned PDF (OCR)',
-    scanned_pdf_ocr_table: 'Scanned PDF Table (OCR)',
-    scanned_pdf_ocr_kv: 'Scanned PDF KV (OCR)',
-    scanned_pdf_ocr_text: 'Scanned PDF Text (OCR)',
-    image_ocr: 'Image OCR',
-    chart_payload: 'Chart Data',
-    network_json: 'Network JSON',
-    llm_extract: 'LLM Extraction',
-    llm_validate: 'LLM Validation',
-    deterministic_normalizer: 'Normalizer',
-    consensus_policy_reducer: 'Consensus',
-  };
-  return MAP[method] || method;
+  return resolveMethodBadge(method).label || method;
 }
 
 export function timeUntil(isoStr: string): string {
@@ -304,76 +156,14 @@ export function timeUntil(isoStr: string): string {
   return `in ${Math.floor(min / 60)}h ${min % 60}m`;
 }
 
-export function tierBadgeClass(tier: number | null): string {
-  switch (tier) {
-    case 1: return 'sf-chip-success';
-    case 2: return 'sf-chip-info';
-    case 3: return 'sf-chip-warning';
-    case 4: return 'sf-chip-neutral';
-    default: return 'sf-chip-neutral';
-  }
-}
+export function tierBadgeClass(tier: number | null): string { return resolveTierBadge(tier).badge; }
 
 // ── Pre-Fetch Phase Helpers ──
 
-export function llmCallStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'finished':
-      return 'sf-chip-success';
-    case 'failed':
-      return 'sf-chip-danger';
-    case 'running':
-      return 'sf-chip-info animate-pulse';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function triageDecisionBadgeClass(decision: string): string {
-  switch (decision) {
-    case 'keep':
-      return 'sf-chip-success';
-    case 'hard_drop':
-      return 'sf-chip-warning';
-    case 'drop':
-    case 'skip':
-      return 'sf-chip-danger';
-    case 'fetch':
-      return 'sf-chip-info';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function domainRoleBadgeClass(role: string): string {
-  switch (role) {
-    case 'manufacturer':
-      return 'sf-chip-success';
-    case 'lab_review':
-    case 'review':
-      return 'sf-chip-info';
-    case 'retail':
-      return 'sf-chip-warning';
-    case 'database':
-      return 'sf-chip-accent';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
-
-export function safetyClassBadgeClass(safetyClass: string): string {
-  switch (safetyClass) {
-    case 'safe':
-      return 'sf-chip-success';
-    case 'caution':
-      return 'sf-chip-warning';
-    case 'blocked':
-    case 'unsafe':
-      return 'sf-chip-danger';
-    default:
-      return 'sf-chip-neutral';
-  }
-}
+export function llmCallStatusBadgeClass(status: string): string { return resolveLlmCallStatusBadge(status); }
+export function triageDecisionBadgeClass(decision: string): string { return resolveTriageDecisionBadge(decision); }
+export function domainRoleBadgeClass(role: string): string { return resolveDomainRoleBadge(role); }
+export function safetyClassBadgeClass(safetyClass: string): string { return resolveSafetyClassBadge(safetyClass); }
 
 import type { TriageScoreComponents } from './types';
 

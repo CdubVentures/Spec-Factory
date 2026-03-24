@@ -34,12 +34,7 @@ export interface ConvergenceKnobGroup {
 // WHY: UI-only metadata for convergence knobs. Structural fields (key, type, min, max)
 // are derived from CONVERGENCE_SETTINGS_REGISTRY — adding a new knob requires only
 // one registry entry + one label/tip here.
-const KNOB_UI_META: Record<string, { label: string; tip?: string }> = {
-  serpTriageMinScore: {
-    label: 'Min Score Threshold',
-    tip: 'Phase coverage: 07 SERP Selector.\nLives in: processDiscoveryResults() after raw search results are normalized and reranked.\nWhat this controls: the minimum combined triage score a candidate URL must reach to survive into approved or candidate routing. Higher values make admission stricter and reduce fetch volume.',
-  },
-};
+const KNOB_UI_META: Record<string, { label: string; tip?: string }> = {};
 
 export const CONVERGENCE_KNOB_GROUPS: ConvergenceKnobGroup[] = [
   {

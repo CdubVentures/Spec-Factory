@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../../core/events/dataChangeContract.js';
 
 function filterCategoryDirs(categoryDirs = [], includeTest = false) {
   return categoryDirs.filter((category) => {

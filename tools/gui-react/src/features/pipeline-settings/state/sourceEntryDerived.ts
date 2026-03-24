@@ -13,31 +13,6 @@ import {
   DISCOVERY_DEFAULTS,
 } from '../../../../../../src/features/indexing/discovery/contracts/sourceEntryContract.js';
 
-// WHY: SourceStrategyDraftField lives here (with the draft shape) so that
-// updateDraftByPath() can reference it without circular imports.
-export type SourceStrategyDraftField =
-  | 'host'
-  | 'display_name'
-  | 'tier'
-  | 'authority'
-  | 'base_url'
-  | 'content_types'
-  | 'doc_kinds'
-  | 'crawl_config.method'
-  | 'crawl_config.rate_limit_ms'
-  | 'crawl_config.timeout_ms'
-  | 'crawl_config.max_concurrent'
-  | 'crawl_config.robots_txt_compliant'
-  | 'field_coverage.high'
-  | 'field_coverage.medium'
-  | 'field_coverage.low'
-  | 'discovery.method'
-  | 'discovery.source_type'
-  | 'discovery.search_pattern'
-  | 'discovery.priority'
-  | 'discovery.enabled'
-  | 'discovery.notes';
-
 // --- Enum option arrays for UI dropdowns (derived from contract) ---
 
 export const TIER_OPTIONS: readonly string[] = TIER_VALUES;
@@ -98,8 +73,6 @@ export function extractSourceEntryFromEnvelope(response: SourceEntryEnvelope): S
   if (response.snapshot && typeof response.snapshot === 'object' && 'sourceId' in response.snapshot) {
     return response.snapshot;
   }
-  // WHY: Fallback — envelope without snapshot means the mutation response
-  // didn't include a full snapshot. Return the applied fields as best-effort.
   const fallback: SourceEntry = {
     sourceId: '',
     display_name: '',
@@ -116,97 +89,165 @@ export function extractSourceEntryFromEnvelope(response: SourceEntryEnvelope): S
   return fallback;
 }
 
-// --- Draft factory derived from contract defaults ---
+// --- Form entry: typed form state (no all-string draft) ---
 
-export interface SourceStrategyDraft {
-  host: string;
-  display_name: string;
-  tier: string;
-  authority: string;
-  base_url: string;
-  content_types: string;
-  doc_kinds: string;
-  crawl_config: {
-    method: string;
-    rate_limit_ms: string;
-    timeout_ms: string;
-    max_concurrent: string;
-    robots_txt_compliant: string;
-  };
-  field_coverage: {
-    high: string;
-    medium: string;
-    low: string;
-  };
-  discovery: {
-    method: string;
-    source_type: string;
-    search_pattern: string;
-    priority: string;
-    enabled: string;
-    notes: string;
-  };
+// WHY: Form state = SourceEntry minus sourceId, plus derived `host` field.
+// All values are natively typed (numbers, booleans, arrays). No stringification.
+// String↔typed conversion happens at the individual input level, not form state.
+export type SourceFormEntry = Omit<SourceEntry, 'sourceId'> & { host: string };
+
+export type SourceFormEntryField =
+  | 'host'
+  | 'display_name'
+  | 'tier'
+  | 'authority'
+  | 'base_url'
+  | 'content_types'
+  | 'doc_kinds'
+  | 'crawl_config.method'
+  | 'crawl_config.rate_limit_ms'
+  | 'crawl_config.timeout_ms'
+  | 'crawl_config.max_concurrent'
+  | 'crawl_config.robots_txt_compliant'
+  | 'field_coverage.high'
+  | 'field_coverage.medium'
+  | 'field_coverage.low'
+  | 'discovery.method'
+  | 'discovery.source_type'
+  | 'discovery.search_pattern'
+  | 'discovery.priority'
+  | 'discovery.enabled'
+  | 'discovery.notes';
+
+type FormEntryValue = string | number | boolean | string[];
+type NestedFormGroup = 'crawl_config' | 'field_coverage' | 'discovery';
+
+export function resolveSourceHost(baseUrl: string, fallback: string): string {
+  const trimmed = String(baseUrl || '').trim();
+  if (!trimmed) return fallback;
+  try {
+    return new URL(trimmed).hostname;
+  } catch {
+    return fallback;
+  }
 }
 
-export function makeSourceStrategyDraft(): SourceStrategyDraft {
+export function defaultSourceFormEntry(): SourceFormEntry {
   return {
     host: '',
     display_name: '',
     tier: 'tier2_lab',
     authority: 'unknown',
     base_url: '',
-    content_types: '',
-    doc_kinds: '',
+    content_types: [],
+    doc_kinds: [],
     crawl_config: {
       method: String(CRAWL_CONFIG_DEFAULTS.method ?? 'http'),
-      rate_limit_ms: String(CRAWL_CONFIG_DEFAULTS.rate_limit_ms ?? 2000),
-      timeout_ms: String(CRAWL_CONFIG_DEFAULTS.timeout_ms ?? 12000),
-      max_concurrent: String(CRAWL_CONFIG_DEFAULTS.max_concurrent ?? 5),
-      robots_txt_compliant: String(CRAWL_CONFIG_DEFAULTS.robots_txt_compliant ?? true),
+      rate_limit_ms: Number(CRAWL_CONFIG_DEFAULTS.rate_limit_ms ?? 2000),
+      timeout_ms: Number(CRAWL_CONFIG_DEFAULTS.timeout_ms ?? 12000),
+      max_concurrent: Number(CRAWL_CONFIG_DEFAULTS.max_concurrent ?? 5),
+      robots_txt_compliant: CRAWL_CONFIG_DEFAULTS.robots_txt_compliant !== false,
     },
-    field_coverage: { high: '', medium: '', low: '' },
+    field_coverage: { high: [], medium: [], low: [] },
     discovery: {
       method: DISCOVERY_METHOD_OPTIONS[1] ?? 'search_first',
-      source_type: String(DISCOVERY_DEFAULTS.source_type),
-      search_pattern: String(DISCOVERY_DEFAULTS.search_pattern),
-      priority: String(DISCOVERY_DEFAULTS.priority),
-      enabled: String(DISCOVERY_DEFAULTS.enabled),
-      notes: String(DISCOVERY_DEFAULTS.notes),
+      source_type: String(DISCOVERY_DEFAULTS.source_type ?? ''),
+      search_pattern: String(DISCOVERY_DEFAULTS.search_pattern ?? ''),
+      priority: Number(DISCOVERY_DEFAULTS.priority ?? 50),
+      enabled: DISCOVERY_DEFAULTS.enabled !== false,
+      notes: String(DISCOVERY_DEFAULTS.notes ?? ''),
     },
   };
 }
 
-// --- Generic draft updater (replaces 22-case switch) ---
+export function entryToFormEntry(entry: SourceEntry): SourceFormEntry {
+  const sourceIdFallback = String(entry.sourceId || '').replace(/_/g, '.');
+  return {
+    host: resolveSourceHost(entry.base_url, sourceIdFallback),
+    display_name: entry.display_name || '',
+    tier: entry.tier || 'tier2_lab',
+    authority: entry.authority || 'unknown',
+    base_url: entry.base_url || '',
+    content_types: entry.content_types || [],
+    doc_kinds: entry.doc_kinds || [],
+    crawl_config: {
+      method: entry.crawl_config?.method || 'http',
+      rate_limit_ms: entry.crawl_config?.rate_limit_ms ?? 2000,
+      timeout_ms: entry.crawl_config?.timeout_ms ?? 12000,
+      max_concurrent: entry.crawl_config?.max_concurrent ?? 5,
+      robots_txt_compliant: entry.crawl_config?.robots_txt_compliant ?? true,
+    },
+    field_coverage: {
+      high: entry.field_coverage?.high || [],
+      medium: entry.field_coverage?.medium || [],
+      low: entry.field_coverage?.low || [],
+    },
+    discovery: {
+      method: entry.discovery?.method || 'search_first',
+      source_type: entry.discovery?.source_type || '',
+      search_pattern: entry.discovery?.search_pattern || '',
+      priority: entry.discovery?.priority ?? 50,
+      enabled: entry.discovery?.enabled ?? true,
+      notes: entry.discovery?.notes || '',
+    },
+  };
+}
 
-type NestedDraftGroup = 'crawl_config' | 'field_coverage' | 'discovery';
+export function formEntryToPayload(form: SourceFormEntry): Partial<SourceEntry> & { host: string } {
+  const host = String(form.host || '').trim();
+  return {
+    host,
+    display_name: String(form.display_name || '').trim() || host,
+    tier: form.tier || 'tier2_lab',
+    authority: form.authority || 'unknown',
+    base_url: form.base_url || `https://${host}`,
+    content_types: form.content_types || [],
+    doc_kinds: form.doc_kinds || [],
+    crawl_config: {
+      method: form.crawl_config.method || 'http',
+      rate_limit_ms: form.crawl_config.rate_limit_ms,
+      timeout_ms: form.crawl_config.timeout_ms,
+      max_concurrent: form.crawl_config.max_concurrent,
+      robots_txt_compliant: form.crawl_config.robots_txt_compliant,
+    },
+    field_coverage: {
+      high: form.field_coverage.high || [],
+      medium: form.field_coverage.medium || [],
+      low: form.field_coverage.low || [],
+    },
+    discovery: {
+      method: (form.discovery.method || 'search_first') as 'search_first' | 'manual',
+      source_type: form.discovery.source_type || '',
+      search_pattern: form.discovery.search_pattern || '',
+      priority: form.discovery.priority,
+      enabled: form.discovery.enabled,
+      notes: form.discovery.notes || '',
+    },
+  };
+}
 
-// WHY: All draft values are strings (HTML form inputs). The structure is always
-// either top-level (`host`, `tier`) or one-level nested (`crawl_config.method`).
-// This single function replaces the 22-case switch in PipelineSettingsPage.
-export function updateDraftByPath(
-  draft: SourceStrategyDraft,
-  path: SourceStrategyDraftField,
-  value: string,
-): SourceStrategyDraft {
+// WHY: Immutable updater for the form entry. Handles both top-level keys
+// and one-level nested paths (e.g., 'crawl_config.method').
+export function updateFormEntryByPath(
+  entry: SourceFormEntry,
+  path: SourceFormEntryField,
+  value: FormEntryValue,
+): SourceFormEntry {
   const dotIdx = path.indexOf('.');
-  if (dotIdx === -1) return { ...draft, [path]: value };
-  const group = path.slice(0, dotIdx) as NestedDraftGroup;
+  if (dotIdx === -1) return { ...entry, [path]: value };
+  const group = path.slice(0, dotIdx) as NestedFormGroup;
   const field = path.slice(dotIdx + 1);
-  return { ...draft, [group]: { ...draft[group], [field]: value } };
+  return { ...entry, [group]: { ...entry[group], [field]: value } };
 }
 
 // --- Contract alignment ---
 
-// WHY: Runtime array of all valid draft field paths. The alignment test verifies
-// this matches the backend contract key arrays (CRAWL_CONFIG_FIELD_KEYS, etc.).
-// Adding a field to the Zod schema will cause the alignment test to fail until
-// the path is added here.
-const TOP_LEVEL_DRAFT_FIELDS: readonly string[] = [
+const TOP_LEVEL_FORM_FIELDS: readonly string[] = [
   'host', 'display_name', 'tier', 'authority', 'base_url', 'content_types', 'doc_kinds',
 ];
 
-export const SOURCE_STRATEGY_DRAFT_FIELD_PATHS: readonly string[] = Object.freeze([
-  ...TOP_LEVEL_DRAFT_FIELDS,
+export const SOURCE_FORM_ENTRY_FIELD_PATHS: readonly string[] = Object.freeze([
+  ...TOP_LEVEL_FORM_FIELDS,
   ...CRAWL_CONFIG_FIELD_KEYS.map((k: string) => `crawl_config.${k}`),
   ...FIELD_COVERAGE_KEYS.map((k: string) => `field_coverage.${k}`),
   ...DISCOVERY_FIELD_KEYS.map((k: string) => `discovery.${k}`),

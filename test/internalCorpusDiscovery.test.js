@@ -130,8 +130,6 @@ test('discoverCandidateSources uses internal source corpus when external provide
     discoveryInternalFirst: true,
     discoveryInternalMinResults: 1,
     searchProfileQueryCap: 3,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
     searchEngines: '',
   };
   const storage = createStorage(config);
@@ -198,8 +196,6 @@ test('discoverCandidateSources skips external search when internal recall alread
     discoveryInternalFirst: true,
     discoveryInternalMinResults: 1,
     searchProfileQueryCap: 2,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
@@ -267,8 +263,6 @@ test('discoverCandidateSources annotates dual-mode internet search reason when p
     discoveryInternalFirst: true,
     discoveryInternalMinResults: 99,
     searchProfileQueryCap: 1,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
     searchEngines: 'bing,google',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,

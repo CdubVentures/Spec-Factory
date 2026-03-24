@@ -20,10 +20,10 @@ import {
   resolveSourceStrategyStatus,
 } from '../../../shared/ui/feedback/settingsStatus';
 import {
-  type SourceStrategyDraft,
-  type SourceStrategyDraftField,
+  type SourceFormEntry,
+  type SourceFormEntryField,
 } from '../sections/PipelineSourceStrategySection';
-import { makeSourceStrategyDraft, updateDraftByPath } from '../state/sourceEntryDerived';
+import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFormEntryByPath } from '../state/sourceEntryDerived';
 
 const RuntimeSettingsFlowCard = lazy(async () => {
   const module = await import('./RuntimeSettingsFlowCard');
@@ -34,105 +34,8 @@ const SourceStrategySection = lazy(async () => {
   return { default: module.PipelineSourceStrategySection };
 });
 
-function dv(value: unknown, fallback = ''): string {
-  const text = String(value ?? '').trim();
-  return text || fallback;
-}
-
-function toNum(value: string, fallback: number, min: number, max: number): number {
-  const parsed = Number.parseInt(String(value || '').trim(), 10);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.max(min, Math.min(max, parsed));
-}
-
-function csvToArray(value: string): string[] {
-  return value.split(',').map((s) => s.trim()).filter(Boolean);
-}
-
-function arrayToCsv(arr: string[] | undefined): string {
-  return (arr || []).join(', ');
-}
-
-function resolveSourceHost(value: string, fallback: string): string {
-  const baseUrl = String(value || '').trim();
-  if (!baseUrl) return fallback;
-  try {
-    return new URL(baseUrl).hostname;
-  } catch {
-    return fallback;
-  }
-}
-
-// WHY: Draft factory derived from backend contract SSOT (sourceEntryDerived.ts).
-
-function sourceStrategyDraftFromEntry(entry: SourceEntry): SourceStrategyDraft {
-  const sourceIdFallback = String(entry.sourceId || '').replace(/_/g, '.');
-  return {
-    host: dv(resolveSourceHost(entry.base_url, sourceIdFallback)),
-    display_name: dv(entry.display_name),
-    tier: dv(entry.tier, 'tier2_lab'),
-    authority: dv(entry.authority, 'unknown'),
-    base_url: dv(entry.base_url),
-    content_types: arrayToCsv(entry.content_types),
-    doc_kinds: arrayToCsv(entry.doc_kinds),
-    crawl_config: {
-      method: dv(entry.crawl_config?.method, 'http'),
-      rate_limit_ms: String(entry.crawl_config?.rate_limit_ms ?? 2000),
-      timeout_ms: String(entry.crawl_config?.timeout_ms ?? 12000),
-      max_concurrent: String(entry.crawl_config?.max_concurrent ?? 5),
-      robots_txt_compliant: String(entry.crawl_config?.robots_txt_compliant ?? true),
-    },
-    field_coverage: {
-      high: arrayToCsv(entry.field_coverage?.high),
-      medium: arrayToCsv(entry.field_coverage?.medium),
-      low: arrayToCsv(entry.field_coverage?.low),
-    },
-    discovery: {
-      method: dv(entry.discovery?.method, 'search_first'),
-      source_type: dv(entry.discovery?.source_type),
-      search_pattern: dv(entry.discovery?.search_pattern),
-      priority: String(entry.discovery?.priority ?? 50),
-      enabled: String(entry.discovery?.enabled ?? true),
-      notes: dv(entry.discovery?.notes),
-    },
-  };
-}
-
-function sourceStrategyPayloadFromDraft(draft: SourceStrategyDraft): Partial<SourceEntry> & { host: string } {
-  const host = String(draft.host || '').trim();
-  return {
-    host,
-    display_name: String(draft.display_name || '').trim() || host,
-    tier: draft.tier || 'tier2_lab',
-    authority: draft.authority || 'unknown',
-    base_url: draft.base_url || `https://${host}`,
-    content_types: csvToArray(draft.content_types),
-    doc_kinds: csvToArray(draft.doc_kinds),
-    crawl_config: {
-      method: draft.crawl_config.method || 'http',
-      rate_limit_ms: toNum(draft.crawl_config.rate_limit_ms, 2000, 0, 60000),
-      timeout_ms: toNum(draft.crawl_config.timeout_ms, 12000, 0, 120000),
-      max_concurrent: toNum(draft.crawl_config.max_concurrent, 5, 1, 50),
-      robots_txt_compliant: draft.crawl_config.robots_txt_compliant !== 'false',
-    },
-    field_coverage: {
-      high: csvToArray(draft.field_coverage.high),
-      medium: csvToArray(draft.field_coverage.medium),
-      low: csvToArray(draft.field_coverage.low),
-    },
-    discovery: {
-      method: (draft.discovery.method || 'search_first') as 'search_first' | 'manual',
-      source_type: draft.discovery.source_type || '',
-      search_pattern: draft.discovery.search_pattern || '',
-      priority: toNum(draft.discovery.priority, 50, 0, 1000),
-      enabled: draft.discovery.enabled !== 'false',
-      notes: draft.discovery.notes || '',
-    },
-  };
-}
-
-// WHY: 22-case switch replaced by generic updateDraftByPath() in sourceEntryDerived.ts.
-// The draft structure is always top-level or one-level nested (group.field).
+// WHY: Typed form entry replaces all-string draft. String↔typed conversion
+// happens at input level (FormCsvInput, parseInt in onChange), not form state.
 
 function ConvergenceGroupIcon({ label, active }: { label: string; active: boolean }) {
   const toneClass = active
@@ -303,7 +206,7 @@ export function PipelineSettingsPage() {
   }>({ kind: 'idle', message: '' });
   const [sourceDraftMode, setSourceDraftMode] = useState<'create' | 'edit' | null>(null);
   const [sourceDraftSourceId, setSourceDraftSourceId] = useState<string | null>(null);
-  const [sourceDraft, setSourceDraft] = useState<SourceStrategyDraft>(() => makeSourceStrategyDraft());
+  const [sourceDraft, setSourceDraft] = useState<SourceFormEntry>(() => defaultSourceFormEntry());
 
   const [saveStatus, setSaveStatus] = useState<{
     kind: 'idle' | 'ok' | 'partial' | 'error';
@@ -407,13 +310,13 @@ export function PipelineSettingsPage() {
   function beginCreateSourceDraft() {
     setSourceDraftMode('create');
     setSourceDraftSourceId(null);
-    setSourceDraft(makeSourceStrategyDraft());
+    setSourceDraft(defaultSourceFormEntry());
   }
 
   function beginEditSourceDraft(entry: SourceEntry) {
     setSourceDraftMode('edit');
     setSourceDraftSourceId(entry.sourceId);
-    setSourceDraft(sourceStrategyDraftFromEntry(entry));
+    setSourceDraft(entryToFormEntry(entry));
   }
 
   function cancelSourceDraft() {
@@ -421,8 +324,8 @@ export function PipelineSettingsPage() {
     setSourceDraftSourceId(null);
   }
 
-  function updateSourceDraft(key: SourceStrategyDraftField, value: string) {
-    setSourceDraft((previous) => updateDraftByPath(previous, key, value));
+  function updateSourceDraft(key: SourceFormEntryField, value: string | number | boolean | string[]) {
+    setSourceDraft((previous) => updateFormEntryByPath(previous, key, value));
   }
 
   function saveEntryDraft() {
@@ -431,7 +334,7 @@ export function PipelineSettingsPage() {
       setSourceStrategySaveState({ kind: 'error', message: 'Host is required.' });
       return;
     }
-    const payload = sourceStrategyPayloadFromDraft(sourceDraft);
+    const payload = formEntryToPayload(sourceDraft);
     if (sourceDraftMode === 'create') {
       createEntry(payload);
       cancelSourceDraft();

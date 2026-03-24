@@ -11,7 +11,7 @@ import {
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from './services/specDbSyncService.js';
 import { handleCompileProcessCompletion } from './services/compileProcessCompletion.js';
 import { handleIndexLabProcessCompletion } from './services/indexLabProcessCompletion.js';
-import { dataChangeMatchesCategory } from './events/dataChangeContract.js';
+import { dataChangeMatchesCategory } from '../core/events/dataChangeContract.js';
 import { toInt, toFloat, toUnitRatio, hasKnownValue } from './helpers/valueNormalizers.js';
 import { jsonRes, corsHeaders, readJsonBody, safeJoin } from './helpers/httpPrimitives.js';
 import {

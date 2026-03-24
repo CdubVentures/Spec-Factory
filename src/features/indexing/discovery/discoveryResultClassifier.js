@@ -47,28 +47,22 @@ export function classifyAndDeduplicateCandidates({
       const parsed = new URL(raw.url);
       const canonicalFromFrontier = frontierDb?.canonicalize?.(parsed.toString())?.canonical_url || parsed.toString();
       const queryList = uniqueTokens(
-        [...toArray(raw.seen_in_queries), raw.query],
-        20
+        [...toArray(raw.seen_in_queries), raw.query]
       );
       const providerList = uniqueTokens(
-        [...toArray(raw.seen_by_providers), raw.provider],
-        8
+        [...toArray(raw.seen_by_providers), raw.provider]
       );
       const queryHintList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.doc_hint || '').trim()).filter(Boolean),
-        12
+        queryList.map((query) => String(queryMetaByQuery.get(query)?.doc_hint || '').trim()).filter(Boolean)
       );
       const hintSourceList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.hint_source || '').trim()).filter(Boolean),
-        8
+        queryList.map((query) => String(queryMetaByQuery.get(query)?.hint_source || '').trim()).filter(Boolean)
       );
       const targetFieldList = uniqueTokens(
-        queryList.flatMap((query) => toArray(queryMetaByQuery.get(query)?.target_fields)),
-        20
+        queryList.flatMap((query) => toArray(queryMetaByQuery.get(query)?.target_fields))
       );
       const domainHintList = uniqueTokens(
-        queryList.map((query) => String(queryMetaByQuery.get(query)?.domain_hint || '').trim()).filter(Boolean),
-        10
+        queryList.map((query) => String(queryMetaByQuery.get(query)?.domain_hint || '').trim()).filter(Boolean)
       );
       const trace = ensureTrace(canonicalFromFrontier, {
         original_url: parsed.toString(),
@@ -108,8 +102,8 @@ export function classifyAndDeduplicateCandidates({
       } else {
         canonMergeCount++;
         const existing = byUrl.get(canonical);
-        existing.seen_by_providers = uniqueTokens([...(existing.seen_by_providers || []), ...providerList], 8);
-        existing.seen_in_queries = uniqueTokens([...(existing.seen_in_queries || []), ...queryList], 20);
+        existing.seen_by_providers = uniqueTokens([...(existing.seen_by_providers || []), ...providerList]);
+        existing.seen_in_queries = uniqueTokens([...(existing.seen_in_queries || []), ...queryList]);
         existing.cross_provider_count = (existing.seen_by_providers || []).length;
       }
     } catch {
@@ -121,12 +115,13 @@ export function classifyAndDeduplicateCandidates({
 }
 
 /**
- * Deterministic domain safety classification (no LLM).
+ * Deterministic domain safety classification with frontier DB runtime data.
  *
  * @param {object} ctx
  * @param {Array} ctx.candidateRows - classified candidate rows
  * @param {object|null} ctx.brandResolution - brand resolver output
  * @param {object} ctx.categoryConfig - tier definitions, denylist
+ * @param {object|null} ctx.frontierDb - frontier DB for runtime fetch history
  * @param {object|null} ctx.logger
  * @returns {{ domainClassificationRows: Array, domainSafetyResults: Map }}
  */
@@ -134,6 +129,7 @@ export function classifyDomains({
   candidateRows,
   brandResolution,
   categoryConfig,
+  frontierDb,
   logger,
 }) {
   const domainClassificationSeeds = collectDomainClassificationSeeds({
@@ -141,31 +137,47 @@ export function classifyDomains({
     brandResolution,
   });
 
+  // WHY: Aggregate per-domain fetch history from frontier DB when available.
+  // This provides real success_rate, latency, cooldown, and block data.
+  const frontierStats = typeof frontierDb?.aggregateDomainStats === 'function'
+    ? frontierDb.aggregateDomainStats(domainClassificationSeeds)
+    : new Map();
+
   const domainClassificationRows = [];
   if (domainClassificationSeeds.length > 0) {
     for (const domain of domainClassificationSeeds) {
       const blocked = isDeniedHost(domain, categoryConfig);
       const approved = !blocked && isApprovedHost(domain, categoryConfig);
       const tier = Number(resolveTierForHost(domain, categoryConfig) || 0);
-      const baseScore = blocked
-        ? 10
-        : approved
-          ? 90
-          : tier === 1
-            ? 80
-            : tier === 2
-              ? 70
-              : tier === 3
-                ? 60
-                : 50;
+      const stats = frontierStats.get(domain) || null;
+
+      // WHY: Budget score combines static tier info with runtime block history.
+      const tierBase = blocked ? 10
+        : approved ? 90
+        : tier === 1 ? 80
+        : tier === 2 ? 70
+        : tier === 3 ? 60
+        : 50;
+      const blockPenalty = stats && stats.blocked_count > 3 ? -20
+        : stats && stats.blocked_count > 0 ? -10
+        : 0;
+      const successBoost = stats && stats.success_rate > 0.8 ? 5
+        : stats && stats.success_rate < 0.3 && stats.fetch_count > 0 ? -15
+        : 0;
+      const budgetScore = Math.max(0, Math.min(100, tierBase + blockPenalty + successBoost));
+
       domainClassificationRows.push({
         domain,
         role: String(inferRoleForHost(domain, categoryConfig) || '').trim(),
         safety_class: blocked ? 'blocked' : (approved ? 'safe' : 'caution'),
-        budget_score: baseScore,
-        cooldown_remaining: 0,
-        success_rate: 0,
-        avg_latency_ms: 0,
+        budget_score: budgetScore,
+        cooldown_remaining: stats ? Math.round(stats.cooldown_remaining_ms / 1000) : 0,
+        success_rate: stats ? stats.success_rate : 0,
+        avg_latency_ms: stats ? stats.avg_latency_ms : 0,
+        fetch_count: stats ? stats.fetch_count : 0,
+        blocked_count: stats ? stats.blocked_count : 0,
+        timeout_count: stats ? stats.timeout_count : 0,
+        last_blocked_ts: stats ? stats.last_blocked_ts : null,
         notes: blocked ? 'category_denylist' : 'deterministic_heuristic',
       });
     }
@@ -182,7 +194,7 @@ export function classifyDomains({
 
   if (domainClassificationRows.length > 0) {
     logger?.info?.('domains_classified', {
-      classifications: domainClassificationRows.slice(0, 50),
+      classifications: domainClassificationRows,
     });
   }
 

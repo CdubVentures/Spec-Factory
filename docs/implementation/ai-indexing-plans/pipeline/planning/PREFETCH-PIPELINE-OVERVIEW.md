@@ -36,7 +36,7 @@ Stage 01: NeedSet           - Schema 2 -> Schema 3 -> Schema 4 group annotations
 Stage 02: Brand Resolver    - brand domain, aliases, support domain, auto-promotion
   (01 + 02 run in parallel via Promise.all -- neither depends on the other's output)
 Stage 03: Search Profile    - CONVERGENCE POINT: first stage requiring both NeedSet + Brand outputs
-                              tier-aware deterministic query generation + optional host plan
+                              tier-aware deterministic query generation, returns { searchProfileBase }
 Stage 04: Search Planner    - tier-aware LLM query enhancement via enhanceQueryRows
 Stage 05: Query Journey     - dedupe, rank, guard, cap, write planned search_profile
 Stage 06: Search Results    - internal/frontier/provider execution
@@ -112,7 +112,6 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
 5. Stage 03 Search Profile:
    - `runSearchProfile()` receives `seedStatus` and `focusGroups` from NeedSet.
    - `buildSearchProfile()` calls `determineQueryModes()` to decide which tiers fire, then runs `buildTier1Queries`, `buildTier2Queries`, `buildTier3Queries` as appropriate. Fully deterministic, no LLM.
-   - optional `buildEffectiveHostPlan()` and `buildScoredQueryRowsFromHostPlan()` run here.
 6. Stage 04 Search Planner:
    - `enhanceQueryRows()` receives tier-tagged `query_rows` from Search Profile + query history.
    - LLM enhances query strings while preserving tier metadata (tier, group_key, normalized_key, target_fields are passthrough).
@@ -121,7 +120,6 @@ Structured per-query tracking with `tier`, `group_key`, `normalized_key`, `hint_
 7. Stage 05 Query Journey:
    - receives enhanced rows from Search Planner (LLM-enhanced or deterministic fallback — treated identically).
    - dedupe, rank by field priority, cap to `searchProfileQueryCap`, identity guard.
-   - append separately guarded host-plan rows.
    - write planned `search_profile`.
    - emit `query_journey_completed`.
 8. Emit `search_queued` rows before Stage 06 so every search slot is visible before execution starts.
@@ -158,6 +156,7 @@ search_queued                               — orchestrator, pre-Stage 06 GUI s
 discovery_query_started                     — Stage 06, per-query
 discovery_query_completed                   — Stage 06, per-query
 serp_selector_completed                     — Stage 07, after LLM selector path completes
+domains_classified                          — Stage 07, after domain classification (runs AFTER selector)
 discovery_enqueue_summary                   — Stage 08, planner queue handoff
 ```
 
@@ -179,15 +178,15 @@ Important nuance: `search_profile_generated` is emitted by `searchProfile.js` (S
 
 Two input streams:
 
-1. **Enhanced rows** from Search Planner — same rows as `searchProfileBase.query_rows` but with potentially LLM-rewritten `query` strings. If LLM failed, these are exact copies of the deterministic rows. Tagged with `tier: 'seed' | 'group_search' | 'key_search'` and `hint_source` ending in `_llm` when LLM-enhanced.
-2. **Host-plan rows** — appended after guard, separately identity-guarded.
+One input stream:
+
+- **Enhanced rows** from Search Planner — same rows as `searchProfileBase.query_rows` but with potentially LLM-rewritten `query` strings. If LLM failed, these are exact copies of the deterministic rows. Tagged with `tier: 'seed' | 'group_search' | 'key_search'` and `hint_source` ending in `_llm` when LLM-enhanced.
 
 Then:
 
 - `dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap)`
 - cap to `searchProfileQueryCap` via `.slice(0, mergedQueryCap)`
 - `enforceIdentityQueryGuard()` with variant guard terms
-- separately guard host-plan rows and append unique survivors within remaining budget
 - build `llm_queries` from rows where `hint_source` ends with `_llm`
 - write planned `search_profile` via `writeSearchProfileArtifacts()`
 - emit `query_journey_completed`
@@ -211,7 +210,7 @@ Canonical orchestrator behavior:
 
 Compatibility behavior:
 
-- direct `discoverCandidateSources()` callers still pass `max(1, config.discoveryQueryConcurrency || 1)`
+- direct `discoverCandidateSources()` callers also hardcode `queryConcurrency` to 1
 
 Search workers cannot appear before `query_journey_completed` fires. The GUI gates the Search Results tab on query journey data.
 
@@ -231,7 +230,6 @@ Brand Resolver:
 Search Profile:
 - `src/features/indexing/discovery/stages/searchProfile.js`
 - `src/features/indexing/search/queryBuilder.js`
-- `src/features/indexing/discovery/domainHintResolver.js`
 
 Search Planner:
 - `src/features/indexing/discovery/stages/searchPlanner.js`
@@ -280,7 +278,6 @@ Seed-phase carry-through:
 - Brand resolution short-circuits on empty brand, cache hit, missing route key, or resolver error.
 - NeedSet preview `needset_computed` emits before the Schema 4 LLM call; the Schema 4 `needset_computed` event is conditional on `schema4.panel`. Panel bundles do not carry queries. `profile_influence` shows budget-aware targeting counts (allocation-based when `tier_allocation` is present, aspirational fallback otherwise).
 - Search Planner falls back to deterministic output when no `plan` route API key or no stage model is available.
-- `buildEffectiveHostPlan()` only runs when `categoryConfig.validatedRegistry` exists.
 - External search can be skipped when `discoveryInternalFirst` satisfies required-field pressure.
 - Plan-only URLs are emitted only when there is no viable provider path and `rawResults` is still empty.
 - Stage 07 uses the selector path only when `serpSelectorEnabled=true` and a triage route key exists; otherwise it falls back to deterministic triage.

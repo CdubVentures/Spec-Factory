@@ -158,7 +158,7 @@ export function deriveRoutePutContract(registry, { clampingIntRangeMap, clamping
     dynamicFetchPolicyMapJsonKey: 'dynamicFetchPolicyMapJson',
     stringEnumMap: clampingStringEnumMap,
     stringFreeMap: Object.freeze(stringFreeMap),
-    stringTrimMap: Object.freeze({ fetchSchedulerInternalsMapJson: 'fetchSchedulerInternalsMapJson' }),
+    stringTrimMap: Object.freeze({}),
     intRangeMap: clampingIntRangeMap,
     floatRangeMap: clampingFloatRangeMap,
     boolMap: Object.freeze(boolMap),
@@ -289,7 +289,7 @@ export function deriveLlmPolicyGroupMap(registry) {
 
 /**
  * Derive top-level scalar LLM policy keys (policyGroup === '_topLevel').
- * Produces: { timeoutMs: 'llmTimeoutMs', writeSummary: 'llmWriteSummary' }
+ * Produces: { timeoutMs: 'llmTimeoutMs' }
  */
 export function deriveLlmPolicyTopLevelKeys(registry) {
   const map = {};

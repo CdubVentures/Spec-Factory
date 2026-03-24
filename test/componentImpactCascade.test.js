@@ -324,7 +324,7 @@ test('evaluateConstraintsForLinkedProducts uses maker-specific component values 
     assert.equal(result.violations.includes('mouse-c'), true);
 
     const dpiState = h.specDb.getItemFieldState('mouse-c').find((row) => row.field_key === 'dpi');
-    assert.equal(dpiState?.needs_ai_review, 1);
+    assert.equal(Boolean(dpiState?.needs_ai_review), true);
   } finally {
     await cleanupHarness(h);
   }

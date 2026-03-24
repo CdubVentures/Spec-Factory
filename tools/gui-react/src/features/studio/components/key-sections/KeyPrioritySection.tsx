@@ -14,6 +14,11 @@ import {
   labelCls,
   STUDIO_TIPS,
 } from "../studioConstants";
+import {
+  REQUIRED_LEVEL_OPTIONS,
+  AVAILABILITY_OPTIONS,
+  DIFFICULTY_OPTIONS,
+} from "../../../../registries/fieldRuleTaxonomy.ts";
 
 export interface KeyPrioritySectionProps extends KeySectionBaseProps {}
 
@@ -61,13 +66,7 @@ export function KeyPrioritySection({
               )
             }
           >
-            <option value="identity">identity</option>
-            <option value="required">required</option>
-            <option value="critical">critical</option>
-            <option value="expected">expected</option>
-            <option value="optional">optional</option>
-            <option value="editorial">editorial</option>
-            <option value="commerce">commerce</option>
+            {REQUIRED_LEVEL_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div>
@@ -100,11 +99,7 @@ export function KeyPrioritySection({
               )
             }
           >
-            <option value="always">always</option>
-            <option value="expected">expected</option>
-            <option value="sometimes">sometimes</option>
-            <option value="rare">rare</option>
-            <option value="editorial_only">editorial_only</option>
+            {AVAILABILITY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div>
@@ -137,10 +132,7 @@ export function KeyPrioritySection({
               )
             }
           >
-            <option value="easy">easy</option>
-            <option value="medium">medium</option>
-            <option value="hard">hard</option>
-            <option value="instrumented">instrumented</option>
+            {DIFFICULTY_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
         <div>

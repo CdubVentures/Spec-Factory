@@ -11,8 +11,10 @@
  * 4. Denied/blocked host
  * 5. URL in cooldown
  * 6. Obvious utility shell pages (login, cart, account, checkout, search results)
+ * 7. Video hosting platforms (YouTube, Vimeo, etc. — never produce extractable spec data)
  */
 import { isDeniedHost } from '../../../categories/loader.js';
+import { isVideoUrl } from './discoveryUrlClassifier.js';
 
 // WHY: Only these path patterns are deterministically non-content utility shells.
 // Other weak paths (/, /index.html) become soft labels — not drops.
@@ -96,6 +98,12 @@ export function applyHardDropFilter({
 
     if (UTILITY_SHELL_RE.test(pathname) || SEARCH_RESULTS_RE.test(pathAndQuery)) {
       hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'utility_shell' });
+      continue;
+    }
+
+    // Step 6: Video hosting platforms (never produce extractable spec data)
+    if (isVideoUrl(canonicalUrl)) {
+      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'video_platform' });
       continue;
     }
 

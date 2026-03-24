@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, ok } from 'node:assert';
-import { handleReviewItemMutationRoute } from '../src/api/reviewItemRoutes.js';
+import { handleReviewItemMutationRoute } from '../src/features/review/api/itemMutationRoutes.js';
 
 /* ------------------------------------------------------------------ */
 /*  WHY: Characterization tests for the handler dispatch layer.         */

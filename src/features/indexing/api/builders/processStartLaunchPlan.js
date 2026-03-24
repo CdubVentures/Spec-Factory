@@ -136,11 +136,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
     runtimeScreencastMaxHeight,
     discoveryEnabled,
     maxPdfBytes,
-    pdfPreferredBackend,
     capturePageScreenshotEnabled,
     capturePageScreenshotFormat,
     capturePageScreenshotSelectors,
-    staticDomMode,
     specDbDir,
     categoryAuthorityRoot: legacyHelperFilesRoot,
     outputMode,
@@ -155,7 +153,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     s3Bucket,
     s3InputPrefix,
     s3OutputPrefix,
-    llmWriteSummary,
     llmProvider,
     llmBaseUrl,
     openaiApiKey,
@@ -288,7 +285,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignString(envOverrides, 'LOCAL_OUTPUT_ROOT', effectiveLocalOutputRoot);
   assignString(envOverrides, 'RUNTIME_EVENTS_KEY', runtimeEventsKey);
   assignBoolean(envOverrides, 'WRITE_MARKDOWN_SUMMARY', writeMarkdownSummary);
-  assignBoolean(envOverrides, 'LLM_WRITE_SUMMARY', llmWriteSummary);
   assignString(envOverrides, 'AWS_REGION', awsRegion);
   assignString(envOverrides, 'S3_BUCKET', s3Bucket);
   assignString(envOverrides, 'S3_INPUT_PREFIX', s3InputPrefix);
@@ -304,11 +300,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
   assignInt(envOverrides, 'FETCH_PER_HOST_CONCURRENCY_CAP', fetchPerHostConcurrencyCap, { minInput: 1, minClamp: 1, maxClamp: 64 });
   assignInt(envOverrides, 'PAGE_GOTO_TIMEOUT_MS', pageGotoTimeoutMs, { minInput: 0, minClamp: 0, maxClamp: 120_000 });
 
-  assignString(envOverrides, 'PDF_PREFERRED_BACKEND', pdfPreferredBackend);
   assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_FORMAT', capturePageScreenshotFormat);
   assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_SELECTORS', capturePageScreenshotSelectors);
-  assignString(envOverrides, 'STATIC_DOM_MODE', staticDomMode);
 
   assignInt(envOverrides, 'RUNTIME_TRACE_FETCH_RING', runtimeTraceFetchRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });
   assignInt(envOverrides, 'RUNTIME_TRACE_LLM_RING', runtimeTraceLlmRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });

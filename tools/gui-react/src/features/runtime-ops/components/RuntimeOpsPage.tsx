@@ -14,7 +14,6 @@ import { MetricsRail } from '../panels/overview/MetricsRail';
 import { OverviewTab } from '../panels/overview/OverviewTab';
 import { WorkersTab } from '../panels/workers/WorkersTab';
 import { DocumentsTab } from '../panels/overview/DocumentsTab';
-import { ExtractionTab } from '../panels/overview/ExtractionTab';
 import { FallbacksTab } from '../panels/overview/FallbacksTab';
 import { QueueTab } from '../panels/overview/QueueTab';
 import { CompoundTab } from '../panels/compound/CompoundTab';
@@ -25,7 +24,6 @@ import type {
   RuntimeOpsWorkersResponse,
   RuntimeOpsDocumentsResponse,
   RuntimeOpsMetricsResponse,
-  ExtractionFieldsResponse,
   FallbacksResponse,
   QueueStateResponse,
 } from '../types';
@@ -34,7 +32,6 @@ const TAB_DEFS = [
   { id: 'overview', label: 'Overview', description: 'Health cards, throughput, blockers' },
   { id: 'workers', label: 'Workers', description: 'Live worker table with stuck detection' },
   { id: 'documents', label: 'Documents', description: 'Document lifecycle tracing' },
-  { id: 'extraction', label: 'Extraction', description: 'Field extraction matrix and method lineage' },
   { id: 'fallbacks', label: 'Fallbacks', description: 'Fetch mode transitions and host degradation' },
   { id: 'queue', label: 'Queue', description: 'Repair queue lanes and job inspection' },
   { id: 'compound', label: 'Compound', description: 'Cross-run learning curves and index analytics' },
@@ -44,7 +41,6 @@ const RUNTIME_OPS_TAB_KEYS = [
   'overview',
   'workers',
   'documents',
-  'extraction',
   'fallbacks',
   'queue',
   'compound',
@@ -338,13 +334,6 @@ export function RuntimeOpsPage() {
     refetchInterval: getRefetchInterval(isSelectedRunActive, false, 2000, 10000),
   });
 
-  const { data: extractionResp } = useQuery({
-    queryKey: ['runtime-ops', effectiveRunId, 'extraction'],
-    queryFn: () => api.get<ExtractionFieldsResponse>(`/indexlab/run/${effectiveRunId}/runtime/extraction/fields`),
-    enabled: Boolean(effectiveRunId) && activeTab === 'extraction',
-    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'extraction', 2000, 10000),
-  });
-
   const { data: fallbacksResp } = useQuery({
     queryKey: ['runtime-ops', effectiveRunId, 'fallbacks'],
     queryFn: () => api.get<FallbacksResponse>(`/indexlab/run/${effectiveRunId}/runtime/fallbacks`),
@@ -466,13 +455,6 @@ export function RuntimeOpsPage() {
                   runId={effectiveRunId}
                   category={category}
                   isRunning={isSelectedRunActive}
-                />
-              )}
-              {activeTab === 'extraction' && (
-                <ExtractionTab
-                  fields={extractionResp?.fields ?? []}
-                  category={category}
-                  onNavigateToDocument={handleNavigateToDocument}
                 />
               )}
               {activeTab === 'fallbacks' && (

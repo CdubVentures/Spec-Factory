@@ -40,20 +40,9 @@ export {
   collectContributionFields,
 } from './candidateHelpers.js';
 
-export {
-  selectAggressiveEvidencePack,
-  selectAggressiveDomHtml,
-  buildDomSnippetArtifact,
-  normalizedSnippetRows,
-  enrichFieldCandidatesWithEvidenceRefs,
-  buildTopEvidenceReferences,
-} from './evidenceHelpers.js';
-
-export {
-  buildFieldReasoning,
-  emitFieldDecisionEvents,
-  buildProvisionalHypothesisQueue,
-} from './reasoningHelpers.js';
+// WHY: evidenceHelpers.js and reasoningHelpers.js removed — they import
+// from deleted extraction/evidencePack.js and pipeline/consensusPhase.js.
+// Their exports were only consumed by the deleted execution/finalize phases.
 
 export {
   toInt,
@@ -88,7 +77,6 @@ export {
 
 export {
   resolveScreencastCallback,
-  createRunProductFetcherFactory,
 } from './runProductContracts.js';
 
 export {

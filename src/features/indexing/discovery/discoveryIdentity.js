@@ -178,53 +178,6 @@ export function categoryPathSegments(category) {
 }
 
 // ---------------------------------------------------------------------------
-// Brand host matching
-// ---------------------------------------------------------------------------
-
-export const BRAND_HOST_HINTS = {
-  logitech: ['logitech', 'logitechg', 'logi'],
-  razer: ['razer'],
-  steelseries: ['steelseries'],
-  alienware: ['alienware', 'dell'],
-  dell: ['dell', 'alienware'],
-  asus: ['asus', 'rog'],
-  zowie: ['zowie', 'benq'],
-  benq: ['benq', 'zowie'],
-  hp: ['hp', 'hyperx'],
-  hyperx: ['hyperx', 'hp'],
-  lenovo: ['lenovo', 'legion'],
-  msi: ['msi'],
-  acer: ['acer', 'predator'],
-  finalmouse: ['finalmouse'],
-  lamzu: ['lamzu'],
-  pulsar: ['pulsar'],
-  corsair: ['corsair'],
-  glorious: ['glorious'],
-  endgame: ['endgamegear', 'endgame-gear']
-};
-
-export function manufacturerHostHintsForBrand(brand) {
-  const hints = new Set(tokenize(brand));
-  const brandSlug = slug(brand);
-  for (const [key, aliases] of Object.entries(BRAND_HOST_HINTS)) {
-    if (brandSlug.includes(key) || hints.has(key)) {
-      for (const alias of aliases) {
-        hints.add(alias);
-      }
-    }
-  }
-  return [...hints];
-}
-
-export function manufacturerHostMatchesBrand(host, hints) {
-  const normalizedHost = normalizeHost(host);
-  if (!normalizedHost || !hints.length) {
-    return true;
-  }
-  return hints.some((hint) => hint && normalizedHost.includes(hint));
-}
-
-// ---------------------------------------------------------------------------
 // Identity guard context helpers
 // ---------------------------------------------------------------------------
 

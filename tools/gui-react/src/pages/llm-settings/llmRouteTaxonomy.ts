@@ -1,50 +1,29 @@
+// WHY: LLM route-specific taxonomy. Core enum registries now live in
+// registries/fieldRuleTaxonomy.ts (SSOT). This file re-exports them
+// and adds LLM-specific sort/prompt/chip utilities.
+
 import type { LlmRouteRow } from '../../types/llmSettings.ts';
 import { toEffortBand, EFFORT_BOUNDS } from './llmRouteDomain.ts';
 
-// --- Taxonomy registries (SSOT for each dimension) ---
+// ── Re-export core registries from SSOT ─────────────────────────────
+export {
+  REQUIRED_LEVEL_OPTIONS,
+  REQUIRED_LEVEL_RANK,
+  DIFFICULTY_OPTIONS,
+  DIFFICULTY_RANK,
+  AVAILABILITY_OPTIONS,
+  AVAILABILITY_RANK,
+  AI_MODE_OPTIONS,
+  AI_MODEL_STRATEGY_OPTIONS,
+  ENUM_POLICY_OPTIONS,
+  tagCls,
+} from '../../registries/fieldRuleTaxonomy.ts';
 
-const REQUIRED_LEVEL_REGISTRY = [
-  { value: 'identity',  rank: 7 },
-  { value: 'critical',  rank: 6 },
-  { value: 'required',  rank: 5 },
-  { value: 'expected',  rank: 4 },
-  { value: 'optional',  rank: 3 },
-  { value: 'editorial', rank: 2 },
-  { value: 'commerce',  rank: 1 },
-] as const;
-
-const DIFFICULTY_REGISTRY = [
-  { value: 'instrumented', rank: 4 },
-  { value: 'hard',         rank: 3 },
-  { value: 'medium',       rank: 2 },
-  { value: 'easy',         rank: 1 },
-] as const;
-
-const AVAILABILITY_REGISTRY = [
-  { value: 'always',        rank: 5 },
-  { value: 'expected',      rank: 4 },
-  { value: 'sometimes',     rank: 3 },
-  { value: 'rare',          rank: 2 },
-  { value: 'editorial_only', rank: 1 },
-] as const;
-
-// --- Derived rank maps ---
-
-export const REQUIRED_LEVEL_RANK: Record<string, number> = Object.fromEntries(
-  REQUIRED_LEVEL_REGISTRY.map((e) => [e.value, e.rank])
-);
-export const DIFFICULTY_RANK: Record<string, number> = Object.fromEntries(
-  DIFFICULTY_REGISTRY.map((e) => [e.value, e.rank])
-);
-export const AVAILABILITY_RANK: Record<string, number> = Object.fromEntries(
-  AVAILABILITY_REGISTRY.map((e) => [e.value, e.rank])
-);
-
-// --- Derived option arrays (for dropdowns) ---
-
-export const REQUIRED_LEVEL_OPTIONS = REQUIRED_LEVEL_REGISTRY.map((e) => e.value);
-export const DIFFICULTY_OPTIONS = DIFFICULTY_REGISTRY.map((e) => e.value);
-export const AVAILABILITY_OPTIONS = AVAILABILITY_REGISTRY.map((e) => e.value);
+import {
+  REQUIRED_LEVEL_RANK,
+  DIFFICULTY_RANK,
+  AVAILABILITY_RANK,
+} from '../../registries/fieldRuleTaxonomy.ts';
 
 // --- Sort types ---
 
@@ -80,30 +59,4 @@ export function rankForSort(row: LlmRouteRow, sortBy: SortBy): number | string {
   if (sortBy === 'difficulty') return DIFFICULTY_RANK[row.difficulty] || 0;
   if (sortBy === 'availability') return AVAILABILITY_RANK[row.availability] || 0;
   return row.route_key;
-}
-
-// --- Chip classification ---
-
-export function tagCls(kind: 'required' | 'difficulty' | 'availability' | 'effort', value: string) {
-  if (kind === 'required') {
-    if (['identity', 'critical', 'required'].includes(value)) return 'sf-chip-danger';
-    if (value === 'expected') return 'sf-chip-info';
-    return 'sf-chip-neutral';
-  }
-  if (kind === 'difficulty') {
-    if (value === 'hard' || value === 'instrumented') return 'sf-chip-warning';
-    if (value === 'medium') return 'sf-chip-info';
-    return 'sf-chip-success';
-  }
-  if (kind === 'availability') {
-    if (value === 'always' || value === 'expected') return 'sf-chip-success';
-    if (value === 'sometimes') return 'sf-chip-warning';
-    return 'sf-chip-neutral';
-  }
-  const parsedEffort = Number.parseInt(String(value || ''), 10);
-  const effortBand = toEffortBand(Number.isFinite(parsedEffort) ? parsedEffort : EFFORT_BOUNDS.min);
-  if (effortBand === '1-3') return 'sf-chip-success';
-  if (effortBand === '4-6') return 'sf-chip-info';
-  if (effortBand === '7-8') return 'sf-chip-warning';
-  return 'sf-chip-danger';
 }

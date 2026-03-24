@@ -1,4 +1,4 @@
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,

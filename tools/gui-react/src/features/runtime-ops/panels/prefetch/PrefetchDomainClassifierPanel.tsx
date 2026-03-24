@@ -21,6 +21,7 @@ import {
   buildDomainFunnelBullets,
   computeAvgBudgetScore,
   computeCooldownSummary,
+  computeFetchSummary,
 } from '../../selectors/domainClassifierHelpers.js';
 import type { RuntimeIdxBadge } from '../../types';
 
@@ -63,11 +64,23 @@ function DomainDetailDrawer({
           {domain.avg_latency_ms > 0 ? formatMs(domain.avg_latency_ms) : 'N/A'}
         </span>
       </DrawerSection>
+      <DrawerSection title="Fetch History">
+        <div className="flex gap-4 sf-text-caption font-mono">
+          <span>{domain.fetch_count || 0} fetches</span>
+          {domain.blocked_count > 0 && <span className="text-[var(--sf-state-error-fg)]">{domain.blocked_count} blocked</span>}
+          {domain.timeout_count > 0 && <span className="text-[var(--sf-state-warning-fg)]">{domain.timeout_count} timeouts</span>}
+        </div>
+      </DrawerSection>
       <DrawerSection title="Cooldown">
         <span className="sf-text-caption font-mono sf-text-muted">
           {domain.cooldown_remaining > 0 ? formatMs(domain.cooldown_remaining * 1000) : 'None'}
         </span>
       </DrawerSection>
+      {domain.last_blocked_ts && (
+        <DrawerSection title="Last Blocked">
+          <span className="sf-text-caption font-mono sf-text-muted">{domain.last_blocked_ts}</span>
+        </DrawerSection>
+      )}
       {domain.notes && (
         <DrawerSection title="Notes">
           <div className="sf-text-caption sf-text-muted">{domain.notes}</div>
@@ -91,6 +104,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
   const funnelBullets = useMemo(() => buildDomainFunnelBullets(health, calls), [health, calls]);
   const avgBudget = useMemo(() => computeAvgBudgetScore(health), [health]);
   const cooldownSummary = useMemo(() => computeCooldownSummary(health), [health]);
+  const fetchSummary = useMemo(() => computeFetchSummary(health), [health]);
   const hasSafetyData = safetyCounts.safe + safetyCounts.caution + safetyCounts.blocked > 0;
 
   const domainValues = useMemo(
@@ -179,6 +193,8 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
           <HeroStat value={safetyCounts.safe} label="safe" colorClass={safetyCounts.safe > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={safetyCounts.caution} label="caution" colorClass={safetyCounts.caution > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
           <HeroStat value={safetyCounts.blocked} label="blocked" colorClass={safetyCounts.blocked > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
+          <HeroStat value={fetchSummary.totalFetches} label="fetches" />
+          <HeroStat value={fetchSummary.totalBlocks} label="blocks" colorClass={fetchSummary.totalBlocks > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
@@ -287,7 +303,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
             <table className="min-w-full text-xs">
               <thead className="sf-surface-elevated sticky top-0">
                 <tr>
-                  {['domain', 'role', 'safety', 'budget', 'success', 'latency', 'cooldown', 'notes'].map((h) => (
+                  {['domain', 'role', 'safety', 'budget', 'fetches', 'blocks', 'success', 'latency', 'cooldown', 'notes'].map((h) => (
                     <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
                   ))}
                 </tr>
@@ -310,6 +326,16 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
                     </td>
                     <td className="py-1.5 px-4">
                       <ScoreBar value={d.budget_score} max={100} label={String(Math.round(d.budget_score))} />
+                    </td>
+                    <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
+                      {d.fetch_count > 0 ? d.fetch_count : '-'}
+                    </td>
+                    <td className="py-1.5 px-4 text-right font-mono">
+                      {d.blocked_count > 0 ? (
+                        <span className="text-[var(--sf-state-error-fg)]">{d.blocked_count}</span>
+                      ) : (
+                        <span className="sf-text-subtle">-</span>
+                      )}
                     </td>
                     <td className="py-1.5 px-4 text-right font-mono">
                       {d.success_rate > 0 ? pctString(d.success_rate) : '-'}

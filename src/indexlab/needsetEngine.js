@@ -51,7 +51,7 @@ export function shardAliases(aliases, maxTokensPerShard = 8) {
   return shards;
 }
 
-export { availabilityRank, difficultyRank, requiredLevelRank };
+export { availabilityRank, difficultyRank, requiredLevelRank, deriveQueryFamilies };
 
 const NEED_SCORE_WEIGHTS = { identity: 100, critical: 80, required: 60, expected: 30, optional: 10 };
 
@@ -175,14 +175,38 @@ function extractSearchHints(rule = {}) {
   };
 }
 
+// WHY: Exact-match lookup prevents substring false positives (e.g. 'doc' matching 'undocumented').
+// Keys sourced from CONTENT_TYPE_SUFFIX in queryFieldRuleGates.js + LLM planner tokens.
+const CONTENT_TYPE_TO_FAMILY = {
+  manual: 'manual_pdf',
+  pdf: 'manual_pdf',
+  manual_pdf: 'manual_pdf',
+  datasheet_pdf: 'manual_pdf',
+  support: 'support_docs',
+  doc: 'support_docs',
+  documentation: 'support_docs',
+  spec: 'manufacturer_html',
+  spec_sheet: 'manufacturer_html',
+  spec_pdf: 'manufacturer_html',
+  product: 'manufacturer_html',
+  product_page: 'manufacturer_html',
+  review: 'manufacturer_html',
+  lab_review: 'manufacturer_html',
+  teardown_review: 'manufacturer_html',
+  lab: 'manufacturer_html',
+  benchmark: 'manufacturer_html',
+  teardown: 'manufacturer_html',
+  datasheet: 'manufacturer_html',
+  comparison: 'manufacturer_html',
+  reference: 'manufacturer_html',
+};
+
 function deriveQueryFamilies(contentTarget, domainHints) {
   const families = new Set();
   if (domainHints.length > 0) families.add('manufacturer_html');
   for (const ct of contentTarget) {
-    const lower = String(ct).toLowerCase();
-    if (lower.includes('manual') || lower.includes('pdf')) families.add('manual_pdf');
-    else if (lower.includes('support') || lower.includes('doc')) families.add('support_docs');
-    else if (lower.includes('spec') || lower.includes('product') || lower.includes('review')) families.add('manufacturer_html');
+    const family = CONTENT_TYPE_TO_FAMILY[String(ct).toLowerCase().trim()];
+    if (family) families.add(family);
   }
   if (families.size === 0) families.add('fallback_web');
   return [...families].sort();

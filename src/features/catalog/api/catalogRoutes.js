@@ -1,5 +1,5 @@
 import { resolveProductIdentity } from '../index.js';
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { recordQueueCleanupOutcome } from '../../../observability/dataPropagationCounters.js';
 import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
 

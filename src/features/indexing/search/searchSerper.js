@@ -28,7 +28,7 @@ export function resetSerperPacingForTests() {
  * @param {object} options
  * @param {string} options.query
  * @param {string} options.apiKey - Serper API key
- * @param {number} [options.limit=20] - Results per query (1-100)
+ * @param {number} [options.limit=10] - Results per query (1-10, Serper hard cap)
  * @param {number} [options.timeoutMs=10000]
  * @param {number} [options.minQueryIntervalMs=500]
  * @param {number} [options.maxRetries=3]
@@ -43,7 +43,7 @@ export function resetSerperPacingForTests() {
 export async function searchSerper({
   query,
   apiKey,
-  limit = 20,
+  limit = 10,
   timeoutMs = 10_000,
   minQueryIntervalMs = DEFAULT_MIN_INTERVAL_MS,
   maxRetries = 3,
@@ -64,7 +64,8 @@ export async function searchSerper({
   }
 
   const q = String(query).trim();
-  const cap = Math.max(1, Math.min(100, Number(limit) || 20));
+  // WHY: Serper returns max 10 organic results regardless of `num` (confirmed via live API test).
+  const cap = Math.max(1, Math.min(10, Number(limit) || 10));
   const fetchFn = _fetchFn || globalThis.fetch;
 
   // Pacing — injectable for tests

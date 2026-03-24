@@ -75,9 +75,6 @@ function makeConfig(tempRoot, overrides = {}) {
     s3OutputPrefix: 'specs/outputs',
     discoveryEnabled: true,
     searchProfileQueryCap: 4,
-    discoveryResultsPerQuery: 5,
-    searchPlannerQueryCap: 20,
-    discoveryQueryConcurrency: 4,
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: 'http://127.0.0.1:8080',
     searxngMinQueryIntervalMs: 0,
@@ -103,7 +100,6 @@ test('discoverCandidateSources with logger emits search profile events without c
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-logger-profile-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 3,
-    discoveryQueryConcurrency: 1,
     searchEngines: 'bing,google',
     searxngBaseUrl: 'http://127.0.0.1:8080'
   });
@@ -221,7 +217,6 @@ test('discoverCandidateSources emits deterministic triage and domain-classifier 
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-deterministic-triage-events-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 2,
-    discoveryQueryConcurrency: 1,
     searchEngines: 'bing,brave,duckduckgo',
     // WHY: LLM API key required so the SERP selector call reaches fetch
     // instead of throwing 'LLM_API_KEY is not configured' before the mock can respond.
@@ -327,7 +322,6 @@ test('discoverCandidateSources uses deterministic domain classification exclusiv
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-domain-deterministic-only-'));
   const config = makeConfig(tempRoot, {
     searchProfileQueryCap: 1,
-    discoveryQueryConcurrency: 1,
     llmProvider: 'openai',
     llmBaseUrl: 'http://llm.test',
     llmApiKey: 'test-key',

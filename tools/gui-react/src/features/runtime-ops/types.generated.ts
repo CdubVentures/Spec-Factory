@@ -291,11 +291,22 @@ export interface PrefetchSearchProfileBase {
 
 export interface SearchPlanEnhancementRow {
   query: string;
-  original_query: string;
   hint_source: string;
   tier: string;
-  group_key: string;
   target_fields: string[];
+  doc_hint: string;
+  alias: string;
+  domain_hint: string;
+  source_host: string;
+  group_key: string;
+  normalized_key: string;
+  repeat_count: number;
+  all_aliases: string[];
+  domain_hints: string[];
+  preferred_content_types: string[];
+  domains_tried_for_key: string[];
+  content_types_tried_for_key: string[];
+  original_query: string;
 }
 
 export interface PrefetchNeedSetBase {
@@ -364,6 +375,10 @@ export interface DomainHealthRow {
   cooldown_remaining: number;
   success_rate: number;
   avg_latency_ms: number;
+  fetch_count: number;
+  blocked_count: number;
+  timeout_count: number;
+  last_blocked_ts: string | null;
   notes: string;
 }
 
@@ -384,7 +399,7 @@ export interface PrefetchLlmCallGen {
 export interface RuntimeOpsWorkerRowGen {
   worker_id: string;
   pool: string;
-  state: 'idle' | 'running' | 'stuck' | 'queued';
+  state: 'idle' | 'running' | 'stuck' | 'queued' | 'blocked' | 'captcha' | 'retrying';
   stage: 'search' | 'fetch' | 'parse' | 'index' | 'llm';
   current_url: string;
   started_at: string;
@@ -409,8 +424,6 @@ export interface RuntimeOpsWorkerRowGen {
   avg_duration_ms?: number;
   last_result_count?: number;
   last_duration_ms?: number;
-  last_query?: string | null;
-  last_provider?: string | null;
   primary_count?: number;
   fallback_count?: number;
   call_type?: string | null;

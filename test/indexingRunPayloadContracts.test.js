@@ -62,20 +62,17 @@ test('deriveIndexingRunStartParsedValues parses runtime numeric settings and fal
     runtimeSettingsPayload: {
       fetchConcurrency: 'bad-value',
       runtimeScreencastFps: '7',
-      scannedPdfOcrMinConfidence: '0.25',
       llmMonthlyBudgetUsd: '3.5',
     },
     runtimeSettingsBaseline: createBaseline({
       fetchConcurrency: 5,
       runtimeScreencastFps: 12,
-      scannedPdfOcrMinConfidence: 0.6,
       llmMonthlyBudgetUsd: 9.25,
     }),
   });
 
   assert.equal(parsed.parsedConcurrency, 5);
   assert.equal(parsed.parsedRuntimeScreencastFps, 7);
-  assert.equal(parsed.parsedScannedPdfOcrMinConfidence, 0.25);
   assert.equal(parsed.parsedLlmMonthlyBudgetUsd, 3.5);
 });
 
@@ -92,15 +89,12 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       runtimeScreencastEnabled: true,
       importsRoot: '  ./imports  ',
       eventsJsonWrite: true,
-      scannedPdfOcrEnabled: true,
-      scannedPdfOcrBackend: '  tesseract  ',
       dynamicFetchPolicyMapJson: '  {"mouse":"full"}  ',
       discoveryEnabled: true,
       llmProvider: '  openai  ',
       llmPlanProvider: '  openai  ',
       llmPlanBaseUrl: '  https://plan.example.test  ',
       llmPlanApiKey: '  plan-key  ',
-      llmVerifyMode: '  strict  ',
       llmModelPlan: '  gpt-plan  ',
       llmModelTriage: '  gpt-triage  ',
       llmMaxOutputTokensPlan: '128',
@@ -131,11 +125,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedIdentityGatePublishThreshold: 1.5,
       parsedIndexingResumeSeedLimit: 0,
       parsedIndexingResumePersistLimit: 0,
-      parsedScannedPdfOcrMaxPages: 0,
-      parsedScannedPdfOcrMaxPairs: 0,
-      parsedScannedPdfOcrMinChars: 0,
-      parsedScannedPdfOcrMinLines: 0,
-      parsedScannedPdfOcrMinConfidence: 1.5,
       parsedSearchProfileQueryCap: 0,
       parsedSearchPlannerQueryCap: 0,
       parsedMaxUrlsPerProduct: 0,
@@ -146,9 +135,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedMaxPdfBytes: 0,
       parsedLlmMaxCallsPerRound: 0,
       parsedLlmMaxOutputTokens: 50,
-      parsedLlmVerifySampleRate: 0,
-      parsedLlmMaxBatchesPerProduct: 0,
-      parsedLlmMaxEvidenceChars: 0,
       parsedLlmMaxTokens: 0,
       parsedLlmTimeoutMs: 0,
       parsedLlmCostInputPer1M: -1,
@@ -161,19 +147,22 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedMaxManufacturerPagesPerDomain: 0,
       parsedManufacturerReserveUrls: -1,
       parsedMaxHypothesisItems: 0,
-      parsedHypothesisAutoFollowupRounds: -1,
-      parsedHypothesisFollowupUrlsPerRound: 0,
-      parsedLlmExtractionCacheTtlMs: 0,
       parsedLlmMaxCallsPerProductTotal: 0,
       parsedLlmMaxCallsPerProductFast: -1,
       // WHY: parsedNeedsetEvidenceDecayDays/Floor removed in Phase 12 NeedSet Legacy Removal
       parsedLlmExtractMaxTokens: 10,
-      parsedLlmExtractMaxSnippetsPerBatch: 0,
-      parsedLlmExtractMaxSnippetChars: 0,
-      parsedLlmExtractReasoningBudget: 0,
       parsedLlmReasoningBudget: 0,
       parsedLlmMonthlyBudgetUsd: -1,
       parsedLlmPerProductBudgetUsd: -1,
+      // WHY: Model token fields now handled by generic overlay (no sub-builder).
+      // In the real flow, deriveIndexingRunStartParsedValues generates these.
+      parsedLlmMaxOutputTokensPlan: 128,
+      parsedLlmMaxOutputTokensReasoning: 131,
+      parsedLlmMaxOutputTokensPlanFallback: 135,
+      parsedLlmMaxOutputTokensReasoningFallback: 138,
+      parsedLlmMaxOutputTokensExtractFallback: 136,
+      parsedLlmMaxOutputTokensValidateFallback: 137,
+      parsedLlmMaxOutputTokensWriteFallback: 138,
     }),
     runControlPayload: {
       reviewMode: true,
@@ -190,12 +179,12 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.daemonConcurrency, 1);
   assert.equal(payload.importsRoot, './imports');
 
-  assert.equal(payload.scannedPdfOcrBackend, 'tesseract');
-  assert.equal(payload.scannedPdfOcrMaxPairs, 50);
-  assert.equal(payload.scannedPdfOcrMinConfidence, 1);
   assert.equal(payload.dynamicFetchPolicyMapJson, '{"mouse":"full"}');
 
-  assert.equal(payload.searchProfileQueryCap, 0);
+  // WHY: Registry SSOT defines min: 1 for searchProfileQueryCap. The generic
+  // overlay now enforces registry min consistently. Old discovery builder skipped
+  // clamping, but the registry is the source of truth.
+  assert.equal(payload.searchProfileQueryCap, 1);
 
   assert.equal(payload.llmProvider, 'openai');
   assert.equal(payload.llmPlanProvider, 'openai');
@@ -223,8 +212,6 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
     category: 'mouse',
     productId: 'mouse-acme-orbit-x1',
     runtimeSettingsPayload: createPayload({
-      discoveryResultsPerQuery: '99',
-      discoveryQueryConcurrency: '8',
       fetchBudgetMs: 30000,
     }),
     parsedValues: createParsedValues(),
@@ -232,7 +219,5 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
   });
 
   // WHY: These keys now flow through via the runtimeSettingsPayload spread
-  assert.equal(payload.discoveryResultsPerQuery, '99');
-  assert.equal(payload.discoveryQueryConcurrency, '8');
   assert.equal(payload.fetchBudgetMs, 30000);
 });

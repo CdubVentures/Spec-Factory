@@ -59,6 +59,21 @@ async function handleSearchProfileGenerated(state, deps, { ts, row }) {
   }
 }
 
+async function handleSourceFetchQueued(state, deps, { ts, url, row }) {
+  const workerId = String(row.worker_id || '').trim();
+  if (url && workerId) {
+    state.fetchByUrl.set(url, { started_at: null, worker_id: workerId, queued: true });
+    state.workerByUrl.set(url, workerId);
+  }
+  await emit(state, 'fetch', 'fetch_queued', {
+    scope: 'url',
+    url,
+    worker_id: workerId,
+    host: String(row.host || ''),
+    state: 'queued',
+  }, ts);
+}
+
 async function handleSourceFetchStarted(state, deps, { ts, url, row }) {
   await startStage(state, 'fetch', ts, { trigger: 'source_fetch_started' });
   if (state.stageState.search.started_at && !state.stageState.search.ended_at) {
@@ -74,11 +89,13 @@ async function handleSourceFetchStarted(state, deps, { ts, url, row }) {
     });
   }
   if (url) {
-    state.counters.pages_checked += 1;
-    const workerId = 'fetch-' + state.counters.pages_checked;
+    // WHY: Reuse the worker_id from source_fetch_queued if the URL was pre-populated.
+    // This prevents creating a duplicate worker with a different ID.
+    const existingWorker = state.workerByUrl.get(url);
+    const workerId = existingWorker || ('fetch-' + (++state.counters.pages_checked));
     state.fetchClosedByUrl.delete(url);
     state.fetchByUrl.set(url, { started_at: ts, worker_id: workerId });
-    state.workerByUrl.set(url, workerId);
+    if (!existingWorker) state.workerByUrl.set(url, workerId);
   }
   await emit(state, 'fetch', 'fetch_started', {
     scope: 'url',
@@ -566,6 +583,10 @@ async function handleDomainsClassified(state, deps, { ts, row }) {
       cooldown_remaining: asInt(cls?.cooldown_remaining, 0),
       success_rate: asFloat(cls?.success_rate, 0),
       avg_latency_ms: asInt(cls?.avg_latency_ms, 0),
+      fetch_count: asInt(cls?.fetch_count, 0),
+      blocked_count: asInt(cls?.blocked_count, 0),
+      timeout_count: asInt(cls?.timeout_count, 0),
+      last_blocked_ts: cls?.last_blocked_ts ? String(cls.last_blocked_ts).trim() : null,
       notes: String(cls?.notes || '').trim(),
     })) : [],
   }, ts);
@@ -791,6 +812,7 @@ const EVENT_HANDLERS = new Map([
   ['run_context',                     handleRunContext],
   ['run_completed',                   handleRunCompleted],
   ['search_profile_generated',        handleSearchProfileGenerated],
+  ['source_fetch_queued',             handleSourceFetchQueued],
   ['source_fetch_started',            handleSourceFetchStarted],
   ['source_fetch_skipped',            handleSourceFetchSkipped],
   ['source_fetch_failed',             handleSourceFetchFailed],

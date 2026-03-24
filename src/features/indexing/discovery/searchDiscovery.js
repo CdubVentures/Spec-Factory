@@ -163,14 +163,14 @@ export async function discoverCandidateSources({
     status: brandStatus,
     skip_reason: brandSkipReason,
     official_domain: brandResolution?.officialDomain || '',
-    aliases: brandResolution?.aliases?.slice(0, 5) || [],
+    aliases: brandResolution?.aliases || [],
     support_domain: brandResolution?.supportDomain || '',
     confidence: brandResolution?.confidence ?? null,
-    reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning.slice(0, 10) : []
+    reasoning: Array.isArray(brandResolution?.reasoning) ? brandResolution.reasoning : []
   });
 
   const enrichedLexicon = mergeLearningStoreHintsIntoLexicon(learning.lexicon, learningStoreHints);
-  const searchProfileCaps = resolveSearchProfileCaps(config);
+  const searchProfileCaps = resolveSearchProfileCaps();
   const identityLock = {
     brand: resolvedIdentity.brand,
     model: resolvedIdentity.model,
@@ -210,7 +210,7 @@ export async function discoverCandidateSources({
     alias_count: toArray(searchProfileBase?.identity_aliases).length,
     query_count: toArray(searchProfileBase?.queries).length,
     source: 'deterministic',
-    query_rows: toArray(searchProfileBase?.query_rows).slice(0, 220).map((row) => ({
+    query_rows: toArray(searchProfileBase?.query_rows).map((row) => ({
       query: String(row?.query || '').trim(),
       hint_source: String(row?.hint_source || '').trim(),
       target_fields: Array.isArray(row?.target_fields) ? row.target_fields : [],
@@ -267,7 +267,7 @@ export async function discoverCandidateSources({
       ? `LLM planner enhanced ${enhancedLlmRows.length} queries`
       : `Deterministic fallback — ${allEnhancedRows.length} queries unchanged`,
     query_target_map: {},
-    missing_critical_fields: toArray(planningHints.missingCriticalFields).slice(0, 30),
+    missing_critical_fields: toArray(planningHints.missingCriticalFields),
     enhancement_rows: allEnhancedRows.map((r) => ({
       query: String(r.query || '').trim(),
       original_query: String(r.original_query || r.query || '').trim(),
@@ -376,7 +376,7 @@ export async function discoverCandidateSources({
     ...toArray(mergedQueries.rejectLog),
     ...toArray(rankedCapRejectLog),
     ...toArray(guardedQueries.rejectLog),
-  ].slice(0, 300);
+  ];
 
   const queryLimit = mergedQueryCap;
   const executionQueryLimit = Math.min(queryLimit, queries.length);
@@ -426,15 +426,15 @@ export async function discoverCandidateSources({
   // advance the phase cursor and the GUI can gate search worker bouncy balls.
   logger?.info?.('query_journey_completed', {
     selected_query_count: queries.length,
-    selected_queries: queries.slice(0, 50),
+    selected_queries: queries,
     deterministic_query_count: baseQueries.length + targetedQueries.length,
     rejected_count: queryRejectLogCombined.length,
   });
 
   // === Stage 06: Search Results ===
-  const resultsPerQuery = configInt(config, 'discoveryResultsPerQuery');
+  const resultsPerQuery = 10;
   const discoveryCap = configInt(config, 'serpSelectorUrlCap');
-  const queryConcurrency = configInt(config, 'discoveryQueryConcurrency');
+  const queryConcurrency = 1;
 
   const providerState = searchEngineAvailability(config);
   const requiredOnlySearch = Boolean(planningHints.requiredOnlySearch);
@@ -493,7 +493,7 @@ export async function discoverCandidateSources({
     rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
     config, storage, categoryConfig, job, runId, logger, runtimeTraceWriter, frontierDb,
     variables, identityLock, brandResolution, missingFields, learning,
-    llmContext, searchProfileBase, llmQueries: [],
+    llmContext, searchProfileBase, llmQueries: enhancedLlmRows.map((r) => r.query),
     queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency, discoveryCap,
   });
 }

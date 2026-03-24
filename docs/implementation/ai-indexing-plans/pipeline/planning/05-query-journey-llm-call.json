@@ -12,7 +12,6 @@
       "dedupeQueryRows(queryCandidates, dedupeQueriesCap)",
       "cap to searchProfileQueryCap via .slice(0, mergedQueryCap)",
       "enforceIdentityQueryGuard()",
-      "append guarded host-plan rows (separately deduped)",
       "build llm_queries from rows where hint_source ends with _llm",
       "write planned search_profile artifact"
     ]

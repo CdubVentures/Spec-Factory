@@ -15,7 +15,7 @@ import {
 export const CUSTOM_KEYS = Object.freeze(new Set([
   // Post-processed strings (.replace, .trim, .toLowerCase)
   's3InputPrefix', 's3OutputPrefix',
-  'indexingResumeMode', 'batchStrategy', 'staticDomMode',
+  'indexingResumeMode', 'batchStrategy',
   'capturePageScreenshotFormat', 'capturePageScreenshotSelectors',
   'repairDedupeRule',
 
@@ -46,9 +46,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'serperApiKey',
 
   // JSON map normalization + sub-fields
-  'fetchSchedulerInternalsMapJson',
-  'fetchSchedulerDefaultDelayMs', 'fetchSchedulerDefaultConcurrency',
-  'fetchSchedulerDefaultMaxRetries', 'fetchSchedulerRetryWaitMs',
   'retrievalInternalsMap',
   'retrievalEvidenceTierWeightMultiplier', 'retrievalEvidenceDocWeightMultiplier',
   'retrievalEvidenceMethodWeightMultiplier', 'retrievalEvidencePoolMaxRows',
@@ -56,15 +53,9 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'retrievalEvidenceRefsLimit', 'retrievalReasonBadgesLimit',
   'retrievalAnchorsLimit', 'retrievalPrimeSourcesMaxCap',
   'retrievalFallbackEvidenceMaxRows', 'retrievalProvenanceOnlyMinRows',
-  'evidencePackLimitsMap', 'parsingConfidenceBaseMap',
-  'evidenceHeadingsLimit', 'evidenceChunkMaxLength', 'evidenceSpecSectionsLimit',
+  'parsingConfidenceBaseMap',
   'searchProfileCapMap', 'searchProfileCapMapJson',
-  'articleExtractorDomainPolicyMap', 'articleExtractorDomainPolicyMapJson',
   'dynamicFetchPolicyMap', 'dynamicFetchPolicyMapJson',
-  'fetchSchedulerInternalsMap',
-
-  // Different default source (convergenceSettingDefault)
-  'serpTriageMinScore',
 
   // Hardcoded constants (not in registry or always fixed)
   'runProfile', 'fetchCandidateSources',
@@ -92,9 +83,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'indexingResumeRetryPersistLimit', 'indexingResumeSuccessPersistLimit',
   'indexingReextractSeedLimit',
   'indexingSchemaPacketsSchemaRoot',
-
-  // Hardcoded bool flags with no runtimeSettingDefault
-  'llmVerifyAggressiveAlways', 'llmVerifyAggressiveBatchCount',
 
   // Runtime events key (uses simple pattern but grouped here for safety)
   'runtimeEventsKey',

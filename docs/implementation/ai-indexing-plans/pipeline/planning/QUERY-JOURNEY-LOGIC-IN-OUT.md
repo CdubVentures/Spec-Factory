@@ -1,10 +1,10 @@
 # Query Journey Logic In And Out
 
-Validated against live code on 2026-03-23. Note: `hostPlanQueryRows` has no default `= []` in the function signature (QJ1 finding) — the orchestrator always passes an array, but the stage itself is not defensive against `undefined`.
+Validated against live code on 2026-03-23. P7: host plan concept deleted entirely — no `hostPlanQueryRows` or `effectiveHostPlan` inputs.
 
 ## What this stage is
 
-Query Journey is the Stage 05 query-selection and persistence boundary owned by `runQueryJourney()`. It does not call an LLM. It receives enhanced query rows from Search Planner (Stage 04) and optional host-plan rows, then deduplicates, ranks, guards, caps, and persists the final query list.
+Query Journey is the Stage 05 query-selection and persistence boundary owned by `runQueryJourney()`. It does not call an LLM. It receives enhanced query rows from Search Planner (Stage 04), then deduplicates, ranks, guards, caps, and persists the final query list.
 
 Primary owners:
 
@@ -17,12 +17,10 @@ Query Journey works from:
 
 - `enhancedRows` — tier-tagged rows from Search Planner (LLM-enhanced or deterministic fallback)
 - `searchProfileBase` — deterministic base from Stage 03 (for `variant_guard_terms`, `query_reject_log`, original `query_rows`)
-- optional `hostPlanQueryRows` — scored queries from host-plan scorer
 - `variables` — resolved job identity
 - `missingFields`
 - `planningHints.missingCriticalFields`, `planningHints.missingRequiredFields`
 - `searchProfileCaps`
-- `effectiveHostPlan`
 - `categoryConfig`, `job`, `runId`, `logger`, `storage`
 - optional `brandResolution`
 
@@ -51,8 +49,7 @@ Search Planner returns `enhancedRows` which are the *same rows* as `searchProfil
 3. Deduplicate with `dedupeQueryRows(queryCandidates, searchProfileCaps.dedupeQueriesCap)`.
 4. Cap to `searchProfileQueryCap` via `.slice(0, mergedQueryCap)`. Tier order IS execution priority — no re-ranking.
 5. Guard with `enforceIdentityQueryGuard()` using `variant_guard_terms`.
-6. Guard host-plan rows (Stream 2) separately, append only unique survivors within remaining budget.
-7. If every guarded row disappears but capped rows existed, retain one fallback query.
+6. If every guarded row disappears but capped rows existed, retain one fallback query.
 8. Build `llm_queries` — filter `enhancedRows` where `hint_source` ends with `_llm`.
 9. Build planned `search_profile` payload (`searchProfilePlanned`).
 10. Write planned `search_profile` artifacts via `writeSearchProfileArtifacts()`.
@@ -71,7 +68,6 @@ The identity guard rejects for reasons such as:
 
 - Query Journey is deterministic. It does not make its own LLM call.
 - Enhanced rows are the sole query source (no separate "deterministic" and "LLM" streams merged). The LLM enhancement is applied *before* Query Journey receives them.
-- Host-plan rows are appended only after the main ranked set has been deduped and guarded.
 - `searchProfilePlanned.llm_queries` contains only queries where `hint_source` ends with `_llm`.
 - If the LLM failed in Stage 04, `llm_queries` will be empty and all rows will have their original deterministic `hint_source`.
 
@@ -97,7 +93,6 @@ The identity guard rejects for reasons such as:
 - `query_guard`
 - `selected_queries`, `selected_query_count`
 - `query_rows` — final selected rows (capped)
-- `effective_host_plan`
 - `brand_resolution`
 - `key`, `run_key`, `latest_key`
 

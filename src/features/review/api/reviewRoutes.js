@@ -3,12 +3,12 @@
 // Thin dispatcher that delegates to extracted handler modules.
 // Field review routes → fieldReviewHandlers.js
 // Component review routes → componentReviewHandlers.js
-// Mutation routes → already in api/reviewItemRoutes.js,
-//   api/reviewComponentMutationRoutes.js, api/reviewEnumMutationRoutes.js
+// Mutation routes → itemMutationRoutes.js,
+//   componentMutationRoutes.js, enumMutationRoutes.js
 
-import { handleReviewItemMutationRoute } from '../../../api/reviewItemRoutes.js';
-import { handleReviewComponentMutationRoute } from '../../../api/reviewComponentMutationRoutes.js';
-import { handleReviewEnumMutationRoute } from '../../../api/reviewEnumMutationRoutes.js';
+import { handleReviewItemMutationRoute } from './itemMutationRoutes.js';
+import { handleReviewComponentMutationRoute } from './componentMutationRoutes.js';
+import { handleReviewEnumMutationRoute } from './enumMutationRoutes.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
 import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
 import {

@@ -60,6 +60,22 @@ export function detectMultiModelHint({ title = '', snippet = '' } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// Video platform detection
+// ---------------------------------------------------------------------------
+
+const VIDEO_HOSTS = new Set([
+  'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
+  'twitch.tv', 'tiktok.com', 'rumble.com',
+]);
+
+export function isVideoUrl(url = '') {
+  try {
+    const host = new URL(String(url)).hostname.toLowerCase().replace(/^www\./, '');
+    return VIDEO_HOSTS.has(host);
+  } catch { return false; }
+}
+
+// ---------------------------------------------------------------------------
 // Doc kind classification
 // ---------------------------------------------------------------------------
 
@@ -69,6 +85,8 @@ export function guessDocKind({
   title = '',
   snippet = ''
 } = {}) {
+  if (isVideoUrl(url)) return 'video';
+
   const pathToken = String(pathname || '').toLowerCase();
   const urlToken = String(url || '').toLowerCase();
   const text = `${String(title || '')} ${String(snippet || '')}`.toLowerCase();
@@ -128,7 +146,8 @@ export function docHintMatchesDocKind(docHint = '', docKind = '') {
 // ---------------------------------------------------------------------------
 
 export function classifyUrlCandidate(result, categoryConfig, { identityLock = {}, variantGuardTerms = [] } = {}) {
-  const parsed = new URL(result.url);
+  let parsed;
+  try { parsed = new URL(result.url); } catch { return null; }
   const host = normalizeHost(parsed.hostname);
   const docKindGuess = guessDocKind({
     url: parsed.toString(),
@@ -215,14 +234,6 @@ export function isLowSignalDiscoveryPath(parsed) {
 // ---------------------------------------------------------------------------
 // Forum / community detection
 // ---------------------------------------------------------------------------
-
-export function isForumLikeDomainClassification(classification = '') {
-  const normalized = String(classification || '').trim().toLowerCase();
-  return normalized === 'forum'
-    || normalized === 'community'
-    || normalized === 'discussion'
-    || normalized === 'user_generated';
-}
 
 export const FORUM_SUBDOMAIN_LABELS = new Set(['community', 'forum', 'forums', 'insider']);
 
@@ -366,33 +377,6 @@ export function detectSiblingManufacturerProductPage({
     || missingTargetNumeric.length > 0
     || extraAlpha.length > 0
     || extraNumeric.length > 0;
-}
-
-// ---------------------------------------------------------------------------
-// Admission exclusion
-// ---------------------------------------------------------------------------
-
-export function resolveDiscoveryAdmissionExclusionReason({
-  row = {},
-  domainSafetyResults = null,
-  variables = {}
-} = {}) {
-  const host = normalizeHost(row?.host || '');
-  const role = String(row?.role || '').trim().toLowerCase();
-  const domainSafety = domainSafetyResults?.get?.(host) || null;
-  if (role === 'manufacturer' && isForumLikeManufacturerSubdomain(host)) {
-    return 'forum_subdomain';
-  }
-  if (isForumLikeDomainClassification(domainSafety?.classification)) {
-    return 'forum_classification';
-  }
-  if (detectSiblingManufacturerProductPage({ row, variables })) {
-    return 'sibling_model_page';
-  }
-  if (row?.multi_model_hint && role !== 'manufacturer') {
-    return 'multi_model_hint';
-  }
-  return '';
 }
 
 // ---------------------------------------------------------------------------

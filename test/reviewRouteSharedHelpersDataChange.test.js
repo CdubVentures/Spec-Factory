@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sendDataChangeResponse } from '../src/api/reviewRouteSharedHelpers.js';
+import { sendDataChangeResponse } from '../src/features/review/api/routeSharedHelpers.js';
 
 test('sendDataChangeResponse emits typed data-change contract for review mutation routes', () => {
   const emitted = [];

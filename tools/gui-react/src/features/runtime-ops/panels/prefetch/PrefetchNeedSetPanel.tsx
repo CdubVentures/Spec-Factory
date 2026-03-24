@@ -12,6 +12,11 @@ import {
   formatNumber,
   queryFamilyBadge,
 } from '../../../indexing/helpers';
+import {
+  resolveNeedsetState,
+  resolveNeedsetBucket,
+  resolveBlockerBadge,
+} from '../../badgeRegistries';
 import { usePersistedTab, usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore';
 import { usePersistedToggle } from '../../../../stores/collapseStore';
 
@@ -22,45 +27,6 @@ interface PrefetchNeedSetPanelProps {
   persistScope: string;
   idxRuntime?: RuntimeIdxBadge[];
   needsetPlannerCalls?: PrefetchLlmCall[];
-}
-
-/* ── Theme-aligned badge helpers ───────────────────────────────────── */
-
-function stateBadge(state: string): { label: string; cls: string } {
-  if (state === 'missing') return { label: 'missing', cls: 'sf-chip-danger' };
-  if (state === 'weak') return { label: 'weak', cls: 'sf-chip-warning' };
-  if (state === 'conflict') return { label: 'conflict', cls: 'sf-chip-danger' };
-  if (state === 'satisfied' || state === 'covered') return { label: 'satisfied', cls: 'sf-chip-success' };
-  return { label: state || 'unknown', cls: 'sf-chip-neutral' };
-}
-
-function bucketBadge(bucket: string): { label: string; cls: string } {
-  if (bucket === 'core') return { label: 'core', cls: 'sf-chip-danger' };
-  if (bucket === 'secondary') return { label: 'secondary', cls: 'sf-chip-warning' };
-  if (bucket === 'expected') return { label: 'expected', cls: 'sf-chip-info' };
-  if (bucket === 'optional') return { label: 'optional', cls: 'sf-chip-neutral' };
-  return { label: bucket || 'unknown', cls: 'sf-chip-neutral' };
-}
-
-function stateDotCls(state: string): string {
-  if (state === 'missing') return 'bg-[var(--sf-state-error-fg)]';
-  if (state === 'weak') return 'bg-[var(--sf-state-warning-fg)]';
-  if (state === 'conflict') return 'bg-[var(--sf-state-error-fg)]';
-  if (state === 'satisfied' || state === 'covered') return 'bg-[var(--sf-state-success-fg)]';
-  return 'sf-bg-surface-soft-strong';
-}
-
-/*
- * WHY: blocker cards use chip classes because state-fg tokens (#38bdf8, #f59e0b)
- * are too light for standalone text on white backgrounds — chip classes pair
- * foreground + background for guaranteed contrast across all themes.
- */
-function blockerChipCls(key: string): string {
-  if (key === 'missing') return 'sf-chip-neutral';
-  if (key === 'weak' || key === 'weak_evidence') return 'sf-chip-warning';
-  if (key === 'conflict') return 'sf-chip-danger';
-  if (key === 'needs_exact_match') return 'sf-chip-confirm';
-  return 'sf-chip-neutral';
 }
 
 /* ── Sort logic ─────────────────────────────────────────────────────── */
@@ -204,16 +170,16 @@ function BundleCard({ bundle, expanded, onToggle }: BundleCardProps) {
             </thead>
             <tbody>
               {sortedFields.map(f => {
-                const stB = stateBadge(f.state);
-                const bB = bucketBadge(f.bucket);
+                const stB = resolveNeedsetState(f.state);
+                const bB = resolveNeedsetBucket(f.bucket);
                 return (
                   <tr key={f.key} className={`border-b sf-border-soft ${f.state === 'conflict' ? 'bg-[var(--sf-state-error-bg)]' : ''}`}>
                     <td className={`py-1.5 px-5 font-mono font-medium ${f.state === 'satisfied' ? 'sf-text-subtle' : 'sf-text-primary'}`}>{f.key}</td>
-                    <td className="py-1.5 px-5"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] ${bB.cls}`}>{bB.label}</span></td>
+                    <td className="py-1.5 px-5"><span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] ${bB.badge}`}>{bB.label}</span></td>
                     <td className="py-1.5 px-5">
                       <span className="inline-flex items-center gap-1">
-                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${stateDotCls(f.state)}`} />
-                        <span className={`text-[10px] font-semibold uppercase tracking-[0.04em] ${stB.cls}`}>{stB.label}</span>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${resolveNeedsetState(f.state).dot}`} />
+                        <span className={`text-[10px] font-semibold uppercase tracking-[0.04em] ${stB.badge}`}>{stB.label}</span>
                       </span>
                     </td>
                     <td className="py-1.5 px-5 font-mono sf-text-muted">{nextAction(f.state)}</td>
@@ -514,7 +480,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
             ] as const).map(([key, count, icon]) => (
               <div
                 key={key}
-                className={`px-4 py-3.5 rounded-sm border sf-border-soft ${blockerChipCls(key)} ${(count ?? 0) === 0 ? 'opacity-60' : ''} transition-opacity`}
+                className={`px-4 py-3.5 rounded-sm border sf-border-soft ${resolveBlockerBadge(key)} ${(count ?? 0) === 0 ? 'opacity-60' : ''} transition-opacity`}
               >
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold leading-none">{formatNumber(count ?? 0)}</span>
@@ -740,7 +706,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
                       if (!h) return null;
                       const isStuck = h.no_value_attempts >= ESCALATION_THRESHOLD;
                       const isExpanded = expandedHistoryField === f.field_key;
-                      const stB = stateBadge(f.state);
+                      const stB = resolveNeedsetState(f.state);
                       return (
                         <tr
                           key={f.field_key}
@@ -750,8 +716,8 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
                           <td className="py-1.5 px-3 font-mono font-medium sf-text-primary">{f.field_key}</td>
                           <td className="py-1.5 px-3">
                             <span className="inline-flex items-center gap-1">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${stateDotCls(f.state)}`} />
-                              <span className={`text-[10px] font-semibold uppercase ${stB.cls}`}>{stB.label}</span>
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${resolveNeedsetState(f.state).dot}`} />
+                              <span className={`text-[10px] font-semibold uppercase ${stB.badge}`}>{stB.label}</span>
                             </span>
                           </td>
                           <td className="py-1.5 px-3 font-mono text-center">{h.query_count}</td>
@@ -889,19 +855,19 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
                   </thead>
                   <tbody>
                     {filteredDrilldownRows.map((row) => {
-                      const bB = bucketBadge(row.priority_bucket);
-                      const stB = stateBadge(row.state);
+                      const bB = resolveNeedsetBucket(row.priority_bucket);
+                      const stB = resolveNeedsetState(row.state);
                       return (
                         <tr key={`${row.field_key}-${row.bundle_id}`} className={`sf-table-row border-b sf-border-soft ${row.state === 'conflict' ? 'bg-[var(--sf-state-error-bg)]' : ''}`}>
                           <td className={`py-1.5 px-3 font-mono font-medium ${row.state === 'satisfied' ? 'sf-text-subtle' : 'sf-text-primary'}`}>{row.field_key}</td>
                           <td className="py-1.5 px-3 font-mono sf-text-muted">{row.bundle_id || '\u2014'}</td>
                           <td className="py-1.5 px-3">
-                            <span className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase ${bB.cls}`}>{bB.label}</span>
+                            <span className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold uppercase ${bB.badge}`}>{bB.label}</span>
                           </td>
                           <td className="py-1.5 px-3">
                             <span className="inline-flex items-center gap-1">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${stateDotCls(row.state)}`} />
-                              <span className={`text-[10px] font-semibold uppercase ${stB.cls}`}>{stB.label}</span>
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${resolveNeedsetState(row.state).dot}`} />
+                              <span className={`text-[10px] font-semibold uppercase ${stB.badge}`}>{stB.label}</span>
                             </span>
                           </td>
                           <td className="py-1.5 px-3 font-mono sf-text-muted">{nextAction(row.state)}</td>

@@ -4,7 +4,7 @@
 
 import { assembleLlmPolicy, disassembleLlmPolicy, LLM_POLICY_FLAT_KEYS } from '../../core/llm/llmPolicySchema.js';
 import { validateModelKeysAgainstRegistry } from '../../core/llm/llmModelValidation.js';
-import { emitDataChange } from '../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../core/events/dataChangeContract.js';
 import { applyRuntimeSettingsToConfig } from './userSettingsService.js';
 
 export function createLlmPolicyHandler({

@@ -1,40 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import net from 'node:net';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      server.close((err) => {
-        if (err) reject(err);
-        else resolve(port);
-      });
-    });
-  });
-}
-
-async function waitForHttpReady(url, timeoutMs = 25_000) {
-  const started = Date.now();
-  while ((Date.now() - started) < timeoutMs) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // keep polling
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`timeout_waiting_for_http_ready:${url}`);
-}
+import {
+  getFreePort,
+  waitForHttpReady,
+} from './integration/helpers/guiServerHttpHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

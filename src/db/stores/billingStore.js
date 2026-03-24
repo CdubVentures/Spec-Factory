@@ -4,6 +4,9 @@
  *
  * @param {{ db: import('better-sqlite3').Database, stmts: object }} deps
  */
+import { BILLING_ENTRY_BOOLEAN_KEYS } from '../specDbSchema.js';
+import { hydrateRows } from '../specDbHelpers.js';
+
 export function createBillingStore({ db, stmts }) {
   function insertBillingEntry(entry) {
     stmts._insertBillingEntry.run({
@@ -108,7 +111,7 @@ export function createBillingStore({ db, stmts }) {
   }
 
   function getBillingEntriesForMonth(month) {
-    return db.prepare('SELECT * FROM billing_entries WHERE month = ? ORDER BY ts').all(month);
+    return hydrateRows(BILLING_ENTRY_BOOLEAN_KEYS, db.prepare('SELECT * FROM billing_entries WHERE month = ? ORDER BY ts').all(month));
   }
 
   function getBillingSnapshot(month, productId) {

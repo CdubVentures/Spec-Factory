@@ -651,7 +651,7 @@ test('DB SEED — SpecDb table verification', async (t) => {
       const logiReviews = db.getReviewsForCandidate('mouse-logitech-g502-x::dpi::logi-d1');
       assert.ok(logiReviews.length > 0, 'Should have review for logi-d1');
       assert.equal(logiReviews[0].context_type, 'item');
-      assert.equal(logiReviews[0].human_accepted, 1);
+      assert.equal(Boolean(logiReviews[0].human_accepted), true);
 
       // Zowie sensor override has candidate_id 'zowie-s1'
       const zowieReviews = db.getReviewsForCandidate('mouse-zowie-ec2-c::sensor::zowie-s1');

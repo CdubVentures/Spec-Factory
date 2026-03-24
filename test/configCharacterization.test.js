@@ -31,9 +31,6 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.equal(typeof cfg.concurrency, 'number');
   assert.equal(typeof cfg.perHostMinDelayMs, 'number');
   assert.equal(typeof cfg.fetchPerHostConcurrencyCap, 'number');
-  assert.equal(cfg.discoveryQueryConcurrency, 2);
-  assert.equal(cfg.discoveryResultsPerQuery, 10);
-
   // Output defaults
   assert.equal(typeof cfg.outputMode, 'string');
   assert.equal(typeof cfg.localInputRoot, 'string');
@@ -68,16 +65,8 @@ test('CHAR config: loadConfig() with clean env returns expected critical default
   assert.ok(cfg.searchProfileCapMap !== null);
   assert.equal(typeof cfg.searchProfileCapMap.deterministicAliasCap, 'number');
 
-
-  assert.equal(typeof cfg.fetchSchedulerInternalsMap, 'object');
-  assert.ok(cfg.fetchSchedulerInternalsMap !== null);
-  assert.equal(typeof cfg.fetchSchedulerInternalsMap.defaultDelayMs, 'number');
-
   assert.equal(typeof cfg.retrievalInternalsMap, 'object');
   assert.ok(cfg.retrievalInternalsMap !== null);
-
-  assert.equal(typeof cfg.evidencePackLimitsMap, 'object');
-  assert.ok(cfg.evidencePackLimitsMap !== null);
 
   assert.equal(typeof cfg.parsingConfidenceBaseMap, 'object');
   assert.ok(cfg.parsingConfidenceBaseMap !== null);
@@ -135,77 +124,11 @@ test('CHAR config: llmPlanApiKey falls back to llmApiKey', () => {
   assert.equal(cfg.llmPlanApiKey, cfg.llmApiKey);
 });
 
-// =========================================================================
-// SECTION 4: Post-merge clamping behavior
-// =========================================================================
+// WHY: Section 4 (post-merge clamping for staticDom*, pdfBackendRouter*, scannedPdfOcr*) removed —
+// those settings were retired from the registry.
 
-test('CHAR config: staticDomTargetMatchThreshold is clamped to [0, 1]', () => {
-  const cfgHigh = loadConfig({ staticDomTargetMatchThreshold: 5.0 });
-  assert.ok(cfgHigh.staticDomTargetMatchThreshold <= 1);
-  assert.ok(cfgHigh.staticDomTargetMatchThreshold >= 0);
-
-  const cfgLow = loadConfig({ staticDomTargetMatchThreshold: -1.0 });
-  assert.ok(cfgLow.staticDomTargetMatchThreshold >= 0);
-});
-
-test('CHAR config: staticDomMaxEvidenceSnippets is clamped to [10, 500]', () => {
-  const cfgHigh = loadConfig({ staticDomMaxEvidenceSnippets: 9999 });
-  assert.ok(cfgHigh.staticDomMaxEvidenceSnippets <= 500);
-
-  const cfgLow = loadConfig({ staticDomMaxEvidenceSnippets: 1 });
-  assert.ok(cfgLow.staticDomMaxEvidenceSnippets >= 10);
-});
-
-test('CHAR config: pdfBackendRouterTimeoutMs is clamped to [10000, 300000]', () => {
-  const cfgHigh = loadConfig({ pdfBackendRouterTimeoutMs: 999999 });
-  assert.ok(cfgHigh.pdfBackendRouterTimeoutMs <= 300_000);
-
-  const cfgLow = loadConfig({ pdfBackendRouterTimeoutMs: 100 });
-  assert.ok(cfgLow.pdfBackendRouterTimeoutMs >= 10_000);
-});
-
-test('CHAR config: pdfBackendRouterMaxPages is clamped to [1, 300]', () => {
-  const cfgHigh = loadConfig({ pdfBackendRouterMaxPages: 1000 });
-  assert.ok(cfgHigh.pdfBackendRouterMaxPages <= 300);
-
-  const cfgLow = loadConfig({ pdfBackendRouterMaxPages: 0 });
-  assert.ok(cfgLow.pdfBackendRouterMaxPages >= 1);
-});
-
-test('CHAR config: scannedPdfOcrMaxPages is clamped to [1, 100]', () => {
-  const cfgHigh = loadConfig({ scannedPdfOcrMaxPages: 999 });
-  assert.ok(cfgHigh.scannedPdfOcrMaxPages <= 100);
-
-  const cfgLow = loadConfig({ scannedPdfOcrMaxPages: 0 });
-  assert.ok(cfgLow.scannedPdfOcrMaxPages >= 1);
-});
-
-test('CHAR config: scannedPdfOcrMinConfidence is clamped to [0, 1]', () => {
-  const cfgHigh = loadConfig({ scannedPdfOcrMinConfidence: 2.0 });
-  assert.ok(cfgHigh.scannedPdfOcrMinConfidence <= 1);
-
-  const cfgLow = loadConfig({ scannedPdfOcrMinConfidence: -1.0 });
-  assert.ok(cfgLow.scannedPdfOcrMinConfidence >= 0);
-});
-
-// =========================================================================
-// SECTION 5: normalizer output shapes
-// =========================================================================
-
-test('CHAR config: pdfPreferredBackend normalizes invalid values to auto', () => {
-  const cfg = loadConfig({ pdfPreferredBackend: 'nonsense' });
-  assert.equal(cfg.pdfPreferredBackend, 'auto');
-});
-
-test('CHAR config: scannedPdfOcrBackend normalizes invalid values to auto', () => {
-  const cfg = loadConfig({ scannedPdfOcrBackend: 'nonsense' });
-  assert.equal(cfg.scannedPdfOcrBackend, 'auto');
-});
-
-test('CHAR config: staticDomMode normalizes invalid values to cheerio', () => {
-  const cfg = loadConfig({ staticDomMode: 'nonsense' });
-  assert.equal(cfg.staticDomMode, 'cheerio');
-});
+// WHY: Section 5 normalizer tests for pdfPreferredBackend, scannedPdfOcrBackend,
+// staticDomMode removed — those settings were retired from the registry.
 
 test('CHAR config: outputMode normalizes invalid values', () => {
   const cfg = loadConfig({ outputMode: 'nonsense' });
@@ -321,9 +244,8 @@ test('CHAR validate: return shape is { valid, errors, warnings }', () => {
 
 test('CHAR config: convergence keys from SETTINGS_DEFAULTS propagate to config', () => {
   const cfg = loadConfig();
-  const convergenceKeys = [
-    'serpTriageMinScore',
-  ];
+  // Registry is empty — no convergence keys should propagate
+  const convergenceKeys = [];
   for (const key of convergenceKeys) {
     assert.ok(key in cfg, `${key} must exist in config`);
   }
@@ -343,14 +265,7 @@ test('CHAR config: searchProfileCapMap has all expected keys', () => {
 });
 
 
-test('CHAR config: fetchSchedulerInternalsMap has all expected keys', () => {
-  const cfg = loadConfig();
-  const expected = ['defaultDelayMs', 'defaultConcurrency', 'defaultMaxRetries', 'retryWaitMs'];
-  for (const key of expected) {
-    assert.ok(key in cfg.fetchSchedulerInternalsMap, `fetchSchedulerInternalsMap must have ${key}`);
-    assert.equal(typeof cfg.fetchSchedulerInternalsMap[key], 'number');
-  }
-});
+// WHY: fetchSchedulerInternalsMap test removed — setting retired from registry.
 
 test('CHAR config: retrievalInternalsMap has all expected keys', () => {
   const cfg = loadConfig();
@@ -375,25 +290,8 @@ test('CHAR config: parsingConfidenceBaseMap has all expected keys', () => {
   }
 });
 
-// =========================================================================
-// SECTION 13: JSON serialized map roundtrip
-// =========================================================================
-
-test('CHAR config: searchProfileCapMapJson is valid JSON matching searchProfileCapMap', () => {
-  const cfg = loadConfig();
-  const parsed = JSON.parse(cfg.searchProfileCapMapJson);
-  assert.deepStrictEqual(parsed, cfg.searchProfileCapMap);
-});
-
-
-test('CHAR config: fetchSchedulerInternalsMapJson is valid JSON matching fetchSchedulerInternalsMap', () => {
-  const cfg = loadConfig();
-  const parsed = JSON.parse(cfg.fetchSchedulerInternalsMapJson);
-  assert.deepStrictEqual(parsed, cfg.fetchSchedulerInternalsMap);
-});
-
-// WHY: retrievalInternalsMapJson was retired — object map retrievalInternalsMap
-// is now the sole representation. Roundtrip test removed.
+// WHY: Section 13 (fetchSchedulerInternalsMapJson roundtrip) removed — setting retired.
+// retrievalInternalsMapJson was also previously retired.
 
 // =========================================================================
 // SECTION 14: category authority / helper files defaults

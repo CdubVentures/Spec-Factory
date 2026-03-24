@@ -356,6 +356,7 @@ export async function callLlmWithRouting({
   costRates,
   onUsage,
   timeoutMs = 40_000,
+  providerHealth,
   logger
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
@@ -449,7 +450,8 @@ export async function callLlmWithRouting({
       model: primary.model,
       apiKey: primary.apiKey,
       baseUrl: primary.baseUrl,
-      provider: primary.provider
+      provider: primary.provider,
+      providerHealth
     });
   } catch (error) {
     if (!fallback) {
@@ -479,6 +481,7 @@ export async function callLlmWithRouting({
       provider: fallback.provider,
       reasoningBudget: Number(fallbackReasoningBudget || 0),
       maxTokens: Number(fallbackMaxTokens || 0),
+      providerHealth,
       usageContext: {
         ...sharedParams.usageContext,
         default_output_token_cap: fallbackTokenCap,

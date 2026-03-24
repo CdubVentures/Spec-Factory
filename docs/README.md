@@ -4,7 +4,7 @@
 > **Prerequisites:** None.
 > **Last validated:** 2026-03-23
 
-Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, extraction, review, billing, learning, and runtime-operations workflows for categories such as `mouse`, `keyboard`, `monitor`, and `gaming_mice`.
+Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, crawl, review, billing, and runtime-operations workflows for categories such as `mouse`, `keyboard`, `monitor`, and `gaming_mice`. The pipeline uses a crawl-first architecture (`src/features/crawl/`) with plugin-based browser automation replacing the former extraction-heavy monolith.
 
 ## LLM Reading Order
 
@@ -104,7 +104,7 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 | config | `package.json` | Root scripts, Node engine, and backend dependency declarations |
 | config | `tools/gui-react/package.json` | GUI package scripts and frontend dependency declarations |
 | source | `src/shared/settingsRegistry.js` | SSOT settings registry (430+ keys) verified for environment-and-config and knobs docs |
-| command | `npm test` | Test baseline: 7692 pass, 1 fail on 2026-03-23 |
+| command | `npm test` | Test baseline: 6555 pass, 77 fail on 2026-03-23 (6632 total; down from ~7693 after pipeline rework deleted ~130 test files) |
 
 ## Related Documents
 

@@ -14,7 +14,7 @@ import {
   resolveItemFieldMutationRequest,
   applyItemManualOverrideAndSync,
   resolveItemOverrideMode,
-} from '../src/api/reviewItemRoutes.js';
+} from '../src/features/review/api/itemMutationRoutes.js';
 
 // --- resolveGridLaneStateForMutation ---
 

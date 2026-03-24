@@ -30,7 +30,7 @@ export { runDeterministicCritic } from './critic.js';
 
 export { appendLlmVerificationReport } from './verificationReport.js';
 
-export { validateCandidatesLLM } from './validateCandidatesLLM.js';
+// WHY: validateCandidatesLLM removed — imports from deleted extraction/extractionContext.js.
 
 // Live-crawl evaluators
 export {

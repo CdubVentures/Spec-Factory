@@ -277,7 +277,7 @@ test('checkIsRelevantDiscoveredUrl rejects non-manufacturer blog even with model
   );
 });
 
-test('checkIsRelevantDiscoveredUrl rejects unbranded follow-ups on brand-prefixed hosts', () => {
+test('checkIsRelevantDiscoveredUrl accepts unbranded follow-ups after brand-prefix retirement', () => {
   const ctx = baseValidationCtx({
     brandKey: 'razer',
     modelTokens: ['viper'],
@@ -287,7 +287,7 @@ test('checkIsRelevantDiscoveredUrl rejects unbranded follow-ups on brand-prefixe
   const parsed = new URL('https://razer.com/mice/viper-mini');
   assert.equal(
     checkIsRelevantDiscoveredUrl(parsed, { manufacturerContext: true }, ctx),
-    false
+    true
   );
 });
 

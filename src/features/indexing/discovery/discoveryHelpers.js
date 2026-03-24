@@ -164,24 +164,16 @@ export function buildQueryAttemptStats(rows = []) {
 }
 
 // ---------------------------------------------------------------------------
-// resolveSearchProfileCaps — reads config caps for search profile
+// resolveSearchProfileCaps — returns hardcoded caps for search profile
 // ---------------------------------------------------------------------------
 
-export function resolveSearchProfileCaps(config = {}) {
-  const map = config?.searchProfileCapMap && typeof config.searchProfileCapMap === 'object'
-    ? config.searchProfileCapMap
-    : {};
-  const readCap = (key, fallback, min, max) => {
-    const parsed = Number.parseInt(String(map?.[key] ?? fallback), 10);
-    const normalized = Number.isFinite(parsed) ? parsed : fallback;
-    return Math.max(min, Math.min(max, normalized));
-  };
+export function resolveSearchProfileCaps() {
   return {
-    deterministicAliasCap: readCap('deterministicAliasCap', 6, 1, 20),
-    llmAliasValidationCap: readCap('llmAliasValidationCap', 12, 1, 32),
-    llmDocHintQueriesCap: readCap('llmDocHintQueriesCap', 3, 1, 20),
-    llmFieldTargetQueriesCap: readCap('llmFieldTargetQueriesCap', 3, 1, 20),
-    dedupeQueriesCap: readCap('dedupeQueriesCap', 24, 1, 200),
+    deterministicAliasCap: 6,
+    llmAliasValidationCap: 12,
+    llmFieldTargetQueriesCap: 3,
+    llmDocHintQueriesCap: 3,
+    dedupeQueriesCap: 24,
   };
 }
 

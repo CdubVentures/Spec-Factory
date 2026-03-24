@@ -3,38 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import net from 'node:net';
 import { spawn } from 'node:child_process';
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      server.close((error) => {
-        if (error) reject(error);
-        else resolve(port);
-      });
-    });
-  });
-}
-
-async function waitForHttpReady(url, timeoutMs = 25_000) {
-  const started = Date.now();
-  while ((Date.now() - started) < timeoutMs) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // server still booting
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`timeout_waiting_for_http_ready:${url}`);
-}
+import {
+  getFreePort,
+  waitForHttpReady,
+} from './integration/helpers/guiServerHttpHarness.js';
 
 async function readJsonFileUntil(filePath, predicate, timeoutMs = 4_000) {
   const started = Date.now();
@@ -107,7 +80,7 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   const convergenceRes = await fetch(`${baseUrl}/convergence-settings`, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ serpTriageMinScore: 3 }),
+    body: JSON.stringify({}),
   });
   assert.equal(convergenceRes.status, 200, `convergence put failed; stdout=${stdout} stderr=${stderr}`);
 
@@ -137,14 +110,14 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
     userSettingsPath,
     (json) => (
       json?.runtime?.concurrency === 11
-      && json?.convergence?.serpTriageMinScore === 3
+      && json?.convergence != null
       && json?.storage?.destinationType === 'local'
       && json?.storage?.localDirectory === storageDirectory
     ),
     12_000,
   );
   assert.equal(userSettings.runtime.concurrency, 11);
-  assert.equal(userSettings.convergence.serpTriageMinScore, 3);
+  assert.deepStrictEqual(userSettings.convergence, {});
   assert.equal(userSettings.storage.destinationType, 'local');
   assert.equal(userSettings.storage.localDirectory, storageDirectory);
 
