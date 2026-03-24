@@ -248,12 +248,7 @@ export function buildIdentityCriticalContradictions(sources) {
     heightConflict: _dimConflictH,
   });
   if (_dimConflictL || _dimConflictW || (_dimConflictH && !_suppressHeightOnlyConflict)) {
-    // TEMPORARY DIAGNOSTIC — remove after identity conflict investigation
-    const _dimDetail = {};
-    if (_dimConflictL) _dimDetail.lngth = lengthValues.map(Number);
-    if (_dimConflictW) _dimDetail.width = widthValues.map(Number);
-    if (_dimConflictH && !_suppressHeightOnlyConflict) _dimDetail.height = heightValues.map(Number);
-    contradictions.push({ source: 'aggregate', conflict: 'size_class_conflict', _dim_values: _dimDetail });
+    contradictions.push({ source: 'aggregate', conflict: 'size_class_conflict' });
   }
 
   return contradictions;

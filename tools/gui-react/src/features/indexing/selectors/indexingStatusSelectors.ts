@@ -11,10 +11,4 @@ export function deriveProcessStatusFlags(processStatus: ProcessStatusLike) {
   };
 }
 
-export function deriveSearxngStatusErrorMessage(searxngStatusError: unknown) {
-  const message = String((searxngStatusError as Error)?.message || '').trim();
-  if (!message) return '';
-  if (message.toLowerCase().includes('failed to fetch')) return '';
-  return message;
-}
 

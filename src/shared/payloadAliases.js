@@ -2,28 +2,6 @@
 // cross-provider field name fallbacks that were previously scattered inline
 // across artifact reader and builder files. Adding a new alias = 1 entry here.
 
-// ── Alias Registries (documentation + future programmatic use) ──
-
-export const EVENT_FIELD_ALIASES = Object.freeze([
-  { canonical: 'query',        aliases: ['search_query', 'searchQuery'] },
-  { canonical: 'run_base',     aliases: ['runBase'] },
-  { canonical: 'latest_base',  aliases: ['latestBase'] },
-  { canonical: 'url',          aliases: ['href'] },
-  { canonical: 'source_url',   aliases: ['url'] },
-  { canonical: 'score',        aliases: ['triage_score'] },
-]);
-
-export const CARDINALITY_ALIASES = Object.freeze([
-  { canonical: 'total_fields', aliases: ['field_count', 'needset_size'] },
-  { canonical: 'result_count', aliases: ['results_count', 'results'] },
-]);
-
-export const LLM_TOKEN_ALIASES = Object.freeze([
-  { canonical: 'prompt_tokens',        aliases: ['input_tokens'] },
-  { canonical: 'completion_tokens',    aliases: ['output_tokens'] },
-  { canonical: 'cached_prompt_tokens', aliases: ['cached_input_tokens'] },
-]);
-
 // ── Generic resolution ──
 
 /**

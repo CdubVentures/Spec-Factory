@@ -1,0 +1,212 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { runDaemon } from '../daemon.js';
+
+function makeJob(id) {
+  return {
+    productId: id,
+    s3key: `specs/inputs/mouse/products/${id}.json`
+  };
+}
+
+test('runDaemon respects daemon concurrency cap per iteration', async () => {
+  const jobs = [
+    makeJob('mouse-a'),
+    makeJob('mouse-b'),
+    makeJob('mouse-c'),
+    makeJob('mouse-d'),
+    makeJob('mouse-e')
+  ];
+  let active = 0;
+  let maxActive = 0;
+
+  const result = await runDaemon({
+    storage: {},
+    config: {
+      categoryAuthorityEnabled: false,
+    },
+    once: true,
+    runtimeHooks: {
+      categories: ['mouse'],
+      daemonConcurrency: 3,
+      ingestIncomingCsvs: async () => ({
+        discovered_csv_count: 0,
+        processed_count: 0,
+        failed_count: 0
+      }),
+      selectNextRunnableJob: async () => jobs.shift() || null,
+      markStaleQueueProducts: async () => ({ stale_marked: 0, products: [] }),
+      runUntilComplete: async ({ s3key }) => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        active -= 1;
+        return {
+          s3key,
+          productId: s3key.split('/').pop().replace('.json', ''),
+          complete: true,
+          exhausted: false,
+          stop_reason: 'complete'
+        };
+      },
+      wait: async () => {}
+    }
+  });
+
+  assert.equal(maxActive <= 3, true);
+  assert.equal(result.run_count, 3);
+});
+
+test('runDaemon exits after SIGTERM with graceful drain of active work', async () => {
+  const signalTarget = new EventEmitter();
+  const jobs = [
+    makeJob('mouse-a'),
+    makeJob('mouse-b')
+  ];
+  let runCount = 0;
+
+  const result = await runDaemon({
+    storage: {},
+    config: {
+      categoryAuthorityEnabled: false,
+    },
+    once: false,
+    runtimeHooks: {
+      categories: ['mouse'],
+      daemonConcurrency: 1,
+      signalTarget,
+      ingestIncomingCsvs: async () => ({
+        discovered_csv_count: 0,
+        processed_count: 0,
+        failed_count: 0
+      }),
+      selectNextRunnableJob: async () => jobs.shift() || null,
+      markStaleQueueProducts: async () => ({ stale_marked: 0, products: [] }),
+      runUntilComplete: async ({ s3key }) => {
+        runCount += 1;
+        signalTarget.emit('SIGTERM');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return {
+          s3key,
+          productId: s3key.split('/').pop().replace('.json', ''),
+          complete: true,
+          exhausted: false,
+          stop_reason: 'complete'
+        };
+      },
+      wait: async () => {}
+    }
+  });
+
+  assert.equal(runCount, 1);
+  assert.equal(result.run_count, 1);
+  assert.equal(result.stop_reason, 'signal:SIGTERM');
+});
+
+test('runDaemon performs drift scan and drift reconcile for drift re-extract jobs', async () => {
+  const jobs = [
+    {
+      productId: 'mouse-drift-case',
+      s3key: 'specs/inputs/mouse/products/mouse-drift-case.json',
+      next_action_hint: 'drift_reextract'
+    }
+  ];
+  let scanCalls = 0;
+  let reconcileCalls = 0;
+
+  const result = await runDaemon({
+    storage: {},
+    config: {
+      categoryAuthorityEnabled: false,
+    },
+    once: true,
+    runtimeHooks: {
+      categories: ['mouse'],
+      daemonConcurrency: 1,
+      driftDetectionEnabled: true,
+      driftPollSeconds: 1,
+      ingestIncomingCsvs: async () => ({
+        discovered_csv_count: 0,
+        processed_count: 0,
+        failed_count: 0
+      }),
+      selectNextRunnableJob: async () => jobs.shift() || null,
+      markStaleQueueProducts: async () => ({ stale_marked: 0, products: [] }),
+      scanAndEnqueueDrift: async () => {
+        scanCalls += 1;
+        return {
+          scanned_count: 1,
+          baseline_seeded_count: 0,
+          drift_detected_count: 1,
+          queued_count: 1
+        };
+      },
+      runUntilComplete: async ({ s3key }) => ({
+        s3key,
+        productId: 'mouse-drift-case',
+        complete: true,
+        exhausted: false,
+        stop_reason: 'complete'
+      }),
+      reconcileDriftProduct: async () => {
+        reconcileCalls += 1;
+        return {
+          action: 'queued_for_review',
+          changed_fields: [{ field: 'weight' }],
+          evidence_failures: []
+        };
+      },
+      wait: async () => {}
+    }
+  });
+
+  assert.equal(scanCalls, 1);
+  assert.equal(reconcileCalls, 1);
+  assert.equal(result.run_count, 1);
+});
+
+test('runDaemon discovers all categories from category_authority when running in all mode', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'daemon-category-discovery-'));
+  const helperRoot = path.join(root, 'category_authority');
+  const importsRoot = path.join(root, 'imports');
+  const previousCwd = process.cwd();
+  try {
+    process.chdir(root);
+    await fs.mkdir(path.join(helperRoot, 'monitor', '_generated'), { recursive: true });
+    await fs.writeFile(
+      path.join(helperRoot, 'monitor', '_generated', 'field_rules.json'),
+      `${JSON.stringify({ category: 'monitor', fields: {} }, null, 2)}\n`,
+      'utf8'
+    );
+
+    const result = await runDaemon({
+      storage: {},
+      config: {
+        categoryAuthorityRoot: helperRoot
+      },
+      importsRoot,
+      all: true,
+      once: true,
+      runtimeHooks: {
+        ingestIncomingCsvs: async ({ category }) => ({
+          category,
+          discovered_csv_count: 0,
+          processed_count: 0,
+          failed_count: 0
+        }),
+        selectNextRunnableJob: async () => null,
+        markStaleQueueProducts: async () => ({ stale_marked: 0, products: [] }),
+        wait: async () => {}
+      }
+    });
+
+    assert.deepEqual(result.categories, ['monitor']);
+  } finally {
+    process.chdir(previousCwd);
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

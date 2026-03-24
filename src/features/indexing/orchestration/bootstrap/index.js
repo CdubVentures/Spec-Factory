@@ -28,7 +28,6 @@ export { buildResearchBootstrapPhaseCallsiteContext } from './buildResearchBoots
 export { buildResearchBootstrapContext } from './buildResearchBootstrapContext.js';
 export { buildPlannerBootstrapPhaseCallsiteContext } from './buildPlannerBootstrapPhaseCallsiteContext.js';
 export { buildPlannerBootstrapContext } from './buildPlannerBootstrapContext.js';
-export { buildFetcherStartPhaseCallsiteContext } from './buildFetcherStartPhaseCallsiteContext.js';
 export { createRunLlmRuntime } from './createRunLlmRuntime.js';
 export { loadLearningStoreHintsForRun } from './loadLearningStoreHintsForRun.js';
 export { bootstrapRunEventIndexing } from './bootstrapRunEventIndexing.js';

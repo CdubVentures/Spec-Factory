@@ -85,49 +85,6 @@ export function splitListValue(value) {
     .filter(Boolean);
 }
 
-export function normalizeBooleanValue(value) {
-  if (typeof value === 'boolean') {
-    return value ? 'yes' : 'no';
-  }
-  const token = normalizeToken(value);
-  if (!token) {
-    return 'unk';
-  }
-  if (['yes', 'true', 'supported', 'y', '1', 'enabled'].includes(token)) {
-    return 'yes';
-  }
-  if (['no', 'false', 'n', '0', 'disabled'].includes(token)) {
-    return 'no';
-  }
-  return 'unk';
-}
-
-export function formatDateMmDdYyyy(input) {
-  if (!input) {
-    return 'unk';
-  }
-  if (typeof input === 'string') {
-    const trimmed = input.trim();
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
-      return trimmed;
-    }
-    const yearMonth = trimmed.match(/^(\d{4})[-/](\d{1,2})$/);
-    if (yearMonth) {
-      const year = yearMonth[1];
-      const month = yearMonth[2].padStart(2, '0');
-      return `${month}/01/${year}`;
-    }
-  }
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) {
-    return 'unk';
-  }
-  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(date.getUTCDate()).padStart(2, '0');
-  const yyyy = String(date.getUTCFullYear());
-  return `${mm}/${dd}/${yyyy}`;
-}
-
 export function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -136,14 +93,3 @@ export function clamp(num, min, max) {
   return Math.max(min, Math.min(max, num));
 }
 
-export function getByPath(obj, path) {
-  const parts = path.split('.');
-  let cur = obj;
-  for (const part of parts) {
-    if (cur == null || typeof cur !== 'object') {
-      return undefined;
-    }
-    cur = cur[part];
-  }
-  return cur;
-}

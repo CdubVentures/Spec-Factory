@@ -301,7 +301,7 @@ export async function buildSearchPlan({
     round: run.round || 0,
     missing_critical_fields: ctx.needset?.missing_critical_fields || [], // GAP-12
     limits: {
-      searchProfileQueryCap: plannerLimits.searchProfileQueryCap || 6,
+      searchProfileQueryCap: plannerLimits.searchProfileQueryCap || 10,
       domainClassifierUrlCap: plannerLimits.domainClassifierUrlCap || 50,
     },
     // WHY: Truncate union arrays to top 5 and drop display-only metrics to keep

@@ -218,10 +218,6 @@ export const BOOTSTRAP_ENV_REGISTRY = Object.freeze([
   { key: "searxngUrl", envKey: "SEARXNG_URL", type: "string", default: "", group: "discovery" },
 
   // --- runtime ---
-  { key: "fetchSchedulerDefaultConcurrency", envKey: "FETCH_SCHEDULER_DEFAULT_CONCURRENCY", type: "int", default: 3, group: "runtime" },
-  { key: "fetchSchedulerDefaultDelayMs", envKey: "FETCH_SCHEDULER_DEFAULT_DELAY_MS", type: "int", default: 300, group: "runtime" },
-  { key: "fetchSchedulerDefaultMaxRetries", envKey: "FETCH_SCHEDULER_DEFAULT_MAX_RETRIES", type: "int", default: 1, group: "runtime" },
-  { key: "fetchSchedulerRetryWaitMs", envKey: "FETCH_SCHEDULER_RETRY_WAIT_MS", type: "int", default: 15000, group: "runtime" },
   { key: "indexingReextractAfterHours", envKey: "INDEXING_REEXTRACT_AFTER_HOURS", type: "int", default: 24, group: "runtime" },
   { key: "indexingReextractEnabled", envKey: "INDEXING_REEXTRACT_ENABLED", type: "bool", default: true, group: "runtime" },
   { key: "indexingReextractSeedLimit", envKey: "INDEXING_REEXTRACT_SEED_LIMIT", type: "int", default: 8, group: "runtime" },

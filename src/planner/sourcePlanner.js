@@ -18,10 +18,7 @@ import {
   canonicalizeQueueUrl,
   hostInSet,
   tokenize,
-  slug,
-  slugIdentityTokens,
-  countQueueHost,
-  urlPath
+  countQueueHost
 } from './sourcePlannerUrlUtils.js';
 
 export class SourcePlanner {
@@ -30,7 +27,6 @@ export class SourcePlanner {
     this.config = config;
     this.categoryConfig = categoryConfig;
 
-    this.brandKey = slug(job.identityLock?.brand || '');
     // WHY: brandHostHints starts empty — populated dynamically via updateBrandHints()
     // after Brand Resolver phase provides LLM-resolved aliases and domains.
     this.brandHostHints = [];
@@ -87,7 +83,6 @@ export class SourcePlanner {
       ...tokenize(job.identityLock?.variant),
       ...tokenize(job.productId)
     ])].filter((token) => !this.brandTokens.includes(token) && !genericModelTokens.has(token));
-    this.modelSlug = slug(job.identityLock?.model || job.productId || '');
 
     // Rejection/acceptance counters
     this._rejectCounters = {

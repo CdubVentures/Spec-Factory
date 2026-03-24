@@ -21,23 +21,11 @@ export function buildPreviousFieldHistories(roundResult) {
 
 // Re-exports for backward compatibility (consumed by tests and other modules)
 export { normalizeFieldContractToken, calcProgressDelta, isIdentityOrEditorialField } from './convergenceHelpers.js';
-export {
-  buildContractEffortPlan,
-  selectRoundSearchProvider,
-  explainSearchProviderSelection,
-  evaluateRequiredSearchExhaustion,
-  shouldForceExpectedFieldRetry,
-  buildRoundConfig,
-  resolveMissingRequiredForPlanning,
-  buildRoundRequirements,
-  makeLlmTargetFields
-} from './roundConfigBuilder.js';
 
 export async function runUntilComplete({
   storage,
   config,
   s3key,
-  maxRounds = 1,
   mode,
   specDb = null,
 }) {

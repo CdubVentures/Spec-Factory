@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 
 import {
@@ -113,6 +114,35 @@ export function buildMouseFieldStudioMap(fieldStudioSourcePath) {
         },
       },
     ],
+  };
+}
+
+export async function createMouseCompileWorkspace({
+  localWorkbook = false,
+  tempPrefix = 'spec-harvester-category-compile-',
+} = {}) {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), tempPrefix));
+  const helperRoot = path.join(tempRoot, 'category_authority');
+  const categoryRoot = path.join(helperRoot, 'mouse');
+  await fs.mkdir(categoryRoot, { recursive: true });
+
+  const sourceFieldStudioSourcePath = mouseFieldStudioSourcePath();
+  const fieldStudioSourcePath = localWorkbook
+    ? path.join(categoryRoot, 'mouseData.xlsm')
+    : sourceFieldStudioSourcePath;
+
+  if (localWorkbook) {
+    await fs.copyFile(sourceFieldStudioSourcePath, fieldStudioSourcePath);
+  }
+
+  return {
+    tempRoot,
+    helperRoot,
+    categoryRoot,
+    generatedRoot: path.join(categoryRoot, '_generated'),
+    fieldStudioSourcePath,
+    fieldStudioMap: buildMouseFieldStudioMap(fieldStudioSourcePath),
+    cleanup: () => fs.rm(tempRoot, { recursive: true, force: true }),
   };
 }
 
