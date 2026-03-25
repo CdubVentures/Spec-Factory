@@ -19,7 +19,6 @@ export interface RuntimeSettingDefaults {
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
-
   eventsJsonWrite: boolean;
   geminiApiKey: string;
   googleSearchMaxRetries: number;
@@ -44,9 +43,7 @@ export interface RuntimeSettingDefaults {
   llmModelPlan: string;
   llmModelReasoning: string;
   llmPhaseOverridesJson: string;
-
   llmPlanFallbackModel: string;
-
   llmPlanUseReasoning: boolean;
   llmProvider: string;
   llmProviderRegistryJson: string;
@@ -60,7 +57,6 @@ export interface RuntimeSettingDefaults {
   maxRunSeconds: number;
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
-
   runtimeControlFile: string;
   runtimeEventsKey: string;
   runtimeScreencastEnabled: boolean;
@@ -73,8 +69,6 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
-
-
   needsetGroupQueryTermsCap: number;
   needsetGroupSearchCoverageThreshold: number;
   needsetGroupSearchMinUnresolved: number;
@@ -83,17 +77,13 @@ export interface RuntimeSettingDefaults {
   queryBuilderMaxAliases: number;
   queryBuilderFieldQueryCap: number;
   queryBuilderDocHintQueryCap: number;
-
   manufacturerPlanUrlCap: number;
   queryDedupeRowsCap: number;
-
   googleSearchPostResultsDelayMs: number;
   googleSearchScreenshotQuality: number;
   googleSearchSerpSelectorWaitMs: number;
   googleSearchScrollDelayMs: number;
-
   serperSearchMinIntervalMs: number;
-
   serperSearchTimeoutMs: number;
   serperSearchMaxRetries: number;
   searxngSearchTimeoutMs: number;
