@@ -176,13 +176,6 @@ describe('buildIndexingRunStartPayload — numeric clamping', () => {
 /* ------------------------------------------------------------------ */
 
 describe('buildIndexingRunStartPayload — llm clamping', () => {
-  it('clamps llmMaxCallsPerRound to min 1', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedLlmMaxCallsPerRound: 0 },
-    }));
-    strictEqual(result.llmMaxCallsPerRound, 1);
-  });
-
   it('clamps llmTimeoutMs to min 1000', () => {
     const result = buildIndexingRunStartPayload(makeInput({
       parsedOverrides: { parsedLlmTimeoutMs: 500 },

@@ -236,66 +236,18 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         {/* Divider */}
         <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
 
-        {/* B — Limits */}
+        {/* B — Limits (registry-driven) */}
         <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
           Limits
         </div>
-        <div className="grid grid-cols-3 gap-x-3.5 gap-y-2.5">
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max context tokens</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxTokens}
-              onChange={(e) => onNumberChange('llmMaxTokens', e.target.value, getNumberBounds('llmMaxTokens'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max output tokens</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxOutputTokens}
-              onChange={(e) => onNumberChange('llmMaxOutputTokens', e.target.value, getNumberBounds('llmMaxOutputTokens'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Timeout (ms)</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmTimeoutMs}
-              onChange={(e) => onNumberChange('llmTimeoutMs', e.target.value, getNumberBounds('llmTimeoutMs'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max calls / round</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxCallsPerRound}
-              onChange={(e) => onNumberChange('llmMaxCallsPerRound', e.target.value, getNumberBounds('llmMaxCallsPerRound'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max calls / product</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmMaxCallsPerProductTotal}
-              onChange={(e) => onNumberChange('llmMaxCallsPerProductTotal', e.target.value, getNumberBounds('llmMaxCallsPerProductTotal'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning budget</label>
-            <input
-              className={inputCls}
-              type="number"
-              value={runtimeDraft.llmReasoningBudget}
-              onChange={(e) => onNumberChange('llmReasoningBudget', e.target.value, getNumberBounds('llmReasoningBudget'))}
-            />
-          </div>
-        </div>
+        <LlmFieldGrid
+          keys={[...getLlmFieldKeys('Call Limits'), ...getLlmFieldKeys('Global Tokens')]}
+          runtimeDraft={runtimeDraft}
+          inputCls={inputCls}
+          updateDraft={updateDraft}
+          onNumberChange={onNumberChange}
+          getNumberBounds={getNumberBounds}
+        />
 
         {/* Token limit warnings */}
         {tokenWarnings.length > 0 && (
@@ -318,32 +270,19 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         {/* Divider */}
         <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
 
-        {/* C — Budget */}
+        {/* C — Budget (registry-driven) */}
         <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
           Budget
         </div>
-        <div className="grid grid-cols-3 gap-x-3.5 gap-y-2.5">
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Monthly budget (USD)</label>
-            <input
-              className={inputCls}
-              type="number"
-              step={0.01}
-              value={runtimeDraft.llmMonthlyBudgetUsd}
-              onChange={(e) => onNumberChange('llmMonthlyBudgetUsd', e.target.value, getNumberBounds('llmMonthlyBudgetUsd'))}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Per-product budget (USD)</label>
-            <input
-              className={inputCls}
-              type="number"
-              step={0.01}
-              value={runtimeDraft.llmPerProductBudgetUsd}
-              onChange={(e) => onNumberChange('llmPerProductBudgetUsd', e.target.value, getNumberBounds('llmPerProductBudgetUsd'))}
-            />
-          </div>
-        </div>
+        <LlmFieldGrid
+          keys={getLlmFieldKeys('Budget')}
+          runtimeDraft={runtimeDraft}
+          inputCls={inputCls}
+          updateDraft={updateDraft}
+          onNumberChange={onNumberChange}
+          getNumberBounds={getNumberBounds}
+          columns={2}
+        />
       </SettingGroupBlock>
 
     </>
