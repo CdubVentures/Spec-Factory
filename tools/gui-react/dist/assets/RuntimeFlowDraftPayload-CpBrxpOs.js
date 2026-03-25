@@ -1,1 +1,0 @@
-import{ae as l}from"./index-nlQdIbpl.js";function o({nextRuntimeDraft:t,runtimeManifestDefaults:e,resolveModelTokenDefaults:a}){return l({...t,runtimeSettingsFallbackBaseline:e,resolveModelTokenDefaults:a})}export{o as c};

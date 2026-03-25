@@ -1,11 +1,5 @@
 // Validation — public API re-exports.
-// Anchors, identity, quality, traffic light, critics, enum, verification, live-crawl.
-
-export {
-  evaluateAnchorConflicts,
-  hasMajorAnchorConflicts,
-  mergeAnchorConflictLists,
-} from './anchors.js';
+// Identity, traffic light, enum, verification, live-crawl.
 
 export {
   buildIdentityCriticalContradictions,
@@ -13,8 +7,6 @@ export {
   evaluateIdentityGate,
   buildIdentityReport,
 } from './identityGate.js';
-
-export { evaluateValidationGate } from './qualityGate.js';
 
 export { buildTrafficLight } from './trafficLight.js';
 
@@ -26,11 +18,7 @@ export {
   sanitizeEnumConsistencyDecisions,
 } from './validateEnumConsistency.js';
 
-export { runDeterministicCritic } from './critic.js';
-
 export { appendLlmVerificationReport } from './verificationReport.js';
-
-// WHY: validateCandidatesLLM removed — imports from deleted extraction/extractionContext.js.
 
 // Live-crawl evaluators
 export {

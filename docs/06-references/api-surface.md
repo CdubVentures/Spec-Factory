@@ -31,21 +31,25 @@
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
 | GET | `/api/v1/ui-settings` | read persisted UI toggles | none | none | UI settings object |
-| PUT | `/api/v1/ui-settings` | persist UI toggles | none | subset of UI toggle keys | `{ ok, ...settings, applied }` |
+| PUT | `/api/v1/ui-settings` | persist UI toggles | none | subset of UI toggle keys | `{ ok, applied, snapshot, rejected }` |
+| GET | `/api/v1/storage-settings/local` | browse local run-data directories | none | none | directory listing |
 | GET | `/api/v1/storage-settings/local/browse` | browse local run-data directories | none | none | directory listing |
 | GET | `/api/v1/storage-settings` | read run-data storage settings | none | none | sanitized storage settings |
-| PUT | `/api/v1/storage-settings` | persist run-data storage settings | none | storage settings patch | `{ ok, ...settings }` |
+| PUT | `/api/v1/storage-settings` | persist run-data storage settings | none | storage settings patch | `{ ok, applied, snapshot, rejected }` |
+| POST | `/api/v1/storage-settings` | compatibility write alias for storage-settings autosave | none | storage settings patch | `{ ok, applied, snapshot, rejected }` |
 | GET | `/api/v1/indexing/llm-config` | read model catalog, pricing metadata, resolved API keys, routing defaults, and token defaults used by settings UIs | none | none | config snapshot |
 | GET | `/api/v1/indexing/llm-metrics` | aggregated LLM usage metrics | none | none | metrics payload |
 | GET | `/api/v1/indexing/domain-checklist/:category` | domain/source checklist for a category | none | none | checklist payload |
 | GET | `/api/v1/indexing/review-metrics/:category` | human review throughput metrics | none | none | review metrics payload |
 | GET | `/api/v1/llm-settings/:category/routes` | read category LLM route matrix | none | none | `{ category, scope, rows }` |
-| PUT | `/api/v1/llm-settings/:category/routes` | write category LLM route matrix | none | `{ rows }` | `{ ok, category, rows }` |
+| PUT | `/api/v1/llm-settings/:category/routes` | write category LLM route matrix | none | `{ rows }` | `{ ok, applied: { rows }, snapshot, rejected, category, rows }` |
 | POST | `/api/v1/llm-settings/:category/routes/reset` | reset category LLM route matrix | none | none | `{ ok, category, rows }` |
 | GET | `/api/v1/llm-policy` | read the composite global LLM policy assembled from managed runtime keys | none | none | `{ ok, policy }` |
 | PUT | `/api/v1/llm-policy` | persist the composite global LLM policy back into runtime settings | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
+| POST | `/api/v1/llm-policy` | compatibility write alias for the composite global LLM policy | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
 | GET | `/api/v1/runtime-settings` | read runtime settings | none | none | runtime settings |
-| PUT | `/api/v1/runtime-settings` | persist runtime settings | none | runtime settings patch | `{ ok, applied, rejected? }` |
+| PUT | `/api/v1/runtime-settings` | persist runtime settings | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
+| POST | `/api/v1/runtime-settings` | compatibility write alias for runtime-settings autosave | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 
 No live `/api/v1/convergence-settings` route is registered in `src/features/settings/api/configRoutes.js`. The persisted `convergence` object in `user-settings.json` is compatibility-only.
 
@@ -210,6 +214,11 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
 | source | `src/features/settings/api/configRoutes.js` | settings/config endpoints |
+| source | `src/features/settings/api/configUiSettingsHandler.js` | `ui-settings` GET/PUT contract |
+| source | `src/features/settings/api/configStorageSettingsHandler.js` | `storage-settings` browse alias plus GET/PUT/POST contract |
+| source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `runtime-settings` GET/PUT/POST contract |
+| source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix GET/PUT/reset contract |
+| source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, checklist, and review-metrics payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
 | source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |

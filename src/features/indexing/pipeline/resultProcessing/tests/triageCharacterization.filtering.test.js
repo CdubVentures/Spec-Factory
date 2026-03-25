@@ -66,7 +66,7 @@ it('canonical URL merge deduplicates same URL from different providers', async (
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -114,7 +114,7 @@ it('domain classification produces safety map for mixed hosts', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -173,7 +173,7 @@ it('hard-drops denied hosts and non-https, keeps valid candidates', async () => 
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });

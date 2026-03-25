@@ -141,22 +141,19 @@ describe('runtime settings UI metadata contract', () => {
     deepStrictEqual(missing, [], `entries missing uiTip tooltip: ${missing.join(', ')}`);
   });
 
-  it('requires uiGroup on non-hero entries when a section has 5+ non-hero entries', () => {
-    // WHY: Sections with many settings must group them into collapsible blocks.
-    // Hero entries are exempt (they render above the groups with blue bg).
-    const sectionNonHeroes = {};
+  it('requires uiGroup on non-hero entries in sections with 5+ non-hero entries', () => {
+    const sectionCounts = new Map();
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
       if (!entry.uiCategory || entry.uiHero) continue;
-      const sectionKey = `${entry.uiCategory}/${entry.uiSection}`;
-      if (!sectionNonHeroes[sectionKey]) sectionNonHeroes[sectionKey] = [];
-      sectionNonHeroes[sectionKey].push(entry);
+      const key = `${entry.uiCategory}/${entry.uiSection}`;
+      sectionCounts.set(key, (sectionCounts.get(key) || 0) + 1);
     }
-
     const ungrouped = [];
-    for (const [sectionKey, entries] of Object.entries(sectionNonHeroes)) {
-      if (entries.length < 5) continue;
-      for (const entry of entries) {
-        if (!entry.uiGroup) ungrouped.push(`${sectionKey}:${entry.key}`);
+    for (const entry of RUNTIME_SETTINGS_REGISTRY) {
+      if (!entry.uiCategory || entry.uiHero) continue;
+      const key = `${entry.uiCategory}/${entry.uiSection}`;
+      if (sectionCounts.get(key) >= 5 && !entry.uiGroup) {
+        ungrouped.push(`${key}:${entry.key}`);
       }
     }
     deepStrictEqual(ungrouped, [], `non-hero entries in large sections missing uiGroup: ${ungrouped.join(', ')}`);

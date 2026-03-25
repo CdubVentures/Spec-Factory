@@ -15,41 +15,37 @@ function makeMockStorage() {
   };
 }
 
-function makeLlmContext({ result = null, shouldFail = false } = {}) {
-  let called = false;
+function makeResolvedDomain(overrides = {}) {
   return {
-    get called() { return called; },
-    callLlm: async () => {
-      called = true;
-      if (shouldFail) throw new Error('LLM unavailable');
-      return result || {
-        official_domain: 'cougargaming.com',
-        aliases: ['cougargaming.com', 'cougar-gaming.com'],
-        support_domain: 'support.cougargaming.com'
-      };
-    }
+    official_domain: 'cougargaming.com',
+    aliases: ['cougargaming.com', 'cougar-gaming.com'],
+    support_domain: 'support.cougargaming.com',
+    ...overrides,
+  };
+}
+
+function makeResolveArgs(overrides = {}) {
+  return {
+    brand: 'Cougar',
+    category: 'mouse',
+    config: { llmModelPlan: 'test-model' },
+    storage: makeMockStorage(),
+    callLlmFn: async () => makeResolvedDomain(),
+    ...overrides,
   };
 }
 
 describe('brandResolver', () => {
-  it('returns structured result from LLM', async () => {
-    const storage = makeMockStorage();
-    const llm = makeLlmContext();
-    const result = await resolveBrandDomain({
-      brand: 'Cougar',
-      category: 'mouse',
-      config: { llmModelPlan: 'test-model' },
-      callLlmFn: llm.callLlm,
-      storage
-    });
+  it('returns the normalized brand resolution contract from the LLM result', async () => {
+    const result = await resolveBrandDomain(makeResolveArgs());
+
     assert.equal(result.officialDomain, 'cougargaming.com');
     assert.ok(Array.isArray(result.aliases));
     assert.ok(result.aliases.includes('cougargaming.com'));
     assert.equal(result.supportDomain, 'support.cougargaming.com');
-    assert.ok(llm.called);
   });
 
-  it('cache hit returns stored result without LLM call', async () => {
+  it('cache hit returns the stored brand resolution contract', async () => {
     const storage = makeMockStorage();
     storage.upsertBrandDomain({
       brand: 'Razer',
@@ -59,45 +55,44 @@ describe('brandResolver', () => {
       support_domain: 'support.razer.com',
       confidence: 0.95
     });
-    const llm = makeLlmContext();
-    const result = await resolveBrandDomain({
+    const result = await resolveBrandDomain(makeResolveArgs({
       brand: 'Razer',
-      category: 'mouse',
-      config: { llmModelPlan: 'test-model' },
-      callLlmFn: llm.callLlm,
-      storage
-    });
+      storage,
+      callLlmFn: async () => {
+        throw new Error('cache hit should not need llm');
+      },
+    }));
+
     assert.equal(result.officialDomain, 'razer.com');
-    assert.equal(llm.called, false);
+    assert.deepEqual(result.aliases, ['razer.com']);
+    assert.equal(result.supportDomain, 'support.razer.com');
+    assert.equal(result.confidence, 0.95);
   });
 
-  it('LLM failure falls back gracefully', async () => {
-    const storage = makeMockStorage();
-    const llm = makeLlmContext({ shouldFail: true });
-    const result = await resolveBrandDomain({
+  it('LLM failure falls back to the empty resolution contract', async () => {
+    const result = await resolveBrandDomain(makeResolveArgs({
       brand: 'Unknown',
-      category: 'mouse',
-      config: { llmModelPlan: 'test-model' },
-      callLlmFn: llm.callLlm,
-      storage
-    });
+      callLlmFn: async () => {
+        throw new Error('LLM unavailable');
+      },
+    }));
+
     assert.equal(result.officialDomain, '');
     assert.deepEqual(result.aliases, []);
-    assert.ok(llm.called);
+    assert.equal(result.supportDomain, '');
+    assert.equal(result.confidence, null);
+    assert.deepEqual(result.reasoning, []);
   });
 
   it('works when storage lacks getBrandDomain (file storage adapter)', async () => {
-    const fileStorage = {};
-    const llm = makeLlmContext();
-    const result = await resolveBrandDomain({
+    const result = await resolveBrandDomain(makeResolveArgs({
       brand: 'Asus',
-      category: 'mouse',
       config: {},
-      callLlmFn: llm.callLlm,
-      storage: fileStorage
-    });
+      storage: {},
+    }));
+
     assert.equal(result.officialDomain, 'cougargaming.com');
-    assert.ok(llm.called, 'should call LLM when cache is unavailable');
+    assert.deepEqual(result.aliases, ['cougargaming.com', 'cougar-gaming.com']);
   });
 
   it('resolved aliases flow through selectManufacturerHosts', async () => {

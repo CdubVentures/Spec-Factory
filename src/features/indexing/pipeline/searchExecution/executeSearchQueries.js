@@ -15,7 +15,6 @@ import { configValue } from '../../../../shared/settingsAccessor.js';
 import {
   buildPlanOnlyResults,
   extractSiteHostFromQuery,
-  buildQueryPlanFallbackResults,
 } from '../shared/queryPlan.js';
 import { toArray } from '../shared/discoveryIdentity.js';
 import { runWithConcurrency } from '../shared/helpers.js';
@@ -345,6 +344,7 @@ export async function executeSearchQueries({
       queries,
       variables,
       maxQueries: queryLimit,
+      config,
     });
     rawResults.push(...planned);
     searchAttempts.push({

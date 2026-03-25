@@ -45,7 +45,6 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
 ]);
 const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
   'discoveryEnabled',
-  'llmMaxCallsPerProductTotal',
   'runtimeScreencastEnabled',
   'runtimeScreencastFps',
   'runtimeScreencastQuality',
@@ -203,7 +202,6 @@ test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', ()
 test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
   const rows = [
     { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
-    { settingsKey: 'llmMaxCallsPerProductTotal', configKey: 'llmMaxCallsPerProductTotal', envKey: 'LLM_MAX_CALLS_PER_PRODUCT_TOTAL' },
   ];
 
   const getSharedDefault = (settingsKey) =>

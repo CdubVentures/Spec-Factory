@@ -12,14 +12,14 @@
 |---|---|---|
 | run-setup | 1 | Run timeout (`maxRunSeconds`) |
 | output | 7 | Paths, dry run, category authority, runtime control, events, specDb |
-| search-profile | 7 | Query builder caps, alias limits, synonym caps |
+| search-profile | 9 | Query builder caps, alias limits, synonym caps |
 | search-execution | 29 | Engines, pacing, timeouts, proxy, retries, loop guards |
 | search-planner | 1 | LLM enhancer retries |
 | serp-selector | 1 | URL cap for SERP selector |
 | domain-classifier | 2 | URL cap, max pages per domain |
-| needset | 4 | Focus fields, confidence thresholds, group term cap |
-| browser | 11 | Crawlee settings, auto-scroll, robots.txt, navigation |
-| network | 3 | Repair dedupe, crawl bypass settings |
+| needset | 8 | Focus fields, confidence thresholds, group term cap, source caps |
+| browser | 13 | Crawlee settings, auto-scroll, robots.txt, navigation, concurrency |
+| network | 1 | Repair dedupe rule |
 | adapter | 2 | Fetcher adapter selection and plugins |
 | screenshots | 6 | Page capture format, quality, selectors |
 | observability | 10 | Tracing, event logging, screencast |
@@ -27,11 +27,11 @@
 | models | 14 | Model selection, token caps, reasoning config |
 | limits | 10 | Costs, budgets, call limits, timeout, JSON overrides |
 | provider | 9 | Provider URLs, API keys |
-| **RUNTIME subtotal** | **118** | |
+| **RUNTIME subtotal** | **124** | |
 | BOOTSTRAP (env-only) | 97 | Read once at startup — core, caching, security, storage, LLM, discovery, paths, runtime, visual assets |
 | STORAGE | 10 | Persistent storage destination (local / S3) |
 | UI | 5 | Auto-save toggles |
-| **TOTAL** | **230** | |
+| **TOTAL** | **236** | |
 
 ---
 
@@ -39,11 +39,11 @@
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 118 | Pipeline runtime config (env vars, route API, GUI) |
+| `RUNTIME_SETTINGS_REGISTRY` | 124 | Pipeline runtime config (env vars, route API, GUI) |
 | `BOOTSTRAP_ENV_REGISTRY` | 97 | Environment-only settings read once at startup |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
-| **TOTAL** | **230** | |
+| **TOTAL** | **236** | |
 
 ---
 
@@ -58,6 +58,7 @@
 | Dead pipeline fields | `budget_score`, `selection_priority`, `primary_lane`, `triage_reason` (computed but never read) |
 | Convergence feature | `CONVERGENCE_SETTINGS_REGISTRY` removed entirely (was empty — zero knobs, full scaffolding across 25+ files) |
 | Dead derivation fns | `deriveRoundOverridableSet`, `deriveDeprecatedSet`, `deriveDisabledByMap` (zero importers) |
+| Dead bypass knobs | `crawlBypassMinBodyLength`, `crawlBypassHtmlSnippetCap` (registered but call sites never passed them — hardcoded fallbacks always used) |
 
 ---
 
@@ -83,7 +84,7 @@
 
 ---
 
-## Search Profile (7 knobs)
+## Search Profile (9 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
@@ -94,6 +95,8 @@
 | `queryBuilderTooltipPhraseCap` | int | 4 | 1–20 | `QUERY_BUILDER_TOOLTIP_PHRASE_CAP` |
 | `queryBuilderLearnedSynonymsCap` | int | 6 | 1–30 | `QUERY_BUILDER_LEARNED_SYNONYMS_CAP` |
 | `queryBuilderFieldSynonymsCap` | int | 12 | 1–50 | `QUERY_BUILDER_FIELD_SYNONYMS_CAP` |
+| `manufacturerPlanUrlCap` | int | 40 | 1–200 | `MANUFACTURER_PLAN_URL_CAP` |
+| `queryDedupeRowsCap` | int | 24 | 1–100 | `QUERY_DEDUPE_ROWS_CAP` |
 
 ---
 
@@ -158,7 +161,7 @@
 
 ---
 
-## NeedSet (4 knobs)
+## NeedSet (8 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
@@ -166,10 +169,14 @@
 | `needsetConfidenceThresholdMatched` | float | 0.95 | 0–1 | `NEEDSET_CONFIDENCE_THRESHOLD_MATCHED` |
 | `needsetConfidenceThresholdPossible` | float | 0.7 | 0–1 | `NEEDSET_CONFIDENCE_THRESHOLD_POSSIBLE` |
 | `needsetGroupQueryTermsCap` | int | 5 | 1–20 | `NEEDSET_GROUP_QUERY_TERMS_CAP` |
+| `needsetGroupSearchCoverageThreshold` | float | 0.8 | 0–1 | `NEEDSET_GROUP_SEARCH_COVERAGE_THRESHOLD` |
+| `needsetGroupSearchMinUnresolved` | int | 3 | 1–20 | `NEEDSET_GROUP_SEARCH_MIN_UNRESOLVED` |
+| `needsetGroupSearchMaxRepeats` | int | 3 | 1–10 | `NEEDSET_GROUP_SEARCH_MAX_REPEATS` |
+| `needsetSeedCooldownDays` | int | 30 | 1–90 | `NEEDSET_SEED_COOLDOWN_DAYS` |
 
 ---
 
-## Browser & Rendering (11 knobs)
+## Browser & Rendering (13 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
@@ -179,21 +186,21 @@
 | `crawleeMaxPagesPerBrowser` | int | 1 | 1–10 | `CRAWLEE_MAX_PAGES_PER_BROWSER` |
 | `crawleeBrowserRetirePageCount` | int | 5 | 1–50 | `CRAWLEE_BROWSER_RETIRE_PAGE_COUNT` |
 | `crawleeNavigationTimeoutMs` | int | 12,000 | 1,000–120,000 | `CRAWLEE_NAVIGATION_TIMEOUT_MS` |
+| `crawlMaxConcurrentSlots` | int | 4 | 1–16 | `CRAWL_MAX_CONCURRENT_SLOTS` |
 | `autoScrollEnabled` | bool | true | — | `AUTO_SCROLL_ENABLED` |
 | `autoScrollPasses` | int | 2 | 0–20 | `AUTO_SCROLL_PASSES` |
 | `autoScrollDelayMs` | int | 1,200 | 0–10,000 | `AUTO_SCROLL_DELAY_MS` |
+| `autoScrollPostLoadWaitMs` | int | 200 | 0–5,000 | `AUTO_SCROLL_POST_LOAD_WAIT_MS` |
 | `robotsTxtCompliant` | bool | true | — | `ROBOTS_TXT_COMPLIANT` |
 | `robotsTxtTimeoutMs` | int | 6,000 | 100–120,000 | `ROBOTS_TXT_TIMEOUT_MS` |
 
 ---
 
-## Network & Pacing (3 knobs)
+## Network & Pacing (1 knob)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
 | `repairDedupeRule` | enum | domain_once | — | `REPAIR_DEDUPE_RULE` |
-| `crawlBypassMinBodyLength` | int | 200 | 0–10,000 | `CRAWL_BYPASS_MIN_BODY_LENGTH` |
-| `crawlBypassHtmlSnippetCap` | int | 5,000 | 500–50,000 | `CRAWL_BYPASS_HTML_SNIPPET_CAP` |
 
 ---
 

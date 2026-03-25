@@ -23,13 +23,6 @@ export {
 } from './sourceRegistry.js';
 
 export {
-  classifyFieldCoreDeep,
-  applyTierAcceptancePolicy,
-  clusterDeepNumericClaims,
-  applyCoreDeepGates,
-} from './coreDeepGate.js';
-
-export {
   recordQueryResult,
   lookupQueryHistory,
   recordUrlVisit,

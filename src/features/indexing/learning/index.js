@@ -4,7 +4,6 @@ export {
   UrlMemoryStore,
   DomainFieldYieldStore
 } from './learningStores.js';
-export { evaluateLearningGate } from './learningUpdater.js';
 export {
   buildSearchHints,
   buildAnchorsSuggestions,
@@ -22,19 +21,16 @@ export {
   summarizeAvailability,
   classifyMissingFields,
   updateFieldAvailability,
-  availabilitySearchEffort,
-  undisclosedThresholdForField
 } from './fieldAvailability.js';
 export { defaultFieldConstraints, updateFieldConstraints } from './fieldConstraints.js';
 export { defaultFieldLexicon, updateFieldLexicon } from './fieldLexicon.js';
 export { defaultFieldYield, updateFieldYield } from './fieldYield.js';
-export { buildHypothesisQueue, nextBestUrlsFromHypotheses } from './hypothesisQueue.js';
+export { nextBestUrlsFromHypotheses } from './hypothesisQueue.js';
 export { defaultIdentityGrammar, updateIdentityGrammar } from './identityGrammar.js';
 export { defaultQueryLearning, updateQueryLearning } from './queryLearning.js';
 export {
   loadLearningProfile,
   applyLearningSeeds,
-  persistLearningProfile
 } from './selfImproveLoop.js';
 export { readLearningHintsFromStores } from './learningReadback.js';
 export * from './sourceIntel.js';

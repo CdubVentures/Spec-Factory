@@ -93,7 +93,8 @@ describe('buildProcessStartLaunchPlan contract', () => {
     strictEqual(snapshot.settings.mode, undefined);
   });
 
-  it('serializes supported direct-launch booleans and clamped integers into env overrides', (t) => {
+  // WHY: Plan 05 Step 6 — runtime settings are snapshot-only. Env vars no longer carry them.
+  it('does not forward runtime settings as individual env vars (snapshot-only)', (t) => {
     const harness = createLaunchPlanHarness();
     t.after(() => harness.cleanup());
 
@@ -103,20 +104,9 @@ describe('buildProcessStartLaunchPlan contract', () => {
     });
 
     strictEqual(result.ok, true);
-    strictEqual(result.envOverrides.DRY_RUN, 'false');
-    strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
-  });
-
-  it('omits direct-launch integers that fall below the supported minimum', (t) => {
-    const harness = createLaunchPlanHarness();
-    t.after(() => harness.cleanup());
-
-    const result = harness.buildPlan({
-      runtimeTraceFetchRing: 5,
-    });
-
-    strictEqual(result.ok, true);
-    strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, undefined);
+    strictEqual(Object.hasOwn(result.envOverrides, 'DRY_RUN'), false);
+    strictEqual(Object.hasOwn(result.envOverrides, 'RUNTIME_TRACE_FETCH_RING'), false);
+    ok(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT, 'snapshot path must be set');
   });
 
   it('rejects unsupported modes', (t) => {

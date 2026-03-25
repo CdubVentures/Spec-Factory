@@ -321,7 +321,9 @@ test('process/start defaults child run roots to GUI runtime roots when request o
   assert.equal(capturedArgs[outIndex + 1], expectedIndexLabRoot);
 });
 
-test('process/start forwards representative runtime override families into child env', async () => {
+// WHY: Plan 05 Step 6 — runtime settings now reach the child via snapshot, not env vars.
+// These settings are no longer forwarded as individual env overrides.
+test('process/start does NOT forward runtime settings as individual env vars (snapshot-only)', async () => {
   let capturedEnv = null;
   const handler = registerInfraRoutes(makeCtx({
     readJsonBody: async () => ({
@@ -337,17 +339,8 @@ test('process/start forwards representative runtime override families into child
       openaiApiKey: 'sk-openai',
       anthropicApiKey: 'sk-anthropic',
       capturePageScreenshotEnabled: true,
-      capturePageScreenshotFormat: 'png',
-      capturePageScreenshotSelectors: 'main,.spec-sheet',
       runtimeTraceFetchRing: 55,
-      runtimeTraceLlmRing: 77,
-      runtimeTraceLlmPayloads: true,
-      eventsJsonWrite: true,
       runtimeScreencastEnabled: true,
-      runtimeScreencastFps: 15,
-      runtimeScreencastQuality: 80,
-      runtimeScreencastMaxWidth: 1920,
-      runtimeScreencastMaxHeight: 1080,
     }),
     fs: {
       access: async () => {},
@@ -362,67 +355,30 @@ test('process/start forwards representative runtime override families into child
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
 
-  assert.equal(capturedEnv?.DRY_RUN, 'true');
-  assert.equal(capturedEnv?.LOCAL_INPUT_ROOT, path.resolve('fixtures', 'input'));
+  // WHY: Path-resolution env vars are still set (needed before config loads).
+  assert.equal(typeof capturedEnv?.RUNTIME_SETTINGS_SNAPSHOT, 'string', 'snapshot path must be set');
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
-  assert.equal(capturedEnv?.RUNTIME_EVENTS_KEY, '_runtime/custom-events.jsonl');
-  assert.equal(capturedEnv?.LLM_PROVIDER, 'openai');
-  assert.equal(capturedEnv?.LLM_BASE_URL, 'http://llm.test');
-  assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');
-  assert.equal(capturedEnv?.ANTHROPIC_API_KEY, 'sk-anthropic');
 
-  // WHY: frontierDbPath removed from registry — no longer propagated as env override.
-  assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_ENABLED, 'true');
-  assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_FORMAT, 'png');
-  assert.equal(capturedEnv?.CAPTURE_PAGE_SCREENSHOT_SELECTORS, 'main,.spec-sheet');
-
-  assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '55');
-  assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '77');
-  assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_PAYLOADS, 'true');
-  assert.equal(capturedEnv?.EVENTS_JSON_WRITE, 'true');
-
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_ENABLED, 'true');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '15');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_QUALITY, '80');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_MAX_WIDTH, '1920');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_MAX_HEIGHT, '1080');
-});
-
-test('process/start clamps representative runtime numeric env overrides before spawn', async () => {
-  let capturedEnv = null;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      runtimeTraceFetchRing: 999999,
-      runtimeTraceLlmRing: 999999,
-      runtimeScreencastFps: 999,
-      runtimeScreencastQuality: 999,
-      runtimeScreencastMaxWidth: 999999,
-      runtimeScreencastMaxHeight: 999999,
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, _cliArgs, envOverrides) => {
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-
-  // WHY: pageGotoTimeoutMs, frontierBlockedDomainThreshold removed from registry —
-  // no longer propagated as env overrides.
-  assert.equal(capturedEnv?.RUNTIME_TRACE_FETCH_RING, '2000');
-  assert.equal(capturedEnv?.RUNTIME_TRACE_LLM_RING, '2000');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_FPS, '60');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_QUALITY, '100');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_MAX_WIDTH, '3840');
-  assert.equal(capturedEnv?.RUNTIME_SCREENCAST_MAX_HEIGHT, '2160');
+  // WHY: All runtime settings are now snapshot-only — not individual env vars.
+  for (const retiredEnvKey of [
+    'DRY_RUN', 'LOCAL_INPUT_ROOT', 'RUNTIME_EVENTS_KEY',
+    'LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
+    'CAPTURE_PAGE_SCREENSHOT_ENABLED', 'CAPTURE_PAGE_SCREENSHOT_FORMAT',
+    'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
+    'RUNTIME_TRACE_FETCH_RING', 'RUNTIME_TRACE_LLM_RING',
+    'RUNTIME_TRACE_LLM_PAYLOADS', 'EVENTS_JSON_WRITE',
+    'DAEMON_CONCURRENCY', 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS',
+    'IMPORTS_ROOT', 'IMPORTS_POLL_SECONDS',
+    'RUNTIME_SCREENCAST_ENABLED', 'RUNTIME_SCREENCAST_FPS',
+    'RUNTIME_SCREENCAST_QUALITY', 'RUNTIME_SCREENCAST_MAX_WIDTH',
+    'RUNTIME_SCREENCAST_MAX_HEIGHT', 'PAGE_GOTO_TIMEOUT_MS',
+  ]) {
+    assert.equal(
+      Object.hasOwn(capturedEnv, retiredEnvKey),
+      false,
+      `${retiredEnvKey} should be snapshot-only, not an env override`,
+    );
+  }
 });
 
 test('process/start ignores retired and not-implemented runtime env knobs', async () => {
@@ -460,8 +416,6 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
   assert.equal(result.status, 200);
 
   for (const forbiddenEnvKey of [
-    'LOCAL_MODE',
-    'WRITE_MARKDOWN_SUMMARY',
     'DISCOVERY_RESULTS_PER_QUERY',
     'DISCOVERY_QUERY_CONCURRENCY',
     'SERP_TRIAGE_ENABLED',

@@ -104,6 +104,14 @@
 | `docs/04-features/test-mode.md`, `docs/05-operations/known-issues.md`, `docs/06-references/background-jobs.md` | `EDIT` | Repointed the stubbed test-mode runner to `src/app/api/routes/testModeRouteContext.js` and clarified current run behavior. |
 | `docs/README.md` | `EDIT` | Added the new LLM policy feature doc to the master table of contents. |
 
+## Third-Pass Convergence Updates
+
+| File | Disposition | What changed |
+|------|-------------|--------------|
+| `docs/07-patterns/canonical-examples.md` | `EDIT` | Corrected the SpecDb migration example so it matches the literal append-only `MIGRATIONS`/`SECONDARY_INDEXES` pattern in `src/db/specDbMigrations.js` and aligned the background-job example to the real `createBatchCommand()` factory-return shape. |
+| `docs/05-operations/monitoring-and-logging.md` | `EDIT` | Refreshed the live `/api/v1/process/status` observation with the 2026-03-24 local validation snapshot showing that idle status retains last-run metadata fields. |
+| `docs/06-references/api-surface.md` | `EDIT` | Added the verified `POST` compatibility writes for `storage-settings`, `runtime-settings`, and `llm-policy`, documented the `/storage-settings/local` browse alias, and tightened response shapes to the current handlers. |
+
 ## Unresolved Ambiguities
 
 | Area | Current note |
@@ -120,6 +128,9 @@
 | `npm run gui:build` | pass | Vite GUI build succeeded on 2026-03-24 |
 | `GET http://127.0.0.1:8788/api/v1/health` | pass | returned `{ ok: true, service: "gui-server", ... }` from the live server |
 | `GET http://127.0.0.1:8788/api/v1/categories` | pass | returned `["gaming_mice","keyboard","monitor","mouse","tests"]` |
+| `GET http://127.0.0.1:8788/api/v1/llm-policy` | pass | returned the live composite policy with provider registry and resolved model assignments |
+| `GET http://127.0.0.1:8788/api/v1/indexing/llm-config` | pass | returned live model/pricing/token metadata plus resolved API-key exposure used by settings UIs |
+| `GET http://127.0.0.1:8788/api/v1/process/status` | pass | idle status retained `run_id`, `category`, `product_id`, `storage_destination`, `pid`, `exitCode`, `startedAt`, and `endedAt` |
 | `npm test` | fail | current worktree is red; details documented in `docs/05-operations/known-issues.md` |
 
 ## Validated Against
@@ -136,6 +147,9 @@
 | command | `npm test` | current red baseline used for known-issues and setup/dependency docs |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live runtime health proof |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory proof |
+| runtime | `http://127.0.0.1:8788/api/v1/llm-policy` | live composite LLM policy contract |
+| runtime | `http://127.0.0.1:8788/api/v1/indexing/llm-config` | live indexing/LLM metadata contract |
+| runtime | `http://127.0.0.1:8788/api/v1/process/status` | live idle process-status retention behavior |
 
 ## Related Documents
 

@@ -1,6 +1,6 @@
 /**
  * Integration tests for LLM SERP Selector in processDiscoveryResults.
- * The selector is the only triage path — no deterministic fallback.
+ * LLM is the primary path; deterministic reranker fallback activates on failure.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -122,7 +122,6 @@ function makeBaseArgs(overrides = {}) {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
     ...overrides,
   };
 }
@@ -188,7 +187,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     assert.equal(result.candidates.length, 3, 'all triaged candidates remain visible for auditability');
   });
 
-  it('LLM call failure produces zero selected URLs (no fallback)', async () => {
+  it('LLM call failure triggers reranker fallback', async () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
@@ -196,12 +195,15 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     });
     const result = await processDiscoveryResults(args);
     assert.equal(result.enabled, true);
-    assert.equal(result.selectedUrls.length, 0, 'failure = zero selected URLs, no deterministic fallback');
-    assert.equal(result.selectedUrls.length, 0, 'failure = zero selected URLs');
+    assert.ok(result.selectedUrls.length > 0, 'reranker fallback should produce selected URLs');
     assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after selector failure');
+    const fetchHigh = result.candidates.filter((c) => c.triage_disposition === 'fetch_high');
+    for (const c of fetchHigh) {
+      assert.equal(c.score_breakdown.score_source, 'reranker_fallback');
+    }
   });
 
-  it('invalid output produces zero selected URLs (no fallback)', async () => {
+  it('invalid output triggers reranker fallback', async () => {
     const logger = makeStubLogger();
     const args = makeBaseArgs({
       logger,
@@ -210,8 +212,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
       },
     });
     const result = await processDiscoveryResults(args);
-    assert.equal(result.selectedUrls.length, 0, 'invalid output = zero selected URLs');
-    assert.equal(result.selectedUrls.length, 0, 'invalid output = zero selected URLs');
+    assert.ok(result.selectedUrls.length > 0, 'reranker fallback should produce selected URLs');
     assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after invalid output');
     const warnEvents = logger.events.filter((e) => e.event === 'serp_selector_invalid_output');
     assert.ok(warnEvents.length >= 1, 'logged serp_selector_invalid_output');

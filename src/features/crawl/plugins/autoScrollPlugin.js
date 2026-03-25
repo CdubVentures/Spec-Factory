@@ -12,7 +12,7 @@ export const autoScrollPlugin = {
       if (!enabled || passes <= 0) return;
 
       const delayMs = Number(settings?.autoScrollDelayMs) || 0;
-      const postLoadWaitMs = 200;
+      const postLoadWaitMs = Number(settings?.autoScrollPostLoadWaitMs) || 200;
 
       for (let i = 0; i < passes; i++) {
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

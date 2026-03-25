@@ -99,7 +99,7 @@ export class FieldRulesEngine {
     return this.loaded?.rules?.publish_gate || null;
   }
 
-  // WHY: Exposes core_fields + per-field evidence_tier_minimum for coreDeepGate.js
+  // WHY: Exposes core_fields + per-field evidence_tier_minimum for tier-based field classification
   getCoreDeepFieldRules() {
     const rules = this.loaded?.rules || {};
     const coreFields = Array.isArray(rules.core_fields) ? rules.core_fields : [];

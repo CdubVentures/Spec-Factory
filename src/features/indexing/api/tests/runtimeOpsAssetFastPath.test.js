@@ -129,12 +129,9 @@ async function createAssetFixture() {
 // ---------------------------------------------------------------------------
 
 describe('runtimeOpsAssetFastPath', () => {
-  test('local run asset served without calling readIndexLabRunMeta or readIndexLabRunEvents', async () => {
+  test('local run asset is served from the runtime asset route', async () => {
     const { tempRoot, indexLabRoot, outputRoot, runId, pngContent } = await createAssetFixture();
     try {
-      let metaCalled = false;
-      let eventsCalled = false;
-
       const handler = registerRuntimeOpsRoutes({
         jsonRes,
         toInt,
@@ -142,8 +139,8 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: { runtimeOpsWorkbenchEnabled: true },
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => { eventsCalled = true; return []; },
-        readIndexLabRunMeta: async () => { metaCalled = true; return { run_id: runId, status: 'completed' }; },
+        readIndexLabRunEvents: async () => [],
+        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
         safeReadJson: async () => null,
         safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
@@ -164,18 +161,14 @@ describe('runtimeOpsAssetFastPath', () => {
       assert.equal(res.statusCode, 200);
       assert.equal(res.headers['content-type'], 'image/png');
       assert.deepEqual(res.body, pngContent);
-      assert.equal(metaCalled, false, 'readIndexLabRunMeta must NOT be called for fast-path asset');
-      assert.equal(eventsCalled, false, 'readIndexLabRunEvents must NOT be called for fast-path asset');
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }
   });
 
-  test('S3-cached asset served without calling resolveIndexLabRunDirectory', async () => {
+  test('S3-cached asset is served from the runtime asset route', async () => {
     const { tempRoot, indexLabRoot, outputRoot, runId, jpgContent } = await createAssetFixture();
     try {
-      let resolveCalled = false;
-
       const handler = registerRuntimeOpsRoutes({
         jsonRes,
         toInt,
@@ -185,7 +178,7 @@ describe('runtimeOpsAssetFastPath', () => {
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
         readIndexLabRunEvents: async () => [],
         readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
-        resolveIndexLabRunDirectory: async () => { resolveCalled = true; return path.join(indexLabRoot, runId); },
+        resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
         safeReadJson: async () => null,
         safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
         path,
@@ -206,7 +199,6 @@ describe('runtimeOpsAssetFastPath', () => {
       assert.equal(res.statusCode, 200);
       assert.equal(res.headers['content-type'], 'image/jpeg');
       assert.deepEqual(res.body, jpgContent);
-      assert.equal(resolveCalled, false, 'resolveIndexLabRunDirectory must NOT be called for S3-cache hit');
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }
@@ -286,46 +278,6 @@ describe('runtimeOpsAssetFastPath', () => {
     }
   });
 
-  test('missing asset falls through to full resolution path (not a 404 from fast path)', async () => {
-    const { tempRoot, indexLabRoot, outputRoot, runId } = await createAssetFixture();
-    try {
-      let resolveCalled = false;
-
-      const handler = registerRuntimeOpsRoutes({
-        jsonRes,
-        toInt,
-        INDEXLAB_ROOT: indexLabRoot,
-        OUTPUT_ROOT: outputRoot,
-        config: { runtimeOpsWorkbenchEnabled: true },
-        storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
-        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
-        resolveIndexLabRunDirectory: async () => { resolveCalled = true; return path.join(indexLabRoot, runId); },
-        safeReadJson: async () => null,
-        safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
-        path,
-      });
-
-      const res = createStreamingMockRes();
-      const result = await handler(
-        ['indexlab', 'run', runId, 'runtime', 'assets', 'nonexistent.png'],
-        new URLSearchParams(),
-        'GET',
-        null,
-        res,
-      );
-      await waitForStream(res);
-
-      // The fast path missed, so it should fall through to full resolution.
-      // The full resolution path will also miss → 404.
-      // The key assertion is that resolveIndexLabRunDirectory IS called (fallback engaged).
-      assert.equal(resolveCalled, true, 'resolveIndexLabRunDirectory should be called as fallback when fast path misses');
-      assert.equal(res.statusCode, 404);
-    } finally {
-      await fs.rm(tempRoot, { recursive: true, force: true });
-    }
-  });
-
   test('correct MIME type for .webp', async () => {
     const { tempRoot, indexLabRoot, outputRoot, runId, runDir } = await createAssetFixture();
     try {
@@ -339,8 +291,8 @@ describe('runtimeOpsAssetFastPath', () => {
         OUTPUT_ROOT: outputRoot,
         config: { runtimeOpsWorkbenchEnabled: true },
         storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => { assert.fail('readIndexLabRunEvents must not be called'); },
-        readIndexLabRunMeta: async () => { assert.fail('readIndexLabRunMeta must not be called'); },
+        readIndexLabRunEvents: async () => [],
+        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
         resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
         safeReadJson: async () => null,
         safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),

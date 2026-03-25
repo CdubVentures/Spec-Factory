@@ -16,5 +16,5 @@ Phase modules for server bootstrap. Each phase initializes one layer of the DI c
 ## Domain Invariants
 
 - Phase ordering: environment → session → domain. Each phase receives outputs of prior phases.
-- The assembled return shape (63 keys) is the contract with guiServer.js. Never add/remove keys without updating guiServer.js.
+- The assembled return shape (8 groups, 65 keys total) is the contract with guiServer.js. Never add/remove keys without updating guiServer.js and BOOTSTRAP_RETURN_GROUPS.
 - Realtime bridge + process manager stay in the assembler due to circular closure binding.

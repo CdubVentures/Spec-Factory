@@ -72,7 +72,6 @@ export function buildSerpSelectorInput({
   variables, brandResolution,
   candidateRows,
   categoryConfig,
-  discoveryCap,
   serpSelectorUrlCap,
 }) {
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
@@ -138,7 +137,7 @@ export function buildSerpSelectorInput({
 // enrichCandidateRow — shared host trust + doc kind enrichment
 // ---------------------------------------------------------------------------
 
-function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig }) {
+function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig, scoreSource = 'llm_selector' }) {
   const host = normalizeHost(String(row.host || ''));
   const url = String(row.url || '');
   let pathname = '';
@@ -151,7 +150,7 @@ function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig
     identity_prelim: hostTrust === 'official' || hostTrust === 'support' ? 'exact' : 'uncertain',
     host_trust_class: hostTrust,
     doc_kind_guess: docKind,
-    score_source: 'llm_selector',
+    score_source: scoreSource,
   };
 }
 
@@ -162,6 +161,7 @@ function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig
 export function adaptSerpSelectorOutput({
   selectorOutput, candidateMap, overflowRows = [],
   officialDomain, supportDomain, categoryConfig,
+  scoreSource = 'llm_selector',
 }) {
   const keepIds = toArray(selectorOutput?.keep_ids).map((id) => String(id || '').trim()).filter(Boolean);
   const keepSet = new Set(keepIds);
@@ -172,7 +172,7 @@ export function adaptSerpSelectorOutput({
 
   // WHY: Shared enrichment extracted — host trust, doc kind, identity prelim, and
   // lane assignment are identical across selected/notSelected/overflow candidates.
-  const enrich = (row) => enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig });
+  const enrich = (row) => enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig, scoreSource });
 
   for (let rank = 0; rank < keepIds.length; rank++) {
     const originalRow = candidateMap.get(keepIds[rank]);
@@ -182,9 +182,9 @@ export function adaptSerpSelectorOutput({
       ...enrich(originalRow),
       triage_disposition: 'fetch_high',
       approval_bucket: 'approved',
-      soft_reason_codes: ['llm_selected'],
+      soft_reason_codes: [scoreSource === 'reranker_fallback' ? 'reranker_fallback' : 'llm_selected'],
       score,
-      score_breakdown: { score_source: 'llm_selector', rank: rank + 1 },
+      score_breakdown: { score_source: scoreSource, rank: rank + 1 },
     });
   }
 
@@ -194,7 +194,7 @@ export function adaptSerpSelectorOutput({
       ...enrich(originalRow),
       triage_disposition: 'fetch_low',
       score: 0,
-      score_breakdown: { score_source: 'llm_selector', reason: 'not_selected' },
+      score_breakdown: { score_source: scoreSource, reason: 'not_selected' },
     });
   }
 
@@ -203,7 +203,7 @@ export function adaptSerpSelectorOutput({
       ...enrich(row),
       triage_disposition: 'selector_input_capped',
       score: 0,
-      score_breakdown: { score_source: 'llm_selector', reason: 'selector_input_capped' },
+      score_breakdown: { score_source: scoreSource, reason: 'selector_input_capped' },
     });
   }
 

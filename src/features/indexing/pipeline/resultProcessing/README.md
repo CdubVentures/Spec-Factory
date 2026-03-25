@@ -23,7 +23,7 @@ Exports from `index.js`:
 
 ## Domain Invariants
 
-- LLM selector is the ONLY triage path — no deterministic fallback for selection.
+- LLM selector is the primary triage path; deterministic reranker fallback activates on LLM failure.
 - Domain classification runs AFTER SERP selector, not before.
 - `candidates[]` refers to the selected set, not all survivors.
 - Stage has limited rejects — code and tests are truth over docs.

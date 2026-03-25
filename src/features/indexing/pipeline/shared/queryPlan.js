@@ -21,6 +21,7 @@ import {
   GENERIC_MODEL_TOKENS,
 } from './discoveryIdentity.js';
 import { normalizeHost } from './hostParser.js';
+import { configInt } from '../../../../shared/settingsAccessor.js';
 
 import {
   inferRoleForHost,
@@ -32,7 +33,7 @@ import {
 // Manufacturer URL plan generation
 // ---------------------------------------------------------------------------
 
-function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '' }) {
+function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '', config = null }) {
   const urls = [];
 
   // Feature flag: DISABLE_URL_GUESS_FALLBACK (default: false)
@@ -92,7 +93,7 @@ function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, d
   // WHY: Internal search URLs removed — search-first mode. Guessed product
   // paths above are the only plan-only fallback for manufacturer hosts.
 
-  const result = urls.slice(0, 40);
+  const result = urls.slice(0, configInt(config, 'manufacturerPlanUrlCap') || 40);
   logger?.info?.('manufacturer_plan_urls_generated', {
     reason: reason || 'plan_only',
     host,
@@ -106,7 +107,7 @@ function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, d
 // Plan-only URL generation (no search provider)
 // ---------------------------------------------------------------------------
 
-export function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries = 3, deterministicAliasCap = 6 }) {
+export function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQueries = 3, deterministicAliasCap = 6, config = null }) {
   const planned = [];
   for (const sourceHost of categoryConfig.sourceHosts || []) {
     const host = sourceHost.host;
@@ -119,6 +120,7 @@ export function buildPlanOnlyResults({ categoryConfig, queries, variables, maxQu
           queries,
           maxQueries,
           deterministicAliasCap,
+          config,
         })
       );
       continue;
@@ -195,8 +197,9 @@ export function buildQueryPlanFallbackResults({
 // Query dedup, ranking, and identity guard
 // ---------------------------------------------------------------------------
 
-export function dedupeQueryRows(rows = [], limit = 24) {
-  const parsedLimit = Number(limit);
+export function dedupeQueryRows(rows = [], limit, config = null) {
+  const resolvedLimit = limit ?? configInt(config, 'queryDedupeRowsCap') ?? 24;
+  const parsedLimit = Number(resolvedLimit);
   const hasCap = Number.isFinite(parsedLimit) && parsedLimit > 0;
   const cap = hasCap ? Math.max(1, Math.floor(parsedLimit)) : Number.POSITIVE_INFINITY;
   const out = [];

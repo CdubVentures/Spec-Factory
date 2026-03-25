@@ -41,7 +41,7 @@ it('logger emits expected event names', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -78,7 +78,7 @@ it('trace enrichment populates reason_codes on serp_explorer candidates', async 
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });

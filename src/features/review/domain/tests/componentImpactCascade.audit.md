@@ -10,17 +10,17 @@ Disposition:
 | `cascadeComponentChange authoritative updates all linked items and marks queue stale via SpecDb` | KEEP | Core authoritative propagation contract. | `componentImpact.authoritativePropagation.test.js` | Preserved |
 | `cascadeComponentChange authoritative updates linked items only (not unlinked value matches)` | KEEP | Guards against over-propagating to lookalike values. | `componentImpact.authoritativeLinkIsolation.test.js` | Preserved |
 | `evaluateConstraintsForLinkedProducts uses maker-specific component values for violations` | KEEP | Protects maker-specific constraint evaluation. | `componentImpact.authoritativeConstraintEvaluation.test.js` | Preserved |
-| `cascadeEnumChange honors preAffectedProductIds for rename cascades` | KEEP | Protects enum rename propagation to precomputed affected products. | `componentImpact.enumCascade.test.js` | Preserved |
+| `cascadeEnumChange honors preAffectedProductIds for rename cascades` | KEEP | Protects enum rename propagation to precomputed affected products. | `componentImpact.enumRenameCascade.test.js` | Preserved |
 | `item enum field writes stay ID-linked via item_list_links and list deletes clear links` | RETIRE | Weaker helper-level duplicate of the stronger rename/delete-by-id link-preservation contract, with overlapping `syncItemListLinkForFieldValue` coverage also present in enum payload tests. | None | Deleted |
-| `cascadeComponentChange override_allowed does not push values and does not evaluate variance` | COLLAPSE | Real contract, but shares setup and outcome with the priority-only case. | `componentImpact.overrideAllowedCascade.test.js` | Preserved with merged assertions |
-| `cascadeComponentChange override_allowed uses priority 3 (lowest)` | COLLAPSE | Same behavior family as the broader override-allowed stale-only contract. | `componentImpact.overrideAllowedCascade.test.js` | Merged into broader contract |
-| `cascadeComponentChange override_allowed with constraints still evaluates constraints` | KEEP | Distinct constraint-evaluation contract under override-allowed mode. | `componentImpact.overrideAllowedCascade.test.js` | Preserved |
-| `enum list value ID helpers rename and delete through slot identifiers` | KEEP | Stronger runtime-facing link-preservation contract than the value-delete helper test. | `componentImpact.enumCascade.test.js` | Preserved |
+| `cascadeComponentChange override_allowed does not push values and does not evaluate variance` | COLLAPSE | Real contract, but shares setup and outcome with the priority-only case. | `componentImpact.overrideAllowedStaleOnly.test.js` | Preserved with merged assertions |
+| `cascadeComponentChange override_allowed uses priority 3 (lowest)` | COLLAPSE | Same behavior family as the broader override-allowed stale-only contract. | `componentImpact.overrideAllowedStaleOnly.test.js` | Merged into broader contract |
+| `cascadeComponentChange override_allowed with constraints still evaluates constraints` | KEEP | Distinct constraint-evaluation contract under override-allowed mode. | `componentImpact.overrideAllowedConstraintEvaluation.test.js` | Preserved |
+| `enum list value ID helpers rename and delete through slot identifiers` | KEEP | Stronger runtime-facing link-preservation contract than the value-delete helper test. | `componentImpact.enumListValueIdContracts.test.js` | Preserved |
 
 Proof log:
 
 | Step | Result |
 | --- | --- |
-| Targeted component-impact tests | `node --test src/features/review/domain/tests/componentImpact.referenceLookup.test.js src/features/review/domain/tests/componentImpact.authoritativeCascade.test.js src/features/review/domain/tests/componentImpact.overrideAllowedCascade.test.js src/features/review/domain/tests/componentImpact.enumCascade.test.js` -> pass |
+| Targeted component-impact tests | `node --test src/features/review/domain/tests/componentImpact.referenceLookup.test.js src/features/review/domain/tests/componentImpact.authoritativePropagation.test.js src/features/review/domain/tests/componentImpact.authoritativeLinkIsolation.test.js src/features/review/domain/tests/componentImpact.authoritativeConstraintEvaluation.test.js src/features/review/domain/tests/componentImpact.overrideAllowedStaleOnly.test.js src/features/review/domain/tests/componentImpact.overrideAllowedConstraintEvaluation.test.js src/features/review/domain/tests/componentImpact.enumRenameCascade.test.js src/features/review/domain/tests/componentImpact.enumListValueIdContracts.test.js` passed |
 | Surrounding review domain tests | `node --test src/features/review/domain/tests/*.test.js` -> pass |
-| Full suite | `npm test` passed |
+| Full suite | Latest `npm test` fails outside this scope in `src/shared/tests/settingsRegistryCompleteness.test.js` |

@@ -245,7 +245,7 @@ The triage flow (decomposed into 4 files in P3):
 1. Hard-drop filter: Remove non-HTTPS, denied hosts, cooldown violations
 2. Classify and deduplicate URLs (`resultClassifier.js`)
 3. Deterministic domain safety heuristics (`resultClassifier.js`)
-4. LLM selector picks which URLs to keep (the only triage path — no deterministic fallback)
+4. LLM selector picks which URLs to keep (deterministic reranker fallback on LLM failure)
 5. Enrich candidate traces with reason codes (`resultTraceBuilder.js`)
 6. Build SERP explorer and write payloads (`resultPayloadBuilder.js`)
 

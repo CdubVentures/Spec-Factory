@@ -42,7 +42,7 @@ it('returns all required top-level keys with correct types', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -94,7 +94,7 @@ it('selectedUrls are string arrays matching candidates', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });

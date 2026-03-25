@@ -3,7 +3,7 @@
 // aggregates hints/history with SET semantics (unresolved fields only).
 
 import { resolvePhaseModel, roleTokenCap } from '../../../../core/llm/client/routing.js';
-import { configInt, configValue } from '../../../../shared/settingsAccessor.js';
+import { configInt, configFloat, configValue } from '../../../../shared/settingsAccessor.js';
 import { toInt } from '../../../../shared/valueNormalizers.js';
 import {
   AVAILABILITY_RANKS,
@@ -157,10 +157,10 @@ export function computeGroupQueryCount(groupKey, queryExecutionHistory) {
   ).length;
 }
 
-export function isGroupSearchWorthy({ coverageRatio, unresolvedCount, groupQueryCount, phase }, thresholds = {}) {
-  const coverageThreshold = thresholds.groupSearchCoverageThreshold ?? 0.80;
-  const minUnresolved = thresholds.groupSearchMinUnresolved ?? 3;
-  const maxRepeats = thresholds.groupSearchMaxRepeats ?? 3;
+export function isGroupSearchWorthy({ coverageRatio, unresolvedCount, groupQueryCount, phase }, thresholds = {}, config = null) {
+  const coverageThreshold = thresholds.groupSearchCoverageThreshold ?? configFloat(config, 'needsetGroupSearchCoverageThreshold') ?? 0.80;
+  const minUnresolved = thresholds.groupSearchMinUnresolved ?? configInt(config, 'needsetGroupSearchMinUnresolved') ?? 3;
+  const maxRepeats = thresholds.groupSearchMaxRepeats ?? configInt(config, 'needsetGroupSearchMaxRepeats') ?? 3;
 
   if (phase === 'hold') return { worthy: false, skipReason: 'group_on_hold' };
   if (coverageRatio >= coverageThreshold) return { worthy: false, skipReason: 'group_mostly_resolved' };
@@ -222,7 +222,7 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
 
 export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, categorySourceHosts = []) {
   const queries = queryExecutionHistory?.queries || [];
-  const cooldownMs = config.seedCooldownMs ?? 2592000000;
+  const cooldownMs = config.seedCooldownMs ?? (configInt(config, 'needsetSeedCooldownDays') ?? 30) * 86400000;
   const now = Date.now();
 
   function seedStatusFor(matchFn) {
@@ -375,7 +375,7 @@ function isSearchExhausted(field) {
     && evidenceClasses.length >= EXHAUSTION_MIN_EVIDENCE_CLASSES;
 }
 
-function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory) {
+function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory, config = null) {
   const satisfiedFieldKeys = [];
   const unresolvedFieldKeys = [];
   const weakFieldKeys = [];
@@ -480,7 +480,7 @@ function buildFocusGroup(groupKey, fields, catalogEntry, queryExecutionHistory) 
     unresolvedCount: nonAcceptedFieldCount,
     groupQueryCount: groupQC,
     phase,
-  });
+  }, {}, config);
 
   return {
     key: groupKey, // GAP-10: renamed from group_key
@@ -569,7 +569,7 @@ export function buildSearchPlanningContext({
   const focusGroups = [];
   for (const [key, groupFields] of groupBuckets) {
     const catalogEntry = groupCatalog[key] || {};
-    focusGroups.push(buildFocusGroup(key, groupFields, catalogEntry, queryExecutionHistory));
+    focusGroups.push(buildFocusGroup(key, groupFields, catalogEntry, queryExecutionHistory, config));
   }
 
   // Pass 2b: Budget-aware phase assignment

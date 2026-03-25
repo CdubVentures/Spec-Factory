@@ -102,7 +102,6 @@ test('runtime settings serializer preserves parsed budget and reasoning knobs', 
     llmReasoningBudget: '3072',
     llmMonthlyBudgetUsd: '7.5',
     llmPerProductBudgetUsd: '1.25',
-    llmMaxCallsPerRound: '12',
     llmMaxOutputTokens: '6144',
     llmMaxTokens: '16000',
     llmTimeoutMs: '45000',
@@ -115,7 +114,6 @@ test('runtime settings serializer preserves parsed budget and reasoning knobs', 
   assert.equal(payload.llmReasoningBudget, 3072);
   assert.equal(payload.llmMonthlyBudgetUsd, 7.5);
   assert.equal(payload.llmPerProductBudgetUsd, 1.25);
-  assert.equal(payload.llmMaxCallsPerRound, 12);
   assert.equal(payload.llmMaxOutputTokens, 6144);
   assert.equal(payload.llmMaxTokens, 16000);
   assert.equal(payload.llmTimeoutMs, 45000);

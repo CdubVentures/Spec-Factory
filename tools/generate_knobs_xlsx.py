@@ -120,6 +120,8 @@ RETIRED_SETTINGS = [
     ("localMode", "bool", "true", "2026-03-24", "output purge", "Replaced by persistent storage system"),
     ("categoryAuthorityEnabled", "bool", "true", "2026-03-24", "output purge", "Retired — category authority always active"),
     ("writeMarkdownSummary", "bool", "true", "2026-03-24", "output purge", "No longer used"),
+    ("crawlBypassMinBodyLength", "int", "200", "2026-03-24", "dead bypass knobs", "Call sites never passed value — hardcoded fallback always used"),
+    ("crawlBypassHtmlSnippetCap", "int", "5000", "2026-03-24", "dead bypass knobs", "Call sites never passed value — hardcoded fallback always used"),
 ]
 
 # ── Node.js JSON dump ──────────────────────────────────────────────────

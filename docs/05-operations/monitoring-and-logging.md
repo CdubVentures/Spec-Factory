@@ -64,7 +64,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
   - inspect Runtime Ops,
   - inspect `_runtime/events.jsonl`,
   - inspect `runtime_events` and other SpecDb telemetry tables.
-- Observed on 2026-03-16: `/api/v1/process/status` returned `running: false` plus the last completed run id, command, and `exitCode: 0`. Do not assume the idle shape clears those fields.
+- Observed during live validation on 2026-03-24 local time: `/api/v1/process/status` returned `running: false` while still retaining the last completed `run_id`, `category`, `product_id`, `storage_destination`, `pid`, `exitCode`, `startedAt`, and `endedAt`. Do not assume the idle shape clears those fields.
 
 ## Validated Against
 

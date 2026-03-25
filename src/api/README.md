@@ -4,7 +4,7 @@ HTTP server composition root: bootstraps the DI context, wires feature route han
 
 ## Public API (The Contract)
 
-- `serverBootstrap.js` → `bootstrapServer({ projectRoot })` — returns the full DI context (config, storage, DB, runtime, review, catalog services)
+- `serverBootstrap.js` → `bootstrapServer({ projectRoot })` — returns grouped DI context (env, storage, session, realtime, process, http, helpers, domain). `BOOTSTRAP_RETURN_GROUPS` documents the shape contract.
 - `bootstrap/` — phase modules: environment → session → domain runtimes (see `bootstrap/README.md`)
 - `guiServer.js` — HTTP server entry point; not imported by other modules (top-level script)
 - `guiServerHttpAssembly.js` → `createGuiServerHttpAssembly(...)` — assembles route pipeline

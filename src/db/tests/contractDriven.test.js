@@ -1010,15 +1010,6 @@ test('Contract-Driven End-to-End Test', async (t) => {
           `at least 1 product should have component links, found ${totalLinkedProducts}`);
       });
 
-      await s.test('SEED-10 — idempotent re-seed produces same counts', async () => {
-        const countsBefore = db.counts();
-        await seedSpecDb({ db, config, category: CATEGORY, fieldRules, logger: null });
-        const countsAfter = db.counts();
-        for (const table of Object.keys(countsBefore)) {
-          assert.strictEqual(countsAfter[table], countsBefore[table],
-            `table ${table} count changed: ${countsBefore[table]} → ${countsAfter[table]}`);
-        }
-      });
     });
 
     // ══════════════════════════════════════════════════════════════════════

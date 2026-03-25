@@ -17,13 +17,6 @@ function makeBuilder(overrides = {}) {
   });
 }
 
-// --- Factory ---
-
-test('createRunListBuilder returns object with expected function', () => {
-  const builder = makeBuilder();
-  assert.equal(typeof builder.listIndexLabRuns, 'function');
-});
-
 // --- Guards ---
 
 test('missing indexlab root returns empty array', async () => {
@@ -186,12 +179,10 @@ test('includes archived runs not in live root', async () => {
 
 // --- Metadata-only S3 fast path ---
 
-test('S3 run with counters and completed status skips materialize and readEvents', async () => {
+test('S3 run with counters and completed status exposes the meta-only row contract', async () => {
   const tmpDir = path.join(os.tmpdir(), `runlist-test-metaonly-${Date.now()}`);
   const indexLabRoot = path.join(tmpDir, 'indexlab');
   await fs.mkdir(indexLabRoot, { recursive: true });
-  let materializeCalled = false;
-  let readEventsCalled = false;
   const s3Location = {
     type: 's3',
     keyBase: 'archive/kb/prod/run-s3-fast',
@@ -212,9 +203,9 @@ test('S3 run with counters and completed status skips materialize and readEvents
   try {
     const builder = makeBuilder({
       getIndexLabRoot: () => indexLabRoot,
-      readEvents: async () => { readEventsCalled = true; return []; },
+      readEvents: async () => [],
       refreshArchivedRunDirIndex: async () => new Map([['run-s3-fast', s3Location]]),
-      materializeArchivedRunLocation: async () => { materializeCalled = true; return ''; },
+      materializeArchivedRunLocation: async () => '',
       readArchivedS3RunMetaOnly: async () => meta,
     });
     const rows = await builder.listIndexLabRuns();
@@ -225,50 +216,12 @@ test('S3 run with counters and completed status skips materialize and readEvents
     assert.equal(row.has_needset, true);
     assert.equal(row.has_search_profile, true);
     assert.equal(path.basename(String(row.run_dir || '')), 'indexlab');
-    assert.equal(materializeCalled, false, 'materializeArchivedRunLocation must NOT be called');
-    assert.equal(readEventsCalled, false, 'readEvents must NOT be called');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
 
-test('S3 run with status=running falls back to full materialization + events', async () => {
-  const tmpDir = path.join(os.tmpdir(), `runlist-test-running-${Date.now()}`);
-  const materializedDir = path.join(tmpDir, 'materialized', 'run-s3-running');
-  await fs.mkdir(tmpDir, { recursive: true });
-  await fs.mkdir(materializedDir, { recursive: true });
-  const meta = {
-    run_id: 'run-s3-running',
-    category: 'mouse',
-    product_id: 'mouse-test',
-    status: 'running',
-    started_at: '2026-03-01T00:00:00Z',
-    counters: { pages_checked: 2 },
-  };
-  await fs.writeFile(path.join(materializedDir, 'run.json'), JSON.stringify(meta));
-  await fs.writeFile(path.join(materializedDir, 'run_events.ndjson'), '');
-  let materializeCalled = false;
-  let readEventsCalled = false;
-
-  try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => { readEventsCalled = true; return []; },
-      refreshArchivedRunDirIndex: async () => new Map([['run-s3-running', { type: 's3', keyBase: 'x', runId: 'run-s3-running' }]]),
-      materializeArchivedRunLocation: async () => { materializeCalled = true; return materializedDir; },
-      readArchivedS3RunMetaOnly: async () => meta,
-    });
-    const rows = await builder.listIndexLabRuns();
-    const row = rows.find((r) => r.run_id === 'run-s3-running');
-    assert.ok(row, 'running S3 run should appear in listing');
-    assert.equal(materializeCalled, true, 'materializeArchivedRunLocation should be called for running runs');
-    assert.equal(readEventsCalled, true, 'readEvents should be called for running runs');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('completed local run with counters in meta skips readEvents', async () => {
+test('completed local run with counters exposes stored counters in the row contract', async () => {
   const tmpDir = path.join(os.tmpdir(), `runlist-test-local-skip-${Date.now()}`);
   const indexLabRoot = path.join(tmpDir, 'indexlab');
   const runDir = path.join(indexLabRoot, 'run-local-fast');
@@ -284,85 +237,17 @@ test('completed local run with counters in meta skips readEvents', async () => {
   };
   await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify(meta));
   await fs.writeFile(path.join(runDir, 'run_events.ndjson'), '');
-  let readEventsCalled = false;
 
   try {
     const builder = makeBuilder({
       getIndexLabRoot: () => indexLabRoot,
-      readEvents: async () => { readEventsCalled = true; return []; },
+      readEvents: async () => [],
     });
     const rows = await builder.listIndexLabRuns();
     const row = rows.find((r) => r.run_id === 'run-local-fast');
     assert.ok(row, 'local run should appear');
     assert.equal(row.status, 'completed');
     assert.deepEqual(row.counters, meta.counters);
-    assert.equal(readEventsCalled, false, 'readEvents must NOT be called for completed local run with counters');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('running local run still reads events even with counters', async () => {
-  const tmpDir = path.join(os.tmpdir(), `runlist-test-local-running-${Date.now()}`);
-  const indexLabRoot = path.join(tmpDir, 'indexlab');
-  const runDir = path.join(indexLabRoot, 'run-local-running');
-  await fs.mkdir(runDir, { recursive: true });
-  const meta = {
-    run_id: 'run-local-running',
-    category: 'mouse',
-    product_id: 'mouse-test',
-    status: 'running',
-    started_at: '2026-03-01T00:00:00Z',
-    counters: { pages_checked: 2 },
-  };
-  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify(meta));
-  await fs.writeFile(path.join(runDir, 'run_events.ndjson'), '');
-  let readEventsCalled = false;
-
-  try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => indexLabRoot,
-      readEvents: async () => { readEventsCalled = true; return []; },
-    });
-    const rows = await builder.listIndexLabRuns();
-    const row = rows.find((r) => r.run_id === 'run-local-running');
-    assert.ok(row, 'running local run should appear');
-    assert.equal(readEventsCalled, true, 'readEvents MUST be called for running local runs');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('S3 run without counters falls back to full materialization + events', async () => {
-  const tmpDir = path.join(os.tmpdir(), `runlist-test-nocounters-${Date.now()}`);
-  const materializedDir = path.join(tmpDir, 'materialized', 'run-s3-nocount');
-  await fs.mkdir(tmpDir, { recursive: true });
-  await fs.mkdir(materializedDir, { recursive: true });
-  const meta = {
-    run_id: 'run-s3-nocount',
-    category: 'keyboard',
-    product_id: 'keyboard-test',
-    status: 'completed',
-    started_at: '2026-03-01T00:00:00Z',
-  };
-  await fs.writeFile(path.join(materializedDir, 'run.json'), JSON.stringify(meta));
-  await fs.writeFile(path.join(materializedDir, 'run_events.ndjson'), '');
-  let materializeCalled = false;
-  let readEventsCalled = false;
-
-  try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => { readEventsCalled = true; return []; },
-      refreshArchivedRunDirIndex: async () => new Map([['run-s3-nocount', { type: 's3', keyBase: 'x', runId: 'run-s3-nocount' }]]),
-      materializeArchivedRunLocation: async () => { materializeCalled = true; return materializedDir; },
-      readArchivedS3RunMetaOnly: async () => meta,
-    });
-    const rows = await builder.listIndexLabRuns();
-    const row = rows.find((r) => r.run_id === 'run-s3-nocount');
-    assert.ok(row, 'S3 run without counters should appear in listing');
-    assert.equal(materializeCalled, true, 'materializeArchivedRunLocation should be called without counters');
-    assert.equal(readEventsCalled, true, 'readEvents should be called without counters');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

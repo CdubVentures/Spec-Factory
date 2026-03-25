@@ -28,6 +28,7 @@ export function buildSerpExplorer({
   auditTrail,
   canonMergeCount,
   config,
+  fallbackApplied = false,
 }) {
   const tracesByQuery = new Map();
   for (const trace of candidateTraceByUrl.values()) {
@@ -100,6 +101,7 @@ export function buildSerpExplorer({
     provider: config.searchEngines,
     llm_selector_enabled: true,
     llm_selector_applied: validation.valid,
+    fallback_applied: fallbackApplied,
     llm_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
     query_count: serpQueryRows.length,
     candidates_checked: candidateTraceRows.length,

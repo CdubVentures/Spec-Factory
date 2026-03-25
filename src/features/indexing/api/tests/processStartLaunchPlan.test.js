@@ -101,13 +101,13 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, '.specfactory_tmp'));
     assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
-    assert.equal(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
-    assert.equal(
-      Object.hasOwn(result.envOverrides, 'LLM_ENABLED'),
-      false,
-      'LLM_ENABLED env var retired - LLM is core, not a knob',
-    );
-    assert.equal(result.envOverrides.LLM_PLAN_FALLBACK_MODEL, '');
+    // WHY: Plan 05 Step 6 — runtime settings are snapshot-only, not individual env vars.
+    assert.equal(Object.hasOwn(result.envOverrides, 'RUNTIME_TRACE_FETCH_RING'), false,
+      'RUNTIME_TRACE_FETCH_RING is snapshot-only');
+    assert.equal(Object.hasOwn(result.envOverrides, 'LLM_ENABLED'), false,
+      'LLM_ENABLED env var retired');
+    assert.equal(Object.hasOwn(result.envOverrides, 'LLM_PLAN_FALLBACK_MODEL'), false,
+      'LLM_PLAN_FALLBACK_MODEL is snapshot-only');
     assert.ok(
       result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT.startsWith(path.join(overrideRoot, '_runtime', 'snapshots')),
       'snapshot path stays inside the requested override root',

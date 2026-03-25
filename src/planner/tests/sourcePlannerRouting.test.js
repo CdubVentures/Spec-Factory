@@ -147,6 +147,18 @@ test('candidateQueue admission works', () => {
   assert.ok(planner.candidateQueue.find((r) => r.url.includes('unknown.example')));
 });
 
+test('seedCandidates routes allowlisted hosts through the candidate queue contract', () => {
+  const planner = makePlanner({}, { identityLock: {} });
+
+  planner.seedCandidates(['https://lab.com/review/thing']);
+
+  const row = planner.next();
+  assert.ok(row, 'seedCandidates should enqueue a row');
+  assert.equal(row.host, 'lab.com');
+  assert.equal(row.candidateSource, true);
+  assert.equal(row.approvedDomain, false);
+});
+
 // --- Enqueue metadata tests ---
 
 test('enqueue row has enqueue metadata fields', () => {
@@ -196,4 +208,52 @@ test('duplicate counts as already_queued', () => {
   const ok = planner.enqueue('https://lab.com/page', 'discovery_approved', { forceApproved: true });
   assert.equal(ok, false);
   assert.ok(planner.enqueueCounters.rejected.already_queued > 0);
+});
+
+test('dequeue order stays priority before manufacturer before approved before candidate', () => {
+  const planner = makePlanner({ maxPagesPerDomain: 5 }, { identityLock: {} });
+
+  planner.enqueue('https://unknown-site.com/candidate', 'discovery', { forceCandidate: true });
+  planner.enqueue('https://lab.com/approved');
+  planner.enqueue('https://manufacturer.com/product');
+  planner.seed(['https://priority-seed.com/page']);
+
+  const seenHosts = [];
+  while (planner.hasNext()) {
+    seenHosts.push(planner.next().host);
+  }
+
+  assert.ok(seenHosts.indexOf('priority-seed.com') < seenHosts.indexOf('manufacturer.com'));
+  assert.ok(seenHosts.indexOf('manufacturer.com') < seenHosts.indexOf('lab.com'));
+  assert.ok(seenHosts.indexOf('lab.com') < seenHosts.indexOf('unknown-site.com'));
+});
+
+test('blockHost removes queued rows for that host and rejects new enqueues', () => {
+  const planner = makePlanner({ maxPagesPerDomain: 10 }, { identityLock: {} });
+
+  planner.enqueue('https://lab.com/page1');
+  planner.enqueue('https://lab.com/page2');
+  planner.enqueue('https://unknown.com/candidate', 'discovery', { forceCandidate: true });
+
+  const removed = planner.blockHost('lab.com');
+  assert.ok(removed >= 2, 'blockHost should remove queued lab.com URLs');
+
+  const next = planner.next();
+  assert.ok(next, 'non-blocked rows should remain');
+  assert.equal(next.host, 'unknown.com');
+  assert.equal(planner.enqueue('https://lab.com/new-page'), false);
+});
+
+test('candidate host cap applies after visited candidate rows accumulate', () => {
+  const planner = makePlanner({ maxPagesPerDomain: 2 }, { identityLock: {} });
+
+  planner.enqueue('https://random.com/page/1', 'discovery', { forceCandidate: true });
+  planner.enqueue('https://random.com/page/2', 'discovery', { forceCandidate: true });
+
+  assert.equal(planner.next()?.host, 'random.com');
+  assert.equal(planner.next()?.host, 'random.com');
+  assert.equal(
+    planner.enqueue('https://random.com/page/3', 'discovery', { forceCandidate: true }),
+    false,
+  );
 });

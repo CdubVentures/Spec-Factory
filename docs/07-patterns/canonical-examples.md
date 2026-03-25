@@ -118,17 +118,18 @@ const ExamplePage = lazyNamedPage(() => import('./pages/example/ExamplePage'), '
 
 Based on `src/db/specDbMigrations.js`.
 
-SpecDb migrations are append-only SQL strings plus optional secondary indexes. Keep them idempotent; `applyMigrations()` already swallows duplicate-column errors.
+SpecDb migrations are append-only SQL strings plus optional secondary indexes. Edit the existing literal array/string in place by appending new entries at the end; do not rebuild them with self-referential spreads. Keep them idempotent; `applyMigrations()` already swallows duplicate-column errors.
 
 ```js
 // src/db/specDbMigrations.js
 export const MIGRATIONS = [
-  ...MIGRATIONS,
+  `ALTER TABLE component_identity ADD COLUMN review_status TEXT DEFAULT 'pending'`,
+  `ALTER TABLE component_identity ADD COLUMN aliases_overridden INTEGER DEFAULT 0`,
   `ALTER TABLE example_items ADD COLUMN external_ref TEXT`,
 ];
 
 export const SECONDARY_INDEXES = `
-  ${SECONDARY_INDEXES}
+  CREATE INDEX IF NOT EXISTS idx_cv_identity_id ON component_values(component_identity_id);
   CREATE INDEX IF NOT EXISTS idx_example_items_external_ref ON example_items(external_ref);
 `;
 ```
@@ -172,7 +173,7 @@ test('publishExampleArtifacts writes one current artifact', async () => {
 
 Based on `src/pipeline/componentReviewBatch.js`, `src/app/cli/commands/batchCommand.js`, and `src/cli/spec.js`.
 
-Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory. `src/cli/spec.js` wires the command into the dispatcher; the worker stays separately testable.
+Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/cli/spec.js` wires that handler into the dispatcher; the worker stays separately testable.
 
 ```js
 // src/features/example/exampleBatch.js
@@ -195,13 +196,18 @@ export async function runExampleBatch({
 ```js
 // src/app/cli/commands/exampleCommand.js
 export function createExampleCommand({ runExampleBatch }) {
-  return async function commandExample(config, storage, args) {
+  async function commandRunExample(config, storage, args) {
+    const category = args.category || 'mouse';
     return runExampleBatch({
       storage,
       config,
-      category: args.category || 'mouse',
+      category,
       logger: null,
     });
+  }
+
+  return {
+    commandRunExample,
   };
 }
 ```
@@ -210,13 +216,13 @@ export function createExampleCommand({ runExampleBatch }) {
 // src/cli/spec.js
 import { createExampleCommand } from '../app/cli/commands/exampleCommand.js';
 
-const commandExample = createExampleCommand({
+const example = createExampleCommand({
   runExampleBatch,
 });
 
 const dispatchCliCommand = createCliCommandDispatcher({
   handlers: {
-    example: ({ config, storage, args }) => commandExample(config, storage, args),
+    'run-example': ({ config, storage, args }) => example.commandRunExample(config, storage, args),
   },
 });
 ```

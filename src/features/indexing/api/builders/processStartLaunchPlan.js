@@ -1,6 +1,5 @@
 import path from 'node:path';
 
-import { disassembleLlmPolicy, LLM_FLAT_KEY_TO_ENV } from '../../../../core/llm/llmPolicySchema.js';
 import { defaultLocalOutputRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { buildRunId } from '../../../../shared/primitives.js';
 import { writeRuntimeSettingsSnapshot } from '../../../../core/config/runtimeSettingsSnapshot.js';
@@ -42,24 +41,6 @@ function resolveStorageBackedRunRoots({
   };
 }
 
-function assignBoolean(envOverrides, envKey, value) {
-  if (typeof value !== 'boolean') return;
-  envOverrides[envKey] = value ? 'true' : 'false';
-}
-
-function assignString(envOverrides, envKey, value) {
-  if (value === undefined || value === null) return;
-  const normalized = String(value || '').trim();
-  if (!normalized) return;
-  envOverrides[envKey] = normalized;
-}
-
-function assignInt(envOverrides, envKey, value, { minInput = Number.NEGATIVE_INFINITY, minClamp = minInput, maxClamp = Number.POSITIVE_INFINITY } = {}) {
-  const parsed = Number.parseInt(String(value ?? ''), 10);
-  if (!Number.isFinite(parsed) || parsed < minInput) return;
-  envOverrides[envKey] = String(Math.max(minClamp, Math.min(maxClamp, parsed)));
-}
-
 function normalizeJoinedList(value) {
   if (Array.isArray(value)) {
     return value.map((item) => String(item || '').trim()).filter(Boolean).join(',');
@@ -91,42 +72,10 @@ export function buildProcessStartLaunchPlan(options = {}) {
     mode = 'indexlab',
     profile,
     dryRun,
-    pageGotoTimeoutMs,
-    runtimeTraceFetchRing,
-    runtimeTraceLlmRing,
-    runtimeTraceLlmPayloads,
-    eventsJsonWrite,
-    daemonConcurrency,
-    daemonGracefulShutdownTimeoutMs,
-    importsRoot,
-    importsPollSeconds,
-    runtimeScreencastEnabled,
-    runtimeScreencastFps,
-    runtimeScreencastQuality,
-    runtimeScreencastMaxWidth,
-    runtimeScreencastMaxHeight,
-    discoveryEnabled,
-    capturePageScreenshotEnabled,
-    capturePageScreenshotFormat,
-    capturePageScreenshotSelectors,
     specDbDir,
     categoryAuthorityRoot: legacyHelperFilesRoot,
-    localInputRoot,
     localOutputRoot,
-    runtimeEventsKey,
-    llmProvider,
-    llmBaseUrl,
-    openaiApiKey,
-    anthropicApiKey,
     searchEngines,
-    llmModelPlan,
-    llmModelReasoning,
-    llmMaxOutputTokensPlan,
-    llmMaxOutputTokensReasoning,
-    llmFallbackEnabled,
-    llmPlanFallbackModel,
-    llmMaxOutputTokensPlanFallback,
-    llmPolicy: rawLlmPolicy,
     seed,
     fields,
     providers,
@@ -204,102 +153,31 @@ export function buildProcessStartLaunchPlan(options = {}) {
     cliArgs.push('--dry-run');
   }
 
+  // WHY: Only path-resolution env vars that must exist before config loads.
+  // All runtime settings reach the child via the snapshot (Plan 05 Step 6).
   const envOverrides = {
     DYNAMIC_CRAWLEE_ENABLED: 'false',
   };
 
-  assignString(envOverrides, 'SPEC_DB_DIR', effectiveSpecDbDir);
+  const specDbDirNormalized = String(effectiveSpecDbDir || '').trim();
+  if (specDbDirNormalized) envOverrides.SPEC_DB_DIR = specDbDirNormalized;
   if (categoryAuthorityRoot) {
     envOverrides.HELPER_FILES_ROOT = categoryAuthorityRoot;
     envOverrides.CATEGORY_AUTHORITY_ROOT = categoryAuthorityRoot;
   }
+  const localOutputNormalized = String(effectiveLocalOutputRoot || '').trim();
+  if (localOutputNormalized) envOverrides.LOCAL_OUTPUT_ROOT = localOutputNormalized;
 
-  assignBoolean(envOverrides, 'DRY_RUN', dryRun);
-  assignString(envOverrides, 'LOCAL_INPUT_ROOT', localInputRoot);
-  assignString(envOverrides, 'LOCAL_OUTPUT_ROOT', effectiveLocalOutputRoot);
-  assignString(envOverrides, 'RUNTIME_EVENTS_KEY', runtimeEventsKey);
-  assignString(envOverrides, 'LLM_PROVIDER', llmProvider);
-  assignString(envOverrides, 'LLM_BASE_URL', llmBaseUrl);
-  assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);
-  assignString(envOverrides, 'ANTHROPIC_API_KEY', anthropicApiKey);
-
-  assignInt(envOverrides, 'PAGE_GOTO_TIMEOUT_MS', pageGotoTimeoutMs, { minInput: 0, minClamp: 0, maxClamp: 120_000 });
-
-  assignBoolean(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_ENABLED', capturePageScreenshotEnabled);
-  assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_FORMAT', capturePageScreenshotFormat);
-  assignString(envOverrides, 'CAPTURE_PAGE_SCREENSHOT_SELECTORS', capturePageScreenshotSelectors);
-
-  assignInt(envOverrides, 'RUNTIME_TRACE_FETCH_RING', runtimeTraceFetchRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });
-  assignInt(envOverrides, 'RUNTIME_TRACE_LLM_RING', runtimeTraceLlmRing, { minInput: 10, minClamp: 10, maxClamp: 2000 });
-  assignBoolean(envOverrides, 'RUNTIME_TRACE_LLM_PAYLOADS', runtimeTraceLlmPayloads);
-  assignBoolean(envOverrides, 'EVENTS_JSON_WRITE', eventsJsonWrite);
-  assignInt(envOverrides, 'DAEMON_CONCURRENCY', daemonConcurrency, { minInput: 1, minClamp: 1, maxClamp: 128 });
-  assignInt(envOverrides, 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS', daemonGracefulShutdownTimeoutMs, { minInput: 1000, minClamp: 1000, maxClamp: 600_000 });
-  assignString(envOverrides, 'IMPORTS_ROOT', importsRoot);
-  assignInt(envOverrides, 'IMPORTS_POLL_SECONDS', importsPollSeconds, { minInput: 1, minClamp: 1, maxClamp: 3600 });
-  assignBoolean(envOverrides, 'RUNTIME_SCREENCAST_ENABLED', runtimeScreencastEnabled);
-  assignInt(envOverrides, 'RUNTIME_SCREENCAST_FPS', runtimeScreencastFps, { minInput: 1, minClamp: 1, maxClamp: 60 });
-  assignInt(envOverrides, 'RUNTIME_SCREENCAST_QUALITY', runtimeScreencastQuality, { minInput: 10, minClamp: 10, maxClamp: 100 });
-  assignInt(envOverrides, 'RUNTIME_SCREENCAST_MAX_WIDTH', runtimeScreencastMaxWidth, { minInput: 320, minClamp: 320, maxClamp: 3840 });
-  assignInt(envOverrides, 'RUNTIME_SCREENCAST_MAX_HEIGHT', runtimeScreencastMaxHeight, { minInput: 240, minClamp: 240, maxClamp: 2160 });
-
-  // WHY: When the composite llmPolicy is present, disassemble it to flat keys
-  // and apply as env overrides. This replaces individual field forwarding with
-  // a single policy object — every new registry setting auto-propagates.
-  if (rawLlmPolicy && typeof rawLlmPolicy === 'object') {
-    const policyFlat = disassembleLlmPolicy(rawLlmPolicy);
-    for (const [flatKey, value] of Object.entries(policyFlat)) {
-      if (value === undefined || value === null || value === '') continue;
-      // WHY: Convert camelCase flat key to SCREAMING_SNAKE env key.
-      // Not all flat keys have env var equivalents — only apply those that do.
-      const envKey = LLM_FLAT_KEY_TO_ENV[flatKey];
-      if (envKey) envOverrides[envKey] = String(value);
-    }
-  }
-
-  const applyModelOverride = (envKey, value, { allowEmpty = false } = {}) => {
-    if (value === undefined || value === null) return false;
-    const token = String(value || '').trim();
-    if (!token && !allowEmpty) return false;
-    envOverrides[envKey] = token;
-    return Boolean(token);
-  };
-  const applyTokenOverride = (envKey, value) => {
-    if (value === undefined || value === null || value === '') return false;
-    const parsed = Number.parseInt(String(value), 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) return false;
-    envOverrides[envKey] = String(parsed);
-    return true;
-  };
-
-  const hasRoleModelOverride = [
-    applyModelOverride('LLM_MODEL_PLAN', llmModelPlan),
-    applyModelOverride('LLM_MODEL_REASONING', llmModelReasoning),
-  ].some(Boolean);
-
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN', llmMaxOutputTokensPlan);
-  applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_REASONING', llmMaxOutputTokensReasoning);
-
-  if (typeof llmFallbackEnabled === 'boolean' && !llmFallbackEnabled) {
-    envOverrides.LLM_PLAN_FALLBACK_MODEL = '';
-    envOverrides.LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK = '';
-  } else {
-    applyModelOverride('LLM_PLAN_FALLBACK_MODEL', llmPlanFallbackModel, { allowEmpty: true });
-    applyTokenOverride('LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK', llmMaxOutputTokensPlanFallback);
-  }
-
-
-  // WHY: Plan 05 — Write a runtime settings snapshot with ALL settings from the POST body.
-  // The child process reads this snapshot via RUNTIME_SETTINGS_SNAPSHOT env var.
-  // This ensures ALL 196 settings reach the child, not just the 42 that get env vars.
-  // Existing env var assignments above are kept for backward compat during migration.
+  // WHY: Plan 05 — runtime settings snapshot is the SSOT for child settings.
+  // The child reads this via RUNTIME_SETTINGS_SNAPSHOT env var in config.js.
   try {
     const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body, effectiveHelperRoot);
     envOverrides.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
   } catch (err) {
-    // WHY: Snapshot write failure is non-fatal during migration. The child still
-    // has env vars + user-settings.json as fallback. Log and continue.
-    console.error('Failed to write runtime settings snapshot:', err?.message || err);
+    return buildError(500, {
+      error: 'snapshot_write_failed',
+      message: `Failed to write runtime settings snapshot: ${err?.message || err}`,
+    });
   }
 
   return {

@@ -56,7 +56,7 @@ The live triage flow is:
 2. Apply hard drops with `applyHardDropFilter()`.
 3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `resultClassifier.js`).
 4. Build selector input with `buildSerpSelectorInput()`.
-5. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, treat as all-reject (no deterministic fallback path).
+5. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, fall back to deterministic reranker scoring.
 6. Build deterministic domain safety results via `classifyDomains()` (in `resultClassifier.js`) — runs AFTER the SERP selector (pipeline contract: SERP Selector then Domain Classifier).
 7. Build reject-audit samples and audit trail.
 8. Emit observability events (`serp_selector_completed` with full candidate funnel).
@@ -69,7 +69,7 @@ The live triage flow is:
 
 - Domain safety is built deterministically via `classifyDomains()` — no separate LLM domain classifier.
 - Borderline relevance problems are soft-label decisions, not automatic hard drops.
-- The LLM selector is the only triage path. There is no deterministic lane/quota/rerank fallback — if the selector fails, the run continues with zero selected URLs.
+- The LLM selector is the primary triage path. On LLM failure, the deterministic reranker scores candidates by host tier, identity, and field yield, selecting the top-N as fallback.
 - Executed `search_profile` rewrites the same keys used by the planned artifact.
 - `serp_selector_completed` event is emitted on every run with full candidate funnel metrics.
 

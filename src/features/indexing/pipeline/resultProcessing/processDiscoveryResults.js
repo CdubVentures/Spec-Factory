@@ -42,7 +42,7 @@ export async function processDiscoveryResults({
   // LLM & planning
   llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
-  queries, searchProfilePlanned, searchProfileKeys, providerState, discoveryCap,
+  queries, searchProfilePlanned, searchProfileKeys, providerState,
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -100,7 +100,7 @@ export async function processDiscoveryResults({
   });
   const candidateRows = [...classifiedByUrl.values()];
 
-  // ── SERP Selector (LLM-only, no deterministic fallback) ──
+  // ── SERP Selector (LLM with deterministic reranker fallback) ──
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
 
@@ -109,7 +109,6 @@ export async function processDiscoveryResults({
     variables, brandResolution,
     candidateRows,
     categoryConfig,
-    discoveryCap,
     serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
@@ -139,13 +138,27 @@ export async function processDiscoveryResults({
     logger?.warn?.('serp_selector_failed', { error: String(err?.message || 'unknown') });
   }
 
-  // WHY: No deterministic fallback. On any failure, treat as all-reject
-  // so the run continues with zero selected URLs rather than garbage.
-  const validOutput = validation.valid ? selectorOutput : { keep_ids: [] };
+  // WHY: On LLM failure, pass through the already-priority-sorted candidates.
+  // buildSerpSelectorInput already ranked them (pinned/multi-hit first).
+  let validOutput;
+  let fallbackApplied = false;
+  if (validation.valid) {
+    validOutput = selectorOutput;
+  } else {
+    validOutput = {
+      keep_ids: selectorInput.candidates.map((c) => c.id).slice(0, selectorInput.max_keep),
+    };
+    fallbackApplied = true;
+    logger?.info?.('serp_selector_fallback_activated', {
+      fallback_count: validOutput.keep_ids.length,
+      max_keep: selectorInput.max_keep,
+    });
+  }
 
   const { selected, notSelected } = adaptSerpSelectorOutput({
     selectorOutput: validOutput, candidateMap, overflowRows,
     officialDomain, supportDomain, categoryConfig,
+    scoreSource: fallbackApplied ? 'reranker_fallback' : 'llm_selector',
   });
 
   // WHY: Enrich selected candidates with search_slot + search_rank so the
@@ -228,6 +241,7 @@ export async function processDiscoveryResults({
       overflow_capped: overflowRows.length,
       llm_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
       llm_applied: validation.valid,
+      fallback_applied: fallbackApplied,
     },
     candidates: [
       ...[...candidateMap.entries()].map(([id, orig]) => {
@@ -240,7 +254,7 @@ export async function processDiscoveryResults({
           snippet: String(orig.snippet || ''),
           score: enriched?.score || 0,
           decision: isKept ? 'keep' : 'drop',
-          rationale: isKept ? 'llm_selected' : 'not_selected',
+          rationale: isKept ? (fallbackApplied ? 'reranker_fallback' : 'llm_selected') : 'not_selected',
           score_components: { base_relevance: enriched?.score || 0, tier_boost: 0, identity_match: 0, penalties: 0 },
           role: '',
           identity_prelim: enriched?.identity_prelim || 'uncertain',
@@ -317,6 +331,7 @@ export async function processDiscoveryResults({
     auditTrail,
     canonMergeCount,
     config,
+    fallbackApplied,
   });
 
   const searchProfileFinal = {

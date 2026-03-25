@@ -13,7 +13,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
   const workerIds = new Map();
   let crawler = null;
 
-  const slotCount = 4;
+  const slotCount = Number(settings.crawlMaxConcurrentSlots) || 4;
   let globalSeq = 0;
 
   function assignWorkerId(uniqueKey) {

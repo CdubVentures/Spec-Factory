@@ -40,7 +40,7 @@ it('serp_explorer has expected top-level shape', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -101,7 +101,7 @@ it('serp_explorer query rows have expected candidate shape', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });
@@ -161,7 +161,7 @@ it('search_profile (searchProfileFinal) has expected shape', async () => {
     searchProfilePlanned: makeSearchProfilePlanned(),
     searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
     providerState: {},
-    discoveryCap: 20,
+
 
     _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
   });

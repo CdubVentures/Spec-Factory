@@ -101,33 +101,32 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
     });
 
     const c = selectorInput.candidates[0];
     assert.deepEqual(Object.keys(c).sort(), ['host', 'id', 'snippet', 'title', 'url']);
   });
 
-  it('max_keep capped by serpSelectorUrlCap when lower than discoveryCap', () => {
+  it('max_keep set by serpSelectorUrlCap', () => {
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
       serpSelectorUrlCap: 20,
     });
     assert.equal(selectorInput.max_keep, 20);
   });
 
-  it('max_keep uses serpSelectorUrlCap regardless of discoveryCap', () => {
+  it('max_keep uses serpSelectorUrlCap as SSOT', () => {
     // WHY: serpSelectorUrlCap is the SSOT for the URL cap.
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 30,
       serpSelectorUrlCap: 100,
     });
     assert.equal(selectorInput.max_keep, 100);
@@ -141,7 +140,7 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow({ title: longTitle, snippet: longSnippet })],
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
     });
     assert.equal(selectorInput.candidates[0].title.length, 300);
     assert.equal(selectorInput.candidates[0].snippet.length, 400);
@@ -154,7 +153,7 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
       serpSelectorUrlCap: 50,
     });
     assert.equal(selectorInput.candidates.length, 50);
@@ -170,7 +169,7 @@ describe('buildSerpSelectorInput', () => {
       candidateRows: [normalRow, pinnedRow],
       categoryConfig: makeCategoryConfig(),
 
-      discoveryCap: 60,
+
     });
     assert.equal(selectorInput.candidates[0].host, 'razer.com');
   });
@@ -181,7 +180,7 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: [],
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
     });
     assert.equal(selectorInput.candidates.length, 0);
     assert.equal(candidateMap.size, 0);
@@ -196,7 +195,7 @@ describe('buildSerpSelectorInput', () => {
       brandResolution: makeBrandResolution(),
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
-      discoveryCap: 60,
+
       serpSelectorUrlCap: 80,
     });
     assert.equal(selectorInput.candidates.length, 80);

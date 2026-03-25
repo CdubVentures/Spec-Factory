@@ -119,8 +119,6 @@ export interface RuntimeSettingDefaults {
   crawleeMaxPagesPerBrowser: number;
   crawleeBrowserRetirePageCount: number;
   crawleeNavigationTimeoutMs: number;
-  crawlBypassMinBodyLength: number;
-  crawlBypassHtmlSnippetCap: number;
   capturePageScreenshotMaxSelectors: number;
 }
 

@@ -31,6 +31,31 @@ import { createBootstrapSessionLayer } from './bootstrap/createBootstrapSessionL
 import { createBootstrapDomainRuntimes } from './bootstrap/createBootstrapDomainRuntimes.js';
 import { assertNativeModulesHealthy } from '../core/nativeModuleGuard.js';
 
+// WHY: Documents the grouped return shape contract for bootstrapServer().
+// Subordinate export — used by characterization tests to verify the shape
+// without calling the side-effectful factory.
+export const BOOTSTRAP_RETURN_GROUPS = {
+  env: ['config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD'],
+  storage: ['storage', 'runDataStorageState', 'getIndexLabRoot'],
+  session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady'],
+  realtime: ['broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame'],
+  process: ['processStatus', 'startProcess', 'stopProcess', 'isProcessRunning', 'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack'],
+  http: ['jsonRes', 'corsHeaders', 'readJsonBody'],
+  helpers: ['toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue', 'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin', 'canonicalSlugify', 'invalidateFieldRulesCache', 'loadProductCatalog', 'loadCategoryConfig'],
+  domain: [
+    'ensureGridKeyReviewState', 'resolveKeyReviewForLaneMutation',
+    'markPrimaryLaneReviewedInItemState', 'syncItemFieldStateFromPrimaryLaneAccept',
+    'syncPrimaryLaneAcceptFromItemSelection',
+    'purgeTestModeCategoryState', 'resetTestModeSharedReviewState', 'resetTestModeProductReviewState',
+    'normalizeLower', 'isMeaningfulValue', 'candidateLooksReference',
+    'annotateCandidatePrimaryReviews', 'getPendingItemPrimaryCandidateIds',
+    'getPendingComponentSharedCandidateIdsAsync', 'getPendingEnumSharedCandidateIds',
+    'syncSyntheticCandidatesFromComponentReview',
+    'remapPendingComponentReviewItemsForNameChange', 'propagateSharedLaneDecision',
+    'buildCatalog', 'patchCompiledComponentDb', 'markEnumSuggestionStatusBound',
+  ],
+};
+
 // WHY: Extracted from guiServer.js so the composition root is a thin
 // orchestrator that calls bootstrapServer(), builds route contexts,
 // and starts the HTTP server.
@@ -112,19 +137,18 @@ export function bootstrapServer({ projectRoot }) {
   });
 
   return {
-    config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState, getIndexLabRoot,
-    sessionCache, resolveCategoryAlias,
-    specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
-    broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame,
-    processStatus, startProcess, stopProcess, isProcessRunning,
-    waitForProcessExit, getSearxngStatus, startSearxngStack,
-    jsonRes, corsHeaders, readJsonBody,
-    toInt, toFloat, toUnitRatio, hasKnownValue,
-    safeReadJson, safeStat, listFiles, listDirs, readJsonlEvents, safeJoin,
-    canonicalSlugify, invalidateFieldRulesCache,
-    loadProductCatalog, loadCategoryConfig,
-    ...domain,
-    markEnumSuggestionStatusBound,
+    env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
+    storage: { storage, runDataStorageState, getIndexLabRoot },
+    session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady },
+    realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
+    process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
+    http: { jsonRes, corsHeaders, readJsonBody },
+    helpers: {
+      toInt, toFloat, toUnitRatio, hasKnownValue,
+      safeReadJson, safeStat, listFiles, listDirs, readJsonlEvents, safeJoin,
+      canonicalSlugify, invalidateFieldRulesCache,
+      loadProductCatalog, loadCategoryConfig,
+    },
+    domain: { ...domain, markEnumSuggestionStatusBound },
   };
 }
