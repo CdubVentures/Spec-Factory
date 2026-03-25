@@ -112,4 +112,90 @@ describe('createPluginRunner', () => {
       assert.deepEqual(calls, ['good']);
     });
   });
+
+  describe('return-value telemetry', () => {
+    it('emits plugin_hook_completed when hook returns a value', async () => {
+      const { logger, infoCalls } = createLoggerSpy();
+      const plugin = createPluginDouble({
+        name: 'stealth',
+        hooks: { beforeNavigate: async () => ({ patches: ['webdriver'], injected: true }) },
+      });
+      const runner = createPluginRunner({ plugins: [plugin], logger });
+      await runner.runHook('beforeNavigate', { workerId: 'fetch-a1' });
+      const completed = infoCalls.filter((c) => c.event === 'plugin_hook_completed');
+      assert.equal(completed.length, 1);
+      assert.equal(completed[0].plugin, 'stealth');
+      assert.equal(completed[0].hook, 'beforeNavigate');
+      assert.equal(completed[0].worker_id, 'fetch-a1');
+      assert.deepEqual(completed[0].result, { patches: ['webdriver'], injected: true });
+    });
+
+    it('does not emit when hook returns undefined', async () => {
+      const { logger, infoCalls } = createLoggerSpy();
+      const plugin = createPluginDouble({
+        name: 'silent',
+        hooks: { beforeNavigate: async () => {} },
+      });
+      const runner = createPluginRunner({ plugins: [plugin], logger });
+      await runner.runHook('beforeNavigate', { workerId: 'fetch-a1' });
+      const completed = infoCalls.filter((c) => c.event === 'plugin_hook_completed');
+      assert.equal(completed.length, 0);
+    });
+
+    it('does not emit when hook throws (only plugin_hook_error)', async () => {
+      const { logger, infoCalls, warnCalls } = createLoggerSpy();
+      const plugin = createPluginDouble({
+        name: 'broken',
+        hooks: { beforeNavigate: async () => { throw new Error('boom'); } },
+      });
+      const runner = createPluginRunner({ plugins: [plugin], logger });
+      await runner.runHook('beforeNavigate', { workerId: 'fetch-a1' });
+      const completed = infoCalls.filter((c) => c.event === 'plugin_hook_completed');
+      assert.equal(completed.length, 0);
+      assert.equal(warnCalls.length, 1);
+      assert.equal(warnCalls[0].event, 'plugin_hook_error');
+    });
+
+    it('emits independently for each plugin that returns a value', async () => {
+      const { logger, infoCalls } = createLoggerSpy();
+      const pluginA = createPluginDouble({
+        name: 'alpha',
+        hooks: { onCapture: async () => ({ a: 1 }) },
+      });
+      const pluginB = createPluginDouble({
+        name: 'beta',
+        hooks: { onCapture: async () => ({ b: 2 }) },
+      });
+      const runner = createPluginRunner({ plugins: [pluginA, pluginB], logger });
+      await runner.runHook('onCapture', { workerId: 'fetch-b2' });
+      const completed = infoCalls.filter((c) => c.event === 'plugin_hook_completed');
+      assert.equal(completed.length, 2);
+      assert.equal(completed[0].plugin, 'alpha');
+      assert.deepEqual(completed[0].result, { a: 1 });
+      assert.equal(completed[1].plugin, 'beta');
+      assert.deepEqual(completed[1].result, { b: 2 });
+    });
+
+    it('does not crash when logger is missing and hook returns value', async () => {
+      const plugin = createPluginDouble({
+        name: 'noLogger',
+        hooks: { beforeNavigate: async () => ({ injected: true }) },
+      });
+      const runner = createPluginRunner({ plugins: [plugin] });
+      await runner.runHook('beforeNavigate', { workerId: 'fetch-a1' });
+      // no error thrown
+    });
+
+    it('uses empty string for worker_id when context lacks it', async () => {
+      const { logger, infoCalls } = createLoggerSpy();
+      const plugin = createPluginDouble({
+        name: 'stealth',
+        hooks: { beforeNavigate: async () => ({ injected: true }) },
+      });
+      const runner = createPluginRunner({ plugins: [plugin], logger });
+      await runner.runHook('beforeNavigate', {});
+      const completed = infoCalls.filter((c) => c.event === 'plugin_hook_completed');
+      assert.equal(completed[0].worker_id, '');
+    });
+  });
 });

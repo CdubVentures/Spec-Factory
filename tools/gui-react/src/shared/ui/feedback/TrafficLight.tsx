@@ -1,1 +1,7 @@
-export * from '../../../components/common/TrafficLight.tsx';
+import { trafficColor } from '../../../utils/colors.ts';
+
+export function TrafficLight({ color }: { color: string }) {
+  return (
+    <span className={`inline-block w-3 h-3 rounded-full ${trafficColor(color)}`} title={color} />
+  );
+}

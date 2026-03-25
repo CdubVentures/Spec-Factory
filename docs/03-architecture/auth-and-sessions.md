@@ -8,7 +8,7 @@
 
 - No end-user login or logout flow was found in the live GUI or API.
 - No verified auth middleware or route guard stack was found in `src/api/guiServer.js`, `src/app/api/requestDispatch.js`, or the route registrars.
-- `JWT_SECRET` and `JWT_EXPIRES_IN` exist as `jwtSecret` and `jwtExpiresIn` entries in `src/shared/settingsRegistry.js`, are surfaced through `src/core/config/manifest/index.js`, and are normalized by `src/config.js`, but no active request-auth consumer was found during the audit.
+- No emitted auth/session settings surface was verified in `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, or `src/config.js`. `src/core/config/manifest/index.js` defines a possible `security` group ID, but the current exported `CONFIG_MANIFEST` contains no populated `security` section.
 
 ## What "Session" Means In This Repo
 
@@ -45,15 +45,15 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/shared/settingsRegistry.js` | existence of JWT-related config keys |
-| source | `src/core/config/manifest/index.js` | JWT keys are included in the live derived manifest |
-| source | `src/config.js` | JWT keys are normalized into config |
+| source | `src/shared/settingsRegistry.js` | absence of live auth/session registry entries |
+| source | `src/core/config/manifest/index.js` | declared group IDs versus the current emitted manifest sections |
+| source | `src/config.js` | no auth/session normalization layer beyond general config loading |
 | source | `src/api/guiServer.js` | no audited auth middleware in server assembly |
 | source | `src/field-rules/sessionCache.js` | non-auth session cache semantics |
 | source | `tools/gui-react/src/stores/uiStore.ts` | local GUI persistence behavior |
 
 ## Related Documents
 
-- [Environment and Config](../02-dependencies/environment-and-config.md) - Shows where security-related config keys exist.
+- [Environment and Config](../02-dependencies/environment-and-config.md) - Shows the actual emitted config and user-settings surfaces.
 - [Routing and GUI](./routing-and-gui.md) - Confirms no auth guards in the live route map.
-- [Known Issues](../05-operations/known-issues.md) - Records this mismatch between config surface and live behavior.
+- [Known Issues](../05-operations/known-issues.md) - Records current operational gotchas unrelated to a user-auth system.

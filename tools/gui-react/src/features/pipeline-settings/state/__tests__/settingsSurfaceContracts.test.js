@@ -4,17 +4,99 @@ import assert from 'node:assert/strict';
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 let settingsSurfaceModulesPromise;
+const PIPELINE_SETTINGS_PUBLIC_STUBS = {
+  './state/RuntimeFlowDraftPayload.ts': `
+    export function collectRuntimeFlowDraftPayload() {
+      return {};
+    }
+  `,
+  './state/RuntimeFlowModelTokenOptions.ts': `
+    export function deriveRuntimeLlmModelOptions() {
+      return [];
+    }
+    export function deriveRuntimeLlmTokenPresetOptions() {
+      return [];
+    }
+  `,
+  './state/RuntimeFlowModelTokenDefaults.ts': `
+    export function buildRuntimeLlmTokenProfileLookup() {
+      return new Map();
+    }
+    export function createRuntimeModelTokenDefaultsResolver() {
+      return () => null;
+    }
+    export function deriveRuntimeLlmTokenContractPresetMax() {
+      return 0;
+    }
+  `,
+  './state/runtimeSettingsDomain.ts': `
+    export function clampTokenForModel(value) {
+      return value;
+    }
+    export function collectRuntimeSettingsPayload() {
+      return {};
+    }
+    export function createRuntimeHydrationBindings() {
+      return {};
+    }
+    export function hydrateRuntimeSettingsFromBindings() {
+      return {};
+    }
+    export function parseRuntimeFloat(value) {
+      return Number(value);
+    }
+    export function parseRuntimeInt(value) {
+      return Number.parseInt(value, 10);
+    }
+    export function parseRuntimeLlmTokenCap(value) {
+      return Number(value);
+    }
+    export function parseRuntimeString(value) {
+      return String(value ?? '');
+    }
+  `,
+  './state/runtimeSettingsEditorAdapter.ts': `
+    export function useRuntimeSettingsEditorAdapter() {
+      return null;
+    }
+  `,
+  './state/sourceStrategyAuthority.ts': `
+    export function readSourceStrategySnapshot() {
+      return null;
+    }
+    export const sourceStrategyQueryKey = ['source-strategy'];
+    export function useSourceStrategyAuthority() {
+      return null;
+    }
+    export function useSourceStrategyReader() {
+      return null;
+    }
+  `,
+  './state/useSettingsAutoSaveEffect.ts': `
+    export function useSettingsAutoSaveEffect() {
+      return null;
+    }
+  `,
+  './components/RuntimeFlowPrimitives.tsx': `
+    export function AdvancedSettingsBlock(props) { return props?.children ?? null; }
+    export function FlowOptionPanel(props) { return props?.children ?? null; }
+    export function MasterSwitchRow(props) { return props?.children ?? null; }
+    export function SettingGroupBlock(props) { return props?.children ?? null; }
+    export function SettingNumberInput() { return null; }
+    export function SettingRow(props) { return props?.children ?? null; }
+    export function SettingToggle() { return null; }
+  `,
+};
 
 async function loadSettingsSurfaceModules() {
   if (!settingsSurfaceModulesPromise) {
     settingsSurfaceModulesPromise = Promise.all([
       loadBundledModule(
         'tools/gui-react/src/features/pipeline-settings/index.ts',
-        { prefix: 'settings-surface-feature-' },
-      ),
-      loadBundledModule(
-        'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts',
-        { prefix: 'settings-surface-runtime-authority-' },
+        {
+          prefix: 'settings-surface-feature-',
+          stubs: PIPELINE_SETTINGS_PUBLIC_STUBS,
+        },
       ),
       loadBundledModule(
         'tools/gui-react/src/stores/settingsManifest.ts',
@@ -27,15 +109,18 @@ async function loadSettingsSurfaceModules() {
 
 test('settings surface normalizes cached runtime settings through the public GUI contract', async () => {
   const [
-    { normalizeRuntimeDraft, RUNTIME_NUMBER_BOUNDS },
     {
+      normalizeRuntimeDraft,
+      RUNTIME_NUMBER_BOUNDS,
       RUNTIME_SETTINGS_QUERY_KEY,
       RUNTIME_SETTINGS_NUMERIC_BASELINE_DEFAULTS,
       readRuntimeSettingsNumericBaseline,
       readRuntimeSettingsSnapshot,
       readRuntimeSettingsBootstrap,
     },
-    { RUNTIME_SETTING_DEFAULTS },
+    {
+      RUNTIME_SETTING_DEFAULTS,
+    },
   ] = await loadSettingsSurfaceModules();
 
   const cachedRuntimeSettings = {
@@ -78,7 +163,7 @@ test('settings surface normalizes cached runtime settings through the public GUI
 });
 
 test('settings manifest surface keeps concrete option defaults and labels aligned', async () => {
-  const [pipelineSettingsFeature, , settingsManifest] = await loadSettingsSurfaceModules();
+  const [pipelineSettingsFeature, settingsManifest] = await loadSettingsSurfaceModules();
   const {
     LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,

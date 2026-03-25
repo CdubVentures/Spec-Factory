@@ -4,6 +4,7 @@
 import { assembleLlmPolicy } from '../llm/llmPolicySchema.js';
 import { providerFromModelToken } from '../llm/providerMeta.js';
 import { buildRegistryLookup } from '../llm/routeResolver.js';
+import { LLM_PHASE_DEFS } from './llmPhaseDefs.js';
 import {
   normalizeModelPricingMap,
   normalizePricingSources,
@@ -46,7 +47,6 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
     const m = String(merged.llmModelPlan || merged.llmModelExtract || '').toLowerCase();
     merged.llmProvider = providerFromModelToken(m) || 'openai';
   }
-  merged.llmApiKey = merged.llmApiKey || merged.openaiApiKey;
   merged.llmBaseUrl = merged.llmBaseUrl || merged.openaiBaseUrl;
   merged.llmModelPlan = merged.llmModelPlan || merged.openaiModelPlan;
   // WHY: Model stack simplified — one base model, one reasoning model.
@@ -96,13 +96,10 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   upsertTokenProfile('gpt-5.2-high', { defaultOutputTokens: 4096, maxOutputTokens: 16384 });
   upsertTokenProfile('gpt-5.2-xhigh', { defaultOutputTokens: 6144, maxOutputTokens: 16384 });
 
-  // --- openai key sync + manufacturer clamping ---
-  merged.llmTimeoutMs = merged.llmTimeoutMs || merged.openaiTimeoutMs;
-  merged.openaiApiKey = merged.llmApiKey;
+  // --- openai alias sync ---
   merged.openaiBaseUrl = merged.llmBaseUrl;
   merged.openaiModelExtract = merged.llmModelExtract;
   merged.openaiModelPlan = merged.llmModelPlan;
-  merged.openaiTimeoutMs = merged.llmTimeoutMs;
 
   // WHY: registry lookup is SSOT for model→provider routing
   merged._registryLookup = buildRegistryLookup(merged.llmProviderRegistryJson);
@@ -123,17 +120,9 @@ export function resolvePhaseOverrides(merged) {
   } catch { /* use empty */ }
   if (typeof overrides !== 'object' || Array.isArray(overrides)) overrides = {};
 
-  const PHASE_DEFS = [
-    { id: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
-    { id: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
-    { id: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
-    { id: 'serpSelector',     globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
-    { id: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
-  ];
-
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  for (const def of PHASE_DEFS) {
+  for (const def of LLM_PHASE_DEFS) {
     const phaseOverride = overrides[def.id] || {};
     const prefix = `_resolved${capitalize(def.id)}`;
 

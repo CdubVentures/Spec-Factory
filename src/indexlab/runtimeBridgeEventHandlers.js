@@ -805,6 +805,16 @@ async function handleBootstrapStep(state, _deps, { ts, row }) {
   await writeRunMeta(state);
 }
 
+async function handlePluginHookCompleted(state, _deps, { ts, row }) {
+  await emit(state, 'fetch', 'plugin_hook_completed', {
+    scope: 'url',
+    plugin: String(row.plugin || 'unknown'),
+    hook: String(row.hook || ''),
+    worker_id: String(row.worker_id || ''),
+    result: row.result ?? null,
+  }, ts);
+}
+
 // ── Event handler registry (table-driven dispatch) ────────────────────────
 
 const EVENT_HANDLERS = new Map([
@@ -841,6 +851,7 @@ const EVENT_HANDLERS = new Map([
   ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
   ['search_queued',                   handleSearchQueued],
   ['bootstrap_step',                  handleBootstrapStep],
+  ['plugin_hook_completed',           handlePluginHookCompleted],
 ]);
 
 const LLM_EVENTS = new Set(['llm_call_started', 'llm_call_completed', 'llm_call_failed']);

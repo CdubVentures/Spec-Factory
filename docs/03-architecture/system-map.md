@@ -6,7 +6,7 @@
 
 ```mermaid
 graph TD
-  Browser["Operator Browser (tools/gui-react/src/App.tsx)"]
+  Browser["Operator Browser (tools/gui-react/src/App.tsx + tools/gui-react/src/registries/pageRegistry.ts)"]
   GuiBuild["Built GUI Assets (tools/gui-react/dist)"]
   GuiServer["GUI/API Server (src/api/guiServer.js)"]
   Pipeline["API Pipeline (src/app/api/guiApiPipeline.js)"]
@@ -49,7 +49,8 @@ graph TD
 
 | Node | Path |
 |------|------|
-| Operator browser router | `tools/gui-react/src/App.tsx` |
+| Operator browser entry | `tools/gui-react/src/App.tsx` |
+| GUI page registry | `tools/gui-react/src/registries/pageRegistry.ts` |
 | Built GUI assets | `tools/gui-react/dist` |
 | HTTP/WebSocket server | `src/api/guiServer.js` |
 | API pipeline | `src/app/api/guiApiPipeline.js` |
@@ -68,6 +69,7 @@ graph TD
 ## Topology Notes
 
 - The browser only talks to the local Node runtime; the GUI is not a separately deployed frontend service in the checked-in repo.
+- Tabbed GUI route and tab metadata live in `tools/gui-react/src/registries/pageRegistry.ts`; `tools/gui-react/src/App.tsx` mounts those routes plus the standalone `/test-mode` page.
 - `src/api/guiServer.js` is both the API host and static-file host for the built GUI assets.
 - WebSocket traffic goes through `/ws` and is backed by `src/app/api/realtimeBridge.js`.
 - Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`. The pipeline uses a crawl-first architecture via `src/features/crawl/` with plugin-based browser automation.
@@ -80,6 +82,8 @@ graph TD
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | source | `src/api/guiServer.js` | main runtime wiring between server, routes, storage, and process runtime |
+| source | `tools/gui-react/src/App.tsx` | browser entry shell and route mounting |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | browser route and tab registry |
 | source | `src/app/api/guiApiPipeline.js` | API pipeline composition |
 | source | `src/app/api/routeRegistry.js` | route registrar inventory and order |
 | source | `src/app/api/realtimeBridge.js` | WebSocket upgrade and watcher-backed broadcasts |

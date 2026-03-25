@@ -223,6 +223,7 @@ export async function handleIndexLabProcessCompletion({
   outputPrefix = 'specs/outputs',
   broadcastWs,
   logError = console.error,
+  onRelocationComplete,
 } = {}) {
   if (!isIndexLabCommand(cliArgs)) return null;
 
@@ -290,6 +291,13 @@ export async function handleIndexLabProcessCompletion({
     broadcastWs?.('process', [
       `[storage] relocated run ${runId} (${relocation.destination_type || 'unknown'})`,
     ]);
+    if (typeof onRelocationComplete === 'function') {
+      try {
+        onRelocationComplete({ relocation, category, productId: String(runMeta.product_id || runMeta.productId || '').trim(), runId });
+      } catch (cbErr) {
+        logError?.('[indexlab-relocation] onRelocationComplete callback error', cbErr);
+      }
+    }
     return relocation;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error || 'run_data_relocation_failed');

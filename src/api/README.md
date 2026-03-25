@@ -8,7 +8,7 @@ HTTP server composition root: bootstraps the DI context, wires feature route han
 - `bootstrap/` — phase modules: environment → session → domain runtimes (see `bootstrap/README.md`)
 - `guiServer.js` — HTTP server entry point; not imported by other modules (top-level script)
 - `guiServerHttpAssembly.js` → `createGuiServerHttpAssembly(...)` — assembles route pipeline
-- `guiServerRuntimeConfig.js` → `resolveProjectPath`, `envToken`, `envBool`, `resolveStorageBackedWorkspaceRoots`, `resolveRunDataDestinationType`, `createRunDataArchiveStorage`
+- `guiServerRuntimeConfig.js` → `resolveProjectPath`, `envToken`, `envBool`, `resolveStorageBackedWorkspaceRoots`, `createRunDataArchiveStorage`
 - `helpers/httpPrimitives.js` → `jsonRes`, `corsHeaders`, `readJsonBody`, `safeJoin`
 - `helpers/valueNormalizers.js` → `toInt`, `toFloat`, `toUnitRatio`, `hasKnownValue`, `normalizePathToken`
 - `helpers/fileHelpers.js` → `safeReadJson`, `safeStat`, `listDirs`, `listFiles`, `readJsonlEvents`, `parseNdjson`

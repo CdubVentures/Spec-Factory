@@ -71,7 +71,7 @@ describe('LLM_TOKEN_VALIDATION_ENTRIES (derived)', () => {
       { phase: 'Plan', modelKey: 'llmModelPlan', tokenKey: 'llmMaxOutputTokensPlan' },
       { phase: 'Plan Fallback', modelKey: 'llmPlanFallbackModel', tokenKey: 'llmMaxOutputTokensPlanFallback' },
       { phase: 'Reasoning', modelKey: 'llmModelReasoning', tokenKey: 'llmMaxOutputTokensReasoning' },
-      { phase: 'Reasoning Fallback', modelKey: 'llmReasoningFallbackModel', tokenKey: 'llmMaxOutputTokensReasoningFallback' },
+      { phase: 'Reasoning Fallback', modelKey: 'llmReasoningFallbackModel', tokenKey: 'llmMaxOutputTokensPlanFallback' },
     ];
     deepStrictEqual(LLM_TOKEN_VALIDATION_ENTRIES, expected);
   });

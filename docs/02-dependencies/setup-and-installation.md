@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the exact local setup path from install to verified GUI runtime using only repo-backed commands and files.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Prerequisites
 
@@ -40,13 +40,15 @@
    npm run env:check
    ```
 
-   Current observed behavior on 2026-03-24: this command returns `[env-check] OK (3 referenced keys covered)`. That is still a narrow reference scan, not a complete manifest-to-env audit; see [environment-and-config.md](./environment-and-config.md) for the actual authority chain.
+   Current observed behavior on 2026-03-24: this command fails with `Missing keys in config manifest: PORT`. It is still only a narrow fixed-file reference scan, not a complete manifest-to-env audit; see [environment-and-config.md](./environment-and-config.md) for the actual authority chain.
 
 5. Build the GUI.
 
    ```powershell
    npm run gui:build
    ```
+
+   Current observed behavior on 2026-03-25: this command succeeds and writes the served assets to `tools/gui-react/dist/`.
 
 6. Start the GUI API server.
 
@@ -68,7 +70,7 @@
 
 ## Verification
 
-1. Confirm the GUI build exists:
+1. Confirm the build output exists:
 
    ```text
    tools/gui-react/dist/index.html
@@ -92,7 +94,7 @@
    npm test
    ```
 
-   Observed on 2026-03-24: `npm test` is red on the current worktree. Verified failing clusters include query-plan export drift, missing indexing/search modules, catalog type-alignment drift, and API/GUI harness boot failures. See [../05-operations/known-issues.md](../05-operations/known-issues.md) for the active clusters.
+   Observed on 2026-03-25: `npm test` passed with `5827` passing tests.
 
 ## Useful Local Commands
 
@@ -114,13 +116,13 @@
 | config | `.env.example` | local env bootstrap starting point |
 | source | `src/api/guiServer.js` | default GUI/API server runtime |
 | source | `tools/specfactory-launcher.mjs` | launcher-based setup path |
-| command | `npm run env:check` | env-check passes on the current audit baseline |
-| command | `npm run gui:build` | GUI build succeeded during the audit |
-| command | `npm test` | full test suite is red on the current worktree; see known-issues for the verified failure clusters |
+| command | `npm run env:check` | env-check currently fails because `.env.example` is missing `PORT` |
+| command | `npm run gui:build` | GUI build succeeded and produced the current `tools/gui-react/dist/` bundle |
+| command | `npm test` | full test suite passed on the audited worktree (`5827` passing tests) |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live server health endpoint responded with `ok: true` |
 
 ## Related Documents
 
 - [Environment and Config](./environment-and-config.md) - Required before adding or changing config keys.
 - [Deployment](../05-operations/deployment.md) - Documents the checked-in launch/build/deployment surfaces.
-- [Known Issues](../05-operations/known-issues.md) - Captures the current baseline failures and stale Docker artifact.
+- [Known Issues](../05-operations/known-issues.md) - Captures the current operational gotchas and stale Docker artifact.

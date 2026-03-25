@@ -1,37 +1,24 @@
-// WHY: Characterization + contract tests for tier metadata flowing through
-// the search profile pipeline: event emission → bridge normalizer → artifact.
-// Phase 1 locks current (stripped) behavior; Phase 2 tests add tier expectations.
-
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  toSearchProfileQueryRow,
-  mergeSearchProfileRows,
-} from '../runtimeBridgePayloads.js';
+import { toSearchProfileQueryRow } from '../runtimeBridgePayloads.js';
 import { refreshSearchProfileCollections } from '../runtimeBridgeArtifacts.js';
 
-// ---------------------------------------------------------------------------
-// Factories
-// ---------------------------------------------------------------------------
+const FIXED_TS = '2026-03-22T00:00:00.000Z';
 
-function makeLegacyRow(overrides = {}) {
-  return {
-    query: 'Razer Viper V3 Pro specifications',
-    hint_source: 'field_rules.search_hints',
-    target_fields: ['sensor_type', 'dpi_range'],
-    doc_hint: 'spec',
-    domain_hint: 'razer.com',
-    source_host: 'razer.com',
-    attempts: 1,
-    result_count: 5,
-    providers: ['serper'],
-    ...overrides,
-  };
-}
-
-function makeTierRow(tier, overrides = {}) {
-  const base = {
+function makeSearchProfileRow(kind = 'legacy', overrides = {}) {
+  const rows = {
+    legacy: {
+      query: 'Razer Viper V3 Pro specifications',
+      hint_source: 'field_rules.search_hints',
+      target_fields: ['sensor_type', 'dpi_range'],
+      doc_hint: 'spec',
+      domain_hint: 'razer.com',
+      source_host: 'razer.com',
+      attempts: 1,
+      result_count: 5,
+      providers: ['serper'],
+    },
     seed: {
       query: 'Razer Viper V3 Pro specifications',
       hint_source: 'tier1_seed',
@@ -78,7 +65,8 @@ function makeTierRow(tier, overrides = {}) {
       providers: [],
     },
   };
-  return { ...(base[tier] || base.seed), ...overrides };
+
+  return { ...(rows[kind] || rows.legacy), ...overrides };
 }
 
 function makeBridgeState(overrides = {}) {
@@ -93,7 +81,7 @@ function makeBridgeState(overrides = {}) {
       selected_queries: [],
       query_stats: [],
       queries: [],
-      generated_at: '2026-03-22T00:00:00.000Z',
+      generated_at: FIXED_TS,
       run_id: 'test-run-001',
       category: 'mouse',
       product_id: 'mouse-razer-viper-v3-pro',
@@ -102,181 +90,153 @@ function makeBridgeState(overrides = {}) {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Phase 1: CHARACTERIZATION — lock current (pre-fix) behavior
-// ═══════════════════════════════════════════════════════════════════════════
+describe('toSearchProfileQueryRow', () => {
+  it('preserves the legacy search-profile row contract', () => {
+    const result = toSearchProfileQueryRow(makeSearchProfileRow('legacy'));
 
-describe('searchProfileTierDataFlow — characterization', () => {
-  describe('toSearchProfileQueryRow — legacy rows', () => {
-    it('preserves all standard fields from a legacy row', () => {
-      const input = makeLegacyRow();
-      const result = toSearchProfileQueryRow(input);
-
-      assert.equal(result.query, 'Razer Viper V3 Pro specifications');
-      assert.equal(result.hint_source, 'field_rules.search_hints');
-      assert.deepEqual(result.target_fields, ['sensor_type', 'dpi_range']);
-      assert.equal(result.doc_hint, 'spec');
-      assert.equal(result.domain_hint, 'razer.com');
-      assert.equal(result.source_host, 'razer.com');
-      assert.equal(result.attempts, 1);
-      assert.equal(result.result_count, 5);
-      assert.deepEqual(result.providers, ['serper']);
-    });
-
-    it('returns safe defaults for empty input', () => {
-      const result = toSearchProfileQueryRow({});
-      assert.equal(result.query, '');
-      assert.deepEqual(result.target_fields, []);
-      assert.equal(result.attempts, 0);
-      assert.equal(result.result_count, 0);
-      assert.deepEqual(result.providers, []);
-      assert.equal(result.hint_source, '');
-    });
+    assert.deepEqual(
+      {
+        query: result.query,
+        hint_source: result.hint_source,
+        target_fields: result.target_fields,
+        doc_hint: result.doc_hint,
+        domain_hint: result.domain_hint,
+        source_host: result.source_host,
+        attempts: result.attempts,
+        result_count: result.result_count,
+        providers: result.providers,
+      },
+      {
+        query: 'Razer Viper V3 Pro specifications',
+        hint_source: 'field_rules.search_hints',
+        target_fields: ['sensor_type', 'dpi_range'],
+        doc_hint: 'spec',
+        domain_hint: 'razer.com',
+        source_host: 'razer.com',
+        attempts: 1,
+        result_count: 5,
+        providers: ['serper'],
+      },
+    );
   });
 
-  describe('refreshSearchProfileCollections — status handling', () => {
-    it('preserves "planned" status when rows exist', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [makeLegacyRow()];
-      state.searchProfile.status = 'planned';
+  it('preserves tier metadata for key-search rows', () => {
+    const result = toSearchProfileQueryRow(makeSearchProfileRow('key_search'));
 
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
+    assert.deepEqual(
+      {
+        tier: result.tier,
+        group_key: result.group_key,
+        normalized_key: result.normalized_key,
+        repeat_count: result.repeat_count,
+        all_aliases: result.all_aliases,
+        domain_hints: result.domain_hints,
+        preferred_content_types: result.preferred_content_types,
+        domains_tried_for_key: result.domains_tried_for_key,
+        content_types_tried_for_key: result.content_types_tried_for_key,
+      },
+      {
+        tier: 'key_search',
+        group_key: 'sensor_specs',
+        normalized_key: 'polling_rate',
+        repeat_count: 1,
+        all_aliases: ['report rate', 'Hz'],
+        domain_hints: ['razer.com', 'rtings.com'],
+        preferred_content_types: ['spec_sheet', 'review'],
+        domains_tried_for_key: ['razer.com'],
+        content_types_tried_for_key: ['spec_sheet'],
+      },
+    );
+  });
 
-      assert.equal(state.searchProfile.status, 'planned');
-    });
+  it('returns safe tier defaults when tier metadata is absent', () => {
+    for (const { label, input } of [
+      { label: 'legacy row', input: makeSearchProfileRow('legacy') },
+      { label: 'empty row', input: {} },
+    ]) {
+      const result = toSearchProfileQueryRow(input);
 
-    it('preserves "planned" status even when no rows', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [];
-      state.searchProfile.status = 'planned';
-
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
-
-      assert.equal(state.searchProfile.status, 'planned');
-    });
-
-    it('defaults to "executed" when status is pending and rows exist', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [makeLegacyRow()];
-      state.searchProfile.status = 'pending';
-
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
-
-      assert.equal(state.searchProfile.status, 'executed');
-    });
-
-    it('stays "pending" when status is pending and no rows', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [];
-      state.searchProfile.status = 'pending';
-
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
-
-      assert.equal(state.searchProfile.status, 'pending');
-    });
+      assert.deepEqual(
+        {
+          tier: result.tier,
+          group_key: result.group_key,
+          normalized_key: result.normalized_key,
+          repeat_count: result.repeat_count,
+          all_aliases: result.all_aliases,
+          domain_hints: result.domain_hints,
+          preferred_content_types: result.preferred_content_types,
+          domains_tried_for_key: result.domains_tried_for_key,
+          content_types_tried_for_key: result.content_types_tried_for_key,
+        },
+        {
+          tier: '',
+          group_key: '',
+          normalized_key: '',
+          repeat_count: 0,
+          all_aliases: [],
+          domain_hints: [],
+          preferred_content_types: [],
+          domains_tried_for_key: [],
+          content_types_tried_for_key: [],
+        },
+        label,
+      );
+    }
   });
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Phase 2: MACRO-RED — tier-aware expectations (these FAIL until Phase 3)
-// ═══════════════════════════════════════════════════════════════════════════
+describe('refreshSearchProfileCollections', () => {
+  it('preserves caller-owned planned and executed statuses when rows exist', () => {
+    for (const status of ['planned', 'executed']) {
+      const state = makeBridgeState({
+        status,
+        query_rows: [makeSearchProfileRow('legacy')],
+      });
 
-describe('searchProfileTierDataFlow — tier preservation contract', () => {
-  describe('toSearchProfileQueryRow — tier scalar fields', () => {
-    it('preserves tier, group_key, normalized_key, repeat_count', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
+      refreshSearchProfileCollections(state, FIXED_TS);
 
-      assert.equal(result.tier, 'key_search');
-      assert.equal(result.group_key, 'sensor_specs');
-      assert.equal(result.normalized_key, 'polling_rate');
-      assert.equal(result.repeat_count, 1);
-    });
-
-    it('preserves tier and group_key for tier2 rows', () => {
-      const input = makeTierRow('group_search');
-      const result = toSearchProfileQueryRow(input);
-
-      assert.equal(result.tier, 'group_search');
-      assert.equal(result.group_key, 'sensor_specs');
-    });
-
-    it('preserves tier for tier1 seed rows', () => {
-      const input = makeTierRow('seed');
-      const result = toSearchProfileQueryRow(input);
-
-      assert.equal(result.tier, 'seed');
-    });
+      assert.equal(state.searchProfile.status, status, status);
+      assert.equal(state.searchProfile.query_count, 1, status);
+      assert.equal(state.searchProfile.selected_query_count, 1, status);
+      assert.deepEqual(
+        state.searchProfile.selected_queries,
+        ['Razer Viper V3 Pro specifications'],
+        status,
+      );
+    }
   });
 
-  describe('toSearchProfileQueryRow — tier array fields', () => {
-    it('preserves all_aliases', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
-      assert.deepEqual(result.all_aliases, ['report rate', 'Hz']);
-    });
+  it('derives executed or pending from pending status based on normalized row presence', () => {
+    for (const { label, queryRows, expectedStatus, expectedCount } of [
+      {
+        label: 'pending with rows becomes executed',
+        queryRows: [makeSearchProfileRow('legacy')],
+        expectedStatus: 'executed',
+        expectedCount: 1,
+      },
+      {
+        label: 'pending without rows stays pending',
+        queryRows: [],
+        expectedStatus: 'pending',
+        expectedCount: 0,
+      },
+      {
+        label: 'pending with blank rows stays pending after normalization',
+        queryRows: [{ query: '   ' }],
+        expectedStatus: 'pending',
+        expectedCount: 0,
+      },
+    ]) {
+      const state = makeBridgeState({
+        status: 'pending',
+        query_rows: queryRows,
+      });
 
-    it('preserves domain_hints', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
-      assert.deepEqual(result.domain_hints, ['razer.com', 'rtings.com']);
-    });
+      refreshSearchProfileCollections(state, FIXED_TS);
 
-    it('preserves preferred_content_types', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
-      assert.deepEqual(result.preferred_content_types, ['spec_sheet', 'review']);
-    });
-
-    it('preserves domains_tried_for_key', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
-      assert.deepEqual(result.domains_tried_for_key, ['razer.com']);
-    });
-
-    it('preserves content_types_tried_for_key', () => {
-      const input = makeTierRow('key_search');
-      const result = toSearchProfileQueryRow(input);
-      assert.deepEqual(result.content_types_tried_for_key, ['spec_sheet']);
-    });
-  });
-
-  describe('toSearchProfileQueryRow — tier defaults for missing fields', () => {
-    it('returns safe defaults when tier fields are absent', () => {
-      const input = makeLegacyRow();
-      const result = toSearchProfileQueryRow(input);
-
-      assert.equal(result.tier, '');
-      assert.equal(result.group_key, '');
-      assert.equal(result.normalized_key, '');
-      assert.equal(result.repeat_count, 0);
-      assert.deepEqual(result.all_aliases, []);
-      assert.deepEqual(result.domain_hints, []);
-      assert.deepEqual(result.preferred_content_types, []);
-      assert.deepEqual(result.domains_tried_for_key, []);
-      assert.deepEqual(result.content_types_tried_for_key, []);
-    });
-  });
-
-  describe('refreshSearchProfileCollections — status preservation', () => {
-    it('preserves "planned" status when rows exist', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [makeLegacyRow()];
-      state.searchProfile.status = 'planned';
-
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
-
-      assert.equal(state.searchProfile.status, 'planned');
-    });
-
-    it('preserves "executed" status when rows exist', () => {
-      const state = makeBridgeState();
-      state.searchProfile.query_rows = [makeLegacyRow()];
-      state.searchProfile.status = 'executed';
-
-      refreshSearchProfileCollections(state, '2026-03-22T00:00:00.000Z');
-
-      assert.equal(state.searchProfile.status, 'executed');
-    });
+      assert.equal(state.searchProfile.status, expectedStatus, label);
+      assert.equal(state.searchProfile.query_count, expectedCount, label);
+      assert.equal(state.searchProfile.selected_query_count, expectedCount, label);
+    }
   });
 });

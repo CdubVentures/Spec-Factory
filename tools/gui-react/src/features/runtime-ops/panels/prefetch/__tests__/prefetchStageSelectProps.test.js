@@ -24,6 +24,10 @@ const EMPTY_SEARCH_PROFILE = {
   query_guard: {},
 };
 
+function buildPanelStub(exportName) {
+  return `export function ${exportName}() { return null; }`;
+}
+
 function createPrefetchData(overrides = {}) {
   return {
     needset: { total_fields: 12 },
@@ -65,225 +69,200 @@ function createPrefetchData(overrides = {}) {
 }
 
 async function createPrefetchHarness() {
-  const keysModule = await loadBundledModule(
-    'tools/gui-react/src/features/runtime-ops/panels/prefetch/prefetchStageKeys.ts',
-    { prefix: 'prefetch-keys-' },
-  );
-  const propsModule = await loadBundledModule(
-    'tools/gui-react/src/features/runtime-ops/panels/prefetch/prefetchStageSelectProps.ts',
-    { prefix: 'prefetch-select-props-' },
-  );
+  if (!createPrefetchHarness.promise) {
+    createPrefetchHarness.promise = loadBundledModule(
+      'tools/gui-react/src/features/runtime-ops/panels/prefetch/prefetchStageRegistry.ts',
+      {
+        prefix: 'prefetch-registry-',
+        stubs: {
+          '../shared/stageGroupContracts.ts': `
+            export function buildStageEntry(
+              key,
+              label,
+              tip,
+              markerClass,
+              idleClass,
+              outlineClass,
+              Component,
+              selectProps,
+            ) {
+              return {
+                key,
+                label,
+                tip,
+                markerClass,
+                idleClass,
+                outlineClass,
+                render: (ctx) => ({ type: Component, props: selectProps(ctx) }),
+                selectProps,
+              };
+            }
+          `,
+          './PrefetchNeedSetPanel.tsx': buildPanelStub('PrefetchNeedSetPanel'),
+          './PrefetchSearchProfilePanel.tsx': buildPanelStub('PrefetchSearchProfilePanel'),
+          './PrefetchBrandResolverPanel.tsx': buildPanelStub('PrefetchBrandResolverPanel'),
+          './PrefetchSearchPlannerPanel.tsx': buildPanelStub('PrefetchSearchPlannerPanel'),
+          './PrefetchQueryJourneyPanel.tsx': buildPanelStub('PrefetchQueryJourneyPanel'),
+          './PrefetchSearchResultsPanel.tsx': buildPanelStub('PrefetchSearchResultsPanel'),
+          './PrefetchSerpTriagePanel.tsx': buildPanelStub('PrefetchSerpTriagePanel'),
+          './PrefetchDomainClassifierPanel.tsx': buildPanelStub('PrefetchDomainClassifierPanel'),
+        },
+      },
+    ).then((registryModule) => ({
+      keys: registryModule.PREFETCH_STAGE_KEYS,
+      selectProps: registryModule.PREFETCH_SELECT_PROPS,
+      persistScope: 'test-category',
+      liveSettings: { searchRoute: 'searxng' },
+      runId: 'run-123',
+    }));
+  }
 
-  return {
-    keys: keysModule.PREFETCH_STAGE_KEYS,
-    selectProps: propsModule.PREFETCH_SELECT_PROPS,
-    persistScope: 'test-category',
-    liveSettings: { searchRoute: 'searxng' },
-    runId: 'run-123',
-  };
+  return createPrefetchHarness.promise;
 }
+
+createPrefetchHarness.promise = null;
 
 test('prefetch stage registry exports the published key order', async () => {
   const harness = await createPrefetchHarness();
   assert.deepStrictEqual([...harness.keys], EXPECTED_KEYS);
-});
-
-test('prefetch select props cover each published stage exactly once', async () => {
-  const harness = await createPrefetchHarness();
   assert.strictEqual(Object.keys(harness.selectProps).length, EXPECTED_KEYS.length);
   assert.deepStrictEqual(Object.keys(harness.selectProps).sort(), [...EXPECTED_KEYS].sort());
 });
 
-test('needset select props surface the current needset contract', async () => {
+test('prefetch select props surface the current stage contracts', async () => {
   const harness = await createPrefetchHarness();
   const data = createPrefetchData();
-  const props = harness.selectProps.needset({
+  const needsetProps = harness.selectProps.needset({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
     runId: harness.runId,
   });
+  assert.deepStrictEqual(needsetProps.data, data.needset);
+  assert.strictEqual(needsetProps.persistScope, harness.persistScope);
+  assert.deepStrictEqual(needsetProps.idxRuntime, data.idx_runtime.needset);
+  assert.deepStrictEqual(needsetProps.needsetPlannerCalls, data.llm_calls.needset_planner);
 
-  assert.deepStrictEqual(props.data, data.needset);
-  assert.strictEqual(props.persistScope, harness.persistScope);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.needset);
-  assert.deepStrictEqual(props.needsetPlannerCalls, data.llm_calls.needset_planner);
-});
-
-test('needset select props fall back to the empty contract', async () => {
-  const harness = await createPrefetchHarness();
-  const props = harness.selectProps.needset({
-    data: undefined,
-    persistScope: harness.persistScope,
-    liveSettings: undefined,
-  });
-
-  assert.deepStrictEqual(props.data, EMPTY_NEEDSET);
-});
-
-test('search_profile select props surface the current search profile contract', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.search_profile({
+  const searchProfileProps = harness.selectProps.search_profile({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
+  assert.deepStrictEqual(searchProfileProps.data, data.search_profile);
+  assert.strictEqual(searchProfileProps.persistScope, harness.persistScope);
+  assert.deepStrictEqual(searchProfileProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(searchProfileProps.idxRuntime, data.idx_runtime.search_profile);
 
-  assert.deepStrictEqual(props.data, data.search_profile);
-  assert.strictEqual(props.persistScope, harness.persistScope);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_profile);
-});
-
-test('search_profile select props fall back to the empty profile contract', async () => {
-  const harness = await createPrefetchHarness();
-  const props = harness.selectProps.search_profile({
-    data: undefined,
-    persistScope: harness.persistScope,
-    liveSettings: undefined,
-  });
-
-  assert.deepStrictEqual(props.data, EMPTY_SEARCH_PROFILE);
-});
-
-test('brand_resolver select props surface brand resolution inputs', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.brand_resolver({
+  const brandResolverProps = harness.selectProps.brand_resolver({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
+  assert.deepStrictEqual(brandResolverProps.calls, data.llm_calls.brand_resolver);
+  assert.deepStrictEqual(brandResolverProps.brandResolution, data.brand_resolution);
+  assert.deepStrictEqual(brandResolverProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(brandResolverProps.idxRuntime, data.idx_runtime.brand_resolver);
 
-  assert.deepStrictEqual(props.calls, data.llm_calls.brand_resolver);
-  assert.deepStrictEqual(props.brandResolution, data.brand_resolution);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.brand_resolver);
-});
-
-test('brand_resolver select props fall back to empty calls', async () => {
-  const harness = await createPrefetchHarness();
-  const props = harness.selectProps.brand_resolver({
-    data: undefined,
-    persistScope: harness.persistScope,
-    liveSettings: undefined,
-  });
-
-  assert.deepStrictEqual(props.calls, []);
-});
-
-test('search_planner select props surface planner results', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.search_planner({
+  const searchPlannerProps = harness.selectProps.search_planner({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
+  assert.deepStrictEqual(searchPlannerProps.calls, data.llm_calls.search_planner);
+  assert.deepStrictEqual(searchPlannerProps.searchPlans, data.search_plans);
+  assert.deepStrictEqual(searchPlannerProps.searchResults, data.search_results);
+  assert.deepStrictEqual(searchPlannerProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(searchPlannerProps.idxRuntime, data.idx_runtime.search_planner);
+  assert.strictEqual(searchPlannerProps.persistScope, harness.persistScope);
 
-  assert.deepStrictEqual(props.calls, data.llm_calls.search_planner);
-  assert.deepStrictEqual(props.searchPlans, data.search_plans);
-  assert.deepStrictEqual(props.searchResults, data.search_results);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_planner);
-  assert.strictEqual(props.persistScope, harness.persistScope);
-});
-
-test('query_journey select props surface the full query journey contract', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.query_journey({
+  const queryJourneyProps = harness.selectProps.query_journey({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
+  assert.deepStrictEqual(queryJourneyProps.searchProfile, data.search_profile);
+  assert.deepStrictEqual(queryJourneyProps.searchPlans, data.search_plans);
+  assert.deepStrictEqual(queryJourneyProps.searchResults, data.search_results);
+  assert.deepStrictEqual(queryJourneyProps.searchResultDetails, data.search_result_details);
+  assert.deepStrictEqual(queryJourneyProps.idxRuntime, data.idx_runtime.query_journey);
 
-  assert.deepStrictEqual(props.searchProfile, data.search_profile);
-  assert.deepStrictEqual(props.searchPlans, data.search_plans);
-  assert.deepStrictEqual(props.searchResults, data.search_results);
-  assert.deepStrictEqual(props.searchResultDetails, data.search_result_details);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.query_journey);
-});
-
-test('query_journey select props fall back to the empty profile contract', async () => {
-  const harness = await createPrefetchHarness();
-  const props = harness.selectProps.query_journey({
-    data: undefined,
-    persistScope: harness.persistScope,
-    liveSettings: undefined,
-  });
-
-  assert.deepStrictEqual(props.searchProfile, EMPTY_SEARCH_PROFILE);
-});
-
-test('search_results select props surface result payloads including run id', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.search_results({
+  const searchResultsProps = harness.selectProps.search_results({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
     runId: harness.runId,
   });
+  assert.deepStrictEqual(searchResultsProps.results, data.search_results);
+  assert.deepStrictEqual(searchResultsProps.searchResultDetails, data.search_result_details);
+  assert.deepStrictEqual(searchResultsProps.searchPlans, data.search_plans);
+  assert.deepStrictEqual(searchResultsProps.crossQueryUrlCounts, data.cross_query_url_counts);
+  assert.deepStrictEqual(searchResultsProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(searchResultsProps.idxRuntime, data.idx_runtime.search_results);
+  assert.strictEqual(searchResultsProps.runId, harness.runId);
 
-  assert.deepStrictEqual(props.results, data.search_results);
-  assert.deepStrictEqual(props.searchResultDetails, data.search_result_details);
-  assert.deepStrictEqual(props.searchPlans, data.search_plans);
-  assert.deepStrictEqual(props.crossQueryUrlCounts, data.cross_query_url_counts);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.search_results);
-  assert.strictEqual(props.runId, harness.runId);
-});
-
-test('search_results select props fall back to empty results', async () => {
-  const harness = await createPrefetchHarness();
-  const props = harness.selectProps.search_results({
-    data: undefined,
-    persistScope: harness.persistScope,
-    liveSettings: undefined,
-  });
-
-  assert.deepStrictEqual(props.results, []);
-});
-
-test('serp_selector select props surface SERP triage payloads', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.serp_selector({
+  const serpSelectorProps = harness.selectProps.serp_selector({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
+  assert.deepStrictEqual(serpSelectorProps.calls, data.llm_calls.serp_selector);
+  assert.deepStrictEqual(serpSelectorProps.serpTriage, data.serp_selector);
+  assert.deepStrictEqual(serpSelectorProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(serpSelectorProps.idxRuntime, data.idx_runtime.serp_selector);
 
-  assert.deepStrictEqual(props.calls, data.llm_calls.serp_selector);
-  assert.deepStrictEqual(props.serpTriage, data.serp_selector);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.serp_selector);
-});
-
-test('domain_classifier select props surface domain health payloads', async () => {
-  const harness = await createPrefetchHarness();
-  const data = createPrefetchData();
-  const props = harness.selectProps.domain_classifier({
+  const domainClassifierProps = harness.selectProps.domain_classifier({
     data,
     persistScope: harness.persistScope,
     liveSettings: harness.liveSettings,
   });
-
-  assert.deepStrictEqual(props.calls, data.llm_calls.domain_classifier);
-  assert.deepStrictEqual(props.domainHealth, data.domain_health);
-  assert.deepStrictEqual(props.liveSettings, harness.liveSettings);
-  assert.deepStrictEqual(props.idxRuntime, data.idx_runtime.domain_classifier);
+  assert.deepStrictEqual(domainClassifierProps.calls, data.llm_calls.domain_classifier);
+  assert.deepStrictEqual(domainClassifierProps.domainHealth, data.domain_health);
+  assert.deepStrictEqual(domainClassifierProps.liveSettings, harness.liveSettings);
+  assert.deepStrictEqual(domainClassifierProps.idxRuntime, data.idx_runtime.domain_classifier);
 });
 
-test('domain_classifier select props fall back to empty calls', async () => {
+test('prefetch select props preserve the public empty fallbacks', async () => {
   const harness = await createPrefetchHarness();
-  const props = harness.selectProps.domain_classifier({
+
+  const needsetProps = harness.selectProps.needset({
     data: undefined,
     persistScope: harness.persistScope,
     liveSettings: undefined,
   });
+  assert.deepStrictEqual(needsetProps.data, EMPTY_NEEDSET);
 
-  assert.deepStrictEqual(props.calls, []);
+  const searchProfileProps = harness.selectProps.search_profile({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+  assert.deepStrictEqual(searchProfileProps.data, EMPTY_SEARCH_PROFILE);
+
+  const brandResolverProps = harness.selectProps.brand_resolver({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+  assert.deepStrictEqual(brandResolverProps.calls, []);
+
+  const queryJourneyProps = harness.selectProps.query_journey({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+  assert.deepStrictEqual(queryJourneyProps.searchProfile, EMPTY_SEARCH_PROFILE);
+
+  const searchResultsProps = harness.selectProps.search_results({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+  assert.deepStrictEqual(searchResultsProps.results, []);
+
+  const domainClassifierProps = harness.selectProps.domain_classifier({
+    data: undefined,
+    persistScope: harness.persistScope,
+    liveSettings: undefined,
+  });
+  assert.deepStrictEqual(domainClassifierProps.calls, []);
 });

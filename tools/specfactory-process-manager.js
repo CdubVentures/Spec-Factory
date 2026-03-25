@@ -236,7 +236,7 @@ export function buildRestartPlan({ root = process.cwd(), row } = {}) {
     return {
       strategy: 'start-api',
       command: process.execPath,
-      args: [path.join(root, 'tools', 'dev-stack-control.js'), 'start-api'],
+      args: [path.join(root, 'tools', 'dev-stack-control.js'), 'start-api', '--no-browser'],
       cwd: root,
     };
   }

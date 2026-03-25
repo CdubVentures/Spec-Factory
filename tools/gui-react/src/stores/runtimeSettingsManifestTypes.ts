@@ -38,7 +38,6 @@ export interface RuntimeSettingDefaults {
   llmMaxOutputTokensPlanFallback: number;
   llmMaxOutputTokensTriage: number;
   llmMaxOutputTokensReasoning: number;
-  llmMaxOutputTokensReasoningFallback: number;
   llmMaxTokens: number;
   llmModelPlan: string;
   llmModelReasoning: string;
@@ -57,6 +56,7 @@ export interface RuntimeSettingDefaults {
   maxRunSeconds: number;
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
+  robotsTxtCompliant: boolean;
   runtimeControlFile: string;
   runtimeEventsKey: string;
   runtimeScreencastEnabled: boolean;
@@ -78,6 +78,7 @@ export interface RuntimeSettingDefaults {
   queryBuilderFieldQueryCap: number;
   queryBuilderDocHintQueryCap: number;
   manufacturerPlanUrlCap: number;
+  disableUrlGuessFallback: boolean;
   queryDedupeRowsCap: number;
   googleSearchPostResultsDelayMs: number;
   googleSearchScreenshotQuality: number;
@@ -87,6 +88,7 @@ export interface RuntimeSettingDefaults {
   serperSearchTimeoutMs: number;
   serperSearchMaxRetries: number;
   searxngSearchTimeoutMs: number;
+  braveApiKey: string;
   braveSearchTimeoutMs: number;
   braveSearchResultCap: number;
   searchPacingJitterFactor: number;

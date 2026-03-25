@@ -70,6 +70,9 @@ export const DEFAULT_REVIEW_SUMMARY = Object.freeze({
   critical_fields_below_pass_target: Object.freeze([]),
 });
 
+let reviewFixtureTemplatePromise = null;
+let reviewFixtureTemplateCleanupRegistered = false;
+
 export const PRODUCTS = {
   'mouse-razer-viper-v3-pro': {
     identity: { brand: 'Razer', model: 'Viper V3 Pro' },
@@ -549,6 +552,54 @@ export async function createFullFixture(tempRoot) {
   return { storage, config };
 }
 
+function registerReviewFixtureTemplateCleanup() {
+  if (reviewFixtureTemplateCleanupRegistered) return;
+  reviewFixtureTemplateCleanupRegistered = true;
+  process.once('exit', () => {
+    if (!reviewFixtureTemplatePromise) return;
+    reviewFixtureTemplatePromise
+      .then(({ templateRoot }) => fs.rm(templateRoot, { recursive: true, force: true }).catch(() => {}))
+      .catch(() => {});
+  });
+}
+
+async function ensureReviewFixtureTemplate() {
+  if (!reviewFixtureTemplatePromise) {
+    reviewFixtureTemplatePromise = (async () => {
+      const templateRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-eco-template-'));
+      try {
+        await createFullFixture(templateRoot);
+        return { templateRoot };
+      } catch (error) {
+        await fs.rm(templateRoot, { recursive: true, force: true }).catch(() => {});
+        throw error;
+      }
+    })();
+    registerReviewFixtureTemplateCleanup();
+  }
+  return reviewFixtureTemplatePromise;
+}
+
+async function cloneFullFixture(tempRoot) {
+  const { templateRoot } = await ensureReviewFixtureTemplate();
+  await fs.cp(path.join(templateRoot, 'category_authority'), path.join(tempRoot, 'category_authority'), {
+    recursive: true,
+    force: true,
+  });
+  await fs.cp(path.join(templateRoot, 'out'), path.join(tempRoot, 'out'), {
+    recursive: true,
+    force: true,
+  });
+  return {
+    storage: makeStorage(tempRoot),
+    config: {
+      categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
+      localOutputRoot: path.join(tempRoot, 'out'),
+      specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+    },
+  };
+}
+
 async function withSeededSpecDb(config, run) {
   const { SpecDb } = await import('../../../../db/specDb.js');
   const { seedSpecDb } = await import('../../../../db/seed.js');
@@ -589,7 +640,7 @@ export async function buildEnumPayloadFromSpecDb(config) {
 export async function withSeededSpecDbFixture(run, tempPrefix = 'review-db-') {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), tempPrefix));
   try {
-    const fixture = await createFullFixture(tempRoot);
+    const fixture = await cloneFullFixture(tempRoot);
     return await withSeededSpecDb(
       fixture.config,
       async ({ db, seedResult, fieldRules }) => run({
@@ -608,7 +659,7 @@ export async function withSeededSpecDbFixture(run, tempPrefix = 'review-db-') {
 export async function withReviewFixture(run, tempPrefix = 'review-eco-') {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), tempPrefix));
   try {
-    const fixture = await createFullFixture(tempRoot);
+    const fixture = await cloneFullFixture(tempRoot);
     return await run({ tempRoot, ...fixture });
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

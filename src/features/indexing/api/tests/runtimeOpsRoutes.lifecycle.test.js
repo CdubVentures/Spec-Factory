@@ -19,22 +19,6 @@ import {
   setupFixture,
 } from './helpers/runtimeOpsRoutesHarness.js';
 
-test('runtimeOpsRoutes: feature flag off returns false for all routes', async () => {
-  const { tempRoot, indexLabRoot, runId } = await setupFixture();
-  try {
-    const handler = createRuntimeOpsHandler({
-      indexLabRoot,
-      config: { runtimeOpsWorkbenchEnabled: false },
-      readIndexLabRunEvents: async () => [],
-    });
-    const res = createMockRes();
-    const result = await handler(['indexlab', 'run', runId, 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
-    assert.equal(result, false);
-  } finally {
-    await cleanupTempRoot(tempRoot);
-  }
-});
-
 test('runtimeOpsRoutes: missing runId returns false (no match)', async () => {
   const { tempRoot, indexLabRoot } = await setupFixture();
   try {

@@ -87,7 +87,9 @@ test('buildProcessRows marks tracked API listener on 8788 as safe to kill and re
   const plan = buildRestartPlan({ root: ROOT, row });
   assert.equal(plan.strategy, 'start-api');
   assert.equal(plan.command, process.execPath);
-  assert.deepEqual(plan.args, [path.join(ROOT, 'tools', 'dev-stack-control.js'), 'start-api']);
+  assert.deepEqual(plan.args.slice(0, 2), [path.join(ROOT, 'tools', 'dev-stack-control.js'), 'start-api']);
+  assert.ok(plan.args.includes('--no-browser'));
+  assert.equal(plan.cwd, ROOT);
 });
 
 test('buildProcessRows blocks kill and restart for protected agent runtimes even if they own 8788', () => {

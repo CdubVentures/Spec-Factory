@@ -57,7 +57,7 @@ test('C.1 config defaults: retired bingSearchEndpoint knob is absent', () => {
 // =========================================================================
 
 test('C.1 validate: LLM always-on without API key is warning (not error)', () => {
-  const config = loadConfig({ llmApiKey: '' });
+  const config = loadConfig();
   const result = validateConfig(config);
   assert.equal(result.valid, true, 'missing API key should not block startup');
   assert.ok(result.warnings.some((w) => w.code === 'LLM_NO_API_KEY'));
@@ -81,9 +81,9 @@ test('C.1 validate: default config with everything disabled is valid', () => {
   assert.equal(result.errors.length, 0);
 });
 
-test('C.1 validate: LLM enabled with API key is valid', () => {
+test('C.1 validate: LLM enabled with provider API key is valid', () => {
   const config = loadConfig({
-    llmApiKey: 'sk-test-key-123'
+    geminiApiKey: 'gem-test-key-123'
   });
   const result = validateConfig(config);
   assert.ok(!result.errors.some((e) => e.code === 'LLM_NO_API_KEY'));

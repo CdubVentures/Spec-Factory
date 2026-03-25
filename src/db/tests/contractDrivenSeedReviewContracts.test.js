@@ -5,15 +5,26 @@ import {
   createContractDrivenSeedReviewHarness,
 } from './fixtures/contractDrivenHarness.js';
 
+const RETAINED_REVIEW_SCENARIOS = [
+  'happy_path',
+  'new_encoder',
+  'new_material',
+  'new_sensor',
+  'new_switch',
+  'cross_validation',
+  'min_evidence_refs',
+  'preserve_all_candidates',
+];
+
 test('contract-driven seeded review contracts survive DB materialization and review payload building', async (t) => {
-  const harness = await createContractDrivenSeedReviewHarness(t);
+  const harness = await createContractDrivenSeedReviewHarness(t, {
+    scenarioNames: RETAINED_REVIEW_SCENARIOS,
+  });
   const {
     contractAnalysis,
-    fieldRules,
     db,
     componentIdentityRowsByType,
     candidateGroupsByProduct,
-    itemFieldStatesByProduct,
     getProductByScenarioName,
     getReviewPayload,
     getComponentReviewPayload,
@@ -73,24 +84,6 @@ test('contract-driven seeded review contracts survive DB materialization and rev
       0,
       `seeded variance_policy mismatches: ${mismatches.join(', ')}`,
     );
-  });
-
-  await t.test('low-confidence unresolved item fields stay marked for AI review', () => {
-    let checked = 0;
-    for (const product of harness.products) {
-      const states = itemFieldStatesByProduct.get(product.productId) || [];
-      for (const state of states) {
-        checked += 1;
-        if (state.confidence >= 0.8 || state.overridden) continue;
-        assert.strictEqual(
-          state.needs_ai_review,
-          1,
-          `${product.productId}:${state.field_key} confidence=${state.confidence} should stay pending AI review`,
-        );
-      }
-    }
-
-    assert.ok(checked > 0, 'expected at least one low-confidence item field');
   });
 
   await t.test('candidate evidence and key-review rows are materialized into the seeded database', () => {

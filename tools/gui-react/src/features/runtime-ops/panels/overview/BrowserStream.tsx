@@ -72,6 +72,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
   const [activeWorkerId, setActiveWorkerId] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string>('');
   const startRef = useRef(Date.now());
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { title: noImageTitle, detail: noImageDetail } = describeBrowserStreamGap({
@@ -96,6 +97,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
     hasFrameRef.current = false;
     setActiveWorkerId('');
     setFrameSize({ width: 0, height: 0 });
+    setVideoUrl('');
     const applyFrame = (frame: { worker_id?: string; data?: string; width?: number; height?: number; mime_type?: string }) => {
       const imageData = typeof frame.data === 'string' ? frame.data : '';
       if (!imageData) return false;
@@ -133,7 +135,25 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
 
     if (shouldHydrateRetainedBrowserFrame(workerState)) {
       setStatus('ended');
-      void hydrateLastFrame();
+      // WHY: Try loading a crawl video first. If the video endpoint returns 200,
+      // display the looping video instead of a static retained frame. The video
+      // URL is set as a direct src for the <video> element (browser handles range
+      // requests). If 404/error, fall through to the existing static frame.
+      const tryVideoUrl = `/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/video/${encodeURIComponent(workerId)}`;
+      void (async () => {
+        if (cancelled || !isBrowserBackedFetchWorker(workerPool, fetchMode)) {
+          void hydrateLastFrame();
+          return;
+        }
+        try {
+          const res = await fetch(tryVideoUrl, { method: 'HEAD' });
+          if (!cancelled && res.ok) {
+            setVideoUrl(tryVideoUrl);
+            return;
+          }
+        } catch { /* ignore — fall through to static frame */ }
+        if (!cancelled) void hydrateLastFrame();
+      })();
       return () => {
         cancelled = true;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -189,9 +209,9 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
       ws?.close();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [runId, workerId, workerState, wsUrl]);
+  }, [runId, workerId, workerState, workerPool, fetchMode, wsUrl]);
 
-  if (!wsUrl && !hasFrame) {
+  if (!wsUrl && !hasFrame && !videoUrl) {
     return (
       <div className="flex-1 flex items-center justify-center sf-surface-shell sf-text-subtle text-sm">
         <div className="text-center max-w-md px-4">
@@ -200,6 +220,24 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
           <div className="text-xs sf-text-muted">
             {browserStreamUnavailableDetail()}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (videoUrl) {
+    return (
+      <div className="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+        <video
+          src={videoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-contain"
+        />
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 sf-chip-neutral px-2 py-0.5 rounded sf-text-caption font-medium">
+          Crawl Recording
         </div>
       </div>
     );

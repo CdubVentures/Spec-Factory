@@ -11,26 +11,27 @@
 | UI Section | Count | Description |
 |---|---|---|
 | run-setup | 1 | Run timeout (`maxRunSeconds`) |
-| output | 7 | Paths, dry run, category authority, runtime control, events, specDb |
-| search-profile | 9 | Query builder caps, alias limits, synonym caps |
-| search-execution | 29 | Engines, pacing, timeouts, proxy, retries, loop guards |
+| output | 6 | Paths, category authority, runtime control, events, specDb |
+| search-profile | 7 | Query builder caps, alias limits, URL guess fallback |
+| search-execution | 26 | Engines, pacing, timeouts, proxy, retries, loop guards |
 | search-planner | 1 | LLM enhancer retries |
 | serp-selector | 1 | URL cap for SERP selector |
 | domain-classifier | 2 | URL cap, max pages per domain |
-| needset | 8 | Focus fields, confidence thresholds, group term cap, source caps |
+| needset | 5 | Group term cap, coverage thresholds, source caps |
 | browser | 12 | Crawlee settings, auto-scroll, robots.txt, concurrency |
 | adapter | 2 | Fetcher adapter selection and plugins |
 | screenshots | 6 | Page capture format, quality, selectors |
 | observability | 4 | Tracing, event logging |
 | schema | 1 | Pipeline Zod checkpoint validation mode |
-| models | 14 | Model selection, token caps, reasoning config |
-| limits | 7 | Costs, budgets, timeout, JSON overrides |
-| provider | 9 | Provider URLs, API keys |
-| **RUNTIME subtotal** | **113** | |
-| BOOTSTRAP (env-only) | 15 | Read once at startup — core, storage, LLM, discovery, runtime, paths |
+| models | 8 | Model selection, token caps, reasoning config |
+| limits | 5 | Costs, timeout, JSON overrides |
+| provider | 6 | Provider URLs, API keys |
+| (internal) | 6 | LLM token/budget knobs with no GUI section |
+| **RUNTIME subtotal** | **99** | |
+| BOOTSTRAP (env-only) | 3 | Read once at startup — phase overrides, registry, paths |
 | STORAGE | 10 | Persistent storage destination (local / S3) |
 | UI | 5 | Auto-save toggles |
-| **TOTAL** | **143** | |
+| **TOTAL** | **117** | |
 
 ---
 
@@ -38,11 +39,11 @@
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 113 | Pipeline runtime config (env vars, route API, GUI) |
-| `BOOTSTRAP_ENV_REGISTRY` | 15 | Environment-only settings read once at startup |
+| `RUNTIME_SETTINGS_REGISTRY` | 99 | Pipeline runtime config (env vars, route API, GUI) |
+| `BOOTSTRAP_ENV_REGISTRY` | 3 | Environment-only settings read once at startup |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
-| **TOTAL** | **143** | |
+| **TOTAL** | **117** | |
 
 ---
 
@@ -60,6 +61,11 @@
 | Dead bypass knobs | `crawlBypassMinBodyLength`, `crawlBypassHtmlSnippetCap` (registered but call sites never passed them — hardcoded fallbacks always used) |
 | Dead knob cleanup | `repairDedupeRule` (consumer never built), `robotsTxtTimeoutMs` (orphaned consumer), `runtimeScreencastFps/MaxHeight/MaxWidth/Quality` (no screencast code reads config), `runtimeTraceFetchRing/LlmRing` (transported but never consumed), `llmMaxCallsPerProductTotal/PerRound` (no enforcement gate), `llmPerProductBudgetUsd` (costLedger never checks it) |
 | Dead configBuilder | `batchStrategy`, `openaiMaxInputChars`, `helperSupportiveFillMissing`, `searchGlobalRps/Burst`, `searchPerHostRps/Burst`, `runProfile`, `consensusLlmWeightTier1-4`, `consensusTier1-4Weight`, `automationQueueStorageEngine`, `runtimeScreenshotMode`, `accuracyMode`, `chartExtractionEnabled`, `fieldRulesEngineEnforceEvidence`, `indexingHelperFilesEnabled`, `helperSupportiveEnabled/MaxSources/AutoSeedTargets/ActiveSyncLimit`, `daemonGracefulShutdownTimeoutMs` |
+| Runtime/search purge | `dryRun`, `discoveryEnabled`, `serperSearchRetryBaseMs`, `googleSearchMinIntervalMs`, `googleSearchResultCap` |
+| Search-profile purge | `queryBuilderTooltipPhraseCap`, `queryBuilderLearnedSynonymsCap`, `queryBuilderFieldSynonymsCap` |
+| NeedSet purge | `needsetMaxFocusFields`, `needsetConfidenceThresholdMatched`, `needsetConfidenceThresholdPossible` |
+| LLM purge | `llmMaxOutputTokensReasoningFallback`, `llmMonthlyBudgetUsd`, `llmPlanBaseUrl`, `llmPlanProvider`, `llmPlanApiKey` |
+| Bootstrap purge | `port`, `settingsCanonicalOnlyWrites`, `llmMaxOutputTokensExtract`, `llmMaxOutputTokensValidate`, `llmMaxOutputTokensWrite`, `openaiTimeoutMs`, `searxngDefaultBaseUrl`, `indexingReextractSeedLimit`, `indexingSchemaPacketsSchemaRoot` |
 
 ---
 
@@ -67,73 +73,67 @@
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `maxRunSeconds` | int | 480 | 30–86,400 | `MAX_RUN_SECONDS` |
+| `maxRunSeconds` | int | 480 | 30–86400 | `MAX_RUN_SECONDS` |
 
 ---
 
-## Output & Automation (7 knobs)
-
-| Key | Type | Default | Env Var | Notes |
-|---|---|---|---|---|
-| `dryRun` | bool | false | `DRY_RUN` | Gates writes in field-rules compiler + catalog reconciler |
-| `localInputRoot` | string | fixtures/s3 | `LOCAL_INPUT_ROOT` | Catalog seed data root (not used during pipeline runs) |
-| `localOutputRoot` | string | (computed) | — | Artifact staging directory; no envKey (dynamic default) |
-| `categoryAuthorityRoot` | string | category_authority | `CATEGORY_AUTHORITY_ROOT` | Field rules + generated artifacts root |
-| `runtimeControlFile` | string | _runtime/control/runtime_overrides.json | `RUNTIME_CONTROL_FILE` | Runtime planner overrides (blocked_domains, force_high_fields) |
-| `runtimeEventsKey` | string | _runtime/events.jsonl | `RUNTIME_EVENTS_KEY` | Live event log (powers GUI WebSocket dashboard) |
-| `specDbDir` | string | .specfactory_tmp | `SPEC_DB_DIR` | SQLite database directory |
-
----
-
-## Search Profile (9 knobs)
+## Output & Automation (6 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `searchProfileQueryCap` | int | 10 | 1–100 | `SEARCH_PROFILE_QUERY_CAP` |
-| `queryBuilderMaxAliases` | int | 12 | 1–50 | `QUERY_BUILDER_MAX_ALIASES` |
-| `queryBuilderFieldQueryCap` | int | 3 | 1–20 | `QUERY_BUILDER_FIELD_QUERY_CAP` |
-| `queryBuilderDocHintQueryCap` | int | 3 | 1–20 | `QUERY_BUILDER_DOC_HINT_QUERY_CAP` |
-| `queryBuilderTooltipPhraseCap` | int | 4 | 1–20 | `QUERY_BUILDER_TOOLTIP_PHRASE_CAP` |
-| `queryBuilderLearnedSynonymsCap` | int | 6 | 1–30 | `QUERY_BUILDER_LEARNED_SYNONYMS_CAP` |
-| `queryBuilderFieldSynonymsCap` | int | 12 | 1–50 | `QUERY_BUILDER_FIELD_SYNONYMS_CAP` |
+| `categoryAuthorityRoot` | string | category_authority | — | `CATEGORY_AUTHORITY_ROOT` |
+| `localInputRoot` | string | fixtures/s3 | — | `LOCAL_INPUT_ROOT` |
+| `localOutputRoot` | string | "" | — | — |
+| `runtimeControlFile` | string | _runtime/control/runtime_overrides.json | — | `RUNTIME_CONTROL_FILE` |
+| `runtimeEventsKey` | string | _runtime/events.jsonl | — | `RUNTIME_EVENTS_KEY` |
+| `specDbDir` | string | .specfactory_tmp | — | `SPEC_DB_DIR` |
+
+---
+
+## Search Profile (7 knobs)
+
+| Key | Type | Default | Range | Env Var |
+|---|---|---|---|---|
+| `disableUrlGuessFallback` | bool | false | — | `DISABLE_URL_GUESS_FALLBACK` |
 | `manufacturerPlanUrlCap` | int | 40 | 1–200 | `MANUFACTURER_PLAN_URL_CAP` |
+| `queryBuilderDocHintQueryCap` | int | 3 | 1–20 | `QUERY_BUILDER_DOC_HINT_QUERY_CAP` |
+| `queryBuilderFieldQueryCap` | int | 3 | 1–20 | `QUERY_BUILDER_FIELD_QUERY_CAP` |
+| `queryBuilderMaxAliases` | int | 12 | 1–50 | `QUERY_BUILDER_MAX_ALIASES` |
 | `queryDedupeRowsCap` | int | 24 | 1–100 | `QUERY_DEDUPE_ROWS_CAP` |
+| `searchProfileQueryCap` | int | 10 | 1–100 | `SEARCH_PROFILE_QUERY_CAP` |
 
 ---
 
-## Search Execution (29 knobs)
+## Search Execution (26 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `discoveryEnabled` | bool | true | — | `DISCOVERY_ENABLED` |
+| `braveApiKey` | string | "" | — | `BRAVE_API_KEY` |
+| `braveSearchResultCap` | int | 20 | 1–100 | `BRAVE_SEARCH_RESULT_CAP` |
+| `braveSearchTimeoutMs` | int | 8000 | 1000–60000 | `BRAVE_SEARCH_TIMEOUT_MS` |
+| `googleSearchMaxRetries` | int | 1 | 0–3 | `GOOGLE_SEARCH_MAX_RETRIES` |
+| `googleSearchMinQueryIntervalMs` | int | 1000 | 0–60000 | `GOOGLE_SEARCH_MIN_QUERY_INTERVAL_MS` |
+| `googleSearchPostResultsDelayMs` | int | 2000 | 0–30000 | `GOOGLE_SEARCH_POST_RESULTS_DELAY_MS` |
+| `googleSearchProxyUrlsJson` | string | (proxy array) | — | — |
+| `googleSearchScreenshotQuality` | int | 35 | 1–100 | `GOOGLE_SEARCH_SCREENSHOT_QUALITY` |
+| `googleSearchScreenshotsEnabled` | bool | true | — | `GOOGLE_SEARCH_SCREENSHOTS_ENABLED` |
+| `googleSearchScrollDelayMs` | int | 300 | 0–5000 | `GOOGLE_SEARCH_SCROLL_DELAY_MS` |
+| `googleSearchSerpSelectorWaitMs` | int | 15000 | 1000–60000 | `GOOGLE_SEARCH_SERP_SELECTOR_WAIT_MS` |
+| `googleSearchTimeoutMs` | int | 30000 | 30000–120000 | `GOOGLE_SEARCH_TIMEOUT_MS` |
 | `searchEngines` | csv_enum | google | — | `SEARCH_ENGINES` |
 | `searchEnginesFallback` | csv_enum | bing | — | `SEARCH_ENGINES_FALLBACK` |
-| `searchMaxRetries` | int | 3 | 0–5 | `SEARCH_MAX_RETRIES` |
-| `serperEnabled` | bool | true | — | `SERPER_ENABLED` |
-| `serperApiKey` | string | "" | — | `SERPER_API_KEY` |
-| `serperSearchMinIntervalMs` | int | 500 | 0–30,000 | `SERPER_SEARCH_MIN_INTERVAL_MS` |
-| `serperSearchRetryBaseMs` | int | 1,000 | 100–30,000 | `SERPER_SEARCH_RETRY_BASE_MS` |
-| `serperSearchTimeoutMs` | int | 10,000 | 1,000–120,000 | `SERPER_SEARCH_TIMEOUT_MS` |
-| `serperSearchMaxRetries` | int | 3 | 0–10 | `SERPER_SEARCH_MAX_RETRIES` |
-| `searxngBaseUrl` | string | http://127.0.0.1:8080 | — | `SEARXNG_BASE_URL` |
-| `searxngMinQueryIntervalMs` | int | 3,000 | 0–30,000 | `SEARXNG_MIN_QUERY_INTERVAL_MS` |
-| `searxngSearchTimeoutMs` | int | 8,000 | 1,000–60,000 | `SEARXNG_SEARCH_TIMEOUT_MS` |
-| `googleSearchMaxRetries` | int | 1 | 0–3 | `GOOGLE_SEARCH_MAX_RETRIES` |
-| `googleSearchMinQueryIntervalMs` | int | 1,000 | 0–60,000 | `GOOGLE_SEARCH_MIN_QUERY_INTERVAL_MS` |
-| `googleSearchMinIntervalMs` | int | 4,000 | 0–60,000 | `GOOGLE_SEARCH_MIN_INTERVAL_MS_PACING` |
-| `googleSearchPostResultsDelayMs` | int | 2,000 | 0–30,000 | `GOOGLE_SEARCH_POST_RESULTS_DELAY_MS` |
-| `googleSearchTimeoutMs` | int | 30,000 | 30,000–120,000 | `GOOGLE_SEARCH_TIMEOUT_MS` |
-| `googleSearchScreenshotsEnabled` | bool | true | — | `GOOGLE_SEARCH_SCREENSHOTS_ENABLED` |
-| `googleSearchScreenshotQuality` | int | 35 | 1–100 | `GOOGLE_SEARCH_SCREENSHOT_QUALITY` |
-| `googleSearchSerpSelectorWaitMs` | int | 15,000 | 1,000–60,000 | `GOOGLE_SEARCH_SERP_SELECTOR_WAIT_MS` |
-| `googleSearchScrollDelayMs` | int | 300 | 0–5,000 | `GOOGLE_SEARCH_SCROLL_DELAY_MS` |
-| `googleSearchResultCap` | int | 10 | 1–100 | `GOOGLE_SEARCH_RESULT_CAP` |
-| `googleSearchProxyUrlsJson` | string | (proxy array) | — | — |
-| `braveSearchTimeoutMs` | int | 8,000 | 1,000–60,000 | `BRAVE_SEARCH_TIMEOUT_MS` |
-| `braveSearchResultCap` | int | 20 | 1–100 | `BRAVE_SEARCH_RESULT_CAP` |
-| `searchPacingJitterFactor` | float | 0.3 | 0–1 | `SEARCH_PACING_JITTER_FACTOR` |
-| `searchLoopMaxNoProgressRounds` | int | 2 | 1–10 | `SEARCH_LOOP_MAX_NO_PROGRESS_ROUNDS` |
 | `searchLoopMaxLowQualityRounds` | int | 3 | 1–10 | `SEARCH_LOOP_MAX_LOW_QUALITY_ROUNDS` |
+| `searchLoopMaxNoProgressRounds` | int | 2 | 1–10 | `SEARCH_LOOP_MAX_NO_PROGRESS_ROUNDS` |
+| `searchMaxRetries` | int | 3 | 0–5 | `SEARCH_MAX_RETRIES` |
+| `searchPacingJitterFactor` | float | 0.3 | 0–1 | `SEARCH_PACING_JITTER_FACTOR` |
+| `searxngBaseUrl` | string | http://127.0.0.1:8080 | — | `SEARXNG_BASE_URL` |
+| `searxngMinQueryIntervalMs` | int | 3000 | 0–30000 | `SEARXNG_MIN_QUERY_INTERVAL_MS` |
+| `searxngSearchTimeoutMs` | int | 8000 | 1000–60000 | `SEARXNG_SEARCH_TIMEOUT_MS` |
+| `serperApiKey` | string | "" | — | `SERPER_API_KEY` |
+| `serperEnabled` | bool | true | — | `SERPER_ENABLED` |
+| `serperSearchMaxRetries` | int | 3 | 0–10 | `SERPER_SEARCH_MAX_RETRIES` |
+| `serperSearchMinIntervalMs` | int | 500 | 0–30000 | `SERPER_SEARCH_MIN_INTERVAL_MS` |
+| `serperSearchTimeoutMs` | int | 10000 | 1000–120000 | `SERPER_SEARCH_TIMEOUT_MS` |
 
 ---
 
@@ -162,17 +162,14 @@
 
 ---
 
-## NeedSet (8 knobs)
+## NeedSet (5 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `needsetMaxFocusFields` | int | 10 | 1–50 | `NEEDSET_MAX_FOCUS_FIELDS` |
-| `needsetConfidenceThresholdMatched` | float | 0.95 | 0–1 | `NEEDSET_CONFIDENCE_THRESHOLD_MATCHED` |
-| `needsetConfidenceThresholdPossible` | float | 0.7 | 0–1 | `NEEDSET_CONFIDENCE_THRESHOLD_POSSIBLE` |
 | `needsetGroupQueryTermsCap` | int | 5 | 1–20 | `NEEDSET_GROUP_QUERY_TERMS_CAP` |
 | `needsetGroupSearchCoverageThreshold` | float | 0.8 | 0–1 | `NEEDSET_GROUP_SEARCH_COVERAGE_THRESHOLD` |
-| `needsetGroupSearchMinUnresolved` | int | 3 | 1–20 | `NEEDSET_GROUP_SEARCH_MIN_UNRESOLVED` |
 | `needsetGroupSearchMaxRepeats` | int | 3 | 1–10 | `NEEDSET_GROUP_SEARCH_MAX_REPEATS` |
+| `needsetGroupSearchMinUnresolved` | int | 3 | 1–20 | `NEEDSET_GROUP_SEARCH_MIN_UNRESOLVED` |
 | `needsetSeedCooldownDays` | int | 30 | 1–90 | `NEEDSET_SEED_COOLDOWN_DAYS` |
 
 ---
@@ -181,17 +178,17 @@
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `crawleeHeadless` | bool | true | — | `CRAWLEE_HEADLESS` |
-| `crawleeRequestHandlerTimeoutSecs` | int | 75 | 0–300 | `CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS` |
-| `crawleeMaxRequestRetries` | int | 1 | 0–5 | `CRAWLEE_MAX_REQUEST_RETRIES` |
-| `crawleeMaxPagesPerBrowser` | int | 1 | 1–10 | `CRAWLEE_MAX_PAGES_PER_BROWSER` |
-| `crawleeBrowserRetirePageCount` | int | 5 | 1–50 | `CRAWLEE_BROWSER_RETIRE_PAGE_COUNT` |
-| `crawleeNavigationTimeoutMs` | int | 12,000 | 1,000–120,000 | `CRAWLEE_NAVIGATION_TIMEOUT_MS` |
-| `crawlMaxConcurrentSlots` | int | 4 | 1–16 | `CRAWL_MAX_CONCURRENT_SLOTS` |
+| `autoScrollDelayMs` | int | 1200 | 0–10000 | `AUTO_SCROLL_DELAY_MS` |
 | `autoScrollEnabled` | bool | true | — | `AUTO_SCROLL_ENABLED` |
 | `autoScrollPasses` | int | 2 | 0–20 | `AUTO_SCROLL_PASSES` |
-| `autoScrollDelayMs` | int | 1,200 | 0–10,000 | `AUTO_SCROLL_DELAY_MS` |
-| `autoScrollPostLoadWaitMs` | int | 200 | 0–5,000 | `AUTO_SCROLL_POST_LOAD_WAIT_MS` |
+| `autoScrollPostLoadWaitMs` | int | 200 | 0–5000 | `AUTO_SCROLL_POST_LOAD_WAIT_MS` |
+| `crawleeBrowserRetirePageCount` | int | 5 | 1–50 | `CRAWLEE_BROWSER_RETIRE_PAGE_COUNT` |
+| `crawleeHeadless` | bool | true | — | `CRAWLEE_HEADLESS` |
+| `crawleeMaxPagesPerBrowser` | int | 1 | 1–10 | `CRAWLEE_MAX_PAGES_PER_BROWSER` |
+| `crawleeMaxRequestRetries` | int | 1 | 0–5 | `CRAWLEE_MAX_REQUEST_RETRIES` |
+| `crawleeNavigationTimeoutMs` | int | 12000 | 1000–120000 | `CRAWLEE_NAVIGATION_TIMEOUT_MS` |
+| `crawleeRequestHandlerTimeoutSecs` | int | 75 | 0–300 | `CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS` |
+| `crawlMaxConcurrentSlots` | int | 4 | 1–16 | `CRAWL_MAX_CONCURRENT_SLOTS` |
 | `robotsTxtCompliant` | bool | true | — | `ROBOTS_TXT_COMPLIANT` |
 
 ---
@@ -211,10 +208,10 @@
 |---|---|---|---|---|
 | `capturePageScreenshotEnabled` | bool | true | — | `CAPTURE_PAGE_SCREENSHOT_ENABLED` |
 | `capturePageScreenshotFormat` | string | jpeg | — | `CAPTURE_PAGE_SCREENSHOT_FORMAT` |
-| `capturePageScreenshotQuality` | int | 50 | 1–100 | `CAPTURE_PAGE_SCREENSHOT_QUALITY` |
-| `capturePageScreenshotMaxBytes` | int | 5,000,000 | 1,024–100M | `CAPTURE_PAGE_SCREENSHOT_MAX_BYTES` |
-| `capturePageScreenshotSelectors` | string | table,... | — | `CAPTURE_PAGE_SCREENSHOT_SELECTORS` |
+| `capturePageScreenshotMaxBytes` | int | 5000000 | 1024–100000000 | `CAPTURE_PAGE_SCREENSHOT_MAX_BYTES` |
 | `capturePageScreenshotMaxSelectors` | int | 12 | 1–50 | `CAPTURE_PAGE_SCREENSHOT_MAX_SELECTORS` |
+| `capturePageScreenshotQuality` | int | 50 | 1–100 | `CAPTURE_PAGE_SCREENSHOT_QUALITY` |
+| `capturePageScreenshotSelectors` | string | table,[data-spec-table],.specs-table,.spec-table,.specifications | — | `CAPTURE_PAGE_SCREENSHOT_SELECTORS` |
 
 ---
 
@@ -222,10 +219,10 @@
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `runtimeTraceEnabled` | bool | true | — | `RUNTIME_TRACE_ENABLED` |
-| `runtimeTraceLlmPayloads` | bool | true | — | `RUNTIME_TRACE_LLM_PAYLOADS` |
 | `eventsJsonWrite` | bool | true | — | `EVENTS_JSON_WRITE` |
 | `runtimeScreencastEnabled` | bool | true | — | `RUNTIME_SCREENCAST_ENABLED` |
+| `runtimeTraceEnabled` | bool | true | — | `RUNTIME_TRACE_ENABLED` |
+| `runtimeTraceLlmPayloads` | bool | true | — | `RUNTIME_TRACE_LLM_PAYLOADS` |
 
 ---
 
@@ -237,54 +234,58 @@
 
 ---
 
-## LLM Models (14 knobs)
+## LLM Models (8 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
+| `llmMaxOutputTokens` | int | 1400 | 128–262144 | `LLM_MAX_OUTPUT_TOKENS` |
+| `llmMaxOutputTokensPlan` | int | 4096 | 128–262144 | `LLM_MAX_OUTPUT_TOKENS_PLAN` |
 | `llmModelPlan` | string | gemini-2.5-flash | — | `LLM_MODEL_PLAN` |
 | `llmModelReasoning` | string | deepseek-reasoner | — | `LLM_MODEL_REASONING` |
 | `llmPlanFallbackModel` | string | deepseek-chat | — | `LLM_PLAN_FALLBACK_MODEL` |
-| `llmReasoningFallbackModel` | string | gemini-2.5-pro | — | `LLM_REASONING_FALLBACK_MODEL` |
-| `llmMaxOutputTokens` | int | 1,400 | 128–262,144 | `LLM_MAX_OUTPUT_TOKENS` |
-| `llmMaxOutputTokensPlan` | int | 4,096 | 128–262,144 | `LLM_MAX_OUTPUT_TOKENS_PLAN` |
-| `llmMaxOutputTokensPlanFallback` | int | 2,048 | 128–262,144 | `LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK` |
-| `llmMaxOutputTokensTriage` | int | 20,000 | 20,000–262,144 | `LLM_MAX_OUTPUT_TOKENS_TRIAGE` |
-| `llmMaxOutputTokensReasoning` | int | 4,096 | 128–262,144 | `LLM_MAX_OUTPUT_TOKENS_REASONING` |
-| `llmMaxOutputTokensReasoningFallback` | int | 2,048 | 128–262,144 | `LLM_MAX_OUTPUT_TOKENS_REASONING_FALLBACK` |
-| `llmMaxTokens` | int | 16,384 | 128–262,144 | `LLM_MAX_TOKENS` |
 | `llmPlanUseReasoning` | bool | false | — | `LLM_PLAN_USE_REASONING` |
-| `llmReasoningBudget` | int | 32,768 | 128–262,144 | `LLM_REASONING_BUDGET` |
+| `llmReasoningFallbackModel` | string | gemini-2.5-pro | — | `LLM_REASONING_FALLBACK_MODEL` |
 | `llmReasoningMode` | bool | true | — | `LLM_REASONING_MODE` |
 
 ---
 
-## LLM Limits (7 knobs)
+## LLM Limits (5 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `llmCostInputPer1M` | float | 1.25 | 0–1,000 | `LLM_COST_INPUT_PER_1M` |
-| `llmCostOutputPer1M` | float | 10 | 0–1,000 | `LLM_COST_OUTPUT_PER_1M` |
-| `llmCostCachedInputPer1M` | float | 0.125 | 0–1,000 | `LLM_COST_CACHED_INPUT_PER_1M` |
-| `llmMonthlyBudgetUsd` | float | 300 | 0–100,000 | `LLM_MONTHLY_BUDGET_USD` |
-| `llmTimeoutMs` | int | 30,000 | 1,000–600,000 | `LLM_TIMEOUT_MS` |
+| `llmCostCachedInputPer1M` | float | 0.125 | 0–1000 | `LLM_COST_CACHED_INPUT_PER_1M` |
+| `llmCostInputPer1M` | float | 1.25 | 0–1000 | `LLM_COST_INPUT_PER_1M` |
+| `llmCostOutputPer1M` | float | 10 | 0–1000 | `LLM_COST_OUTPUT_PER_1M` |
 | `llmPhaseOverridesJson` | string | {} | — | — |
 | `llmProviderRegistryJson` | string | (large JSON) | — | — |
 
 ---
 
-## LLM Provider (9 knobs)
+## LLM Provider (6 knobs)
 
 | Key | Type | Default | Env Var |
 |---|---|---|---|
-| `llmProvider` | string | gemini | `LLM_PROVIDER` |
-| `llmBaseUrl` | string | (Gemini URL) | `LLM_BASE_URL` |
-| `llmPlanBaseUrl` | string | (Gemini URL) | `LLM_PLAN_BASE_URL` |
-| `llmPlanProvider` | string | gemini | `LLM_PLAN_PROVIDER` |
-| `llmPlanApiKey` | string | "" | `LLM_PLAN_API_KEY` |
 | `anthropicApiKey` | string | "" | `ANTHROPIC_API_KEY` |
-| `openaiApiKey` | string | "" | `OPENAI_API_KEY` |
-| `geminiApiKey` | string | "" | `GEMINI_API_KEY` |
 | `deepseekApiKey` | string | "" | `DEEPSEEK_API_KEY` |
+| `geminiApiKey` | string | "" | `GEMINI_API_KEY` |
+| `llmBaseUrl` | string | (Gemini URL) | `LLM_BASE_URL` |
+| `llmProvider` | string | gemini | `LLM_PROVIDER` |
+| `openaiApiKey` | string | "" | `OPENAI_API_KEY` |
+
+---
+
+## LLM Internal (no GUI) (6 knobs)
+
+Runtime knobs that have no `uiSection` — not exposed in the GUI.
+
+| Key | Type | Default | Range | Env Var |
+|---|---|---|---|---|
+| `llmMaxOutputTokensPlanFallback` | int | 2048 | 128–262144 | `LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK` |
+| `llmMaxOutputTokensReasoning` | int | 4096 | 128–262144 | `LLM_MAX_OUTPUT_TOKENS_REASONING` |
+| `llmMaxOutputTokensTriage` | int | 20000 | 20000–262144 | `LLM_MAX_OUTPUT_TOKENS_TRIAGE` |
+| `llmMaxTokens` | int | 16384 | 128–262144 | `LLM_MAX_TOKENS` |
+| `llmReasoningBudget` | int | 32768 | 128–262144 | `LLM_REASONING_BUDGET` |
+| `llmTimeoutMs` | int | 30000 | 1000–600000 | `LLM_TIMEOUT_MS` |
 
 ---
 
@@ -313,59 +314,20 @@
 
 | Key | Type | Default |
 |---|---|---|
+| `runtimeAutoSaveEnabled` | bool | true |
+| `storageAutoSaveEnabled` | bool | false |
 | `studioAutoSaveAllEnabled` | bool | false |
 | `studioAutoSaveEnabled` | bool | true |
 | `studioAutoSaveMapEnabled` | bool | true |
-| `runtimeAutoSaveEnabled` | bool | true |
-| `storageAutoSaveEnabled` | bool | false |
 
 ---
 
-## Bootstrap / Environment-Only Settings (15 knobs)
+## Bootstrap / Environment-Only Settings (3 knobs)
 
 `BOOTSTRAP_ENV_REGISTRY` — read once at startup from `process.env` / `.env`. No GUI, no live-update API. Restart required to change.
 
-### Core (2)
-
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `port` | `PORT` | int | 8788 |
-| `settingsCanonicalOnlyWrites` | `SETTINGS_CANONICAL_ONLY_WRITES` | bool | true |
-
-### Storage (1)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `runDataStorageDestinationType` | `RUN_DATA_STORAGE_DESTINATION_TYPE` | string | local |
-
-### LLM (7)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `llmApiKey` | `LLM_API_KEY` | string | (secret) |
-| `llmMaxOutputTokensExtract` | `LLM_MAX_OUTPUT_TOKENS_EXTRACT` | int | 2048 |
-| `llmMaxOutputTokensValidate` | `LLM_MAX_OUTPUT_TOKENS_VALIDATE` | int | 2048 |
-| `llmMaxOutputTokensWrite` | `LLM_MAX_OUTPUT_TOKENS_WRITE` | int | 2048 |
 | `llmPhaseOverridesJson` | `LLM_PHASE_OVERRIDES_JSON` | string | {} |
 | `llmProviderRegistryJson` | `LLM_PROVIDER_REGISTRY_JSON` | string | "" |
-| `openaiTimeoutMs` | `OPENAI_TIMEOUT_MS` | int | 40000 |
-
-### Discovery (1)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `searxngDefaultBaseUrl` | `SEARXNG_DEFAULT_BASE_URL` | string | "" |
-
-### Runtime (3)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `indexingReextractSeedLimit` | `INDEXING_REEXTRACT_SEED_LIMIT` | int | 8 |
-| `indexingSchemaPacketsSchemaRoot` | `INDEXING_SCHEMA_PACKETS_SCHEMA_ROOT` | string | "" |
-| `runtimeOpsWorkbenchEnabled` | `RUNTIME_OPS_WORKBENCH_ENABLED` | bool | true |
-
-### Paths (1)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
 | `localOutputRoot` | `LOCAL_OUTPUT_ROOT` | string | "" |

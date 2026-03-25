@@ -110,7 +110,7 @@ export function bootstrapServer({ projectRoot }) {
     runDataStorageState,
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
     outputPrefix: OUTPUT_KEY_PREFIX,
-    getSpecDbReady, resolveCategoryAlias, logger: console,
+    getSpecDbReady, getSpecDb, resolveCategoryAlias, logger: console,
   });
 
   processStatusProvider = processStatus;
@@ -135,6 +135,14 @@ export function bootstrapServer({ projectRoot }) {
   const domain = createBootstrapDomainRuntimes({
     config, HELPER_ROOT, storage, getSpecDb, cleanVariant, catalogKey,
   });
+
+  // ── Crawl video cleanup (fire-and-forget, 24h TTL) ──
+  import('../features/crawl/videoCleanup.js')
+    .then(({ cleanupStaleVideoDirs }) => {
+      const videoBaseDir = path.join(process.env.TEMP || process.env.TMPDIR || '/tmp', 'spec-factory-crawl-videos');
+      cleanupStaleVideoDirs({ baseDir: videoBaseDir, maxAgeMs: 24 * 60 * 60 * 1000 });
+    })
+    .catch(() => { /* non-critical — swallow startup cleanup errors */ });
 
   return {
     env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },

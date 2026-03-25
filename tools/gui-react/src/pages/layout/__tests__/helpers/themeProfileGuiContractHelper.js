@@ -42,7 +42,7 @@ export async function runThemeProfileGuiContract({ baseUrl, page }) {
       && state.density === 'standard'
       && state.darkClass === true
     );
-  }, 20_000, 150, 'persisted_theme_hydrated');
+  }, 20_000, 60, 'persisted_theme_hydrated');
 
   assert.equal(await page.getByText('Appearance', { exact: true }).count(), 0, 'pipeline page should not inline appearance controls');
   assert.equal(await page.getByText('Corner Radius', { exact: true }).count(), 0, 'pipeline page should not inline radius controls');
@@ -68,14 +68,14 @@ export async function runThemeProfileGuiContract({ baseUrl, page }) {
       && state.storedTheme === 'sand'
       && state.storedRadius === 'pill-heavy'
     );
-  }, 20_000, 150, 'theme_switch_persisted');
+  }, 20_000, 60, 'theme_switch_persisted');
 
   const closeSettingsButton = page.getByRole('button', { name: /Close app settings/i }).first();
   await closeSettingsButton.click();
   await waitForCondition(
     async () => (await page.getByText('Appearance', { exact: true }).count()) === 0,
     5_000,
-    100,
+    40,
     'appearance_panel_closed',
   );
 
@@ -91,7 +91,7 @@ export async function runThemeProfileGuiContract({ baseUrl, page }) {
       && state.radius === 'pill-heavy'
       && state.darkClass === false
     );
-  }, 20_000, 150, 'theme_persisted_after_reload');
+  }, 20_000, 60, 'theme_persisted_after_reload');
 
   assert.equal(await page.getByText('Appearance', { exact: true }).count(), 0, 'appearance controls should remain owned by the app-shell drawer after reload');
 }

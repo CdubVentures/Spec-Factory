@@ -18,6 +18,7 @@ export class EventLogger {
       ...(options.context || {})
     };
     this.writeQueue = Promise.resolve();
+    this._onEventQueue = Promise.resolve();
 
     // SQLite-backed event storage
     this.specDb = options.specDb || null;
@@ -46,7 +47,12 @@ export class EventLogger {
     this.events.push(row);
     if (this.onEvent) {
       try {
-        this.onEvent(row);
+        const result = this.onEvent(row);
+        if (result && typeof result.then === 'function') {
+          this._onEventQueue = this._onEventQueue
+            .then(() => result)
+            .catch(() => {});
+        }
       } catch {
         // ignore observer hook failures
       }
@@ -101,6 +107,7 @@ export class EventLogger {
   }
 
   async flush() {
+    await this._onEventQueue;
     await this.writeQueue;
   }
 }

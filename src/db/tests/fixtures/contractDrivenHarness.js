@@ -327,8 +327,24 @@ async function writeSupportFiles(categoryAuthorityRoot, contractAnalysis) {
   ]);
 }
 
-export async function createContractDrivenSeedReviewHarness(t) {
+export async function createContractDrivenSeedReviewHarness(t, options = {}) {
   const analysis = await createContractDrivenAnalysisHarness();
+  const scenarioNames = Array.isArray(options.scenarioNames) ? options.scenarioNames : null;
+  const products = scenarioNames
+    ? analysis.products.filter((product) => scenarioNames.includes(product._testCase.name))
+    : analysis.products;
+  const missingScenarioNames = scenarioNames
+    ? scenarioNames.filter((scenarioName) =>
+      !products.some((product) => product._testCase.name === scenarioName))
+    : [];
+  if (missingScenarioNames.length > 0) {
+    throw new Error(`Unknown contract-driven scenarios: ${missingScenarioNames.join(', ')}`);
+  }
+  const productArtifacts = Object.fromEntries(
+    products.map((product) => [product.productId, analysis.productArtifacts[product.productId]]),
+  );
+  const productByScenarioId = new Map(products.map((product) => [product._testCase.id, product]));
+  const productByScenarioName = new Map(products.map((product) => [product._testCase.name, product]));
   let tempRoot = null;
   let db = null;
 
@@ -368,7 +384,7 @@ export async function createContractDrivenSeedReviewHarness(t) {
     ),
     writeSupportFiles(config.categoryAuthorityRoot, analysis.contractAnalysis),
     Promise.all(
-      Object.entries(analysis.productArtifacts).map(async ([productId, { artifacts }]) => {
+      Object.entries(productArtifacts).map(async ([productId, { artifacts }]) => {
         const latestDir = path.join(
           config.localOutputRoot,
           'specs',
@@ -407,11 +423,11 @@ export async function createContractDrivenSeedReviewHarness(t) {
     logger: null,
   });
 
-  const candidateGroupsByProduct = new Map(analysis.products.map((product) => [
+  const candidateGroupsByProduct = new Map(products.map((product) => [
     product.productId,
     db.getCandidatesForProduct(product.productId),
   ]));
-  const itemFieldStatesByProduct = new Map(analysis.products.map((product) => [
+  const itemFieldStatesByProduct = new Map(products.map((product) => [
     product.productId,
     db.getItemFieldState(product.productId),
   ]));
@@ -446,6 +462,8 @@ export async function createContractDrivenSeedReviewHarness(t) {
 
   return {
     ...analysis,
+    products,
+    productArtifacts,
     tempRoot,
     storage,
     config,
@@ -458,6 +476,12 @@ export async function createContractDrivenSeedReviewHarness(t) {
     componentIdentityRowsByType,
     getCandidateRowsForField(productId, fieldKey) {
       return candidateGroupsByProduct.get(productId)?.[fieldKey] || [];
+    },
+    getProductByScenarioId(scenarioId) {
+      return productByScenarioId.get(scenarioId);
+    },
+    getProductByScenarioName(scenarioName) {
+      return productByScenarioName.get(scenarioName);
     },
     getItemFieldState(productId, fieldKey) {
       return itemFieldStateByProductAndField.get(productId)?.get(fieldKey) || null;

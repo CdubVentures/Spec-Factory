@@ -43,7 +43,7 @@ export function createIndexingMetricsHandler({
         plan: String(config.llmPlanFallbackModel || '').trim(),
         reasoning: String(config.llmReasoningFallbackModel || '').trim(),
         plan_tokens: toInt(config.llmMaxOutputTokensPlanFallback, roleTokenDefaults.plan),
-        reasoning_tokens: toInt(config.llmMaxOutputTokensReasoningFallback, roleTokenDefaults.reasoning)
+        reasoning_tokens: toInt(config.llmMaxOutputTokensPlanFallback, roleTokenDefaults.reasoning)
       };
       return jsonRes(res, 200, {
         generated_at: new Date().toISOString(),

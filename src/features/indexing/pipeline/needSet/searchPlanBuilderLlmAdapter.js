@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
+import { createPhaseCallLlm } from '../shared/createPhaseCallLlm.js';
 
 export const plannerResponseZodSchema = z.object({
   planner_confidence: z.number().optional(),
@@ -28,22 +29,21 @@ const PLANNER_SYSTEM_PROMPT = [
   '- Return JSON with a "groups" array where each group has a "key" and "reason_active".',
 ].join('\n');
 
-export function createSearchPlannerCallLlm({ callRoutedLlmFn, config, logger }) {
-  return async ({ payloadJson, llmContext = {}, usageContext = {} }) => {
-    return callRoutedLlmFn({
-      config,
-      reason: 'needset_search_planner',
-      role: 'plan',
-      phase: 'needset',
-      system: PLANNER_SYSTEM_PROMPT,
-      user: payloadJson,
-      jsonSchema: PLANNER_RESPONSE_SCHEMA,
-      usageContext,
-      costRates: llmContext.costRates || config,
-      onUsage: typeof llmContext.recordUsage === 'function'
-        ? async (usageRow) => llmContext.recordUsage(usageRow)
-        : undefined,
-      logger,
-    });
-  };
+const PLANNER_SPEC = {
+  phase: 'needset',
+  reason: 'needset_search_planner',
+  role: 'plan',
+  system: PLANNER_SYSTEM_PROMPT,
+  jsonSchema: PLANNER_RESPONSE_SCHEMA,
+};
+
+export function createSearchPlannerCallLlm(deps) {
+  return createPhaseCallLlm(deps, PLANNER_SPEC, ({ payloadJson, llmContext = {}, usageContext = {} }, config) => ({
+    user: payloadJson,
+    usageContext,
+    costRates: llmContext.costRates || config,
+    onUsage: typeof llmContext.recordUsage === 'function'
+      ? async (usageRow) => llmContext.recordUsage(usageRow)
+      : undefined,
+  }));
 }

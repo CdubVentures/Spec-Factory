@@ -1,6 +1,6 @@
 import BulkPasteGrid, {
   type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid.tsx";
+} from "../../../shared/ui/forms/BulkPasteGrid.tsx";
 import type { BulkKeyRow } from "../state/keyUtils.ts";
 import {
   selectCls,

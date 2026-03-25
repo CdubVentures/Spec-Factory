@@ -1,4 +1,4 @@
-import { Tip } from '../../components/common/Tip.tsx';
+import { Tip } from '../../shared/ui/feedback/Tip.tsx';
 import type { TimedIndexLabEvent } from './types.ts';
 
 export function normalizeToken(value: unknown) {

@@ -364,7 +364,7 @@ function inferEvalBenchHostPortFromCompose(composePath) {
 export function buildServiceTargets(envVars = {}) {
   const targets = [];
 
-  if (Boolean(envVars.LLM_API_KEY || envVars.LLM_BASE_URL)) {
+  if (Boolean(envVars.GEMINI_API_KEY || envVars.OPENAI_API_KEY || envVars.DEEPSEEK_API_KEY || envVars.ANTHROPIC_API_KEY || envVars.LLM_BASE_URL)) {
     targets.push({
       id: 'svc_llm_sync',
       category: 'services',

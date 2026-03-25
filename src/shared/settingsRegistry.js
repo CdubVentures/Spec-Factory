@@ -21,6 +21,8 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "categoryAuthorityRoot", type: "string", default: "category_authority", allowEmpty: true, aliases: ["helperFilesRoot"], configKey: "categoryAuthorityRoot", envKey: "CATEGORY_AUTHORITY_ROOT", group: "paths", uiCategory: "global", uiSection: "output", uiGroup: "Paths", uiTip: "Root directory for category authority helper files" },
   { key: "crawleeHeadless", type: "bool", default: true, configKey: "crawleeHeadless", envKey: "CRAWLEE_HEADLESS", group: "runtime", uiCategory: "fetcher", uiSection: "browser", uiGroup: "Crawlee Internals", uiTip: "Run the browser in headless mode (no visible window)" },
   { key: "crawleeRequestHandlerTimeoutSecs", type: "int", default: 75, min: 0, max: 300, configKey: "crawleeRequestHandlerTimeoutSecs", envKey: "CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS", group: "runtime", uiCategory: "fetcher", uiSection: "browser", uiGroup: "Crawlee Internals", uiTip: "Timeout for the Crawlee request handler per page" },
+  { key: "crawlVideoRecordingEnabled", type: "bool", default: true, configKey: "crawlVideoRecordingEnabled", envKey: "CRAWL_VIDEO_RECORDING_ENABLED", group: "runtime", uiCategory: "fetcher", uiSection: "browser", uiGroup: "Video Recording", uiHero: true, uiTip: "Record a WebM video of each crawled page for playback in the fetch worker panel" },
+  { key: "crawlVideoRecordingSize", type: "string", default: "1280x720", configKey: "crawlVideoRecordingSize", envKey: "CRAWL_VIDEO_RECORDING_SIZE", group: "runtime", uiCategory: "fetcher", uiSection: "browser", uiGroup: "Video Recording", uiTip: "Video recording resolution as WIDTHxHEIGHT (e.g. 1280x720)", disabledBy: "crawlVideoRecordingEnabled" },
   { key: "fetcherAdapter", type: "enum", default: "crawlee", allowed: ["crawlee"], configKey: "fetcherAdapter", envKey: "FETCHER_ADAPTER", group: "runtime", uiCategory: "fetcher", uiSection: "adapter", uiHero: true, uiTip: "Crawl tool used for page fetching" },
   { key: "fetcherPlugins", type: "string", default: "stealth,autoScroll,screenshot", configKey: "fetcherPlugins", envKey: "FETCHER_PLUGINS", group: "runtime", uiCategory: "fetcher", uiSection: "adapter", uiTip: "Comma-separated list of fetcher plugins to activate" },
   { key: "deepseekApiKey", type: "string", default: "", secret: true, allowEmpty: true, policyGroup: "apiKeys", policyField: "deepseek", configKey: "deepseekApiKey", envKey: "DEEPSEEK_API_KEY", group: "llm", uiCategory: "extraction", uiSection: "provider", uiGroup: "API Keys", uiTip: "API key for DeepSeek models" },
@@ -46,7 +48,6 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "llmMaxOutputTokensPlanFallback", type: "int", default: 2048, min: 128, max: 262144, tokenClamped: true, clampModelKey: "llmPlanFallbackModel", clampModelFallbackKey: "llmModelPlan", aliases: ["llmTokensPlanFallback"], policyGroup: "tokens", policyField: "planFallback", configKey: "llmMaxOutputTokensPlanFallback", envKey: "LLM_MAX_OUTPUT_TOKENS_PLAN_FALLBACK", group: "llm" },
   { key: "llmMaxOutputTokensTriage", type: "int", default: 20000, min: 20000, max: 262144, tokenClamped: true, clampModelKey: "llmModelPlan", aliases: ["llmTokensTriage"], policyGroup: "tokens", policyField: "triage", configKey: "llmMaxOutputTokensTriage", envKey: "LLM_MAX_OUTPUT_TOKENS_TRIAGE", group: "llm" },
   { key: "llmMaxOutputTokensReasoning", type: "int", default: 4096, min: 128, max: 262144, tokenClamped: true, clampModelKey: "llmModelReasoning", aliases: ["llmTokensReasoning"], policyGroup: "tokens", policyField: "reasoning", configKey: "llmMaxOutputTokensReasoning", envKey: "LLM_MAX_OUTPUT_TOKENS_REASONING", group: "llm" },
-  { key: "llmMaxOutputTokensReasoningFallback", type: "int", default: 2048, min: 128, max: 262144, tokenClamped: true, clampModelKey: "llmReasoningFallbackModel", clampModelFallbackKey: "llmModelReasoning", aliases: ["llmTokensReasoningFallback"], policyGroup: "tokens", policyField: "reasoningFallback", configKey: "llmMaxOutputTokensReasoningFallback", envKey: "LLM_MAX_OUTPUT_TOKENS_REASONING_FALLBACK", group: "misc" },
   { key: "llmMaxTokens", type: "int", default: 16384, min: 128, max: 262144, policyGroup: "tokens", policyField: "maxTokens", configKey: "llmMaxTokens", envKey: "LLM_MAX_TOKENS", group: "llm" },
   { key: "llmModelPlan", type: "string", default: "gemini-2.5-flash", aliases: ["phase2LlmModel"], policyGroup: "models", policyField: "plan", configKey: "llmModelPlan", envKey: "LLM_MODEL_PLAN", group: "llm", uiCategory: "extraction", uiSection: "models", uiGroup: "Plan Phase", uiTip: "Model ID used for the plan phase" },
   { key: "llmModelReasoning", type: "string", default: "deepseek-reasoner", policyGroup: "models", policyField: "reasoning", configKey: "llmModelReasoning", envKey: "LLM_MODEL_REASONING", group: "llm", uiCategory: "extraction", uiSection: "models", uiGroup: "Reasoning Phase", uiTip: "Model ID used for the reasoning phase" },
@@ -68,6 +69,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "maxRunSeconds", type: "int", default: 480, min: 30, max: 86400, configKey: "maxRunSeconds", envKey: "MAX_RUN_SECONDS", group: "misc", uiCategory: "global", uiSection: "run-setup", uiHero: true, uiTip: "Maximum wall-clock time before the pipeline auto-stops" },
   { key: "openaiApiKey", type: "string", default: "", secret: true, allowEmpty: true, policyGroup: "apiKeys", policyField: "openai", configKey: "openaiApiKey", envKey: "OPENAI_API_KEY", group: "llm", uiCategory: "extraction", uiSection: "provider", uiGroup: "API Keys", uiTip: "API key for OpenAI models" },
   { key: "pipelineSchemaEnforcementMode", type: "enum", default: "warn", allowed: ["off", "warn", "enforce"], configKey: "pipelineSchemaEnforcementMode", envKey: "PIPELINE_SCHEMA_ENFORCEMENT_MODE", group: "misc", uiCategory: "validation", uiSection: "schema", uiHero: true, uiTip: "How pipeline context schema violations are handled: off, warn, or enforce" },
+  { key: "robotsTxtCompliant", type: "bool", default: true, configKey: "robotsTxtCompliant", envKey: "ROBOTS_TXT_COMPLIANT", group: "misc", uiCategory: "fetcher", uiSection: "browser", uiGroup: "Robots.txt", uiTip: "Respect robots.txt rules when crawling" },
   { key: "runtimeControlFile", type: "string", default: "_runtime/control/runtime_overrides.json", configKey: "runtimeControlFile", envKey: "RUNTIME_CONTROL_FILE", group: "runtime", uiCategory: "global", uiSection: "output", uiGroup: "Runtime Output", uiTip: "Path to the runtime override JSON file used by the planner" },
   { key: "runtimeEventsKey", type: "string", default: "_runtime/events.jsonl", configKey: "runtimeEventsKey", envKey: "RUNTIME_EVENTS_KEY", group: "runtime", uiCategory: "global", uiSection: "output", uiGroup: "Runtime Output", uiTip: "Output path for the runtime event log (JSONL format)" },
   { key: "runtimeScreencastEnabled", type: "bool", default: true, configKey: "runtimeScreencastEnabled", envKey: "RUNTIME_SCREENCAST_ENABLED", group: "runtime", uiCategory: "fetcher", uiSection: "observability", uiHero: true, uiTip: "Record a screencast of browser activity during crawling" },
@@ -85,6 +87,10 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
 
   // --- Pipeline phase knobs (extracted from hardcoded values) ---
 
+  // Tier Hierarchy
+  { key: "tierHierarchyOrder", type: "string", default: "brand_seeds,spec_seeds,source_seeds,group_searches,key_searches", configKey: "tierHierarchyOrder", envKey: "TIER_HIERARCHY_ORDER", group: "misc", uiCategory: "planner", uiSection: "tier-hierarchy", uiGroup: "Tier Order", uiTip: "Comma-separated budget priority order for all query tiers (brand_seeds, spec_seeds, source_seeds, group_searches, key_searches)" },
+  { key: "keySearchEnrichmentOrder", type: "string", default: "aliases,domain_hints,content_types", configKey: "keySearchEnrichmentOrder", envKey: "KEY_SEARCH_ENRICHMENT_ORDER", group: "misc", uiCategory: "planner", uiSection: "tier-hierarchy", uiGroup: "Key Search Enrichment", uiTip: "Order of progressive enrichment for Tier 3 key searches (aliases, domain_hints, content_types)" },
+
   // NeedSet
   { key: "needsetGroupQueryTermsCap", type: "int", default: 5, min: 1, max: 20, configKey: "needsetGroupQueryTermsCap", envKey: "NEEDSET_GROUP_QUERY_TERMS_CAP", group: "misc", uiCategory: "planner", uiSection: "needset", uiGroup: "Field Assessment", uiTip: "Maximum query terms generated per field group" },
   { key: "needsetGroupSearchCoverageThreshold", type: "float", default: 0.80, min: 0, max: 1, configKey: "needsetGroupSearchCoverageThreshold", envKey: "NEEDSET_GROUP_SEARCH_COVERAGE_THRESHOLD", group: "misc", uiCategory: "planner", uiSection: "needset", uiGroup: "Group Search", uiTip: "Coverage ratio above which a field group is considered sufficiently resolved" },
@@ -97,6 +103,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "queryBuilderFieldQueryCap", type: "int", default: 3, min: 1, max: 20, configKey: "queryBuilderFieldQueryCap", envKey: "QUERY_BUILDER_FIELD_QUERY_CAP", group: "misc", uiCategory: "planner", uiSection: "search-profile", uiGroup: "Query Caps", uiTip: "Maximum queries generated per field" },
   { key: "queryBuilderDocHintQueryCap", type: "int", default: 3, min: 1, max: 20, configKey: "queryBuilderDocHintQueryCap", envKey: "QUERY_BUILDER_DOC_HINT_QUERY_CAP", group: "misc", uiCategory: "planner", uiSection: "search-profile", uiGroup: "Query Caps", uiTip: "Maximum queries generated from document hints" },
   { key: "manufacturerPlanUrlCap", type: "int", default: 40, min: 1, max: 200, configKey: "manufacturerPlanUrlCap", envKey: "MANUFACTURER_PLAN_URL_CAP", group: "misc", uiCategory: "planner", uiSection: "search-profile", uiGroup: "Query Caps", uiTip: "Maximum manufacturer URLs generated per host when building plan-only results" },
+  { key: "disableUrlGuessFallback", type: "bool", default: false, configKey: "disableUrlGuessFallback", envKey: "DISABLE_URL_GUESS_FALLBACK", group: "misc", uiCategory: "planner", uiSection: "search-profile", uiGroup: "Query Caps", uiTip: "When enabled, disables synthetic URL guessing for manufacturer sites — forces reliance on actual search results" },
   { key: "queryDedupeRowsCap", type: "int", default: 24, min: 1, max: 100, configKey: "queryDedupeRowsCap", envKey: "QUERY_DEDUPE_ROWS_CAP", group: "misc", uiCategory: "planner", uiSection: "search-profile", uiGroup: "Query Caps", uiTip: "Maximum deduplicated query rows retained after merging" },
 
   // Search Execution — Google
@@ -112,6 +119,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
 
   // Search Execution — SearXNG + Brave
   { key: "searxngSearchTimeoutMs", type: "int", default: 8000, min: 1000, max: 60000, configKey: "searxngSearchTimeoutMs", envKey: "SEARXNG_SEARCH_TIMEOUT_MS", group: "misc", uiCategory: "planner", uiSection: "search-execution", uiGroup: "SearXNG", uiTip: "Timeout for a single SearXNG search request" },
+  { key: "braveApiKey", type: "string", default: "", secret: true, configKey: "braveApiKey", envKey: "BRAVE_API_KEY", group: "misc", uiCategory: "planner", uiSection: "search-execution", uiGroup: "Brave Search", uiTip: "Subscription token for the Brave Search API" },
   { key: "braveSearchTimeoutMs", type: "int", default: 8000, min: 1000, max: 60000, configKey: "braveSearchTimeoutMs", envKey: "BRAVE_SEARCH_TIMEOUT_MS", group: "misc", uiCategory: "planner", uiSection: "search-execution", uiGroup: "Brave Search", uiTip: "Timeout for a single Brave Search API request" },
   { key: "braveSearchResultCap", type: "int", default: 20, min: 1, max: 100, configKey: "braveSearchResultCap", envKey: "BRAVE_SEARCH_RESULT_CAP", group: "misc", uiCategory: "planner", uiSection: "search-execution", uiGroup: "Brave Search", uiTip: "Maximum results to extract per Brave search query" },
 
@@ -141,24 +149,9 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
 // This registry lets downstream layers (audit, docs, GUI env editor) discover
 // them without scraping manifest group files.
 export const BOOTSTRAP_ENV_REGISTRY = Object.freeze([
-  // --- core ---
-  { key: "port", envKey: "PORT", type: "int", default: 8788, group: "core" },
-  { key: "settingsCanonicalOnlyWrites", envKey: "SETTINGS_CANONICAL_ONLY_WRITES", type: "bool", default: true, group: "core" },
-
-  // --- storage ---
-  { key: "runDataStorageDestinationType", envKey: "RUN_DATA_STORAGE_DESTINATION_TYPE", type: "string", default: "local", group: "storage" },
-
   // --- llm ---
-  { key: "llmApiKey", envKey: "LLM_API_KEY", type: "string", default: "", group: "llm", secret: true },
   { key: "llmPhaseOverridesJson", envKey: "LLM_PHASE_OVERRIDES_JSON", type: "string", default: "{}", group: "llm" },
   { key: "llmProviderRegistryJson", envKey: "LLM_PROVIDER_REGISTRY_JSON", type: "string", default: "", group: "llm" },
-  { key: "openaiTimeoutMs", envKey: "OPENAI_TIMEOUT_MS", type: "int", default: 40000, group: "llm" },
-
-  // --- discovery ---
-  { key: "searxngDefaultBaseUrl", envKey: "SEARXNG_DEFAULT_BASE_URL", type: "string", default: "", group: "discovery" },
-
-  // --- runtime ---
-  { key: "runtimeOpsWorkbenchEnabled", envKey: "RUNTIME_OPS_WORKBENCH_ENABLED", type: "bool", default: true, group: "runtime" },
 
   // --- paths ---
   { key: "localOutputRoot", envKey: "LOCAL_OUTPUT_ROOT", type: "string", default: "", group: "paths" },

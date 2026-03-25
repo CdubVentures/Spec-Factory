@@ -58,14 +58,13 @@ export async function runLlmHealthCheck({
   const resolvedModel = normalized(
     explicitModel || route.model || configValue(config, 'llmModelPlan')
   );
-  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback
-  const resolvedApiKey = route.apiKey || config.llmApiKey || '';
+  const resolvedApiKey = route.apiKey || '';
   const resolvedBaseUrl = normalized(
     route.baseUrl || config.llmBaseUrl || configValue(config, 'llmBaseUrl')
   );
 
   if (!resolvedApiKey) {
-    throw new Error('LLM_API_KEY is missing');
+    throw new Error('No API key configured for model');
   }
 
   const runId = buildRunId();
@@ -134,8 +133,7 @@ export async function runLlmHealthCheck({
     },
     reasoningMode: configBool(config, 'llmReasoningMode'),
     reasoningBudget: configInt(config, 'llmReasoningBudget'),
-    // WHY: openaiTimeoutMs is not a registry key — legacy fallback
-    timeoutMs: configInt(config, 'llmTimeoutMs') || config.openaiTimeoutMs,
+    timeoutMs: configInt(config, 'llmTimeoutMs'),
     logger
   });
 

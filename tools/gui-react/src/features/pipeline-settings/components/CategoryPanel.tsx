@@ -2,11 +2,14 @@
 // Column 1: styled nav sidebar with icons (select one section).
 // Column 2: header card + settings for the SELECTED section only.
 
+import { Suspense, lazy } from 'react';
 import { GenericSectionPanel } from './GenericSectionPanel.tsx';
 import { findCategory } from '../state/SettingsCategoryRegistry.ts';
 import type { SettingsCategoryId, SettingsSectionDef } from '../state/SettingsCategoryRegistry.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
+
+const TierHierarchyPanel = lazy(() => import('../sections/TierHierarchyPanel.tsx'));
 
 export interface CategoryPanelProps {
   categoryId: SettingsCategoryId;
@@ -24,6 +27,7 @@ function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean
   const iconPaths: Record<string, React.ReactNode> = {
     'run-setup': <><path d="M12 6v6l4 2" /><circle cx="12" cy="12" r="9" /></>,
     output: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></>,
+    'tier-hierarchy': <><path d="M3 6h18M3 12h18M3 18h18" /><path d="m7 3 2 3-2 3" /><path d="m7 9 2 3-2 3" /><path d="m7 15 2 3-2 3" /></>,
     needset: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
     'brand-resolver': <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></>,
     'search-profile': <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></>,
@@ -177,15 +181,25 @@ export function CategoryPanel({
 
             {/* Settings for this section */}
             <div className="space-y-4">
-              <GenericSectionPanel
-                categoryId={categoryId}
-                sectionId={activeSection}
-                runtimeDraft={runtimeDraft}
-                onBoolChange={onBoolChange}
-                onNumberChange={onNumberChange}
-                onStringChange={onStringChange}
-                disabled={disabled}
-              />
+              {activeSectionDef.customComponent === 'TierHierarchy' ? (
+                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                  <TierHierarchyPanel
+                    runtimeDraft={runtimeDraft}
+                    onStringChange={onStringChange}
+                    disabled={disabled}
+                  />
+                </Suspense>
+              ) : (
+                <GenericSectionPanel
+                  categoryId={categoryId}
+                  sectionId={activeSection}
+                  runtimeDraft={runtimeDraft}
+                  onBoolChange={onBoolChange}
+                  onNumberChange={onNumberChange}
+                  onStringChange={onStringChange}
+                  disabled={disabled}
+                />
+              )}
             </div>
           </>
         )}

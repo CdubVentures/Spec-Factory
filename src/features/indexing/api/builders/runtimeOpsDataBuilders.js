@@ -6,6 +6,7 @@ import {
   buildScreenshotRecord,
 } from './runtimeOpsEventPrimitives.js';
 export { buildPreFetchPhases } from './runtimeOpsPreFetchBuilders.js';
+export { buildFetchPhases } from './runtimeOpsFetchBuilders.js';
 export { buildExtractionFields } from './runtimeOpsExtractionFieldBuilders.js';
 export { buildRuntimeOpsWorkers } from './runtimeOpsWorkerPoolBuilders.js';
 export { buildWorkerDetail } from './runtimeOpsWorkerDetailBuilders.js';

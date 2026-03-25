@@ -429,9 +429,7 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       const specDb = getSpecDb(category);
       if (specDb && alias) {
         try {
-          const idRow = specDb.db.prepare(
-            'SELECT id FROM component_identity WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?'
-          ).get(specDb.category, item.component_type, merge_target, '');
+          const idRow = specDb.getComponentIdentity(item.component_type, merge_target, '');
           if (idRow) {
             specDb.insertAlias(idRow.id, alias, 'user');
           }

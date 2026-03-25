@@ -21,7 +21,7 @@ export function createSearxngRuntime({
   sleep,
 } = {}) {
   const SEARXNG_CONTAINER_NAME = 'spec-harvester-searxng';
-  const SEARXNG_DEFAULT_BASE_URL = String(config?.searxngDefaultBaseUrl || 'http://127.0.0.1:8080').trim() || 'http://127.0.0.1:8080';
+  const SEARXNG_DEFAULT_BASE_URL = 'http://127.0.0.1:8080';
   const SEARXNG_COMPOSE_PATH = resolveProjectPath(path.join('tools', 'searxng', 'docker-compose.yml'));
 
   async function probeSearxngHttp(baseUrl) {

@@ -10,6 +10,7 @@ import {
   toBool,
   resolveIdentityAmbiguitySnapshot, buildRunIdentityFingerprint,
   resolveRuntimeControlKey, defaultRuntimeOverrides, normalizeRuntimeOverrides,
+  resolveScreencastCallback,
 } from '../features/indexing/orchestration/shared/index.js';
 import {
   createRunRuntime,
@@ -216,7 +217,13 @@ export async function runProduct({
     .split(',').map((s) => s.trim()).filter(Boolean);
   const plugins = resolvePlugins(pluginNames, { logger });
   const adapter = resolveAdapter(adapterName);
-  const session = adapter.create({ settings: config, plugins, logger });
+  // WHY: crawlSession needs runId to construct the video recording directory.
+  const session = adapter.create({
+    settings: { ...config, runId },
+    plugins,
+    logger,
+    onScreencastFrame: resolveScreencastCallback(config),
+  });
   await session.start();
 
   try {

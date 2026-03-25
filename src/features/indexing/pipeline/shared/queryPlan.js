@@ -36,8 +36,8 @@ import {
 function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '', config = null }) {
   const urls = [];
 
-  // Feature flag: DISABLE_URL_GUESS_FALLBACK (default: false)
-  if (process.env.DISABLE_URL_GUESS_FALLBACK === 'true') {
+  // WHY: Feature flag from settings registry (was process.env, now config-driven).
+  if (config?.disableUrlGuessFallback === true) {
     logger?.info?.('manufacturer_plan_urls_disabled', { host, reason });
     return urls;
   }

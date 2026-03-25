@@ -20,10 +20,10 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'userAgent',
   'localInputRoot', 'localOutputRoot',
   'searchEngines', 'searchEnginesFallback',
-  'searxngBaseUrl', 'searxngDefaultBaseUrl',
+  'searxngBaseUrl',
 
   // LLM model/provider resolution chain
-  'llmProvider', 'llmApiKey', 'llmBaseUrl',
+  'llmProvider', 'llmBaseUrl',
   'llmModelExtract', 'llmModelPlan', 'llmModelReasoning',
   'llmPlanFallbackModel', 'llmModelCatalog',
   'llmTimeoutMs', 'llmForceRoleModelProvider',
@@ -34,7 +34,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   // OpenAI aliases (computed from LLM chain)
   'openaiApiKey', 'openaiBaseUrl',
   'openaiModelExtract', 'openaiModelPlan',
-  'openaiTimeoutMs',
 
   // API keys (read from env directly, not via registry default)
   'anthropicApiKey', 'geminiApiKey', 'deepseekApiKey',
@@ -52,7 +51,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
 
   // Hardcoded constants (not in registry or always fixed)
   'retrievalMaxHitsPerField', 'retrievalMaxPrimeSources', 'retrievalIdentityFilterEnabled',
-  'runtimeOpsWorkbenchEnabled',
 
   // Category authority (computed resolution chain)
   'categoryAuthorityRoot',

@@ -38,3 +38,5 @@ export {
   lookupPromptHistory,
   promptIndexSummary,
 } from './promptIndex.js';
+
+export { createPhaseCallLlm } from './createPhaseCallLlm.js';

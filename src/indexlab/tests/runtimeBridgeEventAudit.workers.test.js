@@ -30,6 +30,52 @@ test('run_started writes baseline needset and search profile artifacts', async (
   assert.equal(Boolean(runMeta?.artifacts?.has_search_profile), true);
 });
 
+test('search_profile_generated updates the planned search-profile artifact contract', async () => {
+  const { bridge, tmpDir } = await makeBridge();
+  await startRun(bridge);
+
+  bridge.onRuntimeEvent(baseRow({
+    event: 'search_profile_generated',
+    ts: '2025-01-01T00:00:05Z',
+    payload: {
+      query_rows: [
+        {
+          query: 'razer viper v3 pro specs',
+          hint_source: 'seed',
+          target_fields: ['weight'],
+          doc_hint: 'spec',
+          domain_hint: 'razer.com',
+          source_host: 'razer.com',
+          tier: 'seed',
+          group_key: 'core_specs',
+          normalized_key: 'weight',
+        },
+      ],
+    },
+  }));
+  await bridge.queue;
+
+  const runDir = path.join(tmpDir, 'run-audit-001');
+  const searchProfile = JSON.parse(await fs.readFile(path.join(runDir, 'search_profile.json'), 'utf8'));
+  assert.equal(String(searchProfile.status || ''), 'planned');
+  assert.equal(Number(searchProfile.query_count || 0), 1);
+  assert.equal(Number(searchProfile.selected_query_count || 0), 1);
+  assert.deepEqual(searchProfile.selected_queries, ['razer viper v3 pro specs']);
+  assert.equal(Array.isArray(searchProfile.query_stats), true);
+  assert.equal(searchProfile.query_stats.length, 1);
+  assert.equal(searchProfile.query_stats[0].query, 'razer viper v3 pro specs');
+  assert.equal(searchProfile.query_stats[0].attempts, 0);
+  assert.equal(searchProfile.query_stats[0].result_count, 0);
+
+  const row = (searchProfile.query_rows || [])[0];
+  assert.ok(row);
+  assert.equal(row.query, 'razer viper v3 pro specs');
+  assert.equal(row.hint_source, 'seed');
+  assert.equal(row.tier, 'seed');
+  assert.equal(row.group_key, 'core_specs');
+  assert.equal(row.normalized_key, 'weight');
+});
+
 test('fetch_started event includes non-empty worker_id', async () => {
   const { bridge, events } = await makeBridge();
   await startRun(bridge);

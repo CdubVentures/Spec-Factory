@@ -1,4 +1,4 @@
-import { Tip } from '../../../components/common/Tip.tsx';
+import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { ActivityGauge, formatNumber } from '../helpers.tsx';
 import type { CatalogRow } from '../../../types/product.ts';
 

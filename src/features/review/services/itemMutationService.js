@@ -114,19 +114,7 @@ export function updateKeyReviewSelectedCandidate({
   selectedValue,
   selectedScore,
 }) {
-  specDb.db.prepare(`
-    UPDATE key_review_state
-    SET selected_candidate_id = ?,
-        selected_value = ?,
-        confidence_score = COALESCE(?, confidence_score),
-        updated_at = datetime('now')
-    WHERE id = ?
-  `).run(
-    candidateId,
-    selectedValue,
-    selectedScore,
-    stateId
-  );
+  specDb.updateKeyReviewSelectedCandidate(stateId, candidateId, selectedValue, selectedScore);
 }
 
 export async function resolveItemLaneCandidateMutationRequest({
@@ -197,13 +185,7 @@ export async function resolveItemLaneCandidateMutationRequest({
 
 export function setItemFieldNeedsAiReview(specDb, category, itemFieldStateId) {
   try {
-    specDb.db.prepare(`
-      UPDATE item_field_state
-      SET needs_ai_review = 1,
-          ai_review_complete = 0,
-          updated_at = datetime('now')
-      WHERE category = ? AND id = ?
-    `).run(category, itemFieldStateId);
+    specDb.setItemFieldNeedsAiReview(itemFieldStateId);
   } catch { /* best-effort */ }
 }
 
@@ -252,12 +234,12 @@ export function applyPrimaryItemConfirmLane({
     at: now,
   });
   if (nextPrimaryStatus === 'confirmed') {
-    const refreshedState = specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(stateRow.id) || stateRow;
+    const refreshedState = specDb.getKeyReviewStateById(stateRow.id) || stateRow;
     markPrimaryLaneReviewedInItemState(specDb, category, refreshedState);
   } else {
     setItemFieldNeedsAiReview(specDb, category, stateItemFieldStateId);
   }
-  const updated = specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(stateRow.id);
+  const updated = specDb.getKeyReviewStateById(stateRow.id);
   return {
     now,
     pendingCandidateIds,
@@ -334,7 +316,7 @@ export function applyLaneDecisionStatusAndAudit({
       reason: `User accepted ${lane} lane via GUI${candidateId ? ` for candidate ${candidateId}` : ''}`,
     });
   }
-  const updated = specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(stateRow.id);
+  const updated = specDb.getKeyReviewStateById(stateRow.id);
   return {
     now,
     updated,

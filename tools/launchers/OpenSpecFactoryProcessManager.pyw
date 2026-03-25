@@ -4,7 +4,9 @@ import json
 import queue
 import subprocess
 import threading
+import time
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import messagebox, ttk
 
@@ -13,11 +15,26 @@ ROOT = LAUNCHER_DIR.parent.parent
 BACKEND_PATH = ROOT / 'tools' / 'specfactory-process-manager.js'
 ICON_PATH = LAUNCHER_DIR / 'icons' / 'specfactory-process-manager.ico'
 TARGET_PORT = 8788
+PORT_POLL_INTERVAL = 0.5
+PORT_POLL_TIMEOUT = 30.0
 CREATE_NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 
 
 class BackendError(RuntimeError):
     pass
+
+
+def wait_for_port(port: int = TARGET_PORT, timeout: float = PORT_POLL_TIMEOUT) -> bool:
+    """Block until something is listening on *port*, or timeout."""
+    import socket
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(('127.0.0.1', port), timeout=0.5):
+                return True
+        except OSError:
+            time.sleep(PORT_POLL_INTERVAL)
+    return False
 
 
 def run_backend(action: str, pid: int | None = None) -> dict:
@@ -56,8 +73,8 @@ class ProcessManagerApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title('Spec Factory Process Manager')
-        self.root.geometry('1320x760')
-        self.root.minsize(1080, 640)
+        self.root.geometry('1584x760')
+        self.root.minsize(1296, 640)
         self.root.configure(bg='#0b1320')
         if ICON_PATH.exists():
             try:
@@ -164,10 +181,12 @@ class ProcessManagerApp:
 
         self.refresh_button = ttk.Button(actions, text='Refresh', command=self.refresh_state, style='Action.TButton')
         self.refresh_button.grid(row=0, column=0, padx=(0, 8))
+        self.open_browser_button = ttk.Button(actions, text='Open Browser', command=self.open_browser, style='Action.TButton')
+        self.open_browser_button.grid(row=0, column=1, padx=(0, 8))
         self.kill_button = ttk.Button(actions, text='Kill Selected', command=self.kill_selected, style='Action.TButton')
-        self.kill_button.grid(row=0, column=1, padx=(0, 8))
+        self.kill_button.grid(row=0, column=2, padx=(0, 8))
         self.restart_button = ttk.Button(actions, text='Restart Selected', command=self.restart_selected, style='Action.TButton')
-        self.restart_button.grid(row=0, column=2)
+        self.restart_button.grid(row=0, column=3)
 
         stats_row = ttk.Frame(shell, style='Root.TFrame')
         stats_row.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(16, 16))
@@ -311,9 +330,12 @@ class ProcessManagerApp:
     def _sync_buttons(self) -> None:
         row = self.rows_by_pid.get(self.selected_pid or -1)
         refresh_state = 'disabled' if self.busy else 'normal'
+        has_port_owner = any(r.get('port_8788_owner') for r in self.rows_by_pid.values())
+        browser_state = 'normal' if has_port_owner and not self.busy else 'disabled'
         kill_state = 'normal' if row and row.get('can_kill') and not self.busy else 'disabled'
         restart_state = 'normal' if row and row.get('can_restart') and not self.busy else 'disabled'
         self.refresh_button.configure(state=refresh_state)
+        self.open_browser_button.configure(state=browser_state)
         self.kill_button.configure(state=kill_state)
         self.restart_button.configure(state=restart_state)
 
@@ -508,6 +530,9 @@ class ProcessManagerApp:
         self.native_module_value.configure(text='ERROR', foreground='#ff8c8c')
         self._set_detail_text(self.env_text, f'Preflight check failed:\n{message}')
 
+    def open_browser(self) -> None:
+        webbrowser.open(f'http://127.0.0.1:{TARGET_PORT}')
+
     def kill_selected(self) -> None:
         row = self.rows_by_pid.get(self.selected_pid or -1)
         if not row or not row.get('can_kill'):
@@ -534,9 +559,15 @@ class ProcessManagerApp:
             parent=self.root,
         ):
             return
+        def restart_worker():
+            result = run_backend('restart', int(row['pid']))
+            if not wait_for_port():
+                raise BackendError('Server did not start within timeout.')
+            return result
+
         self._run_task(
             f"Restarting PID {row['pid']}...",
-            lambda: run_backend('restart', int(row['pid'])),
+            restart_worker,
             lambda _payload: self.refresh_state(),
         )
 

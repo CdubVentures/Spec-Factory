@@ -41,7 +41,7 @@ test('runtimeOpsRoutes: screencast endpoint returns cached last frame for run wo
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => [],
       getLastScreencastFrame: (requestedRunId, workerId) => (
         requestedRunId === runId && workerId === 'fetch-9'
@@ -118,7 +118,7 @@ test('runtimeOpsRoutes: screencast endpoint falls back to persisted run frame wh
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => [],
       getLastScreencastFrame: () => null,
     });
@@ -192,7 +192,7 @@ test('runtimeOpsRoutes: screencast endpoint synthesizes proof frame for ended br
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       outputRoot,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => events,
       getLastScreencastFrame: () => null,
     });
@@ -243,7 +243,7 @@ test('runtimeOpsRoutes: runtime asset route serves output-root screenshot keys r
       indexLabRoot,
       outputRoot,
       storage: createOutputRootStorage(outputRoot),
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => [],
     });
 
@@ -329,7 +329,7 @@ test('runtimeOpsRoutes: archived cache screenshot metadata resolves from cached 
       indexLabRoot,
       outputRoot,
       storage: createOutputRootStorage(outputRoot),
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       resolveIndexLabRunDirectory: async () => archivedRunDir,
       readIndexLabRunEvents: async () => events,
     });
@@ -390,7 +390,7 @@ test('runtimeOpsRoutes: archived cache runtime asset route serves cached run_out
       indexLabRoot,
       outputRoot,
       storage: createOutputRootStorage(outputRoot),
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       resolveIndexLabRunDirectory: async () => archivedRunDir,
       readIndexLabRunEvents: async () => [],
     });

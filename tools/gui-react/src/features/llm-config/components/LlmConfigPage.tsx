@@ -279,6 +279,8 @@ export function LlmConfigPage() {
           inputCls={inputCls}
           llmModelOptions={llmModelOptions}
           updateDraft={updateDraft}
+          onNumberChange={onNumberChange}
+          getNumberBounds={getNumberBounds}
           registry={registry}
           onRegistryChange={onRegistryChange}
           apiKeyFilter={apiKeyFilter}

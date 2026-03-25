@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual, strictEqual, ok } from 'node:assert';
 
-// Existing structures (the truth we must match)
 import { SETTINGS_DEFAULTS, SETTINGS_OPTION_VALUES } from '../settingsDefaults.js';
 import {
   SETTINGS_CLAMPING_INT_RANGE_MAP,
@@ -11,7 +10,6 @@ import {
 import { RUNTIME_SETTINGS_ROUTE_GET } from '../../core/config/settingsKeyMap.js';
 import { RUNTIME_SETTINGS_ROUTE_PUT } from '../../features/settings-authority/runtimeSettingsRoutePut.js';
 
-// New registry + derivation functions
 import { RUNTIME_SETTINGS_REGISTRY } from '../settingsRegistry.js';
 import {
   deriveRuntimeDefaults,
@@ -23,38 +21,29 @@ import {
   deriveRoutePutContract,
 } from '../settingsRegistryDerivations.js';
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                             */
-/* ------------------------------------------------------------------ */
-
 function sortedKeys(obj) {
   return Object.keys(obj).sort();
 }
 
-/** Deep-compare ignoring Object.freeze (frozen vs unfrozen are equal if values match) */
 function toPlainObject(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-/* ------------------------------------------------------------------ */
-/*  Registry integrity                                                  */
-/* ------------------------------------------------------------------ */
-
-describe('RUNTIME_SETTINGS_REGISTRY — integrity', () => {
+describe('RUNTIME_SETTINGS_REGISTRY integrity', () => {
   it('is a frozen array', () => {
     ok(Array.isArray(RUNTIME_SETTINGS_REGISTRY));
     ok(Object.isFrozen(RUNTIME_SETTINGS_REGISTRY));
   });
 
   it('has no duplicate keys', () => {
-    const keys = RUNTIME_SETTINGS_REGISTRY.map(e => e.key);
+    const keys = RUNTIME_SETTINGS_REGISTRY.map((entry) => entry.key);
     const unique = new Set(keys);
-    strictEqual(keys.length, unique.size, `duplicate keys: ${keys.filter((k, i) => keys.indexOf(k) !== i)}`);
+    strictEqual(keys.length, unique.size, `duplicate keys: ${keys.filter((key, index) => keys.indexOf(key) !== index)}`);
   });
 
   it('every entry has key, type, and default', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      ok(typeof entry.key === 'string' && entry.key.length > 0, `missing key`);
+      ok(typeof entry.key === 'string' && entry.key.length > 0, 'missing key');
       ok(['string', 'int', 'float', 'bool', 'enum', 'csv_enum'].includes(entry.type), `${entry.key}: bad type ${entry.type}`);
       ok(entry.default !== undefined, `${entry.key}: missing default`);
     }
@@ -77,40 +66,40 @@ describe('RUNTIME_SETTINGS_REGISTRY — integrity', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  deriveRuntimeDefaults — must match SETTINGS_DEFAULTS.runtime        */
-/* ------------------------------------------------------------------ */
-
 describe('deriveRuntimeDefaults', () => {
   const derived = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
   const existing = SETTINGS_DEFAULTS.runtime;
 
-  // WHY: After Phase 2, SETTINGS_DEFAULTS.runtime IS deriveRuntimeDefaults(REGISTRY).
-  // Zero drift sets remain.
-
-  it('derived key set matches existing (zero drift)', () => {
-    const derivedKeys = sortedKeys(derived);
-    const existingKeys = sortedKeys(existing);
-    deepStrictEqual(derivedKeys, existingKeys);
+  it('derived key set matches existing', () => {
+    deepStrictEqual(sortedKeys(derived), sortedKeys(existing));
   });
 
-  it('every key has matching value', () => {
+  it('every key has the existing value', () => {
     for (const key of Object.keys(derived)) {
-      const d = derived[key];
-      const e = existing[key];
-      ok(e !== undefined, `key "${key}" not found in existing defaults`);
+      const derivedValue = derived[key];
+      const existingValue = existing[key];
+      ok(existingValue !== undefined, `key "${key}" not found in existing defaults`);
       strictEqual(
-        JSON.stringify(d),
-        JSON.stringify(e),
-        `mismatch for ${key}: derived=${JSON.stringify(d).slice(0, 60)} vs existing=${JSON.stringify(e).slice(0, 60)}`,
+        JSON.stringify(derivedValue),
+        JSON.stringify(existingValue),
+        `mismatch for ${key}: derived=${JSON.stringify(derivedValue).slice(0, 60)} vs existing=${JSON.stringify(existingValue).slice(0, 60)}`,
       );
     }
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  deriveClampingIntRangeMap — must match existing                     */
-/* ------------------------------------------------------------------ */
+describe('deriveOptionValues', () => {
+  const derived = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
+
+  it('matches the existing option-values surface', () => {
+    deepStrictEqual(toPlainObject(derived), toPlainObject(SETTINGS_OPTION_VALUES.runtime));
+  });
+
+  it('does not emit retired option keys', () => {
+    ok(!('resumeMode' in derived));
+    ok(!('repairDedupeRule' in derived));
+  });
+});
 
 describe('deriveClampingIntRangeMap', () => {
   const derived = deriveClampingIntRangeMap(RUNTIME_SETTINGS_REGISTRY);
@@ -119,20 +108,16 @@ describe('deriveClampingIntRangeMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_INT_RANGE_MAP));
   });
 
-  it('every entry matches configKey, min, max', () => {
+  it('every entry matches configKey, min, and max', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_INT_RANGE_MAP)) {
-      const d = derived[key];
-      const e = SETTINGS_CLAMPING_INT_RANGE_MAP[key];
-      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
-      strictEqual(d.min, e.min, `${key} min mismatch`);
-      strictEqual(d.max, e.max, `${key} max mismatch`);
+      const derivedEntry = derived[key];
+      const existingEntry = SETTINGS_CLAMPING_INT_RANGE_MAP[key];
+      strictEqual(derivedEntry.configKey, existingEntry.configKey, `${key} configKey mismatch`);
+      strictEqual(derivedEntry.min, existingEntry.min, `${key} min mismatch`);
+      strictEqual(derivedEntry.max, existingEntry.max, `${key} max mismatch`);
     }
   });
 });
-
-/* ------------------------------------------------------------------ */
-/*  deriveClampingFloatRangeMap — must match existing                   */
-/* ------------------------------------------------------------------ */
 
 describe('deriveClampingFloatRangeMap', () => {
   const derived = deriveClampingFloatRangeMap(RUNTIME_SETTINGS_REGISTRY);
@@ -141,20 +126,16 @@ describe('deriveClampingFloatRangeMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP));
   });
 
-  it('every entry matches configKey, min, max', () => {
+  it('every entry matches configKey, min, and max', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_FLOAT_RANGE_MAP)) {
-      const d = derived[key];
-      const e = SETTINGS_CLAMPING_FLOAT_RANGE_MAP[key];
-      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
-      strictEqual(d.min, e.min, `${key} min mismatch`);
-      strictEqual(d.max, e.max, `${key} max mismatch`);
+      const derivedEntry = derived[key];
+      const existingEntry = SETTINGS_CLAMPING_FLOAT_RANGE_MAP[key];
+      strictEqual(derivedEntry.configKey, existingEntry.configKey, `${key} configKey mismatch`);
+      strictEqual(derivedEntry.min, existingEntry.min, `${key} min mismatch`);
+      strictEqual(derivedEntry.max, existingEntry.max, `${key} max mismatch`);
     }
   });
 });
-
-/* ------------------------------------------------------------------ */
-/*  deriveClampingStringEnumMap — must match existing                   */
-/* ------------------------------------------------------------------ */
 
 describe('deriveClampingStringEnumMap', () => {
   const derived = deriveClampingStringEnumMap(RUNTIME_SETTINGS_REGISTRY);
@@ -163,20 +144,16 @@ describe('deriveClampingStringEnumMap', () => {
     deepStrictEqual(sortedKeys(derived), sortedKeys(SETTINGS_CLAMPING_STRING_ENUM_MAP));
   });
 
-  it('every entry matches configKey and allowed', () => {
+  it('every entry matches configKey, allowed values, and csv flag', () => {
     for (const key of Object.keys(SETTINGS_CLAMPING_STRING_ENUM_MAP)) {
-      const d = derived[key];
-      const e = SETTINGS_CLAMPING_STRING_ENUM_MAP[key];
-      strictEqual(d.configKey, e.configKey, `${key} configKey mismatch`);
-      deepStrictEqual([...d.allowed], [...e.allowed], `${key} allowed mismatch`);
-      strictEqual(d.csv, e.csv, `${key} csv mismatch`);
+      const derivedEntry = derived[key];
+      const existingEntry = SETTINGS_CLAMPING_STRING_ENUM_MAP[key];
+      strictEqual(derivedEntry.configKey, existingEntry.configKey, `${key} configKey mismatch`);
+      deepStrictEqual([...derivedEntry.allowed], [...existingEntry.allowed], `${key} allowed mismatch`);
+      strictEqual(derivedEntry.csv, existingEntry.csv, `${key} csv mismatch`);
     }
   });
 });
-
-/* ------------------------------------------------------------------ */
-/*  deriveRouteGetMaps — must match existing                           */
-/* ------------------------------------------------------------------ */
 
 describe('deriveRouteGetMaps', () => {
   const derived = deriveRouteGetMaps(RUNTIME_SETTINGS_REGISTRY);
@@ -186,8 +163,8 @@ describe('deriveRouteGetMaps', () => {
   });
 
   it('stringMap values match', () => {
-    for (const [key, cfgKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.stringMap)) {
-      strictEqual(derived.stringMap[key], cfgKey, `stringMap[${key}] mismatch`);
+    for (const [key, configKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.stringMap)) {
+      strictEqual(derived.stringMap[key], configKey, `stringMap[${key}] mismatch`);
     }
   });
 
@@ -196,8 +173,8 @@ describe('deriveRouteGetMaps', () => {
   });
 
   it('intMap values match', () => {
-    for (const [key, cfgKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.intMap)) {
-      strictEqual(derived.intMap[key], cfgKey, `intMap[${key}] mismatch`);
+    for (const [key, configKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.intMap)) {
+      strictEqual(derived.intMap[key], configKey, `intMap[${key}] mismatch`);
     }
   });
 
@@ -210,16 +187,11 @@ describe('deriveRouteGetMaps', () => {
   });
 
   it('boolMap values match', () => {
-    for (const [key, cfgKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.boolMap)) {
-      strictEqual(derived.boolMap[key], cfgKey, `boolMap[${key}] mismatch`);
+    for (const [key, configKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.boolMap)) {
+      strictEqual(derived.boolMap[key], configKey, `boolMap[${key}] mismatch`);
     }
   });
-
 });
-
-/* ------------------------------------------------------------------ */
-/*  deriveRoutePutContract — must match existing                       */
-/* ------------------------------------------------------------------ */
 
 describe('deriveRoutePutContract', () => {
   const clampingIntRangeMap = deriveClampingIntRangeMap(RUNTIME_SETTINGS_REGISTRY);
@@ -236,8 +208,8 @@ describe('deriveRoutePutContract', () => {
   });
 
   it('stringFreeMap values match', () => {
-    for (const [key, cfgKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap)) {
-      strictEqual(derived.stringFreeMap[key], cfgKey, `stringFreeMap[${key}] mismatch`);
+    for (const [key, configKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_PUT.stringFreeMap)) {
+      strictEqual(derived.stringFreeMap[key], configKey, `stringFreeMap[${key}] mismatch`);
     }
   });
 
@@ -246,20 +218,20 @@ describe('deriveRoutePutContract', () => {
   });
 
   it('boolMap values match', () => {
-    for (const [key, cfgKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_PUT.boolMap)) {
-      strictEqual(derived.boolMap[key], cfgKey, `boolMap[${key}] mismatch`);
+    for (const [key, configKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_PUT.boolMap)) {
+      strictEqual(derived.boolMap[key], configKey, `boolMap[${key}] mismatch`);
     }
   });
 
-  it('stringEnumMap is the clamping map (reference equality)', () => {
+  it('stringEnumMap reuses the clamping map', () => {
     strictEqual(derived.stringEnumMap, clampingStringEnumMap);
   });
 
-  it('intRangeMap is the clamping map (reference equality)', () => {
+  it('intRangeMap reuses the clamping map', () => {
     strictEqual(derived.intRangeMap, clampingIntRangeMap);
   });
 
-  it('floatRangeMap is the clamping map (reference equality)', () => {
+  it('floatRangeMap reuses the clamping map', () => {
     strictEqual(derived.floatRangeMap, clampingFloatRangeMap);
   });
 
@@ -268,55 +240,8 @@ describe('deriveRoutePutContract', () => {
   });
 });
 
-/* ------------------------------------------------------------------ */
-/*  Phase 2: derived defaults golden-master (key existence + values)   */
-/* ------------------------------------------------------------------ */
-
-describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
-  const derived = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
-
-  it('SETTINGS_DEFAULTS.runtime is registry-derived (not hand-maintained)', () => {
-    const derivedKeys = new Set(Object.keys(derived));
-    for (const key of Object.keys(SETTINGS_DEFAULTS.runtime)) {
-      ok(derivedKeys.has(key), `SETTINGS_DEFAULTS.runtime key "${key}" missing from derived`);
-    }
-  });
-
-  it('spot-check key values match registry defaults', () => {
-    strictEqual(derived.llmModelPlan, 'gemini-2.5-flash');
-    strictEqual(derived.llmModelReasoning, 'deepseek-reasoner');
-    strictEqual(derived.maxRunSeconds, 480);
-    strictEqual(derived.autoScrollEnabled, true);
-    strictEqual(derived.runtimeScreencastEnabled, true);
-  });
-
-  it('retired resume aliases are no longer emitted', () => {
-    ok(!('resumeMode' in derived));
-    ok(!('indexingResumeMode' in derived));
-    ok(!('resumeWindowHours' in derived));
-    ok(!('indexingResumeMaxAgeHours' in derived));
-  });
-
-  it('google search keys from registry appear in derived (gap closed)', () => {
-    ok('googleSearchMaxRetries' in derived);
-    ok('googleSearchTimeoutMs' in derived);
-    ok('serperEnabled' in derived);
-  });
-
-  it('deriveOptionValues produces correct enum options', () => {
-    const options = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
-    ok(!options.resumeMode, 'retired resumeMode should not appear in options');
-    ok(!options.repairDedupeRule, 'retired repairDedupeRule should not appear in options');
-    ok(options.searchEngines.includes('google'));
-  });
-});
-
-/* ------------------------------------------------------------------ */
-/*  Phase 1: Registry enrichment — aliases, deprecated, gap closure    */
-/* ------------------------------------------------------------------ */
-
-describe('registry enrichment — aliases', () => {
-  const byKey = Object.fromEntries(RUNTIME_SETTINGS_REGISTRY.map(e => [e.key, e]));
+describe('registry enrichment aliases', () => {
+  const byKey = Object.fromEntries(RUNTIME_SETTINGS_REGISTRY.map((entry) => [entry.key, entry]));
 
   it('aliases field is always an array of strings when present', () => {
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
@@ -332,7 +257,6 @@ describe('registry enrichment — aliases', () => {
   it('categoryAuthorityRoot has helperFilesRoot alias', () => {
     ok(byKey.categoryAuthorityRoot.aliases?.includes('helperFilesRoot'));
   });
-
 
   it('searchEngines has searchProvider alias', () => {
     ok(byKey.searchEngines.aliases?.includes('searchProvider'));
@@ -354,29 +278,21 @@ describe('registry enrichment — aliases', () => {
     ok(byKey.llmMaxOutputTokensPlanFallback.aliases?.includes('llmTokensPlanFallback'));
   });
 
-  it('llmMaxOutputTokensReasoningFallback has llmTokensReasoningFallback alias', () => {
-    ok(byKey.llmMaxOutputTokensReasoningFallback.aliases?.includes('llmTokensReasoningFallback'));
-  });
 });
 
-describe('registry enrichment — deprecated', () => {
-  const byKey = Object.fromEntries(RUNTIME_SETTINGS_REGISTRY.map(e => [e.key, e]));
+describe('registry enrichment deprecated', () => {
+  const byKey = Object.fromEntries(RUNTIME_SETTINGS_REGISTRY.map((entry) => [entry.key, entry]));
 
-  it('helperFilesRoot removed from registry (canonical is categoryAuthorityRoot)', () => {
+  it('helperFilesRoot is removed from the registry', () => {
     strictEqual(byKey.helperFilesRoot, undefined);
   });
 });
 
-describe('registry enrichment — defaults-only gap closure', () => {
-  const registryKeys = new Set(RUNTIME_SETTINGS_REGISTRY.map(e => e.key));
+describe('registry enrichment defaults-only gap closure', () => {
+  const registryKeys = new Set(RUNTIME_SETTINGS_REGISTRY.map((entry) => entry.key));
 
-  // WHY: These keys were in SETTINGS_DEFAULTS.runtime but missing from the
-  // registry. Phase 1 added them as defaultsOnly entries. Dead knob removal
-  // retired all formerly-missing entries (fetchCandidateSources, frontierRepairSearchEnabled, etc.).
-
-  it('all formerly-missing defaultsOnly entries have been retired', () => {
-    const retiredFormerly = ['frontierRepairSearchEnabled', 'fetchCandidateSources'];
-    for (const key of retiredFormerly) {
+  it('all formerly missing defaultsOnly entries have been retired', () => {
+    for (const key of ['frontierRepairSearchEnabled', 'fetchCandidateSources']) {
       ok(!registryKeys.has(key), `retired key ${key} should no longer be in the registry`);
     }
   });

@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the exact live stack, resolved direct dependency versions, and runtime/tooling compatibility notes so an arriving LLM does not guess the framework mix.
 > **Prerequisites:** [../01-project-overview/scope.md](../01-project-overview/scope.md), [../01-project-overview/conventions.md](../01-project-overview/conventions.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Runtime and Build Toolchain
 
@@ -73,8 +73,8 @@
 - Backend is pure JavaScript ESM even though the GUI package is TypeScript.
 - The GUI route model is `HashRouter`, not filesystem routing.
 - The audit observed resolved versions from lockfiles, which are newer than some declared semver ranges.
-- The GUI build used `tsc -b && vite build` successfully on 2026-03-24.
-- The current `node --test` baseline under Node `v24.13.1` is not green. Verified 2026-03-24 failure clusters include the missing `normalizeHost` export consumed by `queryPlan.js`, a missing `src/features/indexing/search/index.js` test import target, catalog type-alignment drift around `QueueProduct`, and multiple API/GUI harness boot timeouts. See [../05-operations/known-issues.md](../05-operations/known-issues.md).
+- The current GUI build baseline under `npm run gui:build` is green. Verified on 2026-03-25: the Vite build completed successfully and wrote `tools/gui-react/dist/`.
+- The current `node --test` baseline under Node `v24.13.1` is green. Verified on 2026-03-25: `npm test` passed with `5827` passing tests.
 
 ## Validated Against
 
@@ -85,8 +85,8 @@
 | config | `tools/gui-react/package.json` | GUI scripts and declared frontend dependencies |
 | config | `tools/gui-react/package-lock.json` | Exact resolved GUI dependency versions |
 | config | `tools/gui-react/vite.config.ts` | Vite usage and dev proxy boundary |
-| command | `npm run gui:build` | GUI build works on the current toolchain |
-| command | `npm test` | current Node `v24.13.1` suite baseline is red on the active worktree; see known-issues for the verified failure clusters |
+| command | `npm run gui:build` | current GUI build baseline is green and produces the served `tools/gui-react/dist/` bundle |
+| command | `npm test` | current Node `v24.13.1` suite baseline is green on the audited worktree (`5827` passing tests) |
 
 ## Related Documents
 

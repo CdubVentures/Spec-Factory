@@ -107,6 +107,26 @@ export function makeStubSerpSelectorCallFn() {
   };
 }
 
+export function makeKeepAllSelectorFn() {
+  return async ({ selectorInput }) => ({
+    keep_ids: selectorInput.candidates.map((candidate) => candidate.id),
+  });
+}
+
+export function makeRejectAllSelectorFn() {
+  return async () => ({ keep_ids: [] });
+}
+
+export function makeInvalidSelectorFn() {
+  return async () => ({ keep_ids: ['FAKE_UNKNOWN_ID'] });
+}
+
+export function makeThrowingSelectorFn(message = 'timeout') {
+  return async () => {
+    throw new Error(message);
+  };
+}
+
 export function makeStubStorage() {
   const written = [];
   return {
@@ -129,5 +149,55 @@ export function makeStubLogger() {
     events,
     info: (event, payload) => events.push({ event, payload }),
     warn: (event, payload) => events.push({ event, payload }),
+  };
+}
+
+export function makeProcessDiscoveryResultsArgs(overrides = {}) {
+  const {
+    config,
+    storage,
+    categoryConfig,
+    job,
+    logger,
+    frontierDb,
+    variables,
+    identityLock,
+    brandResolution,
+    learning,
+    searchProfileBase,
+    searchProfileKeys,
+    providerState,
+    _serpSelectorCallFn,
+    ...rest
+  } = overrides;
+
+  return {
+    rawResults: makeRawResults(),
+    searchAttempts: [],
+    searchJournal: [],
+    internalSatisfied: false,
+    externalSearchReason: '',
+    config: makeConfig(config),
+    storage: storage ?? makeStubStorage(),
+    categoryConfig: categoryConfig ?? makeCategoryConfig(),
+    job: { productId: 'p1', ...(job || {}) },
+    runId: 'r1',
+    logger: logger ?? makeStubLogger(),
+    runtimeTraceWriter: null,
+    frontierDb: frontierDb ?? makeStubFrontierDb(),
+    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro', ...(variables || {}) },
+    identityLock: identityLock ?? makeIdentityLock(),
+    brandResolution: { officialDomain: 'razer.com', ...(brandResolution || {}) },
+    missingFields: ['weight'],
+    learning: { fieldYield: {}, ...(learning || {}) },
+    llmContext: {},
+    searchProfileBase: { variant_guard_terms: [], ...(searchProfileBase || {}) },
+    llmQueries: [],
+    queries: ['razer viper v3 pro specs'],
+    searchProfilePlanned: makeSearchProfilePlanned(),
+    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3', ...(searchProfileKeys || {}) },
+    providerState: providerState ?? {},
+    _serpSelectorCallFn: _serpSelectorCallFn ?? makeStubSerpSelectorCallFn(),
+    ...rest,
   };
 }

@@ -2,50 +2,25 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   processDiscoveryResults,
-  makeCategoryConfig,
-  makeIdentityLock,
-  makeConfig,
-  makeRawResults,
-  makeSearchProfilePlanned,
-  makeStubSerpSelectorCallFn,
+  makeProcessDiscoveryResultsArgs,
   makeStubStorage,
-  makeStubFrontierDb,
   makeStubLogger,
 } from './helpers/triageCharacterizationHarness.js';
 describe('Characterization - processDiscoveryResults result contract', () => {
 it('returns all required top-level keys with correct types', async () => {
   const storage = makeStubStorage();
   const logger = makeStubLogger();
-  const result = await processDiscoveryResults({
-    rawResults: makeRawResults(),
+  const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
     searchAttempts: [{ query: 'razer viper v3 pro specs', attempts: 1, result_count: 2, providers: ['google'] }],
-    searchJournal: [],
-    internalSatisfied: false,
     externalSearchReason: 'missing_fields',
-    config: makeConfig(),
     storage,
-    categoryConfig: makeCategoryConfig(),
     job: { productId: 'test-product' },
     runId: 'run-001',
     logger,
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
     missingFields: ['weight', 'sensor', 'dpi'],
-    learning: { fieldYield: {} },
-    llmContext: {},
     searchProfileBase: { variant_guard_terms: ['hyperspeed'] },
-    llmQueries: [],
     queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
-
-
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
-  });
+  }));
 
   // Top-level keys
   assert.equal(result.enabled, true);
@@ -68,36 +43,7 @@ it('returns all required top-level keys with correct types', async () => {
 });
 
 it('selectedUrls are string arrays matching candidates', async () => {
-  const result = await processDiscoveryResults({
-    rawResults: makeRawResults(),
-    searchAttempts: [],
-    searchJournal: [],
-    internalSatisfied: false,
-    externalSearchReason: '',
-    config: makeConfig(),
-    storage: makeStubStorage(),
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'p1' },
-    runId: 'r1',
-    logger: makeStubLogger(),
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
-    missingFields: ['weight'],
-    learning: { fieldYield: {} },
-    llmContext: {},
-    searchProfileBase: { variant_guard_terms: [] },
-    llmQueries: [],
-    queries: ['razer viper v3 pro specs'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
-
-
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
-  });
+  const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs());
 
   for (const url of result.selectedUrls) {
     assert.equal(typeof url, 'string', 'each selectedUrl is a string');

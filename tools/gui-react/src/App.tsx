@@ -2,7 +2,7 @@ import { lazy, Suspense, type ComponentType } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './pages/layout/AppShell.tsx';
-import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
+import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {

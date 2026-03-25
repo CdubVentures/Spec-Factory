@@ -35,7 +35,6 @@ interface LlmTokenPresetBootstrap {
   llmMaxOutputTokensPlan: number | string;
   llmMaxOutputTokensReasoning: number | string;
   llmMaxOutputTokensPlanFallback: number | string;
-  llmMaxOutputTokensReasoningFallback: number | string;
 }
 
 interface LlmModelOptionsWithCurrentInput {
@@ -50,7 +49,6 @@ interface SelectedLlmPricingRowsInput {
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensReasoning: number;
   llmMaxOutputTokensPlanFallback: number;
-  llmMaxOutputTokensReasoningFallback: number;
   modelPricingLookup: ModelPricingLookup;
   indexingLlmConfig: IndexingLlmConfigResponse | undefined;
 }
@@ -89,7 +87,6 @@ export function deriveLlmTokenPresetFallbackOptions(runtimeSettingsBootstrap: Ll
     runtimeSettingsBootstrap.llmMaxOutputTokensPlan,
     runtimeSettingsBootstrap.llmMaxOutputTokensReasoning,
     runtimeSettingsBootstrap.llmMaxOutputTokensPlanFallback,
-    runtimeSettingsBootstrap.llmMaxOutputTokensReasoningFallback,
   ];
   const cleaned = seeded
     .map((value) => parseRuntimeLlmTokenCap(value))

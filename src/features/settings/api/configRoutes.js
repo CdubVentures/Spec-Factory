@@ -47,18 +47,8 @@ export function registerConfigRoutes(ctx) {
     HELPER_ROOT
     || config?.categoryAuthorityRoot
     || 'category_authority';
-  const canonicalOnlySettingsWrites = (
-    (typeof config?.settingsCanonicalOnlyWrites === 'boolean')
-      ? config.settingsCanonicalOnlyWrites
-        : (() => {
-          const raw = process.env.SETTINGS_CANONICAL_ONLY_WRITES;
-          if (raw === undefined || raw === null || raw === '') return true;
-          const token = String(raw).trim().toLowerCase();
-          if (['1', 'true', 'yes', 'on'].includes(token)) return true;
-          if (['0', 'false', 'no', 'off'].includes(token)) return false;
-          return true;
-        })()
-  );
+  // WHY: Canonical-only writes are always enforced — no toggle needed.
+  const canonicalOnlySettingsWrites = true;
   const initialUserSettings = loadUserSettingsSync({
     categoryAuthorityRoot: settingsRoot,
   });

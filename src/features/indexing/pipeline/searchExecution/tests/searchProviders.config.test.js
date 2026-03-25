@@ -4,6 +4,7 @@ import {
   searchEngineAvailability,
   normalizeSearchEngines,
   groupEnginesByTransport,
+  TRANSPORT_REGISTRY,
 } from '../searchProviders.js';
 
 test('normalizeSearchEngines migrates legacy dual → bing,google', () => {
@@ -148,4 +149,72 @@ test('groupEnginesByTransport google-only', () => {
 test('groupEnginesByTransport empty list returns empty object', () => {
   const groups = groupEnginesByTransport([]);
   assert.deepEqual(groups, {});
+});
+
+// --- TRANSPORT_REGISTRY contract ---
+
+test('TRANSPORT_REGISTRY has crawlee, searxng, brave-api entries', () => {
+  assert.deepEqual(Object.keys(TRANSPORT_REGISTRY).sort(), ['brave-api', 'crawlee', 'searxng']);
+});
+
+test('TRANSPORT_REGISTRY entries have ready and execute functions', () => {
+  for (const [key, entry] of Object.entries(TRANSPORT_REGISTRY)) {
+    assert.equal(typeof entry.ready, 'function', `${key}.ready is a function`);
+    assert.equal(typeof entry.execute, 'function', `${key}.execute is a function`);
+  }
+});
+
+test('crawlee.ready always returns true', () => {
+  assert.equal(TRANSPORT_REGISTRY.crawlee.ready({}), true);
+  assert.equal(TRANSPORT_REGISTRY.crawlee.ready({ anything: 123 }), true);
+});
+
+test('searxng.ready returns true when searxngBaseUrl is set', () => {
+  assert.equal(TRANSPORT_REGISTRY.searxng.ready({ searxngBaseUrl: 'http://127.0.0.1:8080' }), true);
+});
+
+test('searxng.ready returns false when searxngBaseUrl is empty', () => {
+  assert.equal(TRANSPORT_REGISTRY.searxng.ready({}), false);
+  assert.equal(TRANSPORT_REGISTRY.searxng.ready({ searxngBaseUrl: '' }), false);
+});
+
+test('brave-api.ready returns true when braveApiKey is set', () => {
+  assert.equal(TRANSPORT_REGISTRY['brave-api'].ready({ braveApiKey: 'test-key' }), true);
+});
+
+test('brave-api.ready returns false when braveApiKey is empty', () => {
+  assert.equal(TRANSPORT_REGISTRY['brave-api'].ready({}), false);
+  assert.equal(TRANSPORT_REGISTRY['brave-api'].ready({ braveApiKey: '' }), false);
+});
+
+// --- Brave routing via ENGINE_TRANSPORT ---
+
+test('groupEnginesByTransport routes brave to brave-api transport', () => {
+  const groups = groupEnginesByTransport(['brave']);
+  assert.deepEqual(groups, { 'brave-api': ['brave'] });
+});
+
+test('groupEnginesByTransport mixed: google to crawlee, brave to brave-api, bing to searxng', () => {
+  const groups = groupEnginesByTransport(['google', 'brave', 'bing']);
+  assert.deepEqual(groups.crawlee, ['google']);
+  assert.deepEqual(groups['brave-api'], ['brave']);
+  assert.deepEqual(groups.searxng, ['bing']);
+});
+
+// --- Brave in searchEngineAvailability ---
+
+test('searchEngineAvailability reports brave_api_ready when key is set', () => {
+  const available = searchEngineAvailability({
+    searchEngines: 'brave',
+    braveApiKey: 'test-key',
+  });
+  assert.equal(available.brave_api_ready, true);
+  assert.equal(available.internet_ready, true);
+});
+
+test('searchEngineAvailability reports brave_api_ready false without key', () => {
+  const available = searchEngineAvailability({
+    searchEngines: 'brave',
+  });
+  assert.equal(available.brave_api_ready, false);
 });

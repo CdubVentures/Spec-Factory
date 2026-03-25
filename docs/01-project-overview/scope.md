@@ -2,7 +2,7 @@
 
 > **Purpose:** Define the live system boundary, intended operators, and explicit non-goals so an arriving LLM does not invent missing systems.
 > **Prerequisites:** [../README.md](../README.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 Spec Factory is a local-first spec indexing, review, and runtime-operations workbench. The live repo contains a Node.js server in `src/api/guiServer.js`, a React/Vite operator GUI in `tools/gui-react/`, a SQLite persistence layer in `src/db/`, authored category and user-settings content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js` for indexing, queue, review, reporting, drift, migration, and daemon tasks.
 
@@ -23,9 +23,9 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 ## Explicit Exclusions
 
 - No verified login/logout UI or end-user authentication flow.
-- No verified JWT-backed session middleware despite `JWT_SECRET` and `JWT_EXPIRES_IN` existing in the config manifest.
+- No verified request-auth middleware, session issuance flow, or user-role matrix in the live server or emitted config manifest.
 - No checked-in remote git workflow, branch naming standard, PR template, or GitHub Actions workflow.
-- No verified production deployment topology beyond local server startup, GUI build, and packaging scripts.
+- No verified production deployment topology beyond local server startup and packaging scripts.
 
 ## Target Operators
 
@@ -40,10 +40,10 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 
 - Status: active local/internal development workbench.
 - Evidence:
-  - `npm run gui:build` succeeds on the current worktree.
-  - `npm run env:check` returns `[env-check] OK (3 referenced keys covered)`.
-  - `npm test` is red on the current worktree. Verified failing clusters include a missing `normalizeHost` export in `src/features/indexing/pipeline/shared/queryPlan.js`, a missing `src/features/indexing/search/index.js` module in brand-resolver tests, catalog type-alignment drift, and multiple API/GUI harness suites that fail during server boot or hit 25-second readiness timeouts. The active clusters are tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
-  - `http://127.0.0.1:8788/api/v1/categories` returns `["gaming_mice","keyboard","monitor","mouse","tests"]` for the live category inventory.
+  - `npm run gui:build` succeeded on 2026-03-25 and produced the current `tools/gui-react/dist/` bundle.
+  - `npm run env:check` currently fails because `.env.example` is missing `PORT`.
+  - `npm test` passed on the audited worktree with `5827` passing tests.
+  - `http://127.0.0.1:8788/api/v1/categories` returns `["keyboard","monitor","mouse","tests"]` for the live category inventory.
   - `Dockerfile` references `src/cli/run-batch.js`, which does not exist in the live repo.
 
 ## Validated Against
@@ -52,12 +52,13 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 |--------|------|-------------------|
 | source | `src/api/guiServer.js` | Local HTTP/WebSocket runtime and GUI-serving behavior |
 | source | `src/cli/spec.js` | CLI commands and operator-facing workflow scope |
-| source | `tools/gui-react/src/App.tsx` | GUI route inventory and operator surfaces |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route inventory and operator-facing page scope |
+| source | `tools/gui-react/src/App.tsx` | top-level client shell and `test-mode` exception route |
 | config | `package.json` | Scripts and local-run surfaces |
 | config | `Dockerfile` | Confirms checked-in deployment artifact divergence |
-| command | `npm run gui:build` | GUI build passes on the current audit baseline |
-| command | `npm run env:check` | env-sync script currently reports `OK (3 referenced keys covered)` |
-| command | `npm test` | current suite baseline is red on the active worktree with query-plan export drift, missing indexing/search modules, and API/GUI harness boot failures |
+| command | `npm run gui:build` | current GUI build baseline is green and produces the served `tools/gui-react/dist/` assets |
+| command | `npm run env:check` | current env-sync script baseline is failing because `.env.example` does not define `PORT` |
+| command | `npm test` | current suite baseline is green on the audited worktree (`5827` passing tests) |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | Live category inventory available from the running server |
 
 ## Related Documents

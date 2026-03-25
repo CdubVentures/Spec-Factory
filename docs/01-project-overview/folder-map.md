@@ -54,7 +54,7 @@
 | `.git/` | git metadata | repository control data only |
 | `.server-state/` | local API/runtime state | written by local runs; not source of truth |
 | `.specfactory_tmp/` | default temp SQLite / scratch root | default temp-root target derived through `src/core/config/runtimeArtifactRoots.js`, `src/shared/settingsRegistry.js`, and `src/config.js` |
-| `category_authority/` | canonical authored control-plane content | `_runtime/user-settings.json`, per-category `_control_plane/`, `_generated/`, `sources.json`. Categories: `gaming_mice`, `keyboard`, `monitor`, `mouse` (plus `_global` and `_runtime` meta-dirs) |
+| `category_authority/` | canonical authored control-plane content | `_runtime/user-settings.json`, per-category `_control_plane/`, `_generated/`, and category-local `sources.json` where present. Authored directories in the current checkout: `keyboard`, `monitor`, `mouse`, and `tests` (plus `_global` and `_runtime` meta-dirs); `tests/` is a harness category and does not currently include `sources.json` |
 | `data/` | checked-in support data | auxiliary non-authority inputs |
 | `docs/` | maintained LLM-first doc tree | `README.md` is the current entrypoint; `implementation/` is excluded from the reading order and this pass |
 | `e2e/` | Playwright browser/API tests | current checked-in E2E specs live under `e2e/settings/` |
@@ -86,16 +86,16 @@
 | `src/ingest/` | CSV/category ingest and compile helpers | compile/ingest support for authority updates |
 | `src/queue/` | queue-state helpers | `queueState.js` |
 | `src/s3/` | local/S3/dual storage abstraction | `src/s3/storage.js` |
-| `src/shared/` | cross-runtime defaults, settings registry SSOT, and generic shared helpers | `settingsRegistry.js` (233 live registry entries), `settingsDefaults.js`, `settingsAccessor.js`, `settingsClampingRanges.js`, `discoveryRankConstants.js`, `stableHash.js` |
+| `src/shared/` | cross-runtime defaults, settings registry SSOT, and generic shared helpers | `settingsRegistry.js` (`122` live registry entries: `99` runtime, `8` bootstrap-env, `5` UI, `10` storage), `settingsDefaults.js`, `settingsAccessor.js`, `settingsClampingRanges.js`, `discoveryRankConstants.js`, `stableHash.js` |
 | `src/testing/` | test-mode data-generation helpers | `testDataProvider.js` |
 
 ## High-Signal `tools/` Subtrees
 
 | Path | Purpose | Key files |
 |------|---------|-----------|
-| `tools/gui-react/` | React/Vite/TypeScript GUI package | `tools/gui-react/package.json`, `tools/gui-react/vite.config.ts`, `tools/gui-react/src/App.tsx` |
+| `tools/gui-react/` | React/Vite/TypeScript GUI package | `tools/gui-react/package.json`, `tools/gui-react/vite.config.ts`, `tools/gui-react/src/App.tsx`, `tools/gui-react/src/registries/pageRegistry.ts` |
 | `tools/gui-react/src/features/` | stateful GUI feature implementations | indexing, runtime-ops, review, studio, catalog, pipeline-settings, llm-config |
-| `tools/gui-react/src/pages/` | route wrappers and legacy page-local implementations | `layout/AppShell.tsx`, page re-export shims, `StoragePage.tsx`, `TestModePage.tsx` |
+| `tools/gui-react/src/pages/` | route wrappers, shared layout shell, and legacy page-local implementations | `layout/AppShell.tsx`, page re-export shims, `StoragePage.tsx`, `TestModePage.tsx` |
 | `tools/searxng/` | local SearXNG stack | `docker-compose.yml` |
 | `tools/structured-metadata-sidecar/` | optional structured metadata sidecar support | sidecar README and helpers |
 | `tools/architecture/` | architecture/rendering utilities | supplemental tooling, not current-state source of truth |
@@ -133,9 +133,10 @@
 | source | `src/api/guiServer.js` | top-level backend/runtime subtree ownership |
 | source | `src/app/api/routeRegistry.js` | route-family ownership across feature directories |
 | source | `src/core/config/runtimeArtifactRoots.js` | temp-root runtime artifact defaults |
-| source | `src/shared/settingsRegistry.js` | path-root setting definitions and security/runtime group ownership |
-| source | `src/core/config/manifest/index.js` | live manifest-group assembly and path/security group export surface |
-| source | `tools/gui-react/src/App.tsx` | GUI route wrapper and feature ownership |
+| source | `src/shared/settingsRegistry.js` | path-root, provider, runtime, UI, and storage registry ownership |
+| source | `src/core/config/manifest/index.js` | live emitted manifest assembly and declared group inventory |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route registry, tab metadata, and feature ownership |
+| source | `tools/gui-react/src/App.tsx` | GUI lazy-route wrapper and standalone `test-mode` mount |
 | config | `tools/gui-react/vite.config.ts` | GUI build and proxy boundary |
 
 ## Related Documents

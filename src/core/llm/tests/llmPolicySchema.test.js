@@ -62,7 +62,7 @@ test('assembleLlmPolicy structures flat keys into groups', () => {
     llmCostInputPer1M: 1.5,
     llmCostOutputPer1M: 12,
     llmCostCachedInputPer1M: 0.2,
-    llmPhaseOverridesJson: '{"extraction":{"baseModel":"custom"}}',
+    llmPhaseOverridesJson: '{"needset":{"baseModel":"custom"}}',
     llmProviderRegistryJson: '[{"id":"p1","name":"Test"}]',
   });
 
@@ -73,7 +73,7 @@ test('assembleLlmPolicy structures flat keys into groups', () => {
   assert.equal(policy.budget.costInputPer1M, 1.5);
   assert.equal(policy.budget.costOutputPer1M, 12);
   assert.equal(policy.budget.costCachedInputPer1M, 0.2);
-  assert.deepStrictEqual(policy.phaseOverrides, { extraction: { baseModel: 'custom' } });
+  assert.deepStrictEqual(policy.phaseOverrides, { needset: { baseModel: 'custom' } });
   assert.deepStrictEqual(policy.providerRegistry, [{ id: 'p1', name: 'Test' }]);
 });
 

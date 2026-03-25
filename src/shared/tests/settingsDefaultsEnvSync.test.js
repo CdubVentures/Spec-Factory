@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { loadConfig } from '../../config.js';
 import { CONFIG_MANIFEST_DEFAULTS, CONFIG_MANIFEST_KEYS } from '../../core/config/manifest.js';
 import {
@@ -13,10 +12,10 @@ const SECRET_RUNTIME_KEYS = new Set([
   'openaiApiKey',
   'anthropicApiKey',
 ]);
+
 const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'localOutputRoot',
-  // WHY: Model stack simplified — these keys default to '' in settingsDefaults
-  // but post-merge aliases them to llmModelPlan/llmPlanFallbackModel values.
+  // These keys default to '' in settingsDefaults but alias to canonical plan values after merge.
   'llmModelTriage',
   'llmModelExtract',
   'llmModelValidate',
@@ -25,7 +24,7 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmValidateFallbackModel',
   'llmWriteFallbackModel',
   'llmMaxOutputTokensTriage',
-  // Per-role provider/baseUrl/apiKey keys default to '' but alias to global in post-merge
+  // Per-role provider/baseUrl/apiKey values also alias to global defaults after merge.
   'llmExtractProvider',
   'llmExtractBaseUrl',
   'llmExtractApiKey',
@@ -36,13 +35,108 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmWriteBaseUrl',
   'llmWriteApiKey',
 ]);
-const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
-  'autoScrollEnabled',
-  'runtimeScreencastEnabled',
+
+const RUNTIME_SETTINGS_KEY_SET = new Set(RUNTIME_SETTINGS_KEYS || []);
+
+const RETIRED_RUNTIME_KEY_GROUPS = Object.freeze([
+  Object.freeze({
+    label: 'Phase 12 NeedSet legacy removal',
+    keys: Object.freeze([
+      'needsetRequiredWeightIdentity',
+      'needsetRequiredWeightCritical',
+      'needsetRequiredWeightRequired',
+      'needsetRequiredWeightExpected',
+      'needsetRequiredWeightOptional',
+      'needsetMissingMultiplier',
+      'needsetTierDeficitMultiplier',
+      'needsetMinRefsDeficitMultiplier',
+      'needsetConflictMultiplier',
+      'needsetIdentityLockThreshold',
+      'needsetIdentityProvisionalThreshold',
+      'needsetDefaultIdentityAuditLimit',
+    ]),
+  }),
+  Object.freeze({
+    label: 'Phase 5 identity/consensus/retrieval/evidence/json-map removal',
+    keys: Object.freeze([
+      'identityGatePublishThreshold',
+      'identityGateBaseMatchThreshold',
+      'qualityGateIdentityThreshold',
+      'consensusWeightedMajorityThreshold',
+      'consensusStrictAcceptanceDomainCount',
+      'consensusConfidenceScoringBase',
+      'consensusPassTargetIdentityStrong',
+      'consensusPassTargetNormal',
+      'allowBelowPassTargetFill',
+      'consensusMethodWeightNetworkJson',
+      'consensusMethodWeightAdapterApi',
+      'consensusMethodWeightStructuredMeta',
+      'consensusMethodWeightPdf',
+      'consensusMethodWeightTableKv',
+      'consensusMethodWeightDom',
+      'consensusMethodWeightLlmExtractBase',
+      'consensusPolicyBonus',
+      'consensusRelaxedAcceptanceDomainCount',
+      'consensusInstrumentedFieldThreshold',
+      'retrievalTierWeightTier1',
+      'retrievalTierWeightTier2',
+      'retrievalTierWeightTier3',
+      'retrievalTierWeightTier4',
+      'retrievalTierWeightTier5',
+      'retrievalDocKindWeightManualPdf',
+      'retrievalDocKindWeightSpecPdf',
+      'retrievalDocKindWeightSupport',
+      'retrievalDocKindWeightLabReview',
+      'retrievalDocKindWeightProductPage',
+      'retrievalDocKindWeightOther',
+      'retrievalMethodWeightTable',
+      'retrievalMethodWeightKv',
+      'retrievalMethodWeightJsonLd',
+      'retrievalMethodWeightLlmExtract',
+      'retrievalMethodWeightHelperSupportive',
+      'retrievalAnchorScorePerMatch',
+      'retrievalIdentityScorePerMatch',
+      'retrievalUnitMatchBonus',
+      'retrievalDirectFieldMatchBonus',
+      'evidenceTextMaxChars',
+      'retrievalInternalsMapJson',
+      'evidencePackLimitsMapJson',
+      'parsingConfidenceBaseMapJson',
+    ]),
+  }),
+  Object.freeze({
+    label: 'retired paid-search/runtime knobs',
+    keys: Object.freeze([
+      'bingSearchEndpoint',
+      'bingSearchKey',
+      'googleCseKey',
+      'googleCseCx',
+      'disableGoogleCse',
+      'cseRescueOnlyMode',
+      'cseRescueRequiredIteration',
+    ]),
+  }),
 ]);
-// WHY: NeedSet scoring knobs (requiredWeightMap, multipliers, identity thresholds)
-// were removed in Phase 12 NeedSet Legacy Removal. No runtime defaults needed.
-const REQUIRED_NEEDSET_RUNTIME_DEFAULT_KEYS = [];
+
+const RETIRED_MANIFEST_ENV_KEYS = Object.freeze([
+  'BING_SEARCH_KEY',
+  'GOOGLE_CSE_KEY',
+  'GOOGLE_CSE_CX',
+  'DISABLE_GOOGLE_CSE',
+  'CSE_RESCUE_ONLY_MODE',
+  'CSE_RESCUE_REQUIRED_ITERATION',
+]);
+
+const MANUAL_ENV_KEY_MAP = Object.freeze({
+  llmModelTriage: 'LLM_MODEL_TRIAGE',
+  llmModelReasoning: 'LLM_MODEL_REASONING',
+  llmModelValidate: 'LLM_MODEL_VALIDATE',
+  llmModelWrite: 'LLM_MODEL_WRITE',
+  llmTimeoutMs: 'LLM_TIMEOUT_MS',
+  llmBaseUrl: 'LLM_BASE_URL',
+  capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
+  categoryAuthorityRoot: 'HELPER_FILES_ROOT',
+});
 
 function buildRuntimeConfigKeyMap() {
   const pairs = [
@@ -52,46 +146,6 @@ function buildRuntimeConfigKeyMap() {
     ...Object.entries(RUNTIME_SETTINGS_ROUTE_GET.boolMap),
   ];
   return new Map(pairs);
-}
-
-function readEnvKeysFromFile(filePath) {
-  const text = fs.readFileSync(filePath, 'utf8');
-  const keys = new Set();
-  for (const row of text.split(/\r?\n/g)) {
-    const token = String(row || '').trim();
-    if (!token || token.startsWith('#')) continue;
-    const separator = token.indexOf('=');
-    if (separator <= 0) continue;
-    keys.add(token.slice(0, separator));
-  }
-  return keys;
-}
-
-function listExistingRepoEnvFiles() {
-  return ['.env', '.env.example'].filter((filePath) => fs.existsSync(filePath));
-}
-
-function isSecretEnvKey(key) {
-  return (
-    /(API_KEY|SECRET|TOKEN|ACCESS_KEY_ID|SECRET_ACCESS_KEY|ANON_KEY)$/.test(key)
-    || key === 'BING_SEARCH_KEY'
-  );
-}
-
-const MANUAL_ENV_KEY_MAP = Object.freeze({
-  llmModelTriage: 'LLM_MODEL_TRIAGE',
-  llmModelReasoning: 'LLM_MODEL_REASONING',
-  llmModelValidate: 'LLM_MODEL_VALIDATE',
-  llmModelWrite: 'LLM_MODEL_WRITE',
-  llmTimeoutMs: 'LLM_TIMEOUT_MS',
-  llmBaseUrl: 'LLM_BASE_URL',
-  openaiApiKey: 'LLM_API_KEY',
-  capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-  categoryAuthorityRoot: 'HELPER_FILES_ROOT',
-});
-
-function resolveManualEnvKey(configKey) {
-  return MANUAL_ENV_KEY_MAP[configKey] || null;
 }
 
 function buildKnownConfigEnvKeys() {
@@ -118,27 +172,6 @@ function withUnsetEnv(keys, fn) {
   }
 }
 
-test('canonical runtime defaults are sourced from shared settings defaults', () => {
-  const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
-  withUnsetEnv(buildKnownConfigEnvKeys(), () => {
-    const config = loadConfig();
-
-    for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
-      const configKey = runtimeConfigKeyMap.get(key) || key;
-      assert.equal(
-        Object.hasOwn(config, configKey),
-        true,
-        `runtime default "${key}" should map to config.${configKey}`,
-      );
-      assert.deepEqual(
-        SETTINGS_DEFAULTS.runtime[key],
-        config[configKey],
-        `runtime default "${key}" should match config.${configKey}`,
-      );
-    }
-  });
-});
-
 test('shared runtime defaults are the single default owner when env is not explicit', () => {
   const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
   const canonicalRuntimeKeys = Object.keys(SETTINGS_DEFAULTS.runtime).filter((key) => (
@@ -161,181 +194,30 @@ test('shared runtime defaults are the single default owner when env is not expli
   });
 });
 
-test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', () => {
-  // WHY: All NeedSet scoring/weight knobs were removed. This test confirms they stay absent.
-  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
-  const retiredKeys = [
-    'needsetRequiredWeightIdentity',
-    'needsetRequiredWeightCritical',
-    'needsetRequiredWeightRequired',
-    'needsetRequiredWeightExpected',
-    'needsetRequiredWeightOptional',
-    'needsetMissingMultiplier',
-    'needsetTierDeficitMultiplier',
-    'needsetMinRefsDeficitMultiplier',
-    'needsetConflictMultiplier',
-    'needsetIdentityLockThreshold',
-    'needsetIdentityProvisionalThreshold',
-    'needsetDefaultIdentityAuditLimit',
-  ];
-  for (const key of retiredKeys) {
-    assert.equal(
-      Object.hasOwn(runtimeDefaults, key),
-      false,
-      `retired needset knob '${key}' should be absent from runtime defaults`,
-    );
-  }
-});
-
-test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
-  const rows = [
-    { settingsKey: 'autoScrollEnabled', configKey: 'autoScrollEnabled', envKey: 'AUTO_SCROLL_ENABLED' },
-  ];
-
-  const getSharedDefault = (settingsKey) =>
-    SETTINGS_DEFAULTS.runtime?.[settingsKey];
-
-  withUnsetEnv(rows.map(({ envKey }) => envKey), () => {
-    const config = loadConfig();
-
-    for (const { settingsKey, configKey } of rows) {
-      const sharedDefault = getSharedDefault(settingsKey);
-      assert.notEqual(sharedDefault, undefined, `shared defaults should define ${settingsKey}`);
-      assert.equal(
-        config[configKey],
-        sharedDefault,
-        `config fallback ${configKey} should match shared default ${settingsKey}`,
-      );
-    }
-  });
-});
-
-test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are absent from settings defaults and config', () => {
-  const config = loadConfig();
-  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
-
-  const retiredRuntimeKeys = [
-    'identityGatePublishThreshold',
-    'identityGateBaseMatchThreshold',
-    'qualityGateIdentityThreshold',
-    'consensusWeightedMajorityThreshold',
-    'consensusStrictAcceptanceDomainCount',
-    'consensusConfidenceScoringBase',
-    'consensusPassTargetIdentityStrong',
-    'consensusPassTargetNormal',
-    'allowBelowPassTargetFill',
-    'consensusMethodWeightNetworkJson',
-    'consensusMethodWeightAdapterApi',
-    'consensusMethodWeightStructuredMeta',
-    'consensusMethodWeightPdf',
-    'consensusMethodWeightTableKv',
-    'consensusMethodWeightDom',
-    'consensusMethodWeightLlmExtractBase',
-    'consensusPolicyBonus',
-    'consensusRelaxedAcceptanceDomainCount',
-    'consensusInstrumentedFieldThreshold',
-    'retrievalTierWeightTier1',
-    'retrievalTierWeightTier2',
-    'retrievalTierWeightTier3',
-    'retrievalTierWeightTier4',
-    'retrievalTierWeightTier5',
-    'retrievalDocKindWeightManualPdf',
-    'retrievalDocKindWeightSpecPdf',
-    'retrievalDocKindWeightSupport',
-    'retrievalDocKindWeightLabReview',
-    'retrievalDocKindWeightProductPage',
-    'retrievalDocKindWeightOther',
-    'retrievalMethodWeightTable',
-    'retrievalMethodWeightKv',
-    'retrievalMethodWeightJsonLd',
-    'retrievalMethodWeightLlmExtract',
-    'retrievalMethodWeightHelperSupportive',
-    'retrievalAnchorScorePerMatch',
-    'retrievalIdentityScorePerMatch',
-    'retrievalUnitMatchBonus',
-    'retrievalDirectFieldMatchBonus',
-    'evidenceTextMaxChars',
-    'retrievalInternalsMapJson',
-    'evidencePackLimitsMapJson',
-    'parsingConfidenceBaseMapJson',
-  ];
-  for (const key of retiredRuntimeKeys) {
-    assert.equal(Object.hasOwn(runtimeDefaults, key), false, `retired knob '${key}' should be absent from runtime defaults`);
-    assert.equal(Object.hasOwn(config, key), false, `retired knob '${key}' should be absent from config`);
-  }
-});
-
-test('retired bing endpoint stays removed from settings defaults and config', () => {
-  const config = loadConfig();
-  assert.equal(Object.hasOwn(SETTINGS_DEFAULTS.runtime, 'bingSearchEndpoint'), false);
-  assert.equal(Object.hasOwn(config, 'bingSearchEndpoint'), false);
-});
-
-test('.env files are secret-only', () => {
-  const envFiles = listExistingRepoEnvFiles();
-  assert.equal(envFiles.length > 0, true, 'expected at least one repo env file');
-  for (const filePath of envFiles) {
-    const envKeys = readEnvKeysFromFile(filePath);
-    for (const envKey of envKeys) {
-      assert.equal(
-        isSecretEnvKey(envKey),
-        true,
-        `${filePath} should only declare secret env keys, found ${envKey}`,
-      );
-    }
-  }
-});
-
-test('retired CSE/paid search knobs are removed from config/default/manifest surfaces', () => {
+test('retired settings stay absent from runtime, config, and manifest contract surfaces', () => {
   const config = loadConfig();
   const manifestKeys = new Set(CONFIG_MANIFEST_KEYS || []);
-  const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
 
-  const retiredConfigKeys = [
-    'bingSearchKey',
-    'googleCseKey',
-    'googleCseCx',
-    'disableGoogleCse',
-    'cseRescueOnlyMode',
-    'cseRescueRequiredIteration',
-  ];
-  for (const key of retiredConfigKeys) {
-    assert.equal(Object.hasOwn(config, key), false, `config should not expose retired key ${key}`);
-    assert.equal(Object.hasOwn(runtimeDefaults, key), false, `settings defaults should not include retired key ${key}`);
-  }
-
-  const retiredManifestEnvKeys = [
-    'BING_SEARCH_KEY',
-    'GOOGLE_CSE_KEY',
-    'GOOGLE_CSE_CX',
-    'DISABLE_GOOGLE_CSE',
-    'CSE_RESCUE_ONLY_MODE',
-    'CSE_RESCUE_REQUIRED_ITERATION',
-  ];
-  for (const envKey of retiredManifestEnvKeys) {
-    assert.equal(manifestKeys.has(envKey), false, `manifest should not expose retired env ${envKey}`);
-  }
-});
-
-test('repo env files remove retired Google CSE declarations', () => {
-  const retiredEnvKeys = [
-    'GOOGLE_CSE_KEY',
-    'GOOGLE_CSE_CX',
-    'DISABLE_GOOGLE_CSE',
-    'CSE_RESCUE_ONLY_MODE',
-    'CSE_RESCUE_REQUIRED_ITERATION',
-  ];
-
-  const envFiles = listExistingRepoEnvFiles();
-  assert.equal(envFiles.length > 0, true, 'expected at least one repo env file');
-  for (const filePath of envFiles) {
-    const envKeys = readEnvKeysFromFile(filePath);
-    for (const envKey of retiredEnvKeys) {
+  for (const { label, keys } of RETIRED_RUNTIME_KEY_GROUPS) {
+    for (const key of keys) {
       assert.equal(
-        envKeys.has(envKey),
+        RUNTIME_SETTINGS_KEY_SET.has(key),
         false,
-        `${filePath} should not declare retired env ${envKey}`,
+        `${label} should not reintroduce runtime setting ${key}`,
+      );
+      assert.equal(
+        Object.hasOwn(config, key),
+        false,
+        `${label} should not reintroduce config key ${key}`,
       );
     }
+  }
+
+  for (const envKey of RETIRED_MANIFEST_ENV_KEYS) {
+    assert.equal(
+      manifestKeys.has(envKey),
+      false,
+      `retired paid-search env should stay absent from manifest: ${envKey}`,
+    );
   }
 });

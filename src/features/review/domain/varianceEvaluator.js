@@ -3,13 +3,8 @@
 // Pure functions for evaluating whether a product-level value conforms
 // to a component DB's variance policy.  Zero external dependencies.
 //
-// Supports the 5 validated policy types from categoryCompile.js:
-//   null / missing    → always compliant (no enforcement)
-//   override_allowed  → always compliant
-//   authoritative     → exact match (case-insensitive, numeric-normalised)
-//   upper_bound       → product value ≤ DB value
-//   lower_bound       → product value ≥ DB value
-//   range             → product value within ±tolerance of DB value (default 10%)
+// WHY: Strategy map (O(1) scaling) — adding a new policy = add one
+// evaluator function + one registry entry. No switch modification.
 
 const SKIP_VALUES = new Set(['', 'unk', 'n/a', 'n-a', 'null', 'undefined', 'unknown', '-']);
 
@@ -33,6 +28,82 @@ function isSkipValue(val) {
   return SKIP_VALUES.has(String(val).trim().toLowerCase());
 }
 
+// ── Policy evaluators ───────────────────────────────────────────────
+
+function evaluateAuthoritative(dbStr, prodStr) {
+  const dbNum = parseNumeric(dbStr);
+  const prodNum = parseNumeric(prodStr);
+  if (!Number.isNaN(dbNum) && !Number.isNaN(prodNum)) {
+    if (dbNum === prodNum) return { compliant: true };
+    return {
+      compliant: false,
+      reason: 'authoritative_mismatch',
+      details: { expected: dbStr, actual: prodStr, expected_numeric: dbNum, actual_numeric: prodNum },
+    };
+  }
+  if (dbStr.toLowerCase() === prodStr.toLowerCase()) return { compliant: true };
+  return {
+    compliant: false,
+    reason: 'authoritative_mismatch',
+    details: { expected: dbStr, actual: prodStr },
+  };
+}
+
+function evaluateUpperBound(dbStr, prodStr) {
+  const dbNum = parseNumeric(dbStr);
+  const prodNum = parseNumeric(prodStr);
+  if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
+    return { compliant: true, reason: 'skipped_non_numeric' };
+  }
+  if (prodNum <= dbNum) return { compliant: true };
+  return {
+    compliant: false,
+    reason: 'exceeds_upper_bound',
+    details: { bound: dbNum, actual: prodNum },
+  };
+}
+
+function evaluateLowerBound(dbStr, prodStr) {
+  const dbNum = parseNumeric(dbStr);
+  const prodNum = parseNumeric(prodStr);
+  if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
+    return { compliant: true, reason: 'skipped_non_numeric' };
+  }
+  if (prodNum >= dbNum) return { compliant: true };
+  return {
+    compliant: false,
+    reason: 'below_lower_bound',
+    details: { bound: dbNum, actual: prodNum },
+  };
+}
+
+function evaluateRange(dbStr, prodStr, options) {
+  const dbNum = parseNumeric(dbStr);
+  const prodNum = parseNumeric(prodStr);
+  if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
+    return { compliant: true, reason: 'skipped_non_numeric' };
+  }
+  const tolerance = options.tolerance ?? 0.10;
+  const margin = Math.abs(dbNum) * tolerance;
+  const lo = dbNum - margin;
+  const hi = dbNum + margin;
+  if (prodNum >= lo && prodNum <= hi) return { compliant: true };
+  return {
+    compliant: false,
+    reason: 'outside_range',
+    details: { expected: dbNum, actual: prodNum, tolerance, lo, hi },
+  };
+}
+
+// ── Strategy registry ───────────────────────────────────────────────
+
+const POLICY_EVALUATORS = {
+  authoritative: evaluateAuthoritative,
+  upper_bound: evaluateUpperBound,
+  lower_bound: evaluateLowerBound,
+  range: evaluateRange,
+};
+
 /**
  * Evaluate a single product value against a variance policy.
  *
@@ -44,12 +115,10 @@ function isSkipValue(val) {
  * @returns {{ compliant: boolean, reason?: string, details?: object }}
  */
 export function evaluateVariance(policy, dbValue, productValue, options = {}) {
-  // No policy or override_allowed → always compliant
   if (!policy || policy === 'override_allowed') {
     return { compliant: true };
   }
 
-  // Skip enforcement when either side is missing/unknown
   if (isSkipValue(dbValue) || isSkipValue(productValue)) {
     return { compliant: true, reason: 'skipped_missing_value' };
   }
@@ -57,78 +126,9 @@ export function evaluateVariance(policy, dbValue, productValue, options = {}) {
   const dbStr = String(dbValue).trim();
   const prodStr = String(productValue).trim();
 
-  switch (policy) {
-    case 'authoritative': {
-      // Case-insensitive string match, with numeric normalisation
-      const dbNum = parseNumeric(dbStr);
-      const prodNum = parseNumeric(prodStr);
-      if (!Number.isNaN(dbNum) && !Number.isNaN(prodNum)) {
-        if (dbNum === prodNum) return { compliant: true };
-        return {
-          compliant: false,
-          reason: 'authoritative_mismatch',
-          details: { expected: dbStr, actual: prodStr, expected_numeric: dbNum, actual_numeric: prodNum },
-        };
-      }
-      // String comparison (case-insensitive)
-      if (dbStr.toLowerCase() === prodStr.toLowerCase()) return { compliant: true };
-      return {
-        compliant: false,
-        reason: 'authoritative_mismatch',
-        details: { expected: dbStr, actual: prodStr },
-      };
-    }
-
-    case 'upper_bound': {
-      const dbNum = parseNumeric(dbStr);
-      const prodNum = parseNumeric(prodStr);
-      if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
-        return { compliant: true, reason: 'skipped_non_numeric' };
-      }
-      if (prodNum <= dbNum) return { compliant: true };
-      return {
-        compliant: false,
-        reason: 'exceeds_upper_bound',
-        details: { bound: dbNum, actual: prodNum },
-      };
-    }
-
-    case 'lower_bound': {
-      const dbNum = parseNumeric(dbStr);
-      const prodNum = parseNumeric(prodStr);
-      if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
-        return { compliant: true, reason: 'skipped_non_numeric' };
-      }
-      if (prodNum >= dbNum) return { compliant: true };
-      return {
-        compliant: false,
-        reason: 'below_lower_bound',
-        details: { bound: dbNum, actual: prodNum },
-      };
-    }
-
-    case 'range': {
-      const dbNum = parseNumeric(dbStr);
-      const prodNum = parseNumeric(prodStr);
-      if (Number.isNaN(dbNum) || Number.isNaN(prodNum)) {
-        return { compliant: true, reason: 'skipped_non_numeric' };
-      }
-      const tolerance = options.tolerance ?? 0.10;
-      const margin = Math.abs(dbNum) * tolerance;
-      const lo = dbNum - margin;
-      const hi = dbNum + margin;
-      if (prodNum >= lo && prodNum <= hi) return { compliant: true };
-      return {
-        compliant: false,
-        reason: 'outside_range',
-        details: { expected: dbNum, actual: prodNum, tolerance, lo, hi },
-      };
-    }
-
-    default:
-      // Unknown policy → skip enforcement
-      return { compliant: true, reason: 'unknown_policy' };
-  }
+  const evaluator = POLICY_EVALUATORS[policy];
+  if (!evaluator) return { compliant: true, reason: 'unknown_policy' };
+  return evaluator(dbStr, prodStr, options);
 }
 
 /**

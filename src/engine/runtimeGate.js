@@ -247,12 +247,18 @@ export function applyRuntimeFieldRules({
       continue;
     }
 
+    const fieldProvenance = provenance[field];
+    const hasExplicitEvidenceArray = Array.isArray(fieldProvenance?.evidence);
+    const skipQualityForEmptyEvidenceArray = shouldCheckCount
+      && hasExplicitEvidenceArray
+      && fieldProvenance.evidence.length === 0;
+
     // Quality check on the first evidence ref.
-    if (shouldAuditQuality) {
+    if (shouldAuditQuality && !skipQualityForEmptyEvidenceArray) {
       const audit = engine.auditEvidence(
         field,
         value,
-        toEvidenceProvenance(provenance[field]),
+        toEvidenceProvenance(fieldProvenance),
         {
           evidencePack,
           strictEvidence: Boolean(strictEvidence || enforceEvidence)
@@ -279,7 +285,7 @@ export function applyRuntimeFieldRules({
 
     // Count check: require N distinct evidence refs.
     if (shouldCheckCount) {
-      const distinctCount = countDistinctEvidenceRefs(provenance[field]);
+      const distinctCount = countDistinctEvidenceRefs(fieldProvenance);
       if (distinctCount < minRefs) {
         const before = nextFields[field];
         nextFields[field] = 'unk';

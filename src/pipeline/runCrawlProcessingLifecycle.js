@@ -5,7 +5,7 @@
  */
 
 import { classifyBlockStatus } from '../features/crawl/bypassStrategies.js';
-import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+import { normalizeHost } from '../shared/hostParser.js';
 
 function safeHostname(url) {
   try { return normalizeHost(new URL(url).hostname); } catch { return ''; }

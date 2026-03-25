@@ -107,7 +107,7 @@ test('non-registry anthropic model gets bootstrap anthropic API key + default ba
 test('all roles in snapshot resolve via registry when models are in registry', () => {
   const config = baseConfig([proxyProvider()]);
   const snapshot = llmRoutingSnapshot(config);
-  for (const role of ['plan', 'extract', 'validate', 'write']) {
+  for (const role of ['plan', 'triage', 'extract', 'validate', 'write']) {
     assert.equal(snapshot[role].primary.base_url, 'https://my-proxy.corp.com',
       `${role} should resolve via registry`);
   }
@@ -124,7 +124,7 @@ test('all roles resolve to llmModelPlan model', () => {
     llmModelValidate: 'test-model',
     llmModelWrite: 'test-model',
   });
-  for (const role of ['plan', 'extract', 'validate', 'write']) {
+  for (const role of ['plan', 'triage', 'extract', 'validate', 'write']) {
     const route = resolveLlmRoute(config, { role });
     assert.equal(route.model, 'test-model', `${role} should use llmModelPlan`);
   }

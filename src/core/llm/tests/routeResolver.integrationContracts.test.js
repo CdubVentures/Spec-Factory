@@ -43,7 +43,7 @@ test('resolveLlmRoute re-resolves model overrides through the registry', () => {
 test('resolveLlmRoute infers provider metadata when the registry is empty', () => {
   const config = {
     _registryLookup: { providers: new Map(), modelIndex: new Map(), compositeIndex: new Map() },
-    llmApiKey: 'flat-key',
+    openaiApiKey: 'flat-key',
     llmModelPlan: 'gpt-4.1-mini',
   };
   const route = resolveLlmRoute(config, { role: 'extract' });

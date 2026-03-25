@@ -1,15 +1,17 @@
 // WHY: Config validation extracted from config.js (Phase 8).
 // Pure function — no side effects, no imports beyond what's needed for validation.
 
+import { hasAnyLlmApiKey } from '../llm/client/routing.js';
+
 export function validateConfig(config) {
   const errors = [];
   const warnings = [];
 
   // Rule 1: LLM is always on — missing API key is a warning (graceful degradation)
-  if (!config.llmApiKey) {
+  if (!hasAnyLlmApiKey(config)) {
     warnings.push({
       code: 'LLM_NO_API_KEY',
-      message: 'LLM is enabled but LLM_API_KEY is not set — LLM enrichment will fail at runtime'
+      message: 'No LLM API key found — LLM enrichment will fail at runtime'
     });
   }
 

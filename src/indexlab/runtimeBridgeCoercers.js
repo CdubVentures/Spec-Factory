@@ -108,6 +108,7 @@ export function classifyLlmCallType(reason = '') {
   if (r === 'domain_safety_classification') return 'domain_classifier';
   if (r === 'validate' || r.startsWith('validate_')) return 'validation';
   if (r.startsWith('verify_extract')) return 'verification';
+  if (r === 'extract' || r.startsWith('extract_')) return 'extraction';
   if (r === 'escalation_planner' || r.includes('escalation')) return 'escalation_planner';
   return 'unknown';
 }

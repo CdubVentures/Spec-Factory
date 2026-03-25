@@ -6,6 +6,7 @@ import {
 } from '../features/catalog/index.js';
 import { toInt } from '../shared/valueNormalizers.js';
 import { toArray } from '../shared/primitives.js';
+import { createQueueAdapter } from './queueStorageAdapter.js';
 
 function round(value, digits = 8) {
   return Number.parseFloat(Number(value || 0).toFixed(digits));
@@ -13,9 +14,7 @@ function round(value, digits = 8) {
 
 function parseDateMs(value) {
   const text = String(value || '').trim();
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   const ms = Date.parse(text);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -92,11 +91,7 @@ function normalizeProductRow(productId, current = {}) {
 }
 
 function stateDefaults(category) {
-  return {
-    category,
-    updated_at: nowIso(),
-    products: {}
-  };
+  return { category, updated_at: nowIso(), products: {} };
 }
 
 function normalizeState(category, input = {}) {
@@ -109,333 +104,24 @@ function normalizeState(category, input = {}) {
   return output;
 }
 
-function modernQueueStateKey(category) {
-  return `_queue/${String(category || '').trim()}/state.json`;
-}
-
-function legacyQueueStateKey(storage, category) {
-  return storage.resolveOutputKey('_queue', category, 'state.json');
-}
-
 export function queueStateKey({ storage, category }) {
   const token = String(category || '').trim();
-  if (!token) {
-    return '_queue/unknown/state.json';
-  }
-  return modernQueueStateKey(token);
-}
-
-async function readQueueJsonSafe(storage, key) {
-  if (typeof storage.readTextOrNull === 'function') {
-    const text = await storage.readTextOrNull(key);
-    if (text == null) {
-      return {
-        data: null,
-        corrupt: false
-      };
-    }
-    try {
-      return {
-        data: JSON.parse(text),
-        corrupt: false
-      };
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        return {
-          data: null,
-          corrupt: true
-        };
-      }
-      throw error;
-    }
-  }
-  try {
-    return {
-      data: await storage.readJsonOrNull(key),
-      corrupt: false
-    };
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return {
-        data: null,
-        corrupt: true
-      };
-    }
-    throw error;
-  }
-}
-
-/** Convert a SQLite row (product_id column) to the JS normalized row format. */
-function sqliteRowToJs(row) {
-  return {
-    s3key: row.s3key || '',
-    status: row.status || 'pending',
-    priority: row.priority ?? 3,
-    attempts_total: row.attempts_total ?? 0,
-    retry_count: row.retry_count ?? 0,
-    max_attempts: row.max_attempts ?? 3,
-    next_retry_at: row.next_retry_at || '',
-    last_run_id: row.last_run_id || '',
-    last_summary: row.last_summary || null,
-    cost_usd_total_for_product: row.cost_usd_total ?? 0,
-    rounds_completed: row.rounds_completed ?? 0,
-    next_action_hint: row.next_action_hint || '',
-    last_urls_attempted: Array.isArray(row.last_urls_attempted) ? row.last_urls_attempted : [],
-    last_error: row.last_error || '',
-    last_started_at: row.last_started_at || '',
-    last_completed_at: row.last_completed_at || '',
-    updated_at: row.updated_at || nowIso()
-  };
-}
-
-/** Convert a JS normalized product row to the specDb.upsertQueueProduct() format. */
-function jsRowToSqliteUpsert(productId, row) {
-  return {
-    product_id: productId,
-    s3key: row.s3key || '',
-    status: row.status || 'pending',
-    priority: row.priority ?? 3,
-    attempts_total: row.attempts_total ?? 0,
-    retry_count: row.retry_count ?? 0,
-    max_attempts: row.max_attempts ?? 3,
-    next_retry_at: row.next_retry_at || null,
-    last_run_id: row.last_run_id || null,
-    cost_usd_total: row.cost_usd_total_for_product ?? 0,
-    rounds_completed: row.rounds_completed ?? 0,
-    next_action_hint: row.next_action_hint || null,
-    last_urls_attempted: row.last_urls_attempted || [],
-    last_error: row.last_error || null,
-    last_started_at: row.last_started_at || null,
-    last_completed_at: row.last_completed_at || null,
-    last_summary: row.last_summary || null
-  };
-}
-
-export async function loadQueueState({ storage, category, specDb = null }) {
-  // Try SpecDb first if available
-  if (specDb) {
-    try {
-      const rows = specDb.getAllQueueProducts();
-      if (rows.length > 0) {
-        const products = {};
-        for (const row of rows) {
-          products[row.product_id] = normalizeProductRow(row.product_id, sqliteRowToJs(row));
-        }
-        const key = queueStateKey({ storage, category });
-        return {
-          key,
-          state: normalizeState(category, { products }),
-          recovered_from_corrupt_state: false
-        };
-      }
-    } catch { /* fall through to JSON */ }
-  }
-
-  const key = queueStateKey({ storage, category });
-  const legacyKey = legacyQueueStateKey(storage, category);
-  const modern = await readQueueJsonSafe(storage, key);
-  const legacy = await readQueueJsonSafe(storage, legacyKey);
-  const existing = modern.data || legacy.data;
-  return {
-    key,
-    state: normalizeState(category, existing || {}),
-    recovered_from_corrupt_state: Boolean((modern.corrupt || legacy.corrupt) && !existing)
-  };
-}
-
-export async function saveQueueState({ storage, category, state, specDb = null, config = {} }) {
-  const normalized = normalizeState(category, state);
-  normalized.updated_at = nowIso();
-
-  // JSON fallback when SQLite is not available
-  if (!specDb) {
-    const key = queueStateKey({ storage, category });
-    const legacyKey = legacyQueueStateKey(storage, category);
-    const payload = Buffer.from(JSON.stringify(normalized, null, 2), 'utf8');
-    await storage.writeObject(
-      key,
-      payload,
-      { contentType: 'application/json' }
-    );
-    await storage.writeObject(
-      legacyKey,
-      payload,
-      { contentType: 'application/json' }
-    );
-  }
-
-  // SQLite write (primary when available)
-  if (specDb) {
-    const tx = specDb.db.transaction(() => {
-      for (const [productId, row] of Object.entries(normalized.products || {})) {
-        specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, row));
-      }
-    });
-    tx();
-  }
-
-  const key = queueStateKey({ storage, category });
-  return { key, state: normalized };
-}
-
-export async function upsertQueueProduct({
-  storage,
-  category,
-  productId,
-  s3key = '',
-  patch = {},
-  specDb = null,
-  config = {}
-}) {
-  if (specDb) {
-    // Direct SQLite path: read current from SQLite, merge, write back
-    const existing = specDb.getQueueProduct(productId);
-    const currentJs = existing
-      ? normalizeProductRow(productId, sqliteRowToJs(existing))
-      : normalizeProductRow(productId, { s3key });
-    const next = normalizeProductRow(productId, {
-      ...currentJs,
-      ...patch,
-      s3key: patch.s3key || currentJs.s3key || s3key,
-      updated_at: nowIso()
-    });
-    specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    const key = queueStateKey({ storage, category });
-    return { key, product: next };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const current = normalizeProductRow(productId, loaded.state.products[productId] || { s3key });
-  const next = normalizeProductRow(productId, {
-    ...current,
-    ...patch,
-    s3key: patch.s3key || current.s3key || s3key,
-    updated_at: nowIso()
-  });
-  loaded.state.products[productId] = next;
-  const saved = await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  return {
-    key: saved.key,
-    product: next
-  };
-}
-
-export async function migrateQueueEntry({ storage, category, oldProductId, newProductId, specDb = null, config = {} }) {
-  const { state } = await loadQueueState({ storage, category, specDb });
-  const entry = state.products[oldProductId];
-  if (!entry) return false;
-  entry.productId = newProductId;
-  if (entry.s3key) {
-    entry.s3key = entry.s3key.replace(oldProductId, newProductId);
-  }
-  state.products[newProductId] = entry;
-  delete state.products[oldProductId];
-  await saveQueueState({ storage, category, state, specDb, config });
-  if (specDb && oldProductId !== newProductId) {
-    if (typeof specDb.deleteQueueProduct === 'function') {
-      specDb.deleteQueueProduct(oldProductId);
-    } else if (specDb.db?.prepare) {
-      specDb.db
-        .prepare('DELETE FROM product_queue WHERE category = ? AND product_id = ?')
-        .run(specDb.category || category, oldProductId);
-    }
-  }
-  return true;
-}
-
-export async function syncQueueFromInputs({
-  storage,
-  category,
-  specDb = null,
-  config = {}
-}) {
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const keys = await storage.listInputKeys(category);
-  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category });
-  let added = 0;
-  let rejectedByIdentityGate = 0;
-
-  for (const key of keys) {
-    const productId = String(key).split('/').pop()?.replace(/\.json$/i, '') || '';
-    if (!productId) {
-      continue;
-    }
-
-    const input = typeof storage.readJsonOrNull === 'function'
-      ? await storage.readJsonOrNull(key)
-      : null;
-    const identity = input?.identityLock || null;
-    if (identity?.brand && identity?.model) {
-      const gate = evaluateIdentityGate({
-        category,
-        brand: identity.brand,
-        model: identity.model,
-        variant: identity.variant || '',
-        canonicalIndex
-      });
-      if (!gate.valid) {
-        rejectedByIdentityGate += 1;
-        continue;
-      }
-      registerCanonicalIdentity({
-        canonicalIndex,
-        brand: gate.normalized.brand,
-        model: gate.normalized.model,
-        variant: gate.normalized.variant,
-        productId
-      });
-    }
-
-    if (!loaded.state.products[productId]) {
-      loaded.state.products[productId] = normalizeProductRow(productId, {
-        s3key: key,
-        status: 'pending',
-        next_action_hint: 'fast_pass'
-      });
-      added += 1;
-      continue;
-    }
-
-    if (!loaded.state.products[productId].s3key) {
-      loaded.state.products[productId].s3key = key;
-      loaded.state.products[productId].updated_at = nowIso();
-    }
-  }
-
-  if (added > 0) {
-    await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  }
-
-  return {
-    added,
-    rejected_by_identity_gate: rejectedByIdentityGate,
-    total_products: Object.keys(loaded.state.products).length,
-    state: loaded.state
-  };
+  if (!token) return '_queue/unknown/state.json';
+  return `_queue/${token}/state.json`;
 }
 
 function scoreQueueRow(row) {
   const status = String(row.status || 'pending');
   if (
-    status === 'complete' ||
-    status === 'blocked' ||
-    status === 'paused' ||
-    status === 'skipped' ||
-    status === 'in_progress' ||
-    status === 'needs_manual' ||
-    status === 'exhausted' ||
-    status === 'failed'
+    status === 'complete' || status === 'blocked' || status === 'paused' ||
+    status === 'skipped' || status === 'in_progress' || status === 'needs_manual' ||
+    status === 'exhausted' || status === 'failed'
   ) {
     return Number.NEGATIVE_INFINITY;
   }
-
   const nowMs = Date.now();
   const nextRetryMs = parseDateMs(row.next_retry_at);
-  if (nextRetryMs !== null && nextRetryMs > nowMs) {
-    return Number.NEGATIVE_INFINITY;
-  }
+  if (nextRetryMs !== null && nextRetryMs > nowMs) return Number.NEGATIVE_INFINITY;
 
   const summary = row.last_summary || {};
   const missingRequired = toArray(summary.missing_required_fields).length;
@@ -455,130 +141,186 @@ function scoreQueueRow(row) {
   score += Math.max(0, 1 - confidence) * 12;
   score -= Math.max(0, toInt(row.attempts_total, 0)) * 4;
   score -= Math.max(0, toInt(row.rounds_completed, 0)) * 3;
-  if (status === 'blocked') {
-    score -= 50;
-  }
+  if (status === 'blocked') score -= 50;
   return score;
-}
-
-export function selectNextQueueProduct(queueState, { specDb = null } = {}) {
-  // When specDb is available, use SQL-based selection
-  if (specDb) {
-    const sqlRow = specDb.selectNextQueueProductSql();
-    if (!sqlRow) return null;
-    const productId = sqlRow.product_id;
-    const normalized = normalizeProductRow(productId, sqliteRowToJs(sqlRow));
-    return { ...normalized, queue_score: scoreQueueRow(normalized) };
-  }
-
-  // Fallback: in-memory scoring
-  const rows = Object.values(queueState.products || {});
-  const ranked = rows
-    .map((row) => ({
-      ...row,
-      queue_score: scoreQueueRow(row)
-    }))
-    .filter((row) => Number.isFinite(row.queue_score))
-    .sort((a, b) => b.queue_score - a.queue_score || a.productId.localeCompare(b.productId));
-
-  return ranked[0] || null;
 }
 
 function dedupeUrls(urls = [], limit = 250) {
   return [...new Set(urls.filter(Boolean))].slice(-Math.max(1, limit));
 }
 
-function inferQueueStatus({
-  previousStatus,
-  summary,
-  roundResult,
-  budgetExceeded = false
-}) {
-  if (summary?.validated) {
-    return 'complete';
-  }
-  if (budgetExceeded) {
-    return 'exhausted';
-  }
+function inferQueueStatus({ previousStatus, summary, roundResult, budgetExceeded = false }) {
+  if (summary?.validated) return 'complete';
+  if (budgetExceeded) return 'exhausted';
   const llmBlocked = String(summary?.llm?.budget?.blocked_reason || '');
-  if (llmBlocked && llmBlocked.includes('budget')) {
-    return 'needs_manual';
-  }
-
-  if (roundResult?.exhausted) {
-    return 'exhausted';
-  }
-
-  if (summary?.identity_gate_validated === false) {
-    return 'needs_manual';
-  }
+  if (llmBlocked && llmBlocked.includes('budget')) return 'needs_manual';
+  if (roundResult?.exhausted) return 'exhausted';
+  if (summary?.identity_gate_validated === false) return 'needs_manual';
   return previousStatus === 'pending' ? 'running' : previousStatus || 'running';
 }
 
+// ── Exported queue operations (adapter-based) ───────────────────────
+
+export async function loadQueueState({ storage, category, specDb = null }) {
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const rows = await adapter.getAll();
+  const products = {};
+  for (const row of rows) {
+    const id = row.productId || row.product_id;
+    if (id) products[id] = row;
+  }
+  const key = queueStateKey({ storage, category });
+  return {
+    key,
+    state: normalizeState(category, { products }),
+    recovered_from_corrupt_state: Boolean(adapter.recoveredFromCorrupt),
+  };
+}
+
+export async function saveQueueState({ storage, category, state, specDb = null, config = {} }) {
+  const normalized = normalizeState(category, state);
+  normalized.updated_at = nowIso();
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  await adapter.saveBatch(normalized.products);
+  const key = queueStateKey({ storage, category });
+  return { key, state: normalized };
+}
+
+export async function upsertQueueProduct({
+  storage, category, productId, s3key = '', patch = {},
+  specDb = null, config = {}
+}) {
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const existing = await adapter.get(productId);
+  const current = existing || normalizeProductRow(productId, { s3key });
+  const next = normalizeProductRow(productId, {
+    ...current, ...patch,
+    s3key: patch.s3key || current.s3key || s3key,
+    updated_at: nowIso()
+  });
+  await adapter.save(productId, next);
+  const key = queueStateKey({ storage, category });
+  return { key, product: next };
+}
+
+export async function migrateQueueEntry({ storage, category, oldProductId, newProductId, specDb = null, config = {} }) {
+  const { state } = await loadQueueState({ storage, category, specDb });
+  const entry = state.products[oldProductId];
+  if (!entry) return false;
+  entry.productId = newProductId;
+  if (entry.s3key) entry.s3key = entry.s3key.replace(oldProductId, newProductId);
+  state.products[newProductId] = entry;
+  delete state.products[oldProductId];
+  await saveQueueState({ storage, category, state, specDb, config });
+  if (specDb && oldProductId !== newProductId) {
+    const adapter = createQueueAdapter({ storage, category, specDb });
+    await adapter.delete(oldProductId);
+  }
+  return true;
+}
+
+export async function syncQueueFromInputs({ storage, category, specDb = null, config = {} }) {
+  const loaded = await loadQueueState({ storage, category, specDb });
+  const keys = await storage.listInputKeys(category);
+  const canonicalIndex = await loadCanonicalIdentityIndex({ config, category });
+  let added = 0;
+  let rejectedByIdentityGate = 0;
+
+  for (const key of keys) {
+    const productId = String(key).split('/').pop()?.replace(/\.json$/i, '') || '';
+    if (!productId) continue;
+
+    const input = typeof storage.readJsonOrNull === 'function'
+      ? await storage.readJsonOrNull(key)
+      : null;
+    const identity = input?.identityLock || null;
+    if (identity?.brand && identity?.model) {
+      const gate = evaluateIdentityGate({
+        category, brand: identity.brand, model: identity.model,
+        variant: identity.variant || '', canonicalIndex
+      });
+      if (!gate.valid) { rejectedByIdentityGate += 1; continue; }
+      registerCanonicalIdentity({
+        canonicalIndex, brand: gate.normalized.brand,
+        model: gate.normalized.model, variant: gate.normalized.variant, productId
+      });
+    }
+
+    if (!loaded.state.products[productId]) {
+      loaded.state.products[productId] = normalizeProductRow(productId, {
+        s3key: key, status: 'pending', next_action_hint: 'fast_pass'
+      });
+      added += 1;
+      continue;
+    }
+    if (!loaded.state.products[productId].s3key) {
+      loaded.state.products[productId].s3key = key;
+      loaded.state.products[productId].updated_at = nowIso();
+    }
+  }
+
+  if (added > 0) {
+    await saveQueueState({ storage, category, state: loaded.state, specDb, config });
+  }
+  return {
+    added,
+    rejected_by_identity_gate: rejectedByIdentityGate,
+    total_products: Object.keys(loaded.state.products).length,
+    state: loaded.state
+  };
+}
+
+export function selectNextQueueProduct(queueState, { specDb = null } = {}) {
+  if (specDb) {
+    const adapter = createQueueAdapter({ storage: null, category: '', specDb });
+    // WHY: selectNextQueueProductSql is sync in SpecDb, but adapter wraps it async.
+    // For backward compat (this function is sync), call specDb directly here.
+    const sqlRow = specDb.selectNextQueueProductSql();
+    if (!sqlRow) return null;
+    const normalized = normalizeProductRow(sqlRow.product_id, {
+      s3key: sqlRow.s3key || '',
+      status: sqlRow.status || 'pending',
+      priority: sqlRow.priority ?? 3,
+      attempts_total: sqlRow.attempts_total ?? 0,
+      retry_count: sqlRow.retry_count ?? 0,
+      max_attempts: sqlRow.max_attempts ?? 3,
+      next_retry_at: sqlRow.next_retry_at || '',
+      last_run_id: sqlRow.last_run_id || '',
+      last_summary: sqlRow.last_summary || null,
+      cost_usd_total_for_product: sqlRow.cost_usd_total ?? 0,
+      rounds_completed: sqlRow.rounds_completed ?? 0,
+      next_action_hint: sqlRow.next_action_hint || '',
+      last_urls_attempted: Array.isArray(sqlRow.last_urls_attempted) ? sqlRow.last_urls_attempted : [],
+      last_error: sqlRow.last_error || '',
+      last_started_at: sqlRow.last_started_at || '',
+      last_completed_at: sqlRow.last_completed_at || '',
+      updated_at: sqlRow.updated_at || nowIso(),
+    });
+    return { ...normalized, queue_score: scoreQueueRow(normalized) };
+  }
+  const rows = Object.values(queueState.products || {});
+  const ranked = rows
+    .map((row) => ({ ...row, queue_score: scoreQueueRow(row) }))
+    .filter((row) => Number.isFinite(row.queue_score))
+    .sort((a, b) => b.queue_score - a.queue_score || a.productId.localeCompare(b.productId));
+  return ranked[0] || null;
+}
+
 export async function recordQueueRunResult({
-  storage,
-  category,
-  s3key,
-  result,
-  roundResult = {},
-  specDb = null,
-  config = {}
+  storage, category, s3key, result, roundResult = {},
+  specDb = null, config = {}
 }) {
   const productId = String(result?.productId || '').trim();
-  if (!productId) {
-    throw new Error('recordQueueRunResult requires result.productId');
-  }
+  if (!productId) throw new Error('recordQueueRunResult requires result.productId');
 
-  if (specDb) {
-    // Direct SQLite path: read current product from SQLite
-    const existing = specDb.getQueueProduct(productId);
-    const current = normalizeProductRow(productId, existing ? sqliteRowToJs(existing) : { s3key });
-    const summary = result?.summary || {};
-    const snapshot = makeSummarySnapshot(summary);
-    const runCost = Number.parseFloat(String(summary.llm?.cost_usd_run || 0)) || 0;
-    const queueStatus = inferQueueStatus({
-      previousStatus: current.status,
-      summary,
-      roundResult,
-      budgetExceeded: Boolean(roundResult?.budgetExceeded)
-    });
-
-    const next = normalizeProductRow(productId, {
-      ...current,
-      s3key: current.s3key || s3key,
-      status: queueStatus,
-      attempts_total: current.attempts_total + 1,
-      last_run_id: result.runId || current.last_run_id,
-      last_summary: snapshot,
-      cost_usd_total_for_product: round(current.cost_usd_total_for_product + runCost, 8),
-      rounds_completed: current.rounds_completed + 1,
-      next_action_hint: roundResult.nextActionHint || current.next_action_hint || '',
-      last_urls_attempted: dedupeUrls([
-        ...(current.last_urls_attempted || []),
-        ...(result?.normalized?.sources?.urls || []),
-        ...(summary?.source_summary?.urls || []),
-        ...(summary?.sources?.urls || [])
-      ]),
-      last_completed_at: nowIso(),
-      updated_at: nowIso()
-    });
-
-    specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    const key = queueStateKey({ storage, category });
-    return { key, product: next };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const current = normalizeProductRow(productId, loaded.state.products[productId] || { s3key });
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const existing = await adapter.get(productId);
+  const current = existing || normalizeProductRow(productId, { s3key });
   const summary = result?.summary || {};
   const snapshot = makeSummarySnapshot(summary);
   const runCost = Number.parseFloat(String(summary.llm?.cost_usd_run || 0)) || 0;
   const queueStatus = inferQueueStatus({
-    previousStatus: current.status,
-    summary,
-    roundResult,
+    previousStatus: current.status, summary, roundResult,
     budgetExceeded: Boolean(roundResult?.budgetExceeded)
   });
 
@@ -602,63 +344,22 @@ export async function recordQueueRunResult({
     updated_at: nowIso()
   });
 
-  loaded.state.products[productId] = next;
-  const saved = await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  return {
-    key: saved.key,
-    product: next
-  };
+  await adapter.save(productId, next);
+  const key = queueStateKey({ storage, category });
+  return { key, product: next };
 }
 
 export async function recordQueueFailure({
-  storage,
-  category,
-  productId,
-  s3key = '',
-  error,
-  baseRetrySeconds = 60,
-  maxRetrySeconds = 3600,
-  specDb = null,
-  config = {}
+  storage, category, productId, s3key = '', error,
+  baseRetrySeconds = 60, maxRetrySeconds = 3600,
+  specDb = null, config = {}
 }) {
-  if (specDb) {
-    // Direct SQLite path
-    const existing = specDb.getQueueProduct(productId);
-    const current = normalizeProductRow(productId, existing ? sqliteRowToJs(existing) : { s3key });
-    const retryCount = current.retry_count + 1;
-    const nextDelaySeconds = retryBackoffSeconds(retryCount, {
-      baseSeconds: baseRetrySeconds,
-      maxSeconds: maxRetrySeconds
-    });
-    const nextRetryAt = new Date(Date.now() + nextDelaySeconds * 1000).toISOString();
-    const failedHard = retryCount >= current.max_attempts;
-
-    const next = normalizeProductRow(productId, {
-      ...current,
-      s3key: current.s3key || s3key,
-      status: failedHard ? 'failed' : 'pending',
-      attempts_total: current.attempts_total + 1,
-      retry_count: retryCount,
-      next_retry_at: failedHard ? '' : nextRetryAt,
-      last_error: String(error?.message || error || '').slice(0, 2000),
-      last_failed_at: nowIso(),
-      next_action_hint: failedHard ? 'manual_or_retry' : 'retry_backoff',
-      updated_at: nowIso()
-    });
-
-    specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    const key = queueStateKey({ storage, category });
-    return { key, product: next };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const current = normalizeProductRow(productId, loaded.state.products[productId] || { s3key });
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const existing = await adapter.get(productId);
+  const current = existing || normalizeProductRow(productId, { s3key });
   const retryCount = current.retry_count + 1;
   const nextDelaySeconds = retryBackoffSeconds(retryCount, {
-    baseSeconds: baseRetrySeconds,
-    maxSeconds: maxRetrySeconds
+    baseSeconds: baseRetrySeconds, maxSeconds: maxRetrySeconds
   });
   const nextRetryAt = new Date(Date.now() + nextDelaySeconds * 1000).toISOString();
   const failedHard = retryCount >= current.max_attempts;
@@ -676,210 +377,68 @@ export async function recordQueueFailure({
     updated_at: nowIso()
   });
 
-  loaded.state.products[productId] = next;
-  const saved = await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  return {
-    key: saved.key,
-    product: next
-  };
+  await adapter.save(productId, next);
+  const key = queueStateKey({ storage, category });
+  return { key, product: next };
 }
 
 export async function markStaleQueueProducts({
-  storage,
-  category,
-  staleAfterDays = 30,
-  nowIso: nowIsoOverride = null,
-  specDb = null,
-  config = {}
+  storage, category, staleAfterDays = 30,
+  nowIso: nowIsoOverride = null, specDb = null, config = {}
 }) {
-  if (specDb) {
-    // Direct SQLite path: query completed products and update stale ones
-    const allRows = specDb.getAllQueueProducts('complete');
-    const nowMs = parseDateMs(nowIsoOverride || nowIso()) || Date.now();
-    const staleThresholdMs = Math.max(1, Number(staleAfterDays || 30)) * 24 * 60 * 60 * 1000;
-    const marked = [];
-
-    for (const row of allRows) {
-      const completedMs = parseDateMs(row.last_completed_at);
-      if (completedMs === null) continue;
-      if ((nowMs - completedMs) < staleThresholdMs) continue;
-
-      specDb.updateQueueProductPatch(row.product_id, {
-        status: 'stale',
-        next_action_hint: 'recrawl_stale'
-      });
-      marked.push(row.product_id);
-    }
-
-    return { stale_marked: marked.length, products: marked };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const completeRows = await adapter.getAll('complete');
   const nowMs = parseDateMs(nowIsoOverride || nowIso()) || Date.now();
   const staleThresholdMs = Math.max(1, Number(staleAfterDays || 30)) * 24 * 60 * 60 * 1000;
   const marked = [];
 
-  for (const [productId, row] of Object.entries(loaded.state.products || {})) {
-    const status = String(row.status || '').trim().toLowerCase();
-    if (status !== 'complete') {
-      continue;
-    }
+  for (const row of completeRows) {
     const completedMs = parseDateMs(row.last_completed_at);
-    if (completedMs === null) {
-      continue;
-    }
-    if ((nowMs - completedMs) < staleThresholdMs) {
-      continue;
-    }
-    loaded.state.products[productId] = normalizeProductRow(productId, {
-      ...row,
-      status: 'stale',
-      next_action_hint: 'recrawl_stale',
-      updated_at: nowIso()
-    });
-    marked.push(productId);
+    if (completedMs === null) continue;
+    if ((nowMs - completedMs) < staleThresholdMs) continue;
+    const id = row.productId || row.product_id;
+    await adapter.patch(id, { status: 'stale', next_action_hint: 'recrawl_stale' });
+    marked.push(id);
   }
 
-  if (marked.length > 0) {
-    await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  }
-  return {
-    stale_marked: marked.length,
-    products: marked
-  };
+  return { stale_marked: marked.length, products: marked };
 }
 
 export async function listQueueProducts({
-  storage,
-  category,
-  status = '',
-  limit = 200,
-  specDb = null
+  storage, category, status = '', limit = 200, specDb = null
 }) {
-  if (specDb) {
-    // Direct SQLite query, filter/sort in JS
-    const wantedStatus = String(status || '').trim().toLowerCase();
-    const dbRows = wantedStatus
-      ? specDb.getAllQueueProducts(wantedStatus)
-      : specDb.getAllQueueProducts();
-    const rows = dbRows
-      .map((row) => normalizeProductRow(row.product_id, sqliteRowToJs(row)))
-      .sort((a, b) => {
-        const aPriority = toInt(a.priority, 3);
-        const bPriority = toInt(b.priority, 3);
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-        const aUpdated = parseDateMs(a.updated_at) || 0;
-        const bUpdated = parseDateMs(b.updated_at) || 0;
-        if (bUpdated !== aUpdated) {
-          return bUpdated - aUpdated;
-        }
-        return String(a.productId || '').localeCompare(String(b.productId || ''));
-      })
-      .slice(0, Math.max(1, Number(limit || 200)));
-    return rows;
-  }
-
-  // Fallback: JSON load
-  const loaded = await loadQueueState({ storage, category, specDb });
+  const adapter = createQueueAdapter({ storage, category, specDb });
   const wantedStatus = String(status || '').trim().toLowerCase();
-  const rows = Object.values(loaded.state.products || {})
-    .filter((row) => !wantedStatus || String(row.status || '').trim().toLowerCase() === wantedStatus)
+  const rows = wantedStatus ? await adapter.getAll(wantedStatus) : await adapter.getAll();
+  return rows
     .sort((a, b) => {
       const aPriority = toInt(a.priority, 3);
       const bPriority = toInt(b.priority, 3);
-      if (aPriority !== bPriority) {
-        return aPriority - bPriority;
-      }
+      if (aPriority !== bPriority) return aPriority - bPriority;
       const aUpdated = parseDateMs(a.updated_at) || 0;
       const bUpdated = parseDateMs(b.updated_at) || 0;
-      if (bUpdated !== aUpdated) {
-        return bUpdated - aUpdated;
-      }
+      if (bUpdated !== aUpdated) return bUpdated - aUpdated;
       return String(a.productId || '').localeCompare(String(b.productId || ''));
     })
     .slice(0, Math.max(1, Number(limit || 200)));
-  return rows;
 }
 
 export async function clearQueueByStatus({
-  storage,
-  category,
-  status,
-  specDb = null,
-  config = {}
+  storage, category, status, specDb = null, config = {}
 }) {
   const wantedStatus = String(status || '').trim().toLowerCase();
-  if (!wantedStatus) {
-    throw new Error('clearQueueByStatus requires status');
-  }
-
-  if (specDb) {
-    // Direct SQLite path: get matching products first (for return value), then delete
-    const matching = specDb.getAllQueueProducts(wantedStatus);
-    const removed = matching.map((row) => row.product_id);
-
-    if (removed.length > 0) {
-      specDb.clearQueueByStatus(wantedStatus);
-    }
-
-    return {
-      removed_count: removed.length,
-      removed_product_ids: removed
-    };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const removed = [];
-  for (const [productId, row] of Object.entries(loaded.state.products || {})) {
-    if (String(row.status || '').trim().toLowerCase() !== wantedStatus) {
-      continue;
-    }
-    delete loaded.state.products[productId];
-    removed.push(productId);
-  }
-  if (removed.length > 0) {
-    await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  }
-  return {
-    removed_count: removed.length,
-    removed_product_ids: removed
-  };
+  if (!wantedStatus) throw new Error('clearQueueByStatus requires status');
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  return adapter.clearByStatus(wantedStatus);
 }
 
 export async function markQueueRunning({
-  storage,
-  category,
-  productId,
-  s3key,
-  nextActionHint = 'fast_pass',
-  specDb = null,
-  config = {}
+  storage, category, productId, s3key,
+  nextActionHint = 'fast_pass', specDb = null, config = {}
 }) {
-  if (specDb) {
-    // Direct SQLite path
-    const existing = specDb.getQueueProduct(productId);
-    const current = normalizeProductRow(productId, existing ? sqliteRowToJs(existing) : { s3key });
-    const next = normalizeProductRow(productId, {
-      ...current,
-      s3key: current.s3key || s3key,
-      status: 'running',
-      next_action_hint: nextActionHint,
-      last_started_at: nowIso(),
-      updated_at: nowIso()
-    });
-    specDb.upsertQueueProduct(jsRowToSqliteUpsert(productId, next));
-
-    const key = queueStateKey({ storage, category });
-    return { key, product: next };
-  }
-
-  // Fallback: JSON load/mutate/save
-  const loaded = await loadQueueState({ storage, category, specDb });
-  const current = normalizeProductRow(productId, loaded.state.products[productId] || { s3key });
+  const adapter = createQueueAdapter({ storage, category, specDb });
+  const existing = await adapter.get(productId);
+  const current = existing || normalizeProductRow(productId, { s3key });
   const next = normalizeProductRow(productId, {
     ...current,
     s3key: current.s3key || s3key,
@@ -888,10 +447,7 @@ export async function markQueueRunning({
     last_started_at: nowIso(),
     updated_at: nowIso()
   });
-  loaded.state.products[productId] = next;
-  const saved = await saveQueueState({ storage, category, state: loaded.state, specDb, config });
-  return {
-    key: saved.key,
-    product: next
-  };
+  await adapter.save(productId, next);
+  const key = queueStateKey({ storage, category });
+  return { key, product: next };
 }

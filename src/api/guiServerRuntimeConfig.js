@@ -170,16 +170,6 @@ export function resolveCurrentIndexLabRoot({ runDataStorageState, defaultIndexLa
   return defaultIndexLabRoot();
 }
 
-export function resolveRunDataDestinationType({ env = process.env }) {
-  const explicit = envToken({
-    env,
-    name: 'RUN_DATA_STORAGE_DESTINATION_TYPE',
-    fallback: '',
-  }).toLowerCase();
-  if (explicit === 's3' || explicit === 'local') return explicit;
-  return 'local';
-}
-
 export function createRunDataArchiveStorage({
   runDataStorageState,
   config,

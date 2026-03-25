@@ -83,7 +83,7 @@ function createHandler(indexLabRoot, events) {
     jsonRes,
     toInt,
     INDEXLAB_ROOT: indexLabRoot,
-    config: { runtimeOpsWorkbenchEnabled: true },
+    config: {},
     readIndexLabRunEvents: async () => events,
     safeReadJson: async (filePath) => { try { return JSON.parse(await fs.readFile(filePath, 'utf8')); } catch { return null; } },
     safeJoin: (base, sub) => { const s = String(sub || '').trim(); if (!s) return ''; return path.join(base, s); },
@@ -196,7 +196,7 @@ test('runtimeOps132: all new endpoints return 404 for unknown run', async () => 
       jsonRes,
       toInt,
       INDEXLAB_ROOT: indexLabRoot,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => [],
       safeReadJson: async () => null,
       safeJoin: (base, sub) => { const s = String(sub || '').trim(); if (!s) return ''; return path.join(base, s); },
@@ -207,30 +207,6 @@ test('runtimeOps132: all new endpoints return 404 for unknown run', async () => 
       const res = createMockRes();
       await handler(['indexlab', 'run', 'non-existent', 'runtime', ...subPath], new URLSearchParams(), 'GET', null, res);
       assert.equal(res.statusCode, 404, `Expected 404 for ${subPath.join('/')}`);
-    }
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-test('runtimeOps132: all new endpoints gated behind runtimeOpsWorkbenchEnabled', async () => {
-  const { tempRoot, indexLabRoot, runId } = await setupFixture();
-  try {
-    const handler = registerRuntimeOpsRoutes({
-      jsonRes,
-      toInt,
-      INDEXLAB_ROOT: indexLabRoot,
-      config: { runtimeOpsWorkbenchEnabled: false },
-      readIndexLabRunEvents: async () => [],
-      safeReadJson: async () => null,
-      safeJoin: (base, sub) => path.join(base, String(sub || '')),
-      path,
-    });
-
-    for (const subPath of [['extraction', 'fields'], ['fallbacks'], ['queue']]) {
-      const res = createMockRes();
-      const result = await handler(['indexlab', 'run', runId, 'runtime', ...subPath], new URLSearchParams(), 'GET', null, res);
-      assert.equal(result, false, `Expected false (gated) for ${subPath.join('/')}`);
     }
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

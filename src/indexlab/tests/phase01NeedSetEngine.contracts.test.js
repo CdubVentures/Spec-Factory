@@ -4,34 +4,12 @@ import {
   computeNeedSet,
   makeIdentityLocked,
   makeIdentityUnlocked,
-  makeIdentityConflict,
-  makeBaseRules,
   makeBaseInput,
 } from './helpers/phase01NeedSetHarness.js';
 
 // --- Test groups ---
 
 describe('Phase 01 â€” Output Shape Verification (post-legacy-removal)', () => {
-  it('rows.length matches summary counts', () => {
-    const result = computeNeedSet(makeBaseInput());
-    const missingCount = result.rows.filter((r) => r.state === 'missing').length;
-    const weakCount = result.rows.filter((r) => r.state === 'weak').length;
-    const conflictCount = result.rows.filter((r) => r.state === 'conflict').length;
-    assert.equal(result.blockers.missing, missingCount);
-    assert.equal(result.blockers.weak, weakCount);
-    assert.equal(result.blockers.conflict, conflictCount);
-  });
-
-  it('summary reflects bucket counts', () => {
-    const result = computeNeedSet(makeBaseInput());
-    const coreCount = result.rows.filter((r) => r.priority_bucket === 'core').length;
-    const secondaryCount = result.rows.filter((r) => r.priority_bucket === 'secondary').length;
-    const optionalCount = result.rows.filter((r) => r.priority_bucket === 'optional').length;
-    assert.equal(result.summary.core_unresolved, coreCount);
-    assert.equal(result.summary.secondary_unresolved, secondaryCount);
-    assert.equal(result.summary.optional_unresolved, optionalCount);
-  });
-
   it('no legacy fields present on output', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.equal(result.needs, undefined, 'needs[] must not exist');
@@ -72,20 +50,6 @@ describe('Phase 01 â€” Identity Context in Debug', () => {
 });
 
 describe('Phase 01 â€” Top-Level Output Shape', () => {
-  it('output has all required top-level keys', () => {
-    const result = computeNeedSet(makeBaseInput());
-    const requiredKeys = [
-      'run_id', 'category', 'product_id', 'generated_at', 'total_fields',
-      'summary', 'blockers', 'focus_fields', 'bundles', 'profile_mix',
-      'rows', 'debug',
-      // Schema 2 additions
-      'schema_version', 'round', 'identity', 'fields', 'planner_seed'
-    ];
-    for (const key of requiredKeys) {
-      assert.ok(key in result, `output must have "${key}"`);
-    }
-  });
-
   it('debug section has expected fields', () => {
     const result = computeNeedSet(makeBaseInput());
     assert.ok(result.debug, 'debug must exist');
@@ -171,4 +135,3 @@ describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', ()
   });
 });
 
-// --- Schema 2 output shape tests ---

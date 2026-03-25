@@ -9,7 +9,7 @@
 | Concern | Live implementation |
 |---------|---------------------|
 | framework | React 18 in `tools/gui-react/src/main.tsx` |
-| router | `HashRouter` in `tools/gui-react/src/App.tsx` |
+| router | `HashRouter` in `tools/gui-react/src/App.tsx` with route/tab metadata sourced from `tools/gui-react/src/registries/pageRegistry.ts` |
 | data layer | TanStack React Query via `QueryClientProvider` in `tools/gui-react/src/App.tsx` |
 | shared local state | Zustand stores in `tools/gui-react/src/stores/*.ts` |
 | build/dev | Vite in `tools/gui-react/vite.config.ts` |
@@ -17,17 +17,20 @@
 
 ## Routing
 
-- Top-level route map lives in `tools/gui-react/src/App.tsx`.
+- Route and tab metadata single source of truth lives in `tools/gui-react/src/registries/pageRegistry.ts`.
+- `tools/gui-react/src/App.tsx` derives lazy route elements from `ROUTE_ENTRIES`.
 - Shared shell/layout lives in `tools/gui-react/src/pages/layout/AppShell.tsx`.
 - Navigation surfaces:
   - sidebar: `tools/gui-react/src/pages/layout/Sidebar.tsx`
-  - top tab bar: `tools/gui-react/src/pages/layout/TabNav.tsx`
+  - top tab bar: `tools/gui-react/src/pages/layout/TabNav.tsx`, derived from `CATALOG_TABS` and `OPS_TABS`
+- `/test-mode` is intentionally excluded from `PAGE_REGISTRY` and mounted separately in `tools/gui-react/src/App.tsx`.
 - The URL model is `/#/...`; do not document or build against filesystem-style server routes.
 
 ## Route Ownership Pattern
 
 | Pattern | Live location | Notes |
 |---------|---------------|-------|
+| route + tab registry | `tools/gui-react/src/registries/pageRegistry.ts` | single source of truth for path, label, loader, and disabled-state metadata |
 | thin route wrapper | `tools/gui-react/src/pages/**` | some page files only re-export the real implementation |
 | feature implementation | `tools/gui-react/src/features/**` | preferred home for stateful page logic |
 | legacy page-local implementation | `tools/gui-react/src/pages/overview/OverviewPage.tsx`, `tools/gui-react/src/pages/product/ProductPage.tsx`, `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/pages/billing/BillingPage.tsx`, `tools/gui-react/src/pages/storage/StoragePage.tsx`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx`, `tools/gui-react/src/pages/component-review/*` | still active in the live GUI |
@@ -64,6 +67,8 @@
 
 ## Top-Level Feature Components
 
+Routes below come from `PAGE_REGISTRY` in `tools/gui-react/src/registries/pageRegistry.ts` except `/test-mode`, which `tools/gui-react/src/App.tsx` mounts separately.
+
 | Route | Primary implementation |
 |-------|------------------------|
 | `/` | `tools/gui-react/src/pages/overview/OverviewPage.tsx` |
@@ -86,10 +91,12 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `tools/gui-react/src/App.tsx` | router, QueryClientProvider, and top-level route inventory |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | route/tab registry, lazy-loader metadata, and `test-mode` exclusion |
+| source | `tools/gui-react/src/App.tsx` | HashRouter shell, QueryClientProvider, and registry-driven route assembly |
 | source | `tools/gui-react/src/main.tsx` | React entrypoint |
 | source | `tools/gui-react/src/api/client.ts` | REST fetch boundary |
 | source | `tools/gui-react/src/api/ws.ts` | WebSocket client boundary |
+| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab derivation from `CATALOG_TABS` and `OPS_TABS` |
 | source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite LLM policy editor structure |
 | source | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` | shared-store composite policy authority |
 | source | `tools/gui-react/src/stores/llmSettingsAuthority.ts` | category-scoped LLM route-matrix authority |

@@ -40,6 +40,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Runtime Planner',
     subtitle: 'Pipeline phase settings: NeedSet through Domain Classifier',
     sections: Object.freeze([
+      { id: 'tier-hierarchy', label: 'Tier Hierarchy', tip: 'Drag-and-drop query generation priority for Tier 1 seeds', customComponent: 'TierHierarchy' },
       { id: 'needset', label: 'NeedSet', tip: 'Confidence thresholds, focus field caps, and group query term limits' },
       { id: 'search-profile', label: 'Search Profile', tip: 'Query cap, alias limits, field query caps, and synonym limits' },
       { id: 'search-planner', label: 'Search Planner', tip: 'LLM enhancer retry limits' },

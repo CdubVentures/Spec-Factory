@@ -16,12 +16,12 @@
 
 ## Dependencies
 
-- `src/features/crawl/index.js` — crawl session, plugin runner, screenshot capture, block classification
-- `src/features/crawl/plugins/stealthPlugin.js`, `autoScrollPlugin.js` — built-in browser automation plugins
-- `src/pipeline/runProduct.js` (248 LOC) — crawl-first orchestrator
-- `src/pipeline/runCrawlProcessingLifecycle.js` — batch-oriented crawl processing with frontier DB recording
-- `src/features/indexing/orchestration/index.js` — bootstrap and discovery orchestration
-- `src/features/indexing/pipeline/needSet/needsetEngine.js` — NeedSet assessment and search-plan seed logic used at the start of indexing runs
+- `src/features/crawl/index.js` - crawl session, plugin runner, screenshot capture, block classification
+- `src/features/crawl/plugins/stealthPlugin.js`, `autoScrollPlugin.js` - built-in browser automation plugins
+- `src/pipeline/runProduct.js` (248 LOC) - crawl-first orchestrator
+- `src/pipeline/runCrawlProcessingLifecycle.js` - batch-oriented crawl processing with frontier DB recording
+- `src/features/indexing/orchestration/index.js` - bootstrap and discovery orchestration
+- `src/features/indexing/pipeline/needSet/needsetEngine.js` - NeedSet assessment and search-plan seed logic used at the start of indexing runs
 - `src/features/indexing/pipeline/needSet/runNeedSet.js`
 - `src/logger.js`
 - `src/db/specDb.js`
@@ -32,8 +32,8 @@
 
 The pipeline was reworked from an extraction-heavy monolith to a crawl-first architecture:
 
-- **Before**: fetch → parse → extract (LLM) → verify → consensus → validation → learning export
-- **After**: bootstrap → create crawl session → crawl URLs → record to frontier DB
+- **Before**: fetch -> parse -> extract (LLM) -> verify -> consensus -> validation -> learning export
+- **After**: bootstrap -> create crawl session -> crawl URLs -> record to frontier DB
 
 Removed: extraction pipeline, consensus engine, learning gates, evidence audit, field aggregation, identity candidate merging.
 Added: `src/features/crawl/` (plugin-based browser automation), frontier DB integration, block detection/bypass.

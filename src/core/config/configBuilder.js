@@ -57,13 +57,6 @@ function resolveRegistryDefaults() {
   return { provider: 'gemini', model: 'gemini-2.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai' };
 }
 
-function resolveBootstrapApiKey(registryProvider) {
-  if (process.env.LLM_API_KEY) return process.env.LLM_API_KEY;
-  if (registryProvider === 'gemini' && process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-  if (registryProvider === 'deepseek' && process.env.DEEPSEEK_API_KEY) return process.env.DEEPSEEK_API_KEY;
-  return process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.DEEPSEEK_API_KEY || '';
-}
-
 export function createManifestApplicator(manifestDefaults) {
   let manifestDefaultsApplied = false;
   const manifestDefaultedEnvKeys = new Set();
@@ -117,7 +110,6 @@ export function buildRawConfig({ manifestApplicator }) {
 
   const registryDefaults = resolveRegistryDefaults();
   const defaultModel = explicitLlmModelExtract || registryDefaults.model;
-  const resolvedApiKey = resolveBootstrapApiKey(registryDefaults.provider);
   const resolvedBaseUrl = explicitLlmBaseUrl || registryDefaults.baseUrl;
   const timeoutMs = parseIntEnv('LLM_TIMEOUT_MS', runtimeSettingDefault('llmTimeoutMs'));
   const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap({});
@@ -148,7 +140,6 @@ export function buildRawConfig({ manifestApplicator }) {
     searchEngines: process.env.SEARCH_ENGINES || runtimeSettingDefault('searchEngines'),
     searchEnginesFallback: process.env.SEARCH_ENGINES_FALLBACK || runtimeSettingDefault('searchEnginesFallback'),
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),
-    searxngDefaultBaseUrl: process.env.SEARXNG_DEFAULT_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),
     // --- API keys (direct env read) ---
     serperApiKey: process.env.SERPER_API_KEY || runtimeSettingDefault('serperApiKey'),
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
@@ -158,7 +149,6 @@ export function buildRawConfig({ manifestApplicator }) {
     // --- LLM model / provider resolution chain ---
     llmForceRoleModelProvider: parseBoolEnv('LLM_FORCE_ROLE_MODEL_PROVIDER', false),
     llmProvider: explicitLlmProvider || registryDefaults.provider,
-    llmApiKey: resolvedApiKey,
     llmBaseUrl: resolvedBaseUrl,
     llmModelExtract: explicitLlmModelExtract || defaultModel,
     llmModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
@@ -181,11 +171,10 @@ export function buildRawConfig({ manifestApplicator }) {
     llmModelOutputTokenMap: normalizeModelOutputTokenMap(parseJsonEnv('LLM_MODEL_OUTPUT_TOKEN_MAP_JSON', {})),
 
     // --- OpenAI aliases (computed from LLM chain) ---
-    openaiApiKey: resolvedApiKey,
+    openaiApiKey: '',
     openaiBaseUrl: resolvedBaseUrl,
     openaiModelExtract: explicitLlmModelExtract || defaultModel,
     openaiModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
-    openaiTimeoutMs: timeoutMs,
 
     // --- JSON map normalization + sub-fields ---
     retrievalInternalsMap: normalizedRetrievalInternalsMap,
@@ -213,7 +202,6 @@ export function buildRawConfig({ manifestApplicator }) {
     retrievalMaxHitsPerField: 24,
     retrievalMaxPrimeSources: 10,
     retrievalIdentityFilterEnabled: true,
-    runtimeOpsWorkbenchEnabled: parseBoolEnv('RUNTIME_OPS_WORKBENCH_ENABLED', true),
   };
 
   return { cfg, explicitEnvKeys };

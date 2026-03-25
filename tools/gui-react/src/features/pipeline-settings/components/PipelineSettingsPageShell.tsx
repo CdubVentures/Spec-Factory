@@ -7,7 +7,8 @@ export type PipelineSectionId =
   | 'fetcher'
   | 'extraction'
   | 'validation'
-  | 'source-strategy';
+  | 'source-strategy'
+  | 'deterministic-strategy';
 
 export const PIPELINE_SECTION_IDS = [
   'global',
@@ -16,6 +17,7 @@ export const PIPELINE_SECTION_IDS = [
   'extraction',
   'validation',
   'source-strategy',
+  'deterministic-strategy',
 ] as const satisfies readonly PipelineSectionId[];
 
 const PIPELINE_SECTIONS = [
@@ -54,6 +56,12 @@ const PIPELINE_SECTIONS = [
     label: 'Source Strategy',
     subtitle: 'Per-host source rules',
     tip: 'Owns the host registry consumed during Planner Queue Seeding and Fetch and Parse Entry. Use it to tell the planner which hosts are authoritative, how they should be crawled, and whether they should enter discovery as approved or candidate sources.',
+  },
+  {
+    id: 'deterministic-strategy' as const,
+    label: 'Deterministic Strategy',
+    subtitle: 'Per-category spec seed templates',
+    tip: 'Ordered list of specification seed query templates per category. These replace the single hardcoded "specifications" query in Tier 1 query generation.',
   },
 ];
 
@@ -119,6 +127,13 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <path d="M5 6v5c0 1.4 3.13 2.5 7 2.5s7-1.1 7-2.5V6" />
             <path d="M5 11v5c0 1.4 3.13 2.5 7 2.5s7-1.1 7-2.5v-5" />
             <path d="M3 18h4M17 18h4" />
+          </>
+        )}
+        {id === 'deterministic-strategy' && (
+          <>
+            <path d="M4 6h16M4 10h16M4 14h10" />
+            <circle cx="19" cy="14" r="2.5" />
+            <path d="M19 17v3" />
           </>
         )}
       </svg>

@@ -47,7 +47,6 @@ export {
 };
 
 export const CATEGORY = 'mouse_contract_lane_matrix';
-let reviewLaneApiTemplatePromise;
 
 const PRODUCTS = {
   [PRODUCT_A]: {
@@ -338,58 +337,45 @@ function seedKeyReviewState(db, componentIdentifier) {
   });
 }
 
-async function buildReviewLaneApiTemplate() {
-  const templateRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-lane-contract-api-template-'));
-  const storage = makeStorage(templateRoot);
+async function seedReviewLaneApiWorkspace(workspaceRoot) {
+  const storage = makeStorage(workspaceRoot);
   const config = {
-    categoryAuthorityRoot: path.join(templateRoot, 'category_authority'),
-    localOutputRoot: path.join(templateRoot, 'out'),
-    specDbDir: path.join(templateRoot, '.specfactory_tmp'),
+    categoryAuthorityRoot: path.join(workspaceRoot, 'category_authority'),
+    localOutputRoot: path.join(workspaceRoot, 'out'),
+    specDbDir: path.join(workspaceRoot, '.specfactory_tmp'),
   };
   const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');
   const dbPath = path.join(config.specDbDir, CATEGORY, 'spec.sqlite');
 
+  await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
+  await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
+  await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
+  await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
+  await Promise.all([
+    Promise.all(
+      Object.entries(PRODUCTS).map(([productId, product]) =>
+        seedLatestArtifacts(storage, CATEGORY, productId, product)),
+    ),
+    seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
+  ]);
+
+  await fs.mkdir(path.dirname(dbPath), { recursive: true });
+  const db = new SpecDb({ dbPath, category: CATEGORY });
   try {
-    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
-    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
-    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
-    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
-    await Promise.all([
-      Promise.all(
-        Object.entries(PRODUCTS).map(([productId, product]) =>
-          seedLatestArtifacts(storage, CATEGORY, productId, product)),
-      ),
-      seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
-    ]);
-
-    await fs.mkdir(path.dirname(dbPath), { recursive: true });
-    const db = new SpecDb({ dbPath, category: CATEGORY });
-    try {
-      await seedSpecDb({
-        db,
-        config,
-        category: CATEGORY,
-        fieldRules: buildFieldRulesForSeed(),
-        logger: null,
-      });
-      seedStrictLaneCandidates(db, CATEGORY);
-      seedKeyReviewState(db, componentIdentifier);
-    } finally {
-      db.close();
-    }
-
-    return { templateRoot, componentIdentifier };
-  } catch (error) {
-    await fs.rm(templateRoot, { recursive: true, force: true }).catch(() => {});
-    throw error;
+    await seedSpecDb({
+      db,
+      config,
+      category: CATEGORY,
+      fieldRules: buildFieldRulesForSeed(),
+      logger: null,
+    });
+    seedStrictLaneCandidates(db, CATEGORY);
+    seedKeyReviewState(db, componentIdentifier);
+  } finally {
+    db.close();
   }
-}
 
-async function getReviewLaneApiTemplate() {
-  if (!reviewLaneApiTemplatePromise) {
-    reviewLaneApiTemplatePromise = buildReviewLaneApiTemplate();
-  }
-  return reviewLaneApiTemplatePromise;
+  return { componentIdentifier };
 }
 
 export async function createReviewLaneApiHarness(t) {
@@ -422,10 +408,7 @@ export async function createReviewLaneApiHarness(t) {
   t.after(cleanup);
 
   try {
-    const { templateRoot } = await getReviewLaneApiTemplate();
-    await fs.cp(path.join(templateRoot, 'category_authority'), config.categoryAuthorityRoot, { recursive: true });
-    await fs.cp(path.join(templateRoot, 'out'), config.localOutputRoot, { recursive: true });
-    await fs.cp(path.join(templateRoot, '.specfactory_tmp'), config.specDbDir, { recursive: true });
+    await seedReviewLaneApiWorkspace(tempRoot);
 
     const dbPath = path.join(config.specDbDir, CATEGORY, 'spec.sqlite');
     db = new SpecDb({ dbPath, category: CATEGORY });

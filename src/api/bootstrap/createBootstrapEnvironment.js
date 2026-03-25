@@ -13,7 +13,6 @@ import {
   envToken as envTokenFromProcess,
   envBool as envBoolFromProcess,
   resolveStorageBackedWorkspaceRoots as resolveStorageBackedWorkspaceRootsFromSettings,
-  resolveRunDataDestinationType,
   createRunDataArchiveStorage,
 } from '../guiServerRuntimeConfig.js';
 import {
@@ -97,11 +96,9 @@ export function createBootstrapEnvironment({ projectRoot }) {
     repoDefaultOutputRoot: SETTINGS_DEFAULTS.runtime?.localOutputRoot,
   });
 
-  config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', true);
-
   const runDataStorageState = normalizeRunDataStorageSettings({
     enabled: envBool('RUN_DATA_STORAGE_ENABLED', false),
-    destinationType: resolveRunDataDestinationType({ env: process.env }),
+    destinationType: 'local',
     localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
     awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', 'us-east-2'),
     s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', ''),

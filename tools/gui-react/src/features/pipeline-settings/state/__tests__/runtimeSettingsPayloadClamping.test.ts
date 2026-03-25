@@ -62,7 +62,6 @@ function makeInput(
     llmMaxOutputTokensPlan: 4096,
     llmMaxOutputTokensReasoning: 4096,
     llmMaxOutputTokensPlanFallback: 4096,
-    llmMaxOutputTokensReasoningFallback: 4096,
     crawleeRequestHandlerTimeoutSecs: 60,
     autoScrollPasses: 0,
     autoScrollDelayMs: 500,
@@ -113,14 +112,17 @@ describe('collectRuntimeSettingsPayload — fallback token clamping', () => {
     strictEqual(result.llmMaxOutputTokensPlanFallback, 8192);
   });
 
-  it('clamps reasoning fallback tokens against fallback model, not primary', () => {
-    // claude-sonnet max=16384, claude-haiku max=4096
+  it('does not serialize the retired reasoning fallback token knob', () => {
     const result = collectRuntimeSettingsPayload(makeInput({
       llmModelReasoning: 'claude-sonnet',
       llmReasoningFallbackModel: 'claude-haiku',
       llmMaxOutputTokensReasoningFallback: 10000,
     }));
-    strictEqual(result.llmMaxOutputTokensReasoningFallback, 4096);
+    strictEqual(
+      Object.prototype.hasOwnProperty.call(result, 'llmMaxOutputTokensReasoningFallback'),
+      false,
+    );
+    strictEqual(result.llmReasoningFallbackModel, 'claude-haiku');
   });
 
   it('falls back to primary model when no fallback model is configured', () => {

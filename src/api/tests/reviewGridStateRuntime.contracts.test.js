@@ -96,6 +96,11 @@ test('purgeTestModeCategoryState is a no-op outside _test_ categories', () => {
       },
       transaction: (fn) => fn,
     },
+    purgeCategoryState: () => ({
+      clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0,
+      clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0,
+      clearedCatalogState: 0, clearedArtifacts: 0,
+    }),
   };
 
   const result = runtime.purgeTestModeCategoryState(specDb, 'mouse');

@@ -108,6 +108,7 @@ export class IndexLabRuntimeBridge {
         llmTracker: this._llmTracker,
       }, row))
       .catch(() => {});
+    return this.queue;
   }
 
   async finalize(summary = {}) {

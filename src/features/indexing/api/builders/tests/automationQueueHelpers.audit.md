@@ -7,6 +7,14 @@ Policy:
 - Collapse repeated one-value-per-test mapping cases into table-driven tests by helper family.
 - Retire no behavior; this pass is reduction by consolidation rather than deletion of live contracts.
 
+## Runtime Collapse Addendum
+
+The first decomposition pass split this helper surface into four tiny child files by family. That improved local readability, but each file only carried a handful of pure helper assertions and paid separate test-runner startup. The current end state collapses those child files into one focused helper contract file:
+
+- `src/features/indexing/api/builders/tests/automationQueueHelpers.contracts.test.js`
+
+Protected behavior is unchanged. The runtime goal of the second pass is to reduce file-count overhead, not to broaden the surface again.
+
 ## Priority Helpers
 
 | Original test | Bucket | Reason | Replacement | Disposition |
@@ -72,6 +80,6 @@ Policy:
 
 ## Proof
 
-- Targeted replacement tests: `node --test src/features/indexing/api/builders/tests/automationQueueHelpers.priorityContracts.test.js src/features/indexing/api/builders/tests/automationQueueHelpers.listContracts.test.js src/features/indexing/api/builders/tests/automationQueueHelpers.idAndNormalizationContracts.test.js src/features/indexing/api/builders/tests/automationQueueHelpers.searchProfileContracts.test.js`
+- Targeted replacement tests: `node --test src/features/indexing/api/builders/tests/automationQueueHelpers*.test.js`
 - Surrounding indexing API builder tests: `node --test src/features/indexing/api/builders/tests/*.test.js`
 - Full suite: `npm test`

@@ -25,7 +25,7 @@ function createHarness(overrides = {}) {
   const sleepCalls = [];
 
   const runtime = createSearxngRuntime({
-    config: overrides.config || { searxngBaseUrl: '', searxngDefaultBaseUrl: 'http://127.0.0.1:8080' },
+    config: overrides.config || { searxngBaseUrl: '' },
     processRef: overrides.processRef || { env: {} },
     fsSync: overrides.fsSync || { existsSync: () => false },
     resolveProjectPath: overrides.resolveProjectPath || ((v) => path.resolve('/project', String(v || '.'))),

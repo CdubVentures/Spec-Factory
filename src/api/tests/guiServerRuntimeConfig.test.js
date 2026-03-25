@@ -7,7 +7,6 @@ import {
   normalizeRuntimeArtifactWorkspaceDefaults,
   assertNoShadowHelperRuntime,
   resolveStorageBackedWorkspaceRoots,
-  resolveRunDataDestinationType,
   createRunDataArchiveStorage,
   resolveCurrentIndexLabRoot,
 } from '../guiServerRuntimeConfig.js';
@@ -106,16 +105,11 @@ test('resolveStorageBackedWorkspaceRoots maps local and s3 storage to workspace 
   });
 });
 
-test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 storage settings', () => {
-  const destinationType = resolveRunDataDestinationType({
-    env: {
-      RUN_DATA_STORAGE_DESTINATION_TYPE: 's3',
-    },
-  });
+test('createRunDataArchiveStorage creates S3 storage when destinationType is s3', () => {
   const archiveStorage = createRunDataArchiveStorage({
     runDataStorageState: {
       enabled: true,
-      destinationType,
+      destinationType: 's3',
       awsRegion: 'us-east-2',
       s3Bucket: 'spec-factory-bucket',
     },
@@ -130,7 +124,6 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
     },
   });
 
-  assert.equal(destinationType, 's3');
   assert.equal(archiveStorage?.ok, true);
   assert.equal(archiveStorage?.input?.outputMode, 's3');
   assert.equal(archiveStorage?.input?.awsRegion, 'us-east-2');

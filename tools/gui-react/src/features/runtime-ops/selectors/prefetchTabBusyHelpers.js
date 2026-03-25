@@ -1,5 +1,5 @@
 // WHY: Order matches the strict 8-stage sequential pipeline.
-// Canonical keys live in prefetchStageKeys.ts (TypeScript SSOT).
+// Canonical keys live in prefetchStageRegistry.ts (TypeScript SSOT).
 // This .js copy exists for node --test compatibility.
 export const DEFAULT_PREFETCH_TAB_KEYS = [
   'needset',

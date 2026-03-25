@@ -224,9 +224,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         const componentIdentifier = buildComponentIdentifier(componentType, itemName, itemMaker);
         for (const cv of propRows) {
           if (!cv?.id) continue;
-          const existing = specDb.db.prepare(
-            "SELECT id FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_value_id = ?"
-          ).get(specDb.category, cv.id);
+          const existing = specDb.getKeyReviewStateForComponentValue(cv.id);
           if (existing) continue;
           specDb.upsertKeyReviewState({
             category: specDb.category,

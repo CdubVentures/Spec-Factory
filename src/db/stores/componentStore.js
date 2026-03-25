@@ -302,6 +302,72 @@ export function createComponentStore({ db, category, stmts }) {
     tx();
   }
 
+  function getDistinctMakersForComponentName(componentType, componentName) {
+    return db.prepare(`
+      SELECT COUNT(DISTINCT LOWER(TRIM(COALESCE(maker, '')))) AS maker_count
+      FROM component_identity
+      WHERE category = ? AND component_type = ? AND LOWER(TRIM(canonical_name)) = LOWER(TRIM(?))
+    `).get(category, componentType, componentName);
+  }
+
+  function getComponentIdentityCollision(componentType, name, maker, excludeId) {
+    return db.prepare(`
+      SELECT id FROM component_identity
+      WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ? AND id != ?
+      LIMIT 1
+    `).get(category, componentType, name, maker, excludeId) || null;
+  }
+
+  function updateComponentIdentityFields(identityId, { name, maker, source }) {
+    db.prepare(`
+      UPDATE component_identity
+      SET canonical_name = ?, maker = ?, source = ?, updated_at = datetime('now')
+      WHERE category = ? AND id = ?
+    `).run(name, maker, source, category, identityId);
+  }
+
+  function updateComponentValuesByIdentity(componentType, oldName, oldMaker, newName, newMaker) {
+    db.prepare(`
+      UPDATE component_values
+      SET component_name = ?, component_maker = ?, updated_at = datetime('now')
+      WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
+    `).run(newName, newMaker, category, componentType, oldName, oldMaker);
+  }
+
+  function clearComponentValueAcceptedCandidate(componentValueId) {
+    db.prepare(
+      "UPDATE component_values SET accepted_candidate_id = NULL, updated_at = datetime('now') WHERE category = ? AND id = ?"
+    ).run(category, componentValueId);
+  }
+
+  function deleteComponentAliasesBySource(componentId, source) {
+    db.prepare('DELETE FROM component_aliases WHERE component_id = ? AND source = ?').run(componentId, source);
+  }
+
+  function updateComponentLinks(identityId, links) {
+    db.prepare(`
+      UPDATE component_identity
+      SET links = ?, source = 'user', updated_at = datetime('now')
+      WHERE category = ? AND id = ?
+    `).run(JSON.stringify(links), category, identityId);
+  }
+
+  function updateComponentReviewStatusById(identityId, reviewStatus) {
+    db.prepare(`
+      UPDATE component_identity
+      SET review_status = ?, updated_at = datetime('now')
+      WHERE category = ? AND id = ?
+    `).run(reviewStatus, category, identityId);
+  }
+
+  function updateComponentValueNeedsReview(componentValueId, needsReview) {
+    db.prepare(`
+      UPDATE component_values
+      SET needs_review = ?, updated_at = datetime('now')
+      WHERE category = ? AND id = ?
+    `).run(needsReview ? 1 : 0, category, componentValueId);
+  }
+
   return {
     upsertComponentIdentity,
     insertAlias,
@@ -320,5 +386,14 @@ export function createComponentStore({ db, category, stmts }) {
     updateComponentReviewStatus,
     updateAliasesOverridden,
     mergeComponentIdentities,
+    getDistinctMakersForComponentName,
+    getComponentIdentityCollision,
+    updateComponentIdentityFields,
+    updateComponentValuesByIdentity,
+    clearComponentValueAcceptedCandidate,
+    deleteComponentAliasesBySource,
+    updateComponentLinks,
+    updateComponentReviewStatusById,
+    updateComponentValueNeedsReview,
   };
 }

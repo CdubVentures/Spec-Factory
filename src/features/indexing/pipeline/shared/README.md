@@ -13,6 +13,7 @@ Re-exports from `shared/index.js`:
 - Core/deep gate functions (tier-aware filtering)
 - Query index (deduplication, ranking helpers)
 - Prompt index (LLM prompt templates for pipeline phases)
+- `createPhaseCallLlm` — generic factory for pipeline phase LLM call adapters (used by 4 phases)
 
 ## Dependencies
 

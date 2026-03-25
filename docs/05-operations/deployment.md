@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Deployment Model
 
@@ -15,7 +15,7 @@
 | Optional local search sidecar | `tools/searxng/docker-compose.yml` | local SearXNG instance used by search workflows | optional |
 | Docker container | `Dockerfile` | container image attempt for batch CLI | stale; not the verified deployment path |
 
-## Verified Commands
+## Available Commands
 
 | Goal | Command | Source |
 |------|---------|--------|
@@ -27,6 +27,8 @@
 | Build packaged setup launcher | `npm run setup:exe` | `package.json`, `tools/build-setup-exe.mjs` |
 | Start IndexLab CLI directly | `npm run run:indexlab` | `package.json`, `src/cli/spec.js` |
 | Start local GraphQL helper API | `npm run intel:api` | `package.json`, `src/cli/spec.js`, `src/api/intelGraphApi.js` |
+
+Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-03-25, producing the currently served `tools/gui-react/dist/` bundle.
 
 ## Build And Packaging Flow
 
@@ -62,7 +64,6 @@
 - `Dockerfile` is not aligned with the live CLI entrypoints. It still launches `node src/cli/run-batch.js`, but that file does not exist; the supported batch entrypoint is `node src/cli/spec.js run-batch`.
 - No remote deployment manifests, Helm charts, Terraform, or container orchestration configs were verified.
 - The generated `SpecFactory.exe` and `Launcher.exe` artifacts were not present in the current checkout; only the build scripts and wrappers were verified.
-- Live runtime proof during this audit came from the already-running server on `http://127.0.0.1:8788`, not from starting a fresh second instance, because port `8788` was already occupied.
 
 ## Validated Against
 
@@ -75,6 +76,7 @@
 | source | `tools/build-setup-exe.mjs` | packaged launcher build pipeline |
 | source | `tools/specfactory-launcher.mjs` | launcher runtime and default port |
 | config | `Dockerfile` | stale container path and missing entrypoint mismatch |
+| command | `npm run gui:build` | current GUI build pipeline is green and writes `tools/gui-react/dist/` |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live server responded during the audit |
 
 ## Related Documents

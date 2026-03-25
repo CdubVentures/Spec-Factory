@@ -15,7 +15,7 @@ export interface LlmModelRoleEntry {
 
 export const LLM_MODEL_ROLES: readonly LlmModelRoleEntry[] = [
   { role: 'Plan', modelKey: 'llmModelPlan', tokenKey: 'llmMaxOutputTokensPlan', label: 'Base model', fallbackModelKey: 'llmPlanFallbackModel', fallbackTokenKey: 'llmMaxOutputTokensPlanFallback' },
-  { role: 'Reasoning', modelKey: 'llmModelReasoning', tokenKey: 'llmMaxOutputTokensReasoning', label: 'Reasoning model', fallbackModelKey: 'llmReasoningFallbackModel', fallbackTokenKey: 'llmMaxOutputTokensReasoningFallback' },
+  { role: 'Reasoning', modelKey: 'llmModelReasoning', tokenKey: 'llmMaxOutputTokensReasoning', label: 'Reasoning model', fallbackModelKey: 'llmReasoningFallbackModel', fallbackTokenKey: 'llmMaxOutputTokensPlanFallback' },
 ];
 
 /** Field → label map. Consumed by validation and stale-model detection. */

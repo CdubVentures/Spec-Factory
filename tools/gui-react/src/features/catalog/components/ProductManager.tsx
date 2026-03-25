@@ -7,7 +7,7 @@ import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
-import BulkPasteGrid, { type BulkGridRow } from '../../../components/common/BulkPasteGrid.tsx';
+import BulkPasteGrid, { type BulkGridRow } from '../../../shared/ui/forms/BulkPasteGrid.tsx';
 import { invalidateFieldRulesQueries } from '../../studio/index.ts';
 
 import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses.ts';

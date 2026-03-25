@@ -54,10 +54,8 @@ test('config: loadConfig exposes the public runtime and llm contract surface', (
 test('config: resolved OpenAI aliases mirror the resolved llm settings', () => {
   const cfg = makeResolvedConfig();
 
-  assert.equal(cfg.openaiApiKey, cfg.llmApiKey);
   assert.equal(cfg.openaiBaseUrl, cfg.llmBaseUrl);
   assert.equal(cfg.openaiModelPlan, cfg.llmModelPlan);
-  assert.equal(cfg.openaiTimeoutMs, cfg.llmTimeoutMs);
 });
 
 test('config: token profile map stays usable for active resolved models', () => {

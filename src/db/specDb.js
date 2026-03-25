@@ -27,6 +27,7 @@ import { createSourceIntelStore } from './stores/sourceIntelStore.js';
 import { createQueueProductStore } from './stores/queueProductStore.js';
 import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
 import { createFieldHistoryStore } from './stores/fieldHistoryStore.js';
+import { createPurgeStore } from './stores/purgeStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -102,6 +103,7 @@ export class SpecDb {
       category: this.category,
       stmts: { _upsertFieldHistory: this._upsertFieldHistory, _getFieldHistories: this._getFieldHistories, _deleteFieldHistories: this._deleteFieldHistories }
     });
+    this._purgeStore = createPurgeStore({ db: this.db, category: this.category });
   }
 
   cleanupLegacyIdentityFallbackRows() {
@@ -300,8 +302,22 @@ export class SpecDb {
   updateComponentReviewStatus(t, n, m, s) { this._componentStore.updateComponentReviewStatus(t, n, m, s); }
   updateAliasesOverridden(t, n, m, o) { this._componentStore.updateAliasesOverridden(t, n, m, o); }
   mergeComponentIdentities(opts) { this._componentStore.mergeComponentIdentities(opts); }
+  getDistinctMakersForComponentName(t, n) { return this._componentStore.getDistinctMakersForComponentName(t, n); }
+  getComponentIdentityCollision(t, n, m, ex) { return this._componentStore.getComponentIdentityCollision(t, n, m, ex); }
+  updateComponentIdentityFields(id, opts) { this._componentStore.updateComponentIdentityFields(id, opts); }
+  updateComponentValuesByIdentity(t, on, om, nn, nm) { this._componentStore.updateComponentValuesByIdentity(t, on, om, nn, nm); }
+  clearComponentValueAcceptedCandidate(id) { this._componentStore.clearComponentValueAcceptedCandidate(id); }
+  deleteComponentAliasesBySource(cid, src) { this._componentStore.deleteComponentAliasesBySource(cid, src); }
+  updateComponentLinks(id, links) { this._componentStore.updateComponentLinks(id, links); }
+  updateComponentReviewStatusById(id, s) { this._componentStore.updateComponentReviewStatusById(id, s); }
+  updateComponentValueNeedsReview(id, nr) { this._componentStore.updateComponentValueNeedsReview(id, nr); }
 
   deleteKeyReviewStateRowsByIds(stateIds) { return this._keyReviewStore.deleteKeyReviewStateRowsByIds(stateIds); }
+
+  // ── Purge operations (test-mode cleanup) ──
+  deleteKeyReviewStatesByTargetKinds(category, targetKinds) { return this._purgeStore.deleteKeyReviewStatesByTargetKinds(category, targetKinds); }
+  purgeCategoryState(category) { return this._purgeStore.purgeCategoryState(category); }
+  purgeProductReviewState(category, productId) { return this._purgeStore.purgeProductReviewState(category, productId); }
 
   deleteListValue(fieldKey, value) { return this._enumListStore.deleteListValue(fieldKey, value); }
   deleteListValueById(listValueId) { return this._enumListStore.deleteListValueById(listValueId); }
@@ -313,6 +329,9 @@ export class SpecDb {
   renameFieldValueInItems(fk, oldV, newV) { return this._itemStateStore.renameFieldValueInItems(fk, oldV, newV); }
   removeFieldValueFromItems(fk, v) { return this._itemStateStore.removeFieldValueFromItems(fk, v); }
   removeListLinks(fk, v) { this._itemStateStore.removeListLinks(fk, v); }
+  updateItemComponentLinksByIdentity(t, on, om, nn, nm) { this._itemStateStore.updateItemComponentLinksByIdentity(t, on, om, nn, nm); }
+  getItemFieldStateIdByProductAndField(pid, fk) { return this._itemStateStore.getItemFieldStateIdByProductAndField(pid, fk); }
+  setItemFieldNeedsAiReview(id) { this._itemStateStore.setItemFieldNeedsAiReview(id); }
 
   // --- Component cascade helpers ---
 
@@ -576,6 +595,8 @@ export class SpecDb {
 
   upsertComponentReviewItem(row) { this._queueProductStore.upsertComponentReviewItem(row); }
   getComponentReviewItems(ct, sf) { return this._queueProductStore.getComponentReviewItems(ct, sf); }
+  updateComponentReviewQueueMatchedComponent(cat, rid, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponent(cat, rid, v); }
+  updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v) { this._queueProductStore.updateComponentReviewQueueMatchedComponentByName(cat, ct, old, v); }
 
   getProductsByFieldValue(fk, v) { return this._itemStateStore.getProductsByFieldValue(fk, v); }
 
@@ -594,6 +615,7 @@ export class SpecDb {
   insertSourceEvidenceRef(opts) { this._llmRouteSourceStore.insertSourceEvidenceRef(opts); }
   getSourcesForItem(id) { return this._llmRouteSourceStore.getSourcesForItem(id); }
   getAssertionsForSource(id) { return this._llmRouteSourceStore.getAssertionsForSource(id); }
+  hasSourceEvidenceRef(assertionId) { return this._llmRouteSourceStore.hasSourceEvidenceRef(assertionId); }
 
   // --- Key Review Methods ---
 
@@ -613,6 +635,8 @@ export class SpecDb {
   insertKeyReviewAudit(opts) { this._keyReviewStore.insertKeyReviewAudit(opts); }
 
   pruneOrphanCandidateReferences() { return this._keyReviewStore.pruneOrphanCandidateReferences(); }
+  getKeyReviewStateForComponentValue(cvId) { return this._keyReviewStore.getKeyReviewStateForComponentValue(cvId); }
+  updateKeyReviewComponentIdentifier(oldId, newId) { this._keyReviewStore.updateKeyReviewComponentIdentifier(oldId, newId); }
 
   counts() {
     const tables = [

@@ -115,7 +115,25 @@ function parseProxyUrlList(jsonStr) {
 // instead of editing branching logic throughout the file.
 const ENGINE_TRANSPORT = {
   'google': 'crawlee',
+  'brave': 'brave-api',
 };
+
+// WHY: Each transport defines readiness + execution. Adding a new direct-API
+// transport means adding one entry here instead of editing dispatch branching.
+export const TRANSPORT_REGISTRY = Object.freeze({
+  crawlee: {
+    ready: () => true,
+    execute: (args) => attemptGoogleCrawlee(args),
+  },
+  searxng: {
+    ready: (cfg) => Boolean(searxngBaseUrl(cfg)),
+    execute: (args) => attemptSearch(args),
+  },
+  'brave-api': {
+    ready: (cfg) => Boolean(configValue(cfg, 'braveApiKey')),
+    execute: (args) => attemptBraveSearch(args),
+  },
+});
 
 export function groupEnginesByTransport(engineList) {
   const groups = {};
@@ -195,20 +213,38 @@ async function attemptSerperSearch({ query, limit, config, logger, requestThrott
   }
 }
 
+// WHY: Brave Search direct API — uses subscription token, no browser/proxy.
+async function attemptBraveSearch({ query, limit, config, logger, _searchBraveFn }) {
+  try {
+    const searchFn = _searchBraveFn || (await import('./searchBrave.js')).searchBrave;
+    const results = await searchFn({
+      query,
+      apiKey: configValue(config, 'braveApiKey'),
+      count: limit,
+      timeoutMs: config.braveSearchTimeoutMs,
+      braveSearchTimeoutMs: config.braveSearchTimeoutMs,
+      braveSearchResultCap: config.braveSearchResultCap,
+      logger,
+    });
+    if (Array.isArray(results) && results.length === 0) {
+      logger?.warn?.('brave_search_zero_results', { query });
+    }
+    return Array.isArray(results) ? results : [];
+  } catch (error) {
+    logger?.warn?.('brave_search_dispatch_failed', { query, message: error.message });
+    return [];
+  }
+}
+
 // WHY: Dispatches a mixed engine list by transport group.
 // Each transport runs in parallel; results are merged and deduped.
-async function dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink }) {
+// Registry-driven — adding a new transport requires zero edits here.
+async function dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, _searchBraveFn, screenshotSink }) {
   const groups = groupEnginesByTransport(engineList);
-  const promises = [];
-
-  if (groups.crawlee?.length > 0) {
-    promises.push(attemptGoogleCrawlee({ query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink }));
-  }
-
-  if (groups.searxng?.length > 0 && searxBase) {
-    promises.push(attemptSearch({ searxBase, engines: groups.searxng.join(','), query, limit, config, logger, requestThrottler }));
-  }
-
+  const bag = { searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, _searchBraveFn, screenshotSink };
+  const promises = Object.entries(groups)
+    .filter(([key]) => TRANSPORT_REGISTRY[key]?.ready(config))
+    .map(([key, engines]) => TRANSPORT_REGISTRY[key].execute({ engines, ...bag }));
   const resultSets = await Promise.all(promises);
   return dedupeResults(resultSets.flat());
 }
@@ -221,6 +257,7 @@ export async function runSearchProviders({
   requestThrottler,
   _searchGoogleFn,
   _searchSerperFn,
+  _searchBraveFn,
   screenshotSink,
 }) {
   // WHY: Serper mode is exclusive — when enabled, skip all Crawlee/SearXNG paths.
@@ -244,13 +281,15 @@ export async function runSearchProviders({
   const groups = groupEnginesByTransport(engineList);
   const searxBase = searxngBaseUrl(config);
 
-  // Need at least one viable path: a direct-API transport OR (searxng engines + searxng base)
-  const hasDirectPath = (groups.crawlee?.length > 0);
+  // Need at least one viable path: a ready non-searxng transport OR (searxng engines + searxng base)
+  const hasDirectPath = Object.entries(groups).some(
+    ([key, engines]) => key !== 'searxng' && engines.length > 0 && TRANSPORT_REGISTRY[key]?.ready(config)
+  );
   const hasSearxngPath = (groups.searxng?.length > 0) && Boolean(searxBase);
   if (!hasDirectPath && !hasSearxngPath) return { results: [], usedFallback: false };
 
   // Primary attempt
-  const primaryResults = await dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
+  const primaryResults = await dispatchEngines({ engineList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, _searchBraveFn, screenshotSink });
   if (primaryResults.length > 0) return { results: primaryResults, usedFallback: false };
 
   // Fallback attempt — only if primary returned nothing usable
@@ -264,7 +303,7 @@ export async function runSearchProviders({
   });
 
   const fallbackList = fallbackEngines.split(',');
-  const fallbackResults = await dispatchEngines({ engineList: fallbackList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, screenshotSink });
+  const fallbackResults = await dispatchEngines({ engineList: fallbackList, searxBase, query, limit, config, logger, requestThrottler, _searchGoogleFn, _searchBraveFn, screenshotSink });
   return { results: fallbackResults, usedFallback: fallbackResults.length > 0 };
 }
 
@@ -280,13 +319,19 @@ export function searchEngineAvailability(config) {
   const groups = groupEnginesByTransport(engineList);
 
   const googleReady = (groups.crawlee?.length > 0);
+  const braveApiReady = Boolean(configValue(config, 'braveApiKey'));
   const searxngEnginesReady = searxngReady && (groups.searxng?.length > 0);
-  // WHY: Serper OR any direct-API transport OR SearXNG = internet ready.
-  const internetReady = serperReady || googleReady || searxngEnginesReady;
+  // WHY: Serper OR any ready direct-API transport OR SearXNG = internet ready.
+  const hasDirectPath = Object.entries(groups).some(
+    ([key, engines]) => key !== 'searxng' && engines.length > 0 && TRANSPORT_REGISTRY[key]?.ready(config)
+  );
+  const internetReady = serperReady || hasDirectPath || searxngEnginesReady;
   const activeProviders = serperReady
     ? ['serper']
     : [
-        ...(googleReady ? groups.crawlee : []),
+        ...Object.entries(groups)
+          .filter(([key, engines]) => key !== 'searxng' && engines.length > 0 && TRANSPORT_REGISTRY[key]?.ready(config))
+          .flatMap(([, engines]) => engines),
         ...(searxngEnginesReady ? groups.searxng : []),
       ];
 
@@ -297,10 +342,11 @@ export function searchEngineAvailability(config) {
     bing_ready: searxngReady && engineList.includes('bing'),
     google_ready: serperReady || googleReady,
     google_search_ready: serperReady || googleReady,
+    brave_api_ready: braveApiReady,
     searxng_ready: searxngReady,
     active_providers: activeProviders,
     fallback_engines: serperReady ? [] : fallbackEngineList,
-    fallback_ready: serperReady ? false : ((searxngReady && fallbackEngineList.some(e => e !== 'google')) || fallbackEngineList.includes('google')),
+    fallback_ready: serperReady ? false : ((searxngReady && fallbackEngineList.some(e => e !== 'google')) || fallbackEngineList.includes('google') || (braveApiReady && fallbackEngineList.includes('brave'))),
     fallback_reason: null,
     internet_ready: internetReady,
   };

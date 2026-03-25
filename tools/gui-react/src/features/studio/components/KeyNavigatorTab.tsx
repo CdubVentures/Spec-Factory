@@ -30,7 +30,7 @@ import DraggableKeyList from "./DraggableKeyList.tsx";
 import { Section } from "./Section.tsx";
 import {
   type BulkGridRow,
-} from "../../../components/common/BulkPasteGrid.tsx";
+} from "../../../shared/ui/forms/BulkPasteGrid.tsx";
 import {
   arrN,
   strN,

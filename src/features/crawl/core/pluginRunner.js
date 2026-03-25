@@ -10,7 +10,15 @@ export function createPluginRunner({ plugins = [], logger } = {}) {
       const hookFn = plugin?.hooks?.[hookName];
       if (typeof hookFn !== 'function') continue;
       try {
-        await hookFn(context);
+        const result = await hookFn(context);
+        if (result !== undefined) {
+          logger?.info?.('plugin_hook_completed', {
+            plugin: plugin.name ?? 'unknown',
+            hook: hookName,
+            worker_id: context?.workerId || '',
+            result,
+          });
+        }
       } catch (err) {
         logger?.warn?.('plugin_hook_error', {
           plugin: plugin.name ?? 'unknown',

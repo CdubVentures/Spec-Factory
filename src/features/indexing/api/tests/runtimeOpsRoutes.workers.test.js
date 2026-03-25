@@ -67,7 +67,7 @@ test('runtimeOpsRoutes: worker detail hydrates screenshot metadata from resolved
       storage: createOutputRootStorage(outputRoot),
       fs,
       safeStat: statOrNull,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => events,
     });
 
@@ -210,7 +210,7 @@ test('runtimeOpsRoutes: workers and worker detail hydrate from source indexing p
       storage: createOutputRootStorage(outputRoot),
       fs,
       safeStat: statOrNull,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => events,
       readIndexLabRunSourceIndexingPackets: async () => packetCollection,
     });
@@ -360,7 +360,7 @@ test('runtimeOpsRoutes: worker detail surfaces provisional extraction fields fro
       storage: createOutputRootStorage(outputRoot),
       fs,
       safeStat: statOrNull,
-      config: { runtimeOpsWorkbenchEnabled: true },
+      config: {},
       readIndexLabRunEvents: async () => events,
       readIndexLabRunSourceIndexingPackets: async () => null,
     });

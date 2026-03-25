@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the enforced repository rules, code organization patterns, and notable absences so an LLM edits in-bounds.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Non-Negotiable Repo Rules
 
@@ -19,7 +19,8 @@
 |---------|--------------|-------|
 | Backend route handlers | `src/features/<feature>/api/*.js` or `src/app/api/routes/*.js` | adding new route branches directly inside `src/api/guiServer.js` |
 | Backend persistence | `src/db/` and `src/db/stores/*.js` | ad hoc SQLite/file writes from feature routes |
-| GUI route wrappers | `tools/gui-react/src/pages/**` | large stateful feature logic in `App.tsx` |
+| GUI route metadata | `tools/gui-react/src/registries/pageRegistry.ts` | hardcoding new route/tab entries directly in `App.tsx` or `TabNav.tsx` |
+| GUI route wrappers | `tools/gui-react/src/pages/**` | large stateful feature logic in wrappers or registry metadata |
 | GUI feature logic | `tools/gui-react/src/features/**` | cross-feature internals imports and one-off route-local state managers |
 | Shared GUI state | `tools/gui-react/src/stores/*.ts` | duplicating canonical category/tab state in many components |
 | Docs | `docs/` numbered hierarchy | reviving old unnumbered topic trees as authority docs |
@@ -28,7 +29,8 @@
 
 - Backend files use descriptive JS filenames such as `guiServer.js`, `runtimeOpsRoutes.js`, `specDbMigrations.js`.
 - GUI components use PascalCase filenames such as `RuntimeOpsPage.tsx`, `CategoryManager.tsx`, `ReviewPage.tsx`.
-- Many route files in `tools/gui-react/src/pages/**` are thin re-export wrappers. Check whether the real logic lives in `tools/gui-react/src/features/**` before editing.
+- GUI route and tab metadata live in `tools/gui-react/src/registries/pageRegistry.ts`; `tools/gui-react/src/App.tsx` and `tools/gui-react/src/pages/layout/TabNav.tsx` derive from that registry.
+- Many route files in `tools/gui-react/src/pages/**` are thin re-export wrappers or legacy page-local implementations. Check whether the real logic lives in `tools/gui-react/src/features/**` before editing.
 - Domain contracts use `DOMAIN.md` where present, for example `src/db/DOMAIN.md`.
 
 ## Imports and Dependency Direction
@@ -44,7 +46,7 @@
 - Current test roots: `test/`, `src/**/tests/`, `tools/gui-react/**/__tests__/`, and `e2e/`.
 - Prefer behavior-level tests over implementation-level tests.
 - Browser coverage uses Playwright through `playwright.config.ts` and checked-in specs under `e2e/settings/`.
-- Full-suite proof on 2026-03-24 is still red on the current worktree. Verified failure clusters include the missing `normalizeHost` export in `src/features/indexing/pipeline/shared/queryPlan.js`, a missing `src/features/indexing/search/index.js` import target in brand-resolver tests, catalog type-alignment drift around `QueueProduct`, and several GUI/API harness boot timeouts. Do not assume a green baseline; consult [../05-operations/known-issues.md](../05-operations/known-issues.md) before treating failures as new regressions.
+- Full-suite proof on 2026-03-25 is green on the audited worktree: `npm test` passed with `5827` passing tests. `npm run gui:build` is also green on the current worktree; `npm run env:check` remains failing, so consult [../05-operations/known-issues.md](../05-operations/known-issues.md) before treating env-parity drift as newly introduced.
 
 ## Branching, Commit, PR, Review Conventions
 
@@ -65,8 +67,11 @@
 | config | `package.json` | test runner and root toolchain expectations |
 | config | `playwright.config.ts` | Playwright browser-test root and base URL |
 | config | `tools/gui-react/package.json` | GUI TypeScript/Vite/Tailwind toolchain |
-| source | `tools/gui-react/src/App.tsx` | thin route-wrapper pattern in the GUI |
-| command | `npm test` | current full-suite baseline is red on the active worktree; see known-issues for the verified failure clusters |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route/tab registry convention and metadata ownership |
+| source | `tools/gui-react/src/App.tsx` | HashRouter shell and lazy route derivation from the registry |
+| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab navigation derivation from the registry |
+| command | `npm run gui:build` | current GUI build baseline is green on the audited worktree |
+| command | `npm test` | current full-suite baseline is green on the audited worktree (`5827` passing tests) |
 
 ## Related Documents
 

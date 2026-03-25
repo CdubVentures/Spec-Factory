@@ -1,13 +1,10 @@
-// WHY: Contract + characterization tests for the runNeedSet stage wrapper.
-// Characterization tests lock down current behavior before refactoring.
+// WHY: Contract tests for the runNeedSet stage wrapper.
 
 import { describe, it } from 'node:test';
 import { strictEqual, ok, deepStrictEqual } from 'node:assert';
 import { runNeedSet } from '../runNeedSet.js';
 import { computeNeedSet } from '../needsetEngine.js';
 import { buildSearchPlanningContext } from '../searchPlanningContext.js';
-
-// --- Factory helpers ---
 
 function makeJob(overrides = {}) {
   return {
@@ -52,7 +49,12 @@ function makeNeedSetOutput() {
     fields: [],
     summary: {},
     blockers: {},
-    planner_seed: { missing_critical_fields: [], unresolved_fields: [], existing_queries: [], current_product_identity: {} },
+    planner_seed: {
+      missing_critical_fields: [],
+      unresolved_fields: [],
+      existing_queries: [],
+      current_product_identity: {},
+    },
     total_fields: 0,
     round: 0,
     rows: [],
@@ -68,7 +70,14 @@ function makePlanningContext() {
   return {
     schema_version: 'search_planning_context.v2.1',
     focus_groups: [{ key: 'g1', phase: 'now' }],
-    seed_status: {},
+    seed_status: {
+      query_completion_summary: {
+        total_queries: 1,
+        complete: 0,
+        incomplete: 1,
+        pending_scrapes: 2,
+      },
+    },
   };
 }
 
@@ -129,8 +138,6 @@ function assertNeedSetResultContract(result) {
   ok(Object.hasOwn(result, 'seedSearchPlan'), 'seedSearchPlan exists');
 }
 
-// --- Group A: Zod input validation ---
-
 describe('runNeedSet input validation', { concurrency: false }, () => {
   it('accepts empty productId with default', async () => {
     const input = makeValidInput();
@@ -154,18 +161,17 @@ describe('runNeedSet input validation', { concurrency: false }, () => {
   });
 
   it('accepts valid input and returns clean 3-field contract', async () => {
-    const input = makeValidInput();
-    const result = await runNeedSet(input);
+    const result = await runNeedSet(makeValidInput());
     assertNeedSetResultContract(result);
   });
 });
 
-// --- Group B: Error handling isolation ---
-
 describe('runNeedSet error handling', { concurrency: false }, () => {
   it('returns an empty contract when computeNeedSetFn throws', async () => {
     const input = makeValidInput({
-      computeNeedSetFn: () => { throw new Error('engine exploded'); },
+      computeNeedSetFn: () => {
+        throw new Error('engine exploded');
+      },
     });
 
     const result = await runNeedSet(input);
@@ -174,24 +180,17 @@ describe('runNeedSet error handling', { concurrency: false }, () => {
 
   it('returns an empty contract when buildSearchPlanningContextFn throws', async () => {
     const input = makeValidInput({
-      buildSearchPlanningContextFn: () => { throw new Error('context build failed'); },
+      buildSearchPlanningContextFn: () => {
+        throw new Error('context build failed');
+      },
     });
 
     const result = await runNeedSet(input);
     deepStrictEqual(result, makeEmptyNeedSetResult());
   });
-
-  it('all three succeed — returns clean 3-field output', async () => {
-    const input = makeValidInput();
-    const result = await runNeedSet(input);
-    assertNeedSetResultContract(result);
-    ok(result.seedSearchPlan !== null, 'seedSearchPlan present');
-  });
 });
 
-// --- Characterization: golden-master tests locking current behavior ---
-
-describe('runNeedSet characterization (golden-master)', { concurrency: false }, () => {
+describe('runNeedSet public contract', { concurrency: false }, () => {
   function makeRealInput(overrides = {}) {
     return {
       config: { searchProfileQueryCap: 10, discoveryEnabled: true, searchEngines: 'bing' },
@@ -227,19 +226,26 @@ describe('runNeedSet characterization (golden-master)', { concurrency: false }, 
     };
   }
 
-  it('returns the needset contract fields', async () => {
+  it('focusGroups returns grouped unresolved fields', async () => {
     const result = await runNeedSet(makeRealInput());
-    assertNeedSetResultContract(result);
+    ok(Array.isArray(result.focusGroups), 'focusGroups is an array');
+    ok(result.focusGroups.length > 0, 'focusGroups is not empty');
+    ok(result.focusGroups.every((group) => typeof group.key === 'string'), 'each group has a key');
+    ok(result.focusGroups.every((group) => Array.isArray(group.field_keys)), 'each group has field_keys');
+    ok(result.focusGroups.some((group) => group.field_keys.includes('sensor_model')), 'unresolved fields are surfaced');
   });
 
-  it('focusGroups is a non-empty array from planningContext.focus_groups', async () => {
+  it('seedStatus exposes completion and seed state', async () => {
     const result = await runNeedSet(makeRealInput());
-    ok(Array.isArray(result.focusGroups), 'focusGroups is array');
-  });
-
-  it('seedStatus is flattened from planningContext.seed_status', async () => {
-    const result = await runNeedSet(makeRealInput());
-    ok(result.seedStatus !== undefined, 'seedStatus exists');
+    ok(result.seedStatus, 'seedStatus exists');
+    ok(result.seedStatus.query_completion_summary, 'query completion summary exists');
+    strictEqual(typeof result.seedStatus.query_completion_summary.total_queries, 'number');
+    strictEqual(typeof result.seedStatus.query_completion_summary.pending_scrapes, 'number');
+    ok(result.seedStatus.specs_seed, 'specs_seed exists');
+    strictEqual(typeof result.seedStatus.specs_seed.is_needed, 'boolean');
+    ok(result.seedStatus.brand_seed, 'brand_seed exists');
+    strictEqual(typeof result.seedStatus.brand_seed.is_needed, 'boolean');
+    ok(result.seedStatus.source_seeds && typeof result.seedStatus.source_seeds === 'object', 'source_seeds exists');
   });
 
   it('seedSearchPlan contains schema_version and search_plan_handoff', async () => {
@@ -260,6 +266,7 @@ describe('runNeedSet characterization (golden-master)', { concurrency: false }, 
         learning_writeback: { queries_generated: 1 },
       }),
     });
+
     const result = await runNeedSet(input);
     ok(result.seedSearchPlan, 'seedSearchPlan is non-null');
     ok(result.seedSearchPlan.search_plan_handoff, 'search_plan_handoff exists');

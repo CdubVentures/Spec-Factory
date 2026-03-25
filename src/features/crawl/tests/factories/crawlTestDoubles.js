@@ -72,6 +72,9 @@ export function createPageDouble({
     url() {
       return finalUrl;
     },
+    video() {
+      return { path: () => '', saveAs: async () => {} };
+    },
   };
 }
 

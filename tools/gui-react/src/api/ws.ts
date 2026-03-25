@@ -16,6 +16,9 @@ export class WsManager {
   private handlers = new Set<MessageHandler>();
   private subscriptions: { channels: Channel[]; category?: string; productId?: string } | null = null;
   private closed = false;
+  // WHY: Track whether we had a successful connection before so we can
+  // distinguish first-connect from server-restart reconnects.
+  private hadConnection = false;
 
   constructor(opts: WsManagerOptions = {}) {
     const loc = window.location;
@@ -31,6 +34,13 @@ export class WsManager {
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
+      if (this.hadConnection) {
+        // WHY: Server was restarted — reload so all queries, state, and
+        // subscriptions start from a clean slate.
+        window.location.reload();
+        return;
+      }
+      this.hadConnection = true;
       this.currentDelay = this.reconnectMs;
       if (this.subscriptions) {
         this.ws?.send(JSON.stringify({ subscribe: this.subscriptions.channels, ...this.subscriptions }));

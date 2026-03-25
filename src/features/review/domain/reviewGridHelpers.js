@@ -19,7 +19,7 @@ import {
 import {
   isKnownSlotValue,
 } from '../../../utils/slotValueShape.js';
-import { normalizeHost } from '../../indexing/pipeline/shared/hostParser.js';
+import { normalizeHost } from '../../../shared/hostParser.js';
 
 // ── Number Parsing ──────────────────────────────────────────────────
 

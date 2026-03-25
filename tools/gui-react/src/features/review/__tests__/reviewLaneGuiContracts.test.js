@@ -38,7 +38,7 @@ async function assertGridLaneScope({ db, page, openReviewGrid }) {
       itemFieldStateId: weightSlotId,
     });
     return state?.user_accept_primary_status === 'accepted';
-  }, 15_000, 120, 'grid_item_accept_primary');
+  }, 15_000, 50, 'grid_item_accept_primary');
 
   const gridAcceptedValueCard = page.locator('section')
     .filter({ hasText: /Candidates \(/ })
@@ -48,7 +48,7 @@ async function assertGridLaneScope({ db, page, openReviewGrid }) {
   const gridConfirmAfterAccept = gridAcceptedValueCard
     .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]')
     .first();
-  await waitForCondition(async () => (await gridConfirmAfterAccept.count()) > 0, 15_000, 120, 'grid_confirm_still_visible_after_accept');
+  await waitForCondition(async () => (await gridConfirmAfterAccept.count()) > 0, 15_000, 50, 'grid_confirm_still_visible_after_accept');
 
   await clickGridCell(page, PRODUCT_A, 'dpi');
   await ensureButtonVisible(page, 'Confirm');
@@ -64,7 +64,7 @@ async function assertGridLaneScope({ db, page, openReviewGrid }) {
       itemFieldStateId: dpiSlotId,
     });
     return state?.ai_confirm_primary_status === 'confirmed' && state?.user_accept_primary_status == null;
-  }, 15_000, 120, 'grid_item_confirm_primary');
+  }, 15_000, 50, 'grid_item_confirm_primary');
 
   await clickGridCell(page, PRODUCT_A, 'connection');
   const connectionSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
@@ -104,7 +104,7 @@ async function assertEnumLaneScope({ db, page, openEnumList }) {
       enumValueNorm: '2.4ghz',
     });
     return state?.user_accept_shared_status === 'accepted' && state?.ai_confirm_shared_status === 'pending';
-  }, 15_000, 120, 'enum_accept');
+  }, 15_000, 50, 'enum_accept');
 }
 
 async function assertComponentLaneScope({ componentIdentifier, db, page, openSensorComponentView }) {
@@ -132,12 +132,12 @@ async function assertComponentLaneScope({ componentIdentifier, db, page, openSen
       propertyKey: 'dpi_max',
     });
     return state?.user_accept_shared_status === 'accepted' && state?.ai_confirm_shared_status === 'pending';
-  }, 15_000, 120, 'component_accept');
+  }, 15_000, 50, 'component_accept');
 
   const componentConfirmAfterAccept = componentCandidatesSection
     .locator('xpath=.//button[normalize-space()="Confirm"]')
     .first();
-  await waitForCondition(async () => (await componentConfirmAfterAccept.count()) > 0, 15_000, 120, 'component_confirm_visible_after_accept_when_pending_candidates_remain');
+  await waitForCondition(async () => (await componentConfirmAfterAccept.count()) > 0, 15_000, 50, 'component_confirm_visible_after_accept_when_pending_candidates_remain');
 }
 
 test('review lane GUI contracts keep lane-specific actions scoped across grid, enum, and component surfaces', { timeout: 240_000 }, async (t) => {

@@ -44,6 +44,11 @@ const SourceStrategySection = lazy(async () => {
   return { default: module.PipelineSourceStrategySection };
 });
 
+const DeterministicStrategySection = lazy(async () => {
+  const module = await import('../sections/PipelineDeterministicStrategySection.tsx');
+  return { default: module.PipelineDeterministicStrategySection };
+});
+
 // WHY: Helper to test whether a section ID belongs to a runtime category panel.
 function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategoryId {
   return (SETTINGS_CATEGORY_KEYS as readonly string[]).includes(id);
@@ -345,6 +350,13 @@ export function PipelineSettingsPage() {
               onSaveEntryDraft={saveEntryDraft}
               onCancelSourceDraft={cancelSourceDraft}
             />
+          </Suspense>
+        )}
+
+        {/* Deterministic Strategy */}
+        {activeSection === 'deterministic-strategy' && (
+          <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading deterministic strategy...</p>}>
+            <DeterministicStrategySection />
           </Suspense>
         )}
     </>

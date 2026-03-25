@@ -1,29 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { useUiStore } from '../../stores/uiStore.ts';
-import { useRuntimeStore } from '../../stores/runtimeStore.ts';
-import { isTestCategory } from '../../utils/testMode.ts';
-import { useEventsStore } from '../../stores/eventsStore.ts';
-import { useIndexLabStore, type IndexLabEvent } from '../../stores/indexlabStore.ts';
-import { useSettingsAuthorityBootstrap, isSettingsAuthoritySnapshotReady } from '../../stores/settingsAuthority.ts';
-import { useRuntimeSettingsStoreHydration } from '../../features/pipeline-settings/index.ts';
-import { useSettingsAuthorityStore } from '../../stores/settingsAuthorityStore.ts';
-import type { ProcessStatus } from '../../types/events.ts';
-import type { RuntimeEvent } from '../../types/events.ts';
-import { useCategoriesQuery } from '../../hooks/useCategoriesQuery.ts';
-import { useProcessStatusQuery } from '../../hooks/useProcessStatusQuery.ts';
-import { useWsSubscription } from '../../hooks/useWsSubscription.ts';
-import {
-  resolveDataChangeScopedCategories,
-  recordDataChangeInvalidationFlush,
-  createDataChangeInvalidationScheduler,
-} from '../../features/data-change/index.js';
-import { coerceCategories, resolveActiveCategory, DEFAULT_CATEGORY } from '../../utils/categoryStoreSync.js';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
-import { usePersistedTab } from '../../stores/tabStore.ts';
 import {
   SF_THEME_RADIUS_PROFILES,
   SF_LIGHT_THEME_PROFILES,
@@ -32,6 +13,11 @@ import {
   type SfThemeColorProfileId,
   type SfThemeRadiusProfileId,
 } from '../../stores/uiThemeProfiles.ts';
+
+import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
+import { useCategorySync } from './hooks/useCategorySync.ts';
+import { useWsEventBridge } from './hooks/useWsEventBridge.ts';
+import { useFieldTestNavigation } from './hooks/useFieldTestNavigation.ts';
 
 function ThemeSwatchCard({
   themeId,
@@ -68,166 +54,26 @@ const THEME_RADIUS_LABELS: Record<SfThemeRadiusProfileId, string> = {
 };
 
 export function AppShell() {
-  useSettingsAuthorityBootstrap();
-  // WHY: Hydrate the runtime settings Zustand store at the app shell level so it's
-  // populated before any child page mounts. Without this, navigating directly to
-  // /llm-config leaves the store null and LLM hydration silently drops data.
-  useRuntimeSettingsStoreHydration();
-  const settingsSnapshot = useSettingsAuthorityStore((s) => s.snapshot);
-  const settingsReady = isSettingsAuthoritySnapshotReady(settingsSnapshot);
-  const [allowDegradedRender, setAllowDegradedRender] = useState(false);
-  const setCategories = useUiStore((s) => s.setCategories);
-  const setCategory = useUiStore((s) => s.setCategory);
-  const category = useUiStore((s) => s.category);
+  // ── Composition hooks ─────────────────────────────────────────────
+  const { settingsReady, allowDegradedRender, settingsSnapshot } = useSettingsHydration();
+  const { category, testMode, processStatus } = useCategorySync();
+  const queryClient = useQueryClient();
+  useWsEventBridge({ category, queryClient });
+  const { fieldTestTabActive, handleFieldTestToggle } = useFieldTestNavigation({ category, testMode });
+
+  // ── Theme ─────────────────────────────────────────────────────────
   const themeColorProfile = useUiStore((s) => s.themeColorProfile);
   const themeRadiusProfile = useUiStore((s) => s.themeRadiusProfile);
   const setThemeColorProfile = useUiStore((s) => s.setThemeColorProfile);
   const setThemeRadiusProfile = useUiStore((s) => s.setThemeRadiusProfile);
-  const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
-  const appendProcessOutput = useRuntimeStore((s) => s.appendProcessOutput);
-  const appendEvents = useEventsStore((s) => s.appendEvents);
-  const appendIndexLabEvents = useIndexLabStore((s) => s.appendEvents);
-  const activeRunId = useIndexLabStore((s) => s.pickerRunId);
-  const queryClient = useQueryClient();
-  const location = useLocation();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (settingsReady) {
-      setAllowDegradedRender(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setAllowDegradedRender(true);
-    }, 5000);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [settingsReady, settingsSnapshot.category]);
-
-  const categoriesQuery = useCategoriesQuery();
-
-  useEffect(() => {
-    if (!categoriesQuery.data) return;
-    const normalized = coerceCategories(categoriesQuery.data);
-    setCategories(normalized);
-    const nextCategory = resolveActiveCategory({
-      currentCategory: category,
-      categories: normalized,
-    });
-    if (nextCategory !== category) {
-      setCategory(nextCategory);
-    }
-  }, [categoriesQuery.data, setCategories, setCategory, category]);
-
-  useEffect(() => {
-    if (!categoriesQuery.isError) return;
-    const fallback = coerceCategories([]);
-    setCategories(fallback);
-    const nextCategory = resolveActiveCategory({
-      currentCategory: category,
-      categories: fallback,
-    });
-    if (nextCategory !== category) {
-      setCategory(nextCategory);
-    }
-  }, [categoriesQuery.isError, setCategories, setCategory, category]);
-
-  const testMode = isTestCategory(category);
-
-  const { data: polledProcessStatus } = useProcessStatusQuery(5000);
-
-  useEffect(() => {
-    if (!polledProcessStatus) return;
-    setProcessStatus(polledProcessStatus);
-  }, [polledProcessStatus, setProcessStatus]);
-
-  const previousActiveRunIdRef = useRef('');
-  useEffect(() => {
-    const nextRunId = String(activeRunId || '').trim();
-    if (nextRunId === previousActiveRunIdRef.current) return;
-    previousActiveRunIdRef.current = nextRunId;
-    queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] });
-    queryClient.invalidateQueries({ queryKey: ['runtime-ops'] });
-    queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] });
-  }, [activeRunId, queryClient]);
-
-  const dataChangeSchedulerRef = useRef<ReturnType<typeof createDataChangeInvalidationScheduler> | null>(null);
-  useEffect(() => {
-    const dataChangeScheduler = createDataChangeInvalidationScheduler({
-      queryClient,
-      delayMs: 75,
-      onFlush: ({ queryKeys, categories }) => {
-        recordDataChangeInvalidationFlush({
-          queryKeys,
-          categories,
-        });
-      },
-    });
-    dataChangeSchedulerRef.current = dataChangeScheduler;
-    return () => {
-      dataChangeScheduler.flush();
-      dataChangeScheduler.dispose();
-      if (dataChangeSchedulerRef.current === dataChangeScheduler) {
-        dataChangeSchedulerRef.current = null;
-      }
-    };
-  }, [queryClient]);
-
-  const handleWsMessage = useCallback((channel: string, data: unknown) => {
-    if (channel === 'events' && Array.isArray(data)) {
-      appendEvents(data as RuntimeEvent[]);
-    }
-    if (channel === 'process' && Array.isArray(data)) {
-      appendProcessOutput(data as string[]);
-    }
-    if (channel === 'process-status' && data && typeof data === 'object') {
-      const status = data as ProcessStatus;
-      setProcessStatus(status);
-      queryClient.setQueryData(['processStatus'], status);
-    }
-    if (channel === 'indexlab-event' && Array.isArray(data)) {
-      appendIndexLabEvents(data as IndexLabEvent[]);
-    }
-    if (channel === 'data-change' && data && typeof data === 'object') {
-      const msg = data as { type?: string; event?: string; category?: string; categories?: string[] };
-      const eventName = String(
-        msg.event
-        || (msg.type && msg.type !== 'data-change' ? msg.type : ''),
-      ).trim();
-      if (!eventName) return;
-      const scopedCategories = resolveDataChangeScopedCategories(msg, category);
-      dataChangeSchedulerRef.current?.schedule({
-        message: msg,
-        categories: scopedCategories,
-        fallbackCategory: category,
-      });
-    }
-  }, [appendEvents, appendIndexLabEvents, appendProcessOutput, category, queryClient, setProcessStatus]);
-
-  useWsSubscription({
-    channels: ['events', 'process', 'process-status', 'data-change', 'test-import-progress', 'indexlab-event'],
-    category,
-    onMessage: handleWsMessage,
-  });
-
-  useEffect(() => {
-    if (!testMode) return;
-    if (location.pathname === '/indexing' || location.pathname === '/runtime-ops') {
-      navigate('/test-mode', { replace: true });
-    }
-  }, [testMode, location.pathname, navigate]);
-
-  const processStatus = useRuntimeStore((s) => s.processStatus);
+  // ── Local UI state ────────────────────────────────────────────────
   const isRunning = Boolean(processStatus?.running);
   const isRelocating = Boolean(processStatus?.relocating);
   const showIndicator = isRunning || isRelocating;
   const [headerTaskDrawerOpen, toggleHeaderTaskDrawer] = usePersistedToggle('appShell:header:taskDrawer:open', false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const settingsPanelRef = useRef<HTMLDivElement | null>(null);
-  const fieldTestTabActive = location.pathname.startsWith('/test-mode');
-  const [lastMainPath, setLastMainPath] = usePersistedTab<string>('appShell:fieldTest:returnPath', '/');
-  const [lastMainCategory, setLastMainCategory] = usePersistedTab<string>('appShell:fieldTest:returnCategory', DEFAULT_CATEGORY);
   const blockUntilSettingsReady = !settingsReady && !allowDegradedRender;
   const indicatorTitle = isRunning
     ? `Run active${processStatus?.pid ? ` (PID ${processStatus.pid})` : ''}`
@@ -235,12 +81,7 @@ export function AppShell() {
       ? `Uploading run data${processStatus?.relocatingRunId ? ` (${processStatus.relocatingRunId})` : ''}`
       : '';
 
-  useEffect(() => {
-    if (location.pathname.startsWith('/test-mode')) return;
-    if (location.pathname) setLastMainPath(location.pathname);
-    if (!isTestCategory(category)) setLastMainCategory(category);
-  }, [location.pathname, category, setLastMainPath, setLastMainCategory]);
-
+  // ── Settings panel click-outside ──────────────────────────────────
   useEffect(() => {
     if (!settingsPanelOpen) return;
     const onWindowMouseDown = (event: MouseEvent) => {
@@ -261,21 +102,7 @@ export function AppShell() {
     };
   }, [settingsPanelOpen]);
 
-  const handleFieldTestToggle = () => {
-    if (fieldTestTabActive) {
-      const restorePath = lastMainPath && !lastMainPath.startsWith('/test-mode') ? lastMainPath : '/';
-      const restoreCategory = lastMainCategory && !isTestCategory(lastMainCategory) ? lastMainCategory : DEFAULT_CATEGORY;
-      if (category !== restoreCategory) {
-        setCategory(restoreCategory);
-      }
-      navigate(restorePath);
-      return;
-    }
-    if (location.pathname) setLastMainPath(location.pathname);
-    if (!isTestCategory(category)) setLastMainCategory(category);
-    navigate('/test-mode');
-  };
-
+  // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="sf-surface-shell sf-shell flex flex-col h-screen">
       <header className="sf-shell-header z-30 flex items-center justify-between px-4 py-2 border-b border-white/10">
@@ -432,7 +259,7 @@ export function AppShell() {
             </div>
           ) : (
             <>
-{settingsSnapshot.uiSettingsPersistState === 'saving' && (
+              {settingsSnapshot.uiSettingsPersistState === 'saving' && (
                 <div className="mb-3 sf-status sf-status-info sf-shell-saving">
                   Saving autosave preference changes...
                 </div>

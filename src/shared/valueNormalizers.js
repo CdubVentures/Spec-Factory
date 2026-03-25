@@ -53,7 +53,7 @@ export function normalizeJsonText(value, maxChars = 12000) {
   return text.slice(0, Math.max(0, Number(maxChars) || 0));
 }
 
-import { normalizeHost as _normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+import { normalizeHost as _normalizeHost } from './hostParser.js';
 export const normalizeDomainToken = _normalizeHost;
 
 export function domainFromUrl(url) {

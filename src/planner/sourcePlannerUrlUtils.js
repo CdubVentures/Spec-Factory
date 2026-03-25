@@ -1,4 +1,4 @@
-import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+import { normalizeHost } from '../shared/hostParser.js';
 export { normalizeHost };
 
 export { isObject } from '../shared/primitives.js';

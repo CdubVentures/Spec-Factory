@@ -1,4 +1,4 @@
-import { Spinner } from '../../../components/common/Spinner.tsx';
+import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import type { IndexLabRunSummary } from '../../indexing/types.ts';
 
 interface RuntimeOpsRunPickerProps {

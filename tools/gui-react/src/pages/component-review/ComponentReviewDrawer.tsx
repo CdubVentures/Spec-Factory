@@ -15,9 +15,9 @@ import {
 } from '../../shared/ui/overlay/DrawerShell.tsx';
 import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
 import { CellDrawer } from '../../shared/ui/overlay/CellDrawer.tsx';
-import { FlagsSection, FlagsOverviewSection } from '../../components/common/FlagsSection.tsx';
-import { PendingAIReviewSection } from '../../components/common/PendingAIReviewSection.tsx';
-import { LinkedProductsList } from '../../components/common/LinkedProductsList.tsx';
+import { FlagsSection, FlagsOverviewSection } from '../../shared/ui/feedback/FlagsSection.tsx';
+import { PendingAIReviewSection } from './PendingAIReviewSection.tsx';
+import { LinkedProductsList } from './LinkedProductsList.tsx';
 import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 interface ComponentImpactResult {

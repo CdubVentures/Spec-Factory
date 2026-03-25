@@ -406,9 +406,32 @@ export interface PipelineFlowResponse {
   recent_transitions: PipelineTransition[];
 }
 
+// ── Fetch Phases (Workers tab fetch row) ──
+
+export interface FetchStealthInjection {
+  worker_id: string;
+  display_label: string;
+  url: string;
+  host: string;
+  injected: boolean;
+  ts: string;
+}
+
+export interface FetchStealthData {
+  patches: string[];
+  injections: FetchStealthInjection[];
+  total_injected: number;
+  total_failed: number;
+}
+
+export interface FetchPhasesResponse {
+  run_id: string;
+  stealth: FetchStealthData;
+}
+
 // ── Pre-Fetch Phases (Workers tab pinned row) ──
 
-import type { PrefetchTabKey as _PrefetchTabKey } from './panels/prefetch/prefetchStageKeys.ts';
+import type { PrefetchTabKey as _PrefetchTabKey } from './panels/prefetch/prefetchStageRegistry.ts';
 export type PrefetchTabKey = _PrefetchTabKey;
 
 export interface PrefetchNeedSetBundle {

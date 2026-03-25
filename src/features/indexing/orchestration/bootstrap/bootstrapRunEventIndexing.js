@@ -33,8 +33,9 @@ export function bootstrapRunEventIndexing({
 
   const previousOnEvent = logger.onEvent;
   logger.onEvent = (row) => {
+    let hookResult;
     try {
-      previousOnEvent?.(row);
+      hookResult = previousOnEvent?.(row);
     } catch {
       // Preserve existing handler failures as non-fatal.
     }
@@ -71,5 +72,6 @@ export function bootstrapRunEventIndexing({
     } catch {
       // Index recording must not crash the pipeline.
     }
+    return hookResult;
   };
 }

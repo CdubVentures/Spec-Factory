@@ -398,6 +398,27 @@ export function createQueueProductStore({ db, category, stmts }) {
     return rows;
   }
 
+  function updateComponentReviewQueueMatchedComponent(category, reviewId, newValue) {
+    db.prepare(
+      `UPDATE component_review_queue SET matched_component = ?, updated_at = datetime('now') WHERE category = ? AND review_id = ?`
+    ).run(newValue, category, reviewId);
+  }
+
+  function updateComponentReviewQueueMatchedComponentByName(category, componentType, oldName, newValue) {
+    db.prepare(
+      `UPDATE component_review_queue
+       SET matched_component = ?, updated_at = datetime('now')
+       WHERE category = ? AND component_type = ? AND status = 'pending_ai'
+         AND (
+           LOWER(TRIM(COALESCE(matched_component, ''))) = LOWER(TRIM(?))
+           OR (
+             (matched_component IS NULL OR TRIM(matched_component) = '')
+             AND LOWER(TRIM(COALESCE(raw_query, ''))) = LOWER(TRIM(?))
+           )
+         )`
+    ).run(newValue, category, componentType, oldName, oldName);
+  }
+
   return {
     upsertQueueProduct,
     getQueueProduct,
@@ -427,5 +448,7 @@ export function createQueueProductStore({ db, category, stmts }) {
     updateCurationSuggestionStatus,
     upsertComponentReviewItem,
     getComponentReviewItems,
+    updateComponentReviewQueueMatchedComponent,
+    updateComponentReviewQueueMatchedComponentByName,
   };
 }

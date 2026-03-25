@@ -7,6 +7,7 @@ import { providerFromModelToken, defaultBaseUrlForProvider, bootstrapApiKeyForPr
 // model + fallbackModel. Provider/baseUrl/apiKey resolved via registry or bootstrap.
 const ROLE_KEYS = {
   plan: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
+  triage: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   extract: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   validate: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
   write: { model: 'llmModelPlan', fallbackModel: 'llmPlanFallbackModel' },
@@ -103,7 +104,7 @@ function baseRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, resolved.providerType),
+      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, providerFromModelToken(resolved.modelId)),
       _registryEntry: resolved,
     };
   }
@@ -134,7 +135,7 @@ function fallbackRouteForRole(config = {}, role = 'extract') {
       provider: resolved.providerType,
       model: resolved.modelId,
       baseUrl: resolved.baseUrl,
-      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, resolved.providerType),
+      apiKey: resolved.apiKey || bootstrapApiKeyForProvider(config, providerFromModelToken(resolved.modelId)),
       _registryEntry: resolved,
     };
   }
@@ -320,10 +321,6 @@ export function hasLlmRouteApiKey(config = {}, { reason = '', role = '' } = {}) 
 }
 
 export function hasAnyLlmApiKey(config = {}) {
-  // WHY: llmApiKey is not a registry key — legacy bootstrap fallback
-  if (normalized(config.llmApiKey || String(configValue(config, 'openaiApiKey')))) {
-    return true;
-  }
   for (const role of Object.keys(ROLE_KEYS)) {
     if (hasLlmRouteApiKey(config, { role })) {
       return true;
@@ -342,7 +339,7 @@ function publicRouteView(route = {}) {
 }
 
 export function llmRoutingSnapshot(config = {}) {
-  const roles = ['plan', 'extract', 'validate', 'write'];
+  const roles = Object.keys(ROLE_KEYS);
   const snapshot = {};
   for (const role of roles) {
     const primary = baseRouteForRole(config, role);

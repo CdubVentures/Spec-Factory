@@ -84,6 +84,44 @@ function createCommonUiStubs() {
   return {
     'react/jsx-runtime': createJsxRuntimeStub(),
     react: createReactStub(),
+    '../../../../shared/ui/feedback/Chip.tsx': `
+      export function Chip(props) {
+        return { type: 'chip', props: { ...props, children: props.label ?? props.children } };
+      }
+    `,
+    '../../../../shared/ui/data-display/DebugJsonDetails.tsx': `
+      export function DebugJsonDetails() {
+        return null;
+      }
+    `,
+    '../../../../shared/ui/data-display/CollapsibleSectionHeader.tsx': `
+      export function CollapsibleSectionHeader(props) {
+        return { type: 'collapsible-header', props: { ...props, children: props.children } };
+      }
+    `,
+    '../../../../shared/ui/data-display/HeroBand.tsx': `
+      export function HeroBand(props) {
+        return { type: 'hero-band', props: { ...props, children: props.children } };
+      }
+    `,
+    '../../components/HeroStat.tsx': `
+      export function HeroStat(props) {
+        return { type: 'hero-stat', props };
+      }
+      export function HeroStatGrid(props) {
+        return { type: 'hero-stat-grid', props: { ...props, children: props.children } };
+      }
+    `,
+    '../../components/LlmCallCard.tsx': `
+      export function LlmCallCard() {
+        return null;
+      }
+    `,
+    './PrefetchEmptyState.tsx': `
+      export function PrefetchEmptyState(props) {
+        return { type: 'prefetch-empty-state', props: { ...props, children: props.children } };
+      }
+    `,
     '../../components/PrefetchTooltip': `
       export function formatTooltip(parts) {
         return JSON.stringify(parts || {});
@@ -124,6 +162,46 @@ async function loadSearchPlannerModule() {
         }
         export function formatMs(value) {
           return String(value ?? 0);
+        }
+      `,
+      './searchPlannerHelpers.ts': `
+        export function normalizeToken(value) {
+          return String(value || '').trim().toLowerCase();
+        }
+        export function normalizeQuery(value) {
+          return String(value || '').trim();
+        }
+        export function parsePlannerPayload() {
+          return null;
+        }
+        export function isSchema4PlannerPath() {
+          return false;
+        }
+        export function isTierEnhancePath() {
+          return false;
+        }
+        export function buildPlannerInputSummary() {
+          return { missingCriticalFields: [] };
+        }
+      `,
+      './SearchPlannerSchema4View.tsx': `
+        export function SearchPlannerSchema4View() {
+          return null;
+        }
+      `,
+      './SearchPlannerTierEnhanceView.tsx': `
+        export function SearchPlannerTierEnhanceView() {
+          return null;
+        }
+      `,
+      './SearchPlannerPassResults.tsx': `
+        export function SearchPlannerPassResults() {
+          return null;
+        }
+      `,
+      './SearchPlannerContextSection.tsx': `
+        export function SearchPlannerContextSection() {
+          return null;
         }
       `,
       '../../selectors/searchProfileTierHelpers.js': `
@@ -192,6 +270,14 @@ async function loadSerpTriageModule() {
           return [];
         }
       `,
+      '../../badgeRegistries.ts': `
+        export function resolveIdentityBadge() {
+          return 'sf-chip-neutral';
+        }
+        export function resolveApprovalBadge() {
+          return 'sf-chip-neutral';
+        }
+      `,
       '../../../../stores/collapseStore': `
         export function usePersistedToggle(_key, initialValue) {
           return [initialValue, () => {}, () => {}];
@@ -224,6 +310,11 @@ async function loadSerpTriageModule() {
         }
         export function DrawerSection(props) {
           return { type: 'drawer-section', props: { ...props, children: props.children } };
+        }
+      `,
+      '../../../../shared/ui/data-display/SectionHeader.tsx': `
+        export function SectionHeader(props) {
+          return { type: 'section-header', props: { ...props, children: props.children } };
         }
       `,
       '../../components/StageCard': `

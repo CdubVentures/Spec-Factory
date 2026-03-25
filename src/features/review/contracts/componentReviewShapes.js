@@ -2,11 +2,9 @@
 // Adding a field = add one { key, coerce } entry here + run codegen.
 // Alignment test catches TS drift. Key lists derived for existing consumers.
 
-// WHY: SSOT for component identity property keys (synthetic __-prefixed keys).
-// Used by keyReviewStore SQL, componentMutationService, and test fixtures.
-export const COMPONENT_IDENTITY_PROPERTY_KEYS = Object.freeze([
-  '__name', '__maker', '__links', '__aliases',
-]);
+// WHY: Re-exported from db schema SSOT so feature-internal consumers
+// (componentMutationService, test fixtures) keep importing from here.
+export { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../../db/specDbSchema.js';
 
 export const COMPONENT_REVIEW_ITEM_SHAPE = Object.freeze([
   { key: 'component_identity_id', coerce: 'int', nullable: true, optional: true },

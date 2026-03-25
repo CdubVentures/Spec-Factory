@@ -46,12 +46,36 @@ goto :eof
 call :check_node
 if %ERRORLEVEL% NEQ 0 exit /b 1
 call node tools\dev-stack-control.js start-stack
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] Server failed to start. Check .server-state\spec-factory-api.log
+  echo.
+  pause
+  exit /b 1
+)
+echo.
+echo   Server is running.  Press any key to close this window.
+echo   (The server will keep running in the background.)
+echo.
+pause
 goto :eof
 
 :start_api_only
 call :check_node
 if %ERRORLEVEL% NEQ 0 exit /b 1
 call node tools\dev-stack-control.js start-api
+if %ERRORLEVEL% NEQ 0 (
+  echo.
+  echo   [ERROR] API failed to start. Check .server-state\spec-factory-api.log
+  echo.
+  pause
+  exit /b 1
+)
+echo.
+echo   API is running.  Press any key to close this window.
+echo   (The server will keep running in the background.)
+echo.
+pause
 goto :eof
 
 :show_help

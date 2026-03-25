@@ -2,13 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBundledModule } from '../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
-function loadGuiModule(entryRelativePath, stubModules) {
-  return loadBundledModule(entryRelativePath, {
-    prefix: 'billing-query-contract-',
-    stubs: stubModules,
-  });
-}
-
 function renderElement(element) {
   if (Array.isArray(element)) {
     return element.map(renderElement);
@@ -191,6 +184,19 @@ function buildCommonStubs() {
   };
 }
 
+const COMMON_STUBS = buildCommonStubs();
+const guiModulePromises = new Map();
+
+function loadGuiModule(entryRelativePath) {
+  if (!guiModulePromises.has(entryRelativePath)) {
+    guiModulePromises.set(entryRelativePath, loadBundledModule(entryRelativePath, {
+      prefix: 'billing-query-contract-',
+      stubs: COMMON_STUBS,
+    }));
+  }
+  return guiModulePromises.get(entryRelativePath);
+}
+
 test('billing and overview pages preserve their billing refresh contracts', async () => {
   const cases = [
     {
@@ -236,7 +242,7 @@ test('billing and overview pages preserve their billing refresh contracts', asyn
       uiState: row.uiState,
     };
 
-    const module = await loadGuiModule(row.entryRelativePath, buildCommonStubs());
+    const module = await loadGuiModule(row.entryRelativePath);
     const Page = module[row.exportName];
     renderElement(Page());
 

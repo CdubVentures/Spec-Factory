@@ -257,6 +257,29 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     `).run(category, pid, fk);
   }
 
+  function updateItemComponentLinksByIdentity(componentType, oldName, oldMaker, newName, newMaker) {
+    db.prepare(`
+      UPDATE item_component_links
+      SET component_name = ?, component_maker = ?, updated_at = datetime('now')
+      WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
+    `).run(newName, newMaker, category, componentType, oldName, oldMaker);
+  }
+
+  function getItemFieldStateIdByProductAndField(productId, fieldKey) {
+    const row = db.prepare(
+      'SELECT id FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
+    ).get(category, productId, fieldKey);
+    return row?.id ?? null;
+  }
+
+  function setItemFieldNeedsAiReview(itemFieldStateId) {
+    db.prepare(`
+      UPDATE item_field_state
+      SET needs_ai_review = 1, ai_review_complete = 0, updated_at = datetime('now')
+      WHERE category = ? AND id = ?
+    `).run(category, itemFieldStateId);
+  }
+
   return {
     upsertItemFieldState,
     getItemFieldState,
@@ -279,5 +302,8 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     renameFieldValueInItems,
     removeFieldValueFromItems,
     removeListLinks,
+    updateItemComponentLinksByIdentity,
+    getItemFieldStateIdByProductAndField,
+    setItemFieldNeedsAiReview,
   };
 }

@@ -21,7 +21,7 @@
 | SQLite runtime telemetry | `runtime_events` table in the category SpecDb | `src/logger.js`, `src/db/specDb.js` | best-effort mirror of runtime events |
 | Per-run IndexLab events | `run_events.ndjson` under each IndexLab run directory | IndexLab runtime builders/readers | replayed by `indexlabRoutes` and Runtime Ops |
 | Process log broadcast | WebSocket `process` channel | `src/app/api/processRuntime.js` | child stdout/stderr lines while a process is active |
-| Launcher setup logs | in-memory launcher state via `/api/install/state` | `tools/specfactory-launcher.mjs` | setup/bootstrap console only |
+| Launcher setup state | in-memory launcher state via `/api/install/state` | `tools/specfactory-launcher.mjs` | separate setup/bootstrap runtime, not `src/api/guiServer.js` |
 
 ## WebSocket Channels
 
@@ -32,6 +32,7 @@
 | `events` | `src/app/api/realtimeBridge.js` | appended rows from `_runtime/events.jsonl` |
 | `indexlab-event` | `src/app/api/realtimeBridge.js` | appended rows from run-scoped `run_events.ndjson` |
 | `data-change` | `src/core/events/dataChangeContract.js` | normalized mutation/refresh event payloads |
+| `test-import-progress` | `src/app/api/routes/testModeRoutes.js` | test-mode category creation progress frames with `step`, `status`, and optional `detail` / `summary` |
 | `screencast` / `screencast-*` | `src/app/api/processRuntime.js` | retained or synthetic runtime screenshots for workers |
 
 ## Data-Change Event Contract
@@ -74,10 +75,12 @@ The domain map in that file is the live source of truth for event-to-domain fan-
 | source | `src/app/api/routes/infra/processRoutes.js` | process status endpoint |
 | source | `src/app/api/processRuntime.js` | process-state broadcasts, log fan-out, SearXNG probing |
 | source | `src/app/api/realtimeBridge.js` | WebSocket channels and file watchers |
+| source | `src/app/api/routes/testModeRoutes.js` | `test-import-progress` WebSocket broadcasts during test-mode setup |
 | source | `src/logger.js` | NDJSON + SQLite event logging |
 | source | `src/core/events/dataChangeContract.js` | normalized data-change payload shape |
 | source | `src/observability/dataPropagationCounters.js` | data-change and queue cleanup counters |
 | source | `src/observability/settingsPersistenceCounters.js` | settings persistence counters |
+| source | `tools/specfactory-launcher.mjs` | launcher-only `/api/install/state` setup-state surface |
 | runtime | `http://127.0.0.1:8788/api/v1/process/status` | idle process-status shape retains last-run metadata |
 
 ## Related Documents

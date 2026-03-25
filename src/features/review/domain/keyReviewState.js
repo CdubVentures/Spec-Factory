@@ -61,7 +61,7 @@ export function applySharedLaneState({
         confidenceScore,
         aiConfirmSharedStatus: 'pending',
       });
-      state = specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(id) || null;
+      state = specDb.getKeyReviewStateById(id);
     }
     if (!state) return null;
 
@@ -70,14 +70,7 @@ export function applySharedLaneState({
     const previousAiStatus = String(state.ai_confirm_shared_status || '').trim().toLowerCase();
 
     if (shouldUpdateSelection) {
-      specDb.db.prepare(`
-        UPDATE key_review_state
-        SET selected_candidate_id = ?,
-            selected_value = ?,
-            confidence_score = ?,
-            updated_at = datetime('now')
-        WHERE id = ?
-      `).run(selectedCandidateId, selectedValue, confidenceScore, state.id);
+      specDb.updateKeyReviewSelectedCandidate({ id: state.id, selectedCandidateId, selectedValue, confidenceScore });
     }
 
     const nextCandidateId = shouldUpdateSelection
@@ -103,7 +96,7 @@ export function applySharedLaneState({
       specDb.updateKeyReviewAiConfirm({ id: state.id, lane: 'shared', status: nextStatus, confidence: nextConfidence, at });
     }
 
-    return specDb.db.prepare('SELECT * FROM key_review_state WHERE id = ?').get(state.id) || state;
+    return specDb.getKeyReviewStateById(state.id) || state;
   });
 
   return tx();

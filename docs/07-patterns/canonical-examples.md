@@ -59,13 +59,14 @@ If you are creating a brand-new route family instead of extending an existing on
 
 ## Adding A New Page Or View
 
-Based on `tools/gui-react/src/App.tsx` and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
+Based on `tools/gui-react/src/registries/pageRegistry.ts` and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
 
 The live pattern is:
 
 1. Put real UI ownership in `tools/gui-react/src/features/<feature>/components/`.
-2. Optionally re-export from `tools/gui-react/src/pages/<route>/` (some routes import directly from features).
-3. Register the route lazily in `tools/gui-react/src/App.tsx`.
+2. Add a single `PAGE_REGISTRY` entry in `tools/gui-react/src/registries/pageRegistry.ts`.
+3. Let `ROUTE_ENTRIES`, `CATALOG_TABS`, and `OPS_TABS` derive automatically from that entry; `tools/gui-react/src/App.tsx` and `tools/gui-react/src/pages/layout/TabNav.tsx` consume those derived exports.
+4. Only add a `tools/gui-react/src/pages/<route>/` wrapper if the page needs a page-local shell or must preserve a legacy page-local implementation. `test-mode` is the current exception route mounted outside the registry.
 
 ```tsx
 // tools/gui-react/src/features/example/components/ExamplePage.tsx
@@ -102,16 +103,15 @@ export function ExamplePage() {
 }
 ```
 
-```tsx
-// tools/gui-react/src/pages/example/ExamplePage.tsx
-export * from '../../features/example/components/ExamplePage';
-```
-
-```tsx
-// tools/gui-react/src/App.tsx
-const ExamplePage = lazyNamedPage(() => import('./pages/example/ExamplePage'), 'ExamplePage');
-
-<Route path="example" element={wrap(ExamplePage)} />
+```ts
+// tools/gui-react/src/registries/pageRegistry.ts
+{
+  path: '/example',
+  label: 'Example',
+  tabGroup: 'ops',
+  loader: () => import('../features/example/components/ExamplePage.tsx'),
+  exportName: 'ExamplePage',
+}
 ```
 
 ## Adding A New Database Migration
@@ -269,8 +269,9 @@ export async function addExampleItem({ config, name, tags = [] }) {
 |--------|------|-------------------|
 | source | `src/app/api/routes/infra/categoryRoutes.js` | injected route-factory shape and `return false` non-match contract |
 | source | `src/features/settings/api/configRoutes.js` | live route-family registrar pattern |
-| source | `tools/gui-react/src/App.tsx` | lazy route registration and `wrap()` pattern |
-| source | `tools/gui-react/src/App.tsx` (line 23) | direct feature import pattern (some routes skip pages/ re-export) |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | page registry, tab metadata, and derived route pattern |
+| source | `tools/gui-react/src/App.tsx` | HashRouter shell and registry-driven `wrap()` pattern |
+| source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab derivation from the page registry |
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
 | source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |

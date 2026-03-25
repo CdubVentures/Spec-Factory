@@ -185,6 +185,10 @@ export function createLlmRouteSourceStore({ db, category, stmts }) {
       .all(sourceId);
   }
 
+  function hasSourceEvidenceRef(assertionId) {
+    return db.prepare('SELECT 1 FROM source_evidence_refs WHERE assertion_id = ? LIMIT 1').get(assertionId) || null;
+  }
+
   return {
     ensureDefaultLlmRouteMatrix,
     getLlmRouteMatrix,
@@ -196,5 +200,6 @@ export function createLlmRouteSourceStore({ db, category, stmts }) {
     insertSourceEvidenceRef,
     getSourcesForItem,
     getAssertionsForSource,
+    hasSourceEvidenceRef,
   };
 }

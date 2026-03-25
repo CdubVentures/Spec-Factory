@@ -864,3 +864,9 @@ export const PRODUCT_RUN_BOOLEAN_KEYS = Object.freeze(['is_latest', 'validated']
 export const SOURCE_CORPUS_BOOLEAN_KEYS = Object.freeze(['identity_match', 'approved_domain']);
 export const LEARNING_PROFILE_BOOLEAN_KEYS = Object.freeze(['validated']);
 export const BILLING_ENTRY_BOOLEAN_KEYS = Object.freeze(['estimated_usage']);
+
+// WHY: SSOT for component identity property keys (synthetic __-prefixed keys).
+// Used by keyReviewStore SQL exclusions and features/review contract shapes.
+export const COMPONENT_IDENTITY_PROPERTY_KEYS = Object.freeze([
+  '__name', '__maker', '__links', '__aliases',
+]);

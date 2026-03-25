@@ -2,11 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadConfigWithUserSettings } from '../config.js';
 import { defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
-import { createStorage } from '../s3/storage.js';
-import { runProduct } from '../pipeline/runProduct.js';
-import { asBool, parseArgs } from './args.js';
 
 function assert(condition, message) {
   if (!condition) {
@@ -24,8 +20,19 @@ export function resolveSmokeLocalOutputPaths(outputRoot = defaultLocalOutputRoot
 }
 
 export async function main() {
+  const [
+    { loadConfigWithUserSettings },
+    { createStorage },
+    { runProduct },
+    { asBool, parseArgs },
+  ] = await Promise.all([
+    import('../config.js'),
+    import('../s3/storage.js'),
+    import('../pipeline/runProduct.js'),
+    import('./args.js'),
+  ]);
   const args = parseArgs(process.argv.slice(2));
-  const runLlmMode = asBool(args.llm, Boolean(process.env.LLM_API_KEY));
+  const runLlmMode = asBool(args.llm, Boolean(process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || process.env.DEEPSEEK_API_KEY || process.env.ANTHROPIC_API_KEY));
   const { outputRoot, normalizedOutPath, summaryOutPath } = resolveSmokeLocalOutputPaths();
 
   const config = loadConfigWithUserSettings({

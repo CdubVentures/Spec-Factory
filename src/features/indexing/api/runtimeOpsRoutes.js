@@ -11,6 +11,7 @@ import {
   buildPipelineFlow,
   buildPreFetchPhases,
   buildLlmCallsDashboard,
+  buildFetchPhases,
 } from './builders/runtimeOpsDataBuilders.js';
 import { mergeSearchProfileRows } from './builders/runtimeOpsSearchProfileMergeHelpers.js';
 import {
@@ -28,6 +29,7 @@ import {
   createRuntimeScreenshotMetadataResolver,
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
 import { buildArchivedS3CacheRoot } from './builders/archivedRunLocationHelpers.js';
+import { resolveVideoFilePath } from './runtimeOpsVideoHelpers.js';
 
 function isRunStillActive(processStatus, runId = '') {
   if (typeof processStatus !== 'function') return false;
@@ -99,7 +101,7 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
   }
 
   const fs = await import('node:fs');
-  const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+  const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.webm': 'video/webm' };
 
   // Build candidate runDirs: direct local path + S3 cache path
   const candidateRunDirs = [directRunDir];
@@ -175,8 +177,6 @@ export function registerRuntimeOpsRoutes(ctx) {
   });
 
   return async function handleRuntimeOpsRoutes(parts, params, method, req, res) {
-    if (!config.runtimeOpsWorkbenchEnabled) return false;
-
     if (parts[0] !== 'indexlab' || parts[1] !== 'run' || !parts[2] || parts[3] !== 'runtime') {
       return false;
     }
@@ -343,6 +343,26 @@ export function registerRuntimeOpsRoutes(ctx) {
       return jsonRes(res, 200, { run_id: runId, worker_id: workerIdParam, frame });
     }
 
+    // WHY: Serves crawl video recordings from OS temp. Convention-based path avoids
+    // coupling to runtime bridge events. 404 is the expected fallback when video
+    // recording was disabled or the file has been cleaned up.
+    if (subPath === 'video' && parts[5]) {
+      const videoWorkerId = decodeURIComponent(String(parts[5] || '').trim());
+      const videoPath = resolveVideoFilePath(runId, videoWorkerId);
+      if (!videoPath) {
+        return jsonRes(res, 400, { error: 'invalid_video_params' });
+      }
+      const fs = await import('node:fs');
+      try {
+        await fs.promises.access(videoPath);
+        res.writeHead(200, { 'Content-Type': 'video/webm' });
+        fs.createReadStream(videoPath).pipe(res);
+        return true;
+      } catch {
+        return jsonRes(res, 404, { error: 'video_not_found', run_id: runId, worker_id: videoWorkerId });
+      }
+    }
+
     if (subPath === 'llm-dashboard' && !parts[5]) {
       const dashboard = buildLlmCallsDashboard(events);
       return jsonRes(res, 200, { run_id: runId, ...dashboard });
@@ -386,6 +406,11 @@ export function registerRuntimeOpsRoutes(ctx) {
         phase_cursor: String(resolvedMeta?.phase_cursor || '').trim(),
         idx_runtime: buildRuntimeIdxBadgesBySurface(fieldRulesPayload),
       });
+    }
+
+    if (subPath === 'fetch' && !parts[5]) {
+      const fetchPhases = buildFetchPhases(events);
+      return jsonRes(res, 200, { run_id: runId, ...fetchPhases });
     }
 
     if (subPath === 'pipeline' && !parts[5]) {
@@ -435,7 +460,7 @@ export function registerRuntimeOpsRoutes(ctx) {
         return jsonRes(res, 404, { error: 'file_not_found' });
       }
       const ext = path.extname(filename).toLowerCase();
-      const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+      const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.webm': 'video/webm' };
       const contentType = mimeMap[ext] || 'application/octet-stream';
       res.writeHead(200, { 'Content-Type': contentType });
       const stream = fs.createReadStream(resolved);

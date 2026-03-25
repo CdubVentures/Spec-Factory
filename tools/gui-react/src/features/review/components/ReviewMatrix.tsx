@@ -3,9 +3,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
 import { isKeyReviewLanePending } from '../../../utils/keyReview.ts';
-import { InlineCellEditor } from '../../../components/common/InlineCellEditor.tsx';
-import { ReviewValueCell } from '../../../components/common/ReviewValueCell.tsx';
-import { FlagIcon } from '../../../components/common/FlagIcon.tsx';
+import { InlineCellEditor } from '../../../shared/ui/forms/InlineCellEditor.tsx';
+import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell.tsx';
+import { FlagIcon } from '../../../shared/ui/icons/FlagIcon.tsx';
 import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {

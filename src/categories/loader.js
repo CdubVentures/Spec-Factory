@@ -13,7 +13,7 @@ import {
   checkCategoryPopulationHardGate,
 } from '../features/indexing/pipeline/shared/index.js';
 import { isObject, toArray } from '../shared/primitives.js';
-import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+import { normalizeHost } from '../shared/hostParser.js';
 
 const cache = new Map();
 
@@ -392,7 +392,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
   const helperCategoryRoot = path.join(helperRoot, category);
   const generatedRoot = path.join(helperRoot, category, '_generated');
 
-  const [schemaRaw, requiredRaw, fieldRulesRaw, fieldRulesRuntimeRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, fieldGroupsRaw, helperSchemaRaw, helperRequiredRaw, helperSourcesRaw, helperAnchorsRaw, helperSearchTemplatesRaw] = await Promise.all([
+  const [schemaRaw, requiredRaw, fieldRulesRaw, fieldRulesRuntimeRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, fieldGroupsRaw, helperSchemaRaw, helperRequiredRaw, helperSourcesRaw, helperAnchorsRaw, helperSearchTemplatesRaw, helperSpecSeedsRaw] = await Promise.all([
     readJsonIfExists(path.join(generatedRoot, 'schema.json')),
     readJsonIfExists(path.join(generatedRoot, 'required_fields.json')),
     readJsonIfExists(path.join(generatedRoot, 'field_rules.json')),
@@ -406,7 +406,8 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     readJsonIfExists(path.join(helperCategoryRoot, 'required_fields.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'sources.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'anchors.json')),
-    readJsonIfExists(path.join(helperCategoryRoot, 'search_templates.json'))
+    readJsonIfExists(path.join(helperCategoryRoot, 'search_templates.json')),
+    readJsonIfExists(path.join(helperCategoryRoot, 'spec_seeds.json'))
   ]);
 
   const fieldRulesPayload = isObject(fieldRulesRaw)
@@ -452,6 +453,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
   const searchTemplates = Array.isArray(generatedSearchTemplatesRaw)
     ? generatedSearchTemplatesRaw
     : (Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : null);
+  const specSeeds = Array.isArray(helperSpecSeedsRaw) ? helperSpecSeedsRaw : null;
 
   const schemaPath = isObject(schemaRaw)
     ? path.join(generatedRoot, 'schema.json')
@@ -471,6 +473,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     sources,
     anchors,
     searchTemplates,
+    specSeeds,
     schemaPath,
     requiredPath
   };
@@ -610,6 +613,7 @@ export async function loadCategoryConfig(category, options = {}) {
     searchTemplates: generated.searchTemplates || baseConfig.searchTemplates || []
   });
 
+  resolved.specSeeds = generated.specSeeds || null;
   resolved.fieldRules = generated.fieldRules;
   resolved.uiFieldCatalog = generated.uiFieldCatalog || null;
   resolved.fieldGroups = generated.fieldGroups || null;

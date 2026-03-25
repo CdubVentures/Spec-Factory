@@ -127,6 +127,7 @@ function toDocHintRows(rows = [], perHintCap = 3) {
 function fillTemplate(template, values) {
   return clean(
     String(template || '')
+      .replaceAll('{product}', values.product || '')
       .replaceAll('{brand}', values.brand || '')
       .replaceAll('{model}', values.model || '')
       .replaceAll('{variant}', values.variant || '')
@@ -150,6 +151,8 @@ export function buildSearchProfile({
   fieldYieldByDomain = null,
   seedStatus = null,
   focusGroups = null,
+  tierHierarchyOrder = '',
+  keySearchEnrichmentOrder = '',
 }) {
   const resolvedIdentity = resolveJobIdentity(job);
   const brand = resolvedIdentity.brand;
@@ -185,17 +188,45 @@ export function buildSearchProfile({
   const modes = determineQueryModes(effectiveSeedStatus, focusGroups || []);
   const maxQueryCap = Math.max(1, Number(maxQueries || 24));
 
+  // WHY: tierHierarchyOrder controls budget priority for ALL 5 query groups.
+  // Each group fills remaining budget in hierarchy order. Omitting a group
+  // from the order skips it entirely.
+  const effectiveTierOrder = parseTierOrder(tierHierarchyOrder);
+  const seedTierOrder = effectiveTierOrder.filter(
+    (id) => id === 'brand_seeds' || id === 'spec_seeds' || id === 'source_seeds',
+  );
+
   const tierRows = [];
-  if (modes.runTier1Seeds) {
-    tierRows.push(...buildTier1Queries(job, effectiveSeedStatus, brandResolution));
-  }
-  if (modes.runTier2Groups && tierRows.length < maxQueryCap) {
-    const groupRows = buildTier2Queries(job, focusGroups);
-    tierRows.push(...groupRows.slice(0, maxQueryCap - tierRows.length));
-  }
-  if (modes.runTier3Keys && tierRows.length < maxQueryCap) {
-    const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain);
-    tierRows.push(...keyRows.slice(0, maxQueryCap - tierRows.length));
+  for (const tierId of effectiveTierOrder) {
+    if (tierRows.length >= maxQueryCap) break;
+    const remaining = maxQueryCap - tierRows.length;
+
+    if (tierId === 'brand_seeds' || tierId === 'spec_seeds' || tierId === 'source_seeds') {
+      // WHY: Seed tiers are emitted via buildTier1Queries only on first encounter.
+      // All seed sub-groups share the emittedSources dedup set, so they must be
+      // dispatched together. We trigger the full seed batch on the first seed tier
+      // in the hierarchy, then skip subsequent seed tiers (already emitted).
+      if (modes.runTier1Seeds && tierId === seedTierOrder[0]) {
+        const seedRows = buildTier1Queries(job, effectiveSeedStatus, brandResolution, {
+          tierOrder: seedTierOrder,
+          specSeeds: categoryConfig?.specSeeds || null,
+        });
+        tierRows.push(...seedRows.slice(0, remaining));
+      }
+      // Subsequent seed tiers: already emitted in the batch above — skip.
+    } else if (tierId === 'group_searches') {
+      if (modes.runTier2Groups) {
+        const groupRows = buildTier2Queries(job, focusGroups);
+        tierRows.push(...groupRows.slice(0, remaining));
+      }
+    } else if (tierId === 'key_searches') {
+      if (modes.runTier3Keys) {
+        const keyRows = buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain, {
+          enrichmentOrder: parseEnrichmentOrder(keySearchEnrichmentOrder),
+        });
+        tierRows.push(...keyRows.slice(0, remaining));
+      }
+    }
   }
   const queryRows = tierRows;
 
@@ -309,55 +340,33 @@ export function determineQueryModes(seedStatus, focusGroups) {
   };
 }
 
+// WHY: All 5 query groups across Tier 1/2/3. tierHierarchyOrder controls their
+// budget priority. Default: seeds first (brand → spec → source), then groups, then keys.
+const KNOWN_TIER_IDS = ['brand_seeds', 'spec_seeds', 'source_seeds', 'group_searches', 'key_searches'];
+const DEFAULT_TIER_ORDER = ['brand_seeds', 'spec_seeds', 'source_seeds', 'group_searches', 'key_searches'];
+
 /**
- * WHY: Tier 1 — broad seed queries. Cast the wide net first.
- * Uses both seed_status.source_seeds (from NeedSet history) and
- * brandResolution (from Brand Resolver phase) for source domains.
- * @returns {Array<object>} queryRow[]
+ * Parse a CSV tier order string into a validated array of tier IDs.
+ * Unknown IDs are dropped, duplicates removed. Falls back to default on empty input.
  */
-export function buildTier1Queries(job, seedStatus, brandResolution) {
-  const identity = resolveJobIdentity(job);
-  const brand = identity.brand;
-  const model = identity.model;
-  const variant = identity.variant;
-  const product = clean([brand, model, variant].filter(Boolean).join(' '));
-  const rows = [];
-  const emittedSources = new Set();
-
-  if (seedStatus?.specs_seed?.is_needed) {
-    rows.push({
-      query: clean(`${product} specifications`),
-      hint_source: 'tier1_seed',
-      tier: 'seed',
-      target_fields: [],
-      doc_hint: 'spec',
-      alias: '',
-      domain_hint: '',
-      source_host: '',
-    });
+export function parseTierOrder(csv) {
+  const raw = String(csv ?? '').trim();
+  if (!raw) return [...DEFAULT_TIER_ORDER];
+  const seen = new Set();
+  const result = [];
+  for (const token of raw.split(',')) {
+    const id = token.trim();
+    if (KNOWN_TIER_IDS.includes(id) && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
   }
+  return result.length > 0 ? result : [...DEFAULT_TIER_ORDER];
+}
 
-  // Source seeds from NeedSet history
-  for (const [source, info] of Object.entries(seedStatus?.source_seeds || {})) {
-    if (!info?.is_needed) continue;
-    const s = clean(source);
-    if (!s || emittedSources.has(s.toLowerCase())) continue;
-    emittedSources.add(s.toLowerCase());
-    rows.push({
-      query: clean(`${product} ${s}`),
-      hint_source: 'tier1_seed',
-      tier: 'seed',
-      target_fields: [],
-      doc_hint: '',
-      alias: '',
-      domain_hint: s,
-      source_host: s,
-    });
-  }
+// ── Tier 1 emit helpers ──
 
-  // WHY: Brand Resolver phase runs before Search Profile phase.
-  // Add official/support domains as source seeds if not already covered
-  // by seed_status.source_seeds.
+function emitBrandSeedQueries(rows, emittedSources, product, brandResolution) {
   const brandDomains = [
     brandResolution?.officialDomain,
     brandResolution?.supportDomain,
@@ -375,6 +384,84 @@ export function buildTier1Queries(job, seedStatus, brandResolution) {
       domain_hint: domain,
       source_host: domain,
     });
+  }
+}
+
+function emitSpecSeedQueries(rows, product, seedStatus, specSeeds, identity) {
+  if (!seedStatus?.specs_seed?.is_needed) return;
+  const templates = Array.isArray(specSeeds) && specSeeds.length > 0
+    ? specSeeds
+    : ['{product} specifications'];
+  const values = {
+    product,
+    brand: identity.brand,
+    model: identity.model,
+    variant: identity.variant,
+    category: identity.category,
+  };
+  for (const template of templates) {
+    const query = fillTemplate(template, values);
+    if (!query) continue;
+    rows.push({
+      query,
+      hint_source: 'tier1_seed',
+      tier: 'seed',
+      target_fields: [],
+      doc_hint: 'spec',
+      alias: '',
+      domain_hint: '',
+      source_host: '',
+    });
+  }
+}
+
+function emitSourceSeedQueries(rows, emittedSources, product, seedStatus) {
+  for (const [source, info] of Object.entries(seedStatus?.source_seeds || {})) {
+    if (!info?.is_needed) continue;
+    const s = clean(source);
+    if (!s || emittedSources.has(s.toLowerCase())) continue;
+    emittedSources.add(s.toLowerCase());
+    rows.push({
+      query: clean(`${product} ${s}`),
+      hint_source: 'tier1_seed',
+      tier: 'seed',
+      target_fields: [],
+      doc_hint: '',
+      alias: '',
+      domain_hint: s,
+      source_host: s,
+    });
+  }
+}
+
+/**
+ * WHY: Tier 1 — broad seed queries. Cast the wide net first.
+ * Order controlled by options.tierOrder (from tierHierarchyOrder setting).
+ * Default: brand_seeds → spec_seeds → source_seeds.
+ * @param {object} job
+ * @param {object} seedStatus
+ * @param {object|null} brandResolution
+ * @param {object} [options]
+ * @param {string[]} [options.tierOrder] - ordered array of tier IDs
+ * @param {string[]|null} [options.specSeeds] - per-category spec seed templates
+ * @returns {Array<object>} queryRow[]
+ */
+export function buildTier1Queries(job, seedStatus, brandResolution, options = {}) {
+  const { tierOrder = DEFAULT_TIER_ORDER, specSeeds = null } = options;
+  const resolved = resolveJobIdentity(job);
+  const identity = { ...resolved, category: clean(job?.category || '') };
+  const product = clean([identity.brand, identity.model, identity.variant].filter(Boolean).join(' '));
+  const rows = [];
+  const emittedSources = new Set();
+
+  const emitters = {
+    brand_seeds: () => emitBrandSeedQueries(rows, emittedSources, product, brandResolution),
+    spec_seeds: () => emitSpecSeedQueries(rows, product, seedStatus, specSeeds, identity),
+    source_seeds: () => emitSourceSeedQueries(rows, emittedSources, product, seedStatus),
+  };
+
+  for (const tierId of tierOrder) {
+    emitters[tierId]?.();
   }
 
   return rows;
@@ -408,16 +495,61 @@ export function buildTier2Queries(job, focusGroups) {
     }));
 }
 
+// ── Key Search Enrichment ──
+
+const KNOWN_ENRICHMENTS = ['aliases', 'domain_hints', 'content_types'];
+const DEFAULT_ENRICHMENT_ORDER = ['aliases', 'domain_hints', 'content_types'];
+
+/**
+ * Parse a CSV enrichment order string into a validated array of enrichment IDs.
+ * Same pattern as parseTierOrder.
+ */
+export function parseEnrichmentOrder(csv) {
+  const raw = String(csv ?? '').trim();
+  if (!raw) return [...DEFAULT_ENRICHMENT_ORDER];
+  const seen = new Set();
+  const result = [];
+  for (const token of raw.split(',')) {
+    const id = token.trim();
+    if (KNOWN_ENRICHMENTS.includes(id) && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+  return result.length > 0 ? result : [...DEFAULT_ENRICHMENT_ORDER];
+}
+
+function applyAliasEnrichment(parts, entry, readable) {
+  const aliases = (entry.all_aliases || [])
+    .filter((a) => clean(a) && clean(a).toLowerCase() !== readable.toLowerCase())
+    .slice(0, 3);
+  if (aliases.length > 0) parts.push(aliases.join(' '));
+}
+
+function applyDomainHintEnrichment(parts, entry) {
+  const tried = new Set((entry.domains_tried_for_key || []).map((d) => d.toLowerCase()));
+  const hints = (entry.domain_hints || []).filter((d) => !tried.has(d.toLowerCase()));
+  const hint = hints[0] || (entry.domain_hints || [])[0] || '';
+  if (hint) parts.push(hint);
+}
+
+function applyContentTypeEnrichment(parts, entry) {
+  const triedTypes = new Set((entry.content_types_tried_for_key || []).map((t) => t.toLowerCase()));
+  const availableTypes = (entry.preferred_content_types || []);
+  const untriedType = availableTypes.find((t) => !triedTypes.has(t.toLowerCase()));
+  const contentType = untriedType || availableTypes[0] || '';
+  if (contentType) parts.push(contentType);
+}
+
 /**
  * WHY: Tier 3 — individual key queries with progressive enrichment.
- * Each round adds more context to the query based on repeat_count:
- *   0: bare {product} {key}
- *   1: + aliases
- *   2: + domain hints (prefer untried)
- *   3+: + content type hints
+ * Enrichment order controlled by options.enrichmentOrder (from keySearchEnrichmentOrder setting).
+ * Default: aliases → domain_hints → content_types.
+ * At repeat_count=N, the first N enrichments from the order are applied cumulatively.
  * @returns {Array<object>} queryRow[]
  */
-export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain) {
+export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldByDomain, options = {}) {
+  const { enrichmentOrder = DEFAULT_ENRICHMENT_ORDER } = options;
   const identity = resolveJobIdentity(job);
   const brand = identity.brand;
   const model = identity.model;
@@ -426,13 +558,18 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
   const groups = Array.isArray(focusGroups) ? focusGroups : [];
   const rows = [];
 
+  const enrichers = {
+    aliases: (parts, entry, readable) => applyAliasEnrichment(parts, entry, readable),
+    domain_hints: (parts, entry) => applyDomainHintEnrichment(parts, entry),
+    content_types: (parts, entry) => applyContentTypeEnrichment(parts, entry),
+  };
+
   for (const g of groups) {
     if (g.group_search_worthy !== false) continue;
     const keys = toArray(g.normalized_key_queue);
     if (keys.length === 0) continue;
 
     for (const entry of keys) {
-      // Backward compat: plain string keys still work
       const isEnriched = entry && typeof entry === 'object';
       const keyName = isEnriched ? entry.normalized_key : String(entry || '');
       const readable = clean(String(keyName || '').replace(/_/g, ' '));
@@ -441,30 +578,11 @@ export function buildTier3Queries(job, focusGroups, categoryConfig, fieldYieldBy
       const repeatCount = isEnriched ? (entry.repeat_count || 0) : 0;
       const parts = [product, readable];
 
-      // Progressive enrichment based on how many times this key has been searched
-      if (isEnriched && repeatCount >= 1) {
-        // Round 1+: add aliases to differentiate the query
-        const aliases = (entry.all_aliases || [])
-          .filter((a) => clean(a) && clean(a).toLowerCase() !== readable.toLowerCase())
-          .slice(0, 3);
-        if (aliases.length > 0) parts.push(aliases.join(' '));
-      }
-
-      if (isEnriched && repeatCount >= 2) {
-        // Round 2+: add domain hints — prefer untried domains
-        const tried = new Set((entry.domains_tried_for_key || []).map((d) => d.toLowerCase()));
-        const hints = (entry.domain_hints || []).filter((d) => !tried.has(d.toLowerCase()));
-        const hint = hints[0] || (entry.domain_hints || [])[0] || '';
-        if (hint) parts.push(hint);
-      }
-
-      if (isEnriched && repeatCount >= 3) {
-        // Round 3+: add content type hints — prefer untried content types
-        const triedTypes = new Set((entry.content_types_tried_for_key || []).map((t) => t.toLowerCase()));
-        const availableTypes = (entry.preferred_content_types || []);
-        const untriedType = availableTypes.find((t) => !triedTypes.has(t.toLowerCase()));
-        const contentType = untriedType || availableTypes[0] || '';
-        if (contentType) parts.push(contentType);
+      // WHY: Progressive enrichment — apply enrichments in configured order,
+      // one per repeat level. repeat=1 applies enrichment[0], repeat=2 applies [0]+[1], etc.
+      for (let i = 0; i < enrichmentOrder.length; i++) {
+        if (!isEnriched || repeatCount < (i + 1)) break;
+        enrichers[enrichmentOrder[i]]?.(parts, entry, readable);
       }
 
       rows.push({

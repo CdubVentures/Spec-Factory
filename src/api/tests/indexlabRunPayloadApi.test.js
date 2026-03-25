@@ -1,15 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 
-import {
-  getFreePort,
-  waitForHttpReady,
-} from './helpers/guiServerHttpHarness.js';
-import { skipIfSpawnEperm } from '../../shared/tests/helpers/spawnEperm.js';
+import { startInProcessGuiServer } from './helpers/inProcessGuiServerHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -504,50 +499,17 @@ async function seedSchemaPacketsRun(indexlabRoot) {
 }
 
 async function startGuiServer(t, { helperRoot, indexlabRoot }) {
-  const port = await getFreePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
-  let proc = null;
-  let stderr = '';
-
-  t.after(() => {
-    if (proc && !proc.killed) proc.kill('SIGTERM');
+  const server = await startInProcessGuiServer(t, {
+    env: {
+      LOCAL_MODE: 'true',
+      HELPER_FILES_ROOT: helperRoot,
+      CATEGORY_AUTHORITY_ROOT: helperRoot,
+    },
+    argv: ['--local', '--indexlab-root', indexlabRoot],
   });
-
-  try {
-    proc = spawn(
-      process.execPath,
-      [
-        'src/api/guiServer.js',
-        '--port',
-        String(port),
-        '--local',
-        '--indexlab-root',
-        indexlabRoot,
-      ],
-      {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          LOCAL_MODE: 'true',
-          HELPER_FILES_ROOT: helperRoot,
-          CATEGORY_AUTHORITY_ROOT: helperRoot,
-        },
-        stdio: ['ignore', 'ignore', 'pipe'],
-      },
-    );
-  } catch (error) {
-    if (skipIfSpawnEperm(t, error)) return null;
-    throw error;
-  }
-
-  proc.stderr.on('data', (chunk) => {
-    stderr += chunk.toString();
-  });
-
-  await waitForHttpReady(`${baseUrl}/api/v1/health`);
   return {
-    baseUrl,
-    getStderr: () => stderr,
+    baseUrl: server.baseUrl,
+    getStderr: () => '',
   };
 }
 

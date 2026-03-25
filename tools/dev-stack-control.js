@@ -64,23 +64,23 @@ export function planSpecFactoryAction({
   const needsApi = action === 'start-stack' || action === 'start-api';
   const needsGui = false;
 
+  // WHY: If the port is already occupied (even by an untracked process),
+  // skip starting and just open the browser to the existing server.
   if (needsApi && !apiTrackedPidRunning && apiPortOccupied) {
     return {
-      ok: false,
-      error: `Spec Factory API port ${contract.api.port} is already in use by another process.`,
+      ok: true,
       startApi: false,
       startGui: false,
-      openUrl: null,
+      openUrl: contract.api.browserUrl,
     };
   }
 
   if (needsGui && !guiTrackedPidRunning && guiPortOccupied) {
     return {
-      ok: false,
-      error: `Spec Factory GUI port ${contract.gui.port} is already in use by another process.`,
+      ok: true,
       startApi: false,
       startGui: false,
-      openUrl: null,
+      openUrl: contract.gui.browserUrl,
     };
   }
 
@@ -199,7 +199,7 @@ function openBrowser(url) {
   child.unref();
 }
 
-async function run(action, root) {
+async function run(action, root, { noBrowser = false } = {}) {
   const contract = getSpecFactoryServerContract(root);
   ensureStateDir(root);
 
@@ -292,7 +292,7 @@ async function run(action, root) {
     }
   }
 
-  if (plan.openUrl) {
+  if (plan.openUrl && !noBrowser) {
     openBrowser(plan.openUrl);
     console.log(`Opened ${plan.openUrl}`);
   }
@@ -303,16 +303,18 @@ async function run(action, root) {
 }
 
 async function main() {
-  const action = process.argv[2];
+  const args = process.argv.slice(2);
+  const noBrowser = args.includes('--no-browser');
+  const action = args.find((a) => !a.startsWith('--'));
   const root = process.cwd();
 
   if (action !== 'start-stack' && action !== 'start-api' && action !== 'refresh-page') {
-    console.error('Usage: node tools/dev-stack-control.js <start-stack|start-api|refresh-page>');
+    console.error('Usage: node tools/dev-stack-control.js <start-stack|start-api|refresh-page> [--no-browser]');
     process.exitCode = 1;
     return;
   }
 
-  process.exitCode = await run(action, root);
+  process.exitCode = await run(action, root, { noBrowser });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {

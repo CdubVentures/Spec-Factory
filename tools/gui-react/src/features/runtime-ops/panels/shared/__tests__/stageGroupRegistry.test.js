@@ -5,6 +5,19 @@ import { loadBundledModule } from '../../../../../../../../src/shared/tests/help
 
 let mod;
 
+function createStageRegistryStub(groupName, keys) {
+  const entries = keys.map((key) => ({
+    key,
+    label: `${groupName}:${key}`,
+    tip: `${groupName}:${key}:tip`,
+  }));
+  return [
+    `export const ${groupName}_STAGE_KEYS = ${JSON.stringify(keys)};`,
+    `export const ${groupName}_STAGE_REGISTRY = ${JSON.stringify(entries)};`,
+    '',
+  ].join('\n');
+}
+
 async function getModule() {
   if (mod) return mod;
   mod = await loadBundledModule(
@@ -13,6 +26,26 @@ async function getModule() {
       prefix: 'stage-group-registry-',
       stubs: {
         'react': 'export function createElement(type, props) { return { type, props }; }',
+        '../prefetch/prefetchStageRegistry.ts': createStageRegistryStub('PREFETCH', [
+          'needset',
+          'brand_resolver',
+          'search_profile',
+          'search_planner',
+          'query_journey',
+          'search_results',
+          'serp_selector',
+          'domain_classifier',
+        ]),
+        '../fetch/fetchStageRegistry.ts': createStageRegistryStub('FETCH', [
+          'queued',
+          'inflight',
+        ]),
+        '../extraction/extractionStageRegistry.ts': createStageRegistryStub('EXTRACTION', [
+          'field_extraction',
+        ]),
+        '../validation/validationStageRegistry.ts': createStageRegistryStub('VALIDATION', [
+          'quality_gate',
+        ]),
       },
     },
   );

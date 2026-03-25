@@ -551,7 +551,7 @@ export async function callOpenAI({
   logger
 }) {
   if (!apiKey) {
-    throw new Error('LLM_API_KEY is not configured');
+    throw new Error('No API key configured — set a provider API key in the registry');
   }
 
   const baseUrlNormalized = normalizeBaseUrl(baseUrl);

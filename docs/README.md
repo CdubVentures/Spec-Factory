@@ -2,9 +2,9 @@
 
 > **Purpose:** Master entrypoint for the LLM-oriented current-state documentation set for this repository.
 > **Prerequisites:** None.
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
-Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, crawl, review, billing, and runtime-operations workflows for categories such as `mouse`, `keyboard`, `monitor`, and `gaming_mice`. The pipeline uses a crawl-first architecture (`src/features/crawl/`) with plugin-based browser automation replacing the former extraction-heavy monolith.
+Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, crawl, review, billing, and runtime-operations workflows for categories such as `keyboard`, `monitor`, `mouse`, and the harness-oriented `tests` category. The pipeline uses a crawl-first architecture centered on `src/features/crawl/` and `src/pipeline/runProduct.js`.
 
 ## LLM Reading Order
 
@@ -105,14 +105,15 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | source | `src/api/guiServer.js` | Main HTTP/WebSocket runtime and route composition entrypoint |
-| source | `tools/gui-react/src/App.tsx` | GUI route inventory and top-level client structure |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route and tab inventory single source of truth |
+| source | `tools/gui-react/src/App.tsx` | GUI HashRouter shell and lazy route assembly |
 | source | `src/db/specDbSchema.js` | Canonical SQLite table inventory for the data-model docs |
 | config | `package.json` | Root scripts, Node engine, and backend dependency declarations |
 | config | `tools/gui-react/package.json` | GUI package scripts and frontend dependency declarations |
 | source | `src/shared/settingsRegistry.js` | SSOT settings registry verified for environment-and-config and knobs docs |
-| command | `npm run env:check` | narrow env-scan passes with `OK (3 referenced keys covered)` |
-| command | `npm run gui:build` | GUI build succeeds on the current worktree |
-| command | `npm test` | full suite is red on the current worktree; see known-issues for the current failure clusters |
+| command | `npm run env:check` | currently fails because `.env.example` is missing `PORT`; the checker also remains a narrow fixed-list scan |
+| command | `npm run gui:build` | succeeded on 2026-03-25 and wrote the current `tools/gui-react/dist/` bundle |
+| command | `npm test` | full suite passed on the audited worktree (`5827` passing tests) |
 
 ## Related Documents
 

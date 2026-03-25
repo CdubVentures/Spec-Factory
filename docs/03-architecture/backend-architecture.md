@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified server entrypoints, request pipeline, route families, settings boundaries, process runtime, and error behavior with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Server Entrypoints
 
@@ -14,10 +14,10 @@
 
 ## HTTP Request Pipeline
 
-1. `src/api/guiServer.js` assembles runtime dependencies.
-2. `src/api/guiServer.js` builds the large `routeCtx` object inline and hands it to `src/api/guiServerHttpAssembly.js`.
-3. `src/app/api/guiRouteRegistration.js` delegates route registration to `src/app/api/routeRegistry.js`.
-4. `src/app/api/routeRegistry.js` instantiates handlers in this fixed order:
+1. `src/api/guiServer.js` is the thin process entrypoint and delegates runtime assembly to `src/api/guiServerRuntime.js`.
+2. `src/api/guiServerRuntime.js` bootstraps config, storage, SpecDb/session caches, realtime bridges, and the large `routeCtx` object before handing everything to `src/api/guiServerHttpAssembly.js`.
+3. `src/app/api/guiRouteRegistration.js` delegates handler instantiation to `src/app/api/routeRegistry.js`, but the mounted order is taken from the `routeDefinitions` array in `src/api/guiServerRuntime.js`.
+4. `src/api/guiServerRuntime.js` mounts handlers in this verified order:
    - `infra`
    - `config`
    - `indexlab`
@@ -30,8 +30,11 @@
    - `review`
    - `testMode`
    - `sourceStrategy`
+   - `specSeeds`
 5. `src/app/api/requestDispatch.js` parses `/api/v1/*`, normalizes category segments, and dispatches the first handler that returns non-`false`.
 6. `src/app/api/staticFileServer.js` serves `tools/gui-react/dist` for non-API requests.
+
+`src/app/api/routeRegistry.js` still exports `GUI_API_ROUTE_ORDER`, but that constant omits the live `specSeeds` handler and is not the mounted source of truth. Use `routeDefinitions` in `src/api/guiServerRuntime.js` when documenting or extending the server route tree.
 
 ## Route Families
 
@@ -40,6 +43,7 @@
 | infra | `/health`, `/categories`, `/searxng/*`, `/process/*`, `/graphql` | `src/app/api/routes/infraRoutes.js` and `src/app/api/routes/infra/*.js` |
 | config | `/ui-settings`, `/storage-settings`, `/runtime-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config` | `src/features/settings/api/configRoutes.js` |
 | IndexLab | `/indexlab/runs`, `/indexlab/run/*`, `/indexlab/indexes/*`, `/indexlab/analytics/*`, `/indexlab/live-crawl/*` | `src/features/indexing/api/indexlabRoutes.js` |
+| storage manager | `/storage/overview`, `/storage/runs*`, `/storage/prune`, `/storage/purge`, `/storage/export`, `/storage/recalculate`, `/storage/sync/*` | `src/features/indexing/api/indexlabRoutes.js` delegating to `src/features/indexing/api/storageManagerRoutes.js` |
 | runtime ops | `/indexlab/run/:runId/runtime/*` | `src/features/indexing/api/runtimeOpsRoutes.js` |
 | catalog + brands | `/catalog/*`, `/product/*`, `/events/*`, `/brands/*` | `src/features/catalog/api/catalogRoutes.js`, `src/features/catalog/api/brandRoutes.js` |
 | studio | `/field-labels/*`, `/studio/:category/*` | `src/features/studio/api/studioRoutes.js` |
@@ -48,6 +52,7 @@
 | review | `/review/*`, `/review-components/*` | `src/features/review/api/reviewRoutes.js` |
 | test mode | `/test-mode/*` | `src/app/api/routes/testModeRoutes.js` |
 | source strategy | `/source-strategy/*` | `src/features/indexing/api/sourceStrategyRoutes.js` |
+| deterministic spec seeds | `/spec-seeds?category=:category` | `src/features/indexing/api/specSeedsRoutes.js` |
 
 ## Settings and Policy Split
 
@@ -95,12 +100,16 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | server assembly, dependency wiring, and entrypoint role |
+| source | `src/api/guiServer.js` | thin process entrypoint role and runtime startup wrapper |
+| source | `src/api/guiServerRuntime.js` | mounted route order, route-context assembly, and runtime bootstrap SSOT |
 | source | `src/api/guiServerHttpAssembly.js` | `routeCtx` handoff into the HTTP assembly pipeline |
 | source | `src/app/api/guiRouteRegistration.js` | route registration wrapper around the registry |
 | source | `src/app/api/requestDispatch.js` | parse/dispatch/error/static-serving pipeline |
-| source | `src/app/api/routeRegistry.js` | registrar order and handler composition |
+| source | `src/app/api/routeRegistry.js` | handler instantiation behavior and stale `GUI_API_ROUTE_ORDER` export |
 | source | `src/features/settings/api/configRoutes.js` | mounted settings route families |
+| source | `src/features/indexing/api/indexlabRoutes.js` | `/indexlab/*` family plus `/storage/*` delegation |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | live storage manager endpoint family under `/storage/*` |
+| source | `src/features/indexing/api/specSeedsRoutes.js` | mounted deterministic spec-seed endpoints |
 | source | `src/features/settings/api/configPersistenceContext.js` | canonical settings persistence boundary |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy read/write behavior |
 | source | `src/core/llm/llmPolicySchema.js` | composite LLM policy assembly/disassembly contract |

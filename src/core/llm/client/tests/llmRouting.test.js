@@ -134,11 +134,10 @@ test('resolveLlmFallbackRoute returns null when fallback matches primary fingerp
 test('route key helpers detect role-only keys and snapshot masks secrets', () => {
   // WHY: Without registry, routes infer provider from model name + bootstrap apiKey.
   // gemini-2.5-flash infers 'gemini' provider, bootstrap reads geminiApiKey.
-  // gpt-4.1-mini infers 'openai' provider, bootstrap reads llmApiKey/openaiApiKey.
+  // gpt-4.1-mini infers 'openai' provider, bootstrap reads openaiApiKey.
   const config = {
     llmModelPlan: 'gemini-2.5-flash',
     geminiApiKey: 'gem-key',
-    llmApiKey: '',
     openaiApiKey: '',
   };
 
@@ -158,7 +157,6 @@ test('model override switches route provider and credentials by model family via
   // WHY: Model override with no registry infers provider from model name + bootstrap keys.
   const config = {
     llmModelPlan: 'gpt-5.1-low',
-    llmApiKey: 'openai-key',
     openaiApiKey: 'openai-key',
     geminiApiKey: 'gem-key',
     deepseekApiKey: 'ds-key',
@@ -275,7 +273,6 @@ test('flat-key route (no registry) infers provider from model name + bootstrap k
   // WHY: Without registry, baseRouteForRole infers provider from model name.
   const config = {
     llmModelPlan: 'gpt-4.1-mini',
-    llmApiKey: 'openai-key',
     openaiApiKey: 'openai-key',
   };
   const route = resolveLlmRoute(config, { role: 'extract' });
@@ -507,4 +504,84 @@ test('resolvePhaseReasoning works for all known phases', () => {
     });
     assert.equal(resolvePhaseReasoning(config, phase), true, `phase ${phase} should resolve reasoning to true`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// API key resolution: registry with empty apiKey must bootstrap from model name
+// ---------------------------------------------------------------------------
+
+test('registry route with empty apiKey falls back to bootstrap key via model name inference', () => {
+  // WHY: Registry entry has type "openai-compatible" (protocol) but model is gemini-*.
+  // Bootstrap must infer "gemini" from model name to find geminiApiKey.
+  const geminiProvider = {
+    id: 'default-gemini',
+    name: 'Gemini',
+    type: 'openai-compatible',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    apiKey: '',
+    enabled: true,
+    models: [
+      { id: 'gem-flash', modelId: 'gemini-2.5-flash', role: 'primary',
+        costInputPer1M: 0.3, costOutputPer1M: 2.5, costCachedPer1M: 0.03,
+        maxContextTokens: 1048576, maxOutputTokens: 65536 },
+    ],
+  };
+  const config = registryConfig([geminiProvider], {
+    geminiApiKey: 'gem-bootstrap-key',
+    openaiApiKey: '',
+  });
+
+  const route = resolveLlmRoute(config, { role: 'plan' });
+  assert.equal(route.apiKey, 'gem-bootstrap-key',
+    'must infer gemini from model name, not use openaiApiKey');
+});
+
+test('registry fallback route with empty apiKey falls back to bootstrap key via model name', () => {
+  const deepseekProvider = {
+    id: 'default-deepseek',
+    name: 'DeepSeek',
+    type: 'openai-compatible',
+    baseUrl: 'https://api.deepseek.com',
+    apiKey: '',
+    enabled: true,
+    models: [
+      { id: 'ds-chat', modelId: 'deepseek-chat', role: 'primary',
+        costInputPer1M: 0.28, costOutputPer1M: 0.42, costCachedPer1M: 0.028,
+        maxContextTokens: 128000, maxOutputTokens: 8192 },
+    ],
+  };
+  const config = registryConfig([deepseekProvider], {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmPlanFallbackModel: 'deepseek-chat',
+    deepseekApiKey: 'ds-bootstrap-key',
+    openaiApiKey: '',
+  });
+
+  const fallback = resolveLlmFallbackRoute(config, { role: 'plan' });
+  assert.ok(fallback, 'fallback route should exist');
+  assert.equal(fallback.apiKey, 'ds-bootstrap-key',
+    'must infer deepseek from model name, not use openaiApiKey');
+});
+
+// ---------------------------------------------------------------------------
+// Triage role recognition
+// ---------------------------------------------------------------------------
+
+test('hasLlmRouteApiKey returns true for triage role with valid provider key', () => {
+  const config = {
+    llmModelPlan: 'gemini-2.5-flash',
+    geminiApiKey: 'gem-key',
+  };
+  assert.equal(hasLlmRouteApiKey(config, { role: 'triage' }), true,
+    'triage role must resolve to plan model and find geminiApiKey');
+});
+
+test('llmRoutingSnapshot includes triage role', () => {
+  const config = {
+    llmModelPlan: 'gemini-2.5-flash',
+    geminiApiKey: 'gem-key',
+  };
+  const snapshot = llmRoutingSnapshot(config);
+  assert.ok(snapshot.triage, 'snapshot must include triage role');
+  assert.equal(snapshot.triage.primary.api_key_present, true);
 });

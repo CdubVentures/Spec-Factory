@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-25
 
 ## Global Notes
 
@@ -10,6 +10,7 @@
 - Health alias without prefix: `/health`
 - Auth: no verified auth middleware protects these endpoints in the current runtime
 - Route parsing and category alias normalization live in `src/app/api/requestDispatch.js`
+- `/storage-settings/*` is the settings-authority/config surface for choosing destinations; `/storage/*` is a separate run-inventory and maintenance surface delegated from `src/features/indexing/api/indexlabRoutes.js` into `src/features/indexing/api/storageManagerRoutes.js`
 
 ## Infra And Process Endpoints
 
@@ -52,6 +53,23 @@
 | POST | `/api/v1/runtime-settings` | compatibility write alias for runtime-settings autosave | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 
 No live `/api/v1/convergence-settings` route is registered in `src/features/settings/api/configRoutes.js`. The persisted `convergence` object in `user-settings.json` is compatibility-only.
+
+## Storage Manager Endpoints
+
+| Method | Path | Purpose | Auth | Request body | Response shape |
+|--------|------|---------|------|--------------|----------------|
+| GET | `/api/v1/storage/overview` | summarize archived/live run inventory and backend details | none | none | `{ total_runs, total_size_bytes, categories, products_indexed, oldest_run, newest_run, avg_run_size_bytes, storage_backend, backend_detail }` |
+| GET | `/api/v1/storage/runs` | list run inventory, optionally filtered by `category` and `limit` query params | none | none | `{ runs }` |
+| GET | `/api/v1/storage/runs/:runId` | read one run's storage metadata bundle | none | none | `{ run_id, ...meta }` or `404 { error: 'run_not_found', run_id }` |
+| DELETE | `/api/v1/storage/runs/:runId` | delete one archived run bundle | none | none | `{ ok, run_id, deleted_from }` or `409 { ok: false, error: 'run_in_progress', run_id }` |
+| POST | `/api/v1/storage/runs/bulk-delete` | bulk-delete archived run bundles | none | `{ runIds: string[] }` | `{ ok, deleted, errors }` |
+| POST | `/api/v1/storage/prune` | prune old archived runs, optionally failed-only | none | `{ olderThanDays?, failedOnly? }` | `{ ok, pruned, errors }` |
+| POST | `/api/v1/storage/purge` | purge all archived runs after explicit confirmation token | none | `{ confirmToken }` | `{ ok, purged }` or `400 { ok: false, error: 'confirm_token_required' }` |
+| GET | `/api/v1/storage/export` | download run inventory export JSON | none | none | `{ exported_at, storage_backend, runs }` with `Content-Disposition: attachment` |
+| POST | `/api/v1/storage/recalculate` | recompute storage metrics across the run tree | none | none | `{ ok, runs_scanned, runs_updated, total_size_bytes, errors, warning? }` |
+| GET | `/api/v1/storage/sync/status` | read cross-backend sync status if sync service is available | none | none | sync-status payload or `501 { error: 'sync_service_not_configured' }` |
+| POST | `/api/v1/storage/sync/push` | push archived runs to S3 through the storage sync service | none | none | push result or `501 { error: 'sync_service_not_configured' }` |
+| POST | `/api/v1/storage/sync/pull` | pull archived runs from S3 through the storage sync service | none | none | pull result or `501 { error: 'sync_service_not_configured' }` |
 
 ## IndexLab Endpoints
 
@@ -148,7 +166,7 @@ No live `/api/v1/convergence-settings` route is registered in `src/features/sett
 | POST | `/api/v1/studio/:category/invalidate-cache` | invalidate session/studio caches | none | none | `{ ok: true }` |
 | GET | `/api/v1/studio/:category/artifacts` | list generated artifact files | none | none | artifact rows |
 
-## Authority, Queue, Billing, Learning, And Source Strategy
+## Authority, Queue, Billing, Learning, Source Strategy, And Spec Seeds
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
@@ -165,6 +183,8 @@ No live `/api/v1/convergence-settings` route is registered in `src/features/sett
 | POST | `/api/v1/source-strategy?category=:category` | create source strategy entry | none | source entry body | `{ ok, sourceId }` |
 | PUT | `/api/v1/source-strategy/:sourceId?category=:category` | update source strategy entry | none | patch body | updated entry |
 | DELETE | `/api/v1/source-strategy/:sourceId?category=:category` | delete source strategy entry | none | none | `{ ok: true }` |
+| GET | `/api/v1/spec-seeds?category=:category` | read per-category deterministic query templates | none | none | `{ category, seeds }` |
+| PUT | `/api/v1/spec-seeds?category=:category` | replace per-category deterministic query templates | none | `{ seeds: string[] }` or `string[]` | `{ category, seeds }` or `400 { error: 'invalid_spec_seeds', reason }` |
 
 ## Review Endpoints
 
@@ -211,6 +231,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
+| source | `src/api/guiServerRuntime.js` | mounted route families include `specSeeds` in the live runtime |
 | source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
 | source | `src/features/settings/api/configRoutes.js` | settings/config endpoints |
@@ -221,6 +242,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, checklist, and review-metrics payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
 | source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory and maintenance endpoints |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |
 | source | `src/features/catalog/api/catalogRoutes.js` | catalog/product/event endpoints |
 | source | `src/features/catalog/api/brandRoutes.js` | brand endpoints |
@@ -228,6 +250,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/category-authority/api/dataAuthorityRoutes.js` | authority snapshot endpoint |
 | source | `src/features/indexing/api/queueBillingLearningRoutes.js` | queue/billing/learning endpoints |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy endpoints |
+| source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed endpoints |
 | source | `src/features/review/api/reviewRoutes.js` | review read endpoints and review batch endpoints |
 | source | `src/features/review/api/itemMutationRoutes.js` | scalar review mutation endpoints |
 | source | `src/features/review/api/componentMutationRoutes.js` | component mutation endpoints |

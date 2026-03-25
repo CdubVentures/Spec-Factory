@@ -1,6 +1,9 @@
 import { createStorageManagerHandler } from './storageManagerRoutes.js';
 import { refreshArchivedRunDirIndex } from './builders/archivedRunLocationHelpers.js';
+import { materializeArchivedRunLocation } from './builders/archivedRunLocationHelpers.js';
 import { recalculateAllStorageMetrics } from '../../../api/services/storageMetricsService.js';
+import { createStorageSyncService } from '../../../api/services/storageSyncService.js';
+import { relocateRunDataForCompletedRun } from '../../../api/services/runDataRelocationService.js';
 
 export function registerIndexlabRoutes(ctx) {
   const {
@@ -105,6 +108,39 @@ export function registerIndexlabRoutes(ctx) {
     process.stderr.write('[indexlab-routes] Storage manager routes disabled: readJsonBody=' +
       typeof ctx.readJsonBody + ' runDataStorageState=' + typeof ctx.runDataStorageState + '\n');
   }
+
+  // WHY: Sync service needs per-category DBs. getCategoryDbs discovers categories
+  // from the runs list and lazily fetches each DB via getSpecDb.
+  const storageSyncService = (storageGuardOk && typeof ctx.getSpecDb === 'function')
+    ? createStorageSyncService({
+      getCategoryDbs: () => {
+        const dbs = {};
+        // WHY: Use the specDbCache keys as the category list — these are the
+        // categories that have been accessed during this session.
+        for (const cat of ['mouse', 'keyboard', 'monitor', 'gaming_mice']) {
+          try {
+            const db = ctx.getSpecDb(cat);
+            if (db) dbs[cat] = db;
+          } catch { /* category not initialized yet */ }
+        }
+        return dbs;
+      },
+      relocateToS3: async ({ runMeta }) => relocateRunDataForCompletedRun({
+        settings: { ...ctx.runDataStorageState, destinationType: 's3' },
+        runMeta,
+        outputRoot: ctx.OUTPUT_ROOT || '',
+        outputPrefix: 'specs/outputs',
+        indexLabRoot: currentIndexLabRoot(),
+      }),
+      materializeFromS3: async ({ runId }) => {
+        const index = await refreshArchivedRunDirIndex(true);
+        const location = index.get(runId);
+        if (!location) return '';
+        return materializeArchivedRunLocation(location, runId);
+      },
+    })
+    : null;
+
   const handleStorageManagerRoutes = storageGuardOk
     ? createStorageManagerHandler({
       jsonRes,
@@ -140,6 +176,7 @@ export function registerIndexlabRoutes(ctx) {
         listIndexLabRuns,
         resolveIndexLabRunDirectory,
       }),
+      storageSyncService,
     })
     : null;
 

@@ -31,13 +31,13 @@ export function createIndexlabRouteContext(options = {}) {
     processStatus,
     // Storage manager deps (optional — only needed for /storage/* routes)
     readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
-    getIndexLabRoot,
+    getIndexLabRoot, getSpecDb,
   } = options;
 
   return {
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
     processStatus, readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
-    getIndexLabRoot,
+    getIndexLabRoot, getSpecDb,
     readIndexLabRunMeta, resolveIndexLabRunDirectory,
     readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
     readIndexLabRunPhase07Retrieval, readIndexLabRunPhase08Extraction,

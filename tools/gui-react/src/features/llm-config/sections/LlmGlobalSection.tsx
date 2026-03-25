@@ -1,6 +1,7 @@
 import { memo, Suspense, lazy, useMemo, useCallback } from 'react';
 import {
   SettingGroupBlock,
+  type NumberBound,
   type RuntimeDraft,
 } from '../../pipeline-settings/index.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
@@ -24,6 +25,8 @@ interface LlmGlobalSectionProps {
   inputCls: string;
   llmModelOptions: readonly string[];
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
+  onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
+  getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
   registry: LlmProviderEntry[];
   onRegistryChange: (registry: LlmProviderEntry[]) => void;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
@@ -34,6 +37,8 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   inputCls,
   llmModelOptions,
   updateDraft,
+  onNumberChange,
+  getNumberBounds,
   registry,
   onRegistryChange,
   apiKeyFilter,
@@ -222,8 +227,55 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           </div>
         )}
 
-        {/* WHY: Limits and Budget removed — tokens/timeout now live per-phase.
-           Cost fields stay in registry for cost-sync on model change but have no UI panel. */}
+      </SettingGroupBlock>
+
+      {/* ── Section 4: Defaults (inherited by all phases via ↩) ── */}
+      <SettingGroupBlock
+        title="Defaults"
+        collapsible
+        storageKey="sf:llm-global:defaults-tokens"
+      >
+        <div className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)', opacity: 0.8 }}>
+          These values are inherited by every phase panel. Override per-phase if needed.
+        </div>
+        <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5">
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max Output Tokens</label>
+            <input
+              className={inputCls}
+              type="number"
+              value={runtimeDraft.llmMaxOutputTokensPlan}
+              onChange={(e) => onNumberChange('llmMaxOutputTokensPlan', e.target.value, getNumberBounds('llmMaxOutputTokensPlan'))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max Context Tokens</label>
+            <input
+              className={inputCls}
+              type="number"
+              value={runtimeDraft.llmMaxTokens}
+              onChange={(e) => onNumberChange('llmMaxTokens', e.target.value, getNumberBounds('llmMaxTokens'))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Timeout (ms)</label>
+            <input
+              className={inputCls}
+              type="number"
+              value={runtimeDraft.llmTimeoutMs}
+              onChange={(e) => onNumberChange('llmTimeoutMs', e.target.value, getNumberBounds('llmTimeoutMs'))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Reasoning Budget</label>
+            <input
+              className={inputCls}
+              type="number"
+              value={runtimeDraft.llmReasoningBudget}
+              onChange={(e) => onNumberChange('llmReasoningBudget', e.target.value, getNumberBounds('llmReasoningBudget'))}
+            />
+          </div>
+        </div>
       </SettingGroupBlock>
 
     </>

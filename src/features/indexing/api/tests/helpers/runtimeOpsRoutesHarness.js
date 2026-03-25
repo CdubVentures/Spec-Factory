@@ -250,7 +250,7 @@ export async function setupFixture() {
 export function createRuntimeOpsHandler({
   indexLabRoot,
   outputRoot,
-  config = { runtimeOpsWorkbenchEnabled: true },
+  config = {},
   ...overrides
 }) {
   return registerRuntimeOpsRoutes({

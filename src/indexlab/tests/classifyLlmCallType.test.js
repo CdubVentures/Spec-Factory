@@ -33,6 +33,11 @@ describe('classifyLlmCallType', () => {
     // verification
     ['verify_extract', 'verification'],
 
+    // extraction
+    ['extract', 'extraction'],
+    ['extract_candidates', 'extraction'],
+    ['extract_fields', 'extraction'],
+
     // escalation planner
     ['escalation_planner', 'escalation_planner'],
     ['escalation_check', 'escalation_planner'],

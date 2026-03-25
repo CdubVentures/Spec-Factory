@@ -28,7 +28,6 @@ export interface LlmPolicyTokens {
   planFallback: number;
   triage: number;
   reasoning: number;
-  reasoningFallback: number;
   maxTokens: number;
 }
 
@@ -74,7 +73,6 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   llmMaxOutputTokensPlanFallback:            { group: 'tokens', field: 'planFallback' },
   llmMaxOutputTokensTriage:                  { group: 'tokens', field: 'triage' },
   llmMaxOutputTokensReasoning:               { group: 'tokens', field: 'reasoning' },
-  llmMaxOutputTokensReasoningFallback:       { group: 'tokens', field: 'reasoningFallback' },
   llmMaxTokens:                              { group: 'tokens', field: 'maxTokens' },
   llmModelPlan:                              { group: 'models', field: 'plan' },
   llmModelReasoning:                         { group: 'models', field: 'reasoning' },
@@ -104,7 +102,6 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmMaxOutputTokensPlanFallback',
   'llmMaxOutputTokensTriage',
   'llmMaxOutputTokensReasoning',
-  'llmMaxOutputTokensReasoningFallback',
   'llmMaxTokens',
   'llmModelPlan',
   'llmModelReasoning',
@@ -163,7 +160,6 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
       planFallback: readNum(source, 'llmMaxOutputTokensPlanFallback'),
       triage: readNum(source, 'llmMaxOutputTokensTriage'),
       reasoning: readNum(source, 'llmMaxOutputTokensReasoning'),
-      reasoningFallback: readNum(source, 'llmMaxOutputTokensReasoningFallback'),
       maxTokens: readNum(source, 'llmMaxTokens'),
     },
     models: {

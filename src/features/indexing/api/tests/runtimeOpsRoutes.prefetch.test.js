@@ -77,7 +77,6 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
       indexLabRoot,
       outputRoot,
       config: {
-        runtimeOpsWorkbenchEnabled: true,
         categoryAuthorityRoot: helperRoot,
       },
       readIndexLabRunEvents: async () => [],
@@ -170,7 +169,6 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
       indexLabRoot,
       outputRoot,
       config: {
-        runtimeOpsWorkbenchEnabled: true,
         categoryAuthorityRoot: helperRoot,
       },
       readIndexLabRunEvents: async () => [],

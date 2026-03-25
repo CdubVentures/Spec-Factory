@@ -1,6 +1,5 @@
 import { toPositiveInteger, hydrateRow, hydrateRows } from '../specDbHelpers.js';
-import { KEY_REVIEW_STATE_BOOLEAN_KEYS } from '../specDbSchema.js';
-import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../../features/review/contracts/componentReviewShapes.js';
+import { KEY_REVIEW_STATE_BOOLEAN_KEYS, COMPONENT_IDENTITY_PROPERTY_KEYS } from '../specDbSchema.js';
 
 const IDENTITY_KEYS_SQL = COMPONENT_IDENTITY_PROPERTY_KEYS.map(k => `'${k}'`).join(', ');
 
@@ -605,6 +604,20 @@ export function createKeyReviewStore({ db, category, stmts }) {
     `).run(selectedCandidateId, selectedValue, confidenceScore, id);
   }
 
+  function getKeyReviewStateForComponentValue(componentValueId) {
+    return db.prepare(
+      "SELECT id FROM key_review_state WHERE category = ? AND target_kind = 'component_key' AND component_value_id = ?"
+    ).get(category, componentValueId) || null;
+  }
+
+  function updateKeyReviewComponentIdentifier(oldIdentifier, newIdentifier) {
+    db.prepare(`
+      UPDATE key_review_state
+      SET component_identifier = ?, updated_at = datetime('now')
+      WHERE category = ? AND target_kind = 'component_key' AND component_identifier = ?
+    `).run(newIdentifier, category, oldIdentifier);
+  }
+
   return {
     backfillKeyReviewSlotIds,
     deleteKeyReviewStateRowsByIds,
@@ -623,5 +636,7 @@ export function createKeyReviewStore({ db, category, stmts }) {
     insertKeyReviewRunSource,
     insertKeyReviewAudit,
     pruneOrphanCandidateReferences,
+    getKeyReviewStateForComponentValue,
+    updateKeyReviewComponentIdentifier,
   };
 }

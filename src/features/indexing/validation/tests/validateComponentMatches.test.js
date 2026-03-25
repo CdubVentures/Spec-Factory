@@ -29,7 +29,7 @@ test('validateComponentMatches returns empty when no items', async () => {
   const result = await validateComponentMatches({
     items: [],
     componentDBs: {},
-    config: { llmApiKey: 'key', llmValidateApiKey: 'key' },
+    config: { llmValidateApiKey: 'key' },
   });
   assert.equal(result.enabled, false);
   assert.deepEqual(result.decisions, []);

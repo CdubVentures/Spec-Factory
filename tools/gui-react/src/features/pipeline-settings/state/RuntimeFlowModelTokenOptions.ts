@@ -43,7 +43,6 @@ interface DeriveRuntimeLlmTokenPresetOptionsParams {
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensReasoning: number;
   llmMaxOutputTokensPlanFallback: number;
-  llmMaxOutputTokensReasoningFallback: number;
   runtimeManifestDefaults: RuntimeDraft;
 }
 
@@ -52,7 +51,6 @@ export function deriveRuntimeLlmTokenPresetOptions({
   llmMaxOutputTokensPlan,
   llmMaxOutputTokensReasoning,
   llmMaxOutputTokensPlanFallback,
-  llmMaxOutputTokensReasoningFallback,
   runtimeManifestDefaults,
 }: DeriveRuntimeLlmTokenPresetOptionsParams): number[] {
   const seeded = [
@@ -60,11 +58,9 @@ export function deriveRuntimeLlmTokenPresetOptions({
     llmMaxOutputTokensPlan,
     llmMaxOutputTokensReasoning,
     llmMaxOutputTokensPlanFallback,
-    llmMaxOutputTokensReasoningFallback,
     runtimeManifestDefaults.llmMaxOutputTokensPlan,
     runtimeManifestDefaults.llmMaxOutputTokensReasoning,
     runtimeManifestDefaults.llmMaxOutputTokensPlanFallback,
-    runtimeManifestDefaults.llmMaxOutputTokensReasoningFallback,
   ];
   const cleaned = seeded
     .map((row) => parseRuntimeLlmTokenCap(row))

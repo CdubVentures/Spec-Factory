@@ -10,7 +10,7 @@
 |---------|------------|-------------|-------|-------|
 | process env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | `src/config.js` | runtime | SSOT for env-backed config keys; the repo no longer has per-group manifest files |
 | resolved config object | `src/config.js` | backend runtime, CLI, process launch plans | runtime | merges manifest defaults, env, runtime defaults, and overrides |
-| settings registry SSOT | `src/shared/settingsRegistry.js` | all settings surfaces, config assembly, GUI manifests | runtime + GUI | 233 live entries across `RUNTIME_SETTINGS_REGISTRY` (121), `BOOTSTRAP_ENV_REGISTRY` (97), `UI_SETTINGS_REGISTRY` (5), `STORAGE_SETTINGS_REGISTRY` (10), and an empty `CONVERGENCE_SETTINGS_REGISTRY` retained only for compatibility |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | all settings surfaces, config assembly, GUI manifests | runtime + GUI | `122` live entries across `RUNTIME_SETTINGS_REGISTRY` (`99`), `BOOTSTRAP_ENV_REGISTRY` (`8`), `UI_SETTINGS_REGISTRY` (`5`), and `STORAGE_SETTINGS_REGISTRY` (`10`); no exported convergence registry exists in the live file |
 | shared runtime defaults | `src/shared/settingsDefaults.js` | settings authority, GUI bootstrap, config normalization | runtime + GUI | derived defaults from the registry |
 | settings accessor | `src/shared/settingsAccessor.js` | config resolution, pipeline stages | runtime | null-safe accessor with NaN fallback + registry clamping |
 | composite LLM policy schema | `src/core/llm/llmPolicySchema.js` | `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.generated.ts` | runtime + GUI | structured view over managed runtime keys; no separate storage document |
@@ -28,25 +28,24 @@
 - It contains a partial set of secrets and integration keys only.
 - The file itself instructs operators to tune many defaults in `src/shared/settingsDefaults.js`.
 - Do not infer missing config keys from `.env.example`; use `src/core/config/manifest/index.js`, `src/shared/settingsRegistry.js`, and `src/config.js`.
-- `npm run env:check` passed on 2026-03-24 with `[env-check] OK (3 referenced keys covered)`.
-- That pass result is narrow coverage, not full manifest proof: `tools/check-env-example-sync.mjs` only scans the fixed `FILES_TO_SCAN` list declared in that script, and two of those declared paths (`src/api/routes/configRoutes.js`, `src/catalog/activeFilteringLoader.js`) do not currently exist.
+- `npm run env:check` currently fails on 2026-03-24 with `Missing keys in config manifest: PORT`.
+- That failure still comes from a narrow checker, not a complete manifest audit: `tools/check-env-example-sync.mjs` only scans the fixed `FILES_TO_SCAN` list declared in that script, and two of those declared paths (`src/api/routes/configRoutes.js`, `src/catalog/activeFilteringLoader.js`) do not currently exist.
 
 ## Manifest Group Inventory
 
-The live manifest is assembled in one place. `src/core/config/manifest/index.js` declares the 10 group IDs below and derives each section from registry entries in `src/shared/settingsRegistry.js`; no per-group manifest files exist in the current repo.
+The live manifest is assembled in one place. `src/core/config/manifest/index.js` defines 10 possible group IDs, but the current exported `CONFIG_MANIFEST` materializes only 7 populated sections. Storage settings live in `STORAGE_SETTINGS_REGISTRY` and `category_authority/_runtime/user-settings.json`, not in the emitted manifest.
 
 | Group | Manifest source | Scope | Notes |
 |------|-----------------|-------|-------|
-| `core` | `src/core/config/manifest/index.js` | server binding and boot env | includes `API_BASE_URL`, `PORT`, and `NODE_ENV` from `BOOTSTRAP_ENV_REGISTRY` |
-| `caching` | `src/core/config/manifest/index.js` | cache backends | reserved cache/env surface; no verified Redis runtime consumer was found |
-| `storage` | `src/core/config/manifest/index.js` | S3 and run-data relocation | includes AWS credentials and destination keys |
-| `security` | `src/core/config/manifest/index.js` | security-related config | includes `JWT_SECRET` and `JWT_EXPIRES_IN`, but no audited auth middleware consumer |
-| `llm` | `src/core/config/manifest/index.js` | provider routing, budgets, Cortex, models | largest env-backed group in the live registry |
-| `discovery` | `src/core/config/manifest/index.js` | search-provider config | includes SearXNG base URLs and search-provider defaults |
+| `core` | `src/core/config/manifest/index.js` | boot/runtime environment | currently emits `PORT` and `SETTINGS_CANONICAL_ONLY_WRITES` from `BOOTSTRAP_ENV_REGISTRY` |
+| `llm` | `src/core/config/manifest/index.js` | provider routing, models, budgets, timeouts, and API keys | combines populated runtime and bootstrap LLM entries |
+| `discovery` | `src/core/config/manifest/index.js` | search-provider config | currently emits `searxngBaseUrl` and `searxngDefaultBaseUrl` |
 | `runtime` | `src/core/config/manifest/index.js` | crawl/fetch/screenshot/runtime ops knobs | operator-tunable runtime set used by the crawl-first pipeline |
-| `observability` | `src/core/config/manifest/index.js` | JSON-write flags and daemon/import loop behavior | runtime housekeeping and trace knobs |
-| `paths` | `src/core/config/manifest/index.js` | local roots and authority/frontier paths | includes `CATEGORY_AUTHORITY_ROOT`, `LOCAL_INPUT_ROOT`, and `LOCAL_OUTPUT_ROOT` |
-| `misc` | `src/core/config/manifest/index.js` | legacy-compatible and uncategorized knobs | includes several search/planner and browser flags not yet split into narrower groups |
+| `observability` | `src/core/config/manifest/index.js` | runtime event logging | currently emits `eventsJsonWrite` |
+| `paths` | `src/core/config/manifest/index.js` | local roots and authority/frontier paths | currently emits `categoryAuthorityRoot`, `localInputRoot`, `localOutputRoot`, and `specDbDir` |
+| `misc` | `src/core/config/manifest/index.js` | search/planner/browser flags | largest emitted section in the current manifest |
+
+Declared but currently empty manifest group IDs: `caching`, `storage`, and `security`.
 
 ## User-Editable Settings Surfaces
 
@@ -59,15 +58,15 @@ The live manifest is assembled in one place. `src/core/config/manifest/index.js`
 | UI settings | `src/features/settings-authority/settingsValueTypes.js` | `/api/v1/ui-settings` | client bootstrap/autosave settings | UI-only persistence flags |
 | source strategy | `src/features/indexing/api/sourceStrategyRoutes.js` | `/api/v1/source-strategy` | `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts` | per-category discovery/source-policy records |
 
-The persisted `convergence` section still exists in `category_authority/_runtime/user-settings.json`, but the live repo does not mount a `/api/v1/convergence-settings` HTTP surface.
+The persisted `convergence` section still exists in `category_authority/_runtime/user-settings.json`, but the live repo does not mount a `/api/v1/convergence-settings` HTTP surface and does not export a dedicated convergence registry.
 
 ## High-Signal Settings Keys
 
 | Surface | Examples | Primary consumers |
 |---------|----------|-------------------|
-| runtime settings | `searchProvider`, `searxngBaseUrl`, `llmModelPlan`, `llmProvider`, `outputMode`, `specDbDir`, `categoryAuthorityRoot`, `s3Bucket` | `src/config.js`, process launch plans, GUI settings hooks |
+| runtime settings | `searchEngines`, `searxngBaseUrl`, `llmModelPlan`, `llmProvider`, `pipelineSchemaEnforcementMode`, `specDbDir`, `categoryAuthorityRoot` | `src/config.js`, process launch plans, GUI settings hooks |
 | composite LLM policy keys | `llmProviderRegistryJson`, `llmPhaseOverridesJson`, `llmTimeoutMs`, `llmMonthlyBudgetUsd`, `llmPerProductBudgetUsd`, `llmMaxOutputTokensPlan`, `llmPlanFallbackModel` | `src/core/llm/llmPolicySchema.js`, `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/*` |
-| storage settings | `awsRegion`, run-data destination/bucket/prefix fields | `src/api/services/runDataRelocationService.js`, storage settings hooks |
+| storage settings | `destinationType`, `localDirectory`, `awsRegion`, `s3Bucket`, `s3Prefix` | `src/api/services/runDataRelocationService.js`, storage settings hooks |
 | UI settings | `studioAutoSaveEnabled`, `runtimeAutoSaveEnabled`, `storageAutoSaveEnabled`, `llmSettingsAutoSaveEnabled` | GUI autosave and persisted UI behavior |
 
 ## Validated Against
@@ -77,7 +76,7 @@ The persisted `convergence` section still exists in `category_authority/_runtime
 | source | `src/core/config/manifest.js` | live barrel that re-exports the manifest assembly |
 | source | `src/core/config/manifest/index.js` | manifest assembly and default export surface |
 | source | `src/config.js` | config merge order and env consumption |
-| source | `src/shared/settingsRegistry.js` | SSOT registry counts, group ids, JWT keys, and live env-backed settings inventory |
+| source | `src/shared/settingsRegistry.js` | SSOT registry counts, group ids, and live env-backed/settings-backed inventory |
 | source | `src/core/config/settingsKeyMap.js` | route-get map derivation and dual-key pair constants |
 | source | `src/shared/settingsDefaults.js` | derived defaults from the registry |
 | source | `src/features/settings/api/configRoutes.js` | live settings route surfaces |
@@ -86,7 +85,7 @@ The persisted `convergence` section still exists in `category_authority/_runtime
 | source | `src/features/settings-authority/settingsContract.js` | settings authority key exports and schema ownership |
 | config | `.env.example` | partial secrets-only env template |
 | source | `tools/check-env-example-sync.mjs` | fixed-scope env reference checker behavior |
-| command | `npm run env:check` | current env-check output is `OK (3 referenced keys covered)` |
+| command | `npm run env:check` | current env-check output fails with `Missing keys in config manifest: PORT` |
 
 ## Related Documents
 

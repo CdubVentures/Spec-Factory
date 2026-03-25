@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { wsManager } from '../../api/ws.ts';
-import { Spinner } from '../../components/common/Spinner.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { StorageManagerPanel } from '../../features/storage-manager/index.ts';
 import { resolveStorageSettingsStatusText } from '../../shared/ui/feedback/settingsStatus.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';

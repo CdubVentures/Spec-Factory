@@ -28,7 +28,7 @@ export const PROVIDER_META = Object.freeze({
   }),
   chatmock: Object.freeze({
     baseUrl: '',
-    apiKeyConfigKey: 'llmApiKey',
+    apiKeyConfigKey: 'chatmockApiKey',
     modelPrefixes: ['chatmock'],
   }),
 });
@@ -70,10 +70,8 @@ export function defaultBaseUrlForProvider(provider) {
 
 /**
  * Resolve API key from config using the provider's registered config key.
- * Falls back to legacy llmApiKey if present.
  */
 export function bootstrapApiKeyForProvider(config = {}, provider = '') {
-  const legacyFallback = String(config.llmApiKey || '').trim();
   const configKey = PROVIDER_META[provider]?.apiKeyConfigKey || 'openaiApiKey';
-  return String(configValue(config, configKey) || '').trim() || legacyFallback;
+  return String(configValue(config, configKey) || '').trim();
 }

@@ -60,7 +60,7 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
       provider: 'deepseek',
       model: 'deepseek-reasoner',
       config: {
-        llmApiKey: 'ds-test',
+        deepseekApiKey: 'ds-test',
         llmProvider: 'deepseek',
         llmBaseUrl: 'https://api.deepseek.com',
         llmReasoningMode: true,

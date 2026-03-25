@@ -333,13 +333,7 @@ export function createReviewCandidateRuntime({
     ) || [];
     const reviewRows = specDb.getReviewsForContext('component', String(componentValueId)) || [];
     const reviewLookup = buildCandidateReviewLookup(reviewRows);
-    const ambiguousMakerRows = specDb.db.prepare(`
-      SELECT COUNT(DISTINCT LOWER(TRIM(COALESCE(maker, '')))) AS maker_count
-      FROM component_identity
-      WHERE category = ?
-        AND component_type = ?
-        AND LOWER(TRIM(canonical_name)) = LOWER(TRIM(?))
-    `).get(specDb.category, componentType, componentName);
+    const ambiguousMakerRows = specDb.getDistinctMakersForComponentName(componentType, componentName);
     const allowMakerlessForNamedLane = Boolean(String(componentMaker || '').trim())
       && Number(ambiguousMakerRows?.maker_count || 0) <= 1;
     const syntheticRows = await collectComponentReviewPropertyCandidateRows({
@@ -386,12 +380,8 @@ export function createReviewCandidateRuntime({
     const sourceIds = new Set();
     const nowIso = new Date().toISOString();
     const categoryToken = String(specDb.category || category || '').trim();
-    const selectItemFieldSlotId = specDb.db.prepare(
-      'SELECT id FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
-    );
-    const selectEvidenceRef = specDb.db.prepare(
-      'SELECT 1 FROM source_evidence_refs WHERE assertion_id = ? LIMIT 1'
-    );
+    const lookupItemFieldSlotId = (pid, fk) => specDb.getItemFieldStateIdByProductAndField(pid, fk);
+    const lookupEvidenceRef = (assertionId) => specDb.hasSourceEvidenceRef(assertionId);
     for (const item of items) {
       const status = String(item?.status || '').trim().toLowerCase();
       if (status === 'dismissed') continue;
@@ -424,7 +414,7 @@ export function createReviewCandidateRuntime({
         if (!text || !isMeaningfulValue(text)) return;
         const resolvedFieldKey = String(candidateFieldKey || '').trim();
         if (!resolvedFieldKey) return;
-        const itemFieldStateId = selectItemFieldSlotId.get(categoryToken, productId, resolvedFieldKey)?.id ?? null;
+        const itemFieldStateId = lookupItemFieldSlotId(productId, resolvedFieldKey);
         const normalizedText = normalizeLower(text);
         specDb.insertCandidate({
           candidate_id: candidateId,
@@ -475,7 +465,7 @@ export function createReviewCandidateRuntime({
           extractionMethod: method || item?.match_type || 'component_review',
         });
         assertionsUpserted += 1;
-        if (!selectEvidenceRef.get(assertionId)) {
+        if (!lookupEvidenceRef(assertionId)) {
           const quoteText = String(quote || snippetText || `Pipeline component review candidate for ${fieldKey}`).trim();
           specDb.insertSourceEvidenceRef({
             assertionId,
@@ -574,30 +564,12 @@ export function createReviewCandidateRuntime({
     if (runtimeSpecDb) {
       try {
         if (changedReviewIds.length > 0) {
-          const stmt = runtimeSpecDb.db.prepare(
-            `UPDATE component_review_queue
-             SET matched_component = ?, updated_at = datetime('now')
-             WHERE category = ? AND review_id = ?`
-          );
           for (const reviewId of changedReviewIds) {
             if (!reviewId) continue;
-            stmt.run(newValue, category, reviewId);
+            runtimeSpecDb.updateComponentReviewQueueMatchedComponent(category, reviewId, newValue);
           }
         } else {
-          runtimeSpecDb.db.prepare(
-            `UPDATE component_review_queue
-             SET matched_component = ?, updated_at = datetime('now')
-             WHERE category = ?
-               AND component_type = ?
-               AND status = 'pending_ai'
-               AND (
-                 LOWER(TRIM(COALESCE(matched_component, ''))) = LOWER(TRIM(?))
-                 OR (
-                   (matched_component IS NULL OR TRIM(matched_component) = '')
-                   AND LOWER(TRIM(COALESCE(raw_query, ''))) = LOWER(TRIM(?))
-                 )
-               )`
-          ).run(newValue, category, componentType, oldName, oldName);
+          runtimeSpecDb.updateComponentReviewQueueMatchedComponentByName(category, componentType, oldName, newValue);
         }
       } catch {
         // best-effort sync

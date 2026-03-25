@@ -2,6 +2,7 @@
 // Simplified: the LLM just picks which URLs are about the target product.
 
 import { serpSelectorOutputSchema } from './serpSelector.js';
+import { createPhaseCallLlm } from '../shared/createPhaseCallLlm.js';
 
 const SERP_SELECT_URLS_SYSTEM_PROMPT = `You are a URL selector for product research.
 
@@ -27,17 +28,19 @@ Return strict JSON only: { "keep_ids": ["c_0", "c_3", ...] }
 Respect the max_keep limit.
 Do not include IDs that were not in the input.`;
 
-export function createSerpSelectorCallLlm({ callRoutedLlmFn, config, logger }) {
-  return async ({ selectorInput, llmContext = {} }) => {
+const SERP_SELECTOR_SPEC = {
+  phase: 'serpSelector',
+  reason: 'serp_url_selector',
+  role: 'triage',
+  system: SERP_SELECT_URLS_SYSTEM_PROMPT,
+  jsonSchema: serpSelectorOutputSchema,
+};
+
+export function createSerpSelectorCallLlm(deps) {
+  return createPhaseCallLlm(deps, SERP_SELECTOR_SPEC, ({ selectorInput, llmContext = {} }, config) => {
     const payloadJson = JSON.stringify(selectorInput);
-    return callRoutedLlmFn({
-      config,
-      reason: 'serp_url_selector',
-      role: 'triage',
-      phase: 'serpSelector',
-      system: SERP_SELECT_URLS_SYSTEM_PROMPT,
+    return {
       user: payloadJson,
-      jsonSchema: serpSelectorOutputSchema(),
       usageContext: {
         category: llmContext.category || '',
         productId: llmContext.productId || '',
@@ -49,7 +52,6 @@ export function createSerpSelectorCallLlm({ callRoutedLlmFn, config, logger }) {
       },
       costRates: llmContext.costRates || config,
       onUsage: llmContext.recordUsage,
-      logger,
-    });
-  };
+    };
+  });
 }

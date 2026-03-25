@@ -61,6 +61,7 @@ export function createProcessRuntime({
   indexLabRoot,
   outputRoot,
   outputPrefix = 'specs/outputs',
+  getSpecDb,
   logger = console,
   processRef = process,
   fetchImpl = globalThis.fetch?.bind(globalThis),
@@ -204,6 +205,24 @@ export function createProcessRuntime({
               outputRoot: resolvedOutputRoot,
               outputPrefix,
               broadcastWs,
+              onRelocationComplete: ({ relocation, category, productId, runId }) => {
+                if (typeof getSpecDb !== 'function') return;
+                try {
+                  const db = getSpecDb(category);
+                  if (!db || typeof db.updateRunStorageLocation !== 'function') return;
+                  const destType = String(relocation.destination_type || '').trim().toLowerCase();
+                  const storageState = (destType === 's3') ? 's3' : 'local';
+                  db.updateRunStorageLocation({
+                    productId,
+                    runId,
+                    storageState,
+                    localPath: relocation.destination_path || '',
+                    s3Key: relocation.s3_prefix || '',
+                    sizeBytes: relocation.staged_run_output ? 1 : 0,
+                    relocatedAt: new Date().toISOString(),
+                  });
+                } catch { /* non-fatal */ }
+              },
             });
           } finally {
             dispatch({ type: 'RELOCATION_COMPLETED' });

@@ -3,21 +3,7 @@
 
 import { toIso } from './runtimeBridgeCoercers.js';
 import { emit, writeRunMeta } from './runtimeBridgeArtifacts.js';
-
-// WHY: Forward-only guard prevents late events (e.g. needset_computed during
-// finalization) from regressing the cursor and making earlier tabs bounce.
-const PHASE_ORDER = [
-  'phase_00_bootstrap',
-  'phase_01_needset',
-  'phase_02_brand_resolver', 'phase_02_search',
-  'phase_03_search_profile',
-  'phase_04_search_planner',
-  'phase_05_query_journey', 'phase_05_fetch',
-  'phase_06_search_results', 'phase_06_parse', 'phase_06_index',
-  'phase_07_serp_selector', 'phase_07_prime_sources',
-  'phase_08_domain_classifier',
-  'phase_09_crawl',
-];
+import { PHASE_ORDER } from '../features/indexing/pipeline/orchestration/pipelinePhaseRegistry.js';
 
 export function setPhaseCursor(state, next = '') {
   const token = String(next || '').trim();

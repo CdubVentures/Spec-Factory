@@ -83,11 +83,7 @@ export function runComponentIdentityUpdateTx({
   const oldComponentIdentifier = buildComponentIdentifier(componentType, currentName, currentMaker);
   const newComponentIdentifier = buildComponentIdentifier(componentType, nextName, nextMaker);
   const tx = runtimeSpecDb.db.transaction(() => {
-    const collisionTarget = runtimeSpecDb.db.prepare(`
-      SELECT id FROM component_identity
-      WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ? AND id != ?
-      LIMIT 1
-    `).get(runtimeSpecDb.category, componentType, nextName, nextMaker, componentIdentityId);
+    const collisionTarget = runtimeSpecDb.getComponentIdentityCollision(componentType, nextName, nextMaker, componentIdentityId);
 
     if (collisionTarget) {
       runtimeSpecDb.mergeComponentIdentities({
@@ -97,27 +93,11 @@ export function runComponentIdentityUpdateTx({
       return { merged: true, survivingId: collisionTarget.id };
     }
 
-    runtimeSpecDb.db.prepare(`
-      UPDATE component_identity
-      SET canonical_name = ?, maker = ?, source = ?, updated_at = datetime('now')
-      WHERE category = ? AND id = ?
-    `).run(nextName, nextMaker, selectedSource, runtimeSpecDb.category, componentIdentityId);
-    runtimeSpecDb.db.prepare(`
-      UPDATE component_values
-      SET component_name = ?, component_maker = ?, updated_at = datetime('now')
-      WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
-    `).run(nextName, nextMaker, runtimeSpecDb.category, componentType, currentName, currentMaker);
-    runtimeSpecDb.db.prepare(`
-      UPDATE item_component_links
-      SET component_name = ?, component_maker = ?, updated_at = datetime('now')
-      WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
-    `).run(nextName, nextMaker, runtimeSpecDb.category, componentType, currentName, currentMaker);
+    runtimeSpecDb.updateComponentIdentityFields(componentIdentityId, { name: nextName, maker: nextMaker, source: selectedSource });
+    runtimeSpecDb.updateComponentValuesByIdentity(componentType, currentName, currentMaker, nextName, nextMaker);
+    runtimeSpecDb.updateItemComponentLinksByIdentity(componentType, currentName, currentMaker, nextName, nextMaker);
     if (oldComponentIdentifier !== newComponentIdentifier) {
-      runtimeSpecDb.db.prepare(`
-        UPDATE key_review_state
-        SET component_identifier = ?, updated_at = datetime('now')
-        WHERE category = ? AND target_kind = 'component_key' AND component_identifier = ?
-      `).run(newComponentIdentifier, runtimeSpecDb.category, oldComponentIdentifier);
+      runtimeSpecDb.updateKeyReviewComponentIdentifier(oldComponentIdentifier, newComponentIdentifier);
     }
     return { merged: false };
   });
@@ -254,13 +234,11 @@ export function resolveComponentIdentityMutationPlan({
 // --- Extracted SQL wrappers (previously inline in route handler) ---
 
 export function clearComponentValueAcceptedCandidate({ runtimeSpecDb, componentValueId }) {
-  runtimeSpecDb.db.prepare(
-    'UPDATE component_values SET accepted_candidate_id = NULL, updated_at = datetime(\'now\') WHERE category = ? AND id = ?'
-  ).run(runtimeSpecDb.category, componentValueId);
+  runtimeSpecDb.clearComponentValueAcceptedCandidate(componentValueId);
 }
 
 export function replaceComponentUserAliases({ runtimeSpecDb, componentIdentityId, aliases, componentType, name, componentMaker }) {
-  runtimeSpecDb.db.prepare('DELETE FROM component_aliases WHERE component_id = ? AND source = ?').run(componentIdentityId, 'user');
+  runtimeSpecDb.deleteComponentAliasesBySource(componentIdentityId, 'user');
   for (const alias of aliases) {
     runtimeSpecDb.insertAlias(componentIdentityId, alias, 'user');
   }
@@ -268,25 +246,13 @@ export function replaceComponentUserAliases({ runtimeSpecDb, componentIdentityId
 }
 
 export function updateComponentLinks({ runtimeSpecDb, componentIdentityId, links }) {
-  runtimeSpecDb.db.prepare(`
-    UPDATE component_identity
-    SET links = ?, source = 'user', updated_at = datetime('now')
-    WHERE category = ? AND id = ?
-  `).run(JSON.stringify(links), runtimeSpecDb.category, componentIdentityId);
+  runtimeSpecDb.updateComponentLinks(componentIdentityId, links);
 }
 
 export function updateComponentReviewStatus({ runtimeSpecDb, componentIdentityId, reviewStatus }) {
-  runtimeSpecDb.db.prepare(`
-    UPDATE component_identity
-    SET review_status = ?, updated_at = datetime('now')
-    WHERE category = ? AND id = ?
-  `).run(reviewStatus, runtimeSpecDb.category, componentIdentityId);
+  runtimeSpecDb.updateComponentReviewStatusById(componentIdentityId, reviewStatus);
 }
 
 export function updateComponentValueNeedsReview({ runtimeSpecDb, componentSlotId, needsReview }) {
-  runtimeSpecDb.db.prepare(`
-    UPDATE component_values
-    SET needs_review = ?, updated_at = datetime('now')
-    WHERE category = ? AND id = ?
-  `).run(needsReview ? 1 : 0, runtimeSpecDb.category, componentSlotId);
+  runtimeSpecDb.updateComponentValueNeedsReview(componentSlotId, needsReview);
 }

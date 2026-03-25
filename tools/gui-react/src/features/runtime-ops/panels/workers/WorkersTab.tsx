@@ -5,7 +5,7 @@ import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
 import { TabStrip } from '../../../../shared/ui/navigation/TabStrip.tsx';
 import { useRuntimeSettingsReader } from '../../../pipeline-settings/index.ts';
-import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings } from '../../types.ts';
+import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, FetchPhasesResponse } from '../../types.ts';
 import { getRefetchInterval } from '../../helpers.ts';
 import { WorkerSubTabs } from './WorkerSubTabs.tsx';
 import { WorkerLivePanel } from './WorkerLivePanel.tsx';
@@ -85,6 +85,15 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     queryKey: ['runtime-ops', runId, 'prefetch'],
     queryFn: () => api.get<PreFetchPhasesResponse>(`/indexlab/run/${runId}/runtime/prefetch`),
     enabled: Boolean(runId) && (isPrefetchGroup && stageTab !== null || isRunning),
+    refetchInterval: getRefetchInterval(isRunning, false, stageTab !== null ? 3000 : 5000, 15000),
+  });
+
+  // ── Fetch-specific data (only fetched when fetch group is active or running) ──
+  const isFetchGroup = activeGroup === 'fetch';
+  const { data: fetchData } = useQuery({
+    queryKey: ['runtime-ops', runId, 'fetch'],
+    queryFn: () => api.get<FetchPhasesResponse>(`/indexlab/run/${runId}/runtime/fetch`),
+    enabled: Boolean(runId) && (isFetchGroup && stageTab !== null || isRunning),
     refetchInterval: getRefetchInterval(isRunning, false, stageTab !== null ? 3000 : 5000, 15000),
   });
 
@@ -223,7 +232,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       <div className="flex flex-1 min-h-0">
         <div className="flex flex-col flex-1 min-h-0">
           {isStageActive ? (
-            renderStagePanel(activeGroupDef, stageTab, category, isPrefetchGroup ? prefetchData : undefined, isPrefetchGroup ? liveSettings : undefined, runId)
+            renderStagePanel(activeGroupDef, stageTab, category, isPrefetchGroup ? prefetchData : isFetchGroup ? fetchData : undefined, isPrefetchGroup ? liveSettings : undefined, runId)
           ) : activeWorker ? (
             renderWorkerPanel({
               worker: activeWorker,

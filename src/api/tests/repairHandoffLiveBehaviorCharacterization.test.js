@@ -1,14 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import {
-  getFreePort,
-  waitForHttpReady,
-} from './helpers/guiServerHttpHarness.js';
-import { skipIfSpawnEperm } from '../../shared/tests/helpers/spawnEperm.js';
+import { startInProcessGuiServer } from './helpers/inProcessGuiServerHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -108,42 +103,21 @@ test('characterization: live-style 404 and blocked failures surface as domain_ba
     }
   ]);
 
-  const port = await getFreePort();
-  let proc = null;
   t.after(async () => {
-    if (proc && !proc.killed) proc.kill('SIGTERM');
     await fs.rm(tempRoot, { recursive: true, force: true });
   });
-  try {
-    proc = spawn(
-      process.execPath,
-      ['src/api/guiServer.js', '--port', String(port), '--local', '--indexlab-root', indexlabRoot],
-      {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          LOCAL_MODE: 'true',
-          HELPER_FILES_ROOT: helperRoot,
-          CATEGORY_AUTHORITY_ROOT: helperRoot,
-        },
-        stdio: ['ignore', 'ignore', 'pipe']
-      }
-    );
-  } catch (error) {
-    if (skipIfSpawnEperm(t, error)) return;
-    throw error;
-  }
-
-  let stderr = '';
-  proc.stderr.on('data', (chunk) => {
-    stderr += chunk.toString();
+  const server = await startInProcessGuiServer(t, {
+    env: {
+      LOCAL_MODE: 'true',
+      HELPER_FILES_ROOT: helperRoot,
+      CATEGORY_AUTHORITY_ROOT: helperRoot,
+    },
+    argv: ['--local', '--indexlab-root', indexlabRoot],
   });
 
-  await waitForHttpReady(`http://127.0.0.1:${port}/api/v1/health`);
-
-  const target = `http://127.0.0.1:${port}/api/v1/indexlab/run/${encodeURIComponent(runId)}/automation-queue`;
+  const target = `${server.baseUrl}/api/v1/indexlab/run/${encodeURIComponent(runId)}/automation-queue`;
   const response = await fetch(target);
-  assert.equal(response.status, 200, `unexpected status ${response.status} stderr=${stderr}`);
+  assert.equal(response.status, 200, `unexpected status ${response.status}`);
   const payload = await response.json();
 
   assert.equal(payload.summary.repair_search, 0);

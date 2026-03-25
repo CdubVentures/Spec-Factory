@@ -3,13 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { spawn } from 'node:child_process';
 import { SETTINGS_DEFAULTS } from '../settingsDefaults.js';
-import {
-  getFreePort,
-  waitForHttpReady,
-} from '../../api/tests/helpers/guiServerHttpHarness.js';
-import { skipIfSpawnEperm } from './helpers/spawnEperm.js';
+import { startInProcessGuiServer } from '../../api/tests/helpers/inProcessGuiServerHarness.js';
 
 async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) {
   const started = Date.now();
@@ -34,50 +29,39 @@ async function readJsonFileUntil(filePathOrPaths, predicate, timeoutMs = 6_000) 
 }
 
 let _port;
-let _proc;
 let _baseUrl;
 let _helperRoot;
 let _outputRoot;
+let _inputRoot;
 
 test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   _helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-helper-'));
   _outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-output-'));
+  _inputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-input-'));
   await fs.mkdir(path.join(_helperRoot, '_runtime'), { recursive: true });
-  _port = await getFreePort();
-  t.after(() => { if (_proc && !_proc.killed) _proc.kill('SIGTERM'); });
   t.after(async () => {
     await fs.rm(_helperRoot, { recursive: true, force: true }).catch(() => {});
     await fs.rm(_outputRoot, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(_inputRoot, { recursive: true, force: true }).catch(() => {});
   });
-  try {
-    _proc = spawn(
-      process.execPath,
-      ['src/api/guiServer.js', '--port', String(_port), '--local'],
-      {
-        cwd: process.cwd(),
-        stdio: ['ignore', 'ignore', 'pipe'],
-        env: {
-          ...process.env,
-          HELPER_FILES_ROOT: _helperRoot,
-          LOCAL_OUTPUT_ROOT: _outputRoot,
-          OUTPUT_MODE: 'local',
-          LOCAL_MODE: 'true',
-        },
-      }
-    );
-  } catch (error) {
-    if (skipIfSpawnEperm(t, error)) return;
-    throw error;
-  }
-  let stderr = '';
-  _proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-
-  _baseUrl = `http://127.0.0.1:${_port}/api/v1`;
-  await waitForHttpReady(`${_baseUrl}/health`);
+  const server = await startInProcessGuiServer(t, {
+    env: {
+      HELPER_FILES_ROOT: _helperRoot,
+      CATEGORY_AUTHORITY_ROOT: _helperRoot,
+      LOCAL_INPUT_ROOT: _inputRoot,
+      LOCAL_OUTPUT_ROOT: _outputRoot,
+      OUTPUT_MODE: 'local',
+      LOCAL_MODE: 'true',
+      SETTINGS_CANONICAL_ONLY_WRITES: 'true',
+    },
+    argv: ['--local'],
+  });
+  _port = server.port;
+  _baseUrl = `${server.baseUrl}/api/v1`;
 
   await t.test('GET /runtime-settings returns all expected keys with correct types', async () => {
     const res = await fetch(`${_baseUrl}/runtime-settings`);
-    assert.equal(res.status, 200, `unexpected status ${res.status} stderr=${stderr}`);
+    assert.equal(res.status, 200, `unexpected status ${res.status}`);
     const body = await res.json();
 
     const STRING_KEYS = [
@@ -133,7 +117,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
   await t.test('GET /runtime-settings exposes canonical sampled defaults from settingsDefaults on a clean authority root', async () => {
     const res = await fetch(`${_baseUrl}/runtime-settings`);
-    assert.equal(res.status, 200, `unexpected status ${res.status} stderr=${stderr}`);
+    assert.equal(res.status, 200, `unexpected status ${res.status}`);
     const body = await res.json();
 
     const expected = {
@@ -253,6 +237,45 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       fs.access(path.join(_helperRoot, '_runtime', 'settings.json')).then(() => true).catch(() => false),
     ]).then((results) => results.some(Boolean));
     assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
+  });
+
+  await t.test('canonical-only mode persists storage settings into user-settings without legacy snapshots', async () => {
+    const storageDirectory = path.join(os.homedir(), 'Desktop', 'SpecFactoryRuns-test-runtime-settings-api');
+    const storageRes = await fetch(`${_baseUrl}/storage-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled: true,
+        destinationType: 'local',
+        localDirectory: storageDirectory,
+        awsRegion: 'us-east-2',
+        s3Bucket: '',
+        s3Prefix: 'spec-factory-runs',
+        s3AccessKeyId: '',
+        s3SecretAccessKey: '',
+        s3SessionToken: '',
+      }),
+    });
+    assert.equal(storageRes.status, 200);
+
+    const userSettings = await readJsonFileUntil(
+      path.join(_helperRoot, '_runtime', 'user-settings.json'),
+      (json) => (
+        json
+        && json.storage
+        && json.storage.destinationType === 'local'
+        && json.storage.localDirectory === storageDirectory
+      ),
+      8_000,
+    );
+
+    assert.equal(userSettings.storage.destinationType, 'local');
+    assert.equal(userSettings.storage.localDirectory, storageDirectory);
+
+    const legacyStorageExists = await fs.access(path.join(_helperRoot, '_runtime', 'storage-settings.json'))
+      .then(() => true)
+      .catch(() => false);
+    assert.equal(legacyStorageExists, false, 'legacy storage-settings.json should not be written');
   });
 
 });

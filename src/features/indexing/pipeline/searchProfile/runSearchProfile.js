@@ -4,7 +4,7 @@
 import {
   buildSearchProfile,
 } from './queryBuilder.js';
-import { configInt } from '../../../../shared/settingsAccessor.js';
+import { configInt, configValue } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../shared/discoveryIdentity.js';
 
 /**
@@ -31,6 +31,8 @@ export function runSearchProfile({
   }
 
   const profileMaxQueries = configInt(config, 'searchProfileQueryCap');
+  const tierHierarchyOrder = String(configValue(config, 'tierHierarchyOrder') ?? '').trim();
+  const keySearchEnrichmentOrder = String(configValue(config, 'keySearchEnrichmentOrder') ?? '').trim();
   const searchProfileBase = buildSearchProfile({
     job,
     categoryConfig,
@@ -45,6 +47,8 @@ export function runSearchProfile({
     fieldYieldByDomain: learning?.fieldYield?.by_domain || null,
     seedStatus,
     focusGroups,
+    tierHierarchyOrder,
+    keySearchEnrichmentOrder,
   });
 
   // WHY: Emit search_profile_generated HERE (Search Profile phase) so the runtime bridge

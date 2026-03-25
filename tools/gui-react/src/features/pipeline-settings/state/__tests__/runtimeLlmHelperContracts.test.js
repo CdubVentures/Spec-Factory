@@ -254,7 +254,7 @@ test('syncCostsFromRegistry returns null when model not found', async () => {
   assert.equal(syncCostsFromRegistry(registry, 'missing-model'), null);
 });
 
-test('runtime hydration bindings accept alias keys and skip local resets when the snapshot is dirty', async () => {
+test('runtime hydration bindings accept active alias keys, ignore retired reasoning fallback tokens, and skip local resets when the snapshot is dirty', async () => {
   const { createRuntimeHydrationBindings, hydrateRuntimeSettingsFromBindings } = await loadBundledModule(
     'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
     { prefix: 'runtime-llm-hydration-bindings-' },
@@ -296,5 +296,9 @@ test('runtime hydration bindings accept alias keys and skip local resets when th
   assert.equal(state.setLlmPlanFallbackModel, 'alias-plan-fallback');
   assert.equal(state.setLlmMaxOutputTokensPlan, '1536');
   assert.equal(state.setLlmMaxOutputTokensPlanFallback, '2048');
-  assert.equal(state.setLlmMaxOutputTokensReasoningFallback, '2304');
+  assert.equal(
+    state.setLlmMaxOutputTokensReasoningFallback,
+    undefined,
+    'retired reasoning fallback token key should be ignored during hydration',
+  );
 });

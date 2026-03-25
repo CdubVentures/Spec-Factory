@@ -409,7 +409,7 @@ async function ensureGuiBuilt() {
   }
 }
 
-export async function waitForCondition(predicate, timeoutMs = 15_000, intervalMs = 120, label = 'condition') {
+export async function waitForCondition(predicate, timeoutMs = 15_000, intervalMs = 50, label = 'condition') {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const ok = await predicate();
@@ -483,12 +483,12 @@ export async function createReviewLaneGuiHarness(t) {
 
   async function ensureCategorySelected() {
     const categorySelect = page.locator('aside select').first();
-    await waitForCondition(async () => (await categorySelect.locator(`option[value="${CATEGORY}"]`).count()) > 0, 20_000, 150, 'category_option_visible');
+    await waitForCondition(async () => (await categorySelect.locator(`option[value="${CATEGORY}"]`).count()) > 0, 20_000, 60, 'category_option_visible');
     const currentValue = await categorySelect.inputValue().catch(() => '');
     if (categorySelected && currentValue === CATEGORY) return;
     if (currentValue !== CATEGORY) {
       await categorySelect.selectOption(CATEGORY);
-      await waitForCondition(async () => (await categorySelect.inputValue()) === CATEGORY, 20_000, 150, 'category_selected');
+      await waitForCondition(async () => (await categorySelect.inputValue()) === CATEGORY, 20_000, 60, 'category_selected');
     }
     categorySelected = true;
   }
@@ -509,7 +509,7 @@ export async function createReviewLaneGuiHarness(t) {
     await waitForCondition(async () => {
       const payload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/products-index`);
       return Array.isArray(payload?.products) && payload.products.length >= 2;
-    }, 20_000, 150, 'products_index_populated');
+    }, 20_000, 60, 'products_index_populated');
     await page.waitForSelector(`[data-product-id="${PRODUCT_A}"][data-field-key="weight"]`, { timeout: 20_000 });
   }
 
@@ -528,7 +528,7 @@ export async function createReviewLaneGuiHarness(t) {
       if (!label.includes('ON')) {
         await debugToggle.click();
       }
-      await waitForCondition(async () => String(await debugToggle.innerText()).includes('ON'), 10_000, 120, 'component_debug_toggle_on');
+      await waitForCondition(async () => String(await debugToggle.innerText()).includes('ON'), 10_000, 50, 'component_debug_toggle_on');
     }
   }
 
@@ -552,15 +552,12 @@ export async function createReviewLaneGuiHarness(t) {
 
   try {
     await ensureGuiBuilt();
-    await seedFieldRules(config.categoryAuthorityRoot, 'mouse');
-    await seedComponentDb(config.categoryAuthorityRoot, 'mouse');
-    await seedKnownValues(config.categoryAuthorityRoot, 'mouse');
-    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
-    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
-    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
-    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
-    await seedProductCatalog(config.categoryAuthorityRoot, CATEGORY);
     await Promise.all([
+      seedFieldRules(config.categoryAuthorityRoot, CATEGORY),
+      seedComponentDb(config.categoryAuthorityRoot, CATEGORY),
+      seedKnownValues(config.categoryAuthorityRoot, CATEGORY),
+      seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY),
+      seedProductCatalog(config.categoryAuthorityRoot, CATEGORY),
       Promise.all(
         Object.entries(PRODUCTS).map(([productId, product]) =>
           seedLatestArtifacts(storage, CATEGORY, productId, product)),

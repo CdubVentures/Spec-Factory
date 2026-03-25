@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
+import { createPhaseCallLlm } from '../shared/createPhaseCallLlm.js';
 
 export const brandResolverLlmResponseSchema = z.object({
   official_domain: z.string(),
@@ -9,28 +10,22 @@ export const brandResolverLlmResponseSchema = z.object({
   reasoning: z.array(z.string()).optional(),
 });
 
-function brandResolverSchema() {
-  return zodToLlmSchema(brandResolverLlmResponseSchema);
-}
+const BRAND_RESOLVER_SPEC = {
+  phase: 'brandResolver',
+  reason: 'brand_resolution',
+  role: 'triage',
+  system: [
+    'You resolve official brand website domains for product categories.',
+    'Return the official domain (not social media or marketplace).',
+    'Include domain aliases and the support subdomain if one exists.',
+    'Include a reasoning array with 2-4 short bullets explaining how you identified the domain.',
+    'Return strict JSON only.',
+  ].join('\n'),
+  jsonSchema: zodToLlmSchema(brandResolverLlmResponseSchema),
+};
 
-export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {
-  return async ({ brand, category }) => {
-    const result = await callRoutedLlmFn({
-      config,
-      reason: 'brand_resolution',
-      role: 'triage',
-      phase: 'brandResolver',
-      system: [
-        'You resolve official brand website domains for product categories.',
-        'Return the official domain (not social media or marketplace).',
-        'Include domain aliases and the support subdomain if one exists.',
-        'Include a reasoning array with 2-4 short bullets explaining how you identified the domain.',
-        'Return strict JSON only.'
-      ].join('\n'),
-      user: JSON.stringify({ brand, category }),
-      jsonSchema: brandResolverSchema(),
-      logger
-    });
-    return result;
-  };
+export function createBrandResolverCallLlm(deps) {
+  return createPhaseCallLlm(deps, BRAND_RESOLVER_SPEC, ({ brand, category }) => ({
+    user: JSON.stringify({ brand, category }),
+  }));
 }

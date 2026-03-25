@@ -16,7 +16,7 @@ import {
   withReviewFixture,
 } from './helpers/reviewEcosystemHarness.js';
 
-test('review ecosystem enum reference and connection-suggestion contracts share one fixture', { timeout: 120_000 }, async (t) => {
+test('review ecosystem enum contracts share one fixture without weakening enum behavior', { timeout: 120_000 }, async (t) => {
   await withReviewFixture(async ({ config }) => {
     await t.test('ENUM-01: Reference value gets source=reference', async () => {
       const payload = await buildEnumPayloadFromSpecDb(config);
@@ -48,11 +48,7 @@ test('review ecosystem enum reference and connection-suggestion contracts share 
       assert.equal(wiredValues.length, 1, 'Wired should not be duplicated');
       assert.equal(wiredValues[0].source, 'reference');
     });
-  });
-});
 
-test('review ecosystem enum metrics contracts share one fixture', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ config }) => {
     await t.test('ENUM-05: Metrics correctly count flags', async () => {
       await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, buildEnumSuggestionsSeed({
         fields: { connection: ['USB-A', 'Thunderbolt'] },
@@ -61,28 +57,6 @@ test('review ecosystem enum metrics contracts share one fixture', { timeout: 120
       const connectionField = findEnumField(payload, 'connection');
       assert.equal(connectionField.metrics.total, 4);
       assert.equal(connectionField.metrics.flags >= 0, true);
-    });
-  });
-});
-
-test('review ecosystem enum manual-value contracts share one fixture', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ config }) => {
-    await t.test('ENUM-03: User-added fresh value gets source=manual', async () => {
-      const initialPayload = await buildEnumPayloadFromSpecDb(config);
-      const cableField = findEnumField(initialPayload, 'cable_type');
-      assert.ok(cableField);
-
-      await seedKnownValues(
-        config.categoryAuthorityRoot,
-        CATEGORY,
-        buildKnownValueFieldMap({ cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'] }),
-      );
-
-      const nextPayload = await buildEnumPayloadFromSpecDb(config);
-      const braided = findEnumValue(nextPayload, 'cable_type', 'Braided');
-      assert.ok(braided, 'Braided should appear in cable_type values');
-      assert.equal(braided.source, 'manual');
-      assert.equal(braided.confidence, 0.6);
     });
 
     await t.test('ENUM-06: Multiple fields independently tracked', async () => {
@@ -142,11 +116,25 @@ test('review ecosystem enum manual-value contracts share one fixture', { timeout
       const usbC = field.values.find((entry) => entry.value === 'USB-C');
       assert.equal(usbC.source_timestamp, null);
     });
-  });
-});
 
-test('review ecosystem enum curation-suggestion contracts share one fixture', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ config }) => {
+    await t.test('ENUM-03: User-added fresh value gets source=manual', async () => {
+      const initialPayload = await buildEnumPayloadFromSpecDb(config);
+      const cableField = findEnumField(initialPayload, 'cable_type');
+      assert.ok(cableField);
+
+      await seedKnownValues(
+        config.categoryAuthorityRoot,
+        CATEGORY,
+        buildKnownValueFieldMap({ cable_type: [...KNOWN_VALUE_ENUMS.cable_type.values, 'Braided'] }),
+      );
+
+      const nextPayload = await buildEnumPayloadFromSpecDb(config);
+      const braided = findEnumValue(nextPayload, 'cable_type', 'Braided');
+      assert.ok(braided, 'Braided should appear in cable_type values');
+      assert.equal(braided.source, 'manual');
+      assert.equal(braided.confidence, 0.6);
+    });
+
     await t.test('ENUM-07: Curation format suggestions with pending/dismissed status', async () => {
       await seedEnumSuggestions(config.categoryAuthorityRoot, CATEGORY, buildEnumSuggestionsSeed({
         suggestions: [

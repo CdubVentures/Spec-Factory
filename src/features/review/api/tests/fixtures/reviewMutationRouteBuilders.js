@@ -27,6 +27,7 @@ export function makeSeededRuntimeSpecDb(overrides = {}) {
     updateKeyReviewUserAccept: () => {},
     insertKeyReviewAudit: () => {},
     upsertComponentValue: () => ({}),
+    clearComponentValueAcceptedCandidate: () => {},
     insertAlias: () => {},
     updateAliasesOverridden: () => {},
     getListValueByFieldAndValue: () => null,

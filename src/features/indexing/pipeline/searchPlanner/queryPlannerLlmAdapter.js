@@ -3,6 +3,7 @@
 
 import { z } from 'zod';
 import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
+import { createPhaseCallLlm } from '../shared/createPhaseCallLlm.js';
 
 export const queryEnhancerResponseZodSchema = z.object({
   enhanced_queries: z.array(z.object({
@@ -50,19 +51,18 @@ export function buildEnhancerSystemPrompt(rowCount) {
   ].join('\n');
 }
 
-export function createQueryEnhancerCallLlm({ callRoutedLlmFn, config, logger }) {
-  return async ({ payload, rowCount, usageContext = {} }) => {
-    return callRoutedLlmFn({
-      config,
-      reason: 'search_planner_enhance',
-      role: 'plan',
-      phase: 'searchPlanner',
-      system: buildEnhancerSystemPrompt(rowCount),
-      user: typeof payload === 'string' ? payload : JSON.stringify(payload),
-      jsonSchema: QUERY_ENHANCER_SCHEMA,
-      usageContext,
-      costRates: config,
-      logger,
-    });
-  };
+const QUERY_ENHANCER_SPEC = {
+  phase: 'searchPlanner',
+  reason: 'search_planner_enhance',
+  role: 'plan',
+  system: (callArgs) => buildEnhancerSystemPrompt(callArgs.rowCount),
+  jsonSchema: QUERY_ENHANCER_SCHEMA,
+};
+
+export function createQueryEnhancerCallLlm(deps) {
+  return createPhaseCallLlm(deps, QUERY_ENHANCER_SPEC, ({ payload, usageContext = {} }, config) => ({
+    user: typeof payload === 'string' ? payload : JSON.stringify(payload),
+    usageContext,
+    costRates: config,
+  }));
 }

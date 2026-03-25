@@ -5,12 +5,17 @@
  * Plugin lifecycle hooks run inside the requestHandler for each page.
  */
 
+import path from 'node:path';
+import os from 'node:os';
+import fsSync from 'node:fs';
 import { createPluginRunner } from './core/pluginRunner.js';
 
-export function createCrawlSession({ settings = {}, plugins = [], logger, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], logger, onScreencastFrame, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
+  const videoPathMap = new Map();
+  let videoDir = '';
   let crawler = null;
 
   const slotCount = Number(settings.crawlMaxConcurrentSlots) || 4;
@@ -79,6 +84,32 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
         const captureCtx = { ...ctx, html, finalUrl, title, status };
         await runner.runHook('onCapture', captureCtx);
 
+        // WHY: Emit a screencast frame from the last screenshot so the GUI
+        // live view shows what the browser is seeing during the active fetch.
+        if (typeof onScreencastFrame === 'function') {
+          const shots = captureCtx.screenshots ?? [];
+          const shot = shots.findLast((s) => s.kind === 'page') || shots[shots.length - 1];
+          if (shot?.bytes) {
+            const data = Buffer.isBuffer(shot.bytes)
+              ? shot.bytes.toString('base64')
+              : String(shot.bytes);
+            onScreencastFrame({
+              worker_id: workerId,
+              data,
+              width: shot.width || 0,
+              height: shot.height || 0,
+              ts: shot.captured_at || new Date().toISOString(),
+            });
+          }
+        }
+
+        // WHY: Store the Video object (not the path) so we can call video.saveAs()
+        // after c.run() completes and pages are closed. saveAs() waits for the
+        // video to be finalized and copies it to the target path — more reliable
+        // than renaming UUID-named files.
+        const videoObj = page.video?.();
+        if (videoObj) videoPathMap.set(workerId, videoObj);
+
         const result = {
           url: request.url,
           finalUrl,
@@ -87,6 +118,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
           html,
           screenshots: captureCtx.screenshots ?? [],
           workerId,
+          videoPath: '',
         };
 
         await runner.runHook('onComplete', { ...ctx, result });
@@ -127,6 +159,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
           html: '',
           screenshots: [],
           workerId,
+          videoPath: '',
           fetchError: errMsg,
         });
       },
@@ -147,6 +180,22 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
       }
     }
     return crawler;
+  }
+
+  // WHY: Use Playwright's video.saveAs() to copy finalized videos to the
+  // convention-based path ({videoDir}/{workerId}.webm). saveAs() waits for
+  // the video to be fully written — more reliable than renaming UUID files.
+  async function saveVideoFiles() {
+    if (!videoDir) return;
+    for (const [wid, videoObj] of videoPathMap) {
+      try {
+        const finalPath = path.join(videoDir, `${wid}.webm`);
+        if (typeof videoObj?.saveAs === 'function') {
+          await videoObj.saveAs(finalPath);
+        }
+      } catch { /* swallow — video might not exist if recording/page failed */ }
+    }
+    videoPathMap.clear();
   }
 
   async function start() {
@@ -170,6 +219,20 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
     const maxPages = Number(settings.crawleeMaxPagesPerBrowser) || 1;
     const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 5;
 
+    // WHY: Playwright recordVideo requires useIncognitoPages=true because Crawlee's
+    // BrowserPool only forwards pageOptions to browser.newPage() in incognito mode
+    // (browser-pool.js line 382). Without it, recordVideo is silently discarded.
+    const videoEnabled = settings.crawlVideoRecordingEnabled === true || settings.crawlVideoRecordingEnabled === 'true';
+    const runId = String(settings.runId || '').trim();
+    let videoSize = { width: 1280, height: 720 };
+    if (videoEnabled && runId) {
+      const sizeRaw = String(settings.crawlVideoRecordingSize || '1280x720');
+      const [vw, vh] = sizeRaw.split('x').map(Number);
+      videoSize = { width: vw || 1280, height: vh || 720 };
+      videoDir = path.join(os.tmpdir(), 'spec-factory-crawl-videos', runId);
+      fsSync.mkdirSync(videoDir, { recursive: true });
+    }
+
     crawler = new PlaywrightCrawler({
       ...config,
       maxRequestRetries: maxRetries,
@@ -180,11 +243,19 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
       sessionPoolOptions: { blockedStatusCodes: [] },
       launchContext: {
         launchOptions: { headless },
+        ...(videoDir ? { useIncognitoPages: true } : {}),
       },
       browserPoolOptions: {
         useFingerprints: true,
         maxOpenPagesPerBrowser: maxPages,
         retireBrowserAfterPageCount: retireAfter,
+        ...(videoDir ? {
+          prePageCreateHooks: [
+            (_pageId, _browserController, pageOptions) => {
+              pageOptions.recordVideo = { dir: videoDir, size: videoSize };
+            },
+          ],
+        } : {}),
       },
       preNavigationHooks: [
         async ({ request, page }, gotoOptions) => {
@@ -205,6 +276,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
     });
 
     await c.run([{ url, uniqueKey }]);
+    await saveVideoFiles();
 
     const stale = pending.get(uniqueKey);
     if (stale) {
@@ -235,6 +307,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
     }
 
     await c.run(requests);
+    await saveVideoFiles();
 
     // Resolve any stale entries (Crawlee silently dropped them)
     for (const req of requests) {
@@ -243,7 +316,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
         stale.resolve({
           url: req.url, finalUrl: req.url, status: 0, title: '', html: '',
           screenshots: [], workerId: workerIds.get(req.uniqueKey) || 'fetch-x0',
-          fetchError: 'crawl_no_response',
+          videoPath: '', fetchError: 'crawl_no_response',
         });
         pending.delete(req.uniqueKey);
       }
@@ -260,5 +333,5 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
     }
   }
 
-  return { start, processUrl, processBatch, shutdown, slotCount };
+  return { start, processUrl, processBatch, shutdown, slotCount, get videoDir() { return videoDir; } };
 }

@@ -2,181 +2,79 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   processDiscoveryResults,
-  makeCategoryConfig,
-  makeIdentityLock,
-  makeConfig,
+  makeProcessDiscoveryResultsArgs,
   makeRawResults,
-  makeSearchProfilePlanned,
-  makeStubSerpSelectorCallFn,
-  makeStubStorage,
-  makeStubFrontierDb,
-  makeStubLogger,
 } from './helpers/triageCharacterizationHarness.js';
-describe('Characterization - processDiscoveryResults SERP and profile shape', () => {
-it('serp_explorer has expected top-level shape', async () => {
-  const result = await processDiscoveryResults({
-    rawResults: makeRawResults(),
-    searchAttempts: [],
-    searchJournal: [],
-    internalSatisfied: false,
-    externalSearchReason: '',
-    config: makeConfig(),
-    storage: makeStubStorage(),
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'p1' },
-    runId: 'r1',
-    logger: makeStubLogger(),
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
-    missingFields: ['weight'],
-    learning: { fieldYield: {} },
-    llmContext: {},
-    searchProfileBase: { variant_guard_terms: [] },
-    llmQueries: [],
-    queries: ['razer viper v3 pro specs'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
-
-
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
-  });
-
-  const se = result.serp_explorer;
-  assert.ok(se !== null && typeof se === 'object', 'serp_explorer exists');
-
-  // Capture actual keys for shape contract
-  const requiredKeys = [
-    'generated_at', 'llm_selector_enabled', 'llm_selector_applied',
-    'query_count', 'candidates_checked', 'urls_triaged',
-    'urls_selected', 'urls_rejected',
-    'raw_input', 'hard_drop_count', 'canon_merge_count', 'soft_exclude_count',
-    'queries',
-  ];
-  for (const key of requiredKeys) {
-    assert.ok(key in se, `serp_explorer has key '${key}', got keys: ${Object.keys(se).join(', ')}`);
-  }
-  assert.ok(Array.isArray(se.queries), 'serp_explorer.queries is array');
-  assert.equal(typeof se.generated_at, 'string');
-  assert.equal(typeof se.llm_selector_enabled, 'boolean');
-  assert.equal(typeof se.llm_selector_applied, 'boolean');
-  assert.equal(typeof se.query_count, 'number');
-  assert.equal(typeof se.candidates_checked, 'number');
-  assert.equal(typeof se.urls_triaged, 'number');
-  assert.equal(typeof se.urls_selected, 'number');
-  assert.equal(typeof se.urls_rejected, 'number');
-  assert.equal(typeof se.raw_input, 'number');
-  assert.equal(typeof se.hard_drop_count, 'number');
-  assert.equal(typeof se.canon_merge_count, 'number');
-  assert.equal(typeof se.soft_exclude_count, 'number');
-});
-
-it('serp_explorer query rows have expected candidate shape', async () => {
-  const result = await processDiscoveryResults({
-    rawResults: makeRawResults(),
-    searchAttempts: [],
-    searchJournal: [],
-    internalSatisfied: false,
-    externalSearchReason: '',
-    config: makeConfig(),
-    storage: makeStubStorage(),
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'p1' },
-    runId: 'r1',
-    logger: makeStubLogger(),
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
-    missingFields: ['weight'],
-    learning: { fieldYield: {} },
-    llmContext: {},
-    searchProfileBase: { variant_guard_terms: [] },
-    llmQueries: [],
+describe('processDiscoveryResults SERP/profile contracts', () => {
+it('serp_explorer reports funnel counts and query candidate aggregates', async () => {
+  const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
+    searchAttempts: [
+      { query: 'razer viper v3 pro specs', provider: 'google', result_count: 2 },
+      { query: 'razer viper v3 pro review', provider: 'bing', result_count: 1 },
+    ],
     queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
+  }));
 
+  const serpExplorer = result.serp_explorer;
+  assert.equal(serpExplorer.query_count, 2);
+  assert.equal(serpExplorer.raw_input, makeRawResults().length);
+  assert.equal(serpExplorer.candidates_checked, result.candidates.length);
+  assert.equal(serpExplorer.urls_triaged, result.candidates.length);
+  assert.equal(serpExplorer.urls_selected, result.selectedUrls.length);
+  assert.equal(serpExplorer.soft_exclude_count, 0);
 
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
-  });
+  const queryRow = serpExplorer.queries.find((row) => row.query === 'razer viper v3 pro specs');
+  assert.ok(queryRow, 'expected the specs query row in serp_explorer');
+  assert.equal(queryRow.result_count, 2);
+  assert.equal(queryRow.attempts, 1);
+  assert.deepEqual(queryRow.providers, ['google']);
+  assert.equal(queryRow.candidate_count, queryRow.candidates.length);
+  assert.equal(
+    queryRow.selected_count,
+    queryRow.candidates.filter((candidate) => candidate.decision === 'selected').length,
+  );
 
-  const queryRow = result.serp_explorer.queries.find((q) => q.candidates.length > 0);
-  assert.ok(queryRow, 'at least one query row has candidates');
-
-  // Query row shape
-  assert.equal(typeof queryRow.query, 'string');
-  assert.equal(typeof queryRow.hint_source, 'string');
-  assert.ok(Array.isArray(queryRow.target_fields), 'target_fields is array');
-  assert.equal(typeof queryRow.doc_hint, 'string');
-  assert.equal(typeof queryRow.domain_hint, 'string');
-  assert.equal(typeof queryRow.result_count, 'number');
-  assert.equal(typeof queryRow.attempts, 'number');
-  assert.ok(Array.isArray(queryRow.providers), 'providers is array');
-  assert.equal(typeof queryRow.candidate_count, 'number');
-  assert.equal(typeof queryRow.selected_count, 'number');
-
-  // Candidate shape
   const candidate = queryRow.candidates[0];
   assert.equal(typeof candidate.url, 'string');
-  assert.equal(typeof candidate.title, 'string');
-  assert.equal(typeof candidate.snippet, 'string');
   assert.equal(typeof candidate.host, 'string');
   assert.equal(typeof candidate.doc_kind, 'string');
-  assert.equal(typeof candidate.triage_score, 'number');
-  assert.equal(typeof candidate.decision, 'string');
+  assert.ok(candidate.triage_disposition === null || typeof candidate.triage_disposition === 'string');
+  assert.ok(candidate.identity_prelim === null || typeof candidate.identity_prelim === 'string');
+  assert.ok(candidate.host_trust_class === null || typeof candidate.host_trust_class === 'string');
   assert.ok(Array.isArray(candidate.reason_codes), 'reason_codes is array');
   assert.ok(Array.isArray(candidate.providers), 'providers is array');
+  assert.ok(candidate.score_breakdown === null || typeof candidate.score_breakdown === 'object');
 });
 
-it('search_profile (searchProfileFinal) has expected shape', async () => {
-  const result = await processDiscoveryResults({
-    rawResults: makeRawResults(),
-    searchAttempts: [],
-    searchJournal: [],
-    internalSatisfied: false,
-    externalSearchReason: '',
-    config: makeConfig(),
-    storage: makeStubStorage(),
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'p1' },
-    runId: 'r1',
-    logger: makeStubLogger(),
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
-    missingFields: ['weight'],
-    learning: { fieldYield: {} },
-    llmContext: {},
-    searchProfileBase: { variant_guard_terms: [] },
-    llmQueries: [],
-    queries: ['razer viper v3 pro specs'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
+it('search_profile exposes executed query stats and embedded serp explorer counts', async () => {
+  const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
+    searchAttempts: [
+      { query: 'razer viper v3 pro specs', provider: 'google', result_count: 2 },
+      { query: 'razer viper v3 pro specs', provider: 'bing', result_count: 1 },
+    ],
+  }));
 
-
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
+  const searchProfile = result.search_profile;
+  assert.equal(searchProfile.status, 'executed');
+  assert.equal(searchProfile.discovered_count, result.candidates.length);
+  assert.equal(searchProfile.selected_count, result.selectedUrls.length);
+  assert.equal(searchProfile.llm_query_planning, true);
+  assert.equal(searchProfile.llm_serp_selector, true);
+  assert.equal(typeof searchProfile.llm_query_model, 'string');
+  assert.equal(typeof searchProfile.llm_serp_selector_model, 'string');
+  assert.ok(Array.isArray(searchProfile.query_rows), 'query_rows is array');
+  assert.ok(Array.isArray(searchProfile.query_stats), 'query_stats is array');
+  assert.equal(searchProfile.query_rows[0].attempts, 2);
+  assert.equal(searchProfile.query_rows[0].result_count, 3);
+  assert.deepEqual(searchProfile.query_rows[0].providers, ['google', 'bing']);
+  assert.deepEqual(searchProfile.query_stats[0], {
+    query: 'razer viper v3 pro specs',
+    attempts: 2,
+    result_count: 3,
+    providers: ['google', 'bing'],
+    frontier_cache: false,
   });
-
-  const sp = result.search_profile;
-  assert.equal(typeof sp.generated_at, 'string');
-  assert.equal(sp.status, 'executed');
-  assert.ok(Array.isArray(sp.query_rows), 'query_rows is array');
-  assert.ok(Array.isArray(sp.query_stats), 'query_stats is array');
-  assert.equal(typeof sp.discovered_count, 'number');
-  assert.equal(typeof sp.selected_count, 'number');
-  assert.equal(typeof sp.llm_query_planning, 'boolean');
-  assert.equal(typeof sp.llm_query_model, 'string');
-  assert.equal(typeof sp.llm_serp_selector, 'boolean');
-  assert.equal(typeof sp.llm_serp_selector_model, 'string');
-  assert.ok(typeof sp.serp_explorer === 'object', 'serp_explorer embedded in search_profile');
+  assert.equal(searchProfile.serp_explorer.query_count, searchProfile.query_rows.length);
+  assert.equal(searchProfile.serp_explorer.urls_selected, searchProfile.selected_count);
 });
 });
