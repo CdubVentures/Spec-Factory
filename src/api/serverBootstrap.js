@@ -137,12 +137,14 @@ export function bootstrapServer({ projectRoot }) {
   });
 
   // ── Crawl video cleanup (fire-and-forget, 24h TTL) ──
+  // WHY: Must use os.tmpdir() to match crawlSession.js and runtimeOpsVideoHelpers.js.
   import('../features/crawl/videoCleanup.js')
     .then(({ cleanupStaleVideoDirs }) => {
-      const videoBaseDir = path.join(process.env.TEMP || process.env.TMPDIR || '/tmp', 'spec-factory-crawl-videos');
+      const { tmpdir } = require('node:os');
+      const videoBaseDir = path.join(tmpdir(), 'spec-factory-crawl-videos');
       cleanupStaleVideoDirs({ baseDir: videoBaseDir, maxAgeMs: 24 * 60 * 60 * 1000 });
     })
-    .catch(() => { /* non-critical — swallow startup cleanup errors */ });
+    .catch(() => { /* non-critical */ });
 
   return {
     env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },

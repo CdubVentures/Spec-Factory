@@ -343,24 +343,19 @@ export function registerRuntimeOpsRoutes(ctx) {
       return jsonRes(res, 200, { run_id: runId, worker_id: workerIdParam, frame });
     }
 
-    // WHY: Serves crawl video recordings from OS temp. Convention-based path avoids
-    // coupling to runtime bridge events. 404 is the expected fallback when video
-    // recording was disabled or the file has been cleaned up.
+    // WHY: Serves crawl video recordings from OS temp. resolveVideoFilePath reads
+    // the manifest.json written by crawlSession to map workerId → UUID filename.
+    // 404 is expected when video recording was disabled or cleaned up.
     if (subPath === 'video' && parts[5]) {
       const videoWorkerId = decodeURIComponent(String(parts[5] || '').trim());
       const videoPath = resolveVideoFilePath(runId, videoWorkerId);
       if (!videoPath) {
-        return jsonRes(res, 400, { error: 'invalid_video_params' });
-      }
-      const fs = await import('node:fs');
-      try {
-        await fs.promises.access(videoPath);
-        res.writeHead(200, { 'Content-Type': 'video/webm' });
-        fs.createReadStream(videoPath).pipe(res);
-        return true;
-      } catch {
         return jsonRes(res, 404, { error: 'video_not_found', run_id: runId, worker_id: videoWorkerId });
       }
+      const fs = await import('node:fs');
+      res.writeHead(200, { 'Content-Type': 'video/webm' });
+      fs.createReadStream(videoPath).pipe(res);
+      return true;
     }
 
     if (subPath === 'llm-dashboard' && !parts[5]) {

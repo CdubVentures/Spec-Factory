@@ -230,6 +230,65 @@ describe('isDefaultProvider', () => {
   });
 });
 
+describe('isDefaultProvider — lab prefix', () => {
+  it('returns true for lab-openai', () => {
+    strictEqual(isDefaultProvider('lab-openai'), true);
+  });
+
+  it('returns true for lab-gemini', () => {
+    strictEqual(isDefaultProvider('lab-gemini'), true);
+  });
+
+  it('returns true for lab-claude', () => {
+    strictEqual(isDefaultProvider('lab-claude'), true);
+  });
+});
+
+describe('mergeDefaultsIntoRegistry — lab providers', () => {
+  const LAB_DEFAULTS: LlmProviderEntry[] = [
+    ...DEFAULTS,
+    makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      enabled: false,
+      models: [makeModel('lab-openai-gpt5', 'gpt-5', 'primary')],
+    }),
+  ];
+
+  it('lab provider appears in merged result when present in defaults', () => {
+    const result = mergeDefaultsIntoRegistry([], LAB_DEFAULTS);
+    const lab = result.find((p) => p.id === 'lab-openai');
+    strictEqual(lab?.name, 'LLM Lab OpenAI');
+    strictEqual(lab?.enabled, false);
+  });
+
+  it('user-edited lab provider is preserved', () => {
+    const userLab = makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      enabled: true,
+      models: [],
+    });
+    const result = mergeDefaultsIntoRegistry([userLab], LAB_DEFAULTS);
+    const lab = result.find((p) => p.id === 'lab-openai');
+    strictEqual(lab?.enabled, true);
+    strictEqual(lab?.models.length, 0);
+  });
+
+  it('lab providers appear after default API providers, before custom providers', () => {
+    const custom = makeProvider({ id: 'provider-custom', name: 'Custom' });
+    const result = mergeDefaultsIntoRegistry([custom], LAB_DEFAULTS);
+    const ids = result.map((p) => p.id);
+    const labIdx = ids.indexOf('lab-openai');
+    const customIdx = ids.indexOf('provider-custom');
+    const lastDefaultIdx = ids.indexOf('default-openai');
+    strictEqual(labIdx > lastDefaultIdx, true, 'lab should appear after API defaults');
+    strictEqual(customIdx > labIdx, true, 'custom should appear after lab');
+  });
+});
+
 describe('isDefaultModel', () => {
   it('returns true for default-gemini-flash-lite', () => {
     strictEqual(isDefaultModel('default-gemini-flash-lite'), true);

@@ -10,13 +10,23 @@ import os from 'node:os';
 import fsSync from 'node:fs';
 import { createPluginRunner } from './core/pluginRunner.js';
 
-export function createCrawlSession({ settings = {}, plugins = [], logger, onScreencastFrame, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
   const videoPathMap = new Map();
-  let videoDir = '';
   let crawler = null;
+
+  // WHY: Compute video dir at session creation (not in start()) so it's
+  // available regardless of whether real Playwright or _crawlerFactory is used.
+  const videoEnabled = settings.crawlVideoRecordingEnabled === true || settings.crawlVideoRecordingEnabled === 'true';
+  const videoRunId = String(settings.runId || '').trim();
+  const videoDir = (videoEnabled && videoRunId)
+    ? path.join(os.tmpdir(), 'spec-factory-crawl-videos', videoRunId)
+    : '';
+  if (videoDir) {
+    fsSync.mkdirSync(videoDir, { recursive: true });
+  }
 
   const slotCount = Number(settings.crawlMaxConcurrentSlots) || 4;
   let globalSeq = 0;
@@ -84,10 +94,16 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
         const captureCtx = { ...ctx, html, finalUrl, title, status };
         await runner.runHook('onCapture', captureCtx);
 
+        // WHY: Extraction plugins fire concurrently after all fetch hooks complete.
+        // Each plugin receives a frozen context — no shared mutation.
+        const extractions = extractionRunner
+          ? await extractionRunner.runExtractions(captureCtx)
+          : {};
+
         // WHY: Emit a screencast frame from the last screenshot so the GUI
         // live view shows what the browser is seeing during the active fetch.
         if (typeof onScreencastFrame === 'function') {
-          const shots = captureCtx.screenshots ?? [];
+          const shots = extractions.screenshot?.screenshots ?? captureCtx.screenshots ?? [];
           const shot = shots.findLast((s) => s.kind === 'page') || shots[shots.length - 1];
           if (shot?.bytes) {
             const data = Buffer.isBuffer(shot.bytes)
@@ -103,12 +119,11 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
           }
         }
 
-        // WHY: Store the Video object (not the path) so we can call video.saveAs()
-        // after c.run() completes and pages are closed. saveAs() waits for the
-        // video to be finalized and copies it to the target path — more reliable
-        // than renaming UUID-named files.
-        const videoObj = page.video?.();
-        if (videoObj) videoPathMap.set(workerId, videoObj);
+        // WHY: Store the Video object so we can resolve its path after c.run()
+        // completes and all pages/contexts are closed. Playwright guarantees the
+        // video file is written once the context closes.
+        const videoRef = page.video?.();
+        if (videoRef) videoPathMap.set(workerId, videoRef);
 
         const result = {
           url: request.url,
@@ -116,7 +131,8 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
           status,
           title,
           html,
-          screenshots: captureCtx.screenshots ?? [],
+          screenshots: extractions.screenshot?.screenshots ?? captureCtx.screenshots ?? [],
+          extractions,
           workerId,
           videoPath: '',
         };
@@ -182,18 +198,45 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
     return crawler;
   }
 
-  // WHY: Use Playwright's video.saveAs() to copy finalized videos to the
-  // convention-based path ({videoDir}/{workerId}.webm). saveAs() waits for
-  // the video to be fully written — more reliable than renaming UUID files.
-  async function saveVideoFiles() {
+  // WHY: After c.run() all pages/contexts are closed, so video.path() Promises
+  // resolve to the UUID-named file Playwright wrote. Instead of renaming/copying
+  // (which fails silently on Windows due to file locking), write a manifest.json
+  // mapping workerId → UUID filename. The API reads the manifest to serve videos.
+  async function writeVideoManifest() {
     if (!videoDir) return;
-    for (const [wid, videoObj] of videoPathMap) {
+    // WHY: Read existing manifest first so earlier batches' entries survive.
+    // Each processBatch call appends to the manifest, not overwrites.
+    const manifestPath = path.join(videoDir, 'manifest.json');
+    let manifest = {};
+    try {
+      manifest = JSON.parse(fsSync.readFileSync(manifestPath, 'utf8'));
+    } catch { /* first batch or corrupt — start fresh */ }
+    for (const [wid, videoRef] of videoPathMap) {
       try {
-        const finalPath = path.join(videoDir, `${wid}.webm`);
-        if (typeof videoObj?.saveAs === 'function') {
-          await videoObj.saveAs(finalPath);
+        const filePath = typeof videoRef?.path === 'function'
+          ? await videoRef.path()
+          : (typeof videoRef === 'string' ? videoRef : '');
+        if (filePath) {
+          manifest[wid] = path.basename(filePath);
         }
-      } catch { /* swallow — video might not exist if recording/page failed */ }
+      } catch (err) {
+        logger?.warn?.('video_path_resolve_failed', {
+          worker_id: wid,
+          error: err?.message ?? String(err),
+        });
+      }
+    }
+    try {
+      fsSync.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+      logger?.info?.('video_manifest_written', {
+        video_dir: videoDir,
+        workers: Object.keys(manifest).length,
+      });
+    } catch (err) {
+      logger?.warn?.('video_manifest_write_failed', {
+        video_dir: videoDir,
+        error: err?.message ?? String(err),
+      });
     }
     videoPathMap.clear();
   }
@@ -222,15 +265,12 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
     // WHY: Playwright recordVideo requires useIncognitoPages=true because Crawlee's
     // BrowserPool only forwards pageOptions to browser.newPage() in incognito mode
     // (browser-pool.js line 382). Without it, recordVideo is silently discarded.
-    const videoEnabled = settings.crawlVideoRecordingEnabled === true || settings.crawlVideoRecordingEnabled === 'true';
-    const runId = String(settings.runId || '').trim();
+    // videoDir is already computed at session creation time (line 21-27).
     let videoSize = { width: 1280, height: 720 };
-    if (videoEnabled && runId) {
+    if (videoDir) {
       const sizeRaw = String(settings.crawlVideoRecordingSize || '1280x720');
       const [vw, vh] = sizeRaw.split('x').map(Number);
       videoSize = { width: vw || 1280, height: vh || 720 };
-      videoDir = path.join(os.tmpdir(), 'spec-factory-crawl-videos', runId);
-      fsSync.mkdirSync(videoDir, { recursive: true });
     }
 
     crawler = new PlaywrightCrawler({
@@ -276,7 +316,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
     });
 
     await c.run([{ url, uniqueKey }]);
-    await saveVideoFiles();
+    await writeVideoManifest();
 
     const stale = pending.get(uniqueKey);
     if (stale) {
@@ -307,7 +347,7 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, onScre
     }
 
     await c.run(requests);
-    await saveVideoFiles();
+    await writeVideoManifest();
 
     // Resolve any stale entries (Crawlee silently dropped them)
     for (const req of requests) {

@@ -18,13 +18,14 @@ import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStor
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
-import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.ts';
-import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
+import { LLM_PHASE_IDS } from '../state/llmPhaseRegistry.generated.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
+import { uiPhaseIdToOverrideKey } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { parseProviderRegistry, syncCostsFromRegistry } from '../state/llmProviderRegistryBridge.ts';
 import { mergeDefaultsIntoRegistry } from '../state/llmDefaultProviderRegistry.ts';
 import { providerHasApiKey, PROVIDER_API_KEY_MAP, type RuntimeApiKeySlice } from '../state/llmProviderApiKeyGate.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
-import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.ts';
+import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
 import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults.ts';
 import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter.ts';
@@ -194,6 +195,7 @@ export function LlmConfigPage() {
     llmModelReasoning: policy.models.reasoning,
     llmPlanUseReasoning: policy.reasoning.enabled,
     llmMaxOutputTokensPlan: policy.tokens.plan,
+    llmMaxOutputTokensTriage: policy.tokens.triage,
     llmTimeoutMs: policy.timeoutMs,
     llmMaxTokens: policy.tokens.maxTokens,
   }), [
@@ -287,13 +289,7 @@ export function LlmConfigPage() {
         />
       </Suspense>
     );
-  } else if (
-    activePhase === 'needset' ||
-    activePhase === 'brand-resolver' ||
-    activePhase === 'search-planner' ||
-    activePhase === 'serp-selector' ||
-    activePhase === 'validate'
-  ) {
+  } else if (uiPhaseIdToOverrideKey(activePhase) !== undefined) {
     activePanel = (
       <Suspense fallback={null}>
         <LlmPhaseSection

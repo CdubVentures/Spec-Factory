@@ -1,9 +1,10 @@
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 
 const DEFAULT_PREFIX = 'default-';
+const LAB_PREFIX = 'lab-';
 
 export function isDefaultProvider(providerId: string): boolean {
-  return providerId.startsWith(DEFAULT_PREFIX);
+  return providerId.startsWith(DEFAULT_PREFIX) || providerId.startsWith(LAB_PREFIX);
 }
 
 export function isDefaultModel(modelId: string): boolean {

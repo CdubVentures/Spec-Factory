@@ -46,6 +46,8 @@ export function providerHasApiKey(
 ): boolean {
   if (LOCAL_PROVIDER_TYPES.has(provider.type)) return true;
 
+  if (provider.accessMode === 'lab') return true;
+
   if (provider.apiKey.trim()) return true;
 
   const runtimeKeyField = PROVIDER_API_KEY_MAP[provider.id];

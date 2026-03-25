@@ -47,6 +47,7 @@ import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductEx
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolvePlugins } from '../features/crawl/plugins/pluginRegistry.js';
+import { resolveExtractionPlugins, createExtractionRunner } from '../features/extraction/index.js';
 import { runCrawlProcessingLifecycle } from './runCrawlProcessingLifecycle.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
@@ -213,14 +214,25 @@ export async function runProduct({
 
   // --- New crawl pipeline: open pages, screenshot, record to frontier ---
   const adapterName = String(config.fetcherAdapter || 'crawlee');
-  const pluginNames = String(config.fetcherPlugins || 'stealth,autoScroll,screenshot')
+  const pluginNames = String(config.fetcherPlugins || 'stealth,autoScroll')
     .split(',').map((s) => s.trim()).filter(Boolean);
   const plugins = resolvePlugins(pluginNames, { logger });
+
+  // WHY: Extraction plugins run concurrently per-URL after fetch tools complete.
+  // Resolved here and passed via DI — crawlSession has no extraction import.
+  const extractionPluginNames = String(config.extractionPlugins || 'screenshot')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  const extractionRunner = createExtractionRunner({
+    plugins: resolveExtractionPlugins(extractionPluginNames, { logger }),
+    logger,
+  });
+
   const adapter = resolveAdapter(adapterName);
   // WHY: crawlSession needs runId to construct the video recording directory.
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,
+    extractionRunner,
     logger,
     onScreencastFrame: resolveScreencastCallback(config),
   });

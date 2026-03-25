@@ -1,4 +1,4 @@
-import type { LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
+import type { LlmModelRole, LlmAccessMode } from '../types/llmProviderRegistryTypes.ts';
 
 export const ROLE_BADGE_STYLE: Record<LlmModelRole, { fg: string; bg: string }> = {
   primary: { fg: 'rgb(var(--sf-color-text-muted-rgb))', bg: 'rgb(var(--sf-color-text-muted-rgb) / 0.10)' },
@@ -16,3 +16,15 @@ export const MODEL_ROLE_OPTIONS: readonly { value: LlmModelRole; label: string }
   { value: 'primary', label: 'Primary' },
   { value: 'reasoning', label: 'Reasoning' },
 ];
+
+export type CapabilityBadge = 'thinking' | 'web';
+
+export const ACCESS_MODE_BADGE_STYLE: Record<LlmAccessMode, { fg: string; bg: string; label: string }> = {
+  api: { fg: 'rgb(var(--sf-color-text-muted-rgb))', bg: 'rgb(var(--sf-color-text-muted-rgb) / 0.08)', label: 'API' },
+  lab: { fg: 'var(--sf-state-run-ai-fg)', bg: 'rgb(var(--sf-color-accent-strong-rgb) / 0.12)', label: 'LAB' },
+};
+
+export const CAPABILITY_BADGE_STYLE: Record<CapabilityBadge, { fg: string; bg: string; label: string }> = {
+  thinking: { fg: 'var(--sf-state-run-ai-fg)', bg: 'rgb(var(--sf-color-accent-strong-rgb) / 0.08)', label: 'THINKING' },
+  web: { fg: 'var(--sf-state-success-fg)', bg: 'var(--sf-state-success-bg)', label: 'WEB' },
+};

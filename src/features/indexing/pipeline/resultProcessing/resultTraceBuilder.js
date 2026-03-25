@@ -107,6 +107,7 @@ export function enrichCandidateTraces({
       ? Number(candidateRow.tier)
       : (Number.isFinite(Number(trace.tier_guess)) ? Number(trace.tier_guess) : null);
     trace.tier_name_guess = String(candidateRow.tierName || trace.tier_name_guess || '').trim();
+    // WHY: candidateRow comes from serpSelector (camelCase); trace rows use snake_case (DB columns).
     trace.approved_domain = Boolean(candidateRow.approvedDomain || trace.approved_domain);
     trace.doc_kind_guess = String(candidateRow.doc_kind_guess || trace.doc_kind_guess || '').trim();
     trace.triage_score = Number(candidateRow.score || 0);

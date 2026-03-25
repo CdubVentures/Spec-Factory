@@ -3,7 +3,7 @@ export { toNeedSetSnapshot } from '../../../../../../indexlab/runtimeBridgePaylo
 
 export function makeEvent(event, payload = {}, overrides = {}) {
   return {
-    run_id: 'run-schema4-proof',
+    run_id: 'run-searchplan-proof',
     ts: '2026-03-16T00:01:00.000Z',
     event,
     payload,
@@ -13,7 +13,7 @@ export function makeEvent(event, payload = {}, overrides = {}) {
 
 export function makeMeta(overrides = {}) {
   return {
-    run_id: 'run-schema4-proof',
+    run_id: 'run-searchplan-proof',
     category: 'mouse',
     product_id: 'mouse-razer-viper-v3-pro',
     started_at: '2026-03-16T00:00:00.000Z',
@@ -22,8 +22,8 @@ export function makeMeta(overrides = {}) {
   };
 }
 
-// Shared Schema 4 panel fixture mirroring searchPlanBuilder output shape.
-export function makeSchema4Panel() {
+// Shared search-plan panel fixture mirroring searchPlanBuilder output shape.
+export function makeSearchPlanPanel() {
   return {
     round: 0,
     identity: { state: 'locked', confidence: 0.95, brand: 'Razer', model: 'Viper V3 Pro' },
@@ -123,7 +123,7 @@ export function makeSchema4Panel() {
   };
 }
 
-export function makeSchema4Fields() {
+export function makeSearchPlanFields() {
   return [
     { field_key: 'weight', required_level: 'required', state: 'missing', need_score: 0.95, search_hints: { query_terms: ['weight'] } },
     { field_key: 'dimensions', required_level: 'required', state: 'missing', need_score: 0.88, search_hints: {} },
@@ -143,13 +143,13 @@ export function makePlannerSeed() {
   };
 }
 
-export function makeSchema4NeedsetComputedPayload() {
-  const panel = makeSchema4Panel();
+export function makeSearchPlanNeedsetComputedPayload() {
+  const panel = makeSearchPlanPanel();
   return {
     ...panel,
     schema_version: 'needset_planner_output.v2',
     scope: 'search_plan',
-    fields: makeSchema4Fields(),
+    fields: makeSearchPlanFields(),
     planner_seed: makePlannerSeed(),
   };
 }

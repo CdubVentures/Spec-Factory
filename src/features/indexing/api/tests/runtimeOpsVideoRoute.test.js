@@ -14,11 +14,6 @@ describe('runtimeOpsVideoHelpers', () => {
   });
 
   describe('resolveVideoFilePath', () => {
-    it('returns the convention-based path for a valid workerId', () => {
-      const result = resolveVideoFilePath('run-123', 'fetch-1');
-      assert.ok(result.endsWith(path.join('run-123', 'fetch-1.webm')));
-    });
-
     it('returns null for path traversal workerId', () => {
       assert.equal(resolveVideoFilePath('run-1', '../etc/passwd'), null);
     });
@@ -34,15 +29,18 @@ describe('runtimeOpsVideoHelpers', () => {
     it('returns null for path traversal runId', () => {
       assert.equal(resolveVideoFilePath('../../../etc', 'fetch-1'), null);
     });
+
+    it('returns null when no video dir or manifest exists', () => {
+      assert.equal(resolveVideoFilePath('nonexistent-run-xyz', 'fetch-1'), null);
+    });
   });
 
-  describe('video file serving (integration)', () => {
+  describe('manifest-based resolution', () => {
     let tempVideoDir;
-    const runId = 'test-run-video';
-    const workerId = 'fetch-1';
+    const runId = 'test-run-manifest';
 
     beforeEach(() => {
-      tempVideoDir = path.join(os.tmpdir(), 'spec-factory-crawl-videos', runId);
+      tempVideoDir = path.join(CRAWL_VIDEO_BASE_DIR, runId);
       fs.mkdirSync(tempVideoDir, { recursive: true });
     });
 
@@ -50,17 +48,42 @@ describe('runtimeOpsVideoHelpers', () => {
       fs.rmSync(tempVideoDir, { recursive: true, force: true });
     });
 
-    it('resolves to an existing file when video is present', () => {
-      const videoPath = path.join(tempVideoDir, `${workerId}.webm`);
-      fs.writeFileSync(videoPath, 'fake-webm-content');
+    it('resolves via manifest.json mapping workerId to UUID filename', () => {
+      const uuidName = 'abc123def456.webm';
+      fs.writeFileSync(path.join(tempVideoDir, uuidName), 'fake-video');
+      fs.writeFileSync(
+        path.join(tempVideoDir, 'manifest.json'),
+        JSON.stringify({ 'fetch-1': uuidName }),
+      );
 
-      const resolved = resolveVideoFilePath(runId, workerId);
+      const resolved = resolveVideoFilePath(runId, 'fetch-1');
+      assert.ok(resolved, 'should resolve to a path');
+      assert.ok(resolved.endsWith(uuidName), 'should point to UUID file');
       assert.ok(fs.existsSync(resolved), 'resolved path should exist');
     });
 
-    it('resolves to a non-existing path when no video', () => {
-      const resolved = resolveVideoFilePath(runId, 'fetch-999');
-      assert.ok(!fs.existsSync(resolved), 'path for missing video should not exist');
+    it('returns null when worker not in manifest', () => {
+      fs.writeFileSync(
+        path.join(tempVideoDir, 'manifest.json'),
+        JSON.stringify({ 'fetch-1': 'abc.webm' }),
+      );
+      assert.equal(resolveVideoFilePath(runId, 'fetch-99'), null);
+    });
+
+    it('falls back to direct convention name if file exists', () => {
+      fs.writeFileSync(path.join(tempVideoDir, 'fetch-2.webm'), 'direct-video');
+
+      const resolved = resolveVideoFilePath(runId, 'fetch-2');
+      assert.ok(resolved, 'should resolve direct path');
+      assert.ok(resolved.endsWith('fetch-2.webm'));
+    });
+
+    it('rejects path traversal in manifest filename', () => {
+      fs.writeFileSync(
+        path.join(tempVideoDir, 'manifest.json'),
+        JSON.stringify({ 'fetch-1': '../../../etc/passwd' }),
+      );
+      assert.equal(resolveVideoFilePath(runId, 'fetch-1'), null);
     });
   });
 });

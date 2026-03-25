@@ -4,18 +4,18 @@ import {
   buildPreFetchPhases,
   makeEvent,
   makeMeta,
-  makeSchema4NeedsetComputedPayload,
-} from './helpers/schema4PrefetchLiveWiringHarness.js';
+  makeSearchPlanNeedsetComputedPayload,
+} from './helpers/searchPlanPrefetchLiveWiringHarness.js';
 // ---------------------------------------------------------------------------
 // 3. Full live-run simulation: every prefetch tab populated simultaneously
-//    Schema 4 needset + brand + search plans + search results + SERP triage +
+//    Search Plan needset + brand + search plans + search results + SERP triage +
 //    domain health + LLM calls — all in one event stream
 // ---------------------------------------------------------------------------
 
 test('buildPreFetchPhases: full live-run simulation populates every prefetch tab and needset', () => {
   const events = [
-    // -- Needset with full Schema 4 panel data --
-    makeEvent('needset_computed', makeSchema4NeedsetComputedPayload(), { ts: '2026-03-16T00:00:05.000Z' }),
+    // -- Needset with full Search Plan panel data --
+    makeEvent('needset_computed', makeSearchPlanNeedsetComputedPayload(), { ts: '2026-03-16T00:00:05.000Z' }),
 
     // -- Brand resolution --
     makeEvent('brand_resolved', {

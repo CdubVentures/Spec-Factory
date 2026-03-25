@@ -4,16 +4,16 @@ import {
   buildPreFetchPhases,
   makeEvent,
   makeMeta,
-  makeSchema4NeedsetComputedPayload,
-} from './helpers/schema4PrefetchLiveWiringHarness.js';
+  makeSearchPlanNeedsetComputedPayload,
+} from './helpers/searchPlanPrefetchLiveWiringHarness.js';
 // ---------------------------------------------------------------------------
-// 2. buildPreFetchPhases: needset_computed with full Schema 4 payload
+// 2. buildPreFetchPhases: needset_computed with full Search Plan payload
 //    populates every needset field used by the GUI panel
 // ---------------------------------------------------------------------------
 
-test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_influence, deltas', () => {
+test('buildPreFetchPhases: Search Plan needset_computed populates bundles, profile_influence, deltas', () => {
   const events = [
-    makeEvent('needset_computed', makeSchema4NeedsetComputedPayload()),
+    makeEvent('needset_computed', makeSearchPlanNeedsetComputedPayload()),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
 
@@ -25,7 +25,7 @@ test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_
   assert.equal(result.needset.schema_version, 'needset_planner_output.v2');
 
   // fields
-  assert.equal(result.needset.fields.length, 7, 'all 7 Schema 2 fields passed through');
+  assert.equal(result.needset.fields.length, 7, 'all 7 NeedSet fields passed through');
   assert.equal(result.needset.fields[0].field_key, 'weight');
   assert.equal(result.needset.fields[4].field_key, 'polling_rate');
 
@@ -36,7 +36,7 @@ test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_
   assert.equal(result.needset.blockers.weak, 7);
   assert.equal(result.needset.blockers.conflict, 3);
 
-  // bundles (Schema 4 panel data)
+  // bundles (Search Plan panel data)
   assert.ok(Array.isArray(result.needset.bundles), 'bundles must be array');
   assert.equal(result.needset.bundles.length, 3);
 
@@ -64,7 +64,7 @@ test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_
   assert.equal(optionalBundle.phase, 'next');
   assert.equal(optionalBundle.priority, 'optional');
 
-  // profile_influence (Schema 4 panel data)
+  // profile_influence (Search Plan panel data)
   assert.ok(result.needset.profile_influence && typeof result.needset.profile_influence === 'object', 'profile_influence must be object');
   assert.equal(result.needset.profile_influence.manufacturer_html, 2);
   assert.equal(result.needset.profile_influence.manual_pdf, 1);
@@ -75,7 +75,7 @@ test('buildPreFetchPhases: Schema 4 needset_computed populates bundles, profile_
   assert.equal(result.needset.profile_influence.trusted_host_share, 2);
   assert.equal(result.needset.profile_influence.docs_manual_share, 1);
 
-  // deltas (Schema 4 panel data)
+  // deltas (Search Plan panel data)
   assert.ok(Array.isArray(result.needset.deltas), 'deltas must be array');
   assert.equal(result.needset.deltas.length, 3);
   assert.equal(result.needset.deltas[0].field, 'weight');

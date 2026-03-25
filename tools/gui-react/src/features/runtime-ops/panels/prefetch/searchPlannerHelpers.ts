@@ -94,7 +94,7 @@ export function parsePlannerPayload(promptPreview: string | null): PlannerPrompt
 
 /* ── Path detection ────────────────────────────────────────────────── */
 
-export function isSchema4PlannerPath(calls: PrefetchLlmCall[]): boolean {
+export function isNeedSetPlannerPath(calls: PrefetchLlmCall[]): boolean {
   if (calls.length === 0) return false;
   return calls.some((call) => call.reason === 'needset_search_planner');
 }

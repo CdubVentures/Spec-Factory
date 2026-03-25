@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PrefetchNeedSetData, PrefetchSchema4Bundle, PrefetchLlmCall, NeedSetField } from '../../types.ts';
+import type { PrefetchNeedSetData, PrefetchSearchPlanBundle, PrefetchLlmCall, NeedSetField } from '../../types.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
@@ -52,10 +52,10 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
   const summary = data.summary;
   const blockers = data.blockers;
   /* WHY: backward-compat bundles from NeedSet use different keys (bundle_id,
-     priority_bucket, states) vs Schema 4 (key, priority, phase, queries).
+     priority_bucket, states) vs Search Plan (key, priority, phase, queries).
      Normalize so the panel renders either shape. */
   const bundles = useMemo(() => {
-    const raw = (data.bundles ?? []) as Array<PrefetchSchema4Bundle & { bundle_id?: string; priority_bucket?: string }>;
+    const raw = (data.bundles ?? []) as Array<PrefetchSearchPlanBundle & { bundle_id?: string; priority_bucket?: string }>;
     return raw.map((b) => ({
       key: (b.key ?? b.bundle_id ?? '') as string,
       label: (b.label ?? b.bundle_id ?? '') as string,
@@ -83,7 +83,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
   const round = data.round;
   const hasData = summary !== undefined || bundles.length > 0;
   // WHY: Pre-LLM data (blockers, deltas, field history) arrives instantly from
-  // Schema 2/3. LLM-dependent sections (bundles, profile, drilldown) need Schema 4.
+  // NeedSet/Context. LLM-dependent sections (bundles, profile, drilldown) need Search Plan.
   const hasPreLlmData = summary !== undefined;
   const hasLlmData = bundles.length > 0;
   const isLlmPending = hasPreLlmData && !hasLlmData;

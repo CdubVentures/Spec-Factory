@@ -96,7 +96,7 @@ export function toNeedSetBaseline({
     rows: [],
     deltas: [],
     debug: null,
-    // Schema 2 additions
+    // NeedSet output additions
     schema_version: null,
     round: 0,
     identity: null,

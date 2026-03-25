@@ -15,7 +15,7 @@ import { normalizeToken, normalizeQuery } from './searchPlannerHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 
-export interface SearchPlannerSchema4ViewProps {
+export interface NeedSetPlannerViewProps {
   calls: PrefetchLlmCall[];
   searchPlans?: SearchPlanPass[];
   searchResults?: PrefetchSearchResult[];
@@ -25,13 +25,13 @@ export interface SearchPlannerSchema4ViewProps {
 
 /* ── Component ──────────────────────────────────────────────────────── */
 
-export function SearchPlannerSchema4View({
+export function NeedSetPlannerView({
   calls,
   searchPlans,
   searchResults,
   idxRuntime,
   persistScope = '',
-}: SearchPlannerSchema4ViewProps) {
+}: NeedSetPlannerViewProps) {
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:searchPlanner:llmCalls:${persistScope}`, false);
   const plans = searchPlans || [];
 
@@ -79,9 +79,9 @@ export function SearchPlannerSchema4View({
           <Chip label={overallStatus.toUpperCase()} className={overallStatus === 'finished' ? 'sf-chip-success' : 'sf-chip-danger'} />
         </>}
         trailing={<>
-          <Chip label="Schema 4" className="sf-chip-info" />
+          <Chip label="NeedSet Planner" className="sf-chip-info" />
           <Chip label="LLM" className="sf-chip-warning" />
-          <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. Schema 4 uses a single focused LLM call instead of multi-pass discovery." />
+          <Tip text="The NeedSet Planner generates targeted search queries to close field coverage gaps identified by the NeedSet. The NeedSet Planner uses a single focused LLM call instead of multi-pass discovery." />
         </>}
       >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />

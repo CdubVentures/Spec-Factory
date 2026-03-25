@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import type { PrefetchSchema4Bundle } from '../../types.ts';
+import type { PrefetchSearchPlanBundle } from '../../types.ts';
 import { resolveNeedsetState, resolveNeedsetBucket } from '../../badgeRegistries.ts';
 import { phaseBadgeCls, nextAction } from './needSetHelpers.ts';
 
 /* ── Props ──────────────────────────────────────────────────────────── */
 
 export interface NeedSetBundleCardProps {
-  bundle: PrefetchSchema4Bundle;
+  bundle: PrefetchSearchPlanBundle;
   expanded: boolean;
   onToggle: () => void;
 }

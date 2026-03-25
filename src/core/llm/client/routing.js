@@ -243,6 +243,14 @@ export function resolvePhaseMaxContextTokens(config = {}, phase = '') {
   return Math.max(0, Number(config[`_resolved${cap}MaxContextTokens`] || 0));
 }
 
+// WHY: Generic resolver for boolean phase flags (webSearch, thinking).
+// configPostMerge writes _resolved${Phase}WebSearch and _resolved${Phase}Thinking.
+function resolvePhaseFlag(config = {}, phase = '', flagSuffix = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap || !flagSuffix) return false;
+  return Boolean(config[`_resolved${cap}${flagSuffix}`]);
+}
+
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
   const fallbackCap = roleTokenCap(config, role, reason, isFallback);
   const configured = configInt(config, 'llmReasoningBudget');
@@ -382,13 +390,25 @@ export async function callLlmWithRouting({
     modelOverride,
     phase,
   });
-  const effectiveRequestOptions = (
+  const baseRequestOptions = (
     requestOptions && typeof requestOptions === 'object'
       ? requestOptions
       : (usageContext?.request_options && typeof usageContext.request_options === 'object'
           ? usageContext.request_options
           : null)
   );
+
+  // WHY: Phase-level web search / thinking flags from LLM settings panel.
+  // Merged into request_options so LLM Lab receives them in the body.
+  const phaseWebSearch = resolvePhaseFlag(config, phase, 'WebSearch');
+  const phaseThinking = resolvePhaseFlag(config, phase, 'Thinking');
+  const effectiveRequestOptions = (phaseWebSearch || phaseThinking)
+    ? {
+      ...(baseRequestOptions || {}),
+      ...(phaseWebSearch ? { web_search: true } : {}),
+      ...(phaseThinking ? { thinking: true } : {}),
+    }
+    : baseRequestOptions;
 
   // WHY: Reasoning + tokens auto-resolved from config via phase. Callers never set these.
   // The LLM Settings panel is the SSOT — configPostMerge writes _resolved${Phase}* keys.

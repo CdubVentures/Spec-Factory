@@ -8,6 +8,23 @@ function buildPanelStub(exportName) {
   return `export function ${exportName}() { return null; }`;
 }
 
+function buildToolBrandStub() {
+  return `export function ToolBrandHeader() { return null; }`;
+}
+
+function buildToolRegistryStub() {
+  return `export function resolveToolBrand() { return undefined; }\nexport const TOOL_BRAND_REGISTRY = {};`;
+}
+
+function buildToolLogosStub() {
+  return [
+    'export function ScriptIcon() { return null; }',
+    'export function PlaywrightLogo() { return null; }',
+    'export function CrawleeLogo() { return null; }',
+    'export function SpecFactoryLogo() { return null; }',
+  ].join('\n');
+}
+
 function createFetchData(overrides = {}) {
   return {
     run_id: 'run-001',
@@ -40,7 +57,12 @@ async function createFetchHarness() {
             }
           `,
           './FetchStealthPanel.tsx': buildPanelStub('FetchStealthPanel'),
-          './FetchPlaceholderPanel.tsx': buildPanelStub('FetchPlaceholderPanel'),
+          './FetchAutoScrollPanel.tsx': buildPanelStub('FetchAutoScrollPanel'),
+          './FetchDomExpansionPanel.tsx': buildPanelStub('FetchDomExpansionPanel'),
+          './FetchCssOverridePanel.tsx': buildPanelStub('FetchCssOverridePanel'),
+          '../shared/ToolBrandHeader.tsx': buildToolBrandStub(),
+          '../shared/toolBrandRegistry.ts': buildToolRegistryStub(),
+          '../shared/toolLogos.tsx': buildToolLogosStub(),
         },
       },
     ).then((registryModule) => ({
@@ -86,15 +108,69 @@ test('stealth selector returns empty fallback when data is undefined', async () 
   assert.strictEqual(props.data.total_failed, 0);
 });
 
-test('placeholder selectors return persistScope and tool branding', async () => {
+test('auto_scroll selector extracts auto_scroll data from context', async () => {
   const harness = await createFetchHarness();
-  for (const key of ['auto_scroll', 'dom_expansion', 'css_override']) {
-    const props = harness.selectProps[key]({
-      data: undefined,
-      persistScope: harness.persistScope,
-    });
-    assert.strictEqual(props.persistScope, harness.persistScope);
-    assert.strictEqual(props.toolKey, 'playwright');
-    assert.strictEqual(props.toolCategory, 'script');
-  }
+  const data = createFetchData();
+  data.auto_scroll = {
+    scroll_records: [{ worker_id: 'fetch-1', display_label: 'fetch-a1', enabled: true, passes: 3 }],
+    total_scrolled: 1,
+    total_skipped: 0,
+  };
+  const props = harness.selectProps.auto_scroll({ data, persistScope: harness.persistScope });
+  assert.deepStrictEqual(props.data, data.auto_scroll);
+  assert.strictEqual(props.persistScope, harness.persistScope);
+});
+
+test('auto_scroll selector returns empty fallback when data is undefined', async () => {
+  const harness = await createFetchHarness();
+  const props = harness.selectProps.auto_scroll({ data: undefined, persistScope: harness.persistScope });
+  assert.ok(props.data && typeof props.data === 'object');
+  assert.deepStrictEqual(props.data.scroll_records, []);
+  assert.strictEqual(props.data.total_scrolled, 0);
+  assert.strictEqual(props.data.total_skipped, 0);
+});
+
+test('dom_expansion selector extracts dom_expansion data from context', async () => {
+  const harness = await createFetchHarness();
+  const data = createFetchData();
+  data.dom_expansion = {
+    expansion_records: [{ worker_id: 'fetch-1', display_label: 'fetch-a1', enabled: true, found: 5, clicked: 4 }],
+    total_expanded: 1,
+    total_skipped: 0,
+    total_clicks: 4,
+    total_found: 5,
+  };
+  const props = harness.selectProps.dom_expansion({ data, persistScope: harness.persistScope });
+  assert.deepStrictEqual(props.data, data.dom_expansion);
+  assert.strictEqual(props.persistScope, harness.persistScope);
+});
+
+test('dom_expansion selector returns empty fallback when data is undefined', async () => {
+  const harness = await createFetchHarness();
+  const props = harness.selectProps.dom_expansion({ data: undefined, persistScope: harness.persistScope });
+  assert.ok(props.data && typeof props.data === 'object');
+  assert.deepStrictEqual(props.data.expansion_records, []);
+  assert.strictEqual(props.data.total_expanded, 0);
+});
+
+test('css_override selector extracts css_override data from context', async () => {
+  const harness = await createFetchHarness();
+  const data = createFetchData();
+  data.css_override = {
+    override_records: [{ worker_id: 'fetch-1', display_label: 'fetch-a1', enabled: true, hiddenBefore: 8, revealedAfter: 8 }],
+    total_overridden: 1,
+    total_skipped: 0,
+    total_elements_revealed: 8,
+  };
+  const props = harness.selectProps.css_override({ data, persistScope: harness.persistScope });
+  assert.deepStrictEqual(props.data, data.css_override);
+  assert.strictEqual(props.persistScope, harness.persistScope);
+});
+
+test('css_override selector returns empty fallback when data is undefined', async () => {
+  const harness = await createFetchHarness();
+  const props = harness.selectProps.css_override({ data: undefined, persistScope: harness.persistScope });
+  assert.ok(props.data && typeof props.data === 'object');
+  assert.deepStrictEqual(props.data.override_records, []);
+  assert.strictEqual(props.data.total_overridden, 0);
 });

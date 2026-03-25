@@ -4,13 +4,13 @@ import assert from 'node:assert/strict';
 import { runDiscoverySeedPlan } from '../runDiscoverySeedPlan.js';
 
 // ---------------------------------------------------------------------------
-// Realistic Schema 2 output (needsetEngine.computeNeedSet return shape)
+// Realistic NeedSet output (needsetEngine.computeNeedSet return shape)
 // ---------------------------------------------------------------------------
 
-function makeSchema2() {
+function makeNeedSetFixture() {
   return {
     schema_version: 'needset_output.v2',
-    run_id: 'run-schema4-proof',
+    run_id: 'run-searchplan-proof',
     category: 'mouse',
     product_id: 'mouse-razer-viper-v3-pro',
     round: 0,
@@ -53,13 +53,13 @@ function makeSchema2() {
 }
 
 // ---------------------------------------------------------------------------
-// Realistic Schema 4 output (searchPlanBuilder.buildSearchPlan return shape)
+// Realistic Search Plan output (searchPlanBuilder.buildSearchPlan return shape)
 // ---------------------------------------------------------------------------
 
-function makeSchema4() {
+function makeSearchPlanFixture() {
   return {
     schema_version: 'needset_planner_output.v2',
-    run: { run_id: 'run-schema4-proof', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', round: 0 },
+    run: { run_id: 'run-searchplan-proof', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', round: 0 },
     planner: { mode: 'standard' },
     search_plan_handoff: {
       queries: [
@@ -347,8 +347,8 @@ function makeStageStubs() {
 
 test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundles, deltas', async () => {
   const logger = makeLoggerSpy();
-  const schema2 = makeSchema2();
-  const schema4 = makeSchema4();
+  const needSetOutput = makeNeedSetFixture();
+  const searchPlan = makeSearchPlanFixture();
   const planner = makePlanner();
 
   await runDiscoverySeedPlan({
@@ -363,11 +363,11 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
     category: 'mouse',
     categoryConfig: {
       category: 'mouse',
-      fieldOrder: schema2.fields.map((f) => f.field_key),
+      fieldOrder: needSetOutput.fields.map((f) => f.field_key),
       fieldGroups: {},
     },
     job: { productId: 'mouse-razer-viper-v3-pro', brand: 'Razer', model: 'Viper V3 Pro', aliases: ['RZ01-0490'] },
-    runId: 'run-schema4-proof',
+    runId: 'run-searchplan-proof',
     logger,
     roundContext: {},
     requiredFields: ['weight', 'sensor', 'dpi'],
@@ -375,9 +375,9 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
 
-    computeNeedSetFn: () => schema2,
+    computeNeedSetFn: () => needSetOutput,
     buildSearchPlanningContextFn: (args) => ({ ...args, context_ready: true }),
-    buildSearchPlanFn: async () => schema4,
+    buildSearchPlanFn: async () => searchPlan,
     ...makeStageStubs(),
   });
 
@@ -386,14 +386,14 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   const needsetCalls = logger.calls.filter(
     (c) => c.level === 'info' && c.event === 'needset_computed',
   );
-  const schema4Calls = needsetCalls.filter((c) => c.payload?.scope === 'search_plan');
-  assert.equal(schema4Calls.length, 1, 'exactly one search_plan needset_computed emitted');
+  const searchPlanCalls = needsetCalls.filter((c) => c.payload?.scope === 'search_plan');
+  assert.equal(searchPlanCalls.length, 1, 'exactly one search_plan needset_computed emitted');
 
-  const payload = schema4Calls[0].payload;
+  const payload = searchPlanCalls[0].payload;
 
   // -- scope and schema_version --
   assert.equal(payload.scope, 'search_plan', 'scope must be search_plan');
-  assert.equal(payload.schema_version, 'needset_planner_output.v2', 'schema_version from Schema 4');
+  assert.equal(payload.schema_version, 'needset_planner_output.v2', 'schema_version from Search Plan');
 
   // -- profile_influence (every family count) --
   assert.ok(payload.profile_influence, 'profile_influence must exist');
@@ -468,14 +468,14 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   assert.equal(sensorDelta.from, 'missing');
   assert.equal(sensorDelta.to, 'weak');
 
-  // -- fields from Schema 2 --
+  // -- fields from NeedSet --
   assert.ok(Array.isArray(payload.fields), 'fields must be array');
-  assert.equal(payload.fields.length, 12, 'all 12 fields from Schema 2');
+  assert.equal(payload.fields.length, 12, 'all 12 fields from NeedSet');
   assert.equal(payload.fields[0].field_key, 'weight');
   assert.equal(payload.fields[3].field_key, 'dpi');
   assert.equal(payload.fields[3].state, 'accepted');
 
-  // -- planner_seed from Schema 2 --
+  // -- planner_seed from NeedSet --
   assert.ok(payload.planner_seed, 'planner_seed must exist');
   assert.equal(payload.planner_seed.identity.brand, 'Razer');
   assert.equal(payload.planner_seed.product_class, 'gaming_mouse');
@@ -496,7 +496,7 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
   // attachment removed in Search Planner redesign. needset_computed still fires.
 });
 
-test('runDiscoverySeedPlan handles schema4 computation failure gracefully', async () => {
+test('runDiscoverySeedPlan handles search-plan computation failure gracefully', async () => {
   const logger = makeLoggerSpy();
   const planner = makePlanner();
 
@@ -528,10 +528,10 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
 
   // No search_plan needset_computed because the LLM call failed.
   // The early needset_assessment may still fire before the failure.
-  const schema4Calls = logger.calls.filter(
+  const searchPlanCalls = logger.calls.filter(
     (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'search_plan',
   );
-  assert.equal(schema4Calls.length, 0, 'no search_plan needset_computed on failure');
+  assert.equal(searchPlanCalls.length, 0, 'no search_plan needset_computed on failure');
 
   // But a warning was logged
   const warnCalls = logger.calls.filter(
@@ -541,7 +541,7 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
   assert.equal(warnCalls[0].payload.error, 'LLM unavailable');
 });
 
-test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no panel', async () => {
+test('runDiscoverySeedPlan does NOT emit needset_computed when search plan has no panel', async () => {
   const logger = makeLoggerSpy();
   const planner = makePlanner();
 
@@ -565,9 +565,9 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
 
-    computeNeedSetFn: () => makeSchema2(),
+    computeNeedSetFn: () => makeNeedSetFixture(),
     buildSearchPlanningContextFn: () => ({}),
-    // Schema 4 returns but with no panel
+    // Search plan returns but with no panel
     buildSearchPlanFn: async () => ({
       schema_version: 'needset_planner_output.v2',
       search_plan_handoff: { queries: [], total: 0 },
@@ -578,8 +578,8 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
 
   // No search_plan needset_computed when panel is null.
   // The early needset_assessment may still fire.
-  const schema4Calls = logger.calls.filter(
+  const searchPlanCalls = logger.calls.filter(
     (c) => c.level === 'info' && c.event === 'needset_computed' && c.payload?.scope === 'search_plan',
   );
-  assert.equal(schema4Calls.length, 0, 'no search_plan needset_computed when panel is null');
+  assert.equal(searchPlanCalls.length, 0, 'no search_plan needset_computed when panel is null');
 });

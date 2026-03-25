@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   toNeedSetSnapshot,
-  makeSchema4NeedsetComputedPayload,
-} from './helpers/schema4PrefetchLiveWiringHarness.js';
+  makeSearchPlanNeedsetComputedPayload,
+} from './helpers/searchPlanPrefetchLiveWiringHarness.js';
 // ---------------------------------------------------------------------------
-// 1. toNeedSetSnapshot: Schema 4 fields preserved through payload shaper
+// 1. toNeedSetSnapshot: Search Plan fields preserved through payload shaper
 // ---------------------------------------------------------------------------
 
-test('toNeedSetSnapshot preserves bundles, profile_influence, deltas from Schema 4 event', () => {
-  const raw = makeSchema4NeedsetComputedPayload();
+test('toNeedSetSnapshot preserves bundles, profile_influence, deltas from Search Plan event', () => {
+  const raw = makeSearchPlanNeedsetComputedPayload();
   const snap = toNeedSetSnapshot(raw, '2026-03-16T00:01:00.000Z');
 
   // bundles

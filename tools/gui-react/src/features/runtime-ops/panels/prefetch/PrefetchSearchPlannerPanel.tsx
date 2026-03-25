@@ -17,11 +17,11 @@ import {
   normalizeToken,
   normalizeQuery,
   parsePlannerPayload,
-  isSchema4PlannerPath,
+  isNeedSetPlannerPath,
   isTierEnhancePath,
   buildPlannerInputSummary,
 } from './searchPlannerHelpers.ts';
-import { SearchPlannerSchema4View } from './SearchPlannerSchema4View.tsx';
+import { NeedSetPlannerView } from './NeedSetPlannerView.tsx';
 import { SearchPlannerTierEnhanceView } from './SearchPlannerTierEnhanceView.tsx';
 import { SearchPlannerPassResults } from './SearchPlannerPassResults.tsx';
 import { SearchPlannerContextSection } from './SearchPlannerContextSection.tsx';
@@ -55,7 +55,7 @@ export function PrefetchSearchPlannerPanel({
   const plannerInputSummary = useMemo(() => buildPlannerInputSummary(callPayloads), [callPayloads]);
 
   const tierEnhanceActive = useMemo(() => isTierEnhancePath(plans), [plans]);
-  const schema4Active = useMemo(() => isSchema4PlannerPath(calls), [calls]);
+  const needSetPlannerActive = useMemo(() => isNeedSetPlannerPath(calls), [calls]);
 
   const totalTokens = calls.reduce((sum, call) => sum + (call.tokens?.input ?? 0) + (call.tokens?.output ?? 0), 0);
   const totalDuration = calls.reduce((sum, call) => sum + (call.duration_ms ?? 0), 0);
@@ -83,8 +83,8 @@ export function PrefetchSearchPlannerPanel({
     return <SearchPlannerTierEnhanceView calls={calls} searchPlans={searchPlans} searchResults={searchResults} idxRuntime={idxRuntime} persistScope={persistScope} />;
   }
 
-  if (schema4Active) {
-    return <SearchPlannerSchema4View calls={calls} searchPlans={searchPlans} searchResults={searchResults} idxRuntime={idxRuntime} persistScope={persistScope} />;
+  if (needSetPlannerActive) {
+    return <NeedSetPlannerView calls={calls} searchPlans={searchPlans} searchResults={searchResults} idxRuntime={idxRuntime} persistScope={persistScope} />;
   }
 
   if (!hasCalls && !hasStructured) {

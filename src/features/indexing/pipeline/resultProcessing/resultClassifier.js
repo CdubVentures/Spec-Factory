@@ -87,6 +87,7 @@ export function classifyAndDeduplicateCandidates({
         trace.tier_name_guess = String(classified.tierName || '').trim();
         trace.role = String(classified.role || '').trim();
         trace.doc_kind_guess = String(classified.doc_kind_guess || '').trim();
+        // WHY: classified uses camelCase (pipeline convention); trace uses snake_case (DB column names).
         trace.approved_domain = Boolean(classified.approvedDomain);
         trace.decision = 'eligible';
       }

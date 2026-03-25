@@ -179,6 +179,35 @@ describe('buildModelDropdownOptions merge contracts', () => {
     }
   });
 
+  it('lab models carry accessMode and capabilities in dropdown options', () => {
+    const registry = [
+      makeProvider({
+        id: 'lab-gemini',
+        name: 'LLM Lab Gemini',
+        accessMode: 'lab' as const,
+        models: [{
+          ...makeModel('gemini-2.5-flash'),
+          accessMode: 'lab' as const,
+          capabilities: { thinking: true, web: true },
+        }],
+      }),
+      makeProvider({
+        id: 'default-gemini',
+        name: 'Gemini',
+        models: [makeModel('gemini-2.5-flash')],
+      }),
+    ];
+
+    const result = buildModelDropdownOptions([], registry);
+    const labOption = result.find((o) => o.providerId === 'lab-gemini');
+    const apiOption = result.find((o) => o.providerId === 'default-gemini');
+
+    deepStrictEqual(labOption?.accessMode, 'lab');
+    deepStrictEqual(labOption?.capabilities, { thinking: true, web: true });
+    deepStrictEqual(apiOption?.accessMode, undefined);
+    deepStrictEqual(apiOption?.capabilities, undefined);
+  });
+
   it('keeps disabled-provider models off both registry and flat fallback surfaces', () => {
     const registry = [
       makeProvider({

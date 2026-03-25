@@ -4,8 +4,8 @@ import {
   PHASE_OVERRIDE_REGISTRY,
   uiPhaseIdToOverrideKey,
   type PhaseOverrideRegistryEntry,
-} from '../llmPhaseOverridesBridge.ts';
-import { resolvePhaseModel } from '../llmPhaseOverridesBridge.ts';
+} from '../llmPhaseOverridesBridge.generated.ts';
+import { resolvePhaseModel } from '../llmPhaseOverridesBridge.generated.ts';
 
 describe('PHASE_OVERRIDE_REGISTRY', () => {
   it('has exactly 5 entries', () => {
@@ -57,6 +57,53 @@ describe('uiPhaseIdToOverrideKey', () => {
 
   it('returns override key for validate', () => {
     strictEqual(uiPhaseIdToOverrideKey('validate'), 'validate');
+  });
+});
+
+describe('resolvePhaseModel — webSearch and thinking defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+  };
+
+  it('webSearch defaults to false when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.webSearch, false);
+  });
+
+  it('thinking defaults to false when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.thinking, false);
+  });
+
+  it('webSearch resolves to true when phase override is set', () => {
+    const overrides = { needset: { webSearch: true } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.webSearch, true);
+  });
+
+  it('thinking resolves to true when phase override is set', () => {
+    const overrides = { needset: { thinking: true } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.thinking, true);
+  });
+
+  it('webSearch and thinking are independent per phase', () => {
+    const overrides = {
+      needset: { webSearch: true, thinking: false },
+      brandResolver: { webSearch: false, thinking: true },
+    };
+    const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
+    const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
+    strictEqual(needset?.webSearch, true);
+    strictEqual(needset?.thinking, false);
+    strictEqual(brand?.webSearch, false);
+    strictEqual(brand?.thinking, true);
   });
 });
 

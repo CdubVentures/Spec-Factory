@@ -9,7 +9,9 @@ export const autoScrollPlugin = {
     async onInteract({ page, settings }) {
       const enabled = settings?.autoScrollEnabled !== false && settings?.autoScrollEnabled !== 'false';
       const passes = Number(settings?.autoScrollPasses) || 0;
-      if (!enabled || passes <= 0) return;
+      if (!enabled || passes <= 0) {
+        return { enabled: false, passes: 0, delayMs: 0, postLoadWaitMs: 0 };
+      }
 
       const delayMs = Number(settings?.autoScrollDelayMs) || 0;
       const postLoadWaitMs = Number(settings?.autoScrollPostLoadWaitMs) || 200;
@@ -23,6 +25,8 @@ export const autoScrollPlugin = {
       await page.evaluate(() => window.scrollTo(0, 0));
 
       if (postLoadWaitMs > 0) await page.waitForTimeout(postLoadWaitMs);
+
+      return { enabled: true, passes, delayMs, postLoadWaitMs };
     },
   },
 };

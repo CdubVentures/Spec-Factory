@@ -135,25 +135,15 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
 
     if (shouldHydrateRetainedBrowserFrame(workerState)) {
       setStatus('ended');
-      // WHY: Try loading a crawl video first. If the video endpoint returns 200,
-      // display the looping video instead of a static retained frame. The video
-      // URL is set as a direct src for the <video> element (browser handles range
-      // requests). If 404/error, fall through to the existing static frame.
-      const tryVideoUrl = `/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/video/${encodeURIComponent(workerId)}`;
-      void (async () => {
-        if (cancelled || !isBrowserBackedFetchWorker(workerPool, fetchMode)) {
-          void hydrateLastFrame();
-          return;
-        }
-        try {
-          const res = await fetch(tryVideoUrl, { method: 'HEAD' });
-          if (!cancelled && res.ok) {
-            setVideoUrl(tryVideoUrl);
-            return;
-          }
-        } catch { /* ignore — fall through to static frame */ }
-        if (!cancelled) void hydrateLastFrame();
-      })();
+      // WHY: For browser-backed fetch workers, optimistically set the video URL.
+      // The <video> element's onError handler falls back to the static frame if
+      // the video doesn't exist (404). This avoids a HEAD preflight (the backend
+      // only accepts GET) and eliminates the async race condition.
+      if (isBrowserBackedFetchWorker(workerPool, fetchMode)) {
+        setVideoUrl(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/video/${encodeURIComponent(workerId)}`);
+      } else {
+        void hydrateLastFrame();
+      }
       return () => {
         cancelled = true;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -235,6 +225,11 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
           muted
           playsInline
           className="w-full h-full object-contain"
+          onError={() => {
+            // WHY: Video 404 or load failure — clear URL so the component
+            // falls through to the static retained frame view.
+            setVideoUrl('');
+          }}
         />
         <div className="absolute top-2 right-2 flex items-center gap-1.5 sf-chip-neutral px-2 py-0.5 rounded sf-text-caption font-medium">
           Crawl Recording

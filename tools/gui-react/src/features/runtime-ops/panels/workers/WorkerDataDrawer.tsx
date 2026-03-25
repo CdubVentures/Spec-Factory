@@ -8,12 +8,8 @@ import type {
   WorkerDetailResponse,
 } from '../../types.ts';
 import { truncateUrl, poolBadgeClass, workerStateBadgeClass, formatMs } from '../../helpers.ts';
-import { DrawerDocsTab } from './DrawerDocsTab.tsx';
 import { DrawerExtractTab } from './DrawerExtractTab.tsx';
-import { DrawerQueueTab } from './DrawerQueueTab.tsx';
 import { DrawerShotsTab } from './DrawerShotsTab.tsx';
-import { DrawerMetricsTab } from './DrawerMetricsTab.tsx';
-import { DrawerPipelineTab } from './DrawerPipelineTab.tsx';
 
 interface WorkerDataDrawerProps {
   runId: string;
@@ -26,20 +22,12 @@ interface WorkerDataDrawerProps {
 }
 
 const TABS: { key: WorkerDataTab; label: string }[] = [
-  { key: 'documents', label: 'Docs' },
   { key: 'extraction', label: 'Extract' },
-  { key: 'queue', label: 'Queue' },
   { key: 'screenshots', label: 'Shots' },
-  { key: 'metrics', label: 'Metrics' },
-  { key: 'pipeline', label: 'Pipeline' },
 ];
 const WORKER_DRAWER_TAB_KEYS = [
-  'documents',
   'extraction',
-  'queue',
   'screenshots',
-  'metrics',
-  'pipeline',
 ] as const satisfies ReadonlyArray<WorkerDataTab>;
 
 export function WorkerDataDrawer({
@@ -53,7 +41,7 @@ export function WorkerDataDrawer({
 }: WorkerDataDrawerProps) {
   const [activeTab, setActiveTab] = usePersistedTab<WorkerDataTab>(
     `runtimeOps:workers:drawerTab:${category}`,
-    'documents',
+    'extraction',
     { validValues: WORKER_DRAWER_TAB_KEYS },
   );
 
@@ -150,25 +138,12 @@ export function WorkerDataDrawer({
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-3">
-        {activeTab === 'documents' && (
-          <DrawerDocsTab
-            documents={data?.documents ?? []}
-            extractionFields={data?.extraction_fields ?? []}
-            screenshots={data?.screenshots ?? []}
-            queueJobs={data?.queue_jobs ?? []}
-            runId={runId}
-            isRunning={isRunning}
-            category={category}
-          />
-        )}
         {activeTab === 'extraction' && (
           <DrawerExtractTab
             fields={data?.extraction_fields ?? []}
-            indexedFieldNames={data?.indexed_field_names ?? []}
-            category={category}
+            workerState={worker?.state ?? ''}
           />
         )}
-        {activeTab === 'queue' && <DrawerQueueTab jobs={data?.queue_jobs ?? []} />}
         {activeTab === 'screenshots' && (
           <DrawerShotsTab
             screenshots={data?.screenshots ?? []}
@@ -177,8 +152,6 @@ export function WorkerDataDrawer({
             isRunning={isRunning}
           />
         )}
-        {activeTab === 'metrics' && <DrawerMetricsTab data={data} />}
-        {activeTab === 'pipeline' && <DrawerPipelineTab data={data} />}
       </div>
     </div>
   );

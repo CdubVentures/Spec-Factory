@@ -285,7 +285,7 @@
 - `src/features/review/api/tests/reviewRoutesDataChangeContract.test.js`
 - `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanParallel.characterization.test.js`
 - `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`
-- `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js`
+- `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js`
 - `src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js`
 
 ### File Audit
@@ -297,14 +297,14 @@
 | `src/features/review/api/tests/reviewComponentMutationService.characterization.test.js` | RETIRE | It pinned internal component mutation helpers, collision handling, and transaction wiring instead of the route-level contract. | Public mutation envelopes and failure contracts are covered by `src/features/review/api/tests/reviewMutationRouteContracts.test.js`. Data-change behavior remains covered by `src/features/review/api/tests/reviewRoutesDataChangeContract.test.js`. | Targeted review/orchestration proof pending in this audit pass. | Deleted. |
 | `src/features/review/api/tests/reviewMutationRouteContracts.test.js` | KEEP | Protects the public success, validation, and failure envelopes for item, enum, and component mutation routes. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
 | `src/features/review/api/tests/reviewRoutesDataChangeContract.test.js` | KEEP | Protects review route data-change emissions and user-visible route outcomes. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
-| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanParallel.characterization.test.js` | RETIRE | It locked down internal stage ordering, overlap timing, focus-group plumbing, and promotion flow details. Those are implementation details, not the orchestrator’s public contract. | Orchestration contract coverage remains in `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`, `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js`, and `src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js`. | Targeted review/orchestration proof pending in this audit pass. | Deleted. |
-| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | KEEP | Protects schema 2→3→4 orchestration behavior at the returned payload boundary. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
-| `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js` | KEEP | Protects emitted Schema 4 payloads, warnings, and panel-gated behavior. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
+| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanParallel.characterization.test.js` | RETIRE | It locked down internal stage ordering, overlap timing, focus-group plumbing, and promotion flow details. Those are implementation details, not the orchestrator’s public contract. | Orchestration contract coverage remains in `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`, `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js`, and `src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js`. | Targeted review/orchestration proof pending in this audit pass. | Deleted. |
+| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | KEEP | Protects NeedSet→planning-context→search-plan orchestration behavior at the returned payload boundary. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
+| `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js` | KEEP | Protects emitted search-plan payloads, warnings, and panel-gated behavior. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
 | `src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js` | KEEP | Protects the live cap guarantees that the pipeline must preserve. | No replacement required. | Targeted review/orchestration proof pending in this audit pass. | Kept unchanged. |
 
 ### Proof Stack
 
-- `node --test src/features/review/api/tests/reviewMutationRouteContracts.test.js src/features/review/api/tests/reviewRoutesDataChangeContract.test.js src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js`
+- `node --test src/features/review/api/tests/reviewMutationRouteContracts.test.js src/features/review/api/tests/reviewRoutesDataChangeContract.test.js src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js src/features/indexing/pipeline/tests/pipelineCapEnforcement.test.js`
 - Result: green, 40/40 passing on 2026-03-24.
 - `npm test`
 - Result: green, 6390/6390 passing on 2026-03-24.
@@ -540,7 +540,7 @@
 - `src/indexlab/tests/phase01NeedSetEngine.schema2-shape.test.js`
 - `src/indexlab/tests/phase01NeedSetEngine.state-model.test.js`
 - `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`
-- `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js`
+- `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js`
 
 ### File Audit
 
@@ -551,13 +551,13 @@
 | `src/indexlab/tests/phase01NeedSetEngine.schema2-shape.test.js` | KEEP | Protects the canonical schema2 output surface for top-level fields, identity block, planner seed, summary, blockers, and per-field entries. | No replacement required. | Targeted need-set proof green on 2026-03-24. | Kept unchanged. |
 | `src/indexlab/tests/phase01NeedSetEngine.state-model.test.js` | KEEP | Protects state derivation, bundle formation, focus-field ordering, summary counts, row ordering, and edge-case behavior. | No replacement required. | Targeted need-set proof green on 2026-03-24. | Kept unchanged. |
 | `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | KEEP | Protects the orchestrator return contract, schema handoff attachment, planner wiring, and fresh-result enrichment. | No replacement required. | Surrounding need-set proof green on 2026-03-24. | Kept unchanged. |
-| `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js` | KEEP | Protects emitted needset/search-plan payload contracts at the orchestration boundary. | No replacement required. | Surrounding need-set proof green on 2026-03-24. | Kept unchanged. |
+| `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js` | KEEP | Protects emitted needset/search-plan payload contracts at the orchestration boundary. | No replacement required. | Surrounding need-set proof green on 2026-03-24. | Kept unchanged. |
 
 ### Proof Stack
 
 - `node --test src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js src/indexlab/tests/phase01NeedSetEngine.contracts.test.js src/indexlab/tests/phase01NeedSetEngine.schema2-shape.test.js src/indexlab/tests/phase01NeedSetEngine.state-model.test.js`
 - Result: green, 67/67 passing on 2026-03-24.
-- `node --test src/indexlab/tests/phase01NeedSetEngine*.test.js src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js`
+- `node --test src/indexlab/tests/phase01NeedSetEngine*.test.js src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js`
 - Result: green, 157/157 passing on 2026-03-24.
 - `npm test`
 - Result: green, 6045/6045 passing on 2026-03-24.
@@ -627,7 +627,7 @@
 - `src/indexlab/tests/searchProfileTierDataFlow.test.js`
 - `src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js`
 - `src/features/indexing/api/builders/tests/runtimeOpsSearchProfileMergeHelpers.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
@@ -636,13 +636,13 @@
 | `src/indexlab/tests/searchProfileTierDataFlow.test.js` | COLLAPSE | The file mixed stale "Phase 1/Phase 2" characterization scaffolding with duplicate status assertions and repeated tier-field spot checks. It also imported `mergeSearchProfileRows` without using it. | Rewritten in place as a compact contract suite covering legacy row preservation, tier metadata preservation for key-search rows, safe tier defaults, and caller-owned versus derived status behavior in `refreshSearchProfileCollections(...)`. | Targeted search-profile proof green on 2026-03-24. | Kept with duplicate characterization noise removed. |
 | `src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js` | KEEP | Protects on-disk search-profile artifact updates and event-driven runtime bridge behavior. | No replacement required. | Surrounding search-profile proof green on 2026-03-24. | Kept unchanged. |
 | `src/features/indexing/api/builders/tests/runtimeOpsSearchProfileMergeHelpers.test.js` | KEEP | Protects the query merge contract that enriches and deduplicates search-profile rows downstream. | No replacement required. | Surrounding search-profile proof green on 2026-03-24. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live runtime validation that prefetch/search-profile wiring still produces populated search-profile artifacts after the collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live runtime validation that prefetch/search-profile wiring still produces populated search-profile artifacts after the collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
 
 ### Proof Stack
 
 - `node --test src/indexlab/tests/searchProfileTierDataFlow.test.js src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js src/features/indexing/api/builders/tests/runtimeOpsSearchProfileMergeHelpers.test.js`
 - Result: green, 47/47 passing on 2026-03-24.
-- `node --test src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 1/1 passing on 2026-03-24.
 - `npm test`
 - Result: green, 5906/5906 passing on 2026-03-24.
@@ -658,7 +658,7 @@
 - `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.filtering.test.js`
 - `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorIntegration.test.js`
 - `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorFallback.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
@@ -670,7 +670,7 @@
 | `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.filtering.test.js` | KEEP | Protects observable filtering and safety classification outcomes for ranked candidates. | No replacement required. | Targeted result-processing proof green on 2026-03-24. | Kept unchanged. |
 | `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorIntegration.test.js` | KEEP | Protects the selector integration contract that chooses the public SERP view from processed candidates. | No replacement required. | Surrounding result-processing proof green on 2026-03-24. | Kept unchanged. |
 | `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorFallback.test.js` | KEEP | Protects the fallback contract when selector/reranker inputs degrade and the pipeline must still emit usable SERP output. | No replacement required. | Surrounding result-processing proof green on 2026-03-24. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live runtime validation that the prefetch path still emits populated SERP/search-profile artifacts after the collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live runtime validation that the prefetch path still emits populated SERP/search-profile artifacts after the collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
 
 ### Proof Stack
 
@@ -678,7 +678,7 @@
 - Result: green, 9/9 passing on 2026-03-24.
 - `node --test src/features/indexing/pipeline/resultProcessing/tests/*.test.js`
 - Result: green, 88/88 passing on 2026-03-24.
-- `node --test src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 1/1 passing on 2026-03-24.
 - `npm test`
 - Result: green, 5888/5888 passing on 2026-03-24.
@@ -913,7 +913,7 @@
 - `src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js`
 - `src/features/indexing/api/builders/tests/runtimeOpsPreFetchBrandResolutionContracts.test.js`
 - `src/features/indexing/api/builders/tests/runtimeOpsPreFetchCompatibilityContracts.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
@@ -926,7 +926,7 @@
 | `src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js` | KEEP | Protects runtime-bridge artifact behavior, including the replacement contract that `search_profile_generated` writes a planned `search_profile.json` payload with normalized query rows. | No replacement required. | Targeted bridge/prefetch proof green on 2026-03-24. | Kept with new artifact contract coverage added. |
 | `src/features/indexing/api/builders/tests/runtimeOpsPreFetchBrandResolutionContracts.test.js` | KEEP | Protects the runtime-ops brand-resolution surface derived from `brand_resolved` events and artifacts. | No replacement required. | Surrounding bridge/prefetch proof green on 2026-03-24. | Kept unchanged. |
 | `src/features/indexing/api/builders/tests/runtimeOpsPreFetchCompatibilityContracts.test.js` | KEEP | Protects compatibility defaults across prefetch sections when some event/artifact inputs are absent. | No replacement required. | Surrounding bridge/prefetch proof green on 2026-03-24. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live-run validation that the prefetch tabs still hydrate populated brand/search-profile surfaces after the wrapper collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live-run validation that the prefetch tabs still hydrate populated brand/search-profile surfaces after the wrapper collapse. | No replacement required. | Live validation green on 2026-03-24. | Kept unchanged. |
 
 ### Proof Stack
 
@@ -934,7 +934,7 @@
 - Result: green, 17/17 passing on 2026-03-24.
 - `node --test src/indexlab/tests/runtimeBridgeEventAudit.workers.test.js src/features/indexing/api/builders/tests/runtimeOpsPreFetchBrandResolutionContracts.test.js src/features/indexing/api/builders/tests/runtimeOpsPreFetchCompatibilityContracts.test.js`
 - Result: green, 15/15 passing on 2026-03-24.
-- `node --test src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 1/1 passing on 2026-03-24.
 - `npm test`
 - Result: green, 5806/5806 passing on 2026-03-24.
@@ -944,30 +944,30 @@
 ### Scope
 
 - `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`
-- `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js`
+- `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js`
 - `src/features/indexing/pipeline/orchestration/tests/pipelineContextSchema.progressionContracts.test.js`
 - `src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js`
 - `src/indexlab/tests/phase01NeedSetEngine.contracts.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
 | Test file | Bucket | Why | Replacement | Proof run | Final disposition |
 | --- | --- | --- | --- | --- | --- |
-| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | COLLAPSE | The file asserted captured planner/journey arguments, downstream config forwarding, brand-host mutation, and object identity of the merged result. Those checks pinned orchestration internals instead of the returned discovery contract. | Rewritten in place to keep only returned-result assertions over `seed_search_plan_output` and `enqueue_summary` for the handoff, failure, and planner-disabled branches. Emitted schema-4 event behavior remains covered by `schema4EmissionProof.test.js`, while `runNeedSet`/phase-01 suites keep the search-plan seed contract. | Targeted orchestration schema proof green on 2026-03-25. | Kept with plumbing and identity assertions removed. |
-| `src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js` | KEEP | Protects the observable `needset_computed` and `search_plan_failed` event payloads emitted by the orchestrator. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
+| `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | COLLAPSE | The file asserted captured planner/journey arguments, downstream config forwarding, brand-host mutation, and object identity of the merged result. Those checks pinned orchestration internals instead of the returned discovery contract. | Rewritten in place to keep only returned-result assertions over `seed_search_plan_output` and `enqueue_summary` for the handoff, failure, and planner-disabled branches. Emitted search-plan event behavior remains covered by `searchPlanEmissionProof.test.js`, while `runNeedSet`/phase-01 suites keep the search-plan seed contract. | Targeted orchestration schema proof green on 2026-03-25. | Kept with plumbing and identity assertions removed. |
+| `src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js` | KEEP | Protects the observable `needset_computed` and `search_plan_failed` event payloads emitted by the orchestrator. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/pipeline/orchestration/tests/pipelineContextSchema.progressionContracts.test.js` | KEEP | Protects the pipeline checkpoint schema contracts that the orchestrator validates as it progresses. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js` | KEEP | Protects the `seedSearchPlan` contract returned by the NeedSet wrapper before orchestration attaches it to the final discovery result. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
-| `src/indexlab/tests/phase01NeedSetEngine.contracts.test.js` | KEEP | Protects the phase-01 output and runtime-bridge event contract that underpins schema-4 attachment. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live-run validation that populated schema-4 needset/search-profile surfaces still hydrate the prefetch view after the orchestration collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
+| `src/indexlab/tests/phase01NeedSetEngine.contracts.test.js` | KEEP | Protects the phase-01 output and runtime-bridge event contract that underpins search-plan attachment. | No replacement required. | Surrounding orchestration schema proof green on 2026-03-25. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live-run validation that populated search-plan needset/search-profile surfaces still hydrate the prefetch view after the orchestration collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
 
 ### Proof Stack
 
-- `node --test src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/schema4EmissionProof.test.js src/features/indexing/pipeline/orchestration/tests/pipelineContextSchema.progressionContracts.test.js`
+- `node --test src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js src/features/indexing/pipeline/orchestration/tests/searchPlanEmissionProof.test.js src/features/indexing/pipeline/orchestration/tests/pipelineContextSchema.progressionContracts.test.js`
 - Result: green, 11/11 passing on 2026-03-25.
 - `node --test src/features/indexing/pipeline/needSet/tests/needSetStageWrapper.test.js src/indexlab/tests/phase01NeedSetEngine.contracts.test.js`
 - Result: green, 16/16 passing on 2026-03-25.
-- `node --test src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 1/1 passing on 2026-03-25.
 
 ## Extension: Result Processing Selector Contract Audit
@@ -983,7 +983,7 @@
 - `src/features/indexing/api/builders/tests/runtimeOpsPreFetchDomainHealthContracts.test.js`
 - `src/features/indexing/api/builders/tests/runtimeOpsPreFetchSerpContracts.test.js`
 - `src/features/indexing/api/tests/runtimeOpsSearchWorkerTriageEnrichment.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
@@ -991,14 +991,14 @@
 | --- | --- | --- | --- | --- | --- |
 | `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorIntegration.test.js` | COLLAPSE | The file asserted selector invocation and generated id format, and duplicated top-level return-shape coverage already owned elsewhere. Those checks pinned internal LLM plumbing instead of the returned result contract. | Rewritten in place to keep only return-level contracts for all-reject, invalid-output fallback, and successful LLM selection. Shared builders moved into `src/features/indexing/pipeline/resultProcessing/tests/helpers/triageCharacterizationHarness.js`. | Targeted result-processing proof green on 2026-03-25. | Kept with internal call-shape and duplicate shape assertions removed. |
 | `src/features/indexing/pipeline/resultProcessing/tests/serpSelectorFallback.test.js` | COLLAPSE | The file duplicated invalid-output fallback, return-shape parity, logger-event checks, and success-path score-source checks already covered by neighboring contract suites. | Rewritten in place to keep fallback result contracts for selected URLs, cap enforcement, passthrough metadata, pinned-host ordering, zero-candidate behavior, and `fallback_applied`. Shared builders moved into `src/features/indexing/pipeline/resultProcessing/tests/helpers/triageCharacterizationHarness.js`. | Targeted result-processing proof green on 2026-03-25. | Kept with duplicate and logger-side-effect assertions removed. |
-| `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.filtering.test.js` | COLLAPSE | One test asserted `domains_classified` logger payload shape from inside `processDiscoveryResults`, which was implementation-coupled and redundant with runtime boundary coverage. | Rewritten in place to keep only returned dedupe and hard-drop contracts. `domains_classified` boundary behavior remains covered by `src/features/indexing/api/builders/tests/runtimeOpsPreFetchDomainHealthContracts.test.js` and `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`. | Targeted result-processing and boundary proof green on 2026-03-25. | Kept with logger payload assertion removed. |
+| `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.filtering.test.js` | COLLAPSE | One test asserted `domains_classified` logger payload shape from inside `processDiscoveryResults`, which was implementation-coupled and redundant with runtime boundary coverage. | Rewritten in place to keep only returned dedupe and hard-drop contracts. `domains_classified` boundary behavior remains covered by `src/features/indexing/api/builders/tests/runtimeOpsPreFetchDomainHealthContracts.test.js` and `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`. | Targeted result-processing and boundary proof green on 2026-03-25. | Kept with logger payload assertion removed. |
 | `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.instrumentation.test.js` | COLLAPSE | The file asserted logger event-name emission from inside `processDiscoveryResults`, which protected an internal breadcrumb instead of returned behavior. | Rewritten in place to keep only the returned `serp_explorer` reason-code enrichment contract. | Targeted result-processing proof green on 2026-03-25. | Kept with event-name policing removed. |
 | `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.result-contract.test.js` | KEEP | Protects the returned top-level discovery payload surface and selected URL contract. | No replacement required. | Targeted result-processing proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/pipeline/resultProcessing/tests/triageCharacterization.serp-shape.test.js` | KEEP | Protects the returned SERP explorer and search-profile aggregates consumed downstream. | No replacement required. | Targeted result-processing proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/api/builders/tests/runtimeOpsPreFetchDomainHealthContracts.test.js` | KEEP | Protects the runtime-ops boundary projection for `domains_classified` events after the internal logger assertion was removed. | No replacement required. | Surrounding boundary proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/api/builders/tests/runtimeOpsPreFetchSerpContracts.test.js` | KEEP | Protects the runtime-ops boundary projection for `serp_selector_completed` candidate triage data. | No replacement required. | Surrounding boundary proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/api/tests/runtimeOpsSearchWorkerTriageEnrichment.test.js` | KEEP | Protects the search-worker consumer contract for triage decisions and score propagation. | No replacement required. | Surrounding boundary proof green on 2026-03-25. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live validation that populated result-processing event/artifact surfaces still hydrate the runtime-ops prefetch UI after the collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live validation that populated result-processing event/artifact surfaces still hydrate the runtime-ops prefetch UI after the collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
 
 ### Proof Stack
 
@@ -1006,7 +1006,7 @@
 - Result: green, 75/75 passing on 2026-03-25.
 - `node --test src/features/indexing/api/builders/tests/runtimeOpsPreFetchDomainHealthContracts.test.js src/features/indexing/api/builders/tests/runtimeOpsPreFetchSerpContracts.test.js src/features/indexing/api/tests/runtimeOpsSearchWorkerTriageEnrichment.test.js`
 - Result: green, 10/10 passing on 2026-03-25.
-- `node --test src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 1/1 passing on 2026-03-25.
 
 ## Extension: Full-Suite Blocker Cleanup
@@ -1042,7 +1042,7 @@
 - `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`
 - `src/features/indexing/search/tests/phase02SearchProfile.brand-host-hints.test.js`
 - `src/features/indexing/search/tests/queryBuilderFieldAllocation.test.js`
-- `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 
 ### File Audit
 
@@ -1053,13 +1053,13 @@
 | `src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js` | KEEP | Protects the returned orchestration contract for schema handoff and enqueue-summary behavior after bootstrap completes. | No replacement required. | Targeted bootstrap proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/search/tests/phase02SearchProfile.brand-host-hints.test.js` | KEEP | Protects downstream brand-host query behavior that consumes the bootstrap phase host promotion and resolver output. | No replacement required. | Surrounding downstream proof green on 2026-03-25. | Kept unchanged. |
 | `src/features/indexing/search/tests/queryBuilderFieldAllocation.test.js` | KEEP | Protects downstream query builder allocation and official-domain fallback behavior that matters after bootstrap host promotion. | No replacement required. | Surrounding downstream proof green on 2026-03-25. | Kept unchanged. |
-| `src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js` | KEEP | Provides live validation that the indexing runtime still hydrates the populated prefetch surfaces after the bootstrap collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js` | KEEP | Provides live validation that the indexing runtime still hydrates the populated prefetch surfaces after the bootstrap collapse. | No replacement required. | Live validation green on 2026-03-25. | Kept unchanged. |
 
 ### Proof Stack
 
 - `node --test src/features/indexing/pipeline/orchestration/tests/bootstrapPhaseCharacterization.test.js src/features/indexing/pipeline/orchestration/tests/pipelineContextSchema.bootstrapContracts.test.js src/features/indexing/pipeline/orchestration/tests/runDiscoverySeedPlanSchema.test.js`
 - Result: green, 11/11 passing on 2026-03-25.
-- `node --test src/features/indexing/search/tests/phase02SearchProfile.brand-host-hints.test.js src/features/indexing/search/tests/queryBuilderFieldAllocation.test.js src/features/indexing/api/builders/tests/schema4PrefetchLiveWiring.live-run.test.js`
+- `node --test src/features/indexing/search/tests/phase02SearchProfile.brand-host-hints.test.js src/features/indexing/search/tests/queryBuilderFieldAllocation.test.js src/features/indexing/api/builders/tests/searchPlanPrefetchLiveWiring.live-run.test.js`
 - Result: green, 13/13 passing on 2026-03-25.
 - `npm test`
 - Result: green, 5816/5816 passing on 2026-03-25.

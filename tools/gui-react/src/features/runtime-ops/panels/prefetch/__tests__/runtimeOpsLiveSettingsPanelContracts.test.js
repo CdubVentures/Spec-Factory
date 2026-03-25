@@ -174,7 +174,7 @@ async function loadSearchPlannerModule() {
         export function parsePlannerPayload() {
           return null;
         }
-        export function isSchema4PlannerPath() {
+        export function isNeedSetPlannerPath() {
           return false;
         }
         export function isTierEnhancePath() {
@@ -184,8 +184,8 @@ async function loadSearchPlannerModule() {
           return { missingCriticalFields: [] };
         }
       `,
-      './SearchPlannerSchema4View.tsx': `
-        export function SearchPlannerSchema4View() {
+      './NeedSetPlannerView.tsx': `
+        export function NeedSetPlannerView() {
           return null;
         }
       `,

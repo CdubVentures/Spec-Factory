@@ -4,10 +4,10 @@ import {
   SettingRow,
   SettingToggle,
 } from '../../pipeline-settings/index.ts';
-import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
-import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
+import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
-import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.ts';
+import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { resolveProviderForModel } from '../state/llmProviderRegistryBridge.ts';
@@ -57,6 +57,16 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     };
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
+
+  const resolvedModelHasCapability = useCallback((cap: 'web' | 'thinking'): boolean => {
+    if (!resolved) return false;
+    const modelId = resolved.effectiveModel;
+    for (const provider of registry) {
+      const model = provider.models.find((m) => m.modelId === modelId);
+      if (model?.capabilities?.[cap]) return true;
+    }
+    return false;
+  }, [resolved, registry]);
 
   const phaseTokenWarnings = useMemo(() => {
     if (!overrideKey || !resolved) return [];
@@ -169,6 +179,22 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
+      {resolvedModelHasCapability('web') && (
+        <SettingRow label="Enable Web Search" tip="Send web_search in request_options for this phase. Only available for Lab models with web capability.">
+          <SettingToggle
+            checked={phaseOverrides[overrideKey]?.webSearch ?? false}
+            onChange={(v) => updateOverrideField('webSearch', v)}
+          />
+        </SettingRow>
+      )}
+      {resolvedModelHasCapability('thinking') && (
+        <SettingRow label="Enable Thinking" tip="Send thinking in request_options for this phase. Only available for Lab models with thinking capability.">
+          <SettingToggle
+            checked={phaseOverrides[overrideKey]?.thinking ?? false}
+            onChange={(v) => updateOverrideField('thinking', v)}
+          />
+        </SettingRow>
+      )}
       {phaseTokenWarnings.map((w) => (
         <AlertBanner
           key={`phase-token-${w.field}`}

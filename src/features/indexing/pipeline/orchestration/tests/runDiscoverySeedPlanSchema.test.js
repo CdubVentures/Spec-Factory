@@ -137,7 +137,7 @@ function makeStageStubs(overrides = {}) {
   };
 }
 
-function makeSchema4Output(overrides = {}) {
+function makeSearchPlanOutput(overrides = {}) {
   return {
     schema_version: 'needset_planner_output.v2',
     search_plan_handoff: makeHandoff(),
@@ -166,7 +166,7 @@ function makeRunArgs(overrides = {}) {
     normalizeFieldListFn: stubNormalizeFieldList,
     computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
     buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
-    buildSearchPlanFn: async () => makeSchema4Output(),
+    buildSearchPlanFn: async () => makeSearchPlanOutput(),
     ...makeStageStubs(),
     ...overrides,
   };
@@ -176,7 +176,7 @@ describe('runDiscoverySeedPlan schema return contract', () => {
   it('attaches seed_search_plan_output when the schema path yields a search plan handoff', async () => {
     const result = await runDiscoverySeedPlan(makeRunArgs({
       runId: 'run-with-handoff',
-      buildSearchPlanFn: async () => makeSchema4Output(),
+      buildSearchPlanFn: async () => makeSearchPlanOutput(),
     }));
 
     assert.ok(result.seed_search_plan_output, 'seed_search_plan_output should be attached');
@@ -189,7 +189,7 @@ describe('runDiscoverySeedPlan schema return contract', () => {
   it('returns the discovery result contract without seed_search_plan_output when schema computation fails', async () => {
     const result = await runDiscoverySeedPlan(makeRunArgs({
       runId: 'run-schema-failed',
-      buildSearchPlanFn: async () => { throw new Error('Schema4 planner failed'); },
+      buildSearchPlanFn: async () => { throw new Error('Search-plan planner failed'); },
     }));
 
     assert.deepEqual(result.enabled, true);

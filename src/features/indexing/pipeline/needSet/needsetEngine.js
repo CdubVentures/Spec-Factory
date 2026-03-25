@@ -422,7 +422,7 @@ export function computeNeedSet({
   const fieldKeys = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
 
   const eligibleFields = [];
-  const schema2Fields = [];
+  const fieldAssessments = [];
 
   // --- Per-field bucket counts (total, not just unresolved) ---
   let coreTotal = 0;
@@ -524,7 +524,7 @@ export function computeNeedSet({
     });
     const aliasShards = shardAliases(allAliases, 8);
 
-    schema2Fields.push({
+    fieldAssessments.push({
       field_key: field,
       label,
       group_key: groupKey,
@@ -600,13 +600,13 @@ export function computeNeedSet({
   const missingCount = rows.filter((r) => r.state === 'missing').length;
   const weakCount = rows.filter((r) => r.state === 'weak').length;
   const conflictCount = rows.filter((r) => r.state === 'conflict').length;
-  const needsExactMatchCount = schema2Fields.filter(
+  const needsExactMatchCount = fieldAssessments.filter(
     (f) => f.exact_match_required && f.state !== 'accepted'
   ).length;
   // WHY: A field is search-exhausted when it's been targeted multiple times
   // with diverse evidence classes and still has no value. This tells the planner
   // to stop wasting query budget on dead-end fields.
-  const searchExhaustedCount = schema2Fields.filter((f) => {
+  const searchExhaustedCount = fieldAssessments.filter((f) => {
     if (f.state === 'accepted') return false;
     const hist = f.history || {};
     const attempts = toFloat(hist.no_value_attempts, 0);
@@ -648,16 +648,16 @@ export function computeNeedSet({
   };
 
   // --- Planner seed (NeedSet assessment) ---
-  const missingCriticalFields = schema2Fields
+  const missingCriticalFields = fieldAssessments
     .filter((f) => (f.required_level === 'identity' || f.required_level === 'critical') && f.state !== 'accepted')
     .map((f) => f.field_key);
 
-  const unresolvedFields = schema2Fields
+  const unresolvedFields = fieldAssessments
     .filter((f) => f.state !== 'accepted')
     .map((f) => f.field_key);
 
   const existingQueriesSet = new Set();
-  for (const f of schema2Fields) {
+  for (const f of fieldAssessments) {
     for (const q of f.history.existing_queries) {
       existingQueriesSet.add(q);
     }
@@ -675,7 +675,7 @@ export function computeNeedSet({
   };
 
   // --- V4: sorted_unresolved_keys (availability → difficulty → repeat → need_score → required_level) ---
-  const unresolvedWithScores = schema2Fields
+  const unresolvedWithScores = fieldAssessments
     .filter((f) => f.state !== 'accepted')
     .map((f) => ({
       field_key: f.field_key,
@@ -711,7 +711,7 @@ export function computeNeedSet({
     schema_version: 'needset_output.v2.1',
     round,
     identity,
-    fields: schema2Fields,
+    fields: fieldAssessments,
     planner_seed: plannerSeed,
     sorted_unresolved_keys: sortedUnresolvedKeys,
 

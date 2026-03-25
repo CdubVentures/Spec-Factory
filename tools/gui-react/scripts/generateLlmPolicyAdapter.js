@@ -54,7 +54,7 @@ export function generateLlmPolicyAdapter() {
   lines.push('// AUTO-GENERATED from registry policyGroup/policyField metadata — do not edit manually.');
   lines.push('// Run: node tools/gui-react/scripts/generateLlmPolicyAdapter.js');
   lines.push('');
-  lines.push("import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes';");
+  lines.push("import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes.generated';");
   lines.push("import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';");
   lines.push('');
 

@@ -44,7 +44,7 @@ export interface IndexLabNeedSetPlannerRow {
   bundle_id: string;
 }
 
-/* ── Schema 4 bundle field ─────────────────────────────────────────── */
+/* ── Search plan bundle field ─────────────────────────────────────── */
 
 export interface NeedSetBundleField {
   key: string;
@@ -52,7 +52,7 @@ export interface NeedSetBundleField {
   bucket: 'core' | 'secondary' | 'expected' | 'optional';
 }
 
-/* ── Schema 4 bundle (replaces legacy IndexLabNeedSetBundle) ─────── */
+/* ── Search plan bundle (replaces legacy IndexLabNeedSetBundle) ───── */
 
 export interface NeedSetPlannerBundle {
   key: string;
@@ -165,7 +165,7 @@ export interface IndexLabNeedSetDelta {
   to: string;
 }
 
-/* ── Schema 4 profile influence ─────────────────────────────────── */
+/* ── Search plan profile influence ──────────────────────────────── */
 
 export interface NeedSetProfileInfluence {
   manufacturer_html: number;

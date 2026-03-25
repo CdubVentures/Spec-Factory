@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
+import type { LlmProviderEntry, LlmModelRole, LlmAccessMode, LlmModelCapabilities } from '../types/llmProviderRegistryTypes.ts';
 
 export interface DropdownModelOption {
   value: string;
@@ -7,6 +7,8 @@ export interface DropdownModelOption {
   role?: LlmModelRole;
   costInputPer1M?: number;
   maxContextTokens?: number | null;
+  accessMode?: LlmAccessMode;
+  capabilities?: LlmModelCapabilities;
 }
 
 const ROLE_SORT_PRIORITY: Record<string, number> = {
@@ -108,6 +110,7 @@ export function buildModelDropdownOptions(
         const roles = Array.isArray(roleFilter) ? roleFilter : [roleFilter];
         if (!roles.includes(model.role)) continue;
       }
+      const effectiveAccessMode = model.accessMode ?? provider.accessMode;
       result.push({
         value: model.modelId,
         label: buildEnrichedLabel(provider.name, model.modelId, model.costInputPer1M, model.maxContextTokens),
@@ -115,6 +118,8 @@ export function buildModelDropdownOptions(
         role: model.role,
         costInputPer1M: model.costInputPer1M,
         maxContextTokens: model.maxContextTokens,
+        ...(effectiveAccessMode ? { accessMode: effectiveAccessMode } : {}),
+        ...(model.capabilities ? { capabilities: model.capabilities } : {}),
       });
       registryModelIds.add(model.modelId);
     }

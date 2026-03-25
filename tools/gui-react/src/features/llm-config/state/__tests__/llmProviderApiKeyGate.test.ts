@@ -95,6 +95,18 @@ describe('providerHasApiKey', () => {
     deepStrictEqual(providerHasApiKey(provider, keys), true);
   });
 
+  // ── Lab providers bypass API key requirement ──
+
+  it('lab provider always returns true regardless of keys', () => {
+    const provider = makeProvider({ id: 'lab-openai', name: 'LLM Lab OpenAI', accessMode: 'lab' as const });
+    deepStrictEqual(providerHasApiKey(provider, emptyKeys()), true);
+  });
+
+  it('lab provider with session sentinel returns true', () => {
+    const provider = makeProvider({ id: 'lab-gemini', name: 'LLM Lab Gemini', accessMode: 'lab' as const, apiKey: 'session' });
+    deepStrictEqual(providerHasApiKey(provider, emptyKeys()), true);
+  });
+
   // ── Full miss ──
 
   it('returns false when no key source has a value', () => {

@@ -96,6 +96,7 @@ export function createSessionDouble({
         html: result.html ?? DEFAULT_HTML,
         screenshots: result.screenshots ?? [],
         workerId: result.workerId ?? 'fetch-a1',
+        videoPath: result.videoPath ?? '',
         fetchError: result.fetchError ?? null,
       };
     },

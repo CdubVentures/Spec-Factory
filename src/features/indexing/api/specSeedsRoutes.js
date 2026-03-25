@@ -40,8 +40,13 @@ export function registerSpecSeedsRoutes(ctx) {
         return jsonRes(res, 400, { error: 'invalid_spec_seeds', reason: check.reason });
       }
       await writeSpecSeedsFile(root, category, seeds);
-      emitDataChange('spec-seeds', { category });
-      broadcastWs?.({ type: 'spec-seeds-updated', category });
+      emitDataChange({
+        broadcastWs,
+        event: 'spec-seeds-updated',
+        category,
+        domains: ['spec-seeds'],
+        meta: { seed_count: seeds.length },
+      });
       return jsonRes(res, 200, { category, seeds });
     }
   };

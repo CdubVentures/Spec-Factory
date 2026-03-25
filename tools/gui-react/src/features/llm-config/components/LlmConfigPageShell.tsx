@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
-import { LLM_PHASES } from '../state/llmPhaseRegistry.ts';
-import type { LlmPhaseId } from '../types/llmPhaseTypes.ts';
+import { LLM_PHASES } from '../state/llmPhaseRegistry.generated.ts';
+import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 
 interface LlmConfigPageShellProps {
   activePhase: LlmPhaseId;
@@ -10,6 +10,17 @@ interface LlmConfigPageShellProps {
   activePanel: ReactNode;
   settingsScope?: 'default' | 'user';
 }
+
+const PHASE_ICON_PATHS: Record<string, ReactNode> = {
+  global: <><circle cx="12" cy="12" r="9" /><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /></>,
+  needset: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 8h8M8 12h5" /></>,
+  'brand-resolver': <><path d="M4 6h16M4 12h10M4 18h14" /><circle cx="18" cy="12" r="3" /></>,
+  'search-planner': <><circle cx="11" cy="11" r="7" /><path d="M16 16l5 5" /></>,
+  'serp-selector': <><path d="M3 6h18M3 12h12M3 18h8" /><path d="M19 10l2 2-2 2" /></>,
+  validate: <><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></>,
+};
+
+const DEFAULT_PHASE_ICON: ReactNode = <circle cx="12" cy="12" r="8" />;
 
 function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolean }) {
   const toneClass = active ? 'sf-callout sf-callout-info' : 'sf-callout sf-callout-neutral';
@@ -25,42 +36,7 @@ function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolea
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        {phaseId === 'global' && (
-          <>
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
-          </>
-        )}
-        {phaseId === 'needset' && (
-          <>
-            <rect x="4" y="4" width="16" height="16" rx="2" />
-            <path d="M8 8h8M8 12h5" />
-          </>
-        )}
-        {phaseId === 'brand-resolver' && (
-          <>
-            <path d="M4 6h16M4 12h10M4 18h14" />
-            <circle cx="18" cy="12" r="3" />
-          </>
-        )}
-        {phaseId === 'search-planner' && (
-          <>
-            <circle cx="11" cy="11" r="7" />
-            <path d="M16 16l5 5" />
-          </>
-        )}
-        {phaseId === 'serp-selector' && (
-          <>
-            <path d="M3 6h18M3 12h12M3 18h8" />
-            <path d="M19 10l2 2-2 2" />
-          </>
-        )}
-        {phaseId === 'validate' && (
-          <>
-            <path d="M9 12l2 2 4-4" />
-            <circle cx="12" cy="12" r="9" />
-          </>
-        )}
+        {PHASE_ICON_PATHS[phaseId] ?? DEFAULT_PHASE_ICON}
       </svg>
     </span>
   );

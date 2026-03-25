@@ -14,8 +14,8 @@ IndexLab runtime bridge and orchestration support. Translates pipeline events in
 - `needsetEngine.js`: `computeNeedSet()` — determines which fields need data and their priority.
 - `needsetRound0Seeder.js`: `seedRound0NeedSet()` — initial needset for round 0.
 - `needsetStoryProjection.js`: `projectNeedSetStory()` — needset narrative for search planning.
-- `searchPlanningContext.js`: `buildSearchPlanningContext()` — Schema 3 context from needset + field groups.
-- `searchPlanBuilder.js`: `buildSearchPlan()` — Schema 4 query plan via LLM or deterministic fallback.
+- `searchPlanningContext.js`: `buildSearchPlanningContext()` — search planning context from needset + field groups.
+- `searchPlanBuilder.js`: `buildSearchPlan()` — search-plan query plan via LLM or deterministic fallback.
 - `indexingSchemaPackets.js`: `buildIndexingSchemaPackets()` — constructs schema-validated packets.
 - `indexingSchemaPacketsValidator.js`: `validateIndexingSchemaPackets()` — AJV-based packet validation.
 

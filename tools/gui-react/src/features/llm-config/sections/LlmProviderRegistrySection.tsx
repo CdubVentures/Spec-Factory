@@ -5,7 +5,7 @@ import type {
   LlmModelRole,
 } from '../types/llmProviderRegistryTypes.ts';
 import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge.ts';
-import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles.ts';
+import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS, ACCESS_MODE_BADGE_STYLE, CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry.ts';
 import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
 
@@ -31,16 +31,32 @@ function ProviderModelRow({
   return (
     <tr className="sf-table-row">
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
-        {identityLocked ? (
-          <span className="sf-text-caption" style={{ color: 'var(--sf-text)' }}>{model.modelId}</span>
-        ) : (
-          <input
-            className="sf-input sf-text-caption"
-            value={model.modelId}
-            placeholder="e.g. gpt-4o"
-            onChange={(e) => onModelChange({ ...model, modelId: e.target.value })}
-          />
-        )}
+        <div className="flex items-center gap-1">
+          {identityLocked ? (
+            <span className="sf-text-caption" style={{ color: 'var(--sf-text)' }}>{model.modelId}</span>
+          ) : (
+            <input
+              className="sf-input sf-text-caption"
+              value={model.modelId}
+              placeholder="e.g. gpt-4o"
+              onChange={(e) => onModelChange({ ...model, modelId: e.target.value })}
+            />
+          )}
+          {model.accessMode && (
+            <span
+              className="sf-custom-select-badge"
+              style={{ color: ACCESS_MODE_BADGE_STYLE[model.accessMode].fg, backgroundColor: ACCESS_MODE_BADGE_STYLE[model.accessMode].bg }}
+            >
+              {ACCESS_MODE_BADGE_STYLE[model.accessMode].label}
+            </span>
+          )}
+          {model.capabilities?.thinking && (
+            <span className="sf-custom-select-badge" style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}>T</span>
+          )}
+          {model.capabilities?.web && (
+            <span className="sf-custom-select-badge" style={{ color: CAPABILITY_BADGE_STYLE.web.fg, backgroundColor: CAPABILITY_BADGE_STYLE.web.bg }}>W</span>
+          )}
+        </div>
       </td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
         <div className="relative inline-flex">

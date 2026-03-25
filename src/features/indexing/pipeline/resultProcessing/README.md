@@ -28,3 +28,6 @@ Exports from `index.js`:
 - Domain classification runs AFTER SERP selector, not before.
 - `candidates[]` refers to the selected set, not all survivors.
 - Stage has limited rejects — code and tests are truth over docs.
+- Trace rows use snake_case field names (DB column convention: `approved_domain`, `doc_kind_guess`).
+  Pipeline objects from urlClassifier/serpSelector use camelCase (`approvedDomain`, `rootDomain`).
+  Conversion happens in resultClassifier at the classify→trace boundary.

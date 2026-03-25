@@ -194,7 +194,11 @@ export default function TierHierarchyPanel({ runtimeDraft, onStringChange, disab
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeEnrichmentId, setActiveEnrichmentId] = useState<string | null>(null);
 
-  const sensors = useSensors(
+  // WHY: Each DndContext needs its own sensor instance to avoid event listener conflicts.
+  const tierSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+  const enrichmentSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
@@ -227,7 +231,7 @@ export default function TierHierarchyPanel({ runtimeDraft, onStringChange, disab
       </p>
 
       <DndContext
-        sensors={sensors}
+        sensors={tierSensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -285,7 +289,7 @@ export default function TierHierarchyPanel({ runtimeDraft, onStringChange, disab
           </div>
 
           <DndContext
-            sensors={sensors}
+            sensors={enrichmentSensors}
             collisionDetection={closestCenter}
             onDragStart={(e) => setActiveEnrichmentId(String(e.active.id))}
             onDragEnd={(e) => {

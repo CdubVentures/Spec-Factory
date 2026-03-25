@@ -64,23 +64,20 @@ export function planSpecFactoryAction({
   const needsApi = action === 'start-stack' || action === 'start-api';
   const needsGui = false;
 
-  // WHY: If the port is already occupied (even by an untracked process),
-  // skip starting and just open the browser to the existing server.
+  // WHY: Only a tracked Spec Factory process may be reused on 8788.
+  // If an untracked process owns the port, fail loudly instead of
+  // hijacking an unknown server behind the browser entry point.
   if (needsApi && !apiTrackedPidRunning && apiPortOccupied) {
     return {
-      ok: true,
-      startApi: false,
-      startGui: false,
-      openUrl: contract.api.browserUrl,
+      ok: false,
+      error: `Port ${contract.api.port} is already in use by an untracked process.`,
     };
   }
 
   if (needsGui && !guiTrackedPidRunning && guiPortOccupied) {
     return {
-      ok: true,
-      startApi: false,
-      startGui: false,
-      openUrl: contract.gui.browserUrl,
+      ok: false,
+      error: `Port ${contract.gui.port} is already in use by an untracked process.`,
     };
   }
 

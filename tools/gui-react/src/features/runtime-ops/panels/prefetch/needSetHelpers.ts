@@ -1,4 +1,4 @@
-import type { PrefetchSchema4Bundle, PrefetchNeedSetPlannerRow } from '../../types.ts';
+import type { PrefetchSearchPlanBundle, PrefetchNeedSetPlannerRow } from '../../types.ts';
 
 /* ── Sort logic ─────────────────────────────────────────────────────── */
 
@@ -31,7 +31,7 @@ export function sortPlannerRows(
 
 /* ── Derive rows from bundles ───────────────────────────────────────── */
 
-export function derivePlannerRows(bundles: PrefetchSchema4Bundle[]): PrefetchNeedSetPlannerRow[] {
+export function derivePlannerRows(bundles: PrefetchSearchPlanBundle[]): PrefetchNeedSetPlannerRow[] {
   const rows: PrefetchNeedSetPlannerRow[] = [];
   for (const bundle of bundles) {
     for (const f of bundle.fields) {
@@ -43,10 +43,10 @@ export function derivePlannerRows(bundles: PrefetchSchema4Bundle[]): PrefetchNee
 
 /* ── Group bundles by phase ─────────────────────────────────────────── */
 
-export function groupBundlesByPhase(bundles: PrefetchSchema4Bundle[]) {
-  const now: PrefetchSchema4Bundle[] = [];
-  const next: PrefetchSchema4Bundle[] = [];
-  const hold: PrefetchSchema4Bundle[] = [];
+export function groupBundlesByPhase(bundles: PrefetchSearchPlanBundle[]) {
+  const now: PrefetchSearchPlanBundle[] = [];
+  const next: PrefetchSearchPlanBundle[] = [];
+  const hold: PrefetchSearchPlanBundle[] = [];
   for (const b of bundles) {
     if (b.phase === 'now') now.push(b);
     else if (b.phase === 'next') next.push(b);

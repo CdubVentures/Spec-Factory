@@ -1,0 +1,19 @@
+// AUTO-GENERATED from src/core/config/llmPhaseDefs.js — do not edit manually.
+// Run: node tools/gui-react/scripts/generateLlmPhaseRegistry.js
+
+export type LlmPhaseId =
+  | 'global'
+  | 'needset'
+  | 'search-planner'
+  | 'brand-resolver'
+  | 'serp-selector'
+  | 'validate';
+
+export interface LlmPhaseDefinition {
+  id: LlmPhaseId;
+  label: string;
+  subtitle: string;
+  tip: string;
+  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;
+  sharedWith?: ReadonlyArray<LlmPhaseId>;
+}

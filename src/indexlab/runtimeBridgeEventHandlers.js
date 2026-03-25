@@ -393,10 +393,10 @@ async function handleNeedsetComputed(state, deps, { ts, row }) {
   payload.status = 'executed';
   payload.source = 'runtime_bridge';
 
-  // WHY: The Schema 4 planner emits needset_computed mid-run with bundles that
+  // WHY: The search-plan planner emits needset_computed mid-run with bundles that
   // have queries and populated profile_influence. The finalization emits a second
-  // needset_computed with Schema 2 data that lacks these. Preserve the best
-  // Schema 4 panel data so needset.json always has it.
+  // needset_computed with NeedSet-only data that lacks these. Preserve the best
+  // search-plan panel data so needset.json always has it.
   const prevBundles = state.needSet?.bundles || [];
   const prevHasQueries = prevBundles.some((b) => Array.isArray(b.queries) && b.queries.length > 0);
   const newHasQueries = (payload.bundles || []).some((b) => Array.isArray(b.queries) && b.queries.length > 0);

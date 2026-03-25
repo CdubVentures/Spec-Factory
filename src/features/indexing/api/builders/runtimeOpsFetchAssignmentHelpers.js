@@ -104,7 +104,8 @@ export function buildWorkerDisplayLabelMap(events) {
   }
 
   for (const evt of events) {
-    if (eventType(evt) !== 'source_fetch_started') continue;
+    // WHY: The bridge transforms 'source_fetch_started' → 'fetch_started' in NDJSON.
+    if (eventType(evt) !== 'fetch_started') continue;
     const p = payloadOf(evt);
     const workerId = String(p.worker_id || '').trim();
     const url = String(p.url || '').trim();

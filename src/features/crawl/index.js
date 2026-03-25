@@ -1,0 +1,7 @@
+// WHY: Public API barrel for cross-feature access.
+// Other features and the pipeline layer import from here — never from internals.
+
+export { createCrawlSession } from './crawlSession.js';
+export { captureScreenshots } from './screenshotCapture.js';
+export { resolvePlugins, PLUGIN_REGISTRY } from './plugins/pluginRegistry.js';
+export { classifyBlockStatus } from './bypassStrategies.js';

@@ -87,7 +87,7 @@ export interface RuntimeOpsDocumentDetailResponse extends RuntimeOpsDocumentDeta
 }
 
 export interface QueueJobRow extends QueueJobRowGen {
-  transitions: QueueTransition[];
+  transitions: { from_status: string; to_status: string; ts: string; reason: string }[];
 }
 
 export interface RuntimeOpsWorkerRow extends RuntimeOpsWorkerRowGen {
@@ -135,7 +135,7 @@ export interface PrefetchNeedSetData {
   blockers?: { missing: number; weak: number; conflict: number; needs_exact_match?: number; search_exhausted?: number };
   focus_fields?: string[];
   fields?: NeedSetField[];
-  bundles?: PrefetchSchema4Bundle[];
+  bundles?: PrefetchSearchPlanBundle[];
   profile_mix?: PrefetchNeedSetProfileMix;
   profile_influence?: PrefetchNeedSetProfileInfluence | null;
   tier_allocation?: PrefetchNeedSetTierAllocation | null;
@@ -266,14 +266,6 @@ export interface FallbacksResponse {
   host_profiles: HostFallbackProfile[];
 }
 
-// ── Queue Tab ──
-
-export interface QueueTransition {
-  from_status: string;
-  to_status: string;
-  ts: string;
-  reason: string;
-}
 
 export interface QueueStateResponse {
   run_id: string;
@@ -284,22 +276,7 @@ export interface QueueStateResponse {
 
 // ── Worker Dashboard (Phase 13.3) ──
 
-export type WorkerDataTab = 'documents' | 'extraction' | 'queue' | 'screenshots' | 'metrics' | 'pipeline';
-
-export type DocDetailSubTab = 'info' | 'fields' | 'shots' | 'timeline';
-
-export interface PhaseStats {
-  phase_id: string;
-  phase_label: string;
-  doc_count: number;
-  field_count: number;
-  methods_used: string[];
-  confidence_avg: number;
-}
-
-export interface WorkerPhaseLineage {
-  phases: PhaseStats[];
-}
+export type WorkerDataTab = 'extraction' | 'screenshots';
 
 export interface WorkerExtractionField {
   field: string;
@@ -397,7 +374,7 @@ export interface WorkerDetailResponse {
   screenshots: WorkerScreenshot[];
   search_history?: SearchWorkerAttempt[];
   llm_detail?: WorkerLlmDetail;
-  phase_lineage?: WorkerPhaseLineage;
+  phase_lineage?: Record<string, unknown>;
 }
 
 export interface PipelineFlowResponse {
@@ -424,9 +401,90 @@ export interface FetchStealthData {
   total_failed: number;
 }
 
+export interface FetchAutoScrollRecord {
+  worker_id: string;
+  display_label: string;
+  url: string;
+  host: string;
+  enabled: boolean;
+  passes: number;
+  delayMs: number;
+  postLoadWaitMs: number;
+  ts: string;
+}
+
+export interface FetchAutoScrollData {
+  scroll_records: FetchAutoScrollRecord[];
+  total_scrolled: number;
+  total_skipped: number;
+}
+
+export interface FetchDomExpansionRecord {
+  worker_id: string;
+  display_label: string;
+  url: string;
+  host: string;
+  enabled: boolean;
+  selectors: string[];
+  found: number;
+  clicked: number;
+  settleMs: number;
+  ts: string;
+}
+
+export interface FetchDomExpansionData {
+  expansion_records: FetchDomExpansionRecord[];
+  total_expanded: number;
+  total_skipped: number;
+  total_clicks: number;
+  total_found: number;
+}
+
+export interface FetchCssOverrideRecord {
+  worker_id: string;
+  display_label: string;
+  url: string;
+  host: string;
+  enabled: boolean;
+  hiddenBefore: number;
+  revealedAfter: number;
+  ts: string;
+}
+
+export interface FetchCssOverrideData {
+  override_records: FetchCssOverrideRecord[];
+  total_overridden: number;
+  total_skipped: number;
+  total_elements_revealed: number;
+}
+
 export interface FetchPhasesResponse {
   run_id: string;
   stealth: FetchStealthData;
+  auto_scroll: FetchAutoScrollData;
+  dom_expansion: FetchDomExpansionData;
+  css_override: FetchCssOverrideData;
+}
+
+// ── Extraction Phases ──
+
+export interface ExtractionScreenshotEntry {
+  url: string;
+  worker_id: string;
+  count: number;
+  formats: string[];
+  total_bytes: number;
+}
+
+export interface ExtractionScreenshotData {
+  entries: ExtractionScreenshotEntry[];
+  total_screenshots: number;
+  total_bytes: number;
+}
+
+export interface ExtractionPhasesResponse {
+  run_id: string;
+  screenshot: ExtractionScreenshotData;
 }
 
 // ── Pre-Fetch Phases (Workers tab pinned row) ──
@@ -500,7 +558,7 @@ export interface PrefetchNeedSetBundleField {
 }
 
 /** Search plan bundle shape (from searchPlanBuilder) */
-export interface PrefetchSchema4Bundle {
+export interface PrefetchSearchPlanBundle {
   key: string;
   label: string;
   desc: string;

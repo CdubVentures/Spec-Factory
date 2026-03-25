@@ -3,20 +3,20 @@ import assert from 'node:assert/strict';
 import {
   buildPreFetchPhases,
   makeMeta,
-  makeSchema4Fields,
-  makeSchema4Panel,
-} from './helpers/schema4PrefetchLiveWiringHarness.js';
+  makeSearchPlanFields,
+  makeSearchPlanPanel,
+} from './helpers/searchPlanPrefetchLiveWiringHarness.js';
 // ---------------------------------------------------------------------------
-// 5. Artifact fallback: Schema 4 data in needset artifact (post-finalization)
+// 5. Artifact fallback: Search Plan data in needset artifact (post-finalization)
 // ---------------------------------------------------------------------------
 
-test('buildPreFetchPhases: Schema 4 data in needset artifact populates bundles, profile_influence, deltas', () => {
-  const panel = makeSchema4Panel();
+test('buildPreFetchPhases: Search Plan data in needset artifact populates bundles, profile_influence, deltas', () => {
+  const panel = makeSearchPlanPanel();
   const artifacts = {
     needset: {
       total_fields: 42,
       identity: { state: 'locked', confidence: 0.95 },
-      fields: makeSchema4Fields(),
+      fields: makeSearchPlanFields(),
       summary: panel.summary,
       blockers: panel.blockers,
       bundles: panel.bundles,
