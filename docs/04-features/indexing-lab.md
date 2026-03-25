@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified end-to-end indexing run flow from GUI launch through process orchestration, artifact generation, and run replay APIs.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Entry Points
 
@@ -21,8 +21,8 @@
 - `src/pipeline/runProduct.js` (248 LOC) — crawl-first orchestrator
 - `src/pipeline/runCrawlProcessingLifecycle.js` — batch-oriented crawl processing with frontier DB recording
 - `src/features/indexing/orchestration/index.js` — bootstrap and discovery orchestration
-- `src/features/indexing/discovery/pipelineContextSchema.js` — 8 progressive Zod checkpoints for discovery context validation
-- `src/indexlab/needsetEngine.js`
+- `src/features/indexing/pipeline/needSet/needsetEngine.js` — NeedSet assessment and search-plan seed logic used at the start of indexing runs
+- `src/features/indexing/pipeline/needSet/runNeedSet.js`
 - `src/logger.js`
 - `src/db/specDb.js`
 - `src/app/api/realtimeBridge.js`

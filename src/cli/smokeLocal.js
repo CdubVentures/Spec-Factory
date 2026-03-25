@@ -29,11 +29,9 @@ export async function main() {
   const { outputRoot, normalizedOutPath, summaryOutPath } = resolveSmokeLocalOutputPaths();
 
   const config = loadConfigWithUserSettings({
-    localMode: true,
     dryRun: true,
     localInputRoot: 'fixtures/s3',
     localOutputRoot: outputRoot,
-    writeMarkdownSummary: false,
     discoveryEnabled: false
   });
 
@@ -63,11 +61,9 @@ export async function main() {
       };
     } else {
       const llmConfig = loadConfigWithUserSettings({
-        localMode: true,
         dryRun: true,
         localInputRoot: 'fixtures/s3',
         localOutputRoot: outputRoot,
-        writeMarkdownSummary: false,
         discoveryEnabled: false
       });
       const llmStorage = createStorage(llmConfig);

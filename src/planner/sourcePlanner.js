@@ -3,7 +3,7 @@
 // Discovery, scoring, validation, yield policy, and comparator modules removed —
 // enqueue routing is now score-passthrough from upstream triage metadata.
 
-import { extractRootDomain } from '../utils/common.js';
+import { extractRootDomain } from '../shared/valueNormalizers.js';
 import { configInt } from '../shared/settingsAccessor.js';
 import {
   inferRoleForHost,

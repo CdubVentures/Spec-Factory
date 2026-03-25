@@ -111,7 +111,6 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['ui-settings'],
     ['llm-settings-routes', CATEGORY_TOKEN],
     ['storage-settings'],
-    ['convergence-settings'],
     ['runtime-settings'],
     ['indexing', 'llm-config'],
   ]),
@@ -125,7 +124,6 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   indexing: Object.freeze([
     ['indexing', 'llm-config'],
     ['indexing', 'llm-metrics', CATEGORY_TOKEN],
-    ['convergence-settings'],
   ]),
 });
 

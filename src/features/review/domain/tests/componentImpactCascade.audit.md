@@ -7,9 +7,9 @@ Disposition:
 | Original block | Bucket | Why | Replacement / destination | Final disposition |
 | --- | --- | --- | --- | --- |
 | `findProductsReferencingComponent includes linked and unlinked field-state matches` | KEEP | Protects the lookup contract that drives downstream cascades. | `componentImpact.referenceLookup.test.js` | Preserved |
-| `cascadeComponentChange authoritative updates all linked items and marks queue stale via SpecDb` | KEEP | Core authoritative propagation contract. | `componentImpact.authoritativeCascade.test.js` | Preserved |
-| `cascadeComponentChange authoritative updates linked items only (not unlinked value matches)` | KEEP | Guards against over-propagating to lookalike values. | `componentImpact.authoritativeCascade.test.js` | Preserved |
-| `evaluateConstraintsForLinkedProducts uses maker-specific component values for violations` | KEEP | Protects maker-specific constraint evaluation. | `componentImpact.authoritativeCascade.test.js` | Preserved |
+| `cascadeComponentChange authoritative updates all linked items and marks queue stale via SpecDb` | KEEP | Core authoritative propagation contract. | `componentImpact.authoritativePropagation.test.js` | Preserved |
+| `cascadeComponentChange authoritative updates linked items only (not unlinked value matches)` | KEEP | Guards against over-propagating to lookalike values. | `componentImpact.authoritativeLinkIsolation.test.js` | Preserved |
+| `evaluateConstraintsForLinkedProducts uses maker-specific component values for violations` | KEEP | Protects maker-specific constraint evaluation. | `componentImpact.authoritativeConstraintEvaluation.test.js` | Preserved |
 | `cascadeEnumChange honors preAffectedProductIds for rename cascades` | KEEP | Protects enum rename propagation to precomputed affected products. | `componentImpact.enumCascade.test.js` | Preserved |
 | `item enum field writes stay ID-linked via item_list_links and list deletes clear links` | RETIRE | Weaker helper-level duplicate of the stronger rename/delete-by-id link-preservation contract, with overlapping `syncItemListLinkForFieldValue` coverage also present in enum payload tests. | None | Deleted |
 | `cascadeComponentChange override_allowed does not push values and does not evaluate variance` | COLLAPSE | Real contract, but shares setup and outcome with the priority-only case. | `componentImpact.overrideAllowedCascade.test.js` | Preserved with merged assertions |

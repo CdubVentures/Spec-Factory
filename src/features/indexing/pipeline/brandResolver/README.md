@@ -22,4 +22,4 @@ Exports from `index.js`:
 - Brand Resolver returns pure data — orchestrator owns applying promotions to context.
 - Must never depend on NeedSet output (runs in parallel).
 - Cache-first: LLM fallback fires only when cache misses.
-- Registry settings `manufacturerCrawlRateLimitMs` and `manufacturerCrawlTimeoutMs` govern LLM call behavior.
+- Crawl config for brand promotions is a static shape (`{ method: 'http', robots_txt_compliant: true }`) — no registry knobs.

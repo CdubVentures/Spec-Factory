@@ -7,6 +7,7 @@ import {
 import {
   toSourceIndexingPackets, packetMatchesWorkerUrls, packetPrimaryUrl, packetFieldKeyCount,
 } from './runtimeOpsPhaseLineage.js';
+import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 
 export function inferPool(eventType) {
   if (eventType.startsWith('search')) return 'search';
@@ -126,7 +127,7 @@ export function buildRuntimeOpsWorkers(events, options) {
   // differs from the search result URL (www prefix, locale path, brand seed vs
   // SERP URL). Sorted by slot then rank so workers get the best available match.
   function safeHostname(url) {
-    try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+    try { return normalizeHost(new URL(url).hostname); } catch { return ''; }
   }
 
   const hostAssignmentQueues = {};

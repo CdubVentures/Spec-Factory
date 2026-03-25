@@ -2,13 +2,13 @@
 
 > **Purpose:** Document the live reality of authentication, session-like persistence, and permission checks so an arriving LLM does not invent a user-auth system.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Verified Reality
 
 - No end-user login or logout flow was found in the live GUI or API.
 - No verified auth middleware or route guard stack was found in `src/api/guiServer.js`, `src/app/api/requestDispatch.js`, or the route registrars.
-- `JWT_SECRET` and `JWT_EXPIRES_IN` exist in `src/core/config/manifest/securityGroup.js` and are normalized by `src/config.js`, but no active request-auth consumer was found during the audit.
+- `JWT_SECRET` and `JWT_EXPIRES_IN` exist as `jwtSecret` and `jwtExpiresIn` entries in `src/shared/settingsRegistry.js`, are surfaced through `src/core/config/manifest/index.js`, and are normalized by `src/config.js`, but no active request-auth consumer was found during the audit.
 
 ## What "Session" Means In This Repo
 
@@ -45,7 +45,8 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/core/config/manifest/securityGroup.js` | existence of JWT-related config keys |
+| source | `src/shared/settingsRegistry.js` | existence of JWT-related config keys |
+| source | `src/core/config/manifest/index.js` | JWT keys are included in the live derived manifest |
 | source | `src/config.js` | JWT keys are normalized into config |
 | source | `src/api/guiServer.js` | no audited auth middleware in server assembly |
 | source | `src/field-rules/sessionCache.js` | non-auth session cache semantics |

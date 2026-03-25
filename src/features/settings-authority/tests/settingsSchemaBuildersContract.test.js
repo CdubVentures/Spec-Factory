@@ -40,7 +40,6 @@ test('buildUserSettingsSnapshotSchema composes section schemas and required enve
   const schema = buildUserSettingsSnapshotSchema({
     settingsDocumentSchemaVersion: 7,
     runtimeSettingsValueTypes: { r: 'integer' },
-    convergenceSettingsValueTypes: { c: 'number' },
     storageSettingsValueTypes: { s: 'string' },
     uiSettingsValueTypes: { u: 'boolean' },
   });
@@ -65,7 +64,7 @@ test('buildUserSettingsSnapshotSchema composes section schemas and required enve
   });
   assert.deepEqual(schema.properties.convergence, {
     type: 'object',
-    properties: { c: { type: 'number' } },
+    properties: {},
     additionalProperties: false,
   });
   assert.deepEqual(schema.properties.storage, {

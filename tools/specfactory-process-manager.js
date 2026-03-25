@@ -21,7 +21,7 @@ const SPEC_FACTORY_MARKERS = Object.freeze([
   'tools\\dev-stack-control.js',
   'tools\\gui-launcher.mjs',
 ]);
-const CLI_ACTIONS = Object.freeze(['state', 'kill', 'restart']);
+const CLI_ACTIONS = Object.freeze(['state', 'kill', 'restart', 'preflight']);
 
 function normalizeText(value) {
   return String(value || '').trim();
@@ -647,13 +647,13 @@ export function parseCliRequest(argv = process.argv.slice(2)) {
     throw createCliError('unknown_argument');
   }
 
-  if (action !== 'state' && !pid) {
+  if (action !== 'state' && action !== 'preflight' && !pid) {
     throw createCliError('missing_pid');
   }
 
   return {
     action,
-    pid: action === 'state' ? null : pid,
+    pid: (action === 'state' || action === 'preflight') ? null : pid,
     json: true,
   };
 }
@@ -674,6 +674,13 @@ export async function runCliRequest({
   }
   if (request.action === 'restart') {
     return restartManagedProcess({ root, targetPort, pid: request.pid });
+  }
+  if (request.action === 'preflight') {
+    const { runNativeModulePreflight, getNodeDiagnostics, getCategoryList } = await import('./nativeModulePreflight.js');
+    const diagnostics = getNodeDiagnostics();
+    const preflight = await runNativeModulePreflight({ root });
+    const categories = getCategoryList(root);
+    return { ok: preflight.ok, diagnostics, preflight, categories };
   }
   throw createCliError('invalid_action');
 }

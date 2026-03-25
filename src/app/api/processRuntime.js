@@ -121,7 +121,6 @@ export function createProcessRuntime({
     const runId = extractRunIdFromCliArgs(cliArgs);
     const runtimeEnv = {
       ...processRef.env,
-      LOCAL_MODE: 'true',
     };
     for (const [key, value] of Object.entries(envOverrides || {})) {
       if (!key) continue;

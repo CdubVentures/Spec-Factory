@@ -7,6 +7,7 @@ import {
   countTokenHits,
   normalizeIdentityTokens,
 } from '../shared/discoveryIdentity.js';
+import { normalizeHost } from '../shared/hostParser.js';
 import { docHintMatchesDocKind } from '../shared/urlClassifier.js';
 
 /**
@@ -123,7 +124,7 @@ export function enrichCandidateTraces({
       const meta = queryMetaByQuery.get(String(query || '').trim()) || {};
       if (meta?.domain_hint) {
         const hostToken = String(trace.host || '').toLowerCase();
-        const hintToken = String(meta.domain_hint || '').toLowerCase().replace(/^www\./, '');
+        const hintToken = normalizeHost(meta.domain_hint);
         if (hostToken && hintToken && hostToken.includes(hintToken)) {
           reasonCodes.push('domain_hint_match');
         }

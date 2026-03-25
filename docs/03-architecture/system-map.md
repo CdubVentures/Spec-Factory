@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified runtime topology and file-backed relationships between the GUI, API server, workers, storage, and optional external services.
 > **Prerequisites:** [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md), [../02-dependencies/external-services.md](../02-dependencies/external-services.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ```mermaid
 graph TD
@@ -22,8 +22,6 @@ graph TD
   Searxng["Optional SearXNG Stack (tools/searxng/docker-compose.yml)"]
   Graphql["Local GraphQL Upstream :8787 (src/app/api/routes/infra/graphqlRoutes.js)"]
   Llm["Provider-Routed LLM Clients (src/core/llm/*)"]
-  Elo["EloShapes Adapter (deleted — config keys remain)"]
-  Sidecar["Structured Metadata Sidecar (tools/structured-metadata-sidecar/)"]
 
   Browser --> GuiServer
   GuiBuild --> GuiServer
@@ -41,8 +39,6 @@ graph TD
   Cli --> Authority
   Cli --> Output
   Cli --> Llm
-  Cli --> Elo
-  Cli --> Sidecar
   Proc --> Searxng
   Routes --> Searxng
   Routes --> Graphql
@@ -77,6 +73,7 @@ graph TD
 - Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`. The pipeline uses a crawl-first architecture via `src/features/crawl/` with plugin-based browser automation.
 - Canonical persistent state is split between SQLite (`src/db/`) and the category authority content root.
 - The default local artifact roots are under the OS temp directory (`.../spec-factory/output` and `.../spec-factory/indexlab`), not a checked-in top-level `storage/` folder.
+- Removed integrations such as the structured-metadata extractor and Elo adapter are intentionally omitted from this active topology because no live consumer path was verified.
 
 ## Validated Against
 

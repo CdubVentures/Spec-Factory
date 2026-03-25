@@ -5,7 +5,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizeHost,
   slug,
   tokenize,
   compactToken,
@@ -23,6 +22,7 @@ import {
   isLikelyUnitToken,
   GENERIC_MODEL_TOKENS,
 } from '../discoveryIdentity.js';
+import { normalizeHost } from '../hostParser.js';
 
 // ---------------------------------------------------------------------------
 // normalizeHost

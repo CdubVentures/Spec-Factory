@@ -1,6 +1,5 @@
-export function normalizeHost(host) {
-  return String(host || '').trim().toLowerCase().replace(/^www\./, '');
-}
+import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+export { normalizeHost };
 
 export { isObject } from '../shared/primitives.js';
 

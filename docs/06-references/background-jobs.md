@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified long-running loops, child-process jobs, and batch workers used by the live runtime.
 > **Prerequisites:** [../05-operations/deployment.md](../05-operations/deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Job Inventory
 
@@ -10,7 +10,7 @@
 |-----|---------|----------|------|---------|
 | GUI process child run | `POST /api/v1/process/start` | on demand | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/processRoutes.js` | spawn `src/cli/spec.js` commands such as IndexLab or compile-rules |
 | Component review batch | `POST /api/v1/review-components/:category/run-component-review-batch` | on demand | `src/pipeline/componentReviewBatch.js`, `src/features/review/api/reviewRoutes.js` | run queued component-review decisions |
-| Test-mode run | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js` | execute synthetic product runs and optional AI review |
+| Test-mode run | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js`, `src/app/api/routes/testModeRouteContext.js` | attempt synthetic product runs; currently yields error rows because `runTestProduct` is stubbed |
 | Intel Graph API server | CLI `intel-graph-api` | long-running local process | `src/api/intelGraphApi.js`, `src/cli/spec.js` | local GraphQL helper API on port `8787` |
 
 ## Scheduling Reality
@@ -27,7 +27,7 @@
 |------------|-------|--------|
 | GUI child process | HTTP request body + live config | child stdout/stderr broadcasts, runtime artifacts, process status |
 | Review/component batches | SpecDb, authority artifacts, review queues | SpecDb review tables, suggestions, component review outputs |
-| Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs, suggestions, optional SpecDb sync |
+| Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs, suggestions, optional SpecDb sync; current run step returns error rows because the route-context runner stub throws |
 
 ## Worker Boundaries
 
@@ -44,6 +44,7 @@
 | source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status HTTP endpoints |
 | source | `src/features/review/api/reviewRoutes.js` | component review batch trigger |
 | source | `src/app/api/routes/testModeRoutes.js` | test-mode run lifecycle |
+| source | `src/app/api/routes/testModeRouteContext.js` | stubbed `runTestProduct` contract used by the route |
 | source | `src/api/intelGraphApi.js` | local GraphQL helper server |
 
 ## Related Documents

@@ -1,3 +1,5 @@
+import { normalizeHost } from '../../pipeline/shared/hostParser.js';
+
 export function isDiscoveryOnlySourceUrl(url) {
   try {
     const parsed = new URL(url);
@@ -104,7 +106,7 @@ export function isSafeManufacturerFollowupUrl(source, url) {
     if (!sourceRootDomain) {
       return false;
     }
-    const host = String(parsed.hostname || '').toLowerCase().replace(/^www\./, '');
+    const host = normalizeHost(parsed.hostname);
     if (!host || (!host.endsWith(sourceRootDomain) && sourceRootDomain !== host)) {
       return false;
     }

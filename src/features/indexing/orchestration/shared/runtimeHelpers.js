@@ -1,6 +1,7 @@
 import { toInt, toBool } from './typeHelpers.js';
 import { configValue } from '../../../../shared/settingsAccessor.js';
 import { OUTPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
+import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 
 export function parseMinEvidenceRefs(value, fallback = 1) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -317,7 +318,7 @@ export function normalizeRuntimeOverrides(payload = {}) {
       ? null
       : Math.max(1, toInt(input.max_queries_per_product, 0)),
     blocked_domains: Array.isArray(input.blocked_domains)
-      ? [...new Set(input.blocked_domains.map((row) => String(row || '').trim().toLowerCase().replace(/^www\./, '')).filter(Boolean))]
+      ? [...new Set(input.blocked_domains.map((row) => normalizeHost(row)).filter(Boolean))]
       : [],
     force_high_fields: Array.isArray(input.force_high_fields)
       ? [...new Set(input.force_high_fields.map((row) => String(row || '').trim()).filter(Boolean))]

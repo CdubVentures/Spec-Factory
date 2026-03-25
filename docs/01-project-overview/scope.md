@@ -2,7 +2,7 @@
 
 > **Purpose:** Define the live system boundary, intended operators, and explicit non-goals so an arriving LLM does not invent missing systems.
 > **Prerequisites:** [../README.md](../README.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 Spec Factory is a local-first spec indexing, review, and runtime-operations workbench. The live repo contains a Node.js server in `src/api/guiServer.js`, a React/Vite operator GUI in `tools/gui-react/`, a SQLite persistence layer in `src/db/`, authored category and user-settings content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js` for indexing, queue, review, reporting, drift, migration, and daemon tasks.
 
@@ -40,10 +40,10 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 
 - Status: active local/internal development workbench.
 - Evidence:
-  - `npm run gui:build` succeeds.
+  - `npm run gui:build` succeeds on the current worktree.
   - `npm run env:check` returns `[env-check] OK (3 referenced keys covered)`.
-  - `npm test` reported `6555` pass, `77` fail on 2026-03-23 (6632 total; reduced from ~7693 after pipeline rework deleted ~130 test files). The failing clusters are tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
-  - `http://127.0.0.1:8788/api/v1/categories` returns `["gaming_mice","keyboard","monitor","mouse"]` for the live category inventory.
+  - `npm test` is red on the current worktree. Verified failing clusters include a missing `normalizeHost` export in `src/features/indexing/pipeline/shared/queryPlan.js`, a missing `src/features/indexing/search/index.js` module in brand-resolver tests, catalog type-alignment drift, and multiple API/GUI harness suites that fail during server boot or hit 25-second readiness timeouts. The active clusters are tracked in [../05-operations/known-issues.md](../05-operations/known-issues.md).
+  - `http://127.0.0.1:8788/api/v1/categories` returns `["gaming_mice","keyboard","monitor","mouse","tests"]` for the live category inventory.
   - `Dockerfile` references `src/cli/run-batch.js`, which does not exist in the live repo.
 
 ## Validated Against
@@ -57,7 +57,7 @@ Spec Factory is a local-first spec indexing, review, and runtime-operations work
 | config | `Dockerfile` | Confirms checked-in deployment artifact divergence |
 | command | `npm run gui:build` | GUI build passes on the current audit baseline |
 | command | `npm run env:check` | env-sync script currently reports `OK (3 referenced keys covered)` |
-| command | `npm test` | current suite baseline is red with 77 failures (6555 pass, 6632 total) |
+| command | `npm test` | current suite baseline is red on the active worktree with query-plan export drift, missing indexing/search modules, and API/GUI harness boot failures |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | Live category inventory available from the running server |
 
 ## Related Documents

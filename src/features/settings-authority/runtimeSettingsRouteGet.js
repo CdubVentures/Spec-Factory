@@ -1,5 +1,4 @@
 export {
   CATEGORY_AUTHORITY_ROOT_KEY,
-  CATEGORY_AUTHORITY_ENABLED_KEY,
   RUNTIME_SETTINGS_ROUTE_GET,
 } from '../../core/config/settingsKeyMap.js';

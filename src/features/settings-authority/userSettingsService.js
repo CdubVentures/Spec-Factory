@@ -10,8 +10,6 @@ import { deriveStorageCanonicalKeys } from '../../shared/settingsRegistryDerivat
 
 const STORAGE_CANONICAL_KEYS = deriveStorageCanonicalKeys(STORAGE_SETTINGS_REGISTRY);
 import {
-  CONVERGENCE_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_VALUE_TYPES,
   migrateUserSettingsDocument,
   readUserSettingsDocumentMeta,
   RUNTIME_SETTINGS_KEYS,
@@ -31,7 +29,6 @@ import { resolvePhaseOverrides } from '../../core/config/configPostMerge.js';
 import { buildRegistryLookup } from '../../core/llm/routeResolver.js';
 
 const RUNTIME_KEYS_TO_PERSIST = new Set(RUNTIME_SETTINGS_KEYS);
-const CONVERGENCE_KEYS_TO_PERSIST = new Set(CONVERGENCE_SETTINGS_KEYS);
 
 let userSettingsPersistQueue = Promise.resolve();
 
@@ -156,10 +153,6 @@ function sanitizeRuntimeSettings(raw) {
   return sanitizeSectionByTypeMap(raw, RUNTIME_SETTINGS_VALUE_TYPES);
 }
 
-function sanitizeConvergenceSettings(raw) {
-  return sanitizeSectionByTypeMap(raw, CONVERGENCE_SETTINGS_VALUE_TYPES);
-}
-
 function sanitizeStudioSettings(raw) {
   const source = asRecord(raw);
   const normalized = {};
@@ -251,11 +244,11 @@ function resolveSettingsAuthorityRoot(options = {}) {
   return 'category_authority';
 }
 
-function buildUserSettingsSnapshot(runtime, convergence, storage, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
+function buildUserSettingsSnapshot(runtime, storage, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
   return {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     runtime: sanitizeRuntimeSettings(runtime),
-    convergence: sanitizeConvergenceSettings(convergence),
+    convergence: {},
     storage: sanitizeStorageSettings(storage),
     studio: sanitizeStudioSettings(studio),
     ui: sanitizeUiSettings(ui),
@@ -352,16 +345,6 @@ function pickRuntimeSnapshotFromConfig(config = {}) {
   return runtime;
 }
 
-function pickConvergenceSnapshotFromConfig(config = {}) {
-  const convergence = {};
-  for (const key of CONVERGENCE_KEYS_TO_PERSIST) {
-    if (Object.hasOwn(config, key)) {
-      convergence[key] = config[key];
-    }
-  }
-  return convergence;
-}
-
 async function writeUserSettingsFile(filePath, payload) {
   const tempPath = path.join(
     path.dirname(filePath),
@@ -386,7 +369,6 @@ function enqueueUserSettingsPersist(task) {
 
 function resolveRequestedSections({
   runtime = null,
-  convergence = null,
   storage = null,
   studio = null,
   studioPatch = null,
@@ -394,18 +376,16 @@ function resolveRequestedSections({
 } = {}) {
   const sections = [];
   if (runtime !== null) sections.push('runtime');
-  if (convergence !== null) sections.push('convergence');
   if (storage !== null) sections.push('storage');
   if (studio !== null || studioPatch !== null) sections.push('studio');
   if (ui !== null) sections.push('ui');
-  return sections.length > 0 ? sections : ['runtime', 'convergence', 'storage', 'studio', 'ui'];
+  return sections.length > 0 ? sections : ['runtime', 'storage', 'studio', 'ui'];
 }
 
 export async function persistUserSettingsSections(options = {}) {
   const {
     categoryAuthorityRoot = null,
     runtime = null,
-    convergence = null,
     storage = null,
     studio = null,
     studioPatch = null,
@@ -418,7 +398,6 @@ export async function persistUserSettingsSections(options = {}) {
   }
   const requestedSections = resolveRequestedSections({
     runtime,
-    convergence,
     storage,
     studio,
     studioPatch,
@@ -451,7 +430,6 @@ export async function persistUserSettingsSections(options = {}) {
       }
       const sections = {
         runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
-        convergence: convergence === null ? existing.convergence : sanitizeConvergenceSettings(convergence),
         storage: storage === null ? existing.storage : sanitizeStorageSettings(storage),
         studio: nextStudio,
         ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
@@ -486,10 +464,6 @@ export function drainPersistQueue() {
 
 export function snapshotRuntimeSettings(config = {}) {
   return pickRuntimeSnapshotFromConfig(config);
-}
-
-export function snapshotConvergenceSettings(config = {}) {
-  return pickConvergenceSnapshotFromConfig(config);
 }
 
 export function snapshotStorageSettings(state = {}) {
@@ -527,19 +501,10 @@ export function applyRuntimeSettingsToConfig(config, runtimeSettings = {}) {
   rebuildDerivedConfigState(config, source);
 }
 
-export function applyConvergenceSettingsToConfig(config, convergenceSettings = {}) {
-  if (!config || typeof config !== 'object') return;
-  const source = sanitizeConvergenceSettings(convergenceSettings);
-  for (const [key, value] of Object.entries(source)) {
-    config[key] = value;
-  }
-}
-
 export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
   const user = asRecord(payload || {});
   const snapshot = buildUserSettingsSnapshot(
     user.runtime,
-    user.convergence,
     user.storage,
     user.studio,
     user.ui,
@@ -555,7 +520,6 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
     legacy: {
       runtime: snapshot.runtime,
-      convergence: snapshot.convergence,
       storage: sanitizeRunDataStorageSettingsForResponse(snapshot.storage),
     },
   };

@@ -5,12 +5,9 @@ import {
   resolveTierForHost,
   resolveTierNameForHost
 } from '../../../../categories/loader.js';
-import { extractRootDomain } from '../../../../utils/common.js';
+import { extractRootDomain } from '../../../../shared/valueNormalizers.js';
 import { normalizeFieldList } from '../../../../utils/fieldKeys.js';
-
-function normalizeHost(value) {
-  return String(value || '').toLowerCase().replace(/^www\./, '');
-}
+import { normalizeHost } from '../shared/hostParser.js';
 
 function textScore(text, tokens) {
   const haystack = String(text || '').toLowerCase();

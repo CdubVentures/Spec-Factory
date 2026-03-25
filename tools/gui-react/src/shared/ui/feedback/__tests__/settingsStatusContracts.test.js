@@ -9,7 +9,7 @@ async function loadSettingsStatusModule() {
   );
 }
 
-test('indexed runtime and convergence status text keeps error and partial ahead of dirty labels', async () => {
+test('indexed runtime status text keeps error and partial ahead of dirty labels', async () => {
   const { resolveIndexedSettingsStatusText } = await loadSettingsStatusModule();
 
   assert.equal(
@@ -32,13 +32,13 @@ test('indexed runtime and convergence status text keeps error and partial ahead 
     resolveIndexedSettingsStatusText({
       isSaving: false,
       saveState: 'partial',
-      saveMessage: 'Convergence applied with warnings.',
+      saveMessage: 'Settings applied with warnings.',
       dirty: true,
       dirtyLabel: 'Unsaved',
-      failureLabel: 'Failed to save convergence settings.',
+      failureLabel: 'Failed to save settings.',
       successLabel: 'All Changes Saved.',
     }),
-    'Convergence applied with warnings.',
+    'Settings applied with warnings.',
   );
 
   assert.equal(
@@ -130,31 +130,10 @@ test('storage and llm status helpers distinguish autosave-pending dirty state fr
   );
 });
 
-test('pipeline and source strategy status helpers keep persistence outcomes ahead of generic idle labels', async () => {
+test('source strategy status helpers keep persistence outcomes ahead of generic idle labels', async () => {
   const {
-    resolvePipelineConvergenceStatusText,
-    resolvePipelineConvergenceStatusClass,
     resolveSourceStrategyStatus,
   } = await loadSettingsStatusModule();
-
-  assert.equal(
-    resolvePipelineConvergenceStatusText({
-      isSaving: false,
-      saveState: 'error',
-      saveMessage: 'Convergence save failed.',
-      dirty: true,
-    }),
-    'Convergence save failed.',
-  );
-
-  assert.equal(
-    resolvePipelineConvergenceStatusClass({
-      isSaving: false,
-      saveState: 'partial',
-      dirty: true,
-    }),
-    'sf-status-text-warning',
-  );
 
   assert.deepEqual(
     resolveSourceStrategyStatus({

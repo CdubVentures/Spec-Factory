@@ -99,7 +99,7 @@ function unionSorted(existing, additions) {
 
 /**
  * Build per-field history maps from a completed round's artifacts.
- * Pure function — no side effects.
+ * Pure function - no side effects.
  *
  * @param {object} params
  * @param {object|null} params.previousFieldHistories - Previous round's field histories (keyed by field_key)
@@ -119,10 +119,8 @@ export function buildFieldHistories({
   const queries = safeArray(searchPlanQueries);
   const suppressed = safeNum(duplicatesSuppressed);
 
-  // Step 1: Collect all field keys that were touched this round
-  // (either targeted by queries or have provenance entries)
   const targetedFields = new Set();
-  const queryMap = new Map(); // fieldKey → [query strings]
+  const queryMap = new Map();
 
   for (const q of queries) {
     const fields = safeArray(q?.target_fields);
@@ -136,19 +134,16 @@ export function buildFieldHistories({
     }
   }
 
-  // Also include fields that have provenance (evidence was found)
   for (const fk of Object.keys(prov)) {
     if (fk) targetedFields.add(fk);
   }
 
-  // Also include fields from previous histories
   for (const fk of Object.keys(prev)) {
     if (fk) targetedFields.add(fk);
   }
 
   if (targetedFields.size === 0) return {};
 
-  // Step 2: Build history for each field
   const result = {};
 
   for (const fk of targetedFields) {
@@ -158,52 +153,36 @@ export function buildFieldHistories({
     const newQueries = queryMap.get(fk) || [];
     const wasTargeted = queryMap.has(fk);
 
-    // existing_queries: union of previous + new
-    const existingQueries = unionSorted(
-      safeArray(prevHist.existing_queries),
-      newQueries
-    );
+    const existingQueries = unionSorted(safeArray(prevHist.existing_queries), newQueries);
 
-    // domains_tried: union of previous + evidence rootDomains
     const newDomains = evidence
       .map((e) => String(e?.rootDomain || '').trim())
       .filter(Boolean);
-    const domainsTried = unionSorted(
-      safeArray(prevHist.domains_tried),
-      newDomains
-    );
+    const domainsTried = unionSorted(safeArray(prevHist.domains_tried), newDomains);
 
-    // host_classes_tried: union of previous + classified from evidence
     const newHostClasses = evidence.map((e) => classifyHostClass(e));
-    const hostClassesTried = unionSorted(
-      safeArray(prevHist.host_classes_tried),
-      newHostClasses
-    );
+    const hostClassesTried = unionSorted(safeArray(prevHist.host_classes_tried), newHostClasses);
 
-    // evidence_classes_tried: union of previous + classified from evidence
     const newEvidenceClasses = evidence.map((e) => classifyEvidenceClass(e));
     const evidenceClassesTried = unionSorted(
       safeArray(prevHist.evidence_classes_tried),
-      newEvidenceClasses
+      newEvidenceClasses,
     );
 
-    // query_count: previous + number of new queries targeting this field
     const queryCount = safeNum(prevHist.query_count) + newQueries.length;
 
-    // urls_examined_count: previous + unique new evidence URLs
     const uniqueUrls = new Set(
-      evidence.map((e) => String(e?.url || '').trim()).filter(Boolean)
+      evidence.map((e) => String(e?.url || '').trim()).filter(Boolean),
     );
     const urlsExaminedCount = safeNum(prevHist.urls_examined_count) + uniqueUrls.size;
 
-    // no_value_attempts: increment if field was targeted but still has no known value
     const fieldHasValue = hasKnownValue(fieldProv.value);
-    const noValueIncrement = (wasTargeted && !fieldHasValue) ? 1 : 0;
+    const noValueIncrement = wasTargeted && !fieldHasValue ? 1 : 0;
     const noValueAttempts = safeNum(prevHist.no_value_attempts) + noValueIncrement;
 
-    // duplicate_attempts_suppressed: previous + round's suppression count (for targeted fields)
     const dupIncrement = wasTargeted ? suppressed : 0;
-    const duplicateAttemptsSuppressed = safeNum(prevHist.duplicate_attempts_suppressed) + dupIncrement;
+    const duplicateAttemptsSuppressed =
+      safeNum(prevHist.duplicate_attempts_suppressed) + dupIncrement;
 
     result[fk] = {
       existing_queries: existingQueries,

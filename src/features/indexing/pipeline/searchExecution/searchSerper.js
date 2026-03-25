@@ -5,14 +5,17 @@
 import { createPacer } from './createPacer.js';
 
 const SERPER_URL = 'https://google.serper.dev/search';
-const DEFAULT_MIN_INTERVAL_MS = 500;
-const RETRY_BASE_MS = 1000;
+// WHY: Defaults live in settingsRegistry; these are fallbacks for standalone usage.
+const FALLBACK_MIN_INTERVAL_MS = 500;
+const FALLBACK_RETRY_BASE_MS = 1000;
+const FALLBACK_TIMEOUT_MS = 10_000;
+const FALLBACK_MAX_RETRIES = 3;
 
 // ---------------------------------------------------------------------------
 // Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-const _defaultPacer = createPacer({ minIntervalMs: DEFAULT_MIN_INTERVAL_MS });
+const _defaultPacer = createPacer({ minIntervalMs: FALLBACK_MIN_INTERVAL_MS });
 
 export function resetSerperPacingForTests() {
   _defaultPacer.resetForTests();
@@ -44,9 +47,9 @@ export async function searchSerper({
   query,
   apiKey,
   limit = 10,
-  timeoutMs = 10_000,
-  minQueryIntervalMs = DEFAULT_MIN_INTERVAL_MS,
-  maxRetries = 3,
+  timeoutMs,
+  minQueryIntervalMs,
+  maxRetries,
   gl = 'us',
   hl = 'en',
   autocorrect = true,
@@ -54,6 +57,11 @@ export async function searchSerper({
   requestThrottler,
   _fetchFn,
   _pacer,
+  // WHY: Registry settings flow in via the caller's settings bag.
+  serperSearchMinIntervalMs,
+  serperSearchRetryBaseMs,
+  serperSearchTimeoutMs,
+  serperSearchMaxRetries,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
@@ -68,9 +76,15 @@ export async function searchSerper({
   const cap = Math.max(1, Math.min(10, Number(limit) || 10));
   const fetchFn = _fetchFn || globalThis.fetch;
 
+  // WHY: Resolve registry settings → explicit param → fallback constant.
+  const effectiveMinInterval = minQueryIntervalMs ?? serperSearchMinIntervalMs ?? FALLBACK_MIN_INTERVAL_MS;
+  const effectiveRetryBase = serperSearchRetryBaseMs ?? FALLBACK_RETRY_BASE_MS;
+  const effectiveTimeout = timeoutMs ?? serperSearchTimeoutMs ?? FALLBACK_TIMEOUT_MS;
+  const effectiveMaxRetries = maxRetries ?? serperSearchMaxRetries ?? FALLBACK_MAX_RETRIES;
+
   // Pacing — injectable for tests
   const pacer = _pacer || _defaultPacer;
-  await pacer.waitForSlot({ interval: minQueryIntervalMs });
+  await pacer.waitForSlot({ interval: effectiveMinInterval });
 
   if (typeof requestThrottler?.acquire === 'function') {
     await requestThrottler.acquire({ key: 'google.serper.dev', provider: 'serper', query: q });
@@ -79,15 +93,15 @@ export async function searchSerper({
   const body = JSON.stringify({ q, num: cap, gl, hl, autocorrect });
 
   let lastError = null;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= effectiveMaxRetries; attempt++) {
     if (attempt > 0) {
-      const backoffMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
+      const backoffMs = effectiveRetryBase * Math.pow(2, attempt - 1);
       const jitter = Math.floor(Math.random() * backoffMs * 0.3);
       await new Promise(r => setTimeout(r, backoffMs + jitter));
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 10_000));
+    const timeout = setTimeout(() => controller.abort(), Math.max(1000, Number(effectiveTimeout) || 10_000));
 
     try {
       const response = await fetchFn(SERPER_URL, {
@@ -148,13 +162,13 @@ export async function searchSerper({
       clearTimeout(timeout);
       lastError = err;
       if (err.name === 'AbortError') {
-        logger?.warn?.('serper_timeout', { query: q, timeout_ms: timeoutMs, attempt });
+        logger?.warn?.('serper_timeout', { query: q, timeout_ms: effectiveTimeout, attempt });
       } else {
         logger?.warn?.('serper_fetch_error', { query: q, message: err.message, attempt });
       }
     }
   }
 
-  logger?.error?.('serper_all_retries_exhausted', { query: q, max_retries: maxRetries, last_error: lastError?.message });
+  logger?.error?.('serper_all_retries_exhausted', { query: q, max_retries: effectiveMaxRetries, last_error: lastError?.message });
   return EMPTY;
 }

@@ -24,7 +24,10 @@ import {
   buildValidationChecks,
   getScenarioDefs,
 } from '../../testing/testDataProvider.js';
-import { buildProductReviewPayload } from '../../features/review/domain/reviewGridData.js';
+import {
+  buildReviewLayout,
+  buildProductReviewPayload,
+} from '../../features/review/domain/reviewGridData.js';
 import { buildComponentReviewPayloads, buildEnumReviewPayloads } from '../../features/review/domain/componentReviewData.js';
 
 const CATEGORY = 'mouse';
@@ -333,6 +336,11 @@ test('Contract-Driven End-to-End Test', async (t) => {
 
     // 7. Seed SpecDb
     const fieldRules = buildFieldRulesForSeed(contractAnalysis, seedDBs);
+    const reviewLayout = await buildReviewLayout({
+      storage,
+      config,
+      category: CATEGORY,
+    });
 
     const { SpecDb } = await import('../specDb.js');
     const { seedSpecDb } = await import('../seed.js');
@@ -382,7 +390,11 @@ test('Contract-Driven End-to-End Test', async (t) => {
     const reviewPayloads = new Map();
     for (const product of products) {
       reviewPayloads.set(product.productId, await buildProductReviewPayload({
-        storage, config, category: CATEGORY, productId: product.productId,
+        storage,
+        config,
+        category: CATEGORY,
+        productId: product.productId,
+        layout: reviewLayout,
       }));
     }
     const reviewPayloadsWithSpecDb = new Map();
@@ -398,6 +410,7 @@ test('Contract-Driven End-to-End Test', async (t) => {
         config,
         category: CATEGORY,
         productId,
+        layout: reviewLayout,
         specDb: db,
       });
       reviewPayloadsWithSpecDb.set(productId, payload);
@@ -1262,7 +1275,11 @@ test('Contract-Driven End-to-End Test', async (t) => {
       for (const ct of contractAnalysis._raw.componentTypes) {
         await s.test(`COMP — ${ct.type}`, async () => {
           const result = await buildComponentReviewPayloads({
-            config, category: CATEGORY, componentType: ct.type, specDb: db,
+            config,
+            category: CATEGORY,
+            componentType: ct.type,
+            specDb: db,
+            fieldRules,
           });
 
           assert.ok(result, 'result should exist');
@@ -1339,8 +1356,10 @@ test('Contract-Driven End-to-End Test', async (t) => {
 
     await t.test('SECTION 5 — Enum Review', async (s) => {
       const enumResult = await buildEnumReviewPayloads({
-        config, category: CATEGORY,
+        config,
+        category: CATEGORY,
         specDb: db,
+        fieldRules,
       });
 
       await s.test('ENUM-01 — returns catalogs from contract', () => {

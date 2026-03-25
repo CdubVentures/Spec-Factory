@@ -1,4 +1,5 @@
-import { parseNumber, splitListValue, normalizeToken } from '../../../utils/common.js';
+import { normalizeAlphanumToken } from '../../../shared/primitives.js';
+import { parseNumber, splitListValue } from '../../../shared/valueNormalizers.js';
 
 function normalizeString(value) {
   return String(value || '').trim();
@@ -23,8 +24,8 @@ function isTruthyAnchor(value) {
 }
 
 function compareExact(expected, actual) {
-  const e = normalizeToken(expected);
-  const a = normalizeToken(actual);
+  const e = normalizeAlphanumToken(expected);
+  const a = normalizeAlphanumToken(actual);
   if (!e || !a) {
     return null;
   }
@@ -46,8 +47,8 @@ function normalizePerfToken(token) {
 }
 
 function sensorEquivalent(expected, actual) {
-  const expectedTokens = normalizeToken(expected).split(' ').filter(Boolean);
-  const actualTokens = normalizeToken(actual).split(' ').filter(Boolean);
+  const expectedTokens = normalizeAlphanumToken(expected).split(' ').filter(Boolean);
+  const actualTokens = normalizeAlphanumToken(actual).split(' ').filter(Boolean);
   if (!expectedTokens.length || !actualTokens.length) {
     return false;
   }

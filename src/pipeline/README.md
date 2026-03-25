@@ -10,7 +10,7 @@ Product indexing pipeline orchestrator: coordinates the full fetch → parse →
 - `learningGatePhase.js` → `evaluateFieldLearningGates`, `emitLearningGateEvents`, `populateLearningStores`
 - `learningExportPhase.js` → `runLearningExportPhase({ specDb, ... })`
 - `identityGateExtraction.js` → `isIdentityGatedField`, `resolveIdentityLabel`, `applyIdentityGateToCandidates`
-- `urlQualityGate.js` → `isLowValueHost`, `validateFetchUrl`
+- `urlQualityGate.js` → `isLowValueHost`
 - `dedupeOutcomeEvent.js` → `dedupeOutcomeToEventKey`, `buildDedupeOutcomeEvent`
 - `componentReviewBatch.js` → `runComponentReviewBatch`
 

@@ -2,52 +2,52 @@ import type { ReactNode } from 'react';
 import { SidebarShell } from '../../../shared/ui/navigation/SidebarShell.tsx';
 
 export type PipelineSectionId =
-  | 'flow'
+  | 'global'
   | 'planner'
   | 'fetcher'
+  | 'extraction'
   | 'validation'
-  | 'convergence'
   | 'source-strategy';
 
 export const PIPELINE_SECTION_IDS = [
-  'flow',
+  'global',
   'planner',
   'fetcher',
+  'extraction',
   'validation',
-  'convergence',
   'source-strategy',
 ] as const satisfies readonly PipelineSectionId[];
 
 const PIPELINE_SECTIONS = [
   {
-    id: 'flow' as const,
-    label: 'Runtime Flow',
-    subtitle: 'Run setup, timeouts, budgets, resume, output config',
-    tip: 'Owns run lifecycle knobs: timeouts, resume mode, output destinations, cloud mirrors, storage paths, automation helpers, and observability controls.',
+    id: 'global' as const,
+    label: 'Global',
+    subtitle: 'Run setup, timeouts, output config',
+    tip: 'Top-level run lifecycle: timeouts, output destinations, storage paths, and automation helpers.',
   },
   {
     id: 'planner' as const,
     label: 'Runtime Planner',
-    subtitle: 'Discovery, search engines, query caps, NeedSet tuning',
-    tip: 'Owns discovery and search planning knobs: engine selection, query caps, URL budgets, domain limits, planner LLM settings, and network identity.',
+    subtitle: 'Pipeline phase settings: NeedSet through Domain Classifier',
+    tip: 'Per-phase knobs for the 8-stage search pipeline: NeedSet confidence, search profile caps, provider pacing, SERP selector budgets, and domain classifier limits.',
   },
   {
     id: 'fetcher' as const,
     label: 'Runtime Fetcher',
-    subtitle: 'Throughput, frontier, browser, screenshots, pacing',
-    tip: 'Owns fetch-layer knobs: concurrency, host pacing, frontier persistence, cooldowns, browser fallback, headless mode, scroll behavior, and screenshot capture.',
+    subtitle: 'Browser, network, frontier, pacing, observability',
+    tip: 'Fetch-layer knobs: adapter selection, concurrency, host pacing, frontier persistence, cooldowns, headless mode, scroll behavior, and observability (trace, screencast).',
+  },
+  {
+    id: 'extraction' as const,
+    label: 'Runtime Extraction',
+    subtitle: 'Screenshots and page capture',
+    tip: 'Page capture settings: screenshot format, quality, selectors, and size limits.',
   },
   {
     id: 'validation' as const,
     label: 'Runtime Validation',
     subtitle: 'Schema enforcement and quality gates',
-    tip: 'Owns pipeline validation knobs: schema enforcement mode for pipeline context checkpoints.',
-  },
-  {
-    id: 'convergence' as const,
-    label: 'Scoring & Retrieval',
-    subtitle: 'Consensus, SERP triage & retrieval weights',
-    tip: 'Owns late ranking and scoring policy around SERP Selector plus Identity Gating To Consensus and Consensus To Validation. Use it when the pipeline is keeping the wrong URLs, admitting weak evidence, or choosing the wrong final value during consensus.',
+    tip: 'Pipeline validation knobs: schema enforcement mode for pipeline context checkpoints.',
   },
   {
     id: 'source-strategy' as const,
@@ -71,8 +71,8 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        {/* Flow — branching pipeline */}
-        {id === 'flow' && (
+        {/* Global — branching pipeline */}
+        {id === 'global' && (
           <>
             <path d="M4 7h6l2 2h8" />
             <path d="M4 17h6l2-2h8" />
@@ -98,18 +98,19 @@ export function SectionNavIcon({ id, active }: { id: PipelineSectionId; active: 
             <path d="M4 18h16" />
           </>
         )}
+        {/* Extraction — camera/capture */}
+        {id === 'extraction' && (
+          <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M7 5V3h4v2" />
+          </>
+        )}
         {/* Validation — checkmark shield */}
         {id === 'validation' && (
           <>
             <path d="M12 3 4 7v5c0 4.4 3.4 8.5 8 9.5 4.6-1 8-5.1 8-9.5V7z" />
             <path d="m9 12 2 2 4-4" />
-          </>
-        )}
-        {id === 'convergence' && (
-          <>
-            <circle cx="12" cy="12" r="8" />
-            <circle cx="12" cy="12" r="3.25" />
-            <path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4" />
           </>
         )}
         {id === 'source-strategy' && (

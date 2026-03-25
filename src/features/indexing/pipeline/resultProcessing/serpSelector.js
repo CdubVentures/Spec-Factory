@@ -2,9 +2,9 @@
 // Simplified: LLM just picks URLs, all metadata derived deterministically.
 
 import {
-  normalizeHost,
   toArray,
 } from '../shared/discoveryIdentity.js';
+import { normalizeHost } from '../shared/hostParser.js';
 import {
   guessDocKind,
   isForumLikeManufacturerSubdomain,
@@ -21,7 +21,7 @@ import {
 
 import { z, toJSONSchema } from 'zod';
 
-export const serpSelectorOutputZodSchema = z.object({
+const serpSelectorOutputZodSchema = z.object({
   keep_ids: z.array(z.string()),
 });
 

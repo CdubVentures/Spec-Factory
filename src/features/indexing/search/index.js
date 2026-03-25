@@ -1,6 +1,6 @@
 // WHY: Re-export shim — canonical imports are now in pipeline phase folders.
-// Search Profile → pipeline/searchProfile/
-// Search Execution → pipeline/searchExecution/
+// Search Profile -> pipeline/searchProfile/
+// Search Execution -> pipeline/searchExecution/
 export { searchSearxng } from '../pipeline/searchExecution/searchSearxng.js';
 export {
   runSearchProviders,
@@ -11,7 +11,7 @@ export {
 export {
   buildDeterministicAliases,
   buildSearchProfile,
-  buildTargetedQueries
+  buildTargetedQueries,
 } from '../pipeline/searchProfile/queryBuilder.js';
 export { dedupeSerpResults } from '../pipeline/searchExecution/serpDedupe.js';
 export { evaluateSearchLoopStop } from '../pipeline/searchExecution/searchLoop.js';

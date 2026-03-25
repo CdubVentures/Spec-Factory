@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { disassembleLlmPolicy, LLM_FLAT_KEY_TO_ENV } from '../../../../core/llm/llmPolicySchema.js';
 import { defaultLocalOutputRoot } from '../../../../core/config/runtimeArtifactRoots.js';
-import { buildRunId } from '../../../../utils/common.js';
+import { buildRunId } from '../../../../shared/primitives.js';
 import { writeRuntimeSettingsSnapshot } from '../../../../core/config/runtimeSettingsSnapshot.js';
 
 function buildError(status, body) {
@@ -111,11 +111,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
     capturePageScreenshotSelectors,
     specDbDir,
     categoryAuthorityRoot: legacyHelperFilesRoot,
-    localMode,
     localInputRoot,
     localOutputRoot,
     runtimeEventsKey,
-    writeMarkdownSummary,
     llmProvider,
     llmBaseUrl,
     openaiApiKey,
@@ -137,11 +135,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   } = body;
 
   const cat = category || 'mouse';
-  const categoryAuthorityEnabled = (
-    typeof body?.categoryAuthorityEnabled === 'boolean'
-      ? body.categoryAuthorityEnabled
-      : true
-  );
   const categoryAuthorityRoot = String(
     body?.categoryAuthorityRoot
     || legacyHelperFilesRoot
@@ -216,18 +209,15 @@ export function buildProcessStartLaunchPlan(options = {}) {
   };
 
   assignString(envOverrides, 'SPEC_DB_DIR', effectiveSpecDbDir);
-  assignBoolean(envOverrides, 'HELPER_FILES_ENABLED', categoryAuthorityEnabled);
   if (categoryAuthorityRoot) {
     envOverrides.HELPER_FILES_ROOT = categoryAuthorityRoot;
     envOverrides.CATEGORY_AUTHORITY_ROOT = categoryAuthorityRoot;
   }
 
-  assignBoolean(envOverrides, 'LOCAL_MODE', localMode);
   assignBoolean(envOverrides, 'DRY_RUN', dryRun);
   assignString(envOverrides, 'LOCAL_INPUT_ROOT', localInputRoot);
   assignString(envOverrides, 'LOCAL_OUTPUT_ROOT', effectiveLocalOutputRoot);
   assignString(envOverrides, 'RUNTIME_EVENTS_KEY', runtimeEventsKey);
-  assignBoolean(envOverrides, 'WRITE_MARKDOWN_SUMMARY', writeMarkdownSummary);
   assignString(envOverrides, 'LLM_PROVIDER', llmProvider);
   assignString(envOverrides, 'LLM_BASE_URL', llmBaseUrl);
   assignString(envOverrides, 'OPENAI_API_KEY', openaiApiKey);

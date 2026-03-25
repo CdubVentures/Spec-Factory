@@ -4,7 +4,6 @@
 
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
-  CONVERGENCE_SETTINGS_KEYS,
   DUAL_KEY_PAIRS,
   assertDualKeyConsistency
 } from './settingsKeyMap.js';
@@ -12,7 +11,6 @@ import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
 
 const RUNTIME_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.runtime || {});
-const CONVERGENCE_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.convergence || {});
 const LEGACY_HELPER_ROOT_ENV = `HELPER${'_FILES'}_ROOT`;
 
 // WHY: Derived from registry SSOT so new secret keys are automatically excluded
@@ -33,7 +31,7 @@ export const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set(
 );
 
 export const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
-  ['categoryAuthorityEnabled', ['HELPER_FILES_ENABLED']],
+
   ['categoryAuthorityRoot', ['CATEGORY_AUTHORITY_ROOT', LEGACY_HELPER_ROOT_ENV]],
   ['llmProvider', ['LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
   ['llmBaseUrl', ['LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
@@ -90,12 +88,6 @@ export function explicitEnvValue(name, explicitEnvKeys) {
 export function applyCanonicalSettingsDefaults(cfg, explicitEnvKeys) {
   const next = { ...cfg };
 
-  for (const key of CONVERGENCE_SETTINGS_KEYS) {
-    if (!Object.hasOwn(CONVERGENCE_SETTINGS_DEFAULTS, key)) continue;
-    if (hasExplicitSettingEnv(key, key, explicitEnvKeys)) continue;
-    next[key] = CONVERGENCE_SETTINGS_DEFAULTS[key];
-  }
-
   for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
     if (!Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)) continue;
     const configKey = RUNTIME_SETTINGS_CONFIG_KEY_MAP.get(key) || key;
@@ -111,7 +103,6 @@ export function applyCanonicalSettingsDefaults(cfg, explicitEnvKeys) {
 // Catches malformed defaults (wrong type, out-of-range) before they propagate silently.
 export function assertDefaultsValid(defaults) {
   const runtime = defaults?.runtime || {};
-  const convergence = defaults?.convergence || {};
 
   // Validate runtime int keys are actually numbers
   for (const [settingKey] of Object.entries(RUNTIME_SETTINGS_ROUTE_GET.intMap)) {
@@ -153,15 +144,6 @@ export function assertDefaultsValid(defaults) {
     if (typeof val !== 'string') {
       throw new Error(
         `SETTINGS_DEFAULTS.runtime.${settingKey} must be a string, got ${typeof val}: ${JSON.stringify(val)}`
-      );
-    }
-  }
-
-  // Validate convergence keys exist
-  for (const key of CONVERGENCE_SETTINGS_KEYS) {
-    if (!Object.hasOwn(convergence, key)) {
-      throw new Error(
-        `SETTINGS_DEFAULTS.convergence.${key} is required but missing`
       );
     }
   }

@@ -284,18 +284,6 @@ export function deriveConfigKeyMap(registry) {
   return Object.freeze(map);
 }
 
-/**
- * Derive the set of round-overridable setting keys.
- * Produces: Set<string> of keys where roundOverridable === true.
- */
-export function deriveRoundOverridableSet(registry) {
-  const set = new Set();
-  for (const entry of registry) {
-    if (entry.roundOverridable) set.add(entry.key);
-  }
-  return Object.freeze(set);
-}
-
 // ── LLM Policy derivations ──────────────────────────────────────────────
 
 /**
@@ -366,75 +354,6 @@ export function deriveLlmPolicyDefaults(registry) {
     flat[entry.key] = entry.default;
   }
   return flat;
-}
-
-/**
- * Derive the set of deprecated setting keys.
- * Produces: Set<string> of keys where deprecated === true.
- */
-export function deriveDeprecatedSet(registry) {
-  const set = new Set();
-  for (const entry of registry) {
-    if (entry.deprecated) set.add(entry.key);
-  }
-  return Object.freeze(set);
-}
-
-// --- Convergence registry derivations ---
-
-const CONVERGENCE_TYPE_TO_VALUE_TYPE = { int: 'integer', float: 'number', bool: 'boolean' };
-
-/**
- * Derive convergence defaults from registry.
- * Produces: { [key]: default } for every entry.
- */
-export function deriveConvergenceDefaults(registry) {
-  const defaults = {};
-  for (const entry of registry) {
-    defaults[entry.key] = entry.default;
-  }
-  return defaults;
-}
-
-/**
- * Derive convergence route contract from registry.
- * Produces: { intKeys: [...], floatKeys: [...], boolKeys: [...] }
- */
-export function deriveConvergenceRouteContract(registry) {
-  const intKeys = [];
-  const floatKeys = [];
-  const boolKeys = [];
-  for (const entry of registry) {
-    if (entry.type === 'int') intKeys.push(entry.key);
-    else if (entry.type === 'float') floatKeys.push(entry.key);
-    else if (entry.type === 'bool') boolKeys.push(entry.key);
-  }
-  return Object.freeze({
-    intKeys: Object.freeze(intKeys),
-    floatKeys: Object.freeze(floatKeys),
-    boolKeys: Object.freeze(boolKeys),
-  });
-}
-
-/**
- * Derive convergence value type map from registry.
- * Produces: { [key]: 'integer' | 'number' | 'boolean' }
- */
-export function deriveConvergenceValueTypes(registry) {
-  const types = {};
-  for (const entry of registry) {
-    const valueType = CONVERGENCE_TYPE_TO_VALUE_TYPE[entry.type];
-    if (valueType) types[entry.key] = valueType;
-  }
-  return Object.freeze(types);
-}
-
-/**
- * Derive convergence key set from registry.
- * Produces: string[] of all convergence setting keys.
- */
-export function deriveConvergenceKeySet(registry) {
-  return registry.map(e => e.key);
 }
 
 // --- UI registry derivations ---
@@ -605,14 +524,3 @@ export function deriveUiCategoryMap(registry) {
   return map;
 }
 
-/**
- * Derive the disabledBy dependency map from registry.
- * Produces: { [key]: parentKey } for entries with disabledBy.
- */
-export function deriveDisabledByMap(registry) {
-  const map = {};
-  for (const entry of registry) {
-    if (entry.disabledBy) map[entry.key] = entry.disabledBy;
-  }
-  return Object.freeze(map);
-}

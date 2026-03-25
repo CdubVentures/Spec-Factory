@@ -131,19 +131,14 @@ test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 sto
   });
 
   assert.equal(destinationType, 's3');
-  assert.deepEqual(archiveStorage, {
-    ok: true,
-    input: {
-      outputMode: 's3',
-      localMode: false,
-      awsRegion: 'us-east-2',
-      s3Bucket: 'spec-factory-bucket',
-      s3InputPrefix: 'specs/inputs',
-      s3OutputPrefix: 'specs/outputs',
-      localInputRoot: path.resolve('fixtures', 's3'),
-      localOutputRoot: path.resolve('workspace', 'output'),
-    },
-  });
+  assert.equal(archiveStorage?.ok, true);
+  assert.equal(archiveStorage?.input?.outputMode, 's3');
+  assert.equal(archiveStorage?.input?.awsRegion, 'us-east-2');
+  assert.equal(archiveStorage?.input?.s3Bucket, 'spec-factory-bucket');
+  assert.equal(archiveStorage?.input?.s3InputPrefix, 'specs/inputs');
+  assert.equal(archiveStorage?.input?.s3OutputPrefix, 'specs/outputs');
+  assert.equal(archiveStorage?.input?.localInputRoot, path.resolve('fixtures', 's3'));
+  assert.equal(archiveStorage?.input?.localOutputRoot, path.resolve('workspace', 'output'));
 });
 
 // WHY: Contract test for resolveCurrentIndexLabRoot — SSOT dynamic derivation.

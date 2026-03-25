@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { nowIso } from '../utils/common.js';
+import { nowIso } from '../shared/primitives.js';
 import { normalizeFieldKey } from './engineTextHelpers.js';
 import { generateSuggestionId, deduplicateByKey, stableSortSuggestions } from './curationPureDomain.js';
 import { readJsonDoc, writeJsonDoc } from './curationPersistence.js';

@@ -591,3 +591,141 @@
 [gui-server] Canonical settings writes only: ON
 [gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
 [gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-B-aLMaKI.js, buttonClasses-x-rUW2Cc.js, CatalogPage--_KOHlAv.js, CategoryManager-DZxB6dtE.js, Chip-DT26XC1B.js, ComponentReviewPage-Dm_B1JjR.js, DataTable-BmrjKX2I.js, DrawerShell-PcpT2kZw.js, fieldNormalize-BfWKSrbu.js, FlagsSection-B-gx757Q.js, formatting-B6A_RRxb.js, index-B92iBvtR.css, index-DUV4VQEx.js, IndexingPage-Cw2yB_9T.js, indexlabRunsQuery-DBvIY-7y.js, invalidateFieldRulesQueries-DJMyfmrK.js, LlmConfigPage-719af9rZ.js, LlmGlobalSection-wzL-Cj5h.js, LlmPhaseSection-3rO5uFlH.js, llmPolicyDefaults-Ctw6bSjd.js, LlmProviderRegistrySection-CYKlxBE-.js, llmRouteTaxonomy-BmBDQcOm.js, LlmSettingsPage-CE-zgC9G.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-BJW7lYDl.js, PipelineSettingsPage-DtmDvLJ9.js, PipelineSourceStrategySection-C2KJk0u8.js, ProductPage-C3OG_yKx.js, ReviewPage-DNJmrP34.js, RuntimeFlowDraftPayload-CB3PBBl0.js, RuntimeFlowHeaderControls-pTd3oqHf.js, RuntimeOpsPage-Byrm1ejz.js, settingsStatus-BVm315aX.js, StoragePage-exnSb5_r.js, StudioPage-_fRiqqrv.js, TabStrip-Klqv926z.js, TestModePage-D9PWSvNX.js, TrafficLight-h0uAPRSi.js, useFieldLabels-D-ezkHx8.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-Bop-IckU.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DpM4ex2L.js, CategoryManager-Bw2co2Sz.js, Chip-DT26XC1B.js, ComponentReviewPage-FiY3ZrYP.js, DataTable-BmrjKX2I.js, DrawerShell-OWgt9KoD.js, fieldNormalize-BfWKSrbu.js, FlagsSection-Ba3Xf9iH.js, formatting-B6A_RRxb.js, index-B92iBvtR.css, index-C2mHyiz-.js, IndexingPage-CwB1RQ6C.js, indexlabRunsQuery-uZYK2L04.js, invalidateFieldRulesQueries-Dk4Rkzgv.js, LlmConfigPage-CcmPz7pN.js, LlmGlobalSection-CC5H0s-C.js, LlmPhaseSection-BNFoSLh5.js, llmPolicyDefaults-Bj75tpIM.js, LlmProviderRegistrySection-DK8QiCAe.js, llmRouteTaxonomy-CBV4nodO.js, LlmSettingsPage-CM5Ex2p5.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-CPWOdj4Z.js, PipelineSettingsPage-BvGx-Auv.js, PipelineSourceStrategySection-Cuffxl6I.js, ProductPage-B6Jxk8Vq.js, ReviewPage-DQL1evgI.js, RuntimeFlowDraftPayload-CHzOE0Cx.js, RuntimeFlowHeaderControls-0DRlg5b-.js, RuntimeOpsPage-Cr-yPuVM.js, settingsStatus-BVm315aX.js, StoragePage-BFVyzseN.js, StudioPage-CYpm3rhf.js, TabStrip-Klqv926z.js, TestModePage-CTFiDCwO.js, TrafficLight-CG-1uuB_.js, useFieldLabels-DbbxPcwR.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[getSpecDb] primary open failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] primary open failed for keyboard: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for keyboard: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[source-registry] keyboard: 7 sparsity warning(s)
+[source-registry] keyboard: 7 sparsity warning(s)
+[source-registry] keyboard: 7 sparsity warning(s)
+[getSpecDb] primary open failed for gaming_mice: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for gaming_mice: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-D77WZlXy.js, buttonClasses-x-rUW2Cc.js, CatalogPage-CVJA_q-J.js, CategoryManager-DY_4R-FE.js, Chip-DT26XC1B.js, ComponentReviewPage-Brz76Ir4.js, DataTable-BmrjKX2I.js, DrawerShell-J3L9doBF.js, fieldNormalize-BfWKSrbu.js, FlagsSection-COge74jV.js, formatting-B6A_RRxb.js, index-C22Yyyiy.js, index-iM_sa_8V.css, IndexingPage-xRMfboeu.js, indexlabRunsQuery-4wReq5DY.js, invalidateFieldRulesQueries-jPDiWUse.js, LlmConfigPage-BjZT0y0b.js, LlmGlobalSection-C5BfXdoW.js, LlmPhaseSection-RoqMHXIF.js, llmPolicyDefaults-Bi4HhQJ0.js, LlmProviderRegistrySection-Cqyaz8qv.js, llmRouteTaxonomy-DQOvJclb.js, LlmSettingsPage-p9cTU6Sn.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-qAuWx1Xw.js, PipelineSettingsPage-BhIVr4If.js, PipelineSourceStrategySection-BGqTX7-G.js, ProductPage-CITGOkbD.js, ReviewPage-BtOJ6-1N.js, RuntimeFlowDraftPayload-CtgKXgtM.js, RuntimeFlowHeaderControls-BNKBsIxQ.js, RuntimeOpsPage-W8YgBrdL.js, settingsStatus-DBdyX6TZ.js, StoragePage-CBxBaWnx.js, StudioPage-DlxQCBj7.js, TabStrip-Klqv926z.js, TestModePage-gORaoyTK.js, TrafficLight-g75SAHmg.js, useFieldLabels-CEFhSo7h.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[getSpecDb] primary open failed for gaming_mice: ENOENT: no such file or directory, access 'C:\Users\Chris\Desktop\Spec Factory\.specfactory_tmp\gaming_mice\spec.sqlite'
+[getSpecDb] fallback create failed for gaming_mice: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] primary open failed for keyboard: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for keyboard: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[source-registry] keyboard: 7 sparsity warning(s)
+[source-registry] keyboard: 7 sparsity warning(s)
+[source-registry] keyboard: 7 sparsity warning(s)
+[getSpecDb] primary open failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-B2y4gCfA.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DJuEKpMK.js, CategoryManager-C9fxzDjz.js, Chip-DT26XC1B.js, ComponentReviewPage-DMncZ0lL.js, DataTable-BmrjKX2I.js, DrawerShell-RNKY5nBF.js, fieldNormalize-BfWKSrbu.js, FlagsSection-BWNnV9mM.js, formatting-B6A_RRxb.js, index-iM_sa_8V.css, index-mFIYed0G.js, IndexingPage-B1a3uzPq.js, indexlabRunsQuery-9OvAliJO.js, invalidateFieldRulesQueries-B9xbeOER.js, LlmConfigPage-B6HNDtvS.js, LlmGlobalSection-DhrFcqUv.js, LlmPhaseSection-C1dG55XJ.js, llmPolicyDefaults-DM9Tbwwb.js, LlmProviderRegistrySection-_ST3xHDO.js, llmRouteTaxonomy-CWQWVXJ0.js, LlmSettingsPage-E-C2EbBO.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-DmbiFdyP.js, PipelineSettingsPage-DmqlR_WF.js, PipelineSourceStrategySection-CeLJq_q0.js, ProductPage-CWpIWXGJ.js, ReviewPage-Btz7fG61.js, RuntimeFlowDraftPayload-J9LiR6bi.js, RuntimeFlowHeaderControls-BCyfqM9l.js, RuntimeOpsPage-BX9xPsWb.js, settingsStatus-DBdyX6TZ.js, StoragePage-Bm3KzbkM.js, StudioPage-CZkjluDg.js, TabStrip-Klqv926z.js, TestModePage-D369Ccs6.js, TrafficLight-1e-ZQlmi.js, useFieldLabels-DgGcXN1S.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DNYIoObh.js, buttonClasses-x-rUW2Cc.js, CatalogPage-D83VG0Ir.js, CategoryManager-Co3s2gX7.js, Chip-DT26XC1B.js, ComponentReviewPage-C6drOqMy.js, DataTable-BmrjKX2I.js, DrawerShell-hnHEoLH6.js, fieldNormalize-BfWKSrbu.js, FlagsSection-D7OZkvFS.js, formatting-B6A_RRxb.js, index-DJqIEk66.js, index-iM_sa_8V.css, IndexingPage-C_nULyLz.js, indexlabRunsQuery-D0LuHwKb.js, invalidateFieldRulesQueries-1MlyaA88.js, LlmConfigPage-DQKAsetK.js, LlmGlobalSection-C6yB3bRe.js, LlmPhaseSection-CDDY6kCx.js, llmPolicyDefaults-DQbro7d9.js, LlmProviderRegistrySection-D56h0G1l.js, llmRouteTaxonomy-K8JkzP21.js, LlmSettingsPage-BFpNRSAL.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-CuyPgUVr.js, PipelineSettingsPage-BJCy0m5G.js, PipelineSourceStrategySection-Dri4zKTW.js, ProductPage-diNowBdi.js, ReviewPage-CxNmGNTK.js, RuntimeFlowDraftPayload-Bnjg-QWt.js, RuntimeFlowHeaderControls-C-9965Jb.js, RuntimeOpsPage--0mXclhg.js, settingsStatus-DBdyX6TZ.js, StoragePage-00qQFA3s.js, StudioPage-C_R0_gPZ.js, TabStrip-Klqv926z.js, TestModePage-BJPl1mRi.js, TrafficLight-CRT96r2w.js, useFieldLabels-CkPqBogA.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[getSpecDb] primary open failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+[getSpecDb] fallback create failed for mouse: The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:46
+  const { assertNativeModulesHealthy } = await import('../core/nativeModuleGuard.js');
+                                         ^^^^^
+
+SyntaxError: Unexpected reserved word
+    at compileSourceTextModule (node:internal/modules/esm/utils:338:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:102:18)
+    at #translate (node:internal/modules/esm/loader:468:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:515:27)
+
+Node.js v22.14.0
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-aXpr-AY3.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DuGMfeq0.js, CategoryManager-CSgMAhMF.js, Chip-DT26XC1B.js, ComponentReviewPage-CiCBDhuJ.js, DataTable-BmrjKX2I.js, DrawerShell-CTDTpkOc.js, fieldNormalize-BfWKSrbu.js, FlagsSection-CSwWyxM1.js, formatting-B6A_RRxb.js, index-iM_sa_8V.css, index-nlQdIbpl.js, IndexingPage-DBgtlNTq.js, indexlabRunsQuery-DHcaaztN.js, invalidateFieldRulesQueries-Bs50pAWr.js, LlmConfigPage-BOZzn-c7.js, LlmGlobalSection-DX6no1zQ.js, LlmPhaseSection-gR8XJCFk.js, llmPolicyDefaults-BUMafv97.js, LlmProviderRegistrySection-CrOLfZIY.js, llmRouteTaxonomy-DPZGyRIr.js, LlmSettingsPage-Cfs0eVtj.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-D00tAXme.js, PipelineSettingsPage-BgxBWUmG.js, PipelineSourceStrategySection-BqecTM4d.js, ProductPage-kAp1f8WQ.js, ReviewPage-Bce7iZnQ.js, RuntimeFlowDraftPayload-CpBrxpOs.js, RuntimeFlowHeaderControls-VRUhOuw8.js, RuntimeOpsPage-DVgSZQHJ.js, settingsStatus-DBdyX6TZ.js, StoragePage-DZYNNpd4.js, StudioPage-Cn-5zm-R.js, TabStrip-Klqv926z.js, TestModePage-CziemSi1.js, TrafficLight-Bg0dnKdw.js, useFieldLabels-BkDOjm2y.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js

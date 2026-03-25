@@ -62,12 +62,12 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'automationQueueStorageEngine', 'runtimeScreenshotMode', 'accuracyMode',
   'chartExtractionEnabled',
   'fieldRulesEngineEnforceEvidence', 'runtimeOpsWorkbenchEnabled',
-  'indexingHelperFilesEnabled', 'helperFilesEnabled',
+  'indexingHelperFilesEnabled',
   'helperSupportiveEnabled', 'helperSupportiveMaxSources',
   'helperAutoSeedTargets', 'helperActiveSyncLimit',
 
   // Category authority (computed resolution chain)
-  'categoryAuthorityEnabled', 'categoryAuthorityRoot',
+  'categoryAuthorityRoot',
 
   // Chatmock (path.join computation)
   'chatmockDir', 'chatmockComposeFile',

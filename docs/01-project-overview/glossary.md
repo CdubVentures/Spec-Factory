@@ -2,7 +2,7 @@
 
 > **Purpose:** Define project-specific domain terms and overloaded words that would otherwise cause an arriving LLM to hallucinate generic meanings.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 | Term | Meaning in this repo | Primary evidence |
 |------|----------------------|------------------|
@@ -19,17 +19,17 @@
 | Component review | The review workflow for component identities and component-linked fields | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/ComponentReviewPage.tsx` |
 | Enum review | The review workflow for enumerated value catalogs and enum consistency suggestions | `src/features/review/api/reviewRoutes.js`, `tools/gui-react/src/pages/component-review/EnumSubTab.tsx` |
 | Runtime settings | Persisted user-editable operational settings exposed at `/api/v1/runtime-settings` | `src/features/settings/api/configRoutes.js`, `src/features/settings-authority/runtimeSettingsRouteGet.js` |
-| Convergence settings | Persisted user-editable scoring/round/consensus settings exposed at `/api/v1/convergence-settings` | `src/features/settings/api/configRoutes.js`, `src/features/settings-authority/convergenceSettingsRouteContract.js` |
 | Source strategy | Per-category source/discovery policy records exposed at `/api/v1/source-strategy` | `src/features/indexing/api/sourceStrategyRoutes.js` |
 | Run data storage | Optional relocation/archive destination for run artifacts separate from the default local output root | `src/api/guiServer.js`, `src/api/services/runDataRelocationService.js` |
 | Test mode | GUI/API surface for generating deterministic category fixtures and validation runs | `src/app/api/routes/testModeRoutes.js`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
-| Pipeline context schema | Zod schema with 8 progressive checkpoints that validates the context object threading through discovery pipeline stages | `src/features/indexing/discovery/pipelineContextSchema.js` |
+| NeedSet engine | Field-priority and missing-data assessment logic that feeds the early indexing pipeline and run replay artifacts | `src/features/indexing/pipeline/needSet/needsetEngine.js` |
 | Crawl module | Plugin-based browser automation module that opens pages, bypasses blocks, captures screenshots, and records to frontier DB. Replaces the former extraction pipeline | `src/features/crawl/index.js`, `src/features/crawl/README.md` |
 | Crawl session | A persistent browser instance managed by the crawl module; one browser per session, never per-URL | `src/features/crawl/crawlSession.js` |
 | Plugin runner | Sequential plugin lifecycle manager for crawl hooks (stealth, auto-scroll, extensible) | `src/features/crawl/core/pluginRunner.js` |
 | Frontier DB | URL-level crawl state persistence with cooldown, replay, and rate-limiting support | used by `src/pipeline/runCrawlProcessingLifecycle.js` |
 | Catalog product row | The per-product SpecDb row upserted when catalog products are added or updated, linking catalog identity to DB state | `src/features/catalog/products/upsertCatalogProductRow.js` |
-| LLM Config | The GUI page for per-category LLM route matrix configuration, distinct from the LLM Settings page that manages global model routing | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` |
+| LLM Settings | The page that edits category-scoped `llm_route_matrix` rows in SQLite | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `src/features/settings/api/configLlmSettingsHandler.js` |
+| LLM Config | The GUI page for the global composite LLM policy: provider registry, API keys, budgets, token limits, and phase overrides persisted through `/api/v1/llm-policy` | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`, `src/features/settings-authority/llmPolicyHandler.js` |
 
 ## Validated Against
 
@@ -40,6 +40,8 @@
 | source | `src/features/studio/api/studioRoutes.js` | Field Rules Studio terminology |
 | source | `src/features/review/api/reviewRoutes.js` | Review grid, component review, and enum review naming |
 | source | `src/features/category-authority/api/dataAuthorityRoutes.js` | Authority snapshot semantics |
+| source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy terminology |
+| source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category LLM-settings terminology |
 
 ## Related Documents
 

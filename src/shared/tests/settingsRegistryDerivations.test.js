@@ -333,9 +333,6 @@ describe('registry enrichment — aliases', () => {
     ok(byKey.categoryAuthorityRoot.aliases?.includes('helperFilesRoot'));
   });
 
-  it('categoryAuthorityEnabled has helperFilesEnabled alias', () => {
-    ok(byKey.categoryAuthorityEnabled.aliases?.includes('helperFilesEnabled'));
-  });
 
   it('searchEngines has searchProvider alias', () => {
     ok(byKey.searchEngines.aliases?.includes('searchProvider'));

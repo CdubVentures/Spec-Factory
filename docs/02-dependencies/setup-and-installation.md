@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the exact local setup path from install to verified GUI runtime using only repo-backed commands and files.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Prerequisites
 
@@ -11,7 +11,6 @@
 - Windows launcher scripts exist, but the runtime itself is Node-based and can be started from the shell directly.
 - Optional:
   - Docker for local SearXNG control via `tools/searxng/docker-compose.yml`
-  - Python/sidecar dependencies if using the EloShapes adapter or structured metadata sidecar
 
 ## Local Setup
 
@@ -41,7 +40,7 @@
    npm run env:check
    ```
 
-   Current observed behavior on 2026-03-17: this command returns `[env-check] OK (3 referenced keys covered)`. That is still a narrow reference scan, not a complete manifest-to-env audit; see [environment-and-config.md](./environment-and-config.md) for the actual authority chain.
+   Current observed behavior on 2026-03-24: this command returns `[env-check] OK (3 referenced keys covered)`. That is still a narrow reference scan, not a complete manifest-to-env audit; see [environment-and-config.md](./environment-and-config.md) for the actual authority chain.
 
 5. Build the GUI.
 
@@ -93,7 +92,7 @@
    npm test
    ```
 
-   Observed on 2026-03-23: `npm test` reported `6555` pass, `77` fail (6632 total). See [../05-operations/known-issues.md](../05-operations/known-issues.md) for the active failing clusters.
+   Observed on 2026-03-24: `npm test` is red on the current worktree. Verified failing clusters include query-plan export drift, missing indexing/search modules, catalog type-alignment drift, and API/GUI harness boot failures. See [../05-operations/known-issues.md](../05-operations/known-issues.md) for the active clusters.
 
 ## Useful Local Commands
 
@@ -117,7 +116,7 @@
 | source | `tools/specfactory-launcher.mjs` | launcher-based setup path |
 | command | `npm run env:check` | env-check passes on the current audit baseline |
 | command | `npm run gui:build` | GUI build succeeded during the audit |
-| command | `npm test` | full test suite currently reports 77 failures (6555 pass, 6632 total) |
+| command | `npm test` | full test suite is red on the current worktree; see known-issues for the verified failure clusters |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live server health endpoint responded with `ok: true` |
 
 ## Related Documents

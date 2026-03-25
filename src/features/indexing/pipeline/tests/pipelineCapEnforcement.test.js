@@ -273,4 +273,21 @@ describe('runDomainClassifier respects domainClassifierUrlCap', () => {
     assert.equal(planner._enqueued[1].url, 'https://example-1.com/page');
     assert.equal(planner._enqueued[2].url, 'https://example-2.com/page');
   });
+
+  it('enqueues selected URLs through the approved discovery path', () => {
+    const planner = makePlanner();
+    const result = runDomainClassifier({
+      discoveryResult: makeDiscoveryResult(3),
+      planner,
+      config: { domainClassifierUrlCap: 10 },
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    assert.equal(result.enqueuedCount, 3);
+    assert.equal(planner._enqueued.length, 3);
+    for (const entry of planner._enqueued) {
+      assert.equal(entry.source, 'discovery_approved');
+      assert.equal(entry.forceApproved, true);
+    }
+  });
 });

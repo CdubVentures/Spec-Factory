@@ -374,7 +374,7 @@ test('runDiscoverySeedPlan emits needset_computed with profile_influence, bundle
     llmContext: {},
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
-    loadEnabledSourceEntriesFn: async () => [],
+
     computeNeedSetFn: () => schema2,
     buildSearchPlanningContextFn: (args) => ({ ...args, context_ready: true }),
     buildSearchPlanFn: async () => schema4,
@@ -519,7 +519,7 @@ test('runDiscoverySeedPlan handles schema4 computation failure gracefully', asyn
     llmContext: {},
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
-    loadEnabledSourceEntriesFn: async () => [],
+
     computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
     buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
     buildSearchPlanFn: async () => { throw new Error('LLM unavailable'); },
@@ -564,7 +564,7 @@ test('runDiscoverySeedPlan does NOT emit needset_computed when schema4 has no pa
     llmContext: {},
     planner,
     normalizeFieldListFn: (list) => (Array.isArray(list) ? list : []),
-    loadEnabledSourceEntriesFn: async () => [],
+
     computeNeedSetFn: () => makeSchema2(),
     buildSearchPlanningContextFn: () => ({}),
     // Schema 4 returns but with no panel

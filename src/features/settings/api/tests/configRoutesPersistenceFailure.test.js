@@ -87,24 +87,6 @@ test('runtime-settings PUT returns error when persistence writes fail', async ()
   assert.equal(counters.writes.by_target['runtime-settings-route']?.failed_total, 1);
 });
 
-test('convergence-settings PUT returns error when persistence writes fail', async () => {
-  resetSettingsPersistenceCounters();
-  const helperRootFile = await makeInvalidHelperRoot();
-  const config = {};
-  const handler = registerConfigRoutes(makeCtx({
-    HELPER_ROOT: helperRootFile,
-    config,
-    readJsonBody: async () => ({}),
-  }));
-
-  const result = await handler(['convergence-settings'], new URLSearchParams(), 'PUT', {}, {});
-  assert.equal(result.status, 500);
-  assert.equal(result.body?.ok, false);
-  assert.equal(result.body?.error, 'convergence_settings_persist_failed');
-  const counters = getSettingsPersistenceCountersSnapshot();
-  assert.equal(counters.writes.by_target['convergence-settings-route']?.failed_total, 1);
-});
-
 test('storage-settings PUT returns error when persistence writes fail', async () => {
   resetSettingsPersistenceCounters();
   const helperRootFile = await makeInvalidHelperRoot();

@@ -2,7 +2,6 @@
 // Run: node tools/gui-react/scripts/generateManifestTypes.js
 
 export declare const SETTINGS_DEFAULTS: {
-  readonly convergence: Readonly<Record<string, number | boolean>>;
   readonly runtime: Readonly<Record<string, string | number | boolean>>;
   readonly storage: Readonly<{
     enabled: boolean;

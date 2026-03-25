@@ -16,7 +16,6 @@ IndexLab runtime bridge and orchestration support. Translates pipeline events in
 - `needsetStoryProjection.js`: `projectNeedSetStory()` — needset narrative for search planning.
 - `searchPlanningContext.js`: `buildSearchPlanningContext()` — Schema 3 context from needset + field groups.
 - `searchPlanBuilder.js`: `buildSearchPlan()` — Schema 4 query plan via LLM or deterministic fallback.
-- `buildFieldHistories.js`: `buildFieldHistories()`, `classifyHostClass()`, `classifyEvidenceClass()`.
 - `indexingSchemaPackets.js`: `buildIndexingSchemaPackets()` — constructs schema-validated packets.
 - `indexingSchemaPacketsValidator.js`: `validateIndexingSchemaPackets()` — AJV-based packet validation.
 

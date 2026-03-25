@@ -4,10 +4,10 @@
  * Extracted from searchDiscovery.js (Phase 4A of structural decomposition).
  * Contains 10 helper functions: 6 pure, 4 with I/O (storage reads/writes).
  */
-import { extractRootDomain } from '../../../../utils/common.js';
+import { extractRootDomain } from '../../../../shared/valueNormalizers.js';
 import { toPosixKey } from '../../../../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
-import { normalizeHost } from './discoveryIdentity.js';
+import { normalizeHost } from './hostParser.js';
 
 // ---------------------------------------------------------------------------
 // runWithConcurrency — generic concurrency pool
@@ -162,81 +162,6 @@ export function buildQueryAttemptStats(rows = []) {
     }
   }
   return [...byQuery.values()].sort((a, b) => b.result_count - a.result_count || a.query.localeCompare(b.query));
-}
-
-// ---------------------------------------------------------------------------
-// resolveSearchProfileCaps — preserves the public cap contract for discovery
-// ---------------------------------------------------------------------------
-
-export function resolveSearchProfileCaps() {
-  return {
-    deterministicAliasCap: 6,
-    llmAliasValidationCap: 12,
-    llmFieldTargetQueriesCap: 3,
-    llmDocHintQueriesCap: 3,
-    dedupeQueriesCap: 24,
-  };
-}
-
-
-// ---------------------------------------------------------------------------
-// normalizeTriageScore — extracts best available score from a row
-// ---------------------------------------------------------------------------
-
-export function normalizeTriageScore(row) {
-  const candidates = [
-    row?.rerank_score,
-    row?.score,
-    row?.score_det
-  ];
-  for (const value of candidates) {
-    const parsed = Number.parseFloat(String(value ?? ''));
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
-}
-
-// ---------------------------------------------------------------------------
-// normalizeSourceEntryDiscovery — fills defaults for discovery metadata
-// ---------------------------------------------------------------------------
-
-export function normalizeSourceEntryDiscovery(discovery) {
-  if (discovery && typeof discovery === 'object') {
-    return {
-      method: 'manual',
-      source_type: '',
-      search_pattern: '',
-      priority: 50,
-      enabled: true,
-      notes: '',
-      ...discovery,
-    };
-  }
-  return {
-    method: 'manual',
-    source_type: '',
-    search_pattern: '',
-    priority: 50,
-    enabled: true,
-    notes: '',
-  };
-}
-
-// ---------------------------------------------------------------------------
-// resolveEnabledSourceEntries — filters and normalizes source entries
-// ---------------------------------------------------------------------------
-
-export function resolveEnabledSourceEntries({
-  sourceEntries = null,
-} = {}) {
-  const entries = Array.isArray(sourceEntries) ? sourceEntries : [];
-  return entries
-    .filter((entry) => entry && typeof entry === 'object')
-    .map((entry) => ({
-      ...entry,
-      discovery: normalizeSourceEntryDiscovery(entry.discovery),
-    }))
-    .filter((entry) => entry.discovery.enabled !== false);
 }
 
 // ---------------------------------------------------------------------------

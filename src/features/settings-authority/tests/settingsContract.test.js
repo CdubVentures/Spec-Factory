@@ -2,9 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  CONVERGENCE_SETTINGS_ROUTE_PUT,
-  CONVERGENCE_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_VALUE_TYPES,
   migrateUserSettingsDocument,
   readUserSettingsDocumentMeta,
   RUNTIME_SETTINGS_ROUTE_GET,
@@ -23,29 +20,26 @@ test('settings contract exposes version, precedence, and migration metadata', ()
   assert.equal(Number.isInteger(SETTINGS_DOCUMENT_SCHEMA_VERSION), true);
   assert.equal(SETTINGS_DOCUMENT_SCHEMA_VERSION >= 1, true);
   assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.runtime, ['user']);
-  assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.convergence, ['user']);
   assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.storage, ['user']);
   assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.ui, ['user']);
   assert.equal(Array.isArray(SETTINGS_SCHEMA_MIGRATION_RULES), true);
   assert.equal(SETTINGS_SCHEMA_MIGRATION_RULES.length > 0, true);
 });
 
-test('migration normalizes legacy top-level runtime/convergence/ui keys into section envelopes', () => {
+test('migration normalizes legacy top-level runtime/ui keys into section envelopes', () => {
   const migrated = migrateUserSettingsDocument({
     schemaVersion: 1,
-    serpTriageMinScore: 5,
     runtimeAutoSaveEnabled: false,
     unknownRootValue: 'ignored',
   });
   assert.equal(migrated.schemaVersion, SETTINGS_DOCUMENT_SCHEMA_VERSION);
   assert.equal(migrated.migratedFrom, 1);
-  // serpTriageMinScore is no longer a convergence key — migration drops it
-  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), false);
+  assert.deepStrictEqual(migrated.convergence, {});
   assert.equal(migrated.ui.runtimeAutoSaveEnabled, false);
   assert.equal(Object.hasOwn(migrated, 'unknownRootValue'), false);
 });
 
-test('migration keeps only canonical runtime/convergence/ui keys', () => {
+test('migration keeps only canonical runtime/ui keys', () => {
   const migrated = migrateUserSettingsDocument({
     runtime: {
       searchEngines: 'bing,brave,duckduckgo',
@@ -63,13 +57,10 @@ test('migration keeps only canonical runtime/convergence/ui keys', () => {
   assert.equal(Object.hasOwn(migrated.runtime, 'searchEngines'), true);
   assert.equal(Object.hasOwn(migrated.runtime, 'unknownRuntimeKey'), false);
   assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), false);
-  // serpTriageMinScore removed from convergence registry — migration drops it
-  assert.equal(Object.hasOwn(migrated.convergence, 'serpTriageMinScore'), false);
-  assert.equal(Object.hasOwn(migrated.convergence, 'unknownConvergenceKey'), false);
+  assert.deepStrictEqual(migrated.convergence, {});
   assert.equal(Object.hasOwn(migrated.ui, 'studioAutoSaveEnabled'), true);
   assert.equal(Object.hasOwn(migrated.ui, 'unknownUiKey'), false);
   assert.equal(RUNTIME_SETTINGS_KEYS.length > 0, true);
-  assert.equal(CONVERGENCE_SETTINGS_KEYS.length, 0);
   assert.equal(UI_SETTINGS_KEYS.length > 0, true);
 });
 
@@ -104,23 +95,10 @@ test('runtime GET route maps include all runtime PUT frontend keys', () => {
   assert.deepEqual(missing, []);
 });
 
-test('convergence route contract keys resolve to canonical convergence settings keys', () => {
-  const convergenceSet = new Set(CONVERGENCE_SETTINGS_KEYS);
-  const routeKeys = new Set([
-    ...CONVERGENCE_SETTINGS_ROUTE_PUT.intKeys,
-    ...CONVERGENCE_SETTINGS_ROUTE_PUT.floatKeys,
-    ...CONVERGENCE_SETTINGS_ROUTE_PUT.boolKeys,
-  ]);
-  const unknown = Array.from(routeKeys).filter((key) => !convergenceSet.has(key));
-  assert.deepEqual(unknown, []);
-});
-
 test('settings value type maps cover canonical key sets', () => {
   const runtimeMissing = RUNTIME_SETTINGS_KEYS.filter((key) => !Object.hasOwn(RUNTIME_SETTINGS_VALUE_TYPES, key));
-  const convergenceMissing = CONVERGENCE_SETTINGS_KEYS.filter((key) => !Object.hasOwn(CONVERGENCE_SETTINGS_VALUE_TYPES, key));
   const uiMissing = UI_SETTINGS_KEYS.filter((key) => !Object.hasOwn(UI_SETTINGS_VALUE_TYPES, key));
   assert.deepEqual(runtimeMissing, []);
-  assert.deepEqual(convergenceMissing, []);
   assert.deepEqual(uiMissing, []);
 });
 

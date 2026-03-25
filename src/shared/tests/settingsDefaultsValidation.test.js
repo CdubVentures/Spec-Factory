@@ -6,7 +6,7 @@ import {
   CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS
 } from '../../core/config/settingsClassification.js';
 import { SETTINGS_DEFAULTS } from '../settingsDefaults.js';
-import { RUNTIME_SETTINGS_ROUTE_GET, CONVERGENCE_SETTINGS_KEYS } from '../../core/config/settingsKeyMap.js';
+import { RUNTIME_SETTINGS_ROUTE_GET } from '../../core/config/settingsKeyMap.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../settingsRegistry.js';
 
 // ---------------------------------------------------------------------------
@@ -63,13 +63,6 @@ test('defaultsValidation: all runtime string keys have string defaults', () => {
     if (!Object.hasOwn(runtime, settingKey)) continue;
     const val = runtime[settingKey];
     assert.equal(typeof val, 'string', `runtime.${settingKey} should be a string but got ${typeof val}`);
-  }
-});
-
-test('defaultsValidation: all convergence keys exist in convergence defaults', () => {
-  const convergence = SETTINGS_DEFAULTS.convergence;
-  for (const key of CONVERGENCE_SETTINGS_KEYS) {
-    assert.ok(Object.hasOwn(convergence, key), `convergence.${key} must have a default`);
   }
 });
 

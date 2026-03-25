@@ -1,4 +1,4 @@
-import { normalizeWhitespace } from './common.js';
+import { normalizeWhitespace } from '../shared/primitives.js';
 
 const IDENTITY_FIELDS = new Set([
   'id',

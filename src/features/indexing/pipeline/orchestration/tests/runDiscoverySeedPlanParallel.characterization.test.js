@@ -73,7 +73,7 @@ function makeBaseArgs(stageOverrides = {}) {
     logger: null, llmContext: {}, frontierDb: null, traceWriter: null,
     learningStoreHints: {}, planner: null,
     normalizeFieldListFn: (f) => f,
-    loadEnabledSourceEntriesFn: () => [],
+
     computeNeedSetFn: () => ({ schema_version: 'needset_output.v2.1', fields: [], summary: {}, blockers: {}, planner_seed: { missing_critical_fields: [], unresolved_fields: [], existing_queries: [], current_product_identity: {} } }),
     buildSearchPlanningContextFn: () => ({ schema_version: 'search_planning_context.v2', focus_groups: [], run: {} }),
     buildSearchPlanFn: async () => null,

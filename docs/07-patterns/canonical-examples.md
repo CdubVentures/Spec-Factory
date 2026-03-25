@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified repository patterns for adding common work items without inventing new structure.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Adding A New API Endpoint
 
@@ -12,7 +12,7 @@ Use the existing route-family registrar pattern: dependency injection at the top
 
 ```js
 // src/features/example/api/exampleRoutes.js
-import { emitDataChange } from '../../../api/events/dataChangeContract.js';
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
 export function registerExampleRoutes(ctx) {
   const {
@@ -137,7 +137,7 @@ If a migration changes the canonical schema contract, update `docs/03-architectu
 
 ## Adding A New Test
 
-Based on `test/publishingPipeline.test.js`.
+Based on `src/publish/tests/publishingPipeline.publish.test.js`.
 
 Use Node's built-in runner, keep setup local to the test file, and assert through public APIs or returned artifacts rather than internal implementation details.
 
@@ -147,20 +147,21 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { runExampleJob } from '../src/daemon/exampleJob.js';
+import { publishExampleArtifacts } from '../src/publish/examplePublisher.js';
 
-test('runExampleJob records one processed item', async () => {
+test('publishExampleArtifacts writes one current artifact', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-example-'));
 
   try {
-    const result = await runExampleJob({
+    const result = await publishExampleArtifacts({
       config: { helperFilesRoot: tempRoot },
       storage: null,
-      once: true,
+      category: 'mouse',
+      productIds: ['mouse-example'],
     });
 
-    assert.equal(result.mode, 'example-job');
-    assert.equal(result.processed_count, 1);
+    assert.equal(result.published_count, 1);
+    assert.equal(result.results[0]?.product_id, 'mouse-example');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
@@ -169,60 +170,53 @@ test('runExampleJob records one processed item', async () => {
 
 ## Adding A New Background Job
 
-Based on `src/daemon/daemon.js`, `src/cli/spec.js`, and `src/app/cli/commandDispatch.js`.
+Based on `src/pipeline/componentReviewBatch.js`, `src/app/cli/commands/batchCommand.js`, and `src/cli/spec.js`.
 
-Long-running work in this repo is usually exposed as a CLI command backed by an exported worker function. The worker does the loop; `src/cli/spec.js` handles argument parsing, `EventLogger`, and dispatcher registration.
+Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory. `src/cli/spec.js` wires the command into the dispatcher; the worker stays separately testable.
 
 ```js
-// src/daemon/exampleJob.js
-export async function runExampleJob({
+// src/features/example/exampleBatch.js
+export async function runExampleBatch({
   storage,
   config,
-  once = false,
+  category,
   logger = null,
 }) {
-  let processedCount = 0;
-
-  do {
-    processedCount += 1;
-    logger?.info?.('example_job_tick', { processedCount });
-    if (once) break;
-  } while (true);
+  const rows = await storage.listInputKeys(category);
+  logger?.info?.('example_batch_start', { category, total: rows.length });
 
   return {
-    mode: 'example-job',
-    processed_count: processedCount,
+    category,
+    processed_count: rows.length,
+  };
+}
+```
+
+```js
+// src/app/cli/commands/exampleCommand.js
+export function createExampleCommand({ runExampleBatch }) {
+  return async function commandExample(config, storage, args) {
+    return runExampleBatch({
+      storage,
+      config,
+      category: args.category || 'mouse',
+      logger: null,
+    });
   };
 }
 ```
 
 ```js
 // src/cli/spec.js
-async function commandExampleJob(config, storage, args) {
-  const logger = new EventLogger({
-    storage,
-    runtimeEventsKey: config.runtimeEventsKey || '_runtime/events.jsonl',
-    context: { category: args.category || 'all' },
-  });
+import { createExampleCommand } from '../app/cli/commands/exampleCommand.js';
 
-  const result = await runExampleJob({
-    storage,
-    config,
-    once: asBool(args.once, false),
-    logger,
-  });
-  await logger.flush();
-
-  return {
-    command: 'example-job',
-    ...result,
-    events: logger.events.slice(-100),
-  };
-}
+const commandExample = createExampleCommand({
+  runExampleBatch,
+});
 
 const dispatchCliCommand = createCliCommandDispatcher({
   handlers: {
-    'example-job': ({ config, storage, args }) => commandExampleJob(config, storage, args),
+    example: ({ config, storage, args }) => commandExample(config, storage, args),
   },
 });
 ```
@@ -274,11 +268,13 @@ export async function addExampleItem({ config, name, tags = [] }) {
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
 | source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |
-| source | `src/daemon/daemon.js` | exported long-running worker loop pattern |
+| source | `src/core/events/dataChangeContract.js` | canonical `emitDataChange` import path for route examples |
+| source | `src/pipeline/componentReviewBatch.js` | exported batch-worker function pattern |
+| source | `src/app/cli/commands/batchCommand.js` | thin CLI command factory pattern |
 | source | `src/cli/spec.js` | CLI command wrapper and dispatcher registration pattern |
 | source | `src/app/cli/commandDispatch.js` | handler-dispatch contract |
 | source | `src/features/catalog/identity/brandRegistry.js` | service-function options object and structured return pattern |
-| test | `test/publishingPipeline.test.js` | Node `node:test` structure with local fixtures and public-API assertions |
+| test | `src/publish/tests/publishingPipeline.publish.test.js` | Node `node:test` structure with local fixtures and public-API assertions |
 
 ## Related Documents
 

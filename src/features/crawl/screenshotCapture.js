@@ -6,8 +6,9 @@
 
 function parseSelectors(settings) {
   const raw = String(settings?.capturePageScreenshotSelectors ?? '');
+  const maxSelectors = Number(settings?.capturePageScreenshotMaxSelectors) || 12;
   const parsed = raw.split(',').map((s) => s.trim()).filter(Boolean);
-  return parsed.length > 0 ? parsed.slice(0, 12) : [];
+  return parsed.length > 0 ? parsed.slice(0, maxSelectors) : [];
 }
 
 function resolveFormat(settings) {

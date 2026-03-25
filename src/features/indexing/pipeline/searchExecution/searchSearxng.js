@@ -117,12 +117,14 @@ export async function searchSearxng({
   baseUrl,
   query,
   limit = 10,
-  timeoutMs = 8_000,
+  timeoutMs,
   minQueryIntervalMs = SEARXNG_MIN_QUERY_INTERVAL_MS,
   engines = '',
   provider = 'searxng',
   logger,
-  requestThrottler
+  requestThrottler,
+  // WHY: Registry setting flows in via the caller's settings bag.
+  searxngSearchTimeoutMs,
 }) {
   if (!baseUrl || !query) {
     return [];
@@ -135,6 +137,8 @@ export async function searchSearxng({
     baseUrl,
     fallbackKey: '127.0.0.1'
   });
+  // WHY: Resolve registry setting → explicit param → fallback constant.
+  const effectiveTimeout = timeoutMs ?? searxngSearchTimeoutMs ?? 8_000;
   const minIntervalMs = resolveSearxngMinQueryIntervalMs(minQueryIntervalMs);
   await acquireSearxngPaceSlot(minIntervalMs);
   const url = new URL('/search', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);
@@ -148,7 +152,7 @@ export async function searchSearxng({
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Math.max(100, Number(timeoutMs || 8_000)));
+  const timeout = setTimeout(() => controller.abort(), Math.max(100, Number(effectiveTimeout)));
 
   try {
     const response = await fetch(url, {

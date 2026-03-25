@@ -42,9 +42,7 @@ test('exportRunArtifacts skips raw page rewrites when artifacts were already per
     candidates: {},
     summary: {},
     events: [],
-    markdownSummary: '',
     rowTsv: '',
-    writeMarkdownSummary: false,
     specDb: null,
   });
 

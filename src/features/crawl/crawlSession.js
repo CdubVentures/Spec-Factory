@@ -163,11 +163,16 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
 
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
     const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 75;
-    const navTimeoutMs = 12000;
+    // WHY: Resolve registry settings → settings bag → fallback constant.
+    const navTimeoutMs = Number(settings.crawleeNavigationTimeoutMs) || 12000;
+    // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
+    const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
+    const maxPages = Number(settings.crawleeMaxPagesPerBrowser) || 1;
+    const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 5;
 
     crawler = new PlaywrightCrawler({
       ...config,
-      maxRequestRetries: 1,
+      maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
       // WHY: Empty blockedStatusCodes prevents Crawlee from throwing
       // _throwOnBlockedRequest for 403/429 BEFORE requestHandler fires.
@@ -178,8 +183,8 @@ export function createCrawlSession({ settings = {}, plugins = [], logger, _crawl
       },
       browserPoolOptions: {
         useFingerprints: true,
-        maxOpenPagesPerBrowser: 1,
-        retireBrowserAfterPageCount: 5,
+        maxOpenPagesPerBrowser: maxPages,
+        retireBrowserAfterPageCount: retireAfter,
       },
       preNavigationHooks: [
         async ({ request, page }, gotoOptions) => {

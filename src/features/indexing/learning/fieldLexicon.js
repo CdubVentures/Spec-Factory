@@ -1,4 +1,5 @@
-import { nowIso, normalizeToken, extractRootDomain } from '../../../utils/common.js';
+import { nowIso, normalizeAlphanumToken } from '../../../shared/primitives.js';
+import { extractRootDomain } from '../../../shared/valueNormalizers.js';
 
 const STOP_TOKENS = new Set([
   'html',
@@ -83,7 +84,7 @@ function trimFieldRow(fieldRow, maxSynonyms = 120, maxUnits = 50) {
 function tokenizeKeyPath(keyPath) {
   return String(keyPath || '')
     .split(/[^a-zA-Z0-9]+/g)
-    .map((token) => normalizeToken(token))
+    .map((token) => normalizeAlphanumToken(token))
     .filter(Boolean);
 }
 
@@ -113,7 +114,7 @@ export function updateFieldLexicon({
       continue;
     }
     const fieldRow = ensureField(next, field);
-    bumpSynonym(fieldRow, normalizeToken(field), '', seenAt);
+    bumpSynonym(fieldRow, normalizeAlphanumToken(field), '', seenAt);
     bumpUnit(fieldRow, value, seenAt);
 
     for (const evidence of row?.evidence || []) {

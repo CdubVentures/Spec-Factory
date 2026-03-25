@@ -1,6 +1,5 @@
 export function buildDiscoverySeedPlanContext({
   config,
-  runtimeOverrides,
   storage,
   category,
   categoryConfig,
@@ -18,7 +17,6 @@ export function buildDiscoverySeedPlanContext({
 } = {}) {
   return {
     config,
-    runtimeOverrides,
     storage,
     category,
     categoryConfig,

@@ -54,7 +54,6 @@ describe('buildProcessStartLaunchPlan contract', () => {
     t.after(() => harness.cleanup());
 
     const result = harness.buildPlan({
-      localMode: true,
       indexlabOut: path.resolve('custom-indexlab-output'),
     });
 
@@ -94,19 +93,17 @@ describe('buildProcessStartLaunchPlan contract', () => {
     strictEqual(snapshot.settings.mode, undefined);
   });
 
-  it('serializes direct-launch booleans and clamped integers into env overrides', (t) => {
+  it('serializes supported direct-launch booleans and clamped integers into env overrides', (t) => {
     const harness = createLaunchPlanHarness();
     t.after(() => harness.cleanup());
 
     const result = harness.buildPlan({
       dryRun: false,
-      localMode: true,
       runtimeTraceFetchRing: 9999,
     });
 
     strictEqual(result.ok, true);
     strictEqual(result.envOverrides.DRY_RUN, 'false');
-    strictEqual(result.envOverrides.LOCAL_MODE, 'true');
     strictEqual(result.envOverrides.RUNTIME_TRACE_FETCH_RING, '2000');
   });
 

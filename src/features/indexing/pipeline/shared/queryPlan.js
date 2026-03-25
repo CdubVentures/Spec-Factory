@@ -6,7 +6,6 @@
  * All functions are pure — zero module state, zero side effects.
  */
 import {
-  normalizeHost,
   slug,
   tokenize,
   compactToken,
@@ -21,6 +20,7 @@ import {
   isLikelyUnitToken,
   GENERIC_MODEL_TOKENS,
 } from './discoveryIdentity.js';
+import { normalizeHost } from './hostParser.js';
 
 import {
   inferRoleForHost,
@@ -32,7 +32,7 @@ import {
 // Manufacturer URL plan generation
 // ---------------------------------------------------------------------------
 
-export function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '' }) {
+function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, deterministicAliasCap = 6, logger = null, reason = '' }) {
   const urls = [];
 
   // Feature flag: DISABLE_URL_GUESS_FALLBACK (default: false)
@@ -282,131 +282,11 @@ export function dedupeQueryRows(rows = [], limit = 24) {
   };
 }
 
-export function prioritizeQueryRows(rows = [], variables = {}, missingFields = [], {
-  fieldPriority = null,
-  hostFieldFit = null,
-} = {}) {
-  const brand = String(variables.brand || '').trim().toLowerCase();
-  const model = String(variables.model || '').trim().toLowerCase();
-  const brandToken = brand.replace(/\s+/g, '');
-  const missingFieldSet = new Set(
-    toArray(missingFields).map((field) => String(field || '').trim()).filter(Boolean)
-  );
-
-  const ranked = [...(rows || [])].map((row) => {
-    const query = String(row?.query || '').trim();
-    const text = query.toLowerCase();
-    const targetFields = toArray(row?.target_fields)
-      .map((field) => String(field || '').trim())
-      .filter(Boolean);
-
-    // Signal 1 — Field value (0 to 10)
-    let field_value = 0;
-    for (const field of targetFields) {
-      if (!missingFieldSet.has(field)) continue;
-      if (fieldPriority) {
-        const priority = fieldPriority.get(field);
-        field_value += priority === 'critical' ? 3 : priority === 'required' ? 2 : 1;
-      } else {
-        field_value += 2;
-      }
-    }
-    field_value = Math.min(10, field_value);
-
-    // Signal 2 — Source fit (0 to 5)
-    const host = normalizeHost(row?.domain_hint || '');
-    const hostData = host ? hostFieldFit?.get(host) : null;
-    let source_fit = 0;
-    if (hostData) {
-      if (hostData.heuristic !== undefined) {
-        source_fit = Number((hostData.heuristic * 5).toFixed(2));
-      } else {
-        const queryFields = targetFields.filter((f) => missingFieldSet.has(f));
-        const fieldsToScore = queryFields.length > 0 ? queryFields : [...missingFieldSet];
-        let points = 0;
-        for (const field of fieldsToScore) {
-          if (hostData.high?.has(field)) points += 1.0;
-          else if (hostData.medium?.has(field)) points += 0.5;
-        }
-        source_fit = Number(((points / Math.max(1, fieldsToScore.length)) * 5).toFixed(2));
-      }
-    }
-
-    // Signal 3 — Identity match (0 to 2)
-    let identity_match = 0;
-    if ((brandToken && text.includes(brandToken)) || (brand && text.includes(brand))) {
-      identity_match += 1;
-    }
-    if (model && text.includes(model)) {
-      identity_match += 1;
-    }
-
-    // Signal 5 — Overconstraint (-2 to 0)
-    let overconstraint = 0;
-    if (hostFieldFit) {
-      const siteHost = extractSiteHostFromQuery(text);
-      if (siteHost) {
-        const siteHostData = hostFieldFit.get(siteHost);
-        if (!siteHostData) {
-          overconstraint = -2;
-        } else {
-          let effectiveFit = 0;
-          if (siteHostData.heuristic !== undefined) {
-            effectiveFit = siteHostData.heuristic;
-          } else {
-            const qf = targetFields.filter((f) => missingFieldSet.has(f));
-            const fs = qf.length > 0 ? qf : [...missingFieldSet];
-            let pts = 0;
-            for (const field of fs) {
-              if (siteHostData.high?.has(field)) pts += 1.0;
-              else if (siteHostData.medium?.has(field)) pts += 0.5;
-            }
-            effectiveFit = pts / Math.max(1, fs.length);
-          }
-          if (effectiveFit < 0.2) {
-            overconstraint = -1;
-          }
-        }
-      }
-    }
-
-    const score = field_value + source_fit + identity_match + overconstraint;
-    return {
-      ...row,
-      query,
-      score,
-      score_breakdown: { field_value, source_fit, identity_match, redundancy: 0, overconstraint },
-    };
-  });
-
-  // Initial sort by score descending, then alphabetical
-  ranked.sort((a, b) => b.score - a.score || a.query.localeCompare(b.query));
-
-  // Signal 4 — Redundancy (-3 to 0): post-sort pass, host-only
-  const hostCount = new Map();
-  for (const row of ranked) {
-    const rHost = normalizeHost(row?.domain_hint || '');
-    if (!rHost) continue;
-    const count = (hostCount.get(rHost) || 0) + 1;
-    hostCount.set(rHost, count);
-    if (count >= 2) {
-      const penalty = -Math.min(3, count - 1);
-      row.score += penalty;
-      row.score_breakdown.redundancy = penalty;
-    }
-  }
-
-  // Re-sort after redundancy penalties
-  ranked.sort((a, b) => b.score - a.score || a.query.localeCompare(b.query));
-
-  return ranked;
-}
-
 // ---------------------------------------------------------------------------
 // Identity query guard
 // ---------------------------------------------------------------------------
 
-export function buildIdentityQueryGuardContext(variables = {}, variantGuardTerms = []) {
+function buildIdentityQueryGuardContext(variables = {}, variantGuardTerms = []) {
   const brandTokens = [...new Set(tokenize(variables.brand).map((token) => compactToken(token)).filter(Boolean))];
   const modelTokens = [...new Set([
     ...tokenize(variables.model),
@@ -440,7 +320,7 @@ export function buildIdentityQueryGuardContext(variables = {}, variantGuardTerms
   };
 }
 
-export function validateQueryAgainstIdentity(query = '', context = {}) {
+function validateQueryAgainstIdentity(query = '', context = {}) {
   const reasons = [];
   const queryText = String(query || '').toLowerCase();
   const compactQuery = compactToken(queryText);

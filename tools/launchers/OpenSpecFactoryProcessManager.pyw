@@ -68,6 +68,7 @@ class ProcessManagerApp:
         self.busy = False
         self.rows_by_pid: dict[int, dict] = {}
         self.selected_pid: int | None = None
+        self.preflight_data: dict = {}
 
         self._configure_style()
         self._build_ui()
@@ -140,7 +141,8 @@ class ProcessManagerApp:
         shell.pack(fill='both', expand=True)
         shell.columnconfigure(0, weight=3)
         shell.columnconfigure(1, weight=2)
-        shell.rowconfigure(2, weight=1)
+        shell.rowconfigure(2, weight=3)
+        shell.rowconfigure(3, weight=1)
 
         header = ttk.Frame(shell, style='Root.TFrame')
         header.grid(row=0, column=0, columnspan=2, sticky='ew')
@@ -169,13 +171,15 @@ class ProcessManagerApp:
 
         stats_row = ttk.Frame(shell, style='Root.TFrame')
         stats_row.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(16, 16))
-        for index in range(4):
+        for index in range(6):
             stats_row.columnconfigure(index, weight=1)
 
         self.tracked_api_value = self._create_stat(stats_row, 0, 'Tracked API PID')
         self.port_owner_value = self._create_stat(stats_row, 1, f'Port {TARGET_PORT} Owner')
-        self.row_count_value = self._create_stat(stats_row, 2, 'Rows')
-        self.updated_at_value = self._create_stat(stats_row, 3, 'Last Refresh')
+        self.node_version_value = self._create_stat(stats_row, 2, 'Node Version')
+        self.native_module_value = self._create_stat(stats_row, 3, 'Native Modules')
+        self.row_count_value = self._create_stat(stats_row, 4, 'Rows')
+        self.updated_at_value = self._create_stat(stats_row, 5, 'Last Refresh')
 
         table_panel = ttk.Frame(shell, style='Panel.TFrame', padding=14)
         table_panel.grid(row=2, column=0, sticky='nsew', padx=(0, 10))
@@ -232,6 +236,16 @@ class ProcessManagerApp:
         self._set_detail_text(self.command_text, '-')
         self._set_detail_text(self.gate_text, '-')
         self._sync_buttons()
+
+        # ── Environment panel (spans both columns below process panels) ──
+        env_panel = ttk.Frame(shell, style='Panel.TFrame', padding=14)
+        env_panel.grid(row=3, column=0, columnspan=2, sticky='nsew', pady=(10, 0))
+        env_panel.columnconfigure(0, weight=1)
+        env_panel.rowconfigure(1, weight=1)
+
+        ttk.Label(env_panel, text='Environment', style='PanelTitle.TLabel').grid(row=0, column=0, sticky='w')
+        self.env_text = self._create_detail_text(env_panel, 0)
+        self._set_detail_text(self.env_text, 'Run Refresh to load environment diagnostics.')
 
     def _create_stat(self, parent: ttk.Frame, column: int, label: str) -> ttk.Label:
         panel = ttk.Frame(parent, style='Panel.TFrame', padding=12)
@@ -393,6 +407,8 @@ class ProcessManagerApp:
         self.updated_at_value.configure(text=str(payload.get('updatedAt') or '-'))
         self._render_selection()
         self._set_status('State refreshed.', '#8ee39d')
+        # Trigger preflight fetch after state is loaded
+        self._fetch_preflight()
 
     def _run_task(self, status_text: str, worker, on_success) -> None:
         if self.busy:
@@ -430,6 +446,67 @@ class ProcessManagerApp:
 
     def refresh_state(self) -> None:
         self._run_task('Refreshing state...', lambda: run_backend('state'), self._apply_state)
+
+    def _fetch_preflight(self) -> None:
+        """Fetch environment diagnostics in a background thread (non-blocking)."""
+        result_queue: queue.Queue[tuple[str, object]] = queue.Queue()
+
+        def worker() -> None:
+            try:
+                result_queue.put(('ok', run_backend('preflight')))
+            except Exception as error:
+                result_queue.put(('error', error))
+
+        threading.Thread(target=worker, daemon=True).start()
+        self.root.after(100, lambda: self._poll_preflight(result_queue))
+
+    def _poll_preflight(self, result_queue: queue.Queue[tuple[str, object]]) -> None:
+        try:
+            kind, payload = result_queue.get_nowait()
+        except queue.Empty:
+            self.root.after(100, lambda: self._poll_preflight(result_queue))
+            return
+        if kind == 'ok':
+            self._apply_preflight(payload)
+        else:
+            self._apply_preflight_error(str(payload))
+
+    def _apply_preflight(self, payload: dict) -> None:
+        self.preflight_data = payload
+        diag = payload.get('diagnostics') or {}
+        preflight = payload.get('preflight') or {}
+        categories = payload.get('categories') or []
+
+        node_ver = diag.get('version', '-')
+        self.node_version_value.configure(text=node_ver)
+
+        status = preflight.get('status', 'unknown')
+        if preflight.get('ok'):
+            self.native_module_value.configure(text='OK', foreground='#8ee39d')
+        else:
+            self.native_module_value.configure(text=status.upper(), foreground='#ff8c8c')
+
+        lines = [
+            f"Node:             {diag.get('version', '-')} ({diag.get('execPath', '-')})",
+            f"MODULE_VERSION:   {diag.get('moduleVersion', '-')}",
+            f"Arch:             {diag.get('arch', '-')}",
+            f"Platform:         {diag.get('platform', '-')}",
+            '',
+            f"better-sqlite3:   {status}",
+        ]
+        if preflight.get('rebuildAttempted'):
+            lines.append(f"Auto-rebuild:     {'succeeded' if preflight.get('rebuildSucceeded') else 'FAILED'}")
+        if preflight.get('errorMessage'):
+            lines.append(f"Error:            {preflight['errorMessage'][:200]}")
+        lines.append('')
+        lines.append(f"Categories ({len(categories)}):  {', '.join(categories) or 'none'}")
+
+        self._set_detail_text(self.env_text, '\n'.join(lines))
+
+    def _apply_preflight_error(self, message: str) -> None:
+        self.node_version_value.configure(text='?')
+        self.native_module_value.configure(text='ERROR', foreground='#ff8c8c')
+        self._set_detail_text(self.env_text, f'Preflight check failed:\n{message}')
 
     def kill_selected(self) -> None:
         row = self.rows_by_pid.get(self.selected_pid or -1)

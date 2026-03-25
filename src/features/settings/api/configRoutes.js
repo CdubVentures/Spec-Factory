@@ -5,7 +5,6 @@ import { createIndexingMetricsHandler } from './configIndexingMetricsHandler.js'
 import { createLlmSettingsHandler } from './configLlmSettingsHandler.js';
 import { createUiSettingsHandler } from './configUiSettingsHandler.js';
 import { createStorageSettingsHandler } from './configStorageSettingsHandler.js';
-import { createConvergenceSettingsHandler } from './configConvergenceSettingsHandler.js';
 import { createRuntimeSettingsHandler } from './configRuntimeSettingsHandler.js';
 import { createLlmPolicyHandler } from '../../settings-authority/llmPolicyHandler.js';
 
@@ -91,10 +90,6 @@ export function registerConfigRoutes(ctx) {
     jsonRes, readJsonBody, toInt, broadcastWs, config, configGate, persistenceCtx,
   });
 
-  const convergenceHandler = createConvergenceSettingsHandler({
-    jsonRes, readJsonBody, config, broadcastWs, persistenceCtx,
-  });
-
   const runtimeHandler = createRuntimeSettingsHandler({
     jsonRes, readJsonBody, toInt, config, broadcastWs, persistenceCtx,
   });
@@ -108,7 +103,6 @@ export function registerConfigRoutes(ctx) {
     if (parts[0] === 'storage-settings') return storageHandler(parts, params, method, req, res);
     if (parts[0] === 'indexing') return metricsHandler(parts, params, method, req, res);
     if (parts[0] === 'llm-settings') return llmHandler(parts, params, method, req, res);
-    if (parts[0] === 'convergence-settings') return convergenceHandler(parts, params, method, req, res);
     if (parts[0] === 'runtime-settings') return runtimeHandler(parts, params, method, req, res);
     if (parts[0] === 'llm-policy') return llmPolicyHandler(parts, params, method, req, res);
     return false;

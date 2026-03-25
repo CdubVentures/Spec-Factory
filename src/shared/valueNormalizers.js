@@ -53,21 +53,15 @@ export function normalizeJsonText(value, maxChars = 12000) {
   return text.slice(0, Math.max(0, Number(maxChars) || 0));
 }
 
-export function normalizeDomainToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/.*$/, '');
-}
+import { normalizeHost as _normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
+export const normalizeDomainToken = _normalizeHost;
 
 export function domainFromUrl(url) {
   try {
     const parsed = new URL(String(url || ''));
-    return normalizeDomainToken(parsed.hostname);
+    return _normalizeHost(parsed.hostname);
   } catch {
-    return normalizeDomainToken(url);
+    return _normalizeHost(url);
   }
 }
 

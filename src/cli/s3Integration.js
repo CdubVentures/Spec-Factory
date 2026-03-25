@@ -14,7 +14,6 @@ import { loadConfigWithUserSettings } from '../config.js';
 import { parseArgs, asBool } from './args.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
-import { configBool } from '../shared/settingsAccessor.js';
 import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 async function streamToString(stream) {
@@ -73,9 +72,7 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
 
   const config = loadConfigWithUserSettings({
-    localMode: false,
     dryRun: asBool(args['dry-run'], false),
-    writeMarkdownSummary: asBool(args['write-md'], true)
   });
 
   const bucket = config.s3Bucket || '';
@@ -138,11 +135,6 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
     `${latestBase}/summary.json`,
     `${latestBase}/mouse.row.tsv`
   ];
-
-  if (configBool(config, 'writeMarkdownSummary')) {
-    requiredKeys.push(`${runBase}/summary/mouse.summary.md`);
-    requiredKeys.push(`${latestBase}/summary.md`);
-  }
 
   for (const key of requiredKeys) {
     await mustHeadObject(s3, bucket, key);

@@ -75,7 +75,6 @@ test('settings surface normalizes cached runtime settings through the public GUI
 test('settings manifest surface keeps concrete option defaults and labels aligned', async () => {
   const [pipelineSettingsFeature, , settingsManifest] = await loadSettingsSurfaceModules();
   const {
-    CONVERGENCE_KNOB_GROUPS,
     LLM_ROUTE_PRESET_LIMITS,
     LLM_SETTING_LIMITS,
     RUNTIME_SETTING_DEFAULTS,
@@ -130,16 +129,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
 
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
   assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);
-  assert.equal(
-    Array.isArray(CONVERGENCE_KNOB_GROUPS),
-    true,
-  );
-  assert.equal(
-    CONVERGENCE_KNOB_GROUPS.every(
-      (group) => typeof group.label === 'string' && Array.isArray(group.knobs),
-    ),
-    true,
-  );
   assert.equal(
     STORAGE_DESTINATION_OPTIONS.includes(STORAGE_SETTING_DEFAULTS.destinationType),
     true,

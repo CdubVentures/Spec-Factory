@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  applyConvergenceSettingsToConfig,
   applyRuntimeSettingsToConfig,
   deriveSettingsArtifactsFromUserSettings,
   persistUserSettingsSections,
@@ -30,7 +29,6 @@ export function createConfigPersistenceContext({
       ? artifacts.sections
       : {};
     applyRuntimeSettingsToConfig(config, sections.runtime || {});
-    applyConvergenceSettingsToConfig(config, sections.convergence || {});
     Object.assign(runDataStorageState, snapshotStorageSettings(sections.storage || {}));
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
@@ -48,7 +46,6 @@ export function createConfigPersistenceContext({
 
   async function persistCanonicalSections({
     runtime = null,
-    convergence = null,
     storage: storageSection = null,
     ui = null,
     studio = null,
@@ -56,7 +53,6 @@ export function createConfigPersistenceContext({
     const persisted = await persistUserSettingsSections({
       categoryAuthorityRoot: settingsRoot,
       runtime,
-      convergence,
       storage: storageSection,
       ui,
       studio,

@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to catalog storage and SpecDb mirrors.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Entry Points
 
@@ -17,10 +17,10 @@
 ## Dependencies
 
 - `src/features/catalog/products/productCatalog.js`
-- `src/features/catalog/products/upsertCatalogProductRow.js` — SpecDb product row upsert extracted from inline route logic
+- `src/features/catalog/products/upsertCatalogProductRow.js` - SpecDb product row upsert extracted from inline route logic
 - `src/features/catalog/identity/brandRegistry.js`
 - `src/features/catalog/products/reconciler.js`
-- `src/features/catalog/contracts/catalogShapes.js` — Zod-style shape descriptors for catalog/brand responses (O(1) contract alignment)
+- `src/features/catalog/contracts/catalogShapes.js` - Zod-style shape descriptors for catalog/brand responses
 - `src/queue/queueState.js`
 - `src/db/specDb.js`
 - `category_authority/{category}/_control_plane/product_catalog.json`

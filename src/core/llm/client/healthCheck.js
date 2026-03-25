@@ -1,5 +1,5 @@
 import { z, toJSONSchema } from 'zod';
-import { buildRunId } from '../../../utils/common.js';
+import { buildRunId } from '../../../shared/primitives.js';
 import { callOpenAI } from './openaiClient.js';
 import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
 import { normalizeCostRates } from '../../../billing/costRates.js';

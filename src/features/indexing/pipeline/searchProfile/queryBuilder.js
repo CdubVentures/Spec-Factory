@@ -22,7 +22,7 @@ export function buildDeterministicAliases(identity = {}, maxAliases = 12, reject
   const brand = clean(identity.brand || '');
   const model = clean(identity.model || '');
   const variant = clean(identity.variant || '');
-  const cap = Math.max(1, Math.min(12, Number(maxAliases) || 12));
+  const cap = Math.max(1, Number(maxAliases) || 12);
 
   const out = [];
   const seen = new Set();

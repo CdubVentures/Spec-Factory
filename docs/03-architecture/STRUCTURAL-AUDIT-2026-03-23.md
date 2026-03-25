@@ -1,4 +1,10 @@
-# Structural Audit — 2026-03-23
+# Structural Audit - 2026-03-23
+
+> **Purpose:** Preserve the 2026-03-23 architecture audit as a historical record; use the numbered current-state docs for active work.
+> **Prerequisites:** [../README.md](../README.md), [backend-architecture.md](./backend-architecture.md)
+> **Last validated:** 2026-03-24
+
+Historical architecture audit retained for traceability. This document intentionally preserves then-current findings and may reference file paths, counts, or refactor plans that no longer match the live repo.
 
 Principal Architect Review: Decomposition Quality, Dependency Health, and Architectural Maintainability.
 
@@ -878,3 +884,18 @@ The audit found significant areas of **strong architecture** that should be pres
 **Execution path:** 8 phases, sequenced by risk reduction and dependency untangling. Phases 0 (documentation baseline) and 1 (infrastructure relocation) unblock Phase 2 (critical fix). Phases 4-7 are parallelizable. Each phase has a documentation gate.
 
 **Post-execution state:** A codebase where every domain boundary has a README contract, every feature is traceable from entry point to data response via documented file paths, every module's allowed imports/exports/mutation surfaces are explicitly defined, and an LLM agent can work in any directory using only the local README and the code in that directory.
+
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `docs/03-architecture/STRUCTURAL-AUDIT-2026-03-23.md` | historical audit body preserved as supplemental record |
+| source | `docs/03-architecture/backend-architecture.md` | current-state replacement for active backend guidance |
+| source | `docs/05-operations/documentation-audit-ledger.md` | historical-vs-current authority note for this refresh |
+
+## Related Documents
+
+- [Backend Architecture](./backend-architecture.md) - Current-state backend reference that supersedes historical path assumptions in this audit.
+- [Structural Audit 2026-03-24](./STRUCTURAL-AUDIT-2026-03-24.md) - Later supplemental architecture audit in the same repo.
+- [Documentation Audit Ledger](../05-operations/documentation-audit-ledger.md) - Explains why this file is retained as history rather than current-state authority.

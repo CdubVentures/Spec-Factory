@@ -60,7 +60,6 @@ it('returns all required top-level keys with correct types', async () => {
   assert.equal(typeof result.search_profile_run_key, 'string');
   assert.equal(typeof result.search_profile_latest_key, 'string');
   assert.ok(typeof result.provider_state === 'object', 'provider_state is object');
-  assert.equal(typeof result.query_concurrency, 'number');
   assert.equal(typeof result.internal_satisfied, 'boolean');
   assert.equal(typeof result.external_search_reason, 'string');
   assert.ok(Array.isArray(result.search_attempts), 'search_attempts is array');

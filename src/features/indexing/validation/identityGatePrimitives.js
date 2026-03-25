@@ -1,7 +1,7 @@
-import { normalizeToken } from '../../../utils/common.js';
+import { normalizeAlphanumToken } from '../../../shared/primitives.js';
 
 export function tokenize(value) {
-  return normalizeToken(value)
+  return normalizeAlphanumToken(value)
     .split(' ')
     .filter(Boolean);
 }
@@ -104,7 +104,7 @@ export function hasAllExpectedNumericFragments(expectedValue, candidateValues = 
 }
 
 export function detectConnectionClass(value) {
-  const token = normalizeToken(value);
+  const token = normalizeAlphanumToken(value);
   if (!token) {
     return 'unk';
   }
@@ -163,7 +163,7 @@ export function expectedNegativeTokens(identityLock = {}) {
     ...fromSnake,
     ...fromAnchorTokens,
     ...fromAnchorTokensSnake
-  ].map((token) => normalizeToken(token)));
+  ].map((token) => normalizeAlphanumToken(token)));
 }
 
 export function detectUnexpectedVariantTokens({

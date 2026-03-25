@@ -9,13 +9,14 @@ import { computeNeedSet } from '../needSet/needsetEngine.js';
 import { buildSearchPlanningContext } from '../needSet/searchPlanningContext.js';
 import { buildSearchPlan } from '../needSet/searchPlanBuilder.js';
 import { resolveBrandDomain } from '../brandResolver/resolveBrandDomain.js';
-import { resolveJobIdentity, toArray, normalizeHost, SLOT_LABELS } from '../shared/discoveryIdentity.js';
+import { resolveJobIdentity, toArray, SLOT_LABELS } from '../shared/discoveryIdentity.js';
+import { normalizeHost } from '../shared/hostParser.js';
 import {
   mergeLearningStoreHintsIntoLexicon,
   loadLearningArtifacts,
   ensureCategorySourceLookups,
 } from '../shared/helpers.js';
-import { extractRootDomain } from '../../../../utils/common.js';
+import { extractRootDomain } from '../../../../shared/valueNormalizers.js';
 import { searchEngineAvailability } from '../searchExecution/searchProviders.js';
 import { executeSearchQueries } from '../searchExecution/executeSearchQueries.js';
 import { processDiscoveryResults } from '../resultProcessing/processDiscoveryResults.js';
@@ -57,7 +58,6 @@ function normalizePlanningHints({
 
 export async function runDiscoverySeedPlan({
   config = {},
-  runtimeOverrides = {},
   storage,
   category,
   categoryConfig,

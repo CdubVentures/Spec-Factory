@@ -12,11 +12,16 @@ import { createPacer } from './createPacer.js';
 // Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-const DEFAULT_MIN_INTERVAL_MS = 4_000;
-const DEFAULT_POST_RESULTS_DELAY_MS = 2_000;
-const SCREENSHOT_QUALITY = 35;
+// WHY: Defaults live in settingsRegistry; these are fallbacks for standalone usage.
+const FALLBACK_MIN_INTERVAL_MS = 4_000;
+const FALLBACK_POST_RESULTS_DELAY_MS = 2_000;
+const FALLBACK_SCREENSHOT_QUALITY = 35;
+const FALLBACK_RESULT_CAP = 10;
+const FALLBACK_SERP_SELECTOR_WAIT_MS = 15_000;
+const FALLBACK_SCROLL_DELAY_MS = 300;
+const FALLBACK_PACING_JITTER = 0.3;
 
-const _defaultPacer = createPacer({ minIntervalMs: DEFAULT_MIN_INTERVAL_MS });
+const _defaultPacer = createPacer({ minIntervalMs: FALLBACK_MIN_INTERVAL_MS });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,34 +77,55 @@ const CHROME_ARGS = [
  */
 export async function searchGoogle({
   query,
-  limit = 10,
+  limit,
   timeoutMs = 30_000,
   proxyUrls = [],
-  minQueryIntervalMs = DEFAULT_MIN_INTERVAL_MS,
+  minQueryIntervalMs,
   maxRetries = 1,
-  postResultsDelayMs = DEFAULT_POST_RESULTS_DELAY_MS,
+  postResultsDelayMs,
   screenshotsEnabled = false,
+  screenshotQuality,
+  serpSelectorWaitMs,
+  scrollDelayMs,
+  jitterFactor,
   logger,
   requestThrottler,
   _crawlerFactory,
   _pacer,
+  // WHY: Registry settings flow in via the caller's settings bag.
+  googleSearchMinIntervalMs,
+  googleSearchPostResultsDelayMs,
+  googleSearchScreenshotQuality,
+  googleSearchResultCap,
+  googleSearchSerpSelectorWaitMs,
+  googleSearchScrollDelayMs,
+  searchPacingJitterFactor,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
   if (!query || !String(query).trim()) return EMPTY;
   const q = String(query).trim();
 
+  // WHY: Resolve registry settings → explicit param → fallback constant.
+  const effectiveMinInterval = minQueryIntervalMs ?? googleSearchMinIntervalMs ?? FALLBACK_MIN_INTERVAL_MS;
+  const effectivePostResultsDelay = postResultsDelayMs ?? googleSearchPostResultsDelayMs ?? FALLBACK_POST_RESULTS_DELAY_MS;
+  const effectiveScreenshotQuality = screenshotQuality ?? googleSearchScreenshotQuality ?? FALLBACK_SCREENSHOT_QUALITY;
+  const effectiveResultCap = limit ?? googleSearchResultCap ?? FALLBACK_RESULT_CAP;
+  const effectiveSerpWait = serpSelectorWaitMs ?? googleSearchSerpSelectorWaitMs ?? FALLBACK_SERP_SELECTOR_WAIT_MS;
+  const effectiveScrollDelay = scrollDelayMs ?? googleSearchScrollDelayMs ?? FALLBACK_SCROLL_DELAY_MS;
+  const effectiveJitter = jitterFactor ?? searchPacingJitterFactor ?? FALLBACK_PACING_JITTER;
+
   try {
     // Pacing — injectable for tests
     const pacer = _pacer || _defaultPacer;
-    await pacer.waitForSlot({ interval: minQueryIntervalMs, jitterFactor: 0.3 });
+    await pacer.waitForSlot({ interval: effectiveMinInterval, jitterFactor: effectiveJitter });
 
     if (typeof requestThrottler?.acquire === 'function') {
       await requestThrottler.acquire({ key: 'www.google.com', provider: 'google', query: q });
     }
 
     const url = buildGoogleSearchUrl(q);
-    const cap = Math.max(1, Number(limit) || 10);
+    const cap = Math.max(1, Number(effectiveResultCap) || 10);
 
     // Resolve crawler factory
     let crawlerFactory = _crawlerFactory;
@@ -237,12 +263,12 @@ export async function searchGoogle({
           await page.waitForFunction(() => {
             const c = document.querySelector('#rso') || document.querySelector('#search');
             return c && c.querySelectorAll('a[href] h3').length >= 3;
-          }, { timeout: 15_000, polling: 100 });
+          }, { timeout: effectiveSerpWait, polling: 100 });
         } catch { /* may not appear on CAPTCHA pages */ }
 
         // Render delay only when screenshotting
         if (screenshotsEnabled) {
-          const renderDelayMs = Math.max(0, Number(postResultsDelayMs) || 0);
+          const renderDelayMs = Math.max(0, Number(effectivePostResultsDelay) || 0);
           if (renderDelayMs > 0) {
             await new Promise(r => setTimeout(r, renderDelayMs));
           }
@@ -272,7 +298,7 @@ export async function searchGoogle({
               const main = document.querySelector('#rso') || document.querySelector('#search');
               if (main) main.scrollIntoView({ block: 'end', behavior: 'instant' });
             });
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, effectiveScrollDelay));
 
             const clipRect = await page.evaluate(() => {
               const main = document.querySelector('#rso') || document.querySelector('#search') || document.querySelector('#center_col');
@@ -288,7 +314,7 @@ export async function searchGoogle({
             });
             screenshotBuffer = await page.screenshot({
               type: 'jpeg',
-              quality: SCREENSHOT_QUALITY,
+              quality: effectiveScreenshotQuality,
               fullPage: true,
               ...(clipRect ? { clip: clipRect } : {}),
             });

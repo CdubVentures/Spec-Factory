@@ -174,7 +174,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       learningStoreHints: null,
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+  
       computeNeedSetFn: stubComputeNeedSet,
       buildSearchPlanningContextFn: stubBuildContext,
       buildSearchPlanFn: stubBuildPlan,
@@ -219,7 +219,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       learningStoreHints: null,
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+  
       computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
       buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
       buildSearchPlanFn: stubBuildPlan,
@@ -256,7 +256,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       learningStoreHints: null,
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+  
       computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
       buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
       buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
@@ -294,7 +294,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       learningStoreHints: null,
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+  
       computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
       buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
       buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
@@ -338,7 +338,7 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
       learningStoreHints: null,
       planner: { enqueue: () => {}, seedCandidates: () => {} },
       normalizeFieldListFn: stubNormalizeFieldList,
-      loadEnabledSourceEntriesFn: stubLoadSourceEntries,
+  
       computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
       buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
       buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
@@ -347,5 +347,48 @@ describe('runDiscoverySeedPlan Schema 4 wiring', () => {
 
     assert.ok(capturedArgs, 'planner called');
     assert.ok(capturedArgs.searchProfileBase, 'searchProfileBase passed to planner');
+  });
+
+  it('forces discoveryEnabled on and defaults searchEngines before search execution', async () => {
+    let capturedConfig = null;
+
+    const stageStubs = makeStageStubs();
+    stageStubs.executeSearchQueriesFn = async (args) => {
+      capturedConfig = args.config;
+      return {
+        rawResults: [],
+        searchAttempts: [],
+        searchJournal: [],
+        internalSatisfied: false,
+        externalSearchReason: null,
+      };
+    };
+
+    await runDiscoverySeedPlan({
+      config: makeConfig({ discoveryEnabled: false, searchEngines: '' }),
+      storage: makeStorage(),
+      category: 'mouse',
+      categoryConfig: makeCategoryConfig(),
+      job: makeJob(),
+      runId: 'run-config-invariants',
+      logger: { info: () => {}, warn: () => {} },
+      roundContext: makeRoundContext(),
+      requiredFields: [],
+      llmContext: {},
+      frontierDb: null,
+      traceWriter: null,
+      learningStoreHints: null,
+      planner: { enqueue: () => {}, seedCandidates: () => {} },
+      normalizeFieldListFn: stubNormalizeFieldList,
+  
+      computeNeedSetFn: () => ({ fields: [], planner_seed: {} }),
+      buildSearchPlanningContextFn: () => ({ focus_groups: [] }),
+      buildSearchPlanFn: async () => ({ planner: { mode: 'disabled' } }),
+      ...stageStubs,
+    });
+
+    assert.ok(capturedConfig, 'search execution should receive config');
+    assert.equal(capturedConfig.discoveryEnabled, true);
+    assert.equal(capturedConfig.searchEngines, 'bing,google');
   });
 });

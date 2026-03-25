@@ -4,7 +4,6 @@ import fs from 'node:fs';
 import { loadConfig } from '../../config.js';
 import { CONFIG_MANIFEST_DEFAULTS, CONFIG_MANIFEST_KEYS } from '../../core/config/manifest.js';
 import {
-  CONVERGENCE_SETTINGS_KEYS,
   RUNTIME_SETTINGS_KEYS,
   RUNTIME_SETTINGS_ROUTE_GET,
 } from '../../features/settings-authority/settingsContract.js';
@@ -132,18 +131,10 @@ function withUnsetEnv(keys, fn) {
   }
 }
 
-test('convergence defaults and canonical runtime defaults are sourced from shared settings defaults', () => {
+test('canonical runtime defaults are sourced from shared settings defaults', () => {
   const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
   withUnsetEnv(buildKnownConfigEnvKeys(), () => {
     const config = loadConfig({ runProfile: 'standard' });
-
-    for (const key of CONVERGENCE_SETTINGS_KEYS) {
-      assert.equal(
-        SETTINGS_DEFAULTS.convergence[key],
-        config[key],
-        `convergence default "${key}" should match config.${key}`,
-      );
-    }
 
     for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
       const configKey = runtimeConfigKeyMap.get(key) || key;
@@ -216,7 +207,7 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
   ];
 
   const getSharedDefault = (settingsKey) =>
-    SETTINGS_DEFAULTS.runtime?.[settingsKey] ?? SETTINGS_DEFAULTS.convergence?.[settingsKey];
+    SETTINGS_DEFAULTS.runtime?.[settingsKey];
 
   withUnsetEnv(rows.map(({ envKey }) => envKey), () => {
     const config = loadConfig({ runProfile: 'standard' });
@@ -236,7 +227,6 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
 test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are absent from settings defaults and config', () => {
   const config = loadConfig({ runProfile: 'standard' });
   const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
-  const convergenceDefaults = SETTINGS_DEFAULTS.convergence || {};
 
   const retiredRuntimeKeys = [
     'identityGatePublishThreshold',
@@ -286,7 +276,6 @@ test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are a
   for (const key of retiredRuntimeKeys) {
     assert.equal(Object.hasOwn(runtimeDefaults, key), false, `retired knob '${key}' should be absent from runtime defaults`);
     assert.equal(Object.hasOwn(config, key), false, `retired knob '${key}' should be absent from config`);
-    assert.equal(Object.hasOwn(convergenceDefaults, key), false, `retired knob '${key}' should be absent from convergence defaults`);
   }
 });
 

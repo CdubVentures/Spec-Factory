@@ -14,15 +14,12 @@
  */
 import { isDeniedHost } from '../../../../categories/loader.js';
 import { isVideoUrl } from '../shared/urlClassifier.js';
+import { normalizeHost } from '../shared/hostParser.js';
 
 // WHY: Only these path patterns are deterministically non-content utility shells.
 // Other weak paths (/, /index.html) become soft labels — not drops.
 const UTILITY_SHELL_RE = /(?:^|\/)(?:login|signin|sign-in|cart|checkout|account|my-account|register|signup|sign-up)(?:\/|$)/i;
 const SEARCH_RESULTS_RE = /(?:^|\/)search(?:\/|$|\?)|[?&](?:q|query|s|keyword|search|term|searchterm)=/i;
-
-function normalizeHost(value) {
-  return String(value || '').toLowerCase().replace(/^www\./, '');
-}
 
 /**
  * @param {object} options

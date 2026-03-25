@@ -34,6 +34,11 @@ function humanize(key: string): string {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
+/** Read the tooltip from the registry entry. Falls back to empty string (Tip renders nothing). */
+function resolveTip(entry: RegistryEntry): string {
+  return entry.uiTip ?? '';
+}
+
 function renderBoolControl(
   entry: RegistryEntry,
   value: unknown,
@@ -42,7 +47,7 @@ function renderBoolControl(
 ) {
   const checked = Boolean(value);
   const label = entry.uiLabel ?? humanize(entry.key);
-  const tip = entry.uiTip ?? '';
+  const tip = resolveTip(entry);
   const toggle = <SettingToggle checked={checked} onChange={(next) => onBoolChange(entry.key, next)} disabled={disabled} />;
 
   if (entry.uiHero) {
@@ -69,20 +74,22 @@ function renderNumberControl(
   if (!bounds) return null;
 
   const label = entry.uiLabel ?? humanize(entry.key);
-  const tip = entry.uiTip ?? '';
+  const tip = resolveTip(entry);
   const numValue = typeof value === 'number' ? value : Number(value) || 0;
-
-  return (
-    <SettingRow label={label} tip={tip} disabled={disabled}>
-      <SettingNumberInput
-        draftKey={entry.key as keyof import('../types/settingPrimitiveTypes.ts').RuntimeDraft}
-        value={numValue}
-        bounds={bounds}
-        disabled={disabled}
-        onNumberChange={(_, eventValue, b) => onNumberChange(entry.key, eventValue, b)}
-      />
-    </SettingRow>
+  const control = (
+    <SettingNumberInput
+      draftKey={entry.key as keyof import('../types/settingPrimitiveTypes.ts').RuntimeDraft}
+      value={numValue}
+      bounds={bounds}
+      disabled={disabled}
+      onNumberChange={(_, eventValue, b) => onNumberChange(entry.key, eventValue, b)}
+    />
   );
+
+  if (entry.uiHero) {
+    return <MasterSwitchRow label={label} tip={tip} disabled={disabled}>{control}</MasterSwitchRow>;
+  }
+  return <SettingRow label={label} tip={tip} disabled={disabled}>{control}</SettingRow>;
 }
 
 function renderEnumControl(
@@ -93,23 +100,25 @@ function renderEnumControl(
 ) {
   const options = REGISTRY_ENUM_MAP[entry.key] ?? [];
   const label = entry.uiLabel ?? humanize(entry.key);
-  const tip = entry.uiTip ?? '';
+  const tip = resolveTip(entry);
   const strValue = typeof value === 'string' ? value : String(value ?? '');
-
-  return (
-    <SettingRow label={label} tip={tip} disabled={disabled}>
-      <select
-        value={strValue}
-        onChange={(e) => onStringChange(entry.key, e.target.value)}
-        disabled={disabled}
-        className={INPUT_CLASS}
-      >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
-      </select>
-    </SettingRow>
+  const control = (
+    <select
+      value={strValue}
+      onChange={(e) => onStringChange(entry.key, e.target.value)}
+      disabled={disabled}
+      className={INPUT_CLASS}
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
+    </select>
   );
+
+  if (entry.uiHero) {
+    return <MasterSwitchRow label={label} tip={tip} disabled={disabled}>{control}</MasterSwitchRow>;
+  }
+  return <SettingRow label={label} tip={tip} disabled={disabled}>{control}</SettingRow>;
 }
 
 function renderStringControl(
@@ -119,21 +128,23 @@ function renderStringControl(
   disabled: boolean,
 ) {
   const label = entry.uiLabel ?? humanize(entry.key);
-  const tip = entry.uiTip ?? '';
+  const tip = resolveTip(entry);
   const strValue = typeof value === 'string' ? value : String(value ?? '');
   const inputType = entry.secret ? 'password' : 'text';
-
-  return (
-    <SettingRow label={label} tip={tip} disabled={disabled}>
-      <input
-        type={inputType}
-        value={strValue}
-        onChange={(e) => onStringChange(entry.key, e.target.value)}
-        disabled={disabled}
-        className={INPUT_CLASS}
-      />
-    </SettingRow>
+  const control = (
+    <input
+      type={inputType}
+      value={strValue}
+      onChange={(e) => onStringChange(entry.key, e.target.value)}
+      disabled={disabled}
+      className={INPUT_CLASS}
+    />
   );
+
+  if (entry.uiHero) {
+    return <MasterSwitchRow label={label} tip={tip} disabled={disabled}>{control}</MasterSwitchRow>;
+  }
+  return <SettingRow label={label} tip={tip} disabled={disabled}>{control}</SettingRow>;
 }
 
 export function GenericSettingRenderer({

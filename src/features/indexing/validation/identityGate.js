@@ -1,4 +1,4 @@
-import { normalizeToken } from '../../../utils/common.js';
+import { normalizeAlphanumToken } from '../../../shared/primitives.js';
 import {
   tokenize,
   includesAllTokens,
@@ -53,7 +53,7 @@ function likelyProductSpecificSource(source) {
     // continue with heuristic fallback
   }
 
-  const title = normalizeToken(source?.title || '');
+  const title = normalizeAlphanumToken(source?.title || '');
   const signals = [
     '/product',
     '/products/',
@@ -85,9 +85,9 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
   const expectedMpn = str(identityLock.mpn);
   const expectedGtin = str(identityLock.gtin);
 
-  const candidateBrandToken = normalizeToken(candidate.brand);
-  const candidateModelToken = normalizeToken(candidate.model);
-  const candidateVariantToken = normalizeToken(candidate.variant || source.connectionHint || '');
+  const candidateBrandToken = normalizeAlphanumToken(candidate.brand);
+  const candidateModelToken = normalizeAlphanumToken(candidate.model);
+  const candidateVariantToken = normalizeAlphanumToken(candidate.variant || source.connectionHint || '');
   const requiredTokens = expectedRequiredTokens(identityLock);
   const negativeTokens = expectedNegativeTokens(identityLock);
   const unexpectedVariantTokens = detectUnexpectedVariantTokens({
@@ -102,8 +102,8 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
 
   if (expectedBrand) {
     const brandTokens = tokenize(expectedBrand);
-    const titleToken = normalizeToken(source.title || '');
-    const urlToken = normalizeToken(source.url || '');
+    const titleToken = normalizeAlphanumToken(source.title || '');
+    const urlToken = normalizeAlphanumToken(source.url || '');
     if (
       includesAllTokens(candidateBrandToken, brandTokens) ||
       includesAllTokens(candidateModelToken, brandTokens) ||
@@ -123,8 +123,8 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
 
   if (expectedModel) {
     const modelTokens = tokenize(expectedModel);
-    const titleToken = normalizeToken(source.title || '');
-    const urlToken = normalizeToken(source.url || '');
+    const titleToken = normalizeAlphanumToken(source.title || '');
+    const urlToken = normalizeAlphanumToken(source.url || '');
     const candidateModelOverlap = tokenOverlapScore(modelTokens, candidateModelToken, 0.1);
     const titleOverlap = tokenOverlapScore(modelTokens, titleToken, 0.1);
     const urlOverlap = tokenOverlapScore(modelTokens, urlToken, 0.1);
@@ -184,7 +184,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
     );
 
     if (expectedClass === 'unk') {
-      if (normalizeToken(expectedVariant) && normalizeToken(expectedVariant) === candidateVariantToken) {
+      if (normalizeAlphanumToken(expectedVariant) && normalizeAlphanumToken(expectedVariant) === candidateVariantToken) {
         score += 0.15;
         reasons.push('variant_match');
         reasonCodes.push('variant_match');
@@ -205,7 +205,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
   const hardIdMatches = {};
   const hardIdMismatches = [];
   if (expectedSku) {
-    if (normalizeToken(expectedSku) === normalizeToken(candidate.sku)) {
+    if (normalizeAlphanumToken(expectedSku) === normalizeAlphanumToken(candidate.sku)) {
       idMatches.push('sku');
       hardIdMatches.sku = expectedSku;
     } else if (candidate.sku) {
@@ -215,7 +215,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
     }
   }
   if (expectedMpn) {
-    if (normalizeToken(expectedMpn) === normalizeToken(candidate.mpn)) {
+    if (normalizeAlphanumToken(expectedMpn) === normalizeAlphanumToken(candidate.mpn)) {
       idMatches.push('mpn');
       hardIdMatches.mpn = expectedMpn;
     } else if (candidate.mpn) {
@@ -225,7 +225,7 @@ export function evaluateSourceIdentity(source, identityLock = {}, thresholdConfi
     }
   }
   if (expectedGtin) {
-    if (normalizeToken(expectedGtin) === normalizeToken(candidate.gtin)) {
+    if (normalizeAlphanumToken(expectedGtin) === normalizeAlphanumToken(candidate.gtin)) {
       idMatches.push('gtin');
       hardIdMatches.gtin = expectedGtin;
     } else if (candidate.gtin) {

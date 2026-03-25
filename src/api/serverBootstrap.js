@@ -29,6 +29,7 @@ import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createBootstrapSessionLayer } from './bootstrap/createBootstrapSessionLayer.js';
 import { createBootstrapDomainRuntimes } from './bootstrap/createBootstrapDomainRuntimes.js';
+import { assertNativeModulesHealthy } from '../core/nativeModuleGuard.js';
 
 // WHY: Extracted from guiServer.js so the composition root is a thin
 // orchestrator that calls bootstrapServer(), builds route contexts,
@@ -41,6 +42,14 @@ export function bootstrapServer({ projectRoot }) {
     storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
     resolveProjectPath, cleanVariant, catalogKey, markEnumSuggestionStatusBound,
   } = env;
+
+  // ── Native module guard (fail-loud before Phase 2) ──
+  const nativeHealth = assertNativeModulesHealthy({ logger: console });
+  if (!nativeHealth.ok) {
+    throw new Error(
+      `[FATAL] ${nativeHealth.error}\nFix: npm rebuild better-sqlite3\nNode: ${process.version} (${process.execPath})`,
+    );
+  }
 
   // ── Phase 2: Session + DB ──
   const {

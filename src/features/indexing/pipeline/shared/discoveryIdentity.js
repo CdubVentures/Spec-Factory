@@ -14,10 +14,6 @@ export const SLOT_LABELS = 'abcdefghijklmnopqrstuvwxyz';
 // Core text utilities
 // ---------------------------------------------------------------------------
 
-export function normalizeHost(hostname) {
-  return String(hostname || '').toLowerCase().replace(/^www\./, '');
-}
-
 export function slug(value) {
   return String(value || '')
     .toLowerCase()

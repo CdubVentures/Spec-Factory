@@ -3,6 +3,22 @@
 // that verify frontend TS interfaces match backend shapes. Adding a product field =
 // add it here + in the builder + update the TS interface. Alignment test catches drift.
 
+// ── Sub-types (item shapes for array fields) ──
+
+export const RENAME_HISTORY_ENTRY_SHAPE = Object.freeze([
+  { key: 'previous_slug', coerce: 'string' },
+  { key: 'previous_model', coerce: 'string' },
+  { key: 'previous_variant', coerce: 'string' },
+  { key: 'renamed_at', coerce: 'string' },
+  { key: 'migration_result', coerce: 'object' },
+]);
+
+export const BRAND_RENAME_HISTORY_ENTRY_SHAPE = Object.freeze([
+  { key: 'previous_slug', coerce: 'string' },
+  { key: 'previous_name', coerce: 'string' },
+  { key: 'renamed_at', coerce: 'string' },
+]);
+
 // ── Catalog Product (raw CRUD shape from productCatalog.js) ──
 
 export const CATALOG_PRODUCT_SHAPE = Object.freeze([
@@ -17,7 +33,7 @@ export const CATALOG_PRODUCT_SHAPE = Object.freeze([
   { key: 'added_at', coerce: 'string' },
   { key: 'added_by', coerce: 'string' },
   { key: 'updated_at', coerce: 'string', optional: true },
-  { key: 'rename_history', coerce: 'array', optional: true },
+  { key: 'rename_history', coerce: 'array', optional: true, itemRef: 'RenameHistoryEntryGen' },
 ]);
 export const CATALOG_PRODUCT_KEYS = Object.freeze(CATALOG_PRODUCT_SHAPE.map(s => s.key));
 
@@ -58,6 +74,6 @@ export const BRAND_SHAPE = Object.freeze([
   { key: 'added_at', coerce: 'string' },
   { key: 'added_by', coerce: 'string' },
   { key: 'updated_at', coerce: 'string', optional: true },
-  { key: 'rename_history', coerce: 'array', optional: true },
+  { key: 'rename_history', coerce: 'array', optional: true, itemRef: 'BrandRenameHistoryEntryGen' },
 ]);
 export const BRAND_KEYS = Object.freeze(BRAND_SHAPE.map(s => s.key));

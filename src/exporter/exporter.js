@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fsSync from 'node:fs';
-import { gzipBuffer, toNdjson } from '../utils/common.js';
+import { gzipBuffer, toNdjson } from '../shared/serialization.js';
 import { SpecDb } from '../db/specDb.js';
 import { buildScopedItemCandidateId } from '../utils/candidateIdentifier.js';
 
@@ -222,9 +222,7 @@ export async function exportRunArtifacts({
   specDb,
   summary,
   events,
-  markdownSummary,
   rowTsv,
-  writeMarkdownSummary,
   needSetFields,
   round,
 }) {
@@ -298,16 +296,6 @@ export async function exportRunArtifacts({
     )
   );
 
-  if (writeMarkdownSummary && markdownSummary) {
-    writes.push(
-      storage.writeObject(
-        `${runBase}/summary/${category}.summary.md`,
-        Buffer.from(markdownSummary, 'utf8'),
-        { contentType: 'text/markdown; charset=utf-8' }
-      )
-    );
-  }
-
   writes.push(
     storage.writeObject(
       `${latestBase}/normalized.json`,
@@ -347,16 +335,6 @@ export async function exportRunArtifacts({
       { contentType: 'text/tab-separated-values' }
     )
   );
-
-  if (writeMarkdownSummary && markdownSummary) {
-    writes.push(
-      storage.writeObject(
-        `${latestBase}/summary.md`,
-        Buffer.from(markdownSummary, 'utf8'),
-        { contentType: 'text/markdown; charset=utf-8' }
-      )
-    );
-  }
 
   await Promise.all(writes);
 

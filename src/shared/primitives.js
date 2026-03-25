@@ -1,6 +1,6 @@
 // WHY: SSOT for pure type-guard and text-normalization primitives.
 // Every domain-helper file (engineTextHelpers, compilerPrimitives, publishPrimitives,
-// reviewNormalization, compileUtils, convergenceHelpers, runtimeOpsEventPrimitives)
+// reviewNormalization, compileUtils, runtimeOpsEventPrimitives)
 // must import from here instead of defining its own copy.
 
 import crypto from 'node:crypto';

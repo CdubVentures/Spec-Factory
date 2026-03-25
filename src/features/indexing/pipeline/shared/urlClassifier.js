@@ -7,13 +7,13 @@
  * All functions are pure — zero module state, zero side effects.
  */
 import {
-  normalizeHost,
   slug,
   toArray,
   countTokenHits,
   normalizeIdentityTokens,
 } from './discoveryIdentity.js';
-import { extractRootDomain } from '../../../../utils/common.js';
+import { normalizeHost } from './hostParser.js';
+import { extractRootDomain } from '../../../../shared/valueNormalizers.js';
 import {
   inferRoleForHost,
   isApprovedHost,
@@ -70,7 +70,7 @@ const VIDEO_HOSTS = new Set([
 
 export function isVideoUrl(url = '') {
   try {
-    const host = new URL(String(url)).hostname.toLowerCase().replace(/^www\./, '');
+    const host = normalizeHost(new URL(String(url)).hostname);
     return VIDEO_HOSTS.has(host);
   } catch { return false; }
 }

@@ -2,22 +2,23 @@
 
 > **Purpose:** Map the live configuration surfaces, environment manifests, and user-editable settings contracts so an arriving LLM can locate the single source of truth for each knob.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Config Surfaces
 
 | Surface | Defined in | Consumed by | Scope | Notes |
 |---------|------------|-------------|-------|-------|
-| process env manifest | `src/core/config/manifest/*.js` | `src/config.js` | runtime | SSOT for env-backed config keys |
+| process env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | `src/config.js` | runtime | SSOT for env-backed config keys; the repo no longer has per-group manifest files |
 | resolved config object | `src/config.js` | backend runtime, CLI, process launch plans | runtime | merges manifest defaults, env, runtime defaults, and overrides |
-| settings registry SSOT | `src/shared/settingsRegistry.js` | all settings surfaces, config assembly, GUI manifests | runtime + GUI | 430+ settings across 4 registries: `RUNTIME_SETTINGS_REGISTRY`, `CONVERGENCE_SETTINGS_REGISTRY`, `UI_SETTINGS_REGISTRY`, `STORAGE_SETTINGS_REGISTRY` |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | all settings surfaces, config assembly, GUI manifests | runtime + GUI | 233 live entries across `RUNTIME_SETTINGS_REGISTRY` (121), `BOOTSTRAP_ENV_REGISTRY` (97), `UI_SETTINGS_REGISTRY` (5), `STORAGE_SETTINGS_REGISTRY` (10), and an empty `CONVERGENCE_SETTINGS_REGISTRY` retained only for compatibility |
 | shared runtime defaults | `src/shared/settingsDefaults.js` | settings authority, GUI bootstrap, config normalization | runtime + GUI | derived defaults from the registry |
 | settings accessor | `src/shared/settingsAccessor.js` | config resolution, pipeline stages | runtime | null-safe accessor with NaN fallback + registry clamping |
-| user settings document | `category_authority/_runtime/user-settings.json` | `src/features/settings-authority/*` and GUI settings hooks | persisted user state | runtime, convergence, storage, and UI settings |
+| composite LLM policy schema | `src/core/llm/llmPolicySchema.js` | `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.generated.ts` | runtime + GUI | structured view over managed runtime keys; no separate storage document |
+| user settings document | `category_authority/_runtime/user-settings.json` | `src/features/settings-authority/*` and GUI settings hooks | persisted user state | runtime, storage, and UI settings |
 | runtime settings API | `src/features/settings/api/configRoutes.js` | GUI hooks in `tools/gui-react/src/features/pipeline-settings/state/*` | operator-writable | `GET/PUT /api/v1/runtime-settings` |
-| convergence settings API | `src/features/settings/api/configRoutes.js` | GUI convergence/settings consumers | operator-writable | `GET/PUT /api/v1/convergence-settings` |
 | storage settings API | `src/features/settings/api/configRoutes.js` | GUI storage settings surfaces | operator-writable | `GET/PUT /api/v1/storage-settings` plus browse route |
 | UI settings API | `src/features/settings/api/configRoutes.js` | GUI client state bootstrap/persistence | operator-writable | `GET/PUT /api/v1/ui-settings` |
+| LLM policy API | `src/features/settings-authority/llmPolicyHandler.js` | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` | operator-writable | `GET/PUT /api/v1/llm-policy`; persists back into the runtime section of `user-settings.json` |
 | LLM route settings API | `src/features/settings/api/configRoutes.js` | GUI LLM settings surface | operator-writable | `GET/PUT /api/v1/llm-settings/:category/routes` |
 | source strategy API | `src/features/indexing/api/sourceStrategyRoutes.js` | GUI source-strategy authority | operator-writable | separate per-category policy surface |
 
@@ -26,42 +27,46 @@
 - `.env.example` is not a complete manifest mirror.
 - It contains a partial set of secrets and integration keys only.
 - The file itself instructs operators to tune many defaults in `src/shared/settingsDefaults.js`.
-- Do not infer missing config keys from `.env.example`; use `src/core/config/manifest/*.js` and `src/config.js`.
-- `npm run env:check` passed on 2026-03-17 with `[env-check] OK (3 referenced keys covered)`.
+- Do not infer missing config keys from `.env.example`; use `src/core/config/manifest/index.js`, `src/shared/settingsRegistry.js`, and `src/config.js`.
+- `npm run env:check` passed on 2026-03-24 with `[env-check] OK (3 referenced keys covered)`.
 - That pass result is narrow coverage, not full manifest proof: `tools/check-env-example-sync.mjs` only scans the fixed `FILES_TO_SCAN` list declared in that script, and two of those declared paths (`src/api/routes/configRoutes.js`, `src/catalog/activeFilteringLoader.js`) do not currently exist.
 
 ## Manifest Group Inventory
 
-| Group | Manifest file | Scope | Notes |
-|------|---------------|-------|-------|
-| `core` | `src/core/config/manifest/coreGroup.js` | server binding and boot env | `API_BASE_URL`, `PORT`, `NODE_ENV` |
-| `caching` | `src/core/config/manifest/cachingGroup.js` | cache backends | Redis URL/password/TTL only |
-| `storage` | `src/core/config/manifest/storageGroup.js` | S3 and run-data relocation | includes AWS creds and run-data destination keys |
-| `security` | `src/core/config/manifest/securityGroup.js` | security-related config | contains JWT keys, but no audited auth middleware consumer |
-| `llm` | `src/core/config/manifest/llmGroup.js` | provider routing, budgets, Cortex, models | largest env surface |
-| `discovery` | `src/core/config/manifest/discoveryGroup.js` | search-provider config | includes SearXNG base URLs |
-| `retrieval` | formerly `src/core/config/manifest/retrievalGroup.js` (deleted in pipeline rework) | scoring, convergence, evidence knobs | settings migrated to `CONVERGENCE_SETTINGS_REGISTRY` in `src/shared/settingsRegistry.js` |
-| `runtime` | `src/core/config/manifest/runtimeGroup.js` | fetch/ocr/screenshot/runtime ops knobs | large operator-tunable runtime set |
-| `observability` | `src/core/config/manifest/observabilityGroup.js` | JSON-write flags, daemon/import loops, drift | runtime housekeeping and write-mode knobs |
-| `paths` | `src/core/config/manifest/pathsGroup.js` | local roots and authority/frontier paths | includes `CATEGORY_AUTHORITY_ROOT` and `SPEC_DB_DIR` |
-| `misc` | `src/core/config/manifest/miscGroup.js` | aggressive mode, Elo, image processor, general knobs | mixed operational surface |
+The live manifest is assembled in one place. `src/core/config/manifest/index.js` declares the 10 group IDs below and derives each section from registry entries in `src/shared/settingsRegistry.js`; no per-group manifest files exist in the current repo.
+
+| Group | Manifest source | Scope | Notes |
+|------|-----------------|-------|-------|
+| `core` | `src/core/config/manifest/index.js` | server binding and boot env | includes `API_BASE_URL`, `PORT`, and `NODE_ENV` from `BOOTSTRAP_ENV_REGISTRY` |
+| `caching` | `src/core/config/manifest/index.js` | cache backends | reserved cache/env surface; no verified Redis runtime consumer was found |
+| `storage` | `src/core/config/manifest/index.js` | S3 and run-data relocation | includes AWS credentials and destination keys |
+| `security` | `src/core/config/manifest/index.js` | security-related config | includes `JWT_SECRET` and `JWT_EXPIRES_IN`, but no audited auth middleware consumer |
+| `llm` | `src/core/config/manifest/index.js` | provider routing, budgets, Cortex, models | largest env-backed group in the live registry |
+| `discovery` | `src/core/config/manifest/index.js` | search-provider config | includes SearXNG base URLs and search-provider defaults |
+| `runtime` | `src/core/config/manifest/index.js` | crawl/fetch/screenshot/runtime ops knobs | operator-tunable runtime set used by the crawl-first pipeline |
+| `observability` | `src/core/config/manifest/index.js` | JSON-write flags and daemon/import loop behavior | runtime housekeeping and trace knobs |
+| `paths` | `src/core/config/manifest/index.js` | local roots and authority/frontier paths | includes `CATEGORY_AUTHORITY_ROOT`, `LOCAL_INPUT_ROOT`, and `LOCAL_OUTPUT_ROOT` |
+| `misc` | `src/core/config/manifest/index.js` | legacy-compatible and uncategorized knobs | includes several search/planner and browser flags not yet split into narrower groups |
 
 ## User-Editable Settings Surfaces
 
 | Surface | Contract source | API route | GUI consumers | Notes |
 |---------|-----------------|-----------|---------------|-------|
 | runtime settings | `src/features/settings-authority/runtimeSettingsRouteGet.js`, `runtimeSettingsRoutePut.js` | `/api/v1/runtime-settings` | `tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHooks.ts`, `tools/gui-react/src/features/indexing/api/indexingRunStartPayload.ts` | largest operator-facing settings surface |
-| convergence settings | `src/features/settings-authority/convergenceSettingsRouteContract.js` | `/api/v1/convergence-settings` | convergence UI + indexing settings consumers | scoring, concurrency, round-control knobs |
 | storage settings | `src/features/settings-authority/settingsValueTypes.js` plus `configRoutes.js` | `/api/v1/storage-settings` | `tools/gui-react/src/features/pipeline-settings/state/storageSettingsAuthority.ts` | includes browse capability and run-data storage config |
-| LLM route settings | `src/features/settings/api/configRoutes.js` | `/api/v1/llm-settings/:category/routes` | `tools/gui-react/src/features/pipeline-settings/state/llmSettingsAuthority.ts` | category-scoped route matrix edits |
+| composite LLM policy | `src/core/llm/llmPolicySchema.js`, `src/features/settings-authority/llmPolicyHandler.js` | `/api/v1/llm-policy` | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | edits provider registry, API keys, budgets, tokens, timeouts, and phase overrides by writing managed runtime keys |
+| LLM route settings | `src/features/settings/api/configRoutes.js` | `/api/v1/llm-settings/:category/routes` | `tools/gui-react/src/stores/llmSettingsAuthority.ts` | category-scoped route matrix edits |
 | UI settings | `src/features/settings-authority/settingsValueTypes.js` | `/api/v1/ui-settings` | client bootstrap/autosave settings | UI-only persistence flags |
+| source strategy | `src/features/indexing/api/sourceStrategyRoutes.js` | `/api/v1/source-strategy` | `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts` | per-category discovery/source-policy records |
+
+The persisted `convergence` section still exists in `category_authority/_runtime/user-settings.json`, but the live repo does not mount a `/api/v1/convergence-settings` HTTP surface.
 
 ## High-Signal Settings Keys
 
 | Surface | Examples | Primary consumers |
 |---------|----------|-------------------|
 | runtime settings | `searchProvider`, `searxngBaseUrl`, `llmModelPlan`, `llmProvider`, `outputMode`, `specDbDir`, `categoryAuthorityRoot`, `s3Bucket` | `src/config.js`, process launch plans, GUI settings hooks |
-| convergence settings | `convergenceMaxRounds`, `serpTriageMinScore`, `retrievalMaxHitsPerField`, `laneConcurrencyFetch` | convergence logic and settings APIs |
+| composite LLM policy keys | `llmProviderRegistryJson`, `llmPhaseOverridesJson`, `llmTimeoutMs`, `llmMonthlyBudgetUsd`, `llmPerProductBudgetUsd`, `llmMaxOutputTokensPlan`, `llmPlanFallbackModel` | `src/core/llm/llmPolicySchema.js`, `src/features/settings-authority/llmPolicyHandler.js`, `tools/gui-react/src/features/llm-config/*` |
 | storage settings | `awsRegion`, run-data destination/bucket/prefix fields | `src/api/services/runDataRelocationService.js`, storage settings hooks |
 | UI settings | `studioAutoSaveEnabled`, `runtimeAutoSaveEnabled`, `storageAutoSaveEnabled`, `llmSettingsAutoSaveEnabled` | GUI autosave and persisted UI behavior |
 
@@ -69,11 +74,15 @@
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
+| source | `src/core/config/manifest.js` | live barrel that re-exports the manifest assembly |
 | source | `src/core/config/manifest/index.js` | manifest assembly and default export surface |
 | source | `src/config.js` | config merge order and env consumption |
-| source | `src/shared/settingsRegistry.js` | SSOT settings registry with 430+ setting definitions across 4 registries |
+| source | `src/shared/settingsRegistry.js` | SSOT registry counts, group ids, JWT keys, and live env-backed settings inventory |
+| source | `src/core/config/settingsKeyMap.js` | route-get map derivation and dual-key pair constants |
 | source | `src/shared/settingsDefaults.js` | derived defaults from the registry |
 | source | `src/features/settings/api/configRoutes.js` | live settings route surfaces |
+| source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy route and persistence behavior |
+| source | `src/core/llm/llmPolicySchema.js` | composite policy group structure and managed keys |
 | source | `src/features/settings-authority/settingsContract.js` | settings authority key exports and schema ownership |
 | config | `.env.example` | partial secrets-only env template |
 | source | `tools/check-env-example-sync.mjs` | fixed-scope env reference checker behavior |
@@ -83,4 +92,5 @@
 
 - [External Services](./external-services.md) - Connects specific config keys to service boundaries.
 - [Setup and Installation](./setup-and-installation.md) - Uses these surfaces in the local bootstrap sequence.
-- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - Shows how operators edit these settings in the GUI.
+- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - Shows how the composite LLM policy is edited and persisted.
+- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - Shows how operators edit the other settings surfaces in the GUI.

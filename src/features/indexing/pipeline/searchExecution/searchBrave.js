@@ -22,20 +22,27 @@ const BRAVE_URL = 'https://api.search.brave.com/res/v1/web/search';
 export async function searchBrave({
   query,
   apiKey,
-  count = 20,
+  count,
   searchLang = 'en',
   country = 'US',
-  timeoutMs = 8_000,
+  timeoutMs,
   extraSnippets = true,
   logger,
   _fetchFn,
+  // WHY: Registry settings flow in via the caller's settings bag.
+  braveSearchTimeoutMs,
+  braveSearchResultCap,
 } = {}) {
   if (!query || !String(query).trim() || !apiKey) return [];
+
+  // WHY: Resolve registry settings → explicit param → fallback constant.
+  const effectiveTimeout = timeoutMs ?? braveSearchTimeoutMs ?? 8_000;
+  const effectiveCount = count ?? braveSearchResultCap ?? 20;
 
   const fetchFn = _fetchFn || globalThis.fetch;
   const url = new URL(BRAVE_URL);
   url.searchParams.set('q', String(query).trim());
-  url.searchParams.set('count', String(Math.min(20, Math.max(1, count))));
+  url.searchParams.set('count', String(Math.min(20, Math.max(1, effectiveCount))));
   url.searchParams.set('search_lang', searchLang);
   url.searchParams.set('country', country);
   url.searchParams.set('safesearch', 'off');
@@ -44,7 +51,7 @@ export async function searchBrave({
   if (extraSnippets) url.searchParams.set('extra_snippets', 'true');
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Math.max(100, timeoutMs));
+  const timeout = setTimeout(() => controller.abort(), Math.max(100, effectiveTimeout));
 
   try {
     const response = await fetchFn(url, {

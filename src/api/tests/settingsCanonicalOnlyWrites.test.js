@@ -83,13 +83,6 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
   });
   assert.equal(runtimeRes.status, 200, `runtime put failed; stdout=${stdout} stderr=${stderr}`);
 
-  const convergenceRes = await fetch(`${baseUrl}/convergence-settings`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({}),
-  });
-  assert.equal(convergenceRes.status, 200, `convergence put failed; stdout=${stdout} stderr=${stderr}`);
-
   // WHY: normalizeRunDataStorageSettings rejects volatile (os.tmpdir()) paths.
   // Use a non-volatile path so the persist round-trip keeps the value intact.
   const storageDirectory = path.join(os.homedir(), 'Desktop', 'SpecFactoryRuns-test-canonical');
@@ -116,21 +109,17 @@ test('canonical-only settings write mode skips legacy snapshot files and persist
     userSettingsPath,
     (json) => (
       json?.runtime?.maxPagesPerDomain === 11
-      && json?.convergence != null
       && json?.storage?.destinationType === 'local'
       && json?.storage?.localDirectory === storageDirectory
     ),
     12_000,
   );
   assert.equal(userSettings.runtime.maxPagesPerDomain, 11);
-  assert.deepStrictEqual(userSettings.convergence, {});
   assert.equal(userSettings.storage.destinationType, 'local');
   assert.equal(userSettings.storage.localDirectory, storageDirectory);
 
   const legacySettingsExists = await fs.access(path.join(runtimeRoot, 'settings.json')).then(() => true).catch(() => false);
-  const legacyConvergenceExists = await fs.access(path.join(runtimeRoot, 'convergence-settings.json')).then(() => true).catch(() => false);
   const legacyStorageExists = await fs.access(path.join(runtimeRoot, 'storage-settings.json')).then(() => true).catch(() => false);
   assert.equal(legacySettingsExists, false, 'legacy runtime settings snapshot should not be written in canonical-only mode');
-  assert.equal(legacyConvergenceExists, false, 'legacy convergence snapshot should not be written in canonical-only mode');
   assert.equal(legacyStorageExists, false, 'legacy storage snapshot should not be written in canonical-only mode');
 });

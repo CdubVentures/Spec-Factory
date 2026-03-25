@@ -6,7 +6,7 @@ import zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
 import { toPosixKey } from '../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { nowIso } from '../utils/common.js';
+import { nowIso } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 import { slugify as canonicalSlugify, buildProductId as canonicalBuildProductId } from '../features/catalog/identity/slugify.js';
 import { loadCatalogProductsWithFields } from '../features/catalog/products/catalogProductLoader.js';

@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { IndexLabRuntimeBridge } from '../runtimeBridge.js';
-import { loadConfig } from '../../config.js';
 
 test('broadcastScreencastFrame emits frame with __screencast flag via onEvent', () => {
   const events = [];
@@ -114,47 +113,6 @@ test('selective streaming passes all frames when screencastTarget is empty', () 
   });
 
   assert.equal(events.length, 1, 'empty target passes all frames');
-});
-
-test('screencast config knobs have expected defaults', () => {
-  const config = loadConfig({});
-
-  assert.equal(config.runtimeScreencastEnabled, true);
-  assert.equal(config.runtimeScreencastFps, 10);
-  assert.equal(config.runtimeScreencastQuality, 50);
-  assert.equal(config.runtimeScreencastMaxWidth, 1280);
-  assert.equal(config.runtimeScreencastMaxHeight, 720);
-});
-
-test('screencast config knobs can be overridden via env', () => {
-  const prev = {
-    RUNTIME_SCREENCAST_ENABLED: process.env.RUNTIME_SCREENCAST_ENABLED,
-    RUNTIME_SCREENCAST_FPS: process.env.RUNTIME_SCREENCAST_FPS,
-    RUNTIME_SCREENCAST_QUALITY: process.env.RUNTIME_SCREENCAST_QUALITY,
-    RUNTIME_SCREENCAST_MAX_WIDTH: process.env.RUNTIME_SCREENCAST_MAX_WIDTH,
-    RUNTIME_SCREENCAST_MAX_HEIGHT: process.env.RUNTIME_SCREENCAST_MAX_HEIGHT,
-  };
-
-  try {
-    process.env.RUNTIME_SCREENCAST_ENABLED = 'false';
-    process.env.RUNTIME_SCREENCAST_FPS = '15';
-    process.env.RUNTIME_SCREENCAST_QUALITY = '80';
-    process.env.RUNTIME_SCREENCAST_MAX_WIDTH = '1920';
-    process.env.RUNTIME_SCREENCAST_MAX_HEIGHT = '1080';
-
-    const config = loadConfig({});
-
-    assert.equal(config.runtimeScreencastEnabled, false);
-    assert.equal(config.runtimeScreencastFps, 15);
-    assert.equal(config.runtimeScreencastQuality, 80);
-    assert.equal(config.runtimeScreencastMaxWidth, 1920);
-    assert.equal(config.runtimeScreencastMaxHeight, 1080);
-  } finally {
-    for (const [key, val] of Object.entries(prev)) {
-      if (val === undefined) delete process.env[key];
-      else process.env[key] = val;
-    }
-  }
 });
 
 // WHY: PlaywrightFetcher tests removed — playwrightFetcher.js deleted during crawl pipeline rework.

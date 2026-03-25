@@ -121,6 +121,11 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'cseRescueRequiredIteration',
       'phase3LlmTriageEnabled',
       'llmSerpRerankEnabled',
+      'llmModelFast',
+      'llmMaxOutputTokensFast',
+      'fetchConcurrency',
+      'reextractAfterHours',
+      'reextractIndexed',
     ];
     for (const key of RETIRED_KEYS) {
       assert.equal(Object.hasOwn(body, key), false, `retired key should not be surfaced: ${key}`);
@@ -141,16 +146,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     }
 
     assert.equal(Object.hasOwn(body, 'bingSearchEndpoint'), false, 'retired bingSearchEndpoint should stay removed');
-  });
-
-  await t.test('GET /convergence-settings does not surface retired stage-2 knobs', async () => {
-    const res = await fetch(`${_baseUrl}/convergence-settings`);
-    assert.equal(res.status, 200, `unexpected status ${res.status} stderr=${stderr}`);
-    const body = await res.json();
-
-    assert.equal(typeof body, 'object');
-    assert.equal(Array.isArray(body), false);
-    assert.equal(Object.hasOwn(body, 'serpTriageEnabled'), false, 'retired convergence key should not be surfaced');
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
@@ -261,18 +256,4 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
   });
 
-  await t.test('PUT convergence-settings with empty registry rejects all keys', async () => {
-    // With empty convergence registry, all keys are unknown and rejected
-    const payload = { serpTriageMinScore: 5 };
-    const putRes = await fetch(`${_baseUrl}/convergence-settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    assert.equal(putRes.status, 200);
-    const putBody = await putRes.json();
-    // No convergence keys in registry — serpTriageMinScore is rejected
-    assert.deepStrictEqual(putBody.applied, {});
-    assert.equal(putBody.rejected.serpTriageMinScore, 'unknown_key');
-  });
 });

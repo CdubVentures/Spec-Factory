@@ -1,4 +1,4 @@
-import { normalizeToken } from '../../../utils/common.js';
+import { normalizeAlphanumToken } from '../../../shared/primitives.js';
 import {
   tokenize,
   unique,
@@ -207,7 +207,7 @@ export function buildIdentityCriticalContradictions(sources) {
     accepted
       .map((s) => firstFieldValue(s, 'connection'))
       .filter(Boolean)
-      .map((v) => normalizeToken(v))
+      .map((v) => normalizeAlphanumToken(v))
   );
   if (connectionValues.size > 1 && !connectionClassesCompatible(connectionValues)) {
     contradictions.push({ source: 'aggregate', conflict: 'connection_class_conflict' });
@@ -222,7 +222,7 @@ export function buildIdentityCriticalContradictions(sources) {
     accepted
       .map((s) => s.identityCandidates?.sku)
       .filter(Boolean)
-      .map((v) => normalizeToken(v))
+      .map((v) => normalizeAlphanumToken(v))
   );
   if (skuValues.size > 1 && !skuTokenOverlap(skuValues)) {
     contradictions.push({ source: 'aggregate', conflict: 'sku_conflict' });

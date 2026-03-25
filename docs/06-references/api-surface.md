@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Global Notes
 
@@ -35,17 +35,19 @@
 | GET | `/api/v1/storage-settings/local/browse` | browse local run-data directories | none | none | directory listing |
 | GET | `/api/v1/storage-settings` | read run-data storage settings | none | none | sanitized storage settings |
 | PUT | `/api/v1/storage-settings` | persist run-data storage settings | none | storage settings patch | `{ ok, ...settings }` |
-| GET | `/api/v1/indexing/llm-config` | read LLM config defaults and pricing metadata | none | none | config snapshot |
+| GET | `/api/v1/indexing/llm-config` | read model catalog, pricing metadata, resolved API keys, routing defaults, and token defaults used by settings UIs | none | none | config snapshot |
 | GET | `/api/v1/indexing/llm-metrics` | aggregated LLM usage metrics | none | none | metrics payload |
 | GET | `/api/v1/indexing/domain-checklist/:category` | domain/source checklist for a category | none | none | checklist payload |
 | GET | `/api/v1/indexing/review-metrics/:category` | human review throughput metrics | none | none | review metrics payload |
 | GET | `/api/v1/llm-settings/:category/routes` | read category LLM route matrix | none | none | `{ category, scope, rows }` |
 | PUT | `/api/v1/llm-settings/:category/routes` | write category LLM route matrix | none | `{ rows }` | `{ ok, category, rows }` |
 | POST | `/api/v1/llm-settings/:category/routes/reset` | reset category LLM route matrix | none | none | `{ ok, category, rows }` |
-| GET | `/api/v1/convergence-settings` | read convergence settings | none | none | convergence settings |
-| PUT | `/api/v1/convergence-settings` | persist convergence settings | none | convergence settings patch | `{ ok, applied, rejected? }` |
+| GET | `/api/v1/llm-policy` | read the composite global LLM policy assembled from managed runtime keys | none | none | `{ ok, policy }` |
+| PUT | `/api/v1/llm-policy` | persist the composite global LLM policy back into runtime settings | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
 | GET | `/api/v1/runtime-settings` | read runtime settings | none | none | runtime settings |
 | PUT | `/api/v1/runtime-settings` | persist runtime settings | none | runtime settings patch | `{ ok, applied, rejected? }` |
+
+No live `/api/v1/convergence-settings` route is registered in `src/features/settings/api/configRoutes.js`. The persisted `convergence` object in `user-settings.json` is compatibility-only.
 
 ## IndexLab Endpoints
 
@@ -197,7 +199,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | GET | `/api/v1/test-mode/contract-summary` | read test-mode contract summary | none | none | `{ ok, summary, matrices, scenarioDefs }` |
 | GET | `/api/v1/test-mode/status` | read test-mode fixture/run status | none | none | `{ ok, exists, testCategory, testCases, runResults }` |
 | POST | `/api/v1/test-mode/generate-products` | generate synthetic products | none | `{ category }` | `{ ok, products, testCases }` |
-| POST | `/api/v1/test-mode/run` | run synthetic products | none | `{ category, productId?, useLlm?, aiReview?, resetState?, resyncSpecDb? }` | `{ ok, results }` |
+| POST | `/api/v1/test-mode/run` | attempt synthetic product runs; currently returns per-product error rows because `runTestProduct` is stubbed in route context | none | `{ category, productId?, useLlm?, aiReview?, resetState?, resyncSpecDb? }` | `{ ok, results }` with `status: 'error'` rows on the current worktree |
 | POST | `/api/v1/test-mode/validate` | validate synthetic run outputs | none | `{ category }` | validation results + summary |
 | DELETE | `/api/v1/test-mode/:category` | delete `_test_*` category artifacts | none | none | `{ ok, deleted }` |
 
@@ -208,6 +210,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
 | source | `src/features/settings/api/configRoutes.js` | settings/config endpoints |
+| source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
 | source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |
 | source | `src/features/catalog/api/catalogRoutes.js` | catalog/product/event endpoints |
@@ -217,11 +220,12 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | source | `src/features/indexing/api/queueBillingLearningRoutes.js` | queue/billing/learning endpoints |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source strategy endpoints |
 | source | `src/features/review/api/reviewRoutes.js` | review read endpoints and review batch endpoints |
-| source | `src/api/reviewItemRoutes.js` | scalar review mutation endpoints |
-| source | `src/api/reviewComponentMutationRoutes.js` | component mutation endpoints |
-| source | `src/api/reviewEnumMutationRoutes.js` | enum mutation endpoints |
+| source | `src/features/review/api/itemMutationRoutes.js` | scalar review mutation endpoints |
+| source | `src/features/review/api/componentMutationRoutes.js` | component mutation endpoints |
+| source | `src/features/review/api/enumMutationRoutes.js` | enum mutation endpoints |
 | source | `tools/gui-react/src/features/review/components/ReviewPage.tsx` | stale client reference to non-live `finalize` path |
 | source | `src/app/api/routes/testModeRoutes.js` | test-mode endpoints |
+| source | `src/app/api/routes/testModeRouteContext.js` | stubbed test-mode run context |
 
 ## Related Documents
 

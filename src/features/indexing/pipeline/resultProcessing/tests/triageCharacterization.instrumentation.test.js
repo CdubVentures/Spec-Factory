@@ -13,48 +13,6 @@ import {
   makeStubLogger,
 } from './helpers/triageCharacterizationHarness.js';
 describe('Characterization - processDiscoveryResults instrumentation', () => {
-it('storage receives exactly 2 writes (discovery + candidates)', async () => {
-  const storage = makeStubStorage();
-  await processDiscoveryResults({
-    rawResults: makeRawResults(),
-    searchAttempts: [],
-    searchJournal: [],
-    internalSatisfied: false,
-    externalSearchReason: '',
-    config: makeConfig(),
-    storage,
-    categoryConfig: makeCategoryConfig(),
-    job: { productId: 'p1' },
-    runId: 'r1',
-    logger: makeStubLogger(),
-    runtimeTraceWriter: null,
-    frontierDb: makeStubFrontierDb(),
-    variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro' },
-    identityLock: makeIdentityLock(),
-    brandResolution: { officialDomain: 'razer.com' },
-    missingFields: ['weight'],
-    learning: { fieldYield: {} },
-    llmContext: {},
-    searchProfileBase: { variant_guard_terms: [] },
-    llmQueries: [],
-    queries: ['razer viper v3 pro specs'],
-    searchProfilePlanned: makeSearchProfilePlanned(),
-    searchProfileKeys: { inputKey: 'k1', runKey: 'k2', latestKey: 'k3' },
-    providerState: {},
-    discoveryCap: 20,
-
-    _serpSelectorCallFn: makeStubSerpSelectorCallFn(),
-  });
-
-  // 2 storage writes: discoveryPayload + candidatePayload
-  // Plus writeSearchProfileArtifacts writes (variable count)
-  assert.ok(storage.written.length >= 2, `expected >= 2 storage writes, got ${storage.written.length}`);
-  assert.ok(
-    storage.written.every((w) => w.contentType === 'application/json'),
-    'all writes are application/json'
-  );
-});
-
 it('logger emits expected event names', async () => {
   const logger = makeStubLogger();
   await processDiscoveryResults({

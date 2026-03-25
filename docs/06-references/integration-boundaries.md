@@ -2,7 +2,7 @@
 
 > **Purpose:** Define where the local runtime stops and external systems or sidecars begin, including contract surfaces and failure behavior.
 > **Prerequisites:** [../02-dependencies/external-services.md](../02-dependencies/external-services.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Boundary Matrix
 
@@ -12,10 +12,8 @@
 | SearXNG search sidecar | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/searxngRoutes.js`, `tools/searxng/docker-compose.yml` | local HTTP service, default `http://127.0.0.1:8080` | HTTP status probes plus local Docker Compose start | `/api/v1/searxng/status` or `/api/v1/searxng/start` returns failure metadata |
 | Intel Graph helper API | `src/app/api/routes/infra/graphqlRoutes.js`, `src/api/intelGraphApi.js` | local GraphQL server on `http://localhost:8787/graphql` | JSON GraphQL POST proxy | proxy returns `502 graphql_proxy_failed` when helper is absent or unhealthy |
 | LLM providers / Cortex routing | `src/core/llm/`, `src/features/settings/api/configRoutes.js`, `src/cli/spec.js` | provider APIs selected by model/provider settings | provider/model strings, token caps, routing matrix, health checks | runtime commands or health checks fail; fallback routes may engage if configured |
-| Structured metadata sidecar | formerly `src/features/indexing/extraction/structuredMetadataClient.js` (extraction pipeline deleted in rework) | local HTTP extractor, default `http://127.0.0.1:8011/extract/structured` | config keys remain but consumer is deleted | config-only after pipeline rework |
 | Browser crawling stack | `src/features/crawl/index.js`, `playwright`, `crawlee` | external websites | plugin-based browser automation via crawl session with stealth/auto-scroll plugins, block detection, screenshot capture, frontier DB recording | crawl failures are logged and recorded to frontier DB; block classification triggers bypass strategies |
 | Category-authority control plane | `category_authority/`, `src/features/settings-authority/index.js`, `src/api/services/specDbSyncService.js` | authored JSON control-plane content on disk | compiled rules, catalogs, sources, user settings | stale or missing authority artifacts produce compile-stale states, `specdb_not_ready`, or sync drift |
-| Excluded schema assets | formerly `src/indexlab/indexingSchemaPacketsValidator.js` (deleted in pipeline rework) | JSON schemas under the excluded `docs/implementation/ai-indexing-plans/schema/` subtree | schema packet validation was removed | no longer a runtime dependency |
 
 ## Retry And Recovery Notes
 
@@ -25,14 +23,13 @@
 | SearXNG | local start endpoint attempts to bring the stack up; callers can recheck status |
 | Intel Graph helper API | start the helper via `npm run intel:api`, then retry the proxied request |
 | LLM providers | fallback models/providers may be used when configured; otherwise the run fails and is logged |
-| Structured metadata sidecar | optional enrichment; failures do not create a separate retry queue in the verified code |
 | Category-authority control plane | rerun compile/sync flows to rebuild generated artifacts and SpecDb state |
 
 ## Hard Boundaries For Agents
 
 - Do not assume a hosted cloud control plane exists; the verified runtime is local-first.
 - Do not assume auth/session infrastructure protects these boundaries; the GUI API is effectively local/trusted-network only in the verified code.
-- Do not treat the excluded `docs/implementation/` subtree as current-state documentation authority. One exception exists at runtime: `src/indexlab/indexingSchemaPacketsValidator.js` defaults its schema root to JSON files under `docs/implementation/ai-indexing-plans/schema/`.
+- Do not treat the excluded `docs/implementation/` subtree as current-state documentation authority. No live runtime dependency on that subtree was verified during this audit.
 
 ## Validated Against
 
@@ -46,7 +43,6 @@
 | source | `src/features/crawl/index.js` | crawl module public API (replaces extraction pipeline) |
 | source | `src/features/settings-authority/index.js` | file-backed settings/control-plane contract |
 | source | `src/api/services/specDbSyncService.js` | authority-to-SQLite sync boundary |
-| source | formerly `src/indexlab/indexingSchemaPacketsValidator.js` (deleted) | schema packet validation removed in pipeline rework |
 
 ## Related Documents
 

@@ -1,4 +1,5 @@
 import { toInt, toFloat, parseTsMs, eventType, payloadOf, projectShape, buildDefaults } from './runtimeOpsEventPrimitives.js';
+import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 // WHY: O(1) — LLM reason classification + shape descriptors from contract SSOT.
 import {
   classifyPrefetchLlmReason,
@@ -253,7 +254,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
           const projected = projectShape(r, SEARCH_RESULT_ENTRY_SHAPE);
           // WHY: Domain fallback — derive from URL when event omits domain.
           if (!projected.domain && projected.url) {
-            try { projected.domain = new URL(projected.url).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+            try { projected.domain = normalizeHost(new URL(projected.url).hostname); } catch { /* ignore */ }
           }
           return projected;
         }) : [],

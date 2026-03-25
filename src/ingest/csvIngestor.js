@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { toPosixKey } from '../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { nowIso } from '../utils/common.js';
+import { nowIso } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 
 function slug(value) {

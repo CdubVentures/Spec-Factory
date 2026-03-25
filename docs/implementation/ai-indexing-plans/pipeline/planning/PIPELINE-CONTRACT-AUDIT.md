@@ -7,6 +7,7 @@ P5 schema enforcement (2026-03-23): Cumulative pipeline context schema, per-stag
 P6 re-audit (2026-03-23): Full pipeline re-audited against live code. Documentation inaccuracies fixed (event order, discoveryResult field names, Search Planner input contract, crawl config registry status). See P6 section below.
 P7 host plan removal + dead settings cleanup (2026-03-23): Entire host plan concept deleted. 6 dead registry settings removed. Domain classification ordering fixed. See P7 section below.
 Validated: 2026-03-23 (file paths updated to vertical slicing layout, event/scope names updated, stage labels updated to semantic phase names).
+P8 pipeline extensibility + settings reorg (2026-03-24): Dead registry settings removed (4 fetchScheduler*, 4 dead pipeline fields). Fetcher adapter + plugin registries built. NeedSet/SearchProfile/SearchPlanner/SearchExecution vertical sliced to A-grade. 33 magic numbers extracted to registry. Settings taxonomy reorganized (flow→global, discovery→per-phase, budgets→per-phase, screenshots→extraction, observability→fetcher). Convergence feature fully removed (~800 LOC dead scaffolding). 3 dead derivation functions + 1 orphaned utility file deleted.
 
 ---
 

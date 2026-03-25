@@ -14,9 +14,9 @@ Disposition:
 | `resolvePropertyFieldMeta returns enum_values and enum_policy for enum fields` | KEEP | Field metadata derivation contract. | `componentReviewDataLaneState.fieldMeta.test.js` | Preserved |
 | `resolvePropertyFieldMeta returns null for unknown key` | COLLAPSE | Same helper contract family as the identity-key null case. | `componentReviewDataLaneState.fieldMeta.test.js` | Preserved with merged assertion |
 | `resolvePropertyFieldMeta returns null for identity key __name` | COLLAPSE | Same helper contract family as the unknown-key null case. | `componentReviewDataLaneState.fieldMeta.test.js` | Preserved with merged assertion |
-| `component payload inherits constraints from field rules, not DB row` | KEEP | Payload metadata contract. | `componentReviewDataLaneState.payloadMetadata.test.js` | Preserved |
-| `component payload includes enum_values and enum_policy from field rules` | KEEP | Payload metadata contract. | `componentReviewDataLaneState.payloadMetadata.test.js` | Preserved |
-| `component payload strips review-disabled constraints and enum metadata from field rules` | KEEP | Consumer-gated metadata contract. | `componentReviewDataLaneState.payloadMetadata.test.js` | Preserved |
+| `component payload inherits constraints from field rules, not DB row` | KEEP | Payload metadata contract. | `componentReviewDataLaneState.constraintsMetadata.test.js` | Preserved |
+| `component payload includes enum_values and enum_policy from field rules` | KEEP | Payload metadata contract. | `componentReviewDataLaneState.enumMetadata.test.js` | Preserved |
+| `component payload strips review-disabled constraints and enum metadata from field rules` | KEEP | Consumer-gated metadata contract. | `componentReviewDataLaneState.consumerGateMetadata.test.js` | Preserved |
 | `override_allowed property skips variance evaluation - no violation flags despite value mismatch` | KEEP | Variance-policy behavior contract. | `componentReviewDataLaneState.varianceMetadata.test.js` | Preserved |
 | `authoritative property DOES flag variance violation for same mismatch scenario` | KEEP | Variance-policy behavior contract. | `componentReviewDataLaneState.varianceMetadata.test.js` | Preserved |
 

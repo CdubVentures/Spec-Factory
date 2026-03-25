@@ -5,9 +5,10 @@
  */
 
 import { classifyBlockStatus } from '../features/crawl/bypassStrategies.js';
+import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
 
 function safeHostname(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+  try { return normalizeHost(new URL(url).hostname); } catch { return ''; }
 }
 
 // WHY: Sort all planner entries strictly by search slot then SERP rank.

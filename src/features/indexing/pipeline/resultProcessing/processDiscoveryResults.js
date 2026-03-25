@@ -5,10 +5,10 @@
 
 import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
 import {
-  normalizeHost,
   toArray,
   SLOT_LABELS,
 } from '../shared/discoveryIdentity.js';
+import { normalizeHost } from '../shared/hostParser.js';
 import {
   createCandidateTraceMap,
   enrichCandidateTraces,
@@ -42,7 +42,7 @@ export async function processDiscoveryResults({
   // LLM & planning
   llmContext, searchProfileBase, llmQueries,
   // Search profile & query state
-  queries, searchProfilePlanned, searchProfileKeys, providerState, queryConcurrency = 1, discoveryCap,
+  queries, searchProfilePlanned, searchProfileKeys, providerState, discoveryCap,
   // DI seam for SERP selector (testing)
   _serpSelectorCallFn,
 }) {
@@ -367,7 +367,6 @@ export async function processDiscoveryResults({
     search_profile_run_key: searchProfileKeys.runKey,
     search_profile_latest_key: searchProfileKeys.latestKey,
     provider_state: providerState,
-    query_concurrency: queryConcurrency,
     internal_satisfied: internalSatisfied,
     external_search_reason: externalSearchReason,
     search_attempts: searchAttempts,

@@ -4,7 +4,6 @@
 import { loadConfig as _loadConfig } from './core/config/configOrchestrator.js';
 import {
   applyRuntimeSettingsToConfig,
-  applyConvergenceSettingsToConfig,
   loadUserSettingsSync,
 } from './features/settings-authority/userSettingsService.js';
 import {
@@ -62,7 +61,6 @@ export function loadConfigWithUserSettings(overrides = {}) {
   try {
     const userSettings = loadUserSettingsSync({ categoryAuthorityRoot: helperRoot });
     applyRuntimeSettingsToConfig(config, userSettings.runtime);
-    applyConvergenceSettingsToConfig(config, userSettings.convergence);
   } catch { /* best-effort — CLI may run without persisted settings */ }
   return config;
 }

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { readConvergenceSettingsSnapshot, useConvergenceSettingsReader } from './convergenceSettingsAuthority.ts';
 import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings/index.ts';
 import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority.ts';
 import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings/index.ts';
@@ -18,7 +17,6 @@ import {
 export interface SettingsAuthoritySnapshot {
   category: string;
   runtimeReady: boolean;
-  convergenceReady: boolean;
   storageReady: boolean;
   sourceStrategyReady: boolean;
   llmSettingsReady: boolean;
@@ -36,7 +34,6 @@ export function isSettingsAuthoritySnapshotReady(
   if (!snapshot) return false;
   const baseReady = (
     snapshot.runtimeReady
-    && snapshot.convergenceReady
     && snapshot.storageReady
     && snapshot.uiSettingsReady
   );
@@ -51,7 +48,6 @@ export function isSettingsAuthoritySnapshotReady(
 interface SettingsHydrationPipelineOptions {
   category: string;
   runtimeReload: () => Promise<unknown>;
-  convergenceReload: () => Promise<unknown>;
   storageReload: () => Promise<unknown>;
   sourceStrategyReload: () => Promise<unknown>;
   llmReload: () => Promise<void>;
@@ -61,7 +57,6 @@ interface SettingsHydrationPipelineOptions {
 async function runSettingsStartupHydrationPipeline({
   category,
   runtimeReload,
-  convergenceReload,
   storageReload,
   sourceStrategyReload,
   llmReload,
@@ -69,7 +64,6 @@ async function runSettingsStartupHydrationPipeline({
 }: SettingsHydrationPipelineOptions) {
   const reloadTasks: Promise<unknown>[] = [
     runtimeReload(),
-    convergenceReload(),
     storageReload(),
     uiReload(),
   ];
@@ -109,9 +103,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 
   const runtime = useRuntimeSettingsReader({
-    enabled: false,
-  });
-  const convergence = useConvergenceSettingsReader({
     enabled: false,
   });
   const storage = useStorageSettingsReader({
@@ -155,7 +146,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const lastUiAutosaveFingerprintRef = useRef('');
   const lastAppliedServerUiFingerprintRef = useRef('');
   const runtimeReloadRef = useRef(runtime.reload);
-  const convergenceReloadRef = useRef(convergence.reload);
   const storageReloadRef = useRef(storage.reload);
   const sourceStrategyReloadRef = useRef(sourceStrategy.reload);
   const llmReloadRef = useRef(llm.reload);
@@ -164,7 +154,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const patchAuthoritySnapshot = useSettingsAuthorityStore((s) => s.patchSnapshot);
 
   runtimeReloadRef.current = runtime.reload;
-  convergenceReloadRef.current = convergence.reload;
   storageReloadRef.current = storage.reload;
   sourceStrategyReloadRef.current = sourceStrategy.reload;
   llmReloadRef.current = llm.reload;
@@ -181,7 +170,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   uiAutoSavePayloadRef.current = uiAutoSavePayload;
 
   const hasRuntimeSnapshot = readRuntimeSettingsSnapshot(queryClient) !== undefined;
-  const hasConvergenceSnapshot = readConvergenceSettingsSnapshot(queryClient) !== undefined;
   const hasStorageSnapshot = readStorageSettingsSnapshot(queryClient) !== undefined;
   const hasUiSettingsSnapshot = readUiSettingsSnapshot(queryClient) !== undefined;
   const hasSourceStrategySnapshot = category === 'all'
@@ -194,7 +182,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const authoritySnapshot = useMemo<SettingsAuthoritySnapshot>(() => ({
     category,
     runtimeReady: hasRuntimeSnapshot,
-    convergenceReady: hasConvergenceSnapshot,
     storageReady: hasStorageSnapshot,
     sourceStrategyReady: hasSourceStrategySnapshot,
     llmSettingsReady: hasLlmSettingsSnapshot,
@@ -207,7 +194,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   }), [
     category,
     hasRuntimeSnapshot,
-    hasConvergenceSnapshot,
     hasStorageSnapshot,
     hasSourceStrategySnapshot,
     hasLlmSettingsSnapshot,
@@ -228,7 +214,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
         await runSettingsStartupHydrationPipeline({
           category,
           runtimeReload: runtimeReloadRef.current,
-          convergenceReload: convergenceReloadRef.current,
           storageReload: storageReloadRef.current,
           sourceStrategyReload: sourceStrategyReloadRef.current,
           llmReload: llmReloadRef.current,
@@ -315,10 +300,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
       switch (event.domain) {
         case 'runtime': {
           void runtimeReloadRef.current();
-          return;
-        }
-        case 'convergence': {
-          void convergenceReloadRef.current();
           return;
         }
         case 'storage': {

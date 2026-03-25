@@ -1,13 +1,10 @@
 import { toPosixKey } from '../s3/storage.js';
 import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { normalizeMissingFieldTargets } from '../utils/fieldKeys.js';
+import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
 
 const CORPUS_CACHE = new Map();
 const CORPUS_CACHE_TTL_MS = 15_000;
-
-function normalizeHost(value) {
-  return String(value || '').toLowerCase().replace(/^www\./, '');
-}
 
 function normalizePath(url) {
   try {

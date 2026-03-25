@@ -44,7 +44,8 @@ const SEARCH_HINT_GATE_SPECS = [
   { key: 'search_hints.preferred_content_types', name: 'preferred_content_types', path: ['search_hints', 'preferred_content_types'] }
 ];
 
-function extractTooltipTerms(value) {
+function extractTooltipTerms(value, { tooltipPhraseCap = 4 } = {}) {
+  const cap = Number.isFinite(tooltipPhraseCap) && tooltipPhraseCap > 0 ? tooltipPhraseCap : 4;
   const text = String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9\s/_-]+/g, ' ');
@@ -53,16 +54,22 @@ function extractTooltipTerms(value) {
     .map((token) => token.trim())
     .filter((token) => token.length >= 3 && !STOPWORDS.has(token));
   const phrases = [];
-  for (let i = 0; i < tokens.length - 1 && phrases.length < 4; i += 1) {
+  for (let i = 0; i < tokens.length - 1 && phrases.length < cap; i += 1) {
     if (tokens[i] === tokens[i + 1]) {
       continue;
     }
     phrases.push(`${tokens[i]} ${tokens[i + 1]}`);
   }
-  return [...new Set(phrases.map((item) => normalizeSearchTerm(item)).filter(Boolean))].slice(0, 4);
+  return [...new Set(phrases.map((item) => normalizeSearchTerm(item)).filter(Boolean))].slice(0, cap);
 }
 
-export function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {}) {
+// WHY: Caps configurable via options for registry-driven tuning. Defaults match
+// RUNTIME_SETTINGS_REGISTRY values. When callers gain access to config, pass
+// options: { tooltipPhraseCap, learnedSynonymsCap, fieldSynonymsCap }.
+export function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {}, options = {}) {
+  const learnedCap = options?.queryBuilderLearnedSynonymsCap ?? 6;
+  const totalCap = options?.queryBuilderFieldSynonymsCap ?? 12;
+  const tooltipPhraseCap = options?.queryBuilderTooltipPhraseCap ?? 4;
   const defaults = FIELD_SYNONYMS[field] || [field];
   const learned = Object.entries(lexicon?.fields?.[field]?.synonyms || {})
     .sort((a, b) => {
@@ -70,7 +77,7 @@ export function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {})
       const bScore = (b[1].count || 0) * Math.log2(1 + Math.max(1, Object.keys(b[1].hosts || {}).length));
       return bScore - aScore || a[0].localeCompare(b[0]);
     })
-    .slice(0, 6)
+    .slice(0, learnedCap)
     .map(([token]) => token)
     .filter(Boolean);
   const fromRule = toArray(fieldRule?.search_hints?.query_terms)
@@ -83,11 +90,11 @@ export function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {})
       .filter(Boolean)
     : [];
   const fromTooltipMd = tooltipGateEnabled
-    ? extractTooltipTerms(fieldRule?.ui?.tooltip_md || fieldRule?.tooltip_md || '')
+    ? extractTooltipTerms(fieldRule?.ui?.tooltip_md || fieldRule?.tooltip_md || '', { tooltipPhraseCap })
     : [];
   return [...new Set([...fromRule, ...defaults, ...learned, ...fromTooltipHints, ...fromTooltipMd])]
     .filter(Boolean)
-    .slice(0, 12);
+    .slice(0, totalCap);
 }
 
 export function lookupFieldRule(categoryConfig, field) {

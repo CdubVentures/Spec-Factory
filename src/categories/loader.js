@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { extractRootDomain } from '../utils/common.js';
+import { extractRootDomain } from '../shared/valueNormalizers.js';
 import { toPosixKey } from '../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import {
@@ -13,12 +13,9 @@ import {
   checkCategoryPopulationHardGate,
 } from '../features/indexing/pipeline/shared/index.js';
 import { isObject, toArray } from '../shared/primitives.js';
+import { normalizeHost } from '../features/indexing/pipeline/shared/hostParser.js';
 
 const cache = new Map();
-
-function normalizeHost(host) {
-  return String(host || '').trim().toLowerCase().replace(/^www\./, '');
-}
 
 function hostMatches(host, candidate) {
   return host === candidate || host.endsWith(`.${candidate}`);

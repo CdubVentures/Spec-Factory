@@ -3,11 +3,9 @@ import assert from 'node:assert/strict';
 
 import {
   RUNTIME_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_KEYS,
   UI_SETTINGS_KEYS,
 } from '../settingsKeySets.js';
 import { RUNTIME_SETTINGS_VALUE_TYPES } from '../runtimeSettingsRouteContract.js';
-import { CONVERGENCE_SETTINGS_VALUE_TYPES } from '../convergenceSettingsRouteContract.js';
 import { UI_SETTINGS_VALUE_TYPES } from '../settingsValueTypes.js';
 
 function assertSameKeySet(leftKeys, rightKeys, label) {
@@ -21,10 +19,6 @@ function assertSameKeySet(leftKeys, rightKeys, label) {
 
 test('runtime key set matches runtime value type map keys exactly', () => {
   assertSameKeySet(RUNTIME_SETTINGS_KEYS, Object.keys(RUNTIME_SETTINGS_VALUE_TYPES), 'runtime');
-});
-
-test('convergence key set matches convergence value type map keys exactly', () => {
-  assertSameKeySet(CONVERGENCE_SETTINGS_KEYS, Object.keys(CONVERGENCE_SETTINGS_VALUE_TYPES), 'convergence');
 });
 
 test('ui key set matches ui value type map keys exactly', () => {

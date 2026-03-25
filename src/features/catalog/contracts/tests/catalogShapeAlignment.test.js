@@ -1,4 +1,4 @@
-// WHY: Contract test verifying that the TS interfaces in types/product.ts
+// WHY: Contract test verifying that the generated TS interfaces in product.generated.ts
 // declare every field from the canonical catalog shape descriptors. If a shape
 // key is missing from the TS interface, builders emit data the frontend ignores.
 //
@@ -18,37 +18,34 @@ import {
 import { extractInterfaceKeys, assertContractKeysInInterface } from '../../../../shared/tests/helpers/tsInterfaceParser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/product.ts');
+const TYPES_PATH = join(__dirname, '../../../../../tools/gui-react/src/types/product.generated.ts');
 const typesSource = readFileSync(TYPES_PATH, 'utf8');
 
 describe('catalogShapeAlignment', () => {
-  it('CatalogProduct contains all CATALOG_PRODUCT_KEYS', () => {
-    assertContractKeysInInterface(typesSource, CATALOG_PRODUCT_KEYS, 'CatalogProduct');
+  it('CatalogProductGen contains all CATALOG_PRODUCT_KEYS', () => {
+    assertContractKeysInInterface(typesSource, CATALOG_PRODUCT_KEYS, 'CatalogProductGen');
   });
 
-  it('CatalogRow contains all CATALOG_ROW_KEYS', () => {
-    assertContractKeysInInterface(typesSource, CATALOG_ROW_KEYS, 'CatalogRow');
+  it('CatalogRowGen contains all CATALOG_ROW_KEYS', () => {
+    assertContractKeysInInterface(typesSource, CATALOG_ROW_KEYS, 'CatalogRowGen');
   });
 
-  it('CatalogRow must NOT contain CatalogProduct-only keys', () => {
-    // WHY: buildCatalog (GET /catalog/{cat}) never sends seed_urls, added_at,
-    // added_by — those only come from the CRUD endpoint (GET /catalog/{cat}/products).
-    // CatalogRow must be its own flat shape, not extending CatalogProduct.
+  it('CatalogRowGen must NOT contain CatalogProduct-only keys', () => {
     const catalogOnlyKeys = CATALOG_PRODUCT_KEYS.filter(
       (k) => !CATALOG_ROW_KEYS.includes(k),
     );
     ok(catalogOnlyKeys.length > 0, 'CATALOG_PRODUCT_KEYS should have keys absent from CATALOG_ROW_KEYS');
-    const tsKeys = extractInterfaceKeys(typesSource, 'CatalogRow');
-    ok(tsKeys !== null, 'interface CatalogRow not found in product.ts');
+    const tsKeys = extractInterfaceKeys(typesSource, 'CatalogRowGen');
+    ok(tsKeys !== null, 'interface CatalogRowGen not found in product.generated.ts');
     const tsKeySet = new Set(tsKeys);
     const leaked = catalogOnlyKeys.filter((k) => tsKeySet.has(k));
     ok(
       leaked.length === 0,
-      `CatalogRow must not contain CatalogProduct-only keys: [${leaked.join(', ')}]`,
+      `CatalogRowGen must not contain CatalogProduct-only keys: [${leaked.join(', ')}]`,
     );
   });
 
-  it('Brand contains all BRAND_KEYS', () => {
-    assertContractKeysInInterface(typesSource, BRAND_KEYS, 'Brand');
+  it('BrandGen contains all BRAND_KEYS', () => {
+    assertContractKeysInInterface(typesSource, BRAND_KEYS, 'BrandGen');
   });
 });

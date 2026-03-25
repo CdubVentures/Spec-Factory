@@ -1,5 +1,6 @@
 // WHY: Derive settings-by-category and settings-by-section from the backend registry SSOT.
 // A new setting with uiCategory + uiSection auto-appears in the correct UI panel.
+// Adding uiGroup to a registry entry auto-groups it in a collapsible block.
 // No per-setting .tsx code needed.
 
 import { RUNTIME_SETTINGS_REGISTRY, type RegistryEntry } from '../../../shared/registryDerivedSettingsMaps.ts';
@@ -8,6 +9,8 @@ import type { SettingsCategoryId } from './SettingsCategoryRegistry.ts';
 export interface CategorySettingsMap {
   [sectionId: string]: RegistryEntry[];
 }
+
+/* ── Per-entry indexing ────────────────────────────────────────────── */
 
 const _byCategory: Record<string, CategorySettingsMap> = {};
 const _disabledBy: Record<string, string> = {};
@@ -49,4 +52,108 @@ export function isHeroSetting(entry: RegistryEntry): boolean {
 /** Get the disabledBy parent key for a setting, if any */
 export function getDisabledByKey(settingKey: string): string | undefined {
   return DISABLED_BY_MAP[settingKey];
+}
+
+/* ── Group rendering hints ─────────────────────────────────────────── */
+// WHY: Controls display order and default collapsed state for uiGroup blocks.
+// Groups not listed here render expanded at the end (order 999).
+
+interface GroupHint {
+  readonly order: number;
+  readonly collapsed?: boolean;
+}
+
+const UI_GROUP_HINTS: Readonly<Record<string, GroupHint>> = Object.freeze({
+  // Search Execution
+  'Engine Selection':   { order: 0 },
+  'Google Search':      { order: 1, collapsed: true },
+  'Serper':             { order: 2, collapsed: true },
+  'SearXNG':            { order: 3, collapsed: true },
+  'Brave Search':       { order: 4, collapsed: true },
+  'Loop Control':       { order: 5 },
+  // Search Profile
+  'Query Caps':         { order: 0 },
+  'Synonyms & Aliases': { order: 1 },
+  // Browser & Rendering
+  'Auto Scroll':        { order: 0 },
+  'Robots.txt':         { order: 1 },
+  'Crawlee Internals':  { order: 2, collapsed: true },
+  // Observability
+  'Trace':              { order: 0 },
+  'Screencast':         { order: 1 },
+  'Events':             { order: 2 },
+  // Network
+  'Repair & Dedupe':    { order: 0 },
+  'Bypass Detection':   { order: 1 },
+  // Extraction — Provider
+  'API Keys':           { order: 0 },
+  'Plan Provider':      { order: 1 },
+  // Extraction — Screenshots
+  'Capture Settings':   { order: 0 },
+  // Extraction — Models
+  'Plan Phase':         { order: 0 },
+  'Reasoning Phase':    { order: 1 },
+  'Global Tokens':      { order: 2 },
+  // Extraction — Limits
+  'Token Costs':        { order: 0 },
+  'Budget':             { order: 1 },
+  'Call Limits':        { order: 2 },
+  'Advanced Config':    { order: 3, collapsed: true },
+  // Global — Output
+  'Paths':              { order: 0 },
+  'Runtime Output':     { order: 1 },
+});
+
+/* ── Grouped section data ──────────────────────────────────────────── */
+
+export interface SettingGroup {
+  readonly label: string;
+  readonly entries: RegistryEntry[];
+  readonly collapsed: boolean;
+}
+
+export interface GroupedSectionSettings {
+  readonly heroes: RegistryEntry[];
+  readonly groups: SettingGroup[];
+}
+
+/** Derive grouped settings for a section: heroes + named collapsible groups */
+export function getGroupedSettingsForSection(
+  categoryId: SettingsCategoryId,
+  sectionId: string,
+): GroupedSectionSettings {
+  const entries = getSettingsForSection(categoryId, sectionId);
+  const heroes = entries.filter(isHeroSetting);
+  const regular = entries.filter((e) => !isHeroSetting(e));
+
+  const groupMap = new Map<string, RegistryEntry[]>();
+  const ungrouped: RegistryEntry[] = [];
+
+  for (const entry of regular) {
+    const g = (entry as unknown as Record<string, unknown>).uiGroup as string | undefined;
+    if (g) {
+      let list = groupMap.get(g);
+      if (!list) { list = []; groupMap.set(g, list); }
+      list.push(entry);
+    } else {
+      ungrouped.push(entry);
+    }
+  }
+
+  const groups: SettingGroup[] = [...groupMap.entries()]
+    .map(([label, items]) => ({
+      label,
+      entries: items,
+      collapsed: UI_GROUP_HINTS[label]?.collapsed ?? false,
+    }))
+    .sort((a, b) =>
+      (UI_GROUP_HINTS[a.label]?.order ?? 999) - (UI_GROUP_HINTS[b.label]?.order ?? 999),
+    );
+
+  // Ungrouped regular entries render in a plain block at the end
+  if (ungrouped.length > 0) {
+    groups.push({ label: sectionId, entries: ungrouped, collapsed: false });
+  }
+
+  return { heroes, groups };
 }

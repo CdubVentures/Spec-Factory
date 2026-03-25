@@ -53,7 +53,7 @@ src/core/config/
     securityGroup.js        <- security-related entries
     llmGroup.js             <- model routing, pricing, and fallback entries
     discoveryGroup.js       <- discovery-provider entries
-    retrievalGroup.js       <- retrieval, scoring, and convergence entries
+    retrievalGroup.js       <- retrieval and scoring entries
     runtimeGroup.js         <- pipeline, fetch, parse, and OCR entries
     observabilityGroup.js   <- tracing and diagnostics entries
     pathsGroup.js           <- filesystem path and frontier-tuning entries

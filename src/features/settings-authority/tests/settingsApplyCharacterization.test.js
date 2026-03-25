@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadConfig } from '../../../config.js';
 import { applyRuntimeSettingsToConfig } from '../userSettingsService.js';
+import {
+  resolveLlmRoute,
+  resolvePhaseModel,
+  resolvePhaseReasoning,
+} from '../../../core/llm/client/routing.js';
 
 function makeProviderRegistryJson() {
   return JSON.stringify([{
@@ -41,15 +46,15 @@ test('applyRuntimeSettingsToConfig refreshes resolved phase models when phase ov
     }),
   });
 
-  assert.equal(config._resolvedNeedsetBaseModel, 'gpt-5-low');
-  assert.equal(config._resolvedExtractionBaseModel, 'deepseek-chat');
-  assert.equal(config._resolvedSerpSelectorUseReasoning, true);
-  assert.equal(config._resolvedSerpSelectorReasoningModel, 'deepseek-reasoner');
+  assert.equal(resolvePhaseModel(config, 'needset'), 'gpt-5-low');
+  assert.equal(resolvePhaseModel(config, 'extraction'), 'deepseek-chat');
+  assert.equal(resolvePhaseReasoning(config, 'serpSelector'), true);
+  assert.equal(resolvePhaseModel(config, 'serpSelector'), 'deepseek-reasoner');
 
   applyRuntimeSettingsToConfig(config, { llmPhaseOverridesJson: '{}' });
 
-  assert.equal(config._resolvedNeedsetBaseModel, config.llmModelPlan);
-  assert.equal(config._resolvedExtractionBaseModel, config.llmModelPlan);
+  assert.equal(resolvePhaseModel(config, 'needset'), config.llmModelPlan);
+  assert.equal(resolvePhaseModel(config, 'extraction'), config.llmModelPlan);
 });
 
 test('applyRuntimeSettingsToConfig refreshes resolved phase defaults when llmModelPlan changes', () => {
@@ -57,10 +62,10 @@ test('applyRuntimeSettingsToConfig refreshes resolved phase defaults when llmMod
 
   applyRuntimeSettingsToConfig(config, { llmModelPlan: 'gemini-2.5-flash' });
 
-  assert.equal(config._resolvedNeedsetBaseModel, 'gemini-2.5-flash');
-  assert.equal(config._resolvedSerpSelectorBaseModel, 'gemini-2.5-flash');
-  assert.equal(config._resolvedSearchPlannerBaseModel, 'gemini-2.5-flash');
-  assert.equal(config._resolvedBrandResolverBaseModel, 'gemini-2.5-flash');
+  assert.equal(resolvePhaseModel(config, 'needset'), 'gemini-2.5-flash');
+  assert.equal(resolvePhaseModel(config, 'serpSelector'), 'gemini-2.5-flash');
+  assert.equal(resolvePhaseModel(config, 'searchPlanner'), 'gemini-2.5-flash');
+  assert.equal(resolvePhaseModel(config, 'brandResolver'), 'gemini-2.5-flash');
 });
 
 test('applyRuntimeSettingsToConfig rebuilds registry lookup when provider registry changes', () => {
@@ -68,11 +73,11 @@ test('applyRuntimeSettingsToConfig rebuilds registry lookup when provider regist
 
   applyRuntimeSettingsToConfig(config, {
     llmProviderRegistryJson: makeProviderRegistryJson(),
+    llmModelPlan: 'test-model-alpha',
   });
 
-  assert.equal(config._registryLookup.modelIndex.size, 2);
-  const alpha = config._registryLookup.modelIndex.get('test-model-alpha');
-  assert.ok(alpha);
-  assert.equal(alpha[0].baseUrl, 'https://test.example.com');
-  assert.equal(alpha[0].apiKey, 'test-key-123');
+  const route = resolveLlmRoute(config, { role: 'plan' });
+  assert.equal(route.model, 'test-model-alpha');
+  assert.equal(route.baseUrl, 'https://test.example.com');
+  assert.equal(route.apiKey, 'test-key-123');
 });

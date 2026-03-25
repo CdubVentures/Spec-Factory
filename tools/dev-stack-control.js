@@ -4,6 +4,7 @@ import { createConnection } from 'node:net';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { runNativeModulePreflight, getNodeDiagnostics, getCategoryList } from './nativeModulePreflight.js';
 
 const HOST = '127.0.0.1';
 const STATE_DIRNAME = '.server-state';
@@ -232,6 +233,25 @@ async function run(action, root) {
   }
 
   if (plan.startApi) {
+    // ── Preflight: Node diagnostics + native module validation ──
+    const diag = getNodeDiagnostics();
+    console.log(`[preflight] Node ${diag.version} (${diag.execPath})`);
+    console.log(`[preflight] MODULE_VERSION: ${diag.moduleVersion}, arch: ${diag.arch}`);
+
+    const preflight = await runNativeModulePreflight({ root });
+    if (!preflight.ok) {
+      console.error(`[preflight] FATAL: better-sqlite3 cannot load (${preflight.status})`);
+      console.error(`[preflight] ${preflight.errorMessage}`);
+      if (preflight.rebuildAttempted && !preflight.rebuildSucceeded) {
+        console.error('[preflight] Auto-rebuild failed. Manual fix: npm rebuild better-sqlite3');
+      }
+      return 1;
+    }
+    console.log(`[preflight] better-sqlite3: OK${preflight.rebuildAttempted ? ' (auto-rebuilt)' : ''}`);
+
+    const categories = getCategoryList(root);
+    console.log(`[preflight] Categories: ${categories.length} (${categories.join(', ') || 'none'})`);
+
     startManagedProcess(contract.api);
     const apiReady = await waitForPort(contract.api.port, true, START_TIMEOUT_MS);
     if (!apiReady) {

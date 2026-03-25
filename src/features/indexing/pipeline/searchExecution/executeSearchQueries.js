@@ -1,15 +1,14 @@
 /**
  * Discovery Search Execution
  *
- * Extracted from searchDiscovery.js (Phase 4B of structural decomposition).
- * Contains the search execution loop: provider diagnostics, internal-first
- * branch, internet search branch, frontier cache, query index recording,
+ * Search execution loop: provider diagnostics, internal-first branch,
+ * internet search branch, frontier cache, query index recording,
  * and plan-only fallback.
  */
-import _p4aPath from 'node:path';
-import _p4aFs from 'node:fs';
-import { recordQueryResult as _p4aRecordQueryResult } from '../shared/queryIndex.js';
-import { defaultIndexLabRoot as _p4aDefaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
+import path from 'node:path';
+import fs from 'node:fs';
+import { recordQueryResult } from '../shared/queryIndex.js';
+import { defaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../../intel/sourceCorpus.js';
 import { configValue } from '../../../../shared/settingsAccessor.js';
@@ -20,6 +19,7 @@ import {
 } from '../shared/queryPlan.js';
 import { toArray } from '../shared/discoveryIdentity.js';
 import { runWithConcurrency } from '../shared/helpers.js';
+import { normalizeHost } from '../shared/hostParser.js';
 
 /**
  * Execute the search queries phase of discovery.
@@ -194,9 +194,9 @@ export async function executeSearchQueries({
         const screenshotSink = async ({ buffer, queryHash, query: q, ts }) => {
           try {
             const filename = `google-serp-${queryHash}-${(ts || '').replace(/[:.]/g, '-')}.jpeg`;
-            const screenshotDir = _p4aPath.join(_p4aDefaultIndexLabRoot(), runId, 'screenshots');
-            _p4aFs.mkdirSync(screenshotDir, { recursive: true });
-            _p4aFs.writeFileSync(_p4aPath.join(screenshotDir, filename), buffer);
+            const screenshotDir = path.join(defaultIndexLabRoot(), runId, 'screenshots');
+            fs.mkdirSync(screenshotDir, { recursive: true });
+            fs.writeFileSync(path.join(screenshotDir, filename), buffer);
             _googleScreenshotFilename = filename;
             logger?.info?.('google_crawlee_screenshot_saved', { query: q, filename, bytes: buffer.length });
           } catch (err) {
@@ -230,16 +230,16 @@ export async function executeSearchQueries({
         }
         // Record discovery search query to NDJSON index
         try {
-          const _dqDir = _p4aPath.join(_p4aDefaultIndexLabRoot(), job.category || categoryConfig.category || 'mouse');
-          _p4aFs.mkdirSync(_dqDir, { recursive: true });
-          _p4aRecordQueryResult({
+          const _dqDir = path.join(defaultIndexLabRoot(), job.category || categoryConfig.category || 'mouse');
+          fs.mkdirSync(_dqDir, { recursive: true });
+          recordQueryResult({
             query,
             provider: configValue(config, 'searchEngines'),
             result_count: providerResults.length,
             run_id: runId,
             category: job.category || categoryConfig.category || '',
             product_id: job.productId || '',
-          }, _p4aPath.join(_dqDir, 'query-index.ndjson'));
+          }, path.join(_dqDir, 'query-index.ndjson'));
         } catch { /* index recording must not crash the pipeline */ }
         const externalSelectedRow = resolveSelectedQueryRow(query);
         const queryRecord = frontierDb?.recordQuery?.({
@@ -290,7 +290,7 @@ export async function executeSearchQueries({
             results: providerResults.map((r, idx) => {
               const rawUrl = String(r?.url || '').trim();
               let domain = '';
-              try { domain = new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { /* ignore */ }
+              try { domain = normalizeHost(new URL(rawUrl).hostname); } catch { /* ignore */ }
               return {
                 title: String(r?.title || '').trim(),
                 url: rawUrl,
@@ -383,7 +383,7 @@ export async function executeSearchQueries({
             const rawUrl = String(result?.url || '').trim();
             let domain = '';
             try {
-              domain = new URL(rawUrl).hostname.replace(/^www\./, '');
+              domain = normalizeHost(new URL(rawUrl).hostname);
             } catch {
               domain = '';
             }

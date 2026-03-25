@@ -105,40 +105,6 @@ export function resolveLlmSettingsStatusText({
   return lastSavedAt ? `${base} Last save: ${lastSavedAt}` : base;
 }
 
-export function resolvePipelineConvergenceStatusText({
-  isSaving,
-  saveState,
-  saveMessage,
-  dirty,
-}: {
-  isSaving: boolean;
-  saveState: SaveStateKind;
-  saveMessage: string;
-  dirty: boolean;
-}): string {
-  if (isSaving) return 'Saving...';
-  if (saveState === 'error' || saveState === 'partial') return saveMessage;
-  if (dirty) return 'Unsaved changes';
-  if (saveState === 'ok') return 'All changes saved.';
-  return '';
-}
-
-export function resolvePipelineConvergenceStatusClass({
-  isSaving,
-  saveState,
-  dirty,
-}: {
-  isSaving: boolean;
-  saveState: SaveStateKind;
-  dirty: boolean;
-}): string {
-  if (isSaving) return 'sf-status-text-info';
-  if (saveState === 'error') return 'sf-status-text-danger';
-  if (saveState === 'partial') return 'sf-status-text-warning';
-  if (dirty) return 'sf-status-text-warning';
-  return 'sf-status-text-muted';
-}
-
 export function resolveSourceStrategyStatus({
   isSaving,
   saveState,

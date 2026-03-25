@@ -1,6 +1,5 @@
 import {
   RUNTIME_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_KEYS,
   UI_SETTINGS_KEYS,
 } from './settingsKeySets.js';
 
@@ -60,10 +59,6 @@ export function migrateUserSettingsDocument(rawPayload) {
     ...pickKnownKeys(source.runtime, RUNTIME_SETTINGS_KEYS),
     ...pickKnownKeys(source, RUNTIME_SETTINGS_KEYS),
   };
-  const convergence = {
-    ...pickKnownKeys(source.convergence, CONVERGENCE_SETTINGS_KEYS),
-    ...pickKnownKeys(source, CONVERGENCE_SETTINGS_KEYS),
-  };
   const ui = {
     ...pickKnownKeys(source.ui, UI_SETTINGS_KEYS),
     ...pickKnownKeys(source, UI_SETTINGS_KEYS),
@@ -72,7 +67,7 @@ export function migrateUserSettingsDocument(rawPayload) {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     migratedFrom,
     runtime,
-    convergence,
+    convergence: {},
     storage: asRecord(source.storage),
     studio: asRecord(source.studio),
     ui,

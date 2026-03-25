@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified health checks, log sinks, WebSocket telemetry channels, and observability counters used by the live runtime.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Health And Status Endpoints
 
@@ -31,12 +31,12 @@
 | `process` | `src/app/api/processRuntime.js` | streamed child stdout/stderr lines |
 | `events` | `src/app/api/realtimeBridge.js` | appended rows from `_runtime/events.jsonl` |
 | `indexlab-event` | `src/app/api/realtimeBridge.js` | appended rows from run-scoped `run_events.ndjson` |
-| `data-change` | `src/api/events/dataChangeContract.js` | normalized mutation/refresh event payloads |
+| `data-change` | `src/core/events/dataChangeContract.js` | normalized mutation/refresh event payloads |
 | `screencast` / `screencast-*` | `src/app/api/processRuntime.js` | retained or synthetic runtime screenshots for workers |
 
 ## Data-Change Event Contract
 
-`src/api/events/dataChangeContract.js` normalizes every broadcast into:
+`src/core/events/dataChangeContract.js` normalizes every broadcast into:
 
 - `type: "data-change"`
 - `event`
@@ -75,7 +75,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
 | source | `src/app/api/processRuntime.js` | process-state broadcasts, log fan-out, SearXNG probing |
 | source | `src/app/api/realtimeBridge.js` | WebSocket channels and file watchers |
 | source | `src/logger.js` | NDJSON + SQLite event logging |
-| source | `src/api/events/dataChangeContract.js` | normalized data-change payload shape |
+| source | `src/core/events/dataChangeContract.js` | normalized data-change payload shape |
 | source | `src/observability/dataPropagationCounters.js` | data-change and queue cleanup counters |
 | source | `src/observability/settingsPersistenceCounters.js` | settings persistence counters |
 | runtime | `http://127.0.0.1:8788/api/v1/process/status` | idle process-status shape retains last-run metadata |

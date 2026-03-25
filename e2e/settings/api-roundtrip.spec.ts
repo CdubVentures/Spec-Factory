@@ -152,32 +152,3 @@ test.describe('Storage settings API round-trip', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Convergence settings
-// ---------------------------------------------------------------------------
-
-test.describe('Convergence settings API round-trip', () => {
-  test('GET /convergence-settings returns a snapshot', async ({ settingsApi }) => {
-    const snapshot = await settingsApi.get('convergence');
-    expect(typeof snapshot).toBe('object');
-  });
-
-  test('PUT valid int -> GET returns updated value', async ({ settingsApi }) => {
-    const baseline = await settingsApi.get('convergence');
-    const key = 'serpTriageMinScore';
-    const originalValue = baseline[key];
-
-    const newValue = originalValue === 5 ? 7 : 5;
-    const putResult = await settingsApi.put('convergence', { [key]: newValue });
-    expect(putResult.ok).toBe(true);
-    expect(putResult.applied).toHaveProperty(key, newValue);
-
-    const afterPut = await settingsApi.get('convergence');
-    expect(afterPut[key]).toBe(newValue);
-
-    // Restore
-    if (originalValue !== undefined) {
-      await settingsApi.put('convergence', { [key]: originalValue });
-    }
-  });
-});

@@ -13,7 +13,6 @@ import {
 } from '../../billing/modelPricingCatalog.js';
 import {
   runtimeSettingDefault,
-  convergenceSettingDefault,
   normalizeSearchProfileCapMap,
   normalizeRetrievalInternalsMap,
   normalizeModelPricingMap,
@@ -220,7 +219,6 @@ export function buildRawConfig({ manifestApplicator }) {
     chatmockComposeFile: process.env.CHATMOCK_COMPOSE_FILE || path.join(process.env.CHATMOCK_DIR || defaultChatmockDir(), 'docker-compose.yml'),
 
     // --- Category authority ---
-    categoryAuthorityEnabled: parseBoolEnv('HELPER_FILES_ENABLED', runtimeSettingDefault('categoryAuthorityEnabled')),
     categoryAuthorityRoot: resolvedCategoryAuthorityRoot,
 
     // --- DefaultsOnly entries that configBuilder still needs ---
@@ -252,7 +250,7 @@ export function buildRawConfig({ manifestApplicator }) {
     fieldRulesEngineEnforceEvidence: parseBoolEnv('FIELD_RULES_ENGINE_ENFORCE_EVIDENCE', true),
     runtimeOpsWorkbenchEnabled: parseBoolEnv('RUNTIME_OPS_WORKBENCH_ENABLED', true),
     indexingHelperFilesEnabled: false,
-    helperFilesEnabled: true,
+
     helperSupportiveEnabled: true,
     helperSupportiveMaxSources: 12,
     helperAutoSeedTargets: true,

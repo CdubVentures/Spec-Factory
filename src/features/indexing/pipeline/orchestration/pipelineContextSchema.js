@@ -252,7 +252,6 @@ export const discoveryResultSchema = z.object({
   search_profile_run_key: z.string(),
   search_profile_latest_key: z.string(),
   provider_state: z.object({}).passthrough(),
-  query_concurrency: z.number(),
   internal_satisfied: z.boolean(),
   external_search_reason: z.string().nullable(),
   search_attempts: z.array(z.unknown()),

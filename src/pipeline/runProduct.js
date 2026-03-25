@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { buildRunId } from '../utils/common.js';
+import { buildRunId } from '../shared/primitives.js';
 import { EventLogger } from '../logger.js';
 import { recordQueryResult, recordUrlVisit } from '../features/indexing/pipeline/shared/index.js';
 import { captureKnobSnapshot, recordKnobSnapshot } from '../features/indexing/telemetry/index.js';

@@ -14,6 +14,7 @@ import {
 } from './runtimeOpsPhaseLineage.js';
 import { collectPreviewExtractionFields } from './runtimeOpsExtractionFieldBuilders.js';
 import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
+import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 
 // WHY: serp_selector_completed emits canonicalized URLs (www-stripped, URL-parsed)
 // but search_results_collected emits raw provider URLs. Normalize both sides so
@@ -21,7 +22,7 @@ import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
 function normalizeTriageUrl(url) {
   try {
     const u = new URL(url);
-    u.hostname = u.hostname.replace(/^www\./, '');
+    u.hostname = normalizeHost(u.hostname);
     // Drop trailing slash on bare paths so "/foo/" matches "/foo"
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);
@@ -149,7 +150,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
         const fetchWid = String(payload.worker_id).trim();
         urlToFetchWorker[fetchUrl] = fetchWid;
         let fetchHost;
-        try { fetchHost = new URL(fetchUrl).hostname.replace(/^www\./, ''); } catch { fetchHost = ''; }
+        try { fetchHost = normalizeHost(new URL(fetchUrl).hostname); } catch { fetchHost = ''; }
         if (fetchHost) {
           if (!hostToFetchWorkers[fetchHost]) hostToFetchWorkers[fetchHost] = [];
           hostToFetchWorkers[fetchHost].push({ worker_id: fetchWid, url: fetchUrl });
@@ -167,7 +168,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
           r.fetch_link_type = 'exact';
         } else {
           // Host-level fetch fallback
-          const host = (r.domain || '').replace(/^www\./, '');
+          const host = normalizeHost(r.domain || '');
           const hostWorkers = hostToFetchWorkers[host];
           if (hostWorkers && hostWorkers.length > 0) {
             r.fetch_worker_id = hostWorkers[0].worker_id;

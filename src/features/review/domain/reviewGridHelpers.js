@@ -6,7 +6,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { nowIso } from '../../../utils/common.js';
+import { nowIso } from '../../../shared/primitives.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import {
   isObject,
@@ -19,6 +19,7 @@ import {
 import {
   isKnownSlotValue,
 } from '../../../utils/slotValueShape.js';
+import { normalizeHost } from '../../indexing/pipeline/shared/hostParser.js';
 
 // ── Number Parsing ──────────────────────────────────────────────────
 
@@ -277,7 +278,7 @@ export function extractHostFromUrl(rawUrl) {
   const url = String(rawUrl || '').trim();
   if (!url) return '';
   try {
-    return new URL(url).hostname.replace(/^www\./, '');
+    return normalizeHost(new URL(url).hostname);
   } catch {
     return '';
   }

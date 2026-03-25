@@ -5,7 +5,7 @@
 //   Across-run: templates_by_field, templates_by_brand, templates_by_archetype — all derived
 //               from the queries map after trimming. Consumed by queryBuilder for synonym
 //               ranking and by archetype planner for template reuse (consumption deferred).
-import { nowIso } from '../../../utils/common.js';
+import { nowIso } from '../../../shared/primitives.js';
 import { isIdentityField, normalizeFieldList } from '../../../utils/fieldKeys.js';
 import { toArray } from '../../../shared/primitives.js';
 

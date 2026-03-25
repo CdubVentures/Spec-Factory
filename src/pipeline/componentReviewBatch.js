@@ -6,7 +6,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { nowIso } from '../utils/common.js';
+import { nowIso } from '../shared/primitives.js';
 import { componentReviewPath } from '../engine/curationSuggestions.js';
 import { validateComponentMatches } from '../features/indexing/validation/index.js';
 import { normalizeCostRates } from '../billing/costRates.js';

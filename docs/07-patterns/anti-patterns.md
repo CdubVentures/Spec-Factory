@@ -2,7 +2,7 @@
 
 > **Purpose:** Identify the repository patterns that new work must not introduce, even if legacy code still contains examples of them.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [./canonical-examples.md](./canonical-examples.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Route Logic In `src/api/guiServer.js`
 
@@ -59,7 +59,12 @@ Why it is wrong:
 
 Do instead:
 
-- Persist canonical settings through `PUT /api/v1/ui-settings`, `PUT /api/v1/runtime-settings`, `PUT /api/v1/convergence-settings`, or `PUT /api/v1/storage-settings`.
+- Persist canonical settings through the verified domain route:
+  - `PUT /api/v1/ui-settings`
+  - `PUT /api/v1/runtime-settings`
+  - `PUT /api/v1/storage-settings`
+  - `PUT /api/v1/llm-policy` for the composite global LLM policy
+  - `PUT /api/v1/llm-settings/:category/routes` for category-scoped LLM matrices
 - Reserve browser storage for derived continuity like `tools/gui-react/src/stores/tabStore.ts`, `tools/gui-react/src/stores/collapseStore.ts`, and `tools/gui-react/src/features/indexing/state/indexlabStore.ts`.
 
 ## Writing New Mutable JSON Or CSV "Databases"
@@ -98,7 +103,7 @@ Do instead:
 - Import from public feature contracts when they exist:
   - `src/features/catalog/index.js`
   - `src/features/indexing/index.js`
-  - `src/features/review-curation/index.js`
+  - `src/features/review/index.js`
   - `src/features/settings-authority/index.js`
 
 ## Adding New GUI Escape Hatches: `any`, `@ts-ignore`, Or Inline Styles
@@ -159,7 +164,7 @@ Why it is wrong:
 
 Do instead:
 
-- Test through public behavior the way `test/publishingPipeline.test.js` does: build local fixtures, call the public function, and assert on outputs, written artifacts, or returned summaries.
+- Test through public behavior the way `src/publish/tests/publishingPipeline.publish.test.js` does: build local fixtures, call the public function, and assert on outputs, written artifacts, or returned summaries.
 - For one-time cleanup audits, use a temporary script or checklist instead of a permanent brittle test.
 
 ## Validated Against
@@ -179,9 +184,9 @@ Do instead:
 | source | `src/db/specDb.js` | canonical operational mutable data boundary |
 | source | `src/features/catalog/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `src/features/indexing/index.js` | public feature entrypoint available for cross-boundary imports |
-| source | `src/features/review-curation/index.js` | public feature entrypoint available for cross-boundary imports |
+| source | `src/features/review/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `docs/03-architecture/auth-and-sessions.md` | verified absence of current auth/session subsystem |
-| test | `test/publishingPipeline.test.js` | public-behavior test structure |
+| test | `src/publish/tests/publishingPipeline.publish.test.js` | public-behavior test structure |
 
 ## Related Documents
 

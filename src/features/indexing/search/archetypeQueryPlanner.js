@@ -7,7 +7,8 @@
 //   Across-run: query_templates.json (with archetype provenance), field_lexicon.json,
 //               field_yield.json, SQLite stores — all with soft decay
 
-import { isLowValueSubdomain } from '../../../utils/common.js';
+import { isLowValueSubdomain } from '../../../shared/valueNormalizers.js';
+import { normalizeHost } from '../pipeline/shared/hostParser.js';
 
 const ARCHETYPE_ORDER = ['manufacturer', 'lab_review', 'spec_database', 'aggregator', 'retailer', 'community'];
 
@@ -468,8 +469,7 @@ export function buildCoverageAnalysis(focusFields, coveredFieldSet, hardFieldRow
 function extractHostFromUrl(url) {
   if (!url) return '';
   try {
-    const hostname = new URL(url).hostname;
-    return hostname.replace(/^www\./, '');
+    return normalizeHost(new URL(url).hostname);
   } catch {
     return '';
   }

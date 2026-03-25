@@ -1,17 +1,13 @@
 // WHY: Settings key constants needed by config.js at assembly time.
 // Route maps are now derived from the unified settingsRegistry.
 
-import { RUNTIME_SETTINGS_REGISTRY, CONVERGENCE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
-import { deriveRouteGetMaps, deriveConvergenceKeySet } from '../../shared/settingsRegistryDerivations.js';
+import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
+import { deriveRouteGetMaps } from '../../shared/settingsRegistryDerivations.js';
 
 export const CATEGORY_AUTHORITY_ROOT_KEY = 'categoryAuthorityRoot';
-export const CATEGORY_AUTHORITY_ENABLED_KEY = 'categoryAuthorityEnabled';
+
 
 export const RUNTIME_SETTINGS_ROUTE_GET = deriveRouteGetMaps(RUNTIME_SETTINGS_REGISTRY);
-
-export const CONVERGENCE_SETTINGS_KEYS = Object.freeze(
-  deriveConvergenceKeySet(CONVERGENCE_SETTINGS_REGISTRY),
-);
 
 // WHY: Dual-key pairs must have identical values. Self-referencing pairs
 // remain for fallback models (keyA === keyB) as no-ops. All GUI aliases retired.

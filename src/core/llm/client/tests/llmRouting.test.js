@@ -85,11 +85,19 @@ test('resolveLlmRoute selects per-role provider/base/model with reason mapping v
   assert.equal(planRoute.provider, 'openai-compatible');
   assert.equal(planRoute.apiKey, 'proxy-secret');
   assert.equal(planRoute.model, 'gemini-2.5-flash');
+  assert.equal(planRoute.role, 'plan');
+
+  const discoveryPlannerRoute = resolveLlmRoute(config, { reason: 'discovery_planner_primary' });
+  assert.equal(discoveryPlannerRoute.provider, 'openai-compatible');
+  assert.equal(discoveryPlannerRoute.apiKey, 'proxy-secret');
+  assert.equal(discoveryPlannerRoute.model, 'gemini-2.5-flash');
+  assert.equal(discoveryPlannerRoute.role, 'plan');
 
   // verify_extract_fast maps to plan role
   const verifyFastRoute = resolveLlmRoute(config, { reason: 'verify_extract_fast' });
   assert.equal(verifyFastRoute.provider, 'openai-compatible');
   assert.equal(verifyFastRoute.model, 'gemini-2.5-flash');
+  assert.equal(verifyFastRoute.role, 'plan');
 
   // extract also aliases to llmModelPlan — same model, same registry entry
   const extractRoute = resolveLlmRoute(config, { reason: 'extract' });

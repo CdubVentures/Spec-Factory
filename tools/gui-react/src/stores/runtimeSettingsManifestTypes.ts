@@ -13,7 +13,6 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotMaxBytes: number;
   capturePageScreenshotQuality: number;
   capturePageScreenshotSelectors: string;
-  categoryAuthorityEnabled: boolean;
   categoryAuthorityRoot: string;
   crawleeHeadless: boolean;
   crawleeRequestHandlerTimeoutSecs: number;
@@ -63,7 +62,6 @@ export interface RuntimeSettingDefaults {
   llmReasoningMode: boolean;
   llmTimeoutMs: number;
   localInputRoot: string;
-  localMode: boolean;
   localOutputRoot: string;
   maxPagesPerDomain: number;
   maxRunSeconds: number;
@@ -90,8 +88,40 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
-  writeMarkdownSummary: boolean;
   discoveryEnabled: boolean;
+  needsetMaxFocusFields: number;
+  needsetConfidenceThresholdMatched: number;
+  needsetConfidenceThresholdPossible: number;
+  needsetGroupQueryTermsCap: number;
+  queryBuilderMaxAliases: number;
+  queryBuilderFieldQueryCap: number;
+  queryBuilderDocHintQueryCap: number;
+  queryBuilderTooltipPhraseCap: number;
+  queryBuilderLearnedSynonymsCap: number;
+  queryBuilderFieldSynonymsCap: number;
+  googleSearchMinIntervalMs: number;
+  googleSearchPostResultsDelayMs: number;
+  googleSearchScreenshotQuality: number;
+  googleSearchSerpSelectorWaitMs: number;
+  googleSearchScrollDelayMs: number;
+  googleSearchResultCap: number;
+  serperSearchMinIntervalMs: number;
+  serperSearchRetryBaseMs: number;
+  serperSearchTimeoutMs: number;
+  serperSearchMaxRetries: number;
+  searxngSearchTimeoutMs: number;
+  braveSearchTimeoutMs: number;
+  braveSearchResultCap: number;
+  searchPacingJitterFactor: number;
+  searchLoopMaxNoProgressRounds: number;
+  searchLoopMaxLowQualityRounds: number;
+  crawleeMaxRequestRetries: number;
+  crawleeMaxPagesPerBrowser: number;
+  crawleeBrowserRetirePageCount: number;
+  crawleeNavigationTimeoutMs: number;
+  crawlBypassMinBodyLength: number;
+  crawlBypassHtmlSnippetCap: number;
+  capturePageScreenshotMaxSelectors: number;
 }
 
 export type RuntimeProfile = 'standard';

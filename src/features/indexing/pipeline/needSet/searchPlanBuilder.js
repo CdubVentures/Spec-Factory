@@ -266,6 +266,9 @@ export async function buildSearchPlan({
   const activeGroupKeys = activeGroups.map(g => g.key || g.group_key);
 
   // Build LLM payload — GAP-2: send ALL anti-garbage signals, GAP-12: send weak/conflict
+  // WHY: Truncate union arrays to registry-configurable cap to keep the payload
+  // small enough for gemini-2.5-flash-lite's output budget.
+  const groupCap = configInt(config, 'needsetGroupQueryTermsCap');
   const llmPayload = {
     identity: {
       manufacturer: identity.manufacturer || run.brand || '',
@@ -278,8 +281,6 @@ export async function buildSearchPlan({
       searchProfileQueryCap: plannerLimits.searchProfileQueryCap || 10,
       domainClassifierUrlCap: plannerLimits.domainClassifierUrlCap || 50,
     },
-    // WHY: Truncate union arrays to top 5 and drop display-only metrics to keep
-    // the payload small enough for gemini-2.5-flash-lite's output budget.
     focus_groups: activeGroups.map(g => ({
       key: g.key || g.group_key || '',
       phase: g.phase,
@@ -289,12 +290,12 @@ export async function buildSearchPlan({
       conflict_field_keys: g.conflict_field_keys || [],
       core_unresolved_count: g.core_unresolved_count || 0,
       secondary_unresolved_count: g.secondary_unresolved_count || 0,
-      query_terms_union: (g.query_terms_union || []).slice(0, 5),
-      domain_hints_union: (g.domain_hints_union || []).slice(0, 5),
-      existing_queries_union: (g.existing_queries_union || []).slice(0, 5),
-      aliases_union: (g.aliases_union || []).slice(0, 5),
-      preferred_content_types_union: (g.preferred_content_types_union || []).slice(0, 5),
-      domains_tried_union: (g.domains_tried_union || []).slice(0, 5),
+      query_terms_union: (g.query_terms_union || []).slice(0, groupCap),
+      domain_hints_union: (g.domain_hints_union || []).slice(0, groupCap),
+      existing_queries_union: (g.existing_queries_union || []).slice(0, groupCap),
+      aliases_union: (g.aliases_union || []).slice(0, groupCap),
+      preferred_content_types_union: (g.preferred_content_types_union || []).slice(0, groupCap),
+      domains_tried_union: (g.domains_tried_union || []).slice(0, groupCap),
       host_classes_tried_union: g.host_classes_tried_union || [],
       evidence_classes_tried_union: g.evidence_classes_tried_union || [],
       no_value_attempts: g.no_value_attempts || 0,

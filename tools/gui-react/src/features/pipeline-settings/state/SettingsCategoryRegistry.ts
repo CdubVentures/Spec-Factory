@@ -2,9 +2,9 @@
 // Adding a new category or section = one entry here. O(1) scaling.
 // Pattern mirrors PREFETCH_STAGE_REGISTRY.
 
-// WHY: extraction settings are owned by the LLM Config page (dedicated rich UI).
-// Pipeline Settings only covers flow, planner, fetcher, and validation.
-export type SettingsCategoryId = 'flow' | 'planner' | 'fetcher' | 'validation';
+// WHY: LLM/extraction settings are owned by the LLM Config page (dedicated rich UI).
+// Pipeline Settings covers global, planner, fetcher, extraction (screenshots), and validation.
+export type SettingsCategoryId = 'global' | 'planner' | 'fetcher' | 'extraction' | 'validation';
 
 export interface SettingsSectionDef {
   readonly id: string;
@@ -12,6 +12,8 @@ export interface SettingsSectionDef {
   readonly tip: string;
   /** When set, CategoryPanel renders this named component instead of GenericSectionPanel */
   readonly customComponent?: string;
+  /** When true, section button shows a small plug icon badge */
+  readonly isPlugin?: boolean;
 }
 
 export interface SettingsCategoryDef {
@@ -21,39 +23,51 @@ export interface SettingsCategoryDef {
   readonly sections: readonly SettingsSectionDef[];
 }
 
-export const SETTINGS_CATEGORY_KEYS = ['flow', 'planner', 'fetcher', 'validation'] as const;
+export const SETTINGS_CATEGORY_KEYS = ['global', 'planner', 'fetcher', 'extraction', 'validation'] as const;
 
 export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object.freeze([
   {
-    id: 'flow',
-    label: 'Runtime Flow',
-    subtitle: 'Run setup, timeouts, budgets, output config',
+    id: 'global',
+    label: 'Global',
+    subtitle: 'Run setup, timeouts, output config',
     sections: Object.freeze([
       { id: 'run-setup', label: 'Run Setup & Limits', tip: 'Run timeout and execution limits' },
       { id: 'output', label: 'Output & Automation', tip: 'Output destinations, artifact controls, and category authority' },
-      { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
     ]),
   },
   {
     id: 'planner',
     label: 'Runtime Planner',
-    subtitle: 'Discovery, search engines, query caps, NeedSet tuning',
+    subtitle: 'Pipeline phase settings: NeedSet through Domain Classifier',
     sections: Object.freeze([
-      { id: 'discovery', label: 'Discovery & Search', tip: 'Discovery toggle, search engine providers, proxy config, and planner LLM settings' },
-      { id: 'budgets', label: 'Budgets & Caps', tip: 'Query caps, URL limits, domain limits, and per-product maximums' },
+      { id: 'needset', label: 'NeedSet', tip: 'Confidence thresholds, focus field caps, and group query term limits' },
+      { id: 'search-profile', label: 'Search Profile', tip: 'Query cap, alias limits, field query caps, and synonym limits' },
+      { id: 'search-planner', label: 'Search Planner', tip: 'LLM enhancer retry limits' },
+      { id: 'search-execution', label: 'Search Execution', tip: 'Search engines, provider pacing, timeouts, retries, result caps, and loop control' },
+      { id: 'serp-selector', label: 'SERP Selector', tip: 'URL cap for LLM-based SERP selection' },
+      { id: 'domain-classifier', label: 'Domain Classifier', tip: 'Domain URL cap and per-domain page limits' },
     ]),
   },
   {
     id: 'fetcher',
     label: 'Runtime Fetcher',
-    subtitle: 'Throughput, frontier, browser, screenshots, pacing',
+    subtitle: 'Browser, network, frontier, pacing, observability',
     sections: Object.freeze([
-      { id: 'network', label: 'Network & Pacing', tip: 'Concurrency, host delays, frontier cooldowns, repair rules, and backoff config' },
-      { id: 'browser', label: 'Browser & Rendering', tip: 'Headless mode, auto-scroll, robots.txt compliance, and request timeouts' },
+      { id: 'adapter', label: 'Fetcher Adapter', tip: 'Crawl tool selection and plugin configuration', isPlugin: true },
+      { id: 'browser', label: 'Browser & Rendering', tip: 'Headless mode, auto-scroll, robots.txt compliance, Crawlee internals, and request timeouts' },
+      { id: 'network', label: 'Network & Pacing', tip: 'Concurrency, host delays, frontier cooldowns, repair rules, bypass detection, and backoff config' },
+      { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
+    ]),
+  },
+  {
+    id: 'extraction',
+    label: 'Runtime Extraction',
+    subtitle: 'Screenshots and page capture',
+    sections: Object.freeze([
       { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, selectors, and size limits' },
     ]),
   },
-  // WHY: extraction/LLM settings are managed by the dedicated LLM Config page
+  // WHY: LLM/extraction settings are managed by the dedicated LLM Config page
   // (tools/gui-react/src/features/llm-config/). Not duplicated here.
   {
     id: 'validation',

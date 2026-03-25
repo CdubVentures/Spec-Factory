@@ -11,6 +11,7 @@ export {
   sourceEntryMutableKeys,
 } from '../pipeline/shared/contracts/sourceEntryContract.js';
 import { DISCOVERY_DEFAULTS, sourceEntryMutableKeys } from '../pipeline/shared/contracts/sourceEntryContract.js';
+import { normalizeHost } from '../pipeline/shared/hostParser.js';
 
 // WHY: Frozen Set for backward compat — existing callers expect a Set, not a function.
 export const SOURCE_ENTRY_MUTABLE_KEYS = Object.freeze(sourceEntryMutableKeys());
@@ -71,7 +72,7 @@ const TIER_TO_APPROVED_ROLE = {
 function hostFromEntry(sourceId, entry) {
   if (entry.base_url) {
     try {
-      return new URL(entry.base_url).hostname.replace(/^www\./, '');
+      return normalizeHost(new URL(entry.base_url).hostname);
     } catch { /* fallback */ }
   }
   return sourceId.replace(/_/g, '.');

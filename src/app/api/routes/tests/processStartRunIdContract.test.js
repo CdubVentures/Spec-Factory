@@ -328,12 +328,10 @@ test('process/start forwards representative runtime override families into child
       category: 'mouse',
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
-      localMode: true,
       dryRun: true,
       localInputRoot: path.resolve('fixtures', 'input'),
       localOutputRoot: path.resolve('fixtures', 'output'),
       runtimeEventsKey: '_runtime/custom-events.jsonl',
-      writeMarkdownSummary: false,
       llmProvider: 'openai',
       llmBaseUrl: 'http://llm.test',
       openaiApiKey: 'sk-openai',
@@ -364,12 +362,10 @@ test('process/start forwards representative runtime override families into child
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
 
-  assert.equal(capturedEnv?.LOCAL_MODE, 'true');
   assert.equal(capturedEnv?.DRY_RUN, 'true');
   assert.equal(capturedEnv?.LOCAL_INPUT_ROOT, path.resolve('fixtures', 'input'));
   assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
   assert.equal(capturedEnv?.RUNTIME_EVENTS_KEY, '_runtime/custom-events.jsonl');
-  assert.equal(capturedEnv?.WRITE_MARKDOWN_SUMMARY, 'false');
   assert.equal(capturedEnv?.LLM_PROVIDER, 'openai');
   assert.equal(capturedEnv?.LLM_BASE_URL, 'http://llm.test');
   assert.equal(capturedEnv?.OPENAI_API_KEY, 'sk-openai');
@@ -437,6 +433,7 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
       mode: 'indexlab',
       productId: 'mouse-acme-orbit-x1',
       localMode: true,
+      writeMarkdownSummary: false,
       phase3LlmTriageEnabled: true,
       workersSearch: 8,
       workersFetch: 6,
@@ -461,9 +458,10 @@ test('process/start ignores retired and not-implemented runtime env knobs', asyn
 
   const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(result.status, 200);
-  assert.equal(capturedEnv?.LOCAL_MODE, 'true');
 
   for (const forbiddenEnvKey of [
+    'LOCAL_MODE',
+    'WRITE_MARKDOWN_SUMMARY',
     'DISCOVERY_RESULTS_PER_QUERY',
     'DISCOVERY_QUERY_CONCURRENCY',
     'SERP_TRIAGE_ENABLED',
@@ -510,4 +508,3 @@ test('process/start accepts searchEngines CSV and spawns process', async () => {
   assert.equal(result.status, 200);
   assert.equal(started, true, 'process should start with searchEngines CSV value');
 });
-

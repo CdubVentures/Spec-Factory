@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified run-data storage settings, browse flow, and post-run relocation/archive behavior.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [pipeline-and-runtime-settings.md](./pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 ## Entry Points
 

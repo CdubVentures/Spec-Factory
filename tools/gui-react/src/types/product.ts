@@ -1,70 +1,35 @@
-export interface RenameHistoryEntry {
-  previous_slug: string;
-  previous_model: string;
-  previous_variant: string;
-  renamed_at: string;
+// WHY: Re-exports generated types from backend shape descriptors under stable names.
+// Generated types are the SSOT — run codegen, not manual edits, to update shapes.
+// Run: node tools/gui-react/scripts/generateProductTypes.js
+
+import type {
+  RenameHistoryEntryGen,
+  BrandRenameHistoryEntryGen,
+  CatalogProductGen,
+  CatalogRowGen,
+  BrandGen,
+  ProductSummaryGen,
+  QueueProductGen,
+} from './product.generated.ts';
+
+// ── Generated re-exports (stable names for consumers) ──
+
+// WHY: Overrides migration_result from Record<string,unknown> to specific shape
+// needed by ProductManager.tsx for .migrated_count rendering.
+export interface RenameHistoryEntry extends Omit<RenameHistoryEntryGen, 'migration_result'> {
   migration_result: { migrated_count: number; failed_count: number };
 }
-
-export interface MigrationResult {
-  ok: boolean;
-  migrated_count: number;
-  failed_count: number;
-}
-
-// WHY: Raw CRUD product from /api/v1/catalog/{cat}/products (productCatalog.js).
-// Contract: CATALOG_PRODUCT_SHAPE in src/features/catalog/contracts/catalogShapes.js.
-export interface CatalogProduct {
-  productId: string;
-  id: number;
-  identifier: string;
-  brand: string;
-  model: string;
-  variant: string;
-  status: string;
-  seed_urls: string[];
-  added_at: string;
-  added_by: string;
-  updated_at?: string;
+export type BrandRenameHistoryEntry = BrandRenameHistoryEntryGen;
+export interface CatalogProduct extends Omit<CatalogProductGen, 'rename_history'> {
   rename_history?: RenameHistoryEntry[];
 }
+export type CatalogRow = CatalogRowGen;
+export type Brand = BrandGen;
+export type QueueProduct = QueueProductGen;
 
-// WHY: Enriched summary from /api/v1/catalog/{cat} (buildCatalog in catalogHelpers.js).
-// This is a DIFFERENT shape than CatalogProduct — shares identity fields but drops
-// seed_urls/added_at/added_by and adds pipeline summary fields.
-// Contract: CATALOG_ROW_SHAPE in src/features/catalog/contracts/catalogShapes.js.
-export interface CatalogRow {
-  productId: string;
-  id: number;
-  identifier: string;
-  brand: string;
-  model: string;
-  base_model: string;
-  variant: string;
-  status: string;
-  hasFinal: boolean;
-  validated: boolean;
-  confidence: number;
-  coverage: number;
-  fieldsFilled: number;
-  fieldsTotal: number;
-  lastRun: string;
-  inActive: boolean;
-}
-
-export interface ProductSummary {
-  productId: string;
-  category: string;
-  confidence: number;
-  coverage_overall: number;
-  fields_total: number;
-  fields_filled: number;
-  fields_below_pass_target: string[];
-  critical_fields_below_pass_target: string[];
-  missing_required_fields: string[];
-  generated_at: string;
-  runId?: string;
-  field_reasoning?: Record<string, unknown>;
+// WHY: ProductSummary extends the generated base with a typed constraint_analysis
+// and an index signature for forward-compatible field_reasoning payloads.
+export interface ProductSummary extends ProductSummaryGen {
   constraint_analysis?: {
     contradictions: Array<{
       code: string;
@@ -74,6 +39,14 @@ export interface ProductSummary {
     }>;
   };
   [key: string]: unknown;
+}
+
+// ── Manual types (no backend shape descriptor) ──
+
+export interface MigrationResult {
+  ok: boolean;
+  migrated_count: number;
+  failed_count: number;
 }
 
 export interface NormalizedProduct {
@@ -88,37 +61,6 @@ export interface NormalizedProduct {
 export interface TrafficLight {
   color: 'green' | 'yellow' | 'red' | 'gray';
   field: string;
-}
-
-export interface QueueProduct {
-  productId: string;
-  status: string;
-  priority: number;
-  attempts: number;
-  updated_at: string;
-}
-
-// ── Brand Types ─────────────────────────────────────────────────────
-
-export interface BrandRenameHistoryEntry {
-  previous_slug: string;
-  previous_name: string;
-  renamed_at: string;
-}
-
-// WHY: Shared Brand type from brandRegistry.js.
-// Contract: BRAND_SHAPE in src/features/catalog/contracts/catalogShapes.js.
-export interface Brand {
-  slug: string;
-  canonical_name: string;
-  identifier: string;
-  aliases: string[];
-  categories: string[];
-  website: string;
-  added_at: string;
-  added_by: string;
-  updated_at?: string;
-  rename_history?: BrandRenameHistoryEntry[];
 }
 
 export interface BrandMutationResult {

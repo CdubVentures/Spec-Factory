@@ -17,7 +17,6 @@ import {
   createRunDataArchiveStorage,
 } from '../guiServerRuntimeConfig.js';
 import {
-  applyConvergenceSettingsToConfig,
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
 } from '../../features/settings-authority/index.js';
@@ -70,7 +69,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     loadDotEnvFile(path.join(projectRoot, '.env'));
   }
   const config = loadConfig({
-    ...(isLocal ? { localMode: true } : {}),
     ...(argVal('local-input-root', '') ? { localInputRoot: argVal('local-input-root', '') } : {}),
     ...(argVal('local-output-root', '') ? { localOutputRoot: argVal('local-output-root', '') } : {}),
   });
@@ -90,7 +88,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
   });
   const userSettings = loadUserSettingsSync({ categoryAuthorityRoot: HELPER_ROOT });
   applyRuntimeSettingsToConfig(config, userSettings.runtime);
-  applyConvergenceSettingsToConfig(config, userSettings.convergence);
   normalizeRuntimeArtifactWorkspaceDefaults({
     config,
     projectRoot,

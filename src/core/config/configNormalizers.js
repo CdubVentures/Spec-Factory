@@ -10,19 +10,12 @@ import { LLM_PRICING_SOURCES } from '../../billing/modelPricingCatalog.js';
 // ---------------------------------------------------------------------------
 
 const RUNTIME_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.runtime || {});
-const CONVERGENCE_SETTINGS_DEFAULTS = Object.freeze(SETTINGS_DEFAULTS?.convergence || {});
 
 export function runtimeSettingDefault(key) {
   if (!Object.hasOwn(RUNTIME_SETTINGS_DEFAULTS, key)) {
     throw new Error(`runtimeSettingDefault: unknown key "${key}" — not in registry`);
   }
   return RUNTIME_SETTINGS_DEFAULTS[key];
-}
-
-export function convergenceSettingDefault(key, fallback) {
-  return Object.hasOwn(CONVERGENCE_SETTINGS_DEFAULTS, key)
-    ? CONVERGENCE_SETTINGS_DEFAULTS[key]
-    : fallback;
 }
 
 export function parseRuntimeJsonDefault(key, fallback) {

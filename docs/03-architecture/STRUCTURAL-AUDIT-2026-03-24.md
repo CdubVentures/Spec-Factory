@@ -1,4 +1,10 @@
-# Structural & Decomposition Audit — 2026-03-24
+# Structural And Decomposition Audit - 2026-03-24
+
+> **Purpose:** Preserve the 2026-03-24 architecture/decomposition audit as a historical record; use the numbered current-state docs for active implementation guidance.
+> **Prerequisites:** [../README.md](../README.md), [backend-architecture.md](./backend-architecture.md)
+> **Last validated:** 2026-03-24
+
+Historical architecture audit retained for traceability. It may contain then-current counts, path assumptions, and refactor recommendations that differ from the live codebase audited for the maintained docs set.
 
 **Auditor:** Claude Opus 4.6 (Principal Software Architect role)
 **Scope:** Full codebase — backend (`src/`), frontend (`tools/gui-react/src/`), tests, database layer
@@ -701,3 +707,18 @@ These patterns are working well and should be preserved:
 > 5. Cross-references in related docs that link to moved or renamed files
 
 If this gate is skipped, documentation becomes stale mid-refactor and every subsequent LLM session will hallucinate against a codebase that no longer matches the docs.
+
+
+## Validated Against
+
+| Source | Path | What was verified |
+|--------|------|-------------------|
+| source | `docs/03-architecture/STRUCTURAL-AUDIT-2026-03-24.md` | historical audit body preserved as supplemental record |
+| source | `docs/03-architecture/backend-architecture.md` | current-state backend reference for active work |
+| source | `docs/05-operations/documentation-audit-ledger.md` | historical-vs-current authority note for this refresh |
+
+## Related Documents
+
+- [Backend Architecture](./backend-architecture.md) - Current-state backend reference that supersedes historical path assumptions in this audit.
+- [System Map](./system-map.md) - Current topology for the live repo.
+- [Documentation Audit Ledger](../05-operations/documentation-audit-ledger.md) - Explains why this file is retained as history rather than current-state authority.

@@ -73,10 +73,6 @@ test('persistUserSettingsSections serializes concurrent section writes without d
     }),
     persistUserSettingsSections({
       categoryAuthorityRoot: root,
-      convergence: {},
-    }),
-    persistUserSettingsSections({
-      categoryAuthorityRoot: root,
       ui: {
         runtimeAutoSaveEnabled: false,
         storageAutoSaveEnabled: true,

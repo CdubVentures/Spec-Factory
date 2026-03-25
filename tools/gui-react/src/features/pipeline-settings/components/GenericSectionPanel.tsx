@@ -1,10 +1,10 @@
-// WHY: Renders all settings for a specific section as a SettingGroupBlock card.
-// Hero settings render above the block; regular settings inside the bordered card.
+// WHY: Renders all settings for a specific section grouped by uiGroup.
+// Heroes render at top (blue bg). Named groups render as collapsible blocks.
+// Adding uiGroup to a registry entry auto-groups it — no per-setting .tsx code.
 
 import { SettingGroupBlock } from './RuntimeFlowPrimitives.tsx';
 import { GenericSettingRenderer } from './GenericSettingRenderer.tsx';
-import { getSettingsForSection, isHeroSetting, getDisabledByKey } from '../state/settingsCategoryMaps.ts';
-import { findSection } from '../state/SettingsCategoryRegistry.ts';
+import { getGroupedSettingsForSection, getDisabledByKey } from '../state/settingsCategoryMaps.ts';
 import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 
@@ -27,17 +27,13 @@ export function GenericSectionPanel({
   onStringChange,
   disabled = false,
 }: GenericSectionPanelProps) {
-  const entries = getSettingsForSection(categoryId, sectionId);
-  if (entries.length === 0) return null;
-
-  const heroEntries = entries.filter(isHeroSetting);
-  const regularEntries = entries.filter((e) => !isHeroSetting(e));
-  const section = findSection(categoryId, sectionId);
-  const sectionLabel = section?.label ?? sectionId;
+  const { heroes, groups } = getGroupedSettingsForSection(categoryId, sectionId);
+  if (heroes.length === 0 && groups.length === 0) return null;
 
   return (
     <>
-      {heroEntries.map((entry) => (
+      {/* Heroes: blue bg, ungrouped, always visible */}
+      {heroes.map((entry) => (
         <GenericSettingRenderer
           key={entry.key}
           entry={entry}
@@ -48,9 +44,17 @@ export function GenericSectionPanel({
           disabled={disabled}
         />
       ))}
-      {regularEntries.length > 0 && (
-        <SettingGroupBlock title={sectionLabel}>
-          {regularEntries.map((entry) => {
+
+      {/* Named groups: collapsible blocks */}
+      {groups.map((group) => (
+        <SettingGroupBlock
+          key={group.label}
+          title={group.label}
+          collapsible={group.entries.length > 2}
+          defaultCollapsed={group.collapsed}
+          storageKey={`settings-group:${categoryId}:${sectionId}:${group.label}`}
+        >
+          {group.entries.map((entry) => {
             const parentKey = getDisabledByKey(entry.key);
             const isDisabled = parentKey ? !runtimeDraft[parentKey] : false;
             return (
@@ -66,7 +70,7 @@ export function GenericSectionPanel({
             );
           })}
         </SettingGroupBlock>
-      )}
+      ))}
     </>
   );
 }

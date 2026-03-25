@@ -34,7 +34,7 @@ import { runProduct } from '../pipeline/runProduct.js';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { runDiscoverySeedPlan } from '../features/indexing/pipeline/orchestration/index.js';
 import { rebuildCategoryIndex } from '../indexer/rebuildIndex.js';
-import { buildRunId } from '../utils/common.js';
+import { buildRunId } from '../shared/primitives.js';
 import { EventLogger } from '../logger.js';
 import { runS3Integration } from './s3Integration.js';
 import {
@@ -241,12 +241,10 @@ function applyEnvOverrides(env) {
 
 function buildConfig(args) {
   const overrides = {
-    writeMarkdownSummary: asBool(args['write-md'], true),
     localInputRoot: args['local-input-root'] || undefined,
     localOutputRoot: args['local-output-root'] || undefined,
     outputMode: args['output-mode'] || undefined
   };
-  if (args.local !== undefined) overrides.localMode = asBool(args.local);
   if (args['dry-run'] !== undefined) overrides.dryRun = asBool(args['dry-run']);
   if (args['discovery-enabled'] !== undefined) overrides.discoveryEnabled = asBool(args['discovery-enabled']);
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];

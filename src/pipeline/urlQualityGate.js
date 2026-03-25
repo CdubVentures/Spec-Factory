@@ -3,7 +3,7 @@
  * Validates URLs before they enter the fetch queue to prevent wasted slots.
  */
 
-import { isLowValueSubdomain } from '../utils/common.js';
+import { isLowValueSubdomain } from '../shared/valueNormalizers.js';
 
 /**
  * Hosts that never yield useful spec data.
@@ -95,8 +95,6 @@ export function validateFetchUrl(url, {
 
   // WHY: isLowValueHost moved to routing layer (sourcePlanner._resolveQueueRoute).
   // Low-value hosts are now demoted to candidateQueue instead of hard-rejected.
-
-  // Reject third-party on-site search pages (they return search results, not product specs)
   if (isThirdPartySearchPage(parsed)) {
     return { valid: false, reason: 'onsite_search_page', priority: 'skip' };
   }
@@ -105,13 +103,6 @@ export function validateFetchUrl(url, {
   return { valid: true, reason: 'ok', priority };
 }
 
-/**
- * Detect third-party on-site search pages.
- * These are search result listing pages (e.g. techpowerup.com/search/?q=...) that
- * never contain product specs — they're just search result lists.
- * We keep manufacturer search pages (e.g. razer.com/search) because those may
- * redirect to product pages.
- */
 const KNOWN_SEARCH_404_HOSTS = new Set([
   'techpowerup.com', 'www.techpowerup.com',
   'eloshapes.com', 'www.eloshapes.com',
@@ -134,23 +125,19 @@ function classifyUrlPriority(parsed, brand, model) {
   const brandSlug = slugify(brand);
   const modelSlug = slugify(model);
 
-  // Homepage or very short path = low priority
   if (path === '/' || path === '') {
     return 'low';
   }
 
-  // Category listings without product slug = low priority
   const segments = path.split('/').filter(Boolean);
   if (segments.length <= 1 && !pathContainsSlug(path, modelSlug)) {
     return 'low';
   }
 
-  // Path contains model slug = high priority
   if (modelSlug && pathContainsSlug(path, modelSlug)) {
     return 'high';
   }
 
-  // Path contains brand slug = medium priority
   if (brandSlug && pathContainsSlug(path, brandSlug)) {
     return 'medium';
   }
@@ -159,14 +146,17 @@ function classifyUrlPriority(parsed, brand, model) {
 }
 
 function slugify(text) {
-  return String(text || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function pathContainsSlug(path, slug) {
   if (!slug) return false;
-  // Check if any key words from the slug appear in the path
-  const words = slug.split('-').filter((w) => w.length >= 3);
+  const words = slug.split('-').filter((word) => word.length >= 3);
   if (words.length === 0) return false;
   const lowerPath = path.toLowerCase();
-  return words.filter((w) => lowerPath.includes(w)).length >= Math.ceil(words.length * 0.5);
+  return words.filter((word) => lowerPath.includes(word)).length >= Math.ceil(words.length * 0.5);
 }

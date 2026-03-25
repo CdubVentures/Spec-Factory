@@ -1,8 +1,8 @@
 # Spec Factory Knobs Maintenance
 
-> **Purpose:** Track the current knob authority surfaces and verified inventory snapshots without treating this file as the canonical source of setting semantics.
+> **Purpose:** Track the live knob authority surfaces and current inventory snapshots without treating this file as the canonical source of runtime behavior.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-23
+> **Last validated:** 2026-03-24
 
 This log is supplemental. The canonical live definitions remain the source files that own defaults, manifests, contracts, and persistence behavior.
 
@@ -10,65 +10,78 @@ This log is supplemental. The canonical live definitions remain the source files
 
 | Surface | Path | Current role |
 |---------|------|--------------|
-| settings registry SSOT | `src/shared/settingsRegistry.js` | canonical 430+ setting definitions across `RUNTIME_SETTINGS_REGISTRY`, `CONVERGENCE_SETTINGS_REGISTRY`, `UI_SETTINGS_REGISTRY`, and `STORAGE_SETTINGS_REGISTRY` |
-| shared defaults | `src/shared/settingsDefaults.js` | derived defaults from the registry for `runtime`, `convergence`, `storage`, `ui`, and `autosave` |
-| settings accessor | `src/shared/settingsAccessor.js` | null-safe accessor with NaN fallback and registry clamping |
-| clamping ranges | `src/shared/settingsClampingRanges.js` | range clamping for int/float/enum settings |
-| env manifest | `src/core/config/manifest/index.js` | canonical env-backed config key registry |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | canonical registry entries for runtime, bootstrap env, UI, and storage settings |
+| shared defaults | `src/shared/settingsDefaults.js` | derived defaults for runtime, storage, UI, and autosave surfaces |
+| settings accessor | `src/shared/settingsAccessor.js` | null-safe reads plus registry-derived clamping |
+| clamping ranges | `src/shared/settingsClampingRanges.js` | derived int/float/enum clamp maps |
+| env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | canonical env-backed config key registry |
 | config assembly | `src/config.js` | merges env, manifest defaults, shared defaults, and persisted settings |
-| settings authority | `src/features/settings-authority/` | runtime/convergence/ui/storage validation, migration, and persistence |
-| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/convergence-settings`, `/ui-settings`, `/storage-settings`, `/llm-settings/*` |
+| settings authority | `src/features/settings-authority/` | runtime, UI, storage, and compatibility-document validation/persistence; `convergence` is retained as `{}` only |
+| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/ui-settings`, `/storage-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config` |
 | source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source strategy ownership and mutation |
 | LLM route defaults | `src/db/specDbHelpers.js`, `src/db/specDb.js` | default `llm_route_matrix` row seed and persistence |
-| GUI runtime settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`, `tools/gui-react/src/features/pipeline-settings/components/RuntimeSettingsFlowCard.tsx` | current runtime/convergence/source-strategy editor surfaces |
-| GUI category LLM routes | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category-scoped route-matrix editor |
+| GUI pipeline settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`, `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx` | runtime/storage/source-strategy editor surfaces |
+| GUI LLM surfaces | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | route-matrix editing and composite policy editing are separate surfaces |
 | GUI storage and studio | `tools/gui-react/src/pages/storage/StoragePage.tsx`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` | non-pipeline settings/editing surfaces |
 
-## Audit Corrections From 2026-03-17
+## Audit Corrections From This Pass
 
-- The previous maintenance log in this repo overstated the current settings inventory. The live snapshot is now `265` default leaves, not `277`.
-- The current config manifest exports `10` groups and `330` env-backed keys, not `358`.
-- The current pipeline-settings UI is organized around `RuntimeSettingsFlowCard` plus `RuntimeFlow*Section` files. Older ownership references such as `RuntimeFlowLlmCortexSection.tsx` and `RuntimeFlowPlannerTriageSection.tsx` are stale.
-- Earlier retirement-wave claims in older copies no longer describe the live tree. The `structuredMetadataExtruct*` settings have been fully retired (2026-03-18). `daemonGracefulShutdownTimeoutMs` remains in `src/shared/settingsDefaults.js`.
+- The older maintenance log overstated the current inventory counts. The live registry exports 233 entries, not the older 430+ claim.
+- The live defaults surface is smaller than the older snapshot suggested: `SETTINGS_DEFAULTS` currently flattens to 140 leaves.
+- The manifest is built from one assembly file (`src/core/config/manifest/index.js`), not a set of per-group files.
+- The current pipeline-settings GUI no longer has `RuntimeSettingsFlowCard.tsx`; current ownership lives in `PipelineSettingsPage.tsx`, `PipelineSettingsPageShell.tsx`, `RuntimeFlowHeaderControls.tsx`, `RuntimeFlowPrimitives.tsx`, and `sections/PipelineSourceStrategySection.tsx`.
+- No live `/api/v1/convergence-settings` route is mounted. The `convergence` document section remains only as a backwards-compatibility placeholder in `user-settings.json`.
+- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` is not an alternate category route-matrix screen; it is the composite LLM policy editor backed by `/api/v1/llm-policy`.
+- Source strategy files still exist per category, but the older `search_first` / `manual` mode counts are no longer present in the live file shape.
 
 ## Live Snapshot
+
+### Registry Counts
+
+| Registry | Count | Evidence |
+|----------|-------|----------|
+| `RUNTIME_SETTINGS_REGISTRY` | `121` | `src/shared/settingsRegistry.js` |
+| `BOOTSTRAP_ENV_REGISTRY` | `97` | `src/shared/settingsRegistry.js` |
+| `CONVERGENCE_SETTINGS_REGISTRY` | `0` | `src/shared/settingsRegistry.js` |
+| `UI_SETTINGS_REGISTRY` | `5` | `src/shared/settingsRegistry.js` |
+| `STORAGE_SETTINGS_REGISTRY` | `10` | `src/shared/settingsRegistry.js` |
+| **Total** | **233** | flattened from `src/shared/settingsRegistry.js` |
 
 ### Shared Defaults (`SETTINGS_DEFAULTS`)
 
 | Section | Leaf count | Evidence |
 |---------|------------|----------|
-| `convergence` | `2` | `src/shared/settingsDefaults.js` |
-| `runtime` | `243` | `src/shared/settingsDefaults.js` |
+| `convergence` | `0` | `src/shared/settingsDefaults.js` |
+| `runtime` | `121` | `src/shared/settingsDefaults.js` |
 | `storage` | `7` | `src/shared/settingsDefaults.js` |
-| `ui` | `6` | `src/shared/settingsDefaults.js` |
+| `ui` | `5` | `src/shared/settingsDefaults.js` |
 | `autosave` | `7` | `src/shared/settingsDefaults.js` |
-| **Total** | **265** | flattened from `src/shared/settingsDefaults.js` |
+| **Total** | **140** | flattened from `src/shared/settingsDefaults.js` |
 
 ### Settings-Authority Key Ownership
 
 | Surface | Writable keys | Evidence |
 |---------|---------------|----------|
-| runtime | `212` | `src/features/settings-authority/settingsKeySets.js` |
-| convergence | `2` | `src/features/settings-authority/settingsKeySets.js` |
-| ui | `6` | `src/features/settings-authority/settingsKeySets.js` |
+| runtime | `120` | `src/features/settings-authority/settingsKeySets.js` |
+| convergence | `0` | `src/features/settings-authority/README.md`, `src/core/config/settingsKeyMap.js` |
+| ui | `5` | `src/features/settings-authority/settingsKeySets.js` |
 | storage | `10` | `src/features/settings-authority/settingsValueTypes.js` |
-
-The storage count includes persisted Storage-page credentials that are not backed by `SETTINGS_DEFAULTS.storage`.
 
 ### Config Manifest
 
 | Metric | Count | Evidence |
 |--------|-------|----------|
 | manifest groups | `10` | `src/core/config/manifest/index.js` |
-| manifest keys | `330` | `src/core/config/manifest/index.js` |
+| manifest keys | `214` | `src/core/config/manifest/index.js` |
 
 ### Source Strategy Inventory
 
-| Category | Detailed rows | Enabled rows | `search_first` | `manual` |
-|----------|---------------|--------------|----------------|----------|
-| `keyboard` | `23` | `23` | `19` | `4` |
-| `monitor` | `23` | `23` | `22` | `1` |
-| `mouse` | `22` | `22` | `21` | `1` |
+| Category | Source rows | Enabled rows | Evidence |
+|----------|-------------|--------------|----------|
+| `keyboard` | `23` | `23` | `category_authority/keyboard/sources.json` |
+| `monitor` | `23` | `23` | `category_authority/monitor/sources.json` |
+| `mouse` | `22` | `22` | `category_authority/mouse/sources.json` |
+| `gaming_mice` | `0` | `0` | `category_authority/gaming_mice/sources.json` |
 
 ### LLM Route Matrix Defaults
 
@@ -81,39 +94,47 @@ The storage count includes persisted Storage-page credentials that are not backe
 
 ## Current GUI Ownership Notes
 
-- Pipeline runtime/convergence editing flows through `PipelineSettingsPage.tsx`, `RuntimeSettingsFlowCard.tsx`, and the section files under `tools/gui-react/src/features/pipeline-settings/sections/`.
-- Source Strategy editing is exposed through `tools/gui-react/src/pages/pipeline-settings/PipelineSourceStrategySection.tsx`.
-- LLM route editing is isolated to `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`.
+- Pipeline runtime/storage/source-strategy editing flows through `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` and `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx`.
+- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` edits category-scoped `llm_route_matrix` rows in SQLite.
+- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` edits the composite runtime-backed LLM policy and provider registry through `/api/v1/llm-policy`.
 - Storage credentials and destination settings are owned by `tools/gui-react/src/pages/storage/StoragePage.tsx`.
 - Studio autosave and authoring-state UX live under `tools/gui-react/src/features/studio/components/StudioPage.tsx`.
 
 ## Maintenance Rules
 
-1. Update `src/shared/settingsDefaults.js` first when changing a shared default.
-2. Update `src/core/config/manifest/index.js` when adding, removing, or renaming an env-backed config key.
-3. Update `src/features/settings-authority/` contracts when a runtime/convergence/ui/storage key becomes writable or changes type/range.
-4. Update `category_authority/<category>/sources.json` and the source-strategy docs together when source rows or discovery semantics change.
-5. Update `src/db/specDbHelpers.js` and this file together when the default LLM route seed matrix changes.
-6. Do not use this file as the source of truth for exact runtime behavior when the source files disagree.
+1. Update `src/shared/settingsRegistry.js` first when adding, removing, or regrouping a knob.
+2. Update `src/shared/settingsDefaults.js` when changing a derived default.
+3. Update `src/core/config/manifest/index.js` when manifest grouping or computed defaults change.
+4. Update `src/features/settings-authority/` contracts when a runtime/UI/storage key becomes writable or changes type/range; keep `convergence` as a compatibility-only empty section unless a real writable surface is reintroduced.
+5. Update `category_authority/<category>/sources.json` and the source-strategy docs together when source rows or discovery semantics change.
+6. Update `src/db/specDbHelpers.js` and this file together when the default LLM route seed matrix changes.
+7. Do not use this file as the source of truth for exact runtime behavior when the source files disagree.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/shared/settingsDefaults.js` | live default sections and counts |
+| source | `src/shared/settingsRegistry.js` | live registry counts, group ids, and env-key ownership |
+| source | `src/shared/settingsDefaults.js` | live default sections and leaf counts |
+| source | `src/shared/settingsClampingRanges.js` | derived clamp-map ownership |
 | source | `src/core/config/manifest/index.js` | manifest group count and total key count |
+| source | `src/core/config/manifest.js` | live manifest barrel |
 | source | `src/config.js` | config assembly still consumes the current settings surfaces |
-| source | `src/features/settings-authority/settingsKeySets.js` | runtime/convergence/ui writable key inventories |
+| source | `src/features/settings-authority/settingsKeySets.js` | runtime/UI writable key inventories |
+| source | `src/features/settings-authority/README.md` | compatibility-only convergence section invariant |
 | source | `src/features/settings-authority/settingsValueTypes.js` | storage writable key inventory |
 | source | `src/features/settings/api/configRoutes.js` | current settings route ownership |
-| source | `src/features/indexing/sources/sourceFileService.js` | source-strategy file ownership and defaults |
+| source | `src/features/indexing/sources/sourceFileService.js` | source-strategy file ownership and live shape |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy write surface |
 | source | `src/db/specDbHelpers.js` | default LLM route seed matrix |
-| source | `tools/gui-react/src/features/pipeline-settings/components/RuntimeSettingsFlowCard.tsx` | current pipeline settings composition |
-| source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | current LLM settings surface |
+| source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | current pipeline settings composition |
+| source | `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx` | source-strategy editor ownership |
+| source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category LLM route surface |
+| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite global LLM policy surface |
 
 ## Related Documents
 
 - [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - current verified settings persistence flow.
+- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - composite LLM policy and provider-registry flow.
 - [Category Authority](../04-features/category-authority.md) - current authority snapshot flow and category artifact roots.
 - [Environment and Config](../02-dependencies/environment-and-config.md) - maps config surfaces to manifest groups and user-editable settings.

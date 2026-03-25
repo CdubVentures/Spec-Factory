@@ -1,4 +1,4 @@
-import { nowIso, normalizeToken } from '../../../utils/common.js';
+import { nowIso, normalizeAlphanumToken } from '../../../shared/primitives.js';
 
 function slug(value) {
   return String(value || '')
@@ -120,8 +120,8 @@ export function updateIdentityGrammar({
   bumpMap(modelRow.mpn_prefixes, tokenPrefix(identity.mpn));
   bumpMap(modelRow.gtin_prefixes, tokenPrefix(identity.gtin, 6));
 
-  const modelAlias = normalizeToken(identity.model).replace(/\bii\b/g, '2').replace(/\biii\b/g, '3');
-  const canonical = normalizeToken(identity.model);
+  const modelAlias = normalizeAlphanumToken(identity.model).replace(/\bii\b/g, '2').replace(/\biii\b/g, '3');
+  const canonical = normalizeAlphanumToken(identity.model);
   if (modelAlias && canonical && modelAlias !== canonical) {
     next.normalization_rules.token_aliases[modelAlias] = canonical;
   }

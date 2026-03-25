@@ -3,7 +3,6 @@ import { create } from 'zustand';
 export interface SettingsAuthorityStoreSnapshot {
   category: string;
   runtimeReady: boolean;
-  convergenceReady: boolean;
   storageReady: boolean;
   sourceStrategyReady: boolean;
   llmSettingsReady: boolean;
@@ -26,7 +25,6 @@ interface SettingsAuthorityStoreState {
 const DEFAULT_SNAPSHOT: SettingsAuthorityStoreSnapshot = {
   category: 'all',
   runtimeReady: false,
-  convergenceReady: false,
   storageReady: false,
   sourceStrategyReady: false,
   llmSettingsReady: false,

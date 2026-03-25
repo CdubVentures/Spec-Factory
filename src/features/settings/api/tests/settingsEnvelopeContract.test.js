@@ -105,40 +105,6 @@ test('runtime-settings PUT with unknown keys includes them in rejected', async (
   assert.equal(result.body.rejected.__bogusKey__, 'unknown_key');
 });
 
-// --- Convergence settings envelope ---
-
-test('convergence-settings PUT with empty registry returns empty applied', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-convergence-'));
-  t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
-  const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({}),
-  }));
-
-  const result = await handler(['convergence-settings'], new URLSearchParams(), 'PUT', {}, {});
-  assert.equal(result.status, 200);
-  assertEnvelope(result.body, 'convergence');
-  assert.deepStrictEqual(result.body.applied, {});
-});
-
-test('convergence-settings PUT with unknown keys includes them in rejected', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-convergence-unk-'));
-  t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
-  const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({ serpTriageMinScore: 3, __unknownThing__: 42 }),
-  }));
-
-  const result = await handler(['convergence-settings'], new URLSearchParams(), 'PUT', {}, {});
-  assert.equal(result.status, 200);
-  assertEnvelope(result.body, 'convergence-unknown');
-  // Both keys are unknown since convergence registry is empty
-  assert.equal(result.body.rejected.serpTriageMinScore, 'unknown_key');
-  assert.equal(result.body.rejected.__unknownThing__, 'unknown_key');
-});
-
 // --- UI settings envelope ---
 
 test('ui-settings PUT returns standard envelope with ok, applied, snapshot, rejected', async (t) => {

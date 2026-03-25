@@ -286,25 +286,26 @@ function deriveProfileMix(bundles) {
   return mix;
 }
 
-function selectFocusFields(eligibleFields, maxFocus = 10) {
+function selectFocusFields(eligibleFields, maxFocus) {
+  const cap = Number.isFinite(maxFocus) && maxFocus > 0 ? maxFocus : 10;
   const sorted = [...eligibleFields].sort((a, b) => {
     const bucketDiff = (PRIORITY_BUCKET_ORDER[a.priority_bucket] ?? 3) - (PRIORITY_BUCKET_ORDER[b.priority_bucket] ?? 3);
     if (bucketDiff !== 0) return bucketDiff;
     return a.field_key.localeCompare(b.field_key);
   });
-  return sorted.slice(0, maxFocus).map((f) => f.field_key);
+  return sorted.slice(0, cap).map((f) => f.field_key);
 }
 
 // --- NeedSet assessment: Identity derivation ---
 
-function deriveSourceLabelState(identityContext) {
+function deriveSourceLabelState(identityContext, { matchedThreshold = 0.95, possibleThreshold = 0.70 } = {}) {
   const status = String(identityContext?.status || '').toLowerCase();
   const confidence = toFloat(identityContext?.confidence, 0);
   const contradictionCount = toFloat(identityContext?.contradiction_count, 0);
 
   if (status === 'conflict' || contradictionCount > 0) return 'different';
-  if (status === 'locked' && confidence >= 0.95) return 'matched';
-  if (confidence >= 0.70) return 'possible';
+  if (status === 'locked' && confidence >= matchedThreshold) return 'matched';
+  if (confidence >= possibleThreshold) return 'possible';
   return 'unknown';
 }
 
@@ -409,7 +410,14 @@ export function computeNeedSet({
   baseModel = '',
   aliases = [],
   previousFieldHistories = {},
+
+  // WHY: Pipeline-phase knobs — configurable via registry options.
+  // Callers pass these from configInt/configFloat; defaults match registry.
+  options = {},
 } = {}) {
+  const maxFocusFields = options?.needsetMaxFocusFields ?? 10;
+  const confidenceThresholdMatched = options?.needsetConfidenceThresholdMatched ?? 0.95;
+  const confidenceThresholdPossible = options?.needsetConfidenceThresholdPossible ?? 0.70;
   const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
   const fieldKeys = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
 
@@ -586,7 +594,7 @@ export function computeNeedSet({
   const profileMix = deriveProfileMix(bundles);
 
   // --- Focus fields (backward compat) ---
-  const focusFields = selectFocusFields(eligibleFields);
+  const focusFields = selectFocusFields(eligibleFields, maxFocusFields);
 
   // --- Blockers (NeedSet assessment: 5 fields) ---
   const missingCount = rows.filter((r) => r.state === 'missing').length;
@@ -628,7 +636,10 @@ export function computeNeedSet({
   // --- Identity block (NeedSet assessment) ---
   const identity = {
     state: mapIdentityState(identityContext),
-    source_label_state: deriveSourceLabelState(identityContext),
+    source_label_state: deriveSourceLabelState(identityContext, {
+      matchedThreshold: confidenceThresholdMatched,
+      possibleThreshold: confidenceThresholdPossible,
+    }),
     manufacturer: String(brand || identityContext?.manufacturer || '').trim() || null,
     model: String(model || '').trim() || null,
     confidence: toFloat(identityContext?.confidence, 0),

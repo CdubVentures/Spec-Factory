@@ -12,9 +12,6 @@ import {
   buildSearchProfileKeys,
   writeSearchProfileArtifacts,
   buildQueryAttemptStats,
-  normalizeTriageScore,
-  normalizeSourceEntryDiscovery,
-  resolveEnabledSourceEntries,
 } from '../helpers.js';
 
 // ---------------------------------------------------------------------------
@@ -230,74 +227,3 @@ test('buildQueryAttemptStats: sorts by result_count desc', () => {
   assert.equal(stats[1].query, 'low');
 });
 
-// ---------------------------------------------------------------------------
-// 7. normalizeTriageScore
-// ---------------------------------------------------------------------------
-
-test('normalizeTriageScore: returns rerank_score when present', () => {
-  assert.equal(normalizeTriageScore({ rerank_score: 0.85 }), 0.85);
-});
-
-test('normalizeTriageScore: falls back to score then score_det', () => {
-  assert.equal(normalizeTriageScore({ score: 0.7 }), 0.7);
-  assert.equal(normalizeTriageScore({ score_det: 0.5 }), 0.5);
-});
-
-test('normalizeTriageScore: returns 0 when none present', () => {
-  assert.equal(normalizeTriageScore({}), 0);
-  assert.equal(normalizeTriageScore(undefined), 0);
-});
-
-// ---------------------------------------------------------------------------
-// 8. normalizeSourceEntryDiscovery
-// ---------------------------------------------------------------------------
-
-test('normalizeSourceEntryDiscovery: fills defaults for object input', () => {
-  const result = normalizeSourceEntryDiscovery({ method: 'search' });
-  assert.equal(result.method, 'search');
-  assert.equal(result.priority, 50);
-  assert.equal(result.enabled, true);
-});
-
-test('normalizeSourceEntryDiscovery: returns all defaults for non-object', () => {
-  const result = normalizeSourceEntryDiscovery(null);
-  assert.equal(result.method, 'manual');
-  assert.equal(result.priority, 50);
-  assert.equal(result.enabled, true);
-  assert.equal(result.source_type, '');
-});
-
-// ---------------------------------------------------------------------------
-// 9. resolveEnabledSourceEntries
-// ---------------------------------------------------------------------------
-
-test('resolveEnabledSourceEntries: returns empty for null/undefined', () => {
-  assert.deepStrictEqual(resolveEnabledSourceEntries(), []);
-  assert.deepStrictEqual(resolveEnabledSourceEntries({}), []);
-  assert.deepStrictEqual(resolveEnabledSourceEntries({ sourceEntries: null }), []);
-});
-
-test('resolveEnabledSourceEntries: filters disabled entries', () => {
-  const entries = [
-    { url: 'https://a.com', discovery: { enabled: true, method: 'manual' } },
-    { url: 'https://b.com', discovery: { enabled: false, method: 'manual' } },
-    { url: 'https://c.com', discovery: null },
-  ];
-  const result = resolveEnabledSourceEntries({ sourceEntries: entries });
-  assert.equal(result.length, 2);
-  assert.equal(result[0].url, 'https://a.com');
-  assert.equal(result[1].url, 'https://c.com');
-});
-
-test('resolveEnabledSourceEntries: normalizes missing discovery', () => {
-  const result = resolveEnabledSourceEntries({ sourceEntries: [{ url: 'https://x.com' }] });
-  assert.equal(result[0].discovery.method, 'manual');
-  assert.equal(result[0].discovery.priority, 50);
-});
-
-test('resolveEnabledSourceEntries: skips non-object entries', () => {
-  const entries = [null, undefined, 42, 'string', { url: 'https://valid.com' }];
-  const result = resolveEnabledSourceEntries({ sourceEntries: entries });
-  assert.equal(result.length, 1);
-  assert.equal(result[0].url, 'https://valid.com');
-});

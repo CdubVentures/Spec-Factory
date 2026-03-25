@@ -6,12 +6,7 @@ import {
   RUNTIME_SETTINGS_VALUE_TYPES,
 } from './runtimeSettingsRouteContract.js';
 import {
-  CONVERGENCE_SETTINGS_ROUTE_PUT,
-  CONVERGENCE_SETTINGS_VALUE_TYPES,
-} from './convergenceSettingsRouteContract.js';
-import {
   RUNTIME_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_KEYS,
   UI_SETTINGS_KEYS,
 } from './settingsKeySets.js';
 import {
@@ -38,20 +33,16 @@ export {
   readUserSettingsDocumentMeta,
   migrateUserSettingsDocument,
   RUNTIME_SETTINGS_KEYS,
-  CONVERGENCE_SETTINGS_KEYS,
   UI_SETTINGS_KEYS,
   RUNTIME_SETTINGS_ROUTE_GET,
   RUNTIME_SETTINGS_ROUTE_PUT,
   RUNTIME_SETTINGS_VALUE_TYPES,
-  CONVERGENCE_SETTINGS_ROUTE_PUT,
-  CONVERGENCE_SETTINGS_VALUE_TYPES,
   UI_SETTINGS_VALUE_TYPES,
   STORAGE_SETTINGS_VALUE_TYPES,
 };
 
 export const SETTINGS_AUTHORITY_PRECEDENCE = Object.freeze({
   runtime: Object.freeze(['user']),
-  convergence: Object.freeze(['user']),
   storage: Object.freeze(['user']),
   studio: Object.freeze(['user']),
   ui: Object.freeze(['user']),
@@ -60,7 +51,6 @@ export const SETTINGS_AUTHORITY_PRECEDENCE = Object.freeze({
 const USER_SETTINGS_SNAPSHOT_SCHEMA = buildUserSettingsSnapshotSchema({
   settingsDocumentSchemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
   runtimeSettingsValueTypes: RUNTIME_SETTINGS_VALUE_TYPES,
-  convergenceSettingsValueTypes: CONVERGENCE_SETTINGS_VALUE_TYPES,
   storageSettingsValueTypes: STORAGE_SETTINGS_VALUE_TYPES,
   uiSettingsValueTypes: UI_SETTINGS_VALUE_TYPES,
 });

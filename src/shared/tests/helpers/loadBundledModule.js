@@ -14,6 +14,16 @@ const BUILTIN_MODULES = new Set([
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 const ASSET_EXTENSIONS = ['.css', '.scss', '.sass', '.less', '.svg', '.png', '.jpg', '.jpeg', '.webp'];
 const IMPORT_SPECIFIER_RE = /(?:\bimport\s+(?:[^'"]*?\s+from\s*)?|\bexport\s+[^'"]*?\s+from\s*|\bimport\s*\()\s*(['"])([^'"]+)\1/g;
+const BUNDLED_MODULE_CACHE_VERSION = '2026-03-24-01';
+const BUNDLED_MODULE_CACHE_ROOT = path.join(
+  os.tmpdir(),
+  'spec-factory-load-bundled-module-cache',
+  BUNDLED_MODULE_CACHE_VERSION,
+  `pid-${process.pid}`,
+);
+const bundledModuleGraphCache = new Map();
+const bundledModuleGraphBuilds = new Map();
+let bundledModuleCacheCleanupRegistered = false;
 
 function toPosixPath(value) {
   return String(value || '').replace(/\\/g, '/');
@@ -397,191 +407,333 @@ function resolveBareSpecifierPath(specifier, fromDir = process.cwd()) {
   }
 }
 
+function normalizeStubEntries(stubs = {}) {
+  return Object.entries(stubs || {})
+    .map(([specifier, source]) => [String(specifier || ''), String(source ?? '')])
+    .sort((left, right) => left[0].localeCompare(right[0]));
+}
+
+function createBundleCacheKey(entryPath, stubs = {}) {
+  return crypto.createHash('sha1').update(JSON.stringify({
+    entryPath: path.resolve(entryPath),
+    stubs: normalizeStubEntries(stubs),
+  })).digest('hex');
+}
+
+function getBundleCachePaths(cacheKey) {
+  const cacheDir = path.join(BUNDLED_MODULE_CACHE_ROOT, cacheKey);
+  return {
+    cacheDir,
+    bundleDir: path.join(cacheDir, 'bundle'),
+    manifestPath: path.join(cacheDir, 'manifest.json'),
+  };
+}
+
+function buildDependencySignature(filePath) {
+  const stat = fs.statSync(filePath);
+  return {
+    path: filePath,
+    mtimeMs: stat.mtimeMs,
+    size: stat.size,
+  };
+}
+
+function dependenciesAreFresh(dependencies = []) {
+  for (const dependency of dependencies) {
+    try {
+      if (!dependency?.path || !fs.existsSync(dependency.path)) return false;
+      const stat = fs.statSync(dependency.path);
+      if (stat.mtimeMs !== dependency.mtimeMs || stat.size !== dependency.size) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+function getFreshCachedBundle(cacheKey) {
+  const inMemory = bundledModuleGraphCache.get(cacheKey);
+  if (inMemory && fs.existsSync(inMemory.bundleDir) && dependenciesAreFresh(inMemory.dependencies)) {
+    return inMemory;
+  }
+
+  const { bundleDir, manifestPath } = getBundleCachePaths(cacheKey);
+  if (!fs.existsSync(bundleDir) || !fs.existsSync(manifestPath)) {
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (!dependenciesAreFresh(manifest.dependencies)) {
+      return null;
+    }
+    const cached = {
+      cacheKey,
+      bundleDir,
+      entryOutputRelativePath: String(manifest.entryOutputRelativePath || ''),
+      dependencies: Array.isArray(manifest.dependencies) ? manifest.dependencies : [],
+    };
+    bundledModuleGraphCache.set(cacheKey, cached);
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function registerBundledModuleCacheCleanup() {
+  if (bundledModuleCacheCleanupRegistered) return;
+  bundledModuleCacheCleanupRegistered = true;
+  process.once('exit', () => {
+    try {
+      fs.rmSync(BUNDLED_MODULE_CACHE_ROOT, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup failures in test shutdown.
+    }
+  });
+}
+
+async function buildBundledGraph(entryPath, stubs = {}) {
+  const cacheKey = createBundleCacheKey(entryPath, stubs);
+  const cached = getFreshCachedBundle(cacheKey);
+  if (cached) return cached;
+
+  if (bundledModuleGraphBuilds.has(cacheKey)) {
+    return bundledModuleGraphBuilds.get(cacheKey);
+  }
+
+  const buildPromise = (async () => {
+    const { cacheDir, bundleDir, manifestPath } = getBundleCachePaths(cacheKey);
+    registerBundledModuleCacheCleanup();
+    fs.mkdirSync(BUNDLED_MODULE_CACHE_ROOT, { recursive: true });
+
+    const stagingDir = fs.mkdtempSync(path.join(BUNDLED_MODULE_CACHE_ROOT, `${cacheKey}-`));
+    const buildRoot = path.join(stagingDir, 'bundle');
+    const emittedFiles = new Map();
+    const stubFiles = new Map();
+    const genericBareStubRequirements = new Map();
+    const dependencies = new Map();
+
+    function resolveStubSource(specifier) {
+      if (Object.prototype.hasOwnProperty.call(stubs, specifier)) {
+        return stubs[specifier];
+      }
+      const strippedSpecifier = stripSourceLikeExtension(specifier);
+      if (
+        strippedSpecifier !== specifier
+        && Object.prototype.hasOwnProperty.call(stubs, strippedSpecifier)
+      ) {
+        return stubs[strippedSpecifier];
+      }
+      return null;
+    }
+
+    function stubOutputPath(specifier) {
+      const hash = crypto.createHash('sha1').update(String(specifier || '')).digest('hex').slice(0, 12);
+      return path.join(buildRoot, '__stubs__', `${hash}.mjs`);
+    }
+
+    function moduleOutputPath(absPath) {
+      const relativePath = path.relative(process.cwd(), absPath);
+      const normalized = relativePath && !relativePath.startsWith('..')
+        ? relativePath
+        : path.basename(absPath);
+      const parsed = path.parse(normalized);
+      return path.join(buildRoot, parsed.dir, `${parsed.name}.mjs`);
+    }
+
+    async function writeStub(specifier, contents) {
+      if (stubFiles.has(specifier)) {
+        return stubFiles.get(specifier);
+      }
+
+      const outPath = stubOutputPath(specifier);
+      const rawPath = path.join(path.dirname(outPath), `${path.basename(outPath, '.mjs')}.raw.mjs`);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      const transpiledContents = transpileModule(contents, `${specifier}.tsx`);
+      const stubReplacements = new Map();
+
+      for (const match of transpiledContents.matchAll(IMPORT_SPECIFIER_RE)) {
+        const importedSpecifier = match[2];
+        if (stubReplacements.has(importedSpecifier)) continue;
+        if (importedSpecifier === specifier) continue;
+        if (importedSpecifier.startsWith('node:') || isResolvedExternalSpecifier(importedSpecifier)) continue;
+
+        const importedStubSource = resolveStubSource(importedSpecifier);
+        if (importedStubSource !== null) {
+          const dependencyPath = await writeStub(importedSpecifier, importedStubSource);
+          stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
+          continue;
+        }
+
+        const builtInFallbackStub = getBuiltInFallbackStub(importedSpecifier);
+        if (builtInFallbackStub !== null) {
+          const dependencyPath = await writeStub(importedSpecifier, builtInFallbackStub);
+          stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
+          continue;
+        }
+
+        const resolvedBarePath = resolveBareSpecifierPath(importedSpecifier, process.cwd());
+        if (resolvedBarePath) {
+          const dependencyPath = await writeStub(
+            importedSpecifier,
+            createResolvedBareModuleStubCode(resolvedBarePath),
+          );
+          stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
+          continue;
+        }
+
+        if (!resolveBareSpecifier(importedSpecifier)) {
+          const dependencyPath = await writeGenericBareStub(importedSpecifier, collectStubRequirements(match[0]));
+          stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
+        }
+      }
+
+      fs.writeFileSync(rawPath, rewriteImportSpecifiers(transpiledContents, stubReplacements), 'utf8');
+
+      if (specifier === 'react') {
+        fs.writeFileSync(outPath, createReactStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
+      } else if (specifier === 'react/jsx-runtime') {
+        fs.writeFileSync(outPath, createJsxRuntimeStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
+      } else if (specifier === 'react/jsx-dev-runtime') {
+        fs.writeFileSync(outPath, createJsxRuntimeStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
+      } else {
+        fs.copyFileSync(rawPath, outPath);
+      }
+      stubFiles.set(specifier, outPath);
+      return outPath;
+    }
+
+    async function writeGenericBareStub(specifier, requirements) {
+      const existing = genericBareStubRequirements.get(specifier) || {
+        exportNames: new Set(),
+        needsDefault: false,
+      };
+
+      for (const exportName of requirements.exportNames || []) {
+        existing.exportNames.add(exportName);
+      }
+      existing.needsDefault = existing.needsDefault || Boolean(requirements.needsDefault);
+      genericBareStubRequirements.set(specifier, existing);
+
+      const code = createGenericBareStubCode({
+        exportNames: [...existing.exportNames].sort(),
+        needsDefault: existing.needsDefault,
+      });
+
+      return writeStub(specifier, code);
+    }
+
+    async function emitModule(absPath) {
+      if (emittedFiles.has(absPath)) {
+        return emittedFiles.get(absPath);
+      }
+
+      dependencies.set(absPath, buildDependencySignature(absPath));
+
+      const outPath = moduleOutputPath(absPath);
+      emittedFiles.set(absPath, outPath);
+
+      const source = fs.readFileSync(absPath, 'utf8');
+      const transpiled = transpileModule(source, absPath);
+      const replacements = new Map();
+      const dirName = path.dirname(absPath);
+
+      for (const match of transpiled.matchAll(IMPORT_SPECIFIER_RE)) {
+        const specifier = match[2];
+        if (replacements.has(specifier)) continue;
+        if (specifier.startsWith('node:') || isResolvedExternalSpecifier(specifier)) continue;
+
+        const stubSource = resolveStubSource(specifier);
+        if (stubSource !== null) {
+          const stubPath = await writeStub(specifier, stubSource);
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
+          continue;
+        }
+
+        const builtInFallbackStub = getBuiltInFallbackStub(specifier);
+        if (builtInFallbackStub !== null) {
+          const stubPath = await writeStub(specifier, builtInFallbackStub);
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
+          continue;
+        }
+
+        if (shouldStubAsset(specifier)) {
+          const stubPath = await writeStub(specifier, createAssetStubCode(specifier));
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
+          continue;
+        }
+
+        if (specifier.startsWith('.')) {
+          const resolvedPath = resolveSourceModule(dirName, specifier);
+          const emittedPath = await emitModule(resolvedPath);
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, emittedPath));
+          continue;
+        }
+
+        const resolvedBarePath = resolveBareSpecifierPath(specifier, dirName);
+        if (resolvedBarePath) {
+          const stubPath = await writeStub(specifier, createResolvedBareModuleStubCode(resolvedBarePath));
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
+          continue;
+        }
+
+        if (!resolveBareSpecifier(specifier)) {
+          const stubPath = await writeGenericBareStub(specifier, collectStubRequirements(match[0]));
+          replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
+        }
+      }
+
+      const rewritten = rewriteImportSpecifiers(transpiled, replacements);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, rewritten, 'utf8');
+      return outPath;
+    }
+
+    try {
+      const entryOutputPath = await emitModule(path.resolve(entryPath));
+      const manifest = {
+        entryOutputRelativePath: toPosixPath(path.relative(buildRoot, entryOutputPath)),
+        dependencies: [...dependencies.values()].sort((left, right) => left.path.localeCompare(right.path)),
+      };
+
+      fs.mkdirSync(cacheDir, { recursive: true });
+      fs.rmSync(bundleDir, { recursive: true, force: true });
+      fs.cpSync(buildRoot, bundleDir, { recursive: true, force: true });
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+      const result = {
+        cacheKey,
+        bundleDir,
+        entryOutputRelativePath: manifest.entryOutputRelativePath,
+        dependencies: manifest.dependencies,
+      };
+      bundledModuleGraphCache.set(cacheKey, result);
+      return result;
+    } finally {
+      fs.rmSync(stagingDir, { recursive: true, force: true });
+    }
+  })();
+
+  bundledModuleGraphBuilds.set(cacheKey, buildPromise);
+  try {
+    return await buildPromise;
+  } finally {
+    bundledModuleGraphBuilds.delete(cacheKey);
+  }
+}
+
 export async function loadBundledModule(entryRelativePath, {
   stubs = {},
   prefix = 'bundled-module-',
 } = {}) {
   const entryPath = path.resolve(entryRelativePath);
+  const cachedGraph = await buildBundledGraph(entryPath, stubs);
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  const emittedFiles = new Map();
-  const stubFiles = new Map();
-  const genericBareStubRequirements = new Map();
-
-  function resolveStubSource(specifier) {
-    if (Object.prototype.hasOwnProperty.call(stubs, specifier)) {
-      return stubs[specifier];
-    }
-    const strippedSpecifier = stripSourceLikeExtension(specifier);
-    if (
-      strippedSpecifier !== specifier
-      && Object.prototype.hasOwnProperty.call(stubs, strippedSpecifier)
-    ) {
-      return stubs[strippedSpecifier];
-    }
-    return null;
-  }
-
-  function stubOutputPath(specifier) {
-    const hash = crypto.createHash('sha1').update(String(specifier || '')).digest('hex').slice(0, 12);
-    return path.join(tmpDir, '__stubs__', `${hash}.mjs`);
-  }
-
-  function moduleOutputPath(absPath) {
-    const relativePath = path.relative(process.cwd(), absPath);
-    const normalized = relativePath && !relativePath.startsWith('..')
-      ? relativePath
-      : path.basename(absPath);
-    const parsed = path.parse(normalized);
-    return path.join(tmpDir, parsed.dir, `${parsed.name}.mjs`);
-  }
-
-  async function writeStub(specifier, contents) {
-    if (stubFiles.has(specifier)) {
-      return stubFiles.get(specifier);
-    }
-
-    const outPath = stubOutputPath(specifier);
-    const rawPath = path.join(path.dirname(outPath), `${path.basename(outPath, '.mjs')}.raw.mjs`);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    const transpiledContents = transpileModule(contents, `${specifier}.tsx`);
-    const stubReplacements = new Map();
-
-    for (const match of transpiledContents.matchAll(IMPORT_SPECIFIER_RE)) {
-      const importedSpecifier = match[2];
-      if (stubReplacements.has(importedSpecifier)) continue;
-      if (importedSpecifier === specifier) continue;
-      if (importedSpecifier.startsWith('node:') || isResolvedExternalSpecifier(importedSpecifier)) continue;
-
-      const importedStubSource = resolveStubSource(importedSpecifier);
-      if (importedStubSource !== null) {
-        const dependencyPath = await writeStub(importedSpecifier, importedStubSource);
-        stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
-        continue;
-      }
-
-      const builtInFallbackStub = getBuiltInFallbackStub(importedSpecifier);
-      if (builtInFallbackStub !== null) {
-        const dependencyPath = await writeStub(importedSpecifier, builtInFallbackStub);
-        stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
-        continue;
-      }
-
-      const resolvedBarePath = resolveBareSpecifierPath(importedSpecifier, process.cwd());
-      if (resolvedBarePath) {
-        const dependencyPath = await writeStub(
-          importedSpecifier,
-          createResolvedBareModuleStubCode(resolvedBarePath),
-        );
-        stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
-        continue;
-      }
-
-      if (!resolveBareSpecifier(importedSpecifier)) {
-        const dependencyPath = await writeGenericBareStub(importedSpecifier, collectStubRequirements(match[0]));
-        stubReplacements.set(importedSpecifier, ensureRelativeSpecifier(rawPath, dependencyPath));
-      }
-    }
-
-    fs.writeFileSync(rawPath, rewriteImportSpecifiers(transpiledContents, stubReplacements), 'utf8');
-
-    if (specifier === 'react') {
-      fs.writeFileSync(outPath, createReactStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
-    } else if (specifier === 'react/jsx-runtime') {
-      fs.writeFileSync(outPath, createJsxRuntimeStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
-    } else if (specifier === 'react/jsx-dev-runtime') {
-      fs.writeFileSync(outPath, createJsxRuntimeStubWrapper(`./${path.basename(rawPath)}`), 'utf8');
-    } else {
-      fs.copyFileSync(rawPath, outPath);
-    }
-    stubFiles.set(specifier, outPath);
-    return outPath;
-  }
-
-  async function writeGenericBareStub(specifier, requirements) {
-    const existing = genericBareStubRequirements.get(specifier) || {
-      exportNames: new Set(),
-      needsDefault: false,
-    };
-
-    for (const exportName of requirements.exportNames || []) {
-      existing.exportNames.add(exportName);
-    }
-    existing.needsDefault = existing.needsDefault || Boolean(requirements.needsDefault);
-    genericBareStubRequirements.set(specifier, existing);
-
-    const code = createGenericBareStubCode({
-      exportNames: [...existing.exportNames].sort(),
-      needsDefault: existing.needsDefault,
-    });
-
-    return writeStub(specifier, code);
-  }
-
-  async function emitModule(absPath) {
-    if (emittedFiles.has(absPath)) {
-      return emittedFiles.get(absPath);
-    }
-
-    const outPath = moduleOutputPath(absPath);
-    emittedFiles.set(absPath, outPath);
-
-    const source = fs.readFileSync(absPath, 'utf8');
-    const transpiled = transpileModule(source, absPath);
-    const replacements = new Map();
-    const dirName = path.dirname(absPath);
-
-    for (const match of transpiled.matchAll(IMPORT_SPECIFIER_RE)) {
-      const specifier = match[2];
-      if (replacements.has(specifier)) continue;
-      if (specifier.startsWith('node:') || isResolvedExternalSpecifier(specifier)) continue;
-
-      const stubSource = resolveStubSource(specifier);
-      if (stubSource !== null) {
-        const stubPath = await writeStub(specifier, stubSource);
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
-        continue;
-      }
-
-      const builtInFallbackStub = getBuiltInFallbackStub(specifier);
-      if (builtInFallbackStub !== null) {
-        const stubPath = await writeStub(specifier, builtInFallbackStub);
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
-        continue;
-      }
-
-      if (shouldStubAsset(specifier)) {
-        const stubPath = await writeStub(specifier, createAssetStubCode(specifier));
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
-        continue;
-      }
-
-      if (specifier.startsWith('.')) {
-        const resolvedPath = resolveSourceModule(dirName, specifier);
-        const emittedPath = await emitModule(resolvedPath);
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, emittedPath));
-        continue;
-      }
-
-      const resolvedBarePath = resolveBareSpecifierPath(specifier, dirName);
-      if (resolvedBarePath) {
-        const stubPath = await writeStub(specifier, createResolvedBareModuleStubCode(resolvedBarePath));
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
-        continue;
-      }
-
-      if (!resolveBareSpecifier(specifier)) {
-        const stubPath = await writeGenericBareStub(specifier, collectStubRequirements(match[0]));
-        replacements.set(specifier, ensureRelativeSpecifier(outPath, stubPath));
-      }
-    }
-
-    const rewritten = rewriteImportSpecifiers(transpiled, replacements);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    fs.writeFileSync(outPath, rewritten, 'utf8');
-    return outPath;
-  }
-
-  const entryOutputPath = await emitModule(entryPath);
+  const bundleDir = path.join(tmpDir, 'bundle');
+  fs.cpSync(cachedGraph.bundleDir, bundleDir, { recursive: true, force: true });
+  const entryOutputPath = path.resolve(bundleDir, cachedGraph.entryOutputRelativePath);
 
   try {
     return await import(`${pathToFileURL(entryOutputPath).href}?v=${Date.now()}-${Math.random()}`);

@@ -34,7 +34,7 @@ test('createConfigPersistenceContext returns expected shape', () => {
 });
 
 test('getUserSettingsState returns the initial user settings', () => {
-  const initial = { runtime: { maxPagesPerDomain: 40 }, convergence: {} };
+  const initial = { runtime: { maxPagesPerDomain: 40 } };
   const ctx = createConfigPersistenceContext({
     config: {},
     settingsRoot: 'category_authority',
@@ -83,11 +83,11 @@ test('recordRouteWriteOutcome records success telemetry', () => {
     runDataStorageState: {},
     initialUserSettings: {},
   });
-  ctx.recordRouteWriteAttempt('convergence', 'convergence-settings-route');
-  ctx.recordRouteWriteOutcome('convergence', 'convergence-settings-route', true);
+  ctx.recordRouteWriteAttempt('ui', 'ui-settings-route');
+  ctx.recordRouteWriteOutcome('ui', 'ui-settings-route', true);
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.success_total, 1);
-  assert.equal(counters.writes.by_target['convergence-settings-route']?.success_total, 1);
+  assert.equal(counters.writes.by_target['ui-settings-route']?.success_total, 1);
 });
 
 test('recordRouteWriteOutcome records failure telemetry', () => {
