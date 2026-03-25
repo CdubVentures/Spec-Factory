@@ -26,20 +26,12 @@ describe('classifyLlmCallType', () => {
     // domain classifier
     ['domain_safety_classification', 'domain_classifier'],
 
-    // extraction
-    ['extract_batch', 'extraction'],
-    ['extract_candidates', 'extraction'],
-
     // validation
     ['validate', 'validation'],
     ['validate_candidates', 'validation'],
 
     // verification
     ['verify_extract', 'verification'],
-
-    // summary writer
-    ['write', 'summary_writer'],
-    ['run_summary', 'summary_writer'],
 
     // escalation planner
     ['escalation_planner', 'escalation_planner'],

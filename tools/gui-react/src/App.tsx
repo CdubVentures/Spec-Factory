@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './pages/layout/AppShell.tsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
+import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
   return lazy(async () => {
@@ -15,21 +16,13 @@ function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportNam
   });
 }
 
-const OverviewPage = lazyNamedPage(() => import('./pages/overview/OverviewPage.tsx'), 'OverviewPage');
-const ProductPage = lazyNamedPage(() => import('./pages/product/ProductPage.tsx'), 'ProductPage');
-const LlmSettingsPage = lazyNamedPage(() => import('./pages/llm-settings/LlmSettingsPage.tsx'), 'LlmSettingsPage');
-const BillingPage = lazyNamedPage(() => import('./pages/billing/BillingPage.tsx'), 'BillingPage');
-const StudioPage = lazyNamedPage(() => import('./features/studio/components/StudioPage.tsx'), 'StudioPage');
-const CatalogPage = lazyNamedPage(() => import('./features/catalog/components/CatalogPage.tsx'), 'CatalogPage');
-const CategoryManager = lazyNamedPage(() => import('./features/catalog/components/CategoryManager.tsx'), 'CategoryManager');
-const ReviewPage = lazyNamedPage(() => import('./features/review/components/ReviewPage.tsx'), 'ReviewPage');
-const ComponentReviewPage = lazyNamedPage(() => import('./pages/component-review/ComponentReviewPage.tsx'), 'ComponentReviewPage');
+// WHY: Computed once at module scope so lazy components are created once, not per render.
+const LAZY_ROUTES = ROUTE_ENTRIES.map((entry) => ({
+  ...entry,
+  Component: lazyNamedPage(entry.loader, entry.exportName),
+}));
+
 const TestModePage = lazyNamedPage(() => import('./pages/test-mode/TestModePage.tsx'), 'TestModePage');
-const IndexingPage = lazyNamedPage(() => import('./features/indexing/components/IndexingPage.tsx'), 'IndexingPage');
-const PipelineSettingsPage = lazyNamedPage(() => import('./features/pipeline-settings/components/PipelineSettingsPage.tsx'), 'PipelineSettingsPage');
-const RuntimeOpsPage = lazyNamedPage(() => import('./features/runtime-ops/components/RuntimeOpsPage.tsx'), 'RuntimeOpsPage');
-const StoragePage = lazyNamedPage(() => import('./pages/storage/StoragePage.tsx'), 'StoragePage');
-const LlmConfigPage = lazyNamedPage(() => import('./features/llm-config/components/LlmConfigPage.tsx'), 'LlmConfigPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,21 +58,12 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route element={<AppShell />}>
-            <Route index element={wrap(OverviewPage)} />
-            <Route path="categories" element={wrap(CategoryManager)} />
-            <Route path="catalog" element={wrap(CatalogPage)} />
-            <Route path="product" element={wrap(ProductPage)} />
-            <Route path="llm-settings" element={wrap(LlmSettingsPage)} />
-            <Route path="indexing" element={wrap(IndexingPage)} />
-            <Route path="llm-config" element={wrap(LlmConfigPage)} />
-            <Route path="pipeline-settings" element={wrap(PipelineSettingsPage)} />
-            <Route path="billing" element={wrap(BillingPage)} />
-            <Route path="studio" element={wrap(StudioPage)} />
-            <Route path="review" element={wrap(ReviewPage)} />
-            <Route path="review-components" element={wrap(ComponentReviewPage)} />
+            {LAZY_ROUTES.map((entry) =>
+              entry.isIndex
+                ? <Route key={entry.path} index element={wrap(entry.Component)} />
+                : <Route key={entry.path} path={entry.path.slice(1)} element={wrap(entry.Component)} />,
+            )}
             <Route path="test-mode" element={wrap(TestModePage)} />
-            <Route path="runtime-ops" element={wrap(RuntimeOpsPage)} />
-            <Route path="storage" element={wrap(StoragePage)} />
           </Route>
         </Routes>
       </HashRouter>

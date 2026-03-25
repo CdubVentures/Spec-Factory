@@ -45,16 +45,7 @@ function makeMockDb({ runCount = 1, summaryRow = {}, documents = [], topFields =
 }
 
 // ---------------------------------------------------------------------------
-// Group 1: Factory shape
-// ---------------------------------------------------------------------------
-
-test('createEvidenceIndexReader returns object with expected function', () => {
-  const reader = makeReader();
-  assert.equal(typeof reader.readIndexLabRunEvidenceIndex, 'function');
-});
-
-// ---------------------------------------------------------------------------
-// Group 2: Null / empty input guards
+// Group 1: Null / empty input guards
 // ---------------------------------------------------------------------------
 
 test('readIndexLabRunEvidenceIndex: null runId → null', async () => {
@@ -74,7 +65,7 @@ test('readIndexLabRunEvidenceIndex: resolveContext returns null → null', async
 });
 
 // ---------------------------------------------------------------------------
-// Group 3: DB not ready → skeleton
+// Group 2: DB not ready → skeleton
 // ---------------------------------------------------------------------------
 
 test('readIndexLabRunEvidenceIndex: specDb null → skeleton with db_ready:false', async () => {
@@ -114,7 +105,7 @@ test('readIndexLabRunEvidenceIndex: skeleton preserves query and limit from inpu
 });
 
 // ---------------------------------------------------------------------------
-// Group 4: Scope / SQL path
+// Group 3: Scope / SQL path
 // ---------------------------------------------------------------------------
 
 test('readIndexLabRunEvidenceIndex: run_id match → scope.mode = "run"', async () => {
@@ -162,7 +153,7 @@ test('readIndexLabRunEvidenceIndex: summary, documents, top_fields correctly sha
 });
 
 // ---------------------------------------------------------------------------
-// Group 5: Search
+// Group 4: Search
 // ---------------------------------------------------------------------------
 
 test('readIndexLabRunEvidenceIndex: empty query → search.rows is empty array', async () => {
@@ -197,7 +188,7 @@ test('readIndexLabRunEvidenceIndex: with query → search returns mapped rows', 
 });
 
 // ---------------------------------------------------------------------------
-// Group 6: Dedupe stream
+// Group 5: Dedupe stream
 // ---------------------------------------------------------------------------
 
 test('readIndexLabRunEvidenceIndex: dedupe_stream calls readEvents and buildEvidenceSearchPayload', async () => {

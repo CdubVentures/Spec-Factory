@@ -100,12 +100,12 @@ describe('buildProcessStartLaunchPlan contract', () => {
 
     const result = harness.buildPlan({
       dryRun: false,
-      runtimeTraceFetchRing: 9999,
+      maxRunSeconds: 600,
     });
 
     strictEqual(result.ok, true);
     strictEqual(Object.hasOwn(result.envOverrides, 'DRY_RUN'), false);
-    strictEqual(Object.hasOwn(result.envOverrides, 'RUNTIME_TRACE_FETCH_RING'), false);
+    strictEqual(Object.hasOwn(result.envOverrides, 'MAX_RUN_SECONDS'), false);
     ok(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT, 'snapshot path must be set');
   });
 

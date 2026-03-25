@@ -1,5 +1,5 @@
 export { executeSearchQueries } from './executeSearchQueries.js';
-export { runSearchProviders, searchEngineAvailability, searchProviderAvailability, normalizeSearchEngines } from './searchProviders.js';
+export { runSearchProviders, searchEngineAvailability, normalizeSearchEngines } from './searchProviders.js';
 export { searchGoogle } from './searchGoogle.js';
 export { searchSerper } from './searchSerper.js';
 export { searchSearxng } from './searchSearxng.js';

@@ -48,16 +48,11 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   }
   merged.llmApiKey = merged.llmApiKey || merged.openaiApiKey;
   merged.llmBaseUrl = merged.llmBaseUrl || merged.openaiBaseUrl;
-  merged.llmModelExtract = merged.llmModelExtract || merged.openaiModelExtract;
   merged.llmModelPlan = merged.llmModelPlan || merged.openaiModelPlan;
   // WHY: Model stack simplified — one base model, one reasoning model.
   // Phase overrides still allow per-phase model selection via llmPhaseOverridesJson.
   merged.llmModelReasoning = merged.llmModelReasoning || merged.llmModelPlan;
 
-  // --- LLM provider/baseUrl/apiKey fallbacks ---
-  merged.llmPlanProvider = merged.llmPlanProvider || merged.llmProvider;
-  merged.llmPlanBaseUrl = merged.llmPlanBaseUrl || merged.llmBaseUrl;
-  merged.llmPlanApiKey = merged.llmPlanApiKey || merged.llmApiKey;
   // --- Pricing map + token normalization ---
   merged.llmModelPricingMap = normalizeModelPricingMap(
     mergeModelPricingMaps(buildDefaultModelPricingMap(), merged.llmModelPricingMap || {})
@@ -101,16 +96,13 @@ export function applyPostMergeNormalization(cfg, overrides, explicitEnvKeys) {
   upsertTokenProfile('gpt-5.2-high', { defaultOutputTokens: 4096, maxOutputTokens: 16384 });
   upsertTokenProfile('gpt-5.2-xhigh', { defaultOutputTokens: 6144, maxOutputTokens: 16384 });
 
-  // --- openai key sync + runProfile + manufacturer clamping ---
+  // --- openai key sync + manufacturer clamping ---
   merged.llmTimeoutMs = merged.llmTimeoutMs || merged.openaiTimeoutMs;
   merged.openaiApiKey = merged.llmApiKey;
   merged.openaiBaseUrl = merged.llmBaseUrl;
   merged.openaiModelExtract = merged.llmModelExtract;
   merged.openaiModelPlan = merged.llmModelPlan;
-  merged.openaiModelWrite = merged.llmModelPlan;
   merged.openaiTimeoutMs = merged.llmTimeoutMs;
-
-  merged.runProfile = 'standard';
 
   // WHY: registry lookup is SSOT for model→provider routing
   merged._registryLookup = buildRegistryLookup(merged.llmProviderRegistryJson);
@@ -132,13 +124,11 @@ export function resolvePhaseOverrides(merged) {
   if (typeof overrides !== 'object' || Array.isArray(overrides)) overrides = {};
 
   const PHASE_DEFS = [
-    { id: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'serpSelector',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage' },
-    { id: 'extraction',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-    { id: 'write',            globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+    { id: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+    { id: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+    { id: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+    { id: 'serpSelector',     globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensTriage', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+    { id: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
   ];
 
   const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -151,6 +141,8 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}ReasoningModel`] = phaseOverride.reasoningModel || merged.llmModelReasoning;
     merged[`${prefix}UseReasoning`] = phaseOverride.useReasoning ?? merged[def.groupToggle] ?? false;
     merged[`${prefix}MaxOutputTokens`] = phaseOverride.maxOutputTokens ?? merged[def.globalTokens];
+    merged[`${prefix}TimeoutMs`] = phaseOverride.timeoutMs ?? merged[def.globalTimeout];
+    merged[`${prefix}MaxContextTokens`] = phaseOverride.maxContextTokens ?? merged[def.globalContextTokens];
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

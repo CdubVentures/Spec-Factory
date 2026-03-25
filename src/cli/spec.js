@@ -210,8 +210,6 @@ const CLI_DOTENV_OVERRIDE_KEYS = [
   'PER_HOST_MIN_DELAY_MS',
   'SERP_TRIAGE_MIN_SCORE',
   'LLM_FORCE_ROLE_MODEL_PROVIDER',
-  'LLM_MAX_CALLS_PER_PRODUCT_TOTAL',
-  'LLM_MAX_CALLS_PER_ROUND'
 ];
 
 function applyEnvOverrides(env) {
@@ -245,8 +243,6 @@ function buildConfig(args) {
     localOutputRoot: args['local-output-root'] || undefined,
     outputMode: args['output-mode'] || undefined
   };
-  if (args['dry-run'] !== undefined) overrides.dryRun = asBool(args['dry-run']);
-  if (args['discovery-enabled'] !== undefined) overrides.discoveryEnabled = asBool(args['discovery-enabled']);
   if (args['search-engines']) overrides.searchEngines = args['search-engines'];
   if (args['search-provider']) overrides.searchEngines = args['search-provider'];
   return loadConfigWithUserSettings(overrides);

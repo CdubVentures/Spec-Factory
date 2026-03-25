@@ -1,4 +1,3 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CATEGORY,
@@ -12,13 +11,9 @@ import {
   getItemFieldStateId,
   getStrictKeyReviewState,
   upsertStrictKeyReviewState,
-  createReviewLaneApiHarness,
-} from './fixtures/reviewLaneApiHarness.js';
+} from '../fixtures/reviewLaneApiHarness.js';
 
-test('review lane guards reject missing candidates and unknown values', async (t) => {
-  const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
-
+export async function runReviewLaneGuardContracts(t, harness) {
   const { baseUrl, db, componentIdentifier, findComponentRow } = harness;
 
   await t.test('confirm endpoints require candidate ids for pending lanes with zero candidates', async () => {
@@ -311,4 +306,4 @@ test('review lane guards reject missing candidates and unknown values', async (t
     assert.equal(enumAcceptUnknown.status, 400);
     assert.equal(enumAcceptUnknown.data?.error, 'unknown_value_not_actionable');
   });
-});
+}

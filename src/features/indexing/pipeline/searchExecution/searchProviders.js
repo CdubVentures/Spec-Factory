@@ -66,7 +66,7 @@ async function attemptSearch({ searxBase, engines, query, limit, config, logger,
         baseUrl: searxBase,
         query,
         limit,
-        timeoutMs: config.searxngTimeoutMs,
+        timeoutMs: config.searxngSearchTimeoutMs,
         minQueryIntervalMs: config.searxngMinQueryIntervalMs,
         engines,
         provider: engines,
@@ -138,6 +138,11 @@ async function attemptGoogleCrawlee({ query, limit, config, logger, requestThrot
       minQueryIntervalMs: config.googleSearchMinQueryIntervalMs,
       maxRetries: config.searchMaxRetries ?? config.googleSearchMaxRetries,
       screenshotsEnabled: config.googleSearchScreenshotsEnabled,
+      postResultsDelayMs: config.googleSearchPostResultsDelayMs,
+      screenshotQuality: config.googleSearchScreenshotQuality,
+      serpSelectorWaitMs: config.googleSearchSerpSelectorWaitMs,
+      scrollDelayMs: config.googleSearchScrollDelayMs,
+      jitterFactor: config.searchPacingJitterFactor,
       logger,
       requestThrottler,
     });
@@ -172,6 +177,9 @@ async function attemptSerperSearch({ query, limit, config, logger, requestThrott
       query,
       apiKey: config.serperApiKey,
       limit: limit,
+      timeoutMs: config.serperSearchTimeoutMs,
+      minQueryIntervalMs: config.serperSearchMinIntervalMs,
+      maxRetries: config.serperSearchMaxRetries,
       logger,
       requestThrottler,
     });
@@ -297,6 +305,3 @@ export function searchEngineAvailability(config) {
     internet_ready: internetReady,
   };
 }
-
-// WHY: Backward compat alias — downstream imports may still use old name
-export const searchProviderAvailability = searchEngineAvailability;

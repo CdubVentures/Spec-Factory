@@ -109,7 +109,7 @@ test('resolveStorageBackedWorkspaceRoots maps local and s3 storage to workspace 
 test('resolveRunDataDestinationType and createRunDataArchiveStorage honor s3 storage settings', () => {
   const destinationType = resolveRunDataDestinationType({
     env: {
-      S3_BUCKET: 'spec-factory-bucket',
+      RUN_DATA_STORAGE_DESTINATION_TYPE: 's3',
     },
   });
   const archiveStorage = createRunDataArchiveStorage({

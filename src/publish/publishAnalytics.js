@@ -514,11 +514,6 @@ export async function buildLlmMetrics({
     .sort((a, b) => parseDateMs(b.last_call_at) - parseDateMs(a.last_call_at))
     .slice(0, Math.max(10, toInt(runLimit, 120)));
 
-  const budgetMonthly = toNumber(config.llmMonthlyBudgetUsd, 0);
-  const periodBudget = budgetMonthly > 0
-    ? Number.parseFloat(((budgetMonthly / 30) * days).toFixed(8))
-    : 0;
-
   return {
     period_days: days,
     period: normalizeToken(period),
@@ -534,10 +529,5 @@ export async function buildLlmMetrics({
     by_provider: byProvider,
     by_model: byModel,
     by_run: byRun,
-    budget: {
-      monthly_usd: budgetMonthly,
-      period_budget_usd: periodBudget,
-      exceeded: periodBudget > 0 ? totalCost > periodBudget : false
-    }
   };
 }

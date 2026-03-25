@@ -118,7 +118,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
-      <SettingRow label="Token Cap" tip="Override the max output tokens for this phase. Leave empty to use global default.">
+      <SettingRow label="Max Output Tokens" tip="Maximum output tokens for this phase. Leave empty to inherit global default.">
         <div className="flex items-center gap-1.5">
           {phaseOverrides[overrideKey]?.maxOutputTokens == null && <GlobalDefaultIcon />}
           <input
@@ -131,6 +131,40 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             onChange={(e) => {
               const raw = e.target.value;
               updateOverrideField('maxOutputTokens', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            }}
+          />
+        </div>
+      </SettingRow>
+      <SettingRow label="Max Context Tokens" tip="Maximum context window tokens for this phase. Leave empty to inherit global default.">
+        <div className="flex items-center gap-1.5">
+          {phaseOverrides[overrideKey]?.maxContextTokens == null && <GlobalDefaultIcon />}
+          <input
+            className={inputCls}
+            type="number"
+            min={128}
+            step={1}
+            value={phaseOverrides[overrideKey]?.maxContextTokens ?? ''}
+            placeholder={`↩ ${resolved.maxContextTokens ?? 'auto'}`}
+            onChange={(e) => {
+              const raw = e.target.value;
+              updateOverrideField('maxContextTokens', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
+            }}
+          />
+        </div>
+      </SettingRow>
+      <SettingRow label="Timeout (ms)" tip="LLM request timeout for this phase. Leave empty to inherit global default.">
+        <div className="flex items-center gap-1.5">
+          {phaseOverrides[overrideKey]?.timeoutMs == null && <GlobalDefaultIcon />}
+          <input
+            className={inputCls}
+            type="number"
+            min={1000}
+            step={1000}
+            value={phaseOverrides[overrideKey]?.timeoutMs ?? ''}
+            placeholder={`↩ ${resolved.timeoutMs ?? 'auto'}`}
+            onChange={(e) => {
+              const raw = e.target.value;
+              updateOverrideField('timeoutMs', raw === '' ? null : (Number.parseInt(raw, 10) || 0));
             }}
           />
         </div>

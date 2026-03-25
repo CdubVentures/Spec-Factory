@@ -81,14 +81,12 @@ export function toObject(value) {
 
 export function inferLlmRouteRole(routeRole = '', reason = '') {
   const explicit = String(routeRole || '').trim().toLowerCase();
-  if (['plan', 'extract', 'validate', 'write'].includes(explicit)) {
+  if (['plan', 'validate'].includes(explicit)) {
     return explicit;
   }
   const token = String(reason || '').trim().toLowerCase();
   if (!token) return '';
-  if (token.includes('extract')) return 'extract';
   if (token.includes('validate') || token.includes('verify')) return 'validate';
-  if (token.includes('write') || token.includes('summary')) return 'write';
   if (
     token.includes('planner')
     || token.includes('search_profile')
@@ -108,10 +106,8 @@ export function classifyLlmCallType(reason = '') {
   if (r.startsWith('search_planner') || r.startsWith('discovery_planner') || r === 'uber_query_planner') return 'search_planner';
   if (r.includes('triage') || r.includes('rerank') || r.includes('serp')) return 'serp_selector';
   if (r === 'domain_safety_classification') return 'domain_classifier';
-  if (r.startsWith('extract') || r.includes('extract_batch')) return 'extraction';
   if (r === 'validate' || r.startsWith('validate_')) return 'validation';
   if (r.startsWith('verify_extract')) return 'verification';
-  if (r === 'write' || r.includes('summary')) return 'summary_writer';
   if (r === 'escalation_planner' || r.includes('escalation')) return 'escalation_planner';
   return 'unknown';
 }

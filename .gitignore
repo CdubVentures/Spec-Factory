@@ -30,6 +30,7 @@ debug/
 
 # Build output (rebuild from tools/gui-react/)
 gui-dist/
+tools/gui-react/dist/
 
 # Test artifacts
 /test/

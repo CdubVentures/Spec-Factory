@@ -1,4 +1,3 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CATEGORY,
@@ -8,13 +7,9 @@ import {
   getComponentIdentityId,
   getComponentValueId,
   getStrictKeyReviewState,
-  createReviewLaneApiHarness,
-} from './fixtures/reviewLaneApiHarness.js';
+} from '../fixtures/reviewLaneApiHarness.js';
 
-test('review lane component mutations stay decoupled and propagate through component contracts', async (t) => {
-  const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
-
+export async function runReviewLaneComponentContracts(t, harness) {
   const { baseUrl, db, componentIdentifier, findComponentRow, readReviewDoc } = harness;
 
   await t.test('component shared accept with candidate-id collision does not mutate enum slot state', async () => {
@@ -245,4 +240,4 @@ test('review lane component mutations stay decoupled and propagate through compo
     assert.equal(Number(byProduct.get(PRODUCT_A)?.needs_ai_review || 0), 1);
     assert.equal(Number(byProduct.get(PRODUCT_B)?.needs_ai_review || 0), 1);
   });
-});
+}

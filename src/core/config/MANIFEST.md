@@ -38,29 +38,9 @@ Those live in user settings and/or domain data stores.
 - Mark secrets with `secret: true`.
 - Mark defaults that should be user-adjustable through settings APIs as `userMutable: true` only when routed through canonical user-settings.
 
-## File Structure
+## Architecture
 
-`manifest.js` is a thin shim that re-exports from the decomposed directory:
-
-```
-src/core/config/
-  manifest.js               <- 9-line shim (re-exports from manifest/)
-  manifest/
-    index.js                <- assembly (imports all groups, exports public API)
-    coreGroup.js            <- boot/runtime entries
-    cachingGroup.js         <- cache-related entries
-    storageGroup.js         <- storage and object-path entries
-    securityGroup.js        <- security-related entries
-    llmGroup.js             <- model routing, pricing, and fallback entries
-    discoveryGroup.js       <- discovery-provider entries
-    retrievalGroup.js       <- retrieval and scoring entries
-    runtimeGroup.js         <- pipeline, fetch, parse, and OCR entries
-    observabilityGroup.js   <- tracing and diagnostics entries
-    pathsGroup.js           <- filesystem path and frontier-tuning entries
-    miscGroup.js            <- compatibility and overflow entries
-```
-
-To add a new setting, edit the appropriate `<groupId>Group.js` file.
+Manifest groups are derived from `RUNTIME_SETTINGS_REGISTRY` and `BOOTSTRAP_ENV_REGISTRY` via `deriveManifestGroups()` in `manifest/index.js`. To add a new setting, add an entry to `src/shared/settingsRegistry.js` with the appropriate `group` field.
 
 ## Validation
 `npm run env:check` checks whether runtime env references are covered by the manifest key inventory.

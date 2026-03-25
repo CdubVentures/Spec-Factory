@@ -3,28 +3,36 @@ import assert from 'node:assert/strict';
 
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
+let projectionModulePromise;
+let runtimeDefaultsPromise;
+
 async function loadProjectionModule() {
-  return loadBundledModule(
-    'tools/gui-react/src/features/indexing/state/indexingRuntimeSettingsProjection.ts',
-    { prefix: 'indexing-runtime-settings-projection-' },
-  );
+  if (!projectionModulePromise) {
+    projectionModulePromise = loadBundledModule(
+      'tools/gui-react/src/features/indexing/state/indexingRuntimeSettingsProjection.ts',
+      { prefix: 'indexing-runtime-settings-projection-' },
+    );
+  }
+  return projectionModulePromise;
 }
 
 async function loadRuntimeDefaults() {
-  const [{ RUNTIME_SETTING_DEFAULTS }, { toRuntimeDraft }] = await Promise.all([
-    loadBundledModule(
-      'tools/gui-react/src/stores/settingsManifest.ts',
-      { prefix: 'indexing-runtime-settings-defaults-' },
-    ),
-    loadBundledModule(
-      'tools/gui-react/src/features/pipeline-settings/state/RuntimeFlowDraftNormalization.ts',
-      { prefix: 'indexing-runtime-settings-draft-normalization-' },
-    ),
-  ]);
-  return {
-    runtimeBootstrap: { ...RUNTIME_SETTING_DEFAULTS },
-    runtimeManifestDefaults: toRuntimeDraft(RUNTIME_SETTING_DEFAULTS),
-  };
+  if (!runtimeDefaultsPromise) {
+    runtimeDefaultsPromise = Promise.all([
+      loadBundledModule(
+        'tools/gui-react/src/stores/settingsManifest.ts',
+        { prefix: 'indexing-runtime-settings-defaults-' },
+      ),
+      loadBundledModule(
+        'tools/gui-react/src/features/pipeline-settings/state/RuntimeFlowDraftContracts.ts',
+        { prefix: 'indexing-runtime-settings-draft-contracts-' },
+      ),
+    ]).then(([{ RUNTIME_SETTING_DEFAULTS }, { toRuntimeDraft }]) => ({
+      runtimeBootstrap: { ...RUNTIME_SETTING_DEFAULTS },
+      runtimeManifestDefaults: toRuntimeDraft(RUNTIME_SETTING_DEFAULTS),
+    }));
+  }
+  return runtimeDefaultsPromise;
 }
 
 test('buildIndexingRuntimeSettingsProjection normalizes authority settings into draft, payload, baseline, and phase-05 display values', async () => {

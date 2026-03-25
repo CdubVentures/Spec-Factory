@@ -9,7 +9,6 @@
 export {
   normalizeToken,
   parseBoundedNumber,
-  REPAIR_DEDUPE_RULE_OPTIONS,
   RUNTIME_NUMBER_BOUNDS,
   runtimeDraftEqual,
   SEARXNG_ENGINE_OPTIONS,

@@ -9,15 +9,11 @@
 import { buildProductId, slugify } from './slugify.js';
 import { cleanVariant, isFabricatedVariant } from './identityDedup.js';
 import { loadProductCatalog } from '../products/productCatalog.js';
-import { normalizeText } from '../../../shared/primitives.js';
-
-function normalizeToken(value) {
-  return normalizeText(value).toLowerCase().replace(/\s+/g, ' ');
-}
+import { normalizeText, normalizeTokenCollapsed } from '../../../shared/primitives.js';
 
 function pairKey(brand, model) {
-  const b = normalizeToken(brand);
-  const m = normalizeToken(model);
+  const b = normalizeTokenCollapsed(brand);
+  const m = normalizeTokenCollapsed(model);
   if (!b || !m) return '';
   return `${b}||${m}`;
 }
@@ -25,7 +21,7 @@ function pairKey(brand, model) {
 function tupleKey(brand, model, variant) {
   const base = pairKey(brand, model);
   if (!base) return '';
-  return `${base}||${normalizeToken(cleanVariant(variant))}`;
+  return `${base}||${normalizeTokenCollapsed(cleanVariant(variant))}`;
 }
 
 function firstCanonicalProductId(index, brand, model) {
@@ -55,7 +51,7 @@ export function buildCanonicalIdentityIndex({
 
     const pKey = pairKey(brand, model);
     if (!pairVariants.has(pKey)) pairVariants.set(pKey, new Set());
-    pairVariants.get(pKey).add(normalizeToken(variant));
+    pairVariants.get(pKey).add(normalizeTokenCollapsed(variant));
 
     const pid = normalizeText(row.productId) || buildProductId(cat, brand, model, variant);
     tupleToProductId.set(tupleKey(brand, model, variant), pid);
@@ -151,7 +147,7 @@ export function evaluateIdentityGate({
     };
   }
 
-  const variantToken = normalizeToken(cleanVar);
+  const variantToken = normalizeTokenCollapsed(cleanVar);
   if (knownVariants.has(variantToken)) {
     const canonicalProductId =
       canonicalIndex?.tupleToProductId?.get(tupleKey(cleanBrand, cleanModel, cleanVar))
@@ -209,7 +205,7 @@ export function registerCanonicalIdentity({
   if (!canonicalIndex.pairVariants.has(pKey)) {
     canonicalIndex.pairVariants.set(pKey, new Set());
   }
-  canonicalIndex.pairVariants.get(pKey).add(normalizeToken(cleanVar));
+  canonicalIndex.pairVariants.get(pKey).add(normalizeTokenCollapsed(cleanVar));
 
   const pid = normalizeText(productId)
     || buildProductId(canonicalIndex.category, cleanBrand, cleanModel, cleanVar);

@@ -177,7 +177,7 @@ export function resolveRunDataDestinationType({ env = process.env }) {
     fallback: '',
   }).toLowerCase();
   if (explicit === 's3' || explicit === 'local') return explicit;
-  return envToken({ env, name: 'S3_BUCKET', fallback: '' }) ? 's3' : 'local';
+  return 'local';
 }
 
 export function createRunDataArchiveStorage({

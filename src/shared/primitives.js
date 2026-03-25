@@ -28,6 +28,10 @@ export function normalizeToken(value) {
   return normalizeText(value).toLowerCase();
 }
 
+export function normalizeTokenCollapsed(value) {
+  return normalizeToken(value).replace(/\s+/g, ' ');
+}
+
 export function normalizeFieldKey(value) {
   return String(value ?? '')
     .trim()

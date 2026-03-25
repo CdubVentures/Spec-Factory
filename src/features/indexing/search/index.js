@@ -5,7 +5,6 @@ export { searchSearxng } from '../pipeline/searchExecution/searchSearxng.js';
 export {
   runSearchProviders,
   searchEngineAvailability,
-  searchProviderAvailability,
   normalizeSearchEngines,
 } from '../pipeline/searchExecution/searchProviders.js';
 export {

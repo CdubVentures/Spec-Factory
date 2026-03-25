@@ -380,16 +380,6 @@ test('resolvePhaseModel returns phase base model when phase override is set', ()
   assert.equal(result, 'needset-custom');
 });
 
-test('resolvePhaseModel returns phase reasoning model when useReasoning is true', () => {
-  const config = phaseConfig({
-    _resolvedExtractionBaseModel: 'extract-base',
-    _resolvedExtractionReasoningModel: 'extract-reasoning',
-    _resolvedExtractionUseReasoning: true,
-  });
-  const result = resolvePhaseModel(config, 'extraction');
-  assert.equal(result, 'extract-reasoning');
-});
-
 test('resolvePhaseModel falls back to global llmModelPlan when no phase override exists', () => {
   const config = phaseConfig();
   const result = resolvePhaseModel(config, 'needset');
@@ -418,8 +408,8 @@ test('resolvePhaseModel returns registry default when config is empty and phase 
   assert.equal(result, 'gemini-2.5-flash');
 });
 
-test('resolvePhaseModel works for all 8 known phases', () => {
-  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'domainClassifier', 'extraction', 'validate', 'write'];
+test('resolvePhaseModel works for all known phases', () => {
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'domainClassifier', 'validate'];
   for (const phase of phases) {
     const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
     const config = phaseConfig({
@@ -429,20 +419,6 @@ test('resolvePhaseModel works for all 8 known phases', () => {
     const result = resolvePhaseModel(config, phase);
     assert.equal(result, `${phase}-model`, `phase ${phase} should resolve to ${phase}-model`);
   }
-});
-
-test('resolvePhaseModel useReasoning falls through global toggle when phase toggle is undefined', () => {
-  // WHY: configPostMerge resolves phase toggles, but if a caller constructs
-  // config without running postMerge, the phase toggle may be missing.
-  // In that case the global toggle should be used.
-  const config = phaseConfig({
-    llmPlanUseReasoning: true,
-    _resolvedWriteBaseModel: 'write-base',
-    _resolvedWriteReasoningModel: 'write-reasoning',
-    // _resolvedWriteUseReasoning is intentionally missing
-  });
-  const result = resolvePhaseModel(config, 'write');
-  assert.equal(result, 'write-reasoning');
 });
 
 // ---------------------------------------------------------------------------
@@ -480,17 +456,6 @@ test('resolveLlmRoute ignores phase when phase is empty string', () => {
   assert.equal(route.model, 'global-base');
 });
 
-test('resolveLlmRoute phase resolution picks reasoning model when phase enables reasoning', () => {
-  const config = phaseConfig({
-    _resolvedExtractionBaseModel: 'extract-base',
-    _resolvedExtractionReasoningModel: 'deepseek-reasoner',
-    _resolvedExtractionUseReasoning: true,
-    deepseekApiKey: 'ds-key',
-  });
-  const route = resolveLlmRoute(config, { role: 'extract', phase: 'extraction' });
-  assert.equal(route.model, 'deepseek-reasoner');
-});
-
 // ---------------------------------------------------------------------------
 // resolvePhaseReasoning — phase-aware reasoning auto-resolution
 // ---------------------------------------------------------------------------
@@ -512,9 +477,9 @@ test('resolvePhaseReasoning returns false when phase config disables reasoning',
 test('resolvePhaseReasoning falls back to llmPlanUseReasoning when phase key missing', () => {
   const config = phaseConfig({
     llmPlanUseReasoning: true,
-    // _resolvedWriteUseReasoning intentionally missing
+    // _resolvedValidateUseReasoning intentionally missing
   });
-  assert.equal(resolvePhaseReasoning(config, 'write'), true);
+  assert.equal(resolvePhaseReasoning(config, 'validate'), true);
 });
 
 test('resolvePhaseReasoning ignores legacy llmReasoningMode — panel SSOT only', () => {
@@ -534,7 +499,7 @@ test('resolvePhaseReasoning returns false for empty phase with no global toggle'
 });
 
 test('resolvePhaseReasoning works for all known phases', () => {
-  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'extraction', 'validate', 'write'];
+  const phases = ['needset', 'searchPlanner', 'brandResolver', 'serpSelector', 'validate'];
   for (const phase of phases) {
     const cap = phase.charAt(0).toUpperCase() + phase.slice(1);
     const config = phaseConfig({

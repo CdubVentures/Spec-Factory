@@ -10,7 +10,6 @@ import {
 import { SETTINGS_DEFAULTS } from '../settingsDefaults.js';
 
 const SECRET_RUNTIME_KEYS = new Set([
-  'llmPlanApiKey',
   'openaiApiKey',
   'anthropicApiKey',
 ]);
@@ -26,12 +25,6 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmValidateFallbackModel',
   'llmWriteFallbackModel',
   'llmMaxOutputTokensTriage',
-  'llmMaxOutputTokensExtract',
-  'llmMaxOutputTokensValidate',
-  'llmMaxOutputTokensWrite',
-  'llmMaxOutputTokensExtractFallback',
-  'llmMaxOutputTokensValidateFallback',
-  'llmMaxOutputTokensWriteFallback',
   // Per-role provider/baseUrl/apiKey keys default to '' but alias to global in post-merge
   'llmExtractProvider',
   'llmExtractBaseUrl',
@@ -44,12 +37,8 @@ const NON_CANONICAL_RUNTIME_KEYS = new Set([
   'llmWriteApiKey',
 ]);
 const CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS = new Set([
-  'discoveryEnabled',
+  'autoScrollEnabled',
   'runtimeScreencastEnabled',
-  'runtimeScreencastFps',
-  'runtimeScreencastQuality',
-  'runtimeScreencastMaxWidth',
-  'runtimeScreencastMaxHeight',
 ]);
 // WHY: NeedSet scoring knobs (requiredWeightMap, multipliers, identity thresholds)
 // were removed in Phase 12 NeedSet Legacy Removal. No runtime defaults needed.
@@ -97,7 +86,6 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   llmTimeoutMs: 'LLM_TIMEOUT_MS',
   llmBaseUrl: 'LLM_BASE_URL',
   openaiApiKey: 'LLM_API_KEY',
-  outputMode: 'OUTPUT_MODE',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
   categoryAuthorityRoot: 'HELPER_FILES_ROOT',
 });
@@ -133,7 +121,7 @@ function withUnsetEnv(keys, fn) {
 test('canonical runtime defaults are sourced from shared settings defaults', () => {
   const runtimeConfigKeyMap = buildRuntimeConfigKeyMap();
   withUnsetEnv(buildKnownConfigEnvKeys(), () => {
-    const config = loadConfig({ runProfile: 'standard' });
+    const config = loadConfig();
 
     for (const key of CANONICAL_RUNTIME_DEFAULT_SETTINGS_KEYS) {
       const configKey = runtimeConfigKeyMap.get(key) || key;
@@ -159,7 +147,7 @@ test('shared runtime defaults are the single default owner when env is not expli
   ));
 
   withUnsetEnv(buildKnownConfigEnvKeys(), () => {
-    const config = loadConfig({ runProfile: 'standard' });
+    const config = loadConfig();
 
     for (const key of canonicalRuntimeKeys) {
       const configKey = runtimeConfigKeyMap.get(key) || key;
@@ -201,14 +189,14 @@ test('needset runtime scoring knobs were retired in Phase 12 Legacy Removal', ()
 
 test('hotfix-sensitive runtime defaults stay aligned across shared defaults and config fallbacks', () => {
   const rows = [
-    { settingsKey: 'discoveryEnabled', configKey: 'discoveryEnabled', envKey: 'DISCOVERY_ENABLED' },
+    { settingsKey: 'autoScrollEnabled', configKey: 'autoScrollEnabled', envKey: 'AUTO_SCROLL_ENABLED' },
   ];
 
   const getSharedDefault = (settingsKey) =>
     SETTINGS_DEFAULTS.runtime?.[settingsKey];
 
   withUnsetEnv(rows.map(({ envKey }) => envKey), () => {
-    const config = loadConfig({ runProfile: 'standard' });
+    const config = loadConfig();
 
     for (const { settingsKey, configKey } of rows) {
       const sharedDefault = getSharedDefault(settingsKey);
@@ -223,7 +211,7 @@ test('hotfix-sensitive runtime defaults stay aligned across shared defaults and 
 });
 
 test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are absent from settings defaults and config', () => {
-  const config = loadConfig({ runProfile: 'standard' });
+  const config = loadConfig();
   const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
 
   const retiredRuntimeKeys = [
@@ -278,7 +266,7 @@ test('Phase 5 retired identity/consensus/retrieval/evidence/json-map knobs are a
 });
 
 test('retired bing endpoint stays removed from settings defaults and config', () => {
-  const config = loadConfig({ runProfile: 'standard' });
+  const config = loadConfig();
   assert.equal(Object.hasOwn(SETTINGS_DEFAULTS.runtime, 'bingSearchEndpoint'), false);
   assert.equal(Object.hasOwn(config, 'bingSearchEndpoint'), false);
 });
@@ -299,7 +287,7 @@ test('.env files are secret-only', () => {
 });
 
 test('retired CSE/paid search knobs are removed from config/default/manifest surfaces', () => {
-  const config = loadConfig({ runProfile: 'standard' });
+  const config = loadConfig();
   const manifestKeys = new Set(CONFIG_MANIFEST_KEYS || []);
   const runtimeDefaults = SETTINGS_DEFAULTS.runtime || {};
 

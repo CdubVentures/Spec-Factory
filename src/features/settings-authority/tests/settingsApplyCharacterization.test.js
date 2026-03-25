@@ -41,20 +41,17 @@ test('applyRuntimeSettingsToConfig refreshes resolved phase models when phase ov
   applyRuntimeSettingsToConfig(config, {
     llmPhaseOverridesJson: JSON.stringify({
       needset: { baseModel: 'gpt-5-low' },
-      extraction: { baseModel: 'deepseek-chat' },
       serpSelector: { useReasoning: true, reasoningModel: 'deepseek-reasoner' },
     }),
   });
 
   assert.equal(resolvePhaseModel(config, 'needset'), 'gpt-5-low');
-  assert.equal(resolvePhaseModel(config, 'extraction'), 'deepseek-chat');
   assert.equal(resolvePhaseReasoning(config, 'serpSelector'), true);
   assert.equal(resolvePhaseModel(config, 'serpSelector'), 'deepseek-reasoner');
 
   applyRuntimeSettingsToConfig(config, { llmPhaseOverridesJson: '{}' });
 
   assert.equal(resolvePhaseModel(config, 'needset'), config.llmModelPlan);
-  assert.equal(resolvePhaseModel(config, 'extraction'), config.llmModelPlan);
 });
 
 test('applyRuntimeSettingsToConfig refreshes resolved phase defaults when llmModelPlan changes', () => {

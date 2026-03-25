@@ -67,9 +67,9 @@ function extractTooltipTerms(value, { tooltipPhraseCap = 4 } = {}) {
 // RUNTIME_SETTINGS_REGISTRY values. When callers gain access to config, pass
 // options: { tooltipPhraseCap, learnedSynonymsCap, fieldSynonymsCap }.
 export function fieldSynonyms(field, lexicon, fieldRule = {}, tooltipHints = {}, options = {}) {
-  const learnedCap = options?.queryBuilderLearnedSynonymsCap ?? 6;
-  const totalCap = options?.queryBuilderFieldSynonymsCap ?? 12;
-  const tooltipPhraseCap = options?.queryBuilderTooltipPhraseCap ?? 4;
+  const learnedCap = 6;
+  const totalCap = 12;
+  const tooltipPhraseCap = 4;
   const defaults = FIELD_SYNONYMS[field] || [field];
   const learned = Object.entries(lexicon?.fields?.[field]?.synonyms || {})
     .sort((a, b) => {

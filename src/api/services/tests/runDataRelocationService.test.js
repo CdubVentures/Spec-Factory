@@ -20,7 +20,7 @@ async function pathExists(targetPath) {
   }
 }
 
-test('relocateRunDataForCompletedRun moves run directories and extracts run-scoped shared logs', async () => {
+test('relocateRunDataForCompletedRun copies run directories (preserving source) and extracts run-scoped shared logs', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-run-relocate-'));
   const outputRoot = path.join(tempRoot, 'out');
   const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
@@ -121,9 +121,10 @@ test('relocateRunDataForCompletedRun moves run directories and extracts run-scop
   const sourceRuntimeEvents = path.join(outputRoot, '_runtime', 'events.jsonl');
   const sourceBillingLedger = path.join(outputRoot, '_billing', 'ledger', '2026-02.jsonl');
 
-  assert.equal(await pathExists(sourceRunDir), false);
-  assert.equal(await pathExists(sourceIndexLabDir), false);
-  assert.equal(await pathExists(sourceTraceRunDir), false);
+  // WHY: Relocation is COPY not MOVE — source directories are preserved.
+  assert.equal(await pathExists(sourceRunDir), true);
+  assert.equal(await pathExists(sourceIndexLabDir), true);
+  assert.equal(await pathExists(sourceTraceRunDir), true);
 
   const remainingRuntimeRows = (await fs.readFile(sourceRuntimeEvents, 'utf8'))
     .trim()

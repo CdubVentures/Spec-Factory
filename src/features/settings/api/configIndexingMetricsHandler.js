@@ -36,10 +36,7 @@ export function createIndexingMetricsHandler({
       const roleTokenDefaults = {
         plan: toInt(knobDefaults.phase_02_planner?.token_cap, 1200),
         triage: toInt(knobDefaults.phase_03_triage?.token_cap, 1200),
-        reasoning: toInt(knobDefaults.reasoning_pass?.token_cap, 4096),
-        extract: toInt(knobDefaults.extract_role?.token_cap, 1200),
-        validate: toInt(knobDefaults.validate_role?.token_cap, 1200),
-        write: toInt(knobDefaults.write_role?.token_cap, 1200)
+        reasoning: toInt(knobDefaults.reasoning_pass?.token_cap, 4096)
       };
       const fallbackDefaults = {
         enabled: Boolean(String(config.llmPlanFallbackModel || '').trim()),

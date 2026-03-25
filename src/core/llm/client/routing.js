@@ -188,8 +188,6 @@ function reasonTokenGroup(reason = '') {
 }
 
 // WHY: extract/validate/write all alias to the plan model (configPostMerge).
-// Dead per-role token keys (llmMaxOutputTokensExtract etc.) were removed — they
-// were always undefined and fell through to llmMaxOutputTokens.
 // registryEntry is optional; when present its maxOutputTokens acts as a hard ceiling.
 export function roleTokenCap(config = {}, role = 'extract', reason = '', isFallback = false, registryEntry) {
   const group = reasonTokenGroup(reason);
@@ -227,6 +225,21 @@ function resolvePhaseTokenCap(config = {}, phase = '') {
   const cap = capitalize(String(phase || '').trim());
   if (!cap) return 0;
   return Math.max(0, Number(config[`_resolved${cap}MaxOutputTokens`] || 0));
+}
+
+// WHY: Phase-level timeout from LLM panel. configPostMerge writes _resolved${Phase}TimeoutMs.
+// Returns 0 when no phase timeout is configured, letting the caller's default win.
+export function resolvePhaseTimeoutMs(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return 0;
+  return Math.max(0, Number(config[`_resolved${cap}TimeoutMs`] || 0));
+}
+
+// WHY: Phase-level context token cap from LLM panel. configPostMerge writes _resolved${Phase}MaxContextTokens.
+export function resolvePhaseMaxContextTokens(config = {}, phase = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap) return 0;
+  return Math.max(0, Number(config[`_resolved${cap}MaxContextTokens`] || 0));
 }
 
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
@@ -395,6 +408,10 @@ export async function callLlmWithRouting({
     : primaryTokenCap;
   const resolvedReasoningBudget = primaryReasoningBudget;
 
+  // WHY: Phase-level timeout from panel. Falls back to caller's timeoutMs param.
+  const phaseTimeoutMs = resolvePhaseTimeoutMs(config, phase);
+  const resolvedTimeoutMs = phaseTimeoutMs > 0 ? phaseTimeoutMs : timeoutMs;
+
   logger?.info?.('llm_route_selected', {
     reason,
     role: resolvedRole,
@@ -430,7 +447,7 @@ export async function callLlmWithRouting({
     reasoningMode: Boolean(reasoningMode),
     reasoningBudget: Number(resolvedReasoningBudget || 0),
     maxTokens: Number(resolvedMaxTokens || 0),
-    timeoutMs,
+    timeoutMs: resolvedTimeoutMs,
     logger
   };
 

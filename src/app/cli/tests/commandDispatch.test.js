@@ -4,7 +4,7 @@ import { createCliCommandDispatcher } from '../commandDispatch.js';
 
 function createCommandInvocation(overrides = {}) {
   return {
-    config: { runProfile: 'test' },
+    config: {},
     storage: { name: 'stub-storage' },
     args: { local: true },
     ...overrides,

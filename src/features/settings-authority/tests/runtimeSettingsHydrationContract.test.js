@@ -41,10 +41,7 @@ function collectPutRouteFrontendKeys() {
 // Normalizer handles them passively — no active hydration bindings needed.
 const RETIRED_KEYS = new Set([
   'llmModelTriage', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite',
-  'llmMaxOutputTokensTriage', 'llmMaxOutputTokensExtract',
-  'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
-  'llmMaxOutputTokensExtractFallback', 'llmMaxOutputTokensValidateFallback',
-  'llmMaxOutputTokensWriteFallback',
+  'llmMaxOutputTokensTriage',
   'llmExtractFallbackModel', 'llmValidateFallbackModel', 'llmWriteFallbackModel',
   'llmExtractProvider', 'llmExtractBaseUrl', 'llmExtractApiKey',
   'llmValidateProvider', 'llmValidateBaseUrl', 'llmValidateApiKey',

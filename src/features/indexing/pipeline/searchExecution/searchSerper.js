@@ -5,17 +5,12 @@
 import { createPacer } from './createPacer.js';
 
 const SERPER_URL = 'https://google.serper.dev/search';
-// WHY: Defaults live in settingsRegistry; these are fallbacks for standalone usage.
-const FALLBACK_MIN_INTERVAL_MS = 500;
-const FALLBACK_RETRY_BASE_MS = 1000;
-const FALLBACK_TIMEOUT_MS = 10_000;
-const FALLBACK_MAX_RETRIES = 3;
 
 // ---------------------------------------------------------------------------
 // Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-const _defaultPacer = createPacer({ minIntervalMs: FALLBACK_MIN_INTERVAL_MS });
+const _defaultPacer = createPacer({ minIntervalMs: 500 });
 
 export function resetSerperPacingForTests() {
   _defaultPacer.resetForTests();
@@ -58,10 +53,10 @@ export async function searchSerper({
   _fetchFn,
   _pacer,
   // WHY: Registry settings flow in via the caller's settings bag.
-  serperSearchMinIntervalMs,
-  serperSearchRetryBaseMs,
-  serperSearchTimeoutMs,
-  serperSearchMaxRetries,
+  // Defaults match settingsRegistry SSOT for standalone usage.
+  serperSearchMinIntervalMs = 500,
+  serperSearchTimeoutMs = 10_000,
+  serperSearchMaxRetries = 3,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
@@ -76,11 +71,11 @@ export async function searchSerper({
   const cap = Math.max(1, Math.min(10, Number(limit) || 10));
   const fetchFn = _fetchFn || globalThis.fetch;
 
-  // WHY: Resolve registry settings → explicit param → fallback constant.
-  const effectiveMinInterval = minQueryIntervalMs ?? serperSearchMinIntervalMs ?? FALLBACK_MIN_INTERVAL_MS;
-  const effectiveRetryBase = serperSearchRetryBaseMs ?? FALLBACK_RETRY_BASE_MS;
-  const effectiveTimeout = timeoutMs ?? serperSearchTimeoutMs ?? FALLBACK_TIMEOUT_MS;
-  const effectiveMaxRetries = maxRetries ?? serperSearchMaxRetries ?? FALLBACK_MAX_RETRIES;
+  // WHY: Resolve explicit param → registry setting. Caller supplies both tiers.
+  const effectiveMinInterval = minQueryIntervalMs ?? serperSearchMinIntervalMs;
+  const effectiveRetryBase = 1000;
+  const effectiveTimeout = timeoutMs ?? serperSearchTimeoutMs;
+  const effectiveMaxRetries = maxRetries ?? serperSearchMaxRetries;
 
   // Pacing — injectable for tests
   const pacer = _pacer || _defaultPacer;

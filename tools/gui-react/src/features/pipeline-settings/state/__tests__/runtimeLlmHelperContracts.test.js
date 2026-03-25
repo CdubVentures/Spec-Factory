@@ -8,13 +8,7 @@ function createRuntimeManifestTokenDefaults(overrides = {}) {
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 512,
     llmMaxOutputTokensReasoning: 512,
-    llmMaxOutputTokensExtract: 512,
-    llmMaxOutputTokensValidate: 512,
-    llmMaxOutputTokensWrite: 512,
     llmMaxOutputTokensPlanFallback: 4096,
-    llmMaxOutputTokensExtractFallback: 4096,
-    llmMaxOutputTokensValidateFallback: 4096,
-    llmMaxOutputTokensWriteFallback: 4096,
     ...overrides,
   };
 }
@@ -67,13 +61,7 @@ test('runtime llm token preset options sanitize, sort, dedupe, and include live 
     llmMaxOutputTokensPlan: 384,
     llmMaxOutputTokensTriage: 1024,
     llmMaxOutputTokensReasoning: 512,
-    llmMaxOutputTokensExtract: 512,
-    llmMaxOutputTokensValidate: 512,
-    llmMaxOutputTokensWrite: 512,
     llmMaxOutputTokensPlanFallback: 4096,
-    llmMaxOutputTokensExtractFallback: 4096,
-    llmMaxOutputTokensValidateFallback: 4096,
-    llmMaxOutputTokensWriteFallback: 4096,
     runtimeManifestDefaults: createRuntimeManifestTokenDefaults(),
   });
 

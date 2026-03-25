@@ -11,18 +11,10 @@ import {
   getStrictKeyReviewState,
   waitForCondition,
 } from './helpers/reviewLaneGuiHarness.js';
+import { runThemeProfileGuiContract } from '../../../pages/layout/__tests__/helpers/themeProfileGuiContractHelper.js';
 
-async function assertGridLaneScope({ baseUrl, db, page }) {
-  await page.goto(`${baseUrl}/#/review`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
-  await page.locator('aside select').first().selectOption(CATEGORY);
-  await page.getByRole('link', { name: 'Review Grid' }).click();
-  await waitForCondition(async () => {
-    const response = await fetch(`${baseUrl}/api/v1/review/${CATEGORY}/products-index`);
-    const payload = await response.json();
-    return Array.isArray(payload?.products) && payload.products.length >= 2;
-  }, 20_000, 150, 'products_index_populated');
-  await page.waitForSelector(`[data-product-id="${PRODUCT_A}"][data-field-key="weight"]`, { timeout: 20_000 });
+async function assertGridLaneScope({ db, page, openReviewGrid }) {
+  await openReviewGrid();
 
   await clickGridCell(page, PRODUCT_A, 'weight');
   await ensureButtonVisible(page, 'Accept');
@@ -61,9 +53,17 @@ async function assertGridLaneScope({ baseUrl, db, page }) {
   await clickGridCell(page, PRODUCT_A, 'dpi');
   await ensureButtonVisible(page, 'Confirm');
   await page.getByRole('button', { name: 'Confirm' }).first().click();
+  const dpiSlotId = getItemFieldStateId(db, CATEGORY, PRODUCT_A, 'dpi');
+  assert.ok(dpiSlotId);
   await waitForCondition(async () => {
-    const payload = await fetch(`${baseUrl}/api/v1/review/${CATEGORY}/candidates/${PRODUCT_A}/dpi`).then((res) => res.json());
-    return payload?.keyReview?.primaryStatus === 'confirmed' && payload?.keyReview?.userAcceptPrimary == null;
+    const state = getStrictKeyReviewState(db, CATEGORY, {
+      category: CATEGORY,
+      targetKind: 'grid_key',
+      itemIdentifier: PRODUCT_A,
+      fieldKey: 'dpi',
+      itemFieldStateId: dpiSlotId,
+    });
+    return state?.ai_confirm_primary_status === 'confirmed' && state?.user_accept_primary_status == null;
   }, 15_000, 120, 'grid_item_confirm_primary');
 
   await clickGridCell(page, PRODUCT_A, 'connection');
@@ -143,6 +143,10 @@ async function assertComponentLaneScope({ componentIdentifier, db, page, openSen
 test('review lane GUI contracts keep lane-specific actions scoped across grid, enum, and component surfaces', { timeout: 240_000 }, async (t) => {
   const harness = await createReviewLaneGuiHarness(t);
   if (!harness) return;
+
+  await t.test('app-shell appearance controls hydrate persisted theme profile and persist runtime changes', async () => {
+    await runThemeProfileGuiContract(harness);
+  });
 
   await t.test('grid lane keeps primary actions isolated from shared-lane affordances', async () => {
     await assertGridLaneScope(harness);

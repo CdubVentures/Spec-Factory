@@ -199,7 +199,7 @@ describe('SERP Selector integration in processDiscoveryResults', () => {
     assert.equal(result.candidates.length, 3, 'triaged candidates remain visible after selector failure');
     const fetchHigh = result.candidates.filter((c) => c.triage_disposition === 'fetch_high');
     for (const c of fetchHigh) {
-      assert.equal(c.score_breakdown.score_source, 'reranker_fallback');
+      assert.equal(c.score_breakdown.score_source, 'passthrough_fallback');
     }
   });
 

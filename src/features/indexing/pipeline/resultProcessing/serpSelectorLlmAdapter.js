@@ -49,7 +49,6 @@ export function createSerpSelectorCallLlm({ callRoutedLlmFn, config, logger }) {
       },
       costRates: llmContext.costRates || config,
       onUsage: llmContext.recordUsage,
-      timeoutMs: config.llmTimeoutMs || 30_000,
       logger,
     });
   };

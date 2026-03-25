@@ -1,5 +1,5 @@
-import { z, toJSONSchema } from 'zod';
-import { configInt } from '../../../../shared/settingsAccessor.js';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
 
 export const brandResolverLlmResponseSchema = z.object({
   official_domain: z.string(),
@@ -10,8 +10,7 @@ export const brandResolverLlmResponseSchema = z.object({
 });
 
 function brandResolverSchema() {
-  const { $schema, ...schema } = toJSONSchema(brandResolverLlmResponseSchema);
-  return schema;
+  return zodToLlmSchema(brandResolverLlmResponseSchema);
 }
 
 export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) {
@@ -30,7 +29,6 @@ export function createBrandResolverCallLlm({ callRoutedLlmFn, config, logger }) 
       ].join('\n'),
       user: JSON.stringify({ brand, category }),
       jsonSchema: brandResolverSchema(),
-      timeoutMs: configInt(config, 'llmTimeoutMs'),
       logger
     });
     return result;

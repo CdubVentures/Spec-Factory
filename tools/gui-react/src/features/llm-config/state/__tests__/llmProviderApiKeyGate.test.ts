@@ -21,7 +21,6 @@ function emptyKeys(): RuntimeApiKeySlice {
     deepseekApiKey: '',
     anthropicApiKey: '',
     openaiApiKey: '',
-    llmPlanApiKey: '',
   };
 }
 
@@ -78,16 +77,14 @@ describe('providerHasApiKey', () => {
 
   // ── No global catch-all — providers need their own key ──
 
-  it('user-added provider without own apiKey returns false even when llmPlanApiKey set', () => {
+  it('user-added provider without own apiKey returns false', () => {
     const provider = makeProvider({ id: 'provider-12345', name: 'My LLM' });
-    const keys = { ...emptyKeys(), llmPlanApiKey: 'sk-global-key' };
-    deepStrictEqual(providerHasApiKey(provider, keys), false);
+    deepStrictEqual(providerHasApiKey(provider, emptyKeys()), false);
   });
 
-  it('default provider without dedicated key returns false even when llmPlanApiKey set', () => {
+  it('default provider without dedicated key returns false', () => {
     const provider = makeProvider({ id: 'default-anthropic', name: 'Anthropic', type: 'anthropic' });
-    const keys = { ...emptyKeys(), llmPlanApiKey: 'sk-global-key' };
-    deepStrictEqual(providerHasApiKey(provider, keys), false);
+    deepStrictEqual(providerHasApiKey(provider, emptyKeys()), false);
   });
 
   // ── Priority: registry key wins over runtime key ──
@@ -112,7 +109,6 @@ describe('providerHasApiKey', () => {
       deepseekApiKey: '',
       anthropicApiKey: '',
       openaiApiKey: '   ',
-      llmPlanApiKey: '  ',
     };
     deepStrictEqual(providerHasApiKey(provider, keys), false);
   });

@@ -142,13 +142,6 @@ export function createPipelineCommands({
         )
       );
       runConfig.pageGotoTimeoutMs = boundedFetchTimeoutMs;
-      runConfig.robotsTxtTimeoutMs = Math.max(
-        500,
-        Math.min(
-          configInt(runConfig, 'robotsTxtTimeoutMs'),
-          boundedFetchTimeoutMs
-        )
-      );
       runConfig.dynamicFetchRetryBudget = 0;
       runConfig.dynamicFetchRetryBackoffMs = 0;
       runConfig.sourceFetchWrapperAttempts = 1;

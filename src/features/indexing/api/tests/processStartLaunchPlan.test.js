@@ -54,7 +54,7 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       localOutputRoot: path.resolve('ignored-local-output-root'),
       indexlabOut: path.resolve('ignored-indexlab-root'),
       specDbDir: path.resolve('ignored-spec-db-root'),
-      runtimeTraceFetchRing: 9_999,
+      maxRunSeconds: 600,
       llmFallbackEnabled: false,
     }, {
       runDataStorageState: {
@@ -102,8 +102,8 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
     // WHY: Plan 05 Step 6 — runtime settings are snapshot-only, not individual env vars.
-    assert.equal(Object.hasOwn(result.envOverrides, 'RUNTIME_TRACE_FETCH_RING'), false,
-      'RUNTIME_TRACE_FETCH_RING is snapshot-only');
+    assert.equal(Object.hasOwn(result.envOverrides, 'MAX_RUN_SECONDS'), false,
+      'MAX_RUN_SECONDS is snapshot-only');
     assert.equal(Object.hasOwn(result.envOverrides, 'LLM_ENABLED'), false,
       'LLM_ENABLED env var retired');
     assert.equal(Object.hasOwn(result.envOverrides, 'LLM_PLAN_FALLBACK_MODEL'), false,

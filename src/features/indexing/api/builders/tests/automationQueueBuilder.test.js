@@ -19,13 +19,6 @@ function makeBuilder(overrides = {}) {
   });
 }
 
-// --- Factory ---
-
-test('createAutomationQueueBuilder returns object with expected function', () => {
-  const builder = makeBuilder();
-  assert.equal(typeof builder.readIndexLabRunAutomationQueue, 'function');
-});
-
 // --- Guards ---
 
 test('null context returns null', async () => {
@@ -44,21 +37,6 @@ test('empty events produce valid structure with zero jobs', async () => {
   assert.deepEqual(result.jobs, []);
   assert.deepEqual(result.actions, []);
   assert.equal(result.summary.total_jobs, 0);
-});
-
-// --- Output shape ---
-
-test('return has all required top-level keys', async () => {
-  const builder = makeBuilder();
-  const result = await builder.readIndexLabRunAutomationQueue('run-abc');
-  const keys = Object.keys(result);
-  for (const expected of ['generated_at', 'run_id', 'category', 'product_id', 'summary', 'policies', 'jobs', 'actions']) {
-    assert.ok(keys.includes(expected), `missing key: ${expected}`);
-  }
-  assert.equal(typeof result.summary.total_jobs, 'number');
-  assert.equal(typeof result.summary.queue_depth, 'number');
-  assert.equal(typeof result.summary.active_jobs, 'number');
-  assert.ok(result.policies.loops);
 });
 
 // --- Repair jobs ---

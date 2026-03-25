@@ -14,6 +14,7 @@ export function createStorageManagerHandler({
   readRunMeta,
   deleteArchivedRun,
   recalculateAllStorageMetrics,
+  storageSyncService,
 }) {
 
   function resolveBackend() {
@@ -212,6 +213,27 @@ export function createStorageManagerHandler({
         response.warning = 'large_storage_tree';
       }
       return jsonRes(res, 200, response);
+    }
+
+    // GET /storage/sync/status
+    if (parts[1] === 'sync' && parts[2] === 'status' && !parts[3] && method === 'GET') {
+      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
+      const status = await storageSyncService.syncStatus();
+      return jsonRes(res, 200, status);
+    }
+
+    // POST /storage/sync/push
+    if (parts[1] === 'sync' && parts[2] === 'push' && !parts[3] && method === 'POST') {
+      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
+      const result = await storageSyncService.pushAllToS3();
+      return jsonRes(res, 200, result);
+    }
+
+    // POST /storage/sync/pull
+    if (parts[1] === 'sync' && parts[2] === 'pull' && !parts[3] && method === 'POST') {
+      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
+      const result = await storageSyncService.pullAllFromS3();
+      return jsonRes(res, 200, result);
     }
 
     return false;

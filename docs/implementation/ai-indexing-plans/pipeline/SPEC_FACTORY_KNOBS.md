@@ -18,20 +18,19 @@
 | serp-selector | 1 | URL cap for SERP selector |
 | domain-classifier | 2 | URL cap, max pages per domain |
 | needset | 8 | Focus fields, confidence thresholds, group term cap, source caps |
-| browser | 13 | Crawlee settings, auto-scroll, robots.txt, navigation, concurrency |
-| network | 1 | Repair dedupe rule |
+| browser | 12 | Crawlee settings, auto-scroll, robots.txt, concurrency |
 | adapter | 2 | Fetcher adapter selection and plugins |
 | screenshots | 6 | Page capture format, quality, selectors |
-| observability | 10 | Tracing, event logging, screencast |
+| observability | 4 | Tracing, event logging |
 | schema | 1 | Pipeline Zod checkpoint validation mode |
 | models | 14 | Model selection, token caps, reasoning config |
-| limits | 10 | Costs, budgets, call limits, timeout, JSON overrides |
+| limits | 7 | Costs, budgets, timeout, JSON overrides |
 | provider | 9 | Provider URLs, API keys |
-| **RUNTIME subtotal** | **124** | |
-| BOOTSTRAP (env-only) | 97 | Read once at startup — core, caching, security, storage, LLM, discovery, paths, runtime, visual assets |
+| **RUNTIME subtotal** | **113** | |
+| BOOTSTRAP (env-only) | 15 | Read once at startup — core, storage, LLM, discovery, runtime, paths |
 | STORAGE | 10 | Persistent storage destination (local / S3) |
 | UI | 5 | Auto-save toggles |
-| **TOTAL** | **236** | |
+| **TOTAL** | **143** | |
 
 ---
 
@@ -39,11 +38,11 @@
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 124 | Pipeline runtime config (env vars, route API, GUI) |
-| `BOOTSTRAP_ENV_REGISTRY` | 97 | Environment-only settings read once at startup |
+| `RUNTIME_SETTINGS_REGISTRY` | 113 | Pipeline runtime config (env vars, route API, GUI) |
+| `BOOTSTRAP_ENV_REGISTRY` | 15 | Environment-only settings read once at startup |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
-| **TOTAL** | **236** | |
+| **TOTAL** | **143** | |
 
 ---
 
@@ -59,6 +58,8 @@
 | Convergence feature | `CONVERGENCE_SETTINGS_REGISTRY` removed entirely (was empty — zero knobs, full scaffolding across 25+ files) |
 | Dead derivation fns | `deriveRoundOverridableSet`, `deriveDeprecatedSet`, `deriveDisabledByMap` (zero importers) |
 | Dead bypass knobs | `crawlBypassMinBodyLength`, `crawlBypassHtmlSnippetCap` (registered but call sites never passed them — hardcoded fallbacks always used) |
+| Dead knob cleanup | `repairDedupeRule` (consumer never built), `robotsTxtTimeoutMs` (orphaned consumer), `runtimeScreencastFps/MaxHeight/MaxWidth/Quality` (no screencast code reads config), `runtimeTraceFetchRing/LlmRing` (transported but never consumed), `llmMaxCallsPerProductTotal/PerRound` (no enforcement gate), `llmPerProductBudgetUsd` (costLedger never checks it) |
+| Dead configBuilder | `batchStrategy`, `openaiMaxInputChars`, `helperSupportiveFillMissing`, `searchGlobalRps/Burst`, `searchPerHostRps/Burst`, `runProfile`, `consensusLlmWeightTier1-4`, `consensusTier1-4Weight`, `automationQueueStorageEngine`, `runtimeScreenshotMode`, `accuracyMode`, `chartExtractionEnabled`, `fieldRulesEngineEnforceEvidence`, `indexingHelperFilesEnabled`, `helperSupportiveEnabled/MaxSources/AutoSeedTargets/ActiveSyncLimit`, `daemonGracefulShutdownTimeoutMs` |
 
 ---
 
@@ -176,7 +177,7 @@
 
 ---
 
-## Browser & Rendering (13 knobs)
+## Browser & Rendering (12 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
@@ -192,15 +193,6 @@
 | `autoScrollDelayMs` | int | 1,200 | 0–10,000 | `AUTO_SCROLL_DELAY_MS` |
 | `autoScrollPostLoadWaitMs` | int | 200 | 0–5,000 | `AUTO_SCROLL_POST_LOAD_WAIT_MS` |
 | `robotsTxtCompliant` | bool | true | — | `ROBOTS_TXT_COMPLIANT` |
-| `robotsTxtTimeoutMs` | int | 6,000 | 100–120,000 | `ROBOTS_TXT_TIMEOUT_MS` |
-
----
-
-## Network & Pacing (1 knob)
-
-| Key | Type | Default | Range | Env Var |
-|---|---|---|---|---|
-| `repairDedupeRule` | enum | domain_once | — | `REPAIR_DEDUPE_RULE` |
 
 ---
 
@@ -226,20 +218,14 @@
 
 ---
 
-## Observability (10 knobs)
+## Observability (4 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
 | `runtimeTraceEnabled` | bool | true | — | `RUNTIME_TRACE_ENABLED` |
-| `runtimeTraceFetchRing` | int | 30 | 10–2,000 | `RUNTIME_TRACE_FETCH_RING` |
-| `runtimeTraceLlmRing` | int | 50 | 10–2,000 | `RUNTIME_TRACE_LLM_RING` |
 | `runtimeTraceLlmPayloads` | bool | true | — | `RUNTIME_TRACE_LLM_PAYLOADS` |
 | `eventsJsonWrite` | bool | true | — | `EVENTS_JSON_WRITE` |
 | `runtimeScreencastEnabled` | bool | true | — | `RUNTIME_SCREENCAST_ENABLED` |
-| `runtimeScreencastFps` | int | 10 | 1–60 | `RUNTIME_SCREENCAST_FPS` |
-| `runtimeScreencastQuality` | int | 50 | 10–100 | `RUNTIME_SCREENCAST_QUALITY` |
-| `runtimeScreencastMaxWidth` | int | 1,280 | 320–3,840 | `RUNTIME_SCREENCAST_MAX_WIDTH` |
-| `runtimeScreencastMaxHeight` | int | 720 | 240–2,160 | `RUNTIME_SCREENCAST_MAX_HEIGHT` |
 
 ---
 
@@ -272,7 +258,7 @@
 
 ---
 
-## LLM Limits (10 knobs)
+## LLM Limits (7 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
@@ -280,9 +266,6 @@
 | `llmCostOutputPer1M` | float | 10 | 0–1,000 | `LLM_COST_OUTPUT_PER_1M` |
 | `llmCostCachedInputPer1M` | float | 0.125 | 0–1,000 | `LLM_COST_CACHED_INPUT_PER_1M` |
 | `llmMonthlyBudgetUsd` | float | 300 | 0–100,000 | `LLM_MONTHLY_BUDGET_USD` |
-| `llmPerProductBudgetUsd` | float | 0.35 | 0–1,000 | `LLM_PER_PRODUCT_BUDGET_USD` |
-| `llmMaxCallsPerProductTotal` | int | 14 | 1–100 | `LLM_MAX_CALLS_PER_PRODUCT_TOTAL` |
-| `llmMaxCallsPerRound` | int | 5 | 1–200 | `LLM_MAX_CALLS_PER_ROUND` |
 | `llmTimeoutMs` | int | 30,000 | 1,000–600,000 | `LLM_TIMEOUT_MS` |
 | `llmPhaseOverridesJson` | string | {} | — | — |
 | `llmProviderRegistryJson` | string | (large JSON) | — | — |
@@ -338,143 +321,51 @@
 
 ---
 
-## Bootstrap / Environment-Only Settings (97 knobs)
+## Bootstrap / Environment-Only Settings (15 knobs)
 
 `BOOTSTRAP_ENV_REGISTRY` — read once at startup from `process.env` / `.env`. No GUI, no live-update API. Restart required to change.
 
-### Core (5)
+### Core (2)
 
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `apiBaseUrl` | `API_BASE_URL` | string | http://localhost:8788 |
-| `corsOrigin` | `CORS_ORIGIN` | string | http://localhost:8788 |
-| `nodeEnv` | `NODE_ENV` | string | development |
 | `port` | `PORT` | int | 8788 |
 | `settingsCanonicalOnlyWrites` | `SETTINGS_CANONICAL_ONLY_WRITES` | bool | true |
 
-### Caching (3)
+### Storage (1)
 
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `redisPassword` | `REDIS_PASSWORD` | string | (secret) |
-| `redisTtl` | `REDIS_TTL` | int | 0 |
-| `redisUrl` | `REDIS_URL` | string | "" |
-
-### Security (2)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `jwtExpiresIn` | `JWT_EXPIRES_IN` | string | 24h |
-| `jwtSecret` | `JWT_SECRET` | string | (secret) |
-
-### Storage (13)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `awsAccessKeyId` | `AWS_ACCESS_KEY_ID` | string | (secret) |
-| `awsSecretAccessKey` | `AWS_SECRET_ACCESS_KEY` | string | (secret) |
-| `awsSessionToken` | `AWS_SESSION_TOKEN` | string | (secret) |
 | `runDataStorageDestinationType` | `RUN_DATA_STORAGE_DESTINATION_TYPE` | string | local |
-| `runDataStorageEnabled` | `RUN_DATA_STORAGE_ENABLED` | bool | false |
-| `runDataStorageLocalDirectory` | `RUN_DATA_STORAGE_LOCAL_DIRECTORY` | string | "" |
-| `runDataStorageS3AccessKeyId` | `RUN_DATA_STORAGE_S3_ACCESS_KEY_ID` | string | (secret) |
-| `runDataStorageS3Bucket` | `RUN_DATA_STORAGE_S3_BUCKET` | string | "" |
-| `runDataStorageS3Prefix` | `RUN_DATA_STORAGE_S3_PREFIX` | string | "" |
-| `runDataStorageS3Region` | `RUN_DATA_STORAGE_S3_REGION` | string | "" |
-| `runDataStorageS3SecretAccessKey` | `RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY` | string | (secret) |
-| `runDataStorageS3SessionToken` | `RUN_DATA_STORAGE_S3_SESSION_TOKEN` | string | (secret) |
-| `s3DataBucket` | `S3_DATA_BUCKET` | string | "" |
 
-### Discovery (3)
+### LLM (7)
 
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `searchProvider` | `SEARCH_PROVIDER` | string | "" |
+| `llmApiKey` | `LLM_API_KEY` | string | (secret) |
+| `llmMaxOutputTokensExtract` | `LLM_MAX_OUTPUT_TOKENS_EXTRACT` | int | 2048 |
+| `llmMaxOutputTokensValidate` | `LLM_MAX_OUTPUT_TOKENS_VALIDATE` | int | 2048 |
+| `llmMaxOutputTokensWrite` | `LLM_MAX_OUTPUT_TOKENS_WRITE` | int | 2048 |
+| `llmPhaseOverridesJson` | `LLM_PHASE_OVERRIDES_JSON` | string | {} |
+| `llmProviderRegistryJson` | `LLM_PROVIDER_REGISTRY_JSON` | string | "" |
+| `openaiTimeoutMs` | `OPENAI_TIMEOUT_MS` | int | 40000 |
+
+### Discovery (1)
+
+| Key | Env Var | Type | Default |
+|---|---|---|---|
 | `searxngDefaultBaseUrl` | `SEARXNG_DEFAULT_BASE_URL` | string | "" |
-| `searxngUrl` | `SEARXNG_URL` | string | "" |
 
-### Paths (5)
-
-| Key | Env Var | Type | Default |
-|---|---|---|---|
-| `frontierEnableSqlite` | `FRONTIER_ENABLE_SQLITE` | bool | true |
-| `frontierRepairSearchEnabled` | `FRONTIER_REPAIR_SEARCH_ENABLED` | bool | true |
-| `helperFilesRoot` | `HELPER_FILES_ROOT` | string | category_authority |
-| `localOutputRoot` | `LOCAL_OUTPUT_ROOT` | string | "" |
-| `localS3Root` | `LOCAL_S3_ROOT` | string | "" |
-
-### Runtime (25)
+### Runtime (3)
 
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `indexingReextractAfterHours` | `INDEXING_REEXTRACT_AFTER_HOURS` | int | 24 |
-| `indexingReextractEnabled` | `INDEXING_REEXTRACT_ENABLED` | bool | true |
 | `indexingReextractSeedLimit` | `INDEXING_REEXTRACT_SEED_LIMIT` | int | 8 |
 | `indexingSchemaPacketsSchemaRoot` | `INDEXING_SCHEMA_PACKETS_SCHEMA_ROOT` | string | "" |
-| `runtimeAutosaveEnabled` | `RUNTIME_AUTOSAVE_ENABLED` | bool | true |
 | `runtimeOpsWorkbenchEnabled` | `RUNTIME_OPS_WORKBENCH_ENABLED` | bool | true |
-| `visualAssetCaptureEnabled` | `VISUAL_ASSET_CAPTURE_ENABLED` | bool | true |
-| `visualAssetCaptureMaxPerSource` | `VISUAL_ASSET_CAPTURE_MAX_PER_SOURCE` | int | 5 |
-| `visualAssetHeroSelectorMapJson` | `VISUAL_ASSET_HERO_SELECTOR_MAP_JSON` | string | "" |
-| `visualAssetLlmMaxBytes` | `VISUAL_ASSET_LLM_MAX_BYTES` | int | 512000 |
-| `visualAssetMaxPhashDistance` | `VISUAL_ASSET_MAX_PHASH_DISTANCE` | int | 10 |
-| `visualAssetMinEntropy` | `VISUAL_ASSET_MIN_ENTROPY` | float | 2.5 |
-| `visualAssetMinHeight` | `VISUAL_ASSET_MIN_HEIGHT` | int | 320 |
-| `visualAssetMinSharpness` | `VISUAL_ASSET_MIN_SHARPNESS` | int | 80 |
-| `visualAssetMinWidth` | `VISUAL_ASSET_MIN_WIDTH` | int | 320 |
-| `visualAssetPhashEnabled` | `VISUAL_ASSET_PHASH_ENABLED` | bool | true |
-| `visualAssetRegionCropMaxSide` | `VISUAL_ASSET_REGION_CROP_MAX_SIDE` | int | 1024 |
-| `visualAssetRegionCropQuality` | `VISUAL_ASSET_REGION_CROP_QUALITY` | int | 70 |
-| `visualAssetRetentionDays` | `VISUAL_ASSET_RETENTION_DAYS` | int | 30 |
-| `visualAssetReviewFormat` | `VISUAL_ASSET_REVIEW_FORMAT` | string | webp |
-| `visualAssetReviewLgMaxSide` | `VISUAL_ASSET_REVIEW_LG_MAX_SIDE` | int | 1600 |
-| `visualAssetReviewLgQuality` | `VISUAL_ASSET_REVIEW_LG_QUALITY` | int | 75 |
-| `visualAssetReviewSmMaxSide` | `VISUAL_ASSET_REVIEW_SM_MAX_SIDE` | int | 768 |
-| `visualAssetReviewSmQuality` | `VISUAL_ASSET_REVIEW_SM_QUALITY` | int | 65 |
-| `visualAssetStoreOriginal` | `VISUAL_ASSET_STORE_ORIGINAL` | bool | true |
 
-### LLM (41)
+### Paths (1)
 
 | Key | Env Var | Type | Default |
 |---|---|---|---|
-| `chatmockComposeFile` | `CHATMOCK_COMPOSE_FILE` | string | "" |
-| `chatmockDir` | `CHATMOCK_DIR` | string | "" |
-| `deepseekChatMaxOutputDefault` | `DEEPSEEK_CHAT_MAX_OUTPUT_DEFAULT` | int | 2048 |
-| `deepseekChatMaxOutputMaximum` | `DEEPSEEK_CHAT_MAX_OUTPUT_MAXIMUM` | int | 4096 |
-| `deepseekContextLength` | `DEEPSEEK_CONTEXT_LENGTH` | string | "" |
-| `deepseekFeatures` | `DEEPSEEK_FEATURES` | string | "" |
-| `deepseekModelVersion` | `DEEPSEEK_MODEL_VERSION` | string | "" |
-| `deepseekReasonerMaxOutputDefault` | `DEEPSEEK_REASONER_MAX_OUTPUT_DEFAULT` | int | 4096 |
-| `deepseekReasonerMaxOutputMaximum` | `DEEPSEEK_REASONER_MAX_OUTPUT_MAXIMUM` | int | 8192 |
-| `llmApiKey` | `LLM_API_KEY` | string | (secret) |
-| `llmCostCachedInputPer1MDeepseekChat` | `LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_CHAT` | string | "" |
-| `llmCostCachedInputPer1MDeepseekReasoner` | `LLM_COST_CACHED_INPUT_PER_1M_DEEPSEEK_REASONER` | string | "" |
-| `llmCostInputPer1MDeepseekChat` | `LLM_COST_INPUT_PER_1M_DEEPSEEK_CHAT` | string | "" |
-| `llmCostInputPer1MDeepseekReasoner` | `LLM_COST_INPUT_PER_1M_DEEPSEEK_REASONER` | string | "" |
-| `llmCostOutputPer1MDeepseekChat` | `LLM_COST_OUTPUT_PER_1M_DEEPSEEK_CHAT` | string | "" |
-| `llmCostOutputPer1MDeepseekReasoner` | `LLM_COST_OUTPUT_PER_1M_DEEPSEEK_REASONER` | string | "" |
-| `llmDisableBudgetGuards` | `LLM_DISABLE_BUDGET_GUARDS` | bool | false |
-| `llmExtractionCacheEnabled` | `LLM_EXTRACTION_CACHE_ENABLED` | bool | true |
-| `llmFallbackEnabled` | `LLM_FALLBACK_ENABLED` | bool | false |
-| `llmMaxOutputTokensExtract` | `LLM_MAX_OUTPUT_TOKENS_EXTRACT` | int | 2048 |
-| `llmMaxOutputTokensExtractFallback` | `LLM_MAX_OUTPUT_TOKENS_EXTRACT_FALLBACK` | int | 4096 |
-| `llmMaxOutputTokensValidate` | `LLM_MAX_OUTPUT_TOKENS_VALIDATE` | int | 2048 |
-| `llmMaxOutputTokensValidateFallback` | `LLM_MAX_OUTPUT_TOKENS_VALIDATE_FALLBACK` | int | 4096 |
-| `llmMaxOutputTokensWrite` | `LLM_MAX_OUTPUT_TOKENS_WRITE` | int | 2048 |
-| `llmMaxOutputTokensWriteFallback` | `LLM_MAX_OUTPUT_TOKENS_WRITE_FALLBACK` | int | 2048 |
-| `llmModelCatalog` | `LLM_MODEL_CATALOG` | string | "" |
-| `llmModelOutputTokenMapJson` | `LLM_MODEL_OUTPUT_TOKEN_MAP_JSON` | string | "" |
-| `llmModelPricingJson` | `LLM_MODEL_PRICING_JSON` | string | "" |
-| `llmOutputTokenPresets` | `LLM_OUTPUT_TOKEN_PRESETS` | string | "" |
-| `llmPhaseOverridesJson` | `LLM_PHASE_OVERRIDES_JSON` | string | {} |
-| `llmPlanFallbackBaseUrl` | `LLM_PLAN_FALLBACK_BASE_URL` | string | "" |
-| `llmPlanFallbackProvider` | `LLM_PLAN_FALLBACK_PROVIDER` | string | "" |
-| `llmPricingAsOf` | `LLM_PRICING_AS_OF` | string | "" |
-| `llmPricingSourcesJson` | `LLM_PRICING_SOURCES_JSON` | string | "" |
-| `llmProviderRegistryJson` | `LLM_PROVIDER_REGISTRY_JSON` | string | "" |
-| `llmTriageUseReasoning` | `LLM_TRIAGE_USE_REASONING` | bool | false |
-| `openaiBaseUrl` | `OPENAI_BASE_URL` | string | "" |
-| `openaiModelExtract` | `OPENAI_MODEL_EXTRACT` | string | "" |
-| `openaiModelPlan` | `OPENAI_MODEL_PLAN` | string | "" |
-| `openaiModelWrite` | `OPENAI_MODEL_WRITE` | string | "" |
-| `openaiTimeoutMs` | `OPENAI_TIMEOUT_MS` | int | 40000 |
+| `localOutputRoot` | `LOCAL_OUTPUT_ROOT` | string | "" |

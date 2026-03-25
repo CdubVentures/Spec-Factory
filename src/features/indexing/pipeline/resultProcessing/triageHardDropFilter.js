@@ -25,13 +25,11 @@ const SEARCH_RESULTS_RE = /(?:^|\/)search(?:\/|$|\?)|[?&](?:q|query|s|keyword|se
  * @param {object} options
  * @param {Array} options.dedupedResults — raw search results after dedup
  * @param {object} options.categoryConfig — category config with denylist
- * @param {object} [options.identityLock] — identity lock (unused here; soft labeler handles identity)
  * @returns {{ survivors: object[], hardDrops: object[] }}
  */
 export function applyHardDropFilter({
   dedupedResults,
   categoryConfig,
-  identityLock,
 } = {}) {
   const survivors = [];
   const hardDrops = [];

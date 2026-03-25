@@ -43,27 +43,29 @@ export function makeStorage(tempRoot) {
 
 export async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  await fs.writeFile(filePath, JSON.stringify(value), 'utf8');
 }
 
 export async function seedFieldRules(helperRoot, category) {
   const generatedRoot = path.join(helperRoot, category, '_generated');
-  await writeJson(path.join(generatedRoot, 'field_rules.json'), { category, fields: FIELD_RULES_FIELDS });
-  await writeJson(path.join(generatedRoot, 'known_values.json'), { category, fields: {} });
-  await writeJson(path.join(generatedRoot, 'parse_templates.json'), { category, templates: {} });
-  await writeJson(path.join(generatedRoot, 'cross_validation_rules.json'), { category, rules: [] });
-  await writeJson(path.join(generatedRoot, 'key_migrations.json'), {
-    version: '1.0.0',
-    previous_version: '1.0.0',
-    bump: 'patch',
-    summary: { added_count: 0, removed_count: 0, changed_count: 0 },
-    key_map: {},
-    migrations: [],
-  });
-  await writeJson(path.join(generatedRoot, 'ui_field_catalog.json'), {
-    category,
-    fields: Object.keys(FIELD_RULES_FIELDS).map((key) => ({ key, group: 'specs' })),
-  });
+  await Promise.all([
+    writeJson(path.join(generatedRoot, 'field_rules.json'), { category, fields: FIELD_RULES_FIELDS }),
+    writeJson(path.join(generatedRoot, 'known_values.json'), { category, fields: {} }),
+    writeJson(path.join(generatedRoot, 'parse_templates.json'), { category, templates: {} }),
+    writeJson(path.join(generatedRoot, 'cross_validation_rules.json'), { category, rules: [] }),
+    writeJson(path.join(generatedRoot, 'key_migrations.json'), {
+      version: '1.0.0',
+      previous_version: '1.0.0',
+      bump: 'patch',
+      summary: { added_count: 0, removed_count: 0, changed_count: 0 },
+      key_map: {},
+      migrations: [],
+    }),
+    writeJson(path.join(generatedRoot, 'ui_field_catalog.json'), {
+      category,
+      fields: Object.keys(FIELD_RULES_FIELDS).map((key) => ({ key, group: 'specs' })),
+    }),
+  ]);
 }
 
 export async function seedComponentDb(helperRoot, category) {
@@ -91,33 +93,35 @@ export async function seedWorkbookMap(helperRoot, category) {
 
 export async function seedLatestArtifacts(storage, category, productId, product) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  await storage.writeObject(
-    `${latestBase}/normalized.json`,
-    Buffer.from(JSON.stringify({ identity: product.identity, fields: product.fields }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
-  await storage.writeObject(
-    `${latestBase}/provenance.json`,
-    Buffer.from(JSON.stringify(product.provenance, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
-  await storage.writeObject(
-    `${latestBase}/summary.json`,
-    Buffer.from(JSON.stringify({
-      confidence: 0.9,
-      coverage_overall_percent: 100,
-      missing_required_fields: [],
-      fields_below_pass_target: [],
-      critical_fields_below_pass_target: [],
-      field_reasoning: {},
-    }, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
-  await storage.writeObject(
-    `${latestBase}/candidates.json`,
-    Buffer.from(JSON.stringify(product.candidates, null, 2), 'utf8'),
-    { contentType: 'application/json' },
-  );
+  await Promise.all([
+    storage.writeObject(
+      `${latestBase}/normalized.json`,
+      Buffer.from(JSON.stringify({ identity: product.identity, fields: product.fields }), 'utf8'),
+      { contentType: 'application/json' },
+    ),
+    storage.writeObject(
+      `${latestBase}/provenance.json`,
+      Buffer.from(JSON.stringify(product.provenance), 'utf8'),
+      { contentType: 'application/json' },
+    ),
+    storage.writeObject(
+      `${latestBase}/summary.json`,
+      Buffer.from(JSON.stringify({
+        confidence: 0.9,
+        coverage_overall_percent: 100,
+        missing_required_fields: [],
+        fields_below_pass_target: [],
+        critical_fields_below_pass_target: [],
+        field_reasoning: {},
+      }), 'utf8'),
+      { contentType: 'application/json' },
+    ),
+    storage.writeObject(
+      `${latestBase}/candidates.json`,
+      Buffer.from(JSON.stringify(product.candidates), 'utf8'),
+      { contentType: 'application/json' },
+    ),
+  ]);
 }
 
 export function buildFieldRulesForSeed() {

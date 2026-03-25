@@ -51,7 +51,7 @@ const LOW_VALUE_HOSTS = new Set([
   'm.media-amazon.com',
 ]);
 
-// WHY: Subdomain prefix list is shared via isLowValueSubdomain() from utils/common.js
+// WHY: Subdomain prefix list is shared via isLowValueSubdomain() from shared/valueNormalizers.js
 
 export function isLowValueHost(hostname) {
   const h = String(hostname || '').trim().toLowerCase();

@@ -100,15 +100,15 @@ export function createBootstrapEnvironment({ projectRoot }) {
   config.settingsCanonicalOnlyWrites = envBool('SETTINGS_CANONICAL_ONLY_WRITES', true);
 
   const runDataStorageState = normalizeRunDataStorageSettings({
-    enabled: envBool('RUN_DATA_STORAGE_ENABLED', envToken('S3_BUCKET', '') !== ''),
+    enabled: envBool('RUN_DATA_STORAGE_ENABLED', false),
     destinationType: resolveRunDataDestinationType({ env: process.env }),
     localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
     awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', 'us-east-2'),
     s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', ''),
     s3Prefix: envToken('RUN_DATA_STORAGE_S3_PREFIX', 'spec-factory-runs'),
-    s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', process.env.AWS_ACCESS_KEY_ID || ''),
-    s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', process.env.AWS_SECRET_ACCESS_KEY || ''),
-    s3SessionToken: envToken('RUN_DATA_STORAGE_S3_SESSION_TOKEN', process.env.AWS_SESSION_TOKEN || ''),
+    s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', ''),
+    s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', ''),
+    s3SessionToken: envToken('RUN_DATA_STORAGE_S3_SESSION_TOKEN', ''),
     updatedAt: null,
     ...userSettings.storage,
   });

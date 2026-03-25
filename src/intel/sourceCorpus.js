@@ -19,7 +19,8 @@ function normalizePath(url) {
   }
 }
 
-function normalizeToken(value) {
+// WHY: Domain-specific — strips non-alphanumeric, keeps spaces as word delimiters for tokenization.
+function normalizeForTokenization(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
@@ -27,7 +28,7 @@ function normalizeToken(value) {
 }
 
 function tokenize(value) {
-  return normalizeToken(value)
+  return normalizeForTokenization(value)
     .split(/\s+/g)
     .map((token) => token.trim())
     .filter((token) => token.length >= 2);

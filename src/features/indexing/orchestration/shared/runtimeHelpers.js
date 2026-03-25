@@ -16,13 +16,14 @@ export function sendModeIncludesPrime(value = '') {
   return token.includes('prime');
 }
 
-function normalizeToken(value, fallback = '') {
+// WHY: Domain-specific — adds fallback return for empty tokens. Not the canonical normalizeToken.
+function normalizeTokenWithFallback(value, fallback = '') {
   const token = String(value || '').trim().toLowerCase();
   return token || fallback;
 }
 
 function normalizeScopeToken(value) {
-  const token = normalizeToken(value, 'field');
+  const token = normalizeTokenWithFallback(value, 'field');
   if (token === 'component' || token === 'list' || token === 'field') {
     return token;
   }
@@ -43,9 +44,9 @@ function parseTokenCap(value, fallback = 4096) {
 
 function normalizeRoutePolicyRow(row = {}, scopeFallback = 'field') {
   const scope = normalizeScopeToken(row?.scope || scopeFallback);
-  const requiredLevel = normalizeToken(row?.required_level, 'expected');
-  const difficulty = normalizeToken(row?.difficulty, 'medium');
-  const availability = normalizeToken(row?.availability, 'expected');
+  const requiredLevel = normalizeTokenWithFallback(row?.required_level, 'expected');
+  const difficulty = normalizeTokenWithFallback(row?.difficulty, 'medium');
+  const availability = normalizeTokenWithFallback(row?.availability, 'expected');
   const effort = parseEffort(row?.effort, 3);
   const minEvidenceRefs = parseMinEvidenceRefs(row?.llm_output_min_evidence_refs_required, 1);
   return {
@@ -85,9 +86,9 @@ function normalizeRoutePolicyRow(row = {}, scopeFallback = 'field') {
 }
 
 function readRuleToken(rule, key, fallback) {
-  const direct = normalizeToken(rule?.[key], '');
+  const direct = normalizeTokenWithFallback(rule?.[key], '');
   if (direct) return direct;
-  const fromPriority = normalizeToken(rule?.priority?.[key], '');
+  const fromPriority = normalizeTokenWithFallback(rule?.priority?.[key], '');
   if (fromPriority) return fromPriority;
   return fallback;
 }

@@ -52,7 +52,7 @@ async function loadRunStartPayloadModule() {
   );
 }
 
-test('deriveIndexingRunStartParsedValues parses runtime numeric settings and falls back to baseline', async () => {
+test('deriveIndexingRunStartParsedValues parses active runtime numeric settings and falls back to baseline', async () => {
   const { deriveIndexingRunStartParsedValues } = await loadBundledModule(
     'tools/gui-react/src/features/indexing/api/indexingRunStartParsedValues.ts',
     { prefix: 'indexing-run-start-parsed-' },
@@ -60,17 +60,17 @@ test('deriveIndexingRunStartParsedValues parses runtime numeric settings and fal
 
   const parsed = deriveIndexingRunStartParsedValues({
     runtimeSettingsPayload: {
-      runtimeScreencastFps: '7',
-      llmMonthlyBudgetUsd: '3.5',
+      llmCostInputPer1M: '3.5',
+      maxPagesPerDomain: '25',
     },
     runtimeSettingsBaseline: createBaseline({
-      runtimeScreencastFps: 12,
-      llmMonthlyBudgetUsd: 9.25,
+      llmCostInputPer1M: 9.25,
+      maxPagesPerDomain: 10,
     }),
   });
 
-  assert.equal(parsed.parsedRuntimeScreencastFps, 7);
-  assert.equal(parsed.parsedLlmMonthlyBudgetUsd, 3.5);
+  assert.equal(parsed.parsedLlmCostInputPer1M, 3.5);
+  assert.equal(parsed.parsedMaxPagesPerDomain, 25);
 });
 
 test('buildIndexingRunStartPayload composes and clamps cross-domain run payload fields', async () => {
@@ -84,11 +84,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       searchEngines: ' bing,brave,duckduckgo ',
       runtimeScreencastEnabled: true,
       eventsJsonWrite: true,
-      discoveryEnabled: true,
       llmProvider: '  openai  ',
-      llmPlanProvider: '  openai  ',
-      llmPlanBaseUrl: '  https://plan.example.test  ',
-      llmPlanApiKey: '  plan-key  ',
       llmModelPlan: '  gpt-plan  ',
       llmModelTriage: '  gpt-triage  ',
       llmMaxOutputTokensPlan: '128',
@@ -96,22 +92,12 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       llmModelReasoning: '  gpt-reasoning  ',
       llmMaxOutputTokensReasoning: '131',
       llmModelExtract: '  gpt-extract  ',
-      llmMaxOutputTokensExtract: '132',
       llmModelValidate: '  gpt-validate  ',
-      llmMaxOutputTokensValidate: '133',
       llmModelWrite: '  gpt-write  ',
-      llmMaxOutputTokensWrite: '134',
       llmPlanFallbackModel: '  gpt-plan-fallback  ',
       llmMaxOutputTokensPlanFallback: '135',
-      llmMaxOutputTokensExtractFallback: '136',
-      llmMaxOutputTokensValidateFallback: '137',
-      llmMaxOutputTokensWriteFallback: '138',
     }),
     parsedValues: createParsedValues({
-      parsedRuntimeScreencastFps: 0,
-      parsedRuntimeScreencastQuality: 5,
-      parsedRuntimeScreencastMaxWidth: 100,
-      parsedRuntimeScreencastMaxHeight: 100,
       parsedIdentityGatePublishThreshold: 1.5,
       parsedIndexingResumeSeedLimit: 0,
       parsedIndexingResumePersistLimit: 0,
@@ -121,7 +107,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedMaxCandidateUrls: 0,
       parsedMaxPagesPerDomain: 0,
       parsedMaxRunSeconds: 0,
-      parsedLlmMaxCallsPerRound: 0,
       parsedLlmMaxOutputTokens: 50,
       parsedLlmMaxTokens: 0,
       parsedLlmTimeoutMs: 0,
@@ -131,22 +116,17 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedMaxManufacturerUrlsPerProduct: 0,
       parsedMaxManufacturerPagesPerDomain: 0,
       parsedManufacturerReserveUrls: -1,
-      parsedLlmMaxCallsPerProductTotal: 0,
       parsedLlmMaxCallsPerProductFast: -1,
       // WHY: parsedNeedsetEvidenceDecayDays/Floor removed in Phase 12 NeedSet Legacy Removal
       parsedLlmExtractMaxTokens: 10,
       parsedLlmReasoningBudget: 0,
-      parsedLlmMonthlyBudgetUsd: -1,
-      parsedLlmPerProductBudgetUsd: -1,
+      parsedLlmCostInputPer1M: -1,
       // WHY: Model token fields now handled by generic overlay (no sub-builder).
       // In the real flow, deriveIndexingRunStartParsedValues generates these.
       parsedLlmMaxOutputTokensPlan: 128,
       parsedLlmMaxOutputTokensReasoning: 131,
       parsedLlmMaxOutputTokensPlanFallback: 135,
       parsedLlmMaxOutputTokensReasoningFallback: 138,
-      parsedLlmMaxOutputTokensExtractFallback: 136,
-      parsedLlmMaxOutputTokensValidateFallback: 137,
-      parsedLlmMaxOutputTokensWriteFallback: 138,
     }),
     runControlPayload: {
       reviewMode: true,
@@ -157,17 +137,12 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
   assert.equal(payload.mode, 'indexlab');
   assert.equal(payload.replaceRunning, true);
 
-  assert.equal(payload.runtimeScreencastFps, 1);
-  assert.equal(payload.runtimeScreencastQuality, 10);
-
   // WHY: Registry SSOT defines min: 1 for searchProfileQueryCap. The generic
   // overlay now enforces registry min consistently. Old discovery builder skipped
   // clamping, but the registry is the source of truth.
   assert.equal(payload.searchProfileQueryCap, 1);
 
   assert.equal(payload.llmProvider, 'openai');
-  assert.equal(payload.llmPlanProvider, 'openai');
-  assert.equal(payload.llmPlanApiKey, 'plan-key');
   assert.equal(payload.llmMaxOutputTokens, 256);
   assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.llmModelPlan, 'gpt-plan');

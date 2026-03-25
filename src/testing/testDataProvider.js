@@ -9,7 +9,8 @@
  * not hardcoded to mouse or any specific category.
  */
 
-import { z, toJSONSchema } from 'zod';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../core/llm/zodToLlmSchema.js';
 import { callLlmWithRouting } from '../core/llm/client/routing.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -2665,8 +2666,7 @@ export const sourceResponseZodSchema = z.object({
 });
 
 function sourceResponseJsonSchema() {
-  const { $schema, ...schema } = toJSONSchema(sourceResponseZodSchema);
-  return schema;
+  return zodToLlmSchema(sourceResponseZodSchema);
 }
 const sourceResponseSchema = sourceResponseJsonSchema();
 

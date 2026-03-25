@@ -1,4 +1,5 @@
-function normalizeToken(value) {
+// WHY: Domain-specific — converts non-alphanumeric to hyphens for stable candidate IDs.
+function normalizeTokenSlug(value) {
   return String(value ?? '')
     .trim()
     .toLowerCase()
@@ -34,7 +35,7 @@ function hashParts(parts) {
 }
 
 function tokenPart(value, fallback = 'na') {
-  const token = normalizeToken(serializePart(value));
+  const token = normalizeTokenSlug(serializePart(value));
   if (!token) {
     return fallback;
   }

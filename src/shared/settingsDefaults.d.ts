@@ -2,6 +2,7 @@
 // Run: node tools/gui-react/scripts/generateManifestTypes.js
 
 export declare const SETTINGS_DEFAULTS: {
+  readonly convergence: Readonly<Record<string, number | boolean>>;
   readonly runtime: Readonly<Record<string, string | number | boolean>>;
   readonly storage: Readonly<{
     enabled: boolean;
@@ -38,7 +39,6 @@ export declare const SETTINGS_OPTION_VALUES: {
   readonly runtime: Readonly<{
     fetcherAdapter: readonly string[];
     pipelineSchemaEnforcementMode: readonly string[];
-    repairDedupeRule: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];
   }>;

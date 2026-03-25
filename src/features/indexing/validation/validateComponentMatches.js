@@ -5,7 +5,8 @@
 // - NEW_COMPONENT: genuinely different → flag for human approval
 // - REJECT: bad data, extraction error, insufficient evidence
 
-import { z, toJSONSchema } from 'zod';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../../../core/llm/zodToLlmSchema.js';
 import { callLlmWithRouting, hasLlmRouteApiKey } from '../../../core/llm/client/routing.js';
 
 export const componentMatchResponseZodSchema = z.object({
@@ -21,8 +22,7 @@ export const componentMatchResponseZodSchema = z.object({
 });
 
 function responseSchema() {
-  const { $schema, ...schema } = toJSONSchema(componentMatchResponseZodSchema);
-  return schema;
+  return zodToLlmSchema(componentMatchResponseZodSchema);
 }
 
 function buildSystemPrompt(reasoningNote) {
@@ -169,7 +169,6 @@ export async function validateComponentMatches({
         },
         costRates,
         onUsage,
-        timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 60_000),
         logger,
       });
 

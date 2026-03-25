@@ -15,16 +15,11 @@ import { loadConfig, validateConfig } from '../../../config.js';
 
 test('C.1 config defaults: loadConfig returns valid defaults', () => {
   const config = loadConfig();
-  assert.equal(config.runProfile, 'standard');
-});
-
-test('C.1 config defaults: discovery enabled by default', () => {
-  const config = loadConfig();
-  assert.equal(config.discoveryEnabled, true);
+  assert.equal(typeof config.llmProvider, 'string');
 });
 
 test('C.1 config defaults: userAgent is normalized without surrounding quotes', () => {
-  const config = loadConfig({ runProfile: 'standard' });
+  const config = loadConfig();
   assert.equal(typeof config.userAgent, 'string');
   assert.equal(config.userAgent.startsWith('"'), false);
   assert.equal(config.userAgent.endsWith('"'), false);
@@ -36,7 +31,6 @@ test('C.1 config defaults: userAgent is normalized without surrounding quotes', 
 
 test('C.1 config overrides: quoted userAgent input is normalized without surrounding quotes', () => {
   const config = loadConfig({
-    runProfile: 'standard',
     userAgent: '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"'
   });
   assert.equal(typeof config.userAgent, 'string');
@@ -52,7 +46,7 @@ test('C.1 config overrides: quoted userAgent input is normalized without surroun
 // they are now hardcoded in crawl/frontier modules.
 
 test('C.1 config defaults: retired bingSearchEndpoint knob is absent', () => {
-  const config = loadConfig({ runProfile: 'standard' });
+  const config = loadConfig();
   assert.equal(Object.hasOwn(config, 'bingSearchEndpoint'), false);
 });
 
@@ -103,16 +97,7 @@ test('C.1 validate: search provider configured does not emit discovery warning',
   assert.ok(!result.warnings.some((w) => w.code === 'DISCOVERY_NO_SEARCH_PROVIDER'));
 });
 
-// =========================================================================
-// SECTION 4: Run profile is always standard (profiles retired)
-// =========================================================================
-
-test('C.1 profile: runProfile is always standard regardless of input', () => {
-  assert.equal(loadConfig({ runProfile: 'thorough' }).runProfile, 'standard');
-  assert.equal(loadConfig({ runProfile: 'fast' }).runProfile, 'standard');
-  assert.equal(loadConfig({ runProfile: 'xyzinvalid' }).runProfile, 'standard');
-  assert.equal(loadConfig().runProfile, 'standard');
-});
+// WHY: Section 4 (runProfile) removed — runProfile retired.
 
 // WHY: Section 5 (localMode forces outputMode) removed — outputMode/mirrorToS3 settings retired.
 

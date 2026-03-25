@@ -3,21 +3,26 @@ import assert from 'node:assert/strict';
 
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
+let settingsSurfaceModulesPromise;
+
 async function loadSettingsSurfaceModules() {
-  return Promise.all([
-    loadBundledModule(
-      'tools/gui-react/src/features/pipeline-settings/index.ts',
-      { prefix: 'settings-surface-feature-' },
-    ),
-    loadBundledModule(
-      'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts',
-      { prefix: 'settings-surface-runtime-authority-' },
-    ),
-    loadBundledModule(
-      'tools/gui-react/src/stores/settingsManifest.ts',
-      { prefix: 'settings-surface-manifest-' },
-    ),
-  ]);
+  if (!settingsSurfaceModulesPromise) {
+    settingsSurfaceModulesPromise = Promise.all([
+      loadBundledModule(
+        'tools/gui-react/src/features/pipeline-settings/index.ts',
+        { prefix: 'settings-surface-feature-' },
+      ),
+      loadBundledModule(
+        'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHelpers.ts',
+        { prefix: 'settings-surface-runtime-authority-' },
+      ),
+      loadBundledModule(
+        'tools/gui-react/src/stores/settingsManifest.ts',
+        { prefix: 'settings-surface-manifest-' },
+      ),
+    ]);
+  }
+  return settingsSurfaceModulesPromise;
 }
 
 test('settings surface normalizes cached runtime settings through the public GUI contract', async () => {
@@ -85,7 +90,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     STORAGE_SETTING_DEFAULTS,
   } = settingsManifest;
   const {
-    REPAIR_DEDUPE_RULE_OPTIONS,
     SEARXNG_ENGINE_OPTIONS,
   } = pipelineSettingsFeature;
 
@@ -115,17 +119,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
       RUNTIME_SETTING_DEFAULTS.searchEngines.length > 0,
     'searchEngines default should be a non-empty string',
   );
-
-  const runtimeDefaultOptionSets = [
-    [REPAIR_DEDUPE_RULE_OPTIONS, RUNTIME_SETTING_DEFAULTS.repairDedupeRule, 'repairDedupeRule'],
-  ];
-  for (const [options, defaultValue, label] of runtimeDefaultOptionSets) {
-    assert.equal(
-      options.includes(defaultValue),
-      true,
-      `${label} default should stay selectable through the manifest contract`,
-    );
-  }
 
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
   assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);

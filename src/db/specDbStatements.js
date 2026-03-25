@@ -207,6 +207,29 @@ export function prepareStatements(db) {
         run_at = excluded.run_at
     `),
 
+    _updateRunStorageLocation: db.prepare(`
+      UPDATE product_runs SET
+        storage_state = @storage_state,
+        local_path = @local_path,
+        s3_key = @s3_key,
+        size_bytes = @size_bytes,
+        relocated_at = @relocated_at
+      WHERE category = @category AND product_id = @product_id AND run_id = @run_id
+    `),
+
+    _getRunStorageLocation: db.prepare(
+      `SELECT run_id, storage_state, local_path, s3_key, size_bytes, relocated_at
+       FROM product_runs WHERE category = ? AND product_id = ? AND run_id = ?`
+    ),
+
+    _listRunsByStorageState: db.prepare(
+      `SELECT * FROM product_runs WHERE category = ? AND storage_state = ? ORDER BY run_at DESC`
+    ),
+
+    _countRunsByStorageState: db.prepare(
+      `SELECT storage_state, COUNT(*) as count FROM product_runs WHERE category = ? GROUP BY storage_state`
+    ),
+
     _upsertProduct: db.prepare(`
       INSERT INTO products (
         category, product_id, brand, model, variant, status, seed_urls, identifier

@@ -4,8 +4,6 @@
 
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
-  DUAL_KEY_PAIRS,
-  assertDualKeyConsistency
 } from './settingsKeyMap.js';
 import { SETTINGS_DEFAULTS } from '../../shared/settingsDefaults.js';
 import { RUNTIME_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
@@ -37,13 +35,7 @@ export const EXPLICIT_ENV_KEY_OVERRIDES = new Map([
   ['llmBaseUrl', ['LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
   ['llmModelPlan', ['LLM_MODEL_PLAN', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_PLAN', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
   ['llmModelReasoning', ['LLM_MODEL_REASONING', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
-  ['llmPlanProvider', ['LLM_PLAN_PROVIDER', 'LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'LLM_MODEL_EXTRACT', 'OPENAI_MODEL_EXTRACT', 'DEEPSEEK_API_KEY']],
-  ['llmPlanBaseUrl', ['LLM_PLAN_BASE_URL', 'LLM_BASE_URL', 'OPENAI_BASE_URL', 'DEEPSEEK_API_KEY']],
   ['runtimeScreencastEnabled', ['RUNTIME_SCREENCAST_ENABLED']],
-  ['runtimeScreencastFps', ['RUNTIME_SCREENCAST_FPS']],
-  ['runtimeScreencastQuality', ['RUNTIME_SCREENCAST_QUALITY']],
-  ['runtimeScreencastMaxWidth', ['RUNTIME_SCREENCAST_MAX_WIDTH']],
-  ['runtimeScreencastMaxHeight', ['RUNTIME_SCREENCAST_MAX_HEIGHT']],
 ]);
 
 function buildRuntimeSettingsConfigKeyMap() {
@@ -148,6 +140,4 @@ export function assertDefaultsValid(defaults) {
     }
   }
 
-  // Validate dual-key consistency
-  assertDualKeyConsistency(runtime);
 }

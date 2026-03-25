@@ -19,15 +19,15 @@ import {
 // serpSelectorOutputSchema — just keep_ids
 // ---------------------------------------------------------------------------
 
-import { z, toJSONSchema } from 'zod';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../../../../core/llm/zodToLlmSchema.js';
 
 const serpSelectorOutputZodSchema = z.object({
   keep_ids: z.array(z.string()),
 });
 
 export function serpSelectorOutputSchema() {
-  const { $schema, ...schema } = toJSONSchema(serpSelectorOutputZodSchema);
-  return schema;
+  return zodToLlmSchema(serpSelectorOutputZodSchema);
 }
 
 // ---------------------------------------------------------------------------
@@ -182,7 +182,7 @@ export function adaptSerpSelectorOutput({
       ...enrich(originalRow),
       triage_disposition: 'fetch_high',
       approval_bucket: 'approved',
-      soft_reason_codes: [scoreSource === 'reranker_fallback' ? 'reranker_fallback' : 'llm_selected'],
+      soft_reason_codes: [scoreSource === 'passthrough_fallback' ? 'passthrough_fallback' : 'llm_selected'],
       score,
       score_breakdown: { score_source: scoreSource, rank: rank + 1 },
     });

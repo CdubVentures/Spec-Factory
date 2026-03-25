@@ -1,17 +1,12 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
   CATEGORY,
   PRODUCT_A,
   apiJson,
-  createReviewLaneApiHarness,
-} from './fixtures/reviewLaneApiHarness.js';
+} from '../fixtures/reviewLaneApiHarness.js';
 
-test('review lane read contracts stay read-only and preserve selected candidate visibility', async (t) => {
-  const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
-
+export async function runReviewLaneReadContracts(t, harness) {
   const { baseUrl, db, reviewDocPath } = harness;
 
   await t.test('component review GET does not mutate synthetic candidates on read', async () => {
@@ -95,4 +90,4 @@ test('review lane read contracts stay read-only and preserve selected candidate 
       true,
     );
   });
-});
+}

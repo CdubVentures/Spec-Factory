@@ -10,9 +10,7 @@ function round(value, digits = 6) {
   return Math.round(value * factor) / factor;
 }
 
-function normalizeToken(value) {
-  return String(value ?? '').trim().toLowerCase();
-}
+import { normalizeToken } from '../shared/primitives.js';
 
 function isCorrectPrediction(prediction, expectedValue) {
   return normalizeToken(prediction?.value) === normalizeToken(expectedValue);

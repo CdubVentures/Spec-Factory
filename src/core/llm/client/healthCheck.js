@@ -1,4 +1,5 @@
-import { z, toJSONSchema } from 'zod';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../zodToLlmSchema.js';
 import { buildRunId } from '../../../shared/primitives.js';
 import { callOpenAI } from './openaiClient.js';
 import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
@@ -15,8 +16,7 @@ export const healthCheckResponseZodSchema = z.object({
 });
 
 function healthSchema() {
-  const { $schema, ...schema } = toJSONSchema(healthCheckResponseZodSchema);
-  return schema;
+  return zodToLlmSchema(healthCheckResponseZodSchema);
 }
 
 function defaultUsageRow() {

@@ -5,12 +5,10 @@ export interface RuntimeApiKeySlice {
   deepseekApiKey: string;
   anthropicApiKey: string;
   openaiApiKey: string;
-  llmPlanApiKey: string;
 }
 
 const LOCAL_PROVIDER_TYPES: ReadonlySet<LlmProviderType> = new Set(['ollama']);
 
-/** WHY: Gemini uses llmPlanApiKey as legacy fallback — it was historically the only provider key field. */
 export const PROVIDER_API_KEY_MAP: Readonly<Record<string, keyof RuntimeApiKeySlice>> = {
   'default-gemini': 'geminiApiKey',
   'default-deepseek': 'deepseekApiKey',

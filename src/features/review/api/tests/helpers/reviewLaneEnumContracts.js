@@ -1,4 +1,3 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CATEGORY,
@@ -6,13 +5,9 @@ import {
   findEnumValue,
   getEnumSlotIds,
   getStrictKeyReviewState,
-  createReviewLaneApiHarness,
-} from './fixtures/reviewLaneApiHarness.js';
+} from '../fixtures/reviewLaneApiHarness.js';
 
-test('review lane enum mutations stay candidate-scoped and propagate value changes', async (t) => {
-  const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
-
+export async function runReviewLaneEnumContracts(t, harness) {
   const { baseUrl, db, readReviewDoc } = harness;
 
   await t.test('enum accept and confirm remain decoupled and confirm is candidate scoped', async () => {
@@ -119,4 +114,4 @@ test('review lane enum mutations stay candidate-scoped and propagate value chang
     assert.ok(newValue);
     assert.equal(newValue.needs_review, true);
   });
-});
+}

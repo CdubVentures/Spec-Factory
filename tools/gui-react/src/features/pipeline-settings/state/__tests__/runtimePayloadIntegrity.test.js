@@ -52,7 +52,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
   const dummyInput = {
     searchEngines: 'bing,google',
     searxngBaseUrl: '',
-    llmPlanApiKey: '',
     llmModelPlan: 'test-model',
     llmModelReasoning: 'test-model',
     llmPlanFallbackModel: '',
@@ -69,8 +68,6 @@ test('every runtime payload key is accepted by the backend PUT handler', async (
     anthropicApiKey: '',
     geminiApiKey: '',
     deepseekApiKey: '',
-    llmPlanProvider: '',
-    llmPlanBaseUrl: '',
     runtimeSettingsFallbackBaseline: new Proxy({}, { get: () => 0 }),
     resolveModelTokenDefaults: () => ({ max_output_tokens: 4096, default_output_tokens: 2048 }),
   };

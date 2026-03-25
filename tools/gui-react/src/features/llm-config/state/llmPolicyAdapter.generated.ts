@@ -1,21 +1,18 @@
 // AUTO-GENERATED from registry policyGroup/policyField metadata — do not edit manually.
 // Run: node tools/gui-react/scripts/generateLlmPolicyAdapter.js
 
-import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes.ts';
-import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
+import type { LlmPhaseOverride } from '../types/llmPhaseOverrideTypes';
+import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes';
 
 export interface LlmPolicyApiKeys {
   anthropic: string;
   deepseek: string;
   gemini: string;
-  plan: string;
   openai: string;
 }
 
 export interface LlmPolicyProvider {
   baseUrl: string;
-  planBaseUrl: string;
-  planProvider: string;
   id: string;
 }
 
@@ -23,14 +20,13 @@ export interface LlmPolicyBudget {
   costCachedInputPer1M: number;
   costInputPer1M: number;
   costOutputPer1M: number;
-  monthlyUsd: number;
-  perProductUsd: number;
 }
 
 export interface LlmPolicyTokens {
   maxOutput: number;
   plan: number;
   planFallback: number;
+  triage: number;
   reasoning: number;
   reasoningFallback: number;
   maxTokens: number;
@@ -67,20 +63,16 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
   anthropicApiKey:                           { group: 'apiKeys', field: 'anthropic' },
   deepseekApiKey:                            { group: 'apiKeys', field: 'deepseek' },
   geminiApiKey:                              { group: 'apiKeys', field: 'gemini' },
-  llmPlanApiKey:                             { group: 'apiKeys', field: 'plan' },
   openaiApiKey:                              { group: 'apiKeys', field: 'openai' },
   llmBaseUrl:                                { group: 'provider', field: 'baseUrl' },
-  llmPlanBaseUrl:                            { group: 'provider', field: 'planBaseUrl' },
-  llmPlanProvider:                           { group: 'provider', field: 'planProvider' },
   llmProvider:                               { group: 'provider', field: 'id' },
   llmCostCachedInputPer1M:                   { group: 'budget', field: 'costCachedInputPer1M' },
   llmCostInputPer1M:                         { group: 'budget', field: 'costInputPer1M' },
   llmCostOutputPer1M:                        { group: 'budget', field: 'costOutputPer1M' },
-  llmMonthlyBudgetUsd:                       { group: 'budget', field: 'monthlyUsd' },
-  llmPerProductBudgetUsd:                    { group: 'budget', field: 'perProductUsd' },
   llmMaxOutputTokens:                        { group: 'tokens', field: 'maxOutput' },
   llmMaxOutputTokensPlan:                    { group: 'tokens', field: 'plan' },
   llmMaxOutputTokensPlanFallback:            { group: 'tokens', field: 'planFallback' },
+  llmMaxOutputTokensTriage:                  { group: 'tokens', field: 'triage' },
   llmMaxOutputTokensReasoning:               { group: 'tokens', field: 'reasoning' },
   llmMaxOutputTokensReasoningFallback:       { group: 'tokens', field: 'reasoningFallback' },
   llmMaxTokens:                              { group: 'tokens', field: 'maxTokens' },
@@ -101,20 +93,16 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'anthropicApiKey',
   'deepseekApiKey',
   'geminiApiKey',
-  'llmPlanApiKey',
   'openaiApiKey',
   'llmBaseUrl',
-  'llmPlanBaseUrl',
-  'llmPlanProvider',
   'llmProvider',
   'llmCostCachedInputPer1M',
   'llmCostInputPer1M',
   'llmCostOutputPer1M',
-  'llmMonthlyBudgetUsd',
-  'llmPerProductBudgetUsd',
   'llmMaxOutputTokens',
   'llmMaxOutputTokensPlan',
   'llmMaxOutputTokensPlanFallback',
+  'llmMaxOutputTokensTriage',
   'llmMaxOutputTokensReasoning',
   'llmMaxOutputTokensReasoningFallback',
   'llmMaxTokens',
@@ -158,26 +146,22 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
       anthropic: readStr(source, 'anthropicApiKey'),
       deepseek: readStr(source, 'deepseekApiKey'),
       gemini: readStr(source, 'geminiApiKey'),
-      plan: readStr(source, 'llmPlanApiKey'),
       openai: readStr(source, 'openaiApiKey'),
     },
     provider: {
       baseUrl: readStr(source, 'llmBaseUrl'),
-      planBaseUrl: readStr(source, 'llmPlanBaseUrl'),
-      planProvider: readStr(source, 'llmPlanProvider'),
       id: readStr(source, 'llmProvider'),
     },
     budget: {
       costCachedInputPer1M: readNum(source, 'llmCostCachedInputPer1M'),
       costInputPer1M: readNum(source, 'llmCostInputPer1M'),
       costOutputPer1M: readNum(source, 'llmCostOutputPer1M'),
-      monthlyUsd: readNum(source, 'llmMonthlyBudgetUsd'),
-      perProductUsd: readNum(source, 'llmPerProductBudgetUsd'),
     },
     tokens: {
       maxOutput: readNum(source, 'llmMaxOutputTokens'),
       plan: readNum(source, 'llmMaxOutputTokensPlan'),
       planFallback: readNum(source, 'llmMaxOutputTokensPlanFallback'),
+      triage: readNum(source, 'llmMaxOutputTokensTriage'),
       reasoning: readNum(source, 'llmMaxOutputTokensReasoning'),
       reasoningFallback: readNum(source, 'llmMaxOutputTokensReasoningFallback'),
       maxTokens: readNum(source, 'llmMaxTokens'),

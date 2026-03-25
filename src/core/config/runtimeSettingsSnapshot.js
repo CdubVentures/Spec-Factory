@@ -11,7 +11,7 @@ import path from 'node:path';
 const RUN_CONTROL_KEYS = new Set([
   'requestedRunId', 'runId', 'category', 'productId', 'brand', 'model',
   'variant', 'sku', 'seedUrls', 'mode', 'profile', 'seed', 'fields',
-  'providers', 'indexlabOut', 'replaceRunning', 'runProfile',
+  'providers', 'indexlabOut', 'replaceRunning',
 ]);
 
 /**

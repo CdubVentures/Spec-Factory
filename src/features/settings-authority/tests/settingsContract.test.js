@@ -56,7 +56,6 @@ test('migration keeps only canonical runtime/ui keys', () => {
   });
   assert.equal(Object.hasOwn(migrated.runtime, 'searchEngines'), true);
   assert.equal(Object.hasOwn(migrated.runtime, 'unknownRuntimeKey'), false);
-  assert.equal(Object.hasOwn(migrated.runtime, 'runProfile'), false);
   assert.deepStrictEqual(migrated.convergence, {});
   assert.equal(Object.hasOwn(migrated.ui, 'studioAutoSaveEnabled'), true);
   assert.equal(Object.hasOwn(migrated.ui, 'unknownUiKey'), false);

@@ -20,6 +20,11 @@ export const MIGRATIONS = [
   `ALTER TABLE key_review_state ADD COLUMN list_value_id INTEGER REFERENCES list_values(id)`,
   `ALTER TABLE key_review_state ADD COLUMN enum_list_id INTEGER REFERENCES enum_lists(id)`,
   `ALTER TABLE llm_route_matrix ADD COLUMN enable_websearch INTEGER DEFAULT 1`,
+  `ALTER TABLE product_runs ADD COLUMN storage_state TEXT DEFAULT 'live'`,
+  `ALTER TABLE product_runs ADD COLUMN local_path TEXT DEFAULT ''`,
+  `ALTER TABLE product_runs ADD COLUMN s3_key TEXT DEFAULT ''`,
+  `ALTER TABLE product_runs ADD COLUMN size_bytes INTEGER DEFAULT 0`,
+  `ALTER TABLE product_runs ADD COLUMN relocated_at TEXT DEFAULT ''`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -40,6 +45,7 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_krs_component_slot ON key_review_state(component_value_id);
   CREATE INDEX IF NOT EXISTS idx_krs_component_identity_slot ON key_review_state(component_identity_id, property_key);
   CREATE INDEX IF NOT EXISTS idx_krs_list_slot ON key_review_state(list_value_id, enum_list_id);
+  CREATE INDEX IF NOT EXISTS idx_pr_storage_state ON product_runs(storage_state);
 `;
 
 /**

@@ -127,7 +127,6 @@ test('runtime-settings PUT records success telemetry when persistence succeeds',
   const helperRoot = await makeHelperRoot();
   const config = {
     maxPagesPerDomain: 50,
-    runProfile: 'standard',
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRoot,

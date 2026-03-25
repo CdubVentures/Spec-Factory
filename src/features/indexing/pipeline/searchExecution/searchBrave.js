@@ -30,14 +30,15 @@ export async function searchBrave({
   logger,
   _fetchFn,
   // WHY: Registry settings flow in via the caller's settings bag.
-  braveSearchTimeoutMs,
-  braveSearchResultCap,
+  // Defaults match settingsRegistry SSOT for standalone usage.
+  braveSearchTimeoutMs = 8_000,
+  braveSearchResultCap = 20,
 } = {}) {
   if (!query || !String(query).trim() || !apiKey) return [];
 
-  // WHY: Resolve registry settings → explicit param → fallback constant.
-  const effectiveTimeout = timeoutMs ?? braveSearchTimeoutMs ?? 8_000;
-  const effectiveCount = count ?? braveSearchResultCap ?? 20;
+  // WHY: Resolve explicit param → registry setting. Caller supplies both tiers.
+  const effectiveTimeout = timeoutMs ?? braveSearchTimeoutMs;
+  const effectiveCount = count ?? braveSearchResultCap;
 
   const fetchFn = _fetchFn || globalThis.fetch;
   const url = new URL(BRAVE_URL);

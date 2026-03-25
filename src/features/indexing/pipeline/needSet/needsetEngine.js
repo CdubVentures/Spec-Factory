@@ -415,9 +415,9 @@ export function computeNeedSet({
   // Callers pass these from configInt/configFloat; defaults match registry.
   options = {},
 } = {}) {
-  const maxFocusFields = options?.needsetMaxFocusFields ?? 10;
-  const confidenceThresholdMatched = options?.needsetConfidenceThresholdMatched ?? 0.95;
-  const confidenceThresholdPossible = options?.needsetConfidenceThresholdPossible ?? 0.70;
+  const maxFocusFields = 10;
+  const confidenceThresholdMatched = 0.95;
+  const confidenceThresholdPossible = 0.70;
   const rulesMap = isObject(fieldRules?.fields) ? fieldRules.fields : (isObject(fieldRules) ? fieldRules : {});
   const fieldKeys = collectFieldKeys({ fieldOrder, provenance, fieldRules: rulesMap });
 

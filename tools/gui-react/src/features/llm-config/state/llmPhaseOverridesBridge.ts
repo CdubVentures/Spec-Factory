@@ -21,7 +21,9 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       (phase.baseModel !== undefined && phase.baseModel !== '') ||
       (phase.reasoningModel !== undefined && phase.reasoningModel !== '') ||
       phase.useReasoning !== undefined ||
-      phase.maxOutputTokens !== undefined
+      phase.maxOutputTokens !== undefined ||
+      phase.timeoutMs !== undefined ||
+      phase.maxContextTokens !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -33,6 +35,8 @@ export interface ResolvedPhaseModel {
   reasoningModel: string;
   useReasoning: boolean;
   maxOutputTokens: number | null;
+  timeoutMs: number | null;
+  maxContextTokens: number | null;
   effectiveModel: string;
 }
 
@@ -41,6 +45,8 @@ export interface GlobalDraftSlice {
   llmModelReasoning: string;
   llmPlanUseReasoning: boolean;
   llmMaxOutputTokensPlan: number;
+  llmTimeoutMs: number;
+  llmMaxTokens: number;
 }
 
 export interface PhaseOverrideRegistryEntry {
@@ -49,17 +55,17 @@ export interface PhaseOverrideRegistryEntry {
   globalModel: keyof GlobalDraftSlice;
   groupToggle: keyof GlobalDraftSlice;
   globalTokens: keyof GlobalDraftSlice;
+  globalTimeout: keyof GlobalDraftSlice;
+  globalContextTokens: keyof GlobalDraftSlice;
 }
 
 /** SSOT for phase override mappings. Adding a new overrideable phase = add one entry. */
 export const PHASE_OVERRIDE_REGISTRY: readonly PhaseOverrideRegistryEntry[] = [
-  { uiPhaseId: 'needset',           overrideKey: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'search-planner',    overrideKey: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'brand-resolver',    overrideKey: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'serp-selector',     overrideKey: 'serpSelector',     globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'extraction',        overrideKey: 'extraction',       globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'validate',          overrideKey: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
-  { uiPhaseId: 'write',             overrideKey: 'write',            globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan' },
+  { uiPhaseId: 'needset',           overrideKey: 'needset',          globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+  { uiPhaseId: 'search-planner',    overrideKey: 'searchPlanner',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+  { uiPhaseId: 'brand-resolver',    overrideKey: 'brandResolver',    globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+  { uiPhaseId: 'serp-selector',     overrideKey: 'serpSelector',     globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
+  { uiPhaseId: 'validate',          overrideKey: 'validate',         globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan', globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens' },
 ];
 
 /* Derived from registry — replaces manual PHASE_GLOBAL_MAP */
@@ -70,7 +76,7 @@ const PHASE_GLOBAL_MAP: ReadonlyMap<LlmOverridePhaseId, PhaseOverrideRegistryEnt
 const UI_TO_OVERRIDE: ReadonlyMap<LlmPhaseId, LlmOverridePhaseId> =
   new Map(PHASE_OVERRIDE_REGISTRY.map((e) => [e.uiPhaseId, e.overrideKey]));
 
-/** Maps a UI-tab phase ID to its camelCase override key. Returns undefined for non-overrideable phases (global, extraction). */
+/** Maps a UI-tab phase ID to its camelCase override key. Returns undefined for non-overrideable phases (global). */
 export function uiPhaseIdToOverrideKey(uiPhaseId: LlmPhaseId): LlmOverridePhaseId | undefined {
   return UI_TO_OVERRIDE.get(uiPhaseId);
 }
@@ -89,12 +95,16 @@ export function resolvePhaseModel(
   const reasoningModel = phaseOverride.reasoningModel || globalDraft.llmModelReasoning;
   const useReasoning = phaseOverride.useReasoning ?? (globalDraft[mapping.groupToggle] as boolean) ?? false;
   const maxOutputTokens = phaseOverride.maxOutputTokens ?? (globalDraft[mapping.globalTokens] as number);
+  const timeoutMs = phaseOverride.timeoutMs ?? (globalDraft[mapping.globalTimeout] as number);
+  const maxContextTokens = phaseOverride.maxContextTokens ?? (globalDraft[mapping.globalContextTokens] as number);
 
   return {
     baseModel,
     reasoningModel,
     useReasoning,
     maxOutputTokens,
+    timeoutMs,
+    maxContextTokens,
     effectiveModel: useReasoning ? reasoningModel : baseModel,
   };
 }

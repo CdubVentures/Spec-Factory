@@ -2,8 +2,6 @@
 // createManifestApplicator encapsulates manifest state in a closure (no module-level let).
 // buildRawConfig returns the raw cfg object + explicitEnvKeys before post-merge normalization.
 
-import path from 'node:path';
-import { defaultChatmockDir } from './llmModelResolver.js';
 import { providerFromModelToken } from '../llm/providerMeta.js';
 import {
   buildDefaultModelPricingMap,
@@ -116,8 +114,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const explicitLlmModelExtract = explicitEnvValue('LLM_MODEL_EXTRACT', explicitEnvKeys);
   const explicitLlmModelPlan = explicitEnvValue('LLM_MODEL_PLAN', explicitEnvKeys);
   const explicitLlmModelReasoning = explicitEnvValue('LLM_MODEL_REASONING', explicitEnvKeys);
-  const explicitLlmPlanProvider = explicitEnvValue('LLM_PLAN_PROVIDER', explicitEnvKeys).trim().toLowerCase();
-  const explicitLlmPlanBaseUrl = explicitEnvValue('LLM_PLAN_BASE_URL', explicitEnvKeys);
 
   const registryDefaults = resolveRegistryDefaults();
   const defaultModel = explicitLlmModelExtract || registryDefaults.model;
@@ -141,7 +137,6 @@ export function buildRawConfig({ manifestApplicator }) {
     ...simpleCfg,
 
     // --- Post-processed strings ---
-    batchStrategy: 'bandit',
     capturePageScreenshotFormat: String(process.env.CAPTURE_PAGE_SCREENSHOT_FORMAT || 'jpeg').trim().toLowerCase() === 'png' ? 'png' : 'jpeg',
     capturePageScreenshotSelectors: String(process.env.CAPTURE_PAGE_SCREENSHOT_SELECTORS || 'table,[data-spec-table],.specs-table,.spec-table,.specifications').trim(),
 
@@ -170,9 +165,6 @@ export function buildRawConfig({ manifestApplicator }) {
     llmModelReasoning: explicitLlmModelReasoning || explicitLlmModelExtract || defaultModel,
     llmPhaseOverridesJson: runtimeSettingDefault('llmPhaseOverridesJson'),
     llmProviderRegistryJson: runtimeSettingDefault('llmProviderRegistryJson'),
-    llmPlanProvider: explicitLlmPlanProvider,
-    llmPlanBaseUrl: explicitLlmPlanBaseUrl,
-    llmPlanApiKey: process.env.LLM_PLAN_API_KEY || '',
     llmPlanFallbackModel: process.env.LLM_PLAN_FALLBACK_MODEL || '',
     llmModelCatalog: process.env.LLM_MODEL_CATALOG || '',
     llmModelPricingMap: mergeModelPricingMaps(
@@ -193,8 +185,6 @@ export function buildRawConfig({ manifestApplicator }) {
     openaiBaseUrl: resolvedBaseUrl,
     openaiModelExtract: explicitLlmModelExtract || defaultModel,
     openaiModelPlan: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
-    openaiModelWrite: explicitLlmModelPlan || explicitLlmModelExtract || defaultModel,
-    openaiMaxInputChars: parseIntEnv('OPENAI_MAX_INPUT_CHARS', 50_000),
     openaiTimeoutMs: timeoutMs,
 
     // --- JSON map normalization + sub-fields ---
@@ -214,50 +204,16 @@ export function buildRawConfig({ manifestApplicator }) {
     searchProfileCapMap: normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {})),
     searchProfileCapMapJson: JSON.stringify(normalizeSearchProfileCapMap(parseJsonEnv('SEARCH_PROFILE_CAP_MAP_JSON', {}))),
 
-    // --- Chatmock ---
-    chatmockDir: process.env.CHATMOCK_DIR || defaultChatmockDir(),
-    chatmockComposeFile: process.env.CHATMOCK_COMPOSE_FILE || path.join(process.env.CHATMOCK_DIR || defaultChatmockDir(), 'docker-compose.yml'),
-
     // --- Category authority ---
     categoryAuthorityRoot: resolvedCategoryAuthorityRoot,
 
-    // --- DefaultsOnly entries that configBuilder still needs ---
-    discoveryEnabled: parseBoolEnv('DISCOVERY_ENABLED', runtimeSettingDefault('discoveryEnabled')),
-    helperSupportiveFillMissing: parseBoolEnv('HELPER_SUPPORTIVE_FILL_MISSING', true),
     runtimeControlFile: process.env.RUNTIME_CONTROL_FILE || runtimeSettingDefault('runtimeControlFile'),
 
     // --- Hardcoded constants ---
-    searchGlobalRps: 0,
-    searchGlobalBurst: 0,
-    searchPerHostRps: 0,
-    searchPerHostBurst: 0,
-    runProfile: 'standard',
-    consensusLlmWeightTier1: 0.60,
-    consensusLlmWeightTier2: 0.40,
-    consensusLlmWeightTier3: 0.20,
-    consensusLlmWeightTier4: 0.15,
-    consensusTier1Weight: 1.00,
-    consensusTier2Weight: 0.80,
-    consensusTier3Weight: 0.45,
-    consensusTier4Weight: 0.25,
     retrievalMaxHitsPerField: 24,
     retrievalMaxPrimeSources: 10,
     retrievalIdentityFilterEnabled: true,
-    automationQueueStorageEngine: 'sqlite',
-    runtimeScreenshotMode: 'last_only',
-    accuracyMode: 'production',
-    chartExtractionEnabled: true,
-    fieldRulesEngineEnforceEvidence: parseBoolEnv('FIELD_RULES_ENGINE_ENFORCE_EVIDENCE', true),
     runtimeOpsWorkbenchEnabled: parseBoolEnv('RUNTIME_OPS_WORKBENCH_ENABLED', true),
-    indexingHelperFilesEnabled: false,
-
-    helperSupportiveEnabled: true,
-    helperSupportiveMaxSources: 12,
-    helperAutoSeedTargets: true,
-    helperActiveSyncLimit: 0,
-    daemonGracefulShutdownTimeoutMs: 60000,
-    indexingReextractSeedLimit: parseIntEnv('INDEXING_REEXTRACT_SEED_LIMIT', 8),
-    indexingSchemaPacketsSchemaRoot: process.env.INDEXING_SCHEMA_PACKETS_SCHEMA_ROOT || '',
   };
 
   return { cfg, explicitEnvKeys };

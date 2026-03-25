@@ -7,7 +7,6 @@ import {
 } from '../../../api/helpers/llmHelpers.js';
 import {
   RUNTIME_SETTINGS_ROUTE_GET,
-  DUAL_KEY_PAIRS,
 } from '../settingsKeyMap.js';
 import { SETTINGS_DEFAULTS } from '../../../shared/settingsDefaults.js';
 import { SETTINGS_CLAMPING_INT_RANGE_MAP } from '../../../shared/settingsClampingRanges.js';
@@ -48,14 +47,6 @@ test('collectLlmModels does not include per-role fallback model candidates', () 
 // ────────────────────────────────────────────────────────
 
 const DEAD_MODEL_ALIASES = ['llmModelTriage', 'llmModelExtract', 'llmModelValidate', 'llmModelWrite'];
-const DEAD_TOKEN_CAP_ALIASES = [
-  'llmMaxOutputTokensExtract',
-  'llmMaxOutputTokensValidate', 'llmMaxOutputTokensWrite',
-];
-const DEAD_FALLBACK_TOKEN_ALIASES = [
-  'llmMaxOutputTokensExtractFallback', 'llmMaxOutputTokensValidateFallback',
-  'llmMaxOutputTokensWriteFallback',
-];
 const DEAD_PER_ROLE_PROVIDER_KEYS = [
   'llmExtractProvider', 'llmExtractBaseUrl', 'llmExtractApiKey',
   'llmValidateProvider', 'llmValidateBaseUrl', 'llmValidateApiKey',
@@ -78,18 +69,6 @@ test('RUNTIME_SETTINGS_ROUTE_GET.stringMap does not contain dead per-role provid
 test('RUNTIME_SETTINGS_ROUTE_GET.stringMap does not contain dead fallback model aliases', () => {
   for (const key of DEAD_FALLBACK_MODELS) {
     assert.equal(RUNTIME_SETTINGS_ROUTE_GET.stringMap[key], undefined, `stringMap should not contain ${key}`);
-  }
-});
-
-test('RUNTIME_SETTINGS_ROUTE_GET.intMap does not contain dead token cap aliases', () => {
-  for (const key of DEAD_TOKEN_CAP_ALIASES) {
-    assert.equal(RUNTIME_SETTINGS_ROUTE_GET.intMap[key], undefined, `intMap should not contain ${key}`);
-  }
-});
-
-test('RUNTIME_SETTINGS_ROUTE_GET.intMap does not contain dead fallback token aliases', () => {
-  for (const key of DEAD_FALLBACK_TOKEN_ALIASES) {
-    assert.equal(RUNTIME_SETTINGS_ROUTE_GET.intMap[key], undefined, `intMap should not contain ${key}`);
   }
 });
 
@@ -118,39 +97,9 @@ test('SETTINGS_DEFAULTS.runtime does not contain dead model/provider/fallback al
   }
 });
 
-test('SETTINGS_DEFAULTS.runtime does not contain dead token cap aliases', () => {
-  const runtime = SETTINGS_DEFAULTS.runtime;
-  const allDeadTokenKeys = [
-    ...DEAD_TOKEN_CAP_ALIASES,
-    ...DEAD_FALLBACK_TOKEN_ALIASES,
-  ];
-  for (const key of allDeadTokenKeys) {
-    assert.equal(Object.hasOwn(runtime, key), false, `runtime defaults should not contain ${key}`);
-  }
-});
-
-test('SETTINGS_CLAMPING_INT_RANGE_MAP does not contain dead token cap aliases', () => {
-  const allDeadTokenKeys = [
-    ...DEAD_TOKEN_CAP_ALIASES,
-    ...DEAD_FALLBACK_TOKEN_ALIASES,
-  ];
-  for (const key of allDeadTokenKeys) {
-    assert.equal(SETTINGS_CLAMPING_INT_RANGE_MAP[key], undefined,
-      `clamping ranges should not contain ${key}`);
-  }
-});
-
 test('SETTINGS surfaces keep the surviving triage token cap', () => {
   assert.equal(Object.hasOwn(SETTINGS_DEFAULTS.runtime, 'llmMaxOutputTokensTriage'), true);
   assert.notEqual(SETTINGS_CLAMPING_INT_RANGE_MAP.llmMaxOutputTokensTriage, undefined);
-});
-
-test('DUAL_KEY_PAIRS does not contain dead fallback model entries', () => {
-  const deadKeys = new Set(DEAD_FALLBACK_MODELS);
-  for (const [keyA, keyB] of DUAL_KEY_PAIRS) {
-    assert.equal(deadKeys.has(keyA), false, `DUAL_KEY_PAIRS should not reference ${keyA}`);
-    assert.equal(deadKeys.has(keyB), false, `DUAL_KEY_PAIRS should not reference ${keyB}`);
-  }
 });
 
 test('EXPLICIT_ENV_KEY_OVERRIDES does not contain dead model aliases', () => {

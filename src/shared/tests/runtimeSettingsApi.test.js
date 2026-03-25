@@ -93,9 +93,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'llmMaxOutputTokensPlan', 'llmMaxOutputTokensReasoning',
       'llmMaxOutputTokensPlanFallback',
       'crawleeRequestHandlerTimeoutSecs',
-      'autoScrollPasses', 'autoScrollDelayMs', 'robotsTxtTimeoutMs',
-      'runtimeScreencastFps', 'runtimeScreencastQuality', 'runtimeScreencastMaxWidth', 'runtimeScreencastMaxHeight',
-      'runtimeTraceFetchRing', 'runtimeTraceLlmRing',
+      'autoScrollPasses', 'autoScrollDelayMs',
     ];
     for (const key of INT_KEYS) {
       assert.equal(typeof body[key], 'number', `expected number for ${key}, got ${typeof body[key]}`);
@@ -104,7 +102,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
 
     const BOOL_KEYS = [
       'crawleeHeadless', 'runtimeScreencastEnabled',
-      'autoScrollEnabled', 'robotsTxtCompliant',
+      'autoScrollEnabled',
+      'robotsTxtCompliant',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite',
     ];

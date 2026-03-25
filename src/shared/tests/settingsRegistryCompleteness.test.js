@@ -110,9 +110,11 @@ describe('RUNTIME_SETTINGS_REGISTRY contract', () => {
 
 describe('runtime settings UI metadata contract', () => {
   it('assigns category and section metadata to UI-exposed runtime entries', () => {
+    // WHY: Entries with policyGroup are managed by the LLM Config page adapter
+    // and may intentionally lack uiCategory (hidden defaults inherited per-phase).
     const missing = [];
     for (const entry of RUNTIME_SETTINGS_REGISTRY) {
-      if (entry.defaultsOnly || entry.readOnly) continue;
+      if (entry.defaultsOnly || entry.readOnly || entry.policyGroup) continue;
       if (!entry.uiCategory || !entry.uiSection) missing.push(entry.key);
     }
     deepStrictEqual(missing, [], `entries missing UI metadata: ${missing.join(', ')}`);

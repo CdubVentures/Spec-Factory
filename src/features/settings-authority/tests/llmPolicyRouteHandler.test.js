@@ -12,13 +12,10 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmProvider: 'gemini',
     llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmPlanProvider: 'gemini',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     geminiApiKey: 'gk-secret-123',
     deepseekApiKey: '',
     anthropicApiKey: '',
     openaiApiKey: '',
-    llmPlanApiKey: '',
     llmMaxOutputTokens: 1400,
     llmMaxTokens: 16384,
     llmMaxOutputTokensPlan: 4096,
@@ -30,8 +27,6 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
     llmReasoningMode: true,
     llmPhaseOverridesJson: '{}',
     llmProviderRegistryJson: '[]',
-    llmMonthlyBudgetUsd: 300,
-    llmPerProductBudgetUsd: 0.35,
     llmCostInputPer1M: 1.25,
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
@@ -124,7 +119,7 @@ test('PUT /llm-policy applies composite and returns updated policy', async () =>
     reasoning: { enabled: true, budget: 32768, mode: true },
     phaseOverrides: {},
     providerRegistry: [],
-    budget: { monthlyUsd: 300, perProductUsd: 0.35, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
+    budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
   });
 
@@ -145,7 +140,7 @@ test('PUT /llm-policy persists flat keys to canonical sections', async () => {
     reasoning: { enabled: false, budget: 32768, mode: true },
     phaseOverrides: {},
     providerRegistry: [],
-    budget: { monthlyUsd: 300, perProductUsd: 0.35, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
+    budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
   });
 
@@ -164,7 +159,7 @@ test('PUT /llm-policy emits data change broadcast', async () => {
     reasoning: { enabled: false, budget: 0, mode: false },
     phaseOverrides: {},
     providerRegistry: [],
-    budget: { monthlyUsd: 0, perProductUsd: 0, costInputPer1M: 0, costOutputPer1M: 0, costCachedInputPer1M: 0 },
+    budget: { costInputPer1M: 0, costOutputPer1M: 0, costCachedInputPer1M: 0 },
     timeoutMs: 0,
   });
 

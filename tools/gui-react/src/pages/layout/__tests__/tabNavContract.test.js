@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { loadBundledModule } from '../../../../../../src/shared/tests/helpers/loadBundledModule.js';
+import { PAGE_REGISTRY_MODULE_STUBS } from '../../../registries/__tests__/pageRegistryModuleStubs.js';
 
 function renderElement(node) {
   if (Array.isArray(node)) {
@@ -57,10 +58,14 @@ function collectNodes(node, predicate, acc = []) {
   return acc;
 }
 
+let tabNavModulePromise;
+
 async function loadTabNavModule() {
-  return loadBundledModule('tools/gui-react/src/pages/layout/TabNav.tsx', {
+  if (!tabNavModulePromise) {
+    tabNavModulePromise = loadBundledModule('tools/gui-react/src/pages/layout/TabNav.tsx', {
     prefix: 'tab-nav-contract-',
     stubs: {
+      ...PAGE_REGISTRY_MODULE_STUBS,
       'react/jsx-runtime': `
         export function jsx(type, props) {
           return { type, props: props || {} };
@@ -100,7 +105,9 @@ async function loadTabNavModule() {
         }
       `,
     },
-  });
+    });
+  }
+  return tabNavModulePromise;
 }
 
 test('TabNav keeps overview/product and categories/catalog grouped in rendered order', async () => {

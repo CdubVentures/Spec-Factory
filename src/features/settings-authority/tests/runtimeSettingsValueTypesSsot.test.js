@@ -31,17 +31,19 @@ test('valueTypes SSOT: storage-owned keys do not leak into the runtime value-typ
   assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.s3Bucket, undefined);
 });
 
-test('valueTypes SSOT: defaultsOnly entries are excluded', () => {
-  // discoveryEnabled has defaultsOnly: true and must not appear.
+test('valueTypes SSOT: retired entries are excluded', () => {
+  // discoveryEnabled, dryRun removed from registry — must not appear.
   assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.discoveryEnabled, undefined,
-    'defaultsOnly entries must not appear in RUNTIME_SETTINGS_VALUE_TYPES');
+    'retired entries must not appear in RUNTIME_SETTINGS_VALUE_TYPES');
+  assert.equal(RUNTIME_SETTINGS_VALUE_TYPES.dryRun, undefined,
+    'retired entries must not appear in RUNTIME_SETTINGS_VALUE_TYPES');
 });
 
 test('valueTypes SSOT: type tokens match registry entry types', () => {
   const cases = [
     ['autoScrollDelayMs', 'integer'],
     ['llmCostInputPer1M', 'number'],
-    ['dryRun', 'boolean'],
+    ['autoScrollEnabled', 'boolean'],
     ['searchEngines', 'string'],
     ['llmProvider', 'string'],
   ];

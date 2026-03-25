@@ -55,23 +55,10 @@ function PhaseNavIcon({ phaseId, active }: { phaseId: LlmPhaseId; active: boolea
             <path d="M19 10l2 2-2 2" />
           </>
         )}
-        {phaseId === 'extraction' && (
-          <>
-            <path d="M4 7h6l2 2h8" />
-            <path d="M4 17h6l2-2h8" />
-            <circle cx="12" cy="12" r="2" />
-          </>
-        )}
         {phaseId === 'validate' && (
           <>
             <path d="M9 12l2 2 4-4" />
             <circle cx="12" cy="12" r="9" />
-          </>
-        )}
-        {phaseId === 'write' && (
-          <>
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z" />
           </>
         )}
       </svg>

@@ -108,7 +108,6 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
 
     const llmMetrics = await buildLlmMetrics({
       storage,
-      config: { llmMonthlyBudgetUsd: 1 },
       period: 'month'
     });
     assert.equal(llmMetrics.total_calls, 3);

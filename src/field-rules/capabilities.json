@@ -107,12 +107,12 @@
     },
     "evidence.tier_preference": {
       "status": "live",
-      "consumer": "src/field-rules/compiler.js:deriveEvidenceTierMinimum + src/features/indexing/discovery/coreDeepGate.js:classifyFieldCoreDeep",
+      "consumer": "src/field-rules/compiler.js:deriveEvidenceTierMinimum",
       "description": "Preferred evidence tier ordering — drives evidence_tier_minimum derivation"
     },
     "core_fields": {
       "status": "live",
-      "consumer": "src/features/indexing/discovery/coreDeepGate.js:classifyFieldCoreDeep",
+      "consumer": "src/engine/fieldRulesEngine.js:getFieldClassification",
       "description": "Top-level array of field keys classified as core facts (derived from priority.required_level during compilation)"
     },
     "evidence.conflict_policy": {

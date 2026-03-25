@@ -122,6 +122,17 @@ RETIRED_SETTINGS = [
     ("writeMarkdownSummary", "bool", "true", "2026-03-24", "output purge", "No longer used"),
     ("crawlBypassMinBodyLength", "int", "200", "2026-03-24", "dead bypass knobs", "Call sites never passed value — hardcoded fallback always used"),
     ("crawlBypassHtmlSnippetCap", "int", "5000", "2026-03-24", "dead bypass knobs", "Call sites never passed value — hardcoded fallback always used"),
+    ("repairDedupeRule", "enum", "domain_once", "2026-03-24", "dead knob cleanup", "Planned consumer never built"),
+    ("robotsTxtTimeoutMs", "int", "6000", "2026-03-24", "dead knob cleanup", "Orphaned consumer module"),
+    ("runtimeScreencastFps", "int", "10", "2026-03-24", "dead knob cleanup", "No screencast code reads from config"),
+    ("runtimeScreencastMaxHeight", "int", "720", "2026-03-24", "dead knob cleanup", "No screencast code reads from config"),
+    ("runtimeScreencastMaxWidth", "int", "1280", "2026-03-24", "dead knob cleanup", "No screencast code reads from config"),
+    ("runtimeScreencastQuality", "int", "50", "2026-03-24", "dead knob cleanup", "No screencast code reads from config"),
+    ("runtimeTraceFetchRing", "int", "30", "2026-03-24", "dead knob cleanup", "Transported but never consumed by trace writers"),
+    ("runtimeTraceLlmRing", "int", "50", "2026-03-24", "dead knob cleanup", "Transported but LLM client reads hardcoded value"),
+    ("llmMaxCallsPerProductTotal", "int", "14", "2026-03-24", "dead knob cleanup", "No call-counting enforcement gate"),
+    ("llmMaxCallsPerRound", "int", "5", "2026-03-24", "dead knob cleanup", "No per-round enforcement gate"),
+    ("llmPerProductBudgetUsd", "float", "0.35", "2026-03-24", "dead knob cleanup", "costLedger never checks budget"),
 ]
 
 # ── Node.js JSON dump ──────────────────────────────────────────────────

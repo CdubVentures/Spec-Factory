@@ -1,8 +1,6 @@
 // AUTO-GENERATED from RUNTIME_SETTINGS_REGISTRY — do not edit manually.
 // Run: node tools/gui-react/scripts/generateManifestTypes.js
 
-export type RuntimeRepairDedupeRule = 'domain_once' | 'domain_and_status' | 'none';
-
 export interface RuntimeSettingDefaults {
   anthropicApiKey: string;
   autoScrollDelayMs: number;
@@ -21,7 +19,7 @@ export interface RuntimeSettingDefaults {
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
-  dryRun: boolean;
+
   eventsJsonWrite: boolean;
   geminiApiKey: string;
   googleSearchMaxRetries: number;
@@ -36,8 +34,6 @@ export interface RuntimeSettingDefaults {
   llmCostCachedInputPer1M: number;
   llmCostInputPer1M: number;
   llmCostOutputPer1M: number;
-  llmMaxCallsPerProductTotal: number;
-  llmMaxCallsPerRound: number;
   llmMaxOutputTokens: number;
   llmMaxOutputTokensPlan: number;
   llmMaxOutputTokensPlanFallback: number;
@@ -47,13 +43,10 @@ export interface RuntimeSettingDefaults {
   llmMaxTokens: number;
   llmModelPlan: string;
   llmModelReasoning: string;
-  llmMonthlyBudgetUsd: number;
-  llmPerProductBudgetUsd: number;
   llmPhaseOverridesJson: string;
-  llmPlanApiKey: string;
-  llmPlanBaseUrl: string;
+
   llmPlanFallbackModel: string;
-  llmPlanProvider: string;
+
   llmPlanUseReasoning: boolean;
   llmProvider: string;
   llmProviderRegistryJson: string;
@@ -67,20 +60,12 @@ export interface RuntimeSettingDefaults {
   maxRunSeconds: number;
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
-  repairDedupeRule: RuntimeRepairDedupeRule;
-  robotsTxtCompliant: boolean;
-  robotsTxtTimeoutMs: number;
+
   runtimeControlFile: string;
   runtimeEventsKey: string;
   runtimeScreencastEnabled: boolean;
-  runtimeScreencastFps: number;
-  runtimeScreencastMaxHeight: number;
-  runtimeScreencastMaxWidth: number;
-  runtimeScreencastQuality: number;
   runtimeTraceEnabled: boolean;
-  runtimeTraceFetchRing: number;
   runtimeTraceLlmPayloads: boolean;
-  runtimeTraceLlmRing: number;
   searchEngines: string;
   searchEnginesFallback: string;
   searchMaxRetries: number;
@@ -88,25 +73,27 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
-  discoveryEnabled: boolean;
-  needsetMaxFocusFields: number;
-  needsetConfidenceThresholdMatched: number;
-  needsetConfidenceThresholdPossible: number;
+
+
   needsetGroupQueryTermsCap: number;
+  needsetGroupSearchCoverageThreshold: number;
+  needsetGroupSearchMinUnresolved: number;
+  needsetGroupSearchMaxRepeats: number;
+  needsetSeedCooldownDays: number;
   queryBuilderMaxAliases: number;
   queryBuilderFieldQueryCap: number;
   queryBuilderDocHintQueryCap: number;
-  queryBuilderTooltipPhraseCap: number;
-  queryBuilderLearnedSynonymsCap: number;
-  queryBuilderFieldSynonymsCap: number;
-  googleSearchMinIntervalMs: number;
+
+  manufacturerPlanUrlCap: number;
+  queryDedupeRowsCap: number;
+
   googleSearchPostResultsDelayMs: number;
   googleSearchScreenshotQuality: number;
   googleSearchSerpSelectorWaitMs: number;
   googleSearchScrollDelayMs: number;
-  googleSearchResultCap: number;
+
   serperSearchMinIntervalMs: number;
-  serperSearchRetryBaseMs: number;
+
   serperSearchTimeoutMs: number;
   serperSearchMaxRetries: number;
   searxngSearchTimeoutMs: number;
@@ -119,6 +106,8 @@ export interface RuntimeSettingDefaults {
   crawleeMaxPagesPerBrowser: number;
   crawleeBrowserRetirePageCount: number;
   crawleeNavigationTimeoutMs: number;
+  crawlMaxConcurrentSlots: number;
+  autoScrollPostLoadWaitMs: number;
   capturePageScreenshotMaxSelectors: number;
 }
 

@@ -9,12 +9,13 @@ Post-search SERP triage — classify, select, and enrich candidate URLs from sea
 Exports from `index.js`:
 
 - `processDiscoveryResults(ctx)` — main entry point for SERP triage
-- `buildDiscoveryResultTrace(results)` — trace builder for debugging
-- `classifyDiscoveryResults(results)` — URL classifier
-- `buildDiscoveryResultPayload(results)` — payload builder
-- `selectSerpResults(results)` — LLM-based SERP selector
-- `applyHardDropFilter(results)` — hard-drop URL filter
-- `auditRejections(results)` — reject auditor
+- `createCandidateTraceMap()`, `enrichCandidateTraces()` — trace lifecycle
+- `classifyAndDeduplicateCandidates()`, `classifyDomains()` — URL classification
+- `buildSerpExplorer()`, `writeDiscoveryPayloads()` — payload assembly
+- `buildSerpSelectorInput()`, `validateSelectorOutput()`, `adaptSerpSelectorOutput()` — SERP selector
+- `createSerpSelectorCallLlm()` — LLM call factory
+- `applyHardDropFilter()` — hard-drop URL filter
+- `sampleRejectAudit()`, `buildAuditTrail()` — reject auditor
 
 ## Dependencies
 
@@ -23,7 +24,7 @@ Exports from `index.js`:
 
 ## Domain Invariants
 
-- LLM selector is the primary triage path; deterministic reranker fallback activates on LLM failure.
+- LLM selector is the primary triage path; passthrough fallback activates on LLM failure.
 - Domain classification runs AFTER SERP selector, not before.
 - `candidates[]` refers to the selected set, not all survivors.
 - Stage has limited rejects — code and tests are truth over docs.

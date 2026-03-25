@@ -60,10 +60,7 @@ export function resolveLlmKnobDefaults(cfg = {}) {
   const tokenDefaults = {
     plan: planTokenDefault,
     triage: toInt(cfg.llmMaxOutputTokensTriage, planTokenDefault),
-    reasoning: toInt(cfg.llmMaxOutputTokensReasoning, toInt(cfg.llmReasoningBudget, 4096)),
-    extract: toInt(cfg.llmMaxOutputTokensExtract, toInt(cfg.llmMaxOutputTokensPlan, toInt(cfg.llmMaxOutputTokens, 1200))),
-    validate: toInt(cfg.llmMaxOutputTokensValidate, toInt(cfg.llmMaxOutputTokens, 1200)),
-    write: toInt(cfg.llmMaxOutputTokensWrite, toInt(cfg.llmMaxOutputTokens, 1200))
+    reasoning: toInt(cfg.llmMaxOutputTokensReasoning, toInt(cfg.llmReasoningBudget, 4096))
   };
   return {
     phase_02_planner: {
@@ -77,18 +74,6 @@ export function resolveLlmKnobDefaults(cfg = {}) {
     reasoning_pass: {
       model: modelDefaults.reasoning,
       token_cap: tokenDefaults.reasoning
-    },
-    extract_role: {
-      model: modelDefaults.plan,
-      token_cap: tokenDefaults.extract
-    },
-    validate_role: {
-      model: modelDefaults.plan,
-      token_cap: tokenDefaults.validate
-    },
-    write_role: {
-      model: modelDefaults.plan,
-      token_cap: tokenDefaults.write
     },
     fallback_plan: {
       model: String(cfg.llmPlanFallbackModel || '').trim(),

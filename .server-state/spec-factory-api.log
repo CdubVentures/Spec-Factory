@@ -729,3 +729,132 @@ Node.js v22.14.0
 [gui-server] Canonical settings writes only: ON
 [gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
 [gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-aXpr-AY3.js, buttonClasses-x-rUW2Cc.js, CatalogPage-DuGMfeq0.js, CategoryManager-CSgMAhMF.js, Chip-DT26XC1B.js, ComponentReviewPage-CiCBDhuJ.js, DataTable-BmrjKX2I.js, DrawerShell-CTDTpkOc.js, fieldNormalize-BfWKSrbu.js, FlagsSection-CSwWyxM1.js, formatting-B6A_RRxb.js, index-iM_sa_8V.css, index-nlQdIbpl.js, IndexingPage-DBgtlNTq.js, indexlabRunsQuery-DHcaaztN.js, invalidateFieldRulesQueries-Bs50pAWr.js, LlmConfigPage-BOZzn-c7.js, LlmGlobalSection-DX6no1zQ.js, LlmPhaseSection-gR8XJCFk.js, llmPolicyDefaults-BUMafv97.js, LlmProviderRegistrySection-CrOLfZIY.js, llmRouteTaxonomy-DPZGyRIr.js, LlmSettingsPage-Cfs0eVtj.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-D00tAXme.js, PipelineSettingsPage-BgxBWUmG.js, PipelineSourceStrategySection-BqecTM4d.js, ProductPage-kAp1f8WQ.js, ReviewPage-Bce7iZnQ.js, RuntimeFlowDraftPayload-CpBrxpOs.js, RuntimeFlowHeaderControls-VRUhOuw8.js, RuntimeOpsPage-DVgSZQHJ.js, settingsStatus-DBdyX6TZ.js, StoragePage-DZYNNpd4.js, StudioPage-Cn-5zm-R.js, TabStrip-Klqv926z.js, TestModePage-CziemSi1.js, TrafficLight-Bg0dnKdw.js, useFieldLabels-BkDOjm2y.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+
+╔══════════════════════════════════════════════════════════════╗
+║  NATIVE MODULE LOAD FAILURE                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Node:    v22.14.0 (C:\nvm4w\nodejs\node.exe)
+  Module:  127
+  Error:   The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+
+  Fix:     npm rebuild better-sqlite3
+
+  The server cannot start without a working better-sqlite3.
+  Run the fix command above, then restart.
+
+file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74
+    throw new Error(
+          ^
+
+Error: [FATAL] better-sqlite3 MODULE_VERSION mismatch (Node v22.14.0, modules 127). Run: npm rebuild better-sqlite3
+Fix: npm rebuild better-sqlite3
+Node: v22.14.0 (C:\nvm4w\nodejs\node.exe)
+    at bootstrapServer (file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74:11)
+    at file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/guiServer.js:73:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-C4M39-I8.js, buttonClasses-x-rUW2Cc.js, CatalogPage-D0di5TDX.js, CategoryManager-uq0pdobg.js, Chip-DT26XC1B.js, ComponentReviewPage-n7XV9k7S.js, DataTable-BmrjKX2I.js, DrawerShell-1GU9Q3kT.js, fieldNormalize-BfWKSrbu.js, FlagsSection-D4bsuyjI.js, formatting-B6A_RRxb.js, index-CcvmSaOZ.js, index-iM_sa_8V.css, IndexingPage-bIKb1Kaf.js, indexlabRunsQuery-GbMRD1aj.js, invalidateFieldRulesQueries-CxkQYCkQ.js, LlmConfigPage-akGU6SiC.js, LlmGlobalSection-BCQTE8Mv.js, LlmPhaseSection-DjU7SkdG.js, llmPolicyDefaults-BPJNGoj1.js, LlmProviderRegistrySection-B-vCj0id.js, llmRouteTaxonomy-CpN-MD2u.js, LlmSettingsPage-DCMosDaY.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-TpjjEQVP.js, PipelineSettingsPage-DTYL6LY-.js, PipelineSourceStrategySection-gCasUp26.js, ProductPage-v4Im7uV7.js, ReviewPage-B1l1GwTu.js, RuntimeFlowDraftPayload-6GlUKR9O.js, RuntimeFlowHeaderControls-CqnOhxsM.js, RuntimeOpsPage-9fNSElyi.js, settingsStatus-DBdyX6TZ.js, StoragePage-CTEpA5Pz.js, StudioPage-BPHjyNmV.js, TabStrip-Klqv926z.js, TestModePage-Ch_Uo2MT.js, TrafficLight-CvRnk34U.js, useFieldLabels-DVIJIf7P.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-DhZgYMb8.js, vendor-query-B32LnyU-.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+
+╔══════════════════════════════════════════════════════════════╗
+║  NATIVE MODULE LOAD FAILURE                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Node:    v22.14.0 (C:\nvm4w\nodejs\node.exe)
+  Module:  127
+  Error:   The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+
+  Fix:     npm rebuild better-sqlite3
+
+  The server cannot start without a working better-sqlite3.
+  Run the fix command above, then restart.
+
+file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74
+    throw new Error(
+          ^
+
+Error: [FATAL] better-sqlite3 MODULE_VERSION mismatch (Node v22.14.0, modules 127). Run: npm rebuild better-sqlite3
+Fix: npm rebuild better-sqlite3
+Node: v22.14.0 (C:\nvm4w\nodejs\node.exe)
+    at bootstrapServer (file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74:11)
+    at file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/guiServer.js:73:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-wLFywJ7g.js, buttonClasses-DdWdVcJt.js, CatalogPage-CgQHzjiP.js, CategoryManager-D0KH6hJQ.js, Chip-DT26XC1B.js, ComponentReviewPage-HehdxiJh.js, DataTable-C356pbxG.js, DrawerShell-BRvNHmja.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-DWGYYQdX.js, FlagsSection-BkmuFYM-.js, formatting-B6A_RRxb.js, index-DlLpygKn.js, index-iM_sa_8V.css, IndexingPage-BZaw1QSr.js, indexlabRunsQuery-WNXT0Q-z.js, LlmConfigPage-Dp2Dg3xS.js, LlmGlobalSection-RBsGVw39.js, LlmPhaseSection-B47b7Rsn.js, llmPolicyDefaults-9ZS8s1Hf.js, LlmProviderRegistrySection-DHJg-I50.js, LlmSettingsPage-BSArmsSV.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-C3uvvMBz.js, PipelineSettingsPage-jfLaA8yo.js, PipelineSourceStrategySection-Cf7t-045.js, ProductPage-ByqYCsni.js, ReviewPage-BxGCvtUq.js, RuntimeFlowDraftPayload-BG34pmRc.js, RuntimeFlowHeaderControls-DQSIKL5M.js, RuntimeOpsPage-DCLAiS_0.js, settingsStatus-hgmxKD6F.js, sortable.esm-DwYz-8jC.js, StoragePage-B7WNSOw-.js, StudioPage-CNlM6tO6.js, TabStrip-Klqv926z.js, TestModePage-DWixFLod.js, TrafficLight-2mIFCT2i.js, useFieldLabels-DHjuF4um.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+
+╔══════════════════════════════════════════════════════════════╗
+║  NATIVE MODULE LOAD FAILURE                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Node:    v22.14.0 (C:\nvm4w\nodejs\node.exe)
+  Module:  127
+  Error:   The module '\\?\C:\Users\Chris\Desktop\Spec Factory\node_modules\better-sqlite3\build\Release\better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 127. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+
+  Fix:     npm rebuild better-sqlite3
+
+  The server cannot start without a working better-sqlite3.
+  Run the fix command above, then restart.
+
+file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74
+    throw new Error(
+          ^
+
+Error: [FATAL] better-sqlite3 MODULE_VERSION mismatch (Node v22.14.0, modules 127). Run: npm rebuild better-sqlite3
+Fix: npm rebuild better-sqlite3
+Node: v22.14.0 (C:\nvm4w\nodejs\node.exe)
+    at bootstrapServer (file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/serverBootstrap.js:74:11)
+    at file:///C:/Users/Chris/Desktop/Spec%20Factory/src/api/guiServer.js:73:5
+    at ModuleJob.run (node:internal/modules/esm/module_job:271:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:578:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.14.0
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes only: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-VlnxljcC.js, buttonClasses-DdWdVcJt.js, CatalogPage-DoFvM3KP.js, CategoryManager-DVmDSNaT.js, Chip-DT26XC1B.js, ComponentReviewPage-BhXapEtS.js, DataTable-C356pbxG.js, DrawerShell-DyjStMBW.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-Be3SmcbJ.js, FlagsSection-DJgqewla.js, formatting-B6A_RRxb.js, index-B6asdOVN.js, index-iM_sa_8V.css, IndexingPage-BBqCJCaS.js, indexlabRunsQuery-CuLAeg25.js, LlmConfigPage-DEIGTdw7.js, LlmGlobalSection-CtQFHWHP.js, LlmPhaseSection-BwnLCdW9.js, llmPolicyDefaults-BF-O14Xi.js, LlmProviderRegistrySection-BT2p2sqH.js, LlmSettingsPage-81Qeae8n.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Agl5T4xY.js, OverviewPage-CQGG33O0.js, PipelineSettingsPage-DYApKn8A.js, PipelineSourceStrategySection-Y_NCNicl.js, ProductPage-BYlwxzUg.js, ReviewPage-D6MkMAKq.js, RuntimeFlowDraftPayload-BW0MYYGk.js, RuntimeFlowHeaderControls-C0xTLdXk.js, RuntimeOpsPage-BrpmlNSo.js, settingsStatus-hgmxKD6F.js, sortable.esm-CW-p-nMw.js, StoragePage-DKfmhe65.js, StudioPage-QhxZPu3L.js, TabStrip-Klqv926z.js, TestModePage-DCcJH2jU.js, TrafficLight-Cgzv_yg5.js, useFieldLabels-CzphPGrS.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js

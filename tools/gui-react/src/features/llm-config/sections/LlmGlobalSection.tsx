@@ -1,7 +1,6 @@
 import { memo, Suspense, lazy, useMemo, useCallback } from 'react';
 import {
   SettingGroupBlock,
-  type NumberBound,
   type RuntimeDraft,
 } from '../../pipeline-settings/index.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
@@ -11,7 +10,6 @@ import { detectMixIssues, detectStaleModelIssues, resolveRingColor } from '../st
 import { detectEmptyModelFields } from '../state/llmModelValidation.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
-import { validatePhaseTokenLimits } from '../state/llmTokenLimitValidation.ts';
 import { HealthDot } from '../../../shared/ui/feedback/HealthDot.tsx';
 import { LlmAllModelsSection } from './LlmAllModelsSection.tsx';
 import { ModelSelectDropdown } from '../components/ModelSelectDropdown.tsx';
@@ -26,8 +24,6 @@ interface LlmGlobalSectionProps {
   inputCls: string;
   llmModelOptions: readonly string[];
   updateDraft: <K extends keyof RuntimeDraft>(key: K, value: RuntimeDraft[K]) => void;
-  onNumberChange: <K extends keyof RuntimeDraft>(key: K, eventValue: string, bounds: NumberBound) => void;
-  getNumberBounds: <K extends keyof RuntimeDraft>(key: K) => NumberBound;
   registry: LlmProviderEntry[];
   onRegistryChange: (registry: LlmProviderEntry[]) => void;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
@@ -38,8 +34,6 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
   inputCls,
   llmModelOptions,
   updateDraft,
-  onNumberChange,
-  getNumberBounds,
   registry,
   onRegistryChange,
   apiKeyFilter,
@@ -107,11 +101,6 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
     const color = resolveRingColor(field, allIssues, dismissedAlerts);
     return color ? { boxShadow: `0 0 0 2px ${color}` } : undefined;
   }, [allIssues, dismissedAlerts]);
-
-  const tokenWarnings = useMemo(
-    () => validatePhaseTokenLimits(runtimeDraft as unknown as Record<string, unknown>, registry),
-    [runtimeDraft, registry],
-  );
 
   const baseProv = resolveProviderForModel(registry, runtimeDraft.llmModelPlan);
   const reasonProv = resolveProviderForModel(registry, runtimeDraft.llmModelReasoning);
@@ -233,56 +222,8 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
           </div>
         )}
 
-        {/* Divider */}
-        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
-
-        {/* B — Limits (registry-driven) */}
-        <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
-          Limits
-        </div>
-        <LlmFieldGrid
-          keys={[...getLlmFieldKeys('Call Limits'), ...getLlmFieldKeys('Global Tokens')]}
-          runtimeDraft={runtimeDraft}
-          inputCls={inputCls}
-          updateDraft={updateDraft}
-          onNumberChange={onNumberChange}
-          getNumberBounds={getNumberBounds}
-        />
-
-        {/* Token limit warnings */}
-        {tokenWarnings.length > 0 && (
-          <div className="flex flex-col gap-1.5 mt-3">
-            {tokenWarnings.map((w) => (
-              <AlertBanner
-                key={`token-${w.field}-${w.phase}-${w.model}`}
-                severity="warning"
-                title={w.field === 'contextOverflow'
-                  ? `${w.phase}: output allocation exceeds 50% of context window`
-                  : `${w.phase}: token cap exceeds model limit`}
-                message={w.field === 'contextOverflow'
-                  ? `${w.model} context window is ${w.limit.toLocaleString()}, but ${w.phase} output is set to ${w.setting.toLocaleString()} (>${Math.floor(w.limit * 0.5).toLocaleString()}).`
-                  : `${w.model} max output is ${w.limit.toLocaleString()}, but ${w.phase} is set to ${w.setting.toLocaleString()}.`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Divider */}
-        <div className="border-t" style={{ borderColor: 'var(--sf-border)', margin: 'var(--sf-space-4) 0' }} />
-
-        {/* C — Budget (registry-driven) */}
-        <div className="sf-text-caption font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--sf-muted)' }}>
-          Budget
-        </div>
-        <LlmFieldGrid
-          keys={getLlmFieldKeys('Budget')}
-          runtimeDraft={runtimeDraft}
-          inputCls={inputCls}
-          updateDraft={updateDraft}
-          onNumberChange={onNumberChange}
-          getNumberBounds={getNumberBounds}
-          columns={2}
-        />
+        {/* WHY: Limits and Budget removed — tokens/timeout now live per-phase.
+           Cost fields stay in registry for cost-sync on model change but have no UI panel. */}
       </SettingGroupBlock>
 
     </>

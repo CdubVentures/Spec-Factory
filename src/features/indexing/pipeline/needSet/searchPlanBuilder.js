@@ -2,8 +2,8 @@
 // Calls the planner LLM to generate targeted search queries from focus_groups,
 // applies anti-garbage filtering, and assembles the search plan.
 
-import { z, toJSONSchema } from 'zod';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../../core/llm/client/routing.js';
+import { createSearchPlannerCallLlm, plannerResponseZodSchema } from './searchPlanBuilderLlmAdapter.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 import { stableHashString } from '../../../../shared/stableHash.js';
 import { mapRequiredLevelToBucket } from '../../../../shared/discoveryRankConstants.js';
@@ -12,36 +12,8 @@ function defaultQueryHash(query) {
   return stableHashString(String(query || '').trim().toLowerCase().replace(/\s+/g, ' '));
 }
 
-// --- LLM schema + prompt ---
-
-// WHY: NeedSet LLM assesses group search priority and annotations.
-// It does NOT generate search queries — query authoring belongs to
-// Search Profile (deterministic tiers) and Search Planner (LLM).
-export const plannerResponseZodSchema = z.object({
-  planner_confidence: z.number().optional(),
-  groups: z.array(z.object({
-    key: z.string(),
-    phase: z.string().optional(),
-    reason_active: z.string().optional(),
-  })).optional(),
-});
-
-function plannerResponseSchema() {
-  const { $schema, ...schema } = toJSONSchema(plannerResponseZodSchema);
-  return schema;
-}
-const PLANNER_RESPONSE_SCHEMA = plannerResponseSchema();
-
-const PLANNER_SYSTEM_PROMPT = [
-  'You are a search group assessor for hardware specification data collection.',
-  'Given product identity and focus groups with unresolved fields, assess each group.',
-  'You do NOT write search queries. Query authoring is handled by a separate stage.',
-  'Rules:',
-  '- For each active group, explain why it is active (reason_active).',
-  '- Assign planner_confidence (0-1) reflecting how confident you are about the group priorities.',
-  '- weak_field_keys need corroboration from authoritative sources. conflict_field_keys need resolution from manufacturer/official sources.',
-  '- Return JSON with a "groups" array where each group has a "key" and "reason_active".',
-].join('\n');
+// WHY: Re-export so existing consumers don't break.
+export { plannerResponseZodSchema } from './searchPlanBuilderLlmAdapter.js';
 
 // --- Core ---
 
@@ -310,20 +282,16 @@ export async function buildSearchPlan({
 
   const payloadJson = JSON.stringify(llmPayload);
 
-  // Call LLM
+  // Call LLM via adapter
+  const callPlanner = createSearchPlannerCallLlm({
+    callRoutedLlmFn: callLlmWithRouting, config, logger,
+  });
+
   let llmResult;
   try {
-    // WHY: phase must be 'needset' so this LLM call picks up the needset
-    // phase config from the SSOT (e.g. Gemini Flash), not the searchPlanner
-    // phase config (e.g. Pro). Each tab has its own LLM model settings.
-    llmResult = await callLlmWithRouting({
-      config,
-      reason: 'needset_search_planner',
-      role: 'plan',
-      phase: 'needset',
-      system: PLANNER_SYSTEM_PROMPT,
-      user: payloadJson,
-      jsonSchema: PLANNER_RESPONSE_SCHEMA,
+    llmResult = await callPlanner({
+      payloadJson,
+      llmContext,
       usageContext: {
         category: run.category,
         productId: run.product_id,
@@ -334,12 +302,6 @@ export async function buildSearchPlan({
         traceWriter: llmContext.traceWriter || null,
         trace_context: { purpose: 'needset_search_plan', target_groups: activeGroupKeys },
       },
-      costRates: llmContext.costRates || config,
-      onUsage: async (usageRow) => {
-        if (typeof llmContext.recordUsage === 'function') await llmContext.recordUsage(usageRow);
-      },
-      timeoutMs: config.llmTimeoutMs || 40_000,
-      logger,
     });
   } catch (error) {
     logger?.warn?.('search_plan_builder_llm_failed', { message: error.message });

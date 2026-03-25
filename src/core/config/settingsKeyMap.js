@@ -8,24 +8,3 @@ export const CATEGORY_AUTHORITY_ROOT_KEY = 'categoryAuthorityRoot';
 
 
 export const RUNTIME_SETTINGS_ROUTE_GET = deriveRouteGetMaps(RUNTIME_SETTINGS_REGISTRY);
-
-// WHY: Dual-key pairs must have identical values. Self-referencing pairs
-// remain for fallback models (keyA === keyB) as no-ops. All GUI aliases retired.
-export const DUAL_KEY_PAIRS = Object.freeze([
-  ['llmPlanFallbackModel', 'llmPlanFallbackModel'],
-  ['llmReasoningFallbackModel', 'llmReasoningFallbackModel'],
-]);
-
-export function assertDualKeyConsistency(defaults) {
-  for (const [keyA, keyB] of DUAL_KEY_PAIRS) {
-    if (keyA === keyB) continue;
-    if (!Object.hasOwn(defaults, keyA) || !Object.hasOwn(defaults, keyB)) continue;
-    const valA = defaults[keyA];
-    const valB = defaults[keyB];
-    if (valA !== valB) {
-      throw new Error(
-        `Dual-key drift: ${keyA} (${JSON.stringify(valA)}) !== ${keyB} (${JSON.stringify(valB)})`
-      );
-    }
-  }
-}

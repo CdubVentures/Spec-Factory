@@ -12,16 +12,7 @@ import { createPacer } from './createPacer.js';
 // Module-level pacing — injectable via _pacer param
 // ---------------------------------------------------------------------------
 
-// WHY: Defaults live in settingsRegistry; these are fallbacks for standalone usage.
-const FALLBACK_MIN_INTERVAL_MS = 4_000;
-const FALLBACK_POST_RESULTS_DELAY_MS = 2_000;
-const FALLBACK_SCREENSHOT_QUALITY = 35;
-const FALLBACK_RESULT_CAP = 10;
-const FALLBACK_SERP_SELECTOR_WAIT_MS = 15_000;
-const FALLBACK_SCROLL_DELAY_MS = 300;
-const FALLBACK_PACING_JITTER = 0.3;
-
-const _defaultPacer = createPacer({ minIntervalMs: FALLBACK_MIN_INTERVAL_MS });
+const _defaultPacer = createPacer({ minIntervalMs: 4_000 });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,27 +84,26 @@ export async function searchGoogle({
   _crawlerFactory,
   _pacer,
   // WHY: Registry settings flow in via the caller's settings bag.
-  googleSearchMinIntervalMs,
-  googleSearchPostResultsDelayMs,
-  googleSearchScreenshotQuality,
-  googleSearchResultCap,
-  googleSearchSerpSelectorWaitMs,
-  googleSearchScrollDelayMs,
-  searchPacingJitterFactor,
+  // Defaults match settingsRegistry SSOT for standalone usage.
+  googleSearchPostResultsDelayMs = 2_000,
+  googleSearchScreenshotQuality = 35,
+  googleSearchSerpSelectorWaitMs = 15_000,
+  googleSearchScrollDelayMs = 300,
+  searchPacingJitterFactor = 0.3,
 } = {}) {
   const EMPTY = { results: [], proxyKB: 0 };
 
   if (!query || !String(query).trim()) return EMPTY;
   const q = String(query).trim();
 
-  // WHY: Resolve registry settings → explicit param → fallback constant.
-  const effectiveMinInterval = minQueryIntervalMs ?? googleSearchMinIntervalMs ?? FALLBACK_MIN_INTERVAL_MS;
-  const effectivePostResultsDelay = postResultsDelayMs ?? googleSearchPostResultsDelayMs ?? FALLBACK_POST_RESULTS_DELAY_MS;
-  const effectiveScreenshotQuality = screenshotQuality ?? googleSearchScreenshotQuality ?? FALLBACK_SCREENSHOT_QUALITY;
-  const effectiveResultCap = limit ?? googleSearchResultCap ?? FALLBACK_RESULT_CAP;
-  const effectiveSerpWait = serpSelectorWaitMs ?? googleSearchSerpSelectorWaitMs ?? FALLBACK_SERP_SELECTOR_WAIT_MS;
-  const effectiveScrollDelay = scrollDelayMs ?? googleSearchScrollDelayMs ?? FALLBACK_SCROLL_DELAY_MS;
-  const effectiveJitter = jitterFactor ?? searchPacingJitterFactor ?? FALLBACK_PACING_JITTER;
+  // WHY: Resolve explicit param → registry setting. Caller supplies both tiers.
+  const effectiveMinInterval = minQueryIntervalMs ?? 4_000;
+  const effectivePostResultsDelay = postResultsDelayMs ?? googleSearchPostResultsDelayMs;
+  const effectiveScreenshotQuality = screenshotQuality ?? googleSearchScreenshotQuality;
+  const effectiveResultCap = limit ?? 10;
+  const effectiveSerpWait = serpSelectorWaitMs ?? googleSearchSerpSelectorWaitMs;
+  const effectiveScrollDelay = scrollDelayMs ?? googleSearchScrollDelayMs;
+  const effectiveJitter = jitterFactor ?? searchPacingJitterFactor;
 
   try {
     // Pacing — injectable for tests

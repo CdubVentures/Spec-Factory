@@ -9,7 +9,6 @@ import {
 } from '../../../shared/registryDerivedSettingsMaps.ts';
 import {
   type RuntimeSettingDefaults,
-  type RuntimeRepairDedupeRule,
 } from '../../../stores/settingsManifest.ts';
 
 // WHY: Re-export registry-derived bounds as the canonical GUI bounds map.
@@ -20,7 +19,6 @@ export const RUNTIME_NUMBER_BOUNDS = REGISTRY_BOUNDS;
 // Previously 4 hand-typed arrays; now auto-derived. Cast to specific union
 // types so downstream consumers (sections, normalizer) get type safety.
 export const SEARXNG_ENGINE_OPTIONS = (REGISTRY_ENUM_MAP.searchEngines ?? []) as readonly string[];
-export const REPAIR_DEDUPE_RULE_OPTIONS = (REGISTRY_ENUM_MAP.repairDedupeRule ?? []) as readonly RuntimeRepairDedupeRule[];
 
 export type { NumberBound };
 // WHY: Pick<> preserves mapped-type index compatibility that downstream

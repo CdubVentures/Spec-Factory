@@ -57,6 +57,7 @@ export interface RunInventoryRow {
   storage_metrics?: StorageMetrics;
   picker_label?: string;
   storage_origin?: string;
+  storage_state?: 'live' | 'local' | 's3' | 'synced';
 }
 
 export interface StorageRunsResponse {
@@ -139,4 +140,23 @@ export interface ExportResponse {
   exported_at: string;
   storage_backend: string;
   runs: RunInventoryRow[];
+}
+
+export interface SyncStatusResponse {
+  live: number;
+  local: number;
+  s3: number;
+  synced: number;
+}
+
+export interface SyncPushResponse {
+  ok: boolean;
+  pushed: number;
+  errors: Array<{ run_id: string; category: string; error: string }>;
+}
+
+export interface SyncPullResponse {
+  ok: boolean;
+  pulled: number;
+  errors: Array<{ run_id: string; category: string; error: string }>;
 }

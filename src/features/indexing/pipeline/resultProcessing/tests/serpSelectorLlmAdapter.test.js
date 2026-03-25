@@ -65,17 +65,18 @@ describe('createSerpSelectorCallLlm', () => {
     assert.deepEqual(capturedArgs.jsonSchema.required, ['keep_ids']);
   });
 
-  it('passes timeoutMs from config', async () => {
+  it('does not pass manual timeoutMs — routing resolves via phase', async () => {
     let capturedArgs = null;
     const fn = createSerpSelectorCallLlm({
       callRoutedLlmFn: async (args) => { capturedArgs = args; return {}; },
-      config: { llmTimeoutMs: 42000 },
+      config: { llmTimeoutMs: 25000 },
       logger: null,
     });
 
     await fn({ selectorInput: { candidates: [] }, llmContext: {} });
 
-    assert.equal(capturedArgs.timeoutMs, 42000);
+    assert.equal(capturedArgs.timeoutMs, undefined,
+      'adapter must not pass timeoutMs — callLlmWithRouting resolves it via phase key');
   });
 
   it('propagates usageContext', async () => {

@@ -24,7 +24,6 @@ function makeRunData(overrides = {}) {
       pageGotoTimeoutMs: 30000,
       postLoadWaitMs: 1500,
       capturePageScreenshotEnabled: true,
-      runProfile: 'default',
       maxUrlsPerProduct: 40,
       maxRunSeconds: 600
     },

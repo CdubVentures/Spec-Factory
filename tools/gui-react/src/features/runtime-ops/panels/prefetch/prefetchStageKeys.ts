@@ -1,5 +1,5 @@
 // WHY: Single source of truth for prefetch stage keys and the derived union type.
-// All TypeScript consumers (types.ts, registry, selectProps, PrefetchTabRow,
+// All TypeScript consumers (types.ts, registry, selectProps, StageGroupTabRow,
 // WorkersTab) import from here. The one .js consumer (prefetchTabBusyHelpers.js)
 // maintains its own copy for node --test compatibility.
 

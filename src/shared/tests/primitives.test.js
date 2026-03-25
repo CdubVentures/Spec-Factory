@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey, clamp01 } from '../primitives.js';
+import { isObject, toArray, normalizeText, normalizeToken, normalizeTokenCollapsed, normalizeFieldKey, clamp01 } from '../primitives.js';
 
 describe('isObject', () => {
   const trueCases = [
@@ -151,6 +151,24 @@ describe('normalizeFieldKey', () => {
   for (const [input, expected, label] of cases) {
     it(label, () => {
       strictEqual(normalizeFieldKey(input), expected);
+    });
+  }
+});
+
+describe('normalizeTokenCollapsed', () => {
+  const cases = [
+    ['  foo   bar  ',  'foo bar',   'collapses multiple spaces'],
+    [null,             '',          'null → empty string'],
+    [undefined,        '',          'undefined → empty string'],
+    ['FOO  BAR',       'foo bar',   'lowercases and collapses'],
+    [' x ',            'x',         'trims single char'],
+    ['already',        'already',   'passthrough for clean input'],
+    ['  A   B   C  ',  'a b c',     'collapses interior and trims'],
+  ];
+
+  for (const [input, expected, label] of cases) {
+    it(label, () => {
+      strictEqual(normalizeTokenCollapsed(input), expected);
     });
   }
 });

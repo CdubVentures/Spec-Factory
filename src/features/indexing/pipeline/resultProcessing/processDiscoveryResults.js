@@ -76,7 +76,6 @@ export async function processDiscoveryResults({
     dedupedResults: rawResults,
     categoryConfig,
     frontierDb,
-    identityLock,
   });
 
   // Populate traces for hard-dropped URLs
@@ -158,7 +157,7 @@ export async function processDiscoveryResults({
   const { selected, notSelected } = adaptSerpSelectorOutput({
     selectorOutput: validOutput, candidateMap, overflowRows,
     officialDomain, supportDomain, categoryConfig,
-    scoreSource: fallbackApplied ? 'reranker_fallback' : 'llm_selector',
+    scoreSource: fallbackApplied ? 'passthrough_fallback' : 'llm_selector',
   });
 
   // WHY: Enrich selected candidates with search_slot + search_rank so the
@@ -254,7 +253,7 @@ export async function processDiscoveryResults({
           snippet: String(orig.snippet || ''),
           score: enriched?.score || 0,
           decision: isKept ? 'keep' : 'drop',
-          rationale: isKept ? (fallbackApplied ? 'reranker_fallback' : 'llm_selected') : 'not_selected',
+          rationale: isKept ? (fallbackApplied ? 'passthrough_fallback' : 'llm_selected') : 'not_selected',
           score_components: { base_relevance: enriched?.score || 0, tier_boost: 0, identity_match: 0, penalties: 0 },
           role: '',
           identity_prelim: enriched?.identity_prelim || 'uncertain',

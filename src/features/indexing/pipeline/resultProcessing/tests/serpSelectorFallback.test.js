@@ -156,7 +156,7 @@ describe('SERP Selector deterministic reranker fallback', () => {
     assert.ok(result.selectedUrls.length <= 2, `expected <= 2 selected URLs, got ${result.selectedUrls.length}`);
   });
 
-  it('fallback candidates have score_source=reranker_fallback', async () => {
+  it('fallback candidates have score_source=passthrough_fallback', async () => {
     const args = makeBaseArgs({
       _serpSelectorCallFn: async () => { throw new Error('timeout'); },
     });
@@ -164,12 +164,12 @@ describe('SERP Selector deterministic reranker fallback', () => {
     const fetchHigh = result.candidates.filter((c) => c.triage_disposition === 'fetch_high');
     assert.ok(fetchHigh.length > 0, 'should have fetch_high candidates');
     for (const c of fetchHigh) {
-      assert.equal(c.score_breakdown.score_source, 'reranker_fallback',
-        `expected reranker_fallback, got ${c.score_breakdown.score_source} for ${c.url}`);
+      assert.equal(c.score_breakdown.score_source, 'passthrough_fallback',
+        `expected passthrough_fallback, got ${c.score_breakdown.score_source} for ${c.url}`);
     }
   });
 
-  it('fallback selected have soft_reason_codes containing reranker_fallback', async () => {
+  it('fallback selected have soft_reason_codes containing passthrough_fallback', async () => {
     const args = makeBaseArgs({
       _serpSelectorCallFn: async () => { throw new Error('timeout'); },
     });
@@ -177,8 +177,8 @@ describe('SERP Selector deterministic reranker fallback', () => {
     const fetchHigh = result.candidates.filter((c) => c.triage_disposition === 'fetch_high');
     for (const c of fetchHigh) {
       assert.ok(
-        (c.soft_reason_codes || []).includes('reranker_fallback'),
-        `expected reranker_fallback in soft_reason_codes for ${c.url}`,
+        (c.soft_reason_codes || []).includes('passthrough_fallback'),
+        `expected passthrough_fallback in soft_reason_codes for ${c.url}`,
       );
     }
   });

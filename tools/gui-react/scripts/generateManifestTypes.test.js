@@ -75,9 +75,17 @@ describe('generateManifestTypes', () => {
     }
   });
 
-  it('contains exported union type definitions for enums', () => {
+  it('does not reference undeclared custom types in the generated interface', () => {
     ok(!output.includes('RuntimeResumeMode'), 'retired RuntimeResumeMode should not appear');
-    ok(output.includes('RuntimeRepairDedupeRule'), 'should export RuntimeRepairDedupeRule');
+    ok(!output.includes('RuntimeRepairDedupeRule'), 'retired RuntimeRepairDedupeRule should not appear');
+    const referencedCustomTypes = Array.from(
+      output.matchAll(/^\s+[A-Za-z0-9_]+:\s*([A-Z][A-Za-z0-9_]*)\s*;$/gm),
+      (match) => match[1],
+    );
+
+    for (const typeName of referencedCustomTypes) {
+      ok(output.includes(`export type ${typeName} =`), `should export ${typeName}`);
+    }
   });
 
   it('contains the auto-generated header comment', () => {

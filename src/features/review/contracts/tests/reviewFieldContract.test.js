@@ -20,18 +20,27 @@ describe('reviewFieldContract', () => {
 
   it('FIELD_STATE_KEYS is frozen and non-empty', () => {
     ok(Array.isArray(FIELD_STATE_KEYS));
-    ok(FIELD_STATE_KEYS.length >= 10);
+    ok(FIELD_STATE_KEYS.length > 0);
     ok(Object.isFrozen(FIELD_STATE_KEYS));
   });
 
-  it('FIELD_STATE_KEYS includes canonical builder output keys', () => {
+  it('FIELD_STATE_KEYS includes required builder output keys', () => {
     const expected = [
       'selected', 'needs_review', 'reason_codes', 'candidate_count',
-      'candidates', 'accepted_candidate_id', 'source', 'method',
-      'tier', 'evidence_url', 'evidence_quote',
+      'candidates', 'accepted_candidate_id', 'selected_candidate_id',
     ];
     for (const key of expected) {
       ok(FIELD_STATE_KEYS.includes(key), `missing: ${key}`);
+    }
+  });
+
+  it('FIELD_STATE_OPTIONAL_KEYS includes optional builder output keys', () => {
+    const expected = [
+      'source', 'method', 'tier', 'evidence_url', 'evidence_quote',
+      'slot_id', 'overridden', 'source_timestamp', 'keyReview',
+    ];
+    for (const key of expected) {
+      ok(FIELD_STATE_OPTIONAL_KEYS.includes(key), `missing optional: ${key}`);
     }
   });
 

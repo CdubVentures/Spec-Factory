@@ -9,7 +9,7 @@ test('config: parses crawlee env flags', () => {
     process.env.CRAWLEE_HEADLESS = 'false';
     process.env.CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS = '75';
 
-    const cfg = loadConfig({ runProfile: 'standard' });
+    const cfg = loadConfig();
     assert.equal(cfg.crawleeHeadless, false);
     assert.equal(cfg.crawleeRequestHandlerTimeoutSecs, 75);
   } finally {

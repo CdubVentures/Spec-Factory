@@ -47,6 +47,7 @@ export {
 };
 
 export const CATEGORY = 'mouse_contract_lane_matrix';
+let reviewLaneApiTemplatePromise;
 
 const PRODUCTS = {
   [PRODUCT_A]: {
@@ -337,9 +338,62 @@ function seedKeyReviewState(db, componentIdentifier) {
   });
 }
 
+async function buildReviewLaneApiTemplate() {
+  const templateRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-lane-contract-api-template-'));
+  const storage = makeStorage(templateRoot);
+  const config = {
+    categoryAuthorityRoot: path.join(templateRoot, 'category_authority'),
+    localOutputRoot: path.join(templateRoot, 'out'),
+    specDbDir: path.join(templateRoot, '.specfactory_tmp'),
+  };
+  const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');
+  const dbPath = path.join(config.specDbDir, CATEGORY, 'spec.sqlite');
+
+  try {
+    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
+    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
+    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
+    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
+    await Promise.all([
+      Promise.all(
+        Object.entries(PRODUCTS).map(([productId, product]) =>
+          seedLatestArtifacts(storage, CATEGORY, productId, product)),
+      ),
+      seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
+    ]);
+
+    await fs.mkdir(path.dirname(dbPath), { recursive: true });
+    const db = new SpecDb({ dbPath, category: CATEGORY });
+    try {
+      await seedSpecDb({
+        db,
+        config,
+        category: CATEGORY,
+        fieldRules: buildFieldRulesForSeed(),
+        logger: null,
+      });
+      seedStrictLaneCandidates(db, CATEGORY);
+      seedKeyReviewState(db, componentIdentifier);
+    } finally {
+      db.close();
+    }
+
+    return { templateRoot, componentIdentifier };
+  } catch (error) {
+    await fs.rm(templateRoot, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+async function getReviewLaneApiTemplate() {
+  if (!reviewLaneApiTemplatePromise) {
+    reviewLaneApiTemplatePromise = buildReviewLaneApiTemplate();
+  }
+  return reviewLaneApiTemplatePromise;
+}
+
 export async function createReviewLaneApiHarness(t) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'review-lane-contract-api-'));
-  const storage = makeStorage(tempRoot);
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
@@ -368,27 +422,13 @@ export async function createReviewLaneApiHarness(t) {
   t.after(cleanup);
 
   try {
-    await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
-    await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
-    await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
-    await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
-    for (const [productId, product] of Object.entries(PRODUCTS)) {
-      await seedLatestArtifacts(storage, CATEGORY, productId, product);
-    }
-    await seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY);
+    const { templateRoot } = await getReviewLaneApiTemplate();
+    await fs.cp(path.join(templateRoot, 'category_authority'), config.categoryAuthorityRoot, { recursive: true });
+    await fs.cp(path.join(templateRoot, 'out'), config.localOutputRoot, { recursive: true });
+    await fs.cp(path.join(templateRoot, '.specfactory_tmp'), config.specDbDir, { recursive: true });
 
-    const dbPath = path.join(tempRoot, '.specfactory_tmp', CATEGORY, 'spec.sqlite');
-    await fs.mkdir(path.dirname(dbPath), { recursive: true });
+    const dbPath = path.join(config.specDbDir, CATEGORY, 'spec.sqlite');
     db = new SpecDb({ dbPath, category: CATEGORY });
-    await seedSpecDb({
-      db,
-      config,
-      category: CATEGORY,
-      fieldRules: buildFieldRulesForSeed(),
-      logger: null,
-    });
-    seedStrictLaneCandidates(db, CATEGORY);
-    seedKeyReviewState(db, componentIdentifier);
 
     const port = await findFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;

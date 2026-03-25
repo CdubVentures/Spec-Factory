@@ -1,3 +1,11 @@
+// WHY: Public API for component review types. Manually maintained with richer
+// nested typing than the generated baseline. The shape descriptor alignment
+// test (componentReviewShapeAlignment.test.js) ensures these stay in sync.
+//
+// Generated structural baseline: componentReview.generated.ts
+// Backend SSOT: src/features/review/contracts/componentReviewShapes.js
+// Codegen: node tools/gui-react/scripts/generateReviewTypes.js
+
 import type { ReviewCandidate } from './review.ts';
 
 export type VariancePolicy = 'authoritative' | 'upper_bound' | 'lower_bound' | 'range' | 'override_allowed';

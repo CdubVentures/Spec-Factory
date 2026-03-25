@@ -35,7 +35,6 @@ function emptyKeys(): RuntimeApiKeySlice {
     deepseekApiKey: '',
     anthropicApiKey: '',
     openaiApiKey: '',
-    llmPlanApiKey: '',
   };
 }
 

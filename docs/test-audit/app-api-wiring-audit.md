@@ -440,7 +440,69 @@
 - `node --test src/app/api/tests/guiServerRouteRegistryWiring.test.js`
 - Result: green, 5/5 passing on 2026-03-24.
 - `npm test`
-- Result: pending in this audit pass.
+- Result: green, 6163/6163 passing on 2026-03-24.
+
+## Extension: Config Surface And Manifest Codegen Audit
+
+### Scope
+
+- `src/core/config/tests/configCharacterization.test.js`
+- `src/core/config/tests/configValidation.test.js`
+- `src/core/config/tests/llmConfigReadSurface.test.js`
+- `src/core/config/tests/configFromSnapshotContract.test.js`
+- `tools/gui-react/scripts/generateManifestTypes.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/core/config/tests/configCharacterization.test.js` | COLLAPSE | The file mixed real config surface checks with a repeated-load key-shape assertion and duplicated internal-map numeric policing. Those assertions only locked the current object layout, not a meaningful runtime contract. | Rewritten in place to keep the returned config surface, override behavior, resolved aliasing, and retired-key absence, while deleting the repeated-shape and duplicate map-shape checks. | Targeted config proof green on 2026-03-24. | Kept with lower-brittleness contract coverage. |
+| `src/core/config/tests/configValidation.test.js` | COLLAPSE | It contained a duplicate `discoveryEnabled` default assertion already covered by the adjacent default-config test in the same file. | Duplicate assertion deleted in place; validation and normalization coverage remains unchanged. | Targeted config proof green on 2026-03-24. | Kept with duplicate default coverage removed. |
+| `src/core/config/tests/llmConfigReadSurface.test.js` | KEEP | Protects the real read-surface contract for retired LLM keys across settings maps, defaults, clamping, and env metadata. | No replacement required. | Targeted config proof green on 2026-03-24. | Kept unchanged. |
+| `src/core/config/tests/configFromSnapshotContract.test.js` | KEEP | Protects snapshot overlay behavior and alias remapping on the consumer-facing config surface. | No replacement required. | Targeted config proof green on 2026-03-24. | Kept unchanged. |
+| `tools/gui-react/scripts/generateManifestTypes.test.js` | COLLAPSE | The file hardcoded a retired named enum export (`RuntimeRepairDedupeRule`) even though the generator’s current public output no longer emits named enum unions. That assertion only pinned stale codegen internals. | Rewritten in place to assert the generated interface never references undeclared custom types and that retired enum aliases stay absent. | Targeted codegen proof green on 2026-03-24. | Kept with contract-driven output assertions. |
+
+### Proof Stack
+
+- `node --test src/core/config/tests/configCharacterization.test.js src/core/config/tests/configValidation.test.js src/core/config/tests/llmConfigReadSurface.test.js src/core/config/tests/configFromSnapshotContract.test.js`
+- Result: green, 39/39 passing on 2026-03-24.
+- `node --test src/core/config/tests/*.test.js`
+- Result: green, 136/136 passing on 2026-03-24.
+- `node --test tools/gui-react/scripts/generateManifestTypes.test.js`
+- Result: green, 13/13 passing on 2026-03-24.
+- `npm test`
+- Result: green, 6163/6163 passing on 2026-03-24.
+
+## Extension: Page Registry And Automation Queue Audit
+
+### Scope
+
+- `tools/gui-react/src/registries/__tests__/pageRegistryContract.test.js`
+- `tools/gui-react/src/pages/layout/__tests__/tabNavContract.test.js`
+- `src/features/indexing/api/builders/tests/automationQueueBuilder.test.js`
+- `src/features/indexing/api/contracts/tests/automationQueueShapeContract.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `tools/gui-react/src/registries/__tests__/pageRegistryContract.test.js` | COLLAPSE | The file hardcoded page counts and a golden-master inventory of labels and paths. Those assertions only protected the current navigation layout and broke on legitimate page additions or regrouping. | Rewritten in place to keep the real derivation contract: registry entry shape, uniqueness, tab-group validity, metadata preservation, and tab/route derivation from `PAGE_REGISTRY`. User-visible tab grouping stays covered by `tools/gui-react/src/pages/layout/__tests__/tabNavContract.test.js`. | Targeted registry/nav proof green on 2026-03-24. | Kept with hardcoded inventory assertions retired. |
+| `tools/gui-react/src/pages/layout/__tests__/tabNavContract.test.js` | KEEP | Protects the rendered navigation grouping and active-tab surface that users actually see. | No replacement required. | Targeted registry/nav proof green on 2026-03-24. | Kept unchanged. |
+| `src/features/indexing/api/builders/tests/automationQueueBuilder.test.js` | COLLAPSE | It included a builder-factory shape assertion and a duplicate top-level envelope-key test already covered by the dedicated automation queue contract suite. Those assertions pinned object construction details rather than additional runtime behavior. | Retired the builder-shape and duplicate envelope checks in place. Behavioral job-state, deficit, action-history, and summary tests remain. Envelope key coverage stays in `src/features/indexing/api/contracts/tests/automationQueueShapeContract.test.js`. | Targeted automation-queue proof green on 2026-03-24. | Kept with duplicate implementation-coupled assertions removed. |
+| `src/features/indexing/api/contracts/tests/automationQueueShapeContract.test.js` | KEEP | Protects the canonical automation queue response, job, action, and summary key surfaces. | No replacement required. | Targeted automation-queue proof green on 2026-03-24. | Kept unchanged. |
+
+### Proof Stack
+
+- `node --test tools/gui-react/src/registries/__tests__/pageRegistryContract.test.js tools/gui-react/src/pages/layout/__tests__/tabNavContract.test.js`
+- Result: green, 18/18 passing on 2026-03-24.
+- `node --test tools/gui-react/src/registries/__tests__/*.test.js`
+- Result: green, 16/16 passing on 2026-03-24.
+- `node --test src/features/indexing/api/builders/tests/automationQueueBuilder.test.js src/features/indexing/api/contracts/tests/automationQueueShapeContract.test.js`
+- Result: green, 18/18 passing on 2026-03-24.
+- `node --test src/features/indexing/api/builders/tests/automationQueue*.test.js`
+- Result: green, 30/30 passing on 2026-03-24.
+- `npm test`
+- Result: green, 5970/5970 passing on 2026-03-24.
 
 ## Validated Against
 

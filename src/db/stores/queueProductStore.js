@@ -158,6 +158,34 @@ export function createQueueProductStore({ db, category, stmts }) {
       .all(category, productId));
   }
 
+  // --- Run Storage Location ---
+
+  function updateRunStorageLocation({ productId, runId, storageState, localPath, s3Key, sizeBytes, relocatedAt }) {
+    stmts._updateRunStorageLocation.run({
+      category,
+      product_id: productId || '',
+      run_id: runId || '',
+      storage_state: storageState || 'live',
+      local_path: localPath || '',
+      s3_key: s3Key || '',
+      size_bytes: sizeBytes ?? 0,
+      relocated_at: relocatedAt || '',
+    });
+  }
+
+  function getRunStorageLocation({ productId, runId }) {
+    return stmts._getRunStorageLocation.get(category, productId || '', runId || '') || null;
+  }
+
+  function listRunsByStorageState(storageState) {
+    return hydrateRows(PRODUCT_RUN_BOOLEAN_KEYS,
+      stmts._listRunsByStorageState.all(category, storageState || 'live'));
+  }
+
+  function countRunsByStorageState() {
+    return stmts._countRunsByStorageState.all(category);
+  }
+
   // --- Products ---
 
   function upsertProduct(row) {
@@ -383,6 +411,10 @@ export function createQueueProductStore({ db, category, stmts }) {
     upsertProductRun,
     getLatestProductRun,
     getProductRuns,
+    updateRunStorageLocation,
+    getRunStorageLocation,
+    listRunsByStorageState,
+    countRunsByStorageState,
     upsertProduct,
     getProduct,
     getAllProducts,

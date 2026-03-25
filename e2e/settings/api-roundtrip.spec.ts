@@ -68,11 +68,11 @@ test.describe('Runtime settings API round-trip', () => {
 
   test('PUT valid enum -> GET returns updated value', async ({ settingsApi }) => {
     const baseline = await settingsApi.get('runtime');
-    const key = 'repairDedupeRule';
+    const key = 'pipelineSchemaEnforcementMode';
     const originalValue = baseline[key];
 
     // Pick a different valid enum value
-    const newValue = originalValue === 'domain_once' ? 'none' : 'domain_once';
+    const newValue = originalValue === 'off' ? 'warn' : 'off';
     const putResult = await settingsApi.put('runtime', { [key]: newValue });
     expect(putResult.ok).toBe(true);
     expect(putResult.applied).toHaveProperty(key, newValue);

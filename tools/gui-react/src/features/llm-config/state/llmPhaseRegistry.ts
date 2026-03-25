@@ -6,9 +6,7 @@ export const LLM_PHASE_IDS = [
   'brand-resolver',
   'search-planner',
   'serp-selector',
-  'extraction',
   'validate',
-  'write',
 ] as const satisfies readonly LlmPhaseId[];
 
 export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
@@ -52,24 +50,10 @@ export const LLM_PHASES: readonly LlmPhaseDefinition[] = [
     sharedWith: ['brand-resolver'],
   },
   {
-    id: 'extraction',
-    label: 'Extraction',
-    subtitle: 'Extract model + batching',
-    tip: 'LLM configuration for the extraction pipeline: model, tokens, batching, and verification.',
-    roles: ['extract'],
-  },
-  {
     id: 'validate',
     label: 'Validate',
     subtitle: 'Base Model',
     tip: 'Model override for the validation pass that confirms uncertain field candidates.',
     roles: ['validate'],
-  },
-  {
-    id: 'write',
-    label: 'Write',
-    subtitle: 'Base Model',
-    tip: 'Model override for the summary writer that produces final markdown output.',
-    roles: ['write'],
   },
 ] as const;

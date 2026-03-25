@@ -91,12 +91,11 @@ async function acquireSearchSlot({
 // The promise chain ensures each query waits for the previous one's pacing to
 // complete before starting its own, regardless of concurrency.
 let _searxngPaceChain = Promise.resolve();
-const SEARXNG_MIN_QUERY_INTERVAL_MS = 2_000;
 
 function resolveSearxngMinQueryIntervalMs(value) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    return SEARXNG_MIN_QUERY_INTERVAL_MS;
+    return 0;
   }
   return parsed;
 }
@@ -118,13 +117,14 @@ export async function searchSearxng({
   query,
   limit = 10,
   timeoutMs,
-  minQueryIntervalMs = SEARXNG_MIN_QUERY_INTERVAL_MS,
+  minQueryIntervalMs,
   engines = '',
   provider = 'searxng',
   logger,
   requestThrottler,
   // WHY: Registry setting flows in via the caller's settings bag.
-  searxngSearchTimeoutMs,
+  // Default matches settingsRegistry SSOT for standalone usage.
+  searxngSearchTimeoutMs = 8_000,
 }) {
   if (!baseUrl || !query) {
     return [];
@@ -137,8 +137,8 @@ export async function searchSearxng({
     baseUrl,
     fallbackKey: '127.0.0.1'
   });
-  // WHY: Resolve registry setting → explicit param → fallback constant.
-  const effectiveTimeout = timeoutMs ?? searxngSearchTimeoutMs ?? 8_000;
+  // WHY: Resolve explicit param → registry setting. Caller supplies both tiers.
+  const effectiveTimeout = timeoutMs ?? searxngSearchTimeoutMs;
   const minIntervalMs = resolveSearxngMinQueryIntervalMs(minQueryIntervalMs);
   await acquireSearxngPaceSlot(minIntervalMs);
   const url = new URL('/search', baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`);

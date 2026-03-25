@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   searchEngineAvailability,
-  searchProviderAvailability,
   normalizeSearchEngines,
   groupEnginesByTransport,
 } from '../searchProviders.js';
@@ -92,10 +91,6 @@ test('searchEngineAvailability backward compat: legacy searchProvider dual works
   assert.deepEqual(available.engines, ['bing', 'google']);
   assert.equal(available.bing_ready, true);
   assert.equal(available.google_ready, true);
-});
-
-test('searchProviderAvailability is an alias for searchEngineAvailability', () => {
-  assert.equal(searchProviderAvailability, searchEngineAvailability);
 });
 
 test('searchEngineAvailability reports fallback engines', () => {

@@ -455,6 +455,7 @@ export async function createReviewLaneGuiHarness(t) {
   let context = null;
   let page = null;
   let cleaned = false;
+  let categorySelected = false;
   const logs = [];
 
   async function cleanup() {
@@ -468,18 +469,43 @@ export async function createReviewLaneGuiHarness(t) {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 
-  async function loadReviewHome() {
-    await page.goto(`${baseUrl}/#/review`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('text=Spec Factory', { timeout: 20_000 });
+  function currentHashPath() {
+    const currentUrl = String(page?.url?.() || '');
+    const hashIndex = currentUrl.indexOf('#');
+    if (hashIndex === -1) return '/';
+    const hashPath = currentUrl.slice(hashIndex + 1).trim();
+    return hashPath || '/';
+  }
+
+  async function ensureShellReady() {
+    await page.waitForSelector('h1.sf-shell-title', { timeout: 20_000 });
+  }
+
+  async function ensureCategorySelected() {
     const categorySelect = page.locator('aside select').first();
     await waitForCondition(async () => (await categorySelect.locator(`option[value="${CATEGORY}"]`).count()) > 0, 20_000, 150, 'category_option_visible');
-    await categorySelect.selectOption(CATEGORY);
-    await waitForCondition(async () => (await categorySelect.inputValue()) === CATEGORY, 20_000, 150, 'category_selected');
+    const currentValue = await categorySelect.inputValue().catch(() => '');
+    if (categorySelected && currentValue === CATEGORY) return;
+    if (currentValue !== CATEGORY) {
+      await categorySelect.selectOption(CATEGORY);
+      await waitForCondition(async () => (await categorySelect.inputValue()) === CATEGORY, 20_000, 150, 'category_selected');
+    }
+    categorySelected = true;
+  }
+
+  async function loadReviewHome() {
+    if (currentHashPath() !== '/review') {
+      await page.goto(`${baseUrl}/#/review`, { waitUntil: 'domcontentloaded' });
+    }
+    await ensureShellReady();
+    await ensureCategorySelected();
   }
 
   async function openReviewGrid() {
     await loadReviewHome();
-    await page.getByRole('link', { name: 'Review Grid' }).click();
+    if (currentHashPath() !== '/review') {
+      await page.getByRole('link', { name: 'Review Grid' }).click();
+    }
     await waitForCondition(async () => {
       const payload = await apiJson(baseUrl, 'GET', `/review/${CATEGORY}/products-index`);
       return Array.isArray(payload?.products) && payload.products.length >= 2;
@@ -488,8 +514,13 @@ export async function createReviewLaneGuiHarness(t) {
   }
 
   async function openReviewComponents() {
-    await loadReviewHome();
-    await page.getByRole('link', { name: 'Review Components' }).click();
+    if (currentHashPath() !== '/review-components') {
+      await loadReviewHome();
+      await page.getByRole('link', { name: 'Review Components' }).click();
+    } else {
+      await ensureShellReady();
+      await ensureCategorySelected();
+    }
     await page.waitForSelector('text=Enum Lists', { timeout: 20_000 });
     const debugToggle = page.getByRole('button', { name: /Debug LP\+ID/ }).first();
     if ((await debugToggle.count()) > 0) {
@@ -529,10 +560,13 @@ export async function createReviewLaneGuiHarness(t) {
     await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
     await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
     await seedProductCatalog(config.categoryAuthorityRoot, CATEGORY);
-    for (const [productId, product] of Object.entries(PRODUCTS)) {
-      await seedLatestArtifacts(storage, CATEGORY, productId, product);
-    }
-    await seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY);
+    await Promise.all([
+      Promise.all(
+        Object.entries(PRODUCTS).map(([productId, product]) =>
+          seedLatestArtifacts(storage, CATEGORY, productId, product)),
+      ),
+      seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
+    ]);
 
     const dbPath = path.join(tempRoot, '.specfactory_tmp', CATEGORY, 'spec.sqlite');
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
@@ -569,14 +603,13 @@ export async function createReviewLaneGuiHarness(t) {
 
     child.stdout.on('data', (chunk) => logs.push(String(chunk)));
     child.stderr.on('data', (chunk) => logs.push(String(chunk)));
-    await waitForServerReady(baseUrl, child);
-
-    try {
-      browser = await chromium.launch({ headless: true });
-    } catch (error) {
+    const browserPromise = chromium.launch({ headless: true }).catch((error) => {
       if (skipIfSpawnEperm(t, error, 'sandbox blocks Playwright browser launch')) return null;
       throw error;
-    }
+    });
+    await waitForServerReady(baseUrl, child);
+    browser = await browserPromise;
+    if (!browser) return null;
 
     context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
     page = await context.newPage();

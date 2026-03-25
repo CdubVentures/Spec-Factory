@@ -1,3 +1,12 @@
+// WHY: Public API for review types. These interfaces are manually maintained
+// with richer nested typing than the generated baseline. The shape descriptor
+// alignment test (reviewShapeAlignment.test.js) ensures these stay in sync
+// with the backend contract (reviewFieldContract.js).
+//
+// Generated structural baseline: review.generated.ts
+// Backend SSOT: src/features/review/contracts/reviewFieldContract.js
+// Codegen: node tools/gui-react/scripts/generateReviewTypes.js
+
 export interface ReviewLayoutRow {
   group: string;
   key: string;
@@ -50,11 +59,11 @@ export interface ReviewCandidate {
 export interface KeyReviewLaneState {
   id: number;
   selectedCandidateId?: string | null;
-  primaryStatus: string | null;   // 'pending' | 'confirmed' | 'rejected' | 'not_run' | null
+  primaryStatus: string | null;
   primaryConfidence: number | null;
   sharedStatus: string | null;
   sharedConfidence: number | null;
-  userAcceptPrimary: string | null;  // 'accepted' | null
+  userAcceptPrimary: string | null;
   userAcceptShared: string | null;
   overridePrimary: boolean;
   overrideShared: boolean;

@@ -287,7 +287,7 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
     strictEqual(derived.llmModelReasoning, 'deepseek-reasoner');
     strictEqual(derived.maxRunSeconds, 480);
     strictEqual(derived.autoScrollEnabled, true);
-    strictEqual(derived.discoveryEnabled, true);
+    strictEqual(derived.runtimeScreencastEnabled, true);
   });
 
   it('retired resume aliases are no longer emitted', () => {
@@ -306,7 +306,7 @@ describe('deriveRuntimeDefaults — golden-master after Phase 2', () => {
   it('deriveOptionValues produces correct enum options', () => {
     const options = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
     ok(!options.resumeMode, 'retired resumeMode should not appear in options');
-    deepStrictEqual([...options.repairDedupeRule], ['domain_once', 'domain_and_status', 'none']);
+    ok(!options.repairDedupeRule, 'retired repairDedupeRule should not appear in options');
     ok(options.searchEngines.includes('google'));
   });
 });

@@ -40,8 +40,8 @@ describe('settingsAccessor', () => {
     });
 
     it('preserves falsy config values that are not null/undefined', () => {
-      const config = { discoveryEnabled: false };
-      strictEqual(configValue(config, 'discoveryEnabled'), false);
+      const config = { autoScrollEnabled: false };
+      strictEqual(configValue(config, 'autoScrollEnabled'), false);
     });
 
     it('preserves zero as a valid config value', () => {
@@ -176,13 +176,13 @@ describe('settingsAccessor', () => {
 
   describe('configBool', () => {
     it('returns boolean config value directly', () => {
-      const config = { discoveryEnabled: false };
-      strictEqual(configBool(config, 'discoveryEnabled'), false);
+      const config = { autoScrollEnabled: false };
+      strictEqual(configBool(config, 'autoScrollEnabled'), false);
     });
 
     it('returns registry default when absent', () => {
       const config = {};
-      strictEqual(configBool(config, 'discoveryEnabled'), true);
+      strictEqual(configBool(config, 'autoScrollEnabled'), true);
     });
 
     it('coerces truthy/falsy values', () => {

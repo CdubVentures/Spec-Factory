@@ -67,6 +67,9 @@ import {
   loadGeneratedComponentDbForCompile,
   buildFallbackKeyRows
 } from './compileFileIo.js';
+import { writeCompileOutput } from './compileOutputWriter.js';
+import { assembleCompileOutput } from './compileAssembler.js';
+import { loadCompileContext } from './compileContextLoader.js';
 
 // Re-export loadFieldStudioMap and saveFieldStudioMap for backward compatibility
 export { loadFieldStudioMap, saveFieldStudioMap };
@@ -81,190 +84,23 @@ export async function compileCategoryFieldStudio({
   mapPath = null,
   forceSourceExtraction = false
 }) {
-  if (!normalizeText(category)) {
-    throw new Error('category_required');
-  }
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  const categoryRoot = path.join(helperRoot, category);
-  const controlPlaneRoot = path.join(categoryRoot, '_control_plane');
-  const generatedRoot = path.join(categoryRoot, '_generated');
-  const { fieldStudioPath: controlPlaneFieldStudioMapPath } = resolveControlPlaneMapPaths(controlPlaneRoot);
-  const providedMap = isObject(fieldStudioMap)
-    ? fieldStudioMap
-    : (isObject(workbookMap) ? workbookMap : null);
-  const controlMap = providedMap
-    ? { map: normalizeFieldStudioMap(providedMap), file_path: mapPath ? path.resolve(mapPath) : null }
-    : await loadFieldStudioMap({ category, config, mapPath });
-  if (!controlMap?.map) {
-    throw new Error('field_studio_map_missing');
-  }
-  const resolvedControlMapPath = normalizeText(mapPath)
-    ? path.resolve(String(mapPath))
-    : controlPlaneFieldStudioMapPath;
-
-  const configuredFieldStudioSourcePath = normalizeText(fieldStudioSourcePath)
-    || normalizeText(controlMap.map.field_studio_source_path);
-  const resolvedFieldStudioSourcePath = configuredFieldStudioSourcePath
-    ? path.resolve(configuredFieldStudioSourcePath)
-    : '';
-  const fieldStudioSourceExists = resolvedFieldStudioSourcePath
-    ? await fileExists(resolvedFieldStudioSourcePath)
-    : false;
-  const compileMode = 'field_studio';
-
-  const mapValidation = {
-    valid: true,
-    errors: [],
-    warnings: [],
-    normalized: normalizeFieldStudioMap(controlMap.map)
-  };
-  if (resolvedFieldStudioSourcePath && !fieldStudioSourceExists) {
-    mapValidation.warnings.push(`field_studio_source_not_found:${resolvedFieldStudioSourcePath}; using app-native compile fallback from saved map + generated artifacts`);
-  }
-  if (!mapValidation.valid) {
-    return {
-      category,
-      compiled: false,
-      field_studio_source_path: resolvedFieldStudioSourcePath,
-      field_studio_source_hash: null,
-      map_path: resolvedControlMapPath,
-      map_hash: hashJson(mapValidation.normalized),
-      errors: mapValidation.errors,
-      warnings: mapValidation.warnings
-    };
-  }
-  const map = normalizeFieldStudioMap(mapValidation.normalized);
-  const mapWarnings = [...mapValidation.warnings];
-  const mapHash = hashJson(map);
-  const previousCompileReport = await readJsonIfExists(path.join(generatedRoot, '_compile_report.json'));
-  const previousMapHash = normalizeText(previousCompileReport?.field_studio_map_hash || '');
-  const previousGeneratedFieldRules = await readJsonIfExists(path.join(generatedRoot, 'field_rules.json'));
-  const previousTimestamp = normalizeText(
-    previousGeneratedFieldRules?.generated_at
-    || previousCompileReport?.compiled_at
-    || previousCompileReport?.generated_at
-    || ''
-  );
-  const fieldStudioSourceHash = null;
-  const canReuseTimestamp = Boolean(
-    previousTimestamp
-    && (previousCompileReport?.field_studio_source_hash || null) === fieldStudioSourceHash
-    && previousMapHash === mapHash
-  );
-  const compileTimestamp = canReuseTimestamp ? previousTimestamp : nowIso();
-  const baselineCandidates = [
-    { source: 'authoring', path: path.join(categoryRoot, 'field_rules.json') },
-    { source: 'authoring', path: path.join(categoryRoot, 'field_rules_sample.json') },
-    { source: 'generated', path: path.join(generatedRoot, 'field_rules.json') },
-    { source: 'control_plane', path: path.join(controlPlaneRoot, 'field_rules.full.json') }
-  ];
-  let baselineFieldRules = null;
-  let baselineFieldRulesSource = '';
-  for (const candidateRow of baselineCandidates) {
-    const candidate = await readJsonIfExists(candidateRow.path);
-    if (isObject(candidate) && isObject(candidate.fields)) {
-      baselineFieldRules = candidate;
-      baselineFieldRulesSource = candidateRow.source;
-      break;
-    }
-  }
-  const baselineFieldOverrides = isObject(baselineFieldRules?.fields) ? baselineFieldRules.fields : {};
-  const mapFieldOverrides = baselineFieldRulesSource === 'authoring'
-    ? {}
-    : (isObject(map.field_overrides) ? map.field_overrides : {});
-  const draftFieldOverrides = {};
-  const effectiveFieldOverrides = {
-    ...baselineFieldOverrides,
-    ...mapFieldOverrides,
-    ...draftFieldOverrides
-  };
-
-  const previousUiFieldCatalog = await readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json'));
-  const previousKnownValuesArtifact = await readJsonIfExists(path.join(generatedRoot, 'known_values.json'));
-  const extractedKeyRows = buildFallbackKeyRows({
-    map,
-    baselineFieldRules,
-    baselineUiFieldCatalog: previousUiFieldCatalog
+  const ctx = await loadCompileContext({
+    category, fieldStudioSourcePath, fieldStudioMap, workbookMap, config, mapPath, forceSourceExtraction,
   });
-  const selectedKeySet = new Set(toArray(map.selected_keys).map((field) => normalizeFieldKey(field)).filter(Boolean));
-  const componentPropertyKeySet = declaredComponentPropertyKeysFromMap(map);
-  const extractedKeySet = new Set(extractedKeyRows.map((row) => normalizeFieldKey(row.key)).filter(Boolean));
-  const declaredOnlyKeyRows = [...componentPropertyKeySet]
-    .filter((key) => !extractedKeySet.has(key))
-    .sort((a, b) => a.localeCompare(b))
-    .map((key) => ({
-      row: 0,
-      label: titleFromKey(key),
-      key,
-    }));
-  const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows];
-  const keyRows = selectedKeySet.size > 0
-    ? candidateKeyRows.filter((row) => (
-      selectedKeySet.has(normalizeFieldKey(row.key))
-      || componentPropertyKeySet.has(normalizeFieldKey(row.key))
-    ))
-    : candidateKeyRows;
-  if (!keyRows.length) {
-    return {
-      category,
-      compiled: false,
-      field_studio_source_path: resolvedFieldStudioSourcePath,
-      field_studio_source_hash: fieldStudioSourceHash,
-      map_path: resolvedControlMapPath,
-      map_hash: mapHash,
-      errors: [selectedKeySet.size > 0 ? 'selected_keys_filtered_all_extracted_keys' : 'no_keys_extracted_from_key_list'],
-      warnings: mapValidation.warnings
-    };
-  }
+  if (ctx.earlyReturn) return ctx.earlyReturn;
 
-  const samples = {
-    byField: {},
-    columns: []
-  };
-  const enumLists = normalizeKnownValuesFieldsDoc(previousKnownValuesArtifact);
-  // Merge manual_enum_values into pulled enum lists
-  const manualEnumValues2 = isObject(map.manual_enum_values) ? map.manual_enum_values : {};
-  for (const [field, values] of Object.entries(manualEnumValues2)) {
-    const nf = normalizeFieldKey(field);
-    if (!nf) continue;
-    const existing = toArray(enumLists[nf]);
-    const manual = toArray(values).map((v) => String(v).trim()).filter(Boolean);
-    enumLists[nf] = orderedUniqueStrings([...existing, ...manual]);
-  }
-  for (const overrides of [baselineFieldOverrides, mapFieldOverrides, draftFieldOverrides]) {
-    if (!isObject(overrides)) continue;
-    for (const [field, ruleDraft] of Object.entries(overrides)) {
-      const nf = normalizeFieldKey(field);
-      if (!nf) continue;
-      const enumBlock = isObject(ruleDraft?.enum) ? ruleDraft.enum : {};
-      const vals = toArray(enumBlock.additional_values).map((v) => String(v).trim()).filter(Boolean);
-      if (!vals.length) continue;
-      enumLists[nf] = orderedUniqueStrings([...toArray(enumLists[nf]), ...vals]);
-    }
-  }
-  const componentPull = {
-    componentDb: await loadGeneratedComponentDbForCompile(generatedRoot),
-    sourceAssertions: [],
-    sourceStats: {}
-  };
-  const componentDb = componentPull.componentDb || {};
-  const componentSourceAssertions = toArray(componentPull.sourceAssertions);
-  const componentSourceStats = isObject(componentPull.sourceStats) ? componentPull.sourceStats : {};
-  const tooltipLibrary = await loadTooltipLibrary({ categoryRoot, map });
-  const tooltipEntries = isObject(tooltipLibrary?.entries) ? tooltipLibrary.entries : {};
-  if (tooltipLibrary?.selectedMissing) {
-    mapWarnings.push(`tooltip_source: file not found '${normalizeText(tooltipLibrary.configuredPath || map?.tooltip_source?.path || '')}'`);
-  } else if (tooltipLibrary?.selectedConfigured && Object.keys(tooltipEntries).length === 0) {
-    mapWarnings.push(`tooltip_source: no tooltip entries parsed from '${normalizeText(tooltipLibrary.configuredPath || map?.tooltip_source?.path || '')}'`);
-  }
-
-  const expectations = map.expectations || {
-    required_fields: [],
-    critical_fields: [],
-    expected_easy_fields: [],
-    expected_sometimes_fields: [],
-    deep_fields: []
-  };
+  const {
+    categoryRoot, controlPlaneRoot, generatedRoot,
+    controlPlaneFieldStudioMapPath, resolvedControlMapPath,
+    map, mapWarnings, mapHash,
+    resolvedFieldStudioSourcePath, fieldStudioSourceHash,
+    compileMode, compileTimestamp,
+    baselineFieldRules, baselineFieldOverrides, effectiveFieldOverrides, mapFieldOverrides, draftFieldOverrides,
+    previousCompileReport, previousGeneratedFieldRules,
+    keyRows, samples, enumLists,
+    componentDb, componentSourceAssertions, componentSourceStats,
+    tooltipEntries, expectations,
+  } = ctx;
 
   const fieldsRuntime = {};
   const fieldsStudio = {};
@@ -724,470 +560,67 @@ export async function compileCategoryFieldStudio({
     });
     order += 1;
   }
-  const reconciledKeyMigrations = reconcileKeyMigrationsForFieldSet(
-    keyMigrations,
-    Object.keys(fieldsRuntime),
-    mapWarnings
-  );
-  for (const key of Object.keys(keyMigrations)) {
-    delete keyMigrations[key];
-  }
-  Object.assign(keyMigrations, reconciledKeyMigrations);
-
-  const keyMigrationCycle = findKeyMigrationCycle(keyMigrations);
-  if (keyMigrationCycle) {
-    return {
-      category,
-      compiled: false,
-      field_studio_source_path: resolvedFieldStudioSourcePath,
-      field_studio_source_hash: fieldStudioSourceHash,
-      map_path: resolvedControlMapPath,
-      map_hash: mapHash,
-      errors: [
-        `key_migrations: cycle detected (${keyMigrationCycle.join(' -> ')})`
-      ],
-      warnings: mapWarnings
-    };
-  }
-
-  const validation = buildCompileValidation({
-    fields: fieldsRuntime,
-    knownValues,
-    enumLists,
-    componentDb,
-    map,
-  });
-  for (const assertion of componentSourceAssertions) {
-    if (!validation.errors.includes(assertion)) {
-      validation.errors.push(assertion);
-    }
-  }
-
-  const canonicalFields = {};
-  const baselineFieldOrder = Object.keys(isObject(baselineFieldRules?.fields) ? baselineFieldRules.fields : {});
-  for (const fieldKey of baselineFieldOrder) {
-    if (Object.prototype.hasOwnProperty.call(fieldsStudio, fieldKey)) {
-      canonicalFields[fieldKey] = fieldsStudio[fieldKey];
-    }
-  }
-  for (const row of keyRows) {
-    const outputField = normalizeFieldKey(toRawFieldKey(row.key)) || row.key;
-    if (Object.prototype.hasOwnProperty.call(fieldsStudio, outputField) && !Object.prototype.hasOwnProperty.call(canonicalFields, outputField)) {
-      canonicalFields[outputField] = fieldsStudio[outputField];
-    }
-  }
-  for (const fieldKey of Object.keys(fieldsStudio)) {
-    if (!Object.prototype.hasOwnProperty.call(canonicalFields, fieldKey)) {
-      canonicalFields[fieldKey] = fieldsStudio[fieldKey];
-    }
-  }
-
-  // Sort canonicalFields alphabetically by key
-  const sortedCanonicalFields = {};
-  for (const k of stableSortStrings(Object.keys(canonicalFields))) {
-    sortedCanonicalFields[k] = canonicalFields[k];
-  }
-  Object.keys(canonicalFields).forEach(k => delete canonicalFields[k]);
-  Object.assign(canonicalFields, sortedCanonicalFields);
-
-  // Strip orphan properties from compiled output.
-  // These are used internally during compilation but never read by runtime code.
-  const orphanKeys = ['parse_rules', 'value_form', 'round', 'canonical_key'];
-  for (const rule of Object.values(canonicalFields)) {
-    if (!isObject(rule)) continue;
-    for (const orphan of orphanKeys) {
-      delete rule[orphan];
-    }
-  }
-
-  const identityKeys = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'identity')
-      .map(([field]) => field)
-  );
-  const requiredKeys = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'required')
-      .map(([field]) => field)
-  );
-  const criticalKeys = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => normalizeToken(rule?.priority?.required_level) === 'critical')
-      .map(([field]) => field)
-  );
-  const expectedEasy = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        normalizeToken(rule?.priority?.required_level) === 'expected'
-        && normalizeToken(rule?.priority?.difficulty) === 'easy'
-      ))
-      .map(([field]) => field)
-  );
-  const expectedSometimes = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        normalizeToken(rule?.priority?.required_level) === 'expected'
-        && normalizeToken(rule?.priority?.difficulty) !== 'easy'
-      ))
-      .map(([field]) => field)
-  );
-  const deepFields = stableSortStrings(
-    Object.entries(canonicalFields)
-      .filter(([, rule]) => (
-        ['optional', 'rare'].includes(normalizeToken(rule?.priority?.required_level))
-      ))
-      .map(([field]) => field)
-  );
-
-  const keySourceColumn = String(map?.key_list?.column || '').toUpperCase();
-  const keySourceRange = normalizeText(
-    map?.key_list?.source === 'range'
-      ? map?.key_list?.range
-      : (map?.key_list?.source === 'named_range'
-        ? String(map?.key_list?.named_range || '')
-        : `${keySourceColumn}${asInt(map?.key_list?.row_start, 1)}:${keySourceColumn}${asInt(map?.key_list?.row_end, asInt(map?.key_list?.row_start, 1))}`)
-  );
-
-  const keyRange = normalizeText(map?.key_list?.sheet)
-    ? `${normalizeText(map?.key_list?.sheet)}!${keySourceRange}`
-    : keySourceRange;
-  const sourceTabs = sortDeep(isObject(baselineFieldRules?.source_tabs) ? baselineFieldRules.source_tabs : {});
-  const enumBuckets = sortDeep(isObject(baselineFieldRules?.enum_buckets) ? baselineFieldRules.enum_buckets : {});
-  const componentDbSources = buildComponentSourceSummary({
-    map,
-    componentDb,
-    sourceStats: componentSourceStats,
-    fieldsRuntime
-  });
-  const parseTemplates = isObject(baselineFieldRules?.parse_templates)
-    ? baselineFieldRules.parse_templates
-    : buildParseTemplateCatalog();
-
-  const fieldRulesCanonical = {
-    category,
-    publish_gate: normalizeToken(baselineFieldRules?.publish_gate || '') || 'required_complete',
-    component_db_sources: sortDeep(componentDbSources),
-    enum_buckets: sortDeep(isObject(baselineFieldRules?.enum_buckets) ? baselineFieldRules.enum_buckets : enumBuckets),
-    field_count: Object.keys(canonicalFields).length,
-    fields: canonicalFields,
-    generated_at: compileTimestamp,
-    key_range: normalizeText(baselineFieldRules?.key_range || '') || keyRange,
-    notes: Array.isArray(baselineFieldRules?.notes)
-      ? baselineFieldRules.notes
-      : [
-        'Generated by Field Rules Studio compiler.',
-        'Canonical runtime contract used by ingestion and extraction.'
-      ],
-    parse_templates: sortDeep(parseTemplates),
-    source_context: normalizeText(baselineFieldRules?.source_context || '')
-      || (compileMode === 'field_studio' ? 'field_studio_map' : 'field_studio_source'),
-    version: normalizeText(baselineFieldRules?.version || '') || `field_rules_${normalizeFieldKey(category) || category}_compiled_v1`,
-    source_tabs: sortDeep(
-      isObject(baselineFieldRules?.source_tabs)
-        ? baselineFieldRules.source_tabs
-        : sourceTabs
-    )
-  };
-
-  const fieldRulesFull = sortDeep({
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    source_context: compileMode === 'field_studio' ? 'field_studio_map' : 'field_studio_source',
-    field_studio_source: {
-      path: '',
-      hash: null
-    },
-    field_studio_map_hash: mapHash,
-    key_source: {
-      sheet: normalizeText(map?.key_list?.sheet || ''),
-      range: keySourceRange
-    },
-    schema: {
-      identity_fields: identityKeys,
-      required_fields: requiredKeys,
-      critical_fields: criticalKeys,
-      expected_easy_fields: expectedEasy,
-      expected_sometimes_fields: expectedSometimes,
-      deep_fields: deepFields,
-      include_fields: stableSortStrings(Object.keys(canonicalFields)),
-      exclude_fields: ['id', 'brand', 'model', 'base_model', 'category', 'sku'],
-      preserve_existing_fields: false
-    },
-    source_tabs: sourceTabs,
-    enum_buckets: enumBuckets,
-    component_db_sources: componentDbSources,
-    parse_templates: parseTemplates,
-    fields: canonicalFields,
-    known_values: sortDeep(knownValues),
-    key_migrations_suggested: sortDeep(keyMigrations),
-    global: buildGlobalContractMetadata()
-  });
-
-  const uiFieldCatalog = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    fields: uiFieldCatalogRows.sort((a, b) => (asInt(a.order, 0) - asInt(b.order, 0)) || a.key.localeCompare(b.key))
-  };
-
-  const knownValuesArtifact = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    fields: sortDeep(knownValues)
-  };
-
-  const runtimeKeys = stableSortStrings(Object.keys(fieldsRuntime));
-  const uiKeys = stableSortStrings(toArray(uiFieldCatalog.fields).map((row) => normalizeFieldKey(row?.key || '')));
-  const uiKeySet = new Set(uiKeys);
-  for (const key of runtimeKeys) {
-    if (!uiKeySet.has(key)) {
-      validation.errors.push(`ui_field_catalog missing key '${key}'`);
-    }
-  }
-  const runtimeKeySet = new Set(runtimeKeys);
-  for (const key of uiKeys) {
-    if (!runtimeKeySet.has(key)) {
-      validation.errors.push(`field_rules missing key '${key}'`);
-    }
-  }
-
-  const previousHash = previousCompileReport?.artifacts?.field_rules?.hash || null;
-  const currentHash = hashBuffer(Buffer.from(`${JSON.stringify(fieldRulesCanonical, null, 2)}\n`, 'utf8'));
-  const changed = Boolean(previousHash && previousHash !== currentHash);
-  const fieldDiff = diffFieldRuleSets(previousGeneratedFieldRules, fieldRulesCanonical);
-  const componentSourceCount = toArray(map.component_sources).length > 0
-    ? toArray(map.component_sources).length
-    : toArray(map.component_sheets).length;
-
-  const compileReport = {
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    compiled_at: compileTimestamp,
-    compile_mode: compileMode,
-    compiled: validation.errors.length === 0,
-    field_studio_source_path: '',
-    field_studio_source_hash: null,
-    field_studio_map_path: resolvedControlMapPath,
-    field_studio_map_hash: mapHash,
-    counts: {
-      fields: Object.keys(fieldsRuntime).length,
-      identity: identityKeys.length,
-      required: requiredKeys.length,
-      critical: criticalKeys.length,
-      expected_easy: expectedEasy.length,
-      expected_sometimes: expectedSometimes.length,
-      deep: deepFields.length,
-      enums: Object.keys(knownValues).length,
-      component_types: Object.keys(componentDb).length
-    },
-    warnings: [...mapWarnings, ...validation.warnings],
-    errors: validation.errors,
-    source_summary: {
-      key_rows: keyRows.length,
-      sampled_product_columns: toArray(samples.columns).length,
-      sampled_values: Object.values(samples.byField || {}).reduce((sum, list) => sum + toArray(list).length, 0),
-      enum_lists: toArray(map.enum_lists).length,
-      component_sources: componentSourceCount,
-      component_sheets: componentSourceCount
-    },
-    diff: {
-      changed,
-      previous_hash: previousHash,
-      current_hash: currentHash,
-      fields: fieldDiff
-    },
-    artifacts: {
-      field_rules_full: {
-        path: path.join(controlPlaneRoot, 'field_rules.full.json'),
-        hash: hashJson(fieldRulesFull)
-      },
-      field_rules: {
-        path: path.join(generatedRoot, 'field_rules.json'),
-        hash: currentHash,
-        changed
-      },
-      field_rules_runtime: {
-        path: path.join(generatedRoot, 'field_rules.runtime.json'),
-        hash: currentHash
-      },
-      ui_field_catalog: {
-        path: path.join(generatedRoot, 'ui_field_catalog.json'),
-        hash: hashJson(uiFieldCatalog)
-      },
-      known_values: {
-        path: path.join(generatedRoot, 'known_values.json'),
-        hash: hashJson(knownValuesArtifact)
-      },
-      key_migrations: Object.keys(keyMigrations).length
-        ? {
-          path: path.join(generatedRoot, 'key_migrations.json'),
-          hash: hashJson(keyMigrations)
-        }
-        : null
-    }
-  };
-
-  await fs.mkdir(controlPlaneRoot, { recursive: true });
-  await writeJsonStable(resolvedControlMapPath, map);
-  if (resolvedControlMapPath !== controlPlaneFieldStudioMapPath) {
-    await writeJsonStable(controlPlaneFieldStudioMapPath, map);
-  }
-  await writeJsonStable(path.join(controlPlaneRoot, 'field_rules.full.json'), fieldRulesFull);
-  const controlPlaneSnapshot = await writeControlPlaneSnapshot({
-    controlPlaneRoot,
-    fieldStudioMap: map,
+  const {
+    earlyReturn: assemblyEarlyReturn,
+    fieldRulesCanonical,
     fieldRulesFull,
-    note: 'category-compile'
-  });
-  compileReport.artifacts.control_plane_version = {
-    path: controlPlaneSnapshot.path,
-    version_id: controlPlaneSnapshot.version_id
-  };
-
-  if (validation.errors.length > 0) {
-    return {
-      category,
-      compiled: false,
-      field_studio_source_path: resolvedFieldStudioSourcePath,
-      field_studio_source_hash: fieldStudioSourceHash,
-      map_path: resolvedControlMapPath,
-      map_hash: mapHash,
-      selected_key_count: keyRows.length,
-      errors: compileReport.errors,
-      warnings: compileReport.warnings,
-      compile_report: compileReport,
-      control_plane_version: controlPlaneSnapshot
-    };
-  }
-
-  await fs.mkdir(generatedRoot, { recursive: true });
-  const canonicalPair = await writeCanonicalFieldRulesPair({
+    uiFieldCatalog,
+    knownValuesArtifact,
+    compileReport,
+    validation,
+  } = assembleCompileOutput({
+    fieldsRuntime,
+    fieldsStudio,
+    uiFieldCatalogRows,
+    knownValues,
+    keyMigrations,
+    map,
+    category,
+    compileTimestamp,
+    compileMode,
+    baselineFieldRules,
+    componentDb,
+    componentSourceAssertions,
+    componentSourceStats,
+    enumLists,
+    mapWarnings,
+    keyRows,
+    samples,
+    previousCompileReport,
+    previousGeneratedFieldRules,
+    controlPlaneRoot,
     generatedRoot,
-    runtimePayload: fieldRulesCanonical
+    resolvedControlMapPath,
+    mapHash,
+    resolvedFieldStudioSourcePath,
+    fieldStudioSourceHash,
   });
-  if (!canonicalPair.identical) {
-    compileReport.errors.push('field_rules.json and field_rules.runtime.json must be byte-identical');
-    compileReport.compiled = false;
-    await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);
-    return {
-      category,
-      compiled: false,
-      field_studio_source_path: resolvedFieldStudioSourcePath,
-      field_studio_source_hash: fieldStudioSourceHash,
-      map_path: resolvedControlMapPath,
-      map_hash: mapHash,
-      selected_key_count: keyRows.length,
-      errors: compileReport.errors,
-      warnings: compileReport.warnings,
-      compile_report: compileReport,
-      control_plane_version: controlPlaneSnapshot
-    };
-  }
-  compileReport.artifacts.field_rules.hash = canonicalPair.field_rules_hash;
-  compileReport.artifacts.field_rules_runtime.hash = canonicalPair.field_rules_runtime_hash;
-  compileReport.artifacts.field_rules_runtime.identical_to_field_rules = true;
-  compileReport.artifacts.field_rules_runtime.bytes = canonicalPair.bytes;
-  await writeJsonStable(path.join(generatedRoot, 'ui_field_catalog.json'), uiFieldCatalog);
-  await writeJsonStable(path.join(generatedRoot, 'known_values.json'), knownValuesArtifact);
-  await fs.rm(path.join(generatedRoot, 'schema.json'), { force: true });
-  await fs.rm(path.join(generatedRoot, 'required_fields.json'), { force: true });
-  if (Object.keys(keyMigrations).length > 0) {
-    const keyMigrationsEnvelope = {
-      bump: 'patch',
-      key_map: sortDeep(keyMigrations),
-      migrations: Object.entries(keyMigrations).map(([from, to]) => ({
-        from,
-        reason: 'auto-generated from key map',
-        to,
-        type: 'rename'
-      })),
-      previous_version: '1.0.0',
-      summary: { added_count: 0, changed_count: 0, removed_count: 0 },
-      version: '1.0.0'
-    };
-    await writeJsonStable(path.join(generatedRoot, 'key_migrations.json'), keyMigrationsEnvelope);
-  } else {
-    await fs.rm(path.join(generatedRoot, 'key_migrations.json'), { force: true });
-  }
+  if (assemblyEarlyReturn) return assemblyEarlyReturn;
 
-  const componentRoot = path.join(generatedRoot, 'component_db');
-  await fs.rm(componentRoot, { recursive: true, force: true });
-  await fs.mkdir(componentRoot, { recursive: true });
-  const componentTypeOutputName = {
-    sensor: 'sensors',
-    switch: 'switches',
-    encoder: 'encoders',
-    mcu: 'mcus',
-    material: 'materials'
-  };
-  applyKeyLevelConstraintsToEntities(componentDb, fieldsRuntime);
-
-  // Merge component overrides from _overrides/components/ into compiled output
-  const componentOverrideDir = path.join(categoryRoot, '_overrides', 'components');
-  const componentOverrides = {};
-  try {
-    const overrideEntries = await fs.readdir(componentOverrideDir, { withFileTypes: true });
-    for (const entry of overrideEntries) {
-      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
-      try {
-        const ovr = JSON.parse(await fs.readFile(path.join(componentOverrideDir, entry.name), 'utf8'));
-        if (ovr?.componentType && ovr?.name && isObject(ovr?.properties)) {
-          const typeKey = normalizeToken(ovr.componentType);
-          if (!componentOverrides[typeKey]) componentOverrides[typeKey] = {};
-          componentOverrides[typeKey][normalizeToken(ovr.name)] = ovr.properties;
-        }
-      } catch { /* skip corrupt override files */ }
-    }
-  } catch (err) {
-    if (err?.code !== 'ENOENT') throw err;
-  }
-  for (const [componentType, rows] of Object.entries(componentDb)) {
-    // Apply overrides to matching entities
-    const typeOverrides = componentOverrides[normalizeToken(componentType)] || {};
-    for (const entity of rows) {
-      const entityKey = normalizeToken(entity.name || '');
-      const ovr = typeOverrides[entityKey];
-      if (ovr && isObject(entity.properties)) {
-        for (const [prop, val] of Object.entries(ovr)) {
-          if (val !== undefined && val !== null && val !== '') {
-            entity.properties[prop] = val;
-            if (!entity.__overridden) entity.__overridden = {};
-            entity.__overridden[prop] = true;
-          }
-        }
-      }
-    }
-    const payload = {
-      version: 1,
-      category,
-      component_type: componentType,
-      generated_at: compileTimestamp,
-      items: rows
-    };
-    const outputName = normalizeText(componentTypeOutputName[normalizeToken(componentType)] || componentType) || componentType;
-    await writeJsonStable(path.join(componentRoot, `${outputName}.json`), payload);
-  }
-
-  const suggestionsRoot = path.join(categoryRoot, '_suggestions');
-  await fs.mkdir(suggestionsRoot, { recursive: true });
-  const suggestionDefaults = {
-    enums: { version: 1, category, suggestions: [] },
-    components: { version: 1, category, suggestions: [] },
-    lexicon: { version: 1, category, suggestions: [] },
-    constraints: { version: 1, category, suggestions: [] }
-  };
-  for (const [name, payload] of Object.entries(suggestionDefaults)) {
-    const filePath = path.join(suggestionsRoot, `${name}.json`);
-    if (!(await fileExists(filePath))) {
-      await writeJsonStable(filePath, payload);
-    }
-  }
-  await fs.mkdir(path.join(categoryRoot, '_overrides'), { recursive: true });
-
-  await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);
+  const { controlPlaneSnapshot, earlyReturn: writeEarlyReturn } = await writeCompileOutput({
+    controlPlaneRoot,
+    controlPlaneFieldStudioMapPath,
+    resolvedControlMapPath,
+    generatedRoot,
+    categoryRoot,
+    map,
+    fieldRulesCanonical,
+    fieldRulesFull,
+    uiFieldCatalog,
+    knownValuesArtifact,
+    compileReport,
+    validation,
+    componentDb,
+    fieldsRuntime,
+    keyMigrations,
+    category,
+    compileTimestamp,
+    resolvedFieldStudioSourcePath,
+    fieldStudioSourceHash,
+    mapHash,
+    keyRows,
+  });
+  if (writeEarlyReturn) return writeEarlyReturn;
 
   return {
     category,

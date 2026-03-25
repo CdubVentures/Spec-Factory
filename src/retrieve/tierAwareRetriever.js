@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { ruleUnit } from '../engine/ruleAccessors.js';
 import { generateStableSnippetId } from '../index/evidenceIndexDb.js';
 import { toTierNumber, parseTierPreferenceFromRule, parseTierPreferenceFromNeedRow } from '../utils/tierHelpers.js';
-import { isObject, toArray } from '../shared/primitives.js';
+import { isObject, normalizeToken, toArray } from '../shared/primitives.js';
 
 const DEFAULT_TIER_WEIGHTS = new Map([
   [1, 3],
@@ -48,17 +48,11 @@ const FIELD_HINT_SYNONYMS = {
   connectivity: ['connectivity', 'wireless', 'wired', 'bluetooth', '2.4ghz']
 };
 
-function normalizeText(value) {
+// WHY: Domain-specific — lowercases and collapses whitespace for doc-kind inference.
+function normalizeTextCollapsed(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function normalizeToken(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
     .trim();
 }
 
@@ -159,10 +153,10 @@ function collectAnchorTerms({ fieldKey = '', fieldRule = {}, limit = 16 } = {}) 
   const ui = isObject(fieldRule.ui) ? fieldRule.ui : {};
   const base = splitFieldTokenVariants(fieldKey);
   const synonyms = toArray(FIELD_HINT_SYNONYMS[fieldKey] || [])
-    .map((value) => normalizeText(value))
+    .map((value) => normalizeTextCollapsed(value))
     .filter(Boolean);
   const searchTerms = toArray(searchHints.query_terms)
-    .map((value) => normalizeText(value))
+    .map((value) => normalizeTextCollapsed(value))
     .filter(Boolean);
   const labels = [
     String(fieldRule.label || '').trim(),
@@ -170,7 +164,7 @@ function collectAnchorTerms({ fieldKey = '', fieldRule = {}, limit = 16 } = {}) 
     String(fieldRule.description || '').trim(),
     String(ui.tooltip || '').trim()
   ]
-    .map((value) => normalizeText(value))
+    .map((value) => normalizeTextCollapsed(value))
     .filter((value) => value.length > 2);
   return uniqueStrings([...searchTerms, ...synonyms, ...base, ...labels], limit);
 }
@@ -194,11 +188,11 @@ function identityTokens(identity = {}) {
 }
 
 function countMatches(text, terms = []) {
-  const haystack = normalizeText(text);
+  const haystack = normalizeTextCollapsed(text);
   if (!haystack) return [];
   const out = [];
   for (const term of terms || []) {
-    const needle = normalizeText(term);
+    const needle = normalizeTextCollapsed(term);
     if (!needle || needle.length < 2) continue;
     if (haystack.includes(needle)) out.push(needle);
   }
@@ -261,9 +255,9 @@ function scoreEvidenceHit({
   const searchSurface = `${quote} ${keyPath} ${url}`;
   const anchorMatches = countMatches(searchSurface, anchors);
   const identityMatches = countMatches(searchSurface, identityTokens(identity));
-  const unitToken = normalizeText(unitHint);
-  const unitMatch = unitToken ? normalizeText(searchSurface).includes(unitToken) : false;
-  const directField = normalizeText(String(evidence.origin_field || '')) === normalizeText(fieldKey);
+  const unitToken = normalizeTextCollapsed(unitHint);
+  const unitMatch = unitToken ? normalizeTextCollapsed(searchSurface).includes(unitToken) : false;
+  const directField = normalizeTextCollapsed(String(evidence.origin_field || '')) === normalizeTextCollapsed(fieldKey);
 
   const tierWeight = tier ? (tierWeightLookup.get(tier) || DEFAULT_TIER_WEIGHTS.get(tier) || 0.45) : 0.35;
   const docWeight = retrievalDocKindWeights.get(docKind) || retrievalDocKindWeights.get('other') || 0.55;
@@ -379,7 +373,7 @@ function pushPoolRow(pool = [], dedupe = new Set(), row = {}) {
   const fingerprint = [
     normalized.url,
     normalized.snippet_id,
-    normalizeText(normalized.quote),
+    normalizeTextCollapsed(normalized.quote),
     normalized.origin_field
   ].join('|');
   if (!normalized.url || !normalized.quote || dedupe.has(fingerprint)) {
@@ -400,7 +394,7 @@ export function buildEvidencePoolFromProvenance(provenance = {}) {
       const fingerprint = [
         normalized.url,
         normalized.snippet_id,
-        normalizeText(normalized.quote),
+        normalizeTextCollapsed(normalized.quote),
         normalized.origin_field
       ].join('|');
       if (!normalized.url || !normalized.quote || byFingerprint.has(fingerprint)) continue;
@@ -660,7 +654,7 @@ export function buildTierAwareFieldRetrieval({
     });
     scored.source_identity_match = row.source_identity_match ?? null;
     scored.source_identity_score = row.source_identity_score ?? null;
-    const directField = normalizeText(String(row.origin_field || '')) === normalizeText(key);
+    const directField = normalizeTextCollapsed(String(row.origin_field || '')) === normalizeTextCollapsed(key);
     if (!directField && scored.ranking_features.anchor_matches.length === 0 && !scored.ranking_features.unit_match) {
       noAnchorSkipCount += 1;
       if (traceEnabled && rejectedHits.length < 20) {
@@ -669,7 +663,7 @@ export function buildTierAwareFieldRetrieval({
       continue;
     }
     anchorMatchCount += 1;
-    const fingerprint = `${scored.url}|${scored.snippet_id || ''}|${normalizeText(scored.quote_preview)}`;
+    const fingerprint = `${scored.url}|${scored.snippet_id || ''}|${normalizeTextCollapsed(scored.quote_preview)}`;
     if (seen.has(fingerprint)) continue;
     seen.add(fingerprint);
     hits.push(scored);

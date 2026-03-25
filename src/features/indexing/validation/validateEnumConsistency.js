@@ -1,4 +1,5 @@
-import { z, toJSONSchema } from 'zod';
+import { z } from 'zod';
+import { zodToLlmSchema } from '../../../core/llm/zodToLlmSchema.js';
 import { callLlmWithRouting, hasLlmRouteApiKey, resolvePhaseModel } from '../../../core/llm/client/routing.js';
 import { normalizeToken, clamp01 } from '../../../shared/primitives.js';
 
@@ -96,8 +97,7 @@ export const enumConsistencyResponseZodSchema = z.object({
 });
 
 function responseSchema() {
-  const { $schema, ...schema } = toJSONSchema(enumConsistencyResponseZodSchema);
-  return schema;
+  return zodToLlmSchema(enumConsistencyResponseZodSchema);
 }
 
 function defaultUncertainDecision(value) {
@@ -266,7 +266,6 @@ export async function runEnumConsistencyReview({
       },
       costRates,
       onUsage,
-      timeoutMs: Number(config?.llmTimeoutMs || config?.openaiTimeoutMs || 40_000),
       logger,
     });
 

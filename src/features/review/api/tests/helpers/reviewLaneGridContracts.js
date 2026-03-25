@@ -1,4 +1,3 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CATEGORY,
@@ -9,13 +8,9 @@ import {
   findEnumValue,
   getItemFieldStateId,
   getStrictKeyReviewState,
-  createReviewLaneApiHarness,
-} from './fixtures/reviewLaneApiHarness.js';
+} from '../fixtures/reviewLaneApiHarness.js';
 
-test('review lane grid mutations stay slot-scoped and lane-specific', async (t) => {
-  const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
-
+export async function runReviewLaneGridContracts(t, harness) {
   const { baseUrl, db, componentIdentifier } = harness;
 
   await t.test('grid primary accept with candidate-id collision stays slot-scoped', async () => {
@@ -328,4 +323,4 @@ test('review lane grid mutations stay slot-scoped and lane-specific', async (t) 
     assert.equal(enumConfirm.status, 400);
     assert.equal(enumConfirm.data?.error, 'lane_context_mismatch');
   });
-});
+}

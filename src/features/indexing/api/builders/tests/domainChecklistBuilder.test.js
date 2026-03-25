@@ -19,13 +19,6 @@ function makeStorage() {
   };
 }
 
-// --- Factory ---
-
-test('createDomainChecklistBuilder returns object with expected function', () => {
-  const builder = makeBuilder();
-  assert.equal(typeof builder.buildIndexingDomainChecklist, 'function');
-});
-
 // --- Guards ---
 
 test('missing category returns empty response with category_required note', async () => {

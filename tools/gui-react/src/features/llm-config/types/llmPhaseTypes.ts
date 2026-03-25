@@ -4,15 +4,13 @@ export type LlmPhaseId =
   | 'brand-resolver'
   | 'search-planner'
   | 'serp-selector'
-  | 'extraction'
-  | 'validate'
-  | 'write';
+  | 'validate';
 
 export interface LlmPhaseDefinition {
   id: LlmPhaseId;
   label: string;
   subtitle: string;
   tip: string;
-  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'extract' | 'validate' | 'write'>;
+  roles: ReadonlyArray<'plan' | 'triage' | 'reasoning' | 'validate'>;
   sharedWith?: ReadonlyArray<LlmPhaseId>;
 }

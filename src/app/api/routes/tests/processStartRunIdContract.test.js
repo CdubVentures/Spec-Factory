@@ -339,7 +339,6 @@ test('process/start does NOT forward runtime settings as individual env vars (sn
       openaiApiKey: 'sk-openai',
       anthropicApiKey: 'sk-anthropic',
       capturePageScreenshotEnabled: true,
-      runtimeTraceFetchRing: 55,
       runtimeScreencastEnabled: true,
     }),
     fs: {
@@ -365,13 +364,10 @@ test('process/start does NOT forward runtime settings as individual env vars (sn
     'LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
     'CAPTURE_PAGE_SCREENSHOT_ENABLED', 'CAPTURE_PAGE_SCREENSHOT_FORMAT',
     'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-    'RUNTIME_TRACE_FETCH_RING', 'RUNTIME_TRACE_LLM_RING',
     'RUNTIME_TRACE_LLM_PAYLOADS', 'EVENTS_JSON_WRITE',
     'DAEMON_CONCURRENCY', 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS',
     'IMPORTS_ROOT', 'IMPORTS_POLL_SECONDS',
-    'RUNTIME_SCREENCAST_ENABLED', 'RUNTIME_SCREENCAST_FPS',
-    'RUNTIME_SCREENCAST_QUALITY', 'RUNTIME_SCREENCAST_MAX_WIDTH',
-    'RUNTIME_SCREENCAST_MAX_HEIGHT', 'PAGE_GOTO_TIMEOUT_MS',
+    'RUNTIME_SCREENCAST_ENABLED', 'PAGE_GOTO_TIMEOUT_MS',
   ]) {
     assert.equal(
       Object.hasOwn(capturedEnv, retiredEnvKey),

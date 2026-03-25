@@ -7,11 +7,9 @@ import {
   CONFIG_MANIFEST_DEFAULTS,
 } from '../manifest.js';
 
-const REQUIRED_GROUP_IDS = [
+const REQUIRED_ACTIVE_GROUP_IDS = [
   'core',
-  'caching',
   'storage',
-  'security',
   'llm',
   'discovery',
   'runtime',
@@ -32,9 +30,15 @@ describe('manifest structural guard', () => {
 
   it('includes each required manifest group', () => {
     const groupIds = CONFIG_MANIFEST.map((group) => group.id);
-    for (const id of REQUIRED_GROUP_IDS) {
+    for (const id of REQUIRED_ACTIVE_GROUP_IDS) {
       assert.ok(groupIds.includes(id), `missing manifest group: ${id}`);
     }
+  });
+
+  it('omits empty reserved manifest groups until they have live entries', () => {
+    const groupIds = CONFIG_MANIFEST.map((group) => group.id);
+    assert.equal(groupIds.includes('caching'), false);
+    assert.equal(groupIds.includes('security'), false);
   });
 
   it('gives each group the required public shape', () => {

@@ -19,16 +19,14 @@ test('assembleLlmPolicy + disassembleLlmPolicy round-trip identity', () => {
     llmReasoningFallbackModel: 'gemini-2.5-pro',
     llmProvider: 'gemini',
     llmBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    llmPlanProvider: 'gemini',
-    llmPlanBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     geminiApiKey: 'gk-test',
     deepseekApiKey: 'dk-test',
     anthropicApiKey: 'ak-test',
     openaiApiKey: 'ok-test',
-    llmPlanApiKey: 'pk-test',
     llmMaxOutputTokens: 1400,
     llmMaxTokens: 16384,
     llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
     llmMaxOutputTokensReasoning: 4096,
     llmMaxOutputTokensPlanFallback: 2048,
     llmMaxOutputTokensReasoningFallback: 2048,
@@ -37,8 +35,6 @@ test('assembleLlmPolicy + disassembleLlmPolicy round-trip identity', () => {
     llmReasoningMode: true,
     llmPhaseOverridesJson: '{"needset":{"baseModel":"override-model"}}',
     llmProviderRegistryJson: '[{"id":"test"}]',
-    llmMonthlyBudgetUsd: 300,
-    llmPerProductBudgetUsd: 0.35,
     llmCostInputPer1M: 1.25,
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
@@ -63,7 +59,9 @@ test('assembleLlmPolicy structures flat keys into groups', () => {
     llmMaxOutputTokensPlan: 8192,
     llmPlanUseReasoning: true,
     llmReasoningBudget: 16384,
-    llmMonthlyBudgetUsd: 500,
+    llmCostInputPer1M: 1.5,
+    llmCostOutputPer1M: 12,
+    llmCostCachedInputPer1M: 0.2,
     llmPhaseOverridesJson: '{"extraction":{"baseModel":"custom"}}',
     llmProviderRegistryJson: '[{"id":"p1","name":"Test"}]',
   });
@@ -72,7 +70,9 @@ test('assembleLlmPolicy structures flat keys into groups', () => {
   assert.equal(policy.tokens.plan, 8192);
   assert.equal(policy.reasoning.enabled, true);
   assert.equal(policy.reasoning.budget, 16384);
-  assert.equal(policy.budget.monthlyUsd, 500);
+  assert.equal(policy.budget.costInputPer1M, 1.5);
+  assert.equal(policy.budget.costOutputPer1M, 12);
+  assert.equal(policy.budget.costCachedInputPer1M, 0.2);
   assert.deepStrictEqual(policy.phaseOverrides, { extraction: { baseModel: 'custom' } });
   assert.deepStrictEqual(policy.providerRegistry, [{ id: 'p1', name: 'Test' }]);
 });
@@ -96,7 +96,7 @@ test('disassembleLlmPolicy flattens composite to flat keys', () => {
     reasoning: { enabled: true, budget: 32768, mode: true },
     phaseOverrides: { needset: { baseModel: 'custom' } },
     providerRegistry: [{ id: 'test' }],
-    budget: { monthlyUsd: 300, perProductUsd: 0.35, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
+    budget: { monthlyUsd: 300, costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
   });
 
@@ -106,6 +106,7 @@ test('disassembleLlmPolicy flattens composite to flat keys', () => {
   assert.equal(flat.llmPlanUseReasoning, true);
   assert.equal(flat.llmPhaseOverridesJson, '{"needset":{"baseModel":"custom"}}');
   assert.equal(flat.llmProviderRegistryJson, '[{"id":"test"}]');
+  assert.equal(flat.llmCostInputPer1M, 1.25);
   assert.equal(flat.llmTimeoutMs, 30000);
 });
 
@@ -123,10 +124,11 @@ test('DEFAULT_LLM_POLICY has correct structure', () => {
 });
 
 test('LLM_POLICY_FLAT_KEYS contains expected keys', () => {
-  assert.ok(LLM_POLICY_FLAT_KEYS.length >= 25);
+  assert.ok(LLM_POLICY_FLAT_KEYS.length >= 22);
   assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmModelPlan'));
   assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmProviderRegistryJson'));
   assert.ok(LLM_POLICY_FLAT_KEYS.includes('geminiApiKey'));
+  assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmMaxOutputTokensTriage'));
   assert.ok(LLM_POLICY_FLAT_KEYS.includes('openaiApiKey'));
 });
 

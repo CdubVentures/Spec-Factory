@@ -93,12 +93,11 @@ function buildManufacturerPlanUrls({ host, variables, queries, maxQueries = 3, d
   // WHY: Internal search URLs removed — search-first mode. Guessed product
   // paths above are the only plan-only fallback for manufacturer hosts.
 
-  const result = urls.slice(0, configInt(config, 'manufacturerPlanUrlCap') || 40);
+  const result = urls.slice(0, configInt(config, 'manufacturerPlanUrlCap'));
   logger?.info?.('manufacturer_plan_urls_generated', {
     reason: reason || 'plan_only',
     host,
     url_count: result.length,
-    host
   });
   return result;
 }
@@ -198,7 +197,7 @@ export function buildQueryPlanFallbackResults({
 // ---------------------------------------------------------------------------
 
 export function dedupeQueryRows(rows = [], limit, config = null) {
-  const resolvedLimit = limit ?? configInt(config, 'queryDedupeRowsCap') ?? 24;
+  const resolvedLimit = limit ?? configInt(config, 'queryDedupeRowsCap');
   const parsedLimit = Number(resolvedLimit);
   const hasCap = Number.isFinite(parsedLimit) && parsedLimit > 0;
   const cap = hasCap ? Math.max(1, Math.floor(parsedLimit)) : Number.POSITIVE_INFINITY;

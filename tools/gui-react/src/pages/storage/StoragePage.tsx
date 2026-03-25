@@ -130,7 +130,7 @@ export function StoragePage() {
     storageSettingsBootstrap.localDirectory,
   );
   const [migrationStatusKind, setMigrationStatusKind] = useState<'running' | 'ok' | 'error' | 'idle'>('idle');
-  const [migrationStatusText, setMigrationStatusText] = useState('No active run-data migration.');
+  const [migrationStatusText, setMigrationStatusText] = useState('No active archival operation.');
   const hasLocalEditsRef = useRef(false);
   const [savedComparableState, setSavedComparableState] = useState(() => buildComparableState({
     destinationType,
@@ -343,7 +343,7 @@ export function StoragePage() {
           <div>
             <h2 className="text-sm font-semibold">Run Data Storage</h2>
             <p className="sf-text-label sf-status-text-muted mt-1 max-w-3xl">
-              Move all run artifacts, ledgers, and logs to a user-selected local folder or S3 destination after each successful IndexLab run.
+              Auto-archive run artifacts, ledgers, and logs to a local folder or S3 after each IndexLab run.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -417,12 +417,21 @@ export function StoragePage() {
               checked={form.enabled}
               onChange={(event) => setField('enabled', event.target.checked)}
             />
-            <span>Enable automatic run-data relocation</span>
+            <span>Auto-archive runs after completion</span>
           </label>
           <span className={`sf-text-label ${storageStatusTone}`}>
             {storageStatusText}
           </span>
         </div>
+        {!form.enabled && (
+          <div className="mt-2 rounded sf-callout sf-callout-warning px-3 py-2">
+            <p className="sf-text-label font-semibold sf-status-text-warning">Auto-archive is OFF</p>
+            <p className="sf-text-label sf-status-text-muted">
+              Run artifacts will accumulate in the project working directory and can grow very large.
+              Enable auto-archive and configure a destination to keep the project folder manageable.
+            </p>
+          </div>
+        )}
         <div className="mt-2 flex items-center gap-2">
           {migrationStatusKind === 'running' ? (
             <Spinner className="h-3 w-3" />
@@ -657,11 +666,9 @@ export function StoragePage() {
         </div>
       )}
 
-      {form.enabled && (destinationType === 'local' ? form.localDirectory : form.s3Bucket) && (
-        <div className="mt-6">
-          <StorageManagerPanel />
-        </div>
-      )}
+      <div className="mt-6">
+        <StorageManagerPanel />
+      </div>
     </div>
   );
 }

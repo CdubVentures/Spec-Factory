@@ -142,9 +142,6 @@ export function LlmConfigPage() {
       const envField = PROVIDER_API_KEY_MAP[provider.id] as keyof typeof policy.apiKeys | undefined;
       const envValue = envField ? policy.apiKeys[envField] : undefined;
       if (envValue) return { ...provider, apiKey: envValue };
-      if (provider.id === 'default-gemini' && policy.apiKeys.plan) {
-        return { ...provider, apiKey: policy.apiKeys.plan };
-      }
       const serverKey = envField && serverResolvedKeys ? serverResolvedKeys[envField] : undefined;
       if (serverKey) return { ...provider, apiKey: serverKey };
       return provider;
@@ -161,7 +158,6 @@ export function LlmConfigPage() {
     deepseekApiKey: policy.apiKeys.deepseek ?? '',
     anthropicApiKey: policy.apiKeys.anthropic ?? '',
     openaiApiKey: policy.apiKeys.openai ?? '',
-    llmPlanApiKey: policy.apiKeys.plan ?? '',
   }), [policy.apiKeys]);
 
   const apiKeyFilter = useCallback(
@@ -198,11 +194,15 @@ export function LlmConfigPage() {
     llmModelReasoning: policy.models.reasoning,
     llmPlanUseReasoning: policy.reasoning.enabled,
     llmMaxOutputTokensPlan: policy.tokens.plan,
+    llmTimeoutMs: policy.timeoutMs,
+    llmMaxTokens: policy.tokens.maxTokens,
   }), [
     policy.models.plan,
     policy.models.reasoning,
     policy.reasoning.enabled,
     policy.tokens.plan,
+    policy.timeoutMs,
+    policy.tokens.maxTokens,
   ]);
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';
@@ -253,7 +253,6 @@ export function LlmConfigPage() {
         deepseek: policy.apiKeys.deepseek || resolvedKeys['default-deepseek'] || '',
         anthropic: policy.apiKeys.anthropic || resolvedKeys['default-anthropic'] || '',
         openai: policy.apiKeys.openai || resolvedKeys['default-openai'] || '',
-        plan: policy.apiKeys.plan,
       },
     });
     setTimeout(() => saveNow(), 0);
@@ -280,8 +279,6 @@ export function LlmConfigPage() {
           inputCls={inputCls}
           llmModelOptions={llmModelOptions}
           updateDraft={updateDraft}
-          onNumberChange={onNumberChange}
-          getNumberBounds={getNumberBounds}
           registry={registry}
           onRegistryChange={onRegistryChange}
           apiKeyFilter={apiKeyFilter}
@@ -293,9 +290,7 @@ export function LlmConfigPage() {
     activePhase === 'brand-resolver' ||
     activePhase === 'search-planner' ||
     activePhase === 'serp-selector' ||
-    activePhase === 'extraction' ||
-    activePhase === 'validate' ||
-    activePhase === 'write'
+    activePhase === 'validate'
   ) {
     activePanel = (
       <Suspense fallback={null}>

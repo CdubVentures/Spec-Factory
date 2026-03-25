@@ -123,10 +123,9 @@ describe('buildIndexingRunStartPayload — spread', () => {
 
   it('includes numeric settings from payload', () => {
     const result = buildIndexingRunStartPayload(makeInput({
-      settingsOverrides: { runtimeScreencastFps: 30 },
+      settingsOverrides: { maxPagesPerDomain: 25 },
     }));
-    // Spread has 30, overlay has parsed value (also 30). Either way: 30.
-    strictEqual(result.runtimeScreencastFps, 30);
+    strictEqual(result.maxPagesPerDomain, 25);
   });
 });
 
@@ -135,39 +134,12 @@ describe('buildIndexingRunStartPayload — spread', () => {
 /* ------------------------------------------------------------------ */
 
 describe('buildIndexingRunStartPayload — numeric clamping', () => {
-  it('clamps runtimeScreencastFps to min 1', () => {
+  it('clamps crawleeRequestHandlerTimeoutSecs to registry min', () => {
     const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRuntimeScreencastFps: 0 },
+      parsedOverrides: { parsedCrawleeRequestHandlerTimeoutSecs: 0 },
     }));
-    strictEqual(result.runtimeScreencastFps, 1);
-  });
-
-  it('clamps runtimeScreencastQuality to min 10', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRuntimeScreencastQuality: 5 },
-    }));
-    strictEqual(result.runtimeScreencastQuality, 10);
-  });
-
-  it('clamps runtimeScreencastMaxWidth to min 320', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRuntimeScreencastMaxWidth: 100 },
-    }));
-    strictEqual(result.runtimeScreencastMaxWidth, 320);
-  });
-
-  it('clamps runtimeScreencastMaxHeight to min 240', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRuntimeScreencastMaxHeight: 50 },
-    }));
-    strictEqual(result.runtimeScreencastMaxHeight, 240);
-  });
-
-  it('clamps runtimeTraceFetchRing to min 10', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRuntimeTraceFetchRing: 3 },
-    }));
-    strictEqual(result.runtimeTraceFetchRing, 10);
+    // Registry min is 10; 0 should be clamped up
+    ok(result.crawleeRequestHandlerTimeoutSecs >= 10);
   });
 });
 
@@ -203,17 +175,7 @@ describe('buildIndexingRunStartPayload — llm clamping', () => {
 /*  Numeric clamping — main body fields                                 */
 /* ------------------------------------------------------------------ */
 
-describe('buildIndexingRunStartPayload — main body clamping', () => {
-  it('clamps robotsTxtTimeoutMs to min 100', () => {
-    const result = buildIndexingRunStartPayload(makeInput({
-      parsedOverrides: { parsedRobotsTxtTimeoutMs: 10 },
-    }));
-    strictEqual(result.robotsTxtTimeoutMs, 100);
-  });
-
-  // WHY: frontierBackoffMaxExponent removed from registry — no longer clamped.
-
-});
+// WHY: robotsTxtTimeoutMs and frontierBackoffMaxExponent removed from registry — no longer clamped.
 
 /* ------------------------------------------------------------------ */
 /*  Merge overlays                                                      */

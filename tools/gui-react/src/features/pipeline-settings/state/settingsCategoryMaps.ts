@@ -82,23 +82,18 @@ const UI_GROUP_HINTS: Readonly<Record<string, GroupHint>> = Object.freeze({
   'Trace':              { order: 0 },
   'Screencast':         { order: 1 },
   'Events':             { order: 2 },
-  // Network
-  'Repair & Dedupe':    { order: 0 },
-  'Bypass Detection':   { order: 1 },
+  // Network — Bypass Detection removed (knobs retired)
   // Extraction — Provider
   'API Keys':           { order: 0 },
   'Plan Provider':      { order: 1 },
   // Extraction — Screenshots
   'Capture Settings':   { order: 0 },
-  // Extraction — Models
+  // Extraction — Models (hidden token defaults stripped from UI — per-phase now)
   'Plan Phase':         { order: 0 },
   'Reasoning Phase':    { order: 1 },
-  'Global Tokens':      { order: 2 },
   // Extraction — Limits
   'Token Costs':        { order: 0 },
-  'Budget':             { order: 1 },
-  'Call Limits':        { order: 2 },
-  'Advanced Config':    { order: 3, collapsed: true },
+  'Advanced Config':    { order: 1, collapsed: true },
   // Global — Output
   'Paths':              { order: 0 },
   'Runtime Output':     { order: 1 },

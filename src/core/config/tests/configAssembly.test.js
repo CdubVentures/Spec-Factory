@@ -118,7 +118,6 @@ describe('assembleConfigFromRegistry', () => {
       { key: 'maxPagesPerDomain', expected: 5 },
       { key: 'maxRunSeconds', expected: 480 },
       { key: 'searchProfileQueryCap', expected: 10 },
-      { key: 'robotsTxtTimeoutMs', expected: 6000 },
     ];
     for (const { key, expected } of spot) {
       const entry = RUNTIME_SETTINGS_REGISTRY.find(e => e.key === key);
@@ -137,10 +136,10 @@ describe('assembleConfigFromRegistry', () => {
 
   it('env override propagates for bool settings', () => {
     clearAppEnv();
-    process.env.DRY_RUN = 'true';
+    process.env.EVENTS_JSON_WRITE = 'false';
     const overrideCfg = assembleConfigFromRegistry(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(overrideCfg.dryRun, true);
-    delete process.env.DRY_RUN;
+    strictEqual(overrideCfg.eventsJsonWrite, false);
+    delete process.env.EVENTS_JSON_WRITE;
   });
 
   it('env override propagates for string settings', () => {

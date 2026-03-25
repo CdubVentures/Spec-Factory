@@ -18,7 +18,6 @@ export const LLM_POLICY_GROUPS = deriveLlmPolicyGroupMap(RUNTIME_SETTINGS_REGIST
 export const TOP_LEVEL_KEYS = deriveLlmPolicyTopLevelKeys(RUNTIME_SETTINGS_REGISTRY);
 export const JSON_KEYS = deriveLlmPolicyJsonKeys(RUNTIME_SETTINGS_REGISTRY);
 export const LLM_FLAT_KEY_TO_ENV = deriveLlmPolicyFlatKeyToEnv(RUNTIME_SETTINGS_REGISTRY);
-
 // WHY: Complete list of all flat keys managed by LlmPolicy, for round-trip verification.
 export const LLM_POLICY_FLAT_KEYS = Object.freeze([
   ...Object.values(LLM_POLICY_GROUPS).flatMap((group) => Object.values(group)),

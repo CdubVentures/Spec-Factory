@@ -25,7 +25,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   // LLM model/provider resolution chain
   'llmProvider', 'llmApiKey', 'llmBaseUrl',
   'llmModelExtract', 'llmModelPlan', 'llmModelReasoning',
-  'llmPlanProvider', 'llmPlanBaseUrl', 'llmPlanApiKey',
   'llmPlanFallbackModel', 'llmModelCatalog',
   'llmTimeoutMs', 'llmForceRoleModelProvider',
   'llmModelPricingMap', 'llmPricingAsOf', 'llmPricingSources',
@@ -34,8 +33,8 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
 
   // OpenAI aliases (computed from LLM chain)
   'openaiApiKey', 'openaiBaseUrl',
-  'openaiModelExtract', 'openaiModelPlan', 'openaiModelWrite',
-  'openaiMaxInputChars', 'openaiTimeoutMs',
+  'openaiModelExtract', 'openaiModelPlan',
+  'openaiTimeoutMs',
 
   // API keys (read from env directly, not via registry default)
   'anthropicApiKey', 'geminiApiKey', 'deepseekApiKey',
@@ -52,29 +51,11 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   'searchProfileCapMap', 'searchProfileCapMapJson',
 
   // Hardcoded constants (not in registry or always fixed)
-  'runProfile',
-  'searchGlobalRps', 'searchGlobalBurst', 'searchPerHostRps', 'searchPerHostBurst',
-  'consensusLlmWeightTier1', 'consensusLlmWeightTier2',
-  'consensusLlmWeightTier3', 'consensusLlmWeightTier4',
-  'consensusTier1Weight', 'consensusTier2Weight',
-  'consensusTier3Weight', 'consensusTier4Weight',
   'retrievalMaxHitsPerField', 'retrievalMaxPrimeSources', 'retrievalIdentityFilterEnabled',
-  'automationQueueStorageEngine', 'runtimeScreenshotMode', 'accuracyMode',
-  'chartExtractionEnabled',
-  'fieldRulesEngineEnforceEvidence', 'runtimeOpsWorkbenchEnabled',
-  'indexingHelperFilesEnabled',
-  'helperSupportiveEnabled', 'helperSupportiveMaxSources',
-  'helperAutoSeedTargets', 'helperActiveSyncLimit',
+  'runtimeOpsWorkbenchEnabled',
 
   // Category authority (computed resolution chain)
   'categoryAuthorityRoot',
-
-  // Chatmock (path.join computation)
-  'chatmockDir', 'chatmockComposeFile',
-
-  // Reextract + schema packets (hardcoded, no runtimeSettingDefault)
-  'indexingReextractSeedLimit',
-  'indexingSchemaPacketsSchemaRoot',
 
   // Runtime events key (uses simple pattern but grouped here for safety)
   'runtimeEventsKey',

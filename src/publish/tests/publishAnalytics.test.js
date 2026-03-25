@@ -78,7 +78,6 @@ test('buildLlmMetrics: empty ledger', async () => {
   assert.ok(result.by_model);
   assert.ok(result.by_provider);
   assert.ok(result.by_run);
-  assert.ok(result.budget);
 });
 
 test('buildLlmMetrics: aggregates by model and provider', async () => {
@@ -95,14 +94,6 @@ test('buildLlmMetrics: aggregates by model and provider', async () => {
   assert.equal(result.by_model[0].model, 'gpt-4');
   assert.equal(result.by_provider.length, 1);
   assert.equal(result.by_provider[0].provider, 'openai');
-});
-
-test('buildLlmMetrics: budget exceeded', async () => {
-  const ts = new Date().toISOString();
-  const ledger = JSON.stringify({ ts, provider: 'p', model: 'm', cost_usd: 1000, prompt_tokens: 1, completion_tokens: 1 });
-  const storage = makeMockStorage({ '_billing/ledger.jsonl': ledger });
-  const result = await buildLlmMetrics({ storage, config: { llmMonthlyBudgetUsd: 10 }, period: 'month' });
-  assert.equal(result.budget.exceeded, true);
 });
 
 test('buildSourceHealth: empty sources', async () => {

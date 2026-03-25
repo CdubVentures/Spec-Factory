@@ -80,7 +80,15 @@ export class SpecDb {
     });
     this._queueProductStore = createQueueProductStore({
       db: this.db, category: this.category,
-      stmts: { _upsertQueueProduct: this._upsertQueueProduct, _upsertProductRun: this._upsertProductRun, _upsertProduct: this._upsertProduct }
+      stmts: {
+        _upsertQueueProduct: this._upsertQueueProduct,
+        _upsertProductRun: this._upsertProductRun,
+        _upsertProduct: this._upsertProduct,
+        _updateRunStorageLocation: this._updateRunStorageLocation,
+        _getRunStorageLocation: this._getRunStorageLocation,
+        _listRunsByStorageState: this._listRunsByStorageState,
+        _countRunsByStorageState: this._countRunsByStorageState,
+      }
     });
     this._llmRouteSourceStore = createLlmRouteSourceStore({
       db: this.db, category: this.category,
@@ -547,6 +555,10 @@ export class SpecDb {
   upsertProductRun(row) { this._queueProductStore.upsertProductRun(row); }
   getLatestProductRun(pid) { return this._queueProductStore.getLatestProductRun(pid); }
   getProductRuns(pid) { return this._queueProductStore.getProductRuns(pid); }
+  updateRunStorageLocation(opts) { this._queueProductStore.updateRunStorageLocation(opts); }
+  getRunStorageLocation(opts) { return this._queueProductStore.getRunStorageLocation(opts); }
+  listRunsByStorageState(state) { return this._queueProductStore.listRunsByStorageState(state); }
+  countRunsByStorageState() { return this._queueProductStore.countRunsByStorageState(); }
 
   upsertProduct(row) { this._queueProductStore.upsertProduct(row); }
   getProduct(pid) { return this._queueProductStore.getProduct(pid); }

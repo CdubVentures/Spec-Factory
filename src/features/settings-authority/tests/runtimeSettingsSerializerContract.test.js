@@ -17,12 +17,6 @@ async function createRuntimeSettingsDomainHarness() {
 
 const SERIALIZER_EXCLUDED_PUT_KEYS = new Set([
   'llmMaxOutputTokensTriage',
-  'llmMaxOutputTokensExtract',
-  'llmMaxOutputTokensValidate',
-  'llmMaxOutputTokensWrite',
-  'llmMaxOutputTokensExtractFallback',
-  'llmMaxOutputTokensValidateFallback',
-  'llmMaxOutputTokensWriteFallback',
 ]);
 
 function getRuntimePutFrontendKeys() {
@@ -47,7 +41,6 @@ function createSerializerInput(overrides = {}) {
   return {
     searchEngines: 'bing,brave,duckduckgo',
     searxngBaseUrl: '  https://example.test/search  ',
-    llmPlanApiKey: '  key-live  ',
     llmModelPlan: 'gpt-plan',
     llmModelReasoning: 'gpt-reasoning',
     llmPlanFallbackModel: 'gpt-plan-fallback',
@@ -74,11 +67,8 @@ test('runtime settings serializer emits every runtime PUT frontend key', async (
     `runtime settings serializer must emit every runtime PUT frontend key (missing: ${missing.join(', ')})`,
   );
   assert.equal(Object.hasOwn(payload, 'profile'), false);
-  assert.equal(Object.hasOwn(payload, 'runProfile'), false);
-  assert.equal(Object.hasOwn(payload, 'discoveryEnabled'), false);
   assert.equal(payload.searchEngines, 'bing,brave,duckduckgo');
   assert.equal(payload.searxngBaseUrl, 'https://example.test/search');
-  assert.equal(payload.llmPlanApiKey, 'key-live');
   assert.equal(payload.llmPlanFallbackModel, 'gpt-plan-fallback');
 });
 
@@ -95,13 +85,11 @@ test('runtime settings serializer applies fallback baselines and shared token de
   assert.equal(payload.llmMaxOutputTokensPlanFallback, 4096);
 });
 
-test('runtime settings serializer preserves parsed budget and reasoning knobs', async () => {
+test('runtime settings serializer preserves parsed reasoning, timeout, and cost knobs', async () => {
   const harness = await createRuntimeSettingsDomainHarness();
   const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmReasoningMode: true,
     llmReasoningBudget: '3072',
-    llmMonthlyBudgetUsd: '7.5',
-    llmPerProductBudgetUsd: '1.25',
     llmMaxOutputTokens: '6144',
     llmMaxTokens: '16000',
     llmTimeoutMs: '45000',
@@ -112,8 +100,6 @@ test('runtime settings serializer preserves parsed budget and reasoning knobs', 
 
   assert.equal(payload.llmReasoningMode, true);
   assert.equal(payload.llmReasoningBudget, 3072);
-  assert.equal(payload.llmMonthlyBudgetUsd, 7.5);
-  assert.equal(payload.llmPerProductBudgetUsd, 1.25);
   assert.equal(payload.llmMaxOutputTokens, 6144);
   assert.equal(payload.llmMaxTokens, 16000);
   assert.equal(payload.llmTimeoutMs, 45000);

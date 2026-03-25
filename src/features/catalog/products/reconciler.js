@@ -12,19 +12,17 @@ import { buildProductId } from '../identity/slugify.js';
 import { loadQueueState, saveQueueState } from '../../../queue/queueState.js';
 import { loadCanonicalIdentityIndex } from '../identity/identityGate.js';
 
-function normalizeToken(value) {
-  return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
-}
+import { normalizeTokenCollapsed } from '../../../shared/primitives.js';
 
 function pairKey(brand, model) {
-  const b = normalizeToken(brand);
-  const m = normalizeToken(model);
+  const b = normalizeTokenCollapsed(brand);
+  const m = normalizeTokenCollapsed(model);
   if (!b || !m) return '';
   return `${b}||${m}`;
 }
 
 function tupleKey(brand, model, variant) {
-  return `${pairKey(brand, model)}||${normalizeToken(cleanVariant(variant))}`;
+  return `${pairKey(brand, model)}||${normalizeTokenCollapsed(cleanVariant(variant))}`;
 }
 
 /**

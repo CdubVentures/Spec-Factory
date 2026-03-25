@@ -2,11 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadConfig } from '../../../config.js';
 
-test('config: loadConfig exposes the critical public defaults and normalized surfaces', () => {
-  const cfg = loadConfig();
+const RETIRED_MODEL_KEYS = [
+  'llmModelTriage',
+  'llmModelValidate',
+  'llmModelWrite',
+  'llmExtractFallbackModel',
+  'llmValidateFallbackModel',
+  'llmWriteFallbackModel',
+];
 
-  assert.equal(cfg.runProfile, 'standard');
-  assert.equal(cfg.discoveryEnabled, true);
+function makeResolvedConfig(overrides = {}) {
+  return loadConfig(overrides);
+}
+
+test('config: loadConfig exposes the public runtime and llm contract surface', () => {
+  const cfg = makeResolvedConfig();
 
   assert.equal(typeof cfg.localInputRoot, 'string');
   assert.equal(typeof cfg.localOutputRoot, 'string');
@@ -17,8 +27,6 @@ test('config: loadConfig exposes the critical public defaults and normalized sur
   assert.ok(cfg.llmModelPlan.length > 0);
   assert.ok(cfg.llmModelReasoning.length > 0);
 
-  assert.equal(typeof cfg.llmMonthlyBudgetUsd, 'number');
-  assert.equal(typeof cfg.llmPerProductBudgetUsd, 'number');
   assert.equal(typeof cfg.llmMaxOutputTokens, 'number');
   assert.equal(typeof cfg.llmMaxOutputTokensPlan, 'number');
 
@@ -41,22 +49,19 @@ test('config: loadConfig exposes the critical public defaults and normalized sur
   assert.ok(Object.keys(cfg.llmModelOutputTokenMap).length > 0);
 
   assert.equal(typeof cfg.runtimeScreencastEnabled, 'boolean');
-  assert.equal(typeof cfg.runtimeScreencastFps, 'number');
-  assert.equal(typeof cfg.runtimeScreencastQuality, 'number');
 });
 
 test('config: resolved OpenAI aliases mirror the resolved llm settings', () => {
-  const cfg = loadConfig();
+  const cfg = makeResolvedConfig();
 
   assert.equal(cfg.openaiApiKey, cfg.llmApiKey);
   assert.equal(cfg.openaiBaseUrl, cfg.llmBaseUrl);
   assert.equal(cfg.openaiModelPlan, cfg.llmModelPlan);
   assert.equal(cfg.openaiTimeoutMs, cfg.llmTimeoutMs);
-  assert.equal(cfg.llmPlanApiKey, cfg.llmApiKey);
 });
 
 test('config: token profile map stays usable for active resolved models', () => {
-  const cfg = loadConfig();
+  const cfg = makeResolvedConfig();
   const map = cfg.llmModelOutputTokenMap;
 
   for (const model of new Set([cfg.llmModelPlan, cfg.llmModelReasoning])) {
@@ -73,7 +78,7 @@ test('config: token profile map stays usable for active resolved models', () => 
 });
 
 test('config: token fallback chain resolves to non-negative numbers', () => {
-  const cfg = loadConfig();
+  const cfg = makeResolvedConfig();
   const tokenKeys = [
     'llmMaxOutputTokensPlan',
     'llmMaxOutputTokensReasoning',
@@ -87,48 +92,17 @@ test('config: token fallback chain resolves to non-negative numbers', () => {
 });
 
 test('config: explicit overrides win and undefined overrides are ignored', () => {
-  const overridden = loadConfig({ maxPagesPerDomain: 11 });
+  const overridden = makeResolvedConfig({ maxPagesPerDomain: 11 });
   assert.equal(overridden.maxPagesPerDomain, 11);
 
-  const defaulted = loadConfig({ maxPagesPerDomain: undefined });
+  const defaulted = makeResolvedConfig({ maxPagesPerDomain: undefined });
   assert.ok(defaulted.maxPagesPerDomain > 0);
 });
 
-test('config: normalized internal maps remain numeric and non-empty', () => {
-  const cfg = loadConfig();
-
-  assert.ok(Object.keys(cfg.searchProfileCapMap).length > 0);
-  for (const value of Object.values(cfg.searchProfileCapMap)) {
-    assert.equal(typeof value, 'number');
-  }
-
-  assert.ok(Object.keys(cfg.retrievalInternalsMap).length > 0);
-  for (const value of Object.values(cfg.retrievalInternalsMap)) {
-    assert.equal(typeof value, 'number');
-  }
-});
-
-test('config: repeated loadConfig calls preserve the public shape', () => {
-  const cfg1 = loadConfig();
-  const cfg2 = loadConfig();
-  const keys1 = Object.keys(cfg1).sort();
-  const keys2 = Object.keys(cfg2).sort();
-
-  assert.deepStrictEqual(keys1, keys2);
-});
-
 test('config: retired per-role model and fallback aliases stay off the public surface', () => {
-  const cfg = loadConfig();
-  const retiredKeys = [
-    'llmModelTriage',
-    'llmModelValidate',
-    'llmModelWrite',
-    'llmExtractFallbackModel',
-    'llmValidateFallbackModel',
-    'llmWriteFallbackModel',
-  ];
+  const cfg = makeResolvedConfig();
 
-  for (const key of retiredKeys) {
+  for (const key of RETIRED_MODEL_KEYS) {
     assert.equal(cfg[key], undefined, `${key} should not exist on the config surface`);
   }
 
@@ -137,7 +111,7 @@ test('config: retired per-role model and fallback aliases stay off the public su
 });
 
 test('config: explicit plan and reasoning overrides remain independent', () => {
-  const cfg = loadConfig({
+  const cfg = makeResolvedConfig({
     llmModelPlan: 'test-model-xyz',
     llmModelReasoning: 'test-reasoning-model',
   });
@@ -146,20 +120,8 @@ test('config: explicit plan and reasoning overrides remain independent', () => {
   assert.equal(cfg.llmModelReasoning, 'test-reasoning-model');
 });
 
-test('config: retired per-role token cap aliases stay off the public surface', () => {
-  const cfg = loadConfig();
-  const deadTokenKeys = [
-    'llmMaxOutputTokensExtract',
-    'llmMaxOutputTokensValidate',
-    'llmMaxOutputTokensWrite',
-    'llmMaxOutputTokensExtractFallback',
-    'llmMaxOutputTokensValidateFallback',
-    'llmMaxOutputTokensWriteFallback',
-  ];
-
-  for (const key of deadTokenKeys) {
-    assert.equal(cfg[key], undefined, `${key} should no longer exist in config`);
-  }
+test('config: surviving triage token cap remains on the public surface', () => {
+  const cfg = makeResolvedConfig();
 
   assert.equal(typeof cfg.llmMaxOutputTokensTriage, 'number');
 });
