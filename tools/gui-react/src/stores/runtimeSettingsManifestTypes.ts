@@ -6,6 +6,7 @@ export interface RuntimeSettingDefaults {
   autoScrollDelayMs: number;
   autoScrollEnabled: boolean;
   autoScrollPasses: number;
+  autoScrollStrategy: string;
   capturePageScreenshotEnabled: boolean;
   capturePageScreenshotFormat: string;
   capturePageScreenshotMaxBytes: number;
@@ -14,8 +15,9 @@ export interface RuntimeSettingDefaults {
   categoryAuthorityRoot: string;
   crawleeHeadless: boolean;
   crawleeRequestHandlerTimeoutSecs: number;
-  fetcherAdapter: string;
-  fetcherPlugins: string;
+  crawlVideoRecordingEnabled: boolean;
+  crawlVideoRecordingSize: string;
+  stealthEnabled: boolean;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
@@ -28,6 +30,7 @@ export interface RuntimeSettingDefaults {
   googleSearchTimeoutMs: number;
   serperApiKey: string;
   serperEnabled: boolean;
+  serperBurstEnabled: boolean;
   llmEnhancerMaxRetries: number;
   llmBaseUrl: string;
   llmCostCachedInputPer1M: number;
@@ -56,7 +59,6 @@ export interface RuntimeSettingDefaults {
   maxRunSeconds: number;
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
-  robotsTxtCompliant: boolean;
   runtimeControlFile: string;
   runtimeEventsKey: string;
   runtimeScreencastEnabled: boolean;
@@ -69,6 +71,8 @@ export interface RuntimeSettingDefaults {
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;
+  tierHierarchyOrder: string;
+  keySearchEnrichmentOrder: string;
   needsetGroupQueryTermsCap: number;
   needsetGroupSearchCoverageThreshold: number;
   needsetGroupSearchMinUnresolved: number;
@@ -99,7 +103,27 @@ export interface RuntimeSettingDefaults {
   crawleeBrowserRetirePageCount: number;
   crawleeNavigationTimeoutMs: number;
   crawlMaxConcurrentSlots: number;
+  crawleeSameDomainDelaySecs: number;
+  crawleeMaxRequestsPerMinute: number;
+  crawleeUseSessionPool: boolean;
+  crawleePersistCookiesPerSession: boolean;
+  crawleeSessionPoolSize: number;
+  crawleeSessionMaxUsageCount: number;
+  crawleeSessionMaxAgeSecs: number;
+  crawleeUseFingerprints: boolean;
+  crawleeProxyUrlsJson: string;
   autoScrollPostLoadWaitMs: number;
+  cookieConsentEnabled: boolean;
+  cookieConsentTimeoutMs: number;
+  cookieConsentFallbackSelectors: string;
+  cookieConsentSettleMs: number;
+  domExpansionEnabled: boolean;
+  domExpansionSelectors: string;
+  domExpansionMaxClicks: number;
+  domExpansionSettleMs: number;
+  cssOverrideEnabled: boolean;
+  cssOverrideRemoveFixed: boolean;
+  cssOverrideBlockedDomains: string;
   capturePageScreenshotMaxSelectors: number;
 }
 

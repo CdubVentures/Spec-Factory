@@ -10,6 +10,16 @@ import os from 'node:os';
 import fsSync from 'node:fs';
 import { createPluginRunner } from './core/pluginRunner.js';
 
+// WHY: Parses JSON array of proxy URLs from settings. Same pattern as
+// searchProviders.js:parseProxyUrlList. Trust boundary — user JSON input.
+export function parseProxyUrls(jsonStr) {
+  if (!jsonStr) return [];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return Array.isArray(parsed) ? parsed.filter((u) => typeof u === 'string' && u.trim()) : [];
+  } catch { return []; }
+}
+
 export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
@@ -267,34 +277,32 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     videoPathMap.clear();
   }
 
-  async function start() {
-    if (crawler) return;
-
-    if (_crawlerFactory) {
-      const config = buildCrawlerConfig();
-      crawler = _crawlerFactory(config);
-      return;
-    }
-
-    const { PlaywrightCrawler } = await import('crawlee');
+  // WHY: Extracted so _crawlerFactory tests can verify the full config
+  // including proxy, session pool, fingerprints — not just handlers.
+  function buildFullCrawlerOptions({ ProxyConfiguration } = {}) {
     const config = buildCrawlerConfig();
-
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
-    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 75;
-    // WHY: Resolve registry settings → settings bag → fallback constant.
+    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 45;
     const navTimeoutMs = Number(settings.crawleeNavigationTimeoutMs) || 12000;
     // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
-    const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
+    const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 3;
     const maxPages = Number(settings.crawleeMaxPagesPerBrowser) || 1;
-    const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 5;
-    // WHY: Crawlee-native anti-bot — delays between same-domain requests.
+    const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 10;
     const sameDomainDelay = Number(settings.crawleeSameDomainDelaySecs) || 0;
     const maxReqPerMin = Number(settings.crawleeMaxRequestsPerMinute) || 0;
+    const useSessionPool = settings.crawleeUseSessionPool !== false && settings.crawleeUseSessionPool !== 'false';
+    const persistCookies = settings.crawleePersistCookiesPerSession !== false && settings.crawleePersistCookiesPerSession !== 'false';
+    const sessionPoolSize = Number(settings.crawleeSessionPoolSize) || 100;
+    const sessionMaxUsage = Number(settings.crawleeSessionMaxUsageCount) || 50;
+    const sessionMaxAge = Number(settings.crawleeSessionMaxAgeSecs) || 3000;
+    const useFingerprints = settings.crawleeUseFingerprints !== false && settings.crawleeUseFingerprints !== 'false';
 
-    // WHY: Playwright recordVideo requires useIncognitoPages=true because Crawlee's
-    // BrowserPool only forwards pageOptions to browser.newPage() in incognito mode
-    // (browser-pool.js line 382). Without it, recordVideo is silently discarded.
-    // videoDir is already computed at session creation time (line 21-27).
+    // WHY: Tiered proxy — direct first (no bandwidth cost), proxy only on block.
+    const proxyUrls = parseProxyUrls(settings.crawleeProxyUrlsJson);
+    const proxyConfig = (proxyUrls.length > 0 && ProxyConfiguration)
+      ? new ProxyConfiguration({ tieredProxyUrls: [[null], proxyUrls] })
+      : null;
+
     let videoSize = { width: 1280, height: 720 };
     if (videoDir) {
       const sizeRaw = String(settings.crawlVideoRecordingSize || '1280x720');
@@ -302,24 +310,39 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       videoSize = { width: vw || 1280, height: vh || 720 };
     }
 
-    crawler = new PlaywrightCrawler({
+    return {
       ...config,
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
-      // WHY: Crawlee-native per-domain rate limiting. Tracks root domain via tldts
-      // and reclaims requests to the queue when the delay hasn't elapsed.
+      ...(proxyConfig ? { proxyConfiguration: proxyConfig } : {}),
       ...(sameDomainDelay > 0 ? { sameDomainDelaySecs: sameDomainDelay } : {}),
       ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
-      // WHY: Empty blockedStatusCodes prevents Crawlee from throwing
-      // _throwOnBlockedRequest for 403/429 BEFORE requestHandler fires.
-      // We detect and handle blocks ourselves in bypassStrategies.js.
-      sessionPoolOptions: { blockedStatusCodes: [] },
+      useSessionPool,
+      persistCookiesPerSession: persistCookies,
+      sessionPoolOptions: {
+        blockedStatusCodes: [],
+        maxPoolSize: sessionPoolSize,
+        sessionOptions: {
+          maxUsageCount: sessionMaxUsage,
+          maxAgeSecs: sessionMaxAge,
+        },
+      },
       launchContext: {
         launchOptions: { headless },
         ...(videoDir ? { useIncognitoPages: true } : {}),
       },
       browserPoolOptions: {
-        useFingerprints: true,
+        useFingerprints,
+        ...(useFingerprints ? {
+          fingerprintOptions: {
+            fingerprintGeneratorOptions: {
+              browsers: ['chrome'],
+              operatingSystems: ['windows'],
+              devices: ['desktop'],
+              locales: ['en-US'],
+            },
+          },
+        } : {}),
         maxOpenPagesPerBrowser: maxPages,
         retireBrowserAfterPageCount: retireAfter,
         ...(videoDir ? {
@@ -336,7 +359,23 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           gotoOptions.timeout = navTimeoutMs;
         },
       ],
-    });
+      // WHY: Expose proxy URLs for test assertions (not used by Crawlee).
+      _proxyUrls: proxyUrls,
+    };
+  }
+
+  async function start() {
+    if (crawler) return;
+
+    if (_crawlerFactory) {
+      const options = buildFullCrawlerOptions();
+      crawler = _crawlerFactory(options);
+      return;
+    }
+
+    const crawlee = await import('crawlee');
+    const options = buildFullCrawlerOptions({ ProxyConfiguration: crawlee.ProxyConfiguration });
+    crawler = new crawlee.PlaywrightCrawler(options);
   }
 
   async function processUrl(url) {

@@ -9,6 +9,8 @@ import {
   buildSafetyClassSegments,
   buildDomainFunnelBullets,
   computeCooldownSummary,
+  groupKeptUrlsByDomain,
+  computeUrlSafetyBreakdown,
 } from '../domainClassifierHelpers.js';
 
 function makeDomain(overrides = {}) {
@@ -278,5 +280,177 @@ describe('computeCooldownSummary', () => {
     const result = computeCooldownSummary(health);
     assert.equal(result.totalInCooldown, 0);
     assert.equal(result.maxRemainingSeconds, 0);
+  });
+});
+
+// ── Factories for URL-level helpers ──
+
+function makeCandidate(overrides = {}) {
+  return {
+    url: 'https://example.com/page',
+    title: 'Example Page',
+    domain: 'example.com',
+    snippet: 'A snippet',
+    score: 0.8,
+    decision: 'keep',
+    rationale: 'llm_selected',
+    role: 'manufacturer',
+    identity_prelim: 'exact',
+    host_trust_class: 'official',
+    triage_disposition: 'fetch_high',
+    doc_kind_guess: 'product_page',
+    approval_bucket: 'approved',
+    score_components: { base_relevance: 0.8, tier_boost: 0, identity_match: 0, penalties: 0 },
+    ...overrides,
+  };
+}
+
+function makeTriageResult(overrides = {}) {
+  return {
+    query: 'test query',
+    kept_count: 0,
+    dropped_count: 0,
+    candidates: [],
+    ...overrides,
+  };
+}
+
+// ── groupKeptUrlsByDomain ──
+
+describe('groupKeptUrlsByDomain', () => {
+  it('returns empty map for empty triage array', () => {
+    const result = groupKeptUrlsByDomain([]);
+    assert.equal(result.size, 0);
+  });
+
+  it('filters to only kept candidates', () => {
+    const triage = [makeTriageResult({
+      candidates: [
+        makeCandidate({ url: 'https://razer.com/a', domain: 'razer.com', decision: 'keep' }),
+        makeCandidate({ url: 'https://razer.com/b', domain: 'razer.com', decision: 'drop' }),
+        makeCandidate({ url: 'https://razer.com/c', domain: 'razer.com', decision: 'hard_drop' }),
+      ],
+    })];
+    const result = groupKeptUrlsByDomain(triage);
+    assert.equal(result.get('razer.com').length, 1);
+    assert.equal(result.get('razer.com')[0].url, 'https://razer.com/a');
+  });
+
+  it('groups by domain across multiple triage results', () => {
+    const triage = [
+      makeTriageResult({
+        candidates: [
+          makeCandidate({ url: 'https://razer.com/a', domain: 'razer.com', decision: 'keep' }),
+          makeCandidate({ url: 'https://rtings.com/x', domain: 'rtings.com', decision: 'keep' }),
+        ],
+      }),
+      makeTriageResult({
+        candidates: [
+          makeCandidate({ url: 'https://razer.com/b', domain: 'razer.com', decision: 'keep' }),
+          makeCandidate({ url: 'https://amazon.com/z', domain: 'amazon.com', decision: 'keep' }),
+        ],
+      }),
+    ];
+    const result = groupKeptUrlsByDomain(triage);
+    assert.equal(result.size, 3);
+    assert.equal(result.get('razer.com').length, 2);
+    assert.equal(result.get('rtings.com').length, 1);
+    assert.equal(result.get('amazon.com').length, 1);
+  });
+
+  it('returns empty map when all candidates are dropped', () => {
+    const triage = [makeTriageResult({
+      candidates: [
+        makeCandidate({ decision: 'drop' }),
+        makeCandidate({ decision: 'hard_drop' }),
+      ],
+    })];
+    const result = groupKeptUrlsByDomain(triage);
+    assert.equal(result.size, 0);
+  });
+
+  it('merges same-domain candidates from different queries', () => {
+    const triage = [
+      makeTriageResult({ query: 'query 1', candidates: [
+        makeCandidate({ url: 'https://rtings.com/a', domain: 'rtings.com', decision: 'keep' }),
+      ]}),
+      makeTriageResult({ query: 'query 2', candidates: [
+        makeCandidate({ url: 'https://rtings.com/b', domain: 'rtings.com', decision: 'keep' }),
+      ]}),
+    ];
+    const result = groupKeptUrlsByDomain(triage);
+    assert.equal(result.size, 1);
+    assert.equal(result.get('rtings.com').length, 2);
+  });
+});
+
+// ── computeUrlSafetyBreakdown ──
+
+describe('computeUrlSafetyBreakdown', () => {
+  it('returns zeros for empty inputs', () => {
+    const result = computeUrlSafetyBreakdown(new Map(), []);
+    assert.deepEqual(result, { safeUrls: 0, cautionUrls: 0, blockedUrls: 0, totalKeptUrls: 0 });
+  });
+
+  it('counts URLs from safe and caution domains', () => {
+    const urlsByDomain = new Map([
+      ['razer.com', [makeCandidate(), makeCandidate(), makeCandidate(), makeCandidate()]],
+      ['sketchy.com', [makeCandidate(), makeCandidate()]],
+    ]);
+    const health = [
+      makeDomain({ domain: 'razer.com', safety_class: 'safe' }),
+      makeDomain({ domain: 'sketchy.com', safety_class: 'caution' }),
+    ];
+    const result = computeUrlSafetyBreakdown(urlsByDomain, health);
+    assert.equal(result.safeUrls, 4);
+    assert.equal(result.cautionUrls, 2);
+    assert.equal(result.blockedUrls, 0);
+    assert.equal(result.totalKeptUrls, 6);
+  });
+
+  it('classifies URLs from unknown domains as caution', () => {
+    const urlsByDomain = new Map([
+      ['unknown-site.com', [makeCandidate(), makeCandidate()]],
+    ]);
+    const result = computeUrlSafetyBreakdown(urlsByDomain, []);
+    assert.equal(result.cautionUrls, 2);
+    assert.equal(result.totalKeptUrls, 2);
+  });
+
+  it('counts URLs from blocked domains', () => {
+    const urlsByDomain = new Map([
+      ['blocked.com', [makeCandidate(), makeCandidate(), makeCandidate()]],
+    ]);
+    const health = [makeDomain({ domain: 'blocked.com', safety_class: 'blocked' })];
+    const result = computeUrlSafetyBreakdown(urlsByDomain, health);
+    assert.equal(result.blockedUrls, 3);
+    assert.equal(result.totalKeptUrls, 3);
+  });
+
+  it('handles mixed safe/caution/blocked domains', () => {
+    const urlsByDomain = new Map([
+      ['safe.com', [makeCandidate(), makeCandidate()]],
+      ['caution.com', [makeCandidate()]],
+      ['blocked.com', [makeCandidate(), makeCandidate(), makeCandidate()]],
+    ]);
+    const health = [
+      makeDomain({ domain: 'safe.com', safety_class: 'safe' }),
+      makeDomain({ domain: 'caution.com', safety_class: 'caution' }),
+      makeDomain({ domain: 'blocked.com', safety_class: 'blocked' }),
+    ];
+    const result = computeUrlSafetyBreakdown(urlsByDomain, health);
+    assert.equal(result.safeUrls, 2);
+    assert.equal(result.cautionUrls, 1);
+    assert.equal(result.blockedUrls, 3);
+    assert.equal(result.totalKeptUrls, 6);
+  });
+
+  it('classifies unsafe as blocked (consistent with computeSafetyClassCounts)', () => {
+    const urlsByDomain = new Map([
+      ['bad.com', [makeCandidate()]],
+    ]);
+    const health = [makeDomain({ domain: 'bad.com', safety_class: 'unsafe' })];
+    const result = computeUrlSafetyBreakdown(urlsByDomain, health);
+    assert.equal(result.blockedUrls, 1);
   });
 });

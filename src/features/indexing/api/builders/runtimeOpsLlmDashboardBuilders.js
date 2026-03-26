@@ -53,6 +53,8 @@ export function buildLlmCallsDashboard(events, options) {
       response_preview: w.response_preview || null,
       prefetch_tab: w.prefetch_tab || null,
       is_fallback: Boolean(w.is_fallback),
+      is_lab: Boolean(w.is_lab),
+      primary_duration_ms: w.primary_duration_ms ?? null,
       ts: w.started_at || '',
     };
   });

@@ -37,7 +37,7 @@ export declare const SETTINGS_DEFAULTS: {
 
 export declare const SETTINGS_OPTION_VALUES: {
   readonly runtime: Readonly<{
-    fetcherAdapter: readonly string[];
+    autoScrollStrategy: readonly string[];
     pipelineSchemaEnforcementMode: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];

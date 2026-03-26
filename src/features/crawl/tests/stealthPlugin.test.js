@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { stealthPlugin } from '../plugins/stealthPlugin.js';
+import { stealthPlugin, STEALTH_PATCHES } from '../plugins/stealthPlugin.js';
 import { createPageDouble } from './factories/crawlTestDoubles.js';
 
 describe('stealthPlugin', () => {
@@ -38,11 +38,35 @@ describe('stealthPlugin', () => {
     assert.equal(page.initScripts.length, 0, 'should not inject when disabled');
   });
 
-  it('returns enabled result with patches when stealthEnabled is true', async () => {
+  it('returns enabled result with all 12 stealth patches', async () => {
     const page = createPageDouble();
     const result = await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: true } });
     assert.equal(result.enabled, true);
     assert.equal(result.injected, true);
-    assert.ok(result.patches.length > 0);
+    assert.equal(result.patches.length, 12);
+    assert.deepEqual(result.patches, STEALTH_PATCHES);
+  });
+
+  it('exports STEALTH_PATCHES with all 12 patch names', () => {
+    const expected = [
+      'toString', 'webdriver', 'vendor', 'plugins', 'languages',
+      'hardwareConcurrency', 'chromeRuntime', 'chromeApp',
+      'chromeCsi', 'chromeLoadTimes', 'permissions', 'webglVendor',
+    ];
+    assert.deepEqual(STEALTH_PATCHES, expected);
+  });
+
+  it('injected script contains all critical patch markers', async () => {
+    const page = createPageDouble();
+    await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: true } });
+    const script = page.initScripts[0];
+    assert.ok(script.includes('webdriver'), 'missing webdriver patch');
+    assert.ok(script.includes('vendor'), 'missing vendor patch');
+    assert.ok(script.includes('hardwareConcurrency'), 'missing hardwareConcurrency patch');
+    assert.ok(script.includes('chrome'), 'missing chrome stubs');
+    assert.ok(script.includes('permissions'), 'missing permissions patch');
+    assert.ok(script.includes('WebGLRenderingContext'), 'missing WebGL patch');
+    assert.ok(script.includes('toString'), 'missing toString protection');
+    assert.ok(script.includes('Chrome PDF Plugin'), 'missing realistic plugins');
   });
 });

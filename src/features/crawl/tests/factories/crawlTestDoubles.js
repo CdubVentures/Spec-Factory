@@ -31,17 +31,30 @@ export function createPageDouble({
   url = 'http://example.com',
   finalUrl = url,
   evaluateResult = 0,
+  evaluateResults = null,
 } = {}) {
   const initScripts = [];
   const screenshotCalls = [];
   const evaluateCalls = [];
   const waitedMs = [];
+  const mouseWheelCalls = [];
+  const routeCalls = [];
+  const styleTags = [];
+  let evaluateCallIndex = 0;
 
   return {
     initScripts,
     screenshotCalls,
     evaluateCalls,
     waitedMs,
+    mouseWheelCalls,
+    routeCalls,
+    styleTags,
+    mouse: {
+      async wheel(options) {
+        mouseWheelCalls.push(options);
+      },
+    },
     async $(selector) {
       return elements[selector] ?? null;
     },
@@ -56,9 +69,18 @@ export function createPageDouble({
     async addInitScript(script) {
       initScripts.push(script);
     },
+    async addStyleTag(opts) {
+      styleTags.push(opts);
+    },
     async evaluate(fn) {
       evaluateCalls.push(fn);
+      if (evaluateResults && evaluateCallIndex < evaluateResults.length) {
+        return resolveValue(evaluateResults[evaluateCallIndex++], fn);
+      }
       return resolveValue(evaluateResult, fn);
+    },
+    async route(pattern, handler) {
+      routeCalls.push({ pattern, handler });
     },
     async waitForTimeout(ms) {
       waitedMs.push(ms);

@@ -4,6 +4,7 @@ import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBad
 import { resolvePoolStage } from '../../poolStageRegistry.ts';
 import { buildWorkerButtonLabel, buildWorkerButtonSubtitle, sortWorkersForTabs } from '../../selectors/workerTabHelpers.js';
 import { SearchProviderIcon } from '../../../../shared/ui/icons/SearchProviderIcon.tsx';
+import { accessBadgeClass, accessBadgeLabel } from '../../selectors/llmModelHelpers.ts';
 
 interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];
@@ -115,6 +116,11 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                   </span>
                   {w.pool === 'search' && w.current_provider && (
                     <SearchProviderIcon provider={w.current_provider} size={14} className="sf-text-muted shrink-0 opacity-70" />
+                  )}
+                  {w.pool === 'llm' && (
+                    <span className={`px-1 py-0 rounded sf-text-nano font-bold uppercase tracking-wider ${accessBadgeClass(Boolean(w.is_lab))}`}>
+                      {accessBadgeLabel(Boolean(w.is_lab))}
+                    </span>
                   )}
                   {w.state === 'stuck' && (
                     <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>

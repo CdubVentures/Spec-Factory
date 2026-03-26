@@ -11,6 +11,8 @@ interface CssOverrideRecord extends FetchPluginRecord {
   enabled: boolean;
   hiddenBefore: number;
   revealedAfter: number;
+  fixedRemoved?: boolean;
+  domainBlockingEnabled?: boolean;
 }
 
 interface FetchCssOverridePanelProps {
@@ -36,6 +38,19 @@ const OVERRIDE_COLUMNS: ColumnDef<CssOverrideRecord, unknown>[] = [
   },
   { accessorKey: 'hiddenBefore', header: 'Hidden', size: 80 },
   { accessorKey: 'revealedAfter', header: 'Revealed', size: 80 },
+  {
+    accessorKey: 'fixedRemoved',
+    header: 'Fixed Removed',
+    size: 110,
+    cell: ({ getValue }) => {
+      const val = getValue<boolean>();
+      return (
+        <span className={val ? 'sf-chip-info' : 'sf-chip-muted'}>
+          {val ? 'Yes' : 'No'}
+        </span>
+      );
+    },
+  },
   { accessorKey: 'ts', header: 'Timestamp', size: 200 },
 ];
 
@@ -44,6 +59,7 @@ export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePa
   const totalOverridden = useMemo(() => records.filter((r) => r.enabled && r.hiddenBefore > 0).length, [records]);
   const totalSkipped = useMemo(() => records.filter((r) => !r.enabled || !r.hiddenBefore).length, [records]);
   const totalRevealed = useMemo(() => records.reduce((s, r) => s + (r.revealedAfter ?? 0), 0), [records]);
+  const domainBlockingActive = useMemo(() => records.some((r) => r.domainBlockingEnabled), [records]);
   const total = records.length;
   const columns = useMemo(() => OVERRIDE_COLUMNS, []);
 
@@ -65,6 +81,7 @@ export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePa
         <HeroStat value={totalOverridden} label="Overridden" colorClass="text-[var(--sf-token-accent)]" />
         <HeroStat value={totalSkipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
         <HeroStat value={totalRevealed} label="Elements Revealed" colorClass="text-[var(--sf-token-success)]" />
+        <HeroStat value={domainBlockingActive ? 'Active' : 'Off'} label="Domain Blocking" colorClass={domainBlockingActive ? 'text-[var(--sf-token-info)]' : 'text-[var(--sf-token-muted)]'} />
       </HeroStatGrid>
 
       <SectionHeader>Override Log</SectionHeader>

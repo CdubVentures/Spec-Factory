@@ -762,6 +762,7 @@ async function handleLlmEvent(state, deps, { eventName, ts, row }) {
     response_preview: String(row.response_preview || '').slice(0, 12000),
     message: String(row.message || '').trim(),
     is_fallback: isFallback,
+    is_lab: String(row.access_mode || '').trim() === 'lab',
     worker_id: llmWorkerId
   }, ts);
 }

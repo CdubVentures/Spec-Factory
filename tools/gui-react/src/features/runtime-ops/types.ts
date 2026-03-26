@@ -407,51 +407,17 @@ export interface FetchPluginData {
   total: number;
 }
 
-// ── Domain-specific fetch plugin data shapes ──
-
-export interface FetchStealthData {
-  patches: string[];
-  injections: Array<{ worker_id: string; injected: boolean; ts: string }>;
-  total_injected: number;
-  total_failed: number;
-}
-
-export interface FetchAutoScrollData {
-  scroll_records: Array<{ worker_id: string; display_label: string; enabled: boolean; passes: number }>;
-  total_scrolled: number;
-  total_skipped: number;
-}
-
-export interface FetchDomExpansionData {
-  expansion_records: Array<{ worker_id: string; display_label: string; enabled: boolean; found: number; clicked: number }>;
-  total_expanded: number;
-  total_skipped: number;
-  total_clicks: number;
-  total_found: number;
-}
-
-export interface FetchCssOverrideData {
-  override_records: Array<{ worker_id: string; display_label: string; enabled: boolean; hiddenBefore: number; revealedAfter: number }>;
-  total_overridden: number;
-  total_skipped: number;
-  total_elements_revealed: number;
-}
-
-export interface FetchCookieConsentData {
-  consent_records: Array<{ worker_id: string; display_label: string; enabled: boolean; autoconsentMatched: boolean; fallbackClicked: number; settleMs: number }>;
-  total_dismissed: number;
-  total_skipped: number;
-  autoconsent_matches: number;
-  fallback_clicks: number;
-}
-
+// WHY: All fetch plugin phases use the generic FetchPluginData shape.
+// The builder (runtimeOpsFetchBuilders.js) groups plugin_hook_completed events
+// by plugin name and spreads result fields into FetchPluginRecord. Each panel
+// casts to its own local interface (e.g. StealthRecord, AutoScrollRecord).
 export interface FetchPhasesResponse {
   run_id: string;
-  stealth?: FetchStealthData;
-  cookie_consent?: FetchCookieConsentData;
-  auto_scroll?: FetchAutoScrollData;
-  dom_expansion?: FetchDomExpansionData;
-  css_override?: FetchCssOverrideData;
+  stealth?: FetchPluginData;
+  cookie_consent?: FetchPluginData;
+  auto_scroll?: FetchPluginData;
+  dom_expansion?: FetchPluginData;
+  css_override?: FetchPluginData;
 }
 
 // ── Extraction Phases ──

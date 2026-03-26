@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useCallback } from 'react';
+import { Suspense, lazy, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import {
@@ -153,6 +153,21 @@ export function LlmConfigPage() {
     defaultRegistry,
     serverResolvedKeys,
   ]);
+
+  // WHY: If the default registry gained new providers (e.g. lab-openai) since the
+  // user last saved, policy.providerRegistry won't have them. The merge above adds
+  // them for display, but saves serialize policy.providerRegistry (the raw version).
+  // This effect writes the merged list back so the next save persists all providers.
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    if (syncedRef.current) return;
+    const savedIds = new Set((policy.providerRegistry as LlmProviderEntry[]).map((p) => p.id));
+    const hasMissing = registry.some((p) => !savedIds.has(p.id));
+    if (hasMissing) {
+      syncedRef.current = true;
+      llmAuthority.updatePolicy({ providerRegistry: registry });
+    }
+  }, [registry, policy.providerRegistry, llmAuthority]);
 
   const runtimeApiKeys: RuntimeApiKeySlice = useMemo(() => ({
     geminiApiKey: policy.apiKeys.gemini ?? '',

@@ -12,6 +12,7 @@ interface AutoScrollRecord extends FetchPluginRecord {
   passes: number;
   delayMs: number;
   postLoadWaitMs: number;
+  strategy?: string;
 }
 
 interface FetchAutoScrollPanelProps {
@@ -31,6 +32,20 @@ const SCROLL_COLUMNS: ColumnDef<AutoScrollRecord, unknown>[] = [
       return (
         <span className={on ? 'sf-chip-success' : 'sf-chip-muted'}>
           {on ? 'Scrolled' : 'Skipped'}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: 'strategy',
+    header: 'Strategy',
+    size: 100,
+    cell: ({ getValue }) => {
+      const val = getValue<string>();
+      const isIncremental = val === 'incremental';
+      return (
+        <span className={isIncremental ? 'sf-chip-accent' : 'sf-chip-muted'}>
+          {val ?? 'jump'}
         </span>
       );
     },

@@ -483,6 +483,7 @@ export async function callLlmWithRouting({
       apiKey: primary.apiKey,
       baseUrl: primary.baseUrl,
       provider: primary.provider,
+      accessMode: primary._registryEntry?.accessMode || '',
       providerHealth
     });
   } catch (error) {
@@ -511,6 +512,7 @@ export async function callLlmWithRouting({
       apiKey: fallback.apiKey,
       baseUrl: fallback.baseUrl,
       provider: fallback.provider,
+      accessMode: fallback._registryEntry?.accessMode || '',
       reasoningBudget: Number(fallbackReasoningBudget || 0),
       maxTokens: Number(fallbackMaxTokens || 0),
       providerHealth,

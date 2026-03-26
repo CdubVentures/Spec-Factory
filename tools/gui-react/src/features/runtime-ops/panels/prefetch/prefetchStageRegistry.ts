@@ -96,6 +96,7 @@ export const PREFETCH_SELECT_PROPS: Record<PrefetchTabKey, (ctx: PrefetchPanelCo
   domain_classifier: (ctx) => ({
     calls: ctx.data?.llm_calls?.domain_classifier ?? [],
     domainHealth: ctx.data?.domain_health,
+    serpTriage: ctx.data?.serp_selector,
     persistScope: ctx.persistScope,
     liveSettings: ctx.liveSettings,
     idxRuntime: ctx.data?.idx_runtime?.domain_classifier,

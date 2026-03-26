@@ -275,6 +275,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         base.prompt_preview = payload.prompt_preview != null ? String(payload.prompt_preview) : null;
         base.response_preview = payload.response_preview != null ? String(payload.response_preview) : null;
         base.is_fallback = Boolean(payload.is_fallback);
+        base.is_lab = Boolean(payload.is_lab);
       }
       workers[workerId] = base;
     }
@@ -386,6 +387,11 @@ export function buildRuntimeOpsWorkers(events, options) {
         w.last_duration_ms = durationMs;
       }
       if (resolvedPool === 'llm' && (type === 'llm_finished' || type === 'llm_failed')) {
+        // WHY: When fallback fires, the finish event overwrites duration_ms.
+        // Save the primary attempt's duration so the GUI can show both.
+        if (payload.is_fallback && w.duration_ms > 0 && !w.primary_duration_ms) {
+          w.primary_duration_ms = w.duration_ms;
+        }
         if (payload.prompt_tokens != null) w.prompt_tokens = payload.prompt_tokens;
         if (payload.completion_tokens != null) w.completion_tokens = payload.completion_tokens;
         if (payload.estimated_cost != null) w.estimated_cost = payload.estimated_cost;
@@ -394,6 +400,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         if (payload.output_summary != null) w.output_summary = payload.output_summary;
         if (payload.response_preview != null) w.response_preview = String(payload.response_preview);
         if (payload.is_fallback) w.is_fallback = true;
+        w.is_lab = Boolean(payload.is_lab);
         // Only overwrite prompt_preview if finish sends a non-empty value;
         // the openAI client does not resend the prompt on completion, so
         // the finish event typically carries an empty string that would

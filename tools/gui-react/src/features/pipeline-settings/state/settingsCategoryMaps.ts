@@ -78,6 +78,7 @@ const UI_GROUP_HINTS: Readonly<Record<string, GroupHint>> = Object.freeze({
   'Consent Settings':   { order: 0 },
   'Scroll Settings':    { order: 0 },
   'Expansion Settings': { order: 0 },
+  'Override Settings':  { order: 0 },
   'Video Recording':    { order: 0 },
   // Browser & Crawlee
   'Crawlee Internals':  { order: 0, collapsed: true },

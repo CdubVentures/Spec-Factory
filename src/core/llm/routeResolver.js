@@ -20,11 +20,15 @@ function parseRegistry(registryJson) {
 }
 
 function buildResolvedRoute(provider, model) {
-  const { id: modelEntryId, modelId, role, costInputPer1M, costOutputPer1M, costCachedPer1M, maxContextTokens, maxOutputTokens, ...extraFields } = model;
+  const { id: modelEntryId, modelId, role, accessMode: modelAccessMode, costInputPer1M, costOutputPer1M, costCachedPer1M, maxContextTokens, maxOutputTokens, ...extraFields } = model;
+  // WHY: accessMode is SSOT for lab vs API — from registry declaration, not URL heuristics.
+  // Model-level accessMode takes precedence, then provider-level, then default 'api'.
+  const accessMode = String(modelAccessMode || provider.accessMode || 'api').trim();
   return {
     providerId: provider.id,
     providerName: provider.name,
     providerType: provider.type || 'openai-compatible',
+    accessMode,
     modelId,
     baseUrl: provider.baseUrl || '',
     apiKey: provider.apiKey || '',

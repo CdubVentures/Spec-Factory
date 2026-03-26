@@ -30,6 +30,14 @@ export function shortModel(model: string): string {
   return model;
 }
 
+export function accessBadgeClass(isLab: boolean): string {
+  return isLab ? 'sf-chip-accent' : 'sf-chip-neutral';
+}
+
+export function accessBadgeLabel(isLab: boolean): string {
+  return isLab ? 'LAB' : 'API';
+}
+
 export function modelChipClass(model: string): string {
   const m = model.toLowerCase();
   if (m.includes('haiku')) return 'sf-chip-success';

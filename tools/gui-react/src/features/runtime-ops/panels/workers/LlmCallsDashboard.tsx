@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { getRefetchInterval } from '../../helpers.ts';
@@ -6,7 +6,7 @@ import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabSt
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import type { LlmCallsDashboardResponse, LlmCallRow, PrefetchTabKey, RuntimeIdxBadge } from '../../types.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
-import { shortModel, modelChipClass } from '../../selectors/llmModelHelpers.ts';
+import { shortModel, modelChipClass, accessBadgeClass, accessBadgeLabel } from '../../selectors/llmModelHelpers.ts';
 
 // ── Call type metadata ───────────────────────────────────────────────────────
 
@@ -210,6 +210,9 @@ export function LlmCallsDashboard({
             </span>
             <span className="px-2 py-0.5 rounded sf-text-caption font-medium sf-chip-info">
               Call Type: {highlightedCall.call_type}
+            </span>
+            <span className={`px-1 py-0.5 rounded sf-text-nano font-bold uppercase tracking-wider ${accessBadgeClass(Boolean(highlightedCall.is_lab))}`}>
+              {accessBadgeLabel(Boolean(highlightedCall.is_lab))}
             </span>
             <span className={`px-2 py-0.5 rounded sf-text-caption font-medium ${modelChipClass(highlightedCall.model)}`}>
               Model: {highlightedCall.model || '\u2014'}
@@ -500,6 +503,9 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
         <td className="px-2 py-2.5 sf-text-muted">{call.round}</td>
         <td className="px-2 py-2">
           <div className="flex items-center gap-1">
+            <span className={`px-1 py-0.5 rounded sf-text-nano font-bold uppercase tracking-wider ${accessBadgeClass(Boolean(call.is_lab))}`}>
+              {accessBadgeLabel(Boolean(call.is_lab))}
+            </span>
             <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${modelChipClass(call.model)}`}>
               {call.model ? shortModel(call.model) : '\u2014'}
             </span>
@@ -530,12 +536,7 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
         <td className="px-2 py-2.5 text-right font-mono font-semibold sf-text-primary" title={call.estimated_usage ? 'Estimated from content' : undefined}>
           {call.estimated_usage ? '~' : ''}{fmtCost(call.estimated_cost, isActive)}
         </td>
-        <td className={`px-2 py-2.5 text-right font-mono ${
-          isActive ? 'animate-pulse sf-text-muted' :
-          (call.duration_ms && call.duration_ms > 3000 ? 'sf-text-amber font-semibold' : 'sf-text-muted')
-        }`}>
-          {isActive ? '\u2026' : fmtDur(call.duration_ms)}
-        </td>
+        <DurationCell call={call} />
         <td className="px-2 py-2 text-right">
           <div className="flex items-center gap-1 justify-end">
             {meta.tabCode && meta.prefetchTab && (
@@ -605,6 +606,7 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
                   <div className="sf-text-nano font-bold sf-text-muted uppercase tracking-wider mb-1.5">Metadata</div>
                   <MetaRow label="Call Type" value={call.call_type || '\u2014'} />
                   <MetaRow label="Model" value={shortModel(call.model)} />
+                  <MetaRow label="Access" value={call.is_lab ? 'Lab' : 'API'} />
                   <MetaRow label="Provider" value={call.provider || '\u2014'} />
                   <MetaRow label="Round" value={`Round ${call.round}`} />
                   <MetaRow label="Duration" value={fmtDur(call.duration_ms, isActive)} />
@@ -637,5 +639,53 @@ function TokenBar({ promptPct }: { promptPct: number }) {
       <div className="h-full sf-bar-prompt" style={{ width: `${promptPct}%` }} />
       <div className="h-full sf-bar-completion" style={{ width: `${100 - promptPct}%` }} />
     </div>
+  );
+}
+
+function LiveTimer({ startTs }: { startTs: string }) {
+  const [elapsed, setElapsed] = useState(() => {
+    const start = new Date(startTs).getTime();
+    return Number.isFinite(start) ? Math.max(0, (Date.now() - start) / 1000) : 0;
+  });
+  useEffect(() => {
+    const start = new Date(startTs).getTime();
+    if (!Number.isFinite(start)) return;
+    const id = setInterval(() => setElapsed(Math.max(0, (Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [startTs]);
+  return <span className="animate-pulse">{elapsed.toFixed(0)}s</span>;
+}
+
+function fmtSec(ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms) || ms <= 0) return '\u2014';
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function DurationCell({ call }: { call: LlmCallRow }) {
+  const isActive = call.status === 'active';
+  const dur = call.duration_ms;
+  const primaryDur = call.primary_duration_ms;
+  if (isActive) {
+    return (
+      <td className="px-2 py-2.5 text-right font-mono sf-text-muted">
+        <LiveTimer startTs={call.ts} />
+      </td>
+    );
+  }
+  const slow = dur != null && dur > 3000;
+  // WHY: Fallback calls show both primary attempt + fallback duration
+  if (call.is_fallback && primaryDur != null && primaryDur > 0) {
+    return (
+      <td className="px-2 py-2.5 text-right font-mono sf-text-muted">
+        <span className="sf-text-dim line-through" title="Primary attempt (failed)">{fmtSec(primaryDur)}</span>
+        {' '}
+        <span className={slow ? 'sf-text-amber font-semibold' : ''} title="Fallback duration">{fmtSec(dur)}</span>
+      </td>
+    );
+  }
+  return (
+    <td className={`px-2 py-2.5 text-right font-mono ${slow ? 'sf-text-amber font-semibold' : 'sf-text-muted'}`}>
+      {fmtSec(dur)}
+    </td>
   );
 }

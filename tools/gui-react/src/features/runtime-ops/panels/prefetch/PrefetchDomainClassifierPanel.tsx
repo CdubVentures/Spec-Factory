@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
-import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings } from '../../types.ts';
+import { Fragment, useMemo } from 'react';
+import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings, SerpTriageResult } from '../../types.ts';
 import { formatMs, domainRoleBadgeClass, safetyClassBadgeClass, pctString } from '../../helpers.ts';
 import { ScoreBar } from '../../components/ScoreBar.tsx';
 import { StackedScoreBar } from '../../components/StackedScoreBar.tsx';
@@ -21,6 +21,8 @@ import {
   buildDomainFunnelBullets,
   computeCooldownSummary,
   computeFetchSummary,
+  groupKeptUrlsByDomain,
+  computeUrlSafetyBreakdown,
 } from '../../selectors/domainClassifierHelpers.js';
 import { PrefetchEmptyState } from './PrefetchEmptyState.tsx';
 import type { RuntimeIdxBadge } from '../../types.ts';
@@ -28,6 +30,7 @@ import type { RuntimeIdxBadge } from '../../types.ts';
 interface PrefetchDomainClassifierPanelProps {
   calls: PrefetchLlmCall[];
   domainHealth?: DomainHealthRow[];
+  serpTriage?: SerpTriageResult[];
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
@@ -89,7 +92,7 @@ function DomainDetailDrawer({
 
 /* ── Main Panel ── */
 
-export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
+export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpTriage, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
   const health = domainHealth || [];
   const hasStructured = health.length > 0;
   const overallStatus = hasStructured ? 'done' : 'pending';
@@ -103,6 +106,9 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
   const fetchSummary = useMemo(() => computeFetchSummary(health), [health]);
   const hasSafetyData = safetyCounts.safe + safetyCounts.caution + safetyCounts.blocked > 0;
 
+  const urlsByDomain = useMemo(() => groupKeptUrlsByDomain(serpTriage || []), [serpTriage]);
+  const urlSafety = useMemo(() => computeUrlSafetyBreakdown(urlsByDomain, health), [urlsByDomain, health]);
+
   const domainValues = useMemo(
     () => health.map((d) => d.domain),
     [health],
@@ -115,6 +121,9 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
   const selectedDomain = useMemo(
     () => (selectedDomainKey ? health.find((d) => d.domain === selectedDomainKey) ?? null : null),
     [selectedDomainKey, health],
+  );
+  const [expandedDomains, toggleExpandedDomain] = usePersistedExpandMap(
+    `runtimeOps:prefetch:domainClassifier:expandedDomains:${persistScope}`,
   );
 
   const roleFilterOptions = useMemo(() => {
@@ -180,20 +189,27 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
       >
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
-        <HeroStatGrid>
+        <HeroStatGrid columns={6}>
+          <HeroStat value={urlSafety.totalKeptUrls > 0 ? urlSafety.totalKeptUrls : uniqueDomains} label={urlSafety.totalKeptUrls > 0 ? 'URLs' : 'domains'} />
           <HeroStat value={uniqueDomains} label="domains" />
           <HeroStat value={safetyCounts.safe} label="safe" colorClass={safetyCounts.safe > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={safetyCounts.caution} label="caution" colorClass={safetyCounts.caution > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
           <HeroStat value={safetyCounts.blocked} label="blocked" colorClass={safetyCounts.blocked > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
           <HeroStat value={fetchSummary.totalFetches} label="fetches" />
-          <HeroStat value={fetchSummary.totalBlocks} label="blocks" colorClass={fetchSummary.totalBlocks > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
         <div className="text-sm sf-text-muted italic leading-relaxed max-w-3xl">
-          <strong className="sf-text-primary not-italic">{uniqueDomains}</strong> domain{uniqueDomains !== 1 ? 's' : ''} classified
-          {safetyCounts.safe > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{safetyCounts.safe}</strong> safe</>}
-          {safetyCounts.caution > 0 && <>, <strong className="sf-text-primary not-italic">{safetyCounts.caution}</strong> caution</>}
-          {safetyCounts.blocked > 0 && <>, <strong className="sf-text-primary not-italic">{safetyCounts.blocked}</strong> blocked</>}
+          {urlSafety.totalKeptUrls > 0 ? (<>
+            <strong className="sf-text-primary not-italic">{urlSafety.totalKeptUrls}</strong> URL{urlSafety.totalKeptUrls !== 1 ? 's' : ''} across <strong className="sf-text-primary not-italic">{uniqueDomains}</strong> domain{uniqueDomains !== 1 ? 's' : ''}
+            {urlSafety.safeUrls > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{urlSafety.safeUrls}</strong> on safe domains</>}
+            {urlSafety.cautionUrls > 0 && <>, <strong className="sf-text-primary not-italic">{urlSafety.cautionUrls}</strong> on caution domains</>}
+            {urlSafety.blockedUrls > 0 && <>, <strong className="sf-text-primary not-italic">{urlSafety.blockedUrls}</strong> on blocked domains</>}
+          </>) : (<>
+            <strong className="sf-text-primary not-italic">{uniqueDomains}</strong> domain{uniqueDomains !== 1 ? 's' : ''} classified
+            {safetyCounts.safe > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{safetyCounts.safe}</strong> safe</>}
+            {safetyCounts.caution > 0 && <>, <strong className="sf-text-primary not-italic">{safetyCounts.caution}</strong> caution</>}
+            {safetyCounts.blocked > 0 && <>, <strong className="sf-text-primary not-italic">{safetyCounts.blocked}</strong> blocked</>}
+          </>)}
           {cooldownSummary.totalInCooldown > 0 && <>, <strong className="sf-text-primary not-italic">{cooldownSummary.totalInCooldown}</strong> in cooldown</>}
           .
         </div>
@@ -295,53 +311,100 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, persistScop
             <table className="min-w-full text-xs">
               <thead className="sf-surface-elevated sticky top-0">
                 <tr>
+                  <th className="py-2 px-1 w-6 border-b sf-border-soft" />
                   {['domain', 'role', 'safety', 'fetches', 'blocks', 'success', 'latency', 'cooldown', 'notes'].map((h) => (
                     <th key={h} className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredHealth.map((d, i) => (
-                  <tr
-                    key={i}
-                    className={`border-b sf-border-soft hover:sf-surface-elevated cursor-pointer ${selectedDomainKey === d.domain ? 'sf-callout sf-callout-info' : ''}`}
-                    onClick={() => setSelectedDomainKey(
-                      selectedDomainKey === d.domain ? null : d.domain,
-                    )}
-                  >
-                    <td className="py-1.5 px-4 font-mono sf-text-primary">{d.domain}</td>
-                    <td className="py-1.5 px-4">
-                      <Chip label={d.role || '-'} className={domainRoleBadgeClass(d.role)} />
-                    </td>
-                    <td className="py-1.5 px-4">
-                      <Chip label={d.safety_class} className={safetyClassBadgeClass(d.safety_class)} />
-                    </td>
-                    <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
-                      {d.fetch_count > 0 ? d.fetch_count : '-'}
-                    </td>
-                    <td className="py-1.5 px-4 text-right font-mono">
-                      {d.blocked_count > 0 ? (
-                        <span className="text-[var(--sf-state-error-fg)]">{d.blocked_count}</span>
-                      ) : (
-                        <span className="sf-text-subtle">-</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-4 text-right font-mono">
-                      {d.success_rate > 0 ? pctString(d.success_rate) : '-'}
-                    </td>
-                    <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
-                      {d.avg_latency_ms > 0 ? formatMs(d.avg_latency_ms) : '-'}
-                    </td>
-                    <td className="py-1.5 px-4">
-                      {d.cooldown_remaining > 0 ? (
-                        <Chip label={formatMs(d.cooldown_remaining * 1000)} className="sf-chip-warning" />
-                      ) : (
-                        <span className="sf-text-subtle">-</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-4 sf-text-subtle truncate max-w-[10rem]">{d.notes || '-'}</td>
-                  </tr>
-                ))}
+                {filteredHealth.map((d, i) => {
+                  const domainUrls = urlsByDomain.get(d.domain) || [];
+                  const hasUrls = domainUrls.length > 0;
+                  const isExpanded = Boolean(expandedDomains[d.domain]);
+                  return (
+                    <Fragment key={i}>
+                      <tr
+                        className={`border-b sf-border-soft hover:sf-surface-elevated cursor-pointer ${selectedDomainKey === d.domain ? 'sf-callout sf-callout-info' : ''}`}
+                        onClick={() => setSelectedDomainKey(
+                          selectedDomainKey === d.domain ? null : d.domain,
+                        )}
+                      >
+                        <td
+                          className="py-1.5 px-1 text-center sf-text-subtle cursor-pointer w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (hasUrls) toggleExpandedDomain(d.domain);
+                          }}
+                        >
+                          {hasUrls && (
+                            <span className="sf-text-caption">{isExpanded ? '\u25BC' : '\u25B6'}</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-4 font-mono sf-text-primary">
+                          {d.domain}
+                          {hasUrls && (
+                            <span className="ml-1.5 text-[10px] sf-text-subtle font-normal">({domainUrls.length})</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-4">
+                          <Chip label={d.role || '-'} className={domainRoleBadgeClass(d.role)} />
+                        </td>
+                        <td className="py-1.5 px-4">
+                          <Chip label={d.safety_class} className={safetyClassBadgeClass(d.safety_class)} />
+                        </td>
+                        <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
+                          {d.fetch_count > 0 ? d.fetch_count : '-'}
+                        </td>
+                        <td className="py-1.5 px-4 text-right font-mono">
+                          {d.blocked_count > 0 ? (
+                            <span className="text-[var(--sf-state-error-fg)]">{d.blocked_count}</span>
+                          ) : (
+                            <span className="sf-text-subtle">-</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-4 text-right font-mono">
+                          {d.success_rate > 0 ? pctString(d.success_rate) : '-'}
+                        </td>
+                        <td className="py-1.5 px-4 text-right font-mono sf-text-subtle">
+                          {d.avg_latency_ms > 0 ? formatMs(d.avg_latency_ms) : '-'}
+                        </td>
+                        <td className="py-1.5 px-4">
+                          {d.cooldown_remaining > 0 ? (
+                            <Chip label={formatMs(d.cooldown_remaining * 1000)} className="sf-chip-warning" />
+                          ) : (
+                            <span className="sf-text-subtle">-</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 px-4 sf-text-subtle truncate max-w-[10rem]">{d.notes || '-'}</td>
+                      </tr>
+                      {isExpanded && domainUrls.map((u, ui) => (
+                        <tr key={`${i}-url-${ui}`} className="sf-surface-panel border-b sf-border-soft">
+                          <td />
+                          <td colSpan={2} className="py-1 px-4 pl-8">
+                            <div className="sf-text-caption font-mono sf-link-accent truncate max-w-[24rem]" title={u.url}>
+                              {u.url}
+                            </div>
+                            {u.title && (
+                              <div className="sf-text-caption sf-text-muted truncate max-w-[24rem]">{u.title}</div>
+                            )}
+                          </td>
+                          <td className="py-1 px-4">
+                            {u.doc_kind_guess && (
+                              <Chip label={u.doc_kind_guess.replace(/_/g, ' ')} className="sf-chip-accent" />
+                            )}
+                          </td>
+                          <td colSpan={2} className="py-1 px-4">
+                            {u.triage_disposition && (
+                              <Chip label={u.triage_disposition.replace(/_/g, ' ')} className="sf-chip-neutral" />
+                            )}
+                          </td>
+                          <td colSpan={5} />
+                        </tr>
+                      ))}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

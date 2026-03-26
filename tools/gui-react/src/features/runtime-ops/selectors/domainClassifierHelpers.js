@@ -114,3 +114,35 @@ export function computeFetchSummary(health) {
   }
   return { totalFetches, totalBlocks, totalTimeouts };
 }
+
+export function groupKeptUrlsByDomain(serpTriage) {
+  const byDomain = new Map();
+  for (const result of serpTriage) {
+    for (const candidate of result.candidates || []) {
+      if (candidate.decision !== 'keep') continue;
+      const domain = candidate.domain || '';
+      if (!domain) continue;
+      if (!byDomain.has(domain)) byDomain.set(domain, []);
+      byDomain.get(domain).push(candidate);
+    }
+  }
+  return byDomain;
+}
+
+export function computeUrlSafetyBreakdown(urlsByDomain, health) {
+  const safetyByDomain = new Map();
+  for (const d of health) {
+    safetyByDomain.set(d.domain, d.safety_class);
+  }
+  let safeUrls = 0;
+  let cautionUrls = 0;
+  let blockedUrls = 0;
+  for (const [domain, urls] of urlsByDomain) {
+    const safety = safetyByDomain.get(domain) || '';
+    const count = urls.length;
+    if (safety === 'safe') safeUrls += count;
+    else if (safety === 'blocked' || safety === 'unsafe') blockedUrls += count;
+    else cautionUrls += count;
+  }
+  return { safeUrls, cautionUrls, blockedUrls, totalKeptUrls: safeUrls + cautionUrls + blockedUrls };
+}

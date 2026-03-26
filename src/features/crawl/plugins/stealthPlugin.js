@@ -5,7 +5,11 @@
 
 import { STEALTH_INIT_SCRIPT } from '../../../fetcher/stealthProfile.js';
 
-export const STEALTH_PATCHES = ['webdriver', 'plugins', 'languages'];
+export const STEALTH_PATCHES = [
+  'toString', 'webdriver', 'vendor', 'plugins', 'languages',
+  'hardwareConcurrency', 'chromeRuntime', 'chromeApp',
+  'chromeCsi', 'chromeLoadTimes', 'permissions', 'webglVendor',
+];
 
 export const stealthPlugin = {
   name: 'stealth',

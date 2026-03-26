@@ -181,6 +181,8 @@ export interface LlmCallRow {
   response_preview: string | null;
   prefetch_tab: string | null;
   is_fallback?: boolean;
+  is_lab?: boolean;
+  primary_duration_ms?: number | null;
   ts: string;
 }
 
@@ -438,4 +440,6 @@ export interface RuntimeOpsWorkerRowGen {
   prefetch_tab?: string | null;
   prompt_preview?: string | null;
   response_preview?: string | null;
+  is_fallback?: boolean;
+  is_lab?: boolean;
 }

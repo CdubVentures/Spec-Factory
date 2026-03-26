@@ -542,6 +542,7 @@ export async function callOpenAI({
   apiKey,
   baseUrl,
   provider,
+  accessMode = '',
   costRates,
   usageContext = {},
   onUsage,
@@ -559,9 +560,11 @@ export async function callOpenAI({
   const baseUrlNormalized = normalizeBaseUrl(baseUrl);
   const inferredProvider = provider || providerFromModelToken(model);
   const providerClient = selectLlmProvider(inferredProvider);
-  // WHY: providerClient.name always returns 'openai' for openai-compatible types.
-  // Use the model-inferred provider name for a meaningful label in telemetry.
-  const providerLabel = providerFromModelToken(model) || providerClient.name;
+  // WHY: accessMode is SSOT from the provider registry (lab vs api).
+  // Used for circuit breaker isolation and request_options injection.
+  const isLab = accessMode === 'lab';
+  const inferredName = providerFromModelToken(model) || providerClient.name;
+  const providerLabel = isLab ? `lab-${inferredName}` : inferredName;
   const health = providerHealth || _providerHealth;
   const deepSeekMode = inferredProvider === 'deepseek';
   const reason = String(usageContext?.reason || 'extract');
@@ -638,8 +641,16 @@ export async function callOpenAI({
         }
       };
     }
+    // WHY: Lab proxies (browser-based) ignore response_format but honor json_mode
+    // in request_options. Only inject request_options for lab calls — public APIs
+    // (Gemini, DeepSeek) reject unknown fields like request_options.
+    const labCall = isLab;
     if (requestOptions && typeof requestOptions === 'object') {
-      body.request_options = requestOptions;
+      body.request_options = labCall && useJsonSchema && jsonSchema
+        ? { ...requestOptions, json_mode: true }
+        : requestOptions;
+    } else if (labCall && useJsonSchema && jsonSchema) {
+      body.request_options = { json_mode: true };
     }
 
     return body;
@@ -681,6 +692,7 @@ export async function callOpenAI({
       reason,
       route_role: routeRole,
       provider: providerLabel,
+      access_mode: isLab ? 'lab' : 'api',
       model,
       base_url: baseUrlNormalized,
       endpoint: `${baseUrlNormalized}/v1/chat/completions`,
@@ -833,6 +845,7 @@ export async function callOpenAI({
     const safeMessage = `Provider '${providerLabel}' circuit open (${snap.failure_count} consecutive failures). Retry after cooldown.`;
     logger?.warn?.('llm_provider_circuit_open', {
       provider: providerLabel,
+      access_mode: isLab ? 'lab' : 'api',
       model,
       base_url: baseUrlNormalized,
       endpoint: `${baseUrlNormalized}/v1/chat/completions`,
@@ -891,6 +904,7 @@ export async function callOpenAI({
       reason,
       route_role: routeRole,
       provider: providerLabel,
+      access_mode: isLab ? 'lab' : 'api',
       model: first.responseModel || model,
       base_url: baseUrlNormalized,
       endpoint: `${baseUrlNormalized}/v1/chat/completions`,
@@ -955,6 +969,7 @@ export async function callOpenAI({
         reason,
         route_role: routeRole,
         provider: providerLabel,
+        access_mode: isLab ? 'lab' : 'api',
         model: retry.responseModel || model,
         base_url: baseUrlNormalized,
         endpoint: `${baseUrlNormalized}/v1/chat/completions`,
