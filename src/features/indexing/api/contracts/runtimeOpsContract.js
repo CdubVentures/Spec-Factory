@@ -182,12 +182,14 @@ export const PIPELINE_TRANSITION_KEYS = Object.freeze(PIPELINE_TRANSITION_SHAPE.
 export const WORKER_ROW_BASE_SHAPE = Object.freeze([
   { key: 'worker_id', coerce: 'string' },
   { key: 'pool', coerce: 'string' },
-  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha'] },
+  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha', 'crawling', 'crawled', 'retrying', 'rate_limited', 'failed'] },
   { key: 'stage', coerce: 'string', literals: ['search', 'fetch', 'parse', 'index', 'llm'] },
   { key: 'current_url', coerce: 'string' },
   { key: 'started_at', coerce: 'string' },
   { key: 'elapsed_ms', coerce: 'int' },
   { key: 'last_error', coerce: 'string', nullable: true },
+  { key: 'block_reason', coerce: 'string', nullable: true },
+  { key: 'proxy_url', coerce: 'string', nullable: true },
   { key: 'retries', coerce: 'int' },
   { key: 'fetch_mode', coerce: 'string', nullable: true },
   { key: 'docs_processed', coerce: 'int' },
@@ -234,6 +236,8 @@ export const WORKER_LLM_EXTRA_SHAPE = Object.freeze([
   { key: 'prefetch_tab', coerce: 'string', nullable: true },
   { key: 'prompt_preview', coerce: 'string', nullable: true },
   { key: 'response_preview', coerce: 'string', nullable: true },
+  { key: 'is_fallback', coerce: 'bool' },
+  { key: 'is_lab', coerce: 'bool' },
 ]);
 export const WORKER_LLM_EXTRA_KEYS = Object.freeze(WORKER_LLM_EXTRA_SHAPE.map(s => s.key));
 
@@ -289,6 +293,8 @@ export const LLM_CALL_ROW_SHAPE = Object.freeze([
   { key: 'response_preview', coerce: 'string', nullable: true },
   { key: 'prefetch_tab', coerce: 'string', nullable: true },
   { key: 'is_fallback', coerce: 'bool' },
+  { key: 'is_lab', coerce: 'bool' },
+  { key: 'primary_duration_ms', coerce: 'int', nullable: true },
   { key: 'ts', coerce: 'string' },
 ]);
 export const LLM_CALL_ROW_KEYS = Object.freeze(LLM_CALL_ROW_SHAPE.map(s => s.key));

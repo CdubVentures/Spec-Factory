@@ -279,36 +279,38 @@ function TierBudgetBar({ budget }: { budget: ReturnType<typeof buildTierBudgetSu
 
 export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, idxRuntime }: PrefetchSearchProfilePanelProps) {
   const showGateBadges = shouldShowSearchProfileGateBadges();
-  const queryValues = useMemo(() => data.query_rows.map((row) => row.query).filter(Boolean), [data.query_rows]);
+  // WHY: Show the deterministic Search Profile output, not LLM-enhanced rows from downstream phases.
+  const displayRows = data.deterministic_query_rows ?? data.query_rows;
+  const queryValues = useMemo(() => displayRows.map((row) => row.query).filter(Boolean), [displayRows]);
   const [selectedQueryText, setSelectedQueryText] = usePersistedNullableTab<string>(
     `runtimeOps:prefetch:searchProfile:selectedQuery:${persistScope}`,
     null,
     { validValues: queryValues },
   );
   const selectedQuery = useMemo(
-    () => (selectedQueryText ? data.query_rows.find((row) => row.query === selectedQueryText) ?? null : null),
-    [data.query_rows, selectedQueryText],
+    () => (selectedQueryText ? displayRows.find((row) => row.query === selectedQueryText) ?? null : null),
+    [displayRows, selectedQueryText],
   );
   const hintSourceCounts = data.hint_source_counts || {};
   const liveProvider = liveSettings?.searchEngines || '';
-  const allTargetFields = [...new Set(data.query_rows.flatMap((r) => r.target_fields || []))];
+  const allTargetFields = [...new Set(displayRows.flatMap((r) => r.target_fields || []))];
   const uncoveredFields = allTargetFields.length > 0
-    ? allTargetFields.filter((f) => !data.query_rows.some((r) => r.target_fields?.includes(f) && (r.result_count ?? 0) > 0))
+    ? allTargetFields.filter((f) => !displayRows.some((r) => r.target_fields?.includes(f) && (r.result_count ?? 0) > 0))
     : [];
   const identityAliasEntries = useMemo(
     () => normalizeIdentityAliasEntries(data.identity_aliases),
     [data.identity_aliases],
   );
   const gateSummary = useMemo(
-    () => buildGateSummary(data.query_rows, hintSourceCounts),
-    [data.query_rows, hintSourceCounts],
+    () => buildGateSummary(displayRows, hintSourceCounts),
+    [displayRows, hintSourceCounts],
   );
   const fieldRuleGateCounts = useMemo(
     () => normalizeFieldRuleGateCounts(data.field_rule_gate_counts),
     [data.field_rule_gate_counts],
   );
   const providerLabel = providerDisplayLabel(liveProvider || data.provider) || toChipLabel(liveProvider || data.provider);
-  const totalResults = data.query_rows.reduce((s, r) => s + (r.result_count ?? 0), 0);
+  const totalResults = displayRows.reduce((s, r) => s + (r.result_count ?? 0), 0);
   const topLevelFieldRulesOn = gateSummary.fieldRulesOn || gateSummary.fieldRuleKeyCounts.length > 0;
 
   const guardTotal = typeof data.query_guard?.total === 'number' ? data.query_guard.total : null;
@@ -316,11 +318,11 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
   const guardAccepted = typeof data.query_guard?.accepted_query_count === 'number' ? data.query_guard.accepted_query_count : null;
   const guardRejected = typeof data.query_guard?.rejected_query_count === 'number' ? data.query_guard.rejected_query_count : null;
 
-  const tiers = useMemo(() => groupByTier(data.query_rows), [data.query_rows]);
-  const budget = useMemo(() => buildTierBudgetSummary(data.query_rows, 24), [data.query_rows]);
+  const tiers = useMemo(() => groupByTier(displayRows), [displayRows]);
+  const budget = useMemo(() => buildTierBudgetSummary(displayRows, 24), [displayRows]);
 
   /* ── Empty state ── */
-  if (data.query_rows.length === 0 && !data.brand_resolution) {
+  if (displayRows.length === 0 && !data.brand_resolution) {
     return (
       <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
         <h3 className="text-sm font-semibold sf-text-primary">Search Profile</h3>

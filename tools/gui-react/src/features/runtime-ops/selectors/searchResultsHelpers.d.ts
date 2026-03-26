@@ -117,3 +117,13 @@ export declare function resolveDomainCapSummary(
 export declare function resolveRuntimeDomainCapSummary(
   liveSettings: Partial<PrefetchLiveSettings> | undefined,
 ): DomainCapSummary;
+
+export interface DecisionDisplay {
+  label: string;
+  chipClass: string;
+}
+
+export declare function resolveDecisionDisplay(
+  result: { decision?: string; rationale?: string; reason?: string },
+  flags?: { isDuplicate?: boolean; isCrawled?: boolean; isVideo?: boolean },
+): DecisionDisplay;

@@ -161,7 +161,7 @@ describe('prefetchContract', () => {
   });
 
   describe('SEARCH_PROFILE_SHAPE', () => {
-    assertFrozenDescriptor(SEARCH_PROFILE_SHAPE, 'SEARCH_PROFILE_SHAPE', 27);
+    assertFrozenDescriptor(SEARCH_PROFILE_SHAPE, 'SEARCH_PROFILE_SHAPE', 28);
     it('has expected keys', () => {
       const keys = SEARCH_PROFILE_SHAPE.map((d) => d.key);
       for (const k of ['query_count', 'selected_query_count', 'provider', 'llm_query_planning',

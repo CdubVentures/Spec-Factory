@@ -236,6 +236,7 @@ export function registerRuntimeOpsRoutes(ctx) {
         : null;
       const workers = buildRuntimeOpsWorkers(events, {
         sourceIndexingPacketCollection,
+        crawleeRequestHandlerTimeoutSecs: config?.crawleeRequestHandlerTimeoutSecs,
       }).map((worker) => ({
         ...worker,
         idx_runtime: buildRuntimeIdxBadgesForWorker({
@@ -354,8 +355,29 @@ export function registerRuntimeOpsRoutes(ctx) {
         return jsonRes(res, 404, { error: 'video_not_found', run_id: runId, worker_id: videoWorkerId });
       }
       const fs = await import('node:fs');
-      res.writeHead(200, { 'Content-Type': 'video/webm' });
-      fs.createReadStream(videoPath).pipe(res);
+      const stat = fs.statSync(videoPath);
+      // WHY: Range request support lets the <video> element seek, loop efficiently,
+      // and show progress without buffering the entire file first.
+      const range = req.headers.range;
+      if (range) {
+        const [startStr, endStr] = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(startStr, 10);
+        const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
+        res.writeHead(206, {
+          'Content-Type': 'video/webm',
+          'Content-Length': end - start + 1,
+          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+          'Accept-Ranges': 'bytes',
+        });
+        fs.createReadStream(videoPath, { start, end }).pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Type': 'video/webm',
+          'Content-Length': stat.size,
+          'Accept-Ranges': 'bytes',
+        });
+        fs.createReadStream(videoPath).pipe(res);
+      }
       return true;
     }
 

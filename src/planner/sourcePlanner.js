@@ -326,23 +326,25 @@ export class SourcePlanner {
       isCandidateTarget = true;
     }
 
-    // Per-domain cap (the ONLY cap)
-    if (isCandidateTarget) {
-      const domainCount = this.candidateHostCounts.get(host) || 0;
-      if (domainCount >= this.maxPagesPerDomain) {
-        this._rejectCounters.candidate_domain_cap += 1;
-        return false;
-      }
-    } else {
-      const relevantQueue = targetQueue === 'manufacturer' ? this.manufacturerQueue : this.queue;
-      const relevantHostCounts = targetQueue === 'manufacturer' ? this.manufacturerHostCounts : this.hostCounts;
-      // For priority queue items, check against the general hostCounts
-      const hostCountMap = targetQueue === 'priority' ? this.hostCounts : relevantHostCounts;
-      const relevantQ = targetQueue === 'priority' ? this.priorityQueue : relevantQueue;
-      const plannedCount = countQueueHost(relevantQ, host) + (hostCountMap.get(host) || 0);
-      if (plannedCount >= this.maxPagesPerDomain) {
-        this._rejectCounters.domain_cap += 1;
-        return false;
+    // Per-domain cap — skip for forceApproved (pipeline already approved these URLs)
+    if (!forceApproved) {
+      if (isCandidateTarget) {
+        const domainCount = this.candidateHostCounts.get(host) || 0;
+        if (domainCount >= this.maxPagesPerDomain) {
+          this._rejectCounters.candidate_domain_cap += 1;
+          return false;
+        }
+      } else {
+        const relevantQueue = targetQueue === 'manufacturer' ? this.manufacturerQueue : this.queue;
+        const relevantHostCounts = targetQueue === 'manufacturer' ? this.manufacturerHostCounts : this.hostCounts;
+        // For priority queue items, check against the general hostCounts
+        const hostCountMap = targetQueue === 'priority' ? this.hostCounts : relevantHostCounts;
+        const relevantQ = targetQueue === 'priority' ? this.priorityQueue : relevantQueue;
+        const plannedCount = countQueueHost(relevantQ, host) + (hostCountMap.get(host) || 0);
+        if (plannedCount >= this.maxPagesPerDomain) {
+          this._rejectCounters.domain_cap += 1;
+          return false;
+        }
       }
     }
 

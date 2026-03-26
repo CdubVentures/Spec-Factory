@@ -51,6 +51,7 @@ export function createProcessRuntime({
   spawn,
   execCb,
   broadcastWs,
+  invalidateEventCache,
   sessionCache,
   invalidateFieldRulesCache,
   reviewLayoutByCategory,
@@ -236,6 +237,9 @@ export function createProcessRuntime({
     child.on('message', (msg) => {
       if (msg && msg.__screencast) {
         broadcastWs(msg.channel || 'screencast', msg);
+      } else if (msg && msg.__runtime_event) {
+        if (typeof invalidateEventCache === 'function') invalidateEventCache(msg.run_id || '');
+        broadcastWs('indexlab-event', { type: 'runtime-update', stage: msg.stage, event: msg.event });
       }
     });
     childProc = child;

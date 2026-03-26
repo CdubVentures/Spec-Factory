@@ -252,3 +252,84 @@ test('completed local run with counters exposes stored counters in the row contr
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+// --- Archived entry preference for non-active runs ---
+
+test('archived S3 entry wins over live dir for completed (non-active) run', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-s3-wins-${Date.now()}`);
+  const indexLabRoot = path.join(tmpDir, 'indexlab');
+  const liveRunDir = path.join(indexLabRoot, 'run-dual');
+  await fs.mkdir(liveRunDir, { recursive: true });
+  await fs.writeFile(
+    path.join(liveRunDir, 'run.json'),
+    JSON.stringify({
+      run_id: 'run-dual',
+      category: 'mouse',
+      product_id: 'mouse-test',
+      status: 'completed',
+      started_at: '2026-03-01T00:00:00Z',
+      ended_at: '2026-03-01T00:10:00Z',
+      counters: { pages_checked: 5 },
+    }),
+  );
+  const s3Location = { type: 's3', keyBase: 'archive/mouse/mouse-test/run-dual', runId: 'run-dual' };
+  const s3Meta = {
+    run_id: 'run-dual',
+    category: 'mouse',
+    product_id: 'mouse-test',
+    status: 'completed',
+    started_at: '2026-03-01T00:00:00Z',
+    ended_at: '2026-03-01T00:10:00Z',
+    counters: { pages_checked: 5 },
+    artifacts: { has_needset: true, has_search_profile: true },
+  };
+  try {
+    const builder = makeBuilder({
+      getIndexLabRoot: () => indexLabRoot,
+      isRunStillActive: () => false,
+      readEvents: async () => [],
+      refreshArchivedRunDirIndex: async () => new Map([['run-dual', s3Location]]),
+      readArchivedS3RunMetaOnly: async () => s3Meta,
+    });
+    const rows = await builder.listIndexLabRuns();
+    const row = rows.find((r) => r.run_id === 'run-dual');
+    assert.ok(row, 'run should appear');
+    assert.equal(row.storage_origin, 's3', 'archived S3 entry should win for non-active run');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('live dir wins over archived S3 entry for active (still-running) run', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-live-wins-${Date.now()}`);
+  const indexLabRoot = path.join(tmpDir, 'indexlab');
+  const liveRunDir = path.join(indexLabRoot, 'run-active');
+  await fs.mkdir(liveRunDir, { recursive: true });
+  await fs.writeFile(
+    path.join(liveRunDir, 'run.json'),
+    JSON.stringify({
+      run_id: 'run-active',
+      category: 'mouse',
+      product_id: 'mouse-test',
+      status: 'running',
+      started_at: '2026-03-01T00:00:00Z',
+    }),
+  );
+  await fs.writeFile(path.join(liveRunDir, 'run_events.ndjson'), '');
+  const s3Location = { type: 's3', keyBase: 'archive/mouse/mouse-test/run-active', runId: 'run-active' };
+  try {
+    const builder = makeBuilder({
+      getIndexLabRoot: () => indexLabRoot,
+      isRunStillActive: (id) => id === 'run-active',
+      readEvents: async () => [],
+      refreshArchivedRunDirIndex: async () => new Map([['run-active', s3Location]]),
+      readArchivedS3RunMetaOnly: async () => null,
+    });
+    const rows = await builder.listIndexLabRuns();
+    const row = rows.find((r) => r.run_id === 'run-active');
+    assert.ok(row, 'run should appear');
+    assert.equal(row.storage_origin, 'local', 'live dir should win for active run');
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});

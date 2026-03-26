@@ -177,26 +177,49 @@ export async function runProduct({
     }),
   });
 
-  const executionBootstrapState = await bootstrapRunProductExecutionState({
-    storage,
-    config,
+  // --- Session + browser pool warm-up (runs in parallel with discovery) ---
+  // WHY: Browser launches take ~3s. Starting them now means they're warm by
+  // the time the crawl phase begins. Discovery/search takes 10-30s so
+  // the warm-up is completely free (overlapped).
+  const plugins = resolveAllPlugins();
+  const extractionRunner = createExtractionRunner({
+    plugins: resolveAllExtractionPlugins(),
     logger,
-    category,
-    productId,
-    runId,
-    roundContext,
-    runtimeMode,
-    job,
-    identityLock,
-    identityLockStatus,
-    runArtifactsBase,
-    traceWriter,
-    syncRuntimeOverrides: async ({ force = false } = {}) => {
-      runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
-      return runtimeOverrides;
-    },
-    frontierDb,
   });
+  const adapter = resolveAdapter('crawlee');
+  const session = adapter.create({
+    settings: { ...config, runId },
+    plugins,
+    extractionRunner,
+    logger,
+    onScreencastFrame: resolveScreencastCallback(config),
+  });
+  await session.start();
+  const warmUpPromise = session.warmUp?.() ?? Promise.resolve();
+
+  const [executionBootstrapState] = await Promise.all([
+    bootstrapRunProductExecutionState({
+      storage,
+      config,
+      logger,
+      category,
+      productId,
+      runId,
+      roundContext,
+      runtimeMode,
+      job,
+      identityLock,
+      identityLockStatus,
+      runArtifactsBase,
+      traceWriter,
+      syncRuntimeOverrides: async ({ force = false } = {}) => {
+        runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
+        return runtimeOverrides;
+      },
+      frontierDb,
+    }),
+    warmUpPromise,
+  ]);
   runtimeOverrides = executionBootstrapState.runtimeOverrides;
 
   const { planner, discoveryResult } = executionBootstrapState;
@@ -211,28 +234,6 @@ export async function runProduct({
     candidate_queue_length: planner?.candidateQueue?.length ?? 0,
     discovery_selected_count: discoveryResult?.enqueue_summary?.approved_count ?? 0,
   });
-
-  // --- New crawl pipeline: open pages, screenshot, record to frontier ---
-  // WHY: All registered plugins are loaded. Each plugin self-gates via its own *Enabled setting.
-  const plugins = resolveAllPlugins();
-
-  // WHY: Extraction plugins run sequentially per-URL after fetch tools complete.
-  // Resolved here and passed via DI — crawlSession has no extraction import.
-  const extractionRunner = createExtractionRunner({
-    plugins: resolveAllExtractionPlugins(),
-    logger,
-  });
-
-  const adapter = resolveAdapter('crawlee');
-  // WHY: crawlSession needs runId to construct the video recording directory.
-  const session = adapter.create({
-    settings: { ...config, runId },
-    plugins,
-    extractionRunner,
-    logger,
-    onScreencastFrame: resolveScreencastCallback(config),
-  });
-  await session.start();
 
   try {
     const maxRunMs = (Number(config.maxRunSeconds) || 0) * 1000;

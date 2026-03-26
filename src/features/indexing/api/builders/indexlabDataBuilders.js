@@ -193,6 +193,14 @@ export async function readIndexLabRunEvents(runId, limit = 2000) {
   return rows;
 }
 
+export function invalidateEventCache(runId) {
+  const token = String(runId || '').trim();
+  if (!token) { _eventCache.clear(); return; }
+  for (const key of _eventCache.keys()) {
+    if (key.startsWith(`${token}:`)) _eventCache.delete(key);
+  }
+}
+
 export function resolveRunProductId(meta = {}, events = []) {
   const fromMeta = String(meta?.product_id || '').trim();
   if (fromMeta) return fromMeta;

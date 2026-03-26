@@ -106,7 +106,9 @@ async function handleSourceFetchStarted(state, deps, { ts, url, row }) {
     fetcher_kind: String(row.fetcher_kind || ''),
     host_budget_score: asFloat(row.host_budget_score, 0),
     host_budget_state: String(row.host_budget_state || ''),
-    worker_id: url ? state.workerByUrl.get(url) || '' : ''
+    worker_id: url ? state.workerByUrl.get(url) || '' : '',
+    retry_count: asInt(row.retry_count, 0),
+    proxy_url: String(row.proxy_url || ''),
   }, ts);
 }
 
@@ -121,6 +123,18 @@ async function handleSourceFetchSkipped(state, deps, { ts, url, row }) {
     next_retry_ts: String(row.next_retry_ts || ''),
     host_budget_score: asFloat(row.host_budget_score, 0),
     host_budget_state: String(row.host_budget_state || '')
+  }, ts);
+}
+
+// WHY: Crawlee's errorHandler fires before each retry attempt. Emit fetch_retrying
+// so the worker pool builder can set the worker state to 'retrying'.
+async function handleSourceFetchRetrying(state, deps, { ts, url, row }) {
+  const workerId = url ? state.workerByUrl.get(url) || '' : '';
+  await emit(state, 'fetch', 'fetch_retrying', {
+    scope: 'url', url,
+    worker_id: workerId || String(row.worker_id || ''),
+    retry_count: asInt(row.retry_count, 0),
+    error: String(row.error || ''),
   }, ts);
 }
 
@@ -791,9 +805,33 @@ async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
   setPhaseCursor(state, 'phase_08_domain_classifier');
   await emit(state, 'search', 'discovery_enqueue_summary', {
     scope: 'enqueue',
-    input_approved_count: asInt(row.input_approved_count, 0),
+    input_selected_count: asInt(row.input_selected_count, 0),
     input_candidate_count: asInt(row.input_candidate_count, 0),
+    enqueued_count: asInt(row.enqueued_count, 0),
+    overflow_count: asInt(row.overflow_count, 0),
   }, ts);
+}
+
+// ── Browser pool warm-up handlers ──────────────────────────────────────────
+
+async function handleBrowserPoolWarming(state, _deps, { row }) {
+  state.browserPool = {
+    status: 'warming',
+    browsers: Number(row.browsers) || 0,
+    slots: Number(row.slots) || 0,
+    pages_per_browser: Number(row.pages_per_browser) || 1,
+  };
+  await writeRunMeta(state);
+}
+
+async function handleBrowserPoolWarmed(state, _deps, { row }) {
+  state.browserPool = {
+    ...(state.browserPool || {}),
+    status: 'ready',
+    browsers: Number(row.browsers) || state.browserPool?.browsers || 0,
+    slots: Number(row.slots) || state.browserPool?.slots || 0,
+  };
+  await writeRunMeta(state);
 }
 
 // ── Bootstrap sub-step handler ─────────────────────────────────────────────
@@ -843,6 +881,7 @@ const EVENT_HANDLERS = new Map([
   ['source_fetch_queued',             handleSourceFetchQueued],
   ['source_fetch_started',            handleSourceFetchStarted],
   ['source_fetch_skipped',            handleSourceFetchSkipped],
+  ['source_fetch_retrying',           handleSourceFetchRetrying],
   ['source_fetch_failed',             handleSourceFetchFailed],
   ['fetch_trace_written',             handleFetchTraceWritten],
   ['source_processed',                handleSourceProcessed],
@@ -869,6 +908,8 @@ const EVENT_HANDLERS = new Map([
   ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
   ['search_queued',                   handleSearchQueued],
   ['bootstrap_step',                  handleBootstrapStep],
+  ['browser_pool_warming',            handleBrowserPoolWarming],
+  ['browser_pool_warmed',             handleBrowserPoolWarmed],
   ['plugin_hook_completed',           handlePluginHookCompleted],
   ['extraction_plugin_completed',     handleExtractionPluginCompleted],
   ['extraction_plugin_failed',        handleExtractionPluginFailed],

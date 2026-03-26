@@ -19,9 +19,11 @@ interface StageGroupTabRowProps {
   busyTabs?: Set<string>;
   /** Set of tab keys that are currently disabled */
   disabledTabs?: Set<string>;
+  /** Optional content pinned to the far right of the row */
+  rightContent?: React.ReactNode;
 }
 
-export function StageGroupTabRow({ groupLabel, registry, activeTab, onSelectTab, busyTabs, disabledTabs }: StageGroupTabRowProps) {
+export function StageGroupTabRow({ groupLabel, registry, activeTab, onSelectTab, busyTabs, disabledTabs, rightContent }: StageGroupTabRowProps) {
   return (
     <div className="flex items-center gap-1 px-3 py-2 border-b sf-border-default overflow-x-auto sf-surface-shell">
       <span className="sf-text-caption font-semibold uppercase tracking-wider sf-text-subtle mr-1 shrink-0">
@@ -73,6 +75,7 @@ export function StageGroupTabRow({ groupLabel, registry, activeTab, onSelectTab,
           </Tooltip.Root>
         );
       })}
+      {rightContent && <div className="ml-auto shrink-0 flex items-center">{rightContent}</div>}
     </div>
   );
 }

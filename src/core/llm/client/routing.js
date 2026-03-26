@@ -1,4 +1,4 @@
-import { callOpenAI } from './openaiClient.js';
+import { callLlmProvider } from './llmClient.js';
 import { resolveModelFromRegistry } from '../routeResolver.js';
 import { configInt, configBool, configValue } from '../../../shared/settingsAccessor.js';
 import { providerFromModelToken, defaultBaseUrlForProvider, bootstrapApiKeyForProvider, KNOWN_PROVIDERS, normalizeProvider } from '../providerMeta.js';
@@ -477,13 +477,12 @@ export async function callLlmWithRouting({
   }
 
   try {
-    return await callOpenAI({
+    return await callLlmProvider({
       ...effectiveSharedParams,
-      model: primary.model,
-      apiKey: primary.apiKey,
-      baseUrl: primary.baseUrl,
-      provider: primary.provider,
-      accessMode: primary._registryEntry?.accessMode || '',
+      route: {
+        model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
+        provider: primary.provider, accessMode: primary._registryEntry?.accessMode || '',
+      },
       providerHealth
     });
   } catch (error) {
@@ -505,14 +504,13 @@ export async function callLlmWithRouting({
     const fallbackMaxTokens = phaseTokenCap > 0
       ? Math.min(phaseTokenCap, fallbackTokenCap || phaseTokenCap)
       : fallbackTokenCap;
-    return callOpenAI({
+    return callLlmProvider({
       ...sharedParams,
       costRates: effectiveFallbackCostRates,
-      model: fallback.model,
-      apiKey: fallback.apiKey,
-      baseUrl: fallback.baseUrl,
-      provider: fallback.provider,
-      accessMode: fallback._registryEntry?.accessMode || '',
+      route: {
+        model: fallback.model, apiKey: fallback.apiKey, baseUrl: fallback.baseUrl,
+        provider: fallback.provider, accessMode: fallback._registryEntry?.accessMode || '',
+      },
       reasoningBudget: Number(fallbackReasoningBudget || 0),
       maxTokens: Number(fallbackMaxTokens || 0),
       providerHealth,

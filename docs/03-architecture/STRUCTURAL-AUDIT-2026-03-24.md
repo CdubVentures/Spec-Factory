@@ -600,7 +600,7 @@ Public API:
   config/manifest.js  → CONFIG_MANIFEST, CONFIG_MANIFEST_DEFAULTS, CONFIG_MANIFEST_KEYS
   config/configBuilder.js → createManifestApplicator()
   llm/client/routing.js → resolveLlmRoute(), callLlmWithRouting()
-  llm/client/openaiClient.js → callOpenAI(), getProviderHealth()
+  llm/client/llmClient.js → callLlmProvider(), getProviderHealth()
   llm/providers/index.js → selectLlmProvider()
   engine/fieldRulesEngine.js → createFieldRulesEngine()
   engine/ruleAccessors.js → ruleRequiredLevel(), 17 other accessors

@@ -18,6 +18,8 @@ export function shouldSynthesizeRuntimeProofFrame(worker = {}) {
     && (fetchMode === 'crawlee' || fetchMode === 'playwright')
     && state !== 'running'
     && state !== 'stuck'
+    && state !== 'crawling'
+    && state !== 'retrying'
   );
 }
 

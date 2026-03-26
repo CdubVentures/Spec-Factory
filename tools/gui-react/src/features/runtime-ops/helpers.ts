@@ -98,7 +98,7 @@ export const METRIC_TIPS: Record<string, string> = {
 
   worker_id: 'Unique identifier for this worker thread.',
   worker_pool: 'Which task pool this worker belongs to (search, fetch, parse, or llm).',
-  worker_state: 'Current worker state: idle (waiting for work), running (processing a task), or stuck (no response for too long).',
+  worker_state: 'Current worker state: queued (waiting), crawling (fetching page), crawled (success), retrying (retry attempt), stuck (no response), blocked (403), rate_limited (429), captcha, or failed.',
   worker_url: 'The URL or query this worker is currently processing.',
   worker_elapsed: 'Time spent on the current task. Long durations may indicate a stuck worker.',
   worker_error: 'Last error message from this worker, if any.',

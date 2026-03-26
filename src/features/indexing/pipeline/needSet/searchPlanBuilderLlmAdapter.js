@@ -18,7 +18,7 @@ export const plannerResponseZodSchema = z.object({
 
 const PLANNER_RESPONSE_SCHEMA = zodToLlmSchema(plannerResponseZodSchema);
 
-const PLANNER_SYSTEM_PROMPT = [
+export const PLANNER_SYSTEM_PROMPT = [
   'You are a search group assessor for hardware specification data collection.',
   'Given product identity and focus groups with unresolved fields, assess each group.',
   'You do NOT write search queries. Query authoring is handled by a separate stage.',

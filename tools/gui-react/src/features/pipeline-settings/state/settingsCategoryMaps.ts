@@ -14,6 +14,7 @@ export interface CategorySettingsMap {
 
 const _byCategory: Record<string, CategorySettingsMap> = {};
 const _disabledBy: Record<string, string> = {};
+const _readOnly: Set<string> = new Set();
 
 for (const entry of RUNTIME_SETTINGS_REGISTRY) {
   if (!entry.uiCategory) continue;
@@ -23,6 +24,7 @@ for (const entry of RUNTIME_SETTINGS_REGISTRY) {
   _byCategory[entry.uiCategory][section].push(entry);
 
   if (entry.disabledBy) _disabledBy[entry.key] = entry.disabledBy;
+  if ((entry as unknown as Record<string, unknown>).uiReadOnly) _readOnly.add(entry.key);
 }
 
 // Sort entries within each section by uiOrder
@@ -52,6 +54,11 @@ export function isHeroSetting(entry: RegistryEntry): boolean {
 /** Get the disabledBy parent key for a setting, if any */
 export function getDisabledByKey(settingKey: string): string | undefined {
   return DISABLED_BY_MAP[settingKey];
+}
+
+/** Check if a setting is marked as read-only (derived, not user-editable) */
+export function isReadOnlySetting(settingKey: string): boolean {
+  return _readOnly.has(settingKey);
 }
 
 /* ── Group rendering hints ─────────────────────────────────────────── */

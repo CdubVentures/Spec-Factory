@@ -9,6 +9,12 @@ import path from 'node:path';
 import os from 'node:os';
 import fsSync from 'node:fs';
 import { createPluginRunner } from './core/pluginRunner.js';
+import { classifyBlockStatus } from './bypassStrategies.js';
+
+// WHY: Eager import — Crawlee takes ~1.2s to import (heavy deps: playwright,
+// fingerprint-suite, proxy-chain). Starting the import at module load time
+// means it's ready by the time session.start() is called, saving ~1s.
+const _crawleeImport = import('crawlee').catch(() => null);
 
 // WHY: Parses JSON array of proxy URLs from settings. Same pattern as
 // searchProviders.js:parseProxyUrlList. Trust boundary — user JSON input.
@@ -24,8 +30,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
-  const videoPathMap = new Map();
+  // WHY: WeakMap so page references don't leak after GC. Maps page → workerId
+  // so prePageCloseHook can save the video with the correct filename.
+  const pageWorkerMap = new WeakMap();
+  const cdpSessionMap = new WeakMap();
+  const pendingVideoSaves = [];
   let crawler = null;
+  // WHY: Lazy proxy crawler — created once on first retryWithProxy call, reused
+  // across batches. Avoids 2-5s cold browser launch per proxy retry batch.
+  let _proxyCrawler = null;
 
   // WHY: Compute video dir at session creation (not in start()) so it's
   // available regardless of whether real Playwright or _crawlerFactory is used.
@@ -76,7 +89,14 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       // bypassStrategies.js after capturing the page content.
       retryOnBlocked: false,
 
-      requestHandler: async ({ page, request, response }) => {
+      requestHandler: async ({ page, request, response, session, proxyInfo }) => {
+        // WHY: Warmup requests force browser pool pre-launch at run start.
+        // Resolve immediately — no plugins, no extraction, no logging.
+        if (request.userData?.__warmup) {
+          resolveEntry(request.uniqueKey, { __warmup: true });
+          return;
+        }
+
         const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
         const ctx = { page, request, response, settings, workerId };
 
@@ -88,6 +108,8 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           host: new URL(request.url).hostname,
           fetcher_kind: 'crawlee',
           worker_id: workerId,
+          retry_count: request.retryCount ?? 0,
+          proxy_url: proxyInfo?.url || '',
         });
 
         await runner.runHook('beforeNavigate', ctx);
@@ -101,38 +123,71 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           ? response.status()
           : (response?.status ?? 200);
 
+        // WHY: Detect blocks BEFORE extraction so Crawlee can retry with a new
+        // session (fresh fingerprint/cookies). Content IS captured — resolveEntry
+        // returns it to the lifecycle for classification and proxy retry.
+        const { blocked, blockReason } = classifyBlockStatus({ status, html });
+        if (blocked) {
+          // WHY: robots_blocked respects the site's rules — retrying won't help.
+          if (blockReason === 'robots_blocked') request.noRetry = true;
+          session?.retire();
+          resolveEntry(request.uniqueKey, {
+            url: request.url, finalUrl, status, title, html,
+            screenshots: [], workerId, videoPath: '',
+            blocked: true, blockReason,
+          });
+          throw new Error(`blocked:${blockReason}`);
+        }
+
         const captureCtx = { ...ctx, html, finalUrl, title, status };
-        await runner.runHook('onCapture', captureCtx);
+        try { await runner.runHook('onCapture', captureCtx); }
+        catch (err) { logger?.warn?.('hook_error', { hook: 'onCapture', url: request.url, error: err?.message }); }
 
         // WHY: Extraction plugins fire concurrently after all fetch hooks complete.
         // Each plugin receives a frozen context — no shared mutation.
-        const extractions = extractionRunner
-          ? await extractionRunner.runExtractions(captureCtx)
-          : {};
+        let extractions = {};
+        try {
+          extractions = extractionRunner
+            ? await extractionRunner.runExtractions(captureCtx)
+            : {};
+        } catch (err) {
+          logger?.warn?.('extraction_error', { url: request.url, error: err?.message });
+        }
 
         // WHY: Emit a screencast frame from the last screenshot so the GUI
         // live view shows what the browser is seeing during the active fetch.
-        if (typeof onScreencastFrame === 'function') {
-          const shots = extractions.screenshot?.screenshots ?? captureCtx.screenshots ?? [];
-          const shot = shots.findLast((s) => s.kind === 'page') || shots[shots.length - 1];
-          if (shot?.bytes) {
-            const data = Buffer.isBuffer(shot.bytes)
-              ? shot.bytes.toString('base64')
-              : String(shot.bytes);
-            onScreencastFrame({
-              worker_id: workerId,
-              data,
-              width: shot.width || 0,
-              height: shot.height || 0,
-              ts: shot.captured_at || new Date().toISOString(),
-            });
+        try {
+          if (typeof onScreencastFrame === 'function') {
+            const shots = extractions.screenshot?.screenshots ?? captureCtx.screenshots ?? [];
+            const shot = shots.findLast((s) => s.kind === 'page') || shots[shots.length - 1];
+            if (shot?.bytes) {
+              const data = Buffer.isBuffer(shot.bytes)
+                ? shot.bytes.toString('base64')
+                : String(shot.bytes);
+              onScreencastFrame({
+                worker_id: workerId,
+                data,
+                width: shot.width || 0,
+                height: shot.height || 0,
+                ts: shot.captured_at || new Date().toISOString(),
+              });
+            }
           }
+        } catch (err) {
+          logger?.warn?.('screencast_error', { url: request.url, error: err?.message });
         }
 
-        // WHY: Track which workers had video recording active for this batch.
-        // The actual file mapping is done by snapshotVideoDir/writeVideoManifest
-        // using filesystem diffing — no dependency on Playwright's Video API.
-        if (videoDir && page.video?.()) videoPathMap.set(workerId, true);
+        // WHY: Map this page to its workerId so the postPageCloseHook can
+        // save the video with the correct filename after the page closes.
+        if (videoDir) pageWorkerMap.set(page, workerId);
+
+        // WHY: Stop CDP screencast — page processing is done. The retained
+        // frame from the screenshot emission above serves as the final image.
+        const cdp = cdpSessionMap.get(page);
+        if (cdp) {
+          try { await cdp.send('Page.stopScreencast'); } catch {}
+          try { await cdp.detach(); } catch {}
+        }
 
         const result = {
           url: request.url,
@@ -146,7 +201,8 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           videoPath: '',
         };
 
-        await runner.runHook('onComplete', { ...ctx, result });
+        try { await runner.runHook('onComplete', { ...ctx, result }); }
+        catch (err) { logger?.warn?.('hook_error', { hook: 'onComplete', url: request.url, error: err?.message }); }
 
         // WHY: 'source_processed' is the event the bridge uses to mark
         // fetch complete and populate the worker's docs_processed count.
@@ -173,6 +229,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           message: errMsg,
           fetcher_kind: 'crawlee',
           worker_id: workerId,
+          retry_count: request.retryCount ?? 0,
         });
         // WHY: Resolve with error result instead of rejecting — prevents
         // unhandled rejection crashes. The lifecycle classifies the block.
@@ -189,17 +246,30 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         });
       },
 
-      // WHY: Crawlee's errorHandler fires for non-fatal errors (retryable).
-      // Suppress to prevent noise — failedRequestHandler handles final failures.
-      errorHandler: async () => {},
+      // WHY: Crawlee's errorHandler fires before each retry. Emit a signal
+      // so the GUI worker tab shows RETRY badge during retry attempts.
+      // Non-retryable errors (downloads, DNS) are marked noRetry to fail fast.
+      errorHandler: async ({ request }, error) => {
+        const msg = error?.message || '';
+        if (msg.includes('Download is starting') || msg.includes('ERR_NAME_NOT_RESOLVED')) {
+          request.noRetry = true;
+        }
+        const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
+        logger?.info?.('source_fetch_retrying', {
+          url: request.url,
+          worker_id: workerId,
+          retry_count: (request.retryCount ?? 0) + 1,
+          error: msg,
+        });
+      },
     };
   }
 
   function ensureCrawler() {
     if (!crawler) {
-      const config = buildCrawlerConfig();
       if (_crawlerFactory) {
-        crawler = _crawlerFactory(config);
+        const options = buildFullCrawlerOptions();
+        crawler = _crawlerFactory(options);
       } else {
         throw new Error('Real Crawlee integration requires _crawlerFactory or async start()');
       }
@@ -207,86 +277,25 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     return crawler;
   }
 
-  // WHY: Snapshot-diff approach for video manifest — does NOT depend on
-  // Playwright's async video.path() API which is unreliable (Promises hang,
-  // fail silently on Windows, etc.). Instead:
-  //   1. Before batch: snapshot existing .webm files in videoDir
-  //   2. After c.run(): diff to find NEW files Playwright created
-  //   3. Sort new files by mtime, match to workers in processing order
-  //   4. Write manifest.json (merge with existing)
-  // This is synchronous, deterministic, and cannot hang.
-
-  let videoFilesBefore = new Set();
-
-  function snapshotVideoDir() {
-    if (!videoDir) return;
-    try {
-      videoFilesBefore = new Set(
-        fsSync.readdirSync(videoDir).filter((f) => f.endsWith('.webm')),
-      );
-    } catch { videoFilesBefore = new Set(); }
-  }
-
-  function writeVideoManifest() {
-    if (!videoDir) return;
-    const manifestPath = path.join(videoDir, 'manifest.json');
-
-    // Read existing manifest so earlier batches survive
-    let manifest = {};
-    try {
-      manifest = JSON.parse(fsSync.readFileSync(manifestPath, 'utf8'));
-    } catch { /* first batch or corrupt — start fresh */ }
-
-    // Find new .webm files created during this batch
-    let newFiles = [];
-    try {
-      const allFiles = fsSync.readdirSync(videoDir).filter((f) => f.endsWith('.webm'));
-      newFiles = allFiles
-        .filter((f) => !videoFilesBefore.has(f))
-        .map((f) => {
-          try {
-            const stat = fsSync.statSync(path.join(videoDir, f));
-            return { name: f, mtimeMs: stat.mtimeMs };
-          } catch { return { name: f, mtimeMs: 0 }; }
-        })
-        .sort((a, b) => a.mtimeMs - b.mtimeMs);
-    } catch { /* dir might not exist */ }
-
-    // Get workers from this batch in processing order
-    const batchWorkers = Array.from(videoPathMap.keys());
-
-    // Match: worker N → Nth new file (both sorted by time)
-    for (let i = 0; i < batchWorkers.length && i < newFiles.length; i++) {
-      manifest[batchWorkers[i]] = newFiles[i].name;
-    }
-
-    try {
-      fsSync.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-      logger?.info?.('video_manifest_written', {
-        video_dir: videoDir,
-        workers: Object.keys(manifest).length,
-        new_files: newFiles.length,
-        batch_workers: batchWorkers.length,
-      });
-    } catch (err) {
-      logger?.warn?.('video_manifest_write_failed', {
-        video_dir: videoDir,
-        error: err?.message ?? String(err),
-      });
-    }
-    videoPathMap.clear();
-  }
 
   // WHY: Extracted so _crawlerFactory tests can verify the full config
   // including proxy, session pool, fingerprints — not just handlers.
-  function buildFullCrawlerOptions({ ProxyConfiguration } = {}) {
+  function buildFullCrawlerOptions() {
     const config = buildCrawlerConfig();
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
-    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 45;
+    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 30;
     const navTimeoutMs = Number(settings.crawleeNavigationTimeoutMs) || 12000;
     // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
-    const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 3;
-    const maxPages = Number(settings.crawleeMaxPagesPerBrowser) || 1;
+    // Default 1 — one native retry with session rotation (new fingerprint/cookies).
+    // After native retry exhausted, lifecycle calls retryWithProxy as final proxy pass.
+    // Total worst case: 30s direct + 30s retry + 30s proxy = 90s per URL.
+    const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
+    // WHY: Derived from slotCount — not a user knob. With maxOpenPagesPerBrowser=1,
+    // each slot needs its own browser launch (~600ms each), causing 5+ second ramp-up
+    // for 16 slots. With 4 pages/browser, only ceil(16/4)=4 browsers launch. Beyond 4
+    // pages/browser there are diminishing returns and higher crash blast radius.
+    // Incognito pages ensure each page gets its own browser context (cookies, fingerprints).
+    const maxPages = Math.min(slotCount, 4);
     const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 10;
     const sameDomainDelay = Number(settings.crawleeSameDomainDelaySecs) || 0;
     const maxReqPerMin = Number(settings.crawleeMaxRequestsPerMinute) || 0;
@@ -297,11 +306,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     const sessionMaxAge = Number(settings.crawleeSessionMaxAgeSecs) || 3000;
     const useFingerprints = settings.crawleeUseFingerprints !== false && settings.crawleeUseFingerprints !== 'false';
 
-    // WHY: Tiered proxy — direct first (no bandwidth cost), proxy only on block.
+    // WHY: No ProxyConfiguration on the main crawler. Crawlee's tieredProxyUrls
+    // always routes ALL traffic through a local proxy-chain HTTP relay — even for
+    // [null] "direct" tier. This breaks HTTPS (ERR_TUNNEL_CONNECTION_FAILED,
+    // ERR_CERT_AUTHORITY_INVALID). Instead, main crawler is truly direct (no relay).
+    // Blocked URLs are retried via retryWithProxy() with a dedicated proxy crawler.
     const proxyUrls = parseProxyUrls(settings.crawleeProxyUrlsJson);
-    const proxyConfig = (proxyUrls.length > 0 && ProxyConfiguration)
-      ? new ProxyConfiguration({ tieredProxyUrls: [[null], proxyUrls] })
-      : null;
 
     let videoSize = { width: 1280, height: 720 };
     if (videoDir) {
@@ -312,10 +322,11 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
 
     return {
       ...config,
+      // WHY: minConcurrency = maxConcurrency skips AutoscaledPool ramp-up.
+      // User chose the slot count — start at full capacity immediately.
+      minConcurrency: slotCount,
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
-      ...(proxyConfig ? { proxyConfiguration: proxyConfig } : {}),
-      ...(sameDomainDelay > 0 ? { sameDomainDelaySecs: sameDomainDelay } : {}),
       ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
       useSessionPool,
       persistCookiesPerSession: persistCookies,
@@ -329,7 +340,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       },
       launchContext: {
         launchOptions: { headless },
-        ...(videoDir ? { useIncognitoPages: true } : {}),
+        // WHY: Always incognito — each page gets its own browser context (cookies,
+        // fingerprints, storage). Required for maxOpenPagesPerBrowser > 1 so pages
+        // sharing a browser are still isolated. Also needed for video recording.
+        useIncognitoPages: true,
       },
       browserPoolOptions: {
         useFingerprints,
@@ -351,12 +365,65 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               pageOptions.recordVideo = { dir: videoDir, size: videoSize };
             },
           ],
+          // WHY: prePageCloseHooks receives the actual page object (postPageCloseHooks
+          // only gets a pageId string). We fire-and-forget video.saveAs() — it resolves
+          // AFTER the page closes (which happens right after this hook returns).
+          // Pending saves are tracked and awaited after c.run() to ensure completion.
+          prePageCloseHooks: [
+            (page) => {
+              const wid = pageWorkerMap.get(page);
+              if (!wid) return;
+              const video = page.video?.();
+              if (!video) return;
+              const savePromise = video.saveAs(path.join(videoDir, `${wid}.webm`))
+                .catch((err) => {
+                  logger?.warn?.('video_save_failed', {
+                    worker_id: wid,
+                    error: err?.message ?? String(err),
+                  });
+                });
+              pendingVideoSaves.push(savePromise);
+            },
+          ],
         } : {}),
       },
       preNavigationHooks: [
         async ({ request, page }, gotoOptions) => {
+          if (sameDomainDelay > 0) {
+            const base = sameDomainDelay * 1000;
+            const jitter = Math.floor(Math.random() * base * 0.5);
+            await new Promise((r) => setTimeout(r, base + jitter));
+          }
           gotoOptions.waitUntil = 'domcontentloaded';
           gotoOptions.timeout = navTimeoutMs;
+
+          // WHY: Start CDP screencast BEFORE page.goto() so the GUI shows the
+          // page loading in real-time. Gated on onScreencastFrame which is
+          // undefined when runtimeScreencastEnabled=false.
+          if (typeof onScreencastFrame === 'function' && !cdpSessionMap.has(page)) {
+            try {
+              const wid = workerIds.get(request.uniqueKey) || 'fetch-x0';
+              const cdp = await page.context().newCDPSession(page);
+              cdp.on('Page.screencastFrame', (frame) => {
+                onScreencastFrame({
+                  worker_id: wid,
+                  data: frame.data,
+                  width: frame.metadata?.deviceWidth || 0,
+                  height: frame.metadata?.deviceHeight || 0,
+                  ts: new Date().toISOString(),
+                });
+                cdp.send('Page.screencastFrameAck', { sessionId: frame.sessionId }).catch(() => {});
+              });
+              await cdp.send('Page.startScreencast', {
+                format: 'jpeg',
+                quality: 30,
+                maxWidth: 1280,
+                maxHeight: 720,
+                everyNthFrame: 3,
+              });
+              cdpSessionMap.set(page, cdp);
+            } catch { /* CDP not available — crawl continues without live view */ }
+          }
         },
       ],
       // WHY: Expose proxy URLs for test assertions (not used by Crawlee).
@@ -373,9 +440,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       return;
     }
 
-    const crawlee = await import('crawlee');
-    const options = buildFullCrawlerOptions({ ProxyConfiguration: crawlee.ProxyConfiguration });
-    crawler = new crawlee.PlaywrightCrawler(options);
+    const crawlee = await _crawleeImport;
+    const { _proxyUrls, ...crawleeOptions } = buildFullCrawlerOptions();
+    crawler = new crawlee.PlaywrightCrawler(crawleeOptions);
   }
 
   async function processUrl(url) {
@@ -387,9 +454,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       pending.set(uniqueKey, { resolve, reject });
     });
 
-    snapshotVideoDir();
     await c.run([{ url, uniqueKey }]);
-    writeVideoManifest();
+    // WHY: Await fire-and-forget video saves from prePageCloseHooks.
+    if (pendingVideoSaves.length) {
+      await Promise.allSettled(pendingVideoSaves);
+      pendingVideoSaves.length = 0;
+    }
 
     const stale = pending.get(uniqueKey);
     if (stale) {
@@ -419,9 +489,11 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       }));
     }
 
-    snapshotVideoDir();
     await c.run(requests);
-    writeVideoManifest();
+    if (pendingVideoSaves.length) {
+      await Promise.allSettled(pendingVideoSaves);
+      pendingVideoSaves.length = 0;
+    }
 
     // Resolve any stale entries (Crawlee silently dropped them)
     for (const req of requests) {
@@ -440,12 +512,112 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     return Promise.allSettled(promises);
   }
 
+  // WHY: Two-pass proxy retry. The main crawler runs with NO proxy (truly direct
+  // HTTPS, no proxy-chain relay). Blocked URLs are retried through a proxy-enabled
+  // crawler. The proxy crawler is created lazily on first call and reused across
+  // batches to avoid 2-5s cold browser launch per retry batch.
+  async function retryWithProxy(urls, { workerIdMap } = {}) {
+    const proxyUrls = parseProxyUrls(settings.crawleeProxyUrlsJson);
+    if (!proxyUrls.length || !urls.length) return [];
+
+    if (_crawlerFactory) {
+      if (!_proxyCrawler) {
+        const { _proxyUrls, ...baseConfig } = buildFullCrawlerOptions();
+        _proxyCrawler = _crawlerFactory({ ...baseConfig, _proxyRetry: true, _proxyUrls: proxyUrls });
+      }
+      return _runProxyBatch(_proxyCrawler, urls, { workerIdMap });
+    }
+
+    if (!_proxyCrawler) {
+      const crawlee = await _crawleeImport;
+      const proxyConfig = new crawlee.ProxyConfiguration({ proxyUrls });
+      const { _proxyUrls, ...baseConfig } = buildFullCrawlerOptions();
+      _proxyCrawler = new crawlee.PlaywrightCrawler({
+        ...baseConfig,
+        proxyConfiguration: proxyConfig,
+        maxRequestRetries: 2,
+      });
+    }
+
+    return _runProxyBatch(_proxyCrawler, urls, { workerIdMap });
+  }
+
+  async function _runProxyBatch(proxyCrawler, urls, { workerIdMap } = {}) {
+    const requests = [];
+    const promises = [];
+
+    for (const url of urls) {
+      const uniqueKey = `${url}::proxy::${Date.now()}::${Math.random().toString(36).slice(2, 8)}`;
+      const preAssigned = workerIdMap?.get(url);
+      if (preAssigned) workerIds.set(uniqueKey, preAssigned);
+      else assignWorkerId(uniqueKey);
+      requests.push({ url, uniqueKey });
+      promises.push(new Promise((resolve, reject) => {
+        pending.set(uniqueKey, { resolve, reject });
+      }));
+    }
+
+    await proxyCrawler.run(requests);
+
+    for (const req of requests) {
+      const stale = pending.get(req.uniqueKey);
+      if (stale) {
+        stale.resolve({
+          url: req.url, finalUrl: req.url, status: 0, title: '', html: '',
+          screenshots: [], workerId: workerIds.get(req.uniqueKey) || 'fetch-x0',
+          videoPath: '', fetchError: 'proxy_crawl_no_response',
+        });
+        pending.delete(req.uniqueKey);
+      }
+      workerIds.delete(req.uniqueKey);
+    }
+
+    return Promise.allSettled(promises);
+  }
+
+  // WHY: Pre-launch all browsers at run start so they're warm when crawling begins.
+  // Call right after start() — overlaps with discovery/search phase (10-30s).
+  // Uses https://example.com — fast, reliable IANA-owned domain, <200ms response.
+  // requestHandler fast-paths warmup requests (no plugins/extraction/logging).
+  async function warmUp() {
+    const c = ensureCrawler();
+    const maxPages = Math.min(slotCount, 4);
+    const browsersNeeded = Math.ceil(slotCount / maxPages);
+    if (browsersNeeded === 0) return;
+
+    logger?.info?.('browser_pool_warming', { browsers: browsersNeeded, slots: slotCount, pages_per_browser: maxPages });
+
+    const requests = [];
+    const promises = [];
+    for (let i = 0; i < browsersNeeded; i++) {
+      const uniqueKey = `__warmup-${i}-${Date.now()}`;
+      requests.push({ url: 'https://example.com', uniqueKey, userData: { __warmup: true } });
+      promises.push(new Promise((resolve) => {
+        pending.set(uniqueKey, { resolve, reject: resolve });
+      }));
+    }
+
+    await c.run(requests);
+
+    for (const req of requests) {
+      const stale = pending.get(req.uniqueKey);
+      if (stale) { stale.resolve({ __warmup: true }); pending.delete(req.uniqueKey); }
+    }
+
+    await Promise.allSettled(promises);
+    logger?.info?.('browser_pool_warmed', { browsers: browsersNeeded, slots: slotCount });
+  }
+
   async function shutdown() {
+    if (_proxyCrawler) {
+      await _proxyCrawler.teardown?.();
+      _proxyCrawler = null;
+    }
     if (crawler) {
       await crawler.teardown?.();
       crawler = null;
     }
   }
 
-  return { start, processUrl, processBatch, shutdown, slotCount, get videoDir() { return videoDir; } };
+  return { start, processUrl, processBatch, retryWithProxy, warmUp, shutdown, slotCount, get videoDir() { return videoDir; } };
 }

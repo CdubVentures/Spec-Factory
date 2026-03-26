@@ -164,6 +164,7 @@ export interface PrefetchSearchProfileData {
   variant_guard_terms: string[];
   focus_fields?: string[];
   query_rows: PrefetchSearchProfileQueryRow[];
+  deterministic_query_rows?: PrefetchSearchProfileQueryRow[];
   query_guard: Record<string, number>;
   hint_source_counts?: Record<string, number>;
   field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
@@ -328,10 +329,11 @@ export interface SearchResultEntry {
   fetch_worker_id: string | null;
   fetched: boolean;
   fetch_link_type?: 'exact' | 'host_fallback' | 'none';
-  decision: 'keep' | 'maybe' | 'drop' | 'unknown';
+  decision: 'keep' | 'maybe' | 'drop' | 'hard_drop' | 'unknown';
   score: number;
   rationale: string;
   score_components: SearchResultScoreComponents | null;
+  domain_safety?: string;
 }
 
 export interface SearchWorkerAttempt {

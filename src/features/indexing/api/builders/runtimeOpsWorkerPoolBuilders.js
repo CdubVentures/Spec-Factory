@@ -66,7 +66,11 @@ function resolveFetchAssignment(assignments, referenceTsMs) {
 
 export function buildRuntimeOpsWorkers(events, options) {
   const opts = options && typeof options === 'object' ? options : {};
-  const stuckThresholdMs = toInt(opts.stuckThresholdMs, 60_000);
+  // WHY: Stuck threshold derives from the Crawlee request handler timeout.
+  // A worker can't legitimately run longer than that timeout, so "stuck" should
+  // fire 5 seconds before the handler timeout would trigger a retry.
+  const handlerTimeoutSecs = toInt(opts.crawleeRequestHandlerTimeoutSecs, 45);
+  const stuckThresholdMs = toInt(opts.stuckThresholdMs, (handlerTimeoutSecs - 5) * 1000);
   const nowMs = toInt(opts.nowMs, Date.now());
   const sourcePackets = toSourceIndexingPackets(opts.sourceIndexingPacketCollection);
 
@@ -224,6 +228,8 @@ export function buildRuntimeOpsWorkers(events, options) {
         started_at: String(evt?.ts || '').trim(),
         elapsed_ms: 0,
         last_error: null,
+        block_reason: null,
+        proxy_url: null,
         retries: toInt(payload.retries, 0),
         fetch_mode: String(payload.fetch_mode || payload.fetcher_kind || '').trim() || null,
         docs_processed: 0,
@@ -301,8 +307,18 @@ export function buildRuntimeOpsWorkers(events, options) {
       w.state = 'queued';
       w.current_url = extractUrl(evt) || w.current_url;
       applyFetchAssignment(w, parseTsMs(evt?.ts));
+    } else if (type === 'fetch_retrying') {
+      w.state = 'retrying';
+      const retryErr = String(payload.error || '').trim();
+      w.last_error = retryErr || w.last_error;
+      if (retryErr.startsWith('blocked:')) w.block_reason = retryErr.slice(8);
     } else if (isStartEvent(type)) {
-      w.state = 'running';
+      // WHY: Fetch pool uses crawling/retrying; other pools use running.
+      if (w.pool === 'fetch') {
+        w.state = toInt(payload.retry_count, 0) > 0 ? 'retrying' : 'crawling';
+      } else {
+        w.state = 'running';
+      }
       w.current_url = extractUrl(evt) || w.current_url;
       w.started_at = String(evt?.ts || '').trim() || w.started_at;
       if (payload.fetch_mode || payload.fetcher_kind) {
@@ -310,6 +326,9 @@ export function buildRuntimeOpsWorkers(events, options) {
       }
       if (w.pool === 'fetch') {
         applyFetchAssignment(w, parseTsMs(evt?.ts));
+        const proxyUrl = String(payload.proxy_url || '').trim();
+        if (proxyUrl) w.proxy_url = proxyUrl;
+        else if (!w.proxy_url) w.proxy_url = null;
       }
       if (resolvedPool === 'search') {
         if (payload.slot != null) w.slot = String(payload.slot);
@@ -330,7 +349,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         if (payload.prompt_preview != null) w.prompt_preview = String(payload.prompt_preview);
       }
     } else if (isFinishEvent(type)) {
-      w.state = 'idle';
+      w.state = w.pool === 'fetch' ? 'crawled' : 'idle';
       w.elapsed_ms = parseTsMs(evt?.ts) - parseTsMs(w.started_at);
       if (w.pool === 'fetch') {
         w.current_url = extractUrl(evt) || w.current_url;
@@ -342,12 +361,31 @@ export function buildRuntimeOpsWorkers(events, options) {
         const code = fetchStatusCode(payload, 0);
         if (code >= 400 || code === 0) {
           w.last_error = String(payload.error || `HTTP ${code}`).trim();
-          // WHY: Detect blocked/captcha for GUI badge display
-          const errLower = w.last_error.toLowerCase();
-          if (code === 403 || code === 429 || errLower.includes('blocked') || errLower.includes('forbidden')) {
-            w.state = 'blocked';
-          } else if (errLower.includes('captcha') || errLower.includes('challenge') || errLower.includes('cloudflare')) {
-            w.state = 'captcha';
+          // WHY: When the handler detected a content block and threw, the error
+          // message carries the block reason as 'blocked:reason'. Parse it first.
+          if (w.last_error.startsWith('blocked:')) {
+            const reason = w.last_error.slice(8);
+            w.block_reason = reason;
+            if (reason === 'captcha_detected' || reason === 'cloudflare_challenge') {
+              w.state = 'captcha';
+            } else if (reason === 'status_429') {
+              w.state = 'rate_limited';
+            } else if (reason === 'status_403' || reason === 'access_denied') {
+              w.state = 'blocked';
+            } else {
+              w.state = 'failed';
+            }
+          } else {
+            const errLower = w.last_error.toLowerCase();
+            if (code === 429) {
+              w.state = 'rate_limited';
+            } else if (code === 403 || errLower.includes('blocked') || errLower.includes('forbidden')) {
+              w.state = 'blocked';
+            } else if (errLower.includes('captcha') || errLower.includes('challenge') || errLower.includes('cloudflare')) {
+              w.state = 'captcha';
+            } else {
+              w.state = 'failed';
+            }
           }
         }
       }
@@ -447,13 +485,13 @@ export function buildRuntimeOpsWorkers(events, options) {
       clean.docs_processed = uniqueDocUrls.size;
       clean.fields_extracted = packetFieldCount > 0 ? packetFieldCount : eventFieldCount;
     }
-    if (clean.state === 'running') {
+    if (clean.state === 'running' || clean.state === 'crawling') {
       const startMs = parseTsMs(clean.started_at);
       const elapsed = startMs > 0 ? nowMs - startMs : 0;
       return {
         ...clean,
         elapsed_ms: elapsed,
-        state: elapsed > stuckThresholdMs ? 'stuck' : 'running',
+        state: elapsed > stuckThresholdMs ? 'stuck' : clean.state,
       };
     }
     return { ...clean };

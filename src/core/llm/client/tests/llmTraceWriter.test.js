@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { callOpenAI } from '../openaiClient.js';
+import { callLlmProvider } from '../llmClient.js';
 
 function makeTraceWriter() {
   const traces = [];
@@ -46,7 +46,7 @@ test('developer_mode true: trace contains full prompt system, user, and response
   const traceWriter = makeTraceWriter();
 
   try {
-    await callOpenAI({
+    await callLlmProvider({
       model: 'test-model',
       system: 'You are a test assistant.',
       user: 'What is the weight?',
@@ -83,7 +83,7 @@ test('developer_mode false: trace contains redacted prompt with char counts only
   const traceWriter = makeTraceWriter();
 
   try {
-    await callOpenAI({
+    await callLlmProvider({
       model: 'test-model',
       system: 'System prompt content that should be redacted.',
       user: 'User content that should be redacted.',
@@ -123,7 +123,7 @@ test('error path: trace is written with error details and status error', async (
   const traceWriter = makeTraceWriter();
 
   try {
-    await callOpenAI({
+    await callLlmProvider({
       model: 'test-model',
       system: 'System prompt.',
       user: 'User prompt.',

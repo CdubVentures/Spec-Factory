@@ -101,10 +101,10 @@ test('run-data relocation archives completed run artifacts and keeps only non-ru
   const sourceRuntimeEvents = path.join(outputRoot, '_runtime', 'events.jsonl');
   const sourceBillingLedger = path.join(outputRoot, '_billing', 'ledger', '2026-02.jsonl');
 
-  // WHY: Relocation is COPY not MOVE - source directories are preserved.
-  assert.equal(await pathExists(sourceRunDir), true);
-  assert.equal(await pathExists(sourceIndexLabDir), true);
-  assert.equal(await pathExists(sourceTraceRunDir), true);
+  // WHY: Relocation is MOVE not COPY - source directories are deleted after successful archival.
+  assert.equal(await pathExists(sourceRunDir), false);
+  assert.equal(await pathExists(sourceIndexLabDir), false);
+  assert.equal(await pathExists(sourceTraceRunDir), false);
 
   const remainingRuntimeRows = (await fs.readFile(sourceRuntimeEvents, 'utf8'))
     .trim()

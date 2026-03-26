@@ -7,8 +7,8 @@ interface MetricsRailProps {
 }
 
 function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
-  const total = pool.completed + pool.failed + pool.active;
-  const utilization = total > 0 ? pool.active / Math.max(1, pool.active + pool.queued + 1) : 0;
+  const total = pool.completed + pool.failed + pool.active + pool.queued;
+  const utilization = total > 0 ? (pool.completed + pool.failed) / total : 0;
   const widthPct = Math.round(utilization * 100);
   const poolTipKey = `pool_${label}` as keyof typeof METRIC_TIPS;
 

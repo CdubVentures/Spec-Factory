@@ -55,7 +55,7 @@ describe('createCrawlSession video recording', () => {
           async run(requests) {
             for (const request of requests) {
               const page = {
-                async content() { return '<html></html>'; },
+                async content() { return '<html><body><h1>Test</h1></body></html>'; },
                 async title() { return 'Test'; },
                 url() { return request.url; },
                 viewportSize() { return { width: 1280, height: 720 }; },

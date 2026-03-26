@@ -6,54 +6,59 @@ flowchart LR
         B0["runProduct()<br/>run id + logger + trace writer<br/>identity lock + runtime overrides<br/>planner + frontier + resume<br/>learning profile + store-hint readback"]
     end
 
-    subgraph DISCOVERY["Discovery Seed (01-07)"]
+    subgraph DISCOVERY["Phase A: Discovery (01-08)"]
         direction TB
-        S01["01 NeedSet<br/>field state + history<br/>summary + blockers<br/>planner_seed"]
-        S02["02 Brand Resolver<br/>official/support domain<br/>aliases + confidence<br/>auto-promotion hints"]
-        S03["03 Search Planner<br/>planning context<br/>optional search-plan handoff<br/>panel + learning writeback"]
-        S04["04 Query Journey<br/>search-plan adapter or fallback planner<br/>identity guard + reject log<br/>selected query rows"]
-        S05["05 Search Results<br/>internal-first search<br/>Google Crawlee + SearXNG transport split<br/>frontier reuse + plan-only fallback"]
-        S06["06 SERP Triage<br/>hard drops + soft labels<br/>lane quotas + optional rerank<br/>searchProfileFinal + serp_explorer"]
-        S07["07 Queue Seeding<br/>approvedUrls -> enqueue<br/>candidateUrls -> seedCandidates<br/>SourcePlanner revalidation"]
-        S01 --> S02 --> S03 --> S04 --> S05 --> S06 --> S07
+        subgraph PARALLEL["Parallel: Promise.all()"]
+            direction LR
+            S01["01 NeedSet<br/>computeNeedSet() pure<br/>buildSearchPlanningContext()<br/>buildSearchPlan() LLM"]
+            S02["02 Brand Resolver<br/>cache-first domain lookup<br/>LLM fallback<br/>officialDomain + aliases"]
+        end
+        S03["03 Search Profile<br/>deterministic query rows<br/>tier allocation (seed/group/key)<br/>queryBuilder + capMap"]
+        S04["04 Search Planner<br/>LLM query enhancement<br/>identity lock guard<br/>deterministic fallback"]
+        S05["05 Query Journey<br/>dedup + identity guard<br/>searchProfileQueryCap<br/>reject log aggregation"]
+        S06["06 Search Execution<br/>provider dispatch (config-driven)<br/>Serper burst / SearXNG / Google / Brave<br/>frontier cache + plan-only fallback"]
+        S07["07 SERP Selector<br/>hard-drop filter (pure)<br/>LLM URL selection<br/>host trust + doc kind enrichment"]
+        S08["08 Domain Classifier<br/>domainClassifierUrlCap<br/>triage metadata map<br/>planner.enqueue() approved URLs"]
+
+        PARALLEL --> S03 --> S04 --> S05 --> S06 --> S07 --> S08
     end
 
-    subgraph EXEC["Planner Processing And Source Execution (08-10)"]
+    subgraph CRAWL["Phase B: Crawl"]
         direction TB
-        S08["08 Fetch Entry<br/>planner dequeue + fetch scheduling<br/>artifact persistence + host budgets<br/>raw page payloads"]
-        S09["09 Extraction<br/>deterministic extractors + adapters<br/>Evidence Pack V2 + optional LLM<br/>phase08FieldContexts + prime rows"]
-        S10["10 Source Identity<br/>anchor checks + source identity<br/>identity-gated candidates<br/>parserHealth"]
-        S08 --> S09 --> S10
+        C01["Crawl Session<br/>PlaywrightCrawler (persistent)<br/>plugin hooks: before/after/interact/capture/complete<br/>worker slots for GUI visibility"]
+        C02["Crawl Plugins (Registry)<br/>stealth + cookieConsent<br/>autoScroll + domExpansion<br/>cssOverride"]
+        C03["Block Detection<br/>classifyBlockStatus() pure<br/>status-based + content-based<br/>CF/CAPTCHA/access denied markers"]
+        C01 --> C02 --> C03
     end
 
-    subgraph FINALIZE["Finalization And Completion (11-13)"]
+    subgraph EXTRACT["Phase C: Extraction"]
         direction TB
-        S11["11 Consensus<br/>clustered field selection<br/>provenance + candidates<br/>agreementScore + pass-target lists"]
-        S12["12 Finalization Derivation<br/>synthetic source ingestion<br/>critic + validator + inference + runtime gate<br/>needSet + traffic light + publishability"]
-        S13["13 Completion Lifecycle<br/>schema packets + AJV validation<br/>run_completed + run_result<br/>learning gate + store/profile writeback<br/>exports + final promotion"]
-        S11 --> S12 --> S13
+        E01["Extraction Runner<br/>sequential plugin execution<br/>deep-frozen context (Object.freeze)<br/>per-plugin error isolation"]
+        E02["Extraction Plugins (Registry)<br/>screenshot (captureScreenshots)<br/>selector crops + full-page<br/>O(1) plugin addition"]
+        E01 --> E02
     end
 
-    ART["Durable Outputs<br/>runs/ + latest/ + final/<br/>history/runs.jsonl + evidence/sources.jsonl<br/>logs/events.jsonl.gz + logs/summary.json"]
-    SCHEMA["Indexing Schema Packets<br/>sourceCollection + itemPacket + runMetaPacket<br/>validation summary emitted during finalization"]
-    GOOGLE["Google Crawlee Sidecar<br/>splitEnginesByTransport()<br/>searchGoogle() headless browser + optional screenshot<br/>captcha/consent returns empty results"]
-    LEARN["Learning Loop<br/>bootstrap reads learningStoreHints + profile seeds<br/>search plan emits learning_writeback<br/>acceptedUpdates persist to stores + _learning profile<br/>next run reuses anchors, URLs, and domain yield"]
+    ART["Durable Outputs<br/>runs/ + latest/<br/>searchProfile + discovery + candidates<br/>logs/events.jsonl.gz + traces"]
+    GOOGLE["Google Crawlee Sidecar<br/>searchGoogle() headless browser<br/>SERP screenshot capture<br/>captcha/consent returns empty"]
+    LEARN["Learning Loop<br/>store-hint readback on bootstrap<br/>search plan learning_writeback<br/>domain yield + anchor reuse"]
+    ZOD["Zod Checkpoints<br/>cumulative pipeline context schema<br/>8 progressive checkpoints<br/>pipelineSchemaEnforcementMode"]
 
     B0 --> DISCOVERY
-    S07 --> EXEC
-    S10 --> FINALIZE
-    S05 -.->|google via Crawlee| GOOGLE
-    S03 -.->|seed_search_plan_output| S12
-    S12 -.->|"updated NeedSet<br/>+ repair reasoning"| S01
-    S13 --> ART
-    S13 --> SCHEMA
-    S13 --> LEARN
+    S08 --> CRAWL
+    C03 --> EXTRACT
+    S06 -.->|google via Crawlee| GOOGLE
+    E02 --> ART
     LEARN -.->|next run hints + seeds| B0
+
+    PARALLEL -.->|Zod checkpoint| ZOD
+    S05 -.->|Zod checkpoint| ZOD
+    S07 -.->|Zod checkpoint| ZOD
 
     classDef phase fill:#d9eefc,stroke:#0f4c81,stroke-width:3px,color:#0b1f33
     classDef durable fill:#dff3e4,stroke:#2f855a,stroke-width:3px,color:#123524
     classDef sidecar fill:#fef3d6,stroke:#b7791f,stroke-width:2px,color:#4a3410
+    classDef parallel fill:#e8f4fd,stroke:#0f4c81,stroke-width:2px,color:#0b1f33
 
-    class B0,S01,S02,S03,S04,S05,S06,S07,S08,S09,S10,S11,S12,S13 phase
-    class ART,SCHEMA durable
-    class GOOGLE,LEARN sidecar
+    class B0,S01,S02,S03,S04,S05,S06,S07,S08,C01,C02,C03,E01,E02 phase
+    class ART durable
+    class GOOGLE,LEARN,ZOD sidecar

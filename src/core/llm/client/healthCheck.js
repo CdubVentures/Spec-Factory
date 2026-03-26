@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { zodToLlmSchema } from '../zodToLlmSchema.js';
 import { buildRunId } from '../../../shared/primitives.js';
-import { callOpenAI } from './openaiClient.js';
+import { callLlmProvider } from './llmClient.js';
 import { resolveLlmRoute, buildEffectiveCostRates } from './routing.js';
 import { normalizeCostRates } from '../../../billing/costRates.js';
 import { appendCostLedgerEntry } from '../../../billing/costLedger.js';
@@ -72,9 +72,9 @@ export async function runLlmHealthCheck({
   const usage = defaultUsageRow();
   const effectiveCostRates = buildEffectiveCostRates(route._registryEntry, normalizeCostRates(config));
 
-  const response = await callOpenAI({
+  const response = await callLlmProvider({
     providerHealth,
-    model: resolvedModel,
+    route: { model: resolvedModel, apiKey: resolvedApiKey, baseUrl: resolvedBaseUrl, provider: resolvedProvider },
     system: [
       'You are validating model connectivity and JSON schema output.',
       'Return strict JSON matching schema.',
@@ -85,9 +85,6 @@ export async function runLlmHealthCheck({
       request: 'Return ok=true and mirror provider/model and whether reasoning mode was enabled.'
     }),
     jsonSchema: healthSchema(),
-    apiKey: resolvedApiKey,
-    baseUrl: resolvedBaseUrl,
-    provider: resolvedProvider,
     usageContext: {
       category: 'health',
       productId: 'llm-health-check',

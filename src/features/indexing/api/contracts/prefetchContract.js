@@ -126,6 +126,7 @@ export const SEARCH_PROFILE_SHAPE = Object.freeze([
   { key: 'variant_guard_terms', coerce: 'array' },
   { key: 'focus_fields', coerce: 'array' },
   { key: 'query_rows', coerce: 'array' },
+  { key: 'deterministic_query_rows', coerce: 'array' },
   { key: 'query_guard', coerce: 'object_or_empty' },
   { key: 'hint_source_counts', coerce: 'object_or_empty' },
   { key: 'field_rule_gate_counts', coerce: 'object_or_empty' },

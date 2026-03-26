@@ -5,10 +5,13 @@
 
 import { STEALTH_INIT_SCRIPT } from '../../../fetcher/stealthProfile.js';
 
+// WHY: Only patches that Crawlee's fingerprint-suite does NOT cover.
+// Removed vendor, plugins, languages, hardwareConcurrency, webglVendor —
+// fingerprint-suite generates unique varied values per session for those.
+// Static hardcoded values made all sessions look identical to anti-bot.
 export const STEALTH_PATCHES = [
-  'toString', 'webdriver', 'vendor', 'plugins', 'languages',
-  'hardwareConcurrency', 'chromeRuntime', 'chromeApp',
-  'chromeCsi', 'chromeLoadTimes', 'permissions', 'webglVendor',
+  'toString', 'webdriver', 'chromeRuntime', 'chromeApp',
+  'chromeCsi', 'chromeLoadTimes', 'permissions',
 ];
 
 export const stealthPlugin = {

@@ -3,8 +3,13 @@ import { configInt } from '../../../../shared/settingsAccessor.js';
 import { toArray } from '../../../../shared/primitives.js';
 import { createQueryEnhancerCallLlm, queryEnhancerResponseZodSchema } from './queryPlannerLlmAdapter.js';
 
+// WHY: LLMs sometimes inject site: operators despite prompt instructions.
+// Strip them and keep the domain as a plain-text bias term.
 function normalizeQuery(value) {
-  return String(value || '').trim().replace(/\s+/g, ' ');
+  return String(value || '')
+    .replace(/(?:^|\s)site:(\S+)/gi, ' $1')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 export function normalizeQueryRows(rawQueries = []) {

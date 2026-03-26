@@ -364,6 +364,9 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         if (Array.isArray(projected.query_rows)) {
           projected.query_rows = projected.query_rows.filter((r) => !r?.frontier_cache);
         }
+        if (Array.isArray(projected.deterministic_query_rows)) {
+          projected.deterministic_query_rows = projected.deterministic_query_rows.filter((r) => !r?.frontier_cache);
+        }
         return projected;
       })()
     : buildDefaults(SEARCH_PROFILE_SHAPE);

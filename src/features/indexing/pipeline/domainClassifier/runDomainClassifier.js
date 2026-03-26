@@ -78,11 +78,9 @@ export function runDomainClassifier({
       triageMeta: meta,
     });
   }
-  let seededCount = 0;
-  if (candidateUrls.length > 0 && typeof planner?.seedCandidates === 'function') {
-    planner.seedCandidates(candidateUrls, { triageMetaMap });
-    seededCount = candidateUrls.length;
-  }
+  // WHY: Only approved URLs are fetched. Candidates were rejected by the SERP
+  // selector — seeding them would inflate fetch count beyond the approved set.
+  const seededCount = 0;
 
   if (planner.enqueueCounters) {
     const counters = planner.enqueueCounters;

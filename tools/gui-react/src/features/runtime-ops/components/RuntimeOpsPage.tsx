@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { wsManager } from '../../../api/ws.ts';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import type { ProcessStatus } from '../../../types/events.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
@@ -232,6 +233,21 @@ export function RuntimeOpsPage() {
     setSelectedRunId(effectiveRunId);
   }, [effectiveRunId, selectedRunId, setSelectedRunId]);
 
+  // WHY: Push-based updates — when the pipeline emits runtime events, the WS
+  // channel delivers a lightweight signal and we invalidate cached queries
+  // so the panel re-fetches immediately instead of waiting for the poll interval.
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!effectiveRunId) return;
+    wsManager.subscribe(['indexlab-event'], categoryScope);
+    const unsub = wsManager.onMessage((channel) => {
+      if (channel === 'indexlab-event') {
+        queryClient.invalidateQueries({ queryKey: ['runtime-ops', effectiveRunId] });
+      }
+    });
+    return unsub;
+  }, [effectiveRunId, categoryScope, queryClient]);
+
   const selectedRun = useMemo(
     () => runOptions.find((run) => run.run_id === effectiveRunId) ?? null,
     [runOptions, effectiveRunId],
@@ -447,6 +463,7 @@ export function RuntimeOpsPage() {
                   category={category}
                   isRunning={isSelectedRunActive}
                   wsUrl={wsUrl}
+                  browserPoolMeta={(summary as Record<string, unknown> | undefined)?.browser_pool as { status?: string; browsers?: number; slots?: number; pages_per_browser?: number } | null | undefined}
                 />
               )}
               {activeTab === 'documents' && (

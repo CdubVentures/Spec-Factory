@@ -7,7 +7,7 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/config/manifest.js`: `CONFIG_MANIFEST_VERSION`, `CONFIG_MANIFEST`, `CONFIG_MANIFEST_KEYS`, `CONFIG_MANIFEST_DEFAULTS`.
 - `src/core/config/runtimeArtifactRoots.js`: `defaultLocalOutputRoot()`, `defaultIndexLabRoot()`.
 - `src/core/llm/client/routing.js`: `resolveLlmRoute()`, `resolveLlmFallbackRoute()`, `hasLlmRouteApiKey()`, `hasAnyLlmApiKey()`, `llmRoutingSnapshot()`, `callLlmWithRouting()`.
-- `src/core/llm/client/openaiClient.js`: `getProviderHealth()`, `redactOpenAiError()`, `callOpenAI()`.
+- `src/core/llm/client/llmClient.js`: `getProviderHealth()`, `redactOpenAiError()`, `callLlmProvider()`.
 - `src/core/llm/client/healthCheck.js`: `runLlmHealthCheck()`.
 - `src/core/llm/client/llmCache.js`: `LLMCache`.
 - `src/core/llm/client/providerHealth.js`: `LlmProviderHealth`, `normalizeProviderBaseUrl()`.

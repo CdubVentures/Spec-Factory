@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LlmProviderHealth, normalizeProviderBaseUrl } from '../providerHealth.js';
-import { getProviderHealth, callOpenAI } from '../openaiClient.js';
+import { getProviderHealth, callLlmProvider } from '../llmClient.js';
 
 // ---------------------------------------------------------------------------
 // Phase 01 — Foundation Hardening: Provider Health Tests
@@ -98,7 +98,7 @@ test('P01 url: handles empty string', () => {
 });
 
 // =========================================================================
-// SECTION 3: callOpenAI integration — getProviderHealth export
+// SECTION 3: callLlmProvider integration — getProviderHealth export
 // =========================================================================
 
 test('P01 integration: getProviderHealth returns LlmProviderHealth singleton', () => {
@@ -116,18 +116,18 @@ test('P01 integration: getProviderHealth returns same instance on repeated calls
 });
 
 // =========================================================================
-// SECTION 4: callOpenAI providerHealth injection
+// SECTION 4: callLlmProvider providerHealth injection
 // =========================================================================
 
-test('P01 injection: callOpenAI uses injected providerHealth instead of singleton', async () => {
+test('P01 injection: callLlmProvider uses injected providerHealth instead of singleton', async () => {
   const injected = new LlmProviderHealth({ failureThreshold: 1 });
   // WHY: selectLlmProvider resolves all providers to name='openai',
   // so we trip the circuit for 'openai' on the injected instance.
   injected.recordFailure('openai', 'forced');
 
-  // callOpenAI should throw circuit-open using the injected health, not the singleton
+  // callLlmProvider should throw circuit-open using the injected health, not the singleton
   await assert.rejects(
-    () => callOpenAI({
+    () => callLlmProvider({
       model: 'test-model',
       system: 'test',
       user: 'test',
@@ -146,7 +146,7 @@ test('P01 injection: callOpenAI uses injected providerHealth instead of singleto
   assert.equal(singleton.canRequest('openai'), true);
 });
 
-test('P01 injection: callOpenAI falls back to singleton when providerHealth omitted', async (t) => {
+test('P01 injection: callLlmProvider falls back to singleton when providerHealth omitted', async (t) => {
   const originalFetch = globalThis.fetch;
   const singleton = getProviderHealth();
   let fetchCalls = 0;
@@ -169,7 +169,7 @@ test('P01 injection: callOpenAI falls back to singleton when providerHealth omit
   // We can't fully call through (no real API), but we can verify the circuit check passes
   // by confirming the error is NOT about circuit-open but about the actual API call.
   await assert.rejects(
-    () => callOpenAI({
+    () => callLlmProvider({
       model: 'test-model',
       system: 'test',
       user: 'test',

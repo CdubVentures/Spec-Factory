@@ -1,0 +1,52 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Segoe UI', 'fontSize': '22px', 'primaryColor': '#0f4c81', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a3558', 'secondaryColor': '#d9eefc', 'tertiaryColor': '#f4f8fb', 'lineColor': '#264653' }, 'sequence': { 'actorMargin': 30, 'messageFontSize': 18, 'noteFontSize': 16 } }}%%
+
+sequenceDiagram
+    participant CS as CrawlSession
+    participant PR as PluginRunner
+    participant ST as stealthPlugin
+    participant CC as cookieConsentPlugin
+    participant AS as autoScrollPlugin
+    participant DE as domExpansionPlugin
+    participant CO as cssOverridePlugin
+    participant ER as ExtractionRunner
+    participant SS as screenshotPlugin
+
+    Note over CS: requestHandler fires per URL
+
+    CS->>PR: runHook('beforeNavigate', ctx)
+    PR->>ST: hooks.beforeNavigate(ctx)
+    Note right of ST: Inject stealth scripts<br/>Hide webdriver flag
+    ST-->>PR: { enabled, patches }
+    PR->>CO: hooks.beforeNavigate(ctx)
+    Note right of CO: Setup route blocking<br/>for widget domains
+    CO-->>PR: { blocked_domains }
+
+    CS->>CS: page.goto(url)
+
+    CS->>PR: runHook('afterNavigate', ctx)
+    PR->>CC: hooks.afterNavigate(ctx)
+    Note right of CC: Autoconsent CMP (95%+)<br/>Fallback selector clicks<br/>Settle delay
+    CC-->>PR: { autoconsentMatched, fallbackClicked }
+
+    CS->>PR: runHook('onInteract', ctx)
+    PR->>AS: hooks.onInteract(ctx)
+    Note right of AS: Jump or incremental scroll<br/>Lazy content trigger<br/>Stability detection
+    AS-->>PR: { strategy, passes }
+    PR->>DE: hooks.onInteract(ctx)
+    Note right of DE: Click expand buttons<br/>Reveal collapsed sections<br/>maxClicks cap
+    DE-->>PR: { found, clicked }
+    PR->>CO: hooks.onInteract(ctx)
+    Note right of CO: CSS inject: reveal hidden<br/>Remove fixed/sticky
+    CO-->>PR: { hidden_before, hidden_after }
+
+    Note over CS,ER: Context deep-frozen before extraction
+
+    CS->>ER: runExtractions(frozenCtx)
+    ER->>SS: onExtract(frozenCtx)
+    Note right of SS: Selector crops (up to 12)<br/>Full-page screenshot<br/>Size-bounded captures
+    SS-->>ER: { screenshots: [...] }
+
+    Note over ER: Return aggregated extractions
+
+    CS->>PR: runHook('onComplete', ctx)
+    Note over CS: Record to frontier DB<br/>Write video manifest

@@ -10,17 +10,19 @@ export const brandResolverLlmResponseSchema = z.object({
   reasoning: z.array(z.string()).optional(),
 });
 
+export const BRAND_RESOLVER_SYSTEM_PROMPT = [
+  'You resolve official brand website domains for product categories.',
+  'Return the official domain (not social media or marketplace).',
+  'Include domain aliases and the support subdomain if one exists.',
+  'Include a reasoning array with 2-4 short bullets explaining how you identified the domain.',
+  'Return strict JSON only.',
+].join('\n');
+
 const BRAND_RESOLVER_SPEC = {
   phase: 'brandResolver',
   reason: 'brand_resolution',
   role: 'triage',
-  system: [
-    'You resolve official brand website domains for product categories.',
-    'Return the official domain (not social media or marketplace).',
-    'Include domain aliases and the support subdomain if one exists.',
-    'Include a reasoning array with 2-4 short bullets explaining how you identified the domain.',
-    'Return strict JSON only.',
-  ].join('\n'),
+  system: BRAND_RESOLVER_SYSTEM_PROMPT,
   jsonSchema: zodToLlmSchema(brandResolverLlmResponseSchema),
 };
 

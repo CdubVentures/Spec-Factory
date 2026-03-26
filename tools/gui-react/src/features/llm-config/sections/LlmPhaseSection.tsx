@@ -22,6 +22,7 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
+  phaseSchema?: { system_prompt: string; response_schema: Record<string, unknown> } | null;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -33,6 +34,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   registry,
   globalDraft,
   apiKeyFilter,
+  phaseSchema,
 }: LlmPhaseSectionProps) {
   const overrideKey = uiPhaseIdToOverrideKey(phaseId);
   const resolved = overrideKey
@@ -95,6 +97,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   if (!overrideKey || !resolved) return null;
 
   return (
+    <>
     <SettingGroupBlock title="Model Configuration">
       <SettingRow label="Base Model" tip="Override the global base model for this phase. Leave on default to inherit.">
         <div className="flex items-center gap-1.5">
@@ -204,5 +207,28 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         />
       ))}
     </SettingGroupBlock>
+    {phaseSchema && (
+      <SettingGroupBlock title="LLM Call Contract">
+        <div className="space-y-3">
+          {phaseSchema.system_prompt && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed opacity-70 select-none">
+                {String(phaseSchema.system_prompt)}
+              </pre>
+            </div>
+          )}
+          {phaseSchema.response_schema && (
+            <div>
+              <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">Response Schema</div>
+              <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed opacity-70 select-none">
+                {JSON.stringify(phaseSchema.response_schema, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      </SettingGroupBlock>
+    )}
+  </>
   );
 });

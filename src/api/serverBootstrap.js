@@ -20,6 +20,7 @@ import {
 } from './helpers/fileHelpers.js';
 import {
   initIndexLabDataBuilders,
+  invalidateEventCache,
 } from '../features/indexing/api/index.js';
 import { createProcessRuntime } from '../app/api/processRuntime.js';
 import { createRealtimeBridge } from '../app/api/realtimeBridge.js';
@@ -103,7 +104,7 @@ export function bootstrapServer({ projectRoot }) {
     waitForProcessExit, forwardScreencastControl,
   } = createProcessRuntime({
     resolveProjectPath, path, fsSync, config, spawn, execCb,
-    broadcastWs, sessionCache, invalidateFieldRulesCache, reviewLayoutByCategory,
+    broadcastWs, invalidateEventCache, sessionCache, invalidateFieldRulesCache, reviewLayoutByCategory,
     syncSpecDbForCategory: ({ category }) =>
       syncSpecDbForCategoryService({ category, config, resolveCategoryAlias, getSpecDbReady }),
     handleCompileProcessCompletion, handleIndexLabProcessCompletion,

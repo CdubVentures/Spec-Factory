@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { callOpenAI } from '../openaiClient.js';
+import { callLlmProvider } from '../llmClient.js';
 
-test('callOpenAI redacts API key from logged and thrown errors', async () => {
+test('callLlmProvider redacts API key from logged and thrown errors', async () => {
   const secret = 'sk-test-secret';
   const originalFetch = global.fetch;
   const warnings = [];
@@ -17,7 +17,7 @@ test('callOpenAI redacts API key from logged and thrown errors', async () => {
   try {
     await assert.rejects(
       () =>
-        callOpenAI({
+        callLlmProvider({
           model: 'test-model',
           system: 'system',
           user: 'user',

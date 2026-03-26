@@ -533,26 +533,33 @@ export function redactOpenAiError(message, apiKey) {
   return sanitizeText(message, [apiKey]);
 }
 
-export async function callOpenAI({
-  model,
-  system,
-  user,
-  jsonSchema,
+export async function callLlmProvider({
+  // Route (from resolver) — grouped so adding new route fields is one place
+  route = {},
+  // Backward compat: flat params still accepted, route takes precedence
+  model: flatModel, apiKey: flatApiKey, baseUrl: flatBaseUrl,
+  provider: flatProvider, accessMode: flatAccessMode,
+  // Content
+  system, user, jsonSchema,
+  // Options
   requestOptions = null,
-  apiKey,
-  baseUrl,
-  provider,
-  accessMode = '',
-  costRates,
-  usageContext = {},
-  onUsage,
   reasoningMode = false,
   reasoningBudget = 0,
   maxTokens = 0,
   timeoutMs = 40_000,
+  // Infrastructure
+  costRates,
+  usageContext = {},
+  onUsage,
   providerHealth,
-  logger
+  logger,
 }) {
+  const model = route.model || flatModel || '';
+  const apiKey = route.apiKey || flatApiKey || '';
+  const baseUrl = route.baseUrl || flatBaseUrl || '';
+  const provider = route.provider || flatProvider || '';
+  const accessMode = route.accessMode || flatAccessMode || '';
+
   if (!apiKey) {
     throw new Error('No API key configured — set a provider API key in the registry');
   }
@@ -560,8 +567,6 @@ export async function callOpenAI({
   const baseUrlNormalized = normalizeBaseUrl(baseUrl);
   const inferredProvider = provider || providerFromModelToken(model);
   const providerClient = selectLlmProvider(inferredProvider);
-  // WHY: accessMode is SSOT from the provider registry (lab vs api).
-  // Used for circuit breaker isolation and request_options injection.
   const isLab = accessMode === 'lab';
   const inferredName = providerFromModelToken(model) || providerClient.name;
   const providerLabel = isLab ? `lab-${inferredName}` : inferredName;
@@ -616,6 +621,21 @@ export async function callOpenAI({
   } catch {
     promptPreview = '';
   }
+
+  // WHY: Shared telemetry context — computed once, spread into all logger events.
+  // Adding a new field here auto-propagates to all 4 event types.
+  const callContext = Object.freeze({
+    reason,
+    route_role: routeRole,
+    provider: providerLabel,
+    access_mode: isLab ? 'lab' : 'api',
+    model,
+    base_url: baseUrlNormalized,
+    endpoint: `${baseUrlNormalized}/v1/chat/completions`,
+    deepseek_mode_detected: Boolean(deepSeekMode),
+    json_schema_requested: Boolean(jsonSchemaRequested),
+    multimodal_image_count: Number(userMessage.imageCount || 0),
+  });
 
   const buildBody = ({ useJsonSchema }) => {
     const body = {
@@ -689,17 +709,8 @@ export async function callOpenAI({
 
   const emitFailure = (safeMessage) => {
     logger?.warn?.('llm_call_failed', {
-      reason,
-      route_role: routeRole,
-      provider: providerLabel,
-      access_mode: isLab ? 'lab' : 'api',
-      model,
-      base_url: baseUrlNormalized,
-      endpoint: `${baseUrlNormalized}/v1/chat/completions`,
-      message: safeMessage,
-      deepseek_mode_detected: Boolean(deepSeekMode),
-      json_schema_requested: Boolean(jsonSchemaRequested),
-      multimodal_image_count: Number(userMessage.imageCount || 0)
+      ...callContext,
+      message: safeMessage
     });
   };
 
@@ -763,13 +774,11 @@ export async function callOpenAI({
         ringSize: traceRingSize
       });
       logger?.info?.('llm_trace_written', {
-        provider: providerLabel,
+        ...callContext,
         model: responseModel || model,
-        base_url: baseUrlNormalized,
-        endpoint: `${baseUrlNormalized}/v1/chat/completions`,
         purpose: reason,
         target_fields_count: traceTargetFields.length,
-        trace_path: trace.trace_path
+        trace_path: trace.trace_path,
       });
     } catch (traceError) {
       logger?.warn?.('llm_trace_write_failed', {
@@ -819,23 +828,16 @@ export async function callOpenAI({
       ...usageContext
     });
     logger?.info?.('llm_call_usage', {
+      ...callContext,
       purpose: reason,
-      reason,
-      route_role: routeRole,
-      provider: providerLabel,
       model: responseModel || model,
-      base_url: baseUrlNormalized,
-      endpoint: `${baseUrlNormalized}/v1/chat/completions`,
       prompt_tokens: normalizedUsage.promptTokens,
       completion_tokens: normalizedUsage.completionTokens,
       cached_prompt_tokens: normalizedUsage.cachedPromptTokens,
       total_tokens: normalizedUsage.totalTokens,
       cost_usd: cost.costUsd,
       estimated_usage: Boolean(normalizedUsage.estimated),
-      deepseek_mode_detected: Boolean(deepSeekMode),
-      json_schema_requested: Boolean(jsonSchemaRequested),
-      multimodal_image_count: Number(userMessage.imageCount || 0),
-      retry_without_schema: Boolean(retryWithoutSchema)
+      retry_without_schema: Boolean(retryWithoutSchema),
     });
     return usageSummary;
   };
@@ -844,36 +846,24 @@ export async function callOpenAI({
     const snap = health.snapshot(providerLabel);
     const safeMessage = `Provider '${providerLabel}' circuit open (${snap.failure_count} consecutive failures). Retry after cooldown.`;
     logger?.warn?.('llm_provider_circuit_open', {
-      provider: providerLabel,
-      access_mode: isLab ? 'lab' : 'api',
-      model,
-      base_url: baseUrlNormalized,
-      endpoint: `${baseUrlNormalized}/v1/chat/completions`,
+      ...callContext,
       failure_count: snap.failure_count,
       state: snap.state,
-      open_until_ms: snap.open_until_ms
+      open_until_ms: snap.open_until_ms,
     });
     throw new Error(safeMessage);
   }
 
   logger?.info?.('llm_call_started', {
+    ...callContext,
     purpose: reason,
-    reason,
-    route_role: routeRole,
-    provider: providerLabel,
-    model,
-    base_url: baseUrlNormalized,
-    endpoint: `${baseUrlNormalized}/v1/chat/completions`,
-    deepseek_mode_detected: Boolean(deepSeekMode),
-    json_schema_requested: Boolean(jsonSchemaRequested),
     max_tokens_requested: Math.max(Number(reasoningMode ? reasoningBudget : maxTokens) || 0, 0),
     max_tokens_applied: effectiveMaxTokens,
-    multimodal_image_count: Number(userMessage.imageCount || 0),
     multimodal_image_sources: userMessage.imageSources,
     multimodal_image_debug: Array.isArray(userMessage.imageDebug)
       ? userMessage.imageDebug.slice(0, 8)
       : [],
-    prompt_preview: promptPreview
+    prompt_preview: promptPreview,
   });
 
   let controller;
@@ -900,24 +890,16 @@ export async function callOpenAI({
     const parsed = parseStructuredResult(first.content);
     health.recordSuccess(providerLabel);
     logger?.info?.('llm_call_completed', {
+      ...callContext,
       purpose: reason,
-      reason,
-      route_role: routeRole,
-      provider: providerLabel,
-      access_mode: isLab ? 'lab' : 'api',
       model: first.responseModel || model,
-      base_url: baseUrlNormalized,
-      endpoint: `${baseUrlNormalized}/v1/chat/completions`,
-      deepseek_mode_detected: Boolean(deepSeekMode),
-      json_schema_requested: Boolean(jsonSchemaRequested),
       retry_without_schema: false,
-      multimodal_image_count: Number(userMessage.imageCount || 0),
       response_preview: String(first.content || '').slice(0, 12_000),
       prompt_tokens: firstUsage?.prompt_tokens ?? null,
       completion_tokens: firstUsage?.completion_tokens ?? null,
       total_tokens: firstUsage?.total_tokens ?? null,
       estimated_cost: firstUsage?.estimated_cost ?? null,
-      duration_ms: Date.now() - callStartMs
+      duration_ms: Date.now() - callStartMs,
     });
     await emitTrace({
       status: 'ok',
@@ -965,24 +947,16 @@ export async function callOpenAI({
       const parsed = parseStructuredResult(retry.content, { fallbackExtraction: true });
       health.recordSuccess(providerLabel);
       logger?.info?.('llm_call_completed', {
+        ...callContext,
         purpose: reason,
-        reason,
-        route_role: routeRole,
-        provider: providerLabel,
-        access_mode: isLab ? 'lab' : 'api',
         model: retry.responseModel || model,
-        base_url: baseUrlNormalized,
-        endpoint: `${baseUrlNormalized}/v1/chat/completions`,
-        deepseek_mode_detected: Boolean(deepSeekMode),
-        json_schema_requested: Boolean(jsonSchemaRequested),
         retry_without_schema: true,
-        multimodal_image_count: Number(userMessage.imageCount || 0),
         response_preview: String(retry.content || '').slice(0, 12_000),
         prompt_tokens: retryUsage?.prompt_tokens ?? null,
         completion_tokens: retryUsage?.completion_tokens ?? null,
         total_tokens: retryUsage?.total_tokens ?? null,
         estimated_cost: retryUsage?.estimated_cost ?? null,
-        duration_ms: Date.now() - callStartMs
+        duration_ms: Date.now() - callStartMs,
       });
       await emitTrace({
         status: 'ok',

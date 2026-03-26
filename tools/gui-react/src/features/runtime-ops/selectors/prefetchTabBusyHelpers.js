@@ -142,7 +142,7 @@ export function buildBusyPrefetchTabs({
   let hasQueuedSearch = false;
 
   for (const w of workers) {
-    if (w.state !== 'running' && w.state !== 'queued') continue;
+    if (w.state !== 'running' && w.state !== 'queued' && w.state !== 'crawling' && w.state !== 'retrying') continue;
     if (w.pool === 'llm' && w.call_type) {
       const tab = CALL_TYPE_TO_TAB[w.call_type];
       if (tab && tabs.includes(tab)) busy.add(tab);

@@ -121,12 +121,101 @@ test('fingerprints disabled → no fingerprintOptions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Optimized defaults
+// Browser pool optimization (derived maxOpenPagesPerBrowser)
+// ---------------------------------------------------------------------------
+
+test('maxOpenPagesPerBrowser is derived from slotCount (capped at 4)', () => {
+  // Default slotCount = 4 → maxPages = min(4, 4) = 4
+  const config4 = captureConfig({});
+  assert.equal(config4.browserPoolOptions.maxOpenPagesPerBrowser, 4);
+
+  // slotCount = 2 → maxPages = min(2, 4) = 2
+  const config2 = captureConfig({ crawlMaxConcurrentSlots: 2 });
+  assert.equal(config2.browserPoolOptions.maxOpenPagesPerBrowser, 2);
+
+  // slotCount = 16 → maxPages = min(16, 4) = 4
+  const config16 = captureConfig({ crawlMaxConcurrentSlots: 16 });
+  assert.equal(config16.browserPoolOptions.maxOpenPagesPerBrowser, 4);
+
+  // slotCount = 1 → maxPages = min(1, 4) = 1
+  const config1 = captureConfig({ crawlMaxConcurrentSlots: 1 });
+  assert.equal(config1.browserPoolOptions.maxOpenPagesPerBrowser, 1);
+});
+
+test('incognito pages always enabled for fingerprint isolation', () => {
+  const config = captureConfig({});
+  assert.equal(config.launchContext.useIncognitoPages, true);
+});
+
+// ---------------------------------------------------------------------------
+// Optimized defaults (Phase 3: timeout tuning)
 // ---------------------------------------------------------------------------
 
 test('optimized defaults are applied', () => {
   const config = captureConfig({});
-  assert.equal(config.requestHandlerTimeoutSecs, 45);
-  assert.equal(config.maxRequestRetries, 3);
+  assert.equal(config.requestHandlerTimeoutSecs, 30);
+  assert.equal(config.maxRequestRetries, 1);
   assert.equal(config.browserPoolOptions.retireBrowserAfterPageCount, 10);
+});
+
+// ---------------------------------------------------------------------------
+// Delay handling (Phase 2: blocking sleep, not Crawlee sameDomainDelaySecs)
+// ---------------------------------------------------------------------------
+
+test('sameDomainDelaySecs is NOT passed to Crawlee config', () => {
+  const config = captureConfig({ crawleeSameDomainDelaySecs: 5 });
+  assert.equal(config.sameDomainDelaySecs, undefined);
+});
+
+test('preNavigationHooks are present', () => {
+  const config = captureConfig({});
+  assert.ok(Array.isArray(config.preNavigationHooks));
+  assert.ok(config.preNavigationHooks.length >= 1);
+});
+
+// ---------------------------------------------------------------------------
+// Proxy removal (Phase 4: no tieredProxyUrls on main crawler)
+// ---------------------------------------------------------------------------
+
+test('main crawler has NO proxyConfiguration even with proxy URLs configured', () => {
+  const config = captureConfig({
+    crawleeProxyUrlsJson: '["http://user:pass@proxy.io:80"]',
+  });
+  assert.equal(config.proxyConfiguration, undefined, 'main crawler must not have proxyConfiguration');
+  assert.deepStrictEqual(config._proxyUrls, ['http://user:pass@proxy.io:80'], '_proxyUrls still populated for retry');
+});
+
+// ---------------------------------------------------------------------------
+// retryWithProxy contract
+// ---------------------------------------------------------------------------
+
+test('session exposes retryWithProxy method', () => {
+  const session = createCrawlSession({
+    settings: { crawleeProxyUrlsJson: '["http://proxy:80"]' },
+    plugins: [],
+    _crawlerFactory: () => ({ run: async () => {}, teardown: async () => {} }),
+  });
+  assert.equal(typeof session.retryWithProxy, 'function');
+});
+
+test('retryWithProxy returns empty array when no proxy URLs configured', async () => {
+  const session = createCrawlSession({
+    settings: {},
+    plugins: [],
+    _crawlerFactory: () => ({ run: async () => {}, teardown: async () => {} }),
+  });
+  session.start();
+  const result = await session.retryWithProxy(['http://example.com']);
+  assert.deepStrictEqual(result, []);
+});
+
+test('retryWithProxy returns empty array for empty URL list', async () => {
+  const session = createCrawlSession({
+    settings: { crawleeProxyUrlsJson: '["http://proxy:80"]' },
+    plugins: [],
+    _crawlerFactory: () => ({ run: async () => {}, teardown: async () => {} }),
+  });
+  session.start();
+  const result = await session.retryWithProxy([]);
+  assert.deepStrictEqual(result, []);
 });

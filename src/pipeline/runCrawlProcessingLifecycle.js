@@ -115,6 +115,8 @@ export async function runCrawlProcessingLifecycle({
 
     const settled = await session.processBatch(batch, { workerIdMap });
 
+    const batchResults = [];
+
     for (let i = 0; i < settled.length; i++) {
       const entry = settled[i];
       const url = batch[i] || '';
@@ -137,7 +139,7 @@ export async function runCrawlProcessingLifecycle({
           });
         } catch { /* swallow frontier errors */ }
 
-        crawlResults.push(result);
+        batchResults.push(result);
       } else {
         try {
           frontierDb?.recordFetch?.({
@@ -147,7 +149,7 @@ export async function runCrawlProcessingLifecycle({
           });
         } catch { /* swallow */ }
 
-        crawlResults.push({
+        batchResults.push({
           success: false, url, finalUrl: url, status: 0,
           blocked: false, blockReason: null, screenshots: [],
           html: '', fetchDurationMs: 0, attempts: 1, bypassUsed: null,
@@ -155,6 +157,35 @@ export async function runCrawlProcessingLifecycle({
         });
       }
     }
+
+    // WHY: Two-pass proxy retry. Blocked URLs (except robots_blocked — respect
+    // robots.txt) are retried through a dedicated proxy-enabled crawler.
+    // This avoids the proxy-chain relay on the direct pass entirely.
+    const blockedUrls = batchResults
+      .filter((r) => r.blocked && r.blockReason !== 'robots_blocked')
+      .map((r) => r.url);
+
+    if (blockedUrls.length > 0 && typeof session.retryWithProxy === 'function') {
+      const retrySettled = await session.retryWithProxy(blockedUrls, { workerIdMap });
+
+      for (let i = 0; i < retrySettled.length; i++) {
+        if (retrySettled[i].status !== 'fulfilled') continue;
+        const retryResult = retrySettled[i].value;
+        const { blocked, blockReason } = classifyBlockStatus({
+          status: retryResult.status, html: retryResult.html,
+        });
+        retryResult.blocked = blocked;
+        retryResult.blockReason = blockReason;
+        retryResult.success = !blocked && retryResult.status > 0 && retryResult.status < 400;
+        retryResult.proxyRetry = true;
+
+        const idx = batchResults.findIndex((r) => r.url === retryResult.url && r.blocked);
+        if (idx >= 0) batchResults[idx] = retryResult;
+        else batchResults.push(retryResult);
+      }
+    }
+
+    crawlResults.push(...batchResults);
   }
 
   return { crawlResults };

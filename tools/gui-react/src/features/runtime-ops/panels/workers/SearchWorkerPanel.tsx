@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { formatMs, getRefetchInterval, triageDecisionBadgeClass } from '../../helpers.ts';
-import { providerDisplayLabel } from '../../selectors/searchResultsHelpers.js';
+import { providerDisplayLabel, resolveDecisionDisplay } from '../../selectors/searchResultsHelpers.js';
 import type { RuntimeOpsWorkerRow, WorkerDetailResponse, SearchWorkerAttempt, SearchResultEntry, PrefetchTabKey } from '../../types.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 
@@ -349,6 +349,8 @@ function triageRowBg(decision: string): React.CSSProperties | undefined {
     case 'drop':
     case 'skip':
       return { background: 'rgb(239 68 68 / 0.06)', borderLeft: '2px solid rgb(239 68 68 / 0.3)' };
+    case 'hard_drop':
+      return { background: 'rgb(245 158 11 / 0.06)', borderLeft: '2px solid rgb(245 158 11 / 0.3)' };
     case 'maybe':
       return { background: 'rgb(245 158 11 / 0.06)', borderLeft: '2px solid rgb(245 158 11 / 0.3)' };
     default:
@@ -421,6 +423,7 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
   const fetchedCount = results.filter((r) => r.fetched).length;
   const keptCount = results.filter((r) => r.decision === 'keep').length;
   const droppedCount = results.filter((r) => r.decision === 'drop').length;
+  const hardDropCount = results.filter((r) => r.decision === 'hard_drop').length;
   const maybeCount = results.filter((r) => r.decision === 'maybe').length;
   return (
     <tr className="border-t sf-border-soft">
@@ -431,7 +434,7 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
               Search Results
             </span>
             <span className="sf-text-nano sf-text-muted">
-              {results.length} URLs &middot; {fetchedCount} fetched &middot; {keptCount} kept, {droppedCount} dropped, {maybeCount} maybe
+              {results.length} URLs &middot; {fetchedCount} fetched &middot; {keptCount} kept, {droppedCount} LLM-dropped{hardDropCount > 0 ? `, ${hardDropCount} hard-dropped` : ''}, {maybeCount} maybe
             </span>
           </div>
           <div className="flex flex-col gap-px overflow-hidden border sf-border-soft">
@@ -448,9 +451,11 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.fetched ? 'bg-green-500' : 'sf-bg-muted'}`}
                   title={r.fetched ? `Fetched by ${r.fetch_worker_id}` : 'Not fetched'}
                 />
-                <span className={`px-1.5 py-0.5 rounded-full sf-text-nano font-medium shrink-0 ${triageDecisionBadgeClass(r.decision)}`}>
-                  {r.decision}
-                </span>
+                {(() => { const dd = resolveDecisionDisplay(r); return (
+                  <span className={`px-1.5 py-0.5 rounded-full sf-text-nano font-medium shrink-0 ${dd.chipClass}`}>
+                    {dd.label}
+                  </span>
+                ); })()}
                 {r.score > 0 && (
                   <span className="sf-text-nano font-mono sf-text-dim shrink-0" title={r.rationale || undefined}>
                     {r.score.toFixed(1)}
@@ -467,6 +472,15 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
                     >
                       {r.domain}
                     </a>
+                    {r.domain_safety && (
+                      <span className={`px-1 py-0 rounded sf-text-nano font-medium shrink-0 ${
+                        r.domain_safety === 'safe' ? 'sf-chip-success'
+                        : r.domain_safety === 'blocked' ? 'sf-chip-danger'
+                        : 'sf-chip-warning'
+                      }`}>
+                        {r.domain_safety}
+                      </span>
+                    )}
                     {fetchStatusBadge(r)}
                   </div>
                   <div className="sf-text-nano sf-text-muted truncate" title={r.url}>
@@ -486,6 +500,7 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
 function AttemptResultsPreview({ results }: { results: SearchResultEntry[] }) {
   const keptCount = results.filter((r) => r.decision === 'keep').length;
   const droppedCount = results.filter((r) => r.decision === 'drop').length;
+  const hardDropCount = results.filter((r) => r.decision === 'hard_drop').length;
   const maybeCount = results.filter((r) => r.decision === 'maybe').length;
 
   return (
@@ -495,7 +510,7 @@ function AttemptResultsPreview({ results }: { results: SearchResultEntry[] }) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="sf-text-caption font-semibold sf-text-primary">Query results</span>
             <span className="sf-text-nano sf-text-muted">
-              {results.length} results &mdash; {keptCount} kept, {droppedCount} dropped, {maybeCount} maybe
+              {results.length} results &mdash; {keptCount} kept, {droppedCount} LLM-dropped{hardDropCount > 0 ? `, ${hardDropCount} hard-dropped` : ''}, {maybeCount} maybe
             </span>
           </div>
           <div className="mt-2 overflow-x-auto">
@@ -511,9 +526,11 @@ function AttemptResultsPreview({ results }: { results: SearchResultEntry[] }) {
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="sf-text-nano font-mono sf-text-dim shrink-0">{`#${rank}`}</span>
-                      <span className={`px-1 py-0 rounded-full sf-text-nano font-medium ${triageDecisionBadgeClass(result.decision)}`}>
-                        {result.decision}
-                      </span>
+                      {(() => { const dd = resolveDecisionDisplay(result); return (
+                        <span className={`px-1 py-0 rounded-full sf-text-nano font-medium ${dd.chipClass}`}>
+                          {dd.label}
+                        </span>
+                      ); })()}
                       {result.score > 0 && (
                         <span className="sf-text-nano font-mono sf-text-dim">{result.score.toFixed(1)}</span>
                       )}

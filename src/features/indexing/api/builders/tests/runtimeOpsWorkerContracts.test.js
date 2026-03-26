@@ -9,7 +9,7 @@ test('buildRuntimeOpsWorkers: empty events returns no workers', () => {
   assert.deepEqual(result, []);
 });
 
-test('buildRuntimeOpsWorkers: fetch lifecycle rows preserve idle state and bridge status codes', () => {
+test('buildRuntimeOpsWorkers: fetch lifecycle rows use crawled/blocked states', () => {
   const events = [
     makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'w1' }, { ts: '2026-02-20T00:01:00.000Z' }),
     makeEvent('fetch_finished', { url: 'https://a.com/1', worker_id: 'w1', status: 200 }, { ts: '2026-02-20T00:01:05.000Z' }),
@@ -21,25 +21,25 @@ test('buildRuntimeOpsWorkers: fetch lifecycle rows preserve idle state and bridg
   const okWorker = result.find((row) => row.worker_id === 'w1');
   const blockedWorker = result.find((row) => row.worker_id === 'w2');
 
-  assert.equal(okWorker?.state, 'idle');
+  assert.equal(okWorker?.state, 'crawled');
   assert.equal(okWorker?.last_error, null);
   assert.equal(blockedWorker?.state, 'blocked');
   assert.equal(blockedWorker?.last_error, 'HTTP 403');
 });
 
-test('buildRuntimeOpsWorkers: unmatched fetch rows distinguish running from stuck by threshold', () => {
+test('buildRuntimeOpsWorkers: unmatched fetch rows distinguish crawling from stuck by threshold', () => {
   const now = Date.now();
   const events = [
     makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'stuck-worker' }, { ts: new Date(now - 120000).toISOString() }),
-    makeEvent('fetch_started', { url: 'https://b.com/2', worker_id: 'running-worker' }, { ts: new Date(now - 10000).toISOString() }),
+    makeEvent('fetch_started', { url: 'https://b.com/2', worker_id: 'crawling-worker' }, { ts: new Date(now - 10000).toISOString() }),
   ];
 
   const result = buildRuntimeOpsWorkers(events, { stuckThresholdMs: 60000, nowMs: now });
   const stuckWorker = result.find((row) => row.worker_id === 'stuck-worker');
-  const runningWorker = result.find((row) => row.worker_id === 'running-worker');
+  const crawlingWorker = result.find((row) => row.worker_id === 'crawling-worker');
 
   assert.equal(stuckWorker?.state, 'stuck');
-  assert.equal(runningWorker?.state, 'running');
+  assert.equal(crawlingWorker?.state, 'crawling');
 });
 
 test('buildRuntimeOpsWorkers: worker family and stage are derived from the event type', () => {

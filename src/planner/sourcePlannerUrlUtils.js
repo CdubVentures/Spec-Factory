@@ -13,8 +13,13 @@ export function getHost(url) {
 
 export function canonicalizeQueueUrl(parsedUrl) {
   const normalized = new URL(parsedUrl.toString());
-  // Fragments are client-side only and should not create distinct fetch jobs.
   normalized.hash = '';
+  normalized.searchParams.sort();
+  // WHY: Trailing slash on non-root paths creates phantom duplicates
+  // (/product/ vs /product). Root path (/) must keep its slash.
+  if (normalized.pathname.length > 1 && normalized.pathname.endsWith('/')) {
+    normalized.pathname = normalized.pathname.slice(0, -1);
+  }
   return normalized.toString();
 }
 

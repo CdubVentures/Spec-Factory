@@ -109,6 +109,8 @@ export function createPipelineCommands({
       bridge.onEvent = (row) => {
         if (row && row.__screencast) {
           try { process.send(row); } catch { /* ignore IPC errors */ }
+        } else if (row) {
+          try { process.send({ __runtime_event: true, run_id: row.run_id || '', stage: row.stage || '', event: row.event || '' }); } catch { /* ignore IPC errors */ }
         }
       };
       process.on('message', (msg) => {

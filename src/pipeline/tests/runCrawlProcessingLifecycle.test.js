@@ -140,6 +140,85 @@ describe('runCrawlProcessingLifecycle', () => {
     assert.equal(frontierDb.getRecorded().length, 2);
   });
 
+  it('retries blocked URLs with proxy when retryWithProxy is available', async () => {
+    const retryCalls = [];
+    const session = {
+      slotCount: 1,
+      async processBatch(urls) {
+        return urls.map((url) => ({
+          status: 'fulfilled',
+          value: { url, finalUrl: url, status: 403, html: '', screenshots: [], workerId: 'fetch-a1' },
+        }));
+      },
+      async retryWithProxy(urls, opts) {
+        retryCalls.push(urls);
+        return urls.map((url) => ({
+          status: 'fulfilled',
+          value: { url, finalUrl: url, status: 200, html: '<html><body>ok via proxy</body></html>', screenshots: [], workerId: 'fetch-a1' },
+        }));
+      },
+    };
+    const planner = createMockPlanner([{ url: 'http://blocked.com' }]);
+    const frontierDb = createMockFrontierDb();
+
+    const { crawlResults } = await runCrawlProcessingLifecycle({
+      planner, session, frontierDb, settings: {}, startMs: Date.now(), maxRunMs: 0,
+    });
+
+    assert.equal(retryCalls.length, 1, 'retryWithProxy should be called once');
+    assert.deepStrictEqual(retryCalls[0], ['http://blocked.com']);
+    assert.equal(crawlResults[0].success, true, 'proxy retry should replace blocked result');
+    assert.equal(crawlResults[0].proxyRetry, true);
+  });
+
+  it('does NOT retry robots_blocked URLs with proxy', async () => {
+    const retryCalls = [];
+    const session = {
+      slotCount: 1,
+      async processBatch(urls) {
+        return urls.map((url) => ({
+          status: 'fulfilled',
+          value: { url, finalUrl: url, status: 451, html: '', screenshots: [], workerId: 'fetch-a1' },
+        }));
+      },
+      async retryWithProxy(urls) {
+        retryCalls.push(urls);
+        return [];
+      },
+    };
+    const planner = createMockPlanner([{ url: 'http://robots-blocked.com' }]);
+    const frontierDb = createMockFrontierDb();
+
+    const { crawlResults } = await runCrawlProcessingLifecycle({
+      planner, session, frontierDb, settings: {}, startMs: Date.now(), maxRunMs: 0,
+    });
+
+    assert.equal(retryCalls.length, 0, 'should not retry robots_blocked');
+    assert.equal(crawlResults[0].blocked, true);
+    assert.equal(crawlResults[0].blockReason, 'robots_blocked');
+  });
+
+  it('skips proxy retry when session has no retryWithProxy method', async () => {
+    const session = {
+      slotCount: 1,
+      async processBatch(urls) {
+        return urls.map((url) => ({
+          status: 'fulfilled',
+          value: { url, finalUrl: url, status: 403, html: '', screenshots: [], workerId: 'fetch-a1' },
+        }));
+      },
+    };
+    const planner = createMockPlanner([{ url: 'http://blocked.com' }]);
+    const frontierDb = createMockFrontierDb();
+
+    const { crawlResults } = await runCrawlProcessingLifecycle({
+      planner, session, frontierDb, settings: {}, startMs: Date.now(), maxRunMs: 0,
+    });
+
+    assert.equal(crawlResults[0].blocked, true);
+    assert.equal(crawlResults[0].blockReason, 'status_403');
+  });
+
   it('drains in strict slot→rank order across all queues', async () => {
     // Simulate: manufacturer URL (no slot), then 2 general-queue URLs with slot info
     const planner = createMockPlanner([

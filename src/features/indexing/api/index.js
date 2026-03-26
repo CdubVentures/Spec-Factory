@@ -1,5 +1,6 @@
 export {
   initIndexLabDataBuilders,
+  invalidateEventCache,
   readIndexLabRunEvents,
   readIndexLabRunMeta,
   resolveRunProductId,

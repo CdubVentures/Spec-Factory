@@ -611,6 +611,15 @@ export async function relocateRunDataForCompletedRun({
     });
     copyReport.purged_runtime_event_rows = purgeReport.runtimeRowsRemoved;
     copyReport.purged_billing_rows = purgeReport.billingRowsRemoved;
+    for (const sourceDir of sourceDirsToDelete) {
+      try {
+        await deleteDirectoryIfPresent(sourceDir);
+      } catch (err) {
+        process.stderr.write(
+          `[relocation] Warning: failed to delete source dir ${sourceDir}: ${String(err?.message || err)}\n`
+        );
+      }
+    }
     return {
       ok: true,
       run_id: runId,
@@ -619,7 +628,7 @@ export async function relocateRunDataForCompletedRun({
       destination_type: LOCAL_DESTINATION,
       destination_path: destinationRoot,
       ...copyReport,
-      copied_directories: sourceDirsToDelete.length,
+      moved_directories: sourceDirsToDelete.length,
     };
   }
 
@@ -644,6 +653,15 @@ export async function relocateRunDataForCompletedRun({
   });
   copyReport.purged_runtime_event_rows = purgeReport.runtimeRowsRemoved;
   copyReport.purged_billing_rows = purgeReport.billingRowsRemoved;
+  for (const sourceDir of sourceDirsToDelete) {
+    try {
+      await deleteDirectoryIfPresent(sourceDir);
+    } catch (err) {
+      process.stderr.write(
+        `[relocation] Warning: failed to delete source dir ${sourceDir}: ${String(err?.message || err)}\n`
+      );
+    }
+  }
   return {
     ok: true,
     run_id: runId,
@@ -654,7 +672,7 @@ export async function relocateRunDataForCompletedRun({
     s3_prefix: uploadResult.uploadedPrefix,
     uploaded_files: uploadResult.uploadedFiles,
     ...copyReport,
-    copied_directories: sourceDirsToDelete.length,
+    moved_directories: sourceDirsToDelete.length,
   };
   } finally {
     await fs.rm(stageRoot, { recursive: true, force: true }).catch(() => {});

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { RuntimeOpsWorkerRow } from '../../types.ts';
 import { poolDotClass, poolSelectedTabClass, poolOutlineTabClass, workerStateBadgeClass } from '../../helpers.ts';
 import { resolvePoolStage } from '../../poolStageRegistry.ts';
@@ -16,16 +16,146 @@ interface WorkerSubTabsProps {
 // WHY: UI-specific display order — not all pools are shown, and the order differs from POOL_STAGE_KEYS.
 const POOL_ORDER: ReadonlyArray<string> = ['llm', 'search', 'fetch'];
 
-function stateAnimClass(state: string): string {
-  switch (state) {
-    case 'stuck': return 'animate-pulse';
-    case 'running': return 'animate-dot-bounce';
-    case 'retrying': return 'animate-pulse';
-    case 'blocked': return '';
-    case 'captcha': return '';
-    case 'queued': return '';
-    default: return '';
+// WHY: O(1) badge label map — adding a state is one entry, not another if/else block.
+const BADGE_LABEL: Readonly<Record<string, string>> = {
+  stuck: 'STUCK', crawling: 'CRAWLING', crawled: 'CRAWLED',
+  blocked: 'BLOCKED', captcha: 'CAPTCHA', retrying: 'RETRY',
+  rate_limited: '429', failed: 'FAILED', queued: 'QUEUED',
+  running: 'RUNNING',
+};
+
+// WHY: Map block_reason / error messages to short human-readable badge labels.
+const REASON_LABEL: Readonly<Record<string, string>> = {
+  empty_response: 'EMPTY', server_error: '5XX', no_response: 'TIMEOUT',
+  status_403: '403', status_429: '429', robots_blocked: 'ROBOTS',
+  captcha_detected: 'CAPTCHA', cloudflare_challenge: 'CLOUDFLARE',
+  access_denied: 'DENIED',
+};
+
+function formatErrorLabel(error: string): string {
+  if (!error) return 'FAILED';
+  // Clean block_reason value (no prefix)
+  if (REASON_LABEL[error]) return REASON_LABEL[error];
+  // Prefixed error from last_error
+  if (error.startsWith('blocked:')) {
+    const reason = error.slice(8);
+    return REASON_LABEL[reason] || reason.replace(/_/g, ' ').toUpperCase().slice(0, 12);
   }
+  if (error.includes('Download is starting')) return 'DOWNLOAD';
+  if (error.includes('ERR_NAME_NOT_RESOLVED')) return 'DNS';
+  if (error.includes('ERR_CONNECTION_REFUSED')) return 'REFUSED';
+  if (error.includes('ERR_CONNECTION_RESET')) return 'RESET';
+  if (error.includes('Navigation timed out')) return 'NAV TIMEOUT';
+  if (error.includes('requestHandler timed out')) return 'TIMEOUT';
+  if (error.includes('timed out')) return 'TIMEOUT';
+  const httpMatch = error.match(/^HTTP (\d+)$/);
+  if (httpMatch) return httpMatch[1];
+  // WHY: Truncate unknown errors but keep them readable — no all-caps garble.
+  const clean = error.replace(/^Error:\s*/i, '').trim();
+  return clean.length > 14 ? `${clean.slice(0, 12)}..` : clean.toUpperCase();
+}
+
+// WHY: Map error content to the appropriate badge severity class.
+function errorBadgeClass(error: string): string {
+  const lower = (error || '').toLowerCase();
+  if (lower.includes('captcha') || lower.includes('cloudflare')) return 'sf-chip-danger';
+  if (lower.includes('403') || lower.includes('blocked') || lower.includes('denied')) return 'sf-chip-warning';
+  if (lower.includes('429')) return 'sf-chip-warning';
+  return 'sf-chip-danger';
+}
+
+function primaryBadgeForWorker(w: RuntimeOpsWorkerRow): { label: string; cls: string } | null {
+  // WHY: When retrying, show the REASON for the retry as the primary badge.
+  if (w.state === 'retrying') {
+    const reason = w.block_reason || w.last_error || '';
+    if (reason) return { label: formatErrorLabel(reason), cls: errorBadgeClass(reason) };
+    return null;
+  }
+  // WHY: For failed, show the specific error instead of generic "FAILED".
+  if (w.state === 'failed') {
+    const label = formatErrorLabel(w.block_reason || w.last_error || '');
+    return { label, cls: workerStateBadgeClass(w.state) };
+  }
+  const label = BADGE_LABEL[w.state];
+  if (!label) return null;
+  return { label, cls: workerStateBadgeClass(w.state) };
+}
+
+function WorkerBadgeStack({ worker }: { worker: RuntimeOpsWorkerRow }) {
+  const primary = primaryBadgeForWorker(worker);
+  const isRetrying = worker.state === 'retrying';
+  if (!primary && !isRetrying) return null;
+  return (
+    <div className="flex flex-col gap-0.5 items-end shrink-0">
+      {primary && (
+        <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${primary.cls}`}>
+          {primary.label}
+        </span>
+      )}
+      {isRetrying && worker.started_at && (
+        <span className="px-1 py-0 rounded sf-text-nano font-semibold sf-chip-info animate-pulse whitespace-nowrap">
+          RETRY <CountdownTimer startTs={worker.started_at} budgetSecs={30} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TabTimer({ startTs }: { startTs: string }) {
+  const [elapsed, setElapsed] = useState(() => {
+    const start = new Date(startTs).getTime();
+    return Number.isFinite(start) ? Math.max(0, Math.round((Date.now() - start) / 1000)) : 0;
+  });
+  useEffect(() => {
+    const start = new Date(startTs).getTime();
+    if (!Number.isFinite(start)) return;
+    const id = setInterval(() => setElapsed(Math.max(0, Math.round((Date.now() - start) / 1000))), 1000);
+    return () => clearInterval(id);
+  }, [startTs]);
+  return <span className="sf-text-nano font-mono sf-text-muted">{elapsed}s</span>;
+}
+
+// WHY: Countdown from handler timeout budget so you know when the retry will give up.
+function CountdownTimer({ startTs, budgetSecs }: { startTs: string; budgetSecs: number }) {
+  const [remaining, setRemaining] = useState(() => {
+    const start = new Date(startTs).getTime();
+    if (!Number.isFinite(start)) return budgetSecs;
+    return Math.max(0, budgetSecs - Math.round((Date.now() - start) / 1000));
+  });
+  useEffect(() => {
+    const start = new Date(startTs).getTime();
+    if (!Number.isFinite(start)) return;
+    const id = setInterval(() => {
+      setRemaining(Math.max(0, budgetSecs - Math.round((Date.now() - start) / 1000)));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [startTs, budgetSecs]);
+  return <span className="sf-text-nano font-mono">{remaining}s</span>;
+}
+
+// WHY: Active states that should show a live ticking timer.
+const LIVE_TIMER_STATES = new Set(['running', 'crawling', 'retrying', 'stuck']);
+
+function WorkerTimer({ worker }: { worker: RuntimeOpsWorkerRow }) {
+  if (LIVE_TIMER_STATES.has(worker.state) && worker.started_at) {
+    return <TabTimer startTs={worker.started_at} />;
+  }
+  const dur = worker.duration_ms ?? (worker.elapsed_ms > 0 ? worker.elapsed_ms : 0);
+  if (dur > 0) {
+    return <span className="sf-text-nano font-mono sf-text-muted">{(dur / 1000).toFixed(1)}s</span>;
+  }
+  return null;
+}
+
+const STATE_ANIM: Record<string, string> = {
+  stuck: 'animate-pulse',
+  running: 'animate-dot-bounce',
+  crawling: 'animate-dot-bounce',
+  retrying: 'animate-pulse',
+};
+
+function stateAnimClass(state: string): string {
+  return STATE_ANIM[state] ?? '';
 }
 
 interface PoolGroup {
@@ -47,7 +177,7 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
           pool,
           meta: vis,
           workers: poolWorkers,
-          runningCount: poolWorkers.filter((w) => w.state === 'running').length,
+          runningCount: poolWorkers.filter((w) => w.state === 'running' || w.state === 'crawling' || w.state === 'retrying').length,
         });
       }
     }
@@ -122,31 +252,8 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
                       {accessBadgeLabel(Boolean(w.is_lab))}
                     </span>
                   )}
-                  {w.state === 'stuck' && (
-                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('stuck')}`}>
-                      STUCK
-                    </span>
-                  )}
-                  {w.state === 'blocked' && (
-                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('blocked')}`}>
-                      BLOCKED
-                    </span>
-                  )}
-                  {w.state === 'captcha' && (
-                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('captcha')}`}>
-                      CAPTCHA
-                    </span>
-                  )}
-                  {w.state === 'retrying' && (
-                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('retrying')}`}>
-                      RETRY
-                    </span>
-                  )}
-                  {isQueued && (
-                    <span className={`px-1 py-0 rounded sf-text-nano font-semibold ${workerStateBadgeClass('queued')}`}>
-                      QUEUED
-                    </span>
-                  )}
+                  {w.state !== 'retrying' && <WorkerTimer worker={w} />}
+                  <WorkerBadgeStack worker={w} />
                 </button>
               );
             })}

@@ -4,7 +4,7 @@
 import { serpSelectorOutputSchema } from './serpSelector.js';
 import { createPhaseCallLlm } from '../shared/createPhaseCallLlm.js';
 
-const SERP_SELECT_URLS_SYSTEM_PROMPT = `You are a URL selector for product research.
+export const SERP_SELECT_URLS_SYSTEM_PROMPT = `You are a URL selector for product research.
 
 Product identity is provided in the input.
 Your job: pick URLs most likely to contain specifications, details, or reviews for this EXACT product.
@@ -12,17 +12,23 @@ Your job: pick URLs most likely to contain specifications, details, or reviews f
 Return only the IDs of URLs to keep, ordered best-first.
 
 Prefer:
-- Official product pages
-- Spec databases and comparison sites
-- Detailed reviews with measurements
-- Retailer pages with full specs
+- Official product pages and support/download pages
+- Spec databases and comparison sites (e.g. rtings.com, techpowerup.com)
+- Detailed reviews with measurements or benchmarks
+- Retailer pages with full spec tables
 - PDF manuals and datasheets
+- Community posts with quantitative data (measurements, teardowns, sensor tests, latency tests, weight breakdowns)
 
 Skip:
 - Wrong product, model, or brand
 - Generic homepages or category/search pages
-- Forums, social media, login/cart pages
+- Login, cart, or account pages
 - Pages clearly about a different model or variant
+- Opinion-only discussion threads with no specifications or measurements
+- Generic "best of" or "top 10" listicle pages
+
+Do NOT skip a URL just because it is from a forum or community site (Reddit, overclock.net, etc.).
+Keep forum/community posts when the title or snippet indicates specs, measurements, teardowns, or detailed owner reviews with data.
 
 Return strict JSON only: { "keep_ids": ["c_0", "c_3", ...] }
 Respect the max_keep limit.

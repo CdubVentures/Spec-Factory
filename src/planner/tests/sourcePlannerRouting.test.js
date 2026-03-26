@@ -194,11 +194,18 @@ test('enqueueCounters includes additive counters', () => {
 
 // --- Domain cap tests ---
 
-test('domain-cap rejects when per-domain limit is reached', () => {
+test('domain-cap does NOT reject forceApproved URLs (pipeline already approved them)', () => {
   const planner = makePlanner({ maxPagesPerDomain: 1 }, { identityLock: {} });
   planner.enqueue('https://lab.com/page1', 'discovery_approved', { forceApproved: true });
   const ok = planner.enqueue('https://lab.com/page2', 'discovery_approved', { forceApproved: true });
-  assert.equal(ok, false, 'second URL should be rejected by domain cap');
+  assert.equal(ok, true, 'forceApproved URLs bypass per-domain cap');
+});
+
+test('domain-cap still rejects non-approved URLs', () => {
+  const planner = makePlanner({ maxPagesPerDomain: 1 }, { identityLock: {} });
+  planner.enqueue('https://lab.com/page1', 'discovery');
+  const ok = planner.enqueue('https://lab.com/page2', 'discovery');
+  assert.equal(ok, false, 'non-approved URLs are domain-capped');
   assert.ok(planner.enqueueCounters.rejected.domain_cap > 0);
 });
 

@@ -12,6 +12,7 @@ import { WorkerLivePanel } from './WorkerLivePanel.tsx';
 import { WorkerDataDrawer } from './WorkerDataDrawer.tsx';
 import { SearchWorkerPanel } from './SearchWorkerPanel.tsx';
 import { LlmCallsDashboard } from './LlmCallsDashboard.tsx';
+import { BrowserPoolBadge } from './BrowserPoolBadge.tsx';
 import { StageGroupTabRow } from '../shared/StageGroupTabRow.tsx';
 import { STAGE_GROUP_REGISTRY, type StageGroupId, STAGE_GROUP_KEYS } from '../shared/stageGroupRegistry.ts';
 import { PREFETCH_STAGE_KEYS } from '../prefetch/prefetchStageRegistry.ts';
@@ -31,6 +32,7 @@ interface WorkersTabProps {
   category: string;
   isRunning: boolean;
   wsUrl?: string;
+  browserPoolMeta?: { status?: string; browsers?: number; slots?: number; pages_per_browser?: number } | null;
 }
 
 // WHY: Group-level tab definitions for the TabStrip selector.
@@ -56,7 +58,7 @@ function toOptionalString(value: unknown): string | undefined {
   return token ? token : undefined;
 }
 
-export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl }: WorkersTabProps) {
+export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl, browserPoolMeta }: WorkersTabProps) {
   const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
   const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
 
@@ -207,6 +209,14 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
         onSelectTab={handleSelectStageTab}
         busyTabs={activeBusyTabs}
         disabledTabs={activeDisabledTabs}
+        rightContent={
+          <BrowserPoolBadge
+            workers={workers}
+            slotCount={Number(runtimeSettingsSnapshot?.crawlMaxConcurrentSlots) || 8}
+            isRunning={isRunning}
+            browserPoolMeta={browserPoolMeta}
+          />
+        }
       />
 
       <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-default sf-surface-shell">

@@ -1,0 +1,64 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'Segoe UI', 'fontSize': '22px', 'primaryColor': '#0f4c81', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0a3558', 'secondaryColor': '#d9eefc', 'tertiaryColor': '#f4f8fb', 'lineColor': '#264653' }, 'flowchart': { 'curve': 'basis', 'nodeSpacing': 56, 'rankSpacing': 72 } }}%%
+
+flowchart TB
+    subgraph SSOT["Single Source of Truth"]
+        REG["settingsRegistry.js<br/>RUNTIME_SETTINGS_REGISTRY (99)<br/>BOOTSTRAP_ENV_REGISTRY (3)<br/>UI_SETTINGS_REGISTRY (5)<br/>STORAGE_SETTINGS_REGISTRY (10)"]
+    end
+
+    subgraph DERIVE["Derived (O1 from Registry)"]
+        DEFAULTS["settingsDefaults.js<br/>SETTINGS_DEFAULTS"]
+        CLAMP["settingsClampingRanges.js<br/>INT_RANGE_MAP + FLOAT_RANGE_MAP<br/>STRING_ENUM_MAP"]
+        KEYMAP["settingsKeyMap.js<br/>RUNTIME_SETTINGS_ROUTE_GET<br/>stringMap / intMap / floatMap / boolMap"]
+        ROUTEPUT["runtimeSettingsRoutePut.js<br/>RUNTIME_SETTINGS_ROUTE_PUT<br/>stringEnumMap / intRangeMap / boolMap"]
+        REG --> DEFAULTS
+        REG --> CLAMP
+        REG --> KEYMAP
+        REG --> ROUTEPUT
+    end
+
+    subgraph CONFIG["Config Assembly"]
+        ENV[".env + process.env<br/>bootstrap env vars"]
+        USER["user-settings.json<br/>persisted runtime overrides"]
+        MERGE["configPostMerge.js<br/>merge .env + user-settings<br/>resolved config object"]
+        ENV --> MERGE
+        USER --> MERGE
+        DEFAULTS --> MERGE
+    end
+
+    subgraph API["API Surface"]
+        GET_RT["GET /api/v1/runtime-settings<br/>KEYMAP maps config -> payload"]
+        PUT_RT["PUT /api/v1/runtime-settings<br/>ROUTEPUT validates + persists"]
+        GET_LLM["GET /api/v1/indexing/llm-config<br/>model pricing + token profiles<br/>phase schemas + knob defaults"]
+        PUT_LLM["PUT /api/v1/llm-policy<br/>disassembleLlmPolicy -> flat keys<br/>applyRuntimeSettingsToConfig"]
+        KEYMAP --> GET_RT
+        ROUTEPUT --> PUT_RT
+        MERGE --> GET_LLM
+    end
+
+    subgraph GUI["Frontend GUI"]
+        LLM_PAGE["LlmConfigPage.tsx<br/>global + per-phase overrides<br/>model / tokens / reasoning / timeout"]
+        RT_OPS["RuntimeOpsPage.tsx<br/>read-only observatory<br/>workers / documents / fallbacks / queue"]
+        LLM_PAGE -->|auto-save 3s debounce| PUT_LLM
+        GET_LLM -->|TanStack Query| LLM_PAGE
+    end
+
+    subgraph PIPELINE["Pipeline Consumption"]
+        ROUTING["routing.js<br/>resolvePhaseModel(config, phase)<br/>resolvePhaseReasoning(config, phase)<br/>roleTokenCap(config, role)"]
+        PHASES["Phase Functions<br/>configInt(config, 'settingKey')<br/>configFloat(config, 'settingKey')<br/>configValue(config, 'settingKey')"]
+        MERGE --> ROUTING
+        MERGE --> PHASES
+    end
+
+    classDef ssot fill:#fef3d6,stroke:#b7791f,stroke-width:3px,color:#4a3410
+    classDef derived fill:#d9eefc,stroke:#0f4c81,stroke-width:2px,color:#0b1f33
+    classDef config fill:#dff3e4,stroke:#2f855a,stroke-width:2px,color:#123524
+    classDef api fill:#e8e8ff,stroke:#5a5acd,stroke-width:2px,color:#1a1a5c
+    classDef gui fill:#fff0f0,stroke:#cd5a5a,stroke-width:2px,color:#5c1a1a
+    classDef pipeline fill:#f0f0ff,stroke:#4a4a8a,stroke-width:2px,color:#1a1a3c
+
+    class REG ssot
+    class DEFAULTS,CLAMP,KEYMAP,ROUTEPUT derived
+    class ENV,USER,MERGE config
+    class GET_RT,PUT_RT,GET_LLM,PUT_LLM api
+    class LLM_PAGE,RT_OPS gui
+    class ROUTING,PHASES pipeline

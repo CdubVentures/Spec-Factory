@@ -119,6 +119,9 @@ export async function runQueryJourney({
 
   const searchProfilePlanned = {
     ...searchProfileBase,
+    // WHY: Preserve the deterministic Search Profile output so the GUI panel
+    // shows what the profile phase actually produced, not the LLM-enhanced version.
+    deterministic_query_rows: toArray(searchProfileBase?.query_rows),
     category: categoryConfig.category,
     product_id: job.productId,
     run_id: runId,

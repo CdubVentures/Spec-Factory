@@ -69,6 +69,7 @@ export async function writeRunMeta(state, extra = {}) {
     phase_cursor: state.phaseCursor || '',
     boot_step: state.bootStep || '',
     boot_progress: state.bootProgress || 0,
+    browser_pool: state.browserPool || null,
     startup_ms: state.startupMs,
     needset: state.needSet
       ? {

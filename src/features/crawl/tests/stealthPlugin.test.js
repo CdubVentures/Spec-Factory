@@ -38,35 +38,37 @@ describe('stealthPlugin', () => {
     assert.equal(page.initScripts.length, 0, 'should not inject when disabled');
   });
 
-  it('returns enabled result with all 12 stealth patches', async () => {
+  it('returns enabled result with 7 stealth patches (fingerprint-suite handles the rest)', async () => {
     const page = createPageDouble();
     const result = await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: true } });
     assert.equal(result.enabled, true);
     assert.equal(result.injected, true);
-    assert.equal(result.patches.length, 12);
+    assert.equal(result.patches.length, 7);
     assert.deepEqual(result.patches, STEALTH_PATCHES);
   });
 
-  it('exports STEALTH_PATCHES with all 12 patch names', () => {
+  it('exports STEALTH_PATCHES — only patches fingerprint-suite does NOT cover', () => {
     const expected = [
-      'toString', 'webdriver', 'vendor', 'plugins', 'languages',
-      'hardwareConcurrency', 'chromeRuntime', 'chromeApp',
-      'chromeCsi', 'chromeLoadTimes', 'permissions', 'webglVendor',
+      'toString', 'webdriver', 'chromeRuntime', 'chromeApp',
+      'chromeCsi', 'chromeLoadTimes', 'permissions',
     ];
     assert.deepEqual(STEALTH_PATCHES, expected);
   });
 
-  it('injected script contains all critical patch markers', async () => {
+  it('does NOT contain patches that conflict with fingerprint-suite', () => {
+    const conflicting = ['vendor', 'plugins', 'languages', 'hardwareConcurrency', 'webglVendor'];
+    for (const patch of conflicting) {
+      assert.ok(!STEALTH_PATCHES.includes(patch), `${patch} should be removed — fingerprint-suite handles it`);
+    }
+  });
+
+  it('injected script contains critical non-fingerprint patches', async () => {
     const page = createPageDouble();
     await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: true } });
     const script = page.initScripts[0];
     assert.ok(script.includes('webdriver'), 'missing webdriver patch');
-    assert.ok(script.includes('vendor'), 'missing vendor patch');
-    assert.ok(script.includes('hardwareConcurrency'), 'missing hardwareConcurrency patch');
     assert.ok(script.includes('chrome'), 'missing chrome stubs');
     assert.ok(script.includes('permissions'), 'missing permissions patch');
-    assert.ok(script.includes('WebGLRenderingContext'), 'missing WebGL patch');
     assert.ok(script.includes('toString'), 'missing toString protection');
-    assert.ok(script.includes('Chrome PDF Plugin'), 'missing realistic plugins');
   });
 });

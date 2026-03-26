@@ -6,11 +6,15 @@ const POOL_RANK = {
 
 const STATE_RANK = {
   stuck: 0,
+  failed: 0,
   captcha: 0.5,
   blocked: 0.5,
+  rate_limited: 0.5,
   running: 1,
+  crawling: 1,
   retrying: 1.5,
   idle: 2,
+  crawled: 2,
   queued: 3,
 };
 
@@ -65,6 +69,35 @@ function fetchHostLabel(currentUrl) {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
     return truncateText(url);
+  }
+}
+
+// WHY: Show host + truncated path (e.g. "rog.asus.com/strix/xg27...") instead of bare hostname.
+function fetchUrlPath(currentUrl) {
+  const url = String(currentUrl || '').trim();
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    const path = parsed.pathname === '/' ? '' : parsed.pathname;
+    const full = path ? `${host}${path}` : host;
+    return full.length > 40 ? `${full.slice(0, 37)}...` : full;
+  } catch {
+    return truncateText(url, 40);
+  }
+}
+
+// WHY: Shorten proxy URL to a recognizable label (e.g. "proxy-us-1" from full URL).
+function proxyShortLabel(proxyUrl) {
+  const url = String(proxyUrl || '').trim();
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.length > 20
+      ? `${parsed.hostname.slice(0, 17)}...`
+      : parsed.hostname;
+  } catch {
+    return truncateText(url, 15);
   }
 }
 
@@ -163,12 +196,12 @@ export function buildWorkerButtonSubtitle(worker) {
   }
 
   if (worker.pool === 'fetch') {
-    const host = fetchHostLabel(worker.current_url);
-    const displayLabel = String(worker.display_label || '').trim();
-    if (displayLabel && workerId && displayLabel !== workerId) {
-      return host ? `${workerId} \u00b7 ${host}` : workerId;
-    }
-    return host;
+    // WHY: Show truncated URL path (more useful than bare hostname).
+    // Add proxy label so you can see it switch from "direct" to proxy on retry.
+    const urlPath = fetchUrlPath(worker.current_url);
+    const proxyLabel = worker.proxy_url ? proxyShortLabel(worker.proxy_url) : 'direct';
+    const parts = [urlPath || fetchHostLabel(worker.current_url), proxyLabel].filter(Boolean);
+    return parts.join(' \u00b7 ') || null;
   }
 
   return null;

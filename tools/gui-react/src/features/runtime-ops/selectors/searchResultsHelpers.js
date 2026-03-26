@@ -257,6 +257,28 @@ export function extractSiteScope(query) {
   return match ? match[1] : null;
 }
 
+const HARD_DROP_LABELS = {
+  denied_host: 'Denied Host',
+  video_platform: 'Video Platform',
+  utility_shell: 'Utility Shell',
+  invalid_url: 'Invalid URL',
+  invalid_protocol: 'Invalid Protocol',
+};
+
+export function resolveDecisionDisplay(result, { isDuplicate = false, isCrawled = false, isVideo = false } = {}) {
+  const d = result.decision || '';
+  const r = result.rationale || result.reason || '';
+  if (d === 'hard_drop') return { label: HARD_DROP_LABELS[r] || 'Hard Drop', chipClass: 'sf-chip-warning' };
+  if (d === 'keep') return { label: 'Keep', chipClass: 'sf-chip-success' };
+  if (d === 'drop') return { label: 'LLM Drop', chipClass: 'sf-chip-danger' };
+  if (d === 'maybe') return { label: 'Maybe', chipClass: 'sf-chip-info' };
+  if (d === 'unknown') return { label: 'Unknown', chipClass: 'sf-chip-neutral' };
+  if (isVideo) return { label: 'Video', chipClass: 'sf-chip-danger' };
+  if (isDuplicate) return { label: 'Dup', chipClass: 'sf-chip-danger' };
+  if (isCrawled) return { label: 'Crawled', chipClass: 'sf-chip-purple' };
+  return { label: 'Pass', chipClass: 'sf-chip-success' };
+}
+
 function normalizeProfileToken(profile) {
   const token = String(profile || '').trim().toLowerCase();
   if (token === 'fast' || token === 'standard' || token === 'thorough') {

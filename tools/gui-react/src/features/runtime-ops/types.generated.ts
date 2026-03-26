@@ -400,12 +400,14 @@ export interface PrefetchLlmCallGen {
 export interface RuntimeOpsWorkerRowGen {
   worker_id: string;
   pool: string;
-  state: 'idle' | 'running' | 'stuck' | 'queued' | 'blocked' | 'captcha' | 'retrying';
+  state: 'idle' | 'running' | 'stuck' | 'queued' | 'blocked' | 'captcha' | 'crawling' | 'crawled' | 'retrying' | 'rate_limited' | 'failed';
   stage: 'search' | 'fetch' | 'parse' | 'index' | 'llm';
   current_url: string;
   started_at: string;
   elapsed_ms: number;
   last_error: string | null;
+  block_reason: string | null;
+  proxy_url: string | null;
   retries: number;
   fetch_mode: string | null;
   docs_processed: number;

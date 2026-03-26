@@ -156,6 +156,11 @@ export function createRunListBuilder({
     for (const [runId, runLocation] of archivedIndex.entries()) {
       if (!runLocations.has(runId)) {
         runLocations.set(runId, runLocation);
+      } else if (!isRunStillActive(runId)) {
+        // WHY: Archived entry carries richer storage metadata (type: 's3' or 'local').
+        // For completed runs, prefer the archived entry so resolveStorageOrigin
+        // returns the correct storage type instead of always 'local' from a string path.
+        runLocations.set(runId, runLocation);
       }
     }
     let dirs = [...runLocations.keys()];

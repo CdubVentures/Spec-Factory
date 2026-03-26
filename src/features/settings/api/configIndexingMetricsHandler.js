@@ -1,4 +1,5 @@
 import { configValue } from '../../../shared/settingsAccessor.js';
+import { PHASE_SCHEMA_REGISTRY } from '../../indexing/pipeline/shared/phaseSchemaRegistry.js';
 
 export function createIndexingMetricsHandler({
   jsonRes,
@@ -73,6 +74,7 @@ export function createIndexingMetricsHandler({
         model_pricing: modelPricing,
         model_token_profiles: modelTokenProfiles,
         knob_defaults: knobDefaults,
+        phase_schemas: PHASE_SCHEMA_REGISTRY,
         pricing_meta: {
           as_of: String(config.llmPricingAsOf || '').trim() || null,
           sources: config.llmPricingSources && typeof config.llmPricingSources === 'object'

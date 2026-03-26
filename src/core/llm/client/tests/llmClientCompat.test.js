@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { callOpenAI } from '../openaiClient.js';
+import { callLlmProvider } from '../llmClient.js';
 
-test('callOpenAI deepseek mode avoids json_schema and parses fenced JSON', async () => {
+test('callLlmProvider deepseek mode avoids json_schema and parses fenced JSON', async () => {
   const originalFetch = global.fetch;
   const requests = [];
   global.fetch = async (_url, init) => {
@@ -25,7 +25,7 @@ test('callOpenAI deepseek mode avoids json_schema and parses fenced JSON', async
   };
 
   try {
-    const result = await callOpenAI({
+    const result = await callLlmProvider({
       model: 'deepseek-reasoner',
       system: 'system',
       user: 'user',
@@ -53,7 +53,7 @@ test('callOpenAI deepseek mode avoids json_schema and parses fenced JSON', async
   }
 });
 
-test('callOpenAI retries without json_schema when provider rejects response_format', async () => {
+test('callLlmProvider retries without json_schema when provider rejects response_format', async () => {
   const originalFetch = global.fetch;
   const requests = [];
   let callCount = 0;
@@ -94,7 +94,7 @@ test('callOpenAI retries without json_schema when provider rejects response_form
   };
 
   try {
-    const result = await callOpenAI({
+    const result = await callLlmProvider({
       model: 'test-model',
       system: 'system',
       user: 'user',
@@ -118,7 +118,7 @@ test('callOpenAI retries without json_schema when provider rejects response_form
   }
 });
 
-test('callOpenAI rejects truncated structured output instead of accepting nested JSON fragments', async () => {
+test('callLlmProvider rejects truncated structured output instead of accepting nested JSON fragments', async () => {
   const originalFetch = global.fetch;
   global.fetch = async () => ({
     ok: true,
@@ -138,7 +138,7 @@ test('callOpenAI rejects truncated structured output instead of accepting nested
 
   try {
     await assert.rejects(
-      () => callOpenAI({
+      () => callLlmProvider({
         model: 'gemini-2.5-flash',
         system: 'system',
         user: 'user',

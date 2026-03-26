@@ -35,7 +35,7 @@ function ElapsedTimer({ startedAt, state }: { startedAt: string; state: string }
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (state !== 'running' && state !== 'stuck') return;
+    if (state !== 'running' && state !== 'stuck' && state !== 'crawling' && state !== 'retrying') return;
     const startMs = new Date(startedAt).getTime();
     if (!Number.isFinite(startMs) || startMs <= 0) return;
 

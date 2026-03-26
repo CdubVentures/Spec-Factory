@@ -4,7 +4,7 @@
 
 import { SettingGroupBlock } from './RuntimeFlowPrimitives.tsx';
 import { GenericSettingRenderer } from './GenericSettingRenderer.tsx';
-import { getGroupedSettingsForSection, getDisabledByKey } from '../state/settingsCategoryMaps.ts';
+import { getGroupedSettingsForSection, getDisabledByKey, isReadOnlySetting } from '../state/settingsCategoryMaps.ts';
 import type { SettingsCategoryId } from '../state/SettingsCategoryRegistry.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
 
@@ -56,7 +56,7 @@ export function GenericSectionPanel({
         >
           {group.entries.map((entry) => {
             const parentKey = getDisabledByKey(entry.key);
-            const isDisabled = parentKey ? !runtimeDraft[parentKey] : false;
+            const isDisabled = parentKey ? !runtimeDraft[parentKey] : isReadOnlySetting(entry.key);
             return (
               <GenericSettingRenderer
                 key={entry.key}

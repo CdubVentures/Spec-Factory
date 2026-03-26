@@ -85,6 +85,35 @@ test('canonicalizeQueueUrl preserves query string', () => {
   assert.equal(canonicalizeQueueUrl(parsed), 'https://example.com/page?q=test');
 });
 
+test('canonicalizeQueueUrl sorts query params so order does not create duplicates', () => {
+  const a = new URL('https://example.com/product?id=123&color=red');
+  const b = new URL('https://example.com/product?color=red&id=123');
+  assert.equal(canonicalizeQueueUrl(a), canonicalizeQueueUrl(b));
+});
+
+test('canonicalizeQueueUrl strips trailing slash from path', () => {
+  const a = new URL('https://example.com/product/');
+  const b = new URL('https://example.com/product');
+  assert.equal(canonicalizeQueueUrl(a), canonicalizeQueueUrl(b));
+});
+
+test('canonicalizeQueueUrl does not strip trailing slash from root path', () => {
+  const parsed = new URL('https://example.com/');
+  assert.equal(canonicalizeQueueUrl(parsed), 'https://example.com/');
+});
+
+test('canonicalizeQueueUrl lowercases scheme and host', () => {
+  const parsed = new URL('HTTPS://Example.COM/Page');
+  const result = canonicalizeQueueUrl(parsed);
+  assert.ok(result.startsWith('https://example.com/'), 'scheme+host should be lowercased');
+});
+
+test('canonicalizeQueueUrl preserves path case (servers are case-sensitive)', () => {
+  const parsed = new URL('https://example.com/Product/RTX-4090');
+  const result = canonicalizeQueueUrl(parsed);
+  assert.ok(result.includes('/Product/RTX-4090'), 'path case must be preserved');
+});
+
 // --- hostInSet ---
 
 test('hostInSet matches exact and subdomain entries', () => {

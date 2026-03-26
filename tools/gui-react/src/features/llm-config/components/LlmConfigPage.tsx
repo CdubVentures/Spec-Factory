@@ -315,6 +315,7 @@ export function LlmConfigPage() {
           registry={registry}
           globalDraft={globalDraft}
           apiKeyFilter={apiKeyFilter}
+          phaseSchema={indexingLlmConfig?.phase_schemas?.[activePhase] ?? null}
         />
       </Suspense>
     );
