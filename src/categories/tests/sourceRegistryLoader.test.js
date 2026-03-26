@@ -1,29 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { loadCategoryConfig } from '../loader.js';
-
-async function writeJson(filePath, value) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
+import { withTempCategoryRoots, writeJson } from './helpers/categoryLoaderHarness.js';
 
 test('loadCategoryConfig maps rich source registry metadata to source hosts', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase4-source-registry-'));
-  const helperRoot = path.join(root, 'category_authority');
   const category = 'mouse';
-  try {
+
+  await withTempCategoryRoots('phase4-source-registry-', async ({ helperRoot }) => {
     await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
       category: 'mouse',
       fields: {
         weight: {
           required_level: 'required',
           availability: 'expected',
-          difficulty: 'easy'
-        }
-      }
+          difficulty: 'easy',
+        },
+      },
     });
 
     await writeJson(path.join(helperRoot, category, 'sources.json'), {
@@ -33,7 +26,7 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
         manufacturer: [],
         lab: [],
         database: [],
-        retailer: []
+        retailer: [],
       },
       sources: {
         razer_com: {
@@ -43,11 +36,11 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
           crawl_config: {
             method: 'playwright',
             rate_limit_ms: 2200,
-            robots_txt_compliant: true
+            robots_txt_compliant: true,
           },
           field_coverage: {
-            high: ['weight', 'dpi']
-          }
+            high: ['weight', 'dpi'],
+          },
         },
         rtings_com: {
           display_name: 'RTINGS',
@@ -56,50 +49,60 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
           crawl_config: {
             method: 'playwright',
             rate_limit_ms: 3000,
-            robots_txt_compliant: true
-          }
-        }
-      }
+            robots_txt_compliant: true,
+          },
+        },
+      },
     });
 
     const config = await loadCategoryConfig(category, {
       config: {
-        categoryAuthorityRoot: helperRoot
-      }
+        categoryAuthorityRoot: helperRoot,
+      },
     });
 
     const hostMap = config.sourceHostMap || new Map();
-    assert.equal(hostMap.has('razer.com'), true);
-    assert.equal(hostMap.has('rtings.com'), true);
-
-    const razer = hostMap.get('razer.com');
-    assert.equal(razer.sourceId, 'razer_com');
-    assert.equal(razer.tierName, 'manufacturer');
-    assert.equal(razer.crawlConfig.rate_limit_ms, 2200);
-    assert.equal(razer.robotsTxtCompliant, true);
-
-    const sourceHosts = new Set((config.sourceHosts || []).map((row) => row.host));
-    assert.equal(sourceHosts.has('razer.com'), true);
-    assert.equal(sourceHosts.has('rtings.com'), true);
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
+    assert.deepEqual([...hostMap.keys()].sort(), ['razer.com', 'rtings.com']);
+    assert.deepEqual(hostMap.get('razer.com'), {
+      host: 'razer.com',
+      tierName: 'manufacturer',
+      sourceId: 'razer_com',
+      displayName: 'Razer',
+      crawlConfig: {
+        method: 'playwright',
+        rate_limit_ms: 2200,
+        robots_txt_compliant: true,
+      },
+      fieldCoverage: {
+        high: ['weight', 'dpi'],
+      },
+      health: null,
+      robotsTxtCompliant: true,
+      requires_js: true,
+      baseUrl: 'https://www.razer.com',
+    });
+    assert.equal(hostMap.get('rtings.com').tierName, 'lab');
+    assert.equal(hostMap.get('rtings.com').requires_js, true);
+    assert.deepEqual(
+      config.sourceHosts.map((row) => row.host).sort(),
+      ['razer.com', 'rtings.com'],
+    );
+  });
 });
 
-test('loadCategoryConfig materializes manufacturer override hosts into source hosts', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase4-manufacturer-overrides-'));
-  const helperRoot = path.join(root, 'category_authority');
+test('loadCategoryConfig keeps only explicit source hosts when removed manufacturer overrides are absent', async () => {
   const category = 'mouse';
-  try {
+
+  await withTempCategoryRoots('phase4-manufacturer-overrides-', async ({ helperRoot }) => {
     await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
       category: 'mouse',
       fields: {
         sensor: {
           required_level: 'required',
           availability: 'expected',
-          difficulty: 'easy'
-        }
-      }
+          difficulty: 'easy',
+        },
+      },
     });
 
     await writeJson(path.join(helperRoot, category, 'sources.json'), {
@@ -109,7 +112,7 @@ test('loadCategoryConfig materializes manufacturer override hosts into source ho
         manufacturer: [],
         lab: ['rtings.com'],
         database: [],
-        retailer: []
+        retailer: [],
       },
       sources: {
         rtings_com: {
@@ -119,22 +122,91 @@ test('loadCategoryConfig materializes manufacturer override hosts into source ho
           crawl_config: {
             method: 'playwright',
             rate_limit_ms: 3000,
-            robots_txt_compliant: true
-          }
-        }
-      }
+            robots_txt_compliant: true,
+          },
+        },
+      },
     });
 
     const config = await loadCategoryConfig(category, {
       config: {
-        categoryAuthorityRoot: helperRoot
-      }
+        categoryAuthorityRoot: helperRoot,
+      },
     });
 
     const hostMap = config.sourceHostMap || new Map();
-    assert.equal(hostMap.has('rtings.com'), true, 'explicit source rtings.com is in hostMap');
+    assert.deepEqual([...hostMap.keys()], ['rtings.com']);
+    assert.deepEqual(hostMap.get('rtings.com'), {
+      host: 'rtings.com',
+      tierName: 'lab',
+      sourceId: 'rtings_com',
+      displayName: 'RTINGS',
+      crawlConfig: {
+        method: 'playwright',
+        rate_limit_ms: 3000,
+        robots_txt_compliant: true,
+      },
+      fieldCoverage: null,
+      health: null,
+      robotsTxtCompliant: true,
+      requires_js: true,
+      baseUrl: 'https://www.rtings.com',
+    });
     assert.equal(hostMap.has('razer.com'), false, 'manufacturer overrides no longer materialized');
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
+  });
+});
+
+test('loadCategoryConfig resolves hosts from url templates and preserves stronger approved tiers', async () => {
+  const category = 'monitor';
+
+  await withTempCategoryRoots('phase4-source-registry-templates-', async ({ helperRoot }) => {
+    await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
+      category,
+      fields: {
+        brightness: {
+          required_level: 'required',
+          availability: 'expected',
+          difficulty: 'easy',
+        },
+      },
+    });
+
+    await writeJson(path.join(helperRoot, category, 'sources.json'), {
+      category,
+      version: '1.0.0',
+      approved: {
+        manufacturer: ['manuals.example.com'],
+        lab: [],
+        database: [],
+        retailer: [],
+      },
+      sources: {
+        manuals_example: {
+          display_name: 'Manuals',
+          tier: 'tier3_retailer',
+          url_templates: ['https://manuals.example.com/products/{sku}'],
+        },
+        docs_example: {
+          display_name: 'Docs',
+          tier: 'tier4_community',
+          base_url: 'not a url',
+          url_templates: ['  ', 'https://docs.example.com/specs/{slug}'],
+        },
+      },
+    });
+
+    const config = await loadCategoryConfig(category, {
+      config: {
+        categoryAuthorityRoot: helperRoot,
+      },
+    });
+
+    const hostMap = config.sourceHostMap || new Map();
+    assert.deepEqual([...hostMap.keys()].sort(), ['docs.example.com', 'manuals.example.com']);
+    assert.equal(hostMap.get('manuals.example.com').tierName, 'manufacturer');
+    assert.equal(hostMap.get('manuals.example.com').sourceId, 'manuals_example');
+    assert.equal(hostMap.get('docs.example.com').tierName, 'database');
+    assert.equal(hostMap.get('docs.example.com').baseUrl, 'not a url');
+    assert.equal(hostMap.get('docs.example.com').requires_js, false);
+  });
 });

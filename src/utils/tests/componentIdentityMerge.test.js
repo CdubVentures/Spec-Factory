@@ -1,23 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { SpecDb } from '../../db/specDb.js';
 import { buildComponentIdentifier } from '../componentIdentifier.js';
 
 const CATEGORY = 'mouse';
 
-async function createTempSpecDb() {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'component-merge-'));
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-  const specDb = new SpecDb({ dbPath, category: CATEGORY });
-  return { tempRoot, specDb };
+function createSpecDb() {
+  return new SpecDb({ dbPath: ':memory:', category: CATEGORY });
 }
 
-async function cleanupTempSpecDb(tempRoot, specDb) {
+async function cleanupSpecDb(specDb) {
   try { specDb?.close?.(); } catch { /* best-effort */ }
-  await fs.rm(tempRoot, { recursive: true, force: true });
 }
 
 function getIdentityRow(specDb, componentType, canonicalName, maker = '') {
@@ -164,7 +157,7 @@ function seedTwoIdentitiesWithCollision(specDb) {
 }
 
 test('G2/G6 — mergeComponentIdentities transfers links from source to target', async () => {
-  const { tempRoot, specDb } = await createTempSpecDb();
+  const specDb = createSpecDb();
   try {
     const { sourceId, targetId, targetIdentifier } = seedTwoIdentitiesWithCollision(specDb);
 
@@ -178,12 +171,12 @@ test('G2/G6 — mergeComponentIdentities transfers links from source to target',
     const sourceLinks = getLinks(specDb, 'sensor', 'IMX989', '');
     assert.equal(sourceLinks.length, 0, 'source should have no remaining links');
   } finally {
-    await cleanupTempSpecDb(tempRoot, specDb);
+    await cleanupSpecDb(specDb);
   }
 });
 
 test('G2/G6 — mergeComponentIdentities merges values (target takes precedence)', async () => {
-  const { tempRoot, specDb } = await createTempSpecDb();
+  const specDb = createSpecDb();
   try {
     const { sourceId, targetId } = seedTwoIdentitiesWithCollision(specDb);
 
@@ -199,12 +192,12 @@ test('G2/G6 — mergeComponentIdentities merges values (target takes precedence)
     const sourceValues = getComponentValues(specDb, 'sensor', 'IMX989', '');
     assert.equal(sourceValues.length, 0, 'source should have no remaining values');
   } finally {
-    await cleanupTempSpecDb(tempRoot, specDb);
+    await cleanupSpecDb(specDb);
   }
 });
 
 test('G2/G6 — mergeComponentIdentities transfers aliases and removes source identity', async () => {
-  const { tempRoot, specDb } = await createTempSpecDb();
+  const specDb = createSpecDb();
   try {
     const { sourceId, targetId } = seedTwoIdentitiesWithCollision(specDb);
 
@@ -219,12 +212,12 @@ test('G2/G6 — mergeComponentIdentities transfers aliases and removes source id
     assert.equal(identities.length, 1, 'only one identity should remain');
     assert.equal(identities[0].maker, 'Sony', 'surviving identity is the target');
   } finally {
-    await cleanupTempSpecDb(tempRoot, specDb);
+    await cleanupSpecDb(specDb);
   }
 });
 
 test('G2/G6 — mergeComponentIdentities updates key_review_state to target identifier', async () => {
-  const { tempRoot, specDb } = await createTempSpecDb();
+  const specDb = createSpecDb();
   try {
     const { sourceId, targetId, sourceIdentifier, targetIdentifier } = seedTwoIdentitiesWithCollision(specDb);
 
@@ -245,12 +238,12 @@ test('G2/G6 — mergeComponentIdentities updates key_review_state to target iden
     assert.ok(pixelState, 'source-only key_review_state should be transferred');
     assert.equal(pixelState.component_identity_id, targetId, 'transferred state should reference target identity');
   } finally {
-    await cleanupTempSpecDb(tempRoot, specDb);
+    await cleanupSpecDb(specDb);
   }
 });
 
 test('G2/G6 — non-colliding maker update still works (regression)', async () => {
-  const { tempRoot, specDb } = await createTempSpecDb();
+  const specDb = createSpecDb();
   try {
     const sourceId = specDb.upsertComponentIdentity({
       componentType: 'sensor',
@@ -285,6 +278,6 @@ test('G2/G6 — non-colliding maker update still works (regression)', async () =
     const identity = getIdentityRow(specDb, 'sensor', 'IMX989', '');
     assert.ok(identity, 'source identity should exist before update');
   } finally {
-    await cleanupTempSpecDb(tempRoot, specDb);
+    await cleanupSpecDb(specDb);
   }
 });

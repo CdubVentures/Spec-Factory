@@ -32,21 +32,21 @@ test('resolveModelFromRegistry resolves composite keys and returns null on misse
   assert.equal(resolveModelFromRegistry(lookup, 'nonexistent:gemini-2.5-flash'), null);
 });
 
-test('resolveModelFromRegistry resolves bare keys to the first enabled route and returns null for unknown models', () => {
+test('resolveModelFromRegistry resolves bare keys to the first route and returns null for unknown models', () => {
   const lookup = buildRegistryLookup(twoProviderRegistry());
   const route = resolveModelFromRegistry(lookup, 'gemini-2.5-flash');
   assert.equal(route.providerId, 'default-gemini');
   assert.equal(route.modelId, 'gemini-2.5-flash');
 
-  const fallbackLookup = buildRegistryLookup([
-    geminiProvider({ enabled: false }),
+  // When multiple providers have the same modelId, first in registry order wins
+  const multiLookup = buildRegistryLookup([
+    geminiProvider(),
     {
       id: 'alt-gemini',
       name: 'Alt Gemini',
       type: 'openai-compatible',
       baseUrl: 'https://alt.example.com',
       apiKey: 'alt-key',
-      enabled: true,
       models: [{
         id: 'alt-flash',
         modelId: 'gemini-2.5-flash',
@@ -59,8 +59,11 @@ test('resolveModelFromRegistry resolves bare keys to the first enabled route and
       }],
     },
   ]);
-  const fallbackRoute = resolveModelFromRegistry(fallbackLookup, 'gemini-2.5-flash');
-  assert.equal(fallbackRoute.providerId, 'alt-gemini');
+  const firstWins = resolveModelFromRegistry(multiLookup, 'gemini-2.5-flash');
+  assert.equal(firstWins.providerId, 'default-gemini');
+  // Composite key targets the specific provider
+  const altRoute = resolveModelFromRegistry(multiLookup, 'alt-gemini:gemini-2.5-flash');
+  assert.equal(altRoute.providerId, 'alt-gemini');
 
   assert.equal(resolveModelFromRegistry(lookup, 'gpt-99-turbo'), null);
 });

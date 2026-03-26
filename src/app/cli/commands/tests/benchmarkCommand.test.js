@@ -21,8 +21,11 @@ function createDeps(overrides = {}) {
 }
 
 test('benchmark command returns the benchmark summary payload and supports command name override', async () => {
+  const benchmarkCalls = [];
   const commandBenchmark = createBenchmarkCommand(createDeps({
-    runGoldenBenchmark: async ({ fixturePath, maxCases }) => ({
+    runGoldenBenchmark: async ({ storage, category, fixturePath, maxCases }) => {
+      benchmarkCalls.push({ storage, category, fixturePath, maxCases });
+      return ({
       fixture_path: fixturePath,
       case_count: maxCases,
       pass_case_count: 7,
@@ -32,12 +35,14 @@ test('benchmark command returns the benchmark summary payload and supports comma
       field_passed: 25,
       field_pass_rate: 0.7576,
       results: [{ id: 'case-1' }],
-    }),
+    });
+    },
   }));
 
+  const storage = { name: 'storage-stub' };
   const result = await commandBenchmark(
     {},
-    { name: 'storage-stub' },
+    storage,
     { category: 'keyboard', fixture: 'fixtures/keyboard.json', 'max-cases': '15' },
     'benchmark-golden',
   );
@@ -55,6 +60,12 @@ test('benchmark command returns the benchmark summary payload and supports comma
     field_pass_rate: 0.7576,
     results: [{ id: 'case-1' }],
   });
+  assert.deepEqual(benchmarkCalls, [{
+    storage,
+    category: 'keyboard',
+    fixturePath: 'fixtures/keyboard.json',
+    maxCases: 15,
+  }]);
 });
 
 test('benchmark command defaults category and falls back invalid max-cases to zero', async () => {

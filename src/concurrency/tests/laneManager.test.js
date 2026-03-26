@@ -2,8 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LaneManager } from '../laneManager.js';
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+function flushAsyncWork() {
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 test('creates 4 lanes with default concurrency', () => {
@@ -73,7 +83,7 @@ test('pause prevents new tasks from starting, resume unblocks', async () => {
     return 'done';
   });
 
-  await delay(50);
+  await flushAsyncWork();
   assert.equal(started, false, 'Task should not start while paused');
 
   lm.resume('search');
@@ -113,12 +123,19 @@ test('snapshot reports per-lane stats', async () => {
 test('drain waits for all lanes to complete', async () => {
   const lm = new LaneManager();
   let count = 0;
+  const searchTask = createDeferred();
+  const fetchTask = createDeferred();
+  const parseTask = createDeferred();
 
-  lm.dispatch('search', async () => { await delay(20); count += 1; });
-  lm.dispatch('fetch', async () => { await delay(20); count += 1; });
-  lm.dispatch('parse', async () => { await delay(20); count += 1; });
+  lm.dispatch('search', async () => { await searchTask.promise; count += 1; });
+  lm.dispatch('fetch', async () => { await fetchTask.promise; count += 1; });
+  lm.dispatch('parse', async () => { await parseTask.promise; count += 1; });
 
-  await lm.drain();
+  const drainPromise = lm.drain();
+  searchTask.resolve();
+  fetchTask.resolve();
+  parseTask.resolve();
+  await drainPromise;
   assert.equal(count, 3, 'All tasks should complete before drain resolves');
 });
 
@@ -149,4 +166,41 @@ test('withBudgetGuard runs task when budget check passes', async () => {
   assert.equal(result, 'done');
   const snapshot = lm.snapshot();
   assert.equal(snapshot.fetch.completed, 1);
+});
+
+test('failed lane tasks increment failure stats and release queued work', async () => {
+  const lm = new LaneManager({ search: { concurrency: 1 } });
+  const firstTask = createDeferred();
+  const taskOrder = [];
+
+  const failingPromise = lm.dispatch('search', async () => {
+    taskOrder.push('first-start');
+    await firstTask.promise;
+    taskOrder.push('first-fail');
+    throw new Error('lane_boom');
+  });
+  const succeedingPromise = lm.dispatch('search', async () => {
+    taskOrder.push('second-start');
+    return 'ok';
+  });
+
+  await flushAsyncWork();
+  assert.deepEqual(taskOrder, ['first-start']);
+  assert.equal(lm.snapshot().search.queued, 1);
+
+  firstTask.resolve();
+  await assert.rejects(failingPromise, /lane_boom/);
+  assert.equal(await succeedingPromise, 'ok');
+
+  assert.deepEqual(taskOrder, ['first-start', 'first-fail', 'second-start']);
+  assert.deepEqual(lm.snapshot().search, {
+    name: 'search',
+    concurrency: 1,
+    active: 0,
+    queued: 0,
+    completed: 1,
+    failed: 1,
+    budget_rejected: 0,
+    paused: false,
+  });
 });

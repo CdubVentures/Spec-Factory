@@ -30,7 +30,10 @@ Exported from `index.js`:
 ### Built-in Plugins
 
 - `plugins/stealthPlugin.js` — hides webdriver, injects stealth fingerprint
+- `plugins/cookieConsentPlugin.js` — auto-dismisses cookie/consent banners via autoconsent + fallback selectors
 - `plugins/autoScrollPlugin.js` — scrolls to trigger lazy-loaded content
+- `plugins/domExpansionPlugin.js` — clicks expand/show-more buttons to reveal collapsed sections
+- `plugins/cssOverridePlugin.js` — force-reveals hidden elements via CSS injection
 
 ## Dependencies
 

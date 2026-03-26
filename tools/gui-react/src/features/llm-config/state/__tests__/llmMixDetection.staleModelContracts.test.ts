@@ -42,7 +42,7 @@ describe('detectStaleModelIssues contracts', () => {
     }
   });
 
-  it('warns for stale models from missing, disabled, or multiply-missing providers', () => {
+  it('warns for stale models from missing or multiply-missing providers', () => {
     const cases = [
       {
         name: 'missing models warn with field-scoped keys',
@@ -54,20 +54,6 @@ describe('detectStaleModelIssues contracts', () => {
           }),
         ],
         modelFields: { llmModelPlan: 'deleted-model' },
-        knownModelOptions: undefined,
-        expectedKeys: ['stale-model-llmModelPlan'],
-      },
-      {
-        name: 'disabled providers still count as stale',
-        registry: [
-          makeProvider({
-            id: 'p1',
-            name: 'OpenAI',
-            enabled: false,
-            models: [makeModel('gpt-4o')],
-          }),
-        ],
-        modelFields: { llmModelPlan: 'gpt-4o' },
         knownModelOptions: undefined,
         expectedKeys: ['stale-model-llmModelPlan'],
       },

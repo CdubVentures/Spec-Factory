@@ -55,7 +55,6 @@ export function collectModelOptions(
 ): CollectedModelOption[] {
   const result: CollectedModelOption[] = [];
   for (const provider of registry) {
-    if (!provider.enabled) continue;
     for (const model of provider.models) {
       if (roleFilter && model.role !== roleFilter) continue;
       result.push({
@@ -70,13 +69,29 @@ export function collectModelOptions(
   return result;
 }
 
+// WHY: Dropdown values use composite keys (providerId:modelId) to disambiguate
+// when the same modelId exists in multiple providers (e.g., API and Lab).
+// The backend routeResolver already supports composite keys natively.
+export function parseModelKey(key: string): { providerId: string | null; modelId: string } {
+  if (!key) return { providerId: null, modelId: '' };
+  const idx = key.indexOf(':');
+  if (idx > 0) return { providerId: key.slice(0, idx), modelId: key.slice(idx + 1) };
+  return { providerId: null, modelId: key };
+}
+
 export function resolveProviderForModel(
   registry: LlmProviderEntry[],
-  modelId: string,
+  key: string,
 ): LlmProviderEntry | undefined {
-  if (!modelId || !modelId.trim()) return undefined;
+  if (!key || !key.trim()) return undefined;
+  const { providerId, modelId } = parseModelKey(key);
+  if (providerId) {
+    return registry.find(
+      (p) => p.id === providerId && p.models.some((m) => m.modelId === modelId),
+    );
+  }
   return registry.find(
-    (p) => p.enabled && p.models.some((m) => m.modelId === modelId),
+    (p) => p.models.some((m) => m.modelId === modelId),
   );
 }
 
@@ -94,7 +109,8 @@ export function bridgeRegistryToFlatKeys(
 ): FlatKeyBridgeResult | null {
   const provider = resolveProviderForModel(registry, selectedBaseModel);
   if (!provider) return null;
-  const model = provider.models.find((m) => m.modelId === selectedBaseModel);
+  const { modelId } = parseModelKey(selectedBaseModel);
+  const model = provider.models.find((m) => m.modelId === modelId);
   if (!model) return null;
   return {
     llmProvider: provider.type === 'openai-compatible' ? 'openai' : provider.type,
@@ -142,7 +158,6 @@ export function createDefaultProvider(type: LlmProviderType): LlmProviderEntry {
     type,
     baseUrl: DEFAULT_BASE_URLS[type] ?? '',
     apiKey: '',
-    enabled: true,
     expanded: true,
     health: 'gray',
     models: [],

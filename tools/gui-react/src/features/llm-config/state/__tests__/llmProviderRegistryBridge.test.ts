@@ -14,7 +14,6 @@ function makeProvider(
     type: 'openai-compatible',
     baseUrl: 'https://api.openai.com/v1',
     apiKey: 'sk-test',
-    enabled: true,
     expanded: false,
     models: [],
     ...overrides,
@@ -68,28 +67,6 @@ describe('bridgeRegistryToFlatKeys', () => {
       }),
     ];
     const result = bridgeRegistryToFlatKeys(registry, 'unknown-model');
-    strictEqual(result, null);
-  });
-
-  it('returns null for disabled provider', () => {
-    const registry = [
-      makeProvider({
-        id: 'p1',
-        name: 'OpenAI',
-        enabled: false,
-        models: [{
-          id: 'm1',
-          modelId: 'gpt-4o',
-          role: 'primary',
-          costInputPer1M: 2.5,
-          costOutputPer1M: 10.0,
-          costCachedPer1M: 1.25,
-          maxContextTokens: 128000,
-          maxOutputTokens: 16384,
-        }],
-      }),
-    ];
-    const result = bridgeRegistryToFlatKeys(registry, 'gpt-4o');
     strictEqual(result, null);
   });
 
@@ -212,28 +189,6 @@ describe('syncCostsFromRegistry', () => {
       }),
     ];
     const result = syncCostsFromRegistry(registry, 'non-existent-model');
-    strictEqual(result, null);
-  });
-
-  it('returns null when provider is disabled', () => {
-    const registry = [
-      makeProvider({
-        id: 'p1',
-        name: 'OpenAI',
-        enabled: false,
-        models: [{
-          id: 'm1',
-          modelId: 'gpt-4o',
-          role: 'primary',
-          costInputPer1M: 2.5,
-          costOutputPer1M: 10.0,
-          costCachedPer1M: 1.25,
-          maxContextTokens: 128000,
-          maxOutputTokens: 16384,
-        }],
-      }),
-    ];
-    const result = syncCostsFromRegistry(registry, 'gpt-4o');
     strictEqual(result, null);
   });
 

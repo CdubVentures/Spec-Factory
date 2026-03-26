@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createStorage } from '../../../../../s3/storage.js';
 import { SpecDb } from '../../../../../db/specDb.js';
 import { loadQueueState, saveQueueState } from '../../../../../queue/queueState.js';
 import {
@@ -18,20 +17,24 @@ export {
   saveQueueState,
 };
 
+function createStorage() {
+  const objects = new Map();
+  return {
+    readTextOrNull: async (key) => objects.get(key) ?? null,
+    writeObject: async (key, body) => {
+      objects.set(key, Buffer.isBuffer(body) ? body.toString('utf8') : Buffer.from(body).toString('utf8'));
+    },
+    resolveOutputKey: (...parts) => ['specs', 'outputs', ...parts].filter(Boolean).join('/'),
+  };
+}
+
 export async function createHarness() {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-component-impact-'));
   const outputRoot = path.join(tempRoot, 'out');
-  const storage = createStorage({
-    localMode: true,
-    localInputRoot: path.join(tempRoot, 'fixtures'),
-    localOutputRoot: outputRoot,
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs',
-  });
+  const storage = createStorage();
 
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
   const category = 'mouse';
-  const specDb = new SpecDb({ dbPath, category });
+  const specDb = new SpecDb({ dbPath: ':memory:', category });
 
   return { tempRoot, outputRoot, storage, specDb, category };
 }

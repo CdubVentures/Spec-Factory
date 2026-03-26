@@ -87,7 +87,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const BOOL_KEYS = [
       'crawleeHeadless', 'runtimeScreencastEnabled',
       'autoScrollEnabled',
-      'robotsTxtCompliant',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
       'eventsJsonWrite',
     ];
@@ -109,6 +108,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'fetchConcurrency',
       'reextractAfterHours',
       'reextractIndexed',
+      'robotsTxtCompliant',
     ];
     for (const key of RETIRED_KEYS) {
       assert.equal(Object.hasOwn(body, key), false, `retired key should not be surfaced: ${key}`);

@@ -25,8 +25,7 @@ export {
 
 export async function createTempSpecDb() {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'component-review-lane-state-'));
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-  const specDb = new SpecDb({ dbPath, category: CATEGORY });
+  const specDb = new SpecDb({ dbPath: ':memory:', category: CATEGORY });
   return { tempRoot, specDb };
 }
 

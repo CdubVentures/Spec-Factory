@@ -6,23 +6,7 @@ import {
   persistSourceIntel,
   sourceIntelKey
 } from '../sourceIntel.js';
-
-function makeMemoryStorage() {
-  const map = new Map();
-
-  return {
-    async readJsonOrNull(key) {
-      const raw = map.get(key);
-      return raw ? JSON.parse(raw.toString('utf8')) : null;
-    },
-    async writeObject(key, body) {
-      map.set(key, Buffer.isBuffer(body) ? body : Buffer.from(body));
-    },
-    getMap() {
-      return map;
-    }
-  };
-}
+import { makeMemoryStorage } from './helpers/sourceIntelHarness.js';
 
 test('persistSourceIntel writes aggregate stats and promotion suggestion report', async () => {
   const storage = makeMemoryStorage();

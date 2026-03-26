@@ -13,6 +13,21 @@ import {
 } from './helpers/reviewLaneGuiHarness.js';
 import { runThemeProfileGuiContract } from '../../../pages/layout/__tests__/helpers/themeProfileGuiContractHelper.js';
 
+function candidateAction(page, action, candidateId) {
+  return page.locator(`[data-review-action="${action}"][data-candidate-id="${candidateId}"]`).first();
+}
+
+async function clickFirstCandidateAction(page, action, candidateIds) {
+  for (const candidateId of candidateIds) {
+    const button = candidateAction(page, action, candidateId);
+    if ((await button.count()) > 0) {
+      await button.click();
+      return candidateId;
+    }
+  }
+  throw new Error(`missing_candidate_action:${action}:${candidateIds.join(',')}`);
+}
+
 async function assertGridLaneScope({ db, page, openReviewGrid }) {
   await openReviewGrid();
 
@@ -20,12 +35,7 @@ async function assertGridLaneScope({ db, page, openReviewGrid }) {
   await ensureButtonVisible(page, 'Accept');
   await ensureButtonVisible(page, 'Confirm');
 
-  const gridCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-  const gridAcceptButton = gridCandidatesSection
-    .locator('span[title="49"]')
-    .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
-    .first();
-  await gridAcceptButton.click();
+  await clickFirstCandidateAction(page, 'accept-primary', ['p1-weight-1']);
 
   const weightSlotId = getItemFieldStateId(db, CATEGORY, PRODUCT_A, 'weight');
   assert.ok(weightSlotId);
@@ -40,14 +50,7 @@ async function assertGridLaneScope({ db, page, openReviewGrid }) {
     return state?.user_accept_primary_status === 'accepted';
   }, 15_000, 50, 'grid_item_accept_primary');
 
-  const gridAcceptedValueCard = page.locator('section')
-    .filter({ hasText: /Candidates \(/ })
-    .first()
-    .locator('span[title="49"]')
-    .first();
-  const gridConfirmAfterAccept = gridAcceptedValueCard
-    .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Confirm"]')
-    .first();
+  const gridConfirmAfterAccept = candidateAction(page, 'confirm-primary', 'collision_primary_candidate');
   await waitForCondition(async () => (await gridConfirmAfterAccept.count()) > 0, 15_000, 50, 'grid_confirm_still_visible_after_accept');
 
   await clickGridCell(page, PRODUCT_A, 'dpi');
@@ -77,24 +80,11 @@ async function assertEnumLaneScope({ db, page, openEnumList }) {
   await openEnumList('connection');
   await clickAndWaitForDrawer(page, '2.4GHz');
 
-  const enumCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-  let enumAcceptButton = enumCandidatesSection
-    .locator('span[title="candidate_id: p1-conn-1"]')
-    .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
-    .first();
-  if ((await enumAcceptButton.count()) === 0) {
-    enumAcceptButton = enumCandidatesSection
-      .locator('span[title="candidate_id: global_connection_candidate"]')
-      .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
-      .first();
-  }
-  if ((await enumAcceptButton.count()) === 0) {
-    enumAcceptButton = enumCandidatesSection
-      .locator('span[title="2.4GHz"]')
-      .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
-      .first();
-  }
-  await enumAcceptButton.click();
+  await clickFirstCandidateAction(page, 'accept-primary', [
+    'p1-conn-1',
+    'global_connection_candidate',
+    'p1-conn-3',
+  ]);
 
   await waitForCondition(async () => {
     const state = getStrictKeyReviewState(db, CATEGORY, {
@@ -116,12 +106,7 @@ async function assertComponentLaneScope({ componentIdentifier, db, page, openSen
   assert.equal(await componentNameCell.locator('span[title="Item AI review pending"]').count(), 0);
 
   await clickAndWaitForDrawer(page, '35000');
-  const componentCandidatesSection = page.locator('section').filter({ hasText: /Candidates \(/ }).first();
-  const componentAcceptButton = componentCandidatesSection
-    .locator('span[title="35000"]')
-    .locator('xpath=ancestor::div[contains(@class,"border")][1]//button[normalize-space()="Accept"]')
-    .first();
-  await componentAcceptButton.click();
+  await clickFirstCandidateAction(page, 'accept-primary', ['cmp_dpi_35000']);
 
   await waitForCondition(async () => {
     const state = getStrictKeyReviewState(db, CATEGORY, {
@@ -134,9 +119,7 @@ async function assertComponentLaneScope({ componentIdentifier, db, page, openSen
     return state?.user_accept_shared_status === 'accepted' && state?.ai_confirm_shared_status === 'pending';
   }, 15_000, 50, 'component_accept');
 
-  const componentConfirmAfterAccept = componentCandidatesSection
-    .locator('xpath=.//button[normalize-space()="Confirm"]')
-    .first();
+  const componentConfirmAfterAccept = candidateAction(page, 'confirm-primary', 'cmp_dpi_25000');
   await waitForCondition(async () => (await componentConfirmAfterAccept.count()) > 0, 15_000, 50, 'component_confirm_visible_after_accept_when_pending_candidates_remain');
 }
 

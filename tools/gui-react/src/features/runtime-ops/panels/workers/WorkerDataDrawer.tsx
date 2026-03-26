@@ -141,6 +141,7 @@ export function WorkerDataDrawer({
         {activeTab === 'extraction' && (
           <DrawerExtractTab
             fields={data?.extraction_fields ?? []}
+            extractionPlugins={data?.extraction_plugins ?? []}
             workerState={worker?.state ?? ''}
           />
         )}

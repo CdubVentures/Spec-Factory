@@ -74,10 +74,13 @@ const UI_GROUP_HINTS: Readonly<Record<string, GroupHint>> = Object.freeze({
   // Search Profile
   'Query Caps':         { order: 0 },
   'Synonyms & Aliases': { order: 1 },
-  // Browser & Rendering
-  'Auto Scroll':        { order: 0 },
-  'Robots.txt':         { order: 1 },
-  'Crawlee Internals':  { order: 2, collapsed: true },
+  // Fetch Plugins — per-plugin detail groups
+  'Consent Settings':   { order: 0 },
+  'Scroll Settings':    { order: 0 },
+  'Expansion Settings': { order: 0 },
+  'Video Recording':    { order: 0 },
+  // Browser & Crawlee
+  'Crawlee Internals':  { order: 0, collapsed: true },
   // Observability
   'Trace':              { order: 0 },
   'Screencast':         { order: 1 },

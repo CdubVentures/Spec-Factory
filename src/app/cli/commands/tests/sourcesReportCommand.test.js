@@ -86,7 +86,7 @@ test('sources-report sorts domains and per-path rows by planner score with top l
 
   const commandSourcesReport = createSourcesReportCommand(createDeps());
   const result = await commandSourcesReport({}, storage, {
-    category: 'monitor',
+    category: ' monitor ',
     top: '2',
     'top-paths': '1',
   });

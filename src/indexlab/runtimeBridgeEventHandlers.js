@@ -815,6 +815,23 @@ async function handlePluginHookCompleted(state, _deps, { ts, row }) {
   }, ts);
 }
 
+async function handleExtractionPluginCompleted(state, _deps, { ts, row }) {
+  await emit(state, 'extraction', 'extraction_plugin_completed', {
+    scope: 'url',
+    plugin: String(row.plugin || 'unknown'),
+    worker_id: String(row.worker_id || ''),
+    url: String(row.url || ''),
+  }, ts);
+}
+
+async function handleExtractionPluginFailed(state, _deps, { ts, row }) {
+  await emit(state, 'extraction', 'extraction_plugin_failed', {
+    scope: 'url',
+    reason: String(row.reason || 'unknown'),
+    worker_id: String(row.worker_id || ''),
+  }, ts);
+}
+
 // ── Event handler registry (table-driven dispatch) ────────────────────────
 
 const EVENT_HANDLERS = new Map([
@@ -852,6 +869,8 @@ const EVENT_HANDLERS = new Map([
   ['search_queued',                   handleSearchQueued],
   ['bootstrap_step',                  handleBootstrapStep],
   ['plugin_hook_completed',           handlePluginHookCompleted],
+  ['extraction_plugin_completed',     handleExtractionPluginCompleted],
+  ['extraction_plugin_failed',        handleExtractionPluginFailed],
 ]);
 
 const LLM_EVENTS = new Set(['llm_call_started', 'llm_call_completed', 'llm_call_failed']);

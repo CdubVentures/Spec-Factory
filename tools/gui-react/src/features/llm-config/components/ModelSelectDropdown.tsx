@@ -1,8 +1,8 @@
 import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { ensureValueInOptions } from '../state/llmModelDropdownOptions.ts';
 import type { DropdownModelOption } from '../state/llmModelDropdownOptions.ts';
-import { ROLE_BADGE_STYLE, ROLE_LABEL, ACCESS_MODE_BADGE_STYLE, CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
-import type { LlmModelRole, LlmAccessMode, LlmModelCapabilities } from '../types/llmProviderRegistryTypes.ts';
+import { ModelBadgeGroup } from './ModelAccessBadges.tsx';
+import type { LlmModelRole, LlmAccessMode } from '../types/llmProviderRegistryTypes.ts';
 
 /** Small "inherit from global" indicator rendered next to a dropdown when using the global default. */
 export function GlobalDefaultIcon() {
@@ -59,9 +59,11 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
 
   // Build the full item list (none + missing + options)
   const items = useMemo(() => {
-    const list: Array<{ key: string; value: string; label: string; role?: LlmModelRole; muted?: boolean; accessMode?: LlmAccessMode; capabilities?: LlmModelCapabilities }> = [];
-    const derivedNoneOption = noneModelId ? options.find((o) => o.value === noneModelId) : undefined;
-    if (allowNone) list.push({ key: '__none__', value: '', label: noneLabel, role: derivedNoneOption?.role, accessMode: derivedNoneOption?.accessMode, capabilities: derivedNoneOption?.capabilities });
+    const list: Array<{ key: string; value: string; label: string; role?: LlmModelRole; muted?: boolean; accessMode?: LlmAccessMode }> = [];
+    const derivedNoneOption = noneModelId
+      ? (options.find((o) => o.value === noneModelId) ?? options.find((o) => o.value.endsWith(`:${noneModelId}`)))
+      : undefined;
+    if (allowNone) list.push({ key: '__none__', value: '', label: noneLabel, role: derivedNoneOption?.role, accessMode: derivedNoneOption?.accessMode });
     if (missingOption) list.push({ key: `missing-${missingOption.value}`, value: missingOption.value, label: missingOption.label, muted: true });
     for (const o of options) {
       list.push({
@@ -70,7 +72,6 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
         label: o.label,
         role: o.role,
         accessMode: o.accessMode,
-        capabilities: o.capabilities,
       });
     }
     return list;
@@ -165,19 +166,7 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
         aria-expanded={open}
       >
         <span className="sf-custom-select-value">
-          {selectedRole && (
-            <span className="sf-custom-select-role-tag" style={{ color: ROLE_BADGE_STYLE[selectedRole].fg }}>
-              {ROLE_LABEL[selectedRole]}
-            </span>
-          )}
-          {selectedItem?.accessMode && (
-            <span
-              className="sf-custom-select-badge"
-              style={{ color: ACCESS_MODE_BADGE_STYLE[selectedItem.accessMode].fg, backgroundColor: ACCESS_MODE_BADGE_STYLE[selectedItem.accessMode].bg }}
-            >
-              {ACCESS_MODE_BADGE_STYLE[selectedItem.accessMode].label}
-            </span>
-          )}
+          <ModelBadgeGroup accessMode={selectedItem?.accessMode} role={selectedRole} />
           <span className="sf-custom-select-label">{displayLabel}</span>
         </span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="sf-custom-select-chevron">
@@ -197,35 +186,7 @@ export const ModelSelectDropdown = memo(function ModelSelectDropdown({
               onMouseEnter={() => setFocusIdx(idx)}
               onMouseDown={(e) => { e.preventDefault(); handleSelect(item.value); }}
             >
-              {item.role && (
-                <span className="sf-custom-select-role-tag" style={{ color: ROLE_BADGE_STYLE[item.role].fg }}>
-                  {ROLE_LABEL[item.role]}
-                </span>
-              )}
-              {item.accessMode && (
-                <span
-                  className="sf-custom-select-badge"
-                  style={{ color: ACCESS_MODE_BADGE_STYLE[item.accessMode].fg, backgroundColor: ACCESS_MODE_BADGE_STYLE[item.accessMode].bg }}
-                >
-                  {ACCESS_MODE_BADGE_STYLE[item.accessMode].label}
-                </span>
-              )}
-              {item.capabilities?.thinking && (
-                <span
-                  className="sf-custom-select-badge"
-                  style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
-                >
-                  {CAPABILITY_BADGE_STYLE.thinking.label}
-                </span>
-              )}
-              {item.capabilities?.web && (
-                <span
-                  className="sf-custom-select-badge"
-                  style={{ color: CAPABILITY_BADGE_STYLE.web.fg, backgroundColor: CAPABILITY_BADGE_STYLE.web.bg }}
-                >
-                  {CAPABILITY_BADGE_STYLE.web.label}
-                </span>
-              )}
+              <ModelBadgeGroup accessMode={item.accessMode} role={item.role} />
               <span>{item.label}</span>
             </div>
           ))}

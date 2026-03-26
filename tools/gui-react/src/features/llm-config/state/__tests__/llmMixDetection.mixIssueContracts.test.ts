@@ -184,7 +184,6 @@ describe('detectMixIssues contracts', () => {
           makeProvider({
             id: 'p1',
             name: 'OpenAI',
-            enabled: false,
             models: [makeModel('gpt-4o')],
           }),
         ],

@@ -1,5 +1,5 @@
 // WHY: Screenshot extraction plugin — captures full-page and targeted selector
-// screenshots from each URL. Runs concurrently with other extraction plugins
+// screenshots from each URL. Runs sequentially with other extraction plugins
 // after all fetch tools complete. Imports captureScreenshots via crawl's
 // public API barrel (no internal cross-feature import).
 

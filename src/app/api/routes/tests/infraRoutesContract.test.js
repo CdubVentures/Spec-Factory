@@ -2,51 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { registerInfraRoutes } from '../infraRoutes.js';
+import {
+  createInfraRoutesHandler,
+  createMissingPathFs,
+  invokeInfraRoute,
+} from './helpers/infraRoutesHarness.js';
 
-function makeCtx(overrides = {}) {
-  return {
-    jsonRes: (_res, status, body) => ({ status, body }),
-    readJsonBody: async () => ({}),
-    listDirs: async () => [],
-    canonicalSlugify: (value) =>
-      String(value || '')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-'),
-    HELPER_ROOT: path.resolve('category_authority'),
-    DIST_ROOT: path.resolve('gui-dist'),
-    OUTPUT_ROOT: path.resolve('out'),
-    INDEXLAB_ROOT: path.resolve('indexlab'),
-    fs: {
-      access: async () => {
-        const error = new Error('missing');
-        error.code = 'ENOENT';
-        throw error;
-      },
-      mkdir: async () => {},
-    },
-    path,
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-    },
-    getSearxngStatus: async () => ({ ok: true }),
-    startSearxngStack: async () => ({ ok: true }),
-    startProcess: () => ({ running: true }),
-    stopProcess: async () => ({ running: false }),
-    processStatus: () => ({ running: false }),
-    isProcessRunning: () => false,
-    waitForProcessExit: async () => true,
-    broadcastWs: () => {},
-    ...overrides,
-  };
-}
-
-test('infra health route returns gui-server metadata', async () => {
-  const handler = registerInfraRoutes(makeCtx());
-  const result = await handler(['health'], new URLSearchParams(), 'GET', {}, {});
+test('health endpoint reports gui-server identity and dist root', async () => {
+  const handler = createInfraRoutesHandler();
+  const result = await invokeInfraRoute(handler, ['health'], 'GET');
 
   assert.equal(result.status, 200);
   assert.equal(result.body?.ok, true);
@@ -54,36 +18,26 @@ test('infra health route returns gui-server metadata', async () => {
   assert.equal(result.body?.dist_root, path.resolve('gui-dist'));
 });
 
-test('infra categories GET filters private categories and honors includeTest flag', async () => {
-  const handler = registerInfraRoutes(makeCtx({
+test('categories endpoint hides private folders unless includeTest is requested', async () => {
+  const handler = createInfraRoutesHandler({
     listDirs: async () => ['mouse', '_global', '_tmp', '_test_keyboard'],
-  }));
+  });
 
-  const normal = await handler(['categories'], new URLSearchParams(), 'GET', {}, {});
-  const includeTest = await handler(
-    ['categories'],
-    new URLSearchParams('includeTest=true'),
-    'GET',
-    {},
-    {},
-  );
+  const normal = await invokeInfraRoute(handler, ['categories'], 'GET');
+  const includeTest = await invokeInfraRoute(handler, ['categories'], 'GET', {
+    params: 'includeTest=true',
+  });
 
   assert.deepEqual(normal.body, ['mouse']);
   assert.deepEqual(includeTest.body, ['mouse', '_test_keyboard']);
 });
 
-test('infra categories POST scaffolds category and returns field_count', async () => {
+test('category creation returns the new slug, public category list, and field count', async () => {
   const scaffoldCalls = [];
-  const handler = registerInfraRoutes(makeCtx({
+  const emittedEvents = [];
+  const handler = createInfraRoutesHandler({
     readJsonBody: async () => ({ name: 'Gaming Mice' }),
-    fs: {
-      access: async () => {
-        const error = new Error('missing');
-        error.code = 'ENOENT';
-        throw error;
-      },
-      mkdir: async () => {},
-    },
+    fs: createMissingPathFs(),
     listDirs: async () => ['gaming-mice', 'mouse', '_global'],
     scaffoldCategoryFn: async ({ category, config }) => {
       scaffoldCalls.push({ category, config });
@@ -93,23 +47,82 @@ test('infra categories POST scaffolds category and returns field_count', async (
         compileResult: { compiled: true, field_count: 30, warnings: [], errors: [] },
       };
     },
-  }));
+    emitDataChangeFn: (event) => {
+      emittedEvents.push(event);
+    },
+  });
 
-  const result = await handler(['categories'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeInfraRoute(handler, ['categories'], 'POST');
   assert.equal(result.status, 201);
   assert.equal(result.body?.slug, 'gaming-mice');
   assert.equal(result.body?.field_count, 30);
   assert.deepEqual(result.body?.categories, ['gaming-mice', 'mouse']);
   assert.equal(scaffoldCalls.length, 1);
   assert.equal(scaffoldCalls[0].category, 'gaming-mice');
+  assert.equal(emittedEvents.length, 1);
+  assert.equal(emittedEvents[0].event, 'category-created');
+  assert.equal(emittedEvents[0].category, 'all');
+  assert.deepEqual(emittedEvents[0].meta, { slug: 'gaming-mice' });
 });
 
-test('infra searxng surfaces start failures without mutating the success contract', async () => {
-  const handler = registerInfraRoutes(makeCtx({
-    startSearxngStack: async () => ({ ok: false, error: 'searx_boot_failed', status: 'starting' }),
-  }));
+test('category creation rejects blank category names', async () => {
+  const handler = createInfraRoutesHandler({
+    readJsonBody: async () => ({ name: '   ' }),
+  });
 
-  const result = await handler(['searxng', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeInfraRoute(handler, ['categories'], 'POST');
+  assert.deepEqual(result, {
+    status: 400,
+    body: {
+      ok: false,
+      error: 'category_name_required',
+    },
+  });
+});
+
+test('category creation reports conflicts when the category already exists', async () => {
+  const handler = createInfraRoutesHandler({
+    readJsonBody: async () => ({ name: 'Mouse' }),
+  });
+
+  const result = await invokeInfraRoute(handler, ['categories'], 'POST');
+  assert.deepEqual(result, {
+    status: 409,
+    body: {
+      ok: false,
+      error: 'category_already_exists',
+      slug: 'mouse',
+    },
+  });
+});
+
+test('category creation surfaces scaffold compile failures as a 500 contract error', async () => {
+  const handler = createInfraRoutesHandler({
+    readJsonBody: async () => ({ name: 'Broken Category' }),
+    fs: createMissingPathFs(),
+    scaffoldCategoryFn: async () => ({
+      created: true,
+      compileResult: { compiled: false, errors: ['missing schema'] },
+    }),
+  });
+
+  const result = await invokeInfraRoute(handler, ['categories'], 'POST');
+  assert.deepEqual(result, {
+    status: 500,
+    body: {
+      ok: false,
+      error: 'scaffold_compile_failed',
+      details: ['missing schema'],
+    },
+  });
+});
+
+test('searxng start surfaces upstream failures as a 500 error payload', async () => {
+  const handler = createInfraRoutesHandler({
+    startSearxngStack: async () => ({ ok: false, error: 'searx_boot_failed', status: 'starting' }),
+  });
+
+  const result = await invokeInfraRoute(handler, ['searxng', 'start'], 'POST');
   assert.deepEqual(result, {
     status: 500,
     body: {
@@ -119,23 +132,18 @@ test('infra searxng surfaces start failures without mutating the success contrac
   });
 });
 
-test('infra graphql proxy preserves upstream status and payload', async () => {
-  const previousFetch = globalThis.fetch;
-  globalThis.fetch = async () => ({
-    status: 202,
-    json: async () => ({ ok: true, rows: 3 }),
+test('graphql proxy relays the upstream status code and JSON body', async () => {
+  const handler = createInfraRoutesHandler({
+    fetchApi: async () => ({
+      status: 202,
+      json: async () => ({ ok: true, rows: 3 }),
+    }),
+    readJsonBody: async () => ({ query: '{ ping }' }),
   });
 
-  try {
-    const handler = registerInfraRoutes(makeCtx({
-      readJsonBody: async () => ({ query: '{ ping }' }),
-    }));
-    const result = await handler(['graphql'], new URLSearchParams(), 'POST', {}, {});
-    assert.deepEqual(result, {
-      status: 202,
-      body: { ok: true, rows: 3 },
-    });
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
+  const result = await invokeInfraRoute(handler, ['graphql'], 'POST');
+  assert.deepEqual(result, {
+    status: 202,
+    body: { ok: true, rows: 3 },
+  });
 });

@@ -15,6 +15,8 @@ async function createRuntimeSettingsDomainHarness() {
   };
 }
 
+const runtimeSettingsDomainHarnessPromise = createRuntimeSettingsDomainHarness();
+
 const SERIALIZER_EXCLUDED_PUT_KEYS = new Set([
   'llmMaxOutputTokensTriage',
 ]);
@@ -55,7 +57,7 @@ function createSerializerInput(overrides = {}) {
 }
 
 test('runtime settings serializer emits every runtime PUT frontend key', async () => {
-  const harness = await createRuntimeSettingsDomainHarness();
+  const harness = await runtimeSettingsDomainHarnessPromise;
   const payload = harness.collectRuntimeSettingsPayload(createSerializerInput());
   const missing = Array.from(getRuntimePutFrontendKeys()).filter(
     (key) => !Object.prototype.hasOwnProperty.call(payload, key),
@@ -73,7 +75,7 @@ test('runtime settings serializer emits every runtime PUT frontend key', async (
 });
 
 test('runtime settings serializer applies fallback baselines and shared token defaults', async () => {
-  const harness = await createRuntimeSettingsDomainHarness();
+  const harness = await runtimeSettingsDomainHarnessPromise;
   const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmMaxOutputTokens: 'bad-token-count',
     llmMaxOutputTokensPlan: 'bad-plan-tokens',
@@ -86,7 +88,7 @@ test('runtime settings serializer applies fallback baselines and shared token de
 });
 
 test('runtime settings serializer preserves parsed reasoning, timeout, and cost knobs', async () => {
-  const harness = await createRuntimeSettingsDomainHarness();
+  const harness = await runtimeSettingsDomainHarnessPromise;
   const payload = harness.collectRuntimeSettingsPayload(createSerializerInput({
     llmReasoningMode: true,
     llmReasoningBudget: '3072',

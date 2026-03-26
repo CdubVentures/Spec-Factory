@@ -274,6 +274,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         base.prefetch_tab = payload.prefetch_tab ?? null;
         base.prompt_preview = payload.prompt_preview != null ? String(payload.prompt_preview) : null;
         base.response_preview = payload.response_preview != null ? String(payload.response_preview) : null;
+        base.is_fallback = Boolean(payload.is_fallback);
       }
       workers[workerId] = base;
     }
@@ -392,6 +393,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         if (payload.model != null) w.model = String(payload.model);
         if (payload.output_summary != null) w.output_summary = payload.output_summary;
         if (payload.response_preview != null) w.response_preview = String(payload.response_preview);
+        if (payload.is_fallback) w.is_fallback = true;
         // Only overwrite prompt_preview if finish sends a non-empty value;
         // the openAI client does not resend the prompt on completion, so
         // the finish event typically carries an empty string that would

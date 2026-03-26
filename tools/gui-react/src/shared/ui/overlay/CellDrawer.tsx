@@ -632,6 +632,8 @@ export function CellDrawer({
                                 onClick={handleAcceptPrimary}
                                 disabled={acceptThisCandidateDisabled}
                                 aria-pressed={isActiveAccepted}
+                                data-candidate-id={candidateId || undefined}
+                                data-review-action="accept-primary"
                                 className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isActiveAccepted ? 'sf-review-accepted-button' : acceptButtonClass}`}
                               >
                                 {isActiveAccepted ? 'Accepted' : 'Accept'}
@@ -643,6 +645,8 @@ export function CellDrawer({
                               <button
                                 onClick={handleAcceptShared}
                                 disabled={acceptThisCandidateDisabled}
+                                data-candidate-id={candidateId || undefined}
+                                data-review-action="accept-shared"
                                 className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${isSharedAccepted ? 'sf-review-accepted-button' : 'sf-shared-accept-button'}`}
                               >
                                 {isSharedAccepted ? 'Accepted' : 'Accept Shared'}
@@ -654,6 +658,8 @@ export function CellDrawer({
                               <button
                                 onClick={handleConfirmPrimary}
                                 disabled={isPending}
+                                data-candidate-id={candidateId || undefined}
+                                data-review-action="confirm-primary"
                                 className={`${widthClass} px-2 py-1 text-[11px] sf-confirm-button-solid transition-colors disabled:opacity-50`}
                               >
                                 Confirm
@@ -665,6 +671,8 @@ export function CellDrawer({
                               <button
                                 onClick={handleConfirmShared}
                                 disabled={isPending}
+                                data-candidate-id={candidateId || undefined}
+                                data-review-action="confirm-shared"
                                 className={`${widthClass} px-2 py-1 text-[11px] rounded disabled:opacity-50 ${confirmSharedButtonClass}`}
                               >
                                 Confirm

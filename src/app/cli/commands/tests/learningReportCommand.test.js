@@ -15,15 +15,20 @@ function createDeps(overrides = {}) {
 }
 
 test('learning-report returns the requested category in its command payload', async () => {
+  const reportCalls = [];
   const commandLearningReport = createLearningReportCommand(createDeps({
-    buildLearningReport: async ({ category }) => ({
+    buildLearningReport: async ({ storage, category }) => {
+      reportCalls.push({ storage, category });
+      return ({
       category,
       products_learned: 12,
       avg_confidence: 0.93,
-    }),
+    });
+    },
   }));
 
-  const result = await commandLearningReport({}, { name: 'stub-storage' }, { category: 'keyboard' });
+  const storage = { name: 'stub-storage' };
+  const result = await commandLearningReport({}, storage, { category: ' keyboard ' });
 
   assert.deepEqual(result, {
     command: 'learning-report',
@@ -31,6 +36,10 @@ test('learning-report returns the requested category in its command payload', as
     products_learned: 12,
     avg_confidence: 0.93,
   });
+  assert.deepEqual(reportCalls, [{
+    storage,
+    category: 'keyboard',
+  }]);
 });
 
 test('learning-report defaults category to mouse', async () => {

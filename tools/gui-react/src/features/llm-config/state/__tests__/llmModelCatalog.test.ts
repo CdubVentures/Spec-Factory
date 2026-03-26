@@ -9,7 +9,6 @@ function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name:
     type: 'openai-compatible',
     baseUrl: '',
     apiKey: '',
-    enabled: true,
     expanded: false,
     models: [],
     ...overrides,
@@ -84,25 +83,6 @@ describe('buildModelCatalogEntries', () => {
     deepStrictEqual(result.length, 2);
     deepStrictEqual(result[0].providerName, 'OpenAI');
     deepStrictEqual(result[1].providerName, 'Anthropic');
-  });
-
-  it('disabled providers excluded', () => {
-    const registry = [
-      makeProvider({
-        id: 'p1',
-        name: 'Disabled',
-        enabled: false,
-        models: [makeModel('gpt-4o')],
-      }),
-      makeProvider({
-        id: 'p2',
-        name: 'Enabled',
-        models: [makeModel('claude-sonnet')],
-      }),
-    ];
-    const result = buildModelCatalogEntries({ registry, flatModelOptions: [] });
-    deepStrictEqual(result.length, 1);
-    deepStrictEqual(result[0].providerName, 'Enabled');
   });
 
   it('sorted: reasoning before base before fast', () => {

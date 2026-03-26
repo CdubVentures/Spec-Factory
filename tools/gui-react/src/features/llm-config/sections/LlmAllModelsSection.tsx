@@ -4,7 +4,6 @@ import { ModelRoleBadge } from '../components/ModelRoleBadge.tsx';
 
 interface FlatModel extends LlmProviderModel {
   providerName: string;
-  providerEnabled: boolean;
 }
 
 function flattenModels(registry: LlmProviderEntry[]): FlatModel[] {
@@ -14,7 +13,6 @@ function flattenModels(registry: LlmProviderEntry[]): FlatModel[] {
       rows.push({
         ...model,
         providerName: provider.name,
-        providerEnabled: provider.enabled,
       });
     }
   }
@@ -68,7 +66,6 @@ export const LlmAllModelsSection = memo(function LlmAllModelsSection({
               <tr
                 key={`${m.providerName}-${m.id}`}
                 className="sf-table-row"
-                style={{ opacity: m.providerEnabled ? 1 : 0.45 }}
               >
                 <td style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>
                   <span className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>

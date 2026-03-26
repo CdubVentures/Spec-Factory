@@ -6,14 +6,19 @@ import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
 import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
-import type { FetchStealthData, FetchStealthInjection } from '../../types.ts';
+import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
+
+interface StealthRecord extends FetchPluginRecord {
+  injected: boolean;
+  patches: string[];
+}
 
 interface FetchStealthPanelProps {
-  data: FetchStealthData;
+  data: FetchPluginData;
   persistScope: string;
 }
 
-const INJECTION_COLUMNS: ColumnDef<FetchStealthInjection, unknown>[] = [
+const INJECTION_COLUMNS: ColumnDef<StealthRecord, unknown>[] = [
   { accessorKey: 'display_label', header: 'Worker', size: 120 },
   { accessorKey: 'host', header: 'Host', size: 180 },
   {
@@ -33,12 +38,16 @@ const INJECTION_COLUMNS: ColumnDef<FetchStealthInjection, unknown>[] = [
 ];
 
 export function FetchStealthPanel({ data, persistScope }: FetchStealthPanelProps) {
-  const total = data.total_injected + data.total_failed;
-  const successRate = total > 0 ? `${Math.round((data.total_injected / total) * 100)}%` : '--';
+  const records = data.records as StealthRecord[];
+  const totalInjected = useMemo(() => records.filter((r) => r.injected).length, [records]);
+  const totalFailed = useMemo(() => records.filter((r) => !r.injected).length, [records]);
+  const total = records.length;
+  const successRate = total > 0 ? `${Math.round((totalInjected / total) * 100)}%` : '--';
+  const patches = useMemo(() => (records[0]?.patches as string[]) ?? [], [records]);
 
   const columns = useMemo(() => INJECTION_COLUMNS, []);
 
-  if (total === 0 && data.patches.length === 0) {
+  if (total === 0 && patches.length === 0) {
     return (
       <StageEmptyState
         icon="&#x1F6E1;"
@@ -53,23 +62,23 @@ export function FetchStealthPanel({ data, persistScope }: FetchStealthPanelProps
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Injections" />
-        <HeroStat value={data.total_injected} label="Successful" colorClass="text-[var(--sf-token-success)]" />
-        <HeroStat value={data.total_failed} label="Failed" colorClass="text-[var(--sf-token-danger)]" />
+        <HeroStat value={totalInjected} label="Successful" colorClass="text-[var(--sf-token-success)]" />
+        <HeroStat value={totalFailed} label="Failed" colorClass="text-[var(--sf-token-danger)]" />
         <HeroStat value={successRate} label="Success Rate" />
       </HeroStatGrid>
 
       <SectionHeader>Patches Applied</SectionHeader>
       <div className="flex flex-wrap gap-2">
-        {data.patches.map((patch) => (
+        {patches.map((patch) => (
           <Chip key={patch} label={patch} className="sf-chip-info" />
         ))}
       </div>
 
-      {data.injections.length > 0 && (
+      {records.length > 0 && (
         <>
           <SectionHeader>Injection Log</SectionHeader>
           <DataTable
-            data={data.injections}
+            data={records}
             columns={columns}
             persistKey={`${persistScope}:stealth-injections`}
           />

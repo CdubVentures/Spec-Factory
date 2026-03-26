@@ -243,7 +243,6 @@ export function LlmConfigPage() {
       return {
         ...provider,
         apiKey: resolvedKeys[provider.id] || provider.apiKey,
-        enabled: currentProvider ? currentProvider.enabled : provider.enabled,
       };
     });
 

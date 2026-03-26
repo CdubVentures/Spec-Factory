@@ -1,11 +1,11 @@
 ## Purpose
 
-Concurrent extraction plugin system that runs per-URL during the crawl phase. Fetch tools prepare the page (sequential), then extraction plugins fire concurrently to harvest data. URL is not complete until all extraction plugins finish.
+Sequential extraction plugin system that runs per-URL during the crawl phase. Fetch tools prepare the page (sequential), then extraction plugins fire sequentially to harvest data. URL is not complete until all extraction plugins finish.
 
 ## Public API (The Contract)
 
 Exports from `index.js`:
-- `createExtractionRunner({ plugins, logger })` — creates a concurrent runner that calls `onExtract` on all plugins via `Promise.allSettled`
+- `createExtractionRunner({ plugins, logger })` — creates a sequential runner that calls `onExtract` on each plugin via for-of await
 - `resolveExtractionPlugins(names, { logger })` — resolves plugin names to plugin objects from the registry
 - `EXTRACTION_PLUGIN_REGISTRY` — frozen map of registered extraction plugins
 
@@ -17,8 +17,8 @@ Exports from `index.js`:
 
 ## Domain Invariants
 
-- Extraction plugins receive a **frozen context** — no shared mutation across concurrent plugins
+- Extraction plugins receive a **frozen context** — no shared mutation across plugins
 - Each plugin returns its own isolated result object, keyed by plugin name
-- Plugin errors are caught via `Promise.allSettled` — one crash never affects others
+- Plugin errors are caught via try/catch per plugin — one crash never affects others
 - Plugins MUST NOT modify page state (clicks, navigation) — fetch tools handle interaction
 - CrawlSession receives the extraction runner via DI — no direct cross-feature import

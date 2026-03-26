@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FrontierDb, createFrontier } from '../frontierDb.js';
+import {
+  createMemoryFrontierStorage,
+  FRONTIER_KEY,
+} from './helpers/frontierTestHarness.js';
 
 // ---------------------------------------------------------------------------
 // A.2 — SQLite Frontier Tests
@@ -13,33 +17,12 @@ import { FrontierDb, createFrontier } from '../frontierDb.js';
 // The factory function should return either JSON or SQLite based on config.
 // ---------------------------------------------------------------------------
 
-function createStorage(initial = {}) {
-  const data = new Map(Object.entries(initial));
-  return {
-    resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
-    async readJsonOrNull(key) {
-      return data.has(key) ? data.get(key) : null;
-    },
-    async writeObject(key, body) {
-      data.set(key, JSON.parse(Buffer.from(body).toString('utf8')));
-    },
-    snapshot(key) {
-      return data.get(key);
-    },
-    keys() {
-      return [...data.keys()];
-    }
-  };
-}
-
-const FRONTIER_KEY = 'specs/outputs/_intel/frontier/frontier.json';
-
 // =========================================================================
 // SECTION 1: recordQuery + getQueryRecord
 // =========================================================================
 
-test('A.2 query: recordQuery stores and getQueryRecord retrieves', () => {
-  const storage = createStorage();
+test('query history returns the recorded search attempt for the same product', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordQuery({
@@ -56,16 +39,16 @@ test('A.2 query: recordQuery stores and getQueryRecord retrieves', () => {
   assert.equal(record.results.length, 1);
 });
 
-test('A.2 query: getQueryRecord returns null for unknown query', () => {
-  const storage = createStorage();
+test('query history reports no cached search when the product never ran it', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   const record = db.getQueryRecord({ productId: 'p1', query: 'nonexistent' });
   assert.equal(record, null);
 });
 
-test('A.2 query: case-insensitive query normalization', () => {
-  const storage = createStorage();
+test('query history reuses the same cache key regardless of search casing', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({
     storage,
     key: FRONTIER_KEY,
@@ -85,8 +68,8 @@ test('A.2 query: case-insensitive query normalization', () => {
   assert.equal(record.query_text, 'acme orbit specs');
 });
 
-test('A.2 query cache: stored query row exposes cached results for same product/query', () => {
-  const storage = createStorage();
+test('query cache returns the previously captured search results for the same product/query', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({
     storage,
     key: FRONTIER_KEY,
@@ -121,8 +104,8 @@ test('A.2 query cache: stored query row exposes cached results for same product/
 // SECTION 2: recordFetch + getUrlRow
 // =========================================================================
 
-test('A.2 fetch: recordFetch stores and getUrlRow retrieves', () => {
-  const storage = createStorage();
+test('fetch history returns the latest status for a crawled URL', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordFetch({
@@ -137,8 +120,8 @@ test('A.2 fetch: recordFetch stores and getUrlRow retrieves', () => {
   assert.equal(row.last_status, 200);
 });
 
-test('A.2 yield tracking: records field yields per URL via fields_found', () => {
-  const storage = createStorage();
+test('fetch history retains which product fields a URL contributed', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordFetch({
@@ -161,16 +144,16 @@ test('A.2 yield tracking: records field yields per URL via fields_found', () => 
 // SECTION 3: buildQueryExecutionHistory
 // =========================================================================
 
-test('A.2 history: buildQueryExecutionHistory returns empty for unknown product', () => {
-  const storage = createStorage();
+test('query execution history is empty for products with no prior search work', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   const history = db.buildQueryExecutionHistory('unknown');
   assert.deepStrictEqual(history, { queries: [] });
 });
 
-test('A.2 history: buildQueryExecutionHistory maps tier metadata from recorded queries', () => {
-  const storage = createStorage();
+test('query execution history preserves seed and grouped-search tier metadata', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordQuery({
@@ -200,8 +183,8 @@ test('A.2 history: buildQueryExecutionHistory maps tier metadata from recorded q
 // SECTION 4: aggregateDomainStats
 // =========================================================================
 
-test('A.2 domain stats: aggregateDomainStats returns data for recorded domains', () => {
-  const storage = createStorage();
+test('domain stats summarize recorded fetch activity for each crawled host', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordFetch({ productId: 'p1', url: 'https://rtings.com/page1', status: 200, fieldsFound: ['weight'] });
@@ -218,8 +201,8 @@ test('A.2 domain stats: aggregateDomainStats returns data for recorded domains',
 // SECTION 5: Factory
 // =========================================================================
 
-test('A.2 factory: createFrontier returns FrontierDb (fallback when SQLite unavailable)', () => {
-  const storage = createStorage();
+test('frontier factory falls back to the JSON frontier when SQLite is unavailable', () => {
+  const storage = createMemoryFrontierStorage();
   const db = createFrontier({
     storage,
     key: FRONTIER_KEY,
@@ -232,8 +215,8 @@ test('A.2 factory: createFrontier returns FrontierDb (fallback when SQLite unava
 // SECTION 6: Concurrency safety (daemon with multiple products)
 // =========================================================================
 
-test('A.2 concurrency: two products recording simultaneously do not corrupt state', () => {
-  const storage = createStorage();
+test('frontier state keeps concurrent product history isolated by product id', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordQuery({
@@ -265,8 +248,8 @@ test('A.2 concurrency: two products recording simultaneously do not corrupt stat
 // SECTION 7: Edge cases
 // =========================================================================
 
-test('A.2 edge: undefined productId does not crash', () => {
-  const storage = createStorage();
+test('frontier recording tolerates orphan queries without crashing the daemon', () => {
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: FRONTIER_KEY });
 
   db.recordQuery({

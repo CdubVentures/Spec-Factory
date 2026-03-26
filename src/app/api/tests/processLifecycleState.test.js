@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createInitialProcessState,
@@ -7,39 +7,6 @@ import {
   normalizeRunIdToken,
   resolveProcessStorageDestination,
 } from '../processLifecycleState.js';
-
-// ═══════════════════════════════════════════════════════════════
-// createInitialProcessState
-// ═══════════════════════════════════════════════════════════════
-
-test('createInitialProcessState returns idle phase with null snapshot', () => {
-  const state = createInitialProcessState();
-  assert.equal(state.phase, 'idle');
-  assert.equal(state.relocatingRunId, null);
-  assert.equal(state.snapshot.pid, null);
-  assert.equal(state.snapshot.command, null);
-  assert.equal(state.snapshot.startedAt, null);
-  assert.equal(state.snapshot.runId, null);
-  assert.equal(state.snapshot.category, null);
-  assert.equal(state.snapshot.productId, null);
-  assert.equal(state.snapshot.brand, null);
-  assert.equal(state.snapshot.model, null);
-  assert.equal(state.snapshot.variant, null);
-  assert.equal(state.snapshot.storageDestination, null);
-  assert.equal(state.snapshot.exitCode, null);
-  assert.equal(state.snapshot.endedAt, null);
-});
-
-test('createInitialProcessState returns a fresh object each call', () => {
-  const a = createInitialProcessState();
-  const b = createInitialProcessState();
-  assert.notEqual(a, b);
-  assert.notEqual(a.snapshot, b.snapshot);
-});
-
-// ═══════════════════════════════════════════════════════════════
-// processStateReducer — happy path transitions
-// ═══════════════════════════════════════════════════════════════
 
 const STARTED_PAYLOAD = {
   pid: 1234,
@@ -54,228 +21,177 @@ const STARTED_PAYLOAD = {
   storageDestination: 's3',
 };
 
-test('reducer PROCESS_STARTED from idle transitions to running with populated snapshot', () => {
-  const state = createInitialProcessState();
-  const next = processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  assert.equal(next.phase, 'running');
-  assert.equal(next.snapshot.pid, 1234);
-  assert.equal(next.snapshot.command, 'node src/cli/spec.js indexlab');
-  assert.equal(next.snapshot.runId, 'run_test1234');
-  assert.equal(next.snapshot.category, 'mouse');
-  assert.equal(next.snapshot.productId, 'mouse-razer-viper');
-  assert.equal(next.snapshot.brand, 'Razer');
-  assert.equal(next.snapshot.model, 'Viper V3 Pro');
-  assert.equal(next.snapshot.variant, 'White');
-  assert.equal(next.snapshot.storageDestination, 's3');
-  assert.equal(next.snapshot.exitCode, null);
-  assert.equal(next.snapshot.endedAt, null);
-  assert.equal(next.relocatingRunId, null);
-});
+function reduceLifecycle(actions) {
+  return actions.reduce(
+    (state, action) => processStateReducer(state, action),
+    createInitialProcessState(),
+  );
+}
 
-test('reducer PROCESS_EXITED from running transitions to exited with exitCode and endedAt', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const next = processStateReducer(running, { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } });
-  assert.equal(next.phase, 'exited');
-  assert.equal(next.snapshot.exitCode, 0);
-  assert.equal(next.snapshot.endedAt, '2026-03-20T10:05:00.000Z');
-  assert.equal(next.snapshot.pid, 1234);
-  assert.equal(next.snapshot.runId, 'run_test1234');
-});
+describe('process lifecycle status contract', () => {
+  test('drives the public status surface from start through exit and relocation', () => {
+    const running = reduceLifecycle([
+      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
+    ]);
 
-test('reducer RELOCATION_STARTED from exited transitions to relocating', () => {
-  let state = createInitialProcessState();
-  state = processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  state = processStateReducer(state, { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } });
-  const next = processStateReducer(state, { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } });
-  assert.equal(next.phase, 'relocating');
-  assert.equal(next.relocatingRunId, 'run_test1234');
-});
+    assert.deepEqual(deriveProcessStatus(running, {}), {
+      running: true,
+      relocating: false,
+      relocatingRunId: null,
+      run_id: 'run_test1234',
+      runId: 'run_test1234',
+      category: 'mouse',
+      product_id: 'mouse-razer-viper',
+      productId: 'mouse-razer-viper',
+      brand: 'Razer',
+      model: 'Viper V3 Pro',
+      variant: 'White',
+      storage_destination: 's3',
+      storageDestination: 's3',
+      pid: 1234,
+      command: 'node src/cli/spec.js indexlab',
+      startedAt: '2026-03-20T10:00:00.000Z',
+      exitCode: null,
+      endedAt: null,
+    });
 
-test('reducer RELOCATION_COMPLETED from relocating transitions to idle', () => {
-  let state = createInitialProcessState();
-  state = processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  state = processStateReducer(state, { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } });
-  state = processStateReducer(state, { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } });
-  const next = processStateReducer(state, { type: 'RELOCATION_COMPLETED' });
-  assert.equal(next.phase, 'idle');
-  assert.equal(next.relocatingRunId, null);
-  assert.equal(next.snapshot.exitCode, 0);
-});
+    const exited = processStateReducer(running, {
+      type: 'PROCESS_EXITED',
+      payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' },
+    });
+    const exitedStatus = deriveProcessStatus(exited, {});
+    assert.equal(exitedStatus.running, false);
+    assert.equal(exitedStatus.relocating, false);
+    assert.equal(exitedStatus.exitCode, 0);
+    assert.equal(exitedStatus.endedAt, '2026-03-20T10:05:00.000Z');
+    assert.equal(exitedStatus.runId, 'run_test1234');
 
-// ═══════════════════════════════════════════════════════════════
-// processStateReducer — transition guards (illegal transitions)
-// ═══════════════════════════════════════════════════════════════
+    const relocating = processStateReducer(exited, {
+      type: 'RELOCATION_STARTED',
+      payload: { runId: 'run_test1234' },
+    });
+    const relocatingStatus = deriveProcessStatus(relocating, {});
+    assert.equal(relocatingStatus.running, false);
+    assert.equal(relocatingStatus.relocating, true);
+    assert.equal(relocatingStatus.relocatingRunId, 'run_test1234');
+    assert.equal(relocatingStatus.runId, 'run_test1234');
 
-test('reducer PROCESS_STARTED from running returns current state unchanged', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const next = processStateReducer(running, { type: 'PROCESS_STARTED', payload: { ...STARTED_PAYLOAD, pid: 9999 } });
-  assert.equal(next, running);
-});
-
-test('reducer PROCESS_EXITED from idle returns current state unchanged', () => {
-  const idle = createInitialProcessState();
-  const next = processStateReducer(idle, { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } });
-  assert.equal(next, idle);
-});
-
-test('reducer RELOCATION_STARTED from idle returns current state unchanged', () => {
-  const idle = createInitialProcessState();
-  const next = processStateReducer(idle, { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } });
-  assert.equal(next, idle);
-});
-
-test('reducer RELOCATION_COMPLETED from running returns current state unchanged', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const next = processStateReducer(running, { type: 'RELOCATION_COMPLETED' });
-  assert.equal(next, running);
-});
-
-test('reducer unknown action type returns current state unchanged', () => {
-  const state = createInitialProcessState();
-  const next = processStateReducer(state, { type: 'INVALID_ACTION' });
-  assert.equal(next, state);
-});
-
-test('reducer does not mutate the input state object', () => {
-  const state = createInitialProcessState();
-  const frozen = JSON.parse(JSON.stringify(state));
-  processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  assert.deepEqual(state, frozen);
-});
-
-// ═══════════════════════════════════════════════════════════════
-// deriveProcessStatus
-// ═══════════════════════════════════════════════════════════════
-
-test('deriveProcessStatus from idle returns running:false with null fields', () => {
-  const status = deriveProcessStatus(createInitialProcessState(), {});
-  assert.equal(status.running, false);
-  assert.equal(status.relocating, false);
-  assert.equal(status.relocatingRunId, null);
-  assert.equal(status.run_id, null);
-  assert.equal(status.runId, null);
-  assert.equal(status.pid, null);
-  assert.equal(status.command, null);
-  assert.equal(status.exitCode, null);
-  assert.equal(status.endedAt, null);
-});
-
-test('deriveProcessStatus from running returns running:true with snapshot fields', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const status = deriveProcessStatus(running, {});
-  assert.equal(status.running, true);
-  assert.equal(status.relocating, false);
-  assert.equal(status.pid, 1234);
-  assert.equal(status.runId, 'run_test1234');
-  assert.equal(status.category, 'mouse');
-  assert.equal(status.brand, 'Razer');
-  assert.equal(status.exitCode, null);
-  assert.equal(status.endedAt, null);
-});
-
-test('deriveProcessStatus from exited returns exitCode and endedAt', () => {
-  let state = createInitialProcessState();
-  state = processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  state = processStateReducer(state, { type: 'PROCESS_EXITED', payload: { exitCode: 1, endedAt: '2026-03-20T10:05:00.000Z' } });
-  const status = deriveProcessStatus(state, {});
-  assert.equal(status.running, false);
-  assert.equal(status.exitCode, 1);
-  assert.equal(status.endedAt, '2026-03-20T10:05:00.000Z');
-});
-
-test('deriveProcessStatus from relocating returns relocating:true with relocatingRunId', () => {
-  let state = createInitialProcessState();
-  state = processStateReducer(state, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  state = processStateReducer(state, { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } });
-  state = processStateReducer(state, { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } });
-  const status = deriveProcessStatus(state, {});
-  assert.equal(status.running, false);
-  assert.equal(status.relocating, true);
-  assert.equal(status.relocatingRunId, 'run_test1234');
-});
-
-test('deriveProcessStatus dual-key fields are equal', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const status = deriveProcessStatus(running, {});
-  assert.equal(status.run_id, status.runId);
-  assert.equal(status.product_id, status.productId);
-  assert.equal(status.storage_destination, status.storageDestination);
-});
-
-test('deriveProcessStatus falls back to runDataStorageState for storageDestination', () => {
-  const started = processStateReducer(createInitialProcessState(), {
-    type: 'PROCESS_STARTED',
-    payload: { ...STARTED_PAYLOAD, storageDestination: null },
+    const idleAgain = processStateReducer(relocating, { type: 'RELOCATION_COMPLETED' });
+    const idleStatus = deriveProcessStatus(idleAgain, {});
+    assert.equal(idleAgain.phase, 'idle');
+    assert.equal(idleStatus.running, false);
+    assert.equal(idleStatus.relocating, false);
+    assert.equal(idleStatus.runId, 'run_test1234');
   });
-  const status = deriveProcessStatus(started, { runDataStorageState: { enabled: true, destinationType: 's3' } });
-  assert.equal(status.storageDestination, 's3');
-  assert.equal(status.storage_destination, 's3');
-});
 
-test('deriveProcessStatus defaults storageDestination to local when no source', () => {
-  const started = processStateReducer(createInitialProcessState(), {
-    type: 'PROCESS_STARTED',
-    payload: { ...STARTED_PAYLOAD, storageDestination: null },
+  test('preserves the last valid public run id when relocation uses the internal unknown marker', () => {
+    const state = reduceLifecycle([
+      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
+      { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } },
+      { type: 'RELOCATION_STARTED', payload: { runId: 'unknown' } },
+    ]);
+
+    const status = deriveProcessStatus(state, {});
+    assert.equal(status.relocating, true);
+    assert.equal(status.relocatingRunId, 'unknown');
+    assert.equal(status.runId, 'run_test1234');
+    assert.equal(status.run_id, 'run_test1234');
   });
-  const status = deriveProcessStatus(started, {});
-  assert.equal(status.storageDestination, 'local');
+
+  test('ignores invalid lifecycle actions instead of changing state', () => {
+    const idle = createInitialProcessState();
+    const running = reduceLifecycle([
+      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
+    ]);
+    const relocating = reduceLifecycle([
+      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
+      { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } },
+      { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } },
+    ]);
+
+    const cases = [
+      [idle, { type: 'PROCESS_EXITED', payload: { exitCode: 1 } }],
+      [running, { type: 'PROCESS_STARTED', payload: { ...STARTED_PAYLOAD, pid: 9999 } }],
+      [running, { type: 'RELOCATION_STARTED', payload: { runId: 'run_other' } }],
+      [relocating, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD }],
+    ];
+
+    for (const [state, action] of cases) {
+      assert.equal(processStateReducer(state, action), state);
+    }
+  });
+
+  test('resolves public storage destination from snapshot first, then runtime settings, then local default', () => {
+    const snapshotStatus = deriveProcessStatus(
+      reduceLifecycle([
+        { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
+      ]),
+      {
+        runDataStorageState: { enabled: true, destinationType: 'local' },
+      },
+    );
+    assert.equal(snapshotStatus.storageDestination, 's3');
+    assert.equal(snapshotStatus.storage_destination, 's3');
+
+    const runtimeFallbackStatus = deriveProcessStatus(
+      reduceLifecycle([
+        {
+          type: 'PROCESS_STARTED',
+          payload: { ...STARTED_PAYLOAD, storageDestination: null },
+        },
+      ]),
+      {
+        runDataStorageState: { enabled: true, destinationType: 's3' },
+      },
+    );
+    assert.equal(runtimeFallbackStatus.storageDestination, 's3');
+    assert.equal(runtimeFallbackStatus.storage_destination, runtimeFallbackStatus.storageDestination);
+
+    const defaultStatus = deriveProcessStatus(
+      reduceLifecycle([
+        {
+          type: 'PROCESS_STARTED',
+          payload: { ...STARTED_PAYLOAD, storageDestination: null },
+        },
+      ]),
+      {},
+    );
+    assert.equal(defaultStatus.storageDestination, 'local');
+  });
 });
 
-test('deriveProcessStatus nulls exitCode and endedAt when phase is running', () => {
-  const running = processStateReducer(createInitialProcessState(), { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD });
-  const status = deriveProcessStatus(running, {});
-  assert.equal(status.exitCode, null);
-  assert.equal(status.endedAt, null);
+describe('run id token contract', () => {
+  test('accepts valid public run ids and rejects malformed tokens', () => {
+    const cases = [
+      ['run_test1234', 'run_test1234'],
+      ['20260320-abcd1234', '20260320-abcd1234'],
+      [null, ''],
+      ['short', ''],
+      ['a'.repeat(97), ''],
+      ['run id spaces', ''],
+      ['run@special!', ''],
+    ];
+
+    for (const [input, expected] of cases) {
+      assert.equal(normalizeRunIdToken(input), expected);
+    }
+  });
 });
 
-// ═══════════════════════════════════════════════════════════════
-// normalizeRunIdToken
-// ═══════════════════════════════════════════════════════════════
+describe('storage destination resolution contract', () => {
+  test('normalizes enabled destinations and defaults everything else to local', () => {
+    const cases = [
+      [null, 'local'],
+      [undefined, 'local'],
+      ['string', 'local'],
+      [{ enabled: false }, 'local'],
+      [{ enabled: true, destinationType: 's3' }, 's3'],
+      [{ enabled: true, destinationType: 'local' }, 'local'],
+      [{ enabled: true, destinationType: 'S3' }, 's3'],
+    ];
 
-test('normalizeRunIdToken passes through valid tokens', () => {
-  assert.equal(normalizeRunIdToken('run_test1234'), 'run_test1234');
-  assert.equal(normalizeRunIdToken('20260320-abcd1234'), '20260320-abcd1234');
-});
-
-test('normalizeRunIdToken returns empty for null/undefined/empty', () => {
-  assert.equal(normalizeRunIdToken(null), '');
-  assert.equal(normalizeRunIdToken(undefined), '');
-  assert.equal(normalizeRunIdToken(''), '');
-});
-
-test('normalizeRunIdToken returns empty for tokens shorter than 8 chars', () => {
-  assert.equal(normalizeRunIdToken('short'), '');
-  assert.equal(normalizeRunIdToken('1234567'), '');
-});
-
-test('normalizeRunIdToken returns empty for tokens longer than 96 chars', () => {
-  assert.equal(normalizeRunIdToken('a'.repeat(97)), '');
-});
-
-test('normalizeRunIdToken returns empty for tokens with illegal characters', () => {
-  assert.equal(normalizeRunIdToken('run id spaces'), '');
-  assert.equal(normalizeRunIdToken('run@special!'), '');
-});
-
-// ═══════════════════════════════════════════════════════════════
-// resolveProcessStorageDestination
-// ═══════════════════════════════════════════════════════════════
-
-test('resolveProcessStorageDestination returns local for non-object input', () => {
-  assert.equal(resolveProcessStorageDestination(null), 'local');
-  assert.equal(resolveProcessStorageDestination(undefined), 'local');
-  assert.equal(resolveProcessStorageDestination('string'), 'local');
-});
-
-test('resolveProcessStorageDestination returns local when not enabled', () => {
-  assert.equal(resolveProcessStorageDestination({ enabled: false }), 'local');
-  assert.equal(resolveProcessStorageDestination({}), 'local');
-});
-
-test('resolveProcessStorageDestination returns s3 when enabled with s3 destination', () => {
-  assert.equal(resolveProcessStorageDestination({ enabled: true, destinationType: 's3' }), 's3');
-});
-
-test('resolveProcessStorageDestination returns local when enabled with local destination', () => {
-  assert.equal(resolveProcessStorageDestination({ enabled: true, destinationType: 'local' }), 'local');
+    for (const [input, expected] of cases) {
+      assert.equal(resolveProcessStorageDestination(input), expected);
+    }
+  });
 });

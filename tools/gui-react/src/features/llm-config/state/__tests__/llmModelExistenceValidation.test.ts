@@ -10,7 +10,6 @@ function makeRegistry(modelIds: string[] = ['gemini-2.5-flash-lite', 'gpt-5-medi
       type: 'openai-compatible',
       baseUrl: 'https://api.test.com',
       apiKey: 'sk-test',
-      enabled: true,
       models: modelIds.map((modelId) => ({
         id: `model-${modelId}`,
         modelId,
@@ -64,19 +63,6 @@ describe('validateModelExistence', () => {
     const issues = validateModelExistence(
       { llmModelPlan: 'gemini-2.5-flash-lite' },
       [],
-    );
-    strictEqual(issues.length, 1);
-  });
-
-  it('ignores disabled providers', () => {
-    const registry = [{
-      id: 'disabled',
-      enabled: false,
-      models: [{ id: 'm1', modelId: 'disabled-model', role: 'primary' as const, costInputPer1M: 0, costOutputPer1M: 0, costCachedPer1M: 0, maxContextTokens: null, maxOutputTokens: null }],
-    }];
-    const issues = validateModelExistence(
-      { llmModelPlan: 'disabled-model' },
-      registry,
     );
     strictEqual(issues.length, 1);
   });

@@ -72,7 +72,7 @@ function isSpecFactoryProcess(detail = {}, root = process.cwd()) {
   return (
     normalizedExecutable === `${normalizedRoot}\\specfactory.exe` ||
     normalizedExecutable === `${normalizedRoot}\\launcher.exe` ||
-    normalizedCommand.includes(`${normalizedRoot}\\00_startguiapi.bat`)
+    normalizedCommand.includes(`${normalizedRoot}\\specfactory.bat`)
   );
 }
 

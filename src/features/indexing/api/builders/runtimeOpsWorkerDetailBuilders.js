@@ -72,9 +72,10 @@ export function buildWorkerDetail(events, workerId, options = {}) {
   const targetId = String(workerId || '').trim();
   const sourcePackets = toSourceIndexingPackets(options.sourceIndexingPacketCollection);
 
-  // Detect pool from worker events
+  // Detect pool from worker events + collect extraction plugin events
   let detectedPool = 'fetch';
   const workerEvents = [];
+  const extractionPluginEvents = [];
   for (const evt of events) {
     const payload = payloadOf(evt);
     const evtWorkerId = String(payload.worker_id || '').trim();
@@ -83,6 +84,14 @@ export function buildWorkerDetail(events, workerId, options = {}) {
     const type = eventType(evt);
     const pool = inferPool(type);
     if (pool === 'search' || pool === 'llm') detectedPool = pool;
+    if (type === 'extraction_plugin_completed' || type === 'extraction_plugin_failed') {
+      extractionPluginEvents.push({
+        plugin: String(payload.plugin || 'unknown'),
+        status: type === 'extraction_plugin_completed' ? 'completed' : 'failed',
+        url: String(payload.url || ''),
+        reason: String(payload.reason || ''),
+      });
+    }
   }
 
   // Search worker detail
@@ -300,6 +309,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
       search_history: history,
       documents: [],
       extraction_fields: [],
+      extraction_plugins: extractionPluginEvents,
       queue_jobs: [],
       screenshots: [],
       phase_lineage: buildPhaseLineage([]),
@@ -348,6 +358,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
       llm_detail: llmDetail || {},
       documents: [],
       extraction_fields: [],
+      extraction_plugins: extractionPluginEvents,
       queue_jobs: [],
       screenshots: [],
       phase_lineage: buildPhaseLineage([]),
@@ -582,6 +593,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
     worker_id: targetId,
     documents,
     extraction_fields: extractionFields,
+    extraction_plugins: extractionPluginEvents,
     indexed_field_names: indexedFieldNames,
     queue_jobs: queueJobs,
     screenshots,

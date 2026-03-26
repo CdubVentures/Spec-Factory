@@ -1,5 +1,7 @@
 function normalizeBaseUrl(value) {
-  return String(value || '').replace(/\/+$/, '');
+  // WHY: Registry base URLs may already include /v1 (e.g. "http://localhost:5001/v1").
+  // Strip trailing /v1 so the endpoint doesn't become /v1/v1/chat/completions.
+  return String(value || '').replace(/\/+$/, '').replace(/\/v1$/, '');
 }
 
 export async function requestOpenAICompatibleChatCompletion({

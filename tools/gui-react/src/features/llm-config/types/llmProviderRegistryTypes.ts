@@ -2,11 +2,6 @@ export type LlmProviderType = 'openai-compatible' | 'anthropic' | 'ollama';
 export type LlmModelRole = 'primary' | 'reasoning' | 'embedding';
 export type LlmAccessMode = 'api' | 'lab';
 
-export interface LlmModelCapabilities {
-  thinking: boolean;
-  web: boolean;
-}
-
 export interface LlmProviderModel {
   id: string;
   modelId: string;
@@ -17,7 +12,6 @@ export interface LlmProviderModel {
   maxContextTokens: number | null;
   maxOutputTokens: number | null;
   accessMode?: LlmAccessMode;
-  capabilities?: LlmModelCapabilities;
   tier?: 'fast' | 'deep' | 'vision';
   transport?: 'sync' | 'async';
 }
@@ -30,7 +24,6 @@ export interface LlmProviderEntry {
   type: LlmProviderType;
   baseUrl: string;
   apiKey: string;
-  enabled: boolean;
   expanded: boolean;
   accessMode?: LlmAccessMode;
   health?: LlmProviderHealthStatus;

@@ -119,11 +119,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           }
         }
 
-        // WHY: Store the Video object so we can resolve its path after c.run()
-        // completes and all pages/contexts are closed. Playwright guarantees the
-        // video file is written once the context closes.
-        const videoRef = page.video?.();
-        if (videoRef) videoPathMap.set(workerId, videoRef);
+        // WHY: Track which workers had video recording active for this batch.
+        // The actual file mapping is done by snapshotVideoDir/writeVideoManifest
+        // using filesystem diffing — no dependency on Playwright's Video API.
+        if (videoDir && page.video?.()) videoPathMap.set(workerId, true);
 
         const result = {
           url: request.url,
@@ -198,39 +197,66 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     return crawler;
   }
 
-  // WHY: After c.run() all pages/contexts are closed, so video.path() Promises
-  // resolve to the UUID-named file Playwright wrote. Instead of renaming/copying
-  // (which fails silently on Windows due to file locking), write a manifest.json
-  // mapping workerId → UUID filename. The API reads the manifest to serve videos.
-  async function writeVideoManifest() {
+  // WHY: Snapshot-diff approach for video manifest — does NOT depend on
+  // Playwright's async video.path() API which is unreliable (Promises hang,
+  // fail silently on Windows, etc.). Instead:
+  //   1. Before batch: snapshot existing .webm files in videoDir
+  //   2. After c.run(): diff to find NEW files Playwright created
+  //   3. Sort new files by mtime, match to workers in processing order
+  //   4. Write manifest.json (merge with existing)
+  // This is synchronous, deterministic, and cannot hang.
+
+  let videoFilesBefore = new Set();
+
+  function snapshotVideoDir() {
     if (!videoDir) return;
-    // WHY: Read existing manifest first so earlier batches' entries survive.
-    // Each processBatch call appends to the manifest, not overwrites.
+    try {
+      videoFilesBefore = new Set(
+        fsSync.readdirSync(videoDir).filter((f) => f.endsWith('.webm')),
+      );
+    } catch { videoFilesBefore = new Set(); }
+  }
+
+  function writeVideoManifest() {
+    if (!videoDir) return;
     const manifestPath = path.join(videoDir, 'manifest.json');
+
+    // Read existing manifest so earlier batches survive
     let manifest = {};
     try {
       manifest = JSON.parse(fsSync.readFileSync(manifestPath, 'utf8'));
     } catch { /* first batch or corrupt — start fresh */ }
-    for (const [wid, videoRef] of videoPathMap) {
-      try {
-        const filePath = typeof videoRef?.path === 'function'
-          ? await videoRef.path()
-          : (typeof videoRef === 'string' ? videoRef : '');
-        if (filePath) {
-          manifest[wid] = path.basename(filePath);
-        }
-      } catch (err) {
-        logger?.warn?.('video_path_resolve_failed', {
-          worker_id: wid,
-          error: err?.message ?? String(err),
-        });
-      }
+
+    // Find new .webm files created during this batch
+    let newFiles = [];
+    try {
+      const allFiles = fsSync.readdirSync(videoDir).filter((f) => f.endsWith('.webm'));
+      newFiles = allFiles
+        .filter((f) => !videoFilesBefore.has(f))
+        .map((f) => {
+          try {
+            const stat = fsSync.statSync(path.join(videoDir, f));
+            return { name: f, mtimeMs: stat.mtimeMs };
+          } catch { return { name: f, mtimeMs: 0 }; }
+        })
+        .sort((a, b) => a.mtimeMs - b.mtimeMs);
+    } catch { /* dir might not exist */ }
+
+    // Get workers from this batch in processing order
+    const batchWorkers = Array.from(videoPathMap.keys());
+
+    // Match: worker N → Nth new file (both sorted by time)
+    for (let i = 0; i < batchWorkers.length && i < newFiles.length; i++) {
+      manifest[batchWorkers[i]] = newFiles[i].name;
     }
+
     try {
       fsSync.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
       logger?.info?.('video_manifest_written', {
         video_dir: videoDir,
         workers: Object.keys(manifest).length,
+        new_files: newFiles.length,
+        batch_workers: batchWorkers.length,
       });
     } catch (err) {
       logger?.warn?.('video_manifest_write_failed', {
@@ -261,6 +287,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
     const maxPages = Number(settings.crawleeMaxPagesPerBrowser) || 1;
     const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 5;
+    // WHY: Crawlee-native anti-bot — delays between same-domain requests.
+    const sameDomainDelay = Number(settings.crawleeSameDomainDelaySecs) || 0;
+    const maxReqPerMin = Number(settings.crawleeMaxRequestsPerMinute) || 0;
 
     // WHY: Playwright recordVideo requires useIncognitoPages=true because Crawlee's
     // BrowserPool only forwards pageOptions to browser.newPage() in incognito mode
@@ -277,6 +306,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       ...config,
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
+      // WHY: Crawlee-native per-domain rate limiting. Tracks root domain via tldts
+      // and reclaims requests to the queue when the delay hasn't elapsed.
+      ...(sameDomainDelay > 0 ? { sameDomainDelaySecs: sameDomainDelay } : {}),
+      ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
       // WHY: Empty blockedStatusCodes prevents Crawlee from throwing
       // _throwOnBlockedRequest for 403/429 BEFORE requestHandler fires.
       // We detect and handle blocks ourselves in bypassStrategies.js.
@@ -315,8 +348,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       pending.set(uniqueKey, { resolve, reject });
     });
 
+    snapshotVideoDir();
     await c.run([{ url, uniqueKey }]);
-    await writeVideoManifest();
+    writeVideoManifest();
 
     const stale = pending.get(uniqueKey);
     if (stale) {
@@ -346,8 +380,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       }));
     }
 
+    snapshotVideoDir();
     await c.run(requests);
-    await writeVideoManifest();
+    writeVideoManifest();
 
     // Resolve any stale entries (Crawlee silently dropped them)
     for (const req of requests) {

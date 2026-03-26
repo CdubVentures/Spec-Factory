@@ -38,7 +38,7 @@ test('sources-plan loads category config and returns expansion plan summary', as
   }));
 
   const result = await commandSourcesPlan({ mode: 'test' }, { storageName: 'stub' }, {
-    category: 'keyboard',
+    category: ' keyboard ',
   });
 
   assert.equal(loadCalls.length, 1);

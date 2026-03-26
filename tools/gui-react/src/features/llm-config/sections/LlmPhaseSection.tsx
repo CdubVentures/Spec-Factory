@@ -10,7 +10,7 @@ import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
-import { resolveProviderForModel } from '../state/llmProviderRegistryBridge.ts';
+import { resolveProviderForModel, parseModelKey } from '../state/llmProviderRegistryBridge.ts';
 import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
 
 interface LlmPhaseSectionProps {
@@ -58,32 +58,36 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
-  const resolvedModelHasCapability = useCallback((cap: 'web' | 'thinking'): boolean => {
-    if (!resolved) return false;
-    const modelId = resolved.effectiveModel;
-    for (const provider of registry) {
-      const model = provider.models.find((m) => m.modelId === modelId);
-      if (model?.capabilities?.[cap]) return true;
-    }
-    return false;
+  // WHY: web_search is a per-call Lab feature, available when any model is from a Lab provider.
+  const reasoningModelIsLab = useMemo((): boolean => {
+    if (!resolved?.useReasoning) return false;
+    const provider = resolveProviderForModel(registry, resolved.reasoningModel);
+    return provider?.accessMode === 'lab';
+  }, [resolved, registry]);
+
+  const baseModelIsLab = useMemo((): boolean => {
+    if (!resolved?.baseModel) return false;
+    const provider = resolveProviderForModel(registry, resolved.baseModel);
+    return provider?.accessMode === 'lab';
   }, [resolved, registry]);
 
   const phaseTokenWarnings = useMemo(() => {
     if (!overrideKey || !resolved) return [];
     const tokenCap = phaseOverrides[overrideKey]?.maxOutputTokens;
     if (tokenCap == null || tokenCap <= 0) return [];
-    const modelId = resolved.baseModel;
-    if (!modelId) return [];
-    const provider = resolveProviderForModel(registry, modelId);
+    const rawModelKey = resolved.baseModel;
+    if (!rawModelKey) return [];
+    const provider = resolveProviderForModel(registry, rawModelKey);
     if (!provider) return [];
-    const model = provider.models.find((m) => m.modelId === modelId);
+    const { modelId: bareModelId } = parseModelKey(rawModelKey);
+    const model = provider.models.find((m) => m.modelId === bareModelId);
     if (!model) return [];
     const warnings: { field: 'maxOutput' | 'contextOverflow'; model: string; setting: number; limit: number }[] = [];
     if (model.maxOutputTokens != null && tokenCap > model.maxOutputTokens) {
-      warnings.push({ field: 'maxOutput', model: modelId, setting: tokenCap, limit: model.maxOutputTokens });
+      warnings.push({ field: 'maxOutput', model: bareModelId, setting: tokenCap, limit: model.maxOutputTokens });
     }
     if (model.maxContextTokens != null && tokenCap > model.maxContextTokens * 0.5) {
-      warnings.push({ field: 'contextOverflow', model: modelId, setting: tokenCap, limit: model.maxContextTokens });
+      warnings.push({ field: 'contextOverflow', model: bareModelId, setting: tokenCap, limit: model.maxContextTokens });
     }
     return warnings;
   }, [overrideKey, resolved, phaseOverrides, registry]);
@@ -102,7 +106,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             onChange={(v) => updateOverrideField('baseModel', v)}
             disabled={resolved.useReasoning}
             allowNone
-            noneLabel={`↩ ${resolved.baseModel}`}
+            noneLabel={`↩ ${parseModelKey(resolved.baseModel).modelId}`}
             noneModelId={resolved.baseModel}
           />
         </div>
@@ -123,7 +127,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             onChange={(v) => updateOverrideField('reasoningModel', v)}
             disabled={!resolved.useReasoning}
             allowNone
-            noneLabel={`↩ ${globalDraft.llmModelReasoning}`}
+            noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId}`}
             noneModelId={globalDraft.llmModelReasoning}
           />
         </div>
@@ -179,19 +183,11 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
-      {resolvedModelHasCapability('web') && (
-        <SettingRow label="Enable Web Search" tip="Send web_search in request_options for this phase. Only available for Lab models with web capability.">
+      {(reasoningModelIsLab || baseModelIsLab) && (
+        <SettingRow label="Enable Web Search" tip="Send web_search flag to the Lab model for this phase.">
           <SettingToggle
             checked={phaseOverrides[overrideKey]?.webSearch ?? false}
             onChange={(v) => updateOverrideField('webSearch', v)}
-          />
-        </SettingRow>
-      )}
-      {resolvedModelHasCapability('thinking') && (
-        <SettingRow label="Enable Thinking" tip="Send thinking in request_options for this phase. Only available for Lab models with thinking capability.">
-          <SettingToggle
-            checked={phaseOverrides[overrideKey]?.thinking ?? false}
-            onChange={(v) => updateOverrideField('thinking', v)}
           />
         </SettingRow>
       )}

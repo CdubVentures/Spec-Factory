@@ -288,6 +288,7 @@ export const LLM_CALL_ROW_SHAPE = Object.freeze([
   { key: 'prompt_preview', coerce: 'string', nullable: true },
   { key: 'response_preview', coerce: 'string', nullable: true },
   { key: 'prefetch_tab', coerce: 'string', nullable: true },
+  { key: 'is_fallback', coerce: 'bool' },
   { key: 'ts', coerce: 'string' },
 ]);
 export const LLM_CALL_ROW_KEYS = Object.freeze(LLM_CALL_ROW_SHAPE.map(s => s.key));

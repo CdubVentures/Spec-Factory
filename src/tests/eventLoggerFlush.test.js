@@ -6,21 +6,42 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventLogger } from '../logger.js';
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+function flushAsyncWork() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 describe('EventLogger flush drains async onEvent', () => {
   it('flush waits for async onEvent work to complete', async () => {
     let hookCompleted = false;
+    const gate = createDeferred();
 
     const logger = new EventLogger({
-      onEvent: () => new Promise((resolve) => {
-        setTimeout(() => { hookCompleted = true; resolve(); }, 5);
+      onEvent: () => gate.promise.then(() => {
+        hookCompleted = true;
       }),
     });
 
     logger.info('test_event');
+    let flushResolved = false;
+    const flushPromise = logger.flush().then(() => {
+      flushResolved = true;
+    });
 
-    // If flush drains onEvent: waits for setTimeout, hookCompleted = true
-    // If flush only drains writeQueue: resolves immediately, hookCompleted = false
-    await logger.flush();
+    await flushAsyncWork();
+    assert.equal(flushResolved, false, 'flush must stay pending while async onEvent is unresolved');
+
+    gate.resolve();
+    await flushPromise;
 
     assert.equal(hookCompleted, true, 'flush must drain async onEvent before resolving');
   });
@@ -102,6 +123,7 @@ describe('EventLogger flush drains async onEvent', () => {
   it('flush drains both writeQueue and onEventQueue', async () => {
     let writeCompleted = false;
     let hookCompleted = false;
+    const gate = createDeferred();
 
     const fakeStorage = {
       appendText: async () => { writeCompleted = true; },
@@ -109,13 +131,23 @@ describe('EventLogger flush drains async onEvent', () => {
 
     const logger = new EventLogger({
       storage: fakeStorage,
-      onEvent: () => new Promise((resolve) => {
-        setTimeout(() => { hookCompleted = true; resolve(); }, 5);
+      onEvent: () => gate.promise.then(() => {
+        hookCompleted = true;
       }),
     });
 
     logger.info('test_event');
-    await logger.flush();
+    let flushResolved = false;
+    const flushPromise = logger.flush().then(() => {
+      flushResolved = true;
+    });
+
+    await flushAsyncWork();
+    assert.equal(writeCompleted, true, 'writeQueue should complete before the onEvent gate resolves');
+    assert.equal(flushResolved, false, 'flush must still wait for the async onEvent work');
+
+    gate.resolve();
+    await flushPromise;
 
     assert.equal(writeCompleted, true, 'writeQueue must be drained');
     assert.equal(hookCompleted, true, 'onEventQueue must be drained');

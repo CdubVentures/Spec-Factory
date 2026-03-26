@@ -17,7 +17,7 @@ describe('buildModelDropdownOptions apiKeyFilter contracts', () => {
         ],
         roleFilter: undefined,
         filter: (provider: LlmProviderEntry) => provider.id === 'has-key',
-        expectedValues: ['model-a'],
+        expectedValues: ['has-key:model-a'],
       },
       {
         name: 'filtered registry models do not reappear via flat fallbacks',
@@ -37,7 +37,7 @@ describe('buildModelDropdownOptions apiKeyFilter contracts', () => {
         ],
         roleFilter: undefined,
         filter: (provider: LlmProviderEntry) => provider.id === 'keyed',
-        expectedValues: ['reg-only', 'unregistered-model'],
+        expectedValues: ['keyed:reg-only', 'unregistered-model'],
       },
       {
         name: 'apiKeyFilter composes with roleFilter',
@@ -56,7 +56,7 @@ describe('buildModelDropdownOptions apiKeyFilter contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         filter: (provider: LlmProviderEntry) => provider.id === 'keyed',
-        expectedValues: ['m-embed'],
+        expectedValues: ['keyed:m-embed'],
       },
     ];
 

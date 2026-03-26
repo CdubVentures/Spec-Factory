@@ -1063,3 +1063,509 @@
 - Result: green, 13/13 passing on 2026-03-25.
 - `npm test`
 - Result: green, 5816/5816 passing on 2026-03-25.
+
+## Extension: App API Catalog Helpers Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/apiCatalogHelpersWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiCatalogHelpersWiring.test.js` | KEEP | Protects real app-api catalog helper behavior: seeded catalog enrichment, orphan skipping, queue-state fallback, compiled component-db patch writes, and no-op behavior when no matching entity exists. | Kept in place with stronger exact-row assertions and negative-path coverage for queue-state failure and missing component matches. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/apiCatalogHelpersWiring.test.js`
+- Result: green, 4/4 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 87/87 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5904/5906 passing overall).
+
+## Extension: App API Category Alias Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/apiCategoryAliasWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiCategoryAliasWiring.test.js` | KEEP | Protects the public category-token normalization and test-category alias resolution behavior that app-api callers rely on, including canonical `_test_` aliasing and unresolved alias fallback. | Kept in place with table-driven normalization assertions and expanded alias-resolution coverage for canonical aliases, existing plain aliases, normalized mixed-case input, and the missing-alias negative path. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/apiCategoryAliasWiring.test.js`
+- Result: green, 2/2 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 87/87 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5904/5906 passing overall).
+
+## Extension: App API Process Runtime Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/apiProcessRuntimeWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiProcessRuntimeWiring.test.js` | KEEP | Protects real runtime process behavior: child spawn contract, active-run status shape, stop confirmation, screencast forwarding, storage-root propagation, and failure-path completion behavior on non-zero exits. | Kept in place with stricter spawn/status assertions and added non-zero-exit coverage that verifies compile completion stays skipped while index completion and failure reporting still occur. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/apiProcessRuntimeWiring.test.js`
+- Result: green, 6/6 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 88/88 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5905/5907 passing overall).
+
+## Extension: App API Realtime Bridge Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/apiRealtimeBridgeWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiRealtimeBridgeWiring.test.js` | KEEP | Protects runtime-critical websocket behavior: filtered event fanout, process-status delivery, screencast control forwarding, watcher-based runtime/indexlab deltas, append-only indexlab streaming, and last-frame screencast caching. | Kept in place with stronger negative coverage for empty filtered deliveries and append-only watcher behavior so stream consumers do not receive suppressed or duplicate rows. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/apiRealtimeBridgeWiring.test.js`
+- Result: green, 6/6 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 90/90 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5907/5909 passing overall).
+
+## Extension: App API SpecDb Runtime Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/apiSpecDbRuntimeWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiSpecDbRuntimeWiring.test.js` | KEEP | Protects the runtime contract for seeded handle reuse, alias-aware auto-seed readiness, and best-available DB reuse even when background seeding fails. | Kept in place with added failure-path coverage to ensure `getSpecDbReady(...)` still resolves the cached handle and logs the seed failure instead of dropping the DB reference. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/apiSpecDbRuntimeWiring.test.js`
+- Result: green, 3/3 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 91/91 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5908/5910 passing overall).
+
+## Extension: App API Command Capture Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/commandCapture.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/commandCapture.test.js` | KEEP | Protects the command-capture contract for success, non-zero exit, spawn failure, process error, timeout, null exit code, and DI pass-through of `cwd` and `env` into the spawned child. | Kept in place with stronger timeout assertions and an added DI wiring test so the documented spawn-option contract is actually proven. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` and `tools/gui-react/src/features/llm-config/state/__tests__/llmModelDropdownOptions.sortContracts.test.ts`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/commandCapture.test.js`
+- Result: green, 7/7 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 92/92 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` and `tools/gui-react/src/features/llm-config/state/__tests__/llmModelDropdownOptions.sortContracts.test.ts` (5908/5911 passing overall).
+
+## Extension: App API Route Registry Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/guiServerRouteRegistryWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/guiServerRouteRegistryWiring.test.js` | KEEP | Protects request-dispatch and route-registry behavior that the GUI server depends on: category alias parsing, first-match routing, null when no handler matches, HTTP wrapper 404/error/static behavior, `/health` API handling, ordered route assembly, and registry validation failures. | Kept in place with added no-match and `/health` handled-response coverage so the dispatch layer is proven by behavior rather than implied by implementation. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js`. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/guiServerRouteRegistryWiring.test.js`
+- Result: green, 7/7 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 94/94 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures in `src/features/crawl/plugins/tests/pluginRegistry.test.js` (5909/5911 passing overall).
+
+## Extension: App API Static File Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/guiStaticFileServerWiring.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/guiStaticFileServerWiring.test.js` | KEEP | Protects the public static-serving contract: asset streaming, SPA-shell fallback for extensionless routes and missing assets, query-string stripping, terminal 404s, and MIME resolution. | Kept in place with added query-string asset coverage so cache-busted asset URLs remain proven without expanding into filesystem trivia. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof blocked by unrelated failures including `src/features/crawl/plugins/tests/pluginRegistry.test.js` and a `better-sqlite3` ABI mismatch against Node 24 that breaks many external suites. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/guiStaticFileServerWiring.test.js`
+- Result: green, 6/6 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 95/95 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated failures including `src/features/crawl/plugins/tests/pluginRegistry.test.js` and a `better-sqlite3` ABI mismatch against Node 24 that breaks many external suites.
+
+## Extension: App API Process Lifecycle State Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/processLifecycleState.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/processLifecycleState.test.js` | KEEP | Protects the public process-state contract for lifecycle transitions, status derivation, legacy/canonical key alignment, run-id normalization, storage-destination resolution, and relocation-state reporting. | Kept in place with an added relocation edge case proving that the public run id remains the last valid run token even when the internal relocation marker falls back to `'unknown'`. | Targeted file and surrounding `src/app/api/tests` proof green on 2026-03-25; full-suite proof remains blocked by unrelated failures including `src/features/crawl/plugins/tests/pluginRegistry.test.js` and the external `better-sqlite3` ABI mismatch against Node 24. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/processLifecycleState.test.js`
+- Result: green, 30/30 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 96/96 passing on 2026-03-25.
+- `npm test`
+- Result: remains blocked on 2026-03-25 by unrelated failures including `src/features/crawl/plugins/tests/pluginRegistry.test.js` and the external `better-sqlite3` ABI mismatch against Node 24.
+
+## Extension: App API Process Orphan Ops Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/processOrphanOps.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/processOrphanOps.test.js` | KEEP | Protects the real orphan-cleanup contract for PID parsing, Windows taskkill execution, invalid-pid rejection, and platform-specific process-discovery commands used to find stranded IndexLab workers. | Kept in place with stronger command-contract assertions for the Windows `taskkill` call plus the win32 and POSIX process-discovery shells and timeouts. | Targeted file, surrounding `src/app/api/tests`, and full-suite proof green on 2026-03-25. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/processOrphanOps.test.js`
+- Result: green, 14/14 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 98/98 passing on 2026-03-25.
+- `npm test`
+- Result: green, 5917/5917 passing on 2026-03-25.
+
+## Extension: App API SearXNG Runtime Reliability Audit
+
+### Scope
+
+- `src/app/api/tests/searxngRuntime.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/searxngRuntime.test.js` | KEEP | Protects runtime-critical SearXNG behavior: docker availability detection, compose-file gating, container status inspection, normalized base-url probing, docker-ps failure reporting, compose-up launch, and bounded retry behavior when the stack stays unready. | Kept in place with stronger assertions for docker command shape, normalized `/search` probe URL and timeout cleanup, surfaced `docker_error`, immediate-start no-sleep behavior, and the documented 10x800ms retry ceiling. | Targeted file, surrounding `src/app/api/tests`, and full-suite proof green on 2026-03-25. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/tests/searxngRuntime.test.js`
+- Result: green, 13/13 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 98/98 passing on 2026-03-25.
+- `npm test`
+- Result: green, 5917/5917 passing on 2026-03-25.
+
+## Extension: App API Route Contracts Reliability Audit
+
+### Scope
+
+- `src/app/api/routes/tests/processStartRunIdContract.test.js`
+- `src/app/api/routes/tests/infraRoutesContract.test.js`
+- `src/app/api/routes/tests/testModeRoutesContract.test.js`
+- `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js`
+- `src/app/api/routes/infra/tests/infraProcessRoutes.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/routes/tests/processStartRunIdContract.test.js` | KEEP | Protects the public `/api/infra/process/start` and `/api/infra/process/status` contract for run-id propagation, helper-root overrides, storage-root resolution, snapshot-only runtime settings, and launch validation failures. | Kept in place with stronger `missing_generated_field_rules` error-body assertions for `helper_root` and `field_rules_paths`. | Targeted route-slice and surrounding app-api proof green on 2026-03-25; full-suite proof blocked by an external `better-sqlite3` ABI mismatch plus a locked `better_sqlite3.node` held by a local `src/api/guiServer.js --port 8788 --local` process. | Kept with stronger assertions. |
+| `src/app/api/routes/tests/infraRoutesContract.test.js` | KEEP | Protects the top-level infra route registration contract for health, categories, SearXNG start failures, and GraphQL proxy pass-through. | No replacement required. | Targeted route-slice and surrounding app-api proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch and locked module file. | Kept unchanged. |
+| `src/app/api/routes/tests/testModeRoutesContract.test.js` | KEEP | Protects test-mode API validation behavior for missing source categories, empty status shape, invalid non-test categories, and test-category deletion safety. | Kept in place with a new path-traversal deletion guard test. That test exposed a real partial-delete bug, so `src/app/api/routes/testModeRoutes.js` was fixed to prevalidate every resolved delete target before removing anything. | Targeted route-slice and surrounding app-api proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch and locked module file. | Kept with stronger assertions and route bug fixed. |
+| `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js` | KEEP | Protects category listing and creation behavior, including public filtering, fallback behavior, scaffold failures, and category creation side effects. | Kept in place with stronger assertions for created directories and the `category-created` data-change emission. | Targeted route-slice and surrounding app-api proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch and locked module file. | Kept with stronger assertions. |
+| `src/app/api/routes/infra/tests/infraProcessRoutes.test.js` | KEEP | Protects the process-route dispatcher contract, including pass-through status behavior, replace-running timeout handling, and restart behavior after stop attempts. | Kept in place with added regression coverage that proves the route does not redundantly call `waitForProcessExit(...)` after `stopProcess(...)` and still restarts when the prior process has already exited, plus thrown-start error coverage. | Targeted route-slice and surrounding app-api proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch and locked module file. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/api/routes/tests/processStartRunIdContract.test.js src/app/api/routes/tests/infraRoutesContract.test.js src/app/api/routes/tests/testModeRoutesContract.test.js src/app/api/routes/infra/tests/infraCategoryRoutes.test.js src/app/api/routes/infra/tests/infraProcessRoutes.test.js`
+- Result: green, 39/39 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/api/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/api/routes/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/api/routes/infra/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 137/137 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 because Node `v24.13.1` requires `NODE_MODULE_VERSION 137`, but `node_modules/better-sqlite3/build/Release/better_sqlite3.node` is built for `127`. `npm rebuild better-sqlite3` was attempted and also failed because the module file is locked by a local `src/api/guiServer.js --port 8788 --local` process (`PID 8064`).
+
+## Extension: App CLI Surface Reliability Audit
+
+### Scope
+
+- `src/app/cli/tests/commandDispatch.test.js`
+- `src/app/cli/tests/queueCli.test.js`
+- `src/app/cli/tests/publishCli.test.js`
+- `src/app/cli/tests/reviewCli.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/cli/tests/commandDispatch.test.js` | KEEP | Protects the top-level CLI dispatcher contract for handler selection, exact invocation payload handoff, and unknown-command failure behavior. | Kept in place with stronger assertions that the dispatcher passes the original config/storage/args references through unchanged and preserves handler-thrown errors instead of swallowing them. | Targeted CLI file and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/tests/queueCli.test.js` | KEEP | Protects the real queue command surface through the CLI entrypoint: queue lifecycle operations, batch CSV import, and user-visible errors for invalid pause requests. | Kept in place with a missing-product negative case so the top-level CLI surface proves the exact pause failure message rather than only happy-path queue state transitions. | Targeted CLI file and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/tests/publishCli.test.js` | KEEP | Protects the publish/provenance/changelog command surface at the real CLI entrypoint, including approved-override publishing and provenance/changelog lookups. | Kept in place with a top-level provenance validation failure case so missing required args are proven through the actual CLI wrapper, not only at lower command layers. | Targeted CLI file and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/tests/reviewCli.test.js` | KEEP | Protects the review suggestion CLI surface, including persisted suggestion payload shape under the real helper-root wiring. | Kept in place with more specific persisted-JSON assertions for `product_id` and evidence URL/quote so the file proves the saved suggestion shape rather than only append success. | Targeted CLI file and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/cli/tests/commandDispatch.test.js src/app/cli/tests/queueCli.test.js src/app/cli/tests/publishCli.test.js src/app/cli/tests/reviewCli.test.js`
+- Result: green, 9/9 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/cli/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/cli/commands/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 52/52 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to the same external `better-sqlite3` ABI mismatch (`NODE_MODULE_VERSION 127` vs required `137`), with `npm rebuild better-sqlite3` still blocked by the locked module file held by local `src/api/guiServer.js --port 8788 --local` (`PID 8064`), plus unrelated GUI contract failures in `tools/gui-react/src/features/llm-config/state/__tests__/llmModelDropdownOptions.apiKeyFilterContracts.test.ts` and `tools/gui-react/src/features/llm-config/state/__tests__/llmModelDropdownOptions.mergeContracts.test.ts`.
+
+## Extension: App CLI Command Contracts Reliability Audit I
+
+### Scope
+
+- `src/app/cli/commands/tests/benchmarkCommand.test.js`
+- `src/app/cli/commands/tests/billingReportCommand.test.js`
+- `src/app/cli/commands/tests/discoverCommand.test.js`
+- `src/app/cli/commands/tests/explainUnkCommand.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/cli/commands/tests/benchmarkCommand.test.js` | KEEP | Protects the benchmark command contract for normalized command naming, benchmark summary passthrough, default category handling, and max-case normalization. | Kept in place with stronger dependency-call assertions so the command proves the exact `storage`, `category`, `fixturePath`, and `maxCases` payload passed to `runGoldenBenchmark(...)`. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/billingReportCommand.test.js` | KEEP | Protects the billing-report command contract for explicit month passthrough and default month generation. | Kept in place with deterministic time control and exact dependency-call assertions so the default-month test no longer depends on wall-clock timing or a loose regex. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions and flake removed. |
+| `src/app/cli/commands/tests/discoverCommand.test.js` | KEEP | Protects the discover command contract for brand filtering, missing-critical-field round context, per-run summaries, and event logger lifecycle. | Kept in place with a failure-path test proving the logger flushes even when discovery throws. That test exposed a real bug, so `src/app/cli/commands/discoverCommand.js` now flushes the logger in `finally` before rethrowing discovery failures. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions and command bug fixed. |
+| `src/app/cli/commands/tests/explainUnkCommand.test.js` | KEEP | Protects the explain-unk command contract for derived product ids, latest-artifact lookup failures, unknown-field extraction, and compatibility with legacy summary payloads. | Kept in place with an added legacy `run_id` and missing-normalized-output fallback case so the command’s empty-result contract is proven instead of inferred. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/cli/commands/tests/benchmarkCommand.test.js src/app/cli/commands/tests/billingReportCommand.test.js src/app/cli/commands/tests/discoverCommand.test.js src/app/cli/commands/tests/explainUnkCommand.test.js`
+- Result: green, 11/11 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/cli/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/cli/commands/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 54/54 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to the same external `better-sqlite3` ABI mismatch (`NODE_MODULE_VERSION 127` vs required `137`) and locked module file held by local `src/api/guiServer.js --port 8788 --local` (`PID 8064`), plus unrelated GUI contract failures including `tools/gui-react/src/features/llm-config/state/__tests__/llmProviderRegistryBridge.test.ts`.
+
+## Extension: App CLI Command Contracts Reliability Audit III
+
+### Scope
+
+- `src/app/cli/commands/tests/queueCommand.test.js`
+- `src/app/cli/commands/tests/rebuildIndexCommand.test.js`
+- `src/app/cli/commands/tests/reviewCommand.test.js`
+- `src/app/cli/commands/tests/sourcesPlanCommand.test.js`
+- `src/app/cli/commands/tests/sourcesReportCommand.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/cli/commands/tests/queueCommand.test.js` | KEEP | Protects the queue command contract for subcommand validation, list payload shaping, add-path queue upserts, required clear status, and derived queue statistics. | Kept in place with a new `stats` contract test that proves exact status and priority aggregation from persisted queue state rather than only checking that rows exist. | Targeted command files, surrounding `src/app/cli`, and full `src/app` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/rebuildIndexCommand.test.js` | KEEP | Protects the rebuild-index command contract for category normalization, dependency-call shape, and summary payload output. | Kept in place with stronger exact-call assertions and a whitespace-padded category regression case. That test exposed a real bug, so `src/app/cli/commands/rebuildIndexCommand.js` now trims CLI category input before rebuilding the index. | Targeted command files, surrounding `src/app/cli`, and full `src/app` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions and command bug fixed. |
+| `src/app/cli/commands/tests/reviewCommand.test.js` | KEEP | Protects the review command surface for subcommand validation, queue/product/build/manual-override contracts, websocket metadata, and suggestion payload normalization. | Kept in place with a failure-path test proving the opened SpecDb handle is closed exactly once when `buildReviewQueue(...)` throws, so cleanup is contractually protected rather than assumed. | Targeted command files, surrounding `src/app/cli`, and full `src/app` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/sourcesPlanCommand.test.js` | KEEP | Protects the sources-plan command contract for category resolution, category-config loading, and expansion-plan payload output. | Kept in place with exact dependency-call assertions and a whitespace-padded category regression case. That test exposed a real bug, so `src/app/cli/commands/sourcesPlanCommand.js` now trims CLI category input before planning. | Targeted command files, surrounding `src/app/cli`, and full `src/app` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions and command bug fixed. |
+| `src/app/cli/commands/tests/sourcesReportCommand.test.js` | KEEP | Protects the sources-report command contract for normalized category lookup, planner-score ordering, top limits, and promotion-suggestion reporting. | Kept in place with exact promotion-key assertions and a whitespace-padded category regression case. That test exposed a real bug, so `src/app/cli/commands/sourcesReportCommand.js` now trims CLI category input before loading source intel. | Targeted command files, surrounding `src/app/cli`, and full `src/app` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions and command bug fixed. |
+
+During surrounding CLI proof, the top-level entrypoint also exposed a real regression in `src/cli/spec.js`: the lazy-loader refactor had removed `dispatchCliCommand(...)` but `executeCli(...)` still referenced it. The entrypoint now carries a visible `BUG:` note next to the repaired `executeCommand(...)` call so the CLI surface remains executable under the new loader design.
+
+### Proof Stack
+
+- `node --test src/app/cli/commands/tests/queueCommand.test.js src/app/cli/commands/tests/rebuildIndexCommand.test.js src/app/cli/commands/tests/reviewCommand.test.js src/app/cli/commands/tests/sourcesPlanCommand.test.js src/app/cli/commands/tests/sourcesReportCommand.test.js`
+- Result: green, 26/26 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/cli/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/cli/commands/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 57/57 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app -Recurse -Filter '*.test.js' | ForEach-Object FullName)`
+- Result: green, 194/194 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to unrelated repo-wide issues outside `src/app`, including the `better-sqlite3` ABI mismatch under Node `v24.13.1` across DB-backed suites and assertion failures in `tools/gui-react/src/features/runtime-ops/panels/fetch/__tests__/fetchStageSelectProps.test.js`.
+
+## Extension: App CLI Command Contracts Reliability Audit II
+
+### Scope
+
+- `src/app/cli/commands/tests/intelGraphApiCommand.test.js`
+- `src/app/cli/commands/tests/learningReportCommand.test.js`
+- `src/app/cli/commands/tests/llmHealthCommand.test.js`
+- `src/app/cli/commands/tests/migrateToSqliteCommand.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/cli/commands/tests/intelGraphApiCommand.test.js` | KEEP | Protects the intel-graph-api command contract for defaulted host/port/category behavior and normalized endpoint output. | Kept in place with stronger dependency-call assertions so the command proves the exact `storage`, `config`, `category`, `host`, and `port` payload given to `startIntelGraphApi(...)`. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/learningReportCommand.test.js` | KEEP | Protects the learning-report command contract for category defaulting and request normalization. | Kept in place with stronger trimming and dependency-call assertions so explicit categories are proven normalized before `buildLearningReport(...)` runs. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/llmHealthCommand.test.js` | KEEP | Protects the llm-health command contract for provider normalization, model trimming, and result passthrough. | Kept in place with stronger dependency-call assertions so the command proves exact `storage`, `config`, `provider`, and `model` values passed to `runLlmHealthCheck(...)`. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+| `src/app/cli/commands/tests/migrateToSqliteCommand.test.js` | KEEP | Protects a real migration surface: required category validation, SpecDb open failures, queue verification, billing ledger import, and cache import semantics. | Kept in place with new phase-3 coverage proving only fresh LLM cache entries are imported while expired, malformed, and response-less cache files are skipped. | Targeted command files and surrounding `src/app/cli` proof green on 2026-03-25; full-suite proof blocked by the external `better-sqlite3` ABI mismatch plus unrelated GUI contract failures. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/app/cli/commands/tests/intelGraphApiCommand.test.js src/app/cli/commands/tests/learningReportCommand.test.js src/app/cli/commands/tests/llmHealthCommand.test.js src/app/cli/commands/tests/migrateToSqliteCommand.test.js`
+- Result: green, 11/11 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/app/cli/tests/*.test.js | ForEach-Object FullName) (Get-ChildItem src/app/cli/commands/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 55/55 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 due to the same external `better-sqlite3` ABI mismatch (`NODE_MODULE_VERSION 127` vs required `137`) and locked module file held by local `src/api/guiServer.js --port 8788 --local` (`PID 8064`), plus unrelated GUI contract failures including `tools/gui-react/src/features/llm-config/state/__tests__/llmProviderRegistryBridge.test.ts`.
+
+## Extension: Category Loader Reliability Audit
+
+### Scope
+
+- `src/categories/tests/categoryGeneratedLoader.test.js`
+- `src/categories/tests/categoryLoaderOverride.test.js`
+- `src/categories/tests/sourceRegistryLoader.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/categories/tests/categoryGeneratedLoader.test.js` | KEEP | Protects the category loader contract for generated field-rule hydration, authority-over-legacy precedence, required-field derivation, UI-field ordering, and generated path metadata. | Kept in place with exact schema and required-field assertions, helper-path assertions, and a new `field_rules.runtime.json` fallback case so the loader’s runtime-generated contract is proven without relying on incidental file presence. | Targeted category files and surrounding `src/categories/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+| `src/categories/tests/categoryLoaderOverride.test.js` | KEEP | Protects the source-override merge contract for S3 override keys, merged approved hosts, denylist preservation, and absent-override behavior. | Replaced the repo-state-dependent test body with isolated temp-root fixtures so the contract is proven against explicit category inputs instead of whatever happens to exist in the workspace. Added a negative case for missing override files. | Targeted category files and surrounding `src/categories/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions and flake risk removed. |
+| `src/categories/tests/sourceRegistryLoader.test.js` | KEEP | Protects source-registry host resolution for rich metadata mapping, host list materialization, removed manufacturer-override behavior, URL-template fallback, and tier precedence. | Kept in place with exact host-row assertions plus a new case proving host extraction from `url_templates` and preservation of a stronger approved tier when the registry declares a weaker one. | Targeted category files and surrounding `src/categories/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/categories/tests/categoryGeneratedLoader.test.js src/categories/tests/categoryLoaderOverride.test.js src/categories/tests/sourceRegistryLoader.test.js`
+- Result: green, 8/8 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/categories/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 8/8 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 outside this slice. Latest repo-wide run reported 5868 tests with 5706 passing and 149 failing, dominated by the `better-sqlite3` ABI mismatch under Node `v24.13.1` plus unrelated GUI assertion failures in `tools/gui-react/src/features/runtime-ops/panels/fetch/__tests__/fetchStageSelectProps.test.js`.
+
+## Extension: Concurrency Reliability Audit
+
+### Scope
+
+- `src/concurrency/tests/laneManager.test.js`
+- `src/concurrency/tests/requestThrottler.test.js`
+- `src/concurrency/tests/workerPool.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/concurrency/tests/laneManager.test.js` | KEEP | Protects lane scheduling behavior for default/custom concurrency, pause/resume, drain, budget gating, and per-lane stats. | Kept in place with a new failure-path case proving that a rejected task increments `failed`, releases the queued slot, and leaves the lane snapshot in the expected terminal state. | Targeted concurrency files and surrounding `src/concurrency/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+| `src/concurrency/tests/requestThrottler.test.js` | KEEP | Protects throttling contracts for global/key token buckets, cooldown penalties, host-serialized execution, and parallelism across distinct hosts. | Kept in place with exact waited-millisecond assertions, normalized-key/global-penalty coverage, and a host-gate rejection case proving slots are released after thrown task failures. | Targeted concurrency files and surrounding `src/concurrency/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+| `src/concurrency/tests/workerPool.test.js` | KEEP | Protects worker-pool scheduling, queueing, drain semantics, return values, and mixed success/failure stats under concurrency limits. | Kept in place with new cases proving a rejected active task releases queued work and that `drain()` still resolves after failures finish unwinding. | Targeted concurrency files and surrounding `src/concurrency/tests` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/concurrency/tests/laneManager.test.js src/concurrency/tests/requestThrottler.test.js src/concurrency/tests/workerPool.test.js`
+- Result: green, 29/29 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/concurrency/tests/*.test.js | ForEach-Object FullName)`
+- Result: green, 68/68 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 outside this slice. Latest repo-wide run reported 5873 tests with 5711 passing and 149 failing, dominated by repeated `better-sqlite3` ABI mismatches under Node `v24.13.1` plus unrelated GUI assertion failures in `tools/gui-react/src/features/runtime-ops/panels/fetch/__tests__/fetchStageSelectProps.test.js`.
+
+## Extension: Extraction Reliability Audit
+
+### Scope
+
+- `src/features/extraction/core/tests/extractionRunner.test.js`
+- `src/features/extraction/plugins/screenshot/tests/screenshotPlugin.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/features/extraction/core/tests/extractionRunner.test.js` | KEEP | Protects the extraction runner contract for sequential plugin execution, result aggregation, crash isolation, read-only context handling, and extraction event telemetry. | Kept in place with stronger nested-context immutability assertions and exact failed-event payload assertions. Those tests exposed a real bug, so `src/features/extraction/core/extractionRunner.js` now deep-freezes nested plain context data and includes `plugin` and `url` in `extraction_plugin_failed` telemetry. | Targeted extraction files and surrounding `src/features/extraction` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions and runner bug fixed. |
+| `src/features/extraction/plugins/screenshot/tests/screenshotPlugin.test.js` | KEEP | Protects the screenshot extraction plugin contract for disabled no-op behavior and enabled screenshot capture delegation. | Kept in place with a real enabled-path contract test that proves the plugin returns both selector crops and a full-page screenshot through the crawl screenshot API instead of only checking disabled paths. | Targeted extraction files and surrounding `src/features/extraction` proof green on 2026-03-25; repo-wide proof still fails outside this slice. | Kept with stronger assertions. |
+
+### Proof Stack
+
+- `node --test src/features/extraction/core/tests/extractionRunner.test.js src/features/extraction/plugins/screenshot/tests/screenshotPlugin.test.js`
+- Result: green, 13/13 passing on 2026-03-25.
+- `node --test (Get-ChildItem src/features/extraction -Recurse -File | Where-Object { $_.Name -match '(test|spec)\.(js|ts|tsx|mjs|cjs)$' } | ForEach-Object FullName)`
+- Result: green, 13/13 passing on 2026-03-25.
+- `npm test`
+- Result: failed on 2026-03-25 outside this slice. Latest repo-wide run reported 5881 tests with 5717 passing and 151 failing, still dominated by repeated `better-sqlite3` ABI mismatches under Node `v24.13.1` plus unrelated GUI assertion failures in `tools/gui-react/src/features/runtime-ops/panels/fetch/__tests__/fetchStageSelectProps.test.js`.
+
+## Extension: App API Duplicate Plumbing Consolidation Audit
+
+### Scope
+
+- `src/app/api/tests/apiCatalogHelpersWiring.test.js`
+- `src/app/api/tests/apiCategoryAliasWiring.test.js`
+- `src/app/api/tests/apiProcessRuntimeWiring.test.js`
+- `src/app/api/tests/apiRealtimeBridgeWiring.test.js`
+- `src/app/api/tests/apiSpecDbRuntimeWiring.test.js`
+- `src/app/api/tests/commandCapture.test.js`
+- `src/app/api/tests/guiServerRouteRegistryWiring.test.js`
+- `src/app/api/tests/guiStaticFileServerWiring.test.js`
+- `src/app/api/tests/processLifecycleState.test.js`
+- `src/app/api/tests/processOrphanOps.test.js`
+- `src/app/api/tests/searxngRuntime.test.js`
+- `src/app/api/routes/tests/infraRoutesContract.test.js`
+- `src/app/api/routes/tests/processStartRunIdContract.test.js`
+- `src/app/api/routes/tests/testModeRoutesContract.test.js`
+- `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js`
+- `src/app/api/routes/infra/tests/infraProcessRoutes.test.js`
+
+### File Audit
+
+| Test file | Bucket | Why | Replacement | Proof run | Final disposition |
+| --- | --- | --- | --- | --- | --- |
+| `src/app/api/tests/apiCatalogHelpersWiring.test.js` | KEEP | Protects real catalog enrichment and compiled component patch behavior, not source layout. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/apiCategoryAliasWiring.test.js` | KEEP | Protects public category-token normalization and canonical test-category alias behavior. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/apiProcessRuntimeWiring.test.js` | KEEP | Protects runtime process orchestration, child status shape, failure handling, and output-root propagation. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/apiRealtimeBridgeWiring.test.js` | KEEP | Protects websocket stream fanout, watcher-driven runtime updates, and screencast cache behavior. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/apiSpecDbRuntimeWiring.test.js` | KEEP | Protects alias-aware SpecDb readiness and seeded-handle reuse behavior. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/commandCapture.test.js` | KEEP | Protects the command-capture result contract and timeout/spawn-error behavior that process routes depend on. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/guiServerRouteRegistryWiring.test.js` | KEEP | Protects request parsing, first-match dispatch, static/API handoff, and route-registry validation behavior. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/guiStaticFileServerWiring.test.js` | KEEP | Protects the actual static-serving contract: asset streaming, SPA fallback, cache headers, and MIME handling. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/processLifecycleState.test.js` | KEEP | Protects the public process-status contract and storage-destination derivation. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/processOrphanOps.test.js` | KEEP | Protects real orphan-process discovery and Windows taskkill command behavior. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/tests/searxngRuntime.test.js` | KEEP | Protects runtime-critical SearXNG readiness, docker command shape, and bounded start retries. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/routes/tests/infraRoutesContract.test.js` | KEEP | Now carries the meaningful public category route contract: filtering, success creation, invalid name, conflict, scaffold failure, SearXNG failure, and GraphQL pass-through. | Expanded to absorb the public request/response cases retired from `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js`. | Replacement and App API sector proof green on 2026-03-25. | Kept with stronger boundary coverage. |
+| `src/app/api/routes/tests/processStartRunIdContract.test.js` | KEEP | Now carries the meaningful public process route contract: run-id propagation, validation failure, generated-rules gating, replace-running timeout/restart, and thrown-start failure handling. | Expanded to absorb the public request/response and orchestration cases retired from `src/app/api/routes/infra/tests/infraProcessRoutes.test.js`. | Replacement and App API sector proof green on 2026-03-25. | Kept with stronger boundary coverage. |
+| `src/app/api/routes/tests/testModeRoutesContract.test.js` | KEEP | Protects the public test-mode route contract for invalid categories, empty status surface, and deletion safety. | No replacement required. | App API sector proof green on 2026-03-25. | Kept unchanged. |
+| `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js` | COLLAPSE | It duplicated category list/create behavior at an internal handler layer, including non-production fallthrough and no-scaffold path checks that did not strengthen the public contract. | Replaced by `src/app/api/routes/tests/infraRoutesContract.test.js`. | Replacement and App API sector proof green on 2026-03-25. | Deleted after boundary coverage absorbed the real request contract. |
+| `src/app/api/routes/infra/tests/infraProcessRoutes.test.js` | COLLAPSE | It duplicated process start/status behavior at an internal handler layer and spent assertions on handler fallthrough instead of the public route contract. | Replaced by `src/app/api/routes/tests/processStartRunIdContract.test.js`. | Replacement and App API sector proof green on 2026-03-25. | Deleted after boundary coverage absorbed the real request and orchestration contract. |
+
+### Proof Stack
+
+- `node --test --test-isolation=none src/app/api/routes/tests/infraRoutesContract.test.js src/app/api/routes/tests/processStartRunIdContract.test.js`
+- Result: green, 18/18 passing on 2026-03-25.
+- `node --test --test-isolation=none (Get-ChildItem src/app/api -Recurse -Filter '*.test.js' | ForEach-Object FullName)`
+- Result: green, 95/95 passing on 2026-03-25.
+- `npm test -- --test-isolation=none`
+- Result: failed on 2026-03-25 outside this slice with 5889/5900 passing. The remaining failures were unrelated to `src/app/api`: `src/app/cli/tests/reviewCli.test.js`, `src/features/indexing/api/contracts/tests/runtimeOpsShapeContract.test.js`, `tools/gui-react/src/features/runtime-ops/panels/fetch/__tests__/fetchStageSelectProps.test.js`, and three `tools/nativeModulePreflight.test.js` cases blocked by sandbox `spawn EPERM`.
+- Live validation attempt: blocked on 2026-03-25. Starting `node src/api/guiServer.js --port 8899 --local` failed before HTTP readiness because `better-sqlite3` is built for `NODE_MODULE_VERSION 127` while Node `v24.13.1` requires `137`, so no live `/api/v1/health` or `/api/v1/infra/process/start` proof could be collected in this environment.
+
+### Coverage Summary
+
+- Deleted tests: `src/app/api/routes/infra/tests/infraCategoryRoutes.test.js`, `src/app/api/routes/infra/tests/infraProcessRoutes.test.js`.
+- Replacement tests: stronger public route coverage now lives in `src/app/api/routes/tests/infraRoutesContract.test.js` and `src/app/api/routes/tests/processStartRunIdContract.test.js`.
+- Preserved behavior: category listing/creation failures, process start/status and replace-running branches, test-mode safety, process runtime behavior, realtime fanout, SpecDb readiness, static serving, orphan cleanup, and SearXNG runtime contracts.
+- Remaining uncertainty: this sector is only partially proven at repo-wide/live-runtime level because unrelated repo failures remain and the real GUI API server cannot boot under the current `better-sqlite3` ABI mismatch.

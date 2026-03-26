@@ -58,8 +58,11 @@ async function loadStorageSettingsAuthorityModule() {
   );
 }
 
+const settingsManifestModulePromise = loadModule('tools/gui-react/src/stores/settingsManifest.ts');
+const storageSettingsAuthorityModulePromise = loadStorageSettingsAuthorityModule();
+
 test('STORAGE_SETTING_DEFAULTS mirrors the shared storage defaults contract', async () => {
-  const { STORAGE_SETTING_DEFAULTS } = await loadModule('tools/gui-react/src/stores/settingsManifest.ts');
+  const { STORAGE_SETTING_DEFAULTS } = await settingsManifestModulePromise;
 
   assert.deepEqual(STORAGE_SETTING_DEFAULTS, SETTINGS_DEFAULTS.storage);
 });
@@ -68,7 +71,7 @@ test('storage settings bootstrap and snapshot preserve explicit empty strings wh
   const {
     readStorageSettingsBootstrap,
     readStorageSettingsSnapshot,
-  } = await loadStorageSettingsAuthorityModule();
+  } = await storageSettingsAuthorityModulePromise;
 
   const queryClient = {
     getQueryData() {
@@ -107,7 +110,7 @@ test('storage settings bootstrap and snapshot preserve explicit empty strings wh
 });
 
 test('storage settings bootstrap falls back to manifest defaults when no cache snapshot exists', async () => {
-  const { readStorageSettingsBootstrap } = await loadStorageSettingsAuthorityModule();
+  const { readStorageSettingsBootstrap } = await storageSettingsAuthorityModulePromise;
 
   const bootstrap = readStorageSettingsBootstrap({
     getQueryData() {

@@ -1,15 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { SpecDb } from '../specDb.js';
 
-async function createHarness() {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'specdb-sync-version-'));
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-  const specDb = new SpecDb({ dbPath, category: 'mouse' });
-  return { tempRoot, specDb };
+function createHarness() {
+  return { specDb: new SpecDb({ dbPath: ':memory:', category: 'mouse' }) };
 }
 
 async function cleanupHarness(harness) {
@@ -18,11 +12,10 @@ async function cleanupHarness(harness) {
   } catch {
     // best-effort
   }
-  await fs.rm(harness.tempRoot, { recursive: true, force: true });
 }
 
 test('SpecDb recordSpecDbSync persists and increments specdb_sync_version', async () => {
-  const harness = await createHarness();
+  const harness = createHarness();
   try {
     const initial = harness.specDb.getSpecDbSyncState();
     assert.equal(initial.specdb_sync_version, 0);

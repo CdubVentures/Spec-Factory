@@ -503,12 +503,17 @@ export function registerTestModeRoutes(ctx) {
         path.resolve(fixturesRoot, category),
         path.resolve(OUTPUT_ROOT, 'specs', 'outputs', category)
       ];
+      // BUG: Validate every resolved delete target before the first rm() call so
+      // path-traversal input cannot partially delete allowed roots before the
+      // handler notices a later escaped path.
       for (const dir of dirs) {
         if (!dir.startsWith(path.resolve(HELPER_ROOT)) &&
             !dir.startsWith(fixturesRoot) &&
             !dir.startsWith(path.resolve(OUTPUT_ROOT))) {
           return jsonRes(res, 400, { ok: false, error: 'invalid_category_path' });
         }
+      }
+      for (const dir of dirs) {
         try { await fs.rm(dir, { recursive: true, force: true }); } catch { /* ignore */ }
       }
 

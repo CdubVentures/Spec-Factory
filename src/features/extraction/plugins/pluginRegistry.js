@@ -14,3 +14,7 @@ export function resolveExtractionPlugins(names, { logger } = {}) {
     return plugin;
   }).filter(Boolean);
 }
+
+export function resolveAllExtractionPlugins() {
+  return Object.values(EXTRACTION_PLUGIN_REGISTRY);
+}

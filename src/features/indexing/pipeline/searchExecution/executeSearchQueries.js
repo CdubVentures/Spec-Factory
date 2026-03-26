@@ -11,7 +11,7 @@ import { recordQueryResult } from '../shared/queryIndex.js';
 import { defaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../../intel/sourceCorpus.js';
-import { configValue } from '../../../../shared/settingsAccessor.js';
+import { configValue, configBool } from '../../../../shared/settingsAccessor.js';
 import {
   buildPlanOnlyResults,
   extractSiteHostFromQuery,
@@ -175,15 +175,28 @@ export async function executeSearchQueries({
     providerState.provider !== 'none' && Boolean(providerState.internet_ready);
 
   if (canSearchInternet && !(internalFirst && internalSatisfied)) {
-    // WHY: Strict sequential execution — search-b must not start until search-a finishes.
+    // WHY: Serper is a stateless JSON API — concurrent dispatch is safe.
+    // Non-Serper providers (Crawlee, SearXNG) use browsers/proxies and remain sequential.
+    const isSerperBurst = providerState.serper_ready && configBool(config, 'serperBurstEnabled');
+    const searchConcurrency = isSerperBurst ? executionQueryLimit : 1;
+    // WHY: Burst overrides pacing — the shared pacer would re-serialize concurrent
+    // workers through _lastQueryMs, defeating parallel dispatch.
+    const effectiveConfig = isSerperBurst ? { ...config, serperSearchMinIntervalMs: 0 } : config;
+
+    logger?.info?.('search_concurrency_resolved', {
+      serper_burst: isSerperBurst,
+      concurrency: searchConcurrency,
+      query_count: queries.slice(0, executionQueryLimit).length,
+    });
+
     const queryResults = await runWithConcurrency(
       queries.slice(0, executionQueryLimit),
-      1,
+      searchConcurrency,
       async (query) => {
         const startedAt = Date.now();
         logger?.info?.('discovery_query_started', {
           query,
-          provider: configValue(config, 'searchEngines'),
+          provider: configValue(effectiveConfig, 'searchEngines'),
           is_fallback: false,
         });
         // WHY: screenshotSink persists Google Crawlee SERP screenshots to
@@ -203,7 +216,7 @@ export async function executeSearchQueries({
           }
         };
         const searchProviderResult = await runSearchProvidersFn({
-          config,
+          config: effectiveConfig,
           query,
           logger,
           screenshotSink,

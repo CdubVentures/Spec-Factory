@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadConfig } from '../../../config.js';
+import { withSavedEnv } from './helpers/configTestHarness.js';
 
 test('loadConfig derives default model from registry SSOT, not API key presence', () => {
   const keys = [
@@ -8,11 +9,10 @@ test('loadConfig derives default model from registry SSOT, not API key presence'
     'DEEPSEEK_API_KEY',
     'OPENAI_BASE_URL',
     'OPENAI_MODEL_EXTRACT',
-    'LLM_REASONING_MODE'
+    'LLM_REASONING_MODE',
   ];
-  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
-  try {
+  return withSavedEnv(keys, () => {
     delete process.env.OPENAI_API_KEY;
     process.env.DEEPSEEK_API_KEY = 'ds-test-key';
     delete process.env.OPENAI_BASE_URL;
@@ -26,15 +26,6 @@ test('loadConfig derives default model from registry SSOT, not API key presence'
     assert.equal(cfg.llmModelPlan, 'gemini-2.5-flash');
     assert.equal(cfg.llmProvider, 'gemini');
     assert.equal(cfg.llmReasoningMode, true);
-    // Per-provider keys still stored for bootstrapApiKey lookup
     assert.equal(cfg.deepseekApiKey, 'ds-test-key');
-  } finally {
-    for (const key of keys) {
-      if (previous[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = previous[key];
-      }
-    }
-  }
+  });
 });

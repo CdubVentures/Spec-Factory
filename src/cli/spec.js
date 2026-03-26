@@ -3,7 +3,6 @@ import { loadConfigWithUserSettings, loadDotEnvFile, validateConfig } from '../c
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { parseArgs, asBool } from './args.js';
-import { createCliCommandDispatcher } from '../app/cli/commandDispatch.js';
 import {
   slug,
   parseCsvList,
@@ -11,114 +10,6 @@ import {
   parseQueuePriority,
   openSpecDbForCategory
 } from '../app/cli/cliHelpers.js';
-import { createMigrateToSqliteCommand } from '../app/cli/commands/migrateToSqliteCommand.js';
-import { createQueueCommand } from '../app/cli/commands/queueCommand.js';
-import { createDiscoverCommand } from '../app/cli/commands/discoverCommand.js';
-import { createSourcesReportCommand } from '../app/cli/commands/sourcesReportCommand.js';
-import { createSourcesPlanCommand } from '../app/cli/commands/sourcesPlanCommand.js';
-import { createRebuildIndexCommand } from '../app/cli/commands/rebuildIndexCommand.js';
-import { createBenchmarkCommand } from '../app/cli/commands/benchmarkCommand.js';
-import { createIntelGraphApiCommand } from '../app/cli/commands/intelGraphApiCommand.js';
-import { createBillingReportCommand } from '../app/cli/commands/billingReportCommand.js';
-import { createLearningReportCommand } from '../app/cli/commands/learningReportCommand.js';
-import { createExplainUnkCommand } from '../app/cli/commands/explainUnkCommand.js';
-import { createLlmHealthCommand } from '../app/cli/commands/llmHealthCommand.js';
-import { createReviewCommand } from '../app/cli/commands/reviewCommand.js';
-import { createFieldRulesCommands } from '../app/cli/commands/fieldRulesCommands.js';
-import { createTestingQualityCommands } from '../app/cli/commands/testingQualityCommands.js';
-import { createPublishingCommands } from '../app/cli/commands/publishingCommands.js';
-import { createDataUtilityCommands } from '../app/cli/commands/dataUtilityCommands.js';
-import { createBatchCommand } from '../app/cli/commands/batchCommand.js';
-import { createPipelineCommands } from '../app/cli/commands/pipelineCommands.js';
-import { runProduct } from '../pipeline/runProduct.js';
-import { loadCategoryConfig } from '../categories/loader.js';
-import { runDiscoverySeedPlan } from '../features/indexing/pipeline/orchestration/index.js';
-import { rebuildCategoryIndex } from '../indexer/rebuildIndex.js';
-import { buildRunId } from '../shared/primitives.js';
-import { EventLogger } from '../logger.js';
-import { runS3Integration } from './s3Integration.js';
-import {
-  generateSourceExpansionPlans,
-  loadSourceIntel,
-  promotionSuggestionsKey
-} from '../intel/sourceIntel.js';
-import { startIntelGraphApi } from '../api/intelGraphApi.js';
-import { runGoldenBenchmark } from '../benchmark/goldenBenchmark.js';
-import { rankBatchWithBandit } from '../features/indexing/learning/index.js';
-import { ingestCsvFile } from '../ingest/csvIngestor.js';
-import { compileCategoryFieldStudio } from '../ingest/categoryCompile.js';
-import { runUntilComplete } from '../runner/runUntilComplete.js';
-import {
-  clearQueueByStatus,
-  listQueueProducts,
-  loadQueueState,
-  syncQueueFromInputs,
-  upsertQueueProduct
-} from '../queue/queueState.js';
-import {
-  buildReviewLayout,
-  buildReviewQueue,
-  buildProductReviewPayload,
-  writeCategoryReviewArtifacts,
-  writeProductReviewArtifacts
-} from '../features/review/domain/index.js';
-import {
-  approveGreenOverrides,
-  buildReviewMetrics,
-  finalizeOverrides,
-  setManualOverride,
-  setOverrideFromCandidate
-} from '../features/review/domain/index.js';
-import { appendReviewSuggestion } from '../features/review/domain/index.js';
-import { buildBillingReport } from '../billing/costLedger.js';
-import { buildLearningReport } from '../features/indexing/learning/index.js';
-import { runLlmHealthCheck } from '../core/llm/client/healthCheck.js';
-import {
-  bootstrapExpansionCategories,
-  parseExpansionCategories,
-  runFailureInjectionHarness,
-  runFuzzSourceHealthHarness,
-  runProductionHardeningReport,
-  runQueueLoadHarness
-} from '../features/expansion-hardening/index.js';
-import {
-  buildAccuracyTrend,
-  buildLlmMetrics,
-  buildSourceHealth,
-  publishProducts,
-  readPublishedChangelog,
-  readPublishedProvenance,
-  runAccuracyBenchmarkReport
-} from '../publish/publishingPipeline.js';
-import {
-  reconcileDriftedProduct,
-  scanAndEnqueueDriftedProducts
-} from '../publish/driftScheduler.js';
-import { startReviewQueueWebSocket } from '../features/review/domain/index.js';
-import { verifyGeneratedFieldRules } from '../ingest/fieldRulesVerify.js';
-import {
-  compileRules,
-  compileRulesAll,
-  fieldReport,
-  initCategory,
-  listFields,
-  readCompileReport,
-  rulesDiff,
-  watchCompileRules,
-  validateRules
-} from '../field-rules/compiler.js';
-import {
-  buildAccuracyReport,
-  createGoldenFixture,
-  createGoldenFromCatalog,
-  renderAccuracyReportMarkdown,
-  validateGoldenFixtures
-} from '../testing/goldenFiles.js';
-import { generateTypesForCategory } from '../build/generate-types.js';
-import { runQaJudge } from '../features/review/domain/index.js';
-import { computeCalibrationReport } from '../calibration/confidenceCalibrator.js';
-import { reconcileOrphans } from '../features/catalog/products/reconciler.js';
-import { IndexLabRuntimeBridge } from '../indexlab/runtimeBridge.js';
 import fsNode from 'node:fs/promises';
 import pathNode from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -248,225 +139,449 @@ function buildConfig(args) {
   return loadConfigWithUserSettings(overrides);
 }
 
-// --- Factory instantiations: existing commands ---
+function createLazyLoader(factory) {
+  let cachedPromise = null;
+  return async () => {
+    if (!cachedPromise) {
+      cachedPromise = factory();
+    }
+    return cachedPromise;
+  };
+}
 
-const commandQueue = createQueueCommand({
-  slug,
-  toPosixKey,
-  parseCsvList,
-  parseJsonArg,
-  parseQueuePriority,
-  asBool,
-  ingestCsvFile,
-  upsertQueueProduct,
-  syncQueueFromInputs,
-  listQueueProducts,
-  loadQueueState,
-  clearQueueByStatus,
+const loadQueueCommandHandler = createLazyLoader(async () => {
+  const [{ createQueueCommand }, { ingestCsvFile }, queueState] = await Promise.all([
+    import('../app/cli/commands/queueCommand.js'),
+    import('../ingest/csvIngestor.js'),
+    import('../queue/queueState.js'),
+  ]);
+  return createQueueCommand({
+    slug,
+    toPosixKey,
+    parseCsvList,
+    parseJsonArg,
+    parseQueuePriority,
+    asBool,
+    ingestCsvFile,
+    upsertQueueProduct: queueState.upsertQueueProduct,
+    syncQueueFromInputs: queueState.syncQueueFromInputs,
+    listQueueProducts: queueState.listQueueProducts,
+    loadQueueState: queueState.loadQueueState,
+    clearQueueByStatus: queueState.clearQueueByStatus,
+  });
 });
 
-const commandReview = createReviewCommand({
-  asBool,
-  parseJsonArg,
-  openSpecDbForCategory,
-  buildReviewLayout,
-  buildReviewQueue,
-  buildProductReviewPayload,
-  writeProductReviewArtifacts,
-  writeCategoryReviewArtifacts,
-  startReviewQueueWebSocket,
-  setOverrideFromCandidate,
-  approveGreenOverrides,
-  setManualOverride,
-  finalizeOverrides,
-  buildReviewMetrics,
-  appendReviewSuggestion,
+const loadReviewCommandHandler = createLazyLoader(async () => {
+  const [{ createReviewCommand }, reviewDomain] = await Promise.all([
+    import('../app/cli/commands/reviewCommand.js'),
+    import('../features/review/domain/index.js'),
+  ]);
+  return createReviewCommand({
+    asBool,
+    parseJsonArg,
+    openSpecDbForCategory,
+    buildReviewLayout: reviewDomain.buildReviewLayout,
+    buildReviewQueue: reviewDomain.buildReviewQueue,
+    buildProductReviewPayload: reviewDomain.buildProductReviewPayload,
+    writeProductReviewArtifacts: reviewDomain.writeProductReviewArtifacts,
+    writeCategoryReviewArtifacts: reviewDomain.writeCategoryReviewArtifacts,
+    startReviewQueueWebSocket: reviewDomain.startReviewQueueWebSocket,
+    setOverrideFromCandidate: reviewDomain.setOverrideFromCandidate,
+    approveGreenOverrides: reviewDomain.approveGreenOverrides,
+    setManualOverride: reviewDomain.setManualOverride,
+    finalizeOverrides: reviewDomain.finalizeOverrides,
+    buildReviewMetrics: reviewDomain.buildReviewMetrics,
+    appendReviewSuggestion: reviewDomain.appendReviewSuggestion,
+  });
 });
 
-const commandDiscover = createDiscoverCommand({
-  loadCategoryConfig,
-  runDiscoverySeedPlan,
-  EventLogger,
-  buildRunId,
+const loadDiscoverCommandHandler = createLazyLoader(async () => {
+  const [
+    { createDiscoverCommand },
+    { loadCategoryConfig },
+    { runDiscoverySeedPlan },
+    { EventLogger },
+    { buildRunId },
+  ] = await Promise.all([
+    import('../app/cli/commands/discoverCommand.js'),
+    import('../categories/loader.js'),
+    import('../features/indexing/pipeline/orchestration/index.js'),
+    import('../logger.js'),
+    import('../shared/primitives.js'),
+  ]);
+  return createDiscoverCommand({
+    loadCategoryConfig,
+    runDiscoverySeedPlan,
+    EventLogger,
+    buildRunId,
+  });
 });
 
-const commandSourcesReport = createSourcesReportCommand({
-  loadSourceIntel,
-  promotionSuggestionsKey,
+const loadSourcesReportCommandHandler = createLazyLoader(async () => {
+  const [{ createSourcesReportCommand }, intel] = await Promise.all([
+    import('../app/cli/commands/sourcesReportCommand.js'),
+    import('../intel/sourceIntel.js'),
+  ]);
+  return createSourcesReportCommand({
+    loadSourceIntel: intel.loadSourceIntel,
+    promotionSuggestionsKey: intel.promotionSuggestionsKey,
+  });
 });
 
-const commandSourcesPlan = createSourcesPlanCommand({
-  loadCategoryConfig,
-  generateSourceExpansionPlans,
+const loadSourcesPlanCommandHandler = createLazyLoader(async () => {
+  const [
+    { createSourcesPlanCommand },
+    { loadCategoryConfig },
+    { generateSourceExpansionPlans },
+  ] = await Promise.all([
+    import('../app/cli/commands/sourcesPlanCommand.js'),
+    import('../categories/loader.js'),
+    import('../intel/sourceIntel.js'),
+  ]);
+  return createSourcesPlanCommand({
+    loadCategoryConfig,
+    generateSourceExpansionPlans,
+  });
 });
 
-const commandRebuildIndex = createRebuildIndexCommand({
-  rebuildCategoryIndex,
+const loadRebuildIndexCommandHandler = createLazyLoader(async () => {
+  const [{ createRebuildIndexCommand }, { rebuildCategoryIndex }] = await Promise.all([
+    import('../app/cli/commands/rebuildIndexCommand.js'),
+    import('../indexer/rebuildIndex.js'),
+  ]);
+  return createRebuildIndexCommand({
+    rebuildCategoryIndex,
+  });
 });
 
-const commandBenchmark = createBenchmarkCommand({
-  runGoldenBenchmark,
+const loadBenchmarkCommandHandler = createLazyLoader(async () => {
+  const [{ createBenchmarkCommand }, { runGoldenBenchmark }] = await Promise.all([
+    import('../app/cli/commands/benchmarkCommand.js'),
+    import('../benchmark/goldenBenchmark.js'),
+  ]);
+  return createBenchmarkCommand({
+    runGoldenBenchmark,
+  });
 });
 
-const commandIntelGraphApi = createIntelGraphApiCommand({
-  startIntelGraphApi,
+const loadIntelGraphApiCommandHandler = createLazyLoader(async () => {
+  const [{ createIntelGraphApiCommand }, { startIntelGraphApi }] = await Promise.all([
+    import('../app/cli/commands/intelGraphApiCommand.js'),
+    import('../api/intelGraphApi.js'),
+  ]);
+  return createIntelGraphApiCommand({
+    startIntelGraphApi,
+  });
 });
 
-const commandBillingReport = createBillingReportCommand({
-  buildBillingReport,
+const loadBillingReportCommandHandler = createLazyLoader(async () => {
+  const [{ createBillingReportCommand }, { buildBillingReport }] = await Promise.all([
+    import('../app/cli/commands/billingReportCommand.js'),
+    import('../billing/costLedger.js'),
+  ]);
+  return createBillingReportCommand({
+    buildBillingReport,
+  });
 });
 
-const commandLearningReport = createLearningReportCommand({
-  buildLearningReport,
+const loadLearningReportCommandHandler = createLazyLoader(async () => {
+  const [{ createLearningReportCommand }, { buildLearningReport }] = await Promise.all([
+    import('../app/cli/commands/learningReportCommand.js'),
+    import('../features/indexing/learning/index.js'),
+  ]);
+  return createLearningReportCommand({
+    buildLearningReport,
+  });
 });
 
-const commandExplainUnk = createExplainUnkCommand({
-  slug,
+const loadExplainUnkCommandHandler = createLazyLoader(async () => {
+  const { createExplainUnkCommand } = await import('../app/cli/commands/explainUnkCommand.js');
+  return createExplainUnkCommand({
+    slug,
+  });
 });
 
-const commandLlmHealth = createLlmHealthCommand({
-  runLlmHealthCheck,
+const loadLlmHealthCommandHandler = createLazyLoader(async () => {
+  const [{ createLlmHealthCommand }, { runLlmHealthCheck }] = await Promise.all([
+    import('../app/cli/commands/llmHealthCommand.js'),
+    import('../core/llm/client/healthCheck.js'),
+  ]);
+  return createLlmHealthCommand({
+    runLlmHealthCheck,
+  });
 });
 
-const commandMigrateToSqlite = createMigrateToSqliteCommand({
-  openSpecDbForCategory,
-  toPosixKey,
-  fsNode,
-  pathNode,
-  now: () => Date.now(),
+const loadMigrateToSqliteCommandHandler = createLazyLoader(async () => {
+  const { createMigrateToSqliteCommand } = await import('../app/cli/commands/migrateToSqliteCommand.js');
+  return createMigrateToSqliteCommand({
+    openSpecDbForCategory,
+    toPosixKey,
+    fsNode,
+    pathNode,
+    now: () => Date.now(),
+  });
 });
 
-// --- Factory instantiations: new command groups ---
-
-const fieldRules = createFieldRulesCommands({
-  asBool,
-  compileCategoryFieldStudio,
-  compileRules,
-  compileRulesAll,
-  readCompileReport,
-  rulesDiff,
-  watchCompileRules,
-  validateRules,
-  initCategory,
-  listFields,
-  fieldReport,
-  verifyGeneratedFieldRules,
+const loadFieldRulesCommands = createLazyLoader(async () => {
+  const [
+    { createFieldRulesCommands },
+    { compileCategoryFieldStudio },
+    compiler,
+    { verifyGeneratedFieldRules },
+  ] = await Promise.all([
+    import('../app/cli/commands/fieldRulesCommands.js'),
+    import('../ingest/categoryCompile.js'),
+    import('../field-rules/compiler.js'),
+    import('../ingest/fieldRulesVerify.js'),
+  ]);
+  return createFieldRulesCommands({
+    asBool,
+    compileCategoryFieldStudio,
+    compileRules: compiler.compileRules,
+    compileRulesAll: compiler.compileRulesAll,
+    readCompileReport: compiler.readCompileReport,
+    rulesDiff: compiler.rulesDiff,
+    watchCompileRules: compiler.watchCompileRules,
+    validateRules: compiler.validateRules,
+    initCategory: compiler.initCategory,
+    listFields: compiler.listFields,
+    fieldReport: compiler.fieldReport,
+    verifyGeneratedFieldRules,
+  });
 });
 
-const testingQuality = createTestingQualityCommands({
-  asBool,
-  createGoldenFixture,
-  createGoldenFromCatalog,
-  validateGoldenFixtures,
-  runQaJudge,
-  computeCalibrationReport,
-  buildAccuracyReport,
-  renderAccuracyReportMarkdown,
-  runAccuracyBenchmarkReport,
-  buildAccuracyTrend,
+const loadTestingQualityCommands = createLazyLoader(async () => {
+  const [
+    { createTestingQualityCommands },
+    goldenFiles,
+    reviewDomain,
+    { computeCalibrationReport },
+  ] = await Promise.all([
+    import('../app/cli/commands/testingQualityCommands.js'),
+    import('../testing/goldenFiles.js'),
+    import('../features/review/domain/index.js'),
+    import('../calibration/confidenceCalibrator.js'),
+  ]);
+  return createTestingQualityCommands({
+    asBool,
+    createGoldenFixture: goldenFiles.createGoldenFixture,
+    createGoldenFromCatalog: goldenFiles.createGoldenFromCatalog,
+    validateGoldenFixtures: goldenFiles.validateGoldenFixtures,
+    runQaJudge: reviewDomain.runQaJudge,
+    computeCalibrationReport,
+    buildAccuracyReport: goldenFiles.buildAccuracyReport,
+    renderAccuracyReportMarkdown: goldenFiles.renderAccuracyReportMarkdown,
+    runAccuracyBenchmarkReport: goldenFiles.runAccuracyBenchmarkReport,
+    buildAccuracyTrend: goldenFiles.buildAccuracyTrend,
+  });
 });
 
-const publishing = createPublishingCommands({
-  asBool,
-  publishProducts,
-  readPublishedProvenance,
-  readPublishedChangelog,
-  buildSourceHealth,
-  buildLlmMetrics,
-  parseExpansionCategories,
-  bootstrapExpansionCategories,
-  runQueueLoadHarness,
-  runFailureInjectionHarness,
-  runFuzzSourceHealthHarness,
-  runProductionHardeningReport,
-  scanAndEnqueueDriftedProducts,
-  reconcileDriftedProduct,
-  reconcileOrphans,
+const loadPublishingCommands = createLazyLoader(async () => {
+  const [
+    { createPublishingCommands },
+    publishingPipeline,
+    expansionHardening,
+    driftScheduler,
+    { reconcileOrphans },
+  ] = await Promise.all([
+    import('../app/cli/commands/publishingCommands.js'),
+    import('../publish/publishingPipeline.js'),
+    import('../features/expansion-hardening/index.js'),
+    import('../publish/driftScheduler.js'),
+    import('../features/catalog/products/reconciler.js'),
+  ]);
+  return createPublishingCommands({
+    asBool,
+    publishProducts: publishingPipeline.publishProducts,
+    readPublishedProvenance: publishingPipeline.readPublishedProvenance,
+    readPublishedChangelog: publishingPipeline.readPublishedChangelog,
+    buildSourceHealth: publishingPipeline.buildSourceHealth,
+    buildLlmMetrics: publishingPipeline.buildLlmMetrics,
+    parseExpansionCategories: expansionHardening.parseExpansionCategories,
+    bootstrapExpansionCategories: expansionHardening.bootstrapExpansionCategories,
+    runQueueLoadHarness: expansionHardening.runQueueLoadHarness,
+    runFailureInjectionHarness: expansionHardening.runFailureInjectionHarness,
+    runFuzzSourceHealthHarness: expansionHardening.runFuzzSourceHealthHarness,
+    runProductionHardeningReport: expansionHardening.runProductionHardeningReport,
+    scanAndEnqueueDriftedProducts: driftScheduler.scanAndEnqueueDriftedProducts,
+    reconcileDriftedProduct: driftScheduler.reconcileDriftedProduct,
+    reconcileOrphans,
+  });
 });
 
-const dataUtility = createDataUtilityCommands({
-  asBool,
-  ingestCsvFile,
-  EventLogger,
-  runS3Integration,
-  generateTypesForCategory,
+const loadDataUtilityCommands = createLazyLoader(async () => {
+  const [
+    { createDataUtilityCommands },
+    { ingestCsvFile },
+    { EventLogger },
+    { runS3Integration },
+    { generateTypesForCategory },
+  ] = await Promise.all([
+    import('../app/cli/commands/dataUtilityCommands.js'),
+    import('../ingest/csvIngestor.js'),
+    import('../logger.js'),
+    import('./s3Integration.js'),
+    import('../build/generate-types.js'),
+  ]);
+  return createDataUtilityCommands({
+    asBool,
+    ingestCsvFile,
+    EventLogger,
+    runS3Integration,
+    generateTypesForCategory,
+  });
 });
 
-const batch = createBatchCommand({
-  loadCategoryConfig,
-  loadSourceIntel,
-  rankBatchWithBandit,
-  runProduct,
+const loadBatchCommandGroup = createLazyLoader(async () => {
+  const [
+    { createBatchCommand },
+    { loadCategoryConfig },
+    { loadSourceIntel },
+    { rankBatchWithBandit },
+    { runProduct },
+  ] = await Promise.all([
+    import('../app/cli/commands/batchCommand.js'),
+    import('../categories/loader.js'),
+    import('../intel/sourceIntel.js'),
+    import('../features/indexing/learning/index.js'),
+    import('../pipeline/runProduct.js'),
+  ]);
+  return createBatchCommand({
+    loadCategoryConfig,
+    loadSourceIntel,
+    rankBatchWithBandit,
+    runProduct,
+  });
 });
 
-const pipeline = createPipelineCommands({
-  asBool,
-  toPosixKey,
-  runProduct,
-  runUntilComplete,
-  IndexLabRuntimeBridge,
-  defaultIndexLabRoot,
+const loadPipelineCommands = createLazyLoader(async () => {
+  const [
+    { createPipelineCommands },
+    { runProduct },
+    { runUntilComplete },
+    { IndexLabRuntimeBridge },
+  ] = await Promise.all([
+    import('../app/cli/commands/pipelineCommands.js'),
+    import('../pipeline/runProduct.js'),
+    import('../runner/runUntilComplete.js'),
+    import('../indexlab/runtimeBridge.js'),
+  ]);
+  return createPipelineCommands({
+    asBool,
+    toPosixKey,
+    runProduct,
+    runUntilComplete,
+    IndexLabRuntimeBridge,
+    defaultIndexLabRoot,
+  });
 });
 
-// --- Handler registration ---
-
-const dispatchCliCommand = createCliCommandDispatcher({
-  handlers: {
-    'run-one': ({ config, storage, args }) => pipeline.commandRunOne(config, storage, args),
-    indexlab: ({ config, storage, args }) => pipeline.commandIndexLab(config, storage, args),
-    'run-ad-hoc': ({ config, storage, args }) => pipeline.commandRunAdHoc(config, storage, args),
-    'run-until-complete': ({ config, storage, args }) => pipeline.commandRunUntilComplete(config, storage, args),
-    'category-compile': ({ config, storage, args }) => fieldRules.commandCategoryCompile(config, storage, args),
-    'compile-rules': ({ config, storage, args }) => fieldRules.commandCompileRules(config, storage, args),
-    'compile-report': ({ config, storage, args }) => fieldRules.commandCompileReport(config, storage, args),
-    'rules-diff': ({ config, storage, args }) => fieldRules.commandRulesDiff(config, storage, args),
-    'validate-rules': ({ config, storage, args }) => fieldRules.commandValidateRules(config, storage, args),
-    'init-category': ({ config, storage, args }) => fieldRules.commandInitCategory(config, storage, args),
-    'list-fields': ({ config, storage, args }) => fieldRules.commandListFields(config, storage, args),
-    'field-report': ({ config, storage, args }) => fieldRules.commandFieldReport(config, storage, args),
-    'field-rules-verify': ({ config, storage, args }) => fieldRules.commandFieldRulesVerify(config, storage, args),
-    'create-golden': ({ config, storage, args }) => testingQuality.commandCreateGolden(config, storage, args),
-    'test-golden': ({ config, storage, args }) => testingQuality.commandTestGolden(config, storage, args),
-    'qa-judge': ({ config, storage, args }) => testingQuality.commandQaJudge(config, storage, args),
-    'calibrate-confidence': ({ config, storage, args }) => testingQuality.commandCalibrateConfidence(config, storage, args),
-    'accuracy-report': ({ config, storage, args }) => testingQuality.commandAccuracyReport(config, storage, args),
-    'accuracy-benchmark': ({ config, storage, args }) => testingQuality.commandAccuracyBenchmark(config, storage, args),
-    'accuracy-trend': ({ config, storage, args }) => testingQuality.commandAccuracyTrend(config, storage, args),
-    'generate-types': ({ config, storage, args }) => dataUtility.commandGenerateTypes(config, storage, args),
-    publish: ({ config, storage, args }) => publishing.commandPublish(config, storage, args),
-    provenance: ({ config, storage, args }) => publishing.commandProvenance(config, storage, args),
-    changelog: ({ config, storage, args }) => publishing.commandChangelog(config, storage, args),
-    'source-health': ({ config, storage, args }) => publishing.commandSourceHealth(config, storage, args),
-    'llm-metrics': ({ config, storage, args }) => publishing.commandLlmMetrics(config, storage, args),
-    'expansion-bootstrap': ({ config, storage, args }) => (
-      publishing.commandExpansionBootstrap(config, storage, args, 'expansion-bootstrap')
-    ),
-    'hardening-harness': ({ config, storage, args }) => publishing.commandHardeningHarness(config, storage, args),
-    'hardening-report': ({ config, storage, args }) => publishing.commandHardeningReport(config, storage, args),
-    'drift-scan': ({ config, storage, args }) => publishing.commandDriftScan(config, storage, args),
-    'drift-reconcile': ({ config, storage, args }) => publishing.commandDriftReconcile(config, storage, args),
-    'run-batch': ({ config, storage, args }) => batch.commandRunBatch(config, storage, args),
-    discover: ({ config, storage, args }) => commandDiscover(config, storage, args),
-    'ingest-csv': ({ config, storage, args }) => dataUtility.commandIngestCsv(config, storage, args),
-    queue: ({ config, storage, args }) => commandQueue(config, storage, args),
-    review: ({ config, storage, args }) => commandReview(config, storage, args),
-    'billing-report': ({ config, storage, args }) => commandBillingReport(config, storage, args),
-    'learning-report': ({ config, storage, args }) => commandLearningReport(config, storage, args),
-    'explain-unk': ({ config, storage, args }) => commandExplainUnk(config, storage, args),
-    'llm-health': ({ config, storage, args }) => commandLlmHealth(config, storage, args),
-    'test-s3': () => dataUtility.commandTestS3(),
-    'sources-plan': ({ config, storage, args }) => commandSourcesPlan(config, storage, args),
-    'sources-report': ({ config, storage, args }) => commandSourcesReport(config, storage, args),
-    'rebuild-index': ({ config, storage, args }) => commandRebuildIndex(config, storage, args),
-    benchmark: ({ config, storage, args }) => commandBenchmark(config, storage, args, 'benchmark'),
-    'benchmark-golden': ({ config, storage, args }) =>
-      commandBenchmark(config, storage, args, 'benchmark-golden'),
-    'intel-graph-api': ({ config, storage, args }) => commandIntelGraphApi(config, storage, args),
-    'product-reconcile': ({ config, storage, args }) => publishing.commandProductReconcile(config, storage, args),
-    'seed-db': ({ config, storage, args }) => dataUtility.commandSeedDb(config, storage, args),
-    'migrate-to-sqlite': ({ config, storage, args }) => commandMigrateToSqlite(config, storage, args)
+async function executeCommand({ command, config, storage, args }) {
+  switch (command) {
+    case 'run-one':
+      return (await loadPipelineCommands()).commandRunOne(config, storage, args);
+    case 'indexlab':
+      return (await loadPipelineCommands()).commandIndexLab(config, storage, args);
+    case 'run-ad-hoc':
+      return (await loadPipelineCommands()).commandRunAdHoc(config, storage, args);
+    case 'run-until-complete':
+      return (await loadPipelineCommands()).commandRunUntilComplete(config, storage, args);
+    case 'category-compile':
+      return (await loadFieldRulesCommands()).commandCategoryCompile(config, storage, args);
+    case 'compile-rules':
+      return (await loadFieldRulesCommands()).commandCompileRules(config, storage, args);
+    case 'compile-report':
+      return (await loadFieldRulesCommands()).commandCompileReport(config, storage, args);
+    case 'rules-diff':
+      return (await loadFieldRulesCommands()).commandRulesDiff(config, storage, args);
+    case 'validate-rules':
+      return (await loadFieldRulesCommands()).commandValidateRules(config, storage, args);
+    case 'init-category':
+      return (await loadFieldRulesCommands()).commandInitCategory(config, storage, args);
+    case 'list-fields':
+      return (await loadFieldRulesCommands()).commandListFields(config, storage, args);
+    case 'field-report':
+      return (await loadFieldRulesCommands()).commandFieldReport(config, storage, args);
+    case 'field-rules-verify':
+      return (await loadFieldRulesCommands()).commandFieldRulesVerify(config, storage, args);
+    case 'create-golden':
+      return (await loadTestingQualityCommands()).commandCreateGolden(config, storage, args);
+    case 'test-golden':
+      return (await loadTestingQualityCommands()).commandTestGolden(config, storage, args);
+    case 'qa-judge':
+      return (await loadTestingQualityCommands()).commandQaJudge(config, storage, args);
+    case 'calibrate-confidence':
+      return (await loadTestingQualityCommands()).commandCalibrateConfidence(config, storage, args);
+    case 'accuracy-report':
+      return (await loadTestingQualityCommands()).commandAccuracyReport(config, storage, args);
+    case 'accuracy-benchmark':
+      return (await loadTestingQualityCommands()).commandAccuracyBenchmark(config, storage, args);
+    case 'accuracy-trend':
+      return (await loadTestingQualityCommands()).commandAccuracyTrend(config, storage, args);
+    case 'generate-types':
+      return (await loadDataUtilityCommands()).commandGenerateTypes(config, storage, args);
+    case 'publish':
+      return (await loadPublishingCommands()).commandPublish(config, storage, args);
+    case 'provenance':
+      return (await loadPublishingCommands()).commandProvenance(config, storage, args);
+    case 'changelog':
+      return (await loadPublishingCommands()).commandChangelog(config, storage, args);
+    case 'source-health':
+      return (await loadPublishingCommands()).commandSourceHealth(config, storage, args);
+    case 'llm-metrics':
+      return (await loadPublishingCommands()).commandLlmMetrics(config, storage, args);
+    case 'expansion-bootstrap':
+      return (await loadPublishingCommands()).commandExpansionBootstrap(config, storage, args, 'expansion-bootstrap');
+    case 'hardening-harness':
+      return (await loadPublishingCommands()).commandHardeningHarness(config, storage, args);
+    case 'hardening-report':
+      return (await loadPublishingCommands()).commandHardeningReport(config, storage, args);
+    case 'drift-scan':
+      return (await loadPublishingCommands()).commandDriftScan(config, storage, args);
+    case 'drift-reconcile':
+      return (await loadPublishingCommands()).commandDriftReconcile(config, storage, args);
+    case 'run-batch':
+      return (await loadBatchCommandGroup()).commandRunBatch(config, storage, args);
+    case 'discover':
+      return (await loadDiscoverCommandHandler())(config, storage, args);
+    case 'ingest-csv':
+      return (await loadDataUtilityCommands()).commandIngestCsv(config, storage, args);
+    case 'queue':
+      return (await loadQueueCommandHandler())(config, storage, args);
+    case 'review':
+      return (await loadReviewCommandHandler())(config, storage, args);
+    case 'billing-report':
+      return (await loadBillingReportCommandHandler())(config, storage, args);
+    case 'learning-report':
+      return (await loadLearningReportCommandHandler())(config, storage, args);
+    case 'explain-unk':
+      return (await loadExplainUnkCommandHandler())(config, storage, args);
+    case 'llm-health':
+      return (await loadLlmHealthCommandHandler())(config, storage, args);
+    case 'test-s3':
+      return (await loadDataUtilityCommands()).commandTestS3();
+    case 'sources-plan':
+      return (await loadSourcesPlanCommandHandler())(config, storage, args);
+    case 'sources-report':
+      return (await loadSourcesReportCommandHandler())(config, storage, args);
+    case 'rebuild-index':
+      return (await loadRebuildIndexCommandHandler())(config, storage, args);
+    case 'benchmark':
+      return (await loadBenchmarkCommandHandler())(config, storage, args, 'benchmark');
+    case 'benchmark-golden':
+      return (await loadBenchmarkCommandHandler())(config, storage, args, 'benchmark-golden');
+    case 'intel-graph-api':
+      return (await loadIntelGraphApiCommandHandler())(config, storage, args);
+    case 'product-reconcile':
+      return (await loadPublishingCommands()).commandProductReconcile(config, storage, args);
+    case 'seed-db':
+      return (await loadDataUtilityCommands()).commandSeedDb(config, storage, args);
+    case 'migrate-to-sqlite':
+      return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
+    default:
+      throw new Error(`Unknown command: ${command}`);
   }
-});
+}
 
 // --- Entry point ---
 
@@ -496,7 +611,9 @@ export async function executeCli(argv, { env = {}, stdout = process.stdout, stde
     }
     const storage = createStorage(config);
 
-    const output = await dispatchCliCommand({ command, config, storage, args });
+    // BUG: the lazy-loader refactor briefly left executeCli() calling the
+    // removed dispatchCliCommand() symbol, breaking every top-level CLI command.
+    const output = await executeCommand({ command, config, storage, args });
 
     if (output && typeof output === 'object') {
       output.run_profile = 'standard';

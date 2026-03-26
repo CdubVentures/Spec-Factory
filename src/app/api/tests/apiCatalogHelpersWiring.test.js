@@ -60,14 +60,8 @@ function createCatalogStorageFixture() {
   };
 }
 
-test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
-  const loadProductCatalog = async () => ({
-    products: {
-      'mouse-acme-orbit-x1': createCatalogProduct(),
-    },
-  });
-
-  const buildCatalog = createCatalogBuilder({
+function createBuildCatalog(overrides = {}) {
+  return createCatalogBuilder({
     config: { localMode: true },
     storage: createCatalogStorageFixture(),
     getSpecDb: () => ({ id: 'fake-specdb' }),
@@ -78,20 +72,88 @@ test('catalog builder merges storage enrichment onto seeded catalog rows and ski
         },
       },
     }),
-    loadProductCatalog,
+    loadProductCatalog: async () => ({
+      products: {
+        'mouse-acme-orbit-x1': createCatalogProduct(),
+      },
+    }),
     cleanVariant,
     catalogKey,
     path,
+    ...overrides,
+  });
+}
+
+test('catalog builder merges storage enrichment onto seeded catalog rows and skips orphans', async () => {
+  const buildCatalog = createBuildCatalog();
+
+  const rows = await buildCatalog('mouse');
+  assert.deepEqual(rows, [
+    {
+      productId: 'mouse-acme-orbit-x1',
+      id: 10,
+      identifier: '',
+      brand: 'Acme',
+      model: 'Orbit X1',
+      base_model: '',
+      variant: '',
+      status: 'complete',
+      hasFinal: true,
+      validated: true,
+      confidence: 0.86,
+      coverage: 0.77,
+      fieldsFilled: 7,
+      fieldsTotal: 9,
+      lastRun: '2026-02-26T10:00:00.000Z',
+      inActive: true,
+    },
+  ]);
+});
+
+test('catalog builder falls back to pending defaults when queue state loading fails', async () => {
+  const seedInput = createCatalogInput({ active: false });
+  const buildCatalog = createBuildCatalog({
+    storage: {
+      async listInputKeys() {
+        return ['inputs/seed.json'];
+      },
+      async readJsonOrNull(key) {
+        if (key === 'inputs/seed.json') return seedInput;
+        return null;
+      },
+      resolveOutputKey(category, productId) {
+        return `out/${category}/${productId}/latest`;
+      },
+      async objectExists() {
+        return false;
+      },
+    },
+    loadQueueState: async () => {
+      throw new Error('queue offline');
+    },
   });
 
   const rows = await buildCatalog('mouse');
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].productId, 'mouse-acme-orbit-x1');
-  assert.equal(rows[0].status, 'complete');
-  assert.equal(rows[0].hasFinal, true);
-  assert.equal(rows[0].validated, true);
-  assert.equal(rows[0].fieldsFilled, 7);
-  assert.equal(rows[0].fieldsTotal, 9);
+  assert.deepEqual(rows, [
+    {
+      productId: 'mouse-acme-orbit-x1',
+      id: 10,
+      identifier: '',
+      brand: 'Acme',
+      model: 'Orbit X1',
+      base_model: '',
+      variant: '',
+      status: 'pending',
+      hasFinal: false,
+      validated: false,
+      confidence: 0,
+      coverage: 0,
+      fieldsFilled: 0,
+      fieldsTotal: 0,
+      lastRun: '',
+      inActive: true,
+    },
+  ]);
 });
 
 test('compiled component db patcher writes updated matching item', async () => {
@@ -124,9 +186,46 @@ test('compiled component db patcher writes updated matching item', async () => {
     writes[0].filePath,
     path.join('/tmp/helper', 'mouse', '_generated', 'component_db', 'component-db.json'),
   );
-  const parsed = JSON.parse(writes[0].payload);
-  assert.equal(parsed.items[0].name, 'PixArt PMW 3395');
-  assert.equal(parsed.items[0].maker, 'PixArt');
-  assert.equal(parsed.items[0].properties.dpi, 26000);
-  assert.deepEqual(parsed.items[0].aliases, ['PMW3395']);
+  assert.deepEqual(JSON.parse(writes[0].payload), {
+    component_type: 'sensor',
+    items: [
+      {
+        name: 'PixArt PMW 3395',
+        maker: 'PixArt',
+        links: ['https://example.com'],
+        aliases: ['PMW3395'],
+        properties: {
+          dpi: 26000,
+        },
+      },
+    ],
+  });
+});
+
+test('compiled component db patcher skips writes when the target entity is absent', async () => {
+  const writes = [];
+  const patchDb = createCompiledComponentDbPatcher({
+    helperRoot: '/tmp/helper',
+    listFiles: async () => ['component-db.json'],
+    safeReadJson: async () => ({
+      component_type: 'sensor',
+      items: [createCompiledComponentRecord({ name: 'PAW 3311' })],
+    }),
+    fs: {
+      async writeFile(filePath, payload) {
+        writes.push({ filePath, payload });
+      },
+    },
+    path,
+  });
+
+  await patchDb(
+    'mouse',
+    'sensor',
+    'PixArt PMW',
+    { dpi: 26000 },
+    { name: 'PixArt PMW 3395' },
+  );
+
+  assert.deepEqual(writes, []);
 });

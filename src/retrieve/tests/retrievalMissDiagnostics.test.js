@@ -1,42 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTierAwareFieldRetrieval } from '../tierAwareRetriever.js';
+import {
+  makeEvidenceHit,
+  runRetrieval,
+} from './helpers/retrievalContractHarness.js';
 
-test('miss_diagnostics status=miss when no hits survive filtering', () => {
+test('critical-field retrieval reports a miss when only identity-mismatched evidence is available', () => {
   const pool = [
-    {
-      origin_field: 'weight',
-      url: 'https://wrong.com/page',
+    makeEvidenceHit({
       host: 'wrong.com',
-      tier: 2,
-      method: 'table',
       quote: 'Weight: 80g',
-      snippet_id: 'sn_wrong',
-      source_identity_match: false,
-      source_identity_score: 0.1
-    }
+      snippetId: 'sn_wrong',
+      identityMatch: false,
+    }),
   ];
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
+  const result = runRetrieval({
     needRow: { field_key: 'weight', need_score: 10, required_level: 'critical', min_refs: 2 },
     fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' },
-    identityFilterEnabled: true
+    identityFilterEnabled: true,
   });
 
   assert.ok(result.miss_diagnostics);
   assert.equal(result.miss_diagnostics.status, 'miss');
 });
 
-test('miss_diagnostics reasons includes pool_empty when pool is empty', () => {
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
-    needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 1 },
+test('retrieval explains that the pool was empty when no evidence rows were available', () => {
+  const result = runRetrieval({
     fieldRule: { search_hints: { query_terms: ['weight'] }, unit: 'g' },
-    evidencePool: [],
-    identity: { brand: 'Test', model: 'Product' }
   });
 
   assert.ok(result.miss_diagnostics);
@@ -45,25 +37,23 @@ test('miss_diagnostics reasons includes pool_empty when pool is empty', () => {
   assert.equal(result.miss_diagnostics.status, 'miss');
 });
 
-test('miss_diagnostics reasons includes no_anchor when pool non-empty but no anchor matches', () => {
+test('retrieval explains that no anchor terms matched when unrelated evidence is present', () => {
   const pool = [
-    {
-      origin_field: 'totally_different',
-      url: 'https://random.com/xyz',
+    makeEvidenceHit({
+      fieldKey: 'totally_different',
       host: 'random.com',
-      tier: 2,
+      path: 'xyz',
       method: 'text',
       quote: 'Screen ratio 16:9 panel type VA',
-      snippet_id: 'sn_random'
-    }
+      snippetId: 'sn_random',
+    }),
   ];
 
-  const result = buildTierAwareFieldRetrieval({
+  const result = runRetrieval({
     fieldKey: 'click_latency_ms',
     needRow: { field_key: 'click_latency_ms', need_score: 10, required_level: 'required', min_refs: 1 },
     fieldRule: { search_hints: { query_terms: ['click latency'] } },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' }
   });
 
   assert.ok(result.miss_diagnostics);
@@ -72,25 +62,20 @@ test('miss_diagnostics reasons includes no_anchor when pool non-empty but no anc
   assert.equal(result.miss_diagnostics.anchor_match_count, 0);
 });
 
-test('miss_diagnostics reasons includes tier_deficit when all hits are from non-preferred tiers', () => {
+test('retrieval reports a tier deficit when evidence only comes from disallowed tiers', () => {
   const pool = [
-    {
-      origin_field: 'weight',
-      url: 'https://retailer.com/page',
+    makeEvidenceHit({
       host: 'retailer.com',
       tier: 4,
-      method: 'table',
       quote: 'Weight: 54 grams',
-      snippet_id: 'sn_retail'
-    }
+      snippetId: 'sn_retail',
+    }),
   ];
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
+  const result = runRetrieval({
     needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 1, tier_preference: [1, 2] },
     fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' }
   });
 
   assert.ok(result.miss_diagnostics);
@@ -98,34 +83,28 @@ test('miss_diagnostics reasons includes tier_deficit when all hits are from non-
   assert.equal(result.miss_diagnostics.preferred_tier_hit_count, 0);
 });
 
-test('miss_diagnostics status=satisfied when min_refs met with preferred tier hits', () => {
+test('retrieval reports satisfied once preferred-tier evidence meets the minimum reference count', () => {
   const pool = [
-    {
-      origin_field: 'weight',
-      url: 'https://mfg.com/spec',
+    makeEvidenceHit({
       host: 'mfg.com',
       tier: 1,
-      method: 'table',
+      path: 'spec',
       quote: 'Weight: 54 grams',
-      snippet_id: 'sn_mfg'
-    },
-    {
-      origin_field: 'weight',
-      url: 'https://rtings.com/review',
+      snippetId: 'sn_mfg',
+    }),
+    makeEvidenceHit({
       host: 'rtings.com',
       tier: 2,
-      method: 'table',
+      path: 'review',
       quote: 'Weight: 54 g measured',
-      snippet_id: 'sn_rtings'
-    }
+      snippetId: 'sn_rtings',
+    }),
   ];
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
+  const result = runRetrieval({
     needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 2, tier_preference: [1, 2] },
     fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' }
   });
 
   assert.ok(result.miss_diagnostics);

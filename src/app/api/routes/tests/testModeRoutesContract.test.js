@@ -173,3 +173,32 @@ test('test-mode delete rejects non-test categories', async () => {
     },
   });
 });
+
+test('test-mode delete rejects resolved paths that escape the allowed roots', async () => {
+  let rmCalls = 0;
+  const handler = registerTestModeRoutes(makeCtx({
+    fs: {
+      rm: async () => { rmCalls += 1; },
+      mkdir: async () => {},
+      copyFile: async () => {},
+      writeFile: async () => {},
+    },
+  }));
+
+  const result = await handler(
+    ['test-mode', '_test_escape/../../outside'],
+    new URLSearchParams(),
+    'DELETE',
+    {},
+    {},
+  );
+
+  assert.deepEqual(result, {
+    status: 400,
+    body: {
+      ok: false,
+      error: 'invalid_category_path',
+    },
+  });
+  assert.equal(rmCalls, 0, 'delete should stop before removing any directory when the resolved path escapes allowed roots');
+});

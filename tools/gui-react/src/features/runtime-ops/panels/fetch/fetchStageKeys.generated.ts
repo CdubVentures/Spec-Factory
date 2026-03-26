@@ -3,6 +3,7 @@
 
 export const FETCH_STAGE_KEYS = [
   'stealth',
+  'cookie_consent',
   'auto_scroll',
   'dom_expansion',
   'css_override',
@@ -18,6 +19,7 @@ export interface StageMeta {
 
 export const FETCH_STAGE_META: Record<FetchTabKey, StageMeta> = {
   'stealth': { label: 'Stealth', tip: 'Anti-detection fingerprint injection — masks webdriver flag, spoofs plugins and languages.', tone: 'info' },
+  'cookie_consent': { label: 'Cookie Consent', tip: 'Auto-dismiss cookie/privacy consent banners before page interaction.', tone: 'info' },
   'auto_scroll': { label: 'Auto-Scroll', tip: 'Scroll passes to trigger lazy-loaded content and reveal dynamic elements.', tone: 'info' },
   'dom_expansion': { label: 'DOM Expansion', tip: 'Click expand/show-more buttons to reveal collapsed sections and tables.', tone: 'info' },
   'css_override': { label: 'CSS Override', tip: 'Force display:block on hidden elements for full capture (brute-force fallback).', tone: 'info' },

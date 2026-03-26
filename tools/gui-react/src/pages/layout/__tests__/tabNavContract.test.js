@@ -26,23 +26,6 @@ function renderElement(node) {
   };
 }
 
-function collectTextTokens(node, acc = []) {
-  if (Array.isArray(node)) {
-    for (const child of node) collectTextTokens(child, acc);
-    return acc;
-  }
-  if (node == null || typeof node === 'boolean') {
-    return acc;
-  }
-  if (typeof node !== 'object') {
-    const token = String(node).trim();
-    if (token) acc.push(token);
-    return acc;
-  }
-  collectTextTokens(node.props?.children, acc);
-  return acc;
-}
-
 function collectNodes(node, predicate, acc = []) {
   if (Array.isArray(node)) {
     for (const child of node) collectNodes(child, predicate, acc);
@@ -87,6 +70,7 @@ async function loadTabNavModule() {
               ...props,
               className,
               href: props.to,
+              ...(isActive ? { 'aria-current': 'page' } : {}),
               children: props.children,
             },
           };
@@ -110,42 +94,63 @@ async function loadTabNavModule() {
   return tabNavModulePromise;
 }
 
-test('TabNav keeps overview/product and categories/catalog grouped in rendered order', async () => {
+test('TabNav exposes the active route through link semantics instead of relying on visual-only state', async () => {
   globalThis.__tabNavHarness = { category: 'mouse', currentPath: '/' };
   const { TabNav } = await loadTabNavModule();
   const tree = renderElement(TabNav());
-  const tokens = collectTextTokens(tree);
-
-  const overviewIndex = tokens.indexOf('Overview');
-  const selectedProductIndex = tokens.indexOf('Selected Product');
-  const firstDividerAfterProduct = tokens.indexOf('|', selectedProductIndex + 1);
-  const categoriesIndex = tokens.indexOf('Categories');
-  const catalogIndex = tokens.indexOf('Catalog');
-  const firstDividerAfterCatalog = tokens.indexOf('|', catalogIndex + 1);
-
-  assert.notEqual(overviewIndex, -1);
-  assert.notEqual(selectedProductIndex, -1);
-  assert.notEqual(categoriesIndex, -1);
-  assert.notEqual(catalogIndex, -1);
-
-  assert.equal(overviewIndex < selectedProductIndex, true);
-  assert.equal(selectedProductIndex < categoriesIndex, true);
-  assert.equal(categoriesIndex < catalogIndex, true);
-  assert.equal(firstDividerAfterProduct, selectedProductIndex + 1);
-  assert.equal(firstDividerAfterCatalog, catalogIndex + 1);
-});
-
-test('TabNav renders the accent active state and shared bottom-border contract', async () => {
-  globalThis.__tabNavHarness = { category: 'mouse', currentPath: '/' };
-  const { TabNav } = await loadTabNavModule();
-  const tree = renderElement(TabNav());
-
-  assert.equal(String(tree?.props?.className || '').includes('border-b sf-border-default'), true);
 
   const anchors = collectNodes(tree, (node) => node.type === 'a');
   const overviewLink = anchors.find((node) => node.props?.children === 'Overview');
   const productLink = anchors.find((node) => node.props?.children === 'Selected Product');
 
-  assert.equal(String(overviewLink?.props?.className || '').includes('border-accent text-accent'), true);
-  assert.equal(String(productLink?.props?.className || '').includes('border-accent text-accent'), false);
+  assert.ok(overviewLink, 'expected Overview nav link');
+  assert.equal(overviewLink?.props?.href, '/');
+  assert.equal(overviewLink?.props?.['aria-current'], 'page');
+  assert.ok(productLink, 'expected Selected Product nav link');
+  assert.equal(productLink?.props?.href, '/product');
+  assert.equal(productLink?.props?.['aria-current'], undefined);
+});
+
+test('TabNav disables category-scoped tabs as plain text with explanatory titles', async () => {
+  globalThis.__tabNavHarness = { category: 'all', currentPath: '/' };
+  const { TabNav } = await loadTabNavModule();
+  const tree = renderElement(TabNav());
+
+  const anchors = collectNodes(tree, (node) => node.type === 'a');
+  const disabledSpans = collectNodes(
+    tree,
+    (node) => node.type === 'span' && typeof node.props?.title === 'string' && node.props.title.length > 0,
+  );
+
+  const studioDisabled = disabledSpans.find((node) => node.props?.children === 'Field Rules Studio');
+  const reviewGridDisabled = disabledSpans.find((node) => node.props?.children === 'Review Grid');
+  const storageLink = anchors.find((node) => node.props?.children === 'Storage');
+
+  assert.ok(studioDisabled, 'expected Field Rules Studio to render as disabled text for all-category mode');
+  assert.equal(studioDisabled?.props?.title, 'Select a specific category to use this tab');
+  assert.ok(reviewGridDisabled, 'expected Review Grid to render as disabled text for all-category mode');
+  assert.equal(reviewGridDisabled?.props?.title, 'Select a specific category to use this tab');
+  assert.ok(storageLink, 'expected Storage to stay navigable for all-category mode');
+});
+
+test('TabNav disables test-mode tabs without removing still-supported routes', async () => {
+  globalThis.__tabNavHarness = { category: '_test_mouse', currentPath: '/', isTestMode: true };
+  const { TabNav } = await loadTabNavModule();
+  const tree = renderElement(TabNav());
+
+  const anchors = collectNodes(tree, (node) => node.type === 'a');
+  const disabledSpans = collectNodes(
+    tree,
+    (node) => node.type === 'span' && typeof node.props?.title === 'string' && node.props.title.length > 0,
+  );
+
+  const catalogDisabled = disabledSpans.find((node) => node.props?.children === 'Catalog');
+  const runtimeOpsDisabled = disabledSpans.find((node) => node.props?.children === 'Runtime Ops');
+  const storageLink = anchors.find((node) => node.props?.children === 'Storage');
+
+  assert.ok(catalogDisabled, 'expected Catalog to render as disabled text in test mode');
+  assert.equal(catalogDisabled?.props?.title, 'Not available in Field Test');
+  assert.ok(runtimeOpsDisabled, 'expected Runtime Ops to render as disabled text in test mode');
+  assert.equal(runtimeOpsDisabled?.props?.title, 'Not available in Field Test');
+  assert.ok(storageLink, 'expected Storage to remain reachable in test mode');
 });

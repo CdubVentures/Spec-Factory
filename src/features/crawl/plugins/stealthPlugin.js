@@ -10,9 +10,11 @@ export const STEALTH_PATCHES = ['webdriver', 'plugins', 'languages'];
 export const stealthPlugin = {
   name: 'stealth',
   hooks: {
-    async beforeNavigate({ page }) {
+    async beforeNavigate({ page, settings }) {
+      const enabled = settings?.stealthEnabled !== false && settings?.stealthEnabled !== 'false';
+      if (!enabled) return { enabled: false, patches: [], injected: false };
       await page.addInitScript(STEALTH_INIT_SCRIPT);
-      return { patches: STEALTH_PATCHES, injected: true };
+      return { enabled: true, patches: STEALTH_PATCHES, injected: true };
     },
   },
 };

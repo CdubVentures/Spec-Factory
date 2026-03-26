@@ -12,7 +12,7 @@ function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name:
     type: 'openai-compatible',
     baseUrl: '',
     apiKey: '',
-    enabled: true,
+
     expanded: false,
     models: [],
     ...overrides,
@@ -41,7 +41,7 @@ const DEFAULTS: LlmProviderEntry[] = [
     id: 'default-gemini',
     name: 'Gemini',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    enabled: true,
+
     models: [
       makeModel('default-gemini-flash', 'gemini-2.5-flash', 'primary'),
       makeModel('default-gemini-flash-lite', 'gemini-2.5-flash-lite', 'fast'),
@@ -51,7 +51,7 @@ const DEFAULTS: LlmProviderEntry[] = [
     id: 'default-deepseek',
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com',
-    enabled: true,
+
     models: [
       makeModel('default-deepseek-chat', 'deepseek-chat', 'primary'),
       makeModel('default-deepseek-reasoner', 'deepseek-reasoner', 'reasoning'),
@@ -62,14 +62,14 @@ const DEFAULTS: LlmProviderEntry[] = [
     name: 'Anthropic',
     type: 'anthropic',
     baseUrl: 'https://api.anthropic.com',
-    enabled: false,
+
     models: [makeModel('default-anthropic-sonnet', 'claude-sonnet-4-20250514', 'reasoning')],
   }),
   makeProvider({
     id: 'default-openai',
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    enabled: false,
+
     models: [
       makeModel('default-openai-gpt-4-1', 'gpt-4.1', 'primary'),
       makeModel('default-openai-gpt-4-1-mini', 'gpt-4.1-mini', 'fast'),
@@ -91,13 +91,13 @@ describe('mergeDefaultsIntoRegistry', () => {
       id: 'default-gemini',
       name: 'My Custom Name',
       apiKey: 'sk-user-key-123',
-      enabled: false,
+
       models: [],
     });
     const result = mergeDefaultsIntoRegistry([userGemini], DEFAULTS);
     const gemini = result.find((p) => p.id === 'default-gemini');
     strictEqual(gemini?.apiKey, 'sk-user-key-123');
-    strictEqual(gemini?.enabled, false);
+
     strictEqual(gemini?.name, 'My Custom Name'); // user's edits preserved
     strictEqual(gemini?.models.length, 0); // user's edits preserved
   });
@@ -178,7 +178,7 @@ describe('mergeDefaultsIntoRegistry', () => {
       name: 'DeepSeek',
       baseUrl: 'https://api.deepseek.com',
       apiKey: 'sk-ds',
-      enabled: true,
+  
       models: [
         { ...makeModel('default-deepseek-chat', 'deepseek-chat', 'fast'), costInputPer1M: 0.5 },
         makeModel('default-deepseek-reasoner', 'deepseek-reasoner', 'reasoning'),
@@ -186,7 +186,7 @@ describe('mergeDefaultsIntoRegistry', () => {
     });
     const result = mergeDefaultsIntoRegistry([userDeepSeek], DEFAULTS);
     const ds = result.find((p) => p.id === 'default-deepseek');
-    strictEqual(ds?.enabled, true); // user changed from default false
+
     strictEqual(ds?.apiKey, 'sk-ds');
     const chat = ds?.models.find((m) => m.modelId === 'deepseek-chat');
     strictEqual(chat?.role, 'fast'); // user changed role
@@ -197,7 +197,7 @@ describe('mergeDefaultsIntoRegistry', () => {
     const result = mergeDefaultsIntoRegistry([], DEFAULTS);
     const openai = result.find((p) => p.id === 'default-openai');
     strictEqual(openai?.name, 'OpenAI');
-    strictEqual(openai?.enabled, false);
+
     strictEqual(openai?.models.length, 3);
     const gpt41 = openai?.models.find((m) => m.modelId === 'gpt-4.1');
     strictEqual(gpt41?.role, 'primary');
@@ -251,7 +251,7 @@ describe('mergeDefaultsIntoRegistry — lab providers', () => {
       id: 'lab-openai',
       name: 'LLM Lab OpenAI',
       accessMode: 'lab' as const,
-      enabled: false,
+  
       models: [makeModel('lab-openai-gpt5', 'gpt-5', 'primary')],
     }),
   ];
@@ -260,7 +260,7 @@ describe('mergeDefaultsIntoRegistry — lab providers', () => {
     const result = mergeDefaultsIntoRegistry([], LAB_DEFAULTS);
     const lab = result.find((p) => p.id === 'lab-openai');
     strictEqual(lab?.name, 'LLM Lab OpenAI');
-    strictEqual(lab?.enabled, false);
+
   });
 
   it('user-edited lab provider is preserved', () => {
@@ -268,12 +268,12 @@ describe('mergeDefaultsIntoRegistry — lab providers', () => {
       id: 'lab-openai',
       name: 'LLM Lab OpenAI',
       accessMode: 'lab' as const,
-      enabled: true,
+  
       models: [],
     });
     const result = mergeDefaultsIntoRegistry([userLab], LAB_DEFAULTS);
     const lab = result.find((p) => p.id === 'lab-openai');
-    strictEqual(lab?.enabled, true);
+
     strictEqual(lab?.models.length, 0);
   });
 

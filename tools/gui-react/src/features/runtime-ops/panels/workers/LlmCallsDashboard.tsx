@@ -499,9 +499,16 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
         </td>
         <td className="px-2 py-2.5 sf-text-muted">{call.round}</td>
         <td className="px-2 py-2">
-          <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${modelChipClass(call.model)}`}>
-            {call.model ? shortModel(call.model) : '\u2014'}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${modelChipClass(call.model)}`}>
+              {call.model ? shortModel(call.model) : '\u2014'}
+            </span>
+            {call.is_fallback && (
+              <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-chip-danger uppercase tracking-wider">
+                fallback
+              </span>
+            )}
+          </div>
         </td>
         <td className="px-2 py-2.5 sf-text-muted truncate max-w-[16rem]" title={call.prompt_preview ?? undefined}>
           {formatInputPreview(call)}
@@ -601,6 +608,7 @@ function CallRow({ call, expanded, onToggle, onTabClick, isHighlighted }: {
                   <MetaRow label="Provider" value={call.provider || '\u2014'} />
                   <MetaRow label="Round" value={`Round ${call.round}`} />
                   <MetaRow label="Duration" value={fmtDur(call.duration_ms, isActive)} />
+                  {call.is_fallback && <MetaRow label="Fallback" value="Yes" />}
                   <MetaRow label="Worker ID" value={call.worker_id} />
                 </div>
               </div>

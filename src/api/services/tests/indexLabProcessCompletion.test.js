@@ -1,30 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import os from 'node:os';
-import path from 'node:path';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import { handleIndexLabProcessCompletion } from '../indexLabProcessCompletion.js';
+import {
+  createLocalRunDataStorageSettings,
+  createRelocationWorkspace,
+  pathExists,
+  writeUtf8,
+} from './helpers/runRelocationHarness.js';
 
-async function writeUtf8(filePath, text) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, text, 'utf8');
+async function createCompletionHarness(testContext, prefix) {
+  const workspace = await createRelocationWorkspace(testContext, prefix);
+  const emitted = [];
+
+  return {
+    ...workspace,
+    emitted,
+    runDataStorageSettings: createLocalRunDataStorageSettings(workspace.destinationRoot),
+    broadcastWs(channel, payload) {
+      emitted.push({ channel, payload });
+    },
+  };
 }
 
-async function pathExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
+function getRelocationEvents(emitted = []) {
+  return emitted
+    .filter((item) => item.channel === 'data-change')
+    .map((item) => item.payload?.event);
 }
 
-test('handleIndexLabProcessCompletion relocates successful indexlab runs and emits relocation event', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-complete-'));
-  const outputRoot = path.join(tempRoot, 'out');
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+function getProcessLines(emitted = []) {
+  return emitted
+    .filter((item) => item.channel === 'process')
+    .flatMap((item) => (Array.isArray(item.payload) ? item.payload : []));
+}
+
+test('indexlab completion archives successful runs and emits relocation progress', async (t) => {
+  const harness = await createCompletionHarness(t, 'spec-factory-indexlab-complete-');
+  const { outputRoot, indexLabRoot, destinationRoot, emitted } = harness;
 
   const runId = 'run-complete-001';
   const category = 'mouse';
@@ -55,26 +70,15 @@ test('handleIndexLabProcessCompletion relocates successful indexlab runs and emi
     `${JSON.stringify({ run_id: runId, event: 'run_completed' })}\n`,
   );
 
-  const emitted = [];
   const result = await handleIndexLabProcessCompletion({
     exitCode: 0,
     cliArgs: ['indexlab', '--local', '--category', category, '--product-id', productId],
     startedAt: '2026-02-24T00:00:01.000Z',
-    runDataStorageSettings: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: destinationRoot,
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-    },
+    runDataStorageSettings: harness.runDataStorageSettings,
     indexLabRoot,
     outputRoot,
     outputPrefix: 'specs/outputs',
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+    broadcastWs: harness.broadcastWs,
     logError: () => {},
   });
 
@@ -85,16 +89,11 @@ test('handleIndexLabProcessCompletion relocates successful indexlab runs and emi
   assert.equal(await pathExists(path.join(archiveRoot, 'indexlab', 'run.json')), true);
   assert.equal(await pathExists(path.join(archiveRoot, 'run_output', 'summary.json')), true);
 
-  const relocationEvents = emitted
-    .filter((item) => item.channel === 'data-change')
-    .map((item) => item.payload?.event);
-  assert.deepEqual(relocationEvents, [
+  assert.deepEqual(getRelocationEvents(emitted), [
     'indexlab-run-data-relocation-started',
     'indexlab-run-data-relocated',
   ]);
-  const processLines = emitted
-    .filter((item) => item.channel === 'process')
-    .flatMap((item) => (Array.isArray(item.payload) ? item.payload : []));
+  const processLines = getProcessLines(emitted);
   assert.equal(
     processLines.some((line) => line.includes(`[storage] relocating run ${runId}`)),
     true,
@@ -105,21 +104,19 @@ test('handleIndexLabProcessCompletion relocates successful indexlab runs and emi
   );
 });
 
-test('handleIndexLabProcessCompletion ignores non-indexlab commands', async () => {
+test('indexlab completion ignores non-indexlab commands', async () => {
   const result = await handleIndexLabProcessCompletion({
     exitCode: 0,
     cliArgs: ['category-compile', '--category', 'mouse'],
-    runDataStorageSettings: { enabled: true, destinationType: 'local', localDirectory: 'C:\\Runs' },
+    runDataStorageSettings: createLocalRunDataStorageSettings('C:\\Runs'),
   });
 
   assert.equal(result, null);
 });
 
-test('handleIndexLabProcessCompletion relocates interrupted runs (non-zero exit code)', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-interrupted-'));
-  const outputRoot = path.join(tempRoot, 'out');
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+test('indexlab completion archives interrupted runs even without a successful exit code', async (t) => {
+  const harness = await createCompletionHarness(t, 'spec-factory-indexlab-interrupted-');
+  const { outputRoot, indexLabRoot, destinationRoot, emitted } = harness;
 
   const runId = 'run-interrupted-001';
   const category = 'mouse';
@@ -142,26 +139,15 @@ test('handleIndexLabProcessCompletion relocates interrupted runs (non-zero exit 
     `${JSON.stringify({ run_id: runId, event: 'fetch_started' })}\n`,
   );
 
-  const emitted = [];
   const result = await handleIndexLabProcessCompletion({
     exitCode: null,
     cliArgs: ['indexlab', '--local', '--category', category, '--product-id', productId],
     startedAt: '2026-02-24T00:00:01.000Z',
-    runDataStorageSettings: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: destinationRoot,
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-    },
+    runDataStorageSettings: harness.runDataStorageSettings,
     indexLabRoot,
     outputRoot,
     outputPrefix: 'specs/outputs',
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+    broadcastWs: harness.broadcastWs,
     logError: () => {},
   });
 
@@ -171,20 +157,15 @@ test('handleIndexLabProcessCompletion relocates interrupted runs (non-zero exit 
   const archiveRoot = path.join(destinationRoot, category, productId, runId);
   assert.equal(await pathExists(path.join(archiveRoot, 'indexlab', 'run.json')), true);
   assert.equal(await pathExists(path.join(archiveRoot, 'indexlab', 'run_events.ndjson')), true);
-
-  const relocationEvents = emitted
-    .filter((item) => item.channel === 'data-change')
-    .map((item) => item.payload?.event);
-  assert.deepEqual(relocationEvents, [
+  assert.deepEqual(getRelocationEvents(emitted), [
     'indexlab-run-data-relocation-started',
     'indexlab-run-data-relocated',
   ]);
 });
 
-test('handleIndexLabProcessCompletion relocates SIGKILL runs (exit code 1)', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-killed-'));
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+test('indexlab completion archives exit-code-1 runs like interrupted runs', async (t) => {
+  const harness = await createCompletionHarness(t, 'spec-factory-indexlab-killed-');
+  const { indexLabRoot, destinationRoot } = harness;
 
   const runId = 'run-killed-001';
   const category = 'monitor';
@@ -200,20 +181,15 @@ test('handleIndexLabProcessCompletion relocates SIGKILL runs (exit code 1)', asy
     }, null, 2),
   );
 
-  const emitted = [];
   const result = await handleIndexLabProcessCompletion({
     exitCode: 1,
     cliArgs: ['indexlab', '--local', '--category', category, '--product-id', productId],
     startedAt: '2026-02-24T00:00:01.000Z',
-    runDataStorageSettings: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: destinationRoot,
-    },
+    runDataStorageSettings: harness.runDataStorageSettings,
     indexLabRoot,
-    outputRoot: path.join(tempRoot, 'out'),
+    outputRoot: harness.outputRoot,
     outputPrefix: 'specs/outputs',
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+    broadcastWs: harness.broadcastWs,
     logError: () => {},
   });
 
@@ -224,10 +200,9 @@ test('handleIndexLabProcessCompletion relocates SIGKILL runs (exit code 1)', asy
   assert.equal(await pathExists(path.join(archiveRoot, 'indexlab', 'run.json')), true);
 });
 
-test('handleIndexLabProcessCompletion closes interrupted running meta and appends terminal error event before relocation', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-replaced-'));
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+test('indexlab completion closes running metadata and appends a terminal error event before archiving interrupted runs', async (t) => {
+  const harness = await createCompletionHarness(t, 'spec-factory-indexlab-replaced-');
+  const { indexLabRoot, destinationRoot } = harness;
 
   const runId = 'run-replaced-001';
   const category = 'mouse';
@@ -265,15 +240,11 @@ test('handleIndexLabProcessCompletion closes interrupted running meta and append
     exitCode: null,
     cliArgs: ['indexlab', '--local', '--run-id', runId, '--category', category, '--product-id', productId],
     startedAt: '2026-02-24T00:00:01.000Z',
-    runDataStorageSettings: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: destinationRoot,
-    },
+    runDataStorageSettings: harness.runDataStorageSettings,
     indexLabRoot,
-    outputRoot: path.join(tempRoot, 'out'),
+    outputRoot: harness.outputRoot,
     outputPrefix: 'specs/outputs',
-    broadcastWs: () => {},
+    broadcastWs: harness.broadcastWs,
     logError: () => {},
   });
 
@@ -297,11 +268,9 @@ test('handleIndexLabProcessCompletion closes interrupted running meta and append
   assert.equal(terminalEvent?.payload?.event, 'process_interrupted');
 });
 
-test('handleIndexLabProcessCompletion emits failure event when relocation throws', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-indexlab-fail-'));
-  const outputRoot = path.join(tempRoot, 'out');
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+test('indexlab completion emits relocation failure when the archived output escapes the allowed root', async (t) => {
+  const harness = await createCompletionHarness(t, 'spec-factory-indexlab-fail-');
+  const { outputRoot, indexLabRoot, emitted } = harness;
 
   const runId = 'run-fail-001';
   const category = 'mouse';
@@ -320,43 +289,27 @@ test('handleIndexLabProcessCompletion emits failure event when relocation throws
     }, null, 2),
   );
 
-  const emitted = [];
   const result = await handleIndexLabProcessCompletion({
     exitCode: 0,
     cliArgs: ['indexlab', '--local', '--category', category, '--product-id', productId],
     startedAt: '2026-02-24T00:00:01.000Z',
-    runDataStorageSettings: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: destinationRoot,
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-    },
+    runDataStorageSettings: harness.runDataStorageSettings,
     indexLabRoot,
     outputRoot,
     outputPrefix: 'specs/outputs',
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
+    broadcastWs: harness.broadcastWs,
     logError: () => {},
   });
 
   assert.equal(result?.ok, false);
   assert.equal(result?.error, 'run_output_outside_root');
   assert.equal(result?.run_id, runId);
-
-  const failureEvents = emitted
-    .filter((item) => item.channel === 'data-change')
-    .map((item) => item.payload?.event);
-  assert.deepEqual(failureEvents, [
+  assert.deepEqual(getRelocationEvents(emitted), [
     'indexlab-run-data-relocation-started',
     'indexlab-run-data-relocation-failed',
   ]);
-  const failureProcessLines = emitted
-    .filter((item) => item.channel === 'process')
-    .flatMap((item) => (Array.isArray(item.payload) ? item.payload : []));
+
+  const failureProcessLines = getProcessLines(emitted);
   assert.equal(
     failureProcessLines.some((line) => line.includes(`[storage] relocating run ${runId}`)),
     true,

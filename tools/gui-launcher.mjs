@@ -405,7 +405,7 @@ if (isPkg) {
     return origResolveFilename.call(this, request, parent, isMain, options);
   };
 
-  // Auto-rebuild disabled during active development — run SpecFactoryBuild.bat manually
+  // Auto-rebuild disabled during active development — run SpecFactory.bat build-exe manually
   // if (maybeStartAutoRebuild({ root: exeDir, exePath: process.execPath })) {
   //   process.exit(0);
   // }

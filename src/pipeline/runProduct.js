@@ -46,8 +46,8 @@ import { UberAggressiveOrchestrator } from '../research/uberAggressiveOrchestrat
 import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
-import { resolvePlugins } from '../features/crawl/plugins/pluginRegistry.js';
-import { resolveExtractionPlugins, createExtractionRunner } from '../features/extraction/index.js';
+import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
+import { resolveAllExtractionPlugins, createExtractionRunner } from '../features/extraction/index.js';
 import { runCrawlProcessingLifecycle } from './runCrawlProcessingLifecycle.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
@@ -213,21 +213,17 @@ export async function runProduct({
   });
 
   // --- New crawl pipeline: open pages, screenshot, record to frontier ---
-  const adapterName = String(config.fetcherAdapter || 'crawlee');
-  const pluginNames = String(config.fetcherPlugins || 'stealth,autoScroll')
-    .split(',').map((s) => s.trim()).filter(Boolean);
-  const plugins = resolvePlugins(pluginNames, { logger });
+  // WHY: All registered plugins are loaded. Each plugin self-gates via its own *Enabled setting.
+  const plugins = resolveAllPlugins();
 
-  // WHY: Extraction plugins run concurrently per-URL after fetch tools complete.
+  // WHY: Extraction plugins run sequentially per-URL after fetch tools complete.
   // Resolved here and passed via DI — crawlSession has no extraction import.
-  const extractionPluginNames = String(config.extractionPlugins || 'screenshot')
-    .split(',').map((s) => s.trim()).filter(Boolean);
   const extractionRunner = createExtractionRunner({
-    plugins: resolveExtractionPlugins(extractionPluginNames, { logger }),
+    plugins: resolveAllExtractionPlugins(),
     logger,
   });
 
-  const adapter = resolveAdapter(adapterName);
+  const adapter = resolveAdapter('crawlee');
   // WHY: crawlSession needs runId to construct the video recording directory.
   const session = adapter.create({
     settings: { ...config, runId },

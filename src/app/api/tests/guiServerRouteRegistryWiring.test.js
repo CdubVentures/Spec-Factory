@@ -5,9 +5,6 @@ import {
   createApiRouteDispatcher,
   createApiHttpRequestHandler,
 } from '../requestDispatch.js';
-import {
-  createGuiApiRouteRegistry,
-} from '../routeRegistry.js';
 import { createCaptureResponse } from './helpers/appApiTestBuilders.js';
 
 test('api path parser aliases scoped category segments', () => {
@@ -56,6 +53,23 @@ test('api route dispatcher returns the first matching handler result', async () 
     status: 200,
     body: { ok: true, parts: ['health'], method: 'GET' },
   });
+});
+
+test('api route dispatcher returns null when no registered handler matches', async () => {
+  const dispatch = createApiRouteDispatcher({
+    parsePath: () => ({
+      parts: ['missing'],
+      params: new URLSearchParams(),
+      pathname: '/missing',
+    }),
+    routeHandlers: [
+      null,
+      async () => false,
+    ],
+  });
+
+  const result = await dispatch({ url: '/missing', method: 'GET' }, {});
+  assert.equal(result, null);
 });
 
 test('api http request handler applies preflight, api 404, static fallback, and api error handling', async () => {
@@ -107,53 +121,33 @@ test('api http request handler applies preflight, api 404, static fallback, and 
   });
 });
 
-test('gui api route registry returns handlers in definition order with their paired contexts', () => {
-  const routeCtx = {
-    betaRouteContext: { token: 'beta' },
-    alphaRouteContext: { token: 'alpha' },
-    gammaRouteContext: { token: 'gamma' },
-  };
+test('api http request handler treats /health as an API request and preserves handled responses', async () => {
+  const requestHandler = createApiHttpRequestHandler({
+    corsHeaders: (res) => {
+      res.corsApplied = true;
+    },
+    handleApi: async (req, res) => {
+      if (req.url === '/health') {
+        res.handled = { ok: true, source: 'health' };
+        return res.handled;
+      }
+      return null;
+    },
+    jsonRes: (res, status, body) => {
+      res.json = { status, body };
+      return res.json;
+    },
+    serveStatic: (_req, res) => {
+      res.staticServed = true;
+    },
+    logApiError: () => {},
+  });
 
-  const routeDefinitions = ['beta', 'alpha', 'gamma'].map((name) => ({
-    key: name,
-    registrar: (ctx) => () => ctx.token,
-  }));
+  const healthRes = createCaptureResponse();
+  await requestHandler({ method: 'GET', url: '/health' }, healthRes);
 
-  const registry = createGuiApiRouteRegistry({ routeCtx, routeDefinitions });
-
-  assert.deepEqual(
-    registry.routeHandlers.map((handler) => handler()),
-    ['beta', 'alpha', 'gamma'],
-  );
-});
-
-test('gui api route registry rejects invalid registry definitions', () => {
-  assert.throws(
-    () => createGuiApiRouteRegistry({ routeCtx: {}, routeDefinitions: [] }),
-    { message: /routeDefinitions must be a non-empty array/ },
-  );
-
-  assert.throws(
-    () => createGuiApiRouteRegistry({
-      routeCtx: { badRouteContext: {} },
-      routeDefinitions: [{ key: 'bad', registrar: 'not-a-function' }],
-    }),
-    { message: /registrar for "bad" must be a function/ },
-  );
-
-  assert.throws(
-    () => createGuiApiRouteRegistry({
-      routeCtx: {},
-      routeDefinitions: [{ key: 'missing', registrar: () => () => {} }],
-    }),
-    { message: /missingRouteContext.*missing/ },
-  );
-
-  assert.throws(
-    () => createGuiApiRouteRegistry({
-      routeCtx: { badRouteContext: {} },
-      routeDefinitions: [{ key: 'bad', registrar: () => 'not-a-handler' }],
-    }),
-    { message: /must return a route handler function/ },
-  );
+  assert.equal(healthRes.corsApplied, true);
+  assert.deepEqual(healthRes.handled, { ok: true, source: 'health' });
+  assert.equal(healthRes.json, null);
+  assert.equal(healthRes.staticServed, undefined);
 });

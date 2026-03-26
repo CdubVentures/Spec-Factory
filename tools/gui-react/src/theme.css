@@ -1268,15 +1268,18 @@ html[data-sf-theme-mode='dark'] .sf-custom-select-panel {
   font-weight: 600;
 }
 
-.sf-custom-select-role-tag {
+.sf-custom-select-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-size: var(--sf-token-font-size-micro);
   font-weight: 600;
+  border-radius: var(--sf-radius-chip);
+  padding: var(--sf-space-0-5) var(--sf-space-1);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .sf-icon-button {

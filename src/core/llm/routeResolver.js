@@ -51,7 +51,7 @@ export function buildRegistryLookup(registryJson) {
 
   for (const entry of entries) {
     const id = String(entry?.id || '').trim();
-    if (!id || !entry?.enabled) continue;
+    if (!id) continue;
 
     providers.set(id, {
       id,
@@ -59,7 +59,6 @@ export function buildRegistryLookup(registryJson) {
       type: entry.type || 'openai-compatible',
       baseUrl: entry.baseUrl || '',
       apiKey: entry.apiKey || '',
-      enabled: true,
     });
 
     const models = Array.isArray(entry.models) ? entry.models : [];

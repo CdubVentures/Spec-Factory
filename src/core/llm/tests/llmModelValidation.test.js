@@ -129,20 +129,18 @@ describe('validateModelKeysAgainstRegistry', () => {
     deepStrictEqual(rejected, []);
   });
 
-  it('handles disabled providers (models not in lookup)', () => {
+  it('all registry providers are valid — no enabled gate', () => {
     const registry = [{
-      id: 'disabled-provider',
-      name: 'Disabled',
+      id: 'any-provider',
+      name: 'Any',
       type: 'openai-compatible',
-      baseUrl: 'https://disabled.com',
-      apiKey: 'sk-disabled',
-      enabled: false,
-      models: [{ id: 'm1', modelId: 'disabled-model', role: 'primary', costInputPer1M: 0, costOutputPer1M: 0, costCachedPer1M: 0, maxContextTokens: null, maxOutputTokens: null }],
+      baseUrl: 'https://any.com',
+      apiKey: 'sk-any',
+      models: [{ id: 'm1', modelId: 'any-model', role: 'primary', costInputPer1M: 0, costOutputPer1M: 0, costCachedPer1M: 0, maxContextTokens: null, maxOutputTokens: null }],
     }];
     const lookup = buildRegistryLookup(registry);
-    const flatKeys = { llmModelPlan: 'disabled-model' };
+    const flatKeys = { llmModelPlan: 'any-model' };
     const rejected = validateModelKeysAgainstRegistry(flatKeys, lookup);
-    strictEqual(rejected.length, 1);
-    strictEqual(rejected[0].value, 'disabled-model');
+    strictEqual(rejected.length, 0);
   });
 });

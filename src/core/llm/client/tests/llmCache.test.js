@@ -28,7 +28,10 @@ test('LLMCache stores and retrieves responses by deterministic key', async () =>
 
 test('LLMCache expires stale entries by ttl', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-cache-expiry-'));
+  const originalNow = Date.now;
+  let now = 1_000;
   try {
+    Date.now = () => now;
     const cache = new LLMCache({
       cacheDir: root,
       defaultTtlMs: 1
@@ -39,11 +42,11 @@ test('LLMCache expires stale entries by ttl', async () => {
       evidence: { refs: ['s1'] }
     });
     await cache.set(key, { ok: true }, 1);
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    now += 5;
     const miss = await cache.get(key);
     assert.equal(miss, null);
   } finally {
+    Date.now = originalNow;
     await fs.rm(root, { recursive: true, force: true });
   }
 });
-

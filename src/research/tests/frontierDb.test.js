@@ -1,27 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FrontierDb } from '../frontierDb.js';
-
-function createStorage(initial = {}) {
-  const data = new Map(Object.entries(initial));
-  return {
-    resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
-    async readJsonOrNull(key) {
-      return data.has(key) ? data.get(key) : null;
-    },
-    async writeObject(key, body) {
-      data.set(key, JSON.parse(Buffer.from(body).toString('utf8')));
-    },
-    snapshot(key) {
-      return data.get(key);
-    }
-  };
-}
+import { createMemoryFrontierStorage } from './helpers/frontierTestHarness.js';
 
 // ── recordQuery + getQueryRecord ──
 
 test('FrontierDb.recordQuery stores and retrieves query record', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json' });
 
   db.recordQuery({
@@ -40,7 +25,7 @@ test('FrontierDb.recordQuery stores and retrieves query record', () => {
 });
 
 test('FrontierDb.getQueryRecord returns null for unknown query', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json' });
 
   const record = db.getQueryRecord({ productId: 'p1', query: 'unknown query' });
@@ -48,7 +33,7 @@ test('FrontierDb.getQueryRecord returns null for unknown query', () => {
 });
 
 test('FrontierDb.recordQuery persists tier metadata when provided', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
 
   db.recordQuery({
@@ -70,7 +55,7 @@ test('FrontierDb.recordQuery persists tier metadata when provided', () => {
 });
 
 test('FrontierDb.recordQuery defaults tier fields to null when not provided', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
 
   db.recordQuery({
@@ -91,7 +76,7 @@ test('FrontierDb.recordQuery defaults tier fields to null when not provided', ()
 // ── recordFetch + getUrlRow ──
 
 test('FrontierDb.recordFetch stores and retrieves URL row', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json' });
 
   db.recordFetch({
@@ -111,7 +96,7 @@ test('FrontierDb.recordFetch stores and retrieves URL row', () => {
 });
 
 test('FrontierDb.getUrlRow returns empty object for unknown URL', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json' });
 
   const row = db.getUrlRow('https://unknown.com/page');
@@ -119,7 +104,7 @@ test('FrontierDb.getUrlRow returns empty object for unknown URL', () => {
 });
 
 test('FrontierDb.recordFetch merges fields_found across multiple fetches', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json' });
 
   db.recordFetch({
@@ -145,7 +130,7 @@ test('FrontierDb.recordFetch merges fields_found across multiple fetches', () =>
 // ── buildQueryExecutionHistory ──
 
 test('FrontierDb.buildQueryExecutionHistory returns empty for unknown product', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
 
   const history = db.buildQueryExecutionHistory('unknown');
@@ -153,7 +138,7 @@ test('FrontierDb.buildQueryExecutionHistory returns empty for unknown product', 
 });
 
 test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded queries', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
 
   db.recordQuery({
@@ -189,7 +174,7 @@ test('FrontierDb.buildQueryExecutionHistory maps tier metadata from recorded que
 });
 
 test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, key: 'frontier.json', cooldownMs: 0 });
 
   db.recordQuery({
@@ -207,14 +192,14 @@ test('FrontierDb.buildQueryExecutionHistory handles legacy queries without tier'
 // ---------------------------------------------------------------------------
 
 test('aggregateDomainStats returns empty map for no domains', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, config: {} });
   const stats = db.aggregateDomainStats([]);
   assert.equal(stats.size, 0);
 });
 
 test('aggregateDomainStats returns zeros for unknown domain', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({ storage, config: {} });
   const stats = db.aggregateDomainStats(['unknown.com']);
   assert.equal(stats.size, 1);
@@ -229,7 +214,7 @@ test('aggregateDomainStats returns zeros for unknown domain', () => {
 });
 
 test('aggregateDomainStats aggregates fetch history from recorded URLs', () => {
-  const storage = createStorage();
+  const storage = createMemoryFrontierStorage();
   const db = new FrontierDb({
     storage,
     config: {

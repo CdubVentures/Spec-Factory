@@ -14,17 +14,23 @@ function createDeps(overrides = {}) {
 }
 
 test('rebuild-index returns the rebuilt index summary payload', async () => {
+  const rebuildCalls = [];
   const commandRebuildIndex = createRebuildIndexCommand(createDeps({
-    rebuildCategoryIndex: async ({ category }) => ({
-      indexKey: `_index/${category}/catalog-index.json`,
-      totalProducts: 9,
-    }),
+    rebuildCategoryIndex: async ({ storage, config, category }) => {
+      rebuildCalls.push({ storage, config, category });
+      return {
+        indexKey: `_index/${category}/catalog-index.json`,
+        totalProducts: 9,
+      };
+    },
   }));
 
+  const config = { mode: 'test' };
+  const storage = { name: 'stub-storage' };
   const result = await commandRebuildIndex(
-    { mode: 'test' },
-    { name: 'stub-storage' },
-    { category: 'keyboard' },
+    config,
+    storage,
+    { category: ' keyboard ' },
   );
 
   assert.deepEqual(result, {
@@ -33,6 +39,11 @@ test('rebuild-index returns the rebuilt index summary payload', async () => {
     index_key: '_index/keyboard/catalog-index.json',
     total_products: 9,
   });
+  assert.deepEqual(rebuildCalls, [{
+    storage,
+    config,
+    category: 'keyboard',
+  }]);
 });
 
 test('rebuild-index defaults category to mouse', async () => {

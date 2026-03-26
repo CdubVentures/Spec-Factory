@@ -53,11 +53,13 @@ function diffMissing(routeKeys, hydrationKeys) {
   return [...routeKeys].filter((key) => !hydrationKeys.has(key) && !RETIRED_KEYS.has(key)).sort();
 }
 
+const runtimeSettingsDomainModulePromise = loadBundledModule(
+  'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
+  { prefix: 'runtime-hydration-contract-' },
+);
+
 test('runtime hydration bindings cover runtime settings route frontend keys', async () => {
-  const { createRuntimeHydrationBindings } = await loadBundledModule(
-    'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
-    { prefix: 'runtime-hydration-contract-coverage-' },
-  );
+  const { createRuntimeHydrationBindings } = await runtimeSettingsDomainModulePromise;
 
   const setters = new Proxy({}, {
     get() {
@@ -83,10 +85,10 @@ test('runtime hydration bindings cover runtime settings route frontend keys', as
 });
 
 test('runtime hydration bindings apply canonical runtime setting aliases for contract-critical keys', async () => {
-  const { createRuntimeHydrationBindings, hydrateRuntimeSettingsFromBindings } = await loadBundledModule(
-    'tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsDomain.ts',
-    { prefix: 'runtime-hydration-contract-apply-' },
-  );
+  const {
+    createRuntimeHydrationBindings,
+    hydrateRuntimeSettingsFromBindings,
+  } = await runtimeSettingsDomainModulePromise;
 
   const state = {};
   const setters = new Proxy({}, {

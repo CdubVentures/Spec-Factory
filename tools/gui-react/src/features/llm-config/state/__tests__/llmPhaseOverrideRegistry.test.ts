@@ -60,7 +60,7 @@ describe('uiPhaseIdToOverrideKey', () => {
   });
 });
 
-describe('resolvePhaseModel — webSearch and thinking defaults', () => {
+describe('resolvePhaseModel — webSearch defaults', () => {
   const globalDraft = {
     llmModelPlan: 'gemini-2.5-flash',
     llmModelReasoning: 'deepseek-reasoner',
@@ -76,34 +76,21 @@ describe('resolvePhaseModel — webSearch and thinking defaults', () => {
     strictEqual(result?.webSearch, false);
   });
 
-  it('thinking defaults to false when no override set', () => {
-    const result = resolvePhaseModel({}, 'needset', globalDraft);
-    strictEqual(result?.thinking, false);
-  });
-
   it('webSearch resolves to true when phase override is set', () => {
     const overrides = { needset: { webSearch: true } };
     const result = resolvePhaseModel(overrides, 'needset', globalDraft);
     strictEqual(result?.webSearch, true);
   });
 
-  it('thinking resolves to true when phase override is set', () => {
-    const overrides = { needset: { thinking: true } };
-    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
-    strictEqual(result?.thinking, true);
-  });
-
-  it('webSearch and thinking are independent per phase', () => {
+  it('webSearch is independent per phase', () => {
     const overrides = {
-      needset: { webSearch: true, thinking: false },
-      brandResolver: { webSearch: false, thinking: true },
+      needset: { webSearch: true },
+      brandResolver: { webSearch: false },
     };
     const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
     const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
     strictEqual(needset?.webSearch, true);
-    strictEqual(needset?.thinking, false);
     strictEqual(brand?.webSearch, false);
-    strictEqual(brand?.thinking, true);
   });
 });
 

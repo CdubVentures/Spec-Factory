@@ -19,7 +19,9 @@ export function getProviderHealth() {
 }
 
 function normalizeBaseUrl(value) {
-  return String(value || 'https://api.openai.com').replace(/\/+$/, '');
+  // WHY: Registry base URLs may already include /v1. Strip it so endpoints
+  // don't become /v1/v1/chat/completions.
+  return String(value || 'https://api.openai.com').replace(/\/+$/, '').replace(/\/v1$/, '');
 }
 
 function normalizeModel(value) {
@@ -557,7 +559,9 @@ export async function callOpenAI({
   const baseUrlNormalized = normalizeBaseUrl(baseUrl);
   const inferredProvider = provider || providerFromModelToken(model);
   const providerClient = selectLlmProvider(inferredProvider);
-  const providerLabel = providerClient.name;
+  // WHY: providerClient.name always returns 'openai' for openai-compatible types.
+  // Use the model-inferred provider name for a meaningful label in telemetry.
+  const providerLabel = providerFromModelToken(model) || providerClient.name;
   const health = providerHealth || _providerHealth;
   const deepSeekMode = inferredProvider === 'deepseek';
   const reason = String(usageContext?.reason || 'extract');
@@ -570,9 +574,6 @@ export async function callOpenAI({
   const developerMode = Boolean(usageContext?.developer_mode);
   const traceRingSize = Math.max(5, Number.parseInt(String(usageContext?.trace_ring_size || 50), 10) || 50);
   const jsonSchemaRequested = Boolean(jsonSchema && !deepSeekMode);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   const forceJsonOutput = Boolean(jsonSchema && deepSeekMode);
   const effectiveSystem = [
     String(system || ''),
@@ -862,8 +863,13 @@ export async function callOpenAI({
     prompt_preview: promptPreview
   });
 
-  const callStartMs = Date.now();
+  let controller;
+  let timer;
+  let callStartMs = 0;
   try {
+    controller = new AbortController();
+    timer = setTimeout(() => controller.abort(), timeoutMs);
+    callStartMs = Date.now();
     const useJsonSchema = Boolean(jsonSchemaRequested);
     const firstBody = buildBody({ useJsonSchema });
     const first = await requestChatCompletion({

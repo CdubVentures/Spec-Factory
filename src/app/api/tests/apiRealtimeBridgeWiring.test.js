@@ -81,6 +81,27 @@ test('realtime bridge filters subscribed event streams and forwards process-stat
   assert.equal(eventsMessage.data[0].productId, 'mouse-razer-viper');
 });
 
+test('realtime bridge suppresses event broadcasts when subscribed product filters out every row', async () => {
+  const h = createRealtimeBridgeHarness();
+
+  h.bridge.attachWebSocketUpgrade(h.server);
+  h.server.emit('upgrade', { url: '/ws?category=mouse' }, { destroy: () => {} }, Buffer.alloc(0));
+  assert.equal(h.wsHarness.clients.length, 1);
+  const client = h.wsHarness.clients[0];
+
+  client.emit('message', Buffer.from(JSON.stringify(createWsSubscription({
+    subscribe: ['events'],
+    productId: 'mouse-razer-viper',
+  }))));
+
+  h.bridge.broadcastWs('events', [
+    createRuntimeEvent({ productId: 'mouse-logitech-gpx-2' }),
+    createRuntimeEvent({ category: 'keyboard', productId: 'keyboard-logitech-g915' }),
+  ]);
+
+  assert.deepEqual(client.sent, []);
+});
+
 test('realtime bridge forwards screencast control messages and rejects non-ws upgrades', async () => {
   const h = createRealtimeBridgeHarness();
 
@@ -145,6 +166,55 @@ test('realtime bridge watcher fanout publishes runtime and indexlab deltas', asy
   });
   assert.equal(channels.includes('events'), true);
   assert.equal(channels.includes('indexlab-event'), true);
+});
+
+test('realtime bridge indexlab watcher only publishes appended rows on subsequent changes', async () => {
+  const indexLabRoot = path.resolve('artifacts/indexlab');
+  const runFilePath = path.join(indexLabRoot, 'run-1', 'run_events.ndjson');
+  const firstRow = createIndexLabEvent();
+  const secondRow = createIndexLabEvent({ event: 'fetch_done' });
+  const h = createRealtimeBridgeHarness({
+    indexLabRoot,
+    files: {
+      [runFilePath]: `${JSON.stringify(firstRow)}\n`,
+    },
+  });
+
+  h.bridge.attachWebSocketUpgrade(h.server);
+  h.server.emit('upgrade', { url: '/ws' }, { destroy: () => {} }, Buffer.alloc(0));
+  assert.equal(h.wsHarness.clients.length, 1);
+  const client = h.wsHarness.clients[0];
+
+  client.emit('message', Buffer.from(JSON.stringify(createWsSubscription({
+    subscribe: ['indexlab-event'],
+    category: '',
+    productId: '',
+  }))));
+
+  h.bridge.setupWatchers();
+
+  h.watchHarness.watchers[1].emit('add', runFilePath);
+  await flushAsync();
+
+  h.fakeFs.setFile(
+    runFilePath,
+    `${JSON.stringify(firstRow)}\n${JSON.stringify(secondRow)}\n`,
+  );
+  h.watchHarness.watchers[1].emit('change', runFilePath);
+  await flushAsync();
+
+  const messages = client.sent.map((raw) => JSON.parse(raw));
+  assert.equal(messages.length, 2);
+  assert.deepEqual(messages[0], {
+    channel: 'indexlab-event',
+    data: [firstRow],
+    ts: messages[0].ts,
+  });
+  assert.deepEqual(messages[1], {
+    channel: 'indexlab-event',
+    data: [secondRow],
+    ts: messages[1].ts,
+  });
 });
 
 test('realtime bridge caches the last screencast frame by run and worker', async () => {

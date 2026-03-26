@@ -1,221 +1,137 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   compileRules,
   initCategory,
   normalizeFieldRulesForPhase1,
   validateRules
 } from '../compiler.js';
-import { createMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
+import {
+  buildMouseWorkbookMap,
+  buildMouseWorkbookMapWithOverrides,
+  createCompilerWorkspace,
+  createMouseWorkbookPath,
+  pathExists,
+  removeRoot,
+} from './helpers/fieldRulesCompilerHarness.js';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-
-function mouseWorkbookPath(rootDir) {
-  return createMouseFieldStudioSourcePath(rootDir);
-}
-
-function buildMouseWorkbookMap(workbookPath) {
+async function createCompiledMouseBaseline() {
+  const workspace = await createCompilerWorkspace('phase1-compiler-baseline-');
+  const workbookPath = createMouseWorkbookPath(workspace.root);
+  const workbookMap = buildMouseWorkbookMap(workbookPath);
+  const compileResult = await compileRules({
+    category: 'mouse',
+    fieldStudioSourcePath: workbookPath,
+    fieldStudioMap: workbookMap,
+    config: {
+      categoryAuthorityRoot: workspace.helperRoot,
+      categoriesRoot: workspace.categoriesRoot
+    }
+  });
+  process.once('exit', () => {
+    fsSync.rmSync(workspace.root, { recursive: true, force: true });
+  });
   return {
-    version: 1,
-    field_studio_source_path: workbookPath,
-    sheet_roles: [
-      { sheet: 'dataEntry', role: 'product_table' },
-      { sheet: 'dataEntry', role: 'field_key_list' }
-    ],
-    key_list: {
-      sheet: 'dataEntry',
-      source: 'column_range',
-      column: 'B',
-      row_start: 9,
-      row_end: 83
-    },
-    product_table: {
-      sheet: 'dataEntry',
-      layout: 'matrix',
-      brand_row: 3,
-      model_row: 4,
-      variant_row: 5,
-      value_col_start: 'C',
-      value_col_end: '',
-      sample_columns: 18
-    },
-    expectations: {
-      required_fields: ['connection', 'weight', 'dpi'],
-      critical_fields: ['polling_rate'],
-      expected_easy_fields: ['side_buttons'],
-      expected_sometimes_fields: ['sensor'],
-      deep_fields: ['release_date']
-    },
-    enum_lists: [],
-    component_sheets: [],
-    field_overrides: {},
-    selected_keys: [
-      'brand', 'model', 'variant', 'category',
-      'connection', 'weight', 'dpi', 'polling_rate',
-      'side_buttons', 'sensor', 'release_date'
-    ]
+    ...workspace,
+    workbookPath,
+    workbookMap,
+    compileResult,
   };
 }
 
-function buildMouseWorkbookMapWithOverrides({
-  fieldStudioSourcePath = '',
-  workbookPath,
-  fieldOverrides = {},
-  expectations = {}
-}) {
-  const resolvedSourcePath = String(fieldStudioSourcePath || workbookPath || '').trim();
-  const base = buildMouseWorkbookMap(resolvedSourcePath);
-  const overrideKeys = Object.keys(fieldOverrides);
-  const mergedKeys = [...new Set([...(base.selected_keys || []), ...overrideKeys])];
-  return {
-    ...base,
-    selected_keys: mergedKeys,
-    expectations: {
-      ...base.expectations,
-      ...expectations
-    },
-    field_overrides: fieldOverrides
-  };
-}
+let compiledMouseBaselinePromise = null;
 
-async function exists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
+function getCompiledMouseBaseline() {
+  if (!compiledMouseBaselinePromise) {
+    compiledMouseBaselinePromise = createCompiledMouseBaseline();
   }
+  return compiledMouseBaselinePromise;
+}
+
+async function cloneCompiledMouseBaseline(prefix) {
+  const baseline = await getCompiledMouseBaseline();
+  const workspace = await createCompilerWorkspace(prefix);
+  if (await pathExists(baseline.helperRoot)) {
+    await fs.cp(baseline.helperRoot, workspace.helperRoot, { recursive: true });
+  }
+  await fs.mkdir(workspace.categoriesRoot, { recursive: true });
+  if (await pathExists(baseline.categoriesRoot)) {
+    await fs.cp(baseline.categoriesRoot, workspace.categoriesRoot, { recursive: true });
+  }
+  return workspace;
 }
 
 test('compileRules writes Phase 1 generated artifacts and validateRules passes', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
-  try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const compileResult = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(compileResult.compiled, true);
-    assert.equal(Array.isArray(compileResult.phase1_artifacts), true);
-    assert.equal(compileResult.phase1_artifacts.length >= 8, true);
+  const { compileResult, helperRoot, categoriesRoot } = await getCompiledMouseBaseline();
+  const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
+  assert.equal(compileResult.compiled, true);
+  assert.equal(Array.isArray(compileResult.phase1_artifacts), true);
+  assert.equal(compileResult.phase1_artifacts.length >= 8, true);
 
-    const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
-    assert.equal(await exists(path.join(generatedRoot, 'field_rules.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'ui_field_catalog.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'known_values.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'parse_templates.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'cross_validation_rules.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'field_groups.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'key_migrations.json')), true);
-    assert.equal(await exists(path.join(generatedRoot, 'component_db')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'field_rules.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'ui_field_catalog.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'known_values.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'parse_templates.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'cross_validation_rules.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'field_groups.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'key_migrations.json')), true);
+  assert.equal(await pathExists(path.join(generatedRoot, 'component_db')), true);
 
-    const validation = await validateRules({
-      category: 'mouse',
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(validation.valid, true);
-    assert.equal(validation.errors.length, 0);
-    assert.equal(validation.stats.field_count > 0, true);
-    assert.equal(validation.stats.schema_artifacts_validated >= 5, true);
-    assert.equal(validation.schema.valid, true);
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
+  const validation = await validateRules({
+    category: 'mouse',
+    config: {
+      categoryAuthorityRoot: helperRoot,
+      categoriesRoot
+    }
+  });
+  assert.equal(validation.valid, true);
+  assert.equal(validation.errors.length, 0);
+  assert.equal(validation.stats.field_count > 0, true);
+  assert.equal(validation.stats.schema_artifacts_validated >= 5, true);
+  assert.equal(validation.schema.valid, true);
 });
 
 test('compileRules dry-run reports no diff after stable compile', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-dry-run-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
-  try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const first = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(first.compiled, true);
-
-    const dryRun = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      dryRun: true,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(dryRun.dry_run, true);
-    assert.equal(dryRun.would_change, false);
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
+  const { helperRoot, categoriesRoot, workbookPath, workbookMap } = await getCompiledMouseBaseline();
+  const dryRun = await compileRules({
+    category: 'mouse',
+    fieldStudioSourcePath: workbookPath,
+    fieldStudioMap: workbookMap,
+    dryRun: true,
+    config: {
+      categoryAuthorityRoot: helperRoot,
+      categoriesRoot
+    }
+  });
+  assert.equal(dryRun.dry_run, true);
+  assert.equal(dryRun.would_change, false);
 });
 
 test('compileRules dry-run uses existing control-plane map when workbookMap is not provided', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-dry-run-existing-map-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
-  try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const first = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(first.compiled, true);
-
-    const dryRun = await compileRules({
-      category: 'mouse',
-      dryRun: true,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(dryRun.dry_run, true);
-    assert.equal(dryRun.would_change, false);
-    assert.equal(
-      (dryRun.warnings || []).some((row) => String(row).includes('selected_keys: empty')),
-      false
-    );
-  } finally {
-    await fs.rm(root, { recursive: true, force: true });
-  }
+  const { helperRoot, categoriesRoot } = await getCompiledMouseBaseline();
+  const dryRun = await compileRules({
+    category: 'mouse',
+    dryRun: true,
+    config: {
+      categoryAuthorityRoot: helperRoot,
+      categoriesRoot
+    }
+  });
+  assert.equal(dryRun.dry_run, true);
+  assert.equal(dryRun.would_change, false);
+  assert.equal(
+    (dryRun.warnings || []).some((row) => String(row).includes('selected_keys: empty')),
+    false
+  );
 });
 
 test('compileRules enforces critical and identity buckets from expectations and canonical identity keys', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-buckets-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase1-compiler-buckets-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
+    const workbookPath = createMouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMapWithOverrides({
       fieldStudioSourcePath: workbookPath,
       fieldOverrides: {
@@ -258,28 +174,13 @@ test('compileRules enforces critical and identity buckets from expectations and 
     assert.equal(Number(compileReport.counts.critical) >= 1, true);
     assert.equal(Number(compileReport.counts.identity) >= 1, true);
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('validateRules reports missing required artifacts', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-missing-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await cloneCompiledMouseBaseline('phase1-compiler-missing-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const compiled = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(compiled.compiled, true);
-
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await fs.rm(path.join(generatedRoot, 'parse_templates.json'), { force: true });
 
@@ -296,28 +197,13 @@ test('validateRules reports missing required artifacts', async () => {
       true
     );
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('validateRules fails when artifact violates shared JSON schema', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-schema-invalid-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await cloneCompiledMouseBaseline('phase1-compiler-schema-invalid-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const compiled = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(compiled.compiled, true);
-
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await fs.writeFile(
       path.join(generatedRoot, 'parse_templates.json'),
@@ -339,28 +225,13 @@ test('validateRules fails when artifact violates shared JSON schema', async () =
       true
     );
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('validateRules reports missing required per-field metadata', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-compiler-metadata-invalid-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await cloneCompiledMouseBaseline('phase1-compiler-metadata-invalid-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
-    const workbookMap = buildMouseWorkbookMap(workbookPath);
-    const compiled = await compileRules({
-      category: 'mouse',
-      fieldStudioSourcePath: workbookPath,
-      fieldStudioMap: workbookMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-        categoriesRoot
-      }
-    });
-    assert.equal(compiled.compiled, true);
-
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
     const fieldRules = JSON.parse(await fs.readFile(fieldRulesPath, 'utf8'));
@@ -382,14 +253,12 @@ test('validateRules reports missing required per-field metadata', async () => {
       true
     );
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('initCategory creates category scaffolding only in category_authority for category-specific config', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase1-init-category-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase1-init-category-');
   try {
     const initResult = await initCategory({
       category: 'monitor',
@@ -400,22 +269,22 @@ test('initCategory creates category scaffolding only in category_authority for c
       }
     });
     assert.equal(initResult.created, true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', '_source')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', '_generated')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', '_suggestions')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', '_overrides')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', 'schema.json')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', 'sources.json')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', 'required_fields.json')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', 'search_templates.json')), true);
-    assert.equal(await exists(path.join(helperRoot, 'monitor', 'anchors.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_source')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_generated')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_suggestions')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_overrides')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'schema.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'sources.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'required_fields.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'search_templates.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'anchors.json')), true);
     assert.equal(initResult.shared_schema_root, path.join(helperRoot, '_global', '_shared'));
-    assert.equal(await exists(path.join(helperRoot, '_global', '_shared', 'base_field_schema.json')), true);
-    assert.equal(await exists(path.join(helperRoot, '_global', '_shared', 'base_component_schema.json')), true);
-    assert.equal(await exists(path.join(categoriesRoot, '_shared')), false);
-    assert.equal(await exists(path.join(categoriesRoot, 'monitor')), false);
+    assert.equal(await pathExists(path.join(helperRoot, '_global', '_shared', 'base_field_schema.json')), true);
+    assert.equal(await pathExists(path.join(helperRoot, '_global', '_shared', 'base_component_schema.json')), true);
+    assert.equal(await pathExists(path.join(categoriesRoot, '_shared')), false);
+    assert.equal(await pathExists(path.join(categoriesRoot, 'monitor')), false);
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 

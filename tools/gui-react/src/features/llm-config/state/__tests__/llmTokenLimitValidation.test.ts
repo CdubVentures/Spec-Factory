@@ -8,7 +8,6 @@ function makeProvider(overrides: Partial<LlmProviderEntry> & { id: string; name:
     type: 'openai-compatible',
     baseUrl: '',
     apiKey: '',
-    enabled: true,
     expanded: false,
     models: [],
     ...overrides,

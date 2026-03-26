@@ -364,11 +364,19 @@ export interface WorkerLlmDetail {
   response_preview: string | null;
 }
 
+export interface ExtractionPluginEvent {
+  plugin: string;
+  status: 'completed' | 'failed';
+  url?: string;
+  reason?: string;
+}
+
 export interface WorkerDetailResponse {
   run_id: string;
   worker_id: string;
   documents: RuntimeOpsDocumentRow[];
   extraction_fields: WorkerExtractionField[];
+  extraction_plugins?: ExtractionPluginEvent[];
   indexed_field_names?: string[];
   queue_jobs: QueueJobRow[];
   screenshots: WorkerScreenshot[];
@@ -385,106 +393,82 @@ export interface PipelineFlowResponse {
 
 // ── Fetch Phases (Workers tab fetch row) ──
 
-export interface FetchStealthInjection {
+export interface FetchPluginRecord {
   worker_id: string;
   display_label: string;
   url: string;
   host: string;
-  injected: boolean;
   ts: string;
+  [key: string]: unknown;
 }
+
+export interface FetchPluginData {
+  records: FetchPluginRecord[];
+  total: number;
+}
+
+// ── Domain-specific fetch plugin data shapes ──
 
 export interface FetchStealthData {
   patches: string[];
-  injections: FetchStealthInjection[];
+  injections: Array<{ worker_id: string; injected: boolean; ts: string }>;
   total_injected: number;
   total_failed: number;
 }
 
-export interface FetchAutoScrollRecord {
-  worker_id: string;
-  display_label: string;
-  url: string;
-  host: string;
-  enabled: boolean;
-  passes: number;
-  delayMs: number;
-  postLoadWaitMs: number;
-  ts: string;
-}
-
 export interface FetchAutoScrollData {
-  scroll_records: FetchAutoScrollRecord[];
+  scroll_records: Array<{ worker_id: string; display_label: string; enabled: boolean; passes: number }>;
   total_scrolled: number;
   total_skipped: number;
 }
 
-export interface FetchDomExpansionRecord {
-  worker_id: string;
-  display_label: string;
-  url: string;
-  host: string;
-  enabled: boolean;
-  selectors: string[];
-  found: number;
-  clicked: number;
-  settleMs: number;
-  ts: string;
-}
-
 export interface FetchDomExpansionData {
-  expansion_records: FetchDomExpansionRecord[];
+  expansion_records: Array<{ worker_id: string; display_label: string; enabled: boolean; found: number; clicked: number }>;
   total_expanded: number;
   total_skipped: number;
   total_clicks: number;
   total_found: number;
 }
 
-export interface FetchCssOverrideRecord {
-  worker_id: string;
-  display_label: string;
-  url: string;
-  host: string;
-  enabled: boolean;
-  hiddenBefore: number;
-  revealedAfter: number;
-  ts: string;
-}
-
 export interface FetchCssOverrideData {
-  override_records: FetchCssOverrideRecord[];
+  override_records: Array<{ worker_id: string; display_label: string; enabled: boolean; hiddenBefore: number; revealedAfter: number }>;
   total_overridden: number;
   total_skipped: number;
   total_elements_revealed: number;
 }
 
+export interface FetchCookieConsentData {
+  consent_records: Array<{ worker_id: string; display_label: string; enabled: boolean; autoconsentMatched: boolean; fallbackClicked: number; settleMs: number }>;
+  total_dismissed: number;
+  total_skipped: number;
+  autoconsent_matches: number;
+  fallback_clicks: number;
+}
+
 export interface FetchPhasesResponse {
   run_id: string;
-  stealth: FetchStealthData;
-  auto_scroll: FetchAutoScrollData;
-  dom_expansion: FetchDomExpansionData;
-  css_override: FetchCssOverrideData;
+  stealth?: FetchStealthData;
+  cookie_consent?: FetchCookieConsentData;
+  auto_scroll?: FetchAutoScrollData;
+  dom_expansion?: FetchDomExpansionData;
+  css_override?: FetchCssOverrideData;
 }
 
 // ── Extraction Phases ──
 
-export interface ExtractionScreenshotEntry {
+export interface ExtractionPluginEntry {
   url: string;
   worker_id: string;
-  count: number;
-  formats: string[];
-  total_bytes: number;
 }
 
-export interface ExtractionScreenshotData {
-  entries: ExtractionScreenshotEntry[];
-  total_screenshots: number;
-  total_bytes: number;
+export interface ExtractionPluginData {
+  entries: ExtractionPluginEntry[];
+  total: number;
 }
 
 export interface ExtractionPhasesResponse {
   run_id: string;
-  screenshot: ExtractionScreenshotData;
+  plugins: Record<string, ExtractionPluginData>;
 }
 
 // ── Pre-Fetch Phases (Workers tab pinned row) ──

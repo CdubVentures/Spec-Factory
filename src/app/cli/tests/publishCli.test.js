@@ -1,23 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { createCliJsonHarness } from '../../../cli/tests/helpers/cliJsonHarness.js';
+import { createLocalCliWorkspace } from './helpers/localCliWorkspaceHarness.js';
 
 async function writeJson(filePath, value) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
-
-function localArgs({ inputRoot, outputRoot, importsRoot }) {
-  return [
-    '--local',
-    '--output-mode', 'local',
-    '--local-input-root', inputRoot,
-    '--local-output-root', outputRoot,
-    '--imports-root', importsRoot
-  ];
 }
 
 async function seedHelperArtifacts(helperRoot) {
@@ -118,51 +108,65 @@ async function seedApprovedOverride(helperRoot, productId, overrideValue) {
   });
 }
 
-test('publish CLI publishes approved overrides and exposes provenance/changelog queries', async () => {
+test('publish CLI publishes approved overrides and exposes provenance/changelog queries', async (t) => {
   const runCli = createCliJsonHarness();
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-publish-cli-'));
-  const inputRoot = path.join(tempRoot, 'fixtures');
-  const outputRoot = path.join(tempRoot, 'out');
-  const importsRoot = path.join(tempRoot, 'imports');
-  const helperRoot = path.join(tempRoot, 'category_authority');
+  const workspace = await createLocalCliWorkspace(t, 'spec-harvester-publish-cli-');
+  const {
+    outputRoot,
+    helperRoot,
+  } = workspace;
   const productId = 'mouse-cli-publish';
+  await seedHelperArtifacts(helperRoot);
+  await seedLatest(outputRoot, productId, '59');
+  await seedApprovedOverride(helperRoot, productId, '58');
+  const env = { HELPER_FILES_ROOT: helperRoot, CATEGORY_AUTHORITY_ROOT: helperRoot };
 
-  try {
-    await seedHelperArtifacts(helperRoot);
-    await seedLatest(outputRoot, productId, '59');
-    await seedApprovedOverride(helperRoot, productId, '58');
-    const env = { HELPER_FILES_ROOT: helperRoot, CATEGORY_AUTHORITY_ROOT: helperRoot };
+  const published = await runCli([
+    'publish',
+    '--category', 'mouse',
+    '--product-id', productId,
+    ...workspace.localArgs(),
+  ], { env });
+  assert.equal(published.command, 'publish');
+  assert.equal(published.published_count, 1);
 
-    const published = await runCli([
-      'publish',
-      '--category', 'mouse',
-      '--product-id', productId,
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(published.command, 'publish');
-    assert.equal(published.published_count, 1);
+  const provenance = await runCli([
+    'provenance',
+    '--category', 'mouse',
+    '--product-id', productId,
+    '--field', 'weight',
+    ...workspace.localArgs(),
+  ], { env });
+  assert.equal(provenance.command, 'provenance');
+  assert.equal(provenance.field, 'weight');
+  assert.equal(provenance.provenance.evidence[0].snippet_id, 'snp_weight_1');
 
-    const provenance = await runCli([
+  const changelog = await runCli([
+    'changelog',
+    '--category', 'mouse',
+    '--product-id', productId,
+    ...workspace.localArgs(),
+  ], { env });
+  assert.equal(changelog.command, 'changelog');
+  assert.equal(Array.isArray(changelog.entries), true);
+  assert.equal(changelog.entries.length >= 1, true);
+});
+
+test('publish CLI surfaces provenance validation errors through the top-level command surface', async (t) => {
+  const runCli = createCliJsonHarness();
+  const workspace = await createLocalCliWorkspace(t, 'spec-harvester-publish-cli-errors-');
+
+  await assert.rejects(
+    runCli([
       'provenance',
       '--category', 'mouse',
-      '--product-id', productId,
-      '--field', 'weight',
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(provenance.command, 'provenance');
-    assert.equal(provenance.field, 'weight');
-    assert.equal(provenance.provenance.evidence[0].snippet_id, 'snp_weight_1');
-
-    const changelog = await runCli([
-      'changelog',
-      '--category', 'mouse',
-      '--product-id', productId,
-      ...localArgs({ inputRoot, outputRoot, importsRoot })
-    ], { env });
-    assert.equal(changelog.command, 'changelog');
-    assert.equal(Array.isArray(changelog.entries), true);
-    assert.equal(changelog.entries.length >= 1, true);
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+      ...workspace.localArgs(),
+    ], {
+      env: {
+        HELPER_FILES_ROOT: workspace.helperRoot,
+        CATEGORY_AUTHORITY_ROOT: workspace.helperRoot,
+      },
+    }),
+    /provenance requires --category <category> and --product-id <id>/,
+  );
 });

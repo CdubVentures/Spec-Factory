@@ -5,7 +5,8 @@ import type {
   LlmModelRole,
 } from '../types/llmProviderRegistryTypes.ts';
 import { createDefaultProvider, createDefaultModel } from '../state/llmProviderRegistryBridge.ts';
-import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS, ACCESS_MODE_BADGE_STYLE, CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
+import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles.ts';
+import { ModelBadgeGroup } from '../components/ModelAccessBadges.tsx';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry.ts';
 import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
 
@@ -43,18 +44,7 @@ function ProviderModelRow({
             />
           )}
           {model.accessMode && (
-            <span
-              className="sf-custom-select-badge"
-              style={{ color: ACCESS_MODE_BADGE_STYLE[model.accessMode].fg, backgroundColor: ACCESS_MODE_BADGE_STYLE[model.accessMode].bg }}
-            >
-              {ACCESS_MODE_BADGE_STYLE[model.accessMode].label}
-            </span>
-          )}
-          {model.capabilities?.thinking && (
-            <span className="sf-custom-select-badge" style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}>T</span>
-          )}
-          {model.capabilities?.web && (
-            <span className="sf-custom-select-badge" style={{ color: CAPABILITY_BADGE_STYLE.web.fg, backgroundColor: CAPABILITY_BADGE_STYLE.web.bg }}>W</span>
+            <ModelBadgeGroup accessMode={model.accessMode} />
           )}
         </div>
       </td>
@@ -280,27 +270,39 @@ function ProviderPanel({
                 onChange={(e) => updateField('name', e.target.value)}
               />
             </div>
-            <div className="flex flex-col" style={{ gap: 'var(--sf-space-1)' }}>
-              <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>API key</label>
-              <div className="relative">
+            {provider.accessMode === 'lab' ? (
+              <div className="flex flex-col" style={{ gap: 'var(--sf-space-1)' }}>
+                <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Lab URL</label>
                 <input
                   className="sf-input sf-text-label"
-                  type={showKey ? 'text' : 'password'}
-                  value={provider.apiKey}
-                  placeholder="sk-..."
-                  style={{ paddingRight: 'var(--sf-space-8)' }}
-                  onChange={(e) => updateField('apiKey', e.target.value)}
+                  value={provider.baseUrl}
+                  placeholder="http://localhost:5001/v1"
+                  onChange={(e) => updateField('baseUrl', e.target.value)}
                 />
-                <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 sf-text-caption cursor-pointer select-none"
-                  style={{ color: 'var(--sf-muted)', background: 'none', border: 'none', padding: 0 }}
-                  onClick={() => setShowKey(!showKey)}
-                  type="button"
-                >
-                  {showKey ? 'hide' : 'show'}
-                </button>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col" style={{ gap: 'var(--sf-space-1)' }}>
+                <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>API key</label>
+                <div className="relative">
+                  <input
+                    className="sf-input sf-text-label"
+                    type={showKey ? 'text' : 'password'}
+                    value={provider.apiKey}
+                    placeholder="sk-..."
+                    style={{ paddingRight: 'var(--sf-space-8)' }}
+                    onChange={(e) => updateField('apiKey', e.target.value)}
+                  />
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 sf-text-caption cursor-pointer select-none"
+                    style={{ color: 'var(--sf-muted)', background: 'none', border: 'none', padding: 0 }}
+                    onClick={() => setShowKey(!showKey)}
+                    type="button"
+                  >
+                    {showKey ? 'hide' : 'show'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Divider */}

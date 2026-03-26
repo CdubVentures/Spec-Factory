@@ -202,8 +202,8 @@ async function run(action, root, { noBrowser = false } = {}) {
 
   const apiTrackedPid = readTrackedPid(contract.api.pidFile);
   const guiTrackedPid = readTrackedPid(contract.gui.pidFile);
-  const apiTrackedPidRunning = apiTrackedPid != null && isProcessRunning(apiTrackedPid);
-  const guiTrackedPidRunning = guiTrackedPid != null && isProcessRunning(guiTrackedPid);
+  let apiTrackedPidRunning = apiTrackedPid != null && isProcessRunning(apiTrackedPid);
+  let guiTrackedPidRunning = guiTrackedPid != null && isProcessRunning(guiTrackedPid);
 
   if (!apiTrackedPidRunning) {
     removeFileIfPresent(contract.api.pidFile);
@@ -215,6 +215,17 @@ async function run(action, root, { noBrowser = false } = {}) {
 
   const apiPortOccupied = await isPortOccupied(contract.api.port);
   const guiPortOccupied = await isPortOccupied(contract.gui.port);
+
+  // WHY: Windows recycles PIDs aggressively. A tracked PID that is alive but
+  // whose port is free was recycled by the OS to a different process.
+  if (apiTrackedPidRunning && !apiPortOccupied) {
+    apiTrackedPidRunning = false;
+    removeFileIfPresent(contract.api.pidFile);
+  }
+  if (guiTrackedPidRunning && !guiPortOccupied) {
+    guiTrackedPidRunning = false;
+    removeFileIfPresent(contract.gui.pidFile);
+  }
   const plan = planSpecFactoryAction({
     action,
     root,

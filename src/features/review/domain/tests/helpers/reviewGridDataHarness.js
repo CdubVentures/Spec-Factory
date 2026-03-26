@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createStorage } from '../../../../../s3/storage.js';
 import {
   buildReviewLayout,
   buildProductReviewPayload,
@@ -20,13 +19,21 @@ export {
 };
 
 export function makeStorage(tempRoot) {
-  return createStorage({
-    localMode: true,
-    localInputRoot: path.join(tempRoot, 'fixtures'),
-    localOutputRoot: path.join(tempRoot, 'out'),
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs'
-  });
+  const objects = new Map();
+  return {
+    readJson: async (key) => {
+      const raw = objects.get(key);
+      return JSON.parse(raw);
+    },
+    readJsonOrNull: async (key) => {
+      const raw = objects.get(key);
+      return raw == null ? null : JSON.parse(raw);
+    },
+    writeObject: async (key, body) => {
+      objects.set(key, Buffer.isBuffer(body) ? body.toString('utf8') : Buffer.from(body).toString('utf8'));
+    },
+    resolveOutputKey: (...parts) => ['specs', 'outputs', ...parts].filter(Boolean).join('/'),
+  };
 }
 
 export async function writeJson(filePath, value) {

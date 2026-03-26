@@ -123,7 +123,7 @@ function createRawWsClient({ host, port, path = '/ws/queue' }) {
     );
   }
 
-  function nextMessage(timeoutMs = 2000) {
+  function nextMessage(timeoutMs = 500) {
     if (queue.length > 0) {
       return Promise.resolve(queue.shift());
     }
@@ -184,7 +184,7 @@ test('review queue websocket pushes initial and changed queue snapshots', async 
     limit: 50,
     host: '127.0.0.1',
     port: 0,
-    pollSeconds: 0.05,
+    pollSeconds: 0.02,
     snapshotProvider: async () => queueItems
   });
 
@@ -195,7 +195,7 @@ test('review queue websocket pushes initial and changed queue snapshots', async 
 
   try {
     await client.open();
-    const firstRaw = await client.nextMessage(2000);
+    const firstRaw = await client.nextMessage();
     const first = JSON.parse(firstRaw);
     assert.equal(first.channel, 'review_queue');
     assert.equal(first.event, 'snapshot');
@@ -213,7 +213,7 @@ test('review queue websocket pushes initial and changed queue snapshots', async 
       }
     ];
 
-    const secondRaw = await client.nextMessage(2500);
+    const secondRaw = await client.nextMessage(750);
     const second = JSON.parse(secondRaw);
     assert.equal(second.channel, 'review_queue');
     assert.equal(second.event, 'queue_updated');

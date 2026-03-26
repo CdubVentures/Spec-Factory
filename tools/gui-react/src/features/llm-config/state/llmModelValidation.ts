@@ -4,17 +4,25 @@ import { LLM_MODEL_FIELD_LABELS } from './llmModelRoleRegistry.ts';
 // WHY: Accepts a loose registry shape so both LlmProviderEntry (internal)
 // and LlmProviderRegistryEntry (API) can be passed without casting.
 interface RegistryEntryLike {
-  enabled?: boolean;
   models?: ReadonlyArray<{ modelId: string }>;
 }
 
 function resolveModelInRegistry(
   registry: ReadonlyArray<RegistryEntryLike>,
-  modelId: string,
+  key: string,
 ): boolean {
-  if (!modelId || !modelId.trim()) return false;
+  if (!key || !key.trim()) return false;
+  // WHY: Support composite keys (providerId:modelId) from dropdown selections
+  const colonIdx = key.indexOf(':');
+  const providerId = colonIdx > 0 ? key.slice(0, colonIdx) : null;
+  const modelId = colonIdx > 0 ? key.slice(colonIdx + 1) : key;
+  if (providerId) {
+    return registry.some(
+      (p) => (p as { id?: string }).id === providerId && p.models?.some((m) => m.modelId === modelId),
+    );
+  }
   return registry.some(
-    (p) => p.enabled && p.models?.some((m) => m.modelId === modelId),
+    (p) => p.models?.some((m) => m.modelId === modelId),
   );
 }
 

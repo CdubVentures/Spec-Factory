@@ -3,7 +3,8 @@
   promotionSuggestionsKey,
 }) {
   return async function commandSourcesReport(config, storage, args) {
-    const category = args.category || 'mouse';
+    // BUG: whitespace-padded CLI categories could target phantom category names.
+    const category = String(args.category || 'mouse').trim() || 'mouse';
     const top = Math.max(1, Number.parseInt(args.top || '25', 10) || 25);
     const topPaths = Math.max(1, Number.parseInt(args['top-paths'] || '8', 10) || 8);
 

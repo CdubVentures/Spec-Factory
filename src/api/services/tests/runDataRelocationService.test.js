@@ -1,30 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import os from 'node:os';
-import path from 'node:path';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import { relocateRunDataForCompletedRun } from '../runDataRelocationService.js';
+import {
+  createLocalRunDataStorageSettings,
+  createRelocationWorkspace,
+  pathExists,
+  writeUtf8,
+} from './helpers/runRelocationHarness.js';
 
-async function writeUtf8(filePath, text) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, text, 'utf8');
-}
-
-async function pathExists(targetPath) {
-  try {
-    await fs.access(targetPath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-test('relocateRunDataForCompletedRun copies run directories (preserving source) and extracts run-scoped shared logs', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-run-relocate-'));
-  const outputRoot = path.join(tempRoot, 'out');
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
-  const destinationRoot = path.join(tempRoot, 'archive');
+test('run-data relocation archives completed run artifacts and keeps only non-run shared logs in staging', async (t) => {
+  const workspace = await createRelocationWorkspace(t, 'spec-factory-run-relocate-');
+  const { outputRoot, indexLabRoot, destinationRoot } = workspace;
 
   const runId = 'run-local-001';
   const category = 'mouse';
@@ -61,20 +50,11 @@ test('relocateRunDataForCompletedRun copies run directories (preserving source) 
     ].join('\n') + '\n',
   );
 
-  const settings = {
-    enabled: true,
-    destinationType: 'local',
-    localDirectory: destinationRoot,
-    awsRegion: '',
-    s3Bucket: '',
-    s3Prefix: '',
-    s3AccessKeyId: '',
-    s3SecretAccessKey: '',
-    s3SessionToken: '',
-  };
-
   const result = await relocateRunDataForCompletedRun({
-    settings,
+    settings: createLocalRunDataStorageSettings(destinationRoot, {
+      awsRegion: '',
+      s3Prefix: '',
+    }),
     runMeta: {
       run_id: runId,
       category,
@@ -121,7 +101,7 @@ test('relocateRunDataForCompletedRun copies run directories (preserving source) 
   const sourceRuntimeEvents = path.join(outputRoot, '_runtime', 'events.jsonl');
   const sourceBillingLedger = path.join(outputRoot, '_billing', 'ledger', '2026-02.jsonl');
 
-  // WHY: Relocation is COPY not MOVE — source directories are preserved.
+  // WHY: Relocation is COPY not MOVE - source directories are preserved.
   assert.equal(await pathExists(sourceRunDir), true);
   assert.equal(await pathExists(sourceIndexLabDir), true);
   assert.equal(await pathExists(sourceTraceRunDir), true);
@@ -141,10 +121,9 @@ test('relocateRunDataForCompletedRun copies run directories (preserving source) 
   assert.equal((remainingBillingRows[0].runId || remainingBillingRows[0].run_id), 'run-other');
 });
 
-test('relocateRunDataForCompletedRun deletes staging directory when destination write fails', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-run-relocate-fail-cleanup-'));
-  const outputRoot = path.join(tempRoot, 'out');
-  const indexLabRoot = path.join(tempRoot, 'artifacts', 'indexlab');
+test('run-data relocation removes the staging directory when destination creation fails', async (t) => {
+  const workspace = await createRelocationWorkspace(t, 'spec-factory-run-relocate-fail-cleanup-');
+  const { tempRoot, outputRoot, indexLabRoot } = workspace;
   const localDirectoryFile = path.join(tempRoot, 'archive-file');
 
   const runId = 'run-local-fail-001';
@@ -174,17 +153,10 @@ test('relocateRunDataForCompletedRun deletes staging directory when destination 
   try {
     await assert.rejects(
       relocateRunDataForCompletedRun({
-        settings: {
-          enabled: true,
-          destinationType: 'local',
-          localDirectory: localDirectoryFile,
+        settings: createLocalRunDataStorageSettings(localDirectoryFile, {
           awsRegion: '',
-          s3Bucket: '',
           s3Prefix: '',
-          s3AccessKeyId: '',
-          s3SecretAccessKey: '',
-          s3SessionToken: '',
-        },
+        }),
         runMeta: {
           run_id: runId,
           category,

@@ -2,13 +2,13 @@ import { describe, it } from 'node:test';
 import { ok, strictEqual } from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import {
   applySnapshotToConfig,
   isRegistrySetting,
   getConfigKey,
 } from '../resolveEffectiveRuntimeConfig.js';
 import { loadConfigWithUserSettings } from '../../../config.js';
+import { withSavedEnv, withTempDirSync } from './helpers/configTestHarness.js';
 
 describe('resolveEffectiveRuntimeConfig contract', () => {
   it('applySnapshotToConfig overlays values onto config', () => {
@@ -62,48 +62,35 @@ describe('resolveEffectiveRuntimeConfig contract', () => {
   });
 });
 
-function createSnapshotHarness(settings = {}) {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sf-alias-test-'));
-  const snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
-  const originalEnv = process.env.RUNTIME_SETTINGS_SNAPSHOT;
-  const snapshot = {
-    snapshotId: 'alias-test',
-    schemaVersion: '1.0',
-    createdAt: Date.now(),
-    source: 'test',
-    settings,
-  };
+function withSnapshotHarness(settings, runTest) {
+  return withSavedEnv(['RUNTIME_SETTINGS_SNAPSHOT'], () =>
+    withTempDirSync('sf-alias-test-', (tmpDir) => {
+      const snapshotPath = path.join(tmpDir, 'alias-test-settings.json');
+      const snapshot = {
+        snapshotId: 'alias-test',
+        schemaVersion: '1.0',
+        createdAt: Date.now(),
+        source: 'test',
+        settings,
+      };
 
-  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8');
-  process.env.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
-
-  return {
-    cleanup() {
-      if (originalEnv === undefined) delete process.env.RUNTIME_SETTINGS_SNAPSHOT;
-      else process.env.RUNTIME_SETTINGS_SNAPSHOT = originalEnv;
-      try {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        // Best-effort test cleanup.
-      }
-    },
-  };
+      fs.writeFileSync(snapshotPath, JSON.stringify(snapshot), 'utf8');
+      process.env.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
+      return runTest();
+    })
+  );
 }
 
 describe('loadConfigWithUserSettings snapshot contract', () => {
   it('remaps alias keys from the snapshot onto the consumer-facing config surface', () => {
-    const harness = createSnapshotHarness({
+    return withSnapshotHarness({
       maxRunSeconds: 600,
       autoScrollEnabled: false,
-    });
-
-    try {
+    }, () => {
       const config = loadConfigWithUserSettings();
 
       strictEqual(config.maxRunSeconds, 600);
       strictEqual(config.autoScrollEnabled, false);
-    } finally {
-      harness.cleanup();
-    }
+    });
   });
 });

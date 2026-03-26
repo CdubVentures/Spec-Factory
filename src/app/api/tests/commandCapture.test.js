@@ -119,10 +119,13 @@ test('commandCapture resolves with command_timeout error when process exceeds ti
   const promise = runCommandCapture('hang', [], { ...deps, timeoutMs: 1_000 });
   // Fire the timeout callback
   assert.ok(timers.length >= 1);
+  assert.equal(timers[0].ms, 1_000);
   timers[0].fn();
 
   const result = await promise;
   assert.equal(result.ok, false);
+  assert.deepEqual(hangingProc.killCalls, ['SIGTERM']);
+  assert.equal(result.stderr, 'command_timeout');
   assert.equal(result.error, 'command_timeout');
 });
 
@@ -144,4 +147,35 @@ test('commandCapture treats null exit code as ok:false with code:null', async ()
 });
 
 // --- DI wiring: cwd and env pass through to spawn ---
+
+test('commandCapture passes cwd and env through to spawn options', async () => {
+  const spawnCalls = [];
+  const deps = makeDeps({
+    spawn: (command, args, options) => {
+      spawnCalls.push({ command, args, options });
+      return createFakeProc({ exitCode: 0, stdout: 'ok\n' });
+    },
+    processRef: { env: { DEFAULT_ENV: 'from-process' } },
+    path: { resolve: (value) => `resolved:${value || '.'}` },
+  });
+
+  const result = await runCommandCapture('echo', ['hello'], {
+    ...deps,
+    cwd: '/tmp/work',
+    env: { TEST_ENV: 'from-override' },
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(spawnCalls, [
+    {
+      command: 'echo',
+      args: ['hello'],
+      options: {
+        cwd: '/tmp/work',
+        env: { TEST_ENV: 'from-override' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    },
+  ]);
+});
 

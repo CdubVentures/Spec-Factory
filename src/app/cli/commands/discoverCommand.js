@@ -21,31 +21,36 @@ export function createDiscoverCommand({
     });
 
     const runs = [];
-    for (const key of keys) {
-      const job = await storage.readJson(key);
-      const runId = buildRunId();
-      const result = await runDiscoverySeedPlan({
-        config,
-        storage,
-        category,
-        categoryConfig,
-        job,
-        runId,
-        logger,
-        roundContext: {
-          missing_critical_fields: categoryConfig.schema?.critical_fields || [],
-        },
-      });
+    try {
+      for (const key of keys) {
+        const job = await storage.readJson(key);
+        const runId = buildRunId();
+        const result = await runDiscoverySeedPlan({
+          config,
+          storage,
+          category,
+          categoryConfig,
+          job,
+          runId,
+          logger,
+          roundContext: {
+            missing_critical_fields: categoryConfig.schema?.critical_fields || [],
+          },
+        });
 
-      runs.push({
-        key,
-        productId: job.productId,
-        runId,
-        candidates_key: result.candidatesKey,
-        candidate_count: result.candidates.length,
-      });
+        runs.push({
+          key,
+          productId: job.productId,
+          runId,
+          candidates_key: result.candidatesKey,
+          candidate_count: result.candidates.length,
+        });
+      }
+    } finally {
+      // BUG: discovery failures previously skipped logger.flush(), dropping
+      // buffered runtime events for the failed command invocation.
+      await logger.flush();
     }
-    await logger.flush();
 
     return {
       command: 'discover',

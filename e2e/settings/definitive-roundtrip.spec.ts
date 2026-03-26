@@ -1,96 +1,109 @@
 /**
- * Definitive round-trip tests for all settings panels.
+ * UI settings round-trip tests for the critical runtime and storage flows.
  *
- * Tests the actual user workflow: change → save → reload → verify.
+ * These specs stay at the UI/API boundary:
+ * change a named control in the browser, observe the save request, verify the
+ * persisted API snapshot, and confirm the value survives reload.
  */
 
 import { test, expect } from './fixtures.ts';
 
-test.describe('Pipeline Settings — runtime setting round-trip', () => {
-  test('change a boolean setting, save, reload — verify value persists', async ({ page, settingsApi }) => {
+function findRuntimeSwitch(page: import('playwright/test').Page, label: string) {
+  if (label === 'Auto Scroll Enabled') {
+    return page.locator('[role="switch"]').first();
+  }
+
+  return page.getByText(label, { exact: true });
+}
+
+async function ensureAutoSaveEnabled(page: import('playwright/test').Page) {
+  const autoSaveButton = page.getByRole('button', { name: /Auto-Save (On|Off)/ }).first();
+  await expect(autoSaveButton).toBeVisible();
+  if ((await autoSaveButton.innerText()).trim() === 'Auto-Save Off') {
+    await autoSaveButton.click();
+  }
+  await expect(autoSaveButton).toHaveText('Auto-Save On');
+}
+
+async function openPipelineFetcherBrowser(page: import('playwright/test').Page) {
+  await page.goto('/#/pipeline-settings');
+  const fetcherButton = page.getByRole('button', { name: /^Runtime Fetcher\b/ });
+  await expect(fetcherButton).toBeVisible();
+  await fetcherButton.click();
+  await page.getByRole('button', { name: /^Browser & Rendering\b/ }).click();
+  await expect(findRuntimeSwitch(page, 'Auto Scroll Enabled')).toBeVisible();
+}
+
+test.describe('Pipeline Settings - runtime setting round-trip', () => {
+  test('Auto Scroll Enabled auto-saves to the runtime API and survives reload', async ({ page, settingsApi }) => {
     const baseline = await settingsApi.get('runtime');
-    const originalValue = baseline.autoScrollEnabled;
-    console.log(`Baseline autoScrollEnabled: ${originalValue}`);
-
+    const originalValue = Boolean(baseline.autoScrollEnabled);
     const newValue = !originalValue;
-    const putResult = await settingsApi.put('runtime', { autoScrollEnabled: newValue });
-    expect(putResult.ok).toBe(true);
-    expect(putResult.applied).toHaveProperty('autoScrollEnabled', newValue);
 
-    const afterPut = await settingsApi.get('runtime');
-    expect(afterPut.autoScrollEnabled).toBe(newValue);
+    try {
+      await openPipelineFetcherBrowser(page);
+      await ensureAutoSaveEnabled(page);
 
-    // Restore
-    await settingsApi.put('runtime', { autoScrollEnabled: originalValue });
-  });
+      const autoScrollSwitch = findRuntimeSwitch(page, 'Auto Scroll Enabled');
+      const saveRequestPromise = page.waitForRequest((request) =>
+        request.url().includes('/api/v1/runtime-settings') && request.method() === 'PUT');
 
-  test('auto-save fires PUT when a setting changes', async ({ page, settingsApi }) => {
-    await page.goto('/#/pipeline-settings');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-
-    // Ensure auto-save is ON
-    const autoSaveButton = page.locator('button').filter({ hasText: /auto-save/i }).first();
-    const autoSaveText = await autoSaveButton.innerText();
-    if (autoSaveText.toLowerCase().includes('off')) {
-      await autoSaveButton.click();
-      await page.waitForTimeout(500);
-    }
-    console.log(`Auto-save state: ${await autoSaveButton.innerText()}`);
-
-    // Track PUT requests
-    const putUrls: string[] = [];
-    page.on('request', (req) => {
-      if (req.url().includes('runtime-settings') && (req.method() === 'PUT' || req.method() === 'POST')) {
-        putUrls.push(req.url());
+      if (((await autoScrollSwitch.getAttribute('aria-checked')) === 'true') !== newValue) {
+        await autoScrollSwitch.click();
       }
-    });
 
-    // Toggle a checkbox (autoScrollEnabled is a boolean setting)
-    const checkboxes = page.locator('input[type="checkbox"]');
-    const checkboxCount = await checkboxes.count();
-    if (checkboxCount > 0) {
-      const firstCheckbox = checkboxes.first();
-      await firstCheckbox.click();
-      console.log('Toggled first checkbox');
+      const saveRequest = await saveRequestPromise;
+      expect(saveRequest.postDataJSON()).toMatchObject({ autoScrollEnabled: newValue });
 
-      // Wait for auto-save debounce (typically 500-1000ms)
-      await page.waitForTimeout(3000);
-      console.log(`PUT requests after auto-save wait: ${putUrls.length}`);
+      await expect.poll(async () => {
+        const afterSave = await settingsApi.get('runtime');
+        return Boolean(afterSave.autoScrollEnabled);
+      }).toBe(newValue);
 
-      if (putUrls.length === 0) {
-        console.log('AUTO-SAVE DID NOT FIRE — this is the bug');
-      }
+      await openPipelineFetcherBrowser(page);
+      await expect(autoScrollSwitch).toHaveAttribute('aria-checked', String(newValue));
+    } finally {
+      await settingsApi.put('runtime', { autoScrollEnabled: originalValue });
     }
   });
 });
 
-test.describe('Storage — full round-trip', () => {
-  test('toggle, auto-save, reload — value retained', async ({ page, settingsApi }) => {
+test.describe('Storage - full round-trip', () => {
+  test('auto-archive toggle auto-saves to storage settings and survives reload', async ({ page, settingsApi }) => {
     const baseline = await settingsApi.get('storage');
-    const originalEnabled = baseline.enabled;
+    const originalEnabled = Boolean(baseline.enabled);
+    const newEnabled = !originalEnabled;
 
-    await page.goto('/#/storage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    try {
+      await page.goto('/#/storage');
+      await ensureAutoSaveEnabled(page);
 
-    const checkbox = page.locator('input[type="checkbox"]').first();
-    await checkbox.click();
-    await page.waitForTimeout(3000); // auto-save debounce
+      const autoArchiveCheckbox = page.getByLabel('Auto-archive runs after completion');
+      await expect(autoArchiveCheckbox).toBeVisible();
 
-    // Verify via API
-    const afterSave = await settingsApi.get('storage');
-    expect(afterSave.enabled).toBe(!originalEnabled);
+      const saveRequestPromise = page.waitForRequest((request) =>
+        request.url().includes('/api/v1/storage-settings') && request.method() === 'PUT');
 
-    // Reload and verify UI
-    await page.reload();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+      if ((await autoArchiveCheckbox.isChecked()) !== newEnabled) {
+        await autoArchiveCheckbox.click();
+      }
 
-    const afterReload = await page.locator('input[type="checkbox"]').first().isChecked();
-    expect(afterReload).toBe(!originalEnabled);
+      const saveRequest = await saveRequestPromise;
+      expect(saveRequest.postDataJSON()).toMatchObject({ enabled: newEnabled });
 
-    // Restore
-    await settingsApi.put('storage', { enabled: originalEnabled });
+      await expect.poll(async () => {
+        const afterSave = await settingsApi.get('storage');
+        return Boolean(afterSave.enabled);
+      }).toBe(newEnabled);
+
+      await page.reload();
+      if (newEnabled) {
+        await expect(autoArchiveCheckbox).toBeChecked();
+      } else {
+        await expect(autoArchiveCheckbox).not.toBeChecked();
+      }
+    } finally {
+      await settingsApi.put('storage', { enabled: originalEnabled });
+    }
   });
 });

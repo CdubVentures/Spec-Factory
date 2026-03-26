@@ -107,3 +107,53 @@ test('specdb runtime resolves aliased unseeded db handles after auto-seed finish
   assert.equal(ready, db);
   assert.deepEqual(syncCategories, ['_test_mouse']);
 });
+
+test('specdb runtime keeps the cached db handle available when auto-seed fails', async () => {
+  const syncCategories = [];
+  const errorLogs = [];
+
+  class UnseededDb {
+    constructor({ dbPath, category }) {
+      this.dbPath = dbPath;
+      this.category = category;
+    }
+    isSeeded() {
+      return false;
+    }
+  }
+
+  const runtime = createSpecDbRuntime({
+    resolveCategoryAlias: (value) => String(value || '').trim(),
+    specDbClass: UnseededDb,
+    path,
+    fsSync: {
+      accessSync: () => {
+        throw new Error('missing');
+      },
+      mkdirSync: () => {},
+    },
+    syncSpecDbForCategory: async ({ category }) => {
+      syncCategories.push(category);
+      throw new Error('seed failed');
+    },
+    config: { localMode: true },
+    logger: {
+      log: () => {},
+      error: (...args) => {
+        errorLogs.push(args.map((part) => String(part)).join(' '));
+      },
+    },
+  });
+
+  const db = runtime.getSpecDb('mouse');
+  assert.ok(db);
+  assert.equal(db.category, 'mouse');
+
+  const ready = await runtime.getSpecDbReady('mouse');
+  assert.equal(ready, db);
+  assert.deepEqual(syncCategories, ['mouse']);
+  assert.equal(
+    errorLogs.some((entry) => entry.includes('[auto-seed] mouse failed:') && entry.includes('seed failed')),
+    true,
+  );
+});

@@ -5,14 +5,21 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
 import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
-import type { FetchAutoScrollData, FetchAutoScrollRecord } from '../../types.ts';
+import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
+
+interface AutoScrollRecord extends FetchPluginRecord {
+  enabled: boolean;
+  passes: number;
+  delayMs: number;
+  postLoadWaitMs: number;
+}
 
 interface FetchAutoScrollPanelProps {
-  data: FetchAutoScrollData;
+  data: FetchPluginData;
   persistScope: string;
 }
 
-const SCROLL_COLUMNS: ColumnDef<FetchAutoScrollRecord, unknown>[] = [
+const SCROLL_COLUMNS: ColumnDef<AutoScrollRecord, unknown>[] = [
   { accessorKey: 'display_label', header: 'Worker', size: 120 },
   { accessorKey: 'host', header: 'Host', size: 180 },
   {
@@ -35,7 +42,10 @@ const SCROLL_COLUMNS: ColumnDef<FetchAutoScrollRecord, unknown>[] = [
 ];
 
 export function FetchAutoScrollPanel({ data, persistScope }: FetchAutoScrollPanelProps) {
-  const total = data.total_scrolled + data.total_skipped;
+  const records = data.records as AutoScrollRecord[];
+  const totalScrolled = useMemo(() => records.filter((r) => r.enabled && r.passes > 0).length, [records]);
+  const totalSkipped = useMemo(() => records.filter((r) => !r.enabled || !r.passes).length, [records]);
+  const total = records.length;
   const columns = useMemo(() => SCROLL_COLUMNS, []);
 
   if (total === 0) {
@@ -53,13 +63,13 @@ export function FetchAutoScrollPanel({ data, persistScope }: FetchAutoScrollPane
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Workers" />
-        <HeroStat value={data.total_scrolled} label="Scrolled" colorClass="text-[var(--sf-token-success)]" />
-        <HeroStat value={data.total_skipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
+        <HeroStat value={totalScrolled} label="Scrolled" colorClass="text-[var(--sf-token-success)]" />
+        <HeroStat value={totalSkipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
       </HeroStatGrid>
 
       <SectionHeader>Scroll Log</SectionHeader>
       <DataTable
-        data={data.scroll_records}
+        data={records}
         columns={columns}
         persistKey={`${persistScope}:auto-scroll-log`}
       />

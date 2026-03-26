@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmModelRole, LlmAccessMode, LlmModelCapabilities } from '../types/llmProviderRegistryTypes.ts';
+import type { LlmProviderEntry, LlmModelRole, LlmAccessMode } from '../types/llmProviderRegistryTypes.ts';
 
 export interface DropdownModelOption {
   value: string;
@@ -8,7 +8,6 @@ export interface DropdownModelOption {
   costInputPer1M?: number;
   maxContextTokens?: number | null;
   accessMode?: LlmAccessMode;
-  capabilities?: LlmModelCapabilities;
 }
 
 const ROLE_SORT_PRIORITY: Record<string, number> = {
@@ -64,23 +63,8 @@ export function formatContextTokens(tokens: number): string {
   return String(tokens);
 }
 
-function buildEnrichedLabel(
-  providerName: string,
-  modelId: string,
-  costInputPer1M: number,
-  maxContextTokens: number | null,
-): string {
-  const base = providerName ? `${providerName} / ${modelId}` : modelId;
-  const parts: string[] = [];
-  if (maxContextTokens != null && maxContextTokens > 0) {
-    parts.push(`${formatContextTokens(maxContextTokens)} ctx`);
-  }
-  if (costInputPer1M > 0) {
-    const formatted = Number.isInteger(costInputPer1M) ? String(costInputPer1M) : costInputPer1M.toFixed(2);
-    parts.push(`$${formatted} in`);
-  }
-  const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-  return `${base}${suffix}`;
+function buildLabel(modelId: string): string {
+  return modelId;
 }
 
 export function buildModelDropdownOptions(
@@ -103,7 +87,6 @@ export function buildModelDropdownOptions(
 
   // 1. Collect enabled registry models matching role filter
   for (const provider of registry) {
-    if (!provider.enabled) continue;
     if (apiKeyFilter && !apiKeyFilter(provider)) continue;
     for (const model of provider.models) {
       if (roleFilter) {
@@ -112,14 +95,13 @@ export function buildModelDropdownOptions(
       }
       const effectiveAccessMode = model.accessMode ?? provider.accessMode;
       result.push({
-        value: model.modelId,
-        label: buildEnrichedLabel(provider.name, model.modelId, model.costInputPer1M, model.maxContextTokens),
+        value: `${provider.id}:${model.modelId}`,
+        label: buildLabel(model.modelId),
         providerId: provider.id,
         role: model.role,
         costInputPer1M: model.costInputPer1M,
         maxContextTokens: model.maxContextTokens,
         ...(effectiveAccessMode ? { accessMode: effectiveAccessMode } : {}),
-        ...(model.capabilities ? { capabilities: model.capabilities } : {}),
       });
       registryModelIds.add(model.modelId);
     }
@@ -151,5 +133,8 @@ export function ensureValueInOptions(
 ): DropdownModelOption | null {
   if (!value) return null;
   if (options.some((o) => o.value === value)) return null;
-  return { value, label: `${value} (not available)`, providerId: null };
+  // WHY: Show bare modelId in the fallback label, not the composite key
+  const colonIdx = value.indexOf(':');
+  const displayId = colonIdx > 0 ? value.slice(colonIdx + 1) : value;
+  return { value, label: `${displayId} (not available)`, providerId: null };
 }

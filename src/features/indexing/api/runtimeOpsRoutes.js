@@ -13,6 +13,7 @@ import {
   buildLlmCallsDashboard,
   buildFetchPhases,
 } from './builders/runtimeOpsDataBuilders.js';
+import { buildExtractionPluginPhases } from './builders/runtimeOpsExtractionPluginBuilders.js';
 import { mergeSearchProfileRows } from './builders/runtimeOpsSearchProfileMergeHelpers.js';
 import {
   loadRuntimeFieldRulesPayload,
@@ -406,6 +407,11 @@ export function registerRuntimeOpsRoutes(ctx) {
     if (subPath === 'fetch' && !parts[5]) {
       const fetchPhases = buildFetchPhases(events);
       return jsonRes(res, 200, { run_id: runId, ...fetchPhases });
+    }
+
+    if (subPath === 'extraction' && parts[5] === 'plugins') {
+      const plugins = buildExtractionPluginPhases(events);
+      return jsonRes(res, 200, { run_id: runId, plugins });
     }
 
     if (subPath === 'pipeline' && !parts[5]) {

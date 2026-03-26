@@ -1,54 +1,35 @@
 import type { FetchTabKey } from './fetchStageKeys.generated.ts';
-import type { FetchPhasesResponse, FetchStealthData, FetchAutoScrollData, FetchDomExpansionData, FetchCssOverrideData } from '../../types.ts';
+import type { FetchPhasesResponse, FetchPluginData } from '../../types.ts';
 
 export interface FetchPanelContext {
   data: FetchPhasesResponse | undefined;
   persistScope: string;
 }
 
-const EMPTY_STEALTH: FetchStealthData = {
-  patches: [],
-  injections: [],
-  total_injected: 0,
-  total_failed: 0,
-};
-
-const EMPTY_AUTO_SCROLL: FetchAutoScrollData = {
-  scroll_records: [],
-  total_scrolled: 0,
-  total_skipped: 0,
-};
-
-const EMPTY_DOM_EXPANSION: FetchDomExpansionData = {
-  expansion_records: [],
-  total_expanded: 0,
-  total_skipped: 0,
-  total_clicks: 0,
-  total_found: 0,
-};
-
-const EMPTY_CSS_OVERRIDE: FetchCssOverrideData = {
-  override_records: [],
-  total_overridden: 0,
-  total_skipped: 0,
-  total_elements_revealed: 0,
-};
+// WHY: All panels read data.records (FetchPluginData shape from the generic builder).
+// Domain-specific empty defaults caused crashes because they used custom field names
+// (scroll_records, expansion_records, etc.) that panels don't read.
+const EMPTY_PLUGIN: FetchPluginData = { records: [], total: 0 };
 
 export const FETCH_SELECT_PROPS: Record<FetchTabKey, (ctx: FetchPanelContext) => Record<string, unknown>> = {
   stealth: (ctx) => ({
-    data: ctx.data?.stealth ?? EMPTY_STEALTH,
+    data: ctx.data?.stealth ?? EMPTY_PLUGIN,
+    persistScope: ctx.persistScope,
+  }),
+  cookie_consent: (ctx) => ({
+    data: ctx.data?.cookie_consent ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
   }),
   auto_scroll: (ctx) => ({
-    data: ctx.data?.auto_scroll ?? EMPTY_AUTO_SCROLL,
+    data: ctx.data?.auto_scroll ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
   }),
   dom_expansion: (ctx) => ({
-    data: ctx.data?.dom_expansion ?? EMPTY_DOM_EXPANSION,
+    data: ctx.data?.dom_expansion ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
   }),
   css_override: (ctx) => ({
-    data: ctx.data?.css_override ?? EMPTY_CSS_OVERRIDE,
+    data: ctx.data?.css_override ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
   }),
 };

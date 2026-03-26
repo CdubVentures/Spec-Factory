@@ -1,31 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTierAwareFieldRetrieval } from '../tierAwareRetriever.js';
+import {
+  makeEvidenceHit,
+  makeEvidencePool,
+  runRetrieval,
+} from './helpers/retrievalContractHarness.js';
 
-function makePool({ fieldKey = 'weight', count = 5, identityMatch = true } = {}) {
-  return Array.from({ length: count }, (_, i) => ({
-    origin_field: fieldKey,
-    url: `https://source-${i}.com/page`,
-    host: `source-${i}.com`,
-    tier: (i % 3) + 1,
-    method: 'table',
-    quote: `${fieldKey}: value ${i}`,
-    snippet_id: `sn_${i}`,
-    source_identity_match: identityMatch,
-    source_identity_score: identityMatch ? 0.9 : 0.1
-  }));
-}
+test('retrieval trace reports how many evidence rows were scanned, scored, accepted, and rejected', () => {
+  const pool = makeEvidencePool({ fieldKey: 'weight', count: 10 });
 
-test('traceEnabled=true returns trace with pool_size, scored_count, accepted_count, rejected_count', () => {
-  const pool = makePool({ fieldKey: 'weight', count: 10 });
-
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
-    needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 1 },
-    fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
+  const result = runRetrieval({
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' },
-    traceEnabled: true
+    traceEnabled: true,
   });
 
   assert.ok(result.trace, 'trace should be present when traceEnabled=true');
@@ -37,39 +23,29 @@ test('traceEnabled=true returns trace with pool_size, scored_count, accepted_cou
   assert.ok(result.trace.accepted_count > 0);
 });
 
-test('trace rejected_hits contains entries with rejection_reason field', () => {
+test('retrieval trace records why non-winning evidence rows were rejected', () => {
   const pool = [
-    ...makePool({ fieldKey: 'weight', count: 3 }),
-    {
-      origin_field: 'unrelated_field',
-      url: 'https://unrelated.com/page',
+    ...makeEvidencePool({ fieldKey: 'weight', count: 3 }),
+    makeEvidenceHit({
+      fieldKey: 'unrelated_field',
       host: 'unrelated.com',
-      tier: 3,
       method: 'text',
       quote: 'Some unrelated content without anchor terms',
-      snippet_id: 'sn_unrelated'
-    },
-    {
-      origin_field: 'weight',
-      url: 'https://wrong-product.com/page',
+      snippetId: 'sn_unrelated',
+    }),
+    makeEvidenceHit({
       host: 'wrong-product.com',
-      tier: 2,
-      method: 'table',
       quote: 'Weight: 80 grams',
-      snippet_id: 'sn_wrong',
-      source_identity_match: false,
-      source_identity_score: 0.1
-    }
+      snippetId: 'sn_wrong',
+      identityMatch: false,
+    }),
   ];
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
+  const result = runRetrieval({
     needRow: { field_key: 'weight', need_score: 10, required_level: 'critical', min_refs: 1 },
-    fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' },
     traceEnabled: true,
-    identityFilterEnabled: true
+    identityFilterEnabled: true,
   });
 
   assert.ok(result.trace);
@@ -78,38 +54,31 @@ test('trace rejected_hits contains entries with rejection_reason field', () => {
   assert.ok(reasons.some((r) => r === 'no_anchor' || r === 'identity_mismatch'));
 });
 
-test('traceEnabled=false (default) does NOT include trace', () => {
-  const pool = makePool({ fieldKey: 'weight', count: 3 });
+test('retrieval omits trace payloads unless tracing was explicitly requested', () => {
+  const pool = makeEvidencePool({ fieldKey: 'weight', count: 3 });
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
-    needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 1 },
-    fieldRule: { search_hints: { query_terms: ['weight', 'grams'] }, unit: 'g' },
+  const result = runRetrieval({
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' }
   });
 
   assert.equal(result.trace, undefined);
 });
 
-test('trace rejected_hits capped at 20', () => {
+test('retrieval trace caps rejected-hit details so miss reports stay bounded', () => {
   const pool = Array.from({ length: 50 }, (_, i) => ({
-    origin_field: 'other_field',
-    url: `https://unrelated-${i}.com/page`,
-    host: `unrelated-${i}.com`,
-    tier: 3,
-    method: 'text',
-    quote: `Completely unrelated content number ${i}`,
-    snippet_id: `sn_unrelated_${i}`
+    ...makeEvidenceHit({
+      fieldKey: 'other_field',
+      host: `unrelated-${i}.com`,
+      method: 'text',
+      quote: `Completely unrelated content number ${i}`,
+      snippetId: `sn_unrelated_${i}`,
+    }),
   }));
 
-  const result = buildTierAwareFieldRetrieval({
-    fieldKey: 'weight',
-    needRow: { field_key: 'weight', need_score: 10, required_level: 'required', min_refs: 1 },
+  const result = runRetrieval({
     fieldRule: { search_hints: { query_terms: ['weight'] }, unit: 'g' },
     evidencePool: pool,
-    identity: { brand: 'Test', model: 'Product' },
-    traceEnabled: true
+    traceEnabled: true,
   });
 
   assert.ok(result.trace);

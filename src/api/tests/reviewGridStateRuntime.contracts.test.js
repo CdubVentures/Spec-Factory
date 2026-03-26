@@ -1,11 +1,11 @@
-import test, { describe, it } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createReviewGridStateRuntime,
   makePreparedStatement,
 } from './helpers/reviewGridStateRuntimeHarness.js';
 
-test('resolveKeyReviewForLaneMutation seeds missing grid review state from item field state', () => {
+test('resolveKeyReviewForLaneMutation creates missing grid review state from the resolved item field state', () => {
   const captured = [];
   const runtime = createReviewGridStateRuntime({
     resolveExplicitPositiveId: () => ({ provided: false, id: null, raw: null }),
@@ -64,7 +64,7 @@ test('resolveKeyReviewForLaneMutation seeds missing grid review state from item 
   }]);
 });
 
-test('resolveKeyReviewForLaneMutation preserves missing-id error contract from field-state resolution', () => {
+test('resolveKeyReviewForLaneMutation keeps the caller-facing missing-id error when field state resolution has no usable id', () => {
   const runtime = createReviewGridStateRuntime({
     resolveExplicitPositiveId: () => ({ provided: false, id: null, raw: null }),
     resolveGridFieldStateForMutation: () => ({
@@ -82,7 +82,7 @@ test('resolveKeyReviewForLaneMutation preserves missing-id error contract from f
   });
 });
 
-test('purgeTestModeCategoryState is a no-op outside _test_ categories', () => {
+test('purgeTestModeCategoryState leaves non-test categories untouched', () => {
   let prepareCalled = false;
   const runtime = createReviewGridStateRuntime({
     resolveExplicitPositiveId: () => ({ provided: false, id: null, raw: null }),
@@ -97,9 +97,14 @@ test('purgeTestModeCategoryState is a no-op outside _test_ categories', () => {
       transaction: (fn) => fn,
     },
     purgeCategoryState: () => ({
-      clearedKeyReview: 0, clearedSources: 0, clearedCandidates: 0,
-      clearedFieldState: 0, clearedComponentData: 0, clearedEnumData: 0,
-      clearedCatalogState: 0, clearedArtifacts: 0,
+      clearedKeyReview: 0,
+      clearedSources: 0,
+      clearedCandidates: 0,
+      clearedFieldState: 0,
+      clearedComponentData: 0,
+      clearedEnumData: 0,
+      clearedCatalogState: 0,
+      clearedArtifacts: 0,
     }),
   };
 
@@ -117,50 +122,3 @@ test('purgeTestModeCategoryState is a no-op outside _test_ categories', () => {
   });
   assert.equal(prepareCalled, false);
 });
-
-/* ------------------------------------------------------------------ */
-/*  Characterization tests — real SpecDb, locks down production paths  */
-/* ------------------------------------------------------------------ */
-
-const CATEGORY = '_test_grid_runtime';
-
-async function createTempSpecDb() {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'grid-runtime-'));
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-  const specDb = new SpecDb({ dbPath, category: CATEGORY });
-  return { tempRoot, specDb };
-}
-
-async function cleanupTempSpecDb(tempRoot, specDb) {
-  try { specDb?.close?.(); } catch { /* best-effort */ }
-  await fs.rm(tempRoot, { recursive: true, force: true });
-}
-
-function seedItemFieldState(specDb, {
-  productId = 'mouse-1',
-  fieldKey = 'dpi',
-  value = '16000',
-  confidence = 0.9,
-  source = 'pipeline',
-  acceptedCandidateId = null,
-  needsAiReview = true,
-  aiReviewComplete = false,
-  overridden = false,
-} = {}) {
-  specDb.upsertItemFieldState({
-    productId, fieldKey, value, confidence, source,
-    acceptedCandidateId, overridden, needsAiReview, aiReviewComplete,
-  });
-  return specDb.db.prepare(
-    'SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND field_key = ? LIMIT 1'
-  ).get(CATEGORY, productId, fieldKey);
-}
-
-function makeRuntime() {
-  return createReviewGridStateRuntime({
-    resolveExplicitPositiveId,
-    resolveGridFieldStateForMutation,
-  });
-}
-
-/* --- ensureGridKeyReviewState --- */

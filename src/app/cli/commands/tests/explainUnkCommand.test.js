@@ -108,3 +108,36 @@ test('explain-unk throws when latest artifacts are missing for resolved product 
     /No latest run found for productId 'mouse-missing' in category 'mouse'/
   );
 });
+
+test('explain-unk falls back to legacy run_id and empty unknown output when normalized fields are absent', async () => {
+  const commandExplainUnk = createExplainUnkCommand(createDeps());
+
+  const result = await commandExplainUnk({}, {
+    resolveOutputKey: (category, productId) => `out/${category}/${productId}/latest`,
+    async readJsonOrNull(key) {
+      if (key.endsWith('/summary.json')) {
+        return {
+          run_id: 'run-legacy-002',
+          validated: false,
+        };
+      }
+      return null;
+    },
+  }, {
+    category: 'mouse',
+    'product-id': 'mouse-legacy',
+  });
+
+  assert.deepEqual(result, {
+    command: 'explain-unk',
+    category: 'mouse',
+    productId: 'mouse-legacy',
+    run_id: 'run-legacy-002',
+    validated: false,
+    unknown_field_count: 0,
+    unknown_fields: [],
+    searches_attempted: [],
+    urls_fetched_count: 0,
+    top_evidence_references: [],
+  });
+});

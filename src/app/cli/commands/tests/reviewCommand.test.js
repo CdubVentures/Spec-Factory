@@ -89,6 +89,27 @@ test('review queue defaults status and limit in the returned payload', async () 
   });
 });
 
+test('review queue closes the SpecDb and rethrows when queue building fails', async () => {
+  let closeCount = 0;
+  const expectedError = new Error('queue_build_failed');
+  const commandReview = createReviewHarness({
+    openSpecDbForCategory: async () => ({
+      close() {
+        closeCount += 1;
+      },
+    }),
+    buildReviewQueue: async () => {
+      throw expectedError;
+    },
+  });
+
+  await assert.rejects(
+    commandReview({}, {}, { _: ['queue'] }),
+    expectedError,
+  );
+  assert.equal(closeCount, 1);
+});
+
 test('review product requires --product-id', async () => {
   const commandReview = createReviewHarness();
   await assert.rejects(

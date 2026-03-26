@@ -1,57 +1,64 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import os from 'node:os';
 import path from 'node:path';
 
-import { registerInfraRoutes } from '../infraRoutes.js';
+import {
+  createInfraRoutesHandler,
+  createPresentPathFs,
+  invokeInfraRoute,
+} from './helpers/infraRoutesHarness.js';
 
-function makeCtx(overrides = {}) {
-  return {
-    jsonRes: (_res, status, body) => ({ status, body }),
-    readJsonBody: async () => ({}),
-    listDirs: async () => [],
-    canonicalSlugify: (value) => String(value || '').trim().toLowerCase(),
-    HELPER_ROOT: path.resolve('category_authority'),
-    DIST_ROOT: path.resolve('gui-dist'),
-    OUTPUT_ROOT: path.resolve('out'),
-    INDEXLAB_ROOT: path.resolve('indexlab'),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    path,
-    getSearxngStatus: async () => ({ ok: true }),
-    startSearxngStack: async () => ({ ok: true }),
-    startProcess: () => ({ running: true }),
-    stopProcess: async () => ({ running: false }),
-    processStatus: () => ({ running: false }),
-    isProcessRunning: () => false,
-    waitForProcessExit: async () => true,
-    broadcastWs: () => {},
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-    },
+const DEFAULT_PROCESS_START_BODY = Object.freeze({
+  category: 'mouse',
+  mode: 'indexlab',
+  productId: 'mouse-razer-viper-v3-pro',
+});
+
+function createProcessStartBody(overrides = {}) {
+  const body = {
+    ...DEFAULT_PROCESS_START_BODY,
     ...overrides,
   };
+
+  for (const [key, value] of Object.entries(body)) {
+    if (typeof value === 'undefined') {
+      delete body[key];
+    }
+  }
+
+  return body;
 }
 
-test('process/start returns deterministic run_id and forwards --run-id to CLI spawn args', async () => {
+function createProcessStartHandler({
+  body = createProcessStartBody(),
+  fs = createPresentPathFs(),
+  ...overrides
+} = {}) {
+  return createInfraRoutesHandler({
+    readJsonBody: async () => body,
+    fs,
+    ...overrides,
+  });
+}
+
+function invokeProcessStart(handler) {
+  return invokeInfraRoute(handler, ['process', 'start'], 'POST');
+}
+
+function invokeProcessStatus(handler) {
+  return invokeInfraRoute(handler, ['process', 'status'], 'GET');
+}
+
+test('process/start returns a stable run id and forwards it to the child CLI', async () => {
   let capturedArgs = null;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro',
-    }),
+  const handler = createProcessStartHandler({
     startProcess: (_cmd, cliArgs) => {
       capturedArgs = Array.isArray(cliArgs) ? [...cliArgs] : [];
       return { running: true };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeProcessStart(handler);
   assert.equal(result.status, 200);
   assert.equal(typeof result.body?.run_id, 'string');
   assert.equal(result.body.run_id.length > 0, true);
@@ -63,23 +70,18 @@ test('process/start returns deterministic run_id and forwards --run-id to CLI sp
   assert.equal(capturedArgs[runIdIndex + 1], result.body.run_id, 'CLI --run-id should match response run_id');
 });
 
-test('process/start honors valid requestedRunId input', async () => {
+test('process/start preserves a valid requested run id', async () => {
   let capturedArgs = null;
   const requestedRunId = '20260225-abc123';
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro',
-      requestedRunId,
-    }),
+  const handler = createProcessStartHandler({
+    body: createProcessStartBody({ requestedRunId }),
     startProcess: (_cmd, cliArgs) => {
       capturedArgs = Array.isArray(cliArgs) ? [...cliArgs] : [];
       return { running: true, run_id: requestedRunId, runId: requestedRunId };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeProcessStart(handler);
   assert.equal(result.status, 200);
   assert.equal(result.body?.run_id, requestedRunId);
   assert.equal(result.body?.runId, requestedRunId);
@@ -87,374 +89,253 @@ test('process/start honors valid requestedRunId input', async () => {
   assert.equal(capturedArgs[runIdIndex + 1], requestedRunId);
 });
 
-test('process/status returns run_id passthrough from processStatus payload', async () => {
-  const handler = registerInfraRoutes(makeCtx({
+test('process/status exposes the active run id from runtime state', async () => {
+  const handler = createInfraRoutesHandler({
     processStatus: () => ({
       running: true,
       run_id: '20260225-feedaa',
       runId: '20260225-feedaa',
     }),
-  }));
+  });
 
-  const result = await handler(['process', 'status'], new URLSearchParams(), 'GET', {}, {});
+  const result = await invokeProcessStatus(handler);
   assert.equal(result.status, 200);
   assert.equal(result.body?.run_id, '20260225-feedaa');
   assert.equal(result.body?.runId, '20260225-feedaa');
 });
 
-test('process/start fails fast when generated field rules are missing for category', async () => {
+test('process/start returns launch-plan validation failures without spawning the child process', async () => {
+  let started = false;
+  const handler = createProcessStartHandler({
+    buildProcessStartLaunchPlanFn: () => ({
+      ok: false,
+      status: 400,
+      body: {
+        error: 'unsupported_process_mode',
+        message: 'Only indexlab mode is supported in GUI process/start.',
+      },
+    }),
+    startProcess: () => {
+      started = true;
+      return { running: true };
+    },
+  });
+
+  const result = await invokeProcessStart(handler);
+  assert.deepEqual(result, {
+    status: 400,
+    body: {
+      error: 'unsupported_process_mode',
+      message: 'Only indexlab mode is supported in GUI process/start.',
+    },
+  });
+  assert.equal(started, false, 'process should not start when launch-plan validation fails');
+});
+
+test('process/start rejects launches when generated field rules are missing', async () => {
   let started = false;
   const helperRoot = path.resolve('category_authority');
-  const expectedMissingPaths = new Set([
+  const expectedMissingPaths = [
     path.resolve(path.join(helperRoot, 'mouse', '_generated', 'field_rules.json')),
     path.resolve(path.join(helperRoot, 'mouse', '_generated', 'field_rules.runtime.json')),
-  ]);
-  const handler = registerInfraRoutes(makeCtx({
+  ];
+  const expectedMissingPathSet = new Set(expectedMissingPaths);
+  const handler = createProcessStartHandler({
     HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro',
-    }),
-    fs: {
+    fs: createPresentPathFs({
       access: async (targetPath) => {
-        if (expectedMissingPaths.has(path.resolve(String(targetPath || '')))) {
+        if (expectedMissingPathSet.has(path.resolve(String(targetPath || '')))) {
           const error = new Error('missing');
           error.code = 'ENOENT';
           throw error;
         }
       },
-      mkdir: async () => {},
-    },
+    }),
     startProcess: () => {
       started = true;
       return { running: true };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeProcessStart(handler);
   assert.equal(result.status, 409);
   assert.equal(result.body?.error, 'missing_generated_field_rules');
   assert.match(String(result.body?.message || ''), /field_rules\.json/i);
+  assert.equal(result.body?.helper_root, helperRoot);
+  assert.deepEqual(new Set(result.body?.field_rules_paths || []), expectedMissingPathSet);
   assert.equal(started, false, 'process should not start without generated field rules');
 });
 
-test('process/start validates generated field rules against effective helper root override', async () => {
+test('process/start validates generated field rules against the effective helper root override', async () => {
   let started = false;
   const helperRoot = path.resolve('category_authority');
   const overrideRoot = path.resolve('category_authority');
-  const missingForOverride = new Set([
+  const missingForOverride = [
     path.resolve(path.join(overrideRoot, 'mouse', '_generated', 'field_rules.json')),
     path.resolve(path.join(overrideRoot, 'mouse', '_generated', 'field_rules.runtime.json')),
-  ]);
-  const handler = registerInfraRoutes(makeCtx({
+  ];
+  const missingForOverrideSet = new Set(missingForOverride);
+  const handler = createProcessStartHandler({
     HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
+    body: createProcessStartBody({
       productId: 'mouse-razer-viper-v3-pro-black',
       categoryAuthorityRoot: overrideRoot,
     }),
-    fs: {
+    fs: createPresentPathFs({
       access: async (targetPath) => {
         const resolved = path.resolve(String(targetPath || ''));
-        if (missingForOverride.has(resolved)) {
+        if (missingForOverrideSet.has(resolved)) {
           const error = new Error('missing');
           error.code = 'ENOENT';
           throw error;
         }
       },
-      mkdir: async () => {},
-    },
+    }),
     startProcess: () => {
       started = true;
       return { running: true };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeProcessStart(handler);
   assert.equal(result.status, 409);
   assert.equal(result.body?.error, 'missing_generated_field_rules');
+  assert.equal(result.body?.helper_root, overrideRoot);
+  assert.deepEqual(new Set(result.body?.field_rules_paths || []), missingForOverrideSet);
   assert.equal(started, false, 'process should fail before spawn when helper root override lacks generated field rules');
 });
 
-test('process/start forwards helper root override to category-authority env aliases', async () => {
+test('process/start forwards the launch plan cli args and env overrides to startProcess', async () => {
+  const requestedRunId = 'run-forwarded-1234';
+  const forwardedArgs = ['indexlab', '--run-id', requestedRunId, '--search-engines', 'duckduckgo'];
+  const forwardedEnv = {
+    CATEGORY_AUTHORITY_ROOT: path.resolve('category_authority_override'),
+    HELPER_FILES_ROOT: path.resolve('category_authority_override'),
+    LOCAL_OUTPUT_ROOT: path.resolve('forwarded-output-root'),
+    SPEC_DB_DIR: path.resolve('forwarded-specdb-root'),
+    RUNTIME_SETTINGS_SNAPSHOT: path.resolve('category_authority_override', '_runtime', 'snapshots', `${requestedRunId}.json`),
+  };
+  let capturedCommand = null;
+  let capturedArgs = null;
   let capturedEnv = null;
-  const helperRoot = path.resolve('category_authority');
-  const overrideRoot = path.resolve('category_authority');
-  const handler = registerInfraRoutes(makeCtx({
-    HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro-black',
-      categoryAuthorityRoot: overrideRoot,
+  const handler = createProcessStartHandler({
+    buildProcessStartLaunchPlanFn: () => ({
+      ok: true,
+      requestedRunId,
+      cliArgs: forwardedArgs,
+      envOverrides: forwardedEnv,
+      replaceRunning: false,
+      effectiveHelperRoot: path.resolve('category_authority_override'),
+      generatedRulesCandidates: [
+        path.resolve('category_authority_override', 'mouse', '_generated', 'field_rules.json'),
+      ],
     }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, _cliArgs, envOverrides) => {
+    startProcess: (command, cliArgs, envOverrides) => {
+      capturedCommand = command;
+      capturedArgs = cliArgs;
       capturedEnv = envOverrides;
       return { running: true };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
+  const result = await invokeProcessStart(handler);
   assert.equal(result.status, 200);
-  assert.equal(capturedEnv?.HELPER_FILES_ROOT, overrideRoot);
-  assert.equal(capturedEnv?.CATEGORY_AUTHORITY_ROOT, overrideRoot);
+  assert.equal(capturedCommand, 'src/cli/spec.js');
+  assert.deepEqual(capturedArgs, forwardedArgs);
+  assert.deepEqual(capturedEnv, forwardedEnv);
+  assert.equal(result.body?.run_id, requestedRunId);
+  assert.equal(result.body?.runId, requestedRunId);
 });
 
-test('process/start uses enabled local storage root as canonical run-data destination', async () => {
-  let capturedArgs = null;
-  let capturedEnv = null;
-  const storageRoot = path.resolve('C:/SpecFactoryRuns');
-  const expectedOutputRoot = path.join(storageRoot, 'output');
-  const expectedIndexLabRoot = path.join(storageRoot, 'indexlab');
-  const expectedSpecDbDir = path.join(storageRoot, '.specfactory_tmp');
-  const expectedLlmCacheDir = path.join(expectedSpecDbDir, 'llm_cache');
-  const handler = registerInfraRoutes(makeCtx({
-    runDataStorageState: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: storageRoot,
-    },
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro',
-      localOutputRoot: path.resolve('ignored-local-output-root'),
-      indexlabOut: path.resolve('ignored-indexlab-root'),
-      specDbDir: path.resolve('ignored-spec-db-root'),
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, cliArgs, envOverrides) => {
-      capturedArgs = Array.isArray(cliArgs) ? [...cliArgs] : [];
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, expectedOutputRoot);
-  assert.equal(capturedEnv?.SPEC_DB_DIR, expectedSpecDbDir);
-  assert.ok(Array.isArray(capturedArgs), 'startProcess should receive CLI args');
-  const outIndex = capturedArgs.indexOf('--out');
-  assert.equal(outIndex >= 0, true, 'CLI args should include --out when local storage is enabled');
-  assert.equal(capturedArgs[outIndex + 1], expectedIndexLabRoot);
-});
-
-test('process/start uses temp staging db roots when enabled s3 storage is active', async () => {
-  let capturedEnv = null;
-  const expectedSpecDbDir = path.join(os.tmpdir(), 'spec-factory', '.specfactory_tmp');
-  const handler = registerInfraRoutes(makeCtx({
-    OUTPUT_ROOT: path.join(os.tmpdir(), 'spec-factory', 'output'),
-    runDataStorageState: {
-      enabled: true,
-      destinationType: 's3',
-      localDirectory: '',
-      awsRegion: 'us-east-2',
-      s3Bucket: 'my-spec-harvester-data',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: 'test-access-key',
-      s3SecretAccessKey: 'test-secret-key',
-      s3SessionToken: '',
-    },
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-razer-viper-v3-pro',
-      specDbDir: path.resolve('ignored-spec-db-root'),
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, _cliArgs, envOverrides) => {
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(capturedEnv?.SPEC_DB_DIR, expectedSpecDbDir);
-});
-
-test('process/start defaults child run roots to GUI runtime roots when request omits overrides', async () => {
-  let capturedArgs = null;
-  let capturedEnv = null;
-  const expectedOutputRoot = path.resolve('gui-output-root');
-  const expectedIndexLabRoot = path.resolve('gui-indexlab-root');
-  const handler = registerInfraRoutes(makeCtx({
-    OUTPUT_ROOT: expectedOutputRoot,
-    INDEXLAB_ROOT: expectedIndexLabRoot,
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      seed: 'Razer Viper V3 Pro',
-      brand: 'Razer',
-      model: 'Viper V3 Pro',
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, cliArgs, envOverrides) => {
-      capturedArgs = Array.isArray(cliArgs) ? [...cliArgs] : [];
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, expectedOutputRoot);
-  assert.ok(Array.isArray(capturedArgs), 'startProcess should receive CLI args');
-  const outIndex = capturedArgs.indexOf('--out');
-  assert.equal(outIndex >= 0, true, 'CLI args should include --out when GUI runtime roots are available');
-  assert.equal(capturedArgs[outIndex + 1], expectedIndexLabRoot);
-});
-
-// WHY: Plan 05 Step 6 — runtime settings now reach the child via snapshot, not env vars.
-// These settings are no longer forwarded as individual env overrides.
-test('process/start does NOT forward runtime settings as individual env vars (snapshot-only)', async () => {
-  let capturedEnv = null;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      dryRun: true,
-      localInputRoot: path.resolve('fixtures', 'input'),
-      localOutputRoot: path.resolve('fixtures', 'output'),
-      runtimeEventsKey: '_runtime/custom-events.jsonl',
-      llmProvider: 'openai',
-      llmBaseUrl: 'http://llm.test',
-      openaiApiKey: 'sk-openai',
-      anthropicApiKey: 'sk-anthropic',
-      capturePageScreenshotEnabled: true,
-      runtimeScreencastEnabled: true,
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, _cliArgs, envOverrides) => {
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-
-  // WHY: Path-resolution env vars are still set (needed before config loads).
-  assert.equal(typeof capturedEnv?.RUNTIME_SETTINGS_SNAPSHOT, 'string', 'snapshot path must be set');
-  assert.equal(capturedEnv?.LOCAL_OUTPUT_ROOT, path.resolve('fixtures', 'output'));
-
-  // WHY: All runtime settings are now snapshot-only — not individual env vars.
-  for (const retiredEnvKey of [
-    'DRY_RUN', 'LOCAL_INPUT_ROOT', 'RUNTIME_EVENTS_KEY',
-    'LLM_PROVIDER', 'LLM_BASE_URL', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
-    'CAPTURE_PAGE_SCREENSHOT_ENABLED', 'CAPTURE_PAGE_SCREENSHOT_FORMAT',
-    'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-    'RUNTIME_TRACE_LLM_PAYLOADS', 'EVENTS_JSON_WRITE',
-    'DAEMON_CONCURRENCY', 'DAEMON_GRACEFUL_SHUTDOWN_TIMEOUT_MS',
-    'IMPORTS_ROOT', 'IMPORTS_POLL_SECONDS',
-    'RUNTIME_SCREENCAST_ENABLED', 'PAGE_GOTO_TIMEOUT_MS',
-  ]) {
-    assert.equal(
-      Object.hasOwn(capturedEnv, retiredEnvKey),
-      false,
-      `${retiredEnvKey} should be snapshot-only, not an env override`,
-    );
-  }
-});
-
-test('process/start ignores retired and not-implemented runtime env knobs', async () => {
-  let capturedEnv = null;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      localMode: true,
-      writeMarkdownSummary: false,
-      phase3LlmTriageEnabled: true,
-      workersSearch: 8,
-      workersFetch: 6,
-      workersParse: 4,
-      workersLlm: 2,
-      workerHealthCheckIntervalMs: 1_000,
-      workerRestartBackoffMs: 2_000,
-      blockRate429Threshold: 0.6,
-      maxBatchSizeConfirmation: 20,
-      maxParallelProductWorkers: 12,
-      chartVisionFallbackEnabled: true,
-    }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
-    startProcess: (_cmd, _cliArgs, envOverrides) => {
-      capturedEnv = { ...(envOverrides || {}) };
-      return { running: true };
-    },
-  }));
-
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-
-  for (const forbiddenEnvKey of [
-    'DISCOVERY_RESULTS_PER_QUERY',
-    'DISCOVERY_QUERY_CONCURRENCY',
-    'SERP_TRIAGE_ENABLED',
-    'PHASE3_LLM_TRIAGE_ENABLED',
-    'WORKERS_SEARCH',
-    'WORKERS_FETCH',
-    'WORKERS_PARSE',
-    'WORKERS_LLM',
-    'WORKER_HEALTH_CHECK_INTERVAL_MS',
-    'WORKER_RESTART_BACKOFF_MS',
-    '429_BLOCK_RATE_THRESHOLD',
-    'MAX_BATCH_SIZE_CONFIRMATION',
-    'MAX_PARALLEL_PRODUCT_WORKERS',
-    'CHART_VISION_FALLBACK_ENABLED',
-  ]) {
-    assert.equal(
-      Object.hasOwn(capturedEnv, forbiddenEnvKey),
-      false,
-      `process/start should not forward retired or not-implemented env ${forbiddenEnvKey}`,
-    );
-  }
-});
-
-test('process/start accepts searchEngines CSV and spawns process', async () => {
+test('process/start returns process_replace_timeout when the previous process does not stop in time', async () => {
   let started = false;
-  const handler = registerInfraRoutes(makeCtx({
-    readJsonBody: async () => ({
-      category: 'mouse',
-      mode: 'indexlab',
-      productId: 'mouse-acme-orbit-x1',
-      searchEngines: 'duckduckgo',
+  const handler = createProcessStartHandler({
+    buildProcessStartLaunchPlanFn: () => ({
+      ok: true,
+      requestedRunId: 'run-123',
+      cliArgs: ['--run-id', 'run-123'],
+      envOverrides: {},
+      replaceRunning: true,
+      effectiveHelperRoot: path.resolve('category_authority'),
+      generatedRulesCandidates: [
+        path.resolve('category_authority', 'mouse', '_generated', 'field_rules.json'),
+      ],
     }),
-    fs: {
-      access: async () => {},
-      mkdir: async () => {},
-    },
+    isProcessRunning: () => true,
+    stopProcess: async () => ({ stop_confirmed: false }),
     startProcess: () => {
       started = true;
       return { running: true };
     },
-  }));
+  });
 
-  const result = await handler(['process', 'start'], new URLSearchParams(), 'POST', {}, {});
-  assert.equal(result.status, 200);
-  assert.equal(started, true, 'process should start with searchEngines CSV value');
+  const result = await invokeProcessStart(handler);
+  assert.deepEqual(result, {
+    status: 409,
+    body: {
+      error: 'process_replace_timeout',
+      message: 'Existing process did not stop in time',
+    },
+  });
+  assert.equal(started, false, 'route should not restart while the old process is still active');
+});
+
+test('process/start restarts when the previous process exits during replace-running without redundant waiting', async () => {
+  let started = false;
+  let waitCalls = 0;
+  let runningChecks = 0;
+  const handler = createProcessStartHandler({
+    buildProcessStartLaunchPlanFn: () => ({
+      ok: true,
+      requestedRunId: 'run-123',
+      cliArgs: ['--run-id', 'run-123'],
+      envOverrides: {},
+      replaceRunning: true,
+      effectiveHelperRoot: path.resolve('category_authority'),
+      generatedRulesCandidates: [
+        path.resolve('category_authority', 'mouse', '_generated', 'field_rules.json'),
+      ],
+    }),
+    isProcessRunning: () => {
+      runningChecks += 1;
+      return runningChecks === 1;
+    },
+    stopProcess: async () => ({ stop_confirmed: false }),
+    waitForProcessExit: async () => {
+      waitCalls += 1;
+      return true;
+    },
+    startProcess: () => {
+      started = true;
+      return { running: true, run_id: 'run-123', runId: 'run-123' };
+    },
+  });
+
+  const result = await invokeProcessStart(handler);
+  assert.deepEqual(result, {
+    status: 200,
+    body: {
+      running: true,
+      run_id: 'run-123',
+      runId: 'run-123',
+    },
+  });
+  assert.equal(started, true);
+  assert.equal(waitCalls, 0, 'route should not reintroduce a redundant wait after stopProcess returns');
+});
+
+test('process/start surfaces startProcess failures as 409 error payloads', async () => {
+  const handler = createProcessStartHandler({
+    startProcess: () => {
+      throw new Error('spawn_failed');
+    },
+  });
+
+  const result = await invokeProcessStart(handler);
+  assert.deepEqual(result, {
+    status: 409,
+    body: {
+      error: 'spawn_failed',
+    },
+  });
 });

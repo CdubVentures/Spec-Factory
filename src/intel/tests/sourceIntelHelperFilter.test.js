@@ -1,22 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadSourceIntel, persistSourceIntel } from '../sourceIntel.js';
-
-function makeMemoryStorage() {
-  const map = new Map();
-  return {
-    resolveOutputKey(...parts) {
-      return ['specs/outputs', ...parts].join('/');
-    },
-    async readJsonOrNull(key) {
-      const row = map.get(key);
-      return row ? JSON.parse(row.toString('utf8')) : null;
-    },
-    async writeObject(key, body) {
-      map.set(key, Buffer.isBuffer(body) ? body : Buffer.from(body));
-    }
-  };
-}
+import { makeMemoryStorage } from './helpers/sourceIntelHarness.js';
 
 test('persistSourceIntel ignores helper pseudo domains from source rows and evidence', async () => {
   const storage = makeMemoryStorage();
@@ -92,4 +77,3 @@ test('persistSourceIntel ignores helper pseudo domains from source rows and evid
   assert.equal(Boolean(domains['helper-files.local']), false);
   assert.equal(Boolean(domains['logitechg.com']), true);
 });
-

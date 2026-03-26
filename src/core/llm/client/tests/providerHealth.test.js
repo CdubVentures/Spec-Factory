@@ -146,7 +146,24 @@ test('P01 injection: callOpenAI uses injected providerHealth instead of singleto
   assert.equal(singleton.canRequest('openai'), true);
 });
 
-test('P01 injection: callOpenAI falls back to singleton when providerHealth omitted', async () => {
+test('P01 injection: callOpenAI falls back to singleton when providerHealth omitted', async (t) => {
+  const originalFetch = globalThis.fetch;
+  const singleton = getProviderHealth();
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    return {
+      ok: false,
+      status: 401,
+      async text() {
+        return 'synthetic auth failure';
+      }
+    };
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    singleton.recordSuccess('openai');
+  });
   // Without providerHealth param, the singleton is used — canRequest should return true
   // for a provider that hasn't failed on the singleton.
   // We can't fully call through (no real API), but we can verify the circuit check passes
@@ -163,7 +180,9 @@ test('P01 injection: callOpenAI falls back to singleton when providerHealth omit
     (err) => {
       // Should NOT be a circuit-open error (singleton has no failures for this provider)
       assert.doesNotMatch(err.message, /circuit open/i);
+      assert.match(err.message, /401: synthetic auth failure/i);
       return true;
     }
   );
+  assert.equal(fetchCalls, 1);
 });

@@ -1,9 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   compileRules,
   compileRulesAll,
@@ -13,63 +11,17 @@ import {
   rulesDiff,
   watchCompileRules
 } from '../compiler.js';
-import { createMouseFieldStudioSourcePath } from './fixtures/mouseFieldStudioWorkbookFixture.js';
-
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-
-function mouseWorkbookPath(rootDir) {
-  return createMouseFieldStudioSourcePath(rootDir);
-}
-
-function buildMouseWorkbookMap(workbookPath) {
-  return {
-    version: 1,
-    field_studio_source_path: workbookPath,
-    sheet_roles: [
-      { sheet: 'dataEntry', role: 'product_table' },
-      { sheet: 'dataEntry', role: 'field_key_list' }
-    ],
-    key_list: {
-      sheet: 'dataEntry',
-      source: 'column_range',
-      column: 'B',
-      row_start: 9,
-      row_end: 83
-    },
-    product_table: {
-      sheet: 'dataEntry',
-      layout: 'matrix',
-      brand_row: 3,
-      model_row: 4,
-      variant_row: 5,
-      value_col_start: 'C',
-      value_col_end: '',
-      sample_columns: 18
-    },
-    expectations: {
-      required_fields: ['connection', 'weight', 'dpi'],
-      critical_fields: ['polling_rate'],
-      expected_easy_fields: ['side_buttons'],
-      expected_sometimes_fields: ['sensor'],
-      deep_fields: ['release_date']
-    },
-    enum_lists: [],
-    component_sheets: [],
-    field_overrides: {},
-    selected_keys: [
-      'brand', 'model', 'variant', 'category',
-      'connection', 'weight', 'dpi', 'polling_rate',
-      'side_buttons', 'sensor', 'release_date'
-    ]
-  };
-}
+import {
+  buildMouseWorkbookMap,
+  createCompilerWorkspace,
+  createMouseWorkbookPath,
+  removeRoot,
+} from './helpers/fieldRulesCompilerHarness.js';
 
 test('compileRulesAll discovers and compiles initialized categories', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-compile-all-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-compile-all-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
+    const workbookPath = createMouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const single = await compileRules({
       category: 'mouse',
@@ -88,14 +40,12 @@ test('compileRulesAll discovers and compiles initialized categories', async () =
     assert.equal(all.results.length, 1);
     assert.equal(all.results[0].compiled, true);
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('discoverCompileCategories discovers scaffolded categories', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-compile-starter-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-compile-starter-');
   try {
     await initCategory({
       category: 'monitor',
@@ -108,16 +58,14 @@ test('discoverCompileCategories discovers scaffolded categories', async () => {
     });
     assert.equal(discovered.categories.includes('monitor'), true);
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('readCompileReport returns report and rulesDiff classifies change safety', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-report-diff-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-report-diff-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
+    const workbookPath = createMouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -148,16 +96,14 @@ test('readCompileReport returns report and rulesDiff classifies change safety', 
     );
     assert.equal(typeof diff.classification.breaking, 'boolean');
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('compileRules emits key_migrations with semver metadata and migration list', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-key-migrations-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-key-migrations-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
+    const workbookPath = createMouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -174,16 +120,14 @@ test('compileRules emits key_migrations with semver metadata and migration list'
     assert.equal(Array.isArray(keyMigrations.migrations), true);
     assert.equal(typeof keyMigrations.key_map, 'object');
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });
 
 test('watchCompileRules runs initial compile and stops on maxEvents', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'phase2-watch-'));
-  const helperRoot = path.join(root, 'category_authority');
-  const categoriesRoot = path.join(root, 'categories');
+  const { root, helperRoot, categoriesRoot } = await createCompilerWorkspace('phase2-watch-');
   try {
-    const workbookPath = mouseWorkbookPath(root);
+    const workbookPath = createMouseWorkbookPath(root);
     const workbookMap = buildMouseWorkbookMap(workbookPath);
     const compiled = await compileRules({
       category: 'mouse',
@@ -208,6 +152,6 @@ test('watchCompileRules runs initial compile and stops on maxEvents', async () =
     assert.equal(watch.events[0].trigger, 'initial');
     assert.equal(['max_events_reached', 'watch_timeout'].includes(watch.reason), true);
   } finally {
-    await fs.rm(root, { recursive: true, force: true });
+    await removeRoot(root);
   }
 });

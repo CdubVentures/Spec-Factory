@@ -180,6 +180,7 @@ export interface LlmCallRow {
   prompt_preview: string | null;
   response_preview: string | null;
   prefetch_tab: string | null;
+  is_fallback?: boolean;
   ts: string;
 }
 

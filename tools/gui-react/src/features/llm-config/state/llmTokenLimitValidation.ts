@@ -1,5 +1,5 @@
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
-import { resolveProviderForModel } from './llmProviderRegistryBridge.ts';
+import { resolveProviderForModel, parseModelKey } from './llmProviderRegistryBridge.ts';
 import { LLM_TOKEN_VALIDATION_ENTRIES } from './llmModelRoleRegistry.ts';
 
 export interface TokenLimitWarning {
@@ -25,7 +25,8 @@ export function validatePhaseTokenLimits(
     const provider = resolveProviderForModel(registry, modelId);
     if (!provider) continue;
 
-    const model = provider.models.find((m) => m.modelId === modelId);
+    const { modelId: bareId } = parseModelKey(modelId);
+    const model = provider.models.find((m) => m.modelId === bareId);
     if (!model || model.maxOutputTokens == null) continue;
 
     if (tokenSetting > model.maxOutputTokens) {

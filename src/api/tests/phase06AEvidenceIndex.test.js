@@ -29,6 +29,12 @@ function createEvidenceHarness() {
   };
 }
 
+function useEvidenceHarness(t) {
+  const harness = createEvidenceHarness();
+  t.after(() => harness.cleanup());
+  return harness;
+}
+
 function createDocument(overrides = {}) {
   return {
     contentHash: 'abc123hash',
@@ -141,8 +147,7 @@ describe('Phase 06A dedupe classification and indexing lifecycle', () => {
   });
 
   it('indexes new evidence, reuses identical evidence, and treats changed content hashes as new documents', (t) => {
-    const harness = createEvidenceHarness();
-    t.after(() => harness.cleanup());
+    const harness = useEvidenceHarness(t);
 
     const document = createDocument();
     const chunks = createChunks(1);
@@ -165,8 +170,7 @@ describe('Phase 06A dedupe classification and indexing lifecycle', () => {
   });
 
   it('indexes valid facts and skips facts that refer to missing chunks', (t) => {
-    const harness = createEvidenceHarness();
-    t.after(() => harness.cleanup());
+    const harness = useEvidenceHarness(t);
 
     const indexed = indexEvidence({
       db: harness.db,
@@ -187,8 +191,7 @@ describe('Phase 06A dedupe classification and indexing lifecycle', () => {
 
 describe('Phase 06A evidence lookup contracts', () => {
   it('retrieves persisted documents, chunks, and facts through the query helpers', (t) => {
-    const harness = createEvidenceHarness();
-    t.after(() => harness.cleanup());
+    const harness = useEvidenceHarness(t);
 
     const indexResult = indexEvidence({
       db: harness.db,
@@ -219,8 +222,7 @@ describe('Phase 06A evidence lookup contracts', () => {
   });
 
   it('reports evidence inventory from persisted rows only', (t) => {
-    const harness = createEvidenceHarness();
-    t.after(() => harness.cleanup());
+    const harness = useEvidenceHarness(t);
 
     indexEvidence({ db: harness.db, chunks: createChunks(2), facts: createFacts(2) });
     indexEvidence({
@@ -256,8 +258,7 @@ describe('Phase 06A evidence lookup contracts', () => {
 
 describe('Phase 06A evidence search contracts', () => {
   it('searches indexed evidence by field terms, handles misses, and applies maxResults', (t) => {
-    const harness = createEvidenceHarness();
-    t.after(() => harness.cleanup());
+    const harness = useEvidenceHarness(t);
 
     indexEvidence({
       db: harness.db,
@@ -298,8 +299,7 @@ describe('Phase 06A evidence search contracts', () => {
       queryTerms: ['zzzzzznotfound'],
     });
 
-    const cappedHarness = createEvidenceHarness();
-    t.after(() => cappedHarness.cleanup());
+    const cappedHarness = useEvidenceHarness(t);
     indexEvidence({
       db: cappedHarness.db,
       chunks: Array.from({ length: 10 }, (_, index) => ({
@@ -445,8 +445,7 @@ describe('Phase 06A dedupe event contracts', () => {
 
 describe('Phase 06A fact persistence contract', () => {
   it('stores no fact rows when no facts payload is provided and stores fact rows when facts are provided', (t) => {
-    const emptyFactsHarness = createEvidenceHarness();
-    t.after(() => emptyFactsHarness.cleanup());
+    const emptyFactsHarness = useEvidenceHarness(t);
 
     const noFactsResult = indexEvidence({
       db: emptyFactsHarness.db,
@@ -460,8 +459,7 @@ describe('Phase 06A fact persistence contract', () => {
       fieldKey: 'weight',
     });
 
-    const populatedHarness = createEvidenceHarness();
-    t.after(() => populatedHarness.cleanup());
+    const populatedHarness = useEvidenceHarness(t);
 
     const withFactsResult = indexEvidence({
       db: populatedHarness.db,

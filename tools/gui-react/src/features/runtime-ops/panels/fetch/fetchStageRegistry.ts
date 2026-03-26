@@ -8,6 +8,7 @@ import { buildStageEntry, type StageEntry } from '../shared/stageGroupContracts.
 import { FETCH_STAGE_KEYS, FETCH_STAGE_META, type FetchTabKey } from './fetchStageKeys.generated.ts';
 import { FETCH_SELECT_PROPS, type FetchPanelContext } from './fetchStageSelectProps.ts';
 import { FetchStealthPanel } from './FetchStealthPanel.tsx';
+import { FetchCookieConsentPanel } from './FetchCookieConsentPanel.tsx';
 import { FetchAutoScrollPanel } from './FetchAutoScrollPanel.tsx';
 import { FetchDomExpansionPanel } from './FetchDomExpansionPanel.tsx';
 import { FetchCssOverridePanel } from './FetchCssOverridePanel.tsx';
@@ -22,6 +23,7 @@ export { FETCH_SELECT_PROPS, type FetchPanelContext } from './fetchStageSelectPr
 /* eslint-disable @typescript-eslint/no-explicit-any -- Component generics erased at registry boundary */
 const FETCH_COMPONENTS: Record<FetchTabKey, ComponentType<any>> = {
   stealth: FetchStealthPanel,
+  cookie_consent: FetchCookieConsentPanel,
   auto_scroll: FetchAutoScrollPanel,
   dom_expansion: FetchDomExpansionPanel,
   css_override: FetchCssOverridePanel,

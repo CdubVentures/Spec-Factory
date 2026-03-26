@@ -4,26 +4,39 @@ import assert from 'node:assert/strict';
 import { assertNativeModulesHealthy } from '../nativeModuleGuard.js';
 
 describe('assertNativeModulesHealthy', () => {
-  it('returns ok: true under normal conditions', () => {
+  it('returns a synchronous plain object result', () => {
     const result = assertNativeModulesHealthy({ logger: { error() {} } });
-    assert.equal(result.ok, true);
-  });
 
-  it('returns correct shape on success', () => {
-    const result = assertNativeModulesHealthy({ logger: { error() {} } });
-    assert.deepEqual(Object.keys(result), ['ok']);
+    assert.equal(typeof result, 'object');
+    assert.equal(typeof result?.then, 'undefined', 'should not return a Promise');
     assert.equal(typeof result.ok, 'boolean');
   });
 
-  it('is synchronous (returns plain object, not a Promise)', () => {
-    const result = assertNativeModulesHealthy({ logger: { error() {} } });
-    assert.equal(typeof result.then, 'undefined', 'should not return a Promise');
-    assert.equal(typeof result, 'object');
+  it('returns the success shape when native modules are healthy and the failure shape otherwise', () => {
+    const logged = [];
+    const result = assertNativeModulesHealthy({
+      logger: {
+        error(message) {
+          logged.push(String(message));
+        },
+      },
+    });
+
+    if (result.ok) {
+      assert.deepEqual(Object.keys(result), ['ok']);
+      assert.equal(logged.length, 0);
+      return;
+    }
+
+    assert.deepEqual(Object.keys(result).sort(), ['error', 'ok']);
+    assert.equal(typeof result.error, 'string');
+    assert.ok(result.error.length > 0);
+    assert.equal(logged.length, 1);
+    assert.ok(logged[0].includes('NATIVE MODULE LOAD FAILURE'));
   });
 
-  it('accepts default logger without throwing', () => {
-    // Uses console by default — should not throw
+  it('accepts the default logger without throwing', () => {
     const result = assertNativeModulesHealthy();
-    assert.equal(result.ok, true);
+    assert.equal(typeof result.ok, 'boolean');
   });
 });

@@ -87,6 +87,25 @@ test('static file server falls back to index.html when an asset is missing', asy
   assert.equal(res.getHeader('Content-Type'), 'text/html');
 });
 
+test('static file server strips query strings before resolving asset paths', async (t) => {
+  const distRoot = await createDistRoot(t, {
+    'index.html': '<html>shell</html>',
+    'assets/main.js': 'console.log("query-ok");',
+  });
+  const serveStatic = createGuiStaticFileServer({
+    distRoot,
+    pathModule: path,
+    createReadStream: fs.createReadStream,
+  });
+
+  const res = createCaptureResponse();
+  serveStatic({ url: '/assets/main.js?v=42' }, res);
+  await finished(res);
+
+  assert.equal(res.body, 'console.log("query-ok");');
+  assert.equal(res.getHeader('Content-Type'), 'application/javascript');
+});
+
 test('static file server returns 404 when both the asset and shell are missing', async (t) => {
   const distRoot = await createDistRoot(t, {});
   const serveStatic = createGuiStaticFileServer({

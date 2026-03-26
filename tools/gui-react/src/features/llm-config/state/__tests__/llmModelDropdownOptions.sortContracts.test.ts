@@ -21,7 +21,7 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
           }),
         ],
         flat: [],
-        expectedValues: ['reason-m', 'base-m', 'embed-m'],
+        expectedValues: ['p1:reason-m', 'p1:base-m', 'p1:embed-m'],
       },
       {
         name: 'larger context windows sort ahead of smaller and null windows',
@@ -37,7 +37,7 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
           }),
         ],
         flat: [],
-        expectedValues: ['big', 'small', 'unknown'],
+        expectedValues: ['p1:big', 'p1:small', 'p1:unknown'],
       },
       {
         name: 'lower input cost wins when role and context match',
@@ -52,7 +52,7 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
           }),
         ],
         flat: [],
-        expectedValues: ['cheap', 'expensive'],
+        expectedValues: ['p1:cheap', 'p1:expensive'],
       },
       {
         name: 'flat entries sort after registry entries in the same role group',
@@ -64,7 +64,7 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
           }),
         ],
         flat: ['flat-base'],
-        expectedValues: ['reg-base', 'flat-base'],
+        expectedValues: ['p1:reg-base', 'flat-base'],
       },
     ];
 
@@ -96,53 +96,16 @@ describe('buildModelDropdownOptions sort and label contracts', () => {
     strictEqual(result[0].maxContextTokens, 200000);
   });
 
-  it('formats enriched labels only when live token or cost metadata exists', () => {
-    const cases = [
-      {
-        name: 'shows M-suffixed context and cost',
-        registry: [
-          makeProvider({
-            id: 'p1',
-            name: 'DeepSeek',
-            models: [
-              { ...makeModel('deepseek-chat', 'primary'), costInputPer1M: 1.25, maxContextTokens: 1048576 },
-            ],
-          }),
+  it('labels are bare modelId regardless of provider name', () => {
+    const registry = [
+      makeProvider({
+        id: 'p1',
+        name: 'DeepSeek',
+        models: [
+          { ...makeModel('deepseek-chat', 'primary'), costInputPer1M: 1.25, maxContextTokens: 1048576 },
         ],
-        expectedLabel: 'DeepSeek / deepseek-chat (1M ctx, $1.25 in)',
-      },
-      {
-        name: 'shows K-suffixed context for sub-million token windows',
-        registry: [
-          makeProvider({
-            id: 'p1',
-            name: 'OpenAI',
-            models: [
-              { ...makeModel('gpt-4o', 'primary'), costInputPer1M: 2.5, maxContextTokens: 128000 },
-            ],
-          }),
-        ],
-        expectedLabel: 'OpenAI / gpt-4o (128K ctx, $2.50 in)',
-      },
-      {
-        name: 'omits metadata when both cost and context metadata are absent',
-        registry: [
-          makeProvider({
-            id: 'p1',
-            name: 'OpenAI',
-            models: [makeModel('gpt-4o')],
-          }),
-        ],
-        expectedLabel: 'OpenAI / gpt-4o',
-      },
+      }),
     ];
-
-    for (const row of cases) {
-      strictEqual(
-        buildModelDropdownOptions([], row.registry)[0].label,
-        row.expectedLabel,
-        row.name,
-      );
-    }
+    strictEqual(buildModelDropdownOptions([], registry)[0].label, 'deepseek-chat');
   });
 });

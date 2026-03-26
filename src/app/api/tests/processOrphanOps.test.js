@@ -42,12 +42,17 @@ test('parsePidRows trims whitespace around PID values', () => {
 //   - calls `taskkill /PID <pid> /T /F` on win32
 
 test('killWindowsProcessTree calls taskkill on win32 and resolves true on success', async () => {
+  let issuedCommand = null;
   const result = await killWindowsProcessTree({
     pid: 1234,
     platform: 'win32',
-    execCb: (_cmd, cb) => { cb(null); },
+    execCb: (cmd, cb) => {
+      issuedCommand = cmd;
+      cb(null);
+    },
   });
   assert.equal(result, true);
+  assert.equal(issuedCommand, 'taskkill /PID 1234 /T /F');
 });
 
 test('killWindowsProcessTree resolves false when execCb returns error', async () => {
@@ -88,23 +93,39 @@ test('killWindowsProcessTree resolves false for invalid PIDs', async () => {
 //   - returns [] when command fails and stdout is empty
 
 test('findOrphanIndexLabPids parses PID output on win32', async () => {
+  const commandCalls = [];
   const result = await findOrphanIndexLabPids({
     platform: 'win32',
-    runCommandCapture: () => {
+    runCommandCapture: (cmd, args, opts) => {
+      commandCalls.push({ cmd, args, opts });
       return { ok: true, stdout: '555\n666\n' };
     },
   });
   assert.deepEqual(result, [555, 666]);
+  assert.equal(commandCalls.length, 1);
+  assert.equal(commandCalls[0].cmd, 'powershell');
+  assert.deepEqual(commandCalls[0].args.slice(0, 2), ['-NoProfile', '-Command']);
+  assert.ok(commandCalls[0].args[2].includes('Get-CimInstance Win32_Process'));
+  assert.ok(commandCalls[0].args[2].includes("--mode\\s+indexlab"));
+  assert.deepEqual(commandCalls[0].opts, { timeoutMs: 8_000 });
 });
 
 test('findOrphanIndexLabPids parses PID output on non-win32 platforms', async () => {
+  const commandCalls = [];
   const result = await findOrphanIndexLabPids({
     platform: 'linux',
-    runCommandCapture: () => {
+    runCommandCapture: (cmd, args, opts) => {
+      commandCalls.push({ cmd, args, opts });
       return { ok: true, stdout: '111\n222\n' };
     },
   });
   assert.deepEqual(result, [111, 222]);
+  assert.equal(commandCalls.length, 1);
+  assert.equal(commandCalls[0].cmd, 'sh');
+  assert.equal(commandCalls[0].args[0], '-lc');
+  assert.ok(commandCalls[0].args[1].includes('src/cli/(spec|indexlab)\\.js'));
+  assert.ok(commandCalls[0].args[1].includes('--mode indexlab'));
+  assert.deepEqual(commandCalls[0].opts, { timeoutMs: 8_000 });
 });
 
 test('findOrphanIndexLabPids returns empty array when command fails with empty stdout', async () => {

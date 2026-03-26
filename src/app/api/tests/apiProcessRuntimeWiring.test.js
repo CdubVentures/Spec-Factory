@@ -100,16 +100,43 @@ test('process runtime start publishes run metadata and preserves the completed s
     ],
   );
 
-  assert.equal(status.running, true);
-  assert.equal(status.run_id, '20260318061504-16a0b3');
-  assert.equal(status.category, 'mouse');
-  assert.equal(status.product_id, 'mouse-razer-viper-v3-pro-white');
-  assert.equal(status.productId, 'mouse-razer-viper-v3-pro-white');
-  assert.equal(status.brand, 'Razer');
-  assert.equal(status.model, 'Viper V3 Pro');
-  assert.equal(status.variant, 'White');
-  assert.equal(status.storage_destination, 's3');
-  assert.equal(status.storageDestination, 's3');
+  assert.equal(h.spawnCalls.length, 1);
+  assert.equal(h.spawnCalls[0].command, process.execPath);
+  assert.deepEqual(h.spawnCalls[0].args, [
+    'src/cli/spec.js',
+    'indexlab',
+    '--run-id', '20260318061504-16a0b3',
+    '--category', 'mouse',
+    '--product-id', 'mouse-razer-viper-v3-pro-white',
+    '--brand', 'Razer',
+    '--model', 'Viper V3 Pro',
+    '--variant', 'White',
+  ]);
+  assert.equal(h.spawnCalls[0].options.cwd, h.projectRoot);
+  assert.deepEqual(h.spawnCalls[0].options.stdio, ['ignore', 'pipe', 'pipe', 'ipc']);
+  assert.equal(h.spawnCalls[0].options.windowsHide, true);
+  assert.equal(h.spawnCalls[0].options.env.PATH, process.env.PATH);
+  assert.deepEqual(status, {
+    running: true,
+    pid: 4201,
+    command: `${process.execPath} src/cli/spec.js indexlab --run-id 20260318061504-16a0b3 --category mouse --product-id mouse-razer-viper-v3-pro-white --brand Razer --model Viper V3 Pro --variant White`,
+    startedAt: status.startedAt,
+    exitCode: null,
+    endedAt: null,
+    run_id: '20260318061504-16a0b3',
+    runId: '20260318061504-16a0b3',
+    category: 'mouse',
+    product_id: 'mouse-razer-viper-v3-pro-white',
+    productId: 'mouse-razer-viper-v3-pro-white',
+    brand: 'Razer',
+    model: 'Viper V3 Pro',
+    variant: 'White',
+    storage_destination: 's3',
+    storageDestination: 's3',
+    relocating: false,
+    relocatingRunId: null,
+  });
+  assert.match(status.startedAt, /^\d{4}-\d{2}-\d{2}T/);
 
   h.children[0].stdout.emit('data', Buffer.from('line-a\n'));
   assert.deepEqual(
@@ -122,6 +149,7 @@ test('process runtime start publishes run metadata and preserves the completed s
 
   const after = h.runtime.processStatus();
   assert.equal(after.running, false);
+  assert.equal(after.exitCode, 0);
   assert.equal(after.run_id, '20260318061504-16a0b3');
   assert.equal(after.category, 'mouse');
   assert.equal(after.product_id, 'mouse-razer-viper-v3-pro-white');
@@ -186,6 +214,38 @@ test('process runtime completion forwards storage-derived output and indexlab ro
   assert.equal(h.indexCalls.length, 1);
   assert.equal(h.indexCalls[0]?.outputRoot, expectedOutputRoot);
   assert.equal(h.indexCalls[0]?.indexLabRoot, expectedIndexLabRoot);
+});
+
+test('process runtime non-zero exit skips compile completion but still reports the failed run', async () => {
+  const h = createHarness();
+
+  h.runtime.startProcess(
+    'src/cli/spec.js',
+    ['indexlab', '--run-id', 'run_failed01', '--category', 'mouse'],
+  );
+
+  h.children[0].stderr.emit('data', Buffer.from('fatal-line\n'));
+  h.children[0].emit('exit', 1, 'SIGTERM');
+  await flushProcessLifecycle();
+
+  const after = h.runtime.processStatus();
+  assert.equal(after.running, false);
+  assert.equal(after.exitCode, 1);
+  assert.equal(after.run_id, 'run_failed01');
+  assert.equal(after.category, 'mouse');
+  assert.equal(h.compileCalls.length, 0);
+  assert.equal(h.indexCalls.length, 1);
+  assert.equal(h.indexCalls[0]?.exitCode, 1);
+  assert.deepEqual(
+    h.broadcasts.find((event) => event.channel === 'process' && event.payload.includes('fatal-line')),
+    { channel: 'process', payload: ['fatal-line'] },
+  );
+  assert.deepEqual(
+    h.broadcasts.find((event) =>
+      event.channel === 'process'
+      && event.payload.some((line) => line.includes('[process exited with code 1 signal SIGTERM]'))),
+    { channel: 'process', payload: ['[process exited with code 1 signal SIGTERM]'] },
+  );
 });
 
 test('process runtime force stop reports orphan cleanup through the returned status', async () => {

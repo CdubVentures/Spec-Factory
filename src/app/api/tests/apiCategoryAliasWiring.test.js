@@ -7,16 +7,26 @@ import {
 } from '../categoryAlias.js';
 
 test('normalizeCategoryToken canonicalizes casing and separators', () => {
-  assert.equal(normalizeCategoryToken(' Mouse Pro '), 'mouse_pro');
-  assert.equal(normalizeCategoryToken('test-Mouse  '), 'test_mouse');
-  assert.equal(normalizeCategoryToken('_test_mouse'), '_test_mouse');
-  assert.equal(normalizeCategoryToken(''), '');
+  const cases = [
+    [' Mouse Pro ', 'mouse_pro'],
+    ['test-Mouse  ', 'test_mouse'],
+    ['_test_mouse', '_test_mouse'],
+    ['Mouse!!!__', 'mouse'],
+    [null, ''],
+    ['', ''],
+  ];
+
+  for (const [input, expected] of cases) {
+    assert.equal(normalizeCategoryToken(input), expected);
+  }
 });
 
 test('category alias resolver redirects test_ aliases to canonical underscored category when needed', () => {
   const helperRoot = path.join('C:', 'category_authority');
   const existing = new Set([
     path.join(helperRoot, '_test_mouse'),
+    path.join(helperRoot, 'test_headset'),
+    path.join(helperRoot, '_test_headset'),
     path.join(helperRoot, 'test_keyboard'),
   ]);
 
@@ -26,8 +36,17 @@ test('category alias resolver redirects test_ aliases to canonical underscored c
     existsSync: (targetPath) => existing.has(targetPath),
   });
 
-  assert.equal(resolveCategoryAlias('test_mouse'), '_test_mouse');
-  assert.equal(resolveCategoryAlias('test_keyboard'), 'test_keyboard');
-  assert.equal(resolveCategoryAlias('_test_runtime'), '_test_runtime');
-  assert.equal(resolveCategoryAlias('mouse'), 'mouse');
+  const cases = [
+    ['test_mouse', '_test_mouse'],
+    ['Test Mouse', '_test_mouse'],
+    ['test_keyboard', 'test_keyboard'],
+    ['test_headset', 'test_headset'],
+    ['test_ghost', 'test_ghost'],
+    ['_test_runtime', '_test_runtime'],
+    ['mouse', 'mouse'],
+  ];
+
+  for (const [input, expected] of cases) {
+    assert.equal(resolveCategoryAlias(input), expected);
+  }
 });

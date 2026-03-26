@@ -111,3 +111,48 @@ test('discover command runs all inputs when no brand filter', async () => {
   assert.equal(result.total_inputs, 1);
   assert.equal(result.selected_inputs, 1);
 });
+
+test('discover command flushes buffered events before rethrowing discovery failures', async () => {
+  const loggerInstances = [];
+  const expectedError = new Error('seed_plan_failed');
+
+  class EventLoggerRecorder {
+    constructor(params) {
+      this.params = params;
+      this.flushCount = 0;
+      loggerInstances.push(this);
+    }
+    async flush() {
+      this.flushCount += 1;
+    }
+  }
+
+  const storage = {
+    async listInputKeys() {
+      return ['input/a.json'];
+    },
+    async readJsonOrNull() {
+      return { identityLock: { brand: 'Logitech' } };
+    },
+    async readJson() {
+      return { productId: 'mouse-a' };
+    },
+  };
+
+  const commandDiscover = createDiscoverCommand(createDeps({
+    EventLogger: EventLoggerRecorder,
+    runDiscoverySeedPlan: async () => {
+      throw expectedError;
+    },
+  }));
+
+  await assert.rejects(
+    commandDiscover({ runtimeEventsKey: '_runtime/events.jsonl' }, storage, {
+      category: 'mouse',
+    }),
+    expectedError,
+  );
+
+  assert.equal(loggerInstances.length, 1);
+  assert.equal(loggerInstances[0].flushCount, 1);
+});

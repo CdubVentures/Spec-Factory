@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
+import {
+  createRuntimeOpsRunListHarness,
+  flattenText,
+} from './helpers/runtimeOpsRunListHarness.js';
 
 function renderElement(node) {
   if (Array.isArray(node)) {
@@ -26,7 +31,7 @@ function renderElement(node) {
 
 async function loadRuntimeOpsPageModule() {
   return loadBundledModule('tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx', {
-    prefix: 'runtime-ops-worker-selection-',
+    prefix: 'runtime-ops-page-contracts-',
     stubs: {
       react: `
         export function useState(initialValue) {
@@ -57,8 +62,8 @@ async function loadRuntimeOpsPageModule() {
             return {
               data: {
                 runs: [
-                  { run_id: 'run-123', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', started_at: '2026-03-11T00:00:00.000Z', ended_at: '2026-03-11T00:10:00.000Z', status: 'completed', storage_origin: 'local', picker_label: 'Mouse • Razer Viper V3 Pro - run-123' },
-                  { run_id: 'run-456', category: 'mouse', product_id: 'mouse-logitech-g-pro-x-superlight-2', started_at: '2026-03-10T00:00:00.000Z', ended_at: '2026-03-10T00:10:00.000Z', status: 'completed', storage_origin: 'local', picker_label: 'Mouse • Logitech G Pro X Superlight 2 - run-456' },
+                  { run_id: 'run-123', category: 'mouse', product_id: 'mouse-razer-viper-v3-pro', started_at: '2026-03-11T00:00:00.000Z', ended_at: '2026-03-11T00:10:00.000Z', status: 'completed', storage_origin: 'local', picker_label: 'Mouse \\u2022 Razer Viper V3 Pro - run-123' },
+                  { run_id: 'run-456', category: 'mouse', product_id: 'mouse-logitech-g-pro-x-superlight-2', started_at: '2026-03-10T00:00:00.000Z', ended_at: '2026-03-10T00:10:00.000Z', status: 'completed', storage_origin: 'local', picker_label: 'Mouse \\u2022 Logitech G Pro X Superlight 2 - run-456' },
                 ],
               },
             };
@@ -86,12 +91,12 @@ async function loadRuntimeOpsPageModule() {
         }
       `,
       '../../../stores/tabStore': `
-        export function usePersistedTab(key, initialValue) {
+        export function usePersistedTab(key) {
           const calls = globalThis.__runtimeOpsSelectionHarness.calls;
           calls.push({ kind: 'tab', key });
           return ['workers', () => {}];
         }
-        export function usePersistedNullableTab(key, initialValue) {
+        export function usePersistedNullableTab(key) {
           const calls = globalThis.__runtimeOpsSelectionHarness.calls;
           calls.push({ kind: 'nullable', key });
           return [null, () => {}];
@@ -169,7 +174,78 @@ function captureSelectedWorkerPersistenceKey(RuntimeOpsPage, runId) {
   return call?.key || null;
 }
 
-test('runtime ops worker selection persistence is scoped by run id to avoid stale fetch drawers across runs', async () => {
+test('runtime ops page synthesizes a live fallback row while run history is still loading', async () => {
+  const harness = await createRuntimeOpsRunListHarness({
+    prefix: 'runtime-ops-page-live-fallback-',
+    activeScope: true,
+    processStatusResult: {
+      data: {
+        running: true,
+        relocating: false,
+        run_id: '20260318061504-16a0b3',
+        runId: '20260318061504-16a0b3',
+        startedAt: '2026-03-18T06:15:04.000Z',
+        category: 'mouse',
+        product_id: 'mouse-razer-viper-v3-pro-white',
+        productId: 'mouse-razer-viper-v3-pro-white',
+        brand: 'Razer',
+        model: 'Viper V3 Pro',
+        variant: 'White',
+        storage_destination: 's3',
+        storageDestination: 's3',
+      },
+      isLoading: false,
+      isFetching: false,
+    },
+    runsQueryResult: {
+      data: undefined,
+      isLoading: true,
+      isFetching: true,
+    },
+    renderPicker(props) {
+      return {
+        type: 'div',
+        props: {
+          children: [props.runs?.[0] ? 'picker-ready' : 'picker-missing'],
+        },
+      };
+    },
+  });
+
+  try {
+    const tree = harness.renderPage();
+    const text = flattenText(tree);
+    const pickerProps = harness.getPickerProps();
+
+    assert.match(text, /Loading run history/i);
+    assert.equal(pickerProps?.runs?.length, 1);
+    assert.equal(pickerProps?.runs?.[0]?.picker_label, 'Mouse \u2022 Razer Viper V3 Pro White - 6a0b3');
+    assert.equal(pickerProps?.runs?.[0]?.storage_origin, 's3');
+    assert.equal(pickerProps?.runs?.[0]?.storage_state, 'live');
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('runtime ops page scopes run-list query key and request path by category', async () => {
+  const harness = await createRuntimeOpsRunListHarness({
+    prefix: 'runtime-ops-page-query-scope-',
+  });
+
+  try {
+    harness.renderPage();
+
+    const runQuery = harness.getRunQuery();
+    assert.deepEqual(runQuery?.queryKey, ['indexlab', 'runs', { category: 'mouse', limit: 40 }]);
+
+    await runQuery.queryFn();
+    assert.deepEqual(harness.getApiCalls(), ['/indexlab/runs?limit=40&category=mouse']);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('runtime ops page scopes selected worker persistence by run id', async () => {
   globalThis.window = { location: { protocol: 'http:', host: 'example.test' } };
   globalThis.__runtimeOpsSelectionHarness = {
     runId: 'run-123',
@@ -180,21 +256,10 @@ test('runtime ops worker selection persistence is scoped by run id to avoid stal
   const firstKey = captureSelectedWorkerPersistenceKey(RuntimeOpsPage, 'run-123');
   const secondKey = captureSelectedWorkerPersistenceKey(RuntimeOpsPage, 'run-456');
 
-  assert.equal(
-    firstKey,
-    'runtimeOps:workers:selectedWorker:mouse:run-123',
-    'RuntimeOpsPage should scope selected worker persistence by run id for the first run',
-  );
-  assert.equal(
-    secondKey,
-    'runtimeOps:workers:selectedWorker:mouse:run-456',
-    'RuntimeOpsPage should scope selected worker persistence by run id for the second run',
-  );
-  assert.equal(
-    firstKey === 'runtimeOps:workers:selectedWorker:mouse' || secondKey === 'runtimeOps:workers:selectedWorker:mouse',
-    false,
-    'RuntimeOpsPage should not persist worker selection only by category',
-  );
+  assert.equal(firstKey, 'runtimeOps:workers:selectedWorker:mouse:run-123');
+  assert.equal(secondKey, 'runtimeOps:workers:selectedWorker:mouse:run-456');
+  assert.equal(firstKey === 'runtimeOps:workers:selectedWorker:mouse', false);
+  assert.equal(secondKey === 'runtimeOps:workers:selectedWorker:mouse', false);
 
   delete globalThis.__runtimeOpsSelectionHarness;
   delete globalThis.window;

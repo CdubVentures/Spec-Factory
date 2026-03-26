@@ -3,5 +3,5 @@
 
 export { createCrawlSession } from './crawlSession.js';
 export { captureScreenshots } from './screenshotCapture.js';
-export { resolvePlugins, PLUGIN_REGISTRY } from './plugins/pluginRegistry.js';
+export { resolvePlugins, resolveAllPlugins, PLUGIN_REGISTRY } from './plugins/pluginRegistry.js';
 export { classifyBlockStatus } from './bypassStrategies.js';

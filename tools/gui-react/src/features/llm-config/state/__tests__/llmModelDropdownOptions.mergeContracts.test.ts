@@ -33,8 +33,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'gpt-4o-mini', label: 'OpenAI / gpt-4o-mini', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o-mini', label: 'gpt-4o-mini', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -48,7 +48,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'gpt-4o', label: 'OpenAI / gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
           { value: 'other-model', label: 'other-model', providerId: null },
         ],
       },
@@ -68,8 +68,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'shared-model', label: 'Provider A / shared-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'shared-model', label: 'Provider B / shared-model', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:shared-model', label: 'shared-model', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p2:shared-model', label: 'shared-model', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -83,7 +83,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
           }),
         ],
         expected: [
-          { value: 'gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:gpt-4o', label: 'gpt-4o', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
     ];
@@ -115,7 +115,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'embed-v1', label: 'Anthropic / embed-v1', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:embed-v1', label: 'embed-v1', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -134,8 +134,8 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: ['primary', 'reasoning'] as const,
         expected: [
-          { value: 'model-reasoning', label: 'Mixed / model-reasoning', providerId: 'p1', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
-          { value: 'model-base', label: 'Mixed / model-base', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:model-reasoning', label: 'model-reasoning', providerId: 'p1', role: 'reasoning', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:model-base', label: 'model-base', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -150,7 +150,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'embed-model', label: 'Provider / embed-model', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:embed-model', label: 'embed-model', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
       {
@@ -165,7 +165,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
         ],
         roleFilter: 'embedding' as const,
         expected: [
-          { value: 'shared-embed', label: 'Provider / shared-embed', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
+          { value: 'p1:shared-embed', label: 'shared-embed', providerId: 'p1', role: 'embedding', costInputPer1M: 0, maxContextTokens: null },
         ],
       },
     ];
@@ -179,7 +179,7 @@ describe('buildModelDropdownOptions merge contracts', () => {
     }
   });
 
-  it('lab models carry accessMode and capabilities in dropdown options', () => {
+  it('lab models carry accessMode in dropdown options', () => {
     const registry = [
       makeProvider({
         id: 'lab-gemini',
@@ -188,7 +188,6 @@ describe('buildModelDropdownOptions merge contracts', () => {
         models: [{
           ...makeModel('gemini-2.5-flash'),
           accessMode: 'lab' as const,
-          capabilities: { thinking: true, web: true },
         }],
       }),
       makeProvider({
@@ -203,31 +202,28 @@ describe('buildModelDropdownOptions merge contracts', () => {
     const apiOption = result.find((o) => o.providerId === 'default-gemini');
 
     deepStrictEqual(labOption?.accessMode, 'lab');
-    deepStrictEqual(labOption?.capabilities, { thinking: true, web: true });
     deepStrictEqual(apiOption?.accessMode, undefined);
-    deepStrictEqual(apiOption?.capabilities, undefined);
   });
 
-  it('keeps disabled-provider models off both registry and flat fallback surfaces', () => {
+  it('all registry providers appear regardless — apiKeyFilter is the gate', () => {
     const registry = [
       makeProvider({
-        id: 'off',
-        name: 'Disabled',
-        enabled: false,
-        models: [makeModel('disabled-model')],
+        id: 'p1',
+        name: 'Provider A',
+        models: [makeModel('model-a')],
       }),
       makeProvider({
-        id: 'on',
-        name: 'Enabled',
-        models: [makeModel('claude-sonnet')],
+        id: 'p2',
+        name: 'Provider B',
+        models: [makeModel('model-b')],
       }),
     ];
 
     deepStrictEqual(
-      buildModelDropdownOptions(['disabled-model', 'truly-flat'], registry),
+      buildModelDropdownOptions([], registry),
       [
-        { value: 'claude-sonnet', label: 'Enabled / claude-sonnet', providerId: 'on', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
-        { value: 'truly-flat', label: 'truly-flat', providerId: null },
+        { value: 'p1:model-a', label: 'model-a', providerId: 'p1', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
+        { value: 'p2:model-b', label: 'model-b', providerId: 'p2', role: 'primary', costInputPer1M: 0, maxContextTokens: null },
       ],
     );
   });

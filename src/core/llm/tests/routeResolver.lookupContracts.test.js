@@ -29,11 +29,9 @@ test('buildRegistryLookup accepts both JSON strings and pre-parsed arrays', () =
   assert.equal(arrayLookup.providers.size, 2);
 });
 
-test('buildRegistryLookup filters disabled or invalid providers and tolerates missing model arrays', () => {
-  const disabledLookup = buildRegistryLookup([geminiProvider({ enabled: false }), deepseekProvider()]);
-  assert.equal(disabledLookup.providers.size, 1);
-  assert.ok(disabledLookup.providers.has('default-deepseek'));
-  assert.equal(disabledLookup.modelIndex.has('gemini-2.5-flash'), false);
+test('buildRegistryLookup filters invalid providers and tolerates missing model arrays', () => {
+  const twoLookup = buildRegistryLookup([geminiProvider(), deepseekProvider()]);
+  assert.equal(twoLookup.providers.size, 2);
 
   const missingIdLookup = buildRegistryLookup([{ ...geminiProvider(), id: '' }, deepseekProvider()]);
   assert.equal(missingIdLookup.providers.size, 1);

@@ -21,9 +21,12 @@ export function shortModel(model: string): string {
   // DeepSeek: "deepseek-chat" → "DS Chat"
   const ds = m.match(/deepseek[- ](\w+)/);
   if (ds) return `DS ${ds[1].charAt(0).toUpperCase() + ds[1].slice(1)}`;
-  // GPT: "gpt-4o-mini" → "4o-mini"
+  // GPT: "gpt-5-medium" → "GPT-5 Medium", "gpt-4o-mini" → "GPT-4o Mini"
   const gpt = m.match(/gpt[- ](.+)/);
-  if (gpt) return gpt[1];
+  if (gpt) {
+    const parts = gpt[1].split(/[- ]/);
+    return `GPT-${parts.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}`;
+  }
   return model;
 }
 

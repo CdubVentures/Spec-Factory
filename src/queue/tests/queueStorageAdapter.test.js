@@ -1,19 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { createStorage } from '../../s3/storage.js';
 import { createQueueAdapter } from '../queueStorageAdapter.js';
 
-function makeStorage(tempRoot) {
-  return createStorage({
-    localMode: true,
-    localInputRoot: path.join(tempRoot, 'fixtures'),
-    localOutputRoot: path.join(tempRoot, 'out'),
-    s3InputPrefix: 'specs/inputs',
-    s3OutputPrefix: 'specs/outputs'
-  });
+function makeStorage() {
+  const objects = new Map();
+  return {
+    readTextOrNull: async (key) => objects.get(key) ?? null,
+    writeObject: async (key, body) => {
+      objects.set(key, Buffer.isBuffer(body) ? body.toString('utf8') : Buffer.from(body).toString('utf8'));
+    },
+    resolveOutputKey: (...parts) => ['specs', 'outputs', ...parts].filter(Boolean).join('/'),
+  };
 }
 
 function makeSpecDb(category) {
@@ -93,16 +90,11 @@ test('createQueueAdapter returns sqlite adapter when specDb provided', () => {
 });
 
 test('createQueueAdapter returns json adapter when specDb is null', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-adapter-factory-'));
-  const storage = makeStorage(tempRoot);
-  try {
-    const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
-    assert.equal(typeof adapter.get, 'function');
-    assert.equal(typeof adapter.getAll, 'function');
-    assert.equal(typeof adapter.save, 'function');
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+  const storage = makeStorage();
+  const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
+  assert.equal(typeof adapter.get, 'function');
+  assert.equal(typeof adapter.getAll, 'function');
+  assert.equal(typeof adapter.save, 'function');
 });
 
 // ── SQLite adapter tests ────────────────────────────────────────────
@@ -200,55 +192,40 @@ test('sqlite adapter selectNext returns top eligible row', async () => {
 // ── JSON adapter tests ──────────────────────────────────────────────
 
 test('json adapter save and get round-trips via storage', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-adapter-json-'));
-  const storage = makeStorage(tempRoot);
+  const storage = makeStorage();
   const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
 
-  try {
-    await adapter.save('mouse-j1', { s3key: 'k/j1.json', status: 'pending', priority: 2 });
-    const row = await adapter.get('mouse-j1');
-    assert.equal(row.status, 'pending');
-    assert.equal(row.priority, 2);
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+  await adapter.save('mouse-j1', { s3key: 'k/j1.json', status: 'pending', priority: 2 });
+  const row = await adapter.get('mouse-j1');
+  assert.equal(row.status, 'pending');
+  assert.equal(row.priority, 2);
 });
 
 test('json adapter getAll returns all products from storage', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-adapter-json-all-'));
-  const storage = makeStorage(tempRoot);
+  const storage = makeStorage();
   const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
 
-  try {
-    await adapter.save('a', { status: 'pending' });
-    await adapter.save('b', { status: 'complete' });
-    const all = await adapter.getAll();
-    assert.equal(all.length, 2);
+  await adapter.save('a', { status: 'pending' });
+  await adapter.save('b', { status: 'complete' });
+  const all = await adapter.getAll();
+  assert.equal(all.length, 2);
 
-    const pending = await adapter.getAll('pending');
-    assert.equal(pending.length, 1);
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+  const pending = await adapter.getAll('pending');
+  assert.equal(pending.length, 1);
 });
 
 test('json adapter clearByStatus removes matching and returns ids', async () => {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-adapter-json-clear-'));
-  const storage = makeStorage(tempRoot);
+  const storage = makeStorage();
   const adapter = createQueueAdapter({ storage, category: 'mouse', specDb: null });
 
-  try {
-    await adapter.save('a', { status: 'failed' });
-    await adapter.save('b', { status: 'failed' });
-    await adapter.save('c', { status: 'pending' });
+  await adapter.save('a', { status: 'failed' });
+  await adapter.save('b', { status: 'failed' });
+  await adapter.save('c', { status: 'pending' });
 
-    const result = await adapter.clearByStatus('failed');
-    assert.equal(result.removed_count, 2);
-    assert.ok(result.removed_product_ids.includes('a'));
+  const result = await adapter.clearByStatus('failed');
+  assert.equal(result.removed_count, 2);
+  assert.ok(result.removed_product_ids.includes('a'));
 
-    const remaining = await adapter.getAll();
-    assert.equal(remaining.length, 1);
-  } finally {
-    await fs.rm(tempRoot, { recursive: true, force: true });
-  }
+  const remaining = await adapter.getAll();
+  assert.equal(remaining.length, 1);
 });

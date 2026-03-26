@@ -1,16 +1,10 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-
 import { SpecDb } from '../../../../../db/specDb.js';
 
 export const CATEGORY = 'mouse';
 
 export async function createTempSpecDb() {
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'key-review-state-'));
-  const dbPath = path.join(tempRoot, 'spec.sqlite');
-  const specDb = new SpecDb({ dbPath, category: CATEGORY });
-  return { tempRoot, specDb };
+  const specDb = new SpecDb({ dbPath: ':memory:', category: CATEGORY });
+  return { tempRoot: null, specDb };
 }
 
 export async function cleanupTempSpecDb(tempRoot, specDb) {
@@ -19,7 +13,6 @@ export async function cleanupTempSpecDb(tempRoot, specDb) {
   } catch {
     // best-effort
   }
-  await fs.rm(tempRoot, { recursive: true, force: true });
 }
 
 export function ensureEnumSlot(specDb, fieldKey, value, {

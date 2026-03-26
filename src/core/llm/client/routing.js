@@ -243,8 +243,8 @@ export function resolvePhaseMaxContextTokens(config = {}, phase = '') {
   return Math.max(0, Number(config[`_resolved${cap}MaxContextTokens`] || 0));
 }
 
-// WHY: Generic resolver for boolean phase flags (webSearch, thinking).
-// configPostMerge writes _resolved${Phase}WebSearch and _resolved${Phase}Thinking.
+// WHY: Resolves per-phase boolean flags from config.
+// configPostMerge writes _resolved${Phase}WebSearch.
 function resolvePhaseFlag(config = {}, phase = '', flagSuffix = '') {
   const cap = capitalize(String(phase || '').trim());
   if (!cap || !flagSuffix) return false;
@@ -286,10 +286,14 @@ export function resolveLlmRoute(config = {}, { reason = '', role = '', modelOver
         return route;
       }
     }
-    // Override model not in registry — infer provider from model name
+    // WHY: Override model not in registry — infer provider from model name.
+    // Composite keys ("providerId:modelId") must be split so
+    // providerFromModelToken receives a bare model ID, not "lab-openai:gpt-5-low".
     delete route._registryEntry;
-    route.model = overrideModel;
-    const inferred = providerFromModelToken(overrideModel);
+    const colonIdx = overrideModel.indexOf(':');
+    const bareModel = colonIdx > 0 ? overrideModel.slice(colonIdx + 1) : overrideModel;
+    route.model = bareModel;
+    const inferred = providerFromModelToken(bareModel);
     route.provider = inferred;
     route.baseUrl = defaultBaseUrlForProvider(inferred);
     route.apiKey = bootstrapApiKeyForProvider(config, inferred);
@@ -398,16 +402,10 @@ export async function callLlmWithRouting({
           : null)
   );
 
-  // WHY: Phase-level web search / thinking flags from LLM settings panel.
-  // Merged into request_options so LLM Lab receives them in the body.
+  // WHY: Phase-level web_search flag from LLM settings panel.
   const phaseWebSearch = resolvePhaseFlag(config, phase, 'WebSearch');
-  const phaseThinking = resolvePhaseFlag(config, phase, 'Thinking');
-  const effectiveRequestOptions = (phaseWebSearch || phaseThinking)
-    ? {
-      ...(baseRequestOptions || {}),
-      ...(phaseWebSearch ? { web_search: true } : {}),
-      ...(phaseThinking ? { thinking: true } : {}),
-    }
+  const effectiveRequestOptions = phaseWebSearch
+    ? { ...(baseRequestOptions || {}), web_search: true }
     : baseRequestOptions;
 
   // WHY: Reasoning + tokens auto-resolved from config via phase. Callers never set these.

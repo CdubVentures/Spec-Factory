@@ -66,6 +66,47 @@ test('queue list action supports sync/status/limit and returns rows', async () =
   assert.deepEqual(result.products, rows);
 });
 
+test('queue stats summarizes status and priority counts from loaded queue state', async () => {
+  const loadCalls = [];
+  const storage = { name: 'storage-stub' };
+  const commandQueue = createQueueCommand(createDeps({
+    loadQueueState: async (payload) => {
+      loadCalls.push(payload);
+      return {
+        state: {
+          products: {
+            one: { status: 'pending', priority: 5 },
+            two: { status: 'paused', priority: 2 },
+            three: { status: '', priority: 'not-a-number' },
+          },
+        },
+      };
+    },
+  }));
+
+  const result = await commandQueue({}, storage, {
+    category: 'mouse',
+    _: ['stats'],
+  });
+
+  assert.deepEqual(loadCalls, [{ storage, category: 'mouse' }]);
+  assert.deepEqual(result, {
+    command: 'queue',
+    action: 'stats',
+    category: 'mouse',
+    total_products: 3,
+    status: {
+      pending: 2,
+      paused: 1,
+    },
+    priority: {
+      2: 1,
+      3: 1,
+      5: 1,
+    },
+  });
+});
+
 test('queue clear requires --status', async () => {
   const commandQueue = createQueueCommand(createDeps());
   await assert.rejects(

@@ -24,57 +24,56 @@ async function seedAutomationQueueRun(indexlabRoot) {
   const runDir = path.join(indexlabRoot, runId);
   const now = '2026-02-19T10:00:00.000Z';
 
-  await writeJson(path.join(runDir, 'run.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    status: 'completed',
-    started_at: now,
-    ended_at: '2026-02-19T10:04:00.000Z',
-  });
-
-  await writeJson(path.join(runDir, 'search_profile.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    provider: 'searxng',
-    query_rows: [
-      {
-        query: 'Corsair M55 Wireless polling rate specification',
-        target_fields: ['polling_rate'],
-        result_count: 5,
-        attempts: 1,
-        providers: ['searxng'],
-      },
-    ],
-  });
-
-  await writeJson(path.join(runDir, 'needset.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    generated_at: '2026-02-19T10:03:30.000Z',
-    needset_size: 2,
-    total_fields: 75,
-    rows: [
-      {
-        field_key: 'polling_rate',
-        required_level: 'critical',
-        priority_bucket: 'core',
-        state: 'missing',
-        bundle_id: null,
-      },
-      {
-        field_key: 'sensor',
-        required_level: 'required',
-        priority_bucket: 'core',
-        state: 'missing',
-        bundle_id: null,
-      },
-    ],
-  });
-
-  await writeJsonl(path.join(runDir, 'run_events.ndjson'), [
+  await fs.mkdir(runDir, { recursive: true });
+  await Promise.all([
+    writeJson(path.join(runDir, 'run.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      status: 'completed',
+      started_at: now,
+      ended_at: '2026-02-19T10:04:00.000Z',
+    }),
+    writeJson(path.join(runDir, 'search_profile.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      provider: 'searxng',
+      query_rows: [
+        {
+          query: 'Corsair M55 Wireless polling rate specification',
+          target_fields: ['polling_rate'],
+          result_count: 5,
+          attempts: 1,
+          providers: ['searxng'],
+        },
+      ],
+    }),
+    writeJson(path.join(runDir, 'needset.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      generated_at: '2026-02-19T10:03:30.000Z',
+      needset_size: 2,
+      total_fields: 75,
+      rows: [
+        {
+          field_key: 'polling_rate',
+          required_level: 'critical',
+          priority_bucket: 'core',
+          state: 'missing',
+          bundle_id: null,
+        },
+        {
+          field_key: 'sensor',
+          required_level: 'required',
+          priority_bucket: 'core',
+          state: 'missing',
+          bundle_id: null,
+        },
+      ],
+    }),
+    writeJsonl(path.join(runDir, 'run_events.ndjson'), [
     {
       run_id: runId,
       category,
@@ -198,6 +197,7 @@ async function seedAutomationQueueRun(indexlabRoot) {
         ],
       },
     },
+  ]),
   ]);
 
   return { category, productId, runId };
@@ -209,70 +209,72 @@ async function seedPhase07Run(indexlabRoot) {
   const productId = 'mouse-fnatic-x-lamzu-maya-x-8k';
   const runDir = path.join(indexlabRoot, runId);
 
-  await writeJson(path.join(runDir, 'run.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    status: 'completed',
-    started_at: '2026-02-19T11:00:00.000Z',
-    ended_at: '2026-02-19T11:04:00.000Z',
-  });
-
-  await writeJson(path.join(runDir, 'phase07_retrieval.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    generated_at: '2026-02-19T11:03:30.000Z',
-    summary: {
-      fields_attempted: 3,
-      fields_with_hits: 2,
-      fields_satisfied_min_refs: 1,
-      fields_unsatisfied_min_refs: 2,
-      refs_selected_total: 3,
-      distinct_sources_selected: 2,
-      avg_hits_per_field: 1.667,
-      evidence_pool_size: 6,
-    },
-    fields: [
-      {
-        field_key: 'polling_rate',
-        required_level: 'critical',
-        need_score: 38.88,
-        min_refs_required: 2,
-        refs_selected: 2,
-        min_refs_satisfied: true,
-        distinct_sources_required: true,
+  await fs.mkdir(runDir, { recursive: true });
+  await Promise.all([
+    writeJson(path.join(runDir, 'run.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      status: 'completed',
+      started_at: '2026-02-19T11:00:00.000Z',
+      ended_at: '2026-02-19T11:04:00.000Z',
+    }),
+    writeJson(path.join(runDir, 'phase07_retrieval.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      generated_at: '2026-02-19T11:03:30.000Z',
+      summary: {
+        fields_attempted: 3,
+        fields_with_hits: 2,
+        fields_satisfied_min_refs: 1,
+        fields_unsatisfied_min_refs: 2,
+        refs_selected_total: 3,
         distinct_sources_selected: 2,
-        retrieval_query: 'Fnatic x Lamzu MAYA X 8K | polling rate | hz',
-        hits: [
-          {
-            rank: 1,
-            score: 8.15,
-            url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
-            host: 'www.techpowerup.com',
-            tier: 2,
-            doc_kind: 'lab_review',
-            snippet_id: 'w01',
-            quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
-            reason_badges: ['anchor_match', 'unit_match', 'tier_preferred'],
-          },
-        ],
-        prime_sources: [
-          {
-            rank: 1,
-            score: 8.15,
-            url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
-            host: 'www.techpowerup.com',
-            tier: 2,
-            doc_kind: 'lab_review',
-            snippet_id: 'w01',
-            quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
-            reason_badges: ['anchor_match', 'unit_match', 'tier_preferred'],
-          },
-        ],
+        avg_hits_per_field: 1.667,
+        evidence_pool_size: 6,
       },
-    ],
-  });
+      fields: [
+        {
+          field_key: 'polling_rate',
+          required_level: 'critical',
+          need_score: 38.88,
+          min_refs_required: 2,
+          refs_selected: 2,
+          min_refs_satisfied: true,
+          distinct_sources_required: true,
+          distinct_sources_selected: 2,
+          retrieval_query: 'Fnatic x Lamzu MAYA X 8K | polling rate | hz',
+          hits: [
+            {
+              rank: 1,
+              score: 8.15,
+              url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
+              host: 'www.techpowerup.com',
+              tier: 2,
+              doc_kind: 'lab_review',
+              snippet_id: 'w01',
+              quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
+              reason_badges: ['anchor_match', 'unit_match', 'tier_preferred'],
+            },
+          ],
+          prime_sources: [
+            {
+              rank: 1,
+              score: 8.15,
+              url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
+              host: 'www.techpowerup.com',
+              tier: 2,
+              doc_kind: 'lab_review',
+              snippet_id: 'w01',
+              quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
+              reason_badges: ['anchor_match', 'unit_match', 'tier_preferred'],
+            },
+          ],
+        },
+      ],
+    }),
+  ]);
 
   return { category, productId, runId };
 }
@@ -283,80 +285,82 @@ async function seedPhase08Run(indexlabRoot) {
   const productId = 'mouse-fnatic-x-lamzu-maya-x-8k';
   const runDir = path.join(indexlabRoot, runId);
 
-  await writeJson(path.join(runDir, 'run.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    status: 'completed',
-    started_at: '2026-02-19T12:10:00.000Z',
-    ended_at: '2026-02-19T12:16:00.000Z',
-  });
-
-  await writeJson(path.join(runDir, 'phase08_extraction.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    generated_at: '2026-02-19T12:15:55.000Z',
-    summary: {
-      batch_count: 3,
-      batch_error_count: 0,
-      schema_fail_rate: 0,
-      raw_candidate_count: 14,
-      accepted_candidate_count: 9,
-      dangling_snippet_ref_count: 1,
-      dangling_snippet_ref_rate: 0.071428,
-      evidence_policy_violation_count: 2,
-      evidence_policy_violation_rate: 0.142857,
-      min_refs_satisfied_count: 8,
-      min_refs_total: 9,
-      min_refs_satisfied_rate: 0.888889,
-      validator_context_field_count: 5,
-      validator_prime_source_rows: 11,
-    },
-    batches: [
-      {
-        batch_id: 'sensor_performance',
-        status: 'completed',
-        model: 'gemini-2.5-flash',
-        target_field_count: 4,
-        snippet_count: 5,
-        reference_count: 5,
-        raw_candidate_count: 6,
-        accepted_candidate_count: 4,
-        min_refs_satisfied_count: 4,
-        min_refs_total: 4,
-        elapsed_ms: 821,
+  await fs.mkdir(runDir, { recursive: true });
+  await Promise.all([
+    writeJson(path.join(runDir, 'run.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      status: 'completed',
+      started_at: '2026-02-19T12:10:00.000Z',
+      ended_at: '2026-02-19T12:16:00.000Z',
+    }),
+    writeJson(path.join(runDir, 'phase08_extraction.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      generated_at: '2026-02-19T12:15:55.000Z',
+      summary: {
+        batch_count: 3,
+        batch_error_count: 0,
+        schema_fail_rate: 0,
+        raw_candidate_count: 14,
+        accepted_candidate_count: 9,
+        dangling_snippet_ref_count: 1,
+        dangling_snippet_ref_rate: 0.071428,
+        evidence_policy_violation_count: 2,
+        evidence_policy_violation_rate: 0.142857,
+        min_refs_satisfied_count: 8,
+        min_refs_total: 9,
+        min_refs_satisfied_rate: 0.888889,
+        validator_context_field_count: 5,
+        validator_prime_source_rows: 11,
       },
-    ],
-    field_contexts: {
-      polling_rate: {
-        field_key: 'polling_rate',
-        required_level: 'critical',
-        difficulty: 'hard',
-        ai_mode: 'judge',
-        parse_template_intent: {
-          template_id: 'list_of_numbers_with_unit',
-        },
-        evidence_policy: {
-          required: true,
-          min_evidence_refs: 2,
-          distinct_sources_required: true,
-          tier_preference: [1, 2, 3],
-        },
-      },
-    },
-    prime_sources: {
-      rows: [
+      batches: [
         {
-          field_key: 'polling_rate',
-          snippet_id: 'w01',
-          source_id: 'techpowerup_com',
-          url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
-          quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
+          batch_id: 'sensor_performance',
+          status: 'completed',
+          model: 'gemini-2.5-flash',
+          target_field_count: 4,
+          snippet_count: 5,
+          reference_count: 5,
+          raw_candidate_count: 6,
+          accepted_candidate_count: 4,
+          min_refs_satisfied_count: 4,
+          min_refs_total: 4,
+          elapsed_ms: 821,
         },
       ],
-    },
-  });
+      field_contexts: {
+        polling_rate: {
+          field_key: 'polling_rate',
+          required_level: 'critical',
+          difficulty: 'hard',
+          ai_mode: 'judge',
+          parse_template_intent: {
+            template_id: 'list_of_numbers_with_unit',
+          },
+          evidence_policy: {
+            required: true,
+            min_evidence_refs: 2,
+            distinct_sources_required: true,
+            tier_preference: [1, 2, 3],
+          },
+        },
+      },
+      prime_sources: {
+        rows: [
+          {
+            field_key: 'polling_rate',
+            snippet_id: 'w01',
+            source_id: 'techpowerup_com',
+            url: 'https://www.techpowerup.com/review/lamzu-maya/single-page.html',
+            quote_preview: 'Polling Rate: 125/250/500/1000/2000/4000/8000 Hz',
+          },
+        ],
+      },
+    }),
+  ]);
 
   return { category, productId, runId };
 }
@@ -367,133 +371,133 @@ async function seedSchemaPacketsRun(indexlabRoot) {
   const productId = 'mouse-logitech-g-pro-x-superlight-2';
   const runDir = path.join(indexlabRoot, runId);
 
-  await writeJson(path.join(runDir, 'run.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    status: 'completed',
-    started_at: '2026-02-20T12:10:00.000Z',
-    ended_at: '2026-02-20T12:16:00.000Z',
-  });
-
-  await writeJson(path.join(runDir, 'source_indexing_extraction_packets.json'), {
-    schema_version: '2026-02-20.source-indexing-extraction-packet.collection.v1',
-    record_kind: 'source_indexing_extraction_packet_collection',
-    run_id: runId,
-    category,
-    item_identifier: productId,
-    generated_at: '2026-02-20T12:15:55.000Z',
-    source_packet_count: 1,
-    packets: [
-      {
-        schema_version: '2026-02-20.source-indexing-extraction-packet.v1',
-        record_kind: 'source_indexing_extraction_packet',
-        source_packet_id: 'sha256:source-01',
-        source_id: 'src_01',
-        canonical_url: 'https://example.com/product',
-        source_version_id: 'sha256:source-version-01',
-      },
-    ],
-  });
-
-  await writeJson(path.join(runDir, 'item_indexing_extraction_packet.json'), {
-    schema_version: '2026-02-20.item-indexing-extraction-packet.v1',
-    record_kind: 'item_indexing_extraction_packet',
-    item_packet_id: 'sha256:item-01',
-    category,
-    item_identifier: productId,
-    generated_at: '2026-02-20T12:15:56.000Z',
-    run_scope: {
-      current_run_id: runId,
-      included_run_ids: [runId],
-    },
-    source_packet_refs: [
-      {
-        source_packet_id: 'sha256:source-01',
-        source_id: 'src_01',
-        canonical_url: 'https://example.com/product',
-        source_version_id: 'sha256:source-version-01',
-        content_hash: 'sha256:content-01',
-        run_id: runId,
-      },
-    ],
-    field_source_index: {},
-    field_key_map: {},
-    coverage_summary: {
-      field_count: 1,
-      known_field_count: 1,
-      required_coverage: '1/1',
-      critical_coverage: '1/1',
-    },
-    indexing_projection: {
-      retrieval_ready: true,
-      candidate_chunk_count: 1,
-      priority_field_keys: ['polling_rate'],
-    },
-    sql_projection: {
-      item_field_state_rows: [
+  await fs.mkdir(runDir, { recursive: true });
+  await Promise.all([
+    writeJson(path.join(runDir, 'run.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      status: 'completed',
+      started_at: '2026-02-20T12:10:00.000Z',
+      ended_at: '2026-02-20T12:16:00.000Z',
+    }),
+    writeJson(path.join(runDir, 'source_indexing_extraction_packets.json'), {
+      schema_version: '2026-02-20.source-indexing-extraction-packet.collection.v1',
+      record_kind: 'source_indexing_extraction_packet_collection',
+      run_id: runId,
+      category,
+      item_identifier: productId,
+      generated_at: '2026-02-20T12:15:55.000Z',
+      source_packet_count: 1,
+      packets: [
         {
-          category,
-          product_id: productId,
-          field_key: 'polling_rate',
+          schema_version: '2026-02-20.source-indexing-extraction-packet.v1',
+          record_kind: 'source_indexing_extraction_packet',
+          source_packet_id: 'sha256:source-01',
+          source_id: 'src_01',
+          canonical_url: 'https://example.com/product',
+          source_version_id: 'sha256:source-version-01',
         },
       ],
-      candidate_rows: [
+    }),
+    writeJson(path.join(runDir, 'item_indexing_extraction_packet.json'), {
+      schema_version: '2026-02-20.item-indexing-extraction-packet.v1',
+      record_kind: 'item_indexing_extraction_packet',
+      item_packet_id: 'sha256:item-01',
+      category,
+      item_identifier: productId,
+      generated_at: '2026-02-20T12:15:56.000Z',
+      run_scope: {
+        current_run_id: runId,
+        included_run_ids: [runId],
+      },
+      source_packet_refs: [
         {
-          candidate_id: 'cand_01',
-          category,
-          product_id: productId,
-          field_key: 'polling_rate',
+          source_packet_id: 'sha256:source-01',
+          source_id: 'src_01',
+          canonical_url: 'https://example.com/product',
+          source_version_id: 'sha256:source-version-01',
+          content_hash: 'sha256:content-01',
+          run_id: runId,
         },
       ],
-    },
-  });
-
-  await writeJson(path.join(runDir, 'run_meta_packet.json'), {
-    schema_version: '2026-02-20.run-meta-packet.v1',
-    record_kind: 'run_meta_packet',
-    run_packet_id: 'sha256:run-meta-01',
-    run_id: runId,
-    category,
-    started_at: '2026-02-20T12:10:00.000Z',
-    finished_at: '2026-02-20T12:16:00.000Z',
-    duration_ms: 360000,
-    trigger: 'manual',
-    execution_summary: {
-      item_total: 1,
-      item_succeeded: 1,
-      item_partial: 0,
-      item_failed: 0,
-      source_total: 1,
-      source_fetched: 1,
-      source_failed: 0,
-      assertion_total: 1,
-      evidence_total: 1,
-      identity_rejected_evidence_total: 0,
-    },
-    phase_summary: {
-      phase_01_static_html: { enabled: true, executed_sources: 1, assertion_count: 1, evidence_count: 1, error_count: 0, duration_ms: 10 },
-      phase_02_dynamic_js: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_03_main_article: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_04_html_spec_table: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_05_embedded_json: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_06_text_pdf: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_07_scanned_pdf_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_08_image_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_09_chart_graph: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-      phase_10_office_mixed_doc: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-    },
-    output_refs: {
-      source_packet_refs: [{ source_packet_id: 'sha256:source-01', source_version_id: 'sha256:source-version-01', source_id: 'src_01' }],
-      item_packet_refs: [{ item_packet_id: 'sha256:item-01', item_identifier: productId }],
-    },
-    quality_gates: {
-      coverage_gate_passed: true,
-      evidence_gate_passed: true,
-      error_rate_gate_passed: true,
-      target_match_gate_passed: true,
-    },
-  });
+      field_source_index: {},
+      field_key_map: {},
+      coverage_summary: {
+        field_count: 1,
+        known_field_count: 1,
+        required_coverage: '1/1',
+        critical_coverage: '1/1',
+      },
+      indexing_projection: {
+        retrieval_ready: true,
+        candidate_chunk_count: 1,
+        priority_field_keys: ['polling_rate'],
+      },
+      sql_projection: {
+        item_field_state_rows: [
+          {
+            category,
+            product_id: productId,
+            field_key: 'polling_rate',
+          },
+        ],
+        candidate_rows: [
+          {
+            candidate_id: 'cand_01',
+            category,
+            product_id: productId,
+            field_key: 'polling_rate',
+          },
+        ],
+      },
+    }),
+    writeJson(path.join(runDir, 'run_meta_packet.json'), {
+      schema_version: '2026-02-20.run-meta-packet.v1',
+      record_kind: 'run_meta_packet',
+      run_packet_id: 'sha256:run-meta-01',
+      run_id: runId,
+      category,
+      started_at: '2026-02-20T12:10:00.000Z',
+      finished_at: '2026-02-20T12:16:00.000Z',
+      duration_ms: 360000,
+      trigger: 'manual',
+      execution_summary: {
+        item_total: 1,
+        item_succeeded: 1,
+        item_partial: 0,
+        item_failed: 0,
+        source_total: 1,
+        source_fetched: 1,
+        source_failed: 0,
+        assertion_total: 1,
+        evidence_total: 1,
+        identity_rejected_evidence_total: 0,
+      },
+      phase_summary: {
+        phase_01_static_html: { enabled: true, executed_sources: 1, assertion_count: 1, evidence_count: 1, error_count: 0, duration_ms: 10 },
+        phase_02_dynamic_js: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_03_main_article: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_04_html_spec_table: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_05_embedded_json: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_06_text_pdf: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_07_scanned_pdf_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_08_image_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_09_chart_graph: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        phase_10_office_mixed_doc: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+      },
+      output_refs: {
+        source_packet_refs: [{ source_packet_id: 'sha256:source-01', source_version_id: 'sha256:source-version-01', source_id: 'src_01' }],
+        item_packet_refs: [{ item_packet_id: 'sha256:item-01', item_identifier: productId }],
+      },
+      quality_gates: {
+        coverage_gate_passed: true,
+        evidence_gate_passed: true,
+        error_rate_gate_passed: true,
+        target_match_gate_passed: true,
+      },
+    }),
+  ]);
 
   return { category, productId, runId };
 }
@@ -522,10 +526,17 @@ test('indexlab payload endpoints share one gui server harness without weakening 
     await fs.rm(tempRoot, { recursive: true, force: true });
   });
 
-  const automationQueueRun = await seedAutomationQueueRun(indexlabRoot);
-  const phase07Run = await seedPhase07Run(indexlabRoot);
-  const phase08Run = await seedPhase08Run(indexlabRoot);
-  const schemaPacketsRun = await seedSchemaPacketsRun(indexlabRoot);
+  const [
+    automationQueueRun,
+    phase07Run,
+    phase08Run,
+    schemaPacketsRun,
+  ] = await Promise.all([
+    seedAutomationQueueRun(indexlabRoot),
+    seedPhase07Run(indexlabRoot),
+    seedPhase08Run(indexlabRoot),
+    seedSchemaPacketsRun(indexlabRoot),
+  ]);
   const server = await startGuiServer(t, { helperRoot, indexlabRoot });
   if (!server) return;
 

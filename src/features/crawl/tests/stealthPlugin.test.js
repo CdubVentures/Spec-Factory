@@ -28,4 +28,21 @@ describe('stealthPlugin', () => {
     await stealthPlugin.hooks.beforeNavigate({ page, settings: {} });
     assert.ok(page.initScripts.length >= 1);
   });
+
+  it('returns disabled result when stealthEnabled is false', async () => {
+    const page = createPageDouble();
+    const result = await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: false } });
+    assert.equal(result.enabled, false);
+    assert.equal(result.injected, false);
+    assert.deepEqual(result.patches, []);
+    assert.equal(page.initScripts.length, 0, 'should not inject when disabled');
+  });
+
+  it('returns enabled result with patches when stealthEnabled is true', async () => {
+    const page = createPageDouble();
+    const result = await stealthPlugin.hooks.beforeNavigate({ page, settings: { stealthEnabled: true } });
+    assert.equal(result.enabled, true);
+    assert.equal(result.injected, true);
+    assert.ok(result.patches.length > 0);
+  });
 });

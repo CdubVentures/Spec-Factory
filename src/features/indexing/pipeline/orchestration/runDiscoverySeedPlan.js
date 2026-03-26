@@ -51,20 +51,12 @@ function buildInitialContext(params) {
     roundContext, requiredFields, llmContext, frontierDb, traceWriter,
     learningStoreHints, planner, normalizeFieldListFn,
     planningHints, queryExecutionHistory,
-    _di: {
-      runNeedSetFn: params.runNeedSetFn,
-      runBrandResolverFn: params.runBrandResolverFn,
-      runSearchProfileFn: params.runSearchProfileFn,
-      runSearchPlannerFn: params.runSearchPlannerFn,
-      runQueryJourneyFn: params.runQueryJourneyFn,
-      executeSearchQueriesFn: params.executeSearchQueriesFn,
-      processDiscoveryResultsFn: params.processDiscoveryResultsFn,
-      runDomainClassifierFn: params.runDomainClassifierFn,
-      computeNeedSetFn: params.computeNeedSetFn,
-      buildSearchPlanningContextFn: params.buildSearchPlanningContextFn,
-      buildSearchPlanFn: params.buildSearchPlanFn,
-      resolveBrandDomainFn: params.resolveBrandDomainFn,
-    },
+    // WHY: Auto-collects all function-valued params as DI overrides.
+    // Phase descriptors read ctx._di?.keyName || defaultImport.
+    // Adding a new injectable requires zero changes here.
+    _di: Object.fromEntries(
+      Object.entries(params).filter(([, v]) => typeof v === 'function')
+    ),
   };
 }
 

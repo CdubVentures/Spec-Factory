@@ -26,22 +26,16 @@
 |- tmp/                         # transient logs and scratch outputs
 |- tools/                       # GUI package, packaging, setup, SearXNG, and validation helpers
 |- .env                         # local operator env overrides
-|- 00_StartGuiApi.bat           # Windows launcher for the local GUI/API server
-|- 01_BuildGui.bat              # Windows launcher for GUI build
-|- 02_RefreshGuiPage.bat        # Windows helper to refresh GUI assets
-|- 03_RebuildSpecFactoryExe.bat # Windows helper to rebuild packaged executable
+|- SpecFactory.bat              # Process Manager (interactive menu + CLI for all operations)
 |- AGENTS.md                    # repo-wide operating rules
 |- AGENTS.testing.md            # additional testing-focused repo rules
 |- AGENTS.testsCleanUp.md       # additional test-cleanup repo rules
 |- CLAUDE.md                    # additional local coding/repo guidance
 |- Dockerfile                   # stale container artifact; not the verified deployment path
-|- LauncherBuild.bat            # packaged launcher build wrapper
 |- package.json                 # root scripts, Node engine, backend deps
 |- package-lock.json            # exact resolved backend dependency versions
 |- playwright.config.ts         # Playwright config for `e2e/`
-|- RunDump.bat                  # local diagnostics wrapper
-|- Spec Factory Process Manager.lnk # local Windows shortcut artifact
-|- SpecFactoryBuild.bat         # packaged desktop build wrapper
+|- Spec Factory Process Manager.lnk # local Windows shortcut to Python GUI
 |- Restart SearXNG.lnk          # local Windows shortcut artifact
 `- .env.example                 # partial env template; not a full manifest mirror
 ```

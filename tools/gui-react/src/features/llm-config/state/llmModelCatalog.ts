@@ -41,7 +41,6 @@ export function buildModelCatalogEntries(input: BuildModelCatalogInput): ModelCa
 
   // 1. Registry models (full metadata, take precedence)
   for (const provider of registry) {
-    if (!provider.enabled) continue;
     for (const model of provider.models) {
       entries.push({
         providerName: provider.name,

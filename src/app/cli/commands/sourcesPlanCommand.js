@@ -3,7 +3,8 @@
   generateSourceExpansionPlans,
 }) {
   return async function commandSourcesPlan(config, storage, args) {
-    const category = args.category || 'mouse';
+    // BUG: whitespace-padded CLI categories could target phantom category names.
+    const category = String(args.category || 'mouse').trim() || 'mouse';
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
     const result = await generateSourceExpansionPlans({
       storage,

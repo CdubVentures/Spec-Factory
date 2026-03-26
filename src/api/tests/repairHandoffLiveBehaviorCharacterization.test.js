@@ -25,48 +25,47 @@ test('characterization: live-style 404 and blocked failures surface as domain_ba
   const productId = 'mouse-logitech-g-pro-x-superlight-2';
   const runDir = path.join(indexlabRoot, runId);
 
-  await writeJson(path.join(runDir, 'run.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    status: 'completed',
-    started_at: '2026-03-09T10:00:00.000Z',
-    ended_at: '2026-03-09T10:03:00.000Z'
-  });
-
-  await writeJson(path.join(runDir, 'search_profile.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    provider: 'searxng',
-    query_rows: []
-  });
-
-  await writeJson(path.join(runDir, 'needset.json'), {
-    run_id: runId,
-    category,
-    product_id: productId,
-    generated_at: '2026-03-09T10:02:30.000Z',
-    total_fields: 75,
-    rows: [
-      {
-        field_key: 'sensor',
-        required_level: 'critical',
-        priority_bucket: 'core',
-        state: 'missing',
-        bundle_id: null
-      },
-      {
-        field_key: 'weight_g',
-        required_level: 'required',
-        priority_bucket: 'core',
-        state: 'missing',
-        bundle_id: null
-      }
-    ]
-  });
-
-  await writeJsonl(path.join(runDir, 'run_events.ndjson'), [
+  await fs.mkdir(runDir, { recursive: true });
+  await Promise.all([
+    writeJson(path.join(runDir, 'run.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      status: 'completed',
+      started_at: '2026-03-09T10:00:00.000Z',
+      ended_at: '2026-03-09T10:03:00.000Z'
+    }),
+    writeJson(path.join(runDir, 'search_profile.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      provider: 'searxng',
+      query_rows: []
+    }),
+    writeJson(path.join(runDir, 'needset.json'), {
+      run_id: runId,
+      category,
+      product_id: productId,
+      generated_at: '2026-03-09T10:02:30.000Z',
+      total_fields: 75,
+      rows: [
+        {
+          field_key: 'sensor',
+          required_level: 'critical',
+          priority_bucket: 'core',
+          state: 'missing',
+          bundle_id: null
+        },
+        {
+          field_key: 'weight_g',
+          required_level: 'required',
+          priority_bucket: 'core',
+          state: 'missing',
+          bundle_id: null
+        }
+      ]
+    }),
+    writeJsonl(path.join(runDir, 'run_events.ndjson'), [
     {
       run_id: runId,
       category,
@@ -101,6 +100,7 @@ test('characterization: live-style 404 and blocked failures surface as domain_ba
         removed_count: 6
       }
     }
+  ]),
   ]);
 
   t.after(async () => {

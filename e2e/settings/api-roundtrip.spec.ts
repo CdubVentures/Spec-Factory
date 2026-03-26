@@ -18,29 +18,23 @@ test.describe('Runtime settings API round-trip', () => {
   test('GET /runtime-settings returns a snapshot object', async ({ settingsApi }) => {
     const snapshot = await settingsApi.get('runtime');
     expect(typeof snapshot).toBe('object');
-    // fetchConcurrency is a registry-derived int field that must always be present
-    expect(snapshot).toHaveProperty('fetchConcurrency');
+    expect(snapshot).toHaveProperty('crawlMaxConcurrentSlots');
   });
 
   test('PUT valid int -> GET returns updated value', async ({ settingsApi }) => {
-    // Record baseline
     const baseline = await settingsApi.get('runtime');
-    const originalValue = baseline.fetchConcurrency;
+    const originalValue = baseline.crawlMaxConcurrentSlots;
 
-    // Choose a value different from current
-    const newValue = originalValue === 8 ? 16 : 8;
+    const newValue = originalValue === 4 ? 6 : 4;
 
-    // PUT
-    const putResult = await settingsApi.put('runtime', { fetchConcurrency: newValue });
+    const putResult = await settingsApi.put('runtime', { crawlMaxConcurrentSlots: newValue });
     expect(putResult.ok).toBe(true);
-    expect(putResult.applied).toHaveProperty('fetchConcurrency', newValue);
+    expect(putResult.applied).toHaveProperty('crawlMaxConcurrentSlots', newValue);
 
-    // GET — must return updated value
     const afterPut = await settingsApi.get('runtime');
-    expect(afterPut.fetchConcurrency).toBe(newValue);
+    expect(afterPut.crawlMaxConcurrentSlots).toBe(newValue);
 
-    // Restore original
-    await settingsApi.put('runtime', { fetchConcurrency: originalValue });
+    await settingsApi.put('runtime', { crawlMaxConcurrentSlots: originalValue });
   });
 
   test('PUT valid bool -> GET returns updated value', async ({ settingsApi }) => {

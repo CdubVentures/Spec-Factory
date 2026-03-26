@@ -5,14 +5,20 @@ import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
 import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
-import type { FetchCssOverrideData, FetchCssOverrideRecord } from '../../types.ts';
+import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
+
+interface CssOverrideRecord extends FetchPluginRecord {
+  enabled: boolean;
+  hiddenBefore: number;
+  revealedAfter: number;
+}
 
 interface FetchCssOverridePanelProps {
-  data: FetchCssOverrideData;
+  data: FetchPluginData;
   persistScope: string;
 }
 
-const OVERRIDE_COLUMNS: ColumnDef<FetchCssOverrideRecord, unknown>[] = [
+const OVERRIDE_COLUMNS: ColumnDef<CssOverrideRecord, unknown>[] = [
   { accessorKey: 'display_label', header: 'Worker', size: 120 },
   { accessorKey: 'host', header: 'Host', size: 180 },
   {
@@ -20,10 +26,10 @@ const OVERRIDE_COLUMNS: ColumnDef<FetchCssOverrideRecord, unknown>[] = [
     header: 'Status',
     size: 100,
     cell: ({ getValue }) => {
-      const on = getValue<boolean>();
+      const ok = getValue<boolean>();
       return (
-        <span className={on ? 'sf-chip-accent' : 'sf-chip-muted'}>
-          {on ? 'Overridden' : 'Skipped'}
+        <span className={ok ? 'sf-chip-accent' : 'sf-chip-muted'}>
+          {ok ? 'Overridden' : 'Skipped'}
         </span>
       );
     },
@@ -34,7 +40,11 @@ const OVERRIDE_COLUMNS: ColumnDef<FetchCssOverrideRecord, unknown>[] = [
 ];
 
 export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePanelProps) {
-  const total = data.total_overridden + data.total_skipped;
+  const records = data.records as CssOverrideRecord[];
+  const totalOverridden = useMemo(() => records.filter((r) => r.enabled && r.hiddenBefore > 0).length, [records]);
+  const totalSkipped = useMemo(() => records.filter((r) => !r.enabled || !r.hiddenBefore).length, [records]);
+  const totalRevealed = useMemo(() => records.reduce((s, r) => s + (r.revealedAfter ?? 0), 0), [records]);
+  const total = records.length;
   const columns = useMemo(() => OVERRIDE_COLUMNS, []);
 
   if (total === 0) {
@@ -52,14 +62,14 @@ export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePa
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Workers" />
-        <HeroStat value={data.total_overridden} label="Overridden" colorClass="text-[var(--sf-token-accent)]" />
-        <HeroStat value={data.total_skipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
-        <HeroStat value={data.total_elements_revealed} label="Elements Revealed" colorClass="text-[var(--sf-token-success)]" />
+        <HeroStat value={totalOverridden} label="Overridden" colorClass="text-[var(--sf-token-accent)]" />
+        <HeroStat value={totalSkipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
+        <HeroStat value={totalRevealed} label="Elements Revealed" colorClass="text-[var(--sf-token-success)]" />
       </HeroStatGrid>
 
       <SectionHeader>Override Log</SectionHeader>
       <DataTable
-        data={data.override_records}
+        data={records}
         columns={columns}
         persistKey={`${persistScope}:css-override-log`}
       />

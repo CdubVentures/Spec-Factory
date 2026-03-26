@@ -1,4 +1,3 @@
-import { loadCategoryConfig } from '../../categories/loader.js';
 import fsNode from 'node:fs/promises';
 import pathNode from 'node:path';
 
@@ -64,6 +63,7 @@ export function parseQueuePriority(value, fallback = 3) {
 }
 
 export async function assertCategorySchemaReady({ category, storage, config }) {
+  const { loadCategoryConfig } = await import('../../categories/loader.js');
   let categoryConfig;
   try {
     categoryConfig = await loadCategoryConfig(category, { storage, config });

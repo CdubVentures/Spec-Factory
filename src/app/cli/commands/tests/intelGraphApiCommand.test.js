@@ -16,18 +16,24 @@ function createDeps(overrides = {}) {
 }
 
 test('intel-graph-api returns normalized endpoint details', async () => {
+  const startCalls = [];
   const commandIntelGraphApi = createIntelGraphApiCommand(createDeps({
-    startIntelGraphApi: async ({ host, port }) => ({
+    startIntelGraphApi: async ({ storage, config, category, host, port }) => {
+      startCalls.push({ storage, config, category, host, port });
+      return ({
       host,
       port,
       graphqlUrl: `http://${host}:${port}/graphql`,
       healthUrl: `http://${host}:${port}/health`,
-    }),
+    });
+    },
   }));
 
+  const config = { mode: 'test' };
+  const storage = { name: 'stub-storage' };
   const result = await commandIntelGraphApi(
-    { mode: 'test' },
-    { name: 'stub-storage' },
+    config,
+    storage,
     { category: 'keyboard', host: '127.0.0.1', port: '9090' },
   );
 
@@ -39,6 +45,13 @@ test('intel-graph-api returns normalized endpoint details', async () => {
     graphql_url: 'http://127.0.0.1:9090/graphql',
     health_url: 'http://127.0.0.1:9090/health',
   });
+  assert.deepEqual(startCalls, [{
+    storage,
+    config,
+    category: 'keyboard',
+    host: '127.0.0.1',
+    port: 9090,
+  }]);
 });
 
 test('intel-graph-api defaults category, host, and port when args are missing or invalid', async () => {

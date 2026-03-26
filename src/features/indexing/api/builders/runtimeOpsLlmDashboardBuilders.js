@@ -1,29 +1,11 @@
 import { parseTsMs } from './runtimeOpsEventPrimitives.js';
 import { buildRuntimeOpsWorkers } from './runtimeOpsWorkerPoolBuilders.js';
+import { buildDefaultModelPricingMap } from '../../../../billing/modelPricingCatalog.js';
+import { estimateTokensFromText, computeLlmCostUsd, normalizeUsage } from '../../../../billing/costRates.js';
 
-// Rough per-1M-token rates for cost estimation when provider doesn't report usage.
-const MODEL_COST_RATES = {
-  'gemini-2.5-flash': { input: 0.15, output: 0.60 },
-  'gemini-2.5-flash-lite': { input: 0.075, output: 0.30 },
-  'gemini-2.0-flash': { input: 0.10, output: 0.40 },
-  'claude-3-5-haiku': { input: 0.80, output: 4.00 },
-  'claude-3-5-sonnet': { input: 3.00, output: 15.00 },
-  'claude-sonnet-4': { input: 3.00, output: 15.00 },
-  'claude-haiku-4': { input: 0.80, output: 4.00 },
-  'gpt-4o-mini': { input: 0.15, output: 0.60 },
-  'gpt-4o': { input: 2.50, output: 10.00 },
-  'deepseek-chat': { input: 0.14, output: 0.28 },
-};
-
-function estimateCostFromTokens(model, promptTokens, completionTokens) {
-  const m = String(model || '').toLowerCase();
-  let rates = null;
-  for (const [key, r] of Object.entries(MODEL_COST_RATES)) {
-    if (m.includes(key)) { rates = r; break; }
-  }
-  if (!rates) rates = { input: 0.15, output: 0.60 }; // default to flash-tier
-  return ((promptTokens / 1_000_000) * rates.input) + ((completionTokens / 1_000_000) * rates.output);
-}
+// WHY: SSOT pricing from modelPricingCatalog — used as fallback when provider
+// doesn't report usage. Built once at module scope.
+const FALLBACK_PRICING = { llmModelPricingMap: buildDefaultModelPricingMap() };
 
 export function buildLlmCallsDashboard(events, options) {
   const workers = buildRuntimeOpsWorkers(events, options);
@@ -45,12 +27,11 @@ export function buildLlmCallsDashboard(events, options) {
     let estimated = false;
     // Estimate tokens from previews when provider didn't report usage
     if (promptTok === 0 && completionTok === 0 && status !== 'active') {
-      const promptText = w.prompt_preview || '';
-      const responseText = w.response_preview || '';
-      if (responseText.length > 0 || promptText.length > 0) {
-        promptTok = Math.max(1, Math.ceil(promptText.length / 3.8));
-        completionTok = Math.max(1, Math.ceil(responseText.length / 3.8));
-        cost = estimateCostFromTokens(w.model || '', promptTok, completionTok);
+      promptTok = estimateTokensFromText(w.prompt_preview || '');
+      completionTok = estimateTokensFromText(w.response_preview || '');
+      if (promptTok > 0 || completionTok > 0) {
+        const usage = normalizeUsage({ prompt_tokens: promptTok, completion_tokens: completionTok });
+        cost = computeLlmCostUsd({ usage, rates: FALLBACK_PRICING, model: w.model || '' }).costUsd;
         estimated = true;
       }
     }
@@ -71,6 +52,7 @@ export function buildLlmCallsDashboard(events, options) {
       prompt_preview: w.prompt_preview || null,
       response_preview: w.response_preview || null,
       prefetch_tab: w.prefetch_tab || null,
+      is_fallback: Boolean(w.is_fallback),
       ts: w.started_at || '',
     };
   });

@@ -79,7 +79,6 @@ function generatePhaseOverrideTypes() {
   lines.push('  timeoutMs: number | null;');
   lines.push('  maxContextTokens: number | null;');
   lines.push('  webSearch: boolean;');
-  lines.push('  thinking: boolean;');
   lines.push('}\n');
 
   lines.push(`export type LlmOverridePhaseId = ${ids.map(quote).join(' | ')};\n`);
@@ -123,8 +122,7 @@ export function serializePhaseOverrides(overrides: LlmPhaseOverrides): string {
       phase.maxOutputTokens !== undefined ||
       phase.timeoutMs !== undefined ||
       phase.maxContextTokens !== undefined ||
-      phase.webSearch !== undefined ||
-      phase.thinking !== undefined
+      phase.webSearch !== undefined
     );
   });
   if (!hasContent) return '{}';
@@ -139,7 +137,6 @@ export interface ResolvedPhaseModel {
   timeoutMs: number | null;
   maxContextTokens: number | null;
   webSearch: boolean;
-  thinking: boolean;
   effectiveModel: string;
 }
 
@@ -199,7 +196,6 @@ export function resolvePhaseModel(
   const timeoutMs = phaseOverride.timeoutMs ?? (globalDraft[mapping.globalTimeout] as number);
   const maxContextTokens = phaseOverride.maxContextTokens ?? (globalDraft[mapping.globalContextTokens] as number);
   const webSearch = phaseOverride.webSearch ?? false;
-  const thinking = phaseOverride.thinking ?? false;
 
   return {
     baseModel,
@@ -209,7 +205,6 @@ export function resolvePhaseModel(
     timeoutMs,
     maxContextTokens,
     webSearch,
-    thinking,
     effectiveModel: useReasoning ? reasoningModel : baseModel,
   };
 }
