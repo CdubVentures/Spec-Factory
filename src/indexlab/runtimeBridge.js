@@ -11,10 +11,11 @@ import { setPhaseCursor, finishStage } from './runtimeBridgeStageLifecycle.js';
 import { dispatchRuntimeEvent } from './runtimeBridgeEventHandlers.js';
 
 export class IndexLabRuntimeBridge {
-  constructor({ outRoot = defaultIndexLabRoot(), context = {}, onEvent = null } = {}) {
+  constructor({ outRoot = defaultIndexLabRoot(), context = {}, onEvent = null, specDb = null } = {}) {
     this.outRoot = path.resolve(String(outRoot || defaultIndexLabRoot()));
     this.context = { ...(context || {}) };
     this.onEvent = typeof onEvent === 'function' ? onEvent : null;
+    this.specDb = specDb || null;
     this.screencastTarget = '';
 
     this.runId = '';

@@ -28,6 +28,7 @@ import { createQueueProductStore } from './stores/queueProductStore.js';
 import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
 import { createFieldHistoryStore } from './stores/fieldHistoryStore.js';
 import { createPurgeStore } from './stores/purgeStore.js';
+import { createRunMetaStore } from './stores/runMetaStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -77,6 +78,7 @@ export class SpecDb {
         _getLlmCache: this._getLlmCache, _upsertLlmCache: this._upsertLlmCache, _evictExpiredCache: this._evictExpiredCache,
         _upsertLearningProfile: this._upsertLearningProfile, _upsertCategoryBrain: this._upsertCategoryBrain,
         _upsertSourceCorpus: this._upsertSourceCorpus, _insertRuntimeEvent: this._insertRuntimeEvent,
+        _insertBridgeEvent: this._insertBridgeEvent, _getBridgeEventsByRunId: this._getBridgeEventsByRunId,
       }
     });
     this._queueProductStore = createQueueProductStore({
@@ -104,6 +106,10 @@ export class SpecDb {
       stmts: { _upsertFieldHistory: this._upsertFieldHistory, _getFieldHistories: this._getFieldHistories, _deleteFieldHistories: this._deleteFieldHistories }
     });
     this._purgeStore = createPurgeStore({ db: this.db, category: this.category });
+    this._runMetaStore = createRunMetaStore({
+      db: this.db, category: this.category,
+      stmts: { _upsertRun: this._upsertRun, _getRunByRunId: this._getRunByRunId, _getRunsByCategory: this._getRunsByCategory }
+    });
   }
 
   cleanupLegacyIdentityFallbackRows() {
@@ -711,6 +717,17 @@ export class SpecDb {
 
   insertRuntimeEvent(e) { this._sourceIntelStore.insertRuntimeEvent(e); }
   insertRuntimeEventsBatch(es) { this._sourceIntelStore.insertRuntimeEventsBatch(es); }
+
+  // --- Bridge Events (transformed runtime events for GUI readers) ---
+
+  insertBridgeEvent(e) { this._sourceIntelStore.insertBridgeEvent(e); }
+  getBridgeEventsByRunId(runId, limit) { return this._sourceIntelStore.getBridgeEventsByRunId(runId, limit); }
+
+  // --- Run Metadata (mid-run state, replaces run.json overwrites) ---
+
+  upsertRun(row) { this._runMetaStore.upsertRun(row); }
+  getRunByRunId(runId) { return this._runMetaStore.getRunByRunId(runId); }
+  getRunsByCategory(category, limit) { return this._runMetaStore.getRunsByCategory(category, limit); }
 
   // --- Source Intelligence ---
 

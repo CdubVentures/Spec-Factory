@@ -1,0 +1,76 @@
+{
+  "mouse": {
+    "brand": "Ducky",
+    "model": "Feather"
+  },
+  "completion": {
+    "completed": true,
+    "status": {
+      "running": false,
+      "relocating": true,
+      "relocatingRunId": "20260327053455-abd21e",
+      "run_id": "20260327053455-abd21e",
+      "runId": "20260327053455-abd21e",
+      "category": "mouse",
+      "product_id": null,
+      "productId": null,
+      "brand": "Fantech",
+      "model": "Aria XD7",
+      "variant": null,
+      "storage_destination": "s3",
+      "storageDestination": "s3",
+      "pid": 48020,
+      "command": "C:\\nvm4w\\nodejs\\node.exe src/cli/spec.js indexlab --local --run-id 20260327053455-abd21e --category mouse --seed Fantech Aria XD7 --brand Fantech --model Aria XD7 --search-engines google --out C:\\Users\\Chris\\AppData\\Local\\spec-factory\\indexlab",
+      "startedAt": "2026-03-27T05:34:55.968Z",
+      "exitCode": 1,
+      "endedAt": "2026-03-27T05:35:04.750Z"
+    },
+    "waitMs": 0
+  },
+  "runData": {
+    "runId": "20260327053455-abd21e",
+    "summary": {
+      "run_id": "20260327053455-abd21e",
+      "status": "completed",
+      "round": 0,
+      "phase_cursor": "phase_06_index",
+      "boot_step": "needset",
+      "boot_progress": 85,
+      "browser_pool": {
+        "status": "ready",
+        "browsers": 2,
+        "slots": 8,
+        "pages_per_browser": 4
+      },
+      "total_fetches": 0,
+      "total_parses": 0,
+      "total_llm_calls": 0,
+      "error_rate": 0,
+      "docs_per_min": 0,
+      "fields_per_min": 0,
+      "top_blockers": []
+    },
+    "workers": {
+      "run_id": "20260327053455-abd21e",
+      "workers": []
+    },
+    "fetchPhases": {
+      "run_id": "20260327053455-abd21e"
+    },
+    "workerDetails": []
+  },
+  "analysis": {
+    "product": "Ducky Feather",
+    "runId": "20260327053455-abd21e",
+    "status": "completed",
+    "totalFetches": 0,
+    "errorRate": 0,
+    "topBlockers": [],
+    "workerCount": 0,
+    "stateDistribution": {},
+    "errorTypes": {},
+    "discrepancies": [],
+    "domainResults": {},
+    "pluginStats": {}
+  }
+}

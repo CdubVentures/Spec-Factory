@@ -242,6 +242,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         base.assigned_search_worker_id = null;
         base.assigned_search_query = null;
         base.display_label = workerId;
+        base.total_fetches = 0;
         base._worker_urls = new Set();
         base._processed_urls = new Set();
         base._field_counts_by_url = {};
@@ -309,6 +310,7 @@ export function buildRuntimeOpsWorkers(events, options) {
       applyFetchAssignment(w, parseTsMs(evt?.ts));
     } else if (type === 'fetch_retrying') {
       w.state = 'retrying';
+      w.retries += 1;
       const retryErr = String(payload.error || '').trim();
       w.last_error = retryErr || w.last_error;
       if (retryErr.startsWith('blocked:')) w.block_reason = retryErr.slice(8);
@@ -357,6 +359,7 @@ export function buildRuntimeOpsWorkers(events, options) {
         applyFetchAssignment(w, parseTsMs(evt?.ts));
       }
       if (type === 'fetch_finished') {
+        w.total_fetches = (w.total_fetches || 0) + 1;
         const primaryUrl = extractPrimaryEventUrl(evt);
         if (primaryUrl) w._processed_urls.add(primaryUrl);
         const code = fetchStatusCode(payload, 0);
@@ -373,6 +376,12 @@ export function buildRuntimeOpsWorkers(events, options) {
               w.state = 'rate_limited';
             } else if (reason === 'status_403' || reason === 'access_denied') {
               w.state = 'blocked';
+            } else if (payload.timeout_rescued) {
+              // WHY: Page loaded and HTML was captured, but extraction/plugin
+              // chain ate the timeout budget. Show yellow warning badge instead
+              // of red failure badge — the worker HAS data (HTML, possibly
+              // screenshots/video), it just didn't finish the full pipeline.
+              w.state = 'timeout_rescued';
             } else {
               w.state = 'failed';
             }
@@ -384,6 +393,8 @@ export function buildRuntimeOpsWorkers(events, options) {
               w.state = 'blocked';
             } else if (errLower.includes('captcha') || errLower.includes('challenge') || errLower.includes('cloudflare')) {
               w.state = 'captcha';
+            } else if (payload.timeout_rescued) {
+              w.state = 'timeout_rescued';
             } else {
               w.state = 'failed';
             }

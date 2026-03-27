@@ -1,0 +1,76 @@
+{
+  "mouse": {
+    "brand": "Lexip",
+    "model": "Pu94"
+  },
+  "completion": {
+    "completed": false,
+    "status": {
+      "running": true,
+      "relocating": false,
+      "relocatingRunId": null,
+      "run_id": "20260327054636-9adb49",
+      "runId": "20260327054636-9adb49",
+      "category": "mouse",
+      "product_id": "mouse-hyperx-pulsefire-haste-2-pro-wireless",
+      "productId": "mouse-hyperx-pulsefire-haste-2-pro-wireless",
+      "brand": null,
+      "model": null,
+      "variant": null,
+      "storage_destination": "s3",
+      "storageDestination": "s3",
+      "pid": 96100,
+      "command": "C:\\nvm4w\\nodejs\\node.exe src/cli/spec.js indexlab --local --run-id 20260327054636-9adb49 --category mouse --product-id mouse-hyperx-pulsefire-haste-2-pro-wireless --search-engines google --out C:\\Users\\Chris\\AppData\\Local\\spec-factory\\indexlab --profile standard",
+      "startedAt": "2026-03-27T05:46:37.096Z",
+      "exitCode": null,
+      "endedAt": null
+    },
+    "waitMs": 421348
+  },
+  "runData": {
+    "runId": "20260327054057-a5bbc8",
+    "summary": {
+      "run_id": "20260327054057-a5bbc8",
+      "status": "completed",
+      "round": 0,
+      "phase_cursor": "phase_06_index",
+      "boot_step": "needset",
+      "boot_progress": 85,
+      "browser_pool": {
+        "status": "warming",
+        "browsers": 2,
+        "slots": 8,
+        "pages_per_browser": 4
+      },
+      "total_fetches": 0,
+      "total_parses": 0,
+      "total_llm_calls": 0,
+      "error_rate": 0,
+      "docs_per_min": 0,
+      "fields_per_min": 0,
+      "top_blockers": []
+    },
+    "workers": {
+      "run_id": "20260327054057-a5bbc8",
+      "workers": []
+    },
+    "fetchPhases": {
+      "run_id": "20260327054057-a5bbc8"
+    },
+    "workerDetails": []
+  },
+  "analysis": {
+    "product": "Lexip Pu94",
+    "runId": "20260327054057-a5bbc8",
+    "status": "completed",
+    "totalFetches": 0,
+    "errorRate": 0,
+    "topBlockers": [],
+    "workerCount": 0,
+    "stateDistribution": {},
+    "errorTypes": {},
+    "discrepancies": [],
+    "domainResults": {},
+    "pluginStats": {}
+  }
+}

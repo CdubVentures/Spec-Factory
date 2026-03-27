@@ -469,7 +469,11 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <!-- ==================== WAVE 1 ==================== -->
 <div class="phase-header">
   <h3>Wave 1 — Runtime events (highest frequency, tables exist)</h3>
-  <p>Kill the 3,000-5,000 NDJSON appends per run. The runtime_events table already receives this data.</p>
+  <p>Kill the 3,000-5,000 NDJSON appends per run. Bridge events go to SQL via a new bridge_events table.</p>
+</div>
+
+<div class="done">
+<strong>Step 1 audit finding:</strong> The pipeline's EventLogger was constructed WITHOUT specDb — runtime_events received zero events from pipeline runs. Fixed by threading specDb from pipelineCommands.js through to the logger factory. Also discovered that runtime_events (raw logger events) and run_events.ndjson (bridge-transformed events) have different schemas: different event names, no stage column in SQL, and 1:N synthesis. A new bridge_events table was created to mirror the NDJSON shape exactly.
 </div>
 
 <div class="step-grid">
@@ -478,19 +482,39 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#0F6E56">1</div></div>
     <div class="step-body">
       <div class="step-title">Audit runtime_events INSERT coverage</div>
-      <div class="step-desc">Verify every event type that hits run_events.ndjson also hits the runtime_events SQL table. Add any missing event types to the SQL INSERT path. No behavior change — just ensure parity.</div>
-      <div class="step-files">runtimeBridgeEventHandlers.js, sourceIntelStore.js</div>
-      <div class="step-test">Test: run a full pipeline, diff NDJSON event count vs SQL row count. Must match.</div>
+      <div class="step-desc">Fixed specDb wiring so pipeline logger writes raw events to runtime_events. Wrote characterization tests documenting asymmetries between raw SQL events and bridge-transformed NDJSON events (name renames, missing stage column, 1:N synthesis).</div>
+      <div class="step-files">pipelineCommands.js, runProduct.js, runtimeEventsSqlParity.test.js</div>
+      <div class="step-test">Test: 12 characterization tests covering SQL shape, event types, and documented asymmetries.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#0F6E56">2</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">2a</div></div>
     <div class="step-body">
-      <div class="step-title">Switch runtimeOps event readers to SQL</div>
-      <div class="step-desc">The GUI's runtime ops panel reads events from run_events.ndjson via readEvents(). Change it to SELECT from runtime_events WHERE run_id = ?. Keep the NDJSON reader as fallback for archived runs that pre-date this change.</div>
-      <div class="step-files">runListBuilder.js, runtimeOpsRoutes.js, runtimeOpsVideoHelpers.js</div>
-      <div class="step-test">Test: GUI runtime ops panel shows identical data. Compare event counts, ordering, timestamps.</div>
+      <div class="step-title">Create bridge_events table + emit() SQL writes</div>
+      <div class="step-desc">New bridge_events table mirrors run_events.ndjson schema exactly (run_id, category, product_id, ts, stage, event, payload). The bridge's emit() function dual-writes to NDJSON and SQL. Zero reader changes — GUI still reads NDJSON. Additive only.</div>
+      <div class="step-files">specDbSchema.js, specDbStatements.js, sourceIntelStore.js, specDb.js, runtimeBridge.js, runtimeBridgeArtifacts.js, pipelineCommands.js, purgeStore.js</div>
+      <div class="step-test">Test: 12 tests (8 store roundtrip + 4 emit SQL write). After pipeline run, SELECT COUNT(*) FROM bridge_events > 0.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">2b</div></div>
+    <div class="step-body">
+      <div class="step-title">Switch runtimeOpsRoutes event reader to SQL</div>
+      <div class="step-desc">Modify readIndexLabRunEvents() to accept optional { category } param and read from bridge_events SQL. Update runtimeOpsRoutes.js (the main GUI consumer) to pass category. Other callers continue on NDJSON until 2c.</div>
+      <div class="step-files">indexlabDataBuilders.js, runtimeOpsRoutes.js</div>
+      <div class="step-test">Test: GUI runtime ops panel shows identical data from SQL. NDJSON path still works for other callers.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">2c</div></div>
+    <div class="step-body">
+      <div class="step-title">Switch remaining 17 event reader callers to SQL</div>
+      <div class="step-desc">Update all remaining callers of readIndexLabRunEvents (indexlabRoutes, phaseDataReaders, runArtifactReaders, runListBuilder, automationQueueBuilder, evidenceIndexReader) to pass category. Remove NDJSON read path from readIndexLabRunEvents entirely.</div>
+      <div class="step-files">indexlabRoutes.js, phaseDataReaders.js, runArtifactReaders.js, runListBuilder.js, automationQueueBuilder.js, evidenceIndexReader.js, indexlabDataBuilders.js</div>
+      <div class="step-test">Test: all event consumers read from SQL. No NDJSON file reads for events.</div>
     </div>
   </div>
 
@@ -796,11 +820,13 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   <th style="text-align:center; padding: 6px 8px; width: 100px; color: #444441;">Kills file I/O</th>
   <th style="text-align:center; padding: 6px 8px; width: 60px; color: #444441;">Status</th>
 </tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">1</td><td style="padding: 6px 8px;">Audit runtime_events INSERT coverage</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Audit</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">2</td><td style="padding: 6px 8px;">Switch runtimeOps event readers to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">3</td><td style="padding: 6px 8px;">Stop appending to run_events.ndjson</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">4</td><td style="padding: 6px 8px;">Generate run_events.ndjson at completion from SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Archive</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">5</td><td style="padding: 6px 8px;">Stop appending to global events.jsonl</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">1</td><td style="padding: 6px 8px;">Audit runtime_events INSERT coverage (specDb wiring fix + characterization)</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Audit</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">2a</td><td style="padding: 6px 8px;">Create bridge_events table + emit() SQL writes</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Schema + Write</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">2b</td><td style="padding: 6px 8px;">Switch runtimeOpsRoutes reader to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">2c</td><td style="padding: 6px 8px;">Switch remaining 17 event reader callers to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">3</td><td style="padding: 6px 8px;">Stop appending to run_events.ndjson</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #f1efe8;"><td style="text-align:center; padding: 6px 8px;">4</td><td style="padding: 6px 8px;"><s>Generate run_events.ndjson at completion from SQL</s> — SKIPPED (no archive compat needed)</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Archive</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x23ED;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">5</td><td style="padding: 6px 8px;">Stop appending to global events.jsonl + kill Chokidar watchers</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">6</td><td style="padding: 6px 8px;">Create runs table</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">7</td><td style="padding: 6px 8px;">Create runMetaStore with INSERT/UPDATE</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Store</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">8</td><td style="padding: 6px 8px;">Dual-write: run.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>

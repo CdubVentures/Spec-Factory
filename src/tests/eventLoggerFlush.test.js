@@ -120,17 +120,11 @@ describe('EventLogger flush drains async onEvent', () => {
       'events must resolve in push order');
   });
 
-  it('flush drains both writeQueue and onEventQueue', async () => {
-    let writeCompleted = false;
+  it('flush drains onEventQueue even without storage writes', async () => {
     let hookCompleted = false;
     const gate = createDeferred();
 
-    const fakeStorage = {
-      appendText: async () => { writeCompleted = true; },
-    };
-
     const logger = new EventLogger({
-      storage: fakeStorage,
       onEvent: () => gate.promise.then(() => {
         hookCompleted = true;
       }),
@@ -143,13 +137,11 @@ describe('EventLogger flush drains async onEvent', () => {
     });
 
     await flushAsyncWork();
-    assert.equal(writeCompleted, true, 'writeQueue should complete before the onEvent gate resolves');
     assert.equal(flushResolved, false, 'flush must still wait for the async onEvent work');
 
     gate.resolve();
     await flushPromise;
 
-    assert.equal(writeCompleted, true, 'writeQueue must be drained');
     assert.equal(hookCompleted, true, 'onEventQueue must be drained');
   });
 });

@@ -76,22 +76,6 @@ export class EventLogger {
       } catch { /* best-effort */ }
     }
 
-    // NDJSON write (async, queued)
-    const shouldWriteNdjson = this.eventsJsonWrite || !this.specDb;
-    if (shouldWriteNdjson && this.storage && typeof this.storage.appendText === 'function') {
-      const line = `${JSON.stringify(row)}\n`;
-      this.writeQueue = this.writeQueue
-        .then(() => this.storage.appendText(
-          this.runtimeEventsKey,
-          line,
-          { contentType: 'application/x-ndjson' }
-        ))
-        .catch((error) => {
-          process.stderr.write(
-            `[spec-harvester] runtime_event_write_failed key=${this.runtimeEventsKey} message=${error.message}\n`
-          );
-        });
-    }
   }
 
   info(event, data = {}) {

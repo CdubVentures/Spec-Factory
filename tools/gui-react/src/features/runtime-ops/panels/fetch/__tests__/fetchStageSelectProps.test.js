@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
-const EXPECTED_KEYS = ['stealth', 'auto_scroll', 'dom_expansion', 'css_override'];
+const EXPECTED_KEYS = ['stealth', 'cookie_consent', 'auto_scroll', 'dom_expansion', 'css_override'];
 
 function buildPanelStub(exportName) {
   return `export function ${exportName}() { return null; }`;
@@ -57,6 +57,7 @@ async function createFetchHarness() {
             }
           `,
           './FetchStealthPanel.tsx': buildPanelStub('FetchStealthPanel'),
+          './FetchCookieConsentPanel.tsx': buildPanelStub('FetchCookieConsentPanel'),
           './FetchAutoScrollPanel.tsx': buildPanelStub('FetchAutoScrollPanel'),
           './FetchDomExpansionPanel.tsx': buildPanelStub('FetchDomExpansionPanel'),
           './FetchCssOverridePanel.tsx': buildPanelStub('FetchCssOverridePanel'),
@@ -102,10 +103,8 @@ test('stealth selector returns empty fallback when data is undefined', async () 
     persistScope: harness.persistScope,
   });
   assert.ok(props.data && typeof props.data === 'object');
-  assert.deepStrictEqual(props.data.patches, []);
-  assert.deepStrictEqual(props.data.injections, []);
-  assert.strictEqual(props.data.total_injected, 0);
-  assert.strictEqual(props.data.total_failed, 0);
+  assert.deepStrictEqual(props.data.records, []);
+  assert.strictEqual(props.data.total, 0);
 });
 
 test('auto_scroll selector extracts auto_scroll data from context', async () => {
@@ -125,9 +124,8 @@ test('auto_scroll selector returns empty fallback when data is undefined', async
   const harness = await createFetchHarness();
   const props = harness.selectProps.auto_scroll({ data: undefined, persistScope: harness.persistScope });
   assert.ok(props.data && typeof props.data === 'object');
-  assert.deepStrictEqual(props.data.scroll_records, []);
-  assert.strictEqual(props.data.total_scrolled, 0);
-  assert.strictEqual(props.data.total_skipped, 0);
+  assert.deepStrictEqual(props.data.records, []);
+  assert.strictEqual(props.data.total, 0);
 });
 
 test('dom_expansion selector extracts dom_expansion data from context', async () => {
@@ -149,8 +147,8 @@ test('dom_expansion selector returns empty fallback when data is undefined', asy
   const harness = await createFetchHarness();
   const props = harness.selectProps.dom_expansion({ data: undefined, persistScope: harness.persistScope });
   assert.ok(props.data && typeof props.data === 'object');
-  assert.deepStrictEqual(props.data.expansion_records, []);
-  assert.strictEqual(props.data.total_expanded, 0);
+  assert.deepStrictEqual(props.data.records, []);
+  assert.strictEqual(props.data.total, 0);
 });
 
 test('css_override selector extracts css_override data from context', async () => {
@@ -171,6 +169,6 @@ test('css_override selector returns empty fallback when data is undefined', asyn
   const harness = await createFetchHarness();
   const props = harness.selectProps.css_override({ data: undefined, persistScope: harness.persistScope });
   assert.ok(props.data && typeof props.data === 'object');
-  assert.deepStrictEqual(props.data.override_records, []);
-  assert.strictEqual(props.data.total_overridden, 0);
+  assert.deepStrictEqual(props.data.records, []);
+  assert.strictEqual(props.data.total, 0);
 });

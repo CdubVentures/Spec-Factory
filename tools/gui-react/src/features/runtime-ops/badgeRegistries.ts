@@ -80,17 +80,18 @@ export function resolveStatusBadge(status: string): string {
 // ──────────────────────────────────────────────────────────────────────
 
 export const WORKER_STATE_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
-  stuck:        'sf-chip-danger animate-pulse',
-  running:      'sf-chip-info',
-  crawling:     'sf-chip-info',
-  crawled:      'sf-chip-success',
-  blocked:      'sf-chip-warning',
-  rate_limited: 'sf-chip-warning',
-  captcha:      'sf-chip-danger',
-  failed:       'sf-chip-danger',
-  retrying:     'sf-chip-info animate-pulse',
-  queued:       'sf-chip-neutral opacity-50',
-  idle:         'sf-chip-neutral',
+  stuck:            'sf-chip-danger animate-pulse',
+  running:          'sf-chip-info',
+  crawling:         'sf-chip-info',
+  crawled:          'sf-chip-success',
+  timeout_rescued:  'sf-chip-warning',
+  blocked:          'sf-chip-warning',
+  rate_limited:     'sf-chip-warning',
+  captcha:          'sf-chip-danger',
+  failed:           'sf-chip-danger',
+  retrying:         'sf-chip-info animate-pulse',
+  queued:           'sf-chip-neutral opacity-50',
+  idle:             'sf-chip-neutral',
 });
 
 export function resolveWorkerStateBadge(state: string): string {

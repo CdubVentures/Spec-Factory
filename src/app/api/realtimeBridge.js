@@ -84,7 +84,6 @@ export function createRealtimeBridge({
   dataChangeMatchesCategory,
   processStatus,
   forwardScreencastControl,
-  watchFactory = watchFiles,
   webSocketServerClass = WebSocketServer,
   now = () => new Date(),
 } = {}) {
@@ -100,13 +99,12 @@ export function createRealtimeBridge({
   assertFunction('dataChangeMatchesCategory', dataChangeMatchesCategory);
   assertFunction('processStatus', processStatus);
   assertFunction('forwardScreencastControl', forwardScreencastControl);
-  assertFunction('watchFactory', watchFactory);
   assertFunction('webSocketServerClass', webSocketServerClass);
   assertFunction('now', now);
 
   const wsClients = new Set();
   let wsServer = null;
-  let watchers = null;
+  // WHY: Chokidar watchers removed — NDJSON event files no longer written (SQL migration Steps 3+5)
   const lastScreencastFrames = new Map();
 
   function screencastCacheKey(runId, workerId) {
@@ -221,78 +219,7 @@ export function createRealtimeBridge({
   }
 
   function setupWatchers() {
-    if (watchers) return watchers;
-
-    const eventsPath = path.join(outputRoot, '_runtime', 'events.jsonl');
-    let lastEventSize = 0;
-    const indexlabOffsets = new Map();
-
-    const eventsWatcher = watchFactory(eventsPath, { persistent: true, ignoreInitial: true });
-    eventsWatcher.on('change', async () => {
-      try {
-        const stat = await fs.stat(eventsPath);
-        if (stat.size <= lastEventSize) {
-          lastEventSize = stat.size;
-          return;
-        }
-        const fd = await fs.open(eventsPath, 'r');
-        const buf = Buffer.alloc(stat.size - lastEventSize);
-        await fd.read(buf, 0, buf.length, lastEventSize);
-        await fd.close();
-        lastEventSize = stat.size;
-        const newLines = buf.toString('utf8').split('\n').filter(Boolean);
-        const events = newLines
-          .map((line) => {
-            try {
-              return JSON.parse(line);
-            } catch {
-              return null;
-            }
-          })
-          .filter(Boolean);
-        if (events.length > 0) {
-          broadcastWs('events', events);
-        }
-      } catch {
-        // ignore watcher errors
-      }
-    });
-
-    const indexlabPattern = path.join(indexLabRoot, '*', 'run_events.ndjson');
-    const indexlabWatcher = watchFactory(indexlabPattern, { persistent: true, ignoreInitial: true });
-
-    const publishIndexLabDelta = async (filePath) => {
-      try {
-        const stat = await fs.stat(filePath);
-        const key = path.resolve(filePath);
-        const previousSize = indexlabOffsets.get(key) || 0;
-        if (stat.size < previousSize) {
-          indexlabOffsets.set(key, 0);
-        }
-        const start = Math.max(0, Math.min(previousSize, stat.size));
-        if (stat.size <= start) {
-          indexlabOffsets.set(key, stat.size);
-          return;
-        }
-        const fd = await fs.open(filePath, 'r');
-        const buf = Buffer.alloc(stat.size - start);
-        await fd.read(buf, 0, buf.length, start);
-        await fd.close();
-        indexlabOffsets.set(key, stat.size);
-        const rows = parseNdjson(buf.toString('utf8'));
-        if (rows.length > 0) {
-          broadcastWs('indexlab-event', rows);
-        }
-      } catch {
-        // ignore watcher errors
-      }
-    };
-
-    indexlabWatcher.on('add', publishIndexLabDelta);
-    indexlabWatcher.on('change', publishIndexLabDelta);
-
-    watchers = { eventsWatcher, indexlabWatcher };
-    return watchers;
+    return null;
   }
 
   function getLastScreencastFrame(runId, workerId) {

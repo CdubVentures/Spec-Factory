@@ -168,10 +168,11 @@ export function initIndexLabDataBuilders({
     refreshArchivedRunDirIndex,
     materializeArchivedRunLocation,
     readArchivedS3RunMetaOnly,
+    getSpecDbReady: _getSpecDbReady,
   });
 }
 
-export async function readIndexLabRunEvents(runId, limit = 2000) {
+export async function readIndexLabRunEvents(runId, limit = 2000, { category } = {}) {
   const effectiveLimit = Math.max(1, toInt(limit, 2000));
   const cacheKey = `${String(runId || '').trim()}:${effectiveLimit}`;
   const cached = _eventCache.get(cacheKey);
@@ -179,16 +180,10 @@ export async function readIndexLabRunEvents(runId, limit = 2000) {
     return cached.rows;
   }
 
-  const runDir = await resolveIndexLabRunDirectory(runId);
-  if (!runDir) return [];
-  const eventsPath = path.join(runDir, 'run_events.ndjson');
-  let text = '';
-  try {
-    text = await fs.readFile(eventsPath, 'utf8');
-  } catch {
-    return [];
-  }
-  const rows = parseNdjson(text).slice(-effectiveLimit);
+  if (!category || typeof _getSpecDbReady !== 'function') return [];
+  const specDb = await _getSpecDbReady(category);
+  if (!specDb) return [];
+  const rows = specDb.getBridgeEventsByRunId(String(runId || '').trim(), effectiveLimit);
   _eventCache.set(cacheKey, { rows, at: Date.now() });
   return rows;
 }
@@ -243,7 +238,7 @@ export async function resolveIndexLabRunContext(runId) {
   if (!category || !resolvedRunId) {
     return null;
   }
-  const eventRows = await readIndexLabRunEvents(token, 3000);
+  const eventRows = await readIndexLabRunEvents(token, 3000, { category });
   const productId = resolveRunProductId(meta, eventRows);
   if (!productId) {
     return null;

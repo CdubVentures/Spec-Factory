@@ -151,7 +151,8 @@ async function handleSourceFetchFailed(state, deps, { ts, url, row }) {
     finalUrl: String(row.final_url || ''),
     contentType: String(row.content_type || ''),
     contentHash: String(row.content_hash || ''),
-    bytes: asInt(row.bytes, 0)
+    bytes: asInt(row.bytes, 0),
+    timeoutRescued: asBool(row.timeout_rescued),
   });
 }
 
@@ -871,6 +872,19 @@ async function handleExtractionPluginFailed(state, _deps, { ts, row }) {
   }, ts);
 }
 
+// WHY: Crawlee's native stats snapshot — emitted after each batch in runFetchPlan.
+// Just re-emit into the bridge event stream so METRICS_HANDLERS can pick it up.
+async function handleCrawlerStats(state, deps, { ts, row }) {
+  await emit(state, 'fetch', 'crawler_stats', {
+    scope: 'run',
+    status_codes: row.status_codes && typeof row.status_codes === 'object' ? row.status_codes : {},
+    retry_histogram: Array.isArray(row.retry_histogram) ? row.retry_histogram : [],
+    top_errors: Array.isArray(row.top_errors) ? row.top_errors : [],
+    avg_ok_ms: asInt(row.avg_ok_ms, 0),
+    avg_fail_ms: asInt(row.avg_fail_ms, 0),
+  }, ts);
+}
+
 // ── Event handler registry (table-driven dispatch) ────────────────────────
 
 const EVENT_HANDLERS = new Map([
@@ -913,6 +927,7 @@ const EVENT_HANDLERS = new Map([
   ['plugin_hook_completed',           handlePluginHookCompleted],
   ['extraction_plugin_completed',     handleExtractionPluginCompleted],
   ['extraction_plugin_failed',        handleExtractionPluginFailed],
+  ['crawler_stats',                   handleCrawlerStats],
 ]);
 
 const LLM_EVENTS = new Set(['llm_call_started', 'llm_call_completed', 'llm_call_failed']);

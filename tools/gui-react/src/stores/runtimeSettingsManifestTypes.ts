@@ -98,7 +98,6 @@ export interface RuntimeSettingDefaults {
   searchLoopMaxNoProgressRounds: number;
   searchLoopMaxLowQualityRounds: number;
   crawleeMaxRequestRetries: number;
-  crawleeMaxPagesPerBrowser: number;
   crawleeBrowserRetirePageCount: number;
   crawleeNavigationTimeoutMs: number;
   crawlMaxConcurrentSlots: number;

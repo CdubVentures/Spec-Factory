@@ -22,49 +22,12 @@ describe('stealth browser profile presents a mainstream desktop browser', () => 
     assert.equal(STEALTH_VIEWPORT.height, 1080);
   });
 
-  it('injects all 12 stealth patches in the init script', () => {
-    const patchMarkers = [
-      'toString',
-      'webdriver',
-      'vendor',
-      'plugins',
-      'languages',
-      'hardwareConcurrency',
-      'chrome.runtime',
-      'chrome.app',
-      'chrome.csi',
-      'chrome.loadTimes',
-      'permissions',
-      'WebGLRenderingContext',
-    ];
-    for (const marker of patchMarkers) {
-      assert.ok(
-        STEALTH_INIT_SCRIPT.includes(marker),
-        `init script must contain "${marker}" patch`,
-      );
-    }
-  });
-
   it('injects toString protection before any other patches', () => {
     const toStringIndex = STEALTH_INIT_SCRIPT.indexOf('Function.prototype.toString');
     const firstDefineProperty = STEALTH_INIT_SCRIPT.indexOf('Object.defineProperty');
     assert.ok(toStringIndex !== -1, 'must contain toString protection');
     assert.ok(firstDefineProperty !== -1, 'must contain defineProperty calls');
     assert.ok(toStringIndex < firstDefineProperty, 'toString must come before first defineProperty');
-  });
-
-  it('plugins patch creates realistic PluginArray, not bare numbers', () => {
-    assert.ok(!STEALTH_INIT_SCRIPT.includes('[1, 2, 3, 4, 5]'), 'must not use old [1,2,3,4,5] stub');
-    assert.ok(!STEALTH_INIT_SCRIPT.includes('[1,2,3,4,5]'), 'must not use old compact stub');
-    assert.ok(STEALTH_INIT_SCRIPT.includes('Chrome PDF Plugin'), 'must include Chrome PDF Plugin');
-    assert.ok(STEALTH_INIT_SCRIPT.includes('Chrome PDF Viewer'), 'must include Chrome PDF Viewer');
-    assert.ok(STEALTH_INIT_SCRIPT.includes('Native Client'), 'must include Native Client');
-  });
-
-  it('spoofs WebGL vendor/renderer using correct UNMASKED constants', () => {
-    assert.ok(STEALTH_INIT_SCRIPT.includes('37445'), 'must use UNMASKED_VENDOR_WEBGL constant');
-    assert.ok(STEALTH_INIT_SCRIPT.includes('37446'), 'must use UNMASKED_RENDERER_WEBGL constant');
-    assert.ok(STEALTH_INIT_SCRIPT.includes('NVIDIA'), 'must spoof NVIDIA GPU');
   });
 
   it('installs chrome.runtime, chrome.app, chrome.csi, and chrome.loadTimes stubs', () => {

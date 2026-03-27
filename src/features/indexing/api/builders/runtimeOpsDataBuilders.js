@@ -321,6 +321,16 @@ const METRICS_HANDLERS = {
     ms.acceptanceRate = toFloat(payload.acceptance_rate, 0);
     ms.meanConfidence = toFloat(payload.mean_confidence, 0);
   },
+  // WHY: Crawlee's native stats snapshot — last-write-wins. Contains data
+  // not derivable from fetch events: per-status-code counts, retry distribution,
+  // classified error groups, and precise per-request timing.
+  crawler_stats: (payload, _url, ms) => {
+    if (payload.status_codes) ms.statusCodes = payload.status_codes;
+    if (Array.isArray(payload.retry_histogram)) ms.retryHistogram = payload.retry_histogram;
+    if (Array.isArray(payload.top_errors)) ms.topErrors = payload.top_errors;
+    ms.avgOkMs = toInt(payload.avg_ok_ms, ms.avgOkMs);
+    ms.avgFailMs = toInt(payload.avg_fail_ms, ms.avgFailMs);
+  },
 };
 
 export function buildRuntimeOpsMetricsRail(events, options) {
@@ -352,6 +362,8 @@ export function buildRuntimeOpsMetricsRail(events, options) {
     pools, activeSearch, activeFetch, activeParse, activeLlm,
     identityStatus, acceptanceRate, meanConfidence,
     totalFetches, fallbackCount, blockedHosts, retryTotal,
+    statusCodes: {}, retryHistogram: [], topErrors: [],
+    avgOkMs: 0, avgFailMs: 0,
   };
 
   for (const evt of events) {
@@ -382,6 +394,13 @@ export function buildRuntimeOpsMetricsRail(events, options) {
       blocked_hosts: ms.blockedHosts.size,
       retry_total: ms.retryTotal,
       no_progress_streak: 0,
+    },
+    crawl_engine: {
+      status_codes: ms.statusCodes,
+      retry_histogram: ms.retryHistogram,
+      top_errors: ms.topErrors,
+      avg_ok_ms: ms.avgOkMs,
+      avg_fail_ms: ms.avgFailMs,
     },
   };
 }

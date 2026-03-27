@@ -248,7 +248,7 @@ export function createEvidenceIndexReader({
       },
       dedupe_stream: await (async () => {
         try {
-          const events = await readEvents(context.resolvedRunId, 8000);
+          const events = await readEvents(context.resolvedRunId, 8000, { category: context.category });
           const DEDUPE_EVENT_NAMES = new Set(['indexed_new', 'dedupe_hit', 'dedupe_updated']);
           const dedupeEvents = events.filter((e) => DEDUPE_EVENT_NAMES.has(e?.event));
           const payload = buildEvidenceSearchPayload({ dedupeEvents, query: requestedQuery });

@@ -8,7 +8,7 @@ import { toIso, asInt, asFloat, normalizeRunId, normalizeStageStatus } from './r
 import {
   toNeedSetBaseline, toSearchProfileBaseline, normalizeQueryToken,
   toSearchProfileQueryRow, toSearchProfileQueryCard,
-  appendNdjson, mergeSearchProfileRows
+  mergeSearchProfileRows
 } from './runtimeBridgePayloads.js';
 
 export async function ensureRun(state, row = {}) {
@@ -101,6 +101,37 @@ export async function writeRunMeta(state, extra = {}) {
     ...extra
   };
   await fs.writeFile(state.runMetaPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+  if (state.specDb) {
+    try {
+      const sqlExtra = {};
+      if (doc.run_base) sqlExtra.run_base = doc.run_base;
+      if (doc.latest_base) sqlExtra.latest_base = doc.latest_base;
+      state.specDb.upsertRun({
+        run_id: doc.run_id,
+        category: doc.category,
+        product_id: doc.product_id,
+        status: doc.status,
+        started_at: doc.started_at,
+        ended_at: doc.ended_at,
+        phase_cursor: doc.phase_cursor,
+        boot_step: doc.boot_step,
+        boot_progress: doc.boot_progress,
+        identity_fingerprint: doc.identity_fingerprint,
+        identity_lock_status: doc.identity_lock_status,
+        dedupe_mode: doc.dedupe_mode,
+        s3key: doc.s3key,
+        out_root: doc.out_root,
+        counters: doc.counters,
+        stages: doc.stages,
+        startup_ms: doc.startup_ms,
+        browser_pool: doc.browser_pool,
+        needset_summary: doc.needset,
+        search_profile_summary: doc.search_profile,
+        artifacts: doc.artifacts,
+        extra: sqlExtra,
+      });
+    } catch { /* best-effort: pipeline continues without SQL run meta */ }
+  }
 }
 
 export async function writeNeedSet(state, payload = {}) {
@@ -299,7 +330,7 @@ export async function persistAllScreencastFrames(state) {
 }
 
 export async function emit(state, stage, event, payload = {}, ts = '') {
-  if (!state.eventsPath || !state.runId) return;
+  if (!state.runId) return;
   const row = {
     run_id: state.runId,
     category: state.context.category || '',
@@ -309,7 +340,14 @@ export async function emit(state, stage, event, payload = {}, ts = '') {
     event: String(event || '').trim(),
     payload: payload && typeof payload === 'object' ? payload : {}
   };
-  await appendNdjson(state.eventsPath, row);
+  if (state.specDb) {
+    try {
+      state.specDb.insertBridgeEvent({
+        ...row,
+        payload: JSON.stringify(row.payload),
+      });
+    } catch { /* best-effort: pipeline continues without SQL bridge event */ }
+  }
   if (state.onEvent) {
     try {
       state.onEvent(row);
@@ -371,7 +409,8 @@ export async function finishFetchUrl(state, {
   finalUrl = '',
   contentType = '',
   contentHash = '',
-  bytes = 0
+  bytes = 0,
+  timeoutRescued = false
 } = {}) {
   const started = url ? state.fetchByUrl.get(url) : null;
   const alreadyClosed = url ? state.fetchClosedByUrl.has(url) : false;
@@ -407,7 +446,11 @@ export async function finishFetchUrl(state, {
     content_type: String(contentType || ''),
     content_hash: String(contentHash || ''),
     bytes: asInt(bytes, 0),
-    worker_id: workerId
+    worker_id: workerId,
+    // WHY: Only emit when true — keeps payload clean for non-rescued fetches.
+    // The worker pool builder checks this to show 'timeout_rescued' (yellow)
+    // instead of 'failed' (red) when the page actually loaded and has data.
+    ...(timeoutRescued ? { timeout_rescued: true } : {}),
   }, ts);
   await persistScreencastFrame(state, workerId);
 }

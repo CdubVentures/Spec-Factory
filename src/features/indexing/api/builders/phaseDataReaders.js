@@ -32,7 +32,7 @@ export function createPhaseDataReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 
@@ -84,7 +84,7 @@ export function createPhaseDataReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 
@@ -138,7 +138,7 @@ export function createPhaseDataReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 
@@ -206,7 +206,7 @@ export function createPhaseDataReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 

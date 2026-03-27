@@ -239,7 +239,7 @@ export function createProcessRuntime({
         broadcastWs(msg.channel || 'screencast', msg);
       } else if (msg && msg.__runtime_event) {
         if (typeof invalidateEventCache === 'function') invalidateEventCache(msg.run_id || '');
-        broadcastWs('indexlab-event', { type: 'runtime-update', stage: msg.stage, event: msg.event });
+        broadcastWs('indexlab-event', [{ type: 'runtime-update', run_id: msg.run_id || '', stage: msg.stage, event: msg.event }]);
       }
     });
     childProc = child;

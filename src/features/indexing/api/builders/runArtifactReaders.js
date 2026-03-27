@@ -167,8 +167,8 @@ export function createRunArtifactReaders({
     if (!meta || typeof meta !== 'object') {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
     const category = String(meta?.category || '').trim();
+    const eventRows = await readEvents(token, 3000, { category });
     const resolvedRunId = String(meta?.run_id || token).trim();
     const productId = resolveProductId(meta, eventRows);
     const storage = getStorage();
@@ -206,8 +206,8 @@ export function createRunArtifactReaders({
     if (!meta || typeof meta !== 'object') {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
     const category = String(meta?.category || '').trim();
+    const eventRows = await readEvents(token, 3000, { category });
     const resolvedRunId = String(meta?.run_id || token).trim();
     const productId = resolveProductId(meta, eventRows);
     const normalizedRunBase = resolveMetaPath(meta, 'run_base', 'runBase')
@@ -319,7 +319,7 @@ export function createRunArtifactReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 
@@ -357,7 +357,7 @@ export function createRunArtifactReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 
@@ -394,7 +394,7 @@ export function createRunArtifactReaders({
     if (!category || !resolvedRunId) {
       return null;
     }
-    const eventRows = await readEvents(token, 3000);
+    const eventRows = await readEvents(token, 3000, { category });
     const productId = resolveProductId(meta, eventRows);
     if (!productId) return null;
 

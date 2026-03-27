@@ -1,5 +1,5 @@
 /**
- * Screenshot capture for the crawl pipeline.
+ * Screenshot capture for the extraction pipeline.
  * Takes both targeted selector crops AND a full-page screenshot.
  * Never throws — returns empty array on failure.
  */
@@ -75,4 +75,25 @@ export async function captureScreenshots({ page, settings }) {
   }
 
   return results;
+}
+
+// WHY: Detect whether the page exceeds Chromium's 16,384px texture limit.
+// Used by the screenshot plugin to decide between normal capture and scroll-and-stitch.
+// Never throws — returns safe defaults on failure.
+const CHROMIUM_TEXTURE_LIMIT = 16384;
+
+export async function estimatePageHeight({ page }) {
+  try {
+    const dims = await page.evaluate(() => ({
+      scrollHeight: document.documentElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+    }));
+    return {
+      scrollHeight: dims.scrollHeight,
+      viewportHeight: dims.viewportHeight,
+      exceedsLimit: dims.scrollHeight > CHROMIUM_TEXTURE_LIMIT,
+    };
+  } catch {
+    return { scrollHeight: 0, viewportHeight: 0, exceedsLimit: false };
+  }
 }

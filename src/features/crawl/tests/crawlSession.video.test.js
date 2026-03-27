@@ -69,7 +69,7 @@ describe('createCrawlSession video recording', () => {
               };
               await config.requestHandler({
                 page,
-                request: { url: request.url, uniqueKey: request.uniqueKey },
+                request: { url: request.url, uniqueKey: request.uniqueKey, userData: {} },
                 response: { status: () => 200, headers: () => ({}) },
               });
             }

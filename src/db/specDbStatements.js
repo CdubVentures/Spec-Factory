@@ -532,6 +532,70 @@ export function prepareStatements(db) {
       VALUES (@ts, @level, @event, @category, @product_id, @run_id, @data)
     `),
 
+    _insertBridgeEvent: db.prepare(`
+      INSERT INTO bridge_events (run_id, category, product_id, ts, stage, event, payload)
+      VALUES (@run_id, @category, @product_id, @ts, @stage, @event, @payload)
+    `),
+
+    _getBridgeEventsByRunId: db.prepare(`
+      SELECT run_id, category, product_id, ts, stage, event, payload
+      FROM bridge_events
+      WHERE run_id = ?
+      ORDER BY id DESC
+      LIMIT ?
+    `),
+
+    _upsertRun: db.prepare(`
+      INSERT INTO runs (
+        run_id, category, product_id, status, started_at, ended_at,
+        phase_cursor, boot_step, boot_progress,
+        identity_fingerprint, identity_lock_status, dedupe_mode,
+        s3key, out_root,
+        counters, stages, startup_ms, browser_pool,
+        needset_summary, search_profile_summary, artifacts, extra,
+        updated_at
+      ) VALUES (
+        @run_id, @category, @product_id, @status, @started_at, @ended_at,
+        @phase_cursor, @boot_step, @boot_progress,
+        @identity_fingerprint, @identity_lock_status, @dedupe_mode,
+        @s3key, @out_root,
+        @counters, @stages, @startup_ms, @browser_pool,
+        @needset_summary, @search_profile_summary, @artifacts, @extra,
+        datetime('now')
+      )
+      ON CONFLICT(run_id) DO UPDATE SET
+        category = excluded.category,
+        product_id = excluded.product_id,
+        status = excluded.status,
+        started_at = excluded.started_at,
+        ended_at = excluded.ended_at,
+        phase_cursor = excluded.phase_cursor,
+        boot_step = excluded.boot_step,
+        boot_progress = excluded.boot_progress,
+        identity_fingerprint = excluded.identity_fingerprint,
+        identity_lock_status = excluded.identity_lock_status,
+        dedupe_mode = excluded.dedupe_mode,
+        s3key = excluded.s3key,
+        out_root = excluded.out_root,
+        counters = excluded.counters,
+        stages = excluded.stages,
+        startup_ms = excluded.startup_ms,
+        browser_pool = excluded.browser_pool,
+        needset_summary = excluded.needset_summary,
+        search_profile_summary = excluded.search_profile_summary,
+        artifacts = excluded.artifacts,
+        extra = excluded.extra,
+        updated_at = datetime('now')
+    `),
+
+    _getRunByRunId: db.prepare(`
+      SELECT * FROM runs WHERE run_id = ?
+    `),
+
+    _getRunsByCategory: db.prepare(`
+      SELECT * FROM runs WHERE category = ? ORDER BY created_at DESC, id DESC LIMIT ?
+    `),
+
     _upsertFieldHistory: db.prepare(`
       INSERT INTO field_history (category, product_id, field_key, round, run_id, history_json, updated_at)
       VALUES (@category, @product_id, @field_key, @round, @run_id, @history_json, CURRENT_TIMESTAMP)

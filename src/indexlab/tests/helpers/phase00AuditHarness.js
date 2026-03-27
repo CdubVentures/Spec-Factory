@@ -32,15 +32,8 @@ export function createAuditHarness() {
       }
     },
 
-    async getEmittedEvents() {
-      const eventsPath = bridge.eventsPath;
-      if (!eventsPath) return [];
-      try {
-        const raw = await fs.readFile(eventsPath, 'utf8');
-        return raw.trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
-      } catch {
-        return [];
-      }
+    getEmittedEvents() {
+      return [...wsEvents];
     },
 
     async getRunMeta() {

@@ -1,0 +1,76 @@
+{
+  "mouse": {
+    "brand": "Corsair",
+    "model": "Dark Core RGB Pro SE"
+  },
+  "completion": {
+    "completed": false,
+    "status": {
+      "running": true,
+      "relocating": false,
+      "relocatingRunId": null,
+      "run_id": "20260327051104-7ee06b",
+      "runId": "20260327051104-7ee06b",
+      "category": "mouse",
+      "product_id": null,
+      "productId": null,
+      "brand": "Corsair",
+      "model": "Dark Core RGB Pro SE",
+      "variant": null,
+      "storage_destination": "s3",
+      "storageDestination": "s3",
+      "pid": 88508,
+      "command": "C:\\nvm4w\\nodejs\\node.exe src/cli/spec.js indexlab --local --run-id 20260327051104-7ee06b --category mouse --seed Corsair Dark Core RGB Pro SE --brand Corsair --model Dark Core RGB Pro SE --search-engines google --out C:\\Users\\Chris\\AppData\\Local\\spec-factory\\indexlab",
+      "startedAt": "2026-03-27T05:11:04.982Z",
+      "exitCode": null,
+      "endedAt": null
+    },
+    "waitMs": 420868
+  },
+  "runData": {
+    "runId": "20260327051104-7ee06b",
+    "summary": {
+      "run_id": "20260327051104-7ee06b",
+      "status": "running",
+      "round": 0,
+      "phase_cursor": "phase_08_domain_classifier",
+      "boot_step": "needset",
+      "boot_progress": 85,
+      "browser_pool": {
+        "status": "ready",
+        "browsers": 2,
+        "slots": 8,
+        "pages_per_browser": 4
+      },
+      "total_fetches": 0,
+      "total_parses": 0,
+      "total_llm_calls": 0,
+      "error_rate": 0,
+      "docs_per_min": 0,
+      "fields_per_min": 0,
+      "top_blockers": []
+    },
+    "workers": {
+      "run_id": "20260327051104-7ee06b",
+      "workers": []
+    },
+    "fetchPhases": {
+      "run_id": "20260327051104-7ee06b"
+    },
+    "workerDetails": []
+  },
+  "analysis": {
+    "product": "Corsair Dark Core RGB Pro SE",
+    "runId": "20260327051104-7ee06b",
+    "status": "running",
+    "totalFetches": 0,
+    "errorRate": 0,
+    "topBlockers": [],
+    "workerCount": 0,
+    "stateDistribution": {},
+    "errorTypes": {},
+    "discrepancies": [],
+    "domainResults": {},
+    "pluginStats": {}
+  }
+}

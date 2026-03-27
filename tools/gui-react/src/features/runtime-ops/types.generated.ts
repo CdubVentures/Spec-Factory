@@ -412,6 +412,7 @@ export interface RuntimeOpsWorkerRowGen {
   retries: number;
   fetch_mode: string | null;
   docs_processed: number;
+  total_fetches?: number;
   fields_extracted: number;
   assigned_search_slot?: string | null;
   assigned_search_attempt_no?: number | null;

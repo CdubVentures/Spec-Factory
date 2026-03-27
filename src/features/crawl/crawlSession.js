@@ -145,6 +145,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           throw new Error(`blocked:${blockReason}`);
         }
 
+        // WHY: Stash captured page data BEFORE expensive hooks (onCapture,
+        // extraction, screenshot). If Crawlee's handler timeout fires during
+        // those operations, failedRequestHandler can rescue this data instead
+        // of returning an empty result. Same pattern as __blockInfo above.
+        // Audit proof: 13 of 29 misclassified workers had real page content
+        // (28-69KB screencast frames, 2-4MB videos) but HTML was lost because
+        // the timeout killed the handler before extraction ran.
+        request.userData.__capturedPage = { html, finalUrl, title, status };
+
         const captureCtx = { ...ctx, html, finalUrl, title, status };
         try { await runner.runHook('onCapture', captureCtx); }
         catch (err) { logger?.warn?.('hook_error', { hook: 'onCapture', url: request.url, error: err?.message }); }
@@ -156,6 +165,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           extractions = extractionRunner
             ? await extractionRunner.runExtractions(captureCtx)
             : {};
+          // WHY: Stash extraction results (screenshots) on request.userData so
+          // failedRequestHandler can rescue them if timeout fires AFTER extraction
+          // completes but BEFORE resolveEntry runs. Same rescue pattern as __capturedPage.
+          request.userData.__capturedExtractions = extractions;
         } catch (err) {
           logger?.warn?.('extraction_error', { url: request.url, error: err?.message });
         }
@@ -197,7 +210,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           status,
           title,
           html,
-          screenshots: extractions.screenshot?.screenshots ?? captureCtx.screenshots ?? [],
+          screenshots: extractions.screenshot?.screenshots ?? [],
           extractions,
           workerId,
           videoPath: '',
@@ -225,6 +238,21 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       failedRequestHandler: async ({ request }, error) => {
         const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
         const errMsg = error?.message || 'unknown_error';
+        // WHY: Resolve with error result instead of rejecting — prevents
+        // unhandled rejection crashes. Include block info from the handler if
+        // available so the lifecycle can classify and trigger proxy retry.
+        const blockInfo = request.userData?.__blockInfo;
+        // WHY: Rescue stashed page data when handler timed out AFTER
+        // page.content() captured HTML. The page loaded (video/screencast
+        // prove it) but the plugin chain ate the remaining timeout budget.
+        // Returning the HTML lets the pipeline still extract data from it.
+        const capturedPage = !blockInfo ? request.userData?.__capturedPage : null;
+        // WHY: Rescue screenshots from __capturedExtractions when extraction
+        // completed but timeout fired before resolveEntry. Without this,
+        // screenshots are silently lost even though the plugin captured them.
+        const capturedExtractions = capturedPage ? request.userData?.__capturedExtractions : null;
+        const rescuedScreenshots = capturedExtractions?.screenshot?.screenshots ?? [];
+
         logger?.info?.('source_fetch_failed', {
           url: request.url,
           status: 0,
@@ -232,11 +260,13 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           fetcher_kind: 'crawlee',
           worker_id: workerId,
           retry_count: request.retryCount ?? 0,
+          // WHY: Propagate timeout_rescued flag so the bridge → worker pool
+          // builder → GUI badge chain can distinguish "failed with data"
+          // from "failed with nothing". Without this, rescued workers show
+          // red "Failed" badges even though they have HTML, screenshots, video.
+          ...(capturedPage ? { timeout_rescued: true } : {}),
         });
-        // WHY: Resolve with error result instead of rejecting — prevents
-        // unhandled rejection crashes. Include block info from the handler if
-        // available so the lifecycle can classify and trigger proxy retry.
-        const blockInfo = request.userData?.__blockInfo;
+
         resolveEntry(request.uniqueKey, blockInfo ? {
           url: request.url,
           finalUrl: blockInfo.finalUrl || request.url,
@@ -247,6 +277,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           blocked: true,
           blockReason: blockInfo.blockReason || '',
           fetchError: errMsg,
+        } : capturedPage ? {
+          url: request.url,
+          finalUrl: capturedPage.finalUrl || request.url,
+          status: capturedPage.status || 0,
+          title: capturedPage.title || '',
+          html: capturedPage.html || '',
+          screenshots: rescuedScreenshots, workerId, videoPath: '',
+          fetchError: errMsg,
+          timeoutRescued: true,
         } : {
           url: request.url, finalUrl: request.url, status: 0,
           title: '', html: '', screenshots: [],
@@ -260,11 +299,8 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       errorHandler: async ({ request }, error) => {
         const msg = error?.message || '';
         // WHY: These errors cannot be resolved by retrying with a new session.
-        // Timeouts = server is slow/down, retrying burns another full handler timeout.
         // Downloads = site serves a file. DNS = domain doesn't exist.
-        // WHY: requestHandler timed out is NOT here — the page may have loaded
-        // (CDP screencast proves it) but processing was slow. Retry may succeed.
-        // Navigation timed out IS here — the page genuinely didn't respond.
+        // Navigation timed out = page genuinely didn't respond.
         if (
           msg.includes('Download is starting')
           || msg.includes('ERR_NAME_NOT_RESOLVED')
@@ -272,6 +308,18 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           || msg.includes('ERR_CONNECTION_RESET')
           || msg.includes('ERR_TUNNEL_CONNECTION_FAILED')
           || msg.includes('Navigation timed out')
+        ) {
+          request.noRetry = true;
+        }
+        // WHY: If the handler timed out but __capturedPage exists, the page
+        // loaded and HTML was captured — retrying burns another full 45s
+        // loading the same page. Audit proof: 13 timeout workers loaded pages
+        // (video/screencast prove it) then timed out during the plugin chain.
+        // Each retry wasted another 45s re-loading the same content.
+        if (
+          !request.noRetry
+          && msg.includes('requestHandler timed out')
+          && request.userData?.__capturedPage
         ) {
           request.noRetry = true;
         }
@@ -638,6 +686,23 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     logger?.info?.('browser_pool_warmed', { browsers: browsersNeeded, slots: slotCount });
   }
 
+  // WHY: Expose Crawlee's native Statistics as a snapshot. Returns null for
+  // test doubles (_crawlerFactory) that don't have real Crawlee internals.
+  // Data here is NOT derivable from our event stream: per-status-code counts,
+  // retry distribution, classified error groups, precise per-request timing.
+  function getStats() {
+    if (!crawler?.stats) return null;
+    const s = crawler.stats;
+    const calc = s.calculate();
+    return {
+      status_codes: s.state.requestsWithStatusCode,
+      retry_histogram: [...s.requestRetryHistogram],
+      top_errors: s.errorTracker.getMostPopularErrors(10),
+      avg_ok_ms: Number.isFinite(calc.requestAvgFinishedDurationMillis) ? Math.round(calc.requestAvgFinishedDurationMillis) : 0,
+      avg_fail_ms: Number.isFinite(calc.requestAvgFailedDurationMillis) ? Math.round(calc.requestAvgFailedDurationMillis) : 0,
+    };
+  }
+
   async function shutdown() {
     if (_proxyCrawler) {
       await _proxyCrawler.teardown?.();
@@ -738,10 +803,18 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       }
 
       crawlResults.push(...batchResults);
+
+      // WHY: Emit Crawlee's native stats snapshot after each batch so the
+      // GUI MetricsRail can show status code distribution, retry histogram,
+      // and classified error groups — data not derivable from our event stream.
+      const stats = getStats();
+      if (stats) {
+        logger?.info?.('crawler_stats', { ...stats });
+      }
     }
 
     return { crawlResults };
   }
 
-  return { start, processUrl, processBatch, retryWithProxy, runFetchPlan, warmUp, shutdown, slotCount, get videoDir() { return videoDir; } };
+  return { start, processUrl, processBatch, retryWithProxy, runFetchPlan, warmUp, shutdown, getStats, slotCount, get videoDir() { return videoDir; } };
 }

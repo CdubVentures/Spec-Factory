@@ -11,9 +11,8 @@ Exports from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `src/features/crawl/index.js` (public barrel — `captureScreenshots`)
 - **Allowed:** `src/core/`, `src/shared/`
-- **Forbidden:** `src/features/indexing/`, other feature internals
+- **Forbidden:** `src/features/crawl/`, `src/features/indexing/`, other feature internals
 
 ## Domain Invariants
 
@@ -22,3 +21,4 @@ Exports from `index.js`:
 - Plugin errors are caught via try/catch per plugin — one crash never affects others
 - Plugins MUST NOT modify page state (clicks, navigation) — fetch tools handle interaction
 - CrawlSession receives the extraction runner via DI — no direct cross-feature import
+- Viewport scrolling for capture purposes (scroll-and-stitch) is permitted — this is viewport manipulation, not content interaction

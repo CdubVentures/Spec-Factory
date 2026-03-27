@@ -1,6 +1,6 @@
 ## Purpose
 
-Crawlee-based page crawler with a plugin lifecycle. Opens pages, bypasses blocks, captures screenshots, and records results to the frontier DB. Parsing tools are added as drop-in plugins.
+Crawlee-based page crawler with a plugin lifecycle. Opens pages, bypasses blocks, and records results to the frontier DB. Parsing tools are added as drop-in plugins. Screenshots are handled by the extraction plugin system.
 
 ## Public API (The Contract)
 
@@ -9,7 +9,6 @@ Exported from `index.js`:
 - `createCrawlSession({ settings, plugins, logger, _crawlerFactory })` — boots a persistent PlaywrightCrawler. Returns `{ start(), processUrl(url), shutdown() }`.
 - `crawlPage({ url, settings, frontierDb, session, logger })` — crawls one URL. Returns `{ success, url, finalUrl, status, blocked, blockReason, screenshots, html, fetchDurationMs, attempts, bypassUsed }`. Always records to frontier DB.
 - `createPluginRunner({ plugins, logger })` — runs plugins through named lifecycle hooks. Returns `{ runHook(hookName, context) }`.
-- `captureScreenshots({ page, settings })` — takes targeted + full-page screenshots. Returns array.
 - `classifyBlockStatus({ status, html })` — pure block detection. Returns `{ blocked, blockReason }`.
 
 ### Plugin Interface

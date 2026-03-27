@@ -163,6 +163,30 @@ export function createSourceIntelStore({ db, category, stmts }) {
     tx(events);
   }
 
+  // --- Bridge Events (transformed runtime events for GUI readers) ---
+
+  function insertBridgeEvent(row) {
+    stmts._insertBridgeEvent.run({
+      run_id: row.run_id || '',
+      category: row.category || '',
+      product_id: row.product_id || '',
+      ts: row.ts || new Date().toISOString(),
+      stage: row.stage || '',
+      event: row.event || '',
+      payload: typeof row.payload === 'string' ? row.payload : JSON.stringify(row.payload || {}),
+    });
+  }
+
+  function getBridgeEventsByRunId(runId, limit = 2000) {
+    const rows = stmts._getBridgeEventsByRunId.all(runId, limit);
+    rows.reverse();
+    return rows.map(r => {
+      let parsed = {};
+      try { parsed = JSON.parse(r.payload); } catch { /* default {} */ }
+      return { ...r, payload: parsed };
+    });
+  }
+
   // --- Source Intelligence ---
 
   function upsertSourceIntelDomain(entry) {
@@ -463,6 +487,8 @@ export function createSourceIntelStore({ db, category, stmts }) {
     getSourceCorpusCount,
     insertRuntimeEvent,
     insertRuntimeEventsBatch,
+    insertBridgeEvent,
+    getBridgeEventsByRunId,
     upsertSourceIntelDomain,
     upsertSourceIntelFieldReward,
     upsertSourceIntelBrand,

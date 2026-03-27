@@ -711,6 +711,53 @@ CREATE TABLE IF NOT EXISTS runtime_events (
 CREATE INDEX IF NOT EXISTS idx_re_ts ON runtime_events(ts);
 CREATE INDEX IF NOT EXISTS idx_re_product ON runtime_events(product_id);
 
+-- Bridge events: transformed runtime events for GUI readers (mirrors run_events.ndjson shape)
+CREATE TABLE IF NOT EXISTS bridge_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  product_id TEXT NOT NULL DEFAULT '',
+  ts TEXT NOT NULL,
+  stage TEXT NOT NULL DEFAULT '',
+  event TEXT NOT NULL DEFAULT '',
+  payload TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_be_run_id ON bridge_events(run_id);
+CREATE INDEX IF NOT EXISTS idx_be_run_stage ON bridge_events(run_id, stage);
+
+-- Run metadata: replaces per-run run.json mid-run overwrites (Wave 2)
+CREATE TABLE IF NOT EXISTS runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  product_id TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'running',
+  started_at TEXT NOT NULL DEFAULT '',
+  ended_at TEXT NOT NULL DEFAULT '',
+  phase_cursor TEXT NOT NULL DEFAULT '',
+  boot_step TEXT NOT NULL DEFAULT '',
+  boot_progress INTEGER NOT NULL DEFAULT 0,
+  identity_fingerprint TEXT NOT NULL DEFAULT '',
+  identity_lock_status TEXT NOT NULL DEFAULT '',
+  dedupe_mode TEXT NOT NULL DEFAULT '',
+  s3key TEXT NOT NULL DEFAULT '',
+  out_root TEXT NOT NULL DEFAULT '',
+  counters TEXT NOT NULL DEFAULT '{}',
+  stages TEXT NOT NULL DEFAULT '{}',
+  startup_ms TEXT NOT NULL DEFAULT '{}',
+  browser_pool TEXT,
+  needset_summary TEXT,
+  search_profile_summary TEXT,
+  artifacts TEXT NOT NULL DEFAULT '{}',
+  extra TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(run_id)
+);
+CREATE INDEX IF NOT EXISTS idx_runs_category ON runs(category);
+CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(category, status);
+CREATE INDEX IF NOT EXISTS idx_runs_product ON runs(category, product_id);
+
 -- Migration Phase 10: Evidence index tables
 CREATE TABLE IF NOT EXISTS evidence_documents (
   doc_id TEXT PRIMARY KEY,

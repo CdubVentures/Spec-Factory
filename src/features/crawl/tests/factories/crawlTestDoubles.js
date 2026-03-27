@@ -187,7 +187,7 @@ export function createCrawlerFactoryDouble({ resultByUrl = {} } = {}) {
 
             if (result.error && typeof config.failedRequestHandler === 'function') {
               await config.failedRequestHandler(
-                { request: { url: request.url, uniqueKey: request.uniqueKey } },
+                { request: { url: request.url, uniqueKey: request.uniqueKey, userData: {} } },
                 result.error,
               );
               continue;
@@ -208,7 +208,7 @@ export function createCrawlerFactoryDouble({ resultByUrl = {} } = {}) {
 
             await config.requestHandler({
               page,
-              request: { url: request.url, uniqueKey: request.uniqueKey },
+              request: { url: request.url, uniqueKey: request.uniqueKey, userData: {} },
               response: {
                 status: () => result.status ?? 200,
                 headers: () => result.headers ?? {},

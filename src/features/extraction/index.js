@@ -3,3 +3,4 @@
 
 export { createExtractionRunner } from './core/extractionRunner.js';
 export { resolveExtractionPlugins, resolveAllExtractionPlugins, EXTRACTION_PLUGIN_REGISTRY } from './plugins/pluginRegistry.js';
+export { captureScreenshots } from './plugins/screenshot/screenshotCapture.js';

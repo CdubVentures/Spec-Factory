@@ -8,6 +8,7 @@ import {
   initIndexLabDataBuilders,
   readIndexLabRunEvents,
 } from '../indexlabDataBuilders.js';
+import { SpecDb } from '../../../../../db/specDb.js';
 
 const REAL_DATE_NOW = Date.now;
 
@@ -15,18 +16,25 @@ const REAL_DATE_NOW = Date.now;
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function createRunFixture(rootDir, runId, events = []) {
-  const runDir = path.join(rootDir, runId);
-  await fs.mkdir(runDir, { recursive: true });
-  await fs.writeFile(
-    path.join(runDir, 'run.json'),
-    JSON.stringify({ run_id: runId, status: 'completed' }),
-  );
-  const text = events.map((e) => JSON.stringify(e)).join('\n');
-  await fs.writeFile(path.join(runDir, 'run_events.ndjson'), text ? `${text}\n` : '');
+function createMemorySpecDb() {
+  return new SpecDb({ dbPath: ':memory:', category: 'mouse' });
 }
 
-function initBuilders(indexLabRoot) {
+function seedBridgeEvents(specDb, runId, events) {
+  for (const evt of events) {
+    specDb.insertBridgeEvent({
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-test-01',
+      ts: evt.ts || '2026-01-01T00:00:00.000Z',
+      stage: evt.stage || 'fetch',
+      event: evt.event || 'fetch_started',
+      payload: evt.payload || {},
+    });
+  }
+}
+
+function initBuilders(indexLabRoot, specDb) {
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot: indexLabRoot,
@@ -36,7 +44,7 @@ function initBuilders(indexLabRoot) {
       readJsonOrNull: async () => null,
     },
     config: {},
-    getSpecDbReady: () => false,
+    getSpecDbReady: specDb ? async () => specDb : async () => null,
     isProcessRunning: () => false,
   });
 }
@@ -45,7 +53,7 @@ function initBuilders(indexLabRoot) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('readIndexLabRunEvents cache', () => {
+describe('readIndexLabRunEvents cache (SQL path)', () => {
   test.afterEach(() => {
     Date.now = REAL_DATE_NOW;
   });
@@ -53,15 +61,15 @@ describe('readIndexLabRunEvents cache', () => {
   test('second call within TTL returns same array reference (cache hit)', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'event-cache-'));
     try {
-      const events = [
+      const specDb = createMemorySpecDb();
+      seedBridgeEvents(specDb, 'run-cache-1', [
         { event: 'fetch_started', ts: '2026-01-01T00:00:00Z' },
         { event: 'fetch_finished', ts: '2026-01-01T00:00:01Z' },
-      ];
-      await createRunFixture(tmpDir, 'run-cache-1', events);
-      initBuilders(tmpDir);
+      ]);
+      initBuilders(tmpDir, specDb);
 
-      const first = await readIndexLabRunEvents('run-cache-1');
-      const second = await readIndexLabRunEvents('run-cache-1');
+      const first = await readIndexLabRunEvents('run-cache-1', 2000, { category: 'mouse' });
+      const second = await readIndexLabRunEvents('run-cache-1', 2000, { category: 'mouse' });
 
       assert.equal(first.length, 2);
       assert.equal(first, second, 'same reference means cache hit');
@@ -75,20 +83,25 @@ describe('readIndexLabRunEvents cache', () => {
     try {
       let nowMs = Date.parse('2026-01-01T00:00:00Z');
       Date.now = () => nowMs;
-      await createRunFixture(tmpDir, 'run-cache-2', [{ event: 'a', ts: '2026-01-01T00:00:00Z' }]);
-      initBuilders(tmpDir);
+      const specDb = createMemorySpecDb();
+      seedBridgeEvents(specDb, 'run-cache-2', [
+        { event: 'a', ts: '2026-01-01T00:00:00Z' },
+      ]);
+      initBuilders(tmpDir, specDb);
 
-      const first = await readIndexLabRunEvents('run-cache-2');
+      const first = await readIndexLabRunEvents('run-cache-2', 2000, { category: 'mouse' });
       assert.equal(first.length, 1);
 
-      // Append a new event to disk while cache is live
-      const eventsPath = path.join(tmpDir, 'run-cache-2', 'run_events.ndjson');
-      await fs.appendFile(eventsPath, JSON.stringify({ event: 'b', ts: '2026-01-01T00:00:01Z' }) + '\n');
+      // Insert a new event into SQL while cache is live
+      specDb.insertBridgeEvent({
+        run_id: 'run-cache-2', category: 'mouse', product_id: 'mouse-test-01',
+        ts: '2026-01-01T00:00:01Z', stage: 'fetch', event: 'b', payload: {},
+      });
 
-      // Advance virtual time past the TTL instead of sleeping.
+      // Advance virtual time past the TTL
       nowMs += 5_500;
 
-      const afterTtl = await readIndexLabRunEvents('run-cache-2');
+      const afterTtl = await readIndexLabRunEvents('run-cache-2', 2000, { category: 'mouse' });
       assert.equal(afterTtl.length, 2, 'fresh read after TTL should pick up new event');
       assert.notEqual(first, afterTtl, 'different reference means fresh read');
     } finally {
@@ -99,15 +112,15 @@ describe('readIndexLabRunEvents cache', () => {
   test('different limit is a separate cache entry', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'event-cache-'));
     try {
-      const events = Array.from({ length: 10 }, (_, i) => ({
+      const specDb = createMemorySpecDb();
+      seedBridgeEvents(specDb, 'run-cache-3', Array.from({ length: 10 }, (_, i) => ({
         event: `evt-${i}`,
         ts: `2026-01-01T00:00:${String(i).padStart(2, '0')}Z`,
-      }));
-      await createRunFixture(tmpDir, 'run-cache-3', events);
-      initBuilders(tmpDir);
+      })));
+      initBuilders(tmpDir, specDb);
 
-      const full = await readIndexLabRunEvents('run-cache-3', 10);
-      const limited = await readIndexLabRunEvents('run-cache-3', 3);
+      const full = await readIndexLabRunEvents('run-cache-3', 10, { category: 'mouse' });
+      const limited = await readIndexLabRunEvents('run-cache-3', 3, { category: 'mouse' });
 
       assert.equal(full.length, 10);
       assert.equal(limited.length, 3);
@@ -120,19 +133,24 @@ describe('readIndexLabRunEvents cache', () => {
   test('initIndexLabDataBuilders clears the cache', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'event-cache-'));
     try {
-      await createRunFixture(tmpDir, 'run-cache-4', [{ event: 'a', ts: '2026-01-01T00:00:00Z' }]);
-      initBuilders(tmpDir);
+      const specDb = createMemorySpecDb();
+      seedBridgeEvents(specDb, 'run-cache-4', [
+        { event: 'a', ts: '2026-01-01T00:00:00Z' },
+      ]);
+      initBuilders(tmpDir, specDb);
 
-      const first = await readIndexLabRunEvents('run-cache-4');
+      const first = await readIndexLabRunEvents('run-cache-4', 2000, { category: 'mouse' });
 
-      // Append event
-      const eventsPath = path.join(tmpDir, 'run-cache-4', 'run_events.ndjson');
-      await fs.appendFile(eventsPath, JSON.stringify({ event: 'b', ts: '2026-01-01T00:00:01Z' }) + '\n');
+      // Insert a new event while cache is live
+      specDb.insertBridgeEvent({
+        run_id: 'run-cache-4', category: 'mouse', product_id: 'mouse-test-01',
+        ts: '2026-01-01T00:00:01Z', stage: 'fetch', event: 'b', payload: {},
+      });
 
       // Re-init (should clear cache)
-      initBuilders(tmpDir);
+      initBuilders(tmpDir, specDb);
 
-      const afterReinit = await readIndexLabRunEvents('run-cache-4');
+      const afterReinit = await readIndexLabRunEvents('run-cache-4', 2000, { category: 'mouse' });
       assert.equal(first.length, 1);
       assert.equal(afterReinit.length, 2, 'reinit should clear cache so fresh read picks up new event');
       assert.notEqual(first, afterReinit);

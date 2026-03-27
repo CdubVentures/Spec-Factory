@@ -216,7 +216,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
 
     const subPath = String(parts[4] || '').trim();
-    const events = await readIndexLabRunEvents(runId);
+    const events = await readIndexLabRunEvents(runId, 2000, { category: meta?.category });
     const resolvedMeta = resolveInactiveRunMeta(meta, events, runId, processStatus);
 
     if (subPath === 'summary' && !parts[5]) {

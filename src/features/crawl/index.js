@@ -2,6 +2,5 @@
 // Other features and the pipeline layer import from here — never from internals.
 
 export { createCrawlSession } from './crawlSession.js';
-export { captureScreenshots } from './screenshotCapture.js';
 export { resolvePlugins, resolveAllPlugins, PLUGIN_REGISTRY } from './plugins/pluginRegistry.js';
 export { classifyBlockStatus } from './bypassStrategies.js';

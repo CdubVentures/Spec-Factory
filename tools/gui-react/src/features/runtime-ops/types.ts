@@ -227,6 +227,14 @@ export interface RuntimeOpsTimelineEntry {
   evidence_chunks?: number | null;
 }
 
+export interface CrawlEngineStats {
+  status_codes: Record<string, number>;
+  retry_histogram: number[];
+  top_errors: Array<[number, string[]]>;
+  avg_ok_ms: number;
+  avg_fail_ms: number;
+}
+
 export interface RuntimeOpsMetricsRailData {
   pool_metrics: Record<string, PoolMetric>;
   quality_metrics: {
@@ -242,6 +250,7 @@ export interface RuntimeOpsMetricsRailData {
     retry_total: number;
     no_progress_streak: number;
   };
+  crawl_engine?: CrawlEngineStats;
 }
 
 export interface RuntimeOpsMetricsResponse extends RuntimeOpsMetricsRailData {

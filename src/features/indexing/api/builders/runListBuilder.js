@@ -11,6 +11,7 @@ export function createRunListBuilder({
   refreshArchivedRunDirIndex,
   materializeArchivedRunLocation,
   readArchivedS3RunMetaOnly = async () => null,
+  getSpecDbReady = null,
 }) {
   const toToken = (value) => String(value || '').trim();
 
@@ -181,6 +182,21 @@ export function createRunListBuilder({
       dirs = dirs.slice(0, scanLimit);
     }
 
+    // WHY: SQL fast path — one query replaces N async safeReadJson() calls.
+    // Only when category is known (specDb is per-category).
+    let sqlRunMap = new Map();
+    if (categoryFilter && typeof getSpecDbReady === 'function') {
+      try {
+        const specDb = await getSpecDbReady(categoryFilter);
+        if (specDb) {
+          const sqlRows = specDb.getRunsByCategory(categoryFilter, scanLimit);
+          for (const row of sqlRows) {
+            if (row.run_id) sqlRunMap.set(row.run_id, row);
+          }
+        }
+      } catch { /* best-effort: fall back to file I/O */ }
+    }
+
     // WHY: Process runs concurrently instead of sequentially.
     // Each run requires at least 1 async read (safeReadJson for run.json).
     // With 120 runs that's 120 serial round-trips — parallelizing cuts
@@ -230,6 +246,41 @@ export function createRunListBuilder({
           };
         }
         // Metadata insufficient — fall through to full materialization.
+      }
+
+      // SQL fast path for runs with complete metadata in the runs table
+      const sqlRow = sqlRunMap.get(dir);
+      if (sqlRow && sqlRow.counters && typeof sqlRow.counters === 'object'
+          && Object.keys(sqlRow.counters).length > 0) {
+        const rowCategory = toToken(sqlRow.category);
+        if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
+        const rowRunId = toToken(sqlRow.run_id || dir);
+        const rowProductId = toToken(sqlRow.product_id);
+        const rawStatus = String(sqlRow.status || 'unknown').trim();
+        const resolvedStatus = (
+          rawStatus.toLowerCase() === 'running' && !isRunStillActive(rowRunId)
+        ) ? 'completed' : rawStatus;
+        return {
+          run_id: rowRunId,
+          category: rowCategory,
+          product_id: rowProductId,
+          status: resolvedStatus,
+          started_at: String(sqlRow.started_at || '').trim(),
+          ended_at: String(sqlRow.ended_at || '').trim(),
+          identity_fingerprint: String(sqlRow.identity_fingerprint || '').trim(),
+          identity_lock_status: String(sqlRow.identity_lock_status || '').trim(),
+          dedupe_mode: String(sqlRow.dedupe_mode || '').trim(),
+          phase_cursor: String(sqlRow.phase_cursor || '').trim(),
+          startup_ms: normalizeStartupMs(sqlRow.startup_ms),
+          events_path: '',
+          run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
+          storage_origin: storageOrigin,
+          storage_state: resolveStorageState(resolvedStatus),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
+          has_needset: Boolean(sqlRow.needset_summary),
+          has_search_profile: Boolean(sqlRow.search_profile_summary),
+          counters: sqlRow.counters,
+        };
       }
 
       const runDir = typeof runLocation === 'string'
@@ -291,9 +342,9 @@ export function createRunListBuilder({
       }
 
       const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
-      const eventRows = await readEvents(dir, 6000);
-      const eventSummary = summarizeEvents(eventRows);
       const rowCategory = toToken(meta?.category);
+      const eventRows = await readEvents(meta?.run_id || dir, 6000, { category: rowCategory });
+      const eventSummary = summarizeEvents(eventRows);
       if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
       const rowRunId = toToken(meta?.run_id || dir);
       const rowProductId = toToken(meta?.product_id || eventSummary.productId);

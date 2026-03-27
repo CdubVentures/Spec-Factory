@@ -231,6 +231,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
           loop
           muted
           playsInline
+          controls
           className="w-full h-full object-contain"
           onError={() => {
             // WHY: Video 404 or load failure — clear URL so the component

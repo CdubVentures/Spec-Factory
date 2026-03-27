@@ -17,7 +17,7 @@ export function createAutomationQueueBuilder({
     const context = await resolveContext(runId);
     if (!context) return null;
 
-    const eventRows = await readEvents(context.token, 8000);
+    const eventRows = await readEvents(context.token, 8000, { category: context.category });
     const needset = await readNeedSet(context.token);
     const searchProfile = await readSearchProfile(context.token);
     const { queryToFields, fieldStats } = buildSearchProfileQueryMaps(searchProfile || {});

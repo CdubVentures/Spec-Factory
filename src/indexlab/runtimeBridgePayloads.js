@@ -1,7 +1,7 @@
 // WHY: Payload builders and normalizers extracted from runtimeBridge.js
 // Pure functions that shape event data for the runtime bridge.
 
-import fs from 'node:fs/promises';
+
 import { toIso, asInt, asFloat } from './runtimeBridgeCoercers.js';
 import { SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE } from '../features/indexing/api/contracts/prefetchContract.js';
 
@@ -212,10 +212,6 @@ export function toSearchProfileQueryCard(entry = {}) {
     selected_count: 0,
     candidates: []
   };
-}
-
-export async function appendNdjson(filePath, row) {
-  await fs.appendFile(filePath, `${JSON.stringify(row)}\n`, 'utf8');
 }
 
 export function isRuntimeSource(source = '') {

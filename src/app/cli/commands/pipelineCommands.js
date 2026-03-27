@@ -100,16 +100,19 @@ export function createPipelineCommands({
     }
 
     // Open per-category SpecDb for event logging (WAL-safe, best-effort)
+    // WHY: resolve from project root, not CWD — the child process CWD may differ from the GUI server
     let specDb = null;
     try {
       const { SpecDb } = await import('../../../db/specDb.js');
-      const specDbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+      const projectRoot = pathNode.resolve(decodeURIComponent(new URL('../../../../', import.meta.url).pathname).replace(/^\/([A-Z]:)/i, '$1'));
+      const specDbDir = pathNode.join(projectRoot, '.specfactory_tmp', category);
       await fsNode.mkdir(specDbDir, { recursive: true });
       specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
     const bridge = new IndexLabRuntimeBridge({
       outRoot,
+      specDb,
       context: {
         category,
         s3Key

@@ -133,7 +133,10 @@ export function FetchWorkerPanel({ worker, runId, wsUrl }: FetchWorkerPanelProps
           </span>
         )}
         <span className="sf-text-caption sf-text-muted">
-          R:<span className="font-mono">{worker.retries}</span>
+          fetches:<span className="font-mono">{worker.total_fetches ?? 0}</span>
+        </span>
+        <span className="sf-text-caption sf-text-muted">
+          retries:<span className="font-mono">{worker.retries}</span>
         </span>
         <span className="sf-text-caption sf-text-muted">
           docs:<span className="font-mono">{worker.docs_processed}</span>
