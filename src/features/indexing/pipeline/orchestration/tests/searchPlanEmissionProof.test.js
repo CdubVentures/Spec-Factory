@@ -325,7 +325,7 @@ function makeStageStubs() {
       queryRejectLogCombined: [],
     }),
     executeSearchQueriesFn: async () => ({
-      rawResults: [],
+      searchResults: [],
       searchAttempts: [],
       searchJournal: [],
       internalSatisfied: false,

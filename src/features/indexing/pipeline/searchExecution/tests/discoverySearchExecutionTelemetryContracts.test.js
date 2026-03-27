@@ -21,7 +21,7 @@ test('executeSearchQueries emits provider diagnostics even when no queries run',
   assert.ok(diagnostics, 'should log provider diagnostics');
   assert.equal(diagnostics.data.provider, 'google');
 
-  assert.deepEqual(result.rawResults, []);
+  assert.deepEqual(result.searchResults, []);
   assert.deepEqual(result.searchAttempts, []);
   assert.deepEqual(result.searchJournal, []);
   assert.equal(result.internalSatisfied, false);

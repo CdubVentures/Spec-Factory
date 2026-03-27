@@ -30,7 +30,7 @@ export { defaultIdentityGrammar, updateIdentityGrammar } from './identityGrammar
 export { defaultQueryLearning, updateQueryLearning } from './queryLearning.js';
 export {
   loadLearningProfile,
-  applyLearningSeeds,
+  collectLearningSeeds,
 } from './selfImproveLoop.js';
 export { readLearningHintsFromStores } from './learningReadback.js';
 export * from './sourceIntel.js';

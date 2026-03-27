@@ -81,7 +81,7 @@ export const SERP_SCORE_COMPONENTS_SHAPE = Object.freeze([
   { key: 'penalties', coerce: 'float' },
 ]);
 
-export const SERP_TRIAGE_CANDIDATE_SHAPE = Object.freeze([
+export const SERP_SELECTOR_CANDIDATE_SHAPE = Object.freeze([
   { key: 'url', coerce: 'string' },
   { key: 'title', coerce: 'string' },
   { key: 'domain', coerce: 'string' },
@@ -97,13 +97,13 @@ export const SERP_TRIAGE_CANDIDATE_SHAPE = Object.freeze([
   { key: 'approval_bucket', coerce: 'string' },
 ]);
 
-export const SERP_TRIAGE_ENVELOPE_SHAPE = Object.freeze([
+export const SERP_SELECTOR_ENVELOPE_SHAPE = Object.freeze([
   { key: 'query', coerce: 'string' },
   { key: 'kept_count', coerce: 'int' },
   { key: 'dropped_count', coerce: 'int' },
 ]);
 
-export const SERP_TRIAGE_FUNNEL_SHAPE = Object.freeze([
+export const SERP_SELECTOR_FUNNEL_SHAPE = Object.freeze([
   { key: 'raw_input', coerce: 'int' },
   { key: 'hard_drop_count', coerce: 'int' },
   { key: 'candidates_after_hard_drop', coerce: 'int' },

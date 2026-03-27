@@ -7,9 +7,9 @@ import {
   SEARCH_RESULT_ENTRY_SHAPE,
   SEARCH_RESULT_DETAIL_SHAPE,
   SERP_SCORE_COMPONENTS_SHAPE,
-  SERP_TRIAGE_CANDIDATE_SHAPE,
-  SERP_TRIAGE_ENVELOPE_SHAPE,
-  SERP_TRIAGE_FUNNEL_SHAPE,
+  SERP_SELECTOR_CANDIDATE_SHAPE,
+  SERP_SELECTOR_ENVELOPE_SHAPE,
+  SERP_SELECTOR_FUNNEL_SHAPE,
   SEARCH_PROFILE_SHAPE,
   SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE,
 } from '../contracts/prefetchContract.js';
@@ -49,7 +49,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
   let queryJourney = null;
   const searchPlans = [];
   const searchResultDetails = [];
-  const serpTriage = [];
+  const serpSelector = [];
   const domainHealth = [];
 
   for (const evt of events) {
@@ -262,15 +262,15 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     }
 
     if (type === 'serp_selector_completed') {
-      const envelope = projectShape(payload, SERP_TRIAGE_ENVELOPE_SHAPE);
+      const envelope = projectShape(payload, SERP_SELECTOR_ENVELOPE_SHAPE);
       const funnel = payload.funnel && typeof payload.funnel === 'object'
-        ? projectShape(payload.funnel, SERP_TRIAGE_FUNNEL_SHAPE)
+        ? projectShape(payload.funnel, SERP_SELECTOR_FUNNEL_SHAPE)
         : null;
-      serpTriage.push({
+      serpSelector.push({
         ...envelope,
         funnel,
         candidates: Array.isArray(payload.candidates) ? payload.candidates.map((c) => ({
-          ...projectShape(c, SERP_TRIAGE_CANDIDATE_SHAPE),
+          ...projectShape(c, SERP_SELECTOR_CANDIDATE_SHAPE),
           score_components: projectShape(
             c?.score_components && typeof c.score_components === 'object' ? c.score_components : {},
             SERP_SCORE_COMPONENTS_SHAPE,
@@ -373,9 +373,9 @@ export function buildPreFetchPhases(events, meta, artifacts) {
 
   // Enrich searchResultDetails with triage decisions from serp_selector_completed
   // where URLs overlap between raw SERP results and triage candidates.
-  if (serpTriage.length > 0 && searchResultDetails.length > 0) {
+  if (serpSelector.length > 0 && searchResultDetails.length > 0) {
     const triageLookup = {};
-    for (const t of serpTriage) {
+    for (const t of serpSelector) {
       for (const c of t.candidates) {
         if (c.url) {
           triageLookup[c.url] = { decision: c.decision, score: c.score, rationale: c.rationale };
@@ -434,7 +434,7 @@ export function buildPreFetchPhases(events, meta, artifacts) {
     query_journey: queryJourney,
     search_result_details: searchResultDetails,
     cross_query_url_counts: buildCrossQueryUrlCounts(searchResultDetails),
-    serp_selector: serpTriage,
+    serp_selector: serpSelector,
     domain_health: domainHealth,
   };
 }

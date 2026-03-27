@@ -1,4 +1,4 @@
-import type { DomainHealthRow, PrefetchLlmCall, SerpTriageResult, TriageCandidate } from '../types.ts';
+import type { DomainHealthRow, PrefetchLlmCall, SerpSelectorResult, SerpSelectorCandidate } from '../types.ts';
 
 export interface SafetyClassCounts {
   safe: number;
@@ -66,8 +66,8 @@ export declare function computeFetchSummary(
 ): FetchSummary;
 
 export declare function groupKeptUrlsByDomain(
-  serpTriage: SerpTriageResult[],
-): Map<string, TriageCandidate[]>;
+  serpSelector: SerpSelectorResult[],
+): Map<string, SerpSelectorCandidate[]>;
 
 export interface UrlSafetyBreakdown {
   safeUrls: number;
@@ -77,6 +77,6 @@ export interface UrlSafetyBreakdown {
 }
 
 export declare function computeUrlSafetyBreakdown(
-  urlsByDomain: Map<string, TriageCandidate[]>,
+  urlsByDomain: Map<string, SerpSelectorCandidate[]>,
   health: DomainHealthRow[],
 ): UrlSafetyBreakdown;

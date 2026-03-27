@@ -189,7 +189,7 @@ export function makeExecution(overrides = {}) {
     providerState: { provider: 'bing', internet_ready: true },
     requiredOnlySearch: false,
     missingRequiredFields: ['dpi'],
-    rawResults: [
+    searchResults: [
       {
         url: 'https://razer.com/viper',
         title: 'Viper V3',

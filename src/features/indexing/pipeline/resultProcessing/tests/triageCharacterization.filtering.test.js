@@ -8,7 +8,7 @@ import {
 
 describe('Characterization - processDiscoveryResults filtering and dedupe', () => {
   it('canonical URL merge deduplicates same URL from different providers', async () => {
-    const rawResults = [
+    const searchResults = [
       {
         url: 'https://razer.com/gaming-mice/razer-viper-v3-pro',
         title: 'Razer Viper V3 Pro',
@@ -33,7 +33,7 @@ describe('Characterization - processDiscoveryResults filtering and dedupe', () =
     ];
 
     const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
-      rawResults,
+      searchResults,
       queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
     }));
 
@@ -43,7 +43,7 @@ describe('Characterization - processDiscoveryResults filtering and dedupe', () =
   });
 
   it('hard-drops denied hosts and non-https, keeps valid candidates', async () => {
-    const rawResults = [
+    const searchResults = [
       ...makeRawResults(),
       {
         url: 'https://spam-site.biz/razer-viper',
@@ -62,7 +62,7 @@ describe('Characterization - processDiscoveryResults filtering and dedupe', () =
     ];
 
     const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
-      rawResults,
+      searchResults,
     }));
 
     const candidateUrls = result.candidates.map((candidate) => candidate.url);

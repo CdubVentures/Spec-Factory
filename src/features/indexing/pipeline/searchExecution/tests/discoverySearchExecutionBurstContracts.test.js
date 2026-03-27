@@ -146,7 +146,7 @@ test('burst with 1 query: behaves identically to non-burst', async () => {
   }));
 
   assert.equal(stats().maxConcurrent, 1);
-  assert.equal(result.rawResults.length, 1);
+  assert.equal(result.searchResults.length, 1);
   assert.equal(result.searchAttempts.length, 1);
 });
 
@@ -165,7 +165,7 @@ test('burst with 0 queries: returns empty results', async () => {
     _runSearchProvidersFn: provider,
   }));
 
-  assert.deepStrictEqual(result.rawResults, []);
+  assert.deepStrictEqual(result.searchResults, []);
   assert.deepStrictEqual(result.searchAttempts, []);
   assert.deepStrictEqual(result.searchJournal, []);
 });
@@ -231,11 +231,11 @@ test('burst accumulates all results from all concurrent queries', async () => {
     _runSearchProvidersFn: provider,
   }));
 
-  assert.equal(result.rawResults.length, 6, 'all 6 results (2 per query) should accumulate');
+  assert.equal(result.searchResults.length, 6, 'all 6 results (2 per query) should accumulate');
   assert.equal(result.searchAttempts.length, 3);
   assert.equal(result.searchJournal.length, 3);
 
-  const urls = result.rawResults.map((r) => r.url);
+  const urls = result.searchResults.map((r) => r.url);
   assert.ok(urls.includes('https://a.com/1'));
   assert.ok(urls.includes('https://b.com/2'));
   assert.ok(urls.includes('https://c.com/1'));

@@ -12,7 +12,7 @@ import {
   resolveFetchModeBadge,
   resolveQueueStatusBadge,
   resolveLlmCallStatusBadge,
-  resolveTriageDecisionBadge,
+  resolveSerpSelectorDecisionBadge,
   resolveDomainRoleBadge,
   resolveSafetyClassBadge,
   resolveNeedsetState,
@@ -139,7 +139,7 @@ registerChipFamilyCases('resolveLlmCallStatusBadge', resolveLlmCallStatusBadge, 
   ['failed', 'danger'],
 ]);
 
-registerChipFamilyCases('resolveTriageDecisionBadge', resolveTriageDecisionBadge, [
+registerChipFamilyCases('resolveSerpSelectorDecisionBadge', resolveSerpSelectorDecisionBadge, [
   ['keep', 'success'],
   ['fetch', 'info'],
   ['hard_drop', 'warning'],

@@ -23,8 +23,8 @@ test('executeSearchQueries internet search uses the active provider and accumula
     ],
   }));
 
-  assert.equal(result.rawResults.length, 1);
-  assert.equal(result.rawResults[0].url, 'https://rtings.com/viper');
+  assert.equal(result.searchResults.length, 1);
+  assert.equal(result.searchResults[0].url, 'https://rtings.com/viper');
   assert.equal(result.searchAttempts.length, 1);
   assert.equal(result.searchAttempts[0].provider, 'google');
   assert.equal(result.searchAttempts[0].reason_code, 'internet_search');
@@ -50,8 +50,8 @@ test('executeSearchQueries reuses frontier cache when the provider returns zero 
     _runSearchProvidersFn: async () => [],
   }));
 
-  assert.equal(result.rawResults.length, 1);
-  assert.equal(result.rawResults[0].url, 'https://example.com/cached');
+  assert.equal(result.searchResults.length, 1);
+  assert.equal(result.searchResults[0].url, 'https://example.com/cached');
   assert.equal(result.searchAttempts[0].reason_code, 'internet_search_zero_frontier_reuse');
   assert.equal(
     logger.events.some((event) => event.event === 'discovery_query_frontier_reuse'),

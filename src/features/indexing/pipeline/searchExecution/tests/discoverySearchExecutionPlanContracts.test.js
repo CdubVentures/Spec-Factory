@@ -22,7 +22,7 @@ test('executeSearchQueries plan-only mode produces planned URLs from source host
     providerState: makeProviderState({ provider: 'none', internet_ready: false }),
   }));
 
-  assert.ok(result.rawResults.length > 0, 'should produce plan-only results');
+  assert.ok(result.searchResults.length > 0, 'should produce plan-only results');
   assert.equal(result.searchAttempts.length, 1);
   assert.equal(result.searchAttempts[0].provider, 'plan');
   assert.equal(result.searchAttempts[0].reason_code, 'plan_only_no_provider');

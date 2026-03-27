@@ -162,13 +162,13 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
   const uniqueUrlCount = computeUniqueUrls(details);
 
   const crawledCount = useMemo(() => {
-    let count = 0;
+    const seen = new Set<string>();
     for (const d of details) {
       for (const r of d.results) {
-        if (r.already_crawled) count++;
+        if (r.already_crawled && r.url) seen.add(r.url);
       }
     }
-    return count;
+    return seen.size;
   }, [details]);
 
   const dupCount = useMemo(() => {
@@ -184,13 +184,13 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
   }, [details, urlCounts, firstSeenUrlKey]);
 
   const videoCount = useMemo(() => {
-    let count = 0;
+    const seen = new Set<string>();
     for (const d of details) {
       for (const r of d.results) {
-        if (isVideoUrl(r.url)) count++;
+        if (isVideoUrl(r.url) && r.url) seen.add(r.url);
       }
     }
-    return count;
+    return seen.size;
   }, [details]);
 
   const uniqueUncrawledCount = Math.max(0, uniqueUrlCount - crawledCount - videoCount);

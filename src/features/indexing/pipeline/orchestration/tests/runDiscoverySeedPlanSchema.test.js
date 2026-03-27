@@ -106,7 +106,7 @@ function makeJourney() {
 
 function makeSearchResult() {
   return {
-    rawResults: [],
+    searchResults: [],
     searchAttempts: [],
     searchJournal: [],
     internalSatisfied: false,

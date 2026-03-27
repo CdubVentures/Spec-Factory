@@ -10,7 +10,7 @@ export const resultProcessingPhase = {
   async execute(ctx) {
     const fn = ctx._di?.processDiscoveryResultsFn || processDiscoveryResults;
     const discoveryResult = await fn({
-      rawResults: ctx.rawResults,
+      searchResults: ctx.searchResults,
       searchAttempts: ctx.searchAttempts,
       searchJournal: ctx.searchJournal,
       internalSatisfied: ctx.internalSatisfied,

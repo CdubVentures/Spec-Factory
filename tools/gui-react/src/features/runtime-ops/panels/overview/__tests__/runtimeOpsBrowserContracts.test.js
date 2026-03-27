@@ -51,8 +51,8 @@ async function loadBrowserStreamModule() {
   });
 }
 
-async function loadWorkerLivePanelModule() {
-  return loadBundledModule('tools/gui-react/src/features/runtime-ops/panels/workers/WorkerLivePanel.tsx', {
+async function loadFetchWorkerPanelModule() {
+  return loadBundledModule('tools/gui-react/src/features/runtime-ops/panels/workers/FetchWorkerPanel.tsx', {
     prefix: 'runtime-ops-worker-browser-contracts-',
     stubs: {
       react: createReactStub(),
@@ -136,8 +136,8 @@ test('BrowserStream copy stays generic and covers both browser-backed and non-br
   assert.equal(shouldHydrateRetainedBrowserFrame(undefined), false);
 });
 
-test('WorkerLivePanel derives BrowserStream props from the selected worker row', async () => {
-  const { buildBrowserStreamProps } = await loadWorkerLivePanelModule();
+test('FetchWorkerPanel derives BrowserStream props from the selected worker row', async () => {
+  const { buildBrowserStreamProps } = await loadFetchWorkerPanelModule();
 
   const worker = {
     worker_id: 'fetch-5',

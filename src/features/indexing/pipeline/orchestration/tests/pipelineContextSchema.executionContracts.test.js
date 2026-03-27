@@ -19,13 +19,13 @@ test('pipelineContextAfterExecution accepts execution data and nullable external
   );
 });
 
-test('pipelineContextAfterExecution rejects missing rawResults and malformed execution arrays', () => {
+test('pipelineContextAfterExecution rejects missing searchResults and malformed execution arrays', () => {
   const missingRawResults = makeExecution();
-  delete missingRawResults.rawResults;
+  delete missingRawResults.searchResults;
   assert.equal(pipelineContextAfterExecution.safeParse(missingRawResults).success, false);
 
   const malformedRawResults = makeExecution({
-    rawResults: [{ title: 'no url or provider' }],
+    searchResults: [{ title: 'no url or provider' }],
   });
   assert.equal(pipelineContextAfterExecution.safeParse(malformedRawResults).success, false);
 

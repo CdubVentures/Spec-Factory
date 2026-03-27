@@ -19,12 +19,13 @@ import {
 import { toArray } from '../shared/discoveryIdentity.js';
 import { runWithConcurrency } from '../shared/helpers.js';
 import { normalizeHost } from '../shared/hostParser.js';
+import { isVideoUrl } from '../shared/urlClassifier.js';
 
 /**
  * Execute the search queries phase of discovery.
  *
  * @param {object} ctx - Execution context
- * @returns {{ rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason }}
+ * @returns {{ searchResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason }}
  */
 export async function executeSearchQueries({
   // Infrastructure
@@ -418,8 +419,21 @@ export async function executeSearchQueries({
     }
   }
 
+  // WHY: Search Results phase owns dedup + video + crawled filtering.
+  // Downstream phases receive only unique uncrawled URLs.
+  const seen = new Set();
+  const searchResults = [];
+  for (const row of rawResults) {
+    const url = String(row?.url || '').trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    if (isVideoUrl(url)) continue;
+    if (frontierDb?.getUrlRow?.(url)?.fetch_count > 0) continue;
+    searchResults.push(row);
+  }
+
   return {
-    rawResults,
+    searchResults,
     searchAttempts,
     searchJournal,
     internalSatisfied,

@@ -248,8 +248,8 @@ async function loadSearchPlannerModule() {
   });
 }
 
-async function loadSerpTriageModule() {
-  return loadBundledModule('tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpTriagePanel.tsx', {
+async function loadSerpSelectorModule() {
+  return loadBundledModule('tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchSerpSelectorPanel.tsx', {
     prefix: 'runtime-ops-serp-triage-contract-',
     stubs: {
       ...createCommonUiStubs(),
@@ -260,7 +260,7 @@ async function loadSerpTriageModule() {
         export function formatMs(value) {
           return String(value ?? 0);
         }
-        export function triageDecisionBadgeClass() {
+        export function serpSelectorDecisionBadgeClass() {
           return 'sf-chip-neutral';
         }
         export function domainRoleBadgeClass() {
@@ -327,23 +327,23 @@ async function loadSerpTriageModule() {
           return { type: 'progress-ring', props };
         }
       `,
-      '../../selectors/serpTriageHelpers.js': `
-        export function computeTriageDecisionCounts() {
+      '../../selectors/serpSelectorHelpers.js': `
+        export function computeSerpSelectorDecisionCounts() {
           return { keep: 0, maybe: 0, drop: 0 };
         }
-        export function computeTriageTopDomains() {
+        export function computeSerpSelectorTopDomains() {
           return [];
         }
-        export function computeTriageUniqueDomains() {
+        export function computeSerpSelectorUniqueDomains() {
           return 0;
         }
-        export function buildTriageDecisionSegments() {
+        export function buildSerpSelectorDecisionSegments() {
           return [];
         }
-        export function buildTriageFunnelBullets() {
+        export function buildSerpSelectorFunnelBullets() {
           return [];
         }
-        export function buildTriageDomainDecisionBreakdown() {
+        export function buildSerpSelectorDomainDecisionBreakdown() {
           return [];
         }
       `,
@@ -444,9 +444,9 @@ function createSearchProfileData(overrides = {}) {
 }
 
 test('prefetch planner and triage panels hide live-setting badges until booleans are defined', async () => {
-  const [{ PrefetchSearchPlannerPanel }, { PrefetchSerpTriagePanel }] = await Promise.all([
+  const [{ PrefetchSearchPlannerPanel }, { PrefetchSerpSelectorPanel }] = await Promise.all([
     loadSearchPlannerModule(),
-    loadSerpTriageModule(),
+    loadSerpSelectorModule(),
   ]);
 
   const plannerWithoutLiveSettings = renderElement(PrefetchSearchPlannerPanel({
@@ -456,9 +456,9 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     liveSettings: undefined,
     idxRuntime: [],
   }));
-  const triageWithoutLiveSettings = renderElement(PrefetchSerpTriagePanel({
+  const triageWithoutLiveSettings = renderElement(PrefetchSerpSelectorPanel({
     calls: [],
-    serpTriage: [],
+    serpSelector: [],
     persistScope: 'runtime-ops-live-settings-contract',
     liveSettings: undefined,
     idxRuntime: [],
@@ -483,9 +483,9 @@ test('prefetch planner and triage panels hide live-setting badges until booleans
     liveSettings: {},
     idxRuntime: [],
   }));
-  const triageWithExplicitFalse = renderElement(PrefetchSerpTriagePanel({
+  const triageWithExplicitFalse = renderElement(PrefetchSerpSelectorPanel({
     calls: [],
-    serpTriage: [],
+    serpSelector: [],
     persistScope: 'runtime-ops-live-settings-contract',
     liveSettings: { phase3LlmTriageEnabled: false },
     idxRuntime: [],

@@ -541,7 +541,7 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
   }, ts);
 }
 
-async function handleSerpTriageCompleted(state, deps, { ts, row }) {
+async function handleSerpSelectorCompleted(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'serp_selector_completed' });
   setPhaseCursor(state, 'phase_07_serp_selector');
   await emit(state, 'search', 'serp_selector_completed', {
@@ -901,7 +901,7 @@ const EVENT_HANDLERS = new Map([
   ['search_plan_generated',           handleSearchPlanGenerated],
   ['query_journey_completed',         handleQueryJourneyCompleted],
   ['search_results_collected',        handleSearchResultsCollected],
-  ['serp_selector_completed',           handleSerpTriageCompleted],
+  ['serp_selector_completed',           handleSerpSelectorCompleted],
   ['domains_classified',              handleDomainsClassified],
   ['evidence_index_result',           handleEvidenceIndexResult],
   ['phase07_prime_sources_built',     handlePhase07PrimeSourcesBuilt],

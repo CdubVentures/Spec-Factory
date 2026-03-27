@@ -60,7 +60,7 @@ describe('SERP Selector deterministic reranker fallback', () => {
 
   it('fallback with zero candidates produces zero selected', async () => {
     const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
-      rawResults: [],
+      searchResults: [],
       _serpSelectorCallFn: makeThrowingSelectorFn(),
     }));
 

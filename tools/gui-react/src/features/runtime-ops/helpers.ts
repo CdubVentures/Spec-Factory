@@ -9,7 +9,7 @@ import {
   resolveFetchModeBadge,
   resolveQueueStatusBadge,
   resolveLlmCallStatusBadge,
-  resolveTriageDecisionBadge,
+  resolveSerpSelectorDecisionBadge,
   resolveDomainRoleBadge,
   resolveSafetyClassBadge,
 } from './badgeRegistries.ts';
@@ -161,13 +161,13 @@ export function tierBadgeClass(tier: number | null): string { return resolveTier
 // ── Pre-Fetch Phase Helpers ──
 
 export function llmCallStatusBadgeClass(status: string): string { return resolveLlmCallStatusBadge(status); }
-export function triageDecisionBadgeClass(decision: string): string { return resolveTriageDecisionBadge(decision); }
+export function serpSelectorDecisionBadgeClass(decision: string): string { return resolveSerpSelectorDecisionBadge(decision); }
 export function domainRoleBadgeClass(role: string): string { return resolveDomainRoleBadge(role); }
 export function safetyClassBadgeClass(safetyClass: string): string { return resolveSafetyClassBadge(safetyClass); }
 
-import type { TriageScoreComponents } from './types.ts';
+import type { SerpSelectorScoreComponents } from './types.ts';
 
-export function scoreBarSegments(components: TriageScoreComponents): { label: string; value: number; color: string }[] {
+export function scoreBarSegments(components: SerpSelectorScoreComponents): { label: string; value: number; color: string }[] {
   return [
     { label: 'Relevance', value: Math.max(0, components.base_relevance), color: 'sf-metric-fill-info' },
     { label: 'Tier Boost', value: Math.max(0, components.tier_boost), color: 'sf-metric-fill-success' },

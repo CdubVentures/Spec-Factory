@@ -214,20 +214,43 @@ export async function loadLearningProfile({ storage, config, category, job, spec
   };
 }
 
-export function applyLearningSeeds(planner, learningProfile) {
+// WHY: Pure function extracting the token-matching filter from SourcePlanner.seedLearning.
+// Filters learning profile URLs by brand/model token presence in URL components.
+export function collectLearningSeeds(learningProfile, { brandTokens = [], modelTokens = [] } = {}) {
   const preferredUrls = learningProfile?.profile?.preferred_urls || [];
   const feedbackUrls = (learningProfile?.profile?.feedback_urls || [])
     .map((row) => row.url)
     .filter(Boolean);
   const seedUrls = [...new Set([...preferredUrls, ...feedbackUrls])];
-  if (!seedUrls.length) {
-    return;
+  if (!seedUrls.length) return [];
+
+  const result = [];
+  for (const url of seedUrls) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      continue;
+    }
+    const haystack = `${parsed.hostname || ''} ${parsed.pathname || ''} ${parsed.search || ''}`.toLowerCase();
+    const modelHits = modelTokens.reduce(
+      (acc, t) => acc + (haystack.includes(t.toLowerCase()) ? 1 : 0), 0
+    );
+    const brandHits = brandTokens.reduce(
+      (acc, t) => acc + (haystack.includes(t.toLowerCase()) ? 1 : 0), 0
+    );
+    const modelThreshold = modelTokens.length >= 3 ? 2 : 1;
+    const modelMatch = modelTokens.length > 0 && modelHits >= modelThreshold;
+    const brandMatch = brandTokens.length > 0 && brandHits >= 1;
+
+    if (modelTokens.length > 0) {
+      if (!modelMatch || (brandTokens.length > 0 && !brandMatch)) continue;
+    } else if (!brandMatch) {
+      continue;
+    }
+    result.push(url);
   }
-  if (typeof planner.seedLearning === 'function') {
-    planner.seedLearning(seedUrls);
-    return;
-  }
-  planner.seed(seedUrls, { forceBrandBypass: false });
+  return result;
 }
 
 export async function persistLearningProfile({

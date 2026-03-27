@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
-import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings, SerpTriageResult } from '../../types.ts';
+import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings, SerpSelectorResult } from '../../types.ts';
 import { formatMs, domainRoleBadgeClass, safetyClassBadgeClass, pctString } from '../../helpers.ts';
 import { ScoreBar } from '../../components/ScoreBar.tsx';
 import { StackedScoreBar } from '../../components/StackedScoreBar.tsx';
@@ -30,7 +30,7 @@ import type { RuntimeIdxBadge } from '../../types.ts';
 interface PrefetchDomainClassifierPanelProps {
   calls: PrefetchLlmCall[];
   domainHealth?: DomainHealthRow[];
-  serpTriage?: SerpTriageResult[];
+  serpSelector?: SerpSelectorResult[];
   persistScope: string;
   liveSettings?: PrefetchLiveSettings;
   idxRuntime?: RuntimeIdxBadge[];
@@ -92,7 +92,7 @@ function DomainDetailDrawer({
 
 /* ── Main Panel ── */
 
-export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpTriage, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
+export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelector, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
   const health = domainHealth || [];
   const hasStructured = health.length > 0;
   const overallStatus = hasStructured ? 'done' : 'pending';
@@ -106,7 +106,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpTriage,
   const fetchSummary = useMemo(() => computeFetchSummary(health), [health]);
   const hasSafetyData = safetyCounts.safe + safetyCounts.caution + safetyCounts.blocked > 0;
 
-  const urlsByDomain = useMemo(() => groupKeptUrlsByDomain(serpTriage || []), [serpTriage]);
+  const urlsByDomain = useMemo(() => groupKeptUrlsByDomain(serpSelector || []), [serpSelector]);
   const urlSafety = useMemo(() => computeUrlSafetyBreakdown(urlsByDomain, health), [urlsByDomain, health]);
 
   const domainValues = useMemo(

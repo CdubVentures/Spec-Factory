@@ -9,7 +9,6 @@ import {
   resolveIndexingResumeKey,
   defaultRuntimeOverrides,
   normalizeRuntimeOverrides,
-  applyRuntimeOverridesToPlanner
 } from '../runtimeHelpers.js';
 
 // --- parseMinEvidenceRefs ---
@@ -292,25 +291,3 @@ test('normalizeRuntimeOverrides deduplicates blocked domains', () => {
   assert.deepEqual(result.blocked_domains, ['example.com']);
 });
 
-// --- applyRuntimeOverridesToPlanner ---
-
-test('applyRuntimeOverridesToPlanner no longer overrides maxUrls (cap removed)', () => {
-  const planner = { maxUrls: 100, blockHost: () => {} };
-  applyRuntimeOverridesToPlanner(planner, { max_urls_per_product: 50 });
-  // WHY: maxUrls override was removed — planner caps are internal hardcodes now.
-  assert.equal(planner.maxUrls, 100);
-});
-
-test('applyRuntimeOverridesToPlanner calls blockHost for each domain', () => {
-  const blocked = [];
-  const planner = { blockHost: (host, reason) => blocked.push({ host, reason }) };
-  applyRuntimeOverridesToPlanner(planner, { blocked_domains: ['a.com', 'b.com'] });
-  assert.equal(blocked.length, 2);
-  assert.equal(blocked[0].host, 'a.com');
-  assert.equal(blocked[1].reason, 'runtime_override_blocked_domain');
-});
-
-test('applyRuntimeOverridesToPlanner does nothing for null planner', () => {
-  applyRuntimeOverridesToPlanner(null, { max_urls_per_product: 10 });
-  applyRuntimeOverridesToPlanner(undefined, {});
-});

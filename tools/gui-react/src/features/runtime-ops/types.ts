@@ -18,8 +18,8 @@ import type {
   PipelineTransition,
   LlmCallRow,
   SearchPlanEnhancementRow,
-  TriageScoreComponents,
-  SerpTriageFunnel,
+  SerpSelectorScoreComponents,
+  SerpSelectorFunnel,
   DomainHealthRow,
   PrefetchSearchResult,
   BrandResolutionData,
@@ -27,10 +27,10 @@ import type {
   QueueJobRowGen,
   RuntimeOpsWorkerRowGen,
   PrefetchLlmCallGen,
-  LlmCallsDashboardSummaryGen,
-  TriageCandidateGen,
+  LlmWorkerSummaryGen,
+  SerpSelectorCandidateGen,
   SearchPlanPassBase,
-  SerpTriageEnvelope,
+  SerpSelectorEnvelope,
   SerpSearchResultDetail,
 } from './types.generated.ts';
 
@@ -54,8 +54,8 @@ export type {
   PipelineTransition,
   LlmCallRow,
   SearchPlanEnhancementRow,
-  TriageScoreComponents,
-  SerpTriageFunnel,
+  SerpSelectorScoreComponents,
+  SerpSelectorFunnel,
   DomainHealthRow,
   PrefetchSearchResult,
   BrandResolutionData,
@@ -98,13 +98,13 @@ export interface PrefetchLlmCall extends PrefetchLlmCallGen {
   tokens: { input: number; output: number };
 }
 
-export interface LlmCallsDashboardSummary extends LlmCallsDashboardSummaryGen {
+export interface LlmWorkerSummary extends LlmWorkerSummaryGen {
   by_model: Array<{ model: string; calls: number; cost_usd: number }>;
   by_call_type: Array<{ call_type: string; cost_usd: number }>;
 }
 
-export interface TriageCandidate extends TriageCandidateGen {
-  score_components: TriageScoreComponents;
+export interface SerpSelectorCandidate extends SerpSelectorCandidateGen {
+  score_components: SerpSelectorScoreComponents;
 }
 
 export interface SearchPlanPass extends SearchPlanPassBase {
@@ -115,9 +115,9 @@ export interface SearchPlanPass extends SearchPlanPassBase {
   enhancement_rows?: SearchPlanEnhancementRow[];
 }
 
-export interface SerpTriageResult extends SerpTriageEnvelope {
-  funnel?: SerpTriageFunnel | null;
-  candidates: TriageCandidate[];
+export interface SerpSelectorResult extends SerpSelectorEnvelope {
+  funnel?: SerpSelectorFunnel | null;
+  candidates: SerpSelectorCandidate[];
 }
 
 export interface SearchResultDetail extends SerpSearchResultDetail {
@@ -643,10 +643,10 @@ export interface SerpResultRow {
 
 // ── LLM Calls Dashboard ─────────────────────────────────────────────────────
 
-export interface LlmCallsDashboardResponse {
+export interface LlmWorkerResponse {
   run_id?: string;
   calls: LlmCallRow[];
-  summary: LlmCallsDashboardSummary;
+  summary: LlmWorkerSummary;
 }
 
 // ── Live Settings (from /api/v1/runtime-settings) ──
@@ -685,7 +685,7 @@ export interface PreFetchPhasesResponse {
   } | null;
   search_result_details: SearchResultDetail[];
   cross_query_url_counts?: Record<string, number>;
-  serp_selector: SerpTriageResult[];
+  serp_selector: SerpSelectorResult[];
   domain_health: DomainHealthRow[];
   phase_cursor?: string;
   idx_runtime?: Partial<Record<PrefetchTabKey, RuntimeIdxBadge[]>>;

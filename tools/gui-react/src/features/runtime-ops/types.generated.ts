@@ -180,13 +180,13 @@ export interface LlmCallRow {
   prompt_preview: string | null;
   response_preview: string | null;
   prefetch_tab: string | null;
-  is_fallback?: boolean;
-  is_lab?: boolean;
-  primary_duration_ms?: number | null;
+  is_fallback: boolean;
+  is_lab: boolean;
+  primary_duration_ms: number | null;
   ts: string;
 }
 
-export interface LlmCallsDashboardSummaryGen {
+export interface LlmWorkerSummaryGen {
   total_calls: number;
   active_calls: number;
   completed_calls: number;
@@ -220,14 +220,14 @@ export interface SerpSearchResultDetail {
   dedupe_count: number;
 }
 
-export interface TriageScoreComponents {
+export interface SerpSelectorScoreComponents {
   base_relevance: number;
   tier_boost: number;
   identity_match: number;
   penalties: number;
 }
 
-export interface TriageCandidateGen {
+export interface SerpSelectorCandidateGen {
   url: string;
   title: string;
   domain: string;
@@ -243,20 +243,20 @@ export interface TriageCandidateGen {
   approval_bucket: string;
 }
 
-export interface SerpTriageEnvelope {
+export interface SerpSelectorEnvelope {
   query: string;
   kept_count: number;
   dropped_count: number;
 }
 
-export interface SerpTriageFunnel {
+export interface SerpSelectorFunnel {
   raw_input: number;
   hard_drop_count: number;
   candidates_after_hard_drop: number;
   canon_merge_count: number;
   candidates_classified: number;
   candidates_sent_to_llm: number;
-  overflow_capped?: number;
+  overflow_capped: number;
   llm_model: string;
   llm_applied: boolean;
 }
@@ -272,6 +272,7 @@ export interface PrefetchSearchProfileBase {
   variant_guard_terms: unknown[];
   focus_fields: unknown[];
   query_rows: unknown[];
+  deterministic_query_rows: unknown[];
   query_guard: Record<string, unknown>;
   hint_source_counts: Record<string, unknown>;
   field_rule_gate_counts: Record<string, unknown>;

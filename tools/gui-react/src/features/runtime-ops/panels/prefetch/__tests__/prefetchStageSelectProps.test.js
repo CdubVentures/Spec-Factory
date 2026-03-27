@@ -104,7 +104,7 @@ async function createPrefetchHarness() {
           './PrefetchSearchPlannerPanel.tsx': buildPanelStub('PrefetchSearchPlannerPanel'),
           './PrefetchQueryJourneyPanel.tsx': buildPanelStub('PrefetchQueryJourneyPanel'),
           './PrefetchSearchResultsPanel.tsx': buildPanelStub('PrefetchSearchResultsPanel'),
-          './PrefetchSerpTriagePanel.tsx': buildPanelStub('PrefetchSerpTriagePanel'),
+          './PrefetchSerpSelectorPanel.tsx': buildPanelStub('PrefetchSerpSelectorPanel'),
           './PrefetchDomainClassifierPanel.tsx': buildPanelStub('PrefetchDomainClassifierPanel'),
         },
       },
@@ -206,7 +206,7 @@ test('prefetch select props surface the current stage contracts', async () => {
     liveSettings: harness.liveSettings,
   });
   assert.deepStrictEqual(serpSelectorProps.calls, data.llm_calls.serp_selector);
-  assert.deepStrictEqual(serpSelectorProps.serpTriage, data.serp_selector);
+  assert.deepStrictEqual(serpSelectorProps.serpSelector, data.serp_selector);
   assert.deepStrictEqual(serpSelectorProps.liveSettings, harness.liveSettings);
   assert.deepStrictEqual(serpSelectorProps.idxRuntime, data.idx_runtime.serp_selector);
 

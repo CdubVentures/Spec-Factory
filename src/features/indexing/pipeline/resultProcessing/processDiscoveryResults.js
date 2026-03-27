@@ -33,8 +33,8 @@ import { callLlmWithRouting } from '../../../../core/llm/client/routing.js';
 import { configInt } from '../../../../shared/settingsAccessor.js';
 
 export async function processDiscoveryResults({
-  // From executeSearchQueries return
-  rawResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
+  // From executeSearchQueries return (deduped, video-filtered, crawled-filtered)
+  searchResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
   // Core services
   config, storage, categoryConfig, job, runId, logger, runtimeTraceWriter, frontierDb,
   // Identity & learning
@@ -59,7 +59,7 @@ export async function processDiscoveryResults({
     if (q && !queryToSlot.has(q)) queryToSlot.set(q, { slot: SLOT_LABELS[i], index: i });
   }
   const serpRankByUrlQuery = new Map();
-  for (const raw of rawResults) {
+  for (const raw of searchResults) {
     const url = String(raw?.url || '').trim();
     const query = String(raw?.query || '').trim().toLowerCase();
     const rank = Number(raw?.rank) || 0;
@@ -73,9 +73,8 @@ export async function processDiscoveryResults({
 
   // ── Phase 2: Hard-drop filter (replaces inline non-HTTPS/denied/cooldown checks) ──
   const { survivors: hardDropSurvivors, hardDrops } = applyHardDropFilter({
-    dedupedResults: rawResults,
+    dedupedResults: searchResults,
     categoryConfig,
-    frontierDb,
   });
 
   // Populate traces for hard-dropped URLs
@@ -226,12 +225,13 @@ export async function processDiscoveryResults({
   // WHY: Emit serp_selector_completed so the bridge handler populates
   // the SERP Selector prefetch panel and enriches search worker URLs.
   const keepIdSet = new Set(toArray(validOutput.keep_ids));
+
   logger?.info?.('serp_selector_completed', {
     query: '',
     kept_count: selected.length,
     dropped_count: notSelected.length,
     funnel: {
-      raw_input: new Set((rawResults || []).map((r) => String(r?.url || '').trim()).filter(Boolean)).size,
+      raw_input: searchResults.length,
       hard_drop_count: hardDrops.length,
       candidates_after_hard_drop: hardDropSurvivors.length,
       canon_merge_count: canonMergeCount,
@@ -321,7 +321,7 @@ export async function processDiscoveryResults({
     candidateByUrl,
     selectedUrlSet,
     candidateRows,
-    rawResults,
+    searchResults,
     hardDrops,
     selected,
     notSelected,

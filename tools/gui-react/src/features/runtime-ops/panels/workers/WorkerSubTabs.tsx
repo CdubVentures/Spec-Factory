@@ -46,7 +46,7 @@ function formatErrorLabel(error: string): string {
   if (error.includes('ERR_CONNECTION_REFUSED')) return 'REFUSED';
   if (error.includes('ERR_CONNECTION_RESET')) return 'RESET';
   if (error.includes('Navigation timed out')) return 'NAV TIMEOUT';
-  if (error.includes('requestHandler timed out')) return 'TIMEOUT';
+  if (error.includes('requestHandler timed out')) return 'SLOW PAGE';
   if (error.includes('timed out')) return 'TIMEOUT';
   const httpMatch = error.match(/^HTTP (\d+)$/);
   if (httpMatch) return httpMatch[1];

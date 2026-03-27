@@ -27,8 +27,8 @@ import {
 
 import {
   SEARCH_RESULT_ENTRY_SHAPE, SEARCH_RESULT_DETAIL_SHAPE,
-  SERP_SCORE_COMPONENTS_SHAPE, SERP_TRIAGE_CANDIDATE_SHAPE,
-  SERP_TRIAGE_ENVELOPE_SHAPE, SERP_TRIAGE_FUNNEL_SHAPE,
+  SERP_SCORE_COMPONENTS_SHAPE, SERP_SELECTOR_CANDIDATE_SHAPE,
+  SERP_SELECTOR_ENVELOPE_SHAPE, SERP_SELECTOR_FUNNEL_SHAPE,
   SEARCH_PROFILE_SHAPE, SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE,
 } from '../../../src/features/indexing/api/contracts/prefetchContract.js';
 
@@ -53,16 +53,16 @@ const SHAPE_REGISTRY = [
   { shape: EXTRACTION_FIELD_SHAPE, name: 'EXTRACTION_FIELD_SHAPE', iface: 'ExtractionFieldRow' },
   { shape: EXTRACTION_CANDIDATE_SHAPE, name: 'EXTRACTION_CANDIDATE_SHAPE', iface: 'ExtractionCandidate' },
   { shape: LLM_CALL_ROW_SHAPE, name: 'LLM_CALL_ROW_SHAPE', iface: 'LlmCallRow' },
-  { shape: LLM_DASHBOARD_SUMMARY_SHAPE, name: 'LLM_DASHBOARD_SUMMARY_SHAPE', iface: 'LlmCallsDashboardSummaryGen' },
+  { shape: LLM_DASHBOARD_SUMMARY_SHAPE, name: 'LLM_DASHBOARD_SUMMARY_SHAPE', iface: 'LlmWorkerSummaryGen' },
   // prefetchContract.js (already shape descriptors)
   // WHY: Renamed to avoid collision with hand-written SearchResultEntry (worker-level,
   // different fields). The generated shape is the SERP overview; consumer type is SerpResultRow.
   { shape: SEARCH_RESULT_ENTRY_SHAPE, name: 'SEARCH_RESULT_ENTRY_SHAPE', iface: 'SerpSearchResultEntry' },
   { shape: SEARCH_RESULT_DETAIL_SHAPE, name: 'SEARCH_RESULT_DETAIL_SHAPE', iface: 'SerpSearchResultDetail' },
-  { shape: SERP_SCORE_COMPONENTS_SHAPE, name: 'SERP_SCORE_COMPONENTS_SHAPE', iface: 'TriageScoreComponents' },
-  { shape: SERP_TRIAGE_CANDIDATE_SHAPE, name: 'SERP_TRIAGE_CANDIDATE_SHAPE', iface: 'TriageCandidateGen' },
-  { shape: SERP_TRIAGE_ENVELOPE_SHAPE, name: 'SERP_TRIAGE_ENVELOPE_SHAPE', iface: 'SerpTriageEnvelope' },
-  { shape: SERP_TRIAGE_FUNNEL_SHAPE, name: 'SERP_TRIAGE_FUNNEL_SHAPE', iface: 'SerpTriageFunnel' },
+  { shape: SERP_SCORE_COMPONENTS_SHAPE, name: 'SERP_SCORE_COMPONENTS_SHAPE', iface: 'SerpSelectorScoreComponents' },
+  { shape: SERP_SELECTOR_CANDIDATE_SHAPE, name: 'SERP_SELECTOR_CANDIDATE_SHAPE', iface: 'SerpSelectorCandidateGen' },
+  { shape: SERP_SELECTOR_ENVELOPE_SHAPE, name: 'SERP_SELECTOR_ENVELOPE_SHAPE', iface: 'SerpSelectorEnvelope' },
+  { shape: SERP_SELECTOR_FUNNEL_SHAPE, name: 'SERP_SELECTOR_FUNNEL_SHAPE', iface: 'SerpSelectorFunnel' },
   { shape: SEARCH_PROFILE_SHAPE, name: 'SEARCH_PROFILE_SHAPE', iface: 'PrefetchSearchProfileBase' },
   { shape: SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE, name: 'SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE', iface: 'SearchPlanEnhancementRow' },
   // runtimeOpsPrefetchContract.js

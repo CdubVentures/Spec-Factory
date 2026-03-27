@@ -1,5 +1,6 @@
 import { slug, parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
 import pathNode from 'node:path';
+import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 
@@ -98,6 +99,15 @@ export function createPipelineCommands({
       );
     }
 
+    // Open per-category SpecDb for event logging (WAL-safe, best-effort)
+    let specDb = null;
+    try {
+      const { SpecDb } = await import('../../../db/specDb.js');
+      const specDbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+      await fsNode.mkdir(specDbDir, { recursive: true });
+      specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
+    } catch { /* best-effort: pipeline still works without SQL event logging */ }
+
     const bridge = new IndexLabRuntimeBridge({
       outRoot,
       context: {
@@ -129,6 +139,7 @@ export function createPipelineCommands({
 
     const runConfig = {
       ...config,
+      specDb,
       onRuntimeEvent: (row) => bridge.onRuntimeEvent(row),
       onScreencastFrame
     };

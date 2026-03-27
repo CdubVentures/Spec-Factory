@@ -48,7 +48,6 @@ import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductEx
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
 import { resolveAllExtractionPlugins, createExtractionRunner } from '../features/extraction/index.js';
-import { runCrawlProcessingLifecycle } from './runCrawlProcessingLifecycle.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -76,7 +75,7 @@ export async function runProduct({
         storage,
         config,
         runId,
-        createEventLogger: (options) => new EventLogger(options),
+        createEventLogger: (options) => new EventLogger({ ...options, specDb: config.specDb || null }),
       }),
     }),
   });
@@ -222,26 +221,23 @@ export async function runProduct({
   ]);
   runtimeOverrides = executionBootstrapState.runtimeOverrides;
 
-  const { planner, discoveryResult } = executionBootstrapState;
+  const { orderedFetchPlan, workerIdMap, fetchPlanStats } = executionBootstrapState;
 
-  // Diagnostic: log planner state after bootstrap to verify discovery seeded URLs
-  const plannerHasUrls = planner?.hasNext?.() ?? false;
-  logger.info('crawl_planner_state', {
-    has_urls: plannerHasUrls,
-    priority_queue_length: planner?.priorityQueue?.length ?? 0,
-    manufacturer_queue_length: planner?.manufacturerQueue?.length ?? 0,
-    queue_length: planner?.queue?.length ?? 0,
-    candidate_queue_length: planner?.candidateQueue?.length ?? 0,
-    discovery_selected_count: discoveryResult?.enqueue_summary?.approved_count ?? 0,
+  logger.info('crawl_fetch_plan_state', {
+    has_urls: orderedFetchPlan?.length > 0,
+    total_queued: fetchPlanStats?.total_queued ?? 0,
+    seed_count: fetchPlanStats?.seed_count ?? 0,
+    learning_seed_count: fetchPlanStats?.learning_seed_count ?? 0,
+    approved_count: fetchPlanStats?.approved_count ?? 0,
+    blocked_count: fetchPlanStats?.blocked_count ?? 0,
   });
 
   try {
     const maxRunMs = (Number(config.maxRunSeconds) || 0) * 1000;
-    const { crawlResults } = await runCrawlProcessingLifecycle({
-      planner,
-      session,
+    const { crawlResults } = await session.runFetchPlan({
+      orderedSources: orderedFetchPlan,
+      workerIdMap,
       frontierDb,
-      settings: config,
       logger,
       startMs,
       maxRunMs,

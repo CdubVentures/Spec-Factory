@@ -13,7 +13,7 @@ import { PrefetchBrandResolverPanel } from './PrefetchBrandResolverPanel.tsx';
 import { PrefetchSearchPlannerPanel } from './PrefetchSearchPlannerPanel.tsx';
 import { PrefetchQueryJourneyPanel } from './PrefetchQueryJourneyPanel.tsx';
 import { PrefetchSearchResultsPanel } from './PrefetchSearchResultsPanel.tsx';
-import { PrefetchSerpTriagePanel } from './PrefetchSerpTriagePanel.tsx';
+import { PrefetchSerpSelectorPanel } from './PrefetchSerpSelectorPanel.tsx';
 import { PrefetchDomainClassifierPanel } from './PrefetchDomainClassifierPanel.tsx';
 
 export { PREFETCH_STAGE_KEYS, type PrefetchTabKey } from './prefetchStageKeys.generated.ts';
@@ -88,7 +88,7 @@ export const PREFETCH_SELECT_PROPS: Record<PrefetchTabKey, (ctx: PrefetchPanelCo
   }),
   serp_selector: (ctx) => ({
     calls: ctx.data?.llm_calls?.serp_selector ?? [],
-    serpTriage: ctx.data?.serp_selector,
+    serpSelector: ctx.data?.serp_selector,
     persistScope: ctx.persistScope,
     liveSettings: ctx.liveSettings,
     idxRuntime: ctx.data?.idx_runtime?.serp_selector,
@@ -96,7 +96,7 @@ export const PREFETCH_SELECT_PROPS: Record<PrefetchTabKey, (ctx: PrefetchPanelCo
   domain_classifier: (ctx) => ({
     calls: ctx.data?.llm_calls?.domain_classifier ?? [],
     domainHealth: ctx.data?.domain_health,
-    serpTriage: ctx.data?.serp_selector,
+    serpSelector: ctx.data?.serp_selector,
     persistScope: ctx.persistScope,
     liveSettings: ctx.liveSettings,
     idxRuntime: ctx.data?.idx_runtime?.domain_classifier,
@@ -115,7 +115,7 @@ const PREFETCH_COMPONENTS: Record<PrefetchTabKey, ComponentType<any>> = {
   search_planner: PrefetchSearchPlannerPanel,
   query_journey: PrefetchQueryJourneyPanel,
   search_results: PrefetchSearchResultsPanel,
-  serp_selector: PrefetchSerpTriagePanel,
+  serp_selector: PrefetchSerpSelectorPanel,
   domain_classifier: PrefetchDomainClassifierPanel,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */

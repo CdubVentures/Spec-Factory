@@ -257,13 +257,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         // WHY: These errors cannot be resolved by retrying with a new session.
         // Timeouts = server is slow/down, retrying burns another full handler timeout.
         // Downloads = site serves a file. DNS = domain doesn't exist.
+        // WHY: requestHandler timed out is NOT here — the page may have loaded
+        // (CDP screencast proves it) but processing was slow. Retry may succeed.
+        // Navigation timed out IS here — the page genuinely didn't respond.
         if (
           msg.includes('Download is starting')
           || msg.includes('ERR_NAME_NOT_RESOLVED')
           || msg.includes('ERR_CONNECTION_REFUSED')
           || msg.includes('ERR_CONNECTION_RESET')
           || msg.includes('ERR_TUNNEL_CONNECTION_FAILED')
-          || msg.includes('requestHandler timed out')
           || msg.includes('Navigation timed out')
         ) {
           request.noRetry = true;
@@ -642,5 +644,99 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     }
   }
 
-  return { start, processUrl, processBatch, retryWithProxy, warmUp, shutdown, slotCount, get videoDir() { return videoDir; } };
+  // WHY: Complete fetch lifecycle — replaces runCrawlProcessingLifecycle.
+  // Takes a pre-sorted, pre-ID'd URL list and handles batching, block
+  // classification, frontier recording, and two-pass proxy retry.
+  async function runFetchPlan({ orderedSources = [], workerIdMap = new Map(), frontierDb = null, logger: planLogger = null, startMs = 0, maxRunMs = 0 } = {}) {
+    const crawlResults = [];
+    const batchSize = (slotCount || 4) * 2;
+    const urls = orderedSources.map((s) => s.url);
+
+    let offset = 0;
+    while (offset < urls.length) {
+      if (maxRunMs > 0 && (Date.now() - startMs) >= maxRunMs) break;
+
+      const batch = [];
+      while (batch.length < batchSize && offset < urls.length) {
+        batch.push(urls[offset++]);
+      }
+      if (batch.length === 0) continue;
+
+      const settled = await processBatch(batch, { workerIdMap });
+      const batchResults = [];
+
+      for (let i = 0; i < settled.length; i++) {
+        const entry = settled[i];
+        const url = batch[i] || '';
+
+        if (entry.status === 'fulfilled') {
+          const result = entry.value;
+          const { blocked, blockReason } = classifyBlockStatus({
+            status: result.status, html: result.html,
+          });
+          result.blocked = blocked;
+          result.blockReason = blockReason;
+          result.success = !blocked && result.status > 0 && result.status < 400;
+
+          try {
+            frontierDb?.recordFetch?.({
+              url: result.url,
+              status: result.status,
+              finalUrl: result.finalUrl,
+              elapsedMs: result.fetchDurationMs || 0,
+            });
+          } catch { /* swallow frontier errors */ }
+
+          batchResults.push(result);
+        } else {
+          try {
+            frontierDb?.recordFetch?.({
+              url,
+              status: 0,
+              error: entry.reason?.message || '',
+            });
+          } catch { /* swallow */ }
+
+          batchResults.push({
+            success: false, url, finalUrl: url, status: 0,
+            blocked: false, blockReason: null, screenshots: [],
+            html: '', fetchDurationMs: 0, attempts: 1, bypassUsed: null,
+            workerId: workerIdMap.get(url) || null,
+          });
+        }
+      }
+
+      // WHY: Two-pass proxy retry. Blocked URLs (except robots_blocked — respect
+      // robots.txt) are retried through a dedicated proxy-enabled crawler.
+      const blockedUrls = batchResults
+        .filter((r) => r.blocked && r.blockReason !== 'robots_blocked')
+        .map((r) => r.url);
+
+      if (blockedUrls.length > 0 && typeof retryWithProxy === 'function') {
+        const retrySettled = await retryWithProxy(blockedUrls, { workerIdMap });
+
+        for (let i = 0; i < retrySettled.length; i++) {
+          if (retrySettled[i].status !== 'fulfilled') continue;
+          const retryResult = retrySettled[i].value;
+          const { blocked, blockReason } = classifyBlockStatus({
+            status: retryResult.status, html: retryResult.html,
+          });
+          retryResult.blocked = blocked;
+          retryResult.blockReason = blockReason;
+          retryResult.success = !blocked && retryResult.status > 0 && retryResult.status < 400;
+          retryResult.proxyRetry = true;
+
+          const idx = batchResults.findIndex((r) => r.url === retryResult.url && r.blocked);
+          if (idx >= 0) batchResults[idx] = retryResult;
+          else batchResults.push(retryResult);
+        }
+      }
+
+      crawlResults.push(...batchResults);
+    }
+
+    return { crawlResults };
+  }
+
+  return { start, processUrl, processBatch, retryWithProxy, runFetchPlan, warmUp, shutdown, slotCount, get videoDir() { return videoDir; } };
 }

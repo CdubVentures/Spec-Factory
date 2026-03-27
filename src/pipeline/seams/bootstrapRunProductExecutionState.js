@@ -2,35 +2,29 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { loadCategoryConfig } from '../../categories/loader.js';
-import { SourcePlanner } from '../../planner/sourcePlanner.js';
-// WHY: Fetcher classes and mode selection removed during crawl pipeline rework.
-// The new CrawlSession (src/features/crawl/) replaces all fetcher infrastructure.
-// WHY: createHostConcurrencyGate + createRequestThrottler removed — CrawlSession handles concurrency.
 import {
   readLearningHintsFromStores,
   UrlMemoryStore,
   DomainFieldYieldStore,
   FieldAnchorsStore,
   ComponentLexiconStore,
-  applyLearningSeeds,
+  collectLearningSeeds,
   loadLearningProfile,
 } from '../../features/indexing/learning/index.js';
 import {
   buildIndexlabRuntimeCategoryConfig,
   loadRouteMatrixPolicyForRun,
-  applyRuntimeOverridesToPlanner,
   stableHash,
 } from '../../features/indexing/orchestration/shared/index.js';
 import {
   createRunLlmRuntime,
   loadLearningStoreHintsForRun,
-  createPlannerBootstrap,
-  runPlannerQueueSnapshotPhase,
 } from '../../features/indexing/orchestration/bootstrap/index.js';
 import {
   buildDiscoverySeedPlanContext,
   runDiscoverySeedPlan,
 } from '../../features/indexing/pipeline/orchestration/index.js';
+import { buildOrderedFetchPlan } from '../../features/indexing/pipeline/domainClassifier/runDomainClassifier.js';
 // WHY: Adapter subsystem removed — baseline LLM extraction handles all sources.
 // No-op factory preserves DI shape while adapters are retired.
 function createNoOpAdapterManager() {
@@ -40,7 +34,6 @@ function createNoOpAdapterManager() {
     runDedicatedAdapters: async () => ({ syntheticSources: [], adapterArtifacts: [] }),
   };
 }
-// WHY: Extraction classes removed during crawl pipeline rework.
 import { loadSourceIntel } from '../../intel/sourceIntel.js';
 import { readBillingSnapshot } from '../../billing/costLedger.js';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
@@ -49,17 +42,15 @@ import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
 import { recordPromptResult } from '../../features/indexing/pipeline/shared/index.js';
 import { appendCostLedgerEntry } from '../../billing/costLedger.js';
+
 const DEFAULT_DEPS = {
   loadCategoryConfigFn: loadCategoryConfig,
   buildIndexlabRuntimeCategoryConfigFn: buildIndexlabRuntimeCategoryConfig,
   loadRouteMatrixPolicyForRunFn: loadRouteMatrixPolicyForRun,
-  createPlannerBootstrapFn: createPlannerBootstrap,
   createAdapterManagerFn: createNoOpAdapterManager,
   loadSourceIntelFn: loadSourceIntel,
-  SourcePlannerClass: SourcePlanner,
-  applyRuntimeOverridesToPlannerFn: applyRuntimeOverridesToPlanner,
   loadLearningProfileFn: loadLearningProfile,
-  applyLearningSeedsFn: applyLearningSeeds,
+  collectLearningSeedsFn: collectLearningSeeds,
   readBillingSnapshotFn: readBillingSnapshot,
   createRunLlmRuntimeFn: createRunLlmRuntime,
   normalizeCostRatesFn: normalizeCostRates,
@@ -78,8 +69,7 @@ const DEFAULT_DEPS = {
   computeNeedSetFn: computeNeedSet,
   buildDiscoverySeedPlanContextFn: buildDiscoverySeedPlanContext,
   runDiscoverySeedPlanFn: runDiscoverySeedPlan,
-  runPlannerQueueSnapshotPhaseFn: runPlannerQueueSnapshotPhase,
-  enqueueAdapterSeedUrlsFn: () => {},
+  buildOrderedFetchPlanFn: buildOrderedFetchPlan,
 };
 
 export async function bootstrapRunProductExecutionState({
@@ -135,26 +125,14 @@ export async function bootstrapRunProductExecutionState({
   const billingMonth = new Date().toISOString().slice(0, 7);
   const fieldOrder = categoryConfig.fieldOrder;
   const requiredFields = job.requirements?.requiredFields || categoryConfig.requiredFields;
-  logger.info('bootstrap_step', { step: 'planner', progress: 40 });
-  const {
-    adapterManager,
-    sourceIntel,
-    planner,
-    runtimeOverrides,
-  } = await runtimeDeps.createPlannerBootstrapFn({
-    storage,
-    config,
-    logger,
-    category,
-    job,
-    categoryConfig,
-    requiredFields,
-    createAdapterManagerFn: runtimeDeps.createAdapterManagerFn,
-    loadSourceIntelFn: runtimeDeps.loadSourceIntelFn,
-    createSourcePlannerFn: (...args) => new runtimeDeps.SourcePlannerClass(...args),
-    syncRuntimeOverridesFn: syncRuntimeOverrides,
-    applyRuntimeOverridesToPlannerFn: runtimeDeps.applyRuntimeOverridesToPlannerFn,
-  });
+
+  // WHY: Planner removed. Collect seeds as plain arrays and blocked hosts from
+  // runtime overrides. Discovery pipeline runs without a planner — bootstrapPhase
+  // generates manufacturerSeedUrls on ctx, and domainClassifierPhase skips enqueue.
+  logger.info('bootstrap_step', { step: 'seeds', progress: 40 });
+  const runtimeOverrides = await syncRuntimeOverrides({ force: true });
+  const blockedHosts = new Set(runtimeOverrides?.blocked_domains || []);
+  const seedUrls = job.seedUrls || [];
 
   const learningProfile = await runtimeDeps.loadLearningProfileFn({
     storage,
@@ -162,10 +140,12 @@ export async function bootstrapRunProductExecutionState({
     category,
     job,
   });
-  runtimeDeps.applyLearningSeedsFn(planner, learningProfile);
-
-  const adapterSeedUrls = adapterManager.collectSeedUrls({ job });
-  runtimeDeps.enqueueAdapterSeedUrlsFn(planner, adapterSeedUrls);
+  // WHY: Brand/model tokens used by learning seed filter to match URLs
+  const brand = String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim();
+  const model = String(identityLock.model || job?.identityLock?.model || job?.model || '').trim();
+  const brandTokens = brand ? brand.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean) : [];
+  const modelTokens = model ? model.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean) : [];
+  const learningSeedUrls = runtimeDeps.collectLearningSeedsFn(learningProfile, { brandTokens, modelTokens });
 
   logger.info('bootstrap_step', { step: 'llm', progress: 65 });
   const billingSnapshot = await runtimeDeps.readBillingSnapshotFn({
@@ -233,14 +213,11 @@ export async function bootstrapRunProductExecutionState({
       page_count: 0,
       max_match_score: 0,
     },
-    brand: String(identityLock.brand || job?.identityLock?.brand || job?.brand || '').trim(),
-    model: String(identityLock.model || job?.identityLock?.model || job?.model || '').trim(),
+    brand,
+    model,
     baseModel: String(identityLock.base_model || job?.identityLock?.base_model || '').trim(),
     round: 0,
   });
-  // WHY: The runtime bridge + prefetch panel need the full NeedSet payload
-  // (fields, summary, blockers, identity, planner_seed) — not just summary counts.
-  // Without spreading the full object, the GUI prefetch panel renders empty.
   logger.info('needset_computed', {
     ...initialNeedSet,
     productId,
@@ -251,6 +228,8 @@ export async function bootstrapRunProductExecutionState({
       ? initialNeedSet.fields.filter((f) => f.state !== 'accepted').length : 0,
   });
 
+  // WHY: Discovery pipeline runs without a planner. bootstrapPhase generates
+  // manufacturerSeedUrls on ctx. domainClassifierPhase skips planner.enqueue().
   const discoveryResult = await runtimeDeps.runDiscoverySeedPlanFn({
     ...runtimeDeps.buildDiscoverySeedPlanContextFn({
       config,
@@ -267,18 +246,50 @@ export async function bootstrapRunProductExecutionState({
       frontierDb,
       traceWriter,
       learningStoreHints,
-      planner,
+      planner: null,
       normalizeFieldList: runtimeDeps.normalizeFieldListFn,
     }),
   });
-  await runtimeDeps.runPlannerQueueSnapshotPhaseFn({
-    traceWriter,
-    planner,
+
+  // WHY: Merge all seed sources with discovery-approved URLs into ordered fetch plan.
+  // manufacturerSeedUrls was generated by bootstrapPhase and placed on the
+  // discovery result context (ctx.manufacturerSeedUrls).
+  const manufacturerSeedUrls = discoveryResult.manufacturerSeedUrls || [];
+  const allSeedUrls = [...seedUrls, ...manufacturerSeedUrls];
+
+  const { orderedSources, workerIdMap, stats } = runtimeDeps.buildOrderedFetchPlanFn({
+    discoveryResult,
+    seedUrls: allSeedUrls,
+    learningSeedUrls,
+    blockedHosts,
+    config,
     logger,
   });
 
+  // WHY: Write fetch plan snapshot to trace (replaces runPlannerQueueSnapshotPhase)
+  if (traceWriter) {
+    try {
+      await traceWriter.writeJson({
+        section: 'planner',
+        prefix: 'fetch_plan_snapshot',
+        payload: {
+          ts: new Date().toISOString(),
+          total_queued: stats.total_queued,
+          seed_count: stats.seed_count,
+          learning_seed_count: stats.learning_seed_count,
+          approved_count: stats.approved_count,
+          blocked_count: stats.blocked_count,
+          blocked_hosts: stats.blocked_hosts.slice(0, 12),
+        },
+        ringSize: 20,
+      });
+    } catch { /* swallow trace errors */ }
+  }
+
   return {
-    planner,
+    orderedFetchPlan: orderedSources,
+    workerIdMap,
+    fetchPlanStats: stats,
     runtimeOverrides,
     discoveryResult,
   };

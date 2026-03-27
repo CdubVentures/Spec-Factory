@@ -330,13 +330,3 @@ export function normalizeRuntimeOverrides(payload = {}) {
   };
 }
 
-export function applyRuntimeOverridesToPlanner(planner, overrides = {}) {
-  if (!planner || typeof planner !== 'object') {
-    return;
-  }
-  // WHY: maxUrls override removed — planner caps are now internal hardcodes
-  // pending the full sourcePlanner rewrite. Only blockHost survives.
-  for (const host of overrides.blocked_domains || []) {
-    planner.blockHost(host, 'runtime_override_blocked_domain');
-  }
-}

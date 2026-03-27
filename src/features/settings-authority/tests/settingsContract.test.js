@@ -46,7 +46,7 @@ test('migration keeps only canonical runtime/ui keys', () => {
       unknownRuntimeKey: 'drop-me',
     },
     convergence: {
-      serpTriageMinScore: 4,
+      serpSelectorMinScore: 4,
       unknownConvergenceKey: true,
     },
     ui: {

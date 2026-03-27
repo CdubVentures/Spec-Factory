@@ -172,7 +172,7 @@ export function makeProcessDiscoveryResultsArgs(overrides = {}) {
   } = overrides;
 
   return {
-    rawResults: makeRawResults(),
+    searchResults: makeRawResults(),
     searchAttempts: [],
     searchJournal: [],
     internalSatisfied: false,

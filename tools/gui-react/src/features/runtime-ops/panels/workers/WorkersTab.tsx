@@ -8,10 +8,10 @@ import { useRuntimeSettingsReader } from '../../../pipeline-settings/index.ts';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, FetchPhasesResponse } from '../../types.ts';
 import { getRefetchInterval } from '../../helpers.ts';
 import { WorkerSubTabs } from './WorkerSubTabs.tsx';
-import { WorkerLivePanel } from './WorkerLivePanel.tsx';
+import { FetchWorkerPanel } from './FetchWorkerPanel.tsx';
 import { WorkerDataDrawer } from './WorkerDataDrawer.tsx';
 import { SearchWorkerPanel } from './SearchWorkerPanel.tsx';
-import { LlmCallsDashboard } from './LlmCallsDashboard.tsx';
+import { LlmWorkerPanel } from './LlmWorkerPanel.tsx';
 import { BrowserPoolBadge } from './BrowserPoolBadge.tsx';
 import { StageGroupTabRow } from '../shared/StageGroupTabRow.tsx';
 import { STAGE_GROUP_REGISTRY, type StageGroupId, STAGE_GROUP_KEYS } from '../shared/stageGroupRegistry.ts';
@@ -314,7 +314,7 @@ function renderWorkerPanel({
 
   if (worker.pool === 'llm') {
     return (
-      <LlmCallsDashboard
+      <LlmWorkerPanel
         runId={runId}
         category={category}
         isRunning={isRunning}
@@ -325,7 +325,7 @@ function renderWorkerPanel({
     );
   }
 
-  return <WorkerLivePanel worker={worker} runId={runId} wsUrl={wsUrl} isRunning={isRunning} />;
+  return <FetchWorkerPanel worker={worker} runId={runId} wsUrl={wsUrl} isRunning={isRunning} />;
 }
 
 // WHY: Generic stage panel renderer — looks up entry in active group's registry.

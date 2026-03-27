@@ -51,7 +51,9 @@
 | `robotsTxtCompliant` | true | Respect robots.txt (451 → `robots_blocked`, no retry) |
 
 **Non-retryable errors** (fail immediately, no retry):
-`requestHandler timed out`, `Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked`.
+`Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked`.
+
+**Retryable timeouts**: `requestHandler timed out` IS retried — the page may have loaded (CDP screencast proves it) but post-navigation processing (extraction, auto-scroll, hooks) was slow. Retry with fresh session may succeed faster.
 
 **Retryable errors** (1 native retry with session rotation, then proxy retry):
 403, 429, captcha, cloudflare, access denied, empty response, server error.

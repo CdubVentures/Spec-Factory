@@ -23,8 +23,8 @@ test('executeSearchQueries internal-first mode accumulates corpus rows and recor
     ],
   }));
 
-  assert.equal(result.rawResults.length, 1);
-  assert.equal(result.rawResults[0].url, 'https://rtings.com/mice/razer-viper');
+  assert.equal(result.searchResults.length, 1);
+  assert.equal(result.searchResults[0].url, 'https://rtings.com/mice/razer-viper');
   assert.equal(result.searchAttempts[0].provider, 'internal');
   assert.equal(result.searchJournal[0].provider, 'internal');
 });

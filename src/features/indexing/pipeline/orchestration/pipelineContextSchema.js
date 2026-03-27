@@ -196,8 +196,8 @@ export const pipelineContextAfterExecution = pipelineContextAfterJourney.extend(
   requiredOnlySearch: z.boolean(),
   missingRequiredFields: z.array(z.string()),
 
-  // Search Execution phase output
-  rawResults: z.array(rawResultElementSchema),
+  // Search Execution phase output (deduped, video-filtered, crawled-filtered)
+  searchResults: z.array(rawResultElementSchema),
   searchAttempts: z.array(searchAttemptElementSchema),
   searchJournal: z.array(searchJournalElementSchema),
   internalSatisfied: z.boolean(),

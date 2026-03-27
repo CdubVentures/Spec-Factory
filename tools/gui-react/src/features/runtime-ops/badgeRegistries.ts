@@ -163,7 +163,7 @@ export function resolveLlmCallStatusBadge(status: string): string {
 
 // ──────────────────────────────────────────────────────────────────────
 
-export const TRIAGE_DECISION_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
+export const SERP_SELECTOR_DECISION_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
   keep:      'sf-chip-success',
   hard_drop: 'sf-chip-warning',
   drop:      'sf-chip-danger',
@@ -171,12 +171,12 @@ export const TRIAGE_DECISION_BADGE_MAP: Readonly<Record<string, string>> = Objec
   fetch:     'sf-chip-info',
 });
 
-export function resolveTriageDecisionBadge(decision: string): string {
-  return TRIAGE_DECISION_BADGE_MAP[decision] ?? 'sf-chip-neutral';
+export function resolveSerpSelectorDecisionBadge(decision: string): string {
+  return SERP_SELECTOR_DECISION_BADGE_MAP[decision] ?? 'sf-chip-neutral';
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// WHY: Superset of helpers.ts domainRoleBadgeClass + PrefetchSerpTriagePanel
+// WHY: Superset of helpers.ts domainRoleBadgeClass + SerpSelector
 // roleBadgeClass. Includes spec_database, community, forum from the panel.
 
 export const DOMAIN_ROLE_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
@@ -309,7 +309,7 @@ export function resolveConfidenceTextClass(confidence: number | null): string {
   return 'text-[var(--sf-state-error-fg)]';
 }
 
-// ── Approval / gate badges (from SerpTriagePanel, SearchProfilePanel) ─
+// ── Approval / gate badges (from SerpSelectorPanel, SearchProfilePanel) ─
 
 export const APPROVAL_BADGE_MAP: Readonly<Record<string, string>> = Object.freeze({
   approved:  'sf-chip-success',

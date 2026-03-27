@@ -10,8 +10,8 @@ import {
   SEARCH_RESULT_ENTRY_SHAPE,
   SEARCH_RESULT_DETAIL_SHAPE,
   SERP_SCORE_COMPONENTS_SHAPE,
-  SERP_TRIAGE_CANDIDATE_SHAPE,
-  SERP_TRIAGE_ENVELOPE_SHAPE,
+  SERP_SELECTOR_CANDIDATE_SHAPE,
+  SERP_SELECTOR_ENVELOPE_SHAPE,
   SEARCH_PROFILE_SHAPE,
   SEARCH_PLAN_ENHANCEMENT_ROW_SHAPE,
 } from '../prefetchContract.js';
@@ -144,10 +144,10 @@ describe('prefetchContract', () => {
     });
   });
 
-  describe('SERP_TRIAGE_CANDIDATE_SHAPE', () => {
-    assertFrozenDescriptor(SERP_TRIAGE_CANDIDATE_SHAPE, 'SERP_TRIAGE_CANDIDATE_SHAPE', 13);
+  describe('SERP_SELECTOR_CANDIDATE_SHAPE', () => {
+    assertFrozenDescriptor(SERP_SELECTOR_CANDIDATE_SHAPE, 'SERP_SELECTOR_CANDIDATE_SHAPE', 13);
     it('has expected keys', () => {
-      const keys = SERP_TRIAGE_CANDIDATE_SHAPE.map((d) => d.key);
+      const keys = SERP_SELECTOR_CANDIDATE_SHAPE.map((d) => d.key);
       for (const k of ['url', 'title', 'domain', 'snippet', 'score', 'decision', 'rationale',
                         'role', 'identity_prelim', 'host_trust_class',
                         'triage_disposition', 'doc_kind_guess', 'approval_bucket']) {
@@ -156,8 +156,8 @@ describe('prefetchContract', () => {
     });
   });
 
-  describe('SERP_TRIAGE_ENVELOPE_SHAPE', () => {
-    assertFrozenDescriptor(SERP_TRIAGE_ENVELOPE_SHAPE, 'SERP_TRIAGE_ENVELOPE_SHAPE', 3);
+  describe('SERP_SELECTOR_ENVELOPE_SHAPE', () => {
+    assertFrozenDescriptor(SERP_SELECTOR_ENVELOPE_SHAPE, 'SERP_SELECTOR_ENVELOPE_SHAPE', 3);
   });
 
   describe('SEARCH_PROFILE_SHAPE', () => {

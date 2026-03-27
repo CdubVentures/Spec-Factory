@@ -115,9 +115,9 @@ export function computeFetchSummary(health) {
   return { totalFetches, totalBlocks, totalTimeouts };
 }
 
-export function groupKeptUrlsByDomain(serpTriage) {
+export function groupKeptUrlsByDomain(serpSelector) {
   const byDomain = new Map();
-  for (const result of serpTriage) {
+  for (const result of serpSelector) {
     for (const candidate of result.candidates || []) {
       if (candidate.decision !== 'keep') continue;
       const domain = candidate.domain || '';
