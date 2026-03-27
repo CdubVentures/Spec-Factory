@@ -1,3 +1,4 @@
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { RuntimeOpsMetricsRailData, PoolMetric } from '../../types.ts';
 import { poolBadgeClass, poolMeterFillClass, pctString, METRIC_TIPS } from '../../helpers.ts';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
@@ -35,11 +36,12 @@ function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
 }
 
 export function MetricsRail({ data }: MetricsRailProps) {
+  const scrollRef = usePersistedScroll('scroll:metricsRail');
   const pools = data?.pool_metrics ?? {};
   const failure = data?.failure_metrics ?? { total_fetches: 0, fallback_count: 0, fallback_rate: 0, blocked_hosts: 0, retry_total: 0, no_progress_streak: 0 };
 
   return (
-    <aside className="w-60 shrink-0 border-r sf-border-default overflow-y-auto p-3 space-y-4">
+    <aside ref={scrollRef} className="w-60 shrink-0 border-r sf-border-default overflow-y-auto p-3 space-y-4">
       <div>
         <h3 className="sf-text-caption font-semibold sf-text-subtle uppercase tracking-wide mb-2">
           Pools

@@ -12,7 +12,7 @@ Exports from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `pipeline/shared/`, `src/features/indexing/search/queryBuilder.js`, `src/shared/settingsAccessor.js`
+- **Allowed:** `pipeline/shared/`, `src/features/indexing/pipeline/searchProfile/queryBuilder.js`, `src/shared/settingsAccessor.js`
 - **Forbidden:** Other pipeline phase folders
 
 ## Domain Invariants

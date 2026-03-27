@@ -1,42 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDeterministicAliases, buildSearchProfile, buildTargetedQueries } from '../../pipeline/searchProfile/queryBuilder.js';
-
-test('buildTargetedQueries uses normalized missing fields and produces tier-based queries', () => {
-  // WHY: Tier-only pipeline with seedStatus=null synthesizes specs_seed.is_needed=true.
-  // Queries are tier-based (seed query), not archetype-based tooltip expansions.
-  const queries = buildTargetedQueries({
-    job: {
-      category: 'mouse',
-      identityLock: {
-        brand: 'Logitech',
-        model: 'G Pro X Superlight 2',
-        variant: 'Wireless'
-      }
-    },
-    categoryConfig: {
-      category: 'mouse',
-      fieldOrder: ['weight', 'polling_rate'],
-      sourceHosts: [
-        { host: 'logitechg.com', tierName: 'manufacturer' },
-        { host: 'razer.com', tierName: 'manufacturer' }
-      ],
-      searchTemplates: []
-    },
-    missingFields: ['fields.polling_rate'],
-    tooltipHints: {
-      polling_rate: ['report rate', 'polling interval']
-    },
-    lexicon: {},
-    learnedQueries: {},
-    maxQueries: 20
-  });
-
-  assert.ok(queries.length > 0, 'queries emitted');
-  // WHY: Tier-only with synthesized seedStatus produces "Logitech G Pro X Superlight 2 Wireless specifications"
-  assert.ok(queries.some((row) => row.includes('Logitech') && row.includes('G Pro X Superlight 2')), 'brand+model in query');
-  assert.equal(queries.some((row) => row.includes('site:')), false, 'no site: operators');
-});
+import { buildDeterministicAliases, buildSearchProfile } from '../../pipeline/searchProfile/queryBuilder.js';
 
 test('buildSearchProfile emits tier-based provenance and identity aliases', () => {
   // WHY: Tier-only pipeline with seedStatus=null synthesizes specs_seed.is_needed=true.

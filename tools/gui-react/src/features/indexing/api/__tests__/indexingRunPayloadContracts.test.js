@@ -61,16 +61,16 @@ test('deriveIndexingRunStartParsedValues parses active runtime numeric settings 
   const parsed = deriveIndexingRunStartParsedValues({
     runtimeSettingsPayload: {
       llmCostInputPer1M: '3.5',
-      maxPagesPerDomain: '25',
+      domainClassifierUrlCap: '25',
     },
     runtimeSettingsBaseline: createBaseline({
       llmCostInputPer1M: 9.25,
-      maxPagesPerDomain: 10,
+      domainClassifierUrlCap: 10,
     }),
   });
 
   assert.equal(parsed.parsedLlmCostInputPer1M, 3.5);
-  assert.equal(parsed.parsedMaxPagesPerDomain, 25);
+  assert.equal(parsed.parsedDomainClassifierUrlCap, 25);
 });
 
 test('buildIndexingRunStartPayload composes and clamps cross-domain run payload fields', async () => {
@@ -105,7 +105,7 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
       parsedSearchPlannerQueryCap: 0,
       parsedMaxUrlsPerProduct: 0,
       parsedMaxCandidateUrls: 0,
-      parsedMaxPagesPerDomain: 0,
+      parsedDomainClassifierUrlCap: 0,
       parsedMaxRunSeconds: 0,
       parsedLlmMaxOutputTokens: 50,
       parsedLlmMaxTokens: 0,
@@ -164,12 +164,12 @@ test('buildIndexingRunStartPayload propagates all runtimeSettingsPayload keys vi
     category: 'mouse',
     productId: 'mouse-acme-orbit-x1',
     runtimeSettingsPayload: createPayload({
-      maxPagesPerDomain: 15,
+      domainClassifierUrlCap: 15,
     }),
     parsedValues: createParsedValues(),
     runControlPayload: {},
   });
 
   // WHY: These keys now flow through via the runtimeSettingsPayload spread
-  assert.equal(payload.maxPagesPerDomain, 15);
+  assert.equal(payload.domainClassifierUrlCap, 15);
 });

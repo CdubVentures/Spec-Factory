@@ -114,13 +114,13 @@ test('defaultsValidation: assertDefaultsValid catches wrong type', () => {
     ...SETTINGS_DEFAULTS,
     runtime: Object.freeze({
       ...SETTINGS_DEFAULTS.runtime,
-      maxPagesPerDomain: 'not-a-number' // intMap key with wrong type
+      domainClassifierUrlCap: 'not-a-number' // intMap key with wrong type
     })
   };
   assert.throws(
     () => assertDefaultsValid(badDefaults),
     (err) => {
-      assert.ok(err.message.includes('maxPagesPerDomain'));
+      assert.ok(err.message.includes('domainClassifierUrlCap'));
       return true;
     }
   );

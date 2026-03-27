@@ -133,7 +133,7 @@ export function createQueryIndex() {
     }
 
     yieldEntries.sort((a, b) => b.avg_yield - a.avg_yield);
-    const topYield = yieldEntries.slice(0, 10).map((e) => ({ query: e.query, provider: e.provider, avg_yield: e.avg_yield }));
+    const topYield = yieldEntries.map((e) => ({ query: e.query, provider: e.provider, avg_yield: e.avg_yield }));
 
     const providerBreakdown = {};
     for (const [prov, pb] of Object.entries(providerMap)) {

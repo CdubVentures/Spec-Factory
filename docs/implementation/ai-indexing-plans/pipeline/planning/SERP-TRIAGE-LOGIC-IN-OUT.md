@@ -52,11 +52,12 @@ Coverage is split across:
 
 The live triage flow is:
 
-1. Create candidate trace map via `createCandidateTraceMap()` (in `resultTraceBuilder.js`).
-2. Apply hard drops with `applyHardDropFilter()`.
-3. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `resultClassifier.js`).
-4. Build selector input with `buildSerpSelectorInput()`.
-5. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. On failure, fall back to deterministic reranker scoring.
+1. Input: unique uncrawled URLs from Search Results (deduped, video-filtered, crawled-filtered by `executeSearchQueries`).
+2. Create candidate trace map via `createCandidateTraceMap()` (in `resultTraceBuilder.js`).
+3. Apply hard drops with `applyHardDropFilter()` — denied hosts, utility shells only (video filtering done upstream).
+4. Classify and deduplicate surviving URLs via `classifyAndDeduplicateCandidates()` (in `resultClassifier.js`).
+5. Build selector input with `buildSerpSelectorInput()` — ALL candidates sent to LLM (no input cap).
+6. Call the routed selector LLM — validate with `validateSelectorOutput()`, adapt with `adaptSerpSelectorOutput()`. LLM returns at most `serpSelectorMaxKeep` URLs. On failure, fall back to deterministic reranker scoring.
 6. Build deterministic domain safety results via `classifyDomains()` (in `resultClassifier.js`) — runs AFTER the SERP selector (pipeline contract: SERP Selector then Domain Classifier).
 7. Build reject-audit samples and audit trail.
 8. Emit observability events (`serp_selector_completed` with full candidate funnel).

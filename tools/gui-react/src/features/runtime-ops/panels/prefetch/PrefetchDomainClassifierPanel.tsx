@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, DomainHealthRow, PrefetchLiveSettings, SerpSelectorResult } from '../../types.ts';
 import { formatMs, domainRoleBadgeClass, safetyClassBadgeClass, pctString } from '../../helpers.ts';
 import { ScoreBar } from '../../components/ScoreBar.tsx';
@@ -93,6 +94,7 @@ function DomainDetailDrawer({
 /* ── Main Panel ── */
 
 export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelector, persistScope, idxRuntime }: PrefetchDomainClassifierPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:domainClassifier:${persistScope}`);
   const health = domainHealth || [];
   const hasStructured = health.length > 0;
   const overallStatus = hasStructured ? 'done' : 'pending';
@@ -122,7 +124,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelecto
     () => (selectedDomainKey ? health.find((d) => d.domain === selectedDomainKey) ?? null : null),
     [selectedDomainKey, health],
   );
-  const [expandedDomains, toggleExpandedDomain] = usePersistedExpandMap(
+  const [expandedDomains, toggleExpandedDomain, replaceExpandedDomains] = usePersistedExpandMap(
     `runtimeOps:prefetch:domainClassifier:expandedDomains:${persistScope}`,
   );
 
@@ -155,6 +157,45 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelecto
   const blockedAndCooldownCount = safetyCounts.blocked + cooldownSummary.totalInCooldown;
   const showWarningBanner = blockedAndCooldownCount >= 2;
 
+  // WHY: Build ordered fetch plan from SERP selector kept candidates.
+  // Sorted by score descending — mirrors the pipeline's slot+rank ordering.
+  const fetchPlan = useMemo(() => {
+    const kept: Array<{
+      url: string;
+      title: string;
+      domain: string;
+      score: number;
+      host_trust_class: string;
+      triage_disposition: string;
+      doc_kind_guess: string;
+      rank: number;
+      query: string;
+    }> = [];
+    for (const group of serpSelector || []) {
+      for (const c of group.candidates || []) {
+        if (c.decision !== 'keep') continue;
+        kept.push({
+          url: c.url,
+          title: c.title,
+          domain: c.domain,
+          score: c.score,
+          host_trust_class: c.host_trust_class,
+          triage_disposition: c.triage_disposition,
+          doc_kind_guess: c.doc_kind_guess,
+          rank: kept.length + 1,
+          query: group.query,
+        });
+      }
+    }
+    kept.sort((a, b) => b.score - a.score);
+    return kept.map((item, i) => ({ ...item, rank: i + 1 }));
+  }, [serpSelector]);
+
+  const [expandedFetchPlan, toggleExpandedFetchPlan, replaceExpandedFetchPlan] = usePersistedExpandMap(
+    `runtimeOps:prefetch:domainClassifier:expandedFetchPlan:${persistScope}`,
+  );
+  const allFetchPlanExpanded = fetchPlan.length > 0 && fetchPlan.every((_, i) => expandedFetchPlan[String(i)]);
+
   /* ── Empty State ── */
   if (!hasStructured && calls.length === 0) {
     return (
@@ -171,7 +212,7 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelecto
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       <HeroBand
         titleRow={<>
@@ -304,9 +345,31 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelecto
       )}
 
       {/* ── Domain Health Table ── */}
-      {hasStructured && (
+      {hasStructured && (() => {
+        const expandableDomains = filteredHealth.filter((d) => (urlsByDomain.get(d.domain) || []).length > 0);
+        const allDomainsExpanded = expandableDomains.length > 0 && expandableDomains.every((d) => expandedDomains[d.domain]);
+        return (
         <div>
-          <SectionHeader>domain health &middot; {filteredHealth.length} domain{filteredHealth.length !== 1 ? 's' : ''}</SectionHeader>
+          <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
+            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">
+              domain health &middot; {filteredHealth.length} domain{filteredHealth.length !== 1 ? 's' : ''}
+            </span>
+            {expandableDomains.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const next: Record<string, boolean> = {};
+                  for (const d of expandableDomains) {
+                    next[d.domain] = !allDomainsExpanded;
+                  }
+                  replaceExpandedDomains(next);
+                }}
+                className="px-2 py-0.5 rounded sf-text-caption font-medium sf-icon-button hover:sf-primary-button transition-colors"
+              >
+                {allDomainsExpanded ? 'Close All' : 'Open All'}
+              </button>
+            )}
+          </div>
           <div className={`overflow-x-auto border sf-border-soft rounded-sm ${selectedDomain ? 'max-h-[50vh] overflow-y-auto' : ''}`}>
             <table className="min-w-full text-xs">
               <thead className="sf-surface-elevated sticky top-0">
@@ -402,6 +465,84 @@ export function PrefetchDomainClassifierPanel({ calls, domainHealth, serpSelecto
                           <td colSpan={5} />
                         </tr>
                       ))}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* ── Fetch Plan ── */}
+      {fetchPlan.length > 0 && (
+        <div>
+          <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
+            <span className="text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary">
+              fetch plan &middot; {fetchPlan.length} URL{fetchPlan.length !== 1 ? 's' : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const next: Record<string, boolean> = {};
+                for (let i = 0; i < fetchPlan.length; i++) {
+                  next[String(i)] = !allFetchPlanExpanded;
+                }
+                replaceExpandedFetchPlan(next);
+              }}
+              className="px-2 py-0.5 rounded sf-text-caption font-medium sf-icon-button hover:sf-primary-button transition-colors"
+            >
+              {allFetchPlanExpanded ? 'Close All' : 'Open All'}
+            </button>
+          </div>
+          <div className="overflow-x-auto border sf-border-soft rounded-sm">
+            <table className="min-w-full text-xs">
+              <thead className="sf-surface-elevated sticky top-0">
+                <tr>
+                  <th className="py-2 px-2 w-10 text-right border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">#</th>
+                  <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">url</th>
+                  <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">trust</th>
+                  <th className="py-2 px-4 text-left border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">disposition</th>
+                  <th className="py-2 px-4 text-right border-b sf-border-soft text-[9px] font-bold uppercase tracking-[0.08em] sf-text-subtle">score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fetchPlan.map((row, i) => {
+                  const isExpanded = Boolean(expandedFetchPlan[String(i)]);
+                  return (
+                    <Fragment key={i}>
+                      <tr
+                        className="border-b sf-border-soft hover:sf-surface-elevated cursor-pointer"
+                        onClick={() => toggleExpandedFetchPlan(String(i))}
+                      >
+                        <td className="py-1.5 px-2 text-right font-mono sf-text-subtle">{row.rank}</td>
+                        <td className="py-1.5 px-4 font-mono sf-text-primary truncate max-w-[24rem]" title={row.url}>
+                          <span className="sf-text-caption sf-text-subtle mr-1">{isExpanded ? '\u25BC' : '\u25B6'}</span>
+                          {row.domain}
+                          <span className="sf-text-subtle">/{row.url.split('/').slice(3).join('/')}</span>
+                        </td>
+                        <td className="py-1.5 px-4">
+                          <Chip label={row.host_trust_class || '-'} className={safetyClassBadgeClass(row.host_trust_class === 'official' || row.host_trust_class === 'trusted_specdb' ? 'safe' : row.host_trust_class === 'unknown' ? 'caution' : 'safe')} />
+                        </td>
+                        <td className="py-1.5 px-4">
+                          <Chip label={row.triage_disposition?.replace(/_/g, ' ') || '-'} className="sf-chip-neutral" />
+                        </td>
+                        <td className="py-1.5 px-4 text-right font-mono sf-text-primary">{Math.round(row.score)}</td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="sf-surface-panel border-b sf-border-soft">
+                          <td />
+                          <td colSpan={4} className="py-2 px-4 pl-8 space-y-1">
+                            <div className="sf-text-caption font-mono sf-link-accent break-all">{row.url}</div>
+                            {row.title && <div className="sf-text-caption sf-text-muted">{row.title}</div>}
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {row.doc_kind_guess && <Chip label={row.doc_kind_guess.replace(/_/g, ' ')} className="sf-chip-accent" />}
+                              <span className="sf-text-caption sf-text-subtle">query: {row.query}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </Fragment>
                   );
                 })}

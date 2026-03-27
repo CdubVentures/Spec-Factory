@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types.ts';
 import type { RuntimeIdxBadge } from '../../types.ts';
 import { llmCallStatusBadgeClass, formatMs } from '../../helpers.ts';
@@ -32,6 +33,7 @@ export function NeedSetPlannerView({
   idxRuntime,
   persistScope = '',
 }: NeedSetPlannerViewProps) {
+  const scrollRef = usePersistedScroll(`scroll:needsetPlanner:${persistScope}`);
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:searchPlanner:llmCalls:${persistScope}`, false);
   const plans = searchPlans || [];
 
@@ -69,7 +71,7 @@ export function NeedSetPlannerView({
   const primaryCall = calls[0];
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* Hero Band */}
       <HeroBand

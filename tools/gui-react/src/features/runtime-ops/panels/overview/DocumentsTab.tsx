@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
@@ -18,6 +19,7 @@ const DOCUMENT_PAGE_SIZE_KEYS = ['25', '50', '100'] as const;
 type DocumentPageSize = (typeof DOCUMENT_PAGE_SIZE_KEYS)[number];
 
 export function DocumentsTab({ documents, runId, category, isRunning }: DocumentsTabProps) {
+  const scrollRef = usePersistedScroll(`scroll:documents:${category}`);
   const [searchFilter, setSearchFilter] = usePersistedTab<string>(
     `runtimeOps:documents:search:${category}`,
     '',
@@ -58,7 +60,7 @@ export function DocumentsTab({ documents, runId, category, isRunning }: Document
 
   return (
     <div className="flex flex-1 min-h-0">
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-soft">
           <input
             type="text"

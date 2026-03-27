@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { SerpScreenshotOverlay } from './SerpScreenshotOverlay.tsx';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
 import type { PrefetchSearchResult, SearchResultDetail, SerpResultRow, SearchPlanPass, PrefetchLiveSettings } from '../../types.ts';
 import { formatMs } from '../../helpers.ts';
@@ -90,6 +91,7 @@ function ResultDetailDrawer({ result, query, provider, isDuplicate, isCrawled, i
 /* -- Main Panel -- */
 
 export function PrefetchSearchResultsPanel({ results, searchResultDetails, searchPlans, crossQueryUrlCounts, persistScope, liveSettings, idxRuntime, runId }: PrefetchSearchResultsPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:searchResults:${persistScope}`);
   const [showSnippets, , setShowSnippets] = usePersistedToggle('runtimeOps:searchResults:snippets', false);
   const [serpScreenshot, setSerpScreenshot] = useState<string | null>(null);
 
@@ -248,7 +250,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* -- Hero Band -- */}
       <HeroBand

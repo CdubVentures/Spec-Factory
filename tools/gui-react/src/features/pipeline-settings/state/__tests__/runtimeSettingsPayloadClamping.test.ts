@@ -66,7 +66,7 @@ function makeInput(
     autoScrollPasses: 0,
     autoScrollDelayMs: 500,
     searchProfileQueryCap: 10,
-    maxPagesPerDomain: 10,
+    domainClassifierUrlCap: 10,
     maxRunSeconds: 600,
     capturePageScreenshotQuality: 80,
     capturePageScreenshotMaxBytes: 524288,

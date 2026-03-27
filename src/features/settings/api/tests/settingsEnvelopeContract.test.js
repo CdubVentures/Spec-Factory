@@ -81,13 +81,13 @@ test('runtime-settings PUT returns standard envelope with ok, applied, snapshot,
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({ maxPagesPerDomain: 25 }),
+    readJsonBody: async () => ({ domainClassifierUrlCap: 25 }),
   }));
 
   const result = await handler(['runtime-settings'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(result.status, 200);
   assertEnvelope(result.body, 'runtime');
-  assert.equal(result.body.applied.maxPagesPerDomain, 25);
+  assert.equal(result.body.applied.domainClassifierUrlCap, 25);
 });
 
 test('runtime-settings PUT with unknown keys includes them in rejected', async (t) => {
@@ -96,7 +96,7 @@ test('runtime-settings PUT with unknown keys includes them in rejected', async (
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
-    readJsonBody: async () => ({ maxPagesPerDomain: 25, __bogusKey__: 'test' }),
+    readJsonBody: async () => ({ domainClassifierUrlCap: 25, __bogusKey__: 'test' }),
   }));
 
   const result = await handler(['runtime-settings'], new URLSearchParams(), 'PUT', {}, {});

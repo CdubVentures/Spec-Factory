@@ -12,7 +12,7 @@ Exports from `index.js`:
 
 ## Dependencies
 
-- **Allowed:** `pipeline/shared/`, `src/research/queryPlanner.js`
+- **Allowed:** `pipeline/shared/`, `src/features/indexing/pipeline/searchPlanner/queryPlanner.js`
 - **Forbidden:** Other pipeline phase folders
 
 ## Domain Invariants

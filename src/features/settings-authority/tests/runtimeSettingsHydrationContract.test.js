@@ -102,11 +102,11 @@ test('runtime hydration bindings apply canonical runtime setting aliases for con
 
   const snapshot = {
     categoryAuthorityRoot: 'category_authority',
-    maxPagesPerDomain: 7,
+    domainClassifierUrlCap: 7,
   };
 
   assert.equal(hydrateRuntimeSettingsFromBindings(snapshot, false, bindings), true);
 
   assert.equal(state.setCategoryAuthorityRoot, 'category_authority');
-  assert.equal(state.setMaxPagesPerDomain, '7');
+  assert.equal(state.setDomainClassifierUrlCap, '7');
 });

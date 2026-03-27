@@ -293,8 +293,8 @@ export function buildSearchProfile({
     identity,
     variant_guard_terms: variantGuardTerms,
     identity_aliases: identityAliases,
-    alias_reject_log: aliasRejectLog.slice(0, 120),
-    query_reject_log: queryRejectLog.slice(0, 240),
+    alias_reject_log: aliasRejectLog,
+    query_reject_log: queryRejectLog,
     focus_fields: focusFields,
     base_templates: effectiveBaseTemplates,
     query_rows: boundedRows,
@@ -306,11 +306,6 @@ export function buildSearchProfile({
     field_rule_gate_counts: buildFieldRuleGateCounts(categoryConfig),
     field_rule_hint_counts_by_field: buildFieldRuleHintCountsByField(categoryConfig)
   };
-}
-
-export function buildTargetedQueries(options = {}) {
-  const profile = buildSearchProfile(options);
-  return toArray(profile?.queries).slice(0, Math.max(1, Number(options?.maxQueries || 24)));
 }
 
 // ── Tier-Aware Query Generation ──

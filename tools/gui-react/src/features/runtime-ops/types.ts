@@ -655,7 +655,6 @@ export interface PrefetchLiveSettings {
   profile?: string;
   searchEngines?: string;
   discoveryEnabled?: boolean;
-  maxPagesPerDomain?: number;
   discoveryResultsPerQuery?: number;
 }
 

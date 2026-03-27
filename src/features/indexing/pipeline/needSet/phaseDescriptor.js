@@ -7,7 +7,7 @@ import { buildSearchPlanningContext } from './searchPlanningContext.js';
 import { buildSearchPlan } from './searchPlanBuilder.js';
 
 export const needSetPhase = {
-  id: 'needSet',
+  id: 'needset',
   phaseCursor: 'phase_01_needset',
   checkpoint: null,
 

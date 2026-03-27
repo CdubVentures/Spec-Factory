@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { usePersistedExpandMap } from '../../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, SearchPlanPass, PrefetchSearchResult } from '../../types.ts';
 import { formatMs } from '../../helpers.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
@@ -46,6 +47,7 @@ export function PrefetchSearchPlannerPanel({
   idxRuntime,
   persistScope = '',
 }: PrefetchSearchPlannerPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:searchPlanner:${persistScope}`);
   const [expandedPassQueries, toggleExpandedPassQuery] = usePersistedExpandMap(`runtimeOps:searchPlanner:expandedPass:${persistScope}`);
   const plans = searchPlans || [];
   const executedQueryTokens = useMemo(() => new Set(
@@ -102,7 +104,7 @@ export function PrefetchSearchPlannerPanel({
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* Hero Band */}
       <HeroBand

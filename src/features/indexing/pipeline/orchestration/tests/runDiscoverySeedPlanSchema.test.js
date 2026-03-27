@@ -183,7 +183,7 @@ describe('runDiscoverySeedPlan schema return contract', () => {
     assert.equal(result.seed_search_plan_output.schema_version, 'needset_planner_output.v2');
     assert.equal(result.seed_search_plan_output.search_plan_handoff.total, 1);
     assert.equal(result.seed_search_plan_output.search_plan_handoff.queries.length, 1);
-    assert.deepEqual(result.enqueue_summary, { enqueuedCount: 0, seededCount: 0 });
+    assert.deepEqual(result.enqueue_summary, {});
   });
 
   it('returns the discovery result contract without seed_search_plan_output when schema computation fails', async () => {
@@ -196,7 +196,7 @@ describe('runDiscoverySeedPlan schema return contract', () => {
     assert.deepEqual(result.selectedUrls, []);
     assert.deepEqual(result.allCandidateUrls, []);
     assert.deepEqual(result.candidates, []);
-    assert.deepEqual(result.enqueue_summary, { enqueuedCount: 0, seededCount: 0 });
+    assert.deepEqual(result.enqueue_summary, {});
     assert.equal(Object.hasOwn(result, 'seed_search_plan_output'), false);
   });
 
@@ -209,6 +209,6 @@ describe('runDiscoverySeedPlan schema return contract', () => {
     assert.ok(result.seed_search_plan_output, 'seed_search_plan_output should remain attached');
     assert.equal(result.seed_search_plan_output.planner.mode, 'disabled');
     assert.equal(Object.hasOwn(result.seed_search_plan_output, 'search_plan_handoff'), false);
-    assert.deepEqual(result.enqueue_summary, { enqueuedCount: 0, seededCount: 0 });
+    assert.deepEqual(result.enqueue_summary, {});
   });
 });

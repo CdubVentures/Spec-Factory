@@ -242,7 +242,7 @@ Raw search result rows — each with a URL, title, snippet, provider name, and t
 Takes the raw search results and decides which URLs are worth actually fetching and extracting data from.
 
 The triage flow (decomposed into 4 files in P3):
-1. Hard-drop filter: Remove non-HTTPS, denied hosts, cooldown violations
+1. Hard-drop filter: Remove non-HTTPS, denied hosts, utility shells (video filtering done upstream by Search Results)
 2. Classify and deduplicate URLs (`resultClassifier.js`)
 3. Deterministic domain safety heuristics (`resultClassifier.js`)
 4. LLM selector picks which URLs to keep (deterministic reranker fallback on LLM failure)
@@ -495,8 +495,8 @@ Seed-phase carry-through:
 - NeedSet preview `needset_computed` emits before the search plan LLM call; the `search_plan` `needset_computed` event is conditional on the panel. Panel bundles do not carry queries. `profile_influence` shows budget-aware targeting counts (allocation-based when `tier_allocation` is present, aspirational fallback otherwise).
 - Search Planner falls back to deterministic output when no `plan` route API key or no phase model is available.
 - External search can be skipped when `discoveryInternalFirst` satisfies required-field pressure.
-- Plan-only URLs are emitted only when there is no viable provider path and `rawResults` is still empty.
-- Result Processing uses the selector path only when `serpSelectorEnabled=true` and a triage route key exists; otherwise it falls back to deterministic triage.
+- Plan-only URLs are emitted only when there is no viable provider path and search results are still empty.
+- Result Processing always runs the LLM selector (all candidates sent, output capped by `serpSelectorMaxKeep`). On LLM failure, falls back to deterministic reranker scoring.
 - `serp_selector_completed` is emitted after the LLM selector path completes. There is no separate reranker path — the selector is the sole LLM triage mechanism.
 
 ## How History Is Tracked

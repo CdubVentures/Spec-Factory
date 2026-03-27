@@ -214,7 +214,7 @@ export function contentTypeSuffixes(fieldRule = {}) {
   for (const value of values) {
     out.push(CONTENT_TYPE_SUFFIX[value] || normalizeSearchTerm(value));
   }
-  return [...new Set(out.filter(Boolean))].slice(0, 4);
+  return [...new Set(out.filter(Boolean))];
 }
 
 export function domainHintsForField(fieldRule = {}) {

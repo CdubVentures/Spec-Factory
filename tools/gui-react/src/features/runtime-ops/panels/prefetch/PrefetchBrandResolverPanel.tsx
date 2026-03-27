@@ -1,4 +1,5 @@
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, BrandResolutionData, PrefetchLiveSettings } from '../../types.ts';
 import { llmCallStatusBadgeClass, formatMs, pctString } from '../../helpers.ts';
 import { resolveBrandResolutionBadge, resolveSkipReasonLabel, resolveConfidenceRingClass, resolveConfidenceTextClass } from '../../badgeRegistries.ts';
@@ -44,6 +45,7 @@ function sourceLabel(calls: PrefetchLlmCall[], hasResolution: boolean): { text: 
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
 export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScope, idxRuntime }: PrefetchBrandResolverPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:brandResolver:${persistScope}`);
   const br = brandResolution;
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:brandResolver:llmCalls:${persistScope}`, false);
   const hasStructured = br !== null && br !== undefined;
@@ -75,7 +77,7 @@ export function PrefetchBrandResolverPanel({ calls, brandResolution, persistScop
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ─────────────────────────────────────── */}
       <HeroBand

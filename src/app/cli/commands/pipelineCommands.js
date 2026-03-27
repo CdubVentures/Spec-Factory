@@ -175,18 +175,6 @@ export function createPipelineCommands({
     } else if (runConfig.searchEngines) {
       runConfig.discoveryEnabled = true;
     }
-    // WHY: maxUrlsPerProduct removed — planner owns its own internal caps.
-    // Only maxPagesPerDomain clamping survives for quick-run mode.
-    if (
-      Number.isFinite(maxRunSecondsArg) && maxRunSecondsArg > 0
-      && discoveryEnabledArg === false
-      && !runConfig.searchEngines
-    ) {
-      runConfig.maxPagesPerDomain = Math.min(
-        configInt(runConfig, 'maxPagesPerDomain'),
-        2
-      );
-    }
 
     const result = await runProduct({
       storage,

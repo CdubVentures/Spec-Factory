@@ -68,13 +68,13 @@ test('runtime-settings PUT returns error when persistence writes fail', async ()
   resetSettingsPersistenceCounters();
   const helperRootFile = await makeInvalidHelperRoot();
   const config = {
-    maxPagesPerDomain: 50,
+    domainClassifierUrlCap: 50,
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRootFile,
     config,
     readJsonBody: async () => ({
-      maxPagesPerDomain: 25,
+      domainClassifierUrlCap: 25,
     }),
   }));
 
@@ -82,7 +82,7 @@ test('runtime-settings PUT returns error when persistence writes fail', async ()
   assert.equal(result.status, 500);
   assert.equal(result.body?.ok, false);
   assert.equal(result.body?.error, 'runtime_settings_persist_failed');
-  assert.equal(config.maxPagesPerDomain, 50, 'runtime config should roll back when persistence fails');
+  assert.equal(config.domainClassifierUrlCap, 50, 'runtime config should roll back when persistence fails');
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['runtime-settings-route']?.failed_total, 1);
 });
@@ -126,20 +126,20 @@ test('runtime-settings PUT records success telemetry when persistence succeeds',
   resetSettingsPersistenceCounters();
   const helperRoot = await makeHelperRoot();
   const config = {
-    maxPagesPerDomain: 50,
+    domainClassifierUrlCap: 50,
   };
   const handler = registerConfigRoutes(makeCtx({
     HELPER_ROOT: helperRoot,
     config,
     readJsonBody: async () => ({
-      maxPagesPerDomain: 25,
+      domainClassifierUrlCap: 25,
     }),
   }));
 
   const result = await handler(['runtime-settings'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(result.status, 200);
   assert.equal(result.body?.ok, true);
-  assert.equal(config.maxPagesPerDomain, 25);
+  assert.equal(config.domainClassifierUrlCap, 25);
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['runtime-settings-route']?.success_total, 1);
 });

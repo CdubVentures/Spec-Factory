@@ -123,9 +123,9 @@ describe('buildIndexingRunStartPayload — spread', () => {
 
   it('includes numeric settings from payload', () => {
     const result = buildIndexingRunStartPayload(makeInput({
-      settingsOverrides: { maxPagesPerDomain: 25 },
+      settingsOverrides: { domainClassifierUrlCap: 25 },
     }));
-    strictEqual(result.maxPagesPerDomain, 25);
+    strictEqual(result.domainClassifierUrlCap, 25);
   });
 });
 

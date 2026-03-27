@@ -167,7 +167,11 @@ export const pipelineContextAfterProfile = pipelineContextAfterBootstrap.extend(
 // ---------------------------------------------------------------------------
 
 export const pipelineContextAfterPlanner = pipelineContextAfterProfile.extend({
-  enhancedRows: z.array(z.unknown()),
+  enhancedRows: z.array(z.object({
+    query: z.string(),
+    hint_source: z.string(),
+    tier: z.string(),
+  }).passthrough()),
 });
 
 // ---------------------------------------------------------------------------
@@ -322,7 +326,7 @@ export function validatePipelineCheckpoint(checkpointName, data, logger, config)
     logger?.warn?.('pipeline_context_validation_failed', {
       checkpoint: checkpointName,
       error_count: errors.length,
-      errors: errors.slice(0, 10),
+      errors,
     });
     return { valid: false, errors };
   }

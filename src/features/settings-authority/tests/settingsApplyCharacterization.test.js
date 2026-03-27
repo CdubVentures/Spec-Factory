@@ -27,11 +27,11 @@ test('applyRuntimeSettingsToConfig applies sanitized runtime settings and ignore
   const config = loadConfig();
 
   applyRuntimeSettingsToConfig(config, {
-    maxPagesPerDomain: '33',
+    domainClassifierUrlCap: '33',
     __unknownRuntimeKey__: 'drop-me',
   });
 
-  assert.equal(config.maxPagesPerDomain, 33);
+  assert.equal(config.domainClassifierUrlCap, 33);
   assert.equal(Object.hasOwn(config, '__unknownRuntimeKey__'), false);
 });
 

@@ -55,7 +55,6 @@ export interface RuntimeSettingDefaults {
   llmTimeoutMs: number;
   localInputRoot: string;
   localOutputRoot: string;
-  maxPagesPerDomain: number;
   maxRunSeconds: number;
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;

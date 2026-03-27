@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchNeedSetData, PrefetchSearchPlanBundle, PrefetchLlmCall, NeedSetField } from '../../types.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
@@ -40,6 +41,7 @@ const ESCALATION_THRESHOLD = 3;
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
 export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: PrefetchNeedSetPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:needset:${persistScope}`);
   const [plannerSortKey, setPlannerSortKey] = usePersistedTab<PlannerSortKey>(`runtimeOps:needset:sortKey:${persistScope}`, 'required_level', { validValues: PLANNER_SORT_KEYS });
   const [plannerSortDir, setPlannerSortDir] = usePersistedTab<'asc' | 'desc'>(`runtimeOps:needset:sortDir:${persistScope}`, 'asc', { validValues: SORT_DIRS });
   const [fieldFilter, setFieldFilter] = usePersistedTab<string>(`runtimeOps:needset:fieldFilter:${persistScope}`, '');
@@ -162,7 +164,7 @@ export function PrefetchNeedSetPanel({ data, persistScope, idxRuntime }: Prefetc
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* Hero Band */}
       <HeroBand

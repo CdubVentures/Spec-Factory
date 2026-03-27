@@ -108,14 +108,14 @@ test('queryIndexSummary computes correct breakdown', async () => {
   });
 });
 
-test('queryIndexSummary top_yield is capped at 10', async () => {
+test('queryIndexSummary top_yield includes all yield entries', async () => {
   const lines = [];
   for (let i = 0; i < 15; i++) {
     lines.push({ query: `q${i}`, provider: 'google', result_count: 1, field_yield: ['f' + i], run_id: 'r1' });
   }
   await withTempLog(lines, (logPath) => {
     const s = queryIndexSummary(logPath);
-    assert.ok(s.top_yield.length <= 10);
+    assert.ok(s.top_yield.length === 15);
   });
 });
 

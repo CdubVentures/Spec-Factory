@@ -295,7 +295,7 @@ Re-audited all 8 phases against live code. The cumulative Zod checkpoint system 
 |------|-----|-------|---------|----------|
 | 1 | QJ1 | Query Journey | ~~`hostPlanQueryRows` missing default `= []`~~ — RESOLVED (P7): host plan concept deleted entirely | CLOSED |
 | 2 | SP5+SP6 | Search Planner | 8+ hardcoded slice caps (50, 60, 8, 5, 5, 10, 5, 2) controlling LLM payload shaping — not registry-driven | MEDIUM |
-| 3 | SS-DRY | SERP Selector | `adaptSerpSelectorOutput()` repeats same 15-line enrichment block 3x (selected, notSelected, overflow) | MEDIUM |
+| 3 | SS-DRY | SERP Selector | ~~`adaptSerpSelectorOutput()` overflow block~~ — RESOLVED: overflow/input-cap removed, all candidates sent to LLM | CLOSED |
 | 4 | SP8 | Search Planner | `passesIdentityLock` uses loose substring match — false positives possible for short model names | LOW |
 | 5 | DC9 | Domain Classifier | No dedicated unit tests — only integration coverage via orchestration test | LOW |
 

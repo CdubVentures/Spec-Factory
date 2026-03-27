@@ -19,7 +19,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
 
   const config = {
     searchEngines: 'bing,google',
-    maxPagesPerDomain: 5,
+    domainClassifierUrlCap: 50,
   };
 
   let persistedSections = null;
@@ -45,7 +45,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
     responseBody = body;
     return true;
   };
-  const readJsonBody = async () => ({ maxPagesPerDomain: 8 });
+  const readJsonBody = async () => ({ domainClassifierUrlCap: 8 });
   const toInt = (v, d) => {
     const n = Number.parseInt(String(v ?? ''), 10);
     return Number.isFinite(n) ? n : d;
@@ -69,7 +69,7 @@ test('PUT runtime-settings response includes full snapshot after persist', async
   assert.ok(responseBody.snapshot !== undefined, 'response must include snapshot');
   assert.ok(typeof responseBody.snapshot === 'object', 'snapshot must be an object');
   // Snapshot should reflect the updated value
-  assert.equal(responseBody.snapshot.maxPagesPerDomain, 8);
+  assert.equal(responseBody.snapshot.domainClassifierUrlCap, 8);
 });
 
 // --- Client-side: normalizeRuntimeSaveResult prefers snapshot ---

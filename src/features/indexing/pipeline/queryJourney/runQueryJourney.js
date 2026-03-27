@@ -139,9 +139,9 @@ export async function runQueryJourney({
       accepted_query_count: queries.length,
       rejected_query_count: toArray(guardedQueries.rejectLog).length,
     },
-    selected_queries: queries.slice(0, executionQueryLimit),
+    selected_queries: queries,
     selected_query_count: Math.min(executionQueryLimit, queries.length),
-    query_rows: selectedQueryRows.slice(0, executionQueryLimit),
+    query_rows: selectedQueryRows,
     brand_resolution: brandResolution ? {
       officialDomain: brandResolution.officialDomain || '',
       supportDomain: brandResolution.supportDomain || '',

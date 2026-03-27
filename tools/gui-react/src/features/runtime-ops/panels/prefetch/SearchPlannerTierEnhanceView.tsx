@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, SearchPlanPass, SearchPlanEnhancementRow, PrefetchSearchResult } from '../../types.ts';
 import type { RuntimeIdxBadge } from '../../types.ts';
 import { formatMs } from '../../helpers.ts';
@@ -34,6 +35,7 @@ export function SearchPlannerTierEnhanceView({
   idxRuntime,
   persistScope = '',
 }: SearchPlannerTierEnhanceViewProps) {
+  const scrollRef = usePersistedScroll(`scroll:searchPlannerTierEnhance:${persistScope}`);
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:searchPlanner:llmCallsTier:${persistScope}`, false);
   const plans = searchPlans || [];
 
@@ -62,7 +64,7 @@ export function SearchPlannerTierEnhanceView({
   const totalDuration = calls.reduce((sum, c) => sum + (c.duration_ms ?? 0), 0);
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* Hero Band */}
       <HeroBand

@@ -16,21 +16,11 @@ import { collectPreviewExtractionFields } from './runtimeOpsExtractionFieldBuild
 import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
 import { normalizeHost } from '../../pipeline/shared/hostParser.js';
 
-// WHY: serp_selector_completed emits canonicalized URLs (www-stripped, tracking-
-// params-stripped, query-sorted) but search_results_collected emits raw provider
-// URLs. Normalize both sides so triage decisions match their search results.
-const TRACKING_KEYS = new Set(['gclid', 'fbclid', 'msclkid', 'mc_cid', 'mc_eid', 'igshid', 'yclid', 'ref_src']);
-
+// WHY: Minimal normalization to match canonicalizeUrl's output (hash, sort, trailing slash).
 function normalizeTriageUrl(url) {
   try {
     const u = new URL(url);
-    u.hostname = normalizeHost(u.hostname);
     u.hash = '';
-    // WHY: Search providers append tracking params that the pipeline's
-    // canonicalizeUrl strips. Without matching, URLs show as "Unknown."
-    for (const key of [...u.searchParams.keys()]) {
-      if (key.startsWith('utm_') || TRACKING_KEYS.has(key)) u.searchParams.delete(key);
-    }
     u.searchParams.sort();
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);

@@ -317,9 +317,8 @@ function profileCapDefaults(profile) {
 export function resolveDomainCapSummary(liveSettings = {}) {
   const profile = normalizeProfileToken(liveSettings?.profile);
   const defaults = profileCapDefaults(profile);
-  const maxPagesPerDomain = toPositiveInt(liveSettings?.maxPagesPerDomain, 0);
-  const value = maxPagesPerDomain > 0 ? String(maxPagesPerDomain) : defaults.domainCapValue;
-  const source = maxPagesPerDomain > 0 ? 'runtime maxPagesPerDomain knob' : defaults.domainCapSource;
+  const value = defaults.domainCapValue;
+  const source = defaults.domainCapSource;
   const profileLabel = profile.charAt(0).toUpperCase() + profile.slice(1);
   const tooltip = [
     'Domain cap controls how many pages per host can advance from search into fetch/parse.',
@@ -349,7 +348,6 @@ export function resolveRuntimeDomainCapSummary(liveSettings) {
   }
   const hasRuntimeSnapshot = Boolean(
     liveSettings.profile !== undefined
-    || liveSettings.maxPagesPerDomain !== undefined
   );
   if (!hasRuntimeSnapshot) {
     return {

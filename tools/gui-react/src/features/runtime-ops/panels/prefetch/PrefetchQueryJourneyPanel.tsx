@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
@@ -126,6 +127,7 @@ export function PrefetchQueryJourneyPanel({
   persistScope,
   idxRuntime,
 }: PrefetchQueryJourneyPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:queryJourney:${persistScope}`);
   const journeyRows = useMemo(
     () => buildQueryJourneyRows({
       queryRows: searchProfile?.query_rows || [],
@@ -175,7 +177,7 @@ export function PrefetchQueryJourneyPanel({
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
       <HeroBand

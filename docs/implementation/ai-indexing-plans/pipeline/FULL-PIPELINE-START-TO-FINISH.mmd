@@ -16,8 +16,8 @@ flowchart LR
         S03["03 Search Profile<br/>deterministic query rows<br/>tier allocation (seed/group/key)<br/>queryBuilder + capMap"]
         S04["04 Search Planner<br/>LLM query enhancement<br/>identity lock guard<br/>deterministic fallback"]
         S05["05 Query Journey<br/>dedup + identity guard<br/>searchProfileQueryCap<br/>reject log aggregation"]
-        S06["06 Search Execution<br/>provider dispatch (config-driven)<br/>Serper burst / SearXNG / Google / Brave<br/>frontier cache + plan-only fallback"]
-        S07["07 SERP Selector<br/>hard-drop filter (pure)<br/>LLM URL selection<br/>host trust + doc kind enrichment"]
+        S06["06 Search Results<br/>provider dispatch (config-driven)<br/>Serper burst / SearXNG / Google / Brave<br/>dedup + video + crawled filter<br/>frontier cache + plan-only fallback"]
+        S07["07 SERP Selector<br/>hard-drop filter (denied/utility)<br/>LLM URL selection (all candidates, max_keep output cap)<br/>host trust + doc kind enrichment"]
         S08["08 Domain Classifier<br/>domainClassifierUrlCap<br/>triage metadata map<br/>planner.enqueue() approved URLs"]
 
         PARALLEL --> S03 --> S04 --> S05 --> S06 --> S07 --> S08

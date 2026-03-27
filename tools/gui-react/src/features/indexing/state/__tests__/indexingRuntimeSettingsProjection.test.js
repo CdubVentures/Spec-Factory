@@ -44,7 +44,7 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
   const projection = buildIndexingRuntimeSettingsProjection({
     runtimeSettings: {
       llmModelPlan: 'planner-live',
-      maxPagesPerDomain: '12',
+      domainClassifierUrlCap: '12',
     },
     ...defaults,
     resolveModelTokenDefaults: () => ({
@@ -54,9 +54,9 @@ test('buildIndexingRuntimeSettingsProjection normalizes authority settings into 
   });
 
   assert.equal(projection.runtimeDraft.llmModelPlan, 'planner-live');
-  assert.equal(projection.runtimeDraft.maxPagesPerDomain, 12);
-  assert.equal(projection.runtimeSettingsPayload.maxPagesPerDomain, 12);
-  assert.equal(projection.runtimeSettingsBaseline.maxPagesPerDomain, 12);
+  assert.equal(projection.runtimeDraft.domainClassifierUrlCap, 12);
+  assert.equal(projection.runtimeSettingsPayload.domainClassifierUrlCap, 12);
+  assert.equal(projection.runtimeSettingsBaseline.domainClassifierUrlCap, 12);
   // WHY: phase05RuntimeSettings still references perHostMinDelayMs (hardcoded in projection module).
   // perHostMinDelayMs was removed from the registry so the draft value is undefined.
   assert.ok(projection.phase05RuntimeSettings != null);

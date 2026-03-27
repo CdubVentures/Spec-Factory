@@ -90,11 +90,11 @@ test('config: token fallback chain resolves to non-negative numbers', () => {
 });
 
 test('config: explicit overrides win and undefined overrides are ignored', () => {
-  const overridden = makeResolvedConfig({ maxPagesPerDomain: 11 });
-  assert.equal(overridden.maxPagesPerDomain, 11);
+  const overridden = makeResolvedConfig({ domainClassifierUrlCap: 11 });
+  assert.equal(overridden.domainClassifierUrlCap, 11);
 
-  const defaulted = makeResolvedConfig({ maxPagesPerDomain: undefined });
-  assert.ok(defaulted.maxPagesPerDomain > 0);
+  const defaulted = makeResolvedConfig({ domainClassifierUrlCap: undefined });
+  assert.ok(defaulted.domainClassifierUrlCap > 0);
 });
 
 test('config: retired per-role model and fallback aliases stay off the public surface', () => {

@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
@@ -56,6 +57,7 @@ const CONSENT_COLUMNS: ColumnDef<CookieConsentRecord, unknown>[] = [
 const EMPTY_RECORDS: CookieConsentRecord[] = [];
 
 export function FetchCookieConsentPanel({ data, persistScope }: FetchCookieConsentPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:fetchCookieConsent:${persistScope}`);
   const records = (data?.records ?? EMPTY_RECORDS) as CookieConsentRecord[];
   const totalDismissed = useMemo(() => records.filter((r) => r.enabled && (r.autoconsentMatched || r.fallbackClicked > 0)).length, [records]);
   const totalSkipped = useMemo(() => records.filter((r) => !r.enabled).length, [records]);
@@ -76,7 +78,7 @@ export function FetchCookieConsentPanel({ data, persistScope }: FetchCookieConse
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Workers" />

@@ -66,7 +66,6 @@ function derivePlannerLimits(config) {
     searchProfileQueryCap: configInt(config, 'searchProfileQueryCap'),
     domainClassifierUrlCap: configInt(config, 'domainClassifierUrlCap'),
     serpSelectorMaxKeep: configInt(config, 'serpSelectorMaxKeep'),
-    maxPagesPerDomain: configInt(config, 'maxPagesPerDomain'),
     llmModelPlan: resolvePhaseModel(config, 'needset') || String(configValue(config, 'llmModelPlan')),
     llmProvider: String(configValue(config, 'llmProvider')),
     llmMaxOutputTokensPlan: toInt(config._resolvedNeedsetMaxOutputTokens ?? config.llmMaxOutputTokensPlan, 2048),

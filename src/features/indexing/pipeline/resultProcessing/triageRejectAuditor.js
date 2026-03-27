@@ -29,7 +29,7 @@ export function sampleRejectAudit({
   const excluded = Array.isArray(notSelected) ? notSelected : [];
 
   // Sample hard drops — prefer boundary cases (cooldown > shell > other)
-  const dropPriority = { url_cooldown: 3, video_platform: 3, utility_shell: 2, invalid_protocol: 1, denied_host: 0, invalid_url: 0 };
+  const dropPriority = { url_cooldown: 3, utility_shell: 2, invalid_protocol: 1, denied_host: 0, invalid_url: 0 };
   const sortedDrops = [...drops].sort(
     (a, b) => (dropPriority[b.hard_drop_reason] || 1) - (dropPriority[a.hard_drop_reason] || 1)
   );

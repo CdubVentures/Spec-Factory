@@ -8,7 +8,7 @@ import type { RuntimeSettings } from '../runtimeSettingsAuthorityHelpers.ts';
 
 function assertKnownKeys(s: RuntimeSettings) {
   // These must compile — proves autocomplete works for registry keys
-  const _fc: string | number | boolean | undefined = s.maxPagesPerDomain;
+  const _fc: string | number | boolean | undefined = s.domainClassifierUrlCap;
   const _se: string | number | boolean | undefined = s.searchEngines;
   const _ak: string | number | boolean | undefined = s.anthropicApiKey;
 

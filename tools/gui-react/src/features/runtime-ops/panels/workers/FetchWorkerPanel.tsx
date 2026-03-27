@@ -106,13 +106,15 @@ export function FetchWorkerPanel({ worker, runId, wsUrl }: FetchWorkerPanelProps
           {worker.state}
         </span>
         {worker.current_url && (
-          <span
-            className="font-mono sf-text-caption sf-text-muted truncate max-w-[32rem] cursor-pointer hover:sf-text-primary"
-            onClick={() => navigator.clipboard?.writeText(worker.current_url)}
+          <a
+            href={worker.current_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono sf-text-caption sf-link-accent truncate max-w-[32rem] hover:underline"
             title={worker.current_url}
           >
             {worker.current_url}
-          </span>
+          </a>
         )}
       </div>
 

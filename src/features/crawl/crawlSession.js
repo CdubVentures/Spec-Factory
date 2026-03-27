@@ -98,6 +98,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         }
 
         const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
+        // WHY: Map page → workerId IMMEDIATELY so prePageCloseHook can save
+        // the video regardless of whether the page is blocked, retried, or succeeds.
+        if (videoDir) pageWorkerMap.set(page, workerId);
         const ctx = { page, request, response, settings, workerId };
 
         // WHY: Event name must be 'source_fetch_started' — the runtime bridge
@@ -132,6 +135,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         if (blocked) {
           if (blockReason === 'robots_blocked') request.noRetry = true;
           session?.retire();
+          // WHY: Stop CDP screencast before throwing — no more frames needed.
+          const cdpBlocked = cdpSessionMap.get(page);
+          if (cdpBlocked) {
+            try { await cdpBlocked.send('Page.stopScreencast'); } catch {}
+            try { await cdpBlocked.detach(); } catch {}
+          }
           request.userData.__blockInfo = { blocked: true, blockReason, status, html, title, finalUrl };
           throw new Error(`blocked:${blockReason}`);
         }
@@ -173,10 +182,6 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         } catch (err) {
           logger?.warn?.('screencast_error', { url: request.url, error: err?.message });
         }
-
-        // WHY: Map this page to its workerId so the postPageCloseHook can
-        // save the video with the correct filename after the page closes.
-        if (videoDir) pageWorkerMap.set(page, workerId);
 
         // WHY: Stop CDP screencast — page processing is done. The retained
         // frame from the screenshot emission above serves as the final image.

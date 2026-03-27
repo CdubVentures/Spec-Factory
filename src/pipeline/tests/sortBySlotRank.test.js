@@ -19,15 +19,6 @@ describe('sortBySlotRank', () => {
     ]);
   });
 
-  test('uses tier as tiebreaker when slot and rank are equal', () => {
-    const sources = [
-      { url: 'https://b.com', tier: 3, triage_passthrough: { search_slot: 'a', search_rank: 1 } },
-      { url: 'https://a.com', tier: 1, triage_passthrough: { search_slot: 'a', search_rank: 1 } },
-    ];
-    sortBySlotRank(sources);
-    assert.deepEqual(sources.map((s) => s.url), ['https://a.com', 'https://b.com']);
-  });
-
   test('entries without triage_passthrough sort to end', () => {
     const sources = [
       { url: 'https://no-triage.com' },
@@ -94,13 +85,13 @@ describe('sortBySlotRank', () => {
     assert.equal(sources[0].url, 'https://solo.com');
   });
 
-  test('missing tier defaults to 99 for tiebreaker', () => {
+  test('stable sort preserves input order when slot and rank are equal', () => {
     const sources = [
-      { url: 'https://no-tier.com', triage_passthrough: { search_slot: 'a', search_rank: 1 } },
-      { url: 'https://with-tier.com', tier: 1, triage_passthrough: { search_slot: 'a', search_rank: 1 } },
+      { url: 'https://first.com', triage_passthrough: { search_slot: 'a', search_rank: 1 } },
+      { url: 'https://second.com', triage_passthrough: { search_slot: 'a', search_rank: 1 } },
     ];
     sortBySlotRank(sources);
-    assert.equal(sources[0].url, 'https://with-tier.com');
-    assert.equal(sources[1].url, 'https://no-tier.com');
+    assert.equal(sources[0].url, 'https://first.com');
+    assert.equal(sources[1].url, 'https://second.com');
   });
 });

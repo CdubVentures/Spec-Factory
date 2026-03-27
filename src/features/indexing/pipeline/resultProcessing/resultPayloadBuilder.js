@@ -69,7 +69,7 @@ export function buildSerpExplorer({
         tier_name: trace.tier_name_guess,
         doc_kind: trace.doc_kind_guess || 'other',
         triage_score: Number.isFinite(Number(trace.triage_score))
-          ? Number(Number(trace.triage_score).toFixed(3))
+          ? Number(trace.triage_score)
           : 0,
         decision: trace.decision || 'pending',
         reason_codes: uniqueTokens(trace.reason_codes || []),

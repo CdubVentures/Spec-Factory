@@ -53,7 +53,6 @@ describe('buildSearchPlanningContext', () => {
       assert.equal(result.planner_limits.searchProfileQueryCap, 10);
       assert.equal(result.planner_limits.domainClassifierUrlCap, 50);
       assert.equal(result.planner_limits.serpSelectorMaxKeep, 50);
-      assert.equal(result.planner_limits.maxPagesPerDomain, 5);
       // WHY: maxRunSeconds retired from planner_limits (runtime-only concern)
       assert.equal(result.planner_limits.maxRunSeconds, undefined);
       assert.equal(result.planner_limits.llmModelPlan, 'gemini-2.5-flash');

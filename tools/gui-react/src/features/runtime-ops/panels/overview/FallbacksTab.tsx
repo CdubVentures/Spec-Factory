@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
 import type { FallbacksResponse, FallbackEventRow } from '../../types.ts';
 import {
@@ -47,6 +48,7 @@ const FALLBACK_RESULT_FILTER_KEYS = [
 ] as const;
 
 export function FallbacksTab({ fallbacks, category, onNavigateToDocuments }: FallbacksTabProps) {
+  const scrollRef = usePersistedScroll(`scroll:fallbacks:${category}`);
   const [hostFilter, setHostFilter] = usePersistedTab<string>(
     `runtimeOps:fallbacks:host:${category}`,
     '',
@@ -90,7 +92,7 @@ export function FallbacksTab({ fallbacks, category, onNavigateToDocuments }: Fal
 
   return (
     <div className="flex flex-1 min-h-0">
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Top host summary cards */}
         {topHosts.length > 0 && (
           <div className="px-4 py-2 flex gap-2 overflow-x-auto border-b sf-border-soft">

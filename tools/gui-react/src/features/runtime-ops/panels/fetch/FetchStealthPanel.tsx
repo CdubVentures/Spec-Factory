@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
@@ -38,6 +39,7 @@ const INJECTION_COLUMNS: ColumnDef<StealthRecord, unknown>[] = [
 ];
 
 export function FetchStealthPanel({ data, persistScope }: FetchStealthPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:fetchStealth:${persistScope}`);
   const records = data.records as StealthRecord[];
   const totalInjected = useMemo(() => records.filter((r) => r.injected).length, [records]);
   const totalFailed = useMemo(() => records.filter((r) => !r.injected).length, [records]);
@@ -58,7 +60,7 @@ export function FetchStealthPanel({ data, persistScope }: FetchStealthPanelProps
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Injections" />

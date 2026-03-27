@@ -10,10 +10,9 @@
  * 3. HTTP → normalize to HTTPS; drop only if normalization fails or host blocked
  * 4. Denied/blocked host
  * 5. Obvious utility shell pages (login, cart, account, checkout, search results)
- * 6. Video hosting platforms (YouTube, Vimeo, etc. — never produce extractable spec data)
+ * Note: Video filtering handled upstream by executeSearchQueries.
  */
 import { isDeniedHost } from '../../../../categories/loader.js';
-import { isVideoUrl } from '../shared/urlClassifier.js';
 import { normalizeHost } from '../shared/hostParser.js';
 
 // WHY: Only these path patterns are deterministically non-content utility shells.
@@ -83,12 +82,6 @@ export function applyHardDropFilter({
 
     if (UTILITY_SHELL_RE.test(pathname) || SEARCH_RESULTS_RE.test(pathAndQuery)) {
       hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'utility_shell' });
-      continue;
-    }
-
-    // Step 5: Video hosting platforms (never produce extractable spec data)
-    if (isVideoUrl(canonicalUrl)) {
-      hardDrops.push({ ...raw, url: canonicalUrl, host, hard_drop_reason: 'video_platform' });
       continue;
     }
 

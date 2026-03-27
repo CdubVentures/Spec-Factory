@@ -107,7 +107,6 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       profile: toOptionalString(runtimeSettingsSnapshot.profile),
       searchEngines: toOptionalString(runtimeSettingsSnapshot.searchEngines ?? runtimeSettingsSnapshot.searchProvider),
       discoveryEnabled: toOptionalBoolean(runtimeSettingsSnapshot.discoveryEnabled),
-      maxPagesPerDomain: toOptionalPositiveInt(runtimeSettingsSnapshot.maxPagesPerDomain),
     };
   }, [runtimeSettingsSnapshot]);
 

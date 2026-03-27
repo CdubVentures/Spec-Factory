@@ -1,7 +1,6 @@
 import {
   buildDeterministicAliases,
   buildSearchProfile,
-  buildTargetedQueries,
   determineQueryModes,
   buildTier1Queries,
   buildTier2Queries,
@@ -12,7 +11,6 @@ import { normalizeQueryRows } from '../../../pipeline/searchPlanner/queryPlanner
 export {
   buildDeterministicAliases,
   buildSearchProfile,
-  buildTargetedQueries,
   determineQueryModes,
   buildTier1Queries,
   buildTier2Queries,

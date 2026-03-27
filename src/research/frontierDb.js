@@ -69,9 +69,7 @@ export class FrontierDb {
   }
 
   canonicalize(url) {
-    return canonicalizeUrl(url, {
-      stripTrackingParams: true
-    });
+    return canonicalizeUrl(url);
   }
 
   _queryRow(productId, query) {

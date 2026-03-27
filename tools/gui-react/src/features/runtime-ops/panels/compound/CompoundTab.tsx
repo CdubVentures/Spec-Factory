@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedTab } from '../../../../stores/tabStore.ts';
 import { getRefetchInterval } from '../../helpers.ts';
 import { KpiStrip } from '../../components/KpiStrip.tsx';
@@ -55,6 +56,7 @@ function trendChipClass(trend: string): string {
 }
 
 export function CompoundTab({ category, runs, isRunning }: CompoundTabProps) {
+  const scrollRef = usePersistedScroll(`scroll:compound:${category}`);
   const [activeSubTab, setActiveSubTab] = usePersistedTab<CompoundSubTab>(
     'runtimeOps:compound:subTab',
     'curve',
@@ -139,7 +141,7 @@ export function CompoundTab({ category, runs, isRunning }: CompoundTabProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto">
+    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto">
       <KpiStrip cards={kpiCards} />
 
       <TabStrip

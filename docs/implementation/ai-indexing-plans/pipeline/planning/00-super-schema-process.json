@@ -120,9 +120,8 @@
       "name": "Result Processing phase",
       "owner": "src/features/indexing/pipeline/resultProcessing/processDiscoveryResults.js",
       "does": [
-        "dedupe results",
-        "hard drops",
-        "LLM selector path when serpSelectorEnabled and a triage route are both available",
+        "hard drops (denied hosts, utility shells — video/dedup done upstream by Search Results)",
+        "LLM selector (all candidates sent, output capped by serpSelectorMaxKeep)",
         "deterministic domain classification (runs AFTER SERP selector)",
         "fallback deterministic soft-label, lane, scoring, and quota selection path",
         "optional rerankSerpResults() annotation on the deterministic path",
@@ -179,7 +178,7 @@
       "reason": "serp_url_selector",
       "role": "triage",
       "owner": "src/features/indexing/pipeline/resultProcessing/serpSelectorLlmAdapter.js",
-      "conditional": "only when config.serpSelectorEnabled is true and hasLlmRouteApiKey(config, { role: 'triage' }) is true"
+      "conditional": "always runs; falls back to deterministic reranker on LLM failure"
     }
   ],
   "runtime_bridge": {

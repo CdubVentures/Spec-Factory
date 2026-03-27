@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
 import type { QueueStateResponse, LaneSummary, BlockedHostEntry } from '../../types.ts';
@@ -49,6 +50,7 @@ function LaneCard({
 }
 
 export function QueueTab({ queueState, category, onNavigateToDocuments }: QueueTabProps) {
+  const scrollRef = usePersistedScroll(`scroll:queue:${category}`);
   const [blockedExpanded, toggleBlockedExpanded] = usePersistedToggle(`runtimeOps:queue:blocked:${category}`, false);
 
   const jobs = queueState?.jobs ?? [];
@@ -84,7 +86,7 @@ export function QueueTab({ queueState, category, onNavigateToDocuments }: QueueT
 
   return (
     <div className="flex flex-1 min-h-0">
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Lane summary cards */}
         {laneSummary.length > 0 && (
           <div className="flex gap-2 overflow-x-auto border-b sf-border-default px-4 py-2">

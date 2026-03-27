@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
@@ -55,6 +56,7 @@ const OVERRIDE_COLUMNS: ColumnDef<CssOverrideRecord, unknown>[] = [
 ];
 
 export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:fetchCssOverride:${persistScope}`);
   const records = data.records as CssOverrideRecord[];
   const totalOverridden = useMemo(() => records.filter((r) => r.enabled && r.hiddenBefore > 0).length, [records]);
   const totalSkipped = useMemo(() => records.filter((r) => !r.enabled || !r.hiddenBefore).length, [records]);
@@ -74,7 +76,7 @@ export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePa
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
+    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
       <ToolBrandHeader tool="playwright" category="script" />
       <HeroStatGrid>
         <HeroStat value={total} label="Total Workers" />

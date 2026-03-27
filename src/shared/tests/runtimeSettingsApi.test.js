@@ -132,7 +132,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT with valid partial payload applies changes and returns applied', async () => {
-    const payload = { maxPagesPerDomain: 7, searchEngines: 'google' };
+    const payload = { domainClassifierUrlCap: 7, searchEngines: 'google' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -141,17 +141,17 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.ok, true);
-    assert.equal(body.applied.maxPagesPerDomain, 7);
+    assert.equal(body.applied.domainClassifierUrlCap, 7);
     assert.equal(body.applied.searchEngines, 'google');
 
     const getRes = await fetch(`${_baseUrl}/runtime-settings`);
     const getBody = await getRes.json();
-    assert.equal(getBody.maxPagesPerDomain, 7);
+    assert.equal(getBody.domainClassifierUrlCap, 7);
     assert.equal(getBody.searchEngines, 'google');
   });
 
   await t.test('PUT with invalid values returns rejected for those keys', async () => {
-    const payload = { maxPagesPerDomain: 'not_a_number', llmMaxOutputTokensPlan: 'abc' };
+    const payload = { domainClassifierUrlCap: 'not_a_number', llmMaxOutputTokensPlan: 'abc' };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -161,13 +161,13 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const body = await res.json();
     assert.equal(body.ok, true);
     assert.ok(body.rejected);
-    assert.equal(body.rejected.maxPagesPerDomain, 'invalid_integer');
+    assert.equal(body.rejected.domainClassifierUrlCap, 'invalid_integer');
     assert.equal(body.rejected.llmMaxOutputTokensPlan, 'invalid_integer');
   });
 
   await t.test('PUT clamps out-of-range values', async () => {
     const payload = {
-      maxPagesPerDomain: -5,
+      domainClassifierUrlCap: -5,
       maxRunSeconds: 999999,
     };
     const res = await fetch(`${_baseUrl}/runtime-settings`, {
@@ -177,7 +177,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     });
     assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.applied.maxPagesPerDomain, 1);
+    assert.equal(body.applied.domainClassifierUrlCap, 1);
     assert.equal(body.applied.maxRunSeconds, 86400);
   });
 
@@ -206,7 +206,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
 
   await t.test('PUT persists runtime settings to canonical user-settings snapshot', async () => {
-    const payload = { llmModelPlan: 'test-persist-model-xyz', maxPagesPerDomain: 9 };
+    const payload = { llmModelPlan: 'test-persist-model-xyz', domainClassifierUrlCap: 9 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -215,7 +215,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(putRes.status, 200);
     const putBody = await putRes.json();
     assert.equal(putBody.applied.llmModelPlan, 'test-persist-model-xyz');
-    assert.equal(putBody.applied.maxPagesPerDomain, 9);
+    assert.equal(putBody.applied.domainClassifierUrlCap, 9);
 
     const userSettingsPaths = [
       path.join(_helperRoot, '_runtime', 'user-settings.json'),
@@ -226,12 +226,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
         json
         && json.runtime
         && json.runtime.llmModelPlan === 'test-persist-model-xyz'
-        && json.runtime.maxPagesPerDomain === 9
+        && json.runtime.domainClassifierUrlCap === 9
       ),
       8_000,
     );
     assert.equal(userSettings.runtime.llmModelPlan, 'test-persist-model-xyz');
-    assert.equal(userSettings.runtime.maxPagesPerDomain, 9);
+    assert.equal(userSettings.runtime.domainClassifierUrlCap, 9);
 
     const legacySettingsExists = await Promise.all([
       fs.access(path.join(_helperRoot, '_runtime', 'settings.json')).then(() => true).catch(() => false),

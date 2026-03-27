@@ -115,7 +115,7 @@ describe('assembleConfigFromRegistry', () => {
 
   it('default values match registry (clean env, no env overrides)', () => {
     const spot = [
-      { key: 'maxPagesPerDomain', expected: 5 },
+      { key: 'domainClassifierUrlCap', expected: 50 },
       { key: 'maxRunSeconds', expected: 480 },
       { key: 'searchProfileQueryCap', expected: 10 },
     ];

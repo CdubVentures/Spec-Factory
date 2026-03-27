@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedNullableTab } from '../../../../stores/tabStore.ts';
 import type { PrefetchSearchProfileData, PrefetchSearchProfileQueryRow, PrefetchLiveSettings } from '../../types.ts';
 import { DrawerShell, DrawerSection } from '../../../../shared/ui/overlay/DrawerShell.tsx';
@@ -278,6 +279,7 @@ function TierBudgetBar({ budget }: { budget: ReturnType<typeof buildTierBudgetSu
 /* ── Main Panel ─────────────────────────────────────────────────────── */
 
 export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, idxRuntime }: PrefetchSearchProfilePanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:searchProfile:${persistScope}`);
   const showGateBadges = shouldShowSearchProfileGateBadges();
   // WHY: Show the deterministic Search Profile output, not LLM-enhanced rows from downstream phases.
   const displayRows = data.deterministic_query_rows ?? data.query_rows;
@@ -337,7 +339,7 @@ export function PrefetchSearchProfilePanel({ data, persistScope, liveSettings, i
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ══════════════════════════════════════════════════════════════════
           HERO BAND

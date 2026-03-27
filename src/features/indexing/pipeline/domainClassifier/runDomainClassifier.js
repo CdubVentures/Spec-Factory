@@ -74,8 +74,7 @@ export function sortBySlotRank(sources) {
     if (slotA !== slotB) return slotA < slotB ? -1 : 1;
     const rankA = Number(a.triage_passthrough?.search_rank) || Infinity;
     const rankB = Number(b.triage_passthrough?.search_rank) || Infinity;
-    if (rankA !== rankB) return rankA - rankB;
-    return (a.tier ?? 99) - (b.tier ?? 99);
+    return rankA - rankB;
   });
 }
 
@@ -230,7 +229,7 @@ function _buildTriageMetaMap(discoveryResult, logger) {
       canonical = canonicalizeQueueUrl(new URL(candidate.url));
     } catch {
       logger?.warn?.('domain_classifier_url_skip', {
-        url: String(candidate.url || '').slice(0, 200),
+        url: String(candidate.url || ''),
         reason: 'malformed_url',
       });
       continue;
@@ -278,9 +277,6 @@ function _buildSourceRow(url, discoveredFrom, triageMetaMap) {
       search_rank: meta.search_rank,
       triage_score: meta.triage_score,
     } : null,
-    tier: meta?.host_trust_class === 'official' ? 1
-      : meta?.host_trust_class === 'manufacturer' ? 2
-      : 99,
   };
 }
 

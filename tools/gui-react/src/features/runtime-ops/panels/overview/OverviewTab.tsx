@@ -1,4 +1,5 @@
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { RuntimeOpsSummaryResponse, RuntimeOpsBlocker } from '../../types.ts';
 import { statusBadgeClass, METRIC_TIPS } from '../../helpers.ts';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
@@ -31,6 +32,7 @@ function HealthCard({ label, value, sub, tip }: { label: string; value: string |
 }
 
 export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, throughputHistory, runId, isRunning, onNavigateToWorkers }: OverviewTabProps) {
+  const scrollRef = usePersistedScroll('scroll:overview');
   const s = summary ?? {
     status: 'unknown', total_fetches: 0, total_parses: 0,
     total_llm_calls: 0, error_rate: 0, docs_per_min: 0, fields_per_min: 0, top_blockers: [],
@@ -38,7 +40,7 @@ export function OverviewTab({ summary, selectedBlocker, onSelectBlocker, through
 
   return (
     <div className="flex flex-1 min-h-0">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {runId && (
           <PipelineFlowStrip
             runId={runId}

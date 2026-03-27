@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import { usePersistedNullableTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { PrefetchLlmCall, SerpSelectorResult, SerpSelectorCandidate, PrefetchLiveSettings } from '../../types.ts';
 import { formatMs, serpSelectorDecisionBadgeClass, domainRoleBadgeClass, scoreBarSegments } from '../../helpers.ts';
 import { resolveIdentityBadge, resolveApprovalBadge } from '../../badgeRegistries.ts';
@@ -119,6 +120,7 @@ function CandidateDrawer({
 /* ── Main Panel ── */
 
 export function PrefetchSerpSelectorPanel({ calls, serpSelector, persistScope, idxRuntime }: PrefetchSerpSelectorPanelProps) {
+  const scrollRef = usePersistedScroll(`scroll:serpSelector:${persistScope}`);
   const [showScoreDecomposition, , setShowScoreDecomposition] = usePersistedToggle('runtimeOps:serp:scoreDecomposition', false);
   const [kanbanView, , setKanbanView] = usePersistedToggle(`runtimeOps:serp:kanbanView:${persistScope}`, true);
   const [llmCallsOpen, toggleLlmCallsOpen] = usePersistedToggle(`runtimeOps:serpSelector:llmCalls:${persistScope}`, false);
@@ -198,7 +200,7 @@ export function PrefetchSerpSelectorPanel({ calls, serpSelector, persistScope, i
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
 
       {/* ── Hero Band ── */}
       <HeroBand
