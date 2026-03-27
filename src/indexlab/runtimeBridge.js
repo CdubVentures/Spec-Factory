@@ -133,7 +133,7 @@ export class IndexLabRuntimeBridge {
           ...summary,
           status: this.status,
           ended_at: endedAt
-        });
+        }, { writeJson: true });
         this.fetchByUrl.clear();
         this.fetchClosedByUrl.clear();
         this.workerByUrl.clear();

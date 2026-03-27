@@ -7,19 +7,19 @@ import { writeRunMeta } from '../runtimeBridgeArtifacts.js';
 import { SpecDb } from '../../db/specDb.js';
 
 async function makeTmpDir() {
-  return fs.mkdtemp(path.join(os.tmpdir(), 'sf-dual-write-'));
+  return fs.mkdtemp(path.join(os.tmpdir(), 'sf-runmeta-'));
 }
 
 function buildMockState(overrides = {}) {
   return {
-    runId: 'run-dual-001',
+    runId: 'run-meta-001',
     runMetaPath: '', // set by test
     startedAt: '2026-03-26T10:00:00.000Z',
     endedAt: '',
     status: 'running',
     context: { category: 'mouse', productId: 'mouse-razer-viper', s3Key: 'specs/inputs/mouse/products/mouse-razer-viper.json' },
     outRoot: '/tmp/indexlab',
-    eventsPath: '/tmp/indexlab/run-dual-001/run_events.ndjson',
+    eventsPath: '/tmp/indexlab/run-meta-001/run_events.ndjson',
     counters: { pages_checked: 5, fetched_ok: 3, fetched_404: 0, fetched_blocked: 0, fetched_error: 0 },
     stageState: { search: { started_at: '2026-03-26T10:01:00.000Z', ended_at: '' }, fetch: { started_at: '', ended_at: '' } },
     identityFingerprint: 'fp-test',
@@ -32,15 +32,15 @@ function buildMockState(overrides = {}) {
     startupMs: { first_event: 120, search_started: 450 },
     needSet: { total_fields: 12, generated_at: '2026-03-26T10:02:00.000Z', summary: 'test', rows: [1, 2, 3] },
     searchProfile: { status: 'planned', query_count: 8, generated_at: '2026-03-26T10:02:00.000Z' },
-    needSetPath: '/tmp/indexlab/run-dual-001/needset.json',
-    searchProfilePath: '/tmp/indexlab/run-dual-001/search_profile.json',
-    brandResolutionPath: '/tmp/indexlab/run-dual-001/brand_resolution.json',
-    specDb: null, // set by test
+    needSetPath: '/tmp/indexlab/run-meta-001/needset.json',
+    searchProfilePath: '/tmp/indexlab/run-meta-001/search_profile.json',
+    brandResolutionPath: '/tmp/indexlab/run-meta-001/brand_resolution.json',
+    specDb: null,
     ...overrides,
   };
 }
 
-test('writeRunMeta writes both JSON file and SQL row', async () => {
+test('writeRunMeta default writes SQL only — no JSON file created', async () => {
   const tmpDir = await makeTmpDir();
   try {
     const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
@@ -50,128 +50,87 @@ test('writeRunMeta writes both JSON file and SQL row', async () => {
     await writeRunMeta(state);
 
     const jsonExists = await fs.stat(runMetaPath).then(() => true).catch(() => false);
-    assert.ok(jsonExists, 'run.json should exist');
+    assert.equal(jsonExists, false, 'run.json should NOT be created by default');
 
-    const sqlRow = specDb.getRunByRunId('run-dual-001');
+    const sqlRow = specDb.getRunByRunId('run-meta-001');
     assert.ok(sqlRow, 'SQL row should exist');
+    assert.equal(sqlRow.status, 'running');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
 
-test('JSON doc and SQL row have matching scalar fields', async () => {
+test('writeRunMeta with writeJson: true writes both JSON and SQL', async () => {
   const tmpDir = await makeTmpDir();
   try {
     const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
     const runMetaPath = path.join(tmpDir, 'run.json');
     const state = buildMockState({ runMetaPath, specDb });
 
-    await writeRunMeta(state);
+    await writeRunMeta(state, {}, { writeJson: true });
+
+    const jsonExists = await fs.stat(runMetaPath).then(() => true).catch(() => false);
+    assert.ok(jsonExists, 'run.json should exist with writeJson: true');
 
     const jsonDoc = JSON.parse(await fs.readFile(runMetaPath, 'utf8'));
-    const sqlRow = specDb.getRunByRunId('run-dual-001');
+    assert.equal(jsonDoc.run_id, 'run-meta-001');
 
-    assert.equal(sqlRow.run_id, jsonDoc.run_id);
-    assert.equal(sqlRow.category, jsonDoc.category);
-    assert.equal(sqlRow.product_id, jsonDoc.product_id);
-    assert.equal(sqlRow.status, jsonDoc.status);
-    assert.equal(sqlRow.started_at, jsonDoc.started_at);
-    assert.equal(sqlRow.ended_at, jsonDoc.ended_at);
-    assert.equal(sqlRow.phase_cursor, jsonDoc.phase_cursor);
-    assert.equal(sqlRow.boot_step, jsonDoc.boot_step);
-    assert.equal(sqlRow.boot_progress, jsonDoc.boot_progress);
-    assert.equal(sqlRow.identity_fingerprint, jsonDoc.identity_fingerprint);
-    assert.equal(sqlRow.identity_lock_status, jsonDoc.identity_lock_status);
-    assert.equal(sqlRow.dedupe_mode, jsonDoc.dedupe_mode);
-    assert.equal(sqlRow.s3key, jsonDoc.s3key);
-    assert.equal(sqlRow.out_root, jsonDoc.out_root);
+    const sqlRow = specDb.getRunByRunId('run-meta-001');
+    assert.ok(sqlRow, 'SQL row should also exist');
+    assert.equal(sqlRow.run_id, 'run-meta-001');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
 
-test('JSON doc and SQL row have matching JSON fields', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    const runMetaPath = path.join(tmpDir, 'run.json');
-    const state = buildMockState({ runMetaPath, specDb });
+test('SQL row has correct data from mid-run call without JSON', async () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const state = buildMockState({ specDb });
 
-    await writeRunMeta(state);
+  await writeRunMeta(state);
 
-    const jsonDoc = JSON.parse(await fs.readFile(runMetaPath, 'utf8'));
-    const sqlRow = specDb.getRunByRunId('run-dual-001');
-
-    assert.deepEqual(sqlRow.counters, jsonDoc.counters);
-    assert.deepEqual(sqlRow.stages, jsonDoc.stages);
-    assert.deepEqual(sqlRow.startup_ms, jsonDoc.startup_ms);
-    assert.deepEqual(sqlRow.browser_pool, jsonDoc.browser_pool);
-    assert.deepEqual(sqlRow.needset_summary, jsonDoc.needset);
-    assert.deepEqual(sqlRow.search_profile_summary, jsonDoc.search_profile);
-    assert.deepEqual(sqlRow.artifacts, jsonDoc.artifacts);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
+  const sqlRow = specDb.getRunByRunId('run-meta-001');
+  assert.equal(sqlRow.category, 'mouse');
+  assert.equal(sqlRow.product_id, 'mouse-razer-viper');
+  assert.equal(sqlRow.phase_cursor, 'phase_02_search');
+  assert.equal(sqlRow.identity_fingerprint, 'fp-test');
+  assert.deepEqual(sqlRow.counters, { pages_checked: 5, fetched_ok: 3, fetched_404: 0, fetched_blocked: 0, fetched_error: 0 });
+  assert.deepEqual(sqlRow.browser_pool, { browsers: 2, slots: 4 });
+  assert.deepEqual(sqlRow.needset_summary, { total_fields: 12, generated_at: '2026-03-26T10:02:00.000Z', summary: 'test', rows_count: 3 });
 });
 
 test('extra fields (run_base, latest_base) land in SQL extra column', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    const runMetaPath = path.join(tmpDir, 'run.json');
-    const state = buildMockState({ runMetaPath, specDb });
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const state = buildMockState({ specDb });
 
-    await writeRunMeta(state, {
-      status: 'completed',
-      ended_at: '2026-03-26T10:30:00.000Z',
-      run_base: 'specs/outputs/mouse/run-dual-001',
-      latest_base: 'specs/outputs/mouse/latest',
-    });
+  await writeRunMeta(state, {
+    status: 'completed',
+    ended_at: '2026-03-26T10:30:00.000Z',
+    run_base: 'specs/outputs/mouse/run-meta-001',
+    latest_base: 'specs/outputs/mouse/latest',
+  });
 
-    const sqlRow = specDb.getRunByRunId('run-dual-001');
-    assert.equal(sqlRow.status, 'completed');
-    assert.equal(sqlRow.ended_at, '2026-03-26T10:30:00.000Z');
-    assert.deepEqual(sqlRow.extra, {
-      run_base: 'specs/outputs/mouse/run-dual-001',
-      latest_base: 'specs/outputs/mouse/latest',
-    });
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
+  const sqlRow = specDb.getRunByRunId('run-meta-001');
+  assert.equal(sqlRow.status, 'completed');
+  assert.deepEqual(sqlRow.extra, {
+    run_base: 'specs/outputs/mouse/run-meta-001',
+    latest_base: 'specs/outputs/mouse/latest',
+  });
 });
 
-test('SQL write is best-effort — JSON still written if specDb is null', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const runMetaPath = path.join(tmpDir, 'run.json');
-    const state = buildMockState({ runMetaPath, specDb: null });
-
-    await writeRunMeta(state);
-
-    const jsonExists = await fs.stat(runMetaPath).then(() => true).catch(() => false);
-    assert.ok(jsonExists, 'run.json should still be written');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
+test('SQL write is best-effort — no crash if specDb is null', async () => {
+  const state = buildMockState({ specDb: null });
+  // Should not throw
+  await writeRunMeta(state);
 });
 
-test('SQL write is best-effort — JSON still written if specDb.upsertRun throws', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const fakeSpecDb = {
-      upsertRun() { throw new Error('simulated SQL failure'); }
-    };
-    const runMetaPath = path.join(tmpDir, 'run.json');
-    const state = buildMockState({ runMetaPath, specDb: fakeSpecDb });
+test('guard uses runId not runMetaPath — works without runMetaPath', async () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const state = buildMockState({ runMetaPath: '', specDb });
 
-    await writeRunMeta(state);
+  await writeRunMeta(state);
 
-    const jsonExists = await fs.stat(runMetaPath).then(() => true).catch(() => false);
-    assert.ok(jsonExists, 'run.json should still be written despite SQL failure');
-
-    const jsonDoc = JSON.parse(await fs.readFile(runMetaPath, 'utf8'));
-    assert.equal(jsonDoc.run_id, 'run-dual-001');
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
+  const sqlRow = specDb.getRunByRunId('run-meta-001');
+  assert.ok(sqlRow, 'SQL row should exist even without runMetaPath');
+  assert.equal(sqlRow.status, 'running');
 });

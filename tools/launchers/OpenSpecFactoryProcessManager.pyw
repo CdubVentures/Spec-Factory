@@ -159,6 +159,9 @@ class ProcessManagerApp:
         self._server_alive: bool = False
         self._preflight_retried: bool = False
         self._preflight_logged: bool = False
+        self._bg_refresh_pending: bool = False
+        self._row_fingerprints: dict[int, tuple] = {}
+        self._preflight_fetched_at: float = 0
 
         self._configure_style()
         self._build_ui()
@@ -495,6 +498,30 @@ class ProcessManagerApp:
         elapsed = time.monotonic() - self._op_start
         return f' ({elapsed:.1f}s)'
 
+    # ── Row fingerprinting ──────────────────────────────────────────────
+
+    def _compute_row_tag(self, row: dict, idx: int) -> str:
+        if row.get('port_8788_owner'):
+            return 'owner'
+        if row.get('protected_process'):
+            return 'protected'
+        if row.get('spec_factory_process'):
+            return 'managed'
+        if idx % 2 == 1:
+            return 'stripe'
+        return ''
+
+    def _compute_row_fingerprint(self, row: dict, idx: int) -> tuple:
+        """Hashable tuple of display-stable values (excludes uptime which changes every minute)."""
+        return (
+            str(row.get('pid', '')),
+            row.get('name') or '-',
+            self._format_roles(row),
+            self._format_actions(row),
+            self._compute_row_tag(row, idx),
+            row.get('running', False),
+        )
+
     # ── Button state management ────────────────────────────────────────
 
     def _sync_buttons(self) -> None:
@@ -594,11 +621,63 @@ class ProcessManagerApp:
         self._auto_refresh_id = self.root.after(AUTO_REFRESH_MS, self._auto_refresh_tick)
 
     def _auto_refresh_tick(self) -> None:
-        if not self.busy:
-            self.refresh_state()
-        else:
-            self._probe_health()
+        self._background_refresh()
         self._schedule_auto_refresh()
+
+    # ── Background refresh (non-blocking) ───────────────────────────────
+
+    def _background_refresh(self) -> None:
+        """Refresh process state without locking the UI."""
+        if self.busy or self._bg_refresh_pending:
+            self._probe_health()
+            return
+        self._bg_refresh_pending = True
+        result_queue: queue.Queue[tuple[str, object]] = queue.Queue()
+
+        def worker() -> None:
+            try:
+                result_queue.put(('ok', run_backend('state')))
+            except Exception as error:
+                result_queue.put(('error', error))
+
+        threading.Thread(target=worker, daemon=True).start()
+        self.root.after(100, lambda: self._poll_bg_refresh(result_queue))
+
+    def _poll_bg_refresh(self, result_queue: queue.Queue[tuple[str, object]]) -> None:
+        try:
+            kind, payload = result_queue.get_nowait()
+        except queue.Empty:
+            self.root.after(100, lambda: self._poll_bg_refresh(result_queue))
+            return
+        self._bg_refresh_pending = False
+        # Discard result if user started an action while we were refreshing
+        if self.busy:
+            return
+        if kind == 'ok':
+            self._apply_state_diff(payload)
+
+    def _apply_state_diff(self, payload: dict) -> None:
+        """Apply state only if process rows actually changed."""
+        rows = payload.get('rows') or []
+        new_fingerprints: dict[int, tuple] = {}
+        for idx, row in enumerate(rows):
+            pid = int(row['pid'])
+            new_fingerprints[pid] = self._compute_row_fingerprint(row, idx)
+
+        if new_fingerprints == self._row_fingerprints:
+            # Nothing changed — update uptime in-place and timestamp only
+            for row in rows:
+                pid = str(row['pid'])
+                if pid in self.tree.get_children():
+                    self.tree.set(pid, 'uptime', self._format_uptime(row))
+            self.updated_at_value.configure(text=str(payload.get('updatedAt') or '-'))
+            self._probe_health()
+            return
+
+        # Process list changed — do a full rebuild
+        self.rows_by_pid = {int(r['pid']): r for r in rows}
+        self._row_fingerprints = new_fingerprints
+        self._rebuild_tree(rows, payload)
 
     # ── Streaming shell command runner ─────────────────────────────────
 
@@ -865,21 +944,20 @@ class ProcessManagerApp:
     def _apply_state(self, payload: dict) -> None:
         rows = payload.get('rows') or []
         self.rows_by_pid = {int(row['pid']): row for row in rows}
+        self._row_fingerprints = {
+            int(row['pid']): self._compute_row_fingerprint(row, idx)
+            for idx, row in enumerate(rows)
+        }
+        self._rebuild_tree(rows, payload)
 
+    def _rebuild_tree(self, rows: list[dict], payload: dict) -> None:
         self.tree.delete(*self.tree.get_children())
         owner_pid = None
         for idx, row in enumerate(rows):
             pid = int(row['pid'])
-            tags = []
+            tag = self._compute_row_tag(row, idx)
             if row.get('port_8788_owner'):
                 owner_pid = pid
-                tags.append('owner')
-            elif row.get('protected_process'):
-                tags.append('protected')
-            elif row.get('spec_factory_process'):
-                tags.append('managed')
-            elif idx % 2 == 1:
-                tags.append('stripe')
 
             self.tree.insert(
                 '', 'end', iid=str(pid),
@@ -890,7 +968,7 @@ class ProcessManagerApp:
                     self._format_uptime(row),
                     self._format_actions(row),
                 ),
-                tags=tuple(tags),
+                tags=(tag,) if tag else (),
             )
 
         if self.selected_pid not in self.rows_by_pid:
@@ -915,7 +993,12 @@ class ProcessManagerApp:
         self._render_selection()
         self._set_status('State refreshed.', '#8ee39d')
         self._probe_health()
-        self._fetch_preflight()
+        # Only re-fetch preflight every 5 minutes
+        PREFLIGHT_INTERVAL_S = 300
+        now = time.monotonic()
+        if now - self._preflight_fetched_at > PREFLIGHT_INTERVAL_S:
+            self._preflight_fetched_at = now
+            self._fetch_preflight()
 
     def _run_task(self, status_text: str, worker, on_success) -> None:
         if self.busy:
@@ -1030,27 +1113,48 @@ class ProcessManagerApp:
         row = self.rows_by_pid.get(self.selected_pid or -1)
         if not row or not row.get('can_kill'):
             return
+        pid = int(row['pid'])
+
+        def on_kill_success(_payload: dict) -> None:
+            # Optimistic: remove the row immediately
+            self.rows_by_pid.pop(pid, None)
+            self._row_fingerprints.pop(pid, None)
+            if str(pid) in self.tree.get_children():
+                self.tree.delete(str(pid))
+            self.row_count_value.configure(text=str(len(self.rows_by_pid)))
+            self._probe_health()
+            self._set_status(f'Killed PID {pid}.', '#8ee39d')
+            # Reconcile with reality after a short delay
+            self.root.after(2000, self._background_refresh)
+
         self._run_task(
-            f"Killing PID {row['pid']}...",
-            lambda: run_backend('kill', int(row['pid'])),
-            lambda _payload: self.refresh_state(),
+            f"Killing PID {pid}...",
+            lambda: run_backend('kill', pid),
+            on_kill_success,
         )
 
     def restart_selected(self) -> None:
         row = self.rows_by_pid.get(self.selected_pid or -1)
         if not row or not row.get('can_restart'):
             return
+        pid = int(row['pid'])
 
         def restart_worker():
-            result = run_backend('restart', int(row['pid']))
+            result = run_backend('restart', pid)
             if not wait_for_port():
                 raise BackendError('Server did not start within timeout.')
             return result
 
+        def on_restart_success(_payload: dict) -> None:
+            self._set_status(f'Restarted PID {pid}.', '#8ee39d')
+            self._probe_health()
+            # Reconcile after new process has time to start
+            self.root.after(3000, self._background_refresh)
+
         self._run_task(
-            f"Restarting PID {row['pid']}...",
+            f"Restarting PID {pid}...",
             restart_worker,
-            lambda _payload: self.refresh_state(),
+            on_restart_success,
         )
 
     # ── Lifecycle ──────────────────────────────────────────────────────

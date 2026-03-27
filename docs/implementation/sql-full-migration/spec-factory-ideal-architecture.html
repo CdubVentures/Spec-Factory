@@ -559,56 +559,60 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   <p>Kill the dozens of run.json overwrites per run. Write it once at completion for the archive.</p>
 </div>
 
+<div class="done">
+<strong>Wave 2 design decisions:</strong> Created a new <code>runs</code> table (not extending <code>product_runs</code>) because the two serve different purposes: <code>product_runs</code> is a post-run summary (validated, confidence, cost), while <code>runs</code> tracks mid-run state (phase_cursor, boot_step, counters, stages, startup_ms). The store uses a single full <code>upsertRun()</code> instead of granular UPDATE methods — <code>writeRunMeta()</code> already rebuilds the full doc on every call, and SQLite WAL-mode makes full upserts negligible overhead. Step 10 uses a <code>{ writeJson }</code> option flag so only <code>ensureRun</code> (start) and <code>finalize</code> (end) write run.json — mid-run callers get SQL-only automatically. <code>resolveIndexLabRunDirectory</code> and <code>readIndexLabRunMeta</code> still depend on run.json for directory discovery, so run.json is written at start + end (not fully eliminated).
+</div>
+
 <div class="step-grid">
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#534AB7">6</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">6</div></div>
     <div class="step-body">
-      <div class="step-title">Create runs table (or extend product_runs)</div>
-      <div class="step-desc">Add a dedicated runs table with columns for every field currently in run.json: run_id, category, product_id, status, started_at, ended_at, phase_cursor, boot_step, boot_progress, identity_fingerprint, identity_lock_status, dedupe_mode, counters (JSON column), stages (JSON column), startup_ms (JSON column), artifacts (JSON column). Idempotent CREATE TABLE IF NOT EXISTS + migration.</div>
-      <div class="step-files">specDbSchema.js, specDbMigrations.js, specDbStatements.js</div>
-      <div class="step-test">Test: server starts, table exists, migration is idempotent.</div>
+      <div class="step-title">Create runs table (new, separate from product_runs)</div>
+      <div class="step-desc">New <code>runs</code> table with 22 columns mirroring run.json: 14 scalar columns (run_id, category, product_id, status, started_at, ended_at, phase_cursor, boot_step, boot_progress, identity_fingerprint, identity_lock_status, dedupe_mode, s3key, out_root), 7 JSON TEXT columns (counters, stages, startup_ms, browser_pool, needset_summary, search_profile_summary, artifacts), plus extra (catch-all JSON), created_at, updated_at. UNIQUE(run_id). 3 indexes. Prepared statements: _upsertRun (INSERT...ON CONFLICT UPDATE all columns), _getRunByRunId. Purge support added.</div>
+      <div class="step-files">specDbSchema.js, specDbStatements.js, purgeStore.js</div>
+      <div class="step-test">Test: 6 tests — table creation, idempotency, upsert roundtrip (scalar + JSON), conflict update, empty result. All 86 DB tests green.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#534AB7">7</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">7</div></div>
     <div class="step-body">
-      <div class="step-title">Create runMetaStore with INSERT/UPDATE methods</div>
-      <div class="step-desc">New store module in src/db/stores/ with: insertRun(), updateRunStatus(), updateRunCounters(), updateRunPhaseCursor(), updateRunStages(), getRun(), getRunsByCategory(). Follows the same pattern as the other 11 stores.</div>
-      <div class="step-files">src/db/stores/runMetaStore.js, specDb.js</div>
-      <div class="step-test">Test: unit tests for each method — INSERT, UPDATE, SELECT round-trip.</div>
+      <div class="step-title">Create runMetaStore with upsertRun/getRunByRunId/getRunsByCategory</div>
+      <div class="step-desc">New store module at src/db/stores/runMetaStore.js following the factory pattern. 3 methods (not 7 — granular UPDATEs deferred as premature optimization). JSON serialization on write, parsing on read via hydrateRunRow(). Added _getRunsByCategory prepared statement with id DESC tiebreaker. Wired into specDb.js constructor + 3 proxy methods.</div>
+      <div class="step-files">src/db/stores/runMetaStore.js, specDbStatements.js, specDb.js</div>
+      <div class="step-test">Test: 8 tests — object serialization roundtrip, string passthrough, conflict update, null handling, category filtering + sort order, limit, nullable JSON columns. All 86 DB tests green.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#534AB7">8</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">8</div></div>
     <div class="step-body">
       <div class="step-title">Dual-write: run.json + SQL during runs</div>
-      <div class="step-desc">In runtimeBridgeArtifacts.js writeRunMeta(), add a parallel call to runMetaStore.upsertRun(). Both paths write. This proves the SQL path works without removing the JSON safety net.</div>
+      <div class="step-desc">Added SQL write in writeRunMeta() after fs.writeFile, same pattern as emit()'s bridge_events write. Explicit field mapping from doc → SQL columns: needset → needset_summary, search_profile → search_profile_summary, events_path omitted, run_base/latest_base → extra JSON column. Best-effort try/catch.</div>
       <div class="step-files">runtimeBridgeArtifacts.js</div>
-      <div class="step-test">Test: after a run, compare run.json content vs SELECT from runs. Must match on every field.</div>
+      <div class="step-test">Test: 6 parity tests — both paths fire, scalar/JSON field matching, extra column capture, graceful degradation with null/throwing specDb.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#534AB7">9</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">9</div></div>
     <div class="step-body">
-      <div class="step-title">Switch runListBuilder to read from SQL</div>
-      <div class="step-desc">runListBuilder.js currently reads run.json via safeReadJson() to populate the run picker. Change the processRun() function to SELECT from the runs table instead. Fall back to run.json for archived runs that pre-date this change.</div>
-      <div class="step-files">runListBuilder.js</div>
-      <div class="step-test">Test: GUI run picker shows identical data. Sort order, counters, status all match.</div>
+      <div class="step-title">Switch runListBuilder to read from SQL (fast path)</div>
+      <div class="step-desc">Added SQL fast path in listIndexLabRuns(): when category filter is provided, batch-queries getRunsByCategory() and builds a Map. In processRun(), checks the SQL map before file I/O. If SQL row has complete counters, returns directly — no safeReadJson() needed. Falls back to file I/O for pre-Step-8 runs and when no category filter. Threaded getSpecDbReady from indexlabDataBuilders. All 10 existing runListBuilder tests unaffected.</div>
+      <div class="step-files">runListBuilder.js, indexlabDataBuilders.js</div>
+      <div class="step-test">Test: 5 tests — SQL bypass without run.json, fallback on empty counters, no-category skip, shape contract, stale running resolution.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#534AB7">10</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">10</div></div>
     <div class="step-body">
       <div class="step-title">Stop mid-run run.json overwrites</div>
-      <div class="step-desc">Remove the writeRunMeta() calls that fire on every counter bump and phase change. SQL handles those via UPDATE. Write run.json once at run completion for the archive bundle (same as step 4 pattern).</div>
-      <div class="step-files">runtimeBridgeArtifacts.js, runtimeBridgeEventHandlers.js</div>
-      <div class="step-kill">Kills: run.json overwrites during runs (~20-50 full-file rewrites per run)</div>
-      <div class="step-test">Test: during a run, run.json does not exist. At completion, it appears once with final state.</div>
+      <div class="step-desc">Added <code>{ writeJson = false }</code> third parameter to writeRunMeta(). Default is SQL-only. Only 2 callers pass <code>{ writeJson: true }</code>: ensureRun (initial — resolveIndexLabRunDirectory needs run.json) and finalize (archive bundle). The 9 mid-run callers (handleRunContext, handleNeedSetGenerated, handleReferenceSelected, handleRunCompleted, startStage, handleBrowserPoolInit/Warmed, handleBootstrapStep) are completely unchanged — they use the default. Guard changed from runMetaPath to runId so SQL works even without a file path.</div>
+      <div class="step-files">runtimeBridgeArtifacts.js, runtimeBridge.js</div>
+      <div class="step-kill">Kills: ~20-50 fs.writeFile calls per run (mid-run JSON overwrites)</div>
+      <div class="step-test">Test: 6 tests — SQL-only default, writeJson flag, mid-run data in SQL, extra fields, best-effort, runId guard. Full suite 6074/6082 (8 pre-existing). Phase 00 test harness updated to call finalize().</div>
     </div>
   </div>
 

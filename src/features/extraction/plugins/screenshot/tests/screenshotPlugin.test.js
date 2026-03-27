@@ -48,8 +48,8 @@ describe('screenshotExtractionPlugin', () => {
     assert.deepStrictEqual(
       result.screenshots.map(({ kind, selector, format }) => ({ kind, selector, format })),
       [
-        { kind: 'crop', selector: 'table', format: 'jpeg' },
         { kind: 'page', selector: null, format: 'jpeg' },
+        { kind: 'crop', selector: 'table', format: 'jpeg' },
       ],
     );
     assert.ok(Buffer.isBuffer(result.screenshots[0].bytes));
@@ -61,15 +61,12 @@ describe('screenshotExtractionPlugin', () => {
     const page = createPageDouble({
       elements: { table: createElementDouble() },
       evaluateResults: [
-        // Stabilizer calls (fonts, images, rAF)
-        () => { callOrder.push('evaluate'); return true; },
-        () => { callOrder.push('evaluate'); return 0; },
-        () => { callOrder.push('evaluate'); return true; },
+        // WHY: Single stabilizer call (collapsed to 1 CDP round-trip)
+        () => { callOrder.push('evaluate'); return ['fonts', 'images', 'paint']; },
         // estimatePageHeight call
         () => { callOrder.push('evaluate'); return { scrollHeight: 5000, viewportHeight: 1080 }; },
       ],
     });
-    // Wrap screenshot to track call order
     const origScreenshot = page.screenshot.bind(page);
     page.screenshot = async (opts) => {
       callOrder.push('screenshot');
@@ -89,9 +86,9 @@ describe('screenshotExtractionPlugin', () => {
 
     await screenshotExtractionPlugin.onExtract(ctx);
 
-    // Evaluates (stabilizer) must come before screenshots
+    // Stabilizer (1 evaluate) must come before screenshots
     const evalCount = callOrder.filter((c) => c === 'evaluate').length;
-    assert.ok(evalCount >= 3, `expected at least 3 evaluate calls for stabilization, got ${evalCount}`);
+    assert.ok(evalCount >= 1, `expected at least 1 evaluate call for stabilization, got ${evalCount}`);
     const firstEval = callOrder.indexOf('evaluate');
     const firstScreenshot = callOrder.indexOf('screenshot');
     assert.ok(firstEval < firstScreenshot, 'stabilization should run before capture');
@@ -100,8 +97,8 @@ describe('screenshotExtractionPlugin', () => {
   it('still returns screenshots even if stabilization returns stabilized false', async () => {
     const page = createPageDouble({
       evaluateResults: [
-        // Stabilizer will get all results but we don't care about stabilized status
-        true, 0, true,
+        // Single stabilizer call
+        ['fonts', 'images', 'paint'],
         // estimatePageHeight
         { scrollHeight: 5000, viewportHeight: 1080 },
       ],
@@ -151,8 +148,8 @@ describe('screenshotExtractionPlugin', () => {
   it('keeps clipped screenshot when stitch is not available (no sharp)', async () => {
     const page = createPageDouble({
       evaluateResults: [
-        // Stabilizer
-        true, 0, true,
+        // Single stabilizer call
+        ['fonts', 'images', 'paint'],
         // estimatePageHeight — exceeds limit
         { scrollHeight: 20000, viewportHeight: 1080 },
       ],

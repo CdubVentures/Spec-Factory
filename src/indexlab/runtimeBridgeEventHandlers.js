@@ -475,6 +475,16 @@ async function handleBrandResolved(state, deps, { ts, row }) {
   if (state.brandResolutionPath) {
     await fs.writeFile(state.brandResolutionPath, `${JSON.stringify(brandPayload, null, 2)}\n`, 'utf8');
   }
+  if (state.specDb && state.runId) {
+    try {
+      state.specDb.upsertRunArtifact({
+        run_id: state.runId,
+        artifact_type: 'brand_resolution',
+        category: state.context?.category || '',
+        payload: brandPayload,
+      });
+    } catch { /* best-effort */ }
+  }
 }
 
 async function handleSearchPlanGenerated(state, deps, { ts, row }) {

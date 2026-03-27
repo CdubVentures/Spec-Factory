@@ -3,6 +3,7 @@ import fsSync from 'node:fs';
 import { gzipBuffer, toNdjson } from '../shared/serialization.js';
 import { SpecDb } from '../db/specDb.js';
 import { buildScopedItemCandidateId } from '../utils/candidateIdentifier.js';
+import { resolveSourceDir, computePageContentHash, computeFileContentHash } from './artifactPathResolver.js';
 
 function jsonBuffer(value) {
   return Buffer.from(JSON.stringify(value, null, 2), 'utf8');
@@ -28,184 +29,160 @@ function screenshotBuffer(artifact = {}) {
   return null;
 }
 
-function compactSummary(summary) {
-  return {
-    productId: summary.productId,
-    runId: summary.runId,
-    validated: summary.validated,
-    reason: summary.reason,
-    validated_reason: summary.validated_reason,
-    validation_reasons: summary.validation_reasons || [],
-    confidence: summary.confidence,
-    completeness_required_percent: summary.completeness_required_percent,
-    coverage_overall_percent: summary.coverage_overall_percent,
-    missing_required_fields: summary.missing_required_fields || [],
-    fields_below_pass_target: summary.fields_below_pass_target || [],
-    critical_fields_below_pass_target: summary.critical_fields_below_pass_target || [],
-    anchor_conflicts: summary.anchor_conflicts || [],
-    identity_confidence: summary.identity_confidence,
-    identity_gate_validated: summary.identity_gate_validated,
-    publishable: typeof summary.publishable === 'boolean' ? summary.publishable : Boolean(summary.validated),
-    publish_blockers: summary.publish_blockers || [],
-    identity_report: summary.identity_report || null,
-    hypothesis_queue: summary.hypothesis_queue || [],
-    constraint_analysis: summary.constraint_analysis || {},
-    runtime_engine: summary.runtime_engine || {},
-    field_reasoning: summary.field_reasoning || {},
-    needset: summary.needset || null,
-    parser_health: summary.parser_health || {},
-    temporal_evidence: summary.temporal_evidence || {},
-    endpoint_mining: summary.endpoint_mining || {},
-    fields_below_pass_target_count: (summary.fields_below_pass_target || []).length,
-    anchor_conflicts_count: (summary.anchor_conflicts || []).length,
-    duration_ms: summary.duration_ms,
-    generated_at: summary.generated_at
-  };
-}
+async function writePageArtifacts({ writes, storage, category, productId, runId, host, artifact, artifactStore }) {
+  const htmlContent = String(artifact.html || '');
+  const pageHash = computePageContentHash(htmlContent);
+  if (!pageHash) return;
 
-async function writePageArtifacts({ writes, storage, runBase, host, artifact }) {
-  const rawPageAlreadyPersisted = Boolean(artifact?.pageArtifactsPersisted);
+  const sourceDir = resolveSourceDir({ category, productId, contentHash: pageHash });
+  if (!sourceDir) return;
 
-  if (!rawPageAlreadyPersisted) {
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/pages/${host}/page.html.gz`,
-        gzipBuffer(artifact.html || ''),
-        {
-          contentType: 'text/html',
-          contentEncoding: 'gzip'
-        }
-      )
-    );
+  // WHY: Content-addressed dedup — skip binary writes if this exact content already indexed.
+  const existing = artifactStore?.getCrawlSourceByHash(pageHash, productId);
+  const skipBinaryWrites = Boolean(existing) || Boolean(artifact?.pageArtifactsPersisted);
 
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/pages/${host}/ldjson.json`,
-        jsonBuffer(artifact.ldjsonBlocks || []),
-        {
-          contentType: 'application/json'
-        }
-      )
-    );
-
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/pages/${host}/embedded_state.json`,
-        jsonBuffer(artifact.embeddedState || {}),
-        {
-          contentType: 'application/json'
-        }
-      )
-    );
-
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/network/${host}/responses.ndjson.gz`,
-        gzipBuffer(toNdjson(artifact.networkResponses || [])),
-        {
-          contentType: 'application/x-ndjson',
-          contentEncoding: 'gzip'
-        }
-      )
-    );
-  }
-
+  const hasLdjson = Array.isArray(artifact.ldjsonBlocks) && artifact.ldjsonBlocks.length > 0;
   const domSnippetHtml = String(artifact?.domSnippet?.html || '').trim();
-  if (domSnippetHtml) {
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/dom/${host}/dom_snippet.html`,
-        Buffer.from(domSnippetHtml, 'utf8'),
-        { contentType: 'text/html; charset=utf-8' }
-      )
-    );
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/dom/${host}/dom_snippet.meta.json`,
-        jsonBuffer({
-          kind: String(artifact?.domSnippet?.kind || 'html_window'),
-          char_count: Number(artifact?.domSnippet?.char_count || domSnippetHtml.length),
-          generated_at: new Date().toISOString()
-        }),
-        { contentType: 'application/json' }
-      )
-    );
-  }
-
   const screenshot = screenshotBuffer(artifact?.screenshot || {});
-  if (screenshot && screenshot.length > 0) {
-    const format = String(artifact?.screenshot?.format || 'jpeg').trim().toLowerCase();
-    const ext = format === 'png' ? 'png' : 'jpg';
-    const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+  const hasScreenshot = Boolean(screenshot && screenshot.length > 0);
+
+  if (!skipBinaryWrites) {
     writes.push(
       storage.writeObject(
-        `${runBase}/raw/screenshots/${host}/screenshot.${ext}`,
-        screenshot,
-        { contentType }
+        `${sourceDir}page.html.gz`,
+        gzipBuffer(htmlContent),
+        { contentType: 'text/html', contentEncoding: 'gzip' }
       )
     );
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/screenshots/${host}/screenshot.meta.json`,
-        jsonBuffer({
-          kind: String(artifact?.screenshot?.kind || 'page'),
-          format: ext,
-          selector: String(artifact?.screenshot?.selector || '').trim() || null,
-          width: Number(artifact?.screenshot?.width || 0) || null,
-          height: Number(artifact?.screenshot?.height || 0) || null,
-          bytes: screenshot.length,
-          captured_at: String(artifact?.screenshot?.captured_at || '').trim() || null
-        }),
-        { contentType: 'application/json' }
-      )
-    );
+
+    if (hasLdjson) {
+      writes.push(
+        storage.writeObject(
+          `${sourceDir}ldjson.json`,
+          jsonBuffer(artifact.ldjsonBlocks),
+          { contentType: 'application/json' }
+        )
+      );
+    }
+
+    if (artifact.embeddedState && Object.keys(artifact.embeddedState).length > 0) {
+      writes.push(
+        storage.writeObject(
+          `${sourceDir}embedded_state.json`,
+          jsonBuffer(artifact.embeddedState),
+          { contentType: 'application/json' }
+        )
+      );
+    }
+
+    if (domSnippetHtml) {
+      writes.push(
+        storage.writeObject(
+          `${sourceDir}dom_snippet.html`,
+          Buffer.from(domSnippetHtml, 'utf8'),
+          { contentType: 'text/html; charset=utf-8' }
+        )
+      );
+    }
+
+    if (hasScreenshot) {
+      const format = String(artifact?.screenshot?.format || 'jpeg').trim().toLowerCase();
+      const ext = format === 'png' ? 'png' : 'jpg';
+      const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      writes.push(
+        storage.writeObject(
+          `${sourceDir}screenshot.${ext}`,
+          screenshot,
+          { contentType }
+        )
+      );
+    }
+
+    for (const pdf of artifact.pdfDocs || []) {
+      const filename = safeName(pdf.filename || path.basename(pdf.url || '') || 'doc.pdf');
+      writes.push(
+        storage.writeObject(
+          `${sourceDir}${filename}`,
+          pdf.bytes,
+          { contentType: 'application/pdf' }
+        )
+      );
+    }
   }
 
-  writes.push(
-    storage.writeObject(
-      `${runBase}/extracted/${host}/candidates.json`,
-      jsonBuffer(artifact.extractedCandidates || []),
-      {
-        contentType: 'application/json'
+  // SQL metadata inserts (always, even on dedup — updates run_id to latest)
+  if (artifactStore) {
+    try {
+      artifactStore.insertCrawlSource({
+        content_hash: pageHash,
+        category,
+        product_id: productId,
+        run_id: runId,
+        source_url: String(artifact.url || '').trim(),
+        final_url: String(artifact.finalUrl || artifact.url || '').trim(),
+        host: String(host || '').trim(),
+        http_status: Number(artifact.status || 0),
+        doc_kind: String(artifact.docKind || 'other').trim(),
+        source_tier: Number(artifact.sourceTier || 5),
+        content_type: String(artifact.contentType || 'text/html').trim(),
+        size_bytes: Buffer.byteLength(htmlContent, 'utf8'),
+        file_path: `${sourceDir}page.html.gz`,
+        has_screenshot: hasScreenshot ? 1 : 0,
+        has_pdf: (artifact.pdfDocs || []).length > 0 ? 1 : 0,
+        has_ldjson: hasLdjson ? 1 : 0,
+        has_dom_snippet: domSnippetHtml ? 1 : 0,
+        crawled_at: new Date().toISOString(),
+      });
+
+      if (hasScreenshot) {
+        const format = String(artifact?.screenshot?.format || 'jpeg').trim().toLowerCase();
+        const ext = format === 'png' ? 'png' : 'jpg';
+        const shotHash = computeFileContentHash(screenshot);
+        artifactStore.insertScreenshot({
+          screenshot_id: shotHash || `shot_${pageHash.slice(0, 16)}`,
+          content_hash: pageHash,
+          category,
+          product_id: productId,
+          run_id: runId,
+          source_url: String(artifact.url || '').trim(),
+          host: String(host || '').trim(),
+          selector: String(artifact?.screenshot?.selector || '').trim() || 'fullpage',
+          format: ext,
+          width: Number(artifact?.screenshot?.width || 0),
+          height: Number(artifact?.screenshot?.height || 0),
+          size_bytes: screenshot.length,
+          file_path: `${sourceDir}screenshot.${ext}`,
+          captured_at: String(artifact?.screenshot?.captured_at || '').trim() || new Date().toISOString(),
+          doc_kind: String(artifact.docKind || 'other').trim(),
+          source_tier: Number(artifact.sourceTier || 5),
+        });
       }
-    )
-  );
 
-  for (const pdf of artifact.pdfDocs || []) {
-    const filename = safeName(pdf.filename || path.basename(pdf.url || '') || 'doc.pdf');
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/pdfs/${host}/${filename}`,
-        pdf.bytes,
-        {
-          contentType: 'application/pdf'
-        }
-      )
-    );
-
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/pdfs/${host}/${filename}.json`,
-        jsonBuffer({
-          url: pdf.url,
+      for (const pdf of artifact.pdfDocs || []) {
+        const filename = safeName(pdf.filename || path.basename(pdf.url || '') || 'doc.pdf');
+        const pdfHash = computeFileContentHash(pdf.bytes);
+        artifactStore.insertPdf({
+          pdf_id: pdfHash || `pdf_${pageHash.slice(0, 12)}_${filename}`,
+          content_hash: pdfHash || '',
+          parent_content_hash: pageHash,
+          category,
+          product_id: productId,
+          run_id: runId,
+          source_url: String(pdf.url || '').trim(),
+          host: String(host || '').trim(),
           filename,
-          textPreview: pdf.textPreview || '',
-          backend_selected: String(pdf.backend_selected || '').trim() || null,
-          backend_requested: String(pdf.backend_requested || '').trim() || null,
-          backend_fallback_used: Boolean(pdf.backend_fallback_used),
-          pair_count: Number(pdf.pair_count || 0),
-          kv_pair_count: Number(pdf.kv_pair_count || 0),
-          table_pair_count: Number(pdf.table_pair_count || 0),
+          size_bytes: Buffer.isBuffer(pdf.bytes) ? pdf.bytes.length : 0,
+          file_path: `${sourceDir}${filename}`,
           pages_scanned: Number(pdf.pages_scanned || 0),
           tables_found: Number(pdf.tables_found || 0),
-          kv_preview_rows: Array.isArray(pdf.kv_preview_rows) ? pdf.kv_preview_rows.slice(0, 20) : [],
-          table_preview_rows: Array.isArray(pdf.table_preview_rows) ? pdf.table_preview_rows.slice(0, 20) : []
-        }),
-        {
-          contentType: 'application/json'
-        }
-      )
-    );
+          pair_count: Number(pdf.pair_count || 0),
+          crawled_at: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      // WHY: Best-effort — don't fail the export if SQL insert fails.
+      if (typeof console !== 'undefined') console.error('[exporter] artifact SQL insert error:', err.message);
+    }
   }
 }
 
@@ -227,27 +204,41 @@ export async function exportRunArtifacts({
   round,
 }) {
   const runBase = storage.resolveOutputKey(category, productId, 'runs', runId);
+  // WHY: latestBase kept in return value for callers that still reference it.
+  // No files are written to latest/ anymore — SQL is the read source.
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
+
+  // WHY: Resolve artifactStore from specDb for SQL metadata inserts.
+  let db = specDb;
+  if (!db) {
+    try {
+      const dbPath = path.join('.specfactory_tmp', category, 'spec.sqlite');
+      fsSync.accessSync(dbPath);
+      db = new SpecDb({ dbPath, category });
+    } catch { /* no DB available */ }
+  }
+  const artifactStore = db?._artifactStore || null;
 
   const writes = [];
 
   for (const [host, artifact] of Object.entries(artifactsByHost)) {
-    await writePageArtifacts({ writes, storage, runBase, host, artifact });
+    await writePageArtifacts({ writes, storage, category, productId, runId, host, artifact, artifactStore });
   }
 
+  // WHY: Adapter artifacts are not page-based — keep run-scoped for now.
   for (const artifact of adapterArtifacts || []) {
     const name = safeName(artifact.name || 'adapter');
     writes.push(
       storage.writeObject(
         `${runBase}/raw/adapters/${name}.json`,
         jsonBuffer(artifact.payload || artifact),
-        {
-          contentType: 'application/json'
-        }
+        { contentType: 'application/json' }
       )
     );
   }
 
+  // WHY: Normalized, provenance, summary, events still written to run-scoped paths.
+  // These move to SQL in migration waves 2-3 (run metadata + pipeline artifacts).
   writes.push(
     storage.writeObject(
       `${runBase}/normalized/${category}.normalized.json`,
@@ -296,57 +287,9 @@ export async function exportRunArtifacts({
     )
   );
 
-  writes.push(
-    storage.writeObject(
-      `${latestBase}/normalized.json`,
-      jsonBuffer(normalized),
-      { contentType: 'application/json' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${latestBase}/provenance.json`,
-      jsonBuffer(provenance),
-      { contentType: 'application/json' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${latestBase}/summary.json`,
-      jsonBuffer(compactSummary(summary)),
-      { contentType: 'application/json' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${latestBase}/candidates.json`,
-      jsonBuffer(candidates || {}),
-      { contentType: 'application/json' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${latestBase}/${category}.row.tsv`,
-      Buffer.from(`${rowTsv}\n`, 'utf8'),
-      { contentType: 'text/tab-separated-values' }
-    )
-  );
-
   await Promise.all(writes);
 
-  // Dual-write to SpecDb — resolve lazily if not passed in
-  let db = specDb;
-  if (!db) {
-    try {
-      const dbPath = path.join('.specfactory_tmp', category, 'spec.sqlite');
-      fsSync.accessSync(dbPath);
-      db = new SpecDb({ dbPath, category });
-    } catch { /* no DB available */ }
-  }
+  // Dual-write to SpecDb (db already resolved above for artifactStore)
   if (db) {
     try {
       exportToSpecDb({ specDb: db, category, productId, runId, normalized, provenance, candidates, summary, needSetFields, round });

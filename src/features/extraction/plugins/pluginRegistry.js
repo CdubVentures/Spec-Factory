@@ -1,5 +1,7 @@
 // WHY: Registry-driven extraction plugin resolution.
 // Adding a new extraction plugin = import + one line here.
+// Plugins declare phase ('capture' | 'transform' | 'lifecycle') and
+// concurrent (true/false). Defaults: phase='capture', concurrent=false.
 
 import { screenshotExtractionPlugin } from './screenshot/screenshotPlugin.js';
 
@@ -17,4 +19,8 @@ export function resolveExtractionPlugins(names, { logger } = {}) {
 
 export function resolveAllExtractionPlugins() {
   return Object.values(EXTRACTION_PLUGIN_REGISTRY);
+}
+
+export function resolvePluginsByPhase(phase) {
+  return Object.values(EXTRACTION_PLUGIN_REGISTRY).filter((p) => (p.phase || 'capture') === phase);
 }

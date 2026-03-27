@@ -38,6 +38,9 @@ async function createCompletedAuditHarness(runId = RUN_ID) {
   const harness = createAuditHarness();
   await harness.setup();
   await harness.feedEvents(createStandardAuditEvents(runId));
+  // WHY: Step 10 — mid-run writeRunMeta calls are SQL-only. Finalize
+  // triggers the final run.json write so getRunMeta() can read it from disk.
+  await harness.getBridge().finalize({ status: 'completed' });
   return harness;
 }
 

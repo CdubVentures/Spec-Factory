@@ -21,6 +21,8 @@ async function tryStitch({ page, settings }) {
 
 export const screenshotExtractionPlugin = {
   name: 'screenshot',
+  phase: 'capture',
+  concurrent: true,
   async onExtract(ctx) {
     if (!ctx.settings?.capturePageScreenshotEnabled) return { screenshots: [] };
 

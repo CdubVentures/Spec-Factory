@@ -758,6 +758,20 @@ CREATE INDEX IF NOT EXISTS idx_runs_category ON runs(category);
 CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(category, status);
 CREATE INDEX IF NOT EXISTS idx_runs_product ON runs(category, product_id);
 
+-- Per-run artifacts: replaces needset.json / search_profile.json / brand_resolution.json (Wave 3)
+CREATE TABLE IF NOT EXISTS run_artifacts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL DEFAULT '',
+  artifact_type TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  payload TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(run_id, artifact_type)
+);
+CREATE INDEX IF NOT EXISTS idx_rart_run_id ON run_artifacts(run_id);
+CREATE INDEX IF NOT EXISTS idx_rart_category ON run_artifacts(category);
+
 -- Migration Phase 10: Evidence index tables
 CREATE TABLE IF NOT EXISTS evidence_documents (
   doc_id TEXT PRIMARY KEY,
@@ -853,6 +867,74 @@ CREATE TABLE IF NOT EXISTS field_history (
   UNIQUE(category, product_id, field_key)
 );
 CREATE INDEX IF NOT EXISTS idx_fh_product ON field_history(category, product_id);
+
+-- Artifact storage: content-addressed binary index (HTML, screenshots, PDFs on disk; SQL points to them)
+
+CREATE TABLE IF NOT EXISTS crawl_sources (
+  content_hash       TEXT NOT NULL,
+  category           TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  run_id             TEXT NOT NULL,
+  source_url         TEXT NOT NULL,
+  final_url          TEXT NOT NULL DEFAULT '',
+  host               TEXT NOT NULL DEFAULT '',
+  http_status        INTEGER DEFAULT 0,
+  doc_kind           TEXT NOT NULL DEFAULT 'other',
+  source_tier        INTEGER DEFAULT 5,
+  content_type       TEXT NOT NULL DEFAULT '',
+  size_bytes         INTEGER DEFAULT 0,
+  file_path          TEXT NOT NULL DEFAULT '',
+  has_screenshot     INTEGER DEFAULT 0,
+  has_pdf            INTEGER DEFAULT 0,
+  has_ldjson         INTEGER DEFAULT 0,
+  has_dom_snippet    INTEGER DEFAULT 0,
+  crawled_at         TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (content_hash, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_cs_product ON crawl_sources(product_id);
+CREATE INDEX IF NOT EXISTS idx_cs_run ON crawl_sources(run_id);
+CREATE INDEX IF NOT EXISTS idx_cs_host ON crawl_sources(host);
+
+CREATE TABLE IF NOT EXISTS source_screenshots (
+  screenshot_id      TEXT PRIMARY KEY,
+  content_hash       TEXT NOT NULL,
+  category           TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  run_id             TEXT NOT NULL,
+  source_url         TEXT NOT NULL DEFAULT '',
+  host               TEXT NOT NULL DEFAULT '',
+  selector           TEXT NOT NULL DEFAULT 'fullpage',
+  format             TEXT NOT NULL DEFAULT 'jpg',
+  width              INTEGER DEFAULT 0,
+  height             INTEGER DEFAULT 0,
+  size_bytes         INTEGER DEFAULT 0,
+  file_path          TEXT NOT NULL DEFAULT '',
+  captured_at        TEXT NOT NULL DEFAULT '',
+  doc_kind           TEXT NOT NULL DEFAULT 'other',
+  source_tier        INTEGER DEFAULT 5
+);
+CREATE INDEX IF NOT EXISTS idx_ss_product ON source_screenshots(product_id);
+CREATE INDEX IF NOT EXISTS idx_ss_content ON source_screenshots(content_hash);
+
+CREATE TABLE IF NOT EXISTS source_pdfs (
+  pdf_id             TEXT PRIMARY KEY,
+  content_hash       TEXT NOT NULL,
+  parent_content_hash TEXT NOT NULL DEFAULT '',
+  category           TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  run_id             TEXT NOT NULL,
+  source_url         TEXT NOT NULL DEFAULT '',
+  host               TEXT NOT NULL DEFAULT '',
+  filename           TEXT NOT NULL DEFAULT '',
+  size_bytes         INTEGER DEFAULT 0,
+  file_path          TEXT NOT NULL DEFAULT '',
+  pages_scanned      INTEGER DEFAULT 0,
+  tables_found       INTEGER DEFAULT 0,
+  pair_count         INTEGER DEFAULT 0,
+  crawled_at         TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sp_product ON source_pdfs(product_id);
+CREATE INDEX IF NOT EXISTS idx_sp_content ON source_pdfs(content_hash);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

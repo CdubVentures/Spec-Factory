@@ -51,7 +51,16 @@ export async function captureScreenshots({ page, settings }) {
 
   const results = [];
 
-  // Targeted selector crops
+  // WHY: Full-page screenshot FIRST — this is the most important output.
+  // If handler timeout kills us during selector crops, we still have it.
+  try {
+    const shot = await captureOne(page, null, captureOpts);
+    if (shot) results.push(shot);
+  } catch {
+    // swallow
+  }
+
+  // Targeted selector crops (nice-to-have, runs after full-page)
   for (const selector of selectors) {
     try {
       const element = await page.$(selector);
@@ -64,14 +73,6 @@ export async function captureScreenshots({ page, settings }) {
     } catch {
       // skip failed selector
     }
-  }
-
-  // Full-page screenshot (always attempted)
-  try {
-    const shot = await captureOne(page, null, captureOpts);
-    if (shot) results.push(shot);
-  } catch {
-    // swallow
   }
 
   return results;

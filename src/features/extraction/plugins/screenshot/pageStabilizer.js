@@ -1,6 +1,6 @@
 // WHY: Waits for the page to be visually ready before screenshot capture.
-// Runs read-only page.evaluate() calls — no DOM modification.
-// Gates: font loading, image decode, paint cycle (double-rAF).
+// Single page.evaluate() call runs all gates in parallel inside the browser,
+// minimizing CDP round-trips. Gates: font loading, image decode, paint cycle.
 // Never throws — returns { stabilized: false } on timeout or failure.
 
 export async function stabilizePage({ page, settings } = {}) {
@@ -22,53 +22,40 @@ export async function stabilizePage({ page, settings } = {}) {
     return { ...defaultResult, durationMs: Date.now() - start };
   }
 
-  const timeoutMs = Number(settings?.capturePageScreenshotStabilizeTimeoutMs) || 3000;
-  const gates = { fontsReady: false, imagesDecoded: false, paintCycleComplete: false };
+  const timeoutMs = Number(settings?.capturePageScreenshotStabilizeTimeoutMs) || 1500;
 
   try {
-    const gatePromise = (async () => {
-      // Gate 1: Wait for web fonts to finish loading
-      try {
-        await page.evaluate(() => document.fonts.ready);
-        gates.fontsReady = true;
-      } catch {
-        // fonts API may not exist or page may be detached
-      }
-
-      // Gate 2: Wait for all images to decode
-      try {
-        await page.evaluate(() =>
-          Promise.all(
-            Array.from(document.images)
-              .filter((img) => !img.complete)
-              .map((img) => img.decode().catch(() => {})),
-          ).then((results) => results.length),
-        );
-        gates.imagesDecoded = true;
-      } catch {
-        // image decode may fail on detached pages
-      }
-
-      // Gate 3: Double requestAnimationFrame — guarantees at least one paint cycle
-      try {
-        await page.evaluate(
-          () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-        );
-        gates.paintCycleComplete = true;
-      } catch {
-        // rAF may fail on detached pages
-      }
-    })();
+    // WHY: Single evaluate call runs all 3 gates in parallel INSIDE the browser.
+    // This is 1 CDP round-trip instead of 3. Each gate resolves independently —
+    // a failed font load doesn't block image decode or paint cycle.
+    const gatePromise = page.evaluate(() => {
+      const fonts = document.fonts.ready.then(() => 'fonts').catch(() => null);
+      const images = Promise.all(
+        Array.from(document.images)
+          .filter((img) => !img.complete)
+          .map((img) => img.decode().catch(() => null)),
+      ).then(() => 'images').catch(() => null);
+      const paint = new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve('paint'))),
+      );
+      return Promise.all([fonts, images, paint]);
+    });
 
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('stabilize_timeout')), timeoutMs),
     );
 
-    await Promise.race([gatePromise, timeoutPromise]);
+    const results = await Promise.race([gatePromise, timeoutPromise]);
+
+    const gates = {
+      fontsReady: Array.isArray(results) && results.includes('fonts'),
+      imagesDecoded: Array.isArray(results) && results.includes('images'),
+      paintCycleComplete: Array.isArray(results) && results.includes('paint'),
+    };
 
     const stabilized = gates.fontsReady || gates.imagesDecoded || gates.paintCycleComplete;
     return { stabilized, durationMs: Date.now() - start, gates };
   } catch {
-    return { stabilized: false, durationMs: Date.now() - start, gates };
+    return { stabilized: false, durationMs: Date.now() - start, gates: { fontsReady: false, imagesDecoded: false, paintCycleComplete: false } };
   }
 }

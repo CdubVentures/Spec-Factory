@@ -43,14 +43,14 @@ export async function ensureRun(state, row = {}) {
     await writeRunMeta(state, {
       status: 'running',
       started_at: state.startedAt
-    });
+    }, { writeJson: true });
   }
 
   return true;
 }
 
-export async function writeRunMeta(state, extra = {}) {
-  if (!state.runMetaPath) return;
+export async function writeRunMeta(state, extra = {}, { writeJson = false } = {}) {
+  if (!state.runId) return;
   const doc = {
     run_id: state.runId || '',
     started_at: state.startedAt || '',
@@ -100,7 +100,9 @@ export async function writeRunMeta(state, extra = {}) {
     },
     ...extra
   };
-  await fs.writeFile(state.runMetaPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+  if (writeJson && state.runMetaPath) {
+    await fs.writeFile(state.runMetaPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
+  }
   if (state.specDb) {
     try {
       const sqlExtra = {};
@@ -137,11 +139,31 @@ export async function writeRunMeta(state, extra = {}) {
 export async function writeNeedSet(state, payload = {}) {
   if (!state.needSetPath) return;
   await fs.writeFile(state.needSetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  if (state.specDb && state.runId) {
+    try {
+      state.specDb.upsertRunArtifact({
+        run_id: state.runId,
+        artifact_type: 'needset',
+        category: state.context?.category || '',
+        payload,
+      });
+    } catch { /* best-effort */ }
+  }
 }
 
 export async function writeSearchProfile(state, payload = {}) {
   if (!state.searchProfilePath) return;
   await fs.writeFile(state.searchProfilePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  if (state.specDb && state.runId) {
+    try {
+      state.specDb.upsertRunArtifact({
+        run_id: state.runId,
+        artifact_type: 'search_profile',
+        category: state.context?.category || '',
+        payload,
+      });
+    } catch { /* best-effort */ }
+  }
 }
 
 function buildNeedSetBaseline(state, ts = '') {

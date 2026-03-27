@@ -1,0 +1,240 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "15px",
+    "primaryColor": "#1a1a2e",
+    "primaryTextColor": "#e0e0e0",
+    "primaryBorderColor": "#4a90d9",
+    "lineColor": "#6c757d",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "nodeBorder": "#4a90d9",
+    "clusterBkg": "#161b22",
+    "clusterBorder": "#30363d",
+    "edgeLabelBackground": "#0d1117",
+    "nodeTextColor": "#e0e0e0"
+  },
+  "flowchart": {
+    "nodeSpacing": 40,
+    "rankSpacing": 55,
+    "curve": "basis",
+    "padding": 12
+  }
+}}%%
+
+flowchart TB
+
+  title["<b>CURRENT DATA PERSISTENCE FLOW  (Post-Refactor 2026-03-27)</b><br/><i>Every write during a pipeline run  |  Content-addressed + SQL-indexed</i>"]
+  style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:18px
+
+  %% ===== PHASE 1: STARTUP =====
+  subgraph P1["PHASE 1  RUN STARTUP"]
+    direction TB
+    p1_start(["processRuntime.startProcess()"])
+    p1_ensure["ensureRun() + ensureBaselineArtifacts()"]
+
+    subgraph P1_FS["Filesystem Writes"]
+      p1_runjson["run.json<br/><i>status: starting</i>"]
+      p1_needset["needset.json<br/><i>baseline empty</i>"]
+      p1_profile["search_profile.json<br/><i>baseline empty</i>"]
+      p1_scdir["runtime_screencast/<br/><i>directory created</i>"]
+    end
+
+    subgraph P1_SQL["SQL Writes"]
+      p1_runs[("runs<br/><i>UPSERT run record</i>")]
+      p1_bridge[("bridge_events<br/><i>INSERT run_started</i>")]
+      p1_artifact[("run_artifacts<br/><i>INSERT needset baseline</i>")]
+    end
+
+    p1_start --> p1_ensure
+    p1_ensure --> P1_FS
+    p1_ensure --> P1_SQL
+  end
+  style P1 fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:2px
+  style p1_start fill:#238636,stroke:#3fb950,color:#fff
+  style p1_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p1_needset fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p1_profile fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p1_scdir fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style p1_runs fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p1_bridge fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p1_artifact fill:#1f6feb,stroke:#58a6ff,color:#fff
+
+  %% ===== PHASE 2: CRAWL =====
+  subgraph P2["PHASE 2  CRAWL + EXTRACTION  (per URL)"]
+    direction TB
+
+    p2_fetch["Fetch URL via Playwright"]
+
+    subgraph P2_CA["Content-Addressed Writes  (dedup by hash)"]
+      p2_html["artifacts/{cat}/{prod}/sources/{hash12}/<br/><b>page.html.gz</b>"]
+      p2_ldjson["<b>ldjson.json</b>  <i>if present</i>"]
+      p2_state["<b>embedded_state.json</b>  <i>if present</i>"]
+      p2_dom["<b>dom_snippet.html</b>  <i>if present</i>"]
+      p2_shot["<b>screenshot.jpg|png</b>  <i>if captured</i>"]
+      p2_pdf["<b>{filename}.pdf</b>  <i>if PDF source</i>"]
+    end
+
+    subgraph P2_SQL["SQL Metadata  (always, even on dedup)"]
+      p2_crawl[("crawl_sources<br/><i>content_hash, url, host,<br/>file_path, flags</i>")]
+      p2_shots[("source_screenshots<br/><i>dimensions, format,<br/>selector, file_path</i>")]
+      p2_pdfs[("source_pdfs<br/><i>filename, pages,<br/>tables, file_path</i>")]
+    end
+
+    subgraph P2_RT["Runtime Side-Writes"]
+      p2_frame["runtime_screencast/{workerId}.json<br/><i>latest frame per worker</i>"]
+      p2_event[("bridge_events<br/><i>fetch_started, fetch_finished</i>")]
+      p2_trace["traces/{section}/{prefix}_{slot}.json<br/><i>LLM call traces (ring buffer)</i>"]
+    end
+
+    p2_fetch --> P2_CA
+    p2_fetch --> P2_SQL
+    p2_fetch --> P2_RT
+  end
+  style P2 fill:#0d1117,stroke:#f0883e,color:#f0883e,stroke-width:2px
+  style p2_fetch fill:#21262d,stroke:#f0883e,color:#c9d1d9
+  style p2_html fill:#2d333b,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
+  style p2_ldjson fill:#2d333b,stroke:#3fb950,color:#c9d1d9
+  style p2_state fill:#2d333b,stroke:#3fb950,color:#c9d1d9
+  style p2_dom fill:#2d333b,stroke:#3fb950,color:#c9d1d9
+  style p2_shot fill:#2d333b,stroke:#3fb950,color:#c9d1d9
+  style p2_pdf fill:#2d333b,stroke:#3fb950,color:#c9d1d9
+  style p2_crawl fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2_shots fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2_pdfs fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2_frame fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p2_event fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2_trace fill:#2d333b,stroke:#a371f7,color:#e0e0e0
+
+  %% ===== PHASE 2B: MID-RUN UPDATES =====
+  subgraph P2B["MID-RUN UPDATES  (ongoing)"]
+    direction TB
+
+    subgraph P2B_FS["JSON Overwrites"]
+      p2b_runjson["run.json<br/><i>counters, phase_cursor, stages</i>"]
+      p2b_needset["needset.json<br/><i>updated field gaps</i>"]
+      p2b_profile["search_profile.json<br/><i>queries added/updated</i>"]
+    end
+
+    subgraph P2B_SQL["SQL Updates"]
+      p2b_runs[("runs<br/><i>UPDATE counters, phase</i>")]
+      p2b_bridge[("bridge_events<br/><i>INSERT per stage event</i>")]
+      p2b_billing[("billing_entries<br/><i>INSERT per LLM call</i>")]
+    end
+
+    subgraph P2B_METRICS["Metrics + Billing"]
+      p2b_metrics{{"_runtime/metrics.jsonl<br/><i>buffered, flushed every 20 rows</i>"}}
+      p2b_digest["_billing/monthly/{MM}.txt<br/><i>human-readable digest</i>"]
+    end
+
+    P2B_FS ~~~ P2B_SQL ~~~ P2B_METRICS
+  end
+  style P2B fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+  style p2b_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p2b_needset fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p2b_profile fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p2b_runs fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2b_bridge fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2b_billing fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2b_metrics fill:#2d333b,stroke:#a371f7,color:#e0e0e0
+  style p2b_digest fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+
+  %% ===== PHASE 3: EXPORT =====
+  subgraph P3["PHASE 3  RUN COMPLETION  (exportRunArtifacts)"]
+    direction TB
+
+    subgraph P3_FS["Run-Scoped Writes  (still JSON, moves to SQL in migration)"]
+      p3_norm["runs/{runId}/normalized/{cat}.normalized.json"]
+      p3_tsv["runs/{runId}/normalized/{cat}.row.tsv"]
+      p3_prov["runs/{runId}/provenance/fields.provenance.json"]
+      p3_cands["runs/{runId}/provenance/fields.candidates.json"]
+      p3_events["runs/{runId}/logs/events.jsonl.gz"]
+      p3_summary["runs/{runId}/logs/summary.json"]
+    end
+
+    subgraph P3_SQL["SQL Dual-Write  (exportToSpecDb)"]
+      p3_items[("item_field_state<br/><i>UPSERT per field</i>")]
+      p3_candidates[("candidates<br/><i>INSERT all with lineage</i>")]
+      p3_product[("product_runs<br/><i>UPSERT is_latest, validated</i>")]
+      p3_queue[("product_queue<br/><i>UPDATE status</i>")]
+      p3_history[("field_history<br/><i>UPSERT per field/round</i>")]
+    end
+
+    P3_FS ~~~ P3_SQL
+  end
+  style P3 fill:#0d1117,stroke:#a371f7,color:#a371f7,stroke-width:2px
+  style p3_norm fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p3_tsv fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style p3_prov fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p3_cands fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p3_events fill:#2d333b,stroke:#a371f7,color:#e0e0e0
+  style p3_summary fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p3_items fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p3_candidates fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p3_product fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p3_queue fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p3_history fill:#1f6feb,stroke:#58a6ff,color:#fff
+
+  %% ===== PHASE 4: ARCHIVAL =====
+  subgraph P4["PHASE 4  ARCHIVAL  (relocateRunDataForCompletedRun)"]
+    direction TB
+
+    p4_stage["Stage to tmpdir/bundle/"]
+    p4_enrich["Enrich run.json with storage_metrics"]
+
+    subgraph P4_BUNDLE["Staged Bundle"]
+      p4_ro["run_output/  <i>normalized, provenance, logs</i>"]
+      p4_ix["indexlab/  <i>run.json, events, needset, profile</i>"]
+      p4_tr["runtime_traces/  <i>LLM traces</i>"]
+      p4_sl["shared_logs/  <i>filtered events + billing</i>"]
+      p4_mf["manifest.json"]
+    end
+
+    subgraph P4_DEST["Destination"]
+      p4_local["LOCAL<br/>{localDir}/{cat}/{prod}/{runId}/"]
+      p4_s3["S3<br/>s3://{bucket}/{prefix}/{cat}/{prod}/{runId}/"]
+    end
+
+    p4_cleanup["DELETE source dirs<br/><i>indexlab, output, traces</i>"]
+    p4_dbupdate[("product_runs<br/><i>UPDATE storage_state,<br/>s3_key, local_path</i>")]
+
+    p4_stage --> p4_enrich --> P4_BUNDLE
+    P4_BUNDLE --> p4_local
+    P4_BUNDLE --> p4_s3
+    p4_local --> p4_cleanup
+    p4_s3 --> p4_cleanup
+    p4_cleanup --> p4_dbupdate
+  end
+  style P4 fill:#0d1117,stroke:#da3633,color:#f85149,stroke-width:2px
+  style p4_stage fill:#21262d,stroke:#da3633,color:#c9d1d9
+  style p4_enrich fill:#21262d,stroke:#da3633,color:#c9d1d9
+  style p4_ro fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p4_ix fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p4_tr fill:#2d333b,stroke:#a371f7,color:#e0e0e0
+  style p4_sl fill:#2d333b,stroke:#a371f7,color:#e0e0e0
+  style p4_mf fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style p4_local fill:#21262d,stroke:#3fb950,color:#c9d1d9
+  style p4_s3 fill:#21262d,stroke:#58a6ff,color:#c9d1d9
+  style p4_cleanup fill:#da3633,stroke:#f85149,color:#fff
+  style p4_dbupdate fill:#1f6feb,stroke:#58a6ff,color:#fff
+
+  %% ===== FLOW =====
+  P1 --> P2
+  P2 --> P2B
+  P2B --> P3
+  P3 --> P4
+
+  %% ===== LEGEND =====
+  subgraph LEGEND["LEGEND"]
+    direction LR
+    lg1["JSON / Binary File"]
+    lg2[("SQLite Table")]
+    lg3{{"NDJSON Append"}}
+    lg1 ~~~ lg2 ~~~ lg3
+  end
+  style LEGEND fill:#161b22,stroke:#30363d,color:#8b949e
+  style lg1 fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
+  style lg2 fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style lg3 fill:#2d333b,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+
+  style p1_ensure fill:#21262d,stroke:#4a90d9,color:#c9d1d9

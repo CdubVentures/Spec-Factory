@@ -255,8 +255,11 @@ describe('Fix 2: progressive screenshot stashing', () => {
     };
 
     const fakeExtractor = {
-      async runExtractions() {
+      async runCaptures() {
         return { screenshot: { screenshots: [{ kind: 'page', bytes: Buffer.from('test') }] } };
+      },
+      async runExtractions() {
+        return this.runCaptures();
       },
     };
 

@@ -29,15 +29,16 @@ describe('captureScreenshots contract', () => {
       },
     });
 
-    const crop = result.find((entry) => entry.kind === 'crop');
-    const pageShot = result.find((entry) => entry.kind === 'page');
-
-    assert.ok(crop);
-    assert.equal(crop.selector, 'table');
-    assert.equal(crop.format, 'jpeg');
-    assert.ok(Buffer.isBuffer(crop.bytes));
-    assert.ok(pageShot);
-    assert.equal(pageShot.selector, null);
+    // WHY: Full-page screenshot is captured FIRST (most important output).
+    // Selector crops follow after. This ordering ensures the full-page shot
+    // survives even if handler timeout kills us during crop iteration.
+    assert.equal(result[0].kind, 'page', 'full-page shot must be first');
+    assert.equal(result[0].selector, null);
+    assert.equal(result[1].kind, 'crop');
+    assert.equal(result[1].selector, 'table');
+    assert.equal(result[1].format, 'jpeg');
+    assert.ok(Buffer.isBuffer(result[0].bytes));
+    assert.ok(Buffer.isBuffer(result[1].bytes));
   });
 
   it('falls back to a full-page screenshot when selectors miss', async () => {

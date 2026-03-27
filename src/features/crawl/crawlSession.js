@@ -158,12 +158,14 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         try { await runner.runHook('onCapture', captureCtx); }
         catch (err) { logger?.warn?.('hook_error', { hook: 'onCapture', url: request.url, error: err?.message }); }
 
-        // WHY: Extraction plugins fire concurrently after all fetch hooks complete.
-        // Each plugin receives a frozen context — no shared mutation.
+        // WHY: Capture-phase extraction plugins run inside the handler with live
+        // page access. Sequential plugins first (may mutate page state), then
+        // concurrent plugins via Promise.all (read-only CDP commands like screenshot).
+        // Transform-phase plugins run later in runFetchPlan after the page closes.
         let extractions = {};
         try {
           extractions = extractionRunner
-            ? await extractionRunner.runExtractions(captureCtx)
+            ? await extractionRunner.runCaptures(captureCtx)
             : {};
           // WHY: Stash extraction results (screenshots) on request.userData so
           // failedRequestHandler can rescue them if timeout fires AFTER extraction
@@ -504,6 +506,22 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           }
         },
       ],
+      // WHY: Wait for page resources (images, fonts, stylesheets) to load
+      // BEFORE the plugin chain starts. domcontentloaded fires fast but only
+      // means the DOM is parsed — images/fonts may still be loading. This gives
+      // the page up to 5s to finish loading resources. If 5s expires, continue
+      // anyway — domcontentloaded already fired, page is usable. This prevents
+      // screenshots of half-rendered pages where images show as blank.
+      postNavigationHooks: [
+        async ({ page, request }) => {
+          if (request.userData?.__warmup) return;
+          try {
+            await page.waitForLoadState('load', { timeout: 5000 });
+          } catch {
+            // domcontentloaded already fired — page is usable, continue
+          }
+        },
+      ],
       // WHY: Expose proxy URLs for test assertions (not used by Crawlee).
       _proxyUrls: proxyUrls,
     };
@@ -799,6 +817,29 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           const idx = batchResults.findIndex((r) => r.url === retryResult.url && r.blocked);
           if (idx >= 0) batchResults[idx] = retryResult;
           else batchResults.push(retryResult);
+        }
+      }
+
+      // WHY: Transform-phase extraction plugins run AFTER the handler closes
+      // (no page, no timeout pressure). They process captured data (HTML,
+      // screenshot bytes) that was already collected during the capture phase.
+      // Always concurrent via Promise.all — no shared mutable state.
+      if (extractionRunner?.runTransforms) {
+        for (const result of batchResults) {
+          if (!result.success || !result.html) continue;
+          try {
+            const transforms = await extractionRunner.runTransforms({
+              html: result.html,
+              finalUrl: result.finalUrl,
+              title: result.title,
+              status: result.status,
+              settings,
+              captures: result.extractions || {},
+            });
+            if (Object.keys(transforms).length > 0) {
+              result.extractions = { ...(result.extractions || {}), ...transforms };
+            }
+          } catch { /* transform errors don't fail the result */ }
         }
       }
 

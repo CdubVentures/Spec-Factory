@@ -29,6 +29,8 @@ import { createLlmRouteSourceStore } from './stores/llmRouteSourceStore.js';
 import { createFieldHistoryStore } from './stores/fieldHistoryStore.js';
 import { createPurgeStore } from './stores/purgeStore.js';
 import { createRunMetaStore } from './stores/runMetaStore.js';
+import { createArtifactStore } from './stores/artifactStore.js';
+import { createRunArtifactStore } from './stores/runArtifactStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -109,6 +111,17 @@ export class SpecDb {
     this._runMetaStore = createRunMetaStore({
       db: this.db, category: this.category,
       stmts: { _upsertRun: this._upsertRun, _getRunByRunId: this._getRunByRunId, _getRunsByCategory: this._getRunsByCategory }
+    });
+    this._artifactStore = createArtifactStore({
+      db: this.db, category: this.category,
+      stmts: {
+        _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertPdf: this._insertPdf,
+        _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getScreenshotsByProduct: this._getScreenshotsByProduct,
+        _getCrawlSourceByHash: this._getCrawlSourceByHash,
+      }
+    });
+    this._runArtifactStore = createRunArtifactStore({
+      stmts: { _upsertRunArtifact: this._upsertRunArtifact, _getRunArtifact: this._getRunArtifact, _getRunArtifactsByRunId: this._getRunArtifactsByRunId }
     });
   }
 
@@ -728,6 +741,12 @@ export class SpecDb {
   upsertRun(row) { this._runMetaStore.upsertRun(row); }
   getRunByRunId(runId) { return this._runMetaStore.getRunByRunId(runId); }
   getRunsByCategory(category, limit) { return this._runMetaStore.getRunsByCategory(category, limit); }
+
+  // --- Run Artifacts (needset, search_profile, brand_resolution payloads) ---
+
+  upsertRunArtifact(row) { this._runArtifactStore.upsertRunArtifact(row); }
+  getRunArtifact(runId, type) { return this._runArtifactStore.getRunArtifact(runId, type); }
+  getRunArtifactsByRunId(runId) { return this._runArtifactStore.getRunArtifactsByRunId(runId); }
 
   // --- Source Intelligence ---
 

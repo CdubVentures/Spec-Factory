@@ -351,8 +351,19 @@ export function buildRuntimeOpsWorkers(events, options) {
         if (payload.prompt_preview != null) w.prompt_preview = String(payload.prompt_preview);
       }
     } else if (isFinishEvent(type)) {
-      w.state = w.pool === 'fetch' ? 'crawled' : 'idle';
-      w.block_reason = null; // WHY: Clear stale block reason from previous retry attempt.
+      // WHY: For fetch workers, only fetch_finished should set the definitive state.
+      // parse_finished/index_finished arrive AFTER fetch_finished and must NOT
+      // overwrite blocked/failed/captcha/timeout_rescued states back to 'crawled'.
+      // Non-fetch workers (parse, llm) always reset to idle on their finish event.
+      const isTerminalFetchState = w.pool === 'fetch'
+        && (w.state === 'blocked' || w.state === 'failed' || w.state === 'captcha'
+          || w.state === 'rate_limited' || w.state === 'timeout_rescued');
+      if (isTerminalFetchState && type !== 'fetch_finished') {
+        // Keep the terminal state — don't overwrite with 'crawled'
+      } else {
+        w.state = w.pool === 'fetch' ? 'crawled' : 'idle';
+        w.block_reason = null; // WHY: Clear stale block reason from previous retry attempt.
+      }
       w.elapsed_ms = parseTsMs(evt?.ts) - parseTsMs(w.started_at);
       if (w.pool === 'fetch') {
         w.current_url = extractUrl(evt) || w.current_url;

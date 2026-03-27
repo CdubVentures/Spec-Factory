@@ -5,12 +5,9 @@ import { createPageDouble } from '../../../tests/factories/extractionTestDoubles
 
 describe('stabilizePage', () => {
   it('returns stabilized true when all gates pass within timeout', async () => {
+    // WHY: Single evaluate call returns array of gate results from browser
     const page = createPageDouble({
-      evaluateResults: [
-        true,   // fonts ready
-        0,      // images decoded (count of images decoded)
-        true,   // paint cycle (rAF resolved)
-      ],
+      evaluateResult: ['fonts', 'images', 'paint'],
     });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
@@ -21,9 +18,19 @@ describe('stabilizePage', () => {
     assert.equal(result.gates.paintCycleComplete, true);
   });
 
+  it('makes exactly one page.evaluate call (single CDP round-trip)', async () => {
+    const page = createPageDouble({
+      evaluateResult: ['fonts', 'images', 'paint'],
+    });
+
+    await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
+
+    assert.equal(page.evaluateCalls.length, 1);
+  });
+
   it('returns durationMs as a non-negative number', async () => {
     const page = createPageDouble({
-      evaluateResults: [true, 0, true],
+      evaluateResult: ['fonts', 'images', 'paint'],
     });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
@@ -52,13 +59,13 @@ describe('stabilizePage', () => {
 
   it('defaults to enabled when setting is missing', async () => {
     const page = createPageDouble({
-      evaluateResults: [true, 0, true],
+      evaluateResult: ['fonts', 'images', 'paint'],
     });
 
     const result = await stabilizePage({ page, settings: {} });
 
     assert.equal(result.stabilized, true);
-    assert.ok(page.evaluateCalls.length > 0);
+    assert.equal(page.evaluateCalls.length, 1);
   });
 
   it('returns stabilized false when page.evaluate throws', async () => {
@@ -77,20 +84,23 @@ describe('stabilizePage', () => {
     assert.equal(typeof result.durationMs, 'number');
   });
 
-  it('uses default timeout of 3000ms when setting is missing', async () => {
+  it('handles partial gate results from the browser', async () => {
+    // WHY: If fonts failed but images and paint succeeded, only 2 entries
     const page = createPageDouble({
-      evaluateResults: [true, 0, true],
+      evaluateResult: [null, 'images', 'paint'],
     });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 
-    // Just verify it completes (no hang) — timeout is internal
     assert.equal(result.stabilized, true);
+    assert.equal(result.gates.fontsReady, false);
+    assert.equal(result.gates.imagesDecoded, true);
+    assert.equal(result.gates.paintCycleComplete, true);
   });
 
   it('gates object has all three boolean fields', async () => {
     const page = createPageDouble({
-      evaluateResults: [true, 0, true],
+      evaluateResult: ['fonts', 'images', 'paint'],
     });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
@@ -98,21 +108,5 @@ describe('stabilizePage', () => {
     assert.equal(typeof result.gates.fontsReady, 'boolean');
     assert.equal(typeof result.gates.imagesDecoded, 'boolean');
     assert.equal(typeof result.gates.paintCycleComplete, 'boolean');
-  });
-
-  it('returns partial gates when some pass and evaluate eventually throws', async () => {
-    let callCount = 0;
-    const page = createPageDouble();
-    page.evaluate = async () => {
-      callCount++;
-      if (callCount === 1) return true;  // fonts ready
-      throw new Error('images_failed');
-    };
-
-    const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
-
-    // Should not crash — returns whatever it managed to gather
-    assert.equal(typeof result.stabilized, 'boolean');
-    assert.ok(result.gates);
   });
 });

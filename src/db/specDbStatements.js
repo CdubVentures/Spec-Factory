@@ -596,6 +596,23 @@ export function prepareStatements(db) {
       SELECT * FROM runs WHERE category = ? ORDER BY created_at DESC, id DESC LIMIT ?
     `),
 
+    _upsertRunArtifact: db.prepare(`
+      INSERT INTO run_artifacts (run_id, artifact_type, category, payload, updated_at)
+      VALUES (@run_id, @artifact_type, @category, @payload, datetime('now'))
+      ON CONFLICT(run_id, artifact_type) DO UPDATE SET
+        category = excluded.category,
+        payload = excluded.payload,
+        updated_at = datetime('now')
+    `),
+
+    _getRunArtifact: db.prepare(`
+      SELECT * FROM run_artifacts WHERE run_id = ? AND artifact_type = ?
+    `),
+
+    _getRunArtifactsByRunId: db.prepare(`
+      SELECT * FROM run_artifacts WHERE run_id = ? ORDER BY artifact_type
+    `),
+
     _upsertFieldHistory: db.prepare(`
       INSERT INTO field_history (category, product_id, field_key, round, run_id, history_json, updated_at)
       VALUES (@category, @product_id, @field_key, @round, @run_id, @history_json, CURRENT_TIMESTAMP)
@@ -609,6 +626,56 @@ export function prepareStatements(db) {
 
     _deleteFieldHistories: db.prepare(`
       DELETE FROM field_history WHERE category = @category AND product_id = @product_id
+    `),
+
+    // --- Artifact store (crawl_sources, source_screenshots, source_pdfs) ---
+
+    _insertCrawlSource: db.prepare(`
+      INSERT OR REPLACE INTO crawl_sources (
+        content_hash, category, product_id, run_id, source_url, final_url,
+        host, http_status, doc_kind, source_tier, content_type, size_bytes,
+        file_path, has_screenshot, has_pdf, has_ldjson, has_dom_snippet, crawled_at
+      ) VALUES (
+        @content_hash, @category, @product_id, @run_id, @source_url, @final_url,
+        @host, @http_status, @doc_kind, @source_tier, @content_type, @size_bytes,
+        @file_path, @has_screenshot, @has_pdf, @has_ldjson, @has_dom_snippet, @crawled_at
+      )
+    `),
+
+    _insertScreenshot: db.prepare(`
+      INSERT OR REPLACE INTO source_screenshots (
+        screenshot_id, content_hash, category, product_id, run_id, source_url,
+        host, selector, format, width, height, size_bytes,
+        file_path, captured_at, doc_kind, source_tier
+      ) VALUES (
+        @screenshot_id, @content_hash, @category, @product_id, @run_id, @source_url,
+        @host, @selector, @format, @width, @height, @size_bytes,
+        @file_path, @captured_at, @doc_kind, @source_tier
+      )
+    `),
+
+    _insertPdf: db.prepare(`
+      INSERT OR REPLACE INTO source_pdfs (
+        pdf_id, content_hash, parent_content_hash, category, product_id, run_id,
+        source_url, host, filename, size_bytes, file_path,
+        pages_scanned, tables_found, pair_count, crawled_at
+      ) VALUES (
+        @pdf_id, @content_hash, @parent_content_hash, @category, @product_id, @run_id,
+        @source_url, @host, @filename, @size_bytes, @file_path,
+        @pages_scanned, @tables_found, @pair_count, @crawled_at
+      )
+    `),
+
+    _getCrawlSourcesByProduct: db.prepare(`
+      SELECT * FROM crawl_sources WHERE product_id = ? ORDER BY crawled_at DESC
+    `),
+
+    _getScreenshotsByProduct: db.prepare(`
+      SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC
+    `),
+
+    _getCrawlSourceByHash: db.prepare(`
+      SELECT * FROM crawl_sources WHERE content_hash = ? AND product_id = ?
     `),
   };
 }
