@@ -16,8 +16,8 @@ export const searchExecutionPhase = {
   async execute(ctx) {
     const fn = ctx._di?.executeSearchQueriesFn || executeSearchQueries;
 
-    // WHY: discoveryCap derives from serpSelectorUrlCap (a URL count).
-    const discoveryCap = configInt(ctx.config, 'serpSelectorUrlCap');
+    // WHY: discoveryCap derives from serpSelectorMaxKeep (a URL count).
+    const discoveryCap = configInt(ctx.config, 'serpSelectorMaxKeep');
     const providerState = searchEngineAvailability(ctx.config);
     const requiredOnlySearch = Boolean(ctx.planningHints.requiredOnlySearch);
     const missingRequiredFields = ctx.normalizeFieldListFn(

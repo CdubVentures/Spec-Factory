@@ -76,13 +76,13 @@ function makeRows(count) {
 
 describe('buildSerpSelectorInput', () => {
   it('returns simplified input with product, candidates, max_keep', () => {
-    const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
+    const { selectorInput, candidateMap } = buildSerpSelectorInput({
       runId: 'run-1', category: 'mouse', productId: 'mouse-razer-viper-v3-pro',
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-      serpSelectorUrlCap: 50,
+      serpSelectorMaxKeep: 50,
     });
 
     assert.ok(selectorInput.product);
@@ -92,7 +92,6 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(selectorInput.max_keep, 50);
     assert.equal(selectorInput.candidates.length, 1);
     assert.equal(candidateMap.size, 1);
-    assert.equal(overflowRows.length, 0);
   });
 
   it('candidate has only id, url, host, title, snippet', () => {
@@ -108,26 +107,25 @@ describe('buildSerpSelectorInput', () => {
     assert.deepEqual(Object.keys(c).sort(), ['host', 'id', 'snippet', 'title', 'url']);
   });
 
-  it('max_keep set by serpSelectorUrlCap', () => {
+  it('max_keep set by serpSelectorMaxKeep', () => {
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-
-      serpSelectorUrlCap: 20,
+      serpSelectorMaxKeep: 20,
     });
     assert.equal(selectorInput.max_keep, 20);
   });
 
-  it('max_keep uses serpSelectorUrlCap as SSOT', () => {
-    // WHY: serpSelectorUrlCap is the SSOT for the URL cap.
+  it('max_keep uses serpSelectorMaxKeep as SSOT', () => {
+    // WHY: serpSelectorMaxKeep is the SSOT for how many URLs the selector can keep.
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [makeCandidateRow()],
       categoryConfig: makeCategoryConfig(),
-      serpSelectorUrlCap: 100,
+      serpSelectorMaxKeep: 100,
     });
     assert.equal(selectorInput.max_keep, 100);
   });
@@ -146,18 +144,18 @@ describe('buildSerpSelectorInput', () => {
     assert.equal(selectorInput.candidates[0].snippet.length, 400);
   });
 
-  it('caps candidates at serpSelectorUrlCap', () => {
+  it('sends all candidates to LLM regardless of serpSelectorMaxKeep', () => {
     const rows = makeRows(150);
-    const { selectorInput, overflowRows } = buildSerpSelectorInput({
+    const { selectorInput, candidateMap } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
-
-      serpSelectorUrlCap: 50,
+      serpSelectorMaxKeep: 50,
     });
-    assert.equal(selectorInput.candidates.length, 50);
-    assert.equal(overflowRows.length, 100);
+    assert.equal(selectorInput.candidates.length, 150);
+    assert.equal(candidateMap.size, 150);
+    assert.equal(selectorInput.max_keep, 50);
   });
 
   it('priority rows (pinned/multi-hit) kept before normal rows', () => {
@@ -175,30 +173,29 @@ describe('buildSerpSelectorInput', () => {
   });
 
   it('handles empty candidateRows', () => {
-    const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
+    const { selectorInput, candidateMap } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: [],
       categoryConfig: makeCategoryConfig(),
-
     });
     assert.equal(selectorInput.candidates.length, 0);
     assert.equal(candidateMap.size, 0);
-    assert.equal(overflowRows.length, 0);
   });
 
-  it('serpSelectorUrlCap controls the candidate cap', () => {
-    // WHY: serpSelectorUrlCap is the single SSOT for the selector input cap.
+  it('serpSelectorMaxKeep controls max_keep only, not input count', () => {
+    // WHY: serpSelectorMaxKeep is the SSOT for how many URLs the selector can keep.
+    // All candidates are sent to the LLM; max_keep constrains the output.
     const rows = makeRows(100);
     const { selectorInput } = buildSerpSelectorInput({
       variables: makeVariables(),
       brandResolution: makeBrandResolution(),
       candidateRows: rows,
       categoryConfig: makeCategoryConfig(),
-
-      serpSelectorUrlCap: 80,
+      serpSelectorMaxKeep: 80,
     });
-    assert.equal(selectorInput.candidates.length, 80);
+    assert.equal(selectorInput.candidates.length, 100);
+    assert.equal(selectorInput.max_keep, 80);
   });
 });
 
@@ -391,19 +388,6 @@ describe('adaptSerpSelectorOutput', () => {
     for (const row of notSelected) {
       assert.equal(row.triage_disposition, 'fetch_low');
     }
-  });
-
-  it('overflow rows get selector_input_capped disposition', () => {
-    const overflow = [{ url: 'https://overflow.com', host: 'overflow.com' }];
-    const { notSelected } = adaptSerpSelectorOutput({
-      selectorOutput: { keep_ids: ['c_0'] },
-      candidateMap: makeMap(),
-      overflowRows: overflow,
-      officialDomain: 'razer.com',
-      supportDomain: '',
-    });
-    const capped = notSelected.filter((r) => r.triage_disposition === 'selector_input_capped');
-    assert.equal(capped.length, 1);
   });
 
   it('empty keep_ids returns all as notSelected', () => {

@@ -12,15 +12,22 @@ const CAPTCHA_MARKERS = [
   'h-captcha',
 ];
 
+// WHY: Removed bare 'cloudflare' — too many false positives on tech content
+// (blog posts about Cloudflare, CDN reviews). cf-challenge and cf-browser-verification
+// are Cloudflare-specific class/element names that don't appear in regular content.
 const CF_MARKERS = [
   'cf-browser-verification',
   'cf-challenge',
-  'cloudflare',
 ];
 
-const ACCESS_DENIED_MARKERS = [
-  'access denied',
-  'forbidden',
+// WHY: Structural markers avoid matching "forbidden fruit" in a 50KB article.
+// Block pages are short and put these words in <title>/<h1> or near the start.
+const ACCESS_DENIED_STRUCTURAL = [
+  '<title>access denied',
+  '<title>403',
+  '<title>forbidden',
+  '<h1>access denied',
+  '<h1>forbidden',
 ];
 
 const MIN_BODY_LENGTH = 200;
@@ -47,7 +54,13 @@ export function classifyBlockStatus({ status, html } = {}) {
     return { blocked: true, blockReason: 'captcha_detected' };
   }
 
-  if (ACCESS_DENIED_MARKERS.some((m) => snippet.includes(m))) {
+  // WHY: Structural check first (high confidence), then short-page fallback.
+  // A real block page is typically <2KB. A 50KB article mentioning "forbidden" is not a block.
+  if (ACCESS_DENIED_STRUCTURAL.some((m) => snippet.includes(m))) {
+    return { blocked: true, blockReason: 'access_denied' };
+  }
+  const SHORT_PAGE_LIMIT = 2000;
+  if (snippet.length < SHORT_PAGE_LIMIT && (snippet.includes('access denied') || snippet.includes('forbidden'))) {
     return { blocked: true, blockReason: 'access_denied' };
   }
 

@@ -94,7 +94,7 @@ function WorkerBadgeStack({ worker }: { worker: RuntimeOpsWorkerRow }) {
       )}
       {isRetrying && worker.started_at && (
         <span className="px-1 py-0 rounded sf-text-nano font-semibold sf-chip-info animate-pulse whitespace-nowrap">
-          RETRY <CountdownTimer startTs={worker.started_at} budgetSecs={30} />
+          RETRY <TabTimer startTs={worker.started_at} />
         </span>
       )}
     </div>

@@ -63,6 +63,8 @@ Derived internally:
 - LLM call throws -> retry -> fallback
 - Both attempts fail -> return original rows unchanged, `source: 'deterministic_fallback'`
 
+**Post-LLM sanitization:** `normalizeQuery()` strips any `site:` operator syntax that the LLM may inject despite prompt instructions. `"site:rtings.com product review"` is normalized to `"rtings.com product review"` — the domain is preserved as a plain-text bias term.
+
 ## Tier-aware enhancement rules
 
 | Tier | `tier` value | LLM latitude | What changes |
@@ -83,6 +85,10 @@ IDENTITY LOCK (mandatory):
 - Every output query MUST contain the brand name and model name.
 - Never drop, abbreviate, or alter the brand/model identity tokens.
 - Never drift to a sibling or competitor product.
+
+DOMAIN FORMAT (mandatory):
+- NEVER use site: operator syntax in any query.
+- Domains must appear as plain-text bias terms appended to the query (e.g. "product review rtings.com", NOT "site:rtings.com product review").
 
 TIER 1 — "seed": Broad product seed queries (e.g. "{brand} {model} specifications").
 - Return the query unchanged or with only trivial phrasing cleanup.

@@ -87,12 +87,13 @@ The identity guard rejects for reasons such as:
 `searchProfilePlanned` shape:
 
 - `...searchProfileBase` (spread)
+- `deterministic_query_rows` — frozen copy of `searchProfileBase.query_rows` (the deterministic profile output, preserved for the GUI Search Profile panel)
 - `status: "planned"`
 - `provider`
 - `llm_queries` — LLM-enhanced query texts (empty if LLM failed)
 - `query_guard`
 - `selected_queries`, `selected_query_count`
-- `query_rows` — final selected rows (capped)
+- `query_rows` — final selected rows (capped, LLM-enhanced). Downstream consumers (Result Processing, merge helpers, automation queue) use this for execution matching.
 - `brand_resolution`
 - `key`, `run_key`, `latest_key`
 

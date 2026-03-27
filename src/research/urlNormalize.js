@@ -30,6 +30,12 @@ export function isTrackingParam(key) {
   return TRACKING_PREFIXES.some((prefix) => token.startsWith(prefix));
 }
 
+// WHY: Locale prefixes like /us/, /pt/, /hk-en/, /ca-en/ create phantom
+// duplicates — same page content in different languages. Google returns all
+// variants as separate results, wasting fetch slots on identical specs.
+// Pattern: 2-letter country code or 2-5 letter lang/region code.
+const LOCALE_PREFIX_RE = /^\/([a-z]{2}|[a-z]{2,5}-[a-z]{2})\//;
+
 function normalizePathname(pathname = '') {
   let next = String(pathname || '').replace(/\/+/g, '/');
   if (!next.startsWith('/')) {
@@ -41,7 +47,8 @@ function normalizePathname(pathname = '') {
   next = next
     .replace(/^\/amp\//, '/')
     .replace(/^\/share\//, '/')
-    .replace(/\/amp$/, '');
+    .replace(/\/amp$/, '')
+    .replace(LOCALE_PREFIX_RE, '/');
   if (!next) {
     return '/';
   }

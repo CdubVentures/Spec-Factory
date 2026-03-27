@@ -173,7 +173,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
   const uniqueDomains = useMemo(() => computeTriageUniqueDomains(triage), [triage]);
   const decisionSegments = useMemo(() => buildTriageDecisionSegments(counts), [counts]);
   const funnelBullets = useMemo(() => buildTriageFunnelBullets(triage, calls), [triage, calls]);
-  const hasDecisions = counts.keep + counts.dropped_by_llm + counts.overflow_capped + counts.hard_drop > 0;
+  const hasDecisions = counts.keep + counts.dropped_by_llm + counts.hard_drop > 0;
 
   const allDroppedQueries = useMemo(
     () => triage.filter((t) => t.kept_count === 0 && t.candidates.length > 0),
@@ -227,13 +227,12 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
         <RuntimeIdxBadgeStrip badges={idxRuntime} />
 
         {/* Big stat numbers */}
-        <HeroStatGrid columns={6}>
+        <HeroStatGrid columns={4}>
           <HeroStat value={funnel ? funnel.raw_input : totalCandidates} label="raw input" />
           <HeroStat value={counts.hard_drop || '-'} label="hard dropped" colorClass={counts.hard_drop > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
           <HeroStat value={funnel ? funnel.candidates_sent_to_llm : counts.keep + counts.dropped_by_llm} label="sent to LLM" />
           <HeroStat value={counts.keep} label="kept" colorClass={counts.keep > 0 ? 'text-[var(--sf-state-success-fg)]' : 'sf-text-muted'} />
           <HeroStat value={counts.dropped_by_llm} label="dropped by LLM" colorClass={counts.dropped_by_llm > 0 ? 'text-[var(--sf-state-error-fg)]' : 'sf-text-muted'} />
-          <HeroStat value={counts.overflow_capped || '-'} label="overflow capped" colorClass={counts.overflow_capped > 0 ? 'text-[var(--sf-state-warning-fg)]' : 'sf-text-muted'} />
         </HeroStatGrid>
 
         {/* Narrative */}
@@ -242,7 +241,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
             <strong className="sf-text-primary not-italic">{funnel.raw_input}</strong> raw results
             {funnel.hard_drop_count > 0 && <>, <strong className="sf-text-primary not-italic">{funnel.hard_drop_count}</strong> hard-dropped</>}
             , <strong className="sf-text-primary not-italic">{funnel.candidates_sent_to_llm}</strong> sent to LLM
-            {funnel.overflow_capped > 0 && <> (<strong className="sf-text-primary not-italic">{funnel.overflow_capped}</strong> overflow capped)</>}
             {counts.keep > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{counts.keep}</strong> kept</>}
             {counts.dropped_by_llm > 0 && <>, <strong className="sf-text-primary not-italic">{counts.dropped_by_llm}</strong> dropped by LLM</>}
             {totalTokens > 0 && (
@@ -254,7 +252,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
             {counts.hard_drop > 0 && <> &mdash; <strong className="sf-text-primary not-italic">{counts.hard_drop}</strong> hard-dropped</>}
             {counts.keep > 0 && <>{counts.hard_drop > 0 ? ', ' : ' \u2014 '}<strong className="sf-text-primary not-italic">{counts.keep}</strong> kept</>}
             {counts.dropped_by_llm > 0 && <>, <strong className="sf-text-primary not-italic">{counts.dropped_by_llm}</strong> dropped by LLM</>}
-            {counts.overflow_capped > 0 && <>, <strong className="sf-text-primary not-italic">{counts.overflow_capped}</strong> overflow capped</>}
             {totalTokens > 0 && (
               <>. Used <strong className="sf-text-primary not-italic">{totalTokens.toLocaleString()}</strong> tokens in <strong className="sf-text-primary not-italic">{formatMs(totalDuration)}</strong></>
             )}
@@ -273,7 +270,7 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
                 { label: 'Raw results from search', count: funnel.raw_input, delta: null, tip: null },
                 { label: 'After hard drop filter', count: funnel.candidates_after_hard_drop, delta: funnel.hard_drop_count > 0 ? `-${funnel.hard_drop_count} dropped` : null, tip: 'Removes malformed URLs, denied/blocked hosts, URLs in cooldown, and utility pages (login, cart, checkout, search results)' },
                 { label: 'After URL normalization', count: funnel.candidates_classified, delta: funnel.canon_merge_count > 0 ? `-${funnel.canon_merge_count} merged` : null, tip: 'Frontier database merges URL variants that resolve to the same page (trailing slashes, redirects, param differences)' },
-                { label: 'Sent to LLM', count: funnel.candidates_sent_to_llm, delta: funnel.overflow_capped > 0 ? `${funnel.overflow_capped} overflow capped` : null, tip: 'Priority-ranked candidates capped at 80 max. Official/support domains and multi-provider hits go first' },
+                { label: 'Sent to LLM', count: funnel.candidates_sent_to_llm, delta: null, tip: 'All classified candidates sent to LLM for evaluation' },
                 { label: 'Kept by LLM', count: counts.keep, delta: funnel.llm_model ? `by ${funnel.llm_model}` : null, tip: null },
               ].map((step, i) => (
                 <div key={i} className="flex items-center gap-3 text-xs">
@@ -419,9 +416,8 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
               const isExpanded = triage.length === 1 || Boolean(expandedQueries[queryKey]);
               const allCandidates = t.candidates;
               const kept = allCandidates.filter((c) => c.decision === 'keep');
-              const droppedByLlm = allCandidates.filter((c) => c.decision !== 'keep' && c.decision !== 'hard_drop' && c.triage_disposition !== 'selector_input_capped');
+              const droppedByLlm = allCandidates.filter((c) => c.decision !== 'keep' && c.decision !== 'hard_drop');
               const hardDropped = allCandidates.filter((c) => c.decision === 'hard_drop');
-              const overflowCapped = allCandidates.filter((c) => c.triage_disposition === 'selector_input_capped');
               const queryAllDropped = kept.length === 0 && allCandidates.length > 0;
 
               return (
@@ -438,7 +434,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
                       <span className="sf-text-caption sf-status-text-success">Keep: {kept.length}</span>
                       <span className="sf-text-caption sf-status-text-danger">LLM drop: {droppedByLlm.length}</span>
                       {hardDropped.length > 0 && <span className="sf-text-caption sf-status-text-warning">Hard drop: {hardDropped.length}</span>}
-                      {overflowCapped.length > 0 && <span className="sf-text-caption sf-text-subtle">Overflow: {overflowCapped.length}</span>}
                       {queryAllDropped && <Chip label="all dropped" className="sf-chip-warning" />}
                     </button>
                   )}
@@ -501,23 +496,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
                           ))}
                         </KanbanLane>
                       )}
-                      {overflowCapped.length > 0 && (
-                        <KanbanLane title="Overflow Capped" count={overflowCapped.length} badgeClass="sf-chip-neutral">
-                          {overflowCapped.map((c, ci) => (
-                            <KanbanCard
-                              key={ci}
-                              title={c.title}
-                              domain={c.domain}
-                              snippet={c.snippet}
-                              score={c.score}
-                              rationale={c.rationale}
-                              onClick={() => setSelectedCandidateKey(
-                                selectedCandidateKey === `${queryKey}::${c.url}` ? null : `${queryKey}::${c.url}`,
-                              )}
-                            />
-                          ))}
-                        </KanbanLane>
-                      )}
                     </div>
                   ) : isExpanded ? (
                     <div className={`overflow-x-auto border-t sf-border-soft ${selectedCandidate ? 'max-h-[50vh] overflow-y-auto' : ''}`}>
@@ -549,8 +527,6 @@ export function PrefetchSerpTriagePanel({ calls, serpTriage, persistScope, idxRu
                               <td className="py-1.5 px-4">
                                 {c.decision === 'hard_drop' ? (
                                   <Chip label={(c.triage_disposition || 'hard drop').replace(/_/g, ' ')} className="sf-chip-warning" />
-                                ) : c.triage_disposition === 'selector_input_capped' ? (
-                                  <Chip label="overflow capped" className="sf-chip-neutral" />
                                 ) : c.decision !== 'keep' ? (
                                   <Chip label="LLM rejected" className="sf-chip-danger" />
                                 ) : (

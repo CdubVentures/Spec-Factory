@@ -26,7 +26,7 @@ describe('SERP Selector deterministic reranker fallback', () => {
 
   it('fallback respects max_keep cap', async () => {
     const result = await processDiscoveryResults(makeProcessDiscoveryResultsArgs({
-      config: { serpSelectorUrlCap: 2 },
+      config: { serpSelectorMaxKeep: 2 },
       _serpSelectorCallFn: makeThrowingSelectorFn(),
       queries: ['razer viper v3 pro specs', 'razer viper v3 pro review'],
     }));

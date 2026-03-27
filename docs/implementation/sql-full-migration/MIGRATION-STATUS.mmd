@@ -1,0 +1,171 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "16px",
+    "primaryColor": "#1a1a2e",
+    "primaryTextColor": "#e0e0e0",
+    "primaryBorderColor": "#4a90d9",
+    "lineColor": "#6c757d",
+    "secondaryColor": "#16213e",
+    "tertiaryColor": "#0f3460",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "nodeBorder": "#4a90d9",
+    "clusterBkg": "#161b22",
+    "clusterBorder": "#30363d",
+    "titleColor": "#e0e0e0",
+    "edgeLabelBackground": "#0d1117",
+    "nodeTextColor": "#e0e0e0"
+  },
+  "flowchart": {
+    "nodeSpacing": 40,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15
+  }
+}}%%
+
+flowchart TB
+
+  title["<b>SQL MIGRATION STATUS</b><br/><i>JSON to SQL SSOT Roadmap  |  Audit 2026-03-26</i>"]
+  style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
+
+  %% ==========================================
+  %%  ALREADY IN SQL
+  %% ==========================================
+  subgraph DONE["ALREADY IN SQL  (SSOT)"]
+    direction TB
+    d1[("candidates + candidate_reviews")]
+    d2[("component_identity + aliases + values")]
+    d3[("item_field_state + component_links + list_links")]
+    d4[("enum_lists + list_values")]
+    d5[("key_review_state + runs + audit")]
+    d6[("product_queue + product_runs + artifacts")]
+    d7[("source_registry + assertions + evidence_refs")]
+    d8[("source_intel_domains + brands + paths + corpus")]
+    d9[("llm_route_matrix")]
+    d10[("curation_suggestions + component_review_queue")]
+    d11[("audit_log")]
+    df1[("frontierDb: queries + urls + yields")]
+  end
+  style DONE fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
+  style d1 fill:#238636,stroke:#3fb950,color:#fff
+  style d2 fill:#238636,stroke:#3fb950,color:#fff
+  style d3 fill:#238636,stroke:#3fb950,color:#fff
+  style d4 fill:#238636,stroke:#3fb950,color:#fff
+  style d5 fill:#238636,stroke:#3fb950,color:#fff
+  style d6 fill:#238636,stroke:#3fb950,color:#fff
+  style d7 fill:#238636,stroke:#3fb950,color:#fff
+  style d8 fill:#238636,stroke:#3fb950,color:#fff
+  style d9 fill:#238636,stroke:#3fb950,color:#fff
+  style d10 fill:#238636,stroke:#3fb950,color:#fff
+  style d11 fill:#238636,stroke:#3fb950,color:#fff
+  style df1 fill:#238636,stroke:#3fb950,color:#fff
+
+  %% ==========================================
+  %%  DUAL-WRITE
+  %% ==========================================
+  subgraph DUAL["DUAL-WRITE  (SQL exists + JSON fallback  -  consolidate to SQL-only)"]
+    direction TB
+    dual1{{"_billing/ledger/YYYY-MM.jsonl"}} -->|"migrate to"| dual1s[("billing_entries")]
+    dual2{{"_runtime/events.jsonl"}} -->|"migrate to"| dual2s[("runtime_events")]
+    dual3["llm_cache/sha256.json"] -->|"migrate to"| dual3s[("llm_cache")]
+    dual4["_learning/cat/profiles/*.json"] -->|"migrate to"| dual4s[("learning_profiles")]
+    dual5["_learning/cat/artifact.json"] -->|"migrate to"| dual5s[("category_brain")]
+  end
+  style DUAL fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:3px
+  style dual1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style dual2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style dual3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style dual4 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style dual5 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style dual1s fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style dual2s fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style dual3s fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style dual4s fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style dual5s fill:#1f6feb,stroke:#58a6ff,color:#fff
+
+  %% ==========================================
+  %%  JSON-ONLY (needs migration)
+  %% ==========================================
+  subgraph MIGRATE["JSON-ONLY  (needs new SQL tables)"]
+    direction TB
+
+    subgraph MIG_P1["Priority 1  -  Run Metadata"]
+      mig1["run.json<br/><i>status, counters, timestamps,<br/>identity, phase_cursor</i>"]
+      mig1t[("NEW: runs")]
+      mig1 -->|"needs"| mig1t
+    end
+
+    subgraph MIG_P2["Priority 2  -  Pipeline Artifacts"]
+      mig2["needset.json<br/><i>field requirements</i>"]
+      mig2t[("NEW: run_needsets")]
+      mig3["search_profile.json<br/><i>query plan</i>"]
+      mig3t[("NEW: run_search_profiles")]
+      mig2 -->|"needs"| mig2t
+      mig3 -->|"needs"| mig3t
+    end
+
+    subgraph MIG_P3["Priority 3  -  Global State"]
+      mig4["user-settings.json<br/><i>global prefs (schema v2)</i>"]
+      mig4t[("NEW: user_settings")]
+      mig5["brand_registry.json<br/><i>brands, aliases, domains</i>"]
+      mig5t[("NEW: brands")]
+      mig4 -->|"needs"| mig4t
+      mig5 -->|"needs"| mig5t
+    end
+
+    subgraph MIG_P4["Priority 4  -  Telemetry"]
+      mig6{{"_runtime/metrics.jsonl<br/><i>timing, counters, gauges</i>"}}
+      mig6t[("NEW: metrics")]
+      mig6 -->|"needs"| mig6t
+    end
+  end
+  style MIGRATE fill:#0d1117,stroke:#da3633,color:#f85149,stroke-width:3px
+  style MIG_P1 fill:#0d1117,stroke:#da3633,color:#e0e0e0
+  style MIG_P2 fill:#0d1117,stroke:#da3633,color:#e0e0e0
+  style MIG_P3 fill:#0d1117,stroke:#da3633,color:#e0e0e0
+  style MIG_P4 fill:#0d1117,stroke:#da3633,color:#e0e0e0
+  style mig1 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig2 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig3 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig4 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig5 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig6 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style mig1t fill:#da3633,stroke:#f85149,color:#fff
+  style mig2t fill:#da3633,stroke:#f85149,color:#fff
+  style mig3t fill:#da3633,stroke:#f85149,color:#fff
+  style mig4t fill:#da3633,stroke:#f85149,color:#fff
+  style mig5t fill:#da3633,stroke:#f85149,color:#fff
+  style mig6t fill:#da3633,stroke:#f85149,color:#fff
+
+  %% ==========================================
+  %%  KEEP AS FILES
+  %% ==========================================
+  subgraph KEEP["KEEP AS FILES  (generated artifacts, not mutable state)"]
+    direction TB
+    keep1["category_authority: field_rules.json, known_values.json,<br/>ui_field_catalog.json, component_db/*.json, _compile_report.json"]
+    keep2["export artifacts: spec.json, summary.json, provenance.json,<br/>traffic_light.json, evidence_pack.json, candidates.json"]
+    keep3["raw extractions: *.html.gz, ldjson.json,<br/>screenshot.meta.json, *.pdf.json"]
+  end
+  style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+
+  %% ==========================================
+  %%  FUTURE STATE
+  %% ==========================================
+  subgraph FUTURE["FUTURE  -  SQL is SSOT, JSON = checkpoints only"]
+    direction TB
+    fut_sql[("SQL owns ALL mutable state<br/><i>runs, needsets, profiles, settings,<br/>brands, billing, events, metrics,<br/>cache, learning</i>")]
+    fut_json["JSON written at pivotal moments<br/><i>run completion snapshots,<br/>S3 archival bundles,<br/>export artifacts</i>"]
+    fut_rebuild["Any JSON artifact<br/>reconstructable from SQL"]
+    fut_sql --> fut_json --> fut_rebuild
+  end
+  style FUTURE fill:#0d1117,stroke:#58a6ff,color:#58a6ff,stroke-width:3px
+  style fut_sql fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:3px
+  style fut_json fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style fut_rebuild fill:#21262d,stroke:#3fb950,color:#c9d1d9
+
+  DONE --> DUAL --> MIGRATE --> KEEP --> FUTURE

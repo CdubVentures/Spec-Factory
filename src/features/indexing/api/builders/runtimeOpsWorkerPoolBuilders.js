@@ -350,6 +350,7 @@ export function buildRuntimeOpsWorkers(events, options) {
       }
     } else if (isFinishEvent(type)) {
       w.state = w.pool === 'fetch' ? 'crawled' : 'idle';
+      w.block_reason = null; // WHY: Clear stale block reason from previous retry attempt.
       w.elapsed_ms = parseTsMs(evt?.ts) - parseTsMs(w.started_at);
       if (w.pool === 'fetch') {
         w.current_url = extractUrl(evt) || w.current_url;

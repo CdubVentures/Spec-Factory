@@ -1,7 +1,7 @@
 # Crawl Pipeline Overview
 
 > Replaces the old stages 09–13 (extraction, identity evaluation, consensus, finalization, export).
-> Validated: 2026-03-24. Sources: `src/features/crawl/`, `src/pipeline/runCrawlProcessingLifecycle.js`, `src/pipeline/runProduct.js`.
+> Validated: 2026-03-26. Sources: `src/features/crawl/`, `src/pipeline/runCrawlProcessingLifecycle.js`, `src/pipeline/runProduct.js`.
 
 ## Architecture
 
@@ -16,12 +16,17 @@ Discovery (stages 01–08, unchanged)
             │    └─ ONE PlaywrightCrawler, N concurrent pages (maxConcurrency)
             │         ├─ Plugin lifecycle per page:
             │         │    beforeNavigate → navigate → afterNavigate → onInteract → onCapture → onComplete
+            │         ├─ Block detection in requestHandler (classifyBlockStatus)
+            │         │    ├─ Blocked → session.retire() → throw → Crawlee retries with new session
+            │         │    ├─ Non-retryable (timeout/DNS/download) → request.noRetry → fail fast
+            │         │    └─ robots_blocked → request.noRetry (respects robots.txt)
             │         ├─ Stealth plugin: hides webdriver, sets UA
             │         ├─ AutoScroll plugin: scrolls to trigger lazy content
             │         └─ Screenshots: targeted selectors + full-page
-            ├─ classifyBlockStatus: detect 403/429/captcha/cloudflare/empty
+            ├─ classifyBlockStatus in lifecycle: re-classify for proxy retry decision
+            ├─ retryWithProxy: lazy proxy crawler for still-blocked URLs
             ├─ frontierDb.recordFetch: update URL history (always, success or failure)
-            └─ Emit fetch_started / fetch_finished events per URL (GUI worker tab)
+            └─ Events: fetch_queued → fetch_started → fetch_retrying → fetch_finished
 ```
 
 ## What Was Removed
@@ -63,14 +68,14 @@ Total: ~24,000 LOC removed across ~300 files.
 
 ## Concurrency Model
 
-ONE physical Crawlee session with `maxConcurrency` controlling parallel browser pages.
+TWO Crawlee crawlers — one direct, one proxy (lazy):
 
-- `crawlSessionCount` setting (default 4, max 20) → `maxConcurrency` on the PlaywrightCrawler
-- Shared rate limiting — if one page gets 429'd, all pages pause for that host
-- Built-in URL deduplication via Crawlee's RequestQueue
-- Shared cookie jar and proxy rotation across all pages
+- **Main crawler** (direct, no proxy): runs with `maxConcurrency` controlling parallel browser pages. No `ProxyConfiguration` — Crawlee's `tieredProxyUrls` breaks HTTPS via local proxy-chain relay.
+- **Proxy crawler** (lazy): created on first `retryWithProxy` call, reused across batches. Uses `ProxyConfiguration({ proxyUrls })` from `crawleeProxyUrlsJson` setting. Torn down on `shutdown()`.
+- `crawlSessionCount` setting (default 4, max 20) → `maxConcurrency` on both crawlers
 - Each URL gets a unique `worker_id` (`fetch-a1`, `fetch-b2`, ...) for GUI visibility
-- `fetch_started` / `fetch_finished` events emitted per URL
+- `fetch_queued` / `fetch_started` / `fetch_retrying` / `fetch_finished` events emitted per URL
+- `proxyInfo.url` is included in `fetch_started` events so the GUI shows which proxy is active
 
 ## Plugin Interface
 
@@ -100,12 +105,56 @@ Plugins run sequentially in registration order. Errors are caught per-plugin (ne
 | Status 451 | `robots_blocked` |
 | Status 5xx | `server_error` |
 | Status 0/null | `no_response` |
-| Cloudflare challenge markers | `cloudflare_challenge` |
-| CAPTCHA markers in HTML | `captcha_detected` |
-| "Access Denied" / "Forbidden" text | `access_denied` |
-| Very short HTML, no `<body>` | `empty_response` |
+| `cf-browser-verification` / `cf-challenge` class in HTML | `cloudflare_challenge` |
+| CAPTCHA markers (`captcha`, `g-recaptcha`, `h-captcha`, `challenge-form`) | `captcha_detected` |
+| "Access Denied" / "Forbidden" in `<title>` or `<h1>` | `access_denied` |
+| "Access Denied" / "Forbidden" in body of SHORT pages (<2KB) | `access_denied` |
+| Very short HTML (<200 bytes), no `<body>` | `empty_response` |
 
-Crawlee's built-in `retryOnBlocked` is disabled — we handle all block detection ourselves after capturing the page content.
+Crawlee's built-in `retryOnBlocked` is disabled — block detection runs in the requestHandler after page content capture so we get HTML for classification.
+
+## Retry & Proxy Architecture
+
+**In-handler block detection → Crawlee native retry → proxy fallback:**
+
+1. `requestHandler` captures HTML, runs `classifyBlockStatus`.
+2. If blocked: `session.retire()` + throw `Error('blocked:reason')`. Block info stored on `request.userData.__blockInfo`.
+3. Crawlee retries with new session (fresh fingerprint/cookies). `maxRequestRetries: 1` = one native retry.
+4. If retry succeeds → lifecycle sees success, no proxy needed.
+5. If retry fails → `failedRequestHandler` resolves with block info → lifecycle calls `retryWithProxy`.
+6. `retryWithProxy` uses a lazy proxy crawler (created once, reused). `maxRequestRetries: 2` on proxy crawler.
+
+**Non-retryable errors** (`request.noRetry = true`, fail fast):
+- `requestHandler timed out` — server won't respond faster on retry
+- `Navigation timed out` — same
+- `Download is starting` — site serves a file, not a page
+- `net::ERR_NAME_NOT_RESOLVED` — domain doesn't exist
+- `net::ERR_CONNECTION_REFUSED` — server actively refusing
+- `net::ERR_CONNECTION_RESET` — connection dropped
+- `net::ERR_TUNNEL_CONNECTION_FAILED` — invalid proxy URL
+- `robots_blocked` (451) — respects robots.txt
+
+**Timing budget (worst case per URL):**
+- Block → 1 native retry → proxy = ~20s
+- Timeout → no retry → proxy = ~35s
+- Non-retryable error → fail = ~1-3s
+- Happy path = ~5-15s
+
+## Worker States (GUI)
+
+| State | Badge | Trigger |
+|-------|-------|---------|
+| `queued` | QUEUED (gray) | `fetch_queued` event |
+| `crawling` | CRAWLING (blue, bounce) | `fetch_started` (retry_count=0) |
+| `retrying` | Error reason + RETRY Ns (dual badge) | `fetch_started` (retry_count>0) |
+| `stuck` | STUCK (red pulse) | elapsed > handler timeout - 5s |
+| `crawled` | CRAWLED (green) | `fetch_finished` success |
+| `blocked` | BLOCKED (yellow) | 403/forbidden error |
+| `rate_limited` | 429 (yellow) | HTTP 429 |
+| `captcha` | CAPTCHA (red) | captcha/cloudflare detected |
+| `failed` | Specific error: TIMEOUT/5XX/DNS/DOWNLOAD (red) | all retries exhausted |
+
+Worker rows show: truncated URL path, proxy label (`direct` or proxy hostname), elapsed timer on all pools.
 
 ## Frontier DB Integration
 

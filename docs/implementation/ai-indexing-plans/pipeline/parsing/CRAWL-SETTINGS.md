@@ -42,14 +42,21 @@
 | `capturePageScreenshotMaxBytes` | 5000000 | Max screenshot size (reject if larger) |
 | `capturePageScreenshotSelectors` | `table,[data-spec-table],...` | CSS selectors for targeted crops |
 
-## Retry & Bypass
+## Retry & Proxy
 
 | Key | Default | What it controls |
 |-----|---------|-----------------|
-| `dynamicFetchRetryBudget` | 1 | Retries per URL before giving up |
-| `dynamicFetchRetryBackoffMs` | 2500 | Backoff between retries |
-| `robotsTxtCompliant` | true | Respect robots.txt |
-| `robotsTxtTimeoutMs` | 6000 | Timeout for robots.txt fetch |
+| `crawleeMaxRequestRetries` | 1 (code default) | Native retries with session rotation. Only retryable errors (blocks) get retried. Timeouts, DNS, downloads set `request.noRetry` and fail fast. |
+| `crawleeProxyUrlsJson` | `""` | JSON array of proxy URLs for the proxy retry pass. Empty = no proxy retry. |
+| `robotsTxtCompliant` | true | Respect robots.txt (451 → `robots_blocked`, no retry) |
+
+**Non-retryable errors** (fail immediately, no retry):
+`requestHandler timed out`, `Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked`.
+
+**Retryable errors** (1 native retry with session rotation, then proxy retry):
+403, 429, captcha, cloudflare, access denied, empty response, server error.
+
+**Timing budget**: worst case per URL = 30s direct + 30s proxy = ~60s. Blocked URLs detected in ~2s get retried within seconds.
 
 ## Per-Host Overrides
 

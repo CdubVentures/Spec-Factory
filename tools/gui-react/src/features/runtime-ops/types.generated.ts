@@ -256,7 +256,7 @@ export interface SerpTriageFunnel {
   canon_merge_count: number;
   candidates_classified: number;
   candidates_sent_to_llm: number;
-  overflow_capped: number;
+  overflow_capped?: number;
   llm_model: string;
   llm_applied: boolean;
 }

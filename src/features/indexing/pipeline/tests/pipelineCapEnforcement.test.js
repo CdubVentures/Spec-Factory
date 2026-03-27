@@ -5,9 +5,9 @@
  * Bug 1: queryJourney uses searchPlannerQueryCap instead of searchProfileQueryCap
  *         as the final merged cap → Search Profile shows 30 when set to 10.
  * Bug 2: runDiscoverySeedPlan passes searchPlannerQueryCap (query count) as
- *         discoveryCap to the SERP selector (URL count) → serpSelectorUrlCap
+ *         discoveryCap to the SERP selector (URL count) → serpSelectorMaxKeep
  *         is silently overridden by the wrong setting.
- * Bug 3: serpSelector maxKeep uses min(discoveryCap, serpSelectorUrlCap) but
+ * Bug 3: serpSelector maxKeep uses min(discoveryCap, serpSelectorMaxKeep) but
  *         discoveryCap is a query count → wrong unit contaminates URL cap.
  */
 import { describe, it } from 'node:test';
@@ -50,7 +50,7 @@ function makeConfig(overrides = {}) {
   return {
     searchEngines: 'bing',
     searchProfileQueryCap: 10,
-    serpSelectorUrlCap: 50,
+    serpSelectorMaxKeep: 50,
     domainClassifierUrlCap: 40,
     ...overrides,
   };
@@ -136,11 +136,11 @@ describe('queryJourney respects searchProfileQueryCap as final output cap', () =
 });
 
 // ---------------------------------------------------------------------------
-// Bug 2 + 3: serpSelectorUrlCap must control maxKeep, not searchPlannerQueryCap
+// Bug 2 + 3: serpSelectorMaxKeep must control maxKeep, not searchPlannerQueryCap
 // ---------------------------------------------------------------------------
 
-describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () => {
-  it('maxKeep equals serpSelectorUrlCap regardless of discoveryCap', () => {
+describe('buildSerpSelectorInput respects serpSelectorMaxKeep independently', () => {
+  it('maxKeep equals serpSelectorMaxKeep regardless of discoveryCap', () => {
     const candidateRows = makeCandidateRows(80);
     const result = buildSerpSelectorInput({
       runId: 'run-1',
@@ -151,14 +151,14 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: 30,
-      serpSelectorUrlCap: 50,
+      serpSelectorMaxKeep: 50,
     });
 
     assert.equal(result.selectorInput.max_keep, 50,
-      `Expected max_keep=50 (serpSelectorUrlCap), got ${result.selectorInput.max_keep}`);
+      `Expected max_keep=50 (serpSelectorMaxKeep), got ${result.selectorInput.max_keep}`);
   });
 
-  it('maxKeep equals serpSelectorUrlCap when discoveryCap is absent', () => {
+  it('maxKeep equals serpSelectorMaxKeep when discoveryCap is absent', () => {
     const candidateRows = makeCandidateRows(60);
     const result = buildSerpSelectorInput({
       runId: 'run-2',
@@ -169,16 +169,15 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: undefined,
-      serpSelectorUrlCap: 25,
+      serpSelectorMaxKeep: 25,
     });
 
     assert.equal(result.selectorInput.max_keep, 25,
-      `Expected max_keep=25 (serpSelectorUrlCap), got ${result.selectorInput.max_keep}`);
+      `Expected max_keep=25 (serpSelectorMaxKeep), got ${result.selectorInput.max_keep}`);
   });
 
-  it('SERP selector input capped at SERP_SELECTOR_MAX_CANDIDATES (80)', () => {
-    // WHY: domainClassifierUrlCap no longer controls SERP selector input.
-    // It now controls Stage 08 enqueue cap. SERP input is always ≤ 80.
+  it('SERP selector sends all candidates to LLM (no input cap)', () => {
+    // WHY: All candidates go to the LLM. serpSelectorMaxKeep controls only max_keep (output).
     const candidateRows = makeCandidateRows(100);
     const result = buildSerpSelectorInput({
       runId: 'run-3',
@@ -189,11 +188,13 @@ describe('buildSerpSelectorInput respects serpSelectorUrlCap independently', () 
       candidateRows,
       categoryConfig: { category: 'mouse', sourceHostMap: new Map(), approvedRootDomains: new Set() },
       discoveryCap: 999,
-      serpSelectorUrlCap: 50,
+      serpSelectorMaxKeep: 50,
     });
 
-    assert.ok(result.selectorInput.candidates.length <= 80,
-      `Expected ≤80 candidates (SERP_SELECTOR_MAX_CANDIDATES), got ${result.selectorInput.candidates.length}`);
+    assert.equal(result.selectorInput.candidates.length, 100,
+      `Expected all 100 candidates sent to LLM, got ${result.selectorInput.candidates.length}`);
+    assert.equal(result.selectorInput.max_keep, 50,
+      `Expected max_keep=50 (serpSelectorMaxKeep), got ${result.selectorInput.max_keep}`);
   });
 });
 

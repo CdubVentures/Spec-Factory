@@ -3,7 +3,6 @@ import type { SerpTriageResult, PrefetchLlmCall } from '../types.ts';
 export interface TriageDecisionCounts {
   keep: number;
   dropped_by_llm: number;
-  overflow_capped: number;
   hard_drop: number;
 }
 

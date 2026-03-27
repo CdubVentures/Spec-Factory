@@ -103,12 +103,12 @@ export async function processDiscoveryResults({
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
 
-  const { selectorInput, candidateMap, overflowRows } = buildSerpSelectorInput({
+  const { selectorInput, candidateMap } = buildSerpSelectorInput({
     runId, category: categoryConfig.category, productId: job.productId,
     variables, brandResolution,
     candidateRows,
     categoryConfig,
-    serpSelectorUrlCap: configInt(config, 'serpSelectorUrlCap'),
+    serpSelectorMaxKeep: configInt(config, 'serpSelectorMaxKeep'),
   });
   const sentCandidateIds = [...candidateMap.keys()];
 
@@ -155,7 +155,7 @@ export async function processDiscoveryResults({
   }
 
   const { selected, notSelected } = adaptSerpSelectorOutput({
-    selectorOutput: validOutput, candidateMap, overflowRows,
+    selectorOutput: validOutput, candidateMap,
     officialDomain, supportDomain, categoryConfig,
     scoreSource: fallbackApplied ? 'passthrough_fallback' : 'llm_selector',
   });
@@ -231,13 +231,13 @@ export async function processDiscoveryResults({
     kept_count: selected.length,
     dropped_count: notSelected.length,
     funnel: {
-      raw_input: rawResults.length,
+      raw_input: new Set((rawResults || []).map((r) => String(r?.url || '').trim()).filter(Boolean)).size,
       hard_drop_count: hardDrops.length,
       candidates_after_hard_drop: hardDropSurvivors.length,
       canon_merge_count: canonMergeCount,
       candidates_classified: candidateRows.length,
       candidates_sent_to_llm: selectorInput.candidates.length,
-      overflow_capped: overflowRows.length,
+      overflow_capped: 0,
       llm_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
       llm_applied: validation.valid,
       fallback_applied: fallbackApplied,

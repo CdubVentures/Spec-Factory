@@ -1,10 +1,9 @@
 export function computeTriageDecisionCounts(triage) {
-  const counts = { keep: 0, dropped_by_llm: 0, overflow_capped: 0, hard_drop: 0 };
+  const counts = { keep: 0, dropped_by_llm: 0, hard_drop: 0 };
   for (const t of triage) {
     for (const c of t.candidates) {
       if (c.decision === 'keep') counts.keep++;
       else if (c.decision === 'hard_drop') counts.hard_drop++;
-      else if (c.triage_disposition === 'selector_input_capped') counts.overflow_capped++;
       else counts.dropped_by_llm++;
     }
   }
@@ -58,13 +57,12 @@ export function buildTriageFunnelBullets(triage, calls) {
     bullets.push(`${uniqueDomains} unique domain${uniqueDomains !== 1 ? 's' : ''} represented`);
   }
 
-  const total = counts.keep + counts.dropped_by_llm + counts.overflow_capped + counts.hard_drop;
+  const total = counts.keep + counts.dropped_by_llm + counts.hard_drop;
   if (total > 0) {
     const parts = [];
     if (counts.keep > 0) parts.push(`${counts.keep} kept`);
     if (counts.dropped_by_llm > 0) parts.push(`${counts.dropped_by_llm} dropped by LLM`);
     if (counts.hard_drop > 0) parts.push(`${counts.hard_drop} hard-dropped`);
-    if (counts.overflow_capped > 0) parts.push(`${counts.overflow_capped} overflow capped`);
     bullets.push(`Decision: ${parts.join(', ')}`);
   }
 

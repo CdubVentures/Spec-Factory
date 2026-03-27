@@ -72,12 +72,12 @@ export function buildSerpSelectorInput({
   variables, brandResolution,
   candidateRows,
   categoryConfig,
-  serpSelectorUrlCap,
+  serpSelectorMaxKeep,
 }) {
   const officialDomain = normalizeHost(String(brandResolution?.officialDomain || '').trim());
   const supportDomain = normalizeHost(String(brandResolution?.supportDomain || '').trim());
 
-  // --- Priority-based candidate capping ---
+  // --- Priority sort (pinned/multi-hit first) ---
   const isPinned = (row) => {
     const host = normalizeHost(String(row?.host || ''));
     if (officialDomain && host === officialDomain) return true;
@@ -88,20 +88,16 @@ export function buildSerpSelectorInput({
   const isMultiHit = (row) =>
     (toArray(row?.seen_in_queries).length >= 2) || (toArray(row?.seen_by_providers).length >= 2);
 
-  // WHY: Sort pinned/multi-hit first, then slice to serpSelectorUrlCap.
+  // WHY: Sort pinned/multi-hit first so fallback truncation preserves high-value URLs.
   const sorted = [...candidateRows].sort((a, b) => {
     const aPriority = isPinned(a) || isMultiHit(a) ? 0 : 1;
     const bPriority = isPinned(b) || isMultiHit(b) ? 0 : 1;
     return aPriority - bPriority;
   });
-  const sentRows = sorted.slice(0, serpSelectorUrlCap);
-
-  const sentUrlSet = new Set(sentRows.map((r) => r.url));
-  const overflowRows = candidateRows.filter((r) => !sentUrlSet.has(r.url));
 
   // --- Build candidate map (SSOT for id→row) ---
   const candidateMap = new Map();
-  const candidates = sentRows.map((row, idx) => {
+  const candidates = sorted.map((row, idx) => {
     const id = `c_${idx}`;
     candidateMap.set(id, row);
     const url = String(row?.url || '');
@@ -115,9 +111,9 @@ export function buildSerpSelectorInput({
     };
   });
 
-  // WHY: serpSelectorUrlCap is the hard cap on how many URLs the LLM keeps.
-  // Caller resolves via configInt — store guarantees min/max clamping.
-  const maxKeep = serpSelectorUrlCap;
+  // WHY: serpSelectorMaxKeep controls how many URLs the LLM can return (output cap).
+  // All candidates are sent to the LLM; it decides which to keep.
+  const maxKeep = serpSelectorMaxKeep;
 
   const selectorInput = {
     product: {
@@ -130,7 +126,7 @@ export function buildSerpSelectorInput({
     candidates,
   };
 
-  return { selectorInput, candidateMap, overflowRows };
+  return { selectorInput, candidateMap };
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +155,7 @@ function enrichCandidateRow(row, { officialDomain, supportDomain, categoryConfig
 // ---------------------------------------------------------------------------
 
 export function adaptSerpSelectorOutput({
-  selectorOutput, candidateMap, overflowRows = [],
+  selectorOutput, candidateMap,
   officialDomain, supportDomain, categoryConfig,
   scoreSource = 'llm_selector',
 }) {
@@ -195,15 +191,6 @@ export function adaptSerpSelectorOutput({
       triage_disposition: 'fetch_low',
       score: 0,
       score_breakdown: { score_source: scoreSource, reason: 'not_selected' },
-    });
-  }
-
-  for (const row of overflowRows) {
-    notSelected.push({
-      ...enrich(row),
-      triage_disposition: 'selector_input_capped',
-      score: 0,
-      score_breakdown: { score_source: scoreSource, reason: 'selector_input_capped' },
     });
   }
 

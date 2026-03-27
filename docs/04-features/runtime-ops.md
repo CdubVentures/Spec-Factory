@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified worker-centric runtime diagnostics flow for completed or active IndexLab runs.
 > **Prerequisites:** [indexing-lab.md](./indexing-lab.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-26
 
 ## Entry Points
 
@@ -43,13 +43,39 @@
 - Missing document or screenshot assets: `404 document_not_found`, `404 file_not_found`, or `404 screencast_frame_not_found`.
 - Invalid asset filename: `400 invalid_filename`.
 
+## Worker State Machine (Fetch Pool)
+
+| State | Badge | Trigger |
+|-------|-------|---------|
+| `queued` | QUEUED (gray) | `fetch_queued` event |
+| `crawling` | CRAWLING (blue, bounce) | `fetch_started` (retry_count=0) |
+| `retrying` | Error reason + RETRY Ns (dual badge) | `fetch_started` (retry_count>0) or `fetch_retrying` |
+| `stuck` | STUCK (red pulse) | elapsed > handler timeout - 5s |
+| `crawled` | CRAWLED (green) | `fetch_finished` success |
+| `blocked` | BLOCKED (yellow) | 403/forbidden |
+| `rate_limited` | 429 (yellow) | HTTP 429 |
+| `captcha` | CAPTCHA (red) | captcha/cloudflare |
+| `failed` | Specific error: TIMEOUT/5XX/DNS/DOWNLOAD (red) | all retries exhausted |
+
+Non-fetch pools (search, llm, parse) keep `running`/`idle` states.
+
+Worker rows show: truncated URL path, proxy label (`direct` or proxy hostname), elapsed timer on all pools.
+
+## Dual Badge System
+
+When a worker is retrying, two badges stack vertically:
+- **Primary** (top): The real error reason (403, CAPTCHA, TIMEOUT, etc.) with severity color
+- **Secondary** (bottom): `RETRY Ns` with live count-up timer, blue pulse animation
+
+Terminal states show a single badge with the specific error (not generic "FAILED").
+
 ## State Transitions
 
 | State | Trigger | Result |
 |-------|---------|--------|
 | live worker snapshot | active run + websocket updates | tabs continue updating |
 | inactive run replay | process ended | route normalizes stale `running` metadata to `completed` or `failed` |
-| missing screenshot | no retained browser frame | synthetic SVG proof frame returned |
+| missing screenshot | no retained browser frame | synthetic SVG proof frame returned (excludes `crawling`/`retrying` active states) |
 
 ## Diagram
 

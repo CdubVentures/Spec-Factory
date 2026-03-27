@@ -149,7 +149,7 @@
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
-| `serpSelectorUrlCap` | int | 50 | 1–500 | `SERP_SELECTOR_URL_CAP` |
+| `serpSelectorMaxKeep` | int | 50 | 1–500 | `SERP_SELECTOR_MAX_KEEP` |
 
 ---
 
@@ -185,7 +185,7 @@
 | `crawleeBrowserRetirePageCount` | int | 5 | 1–50 | `CRAWLEE_BROWSER_RETIRE_PAGE_COUNT` |
 | `crawleeHeadless` | bool | true | — | `CRAWLEE_HEADLESS` |
 | `crawleeMaxPagesPerBrowser` | int | 1 | 1–10 | `CRAWLEE_MAX_PAGES_PER_BROWSER` |
-| `crawleeMaxRequestRetries` | int | 1 | 0–5 | `CRAWLEE_MAX_REQUEST_RETRIES` |
+| `crawleeMaxRequestRetries` | int | 1 | 0–5 | `CRAWLEE_MAX_REQUEST_RETRIES` | Code default 1. Only retryable errors (blocks) get retried. Timeouts, DNS, downloads set `request.noRetry` and fail fast. |
 | `crawleeNavigationTimeoutMs` | int | 12000 | 1000–120000 | `CRAWLEE_NAVIGATION_TIMEOUT_MS` |
 | `crawleeRequestHandlerTimeoutSecs` | int | 75 | 0–300 | `CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS` |
 | `crawlMaxConcurrentSlots` | int | 4 | 1–16 | `CRAWL_MAX_CONCURRENT_SLOTS` |

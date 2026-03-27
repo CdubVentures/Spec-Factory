@@ -31,7 +31,7 @@ Do NOT skip a URL just because it is from a forum or community site (Reddit, ove
 Keep forum/community posts when the title or snippet indicates specs, measurements, teardowns, or detailed owner reviews with data.
 
 Return strict JSON only: { "keep_ids": ["c_0", "c_3", ...] }
-Respect the max_keep limit.
+You MUST return at most max_keep URLs. Returning more than max_keep is a hard failure.
 Do not include IDs that were not in the input.`;
 
 const SERP_SELECTOR_SPEC = {

@@ -60,6 +60,7 @@ Primary owners:
 - Search Planner consumes Search Profile: `base_templates`, targeted query rows, `coverage_analysis`.
 - Search Profile emits `search_profile_generated` with the deterministic query count and row details.
 - Search Profile is a deterministic base, not the final query-selection authority. Query Journey still dedupes, ranks, and guards.
+- Query Journey preserves the deterministic `query_rows` as `deterministic_query_rows` on `searchProfilePlanned`. The GUI Search Profile panel reads `deterministic_query_rows` to show what this phase actually produced, not LLM-enhanced versions from downstream.
 
 ## Outputs out
 

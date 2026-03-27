@@ -28,6 +28,30 @@ test('canonicalizeUrl keeps non-tracking params and normalizes AMP/share paths',
   assert.equal(share.canonical_url, 'https://example.com/product/spec?id=123');
 });
 
+test('canonicalizeUrl strips locale prefixes so locale variants merge', () => {
+  const base = canonicalizeUrl('https://rog.asus.com/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace');
+  const us = canonicalizeUrl('https://rog.asus.com/us/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace');
+  const pt = canonicalizeUrl('https://rog.asus.com/pt/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace');
+  const hkEn = canonicalizeUrl('https://rog.asus.com/hk-en/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace');
+  const caEn = canonicalizeUrl('https://rog.asus.com/ca-en/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace');
+  assert.equal(base.canonical_url, us.canonical_url, 'base and /us/ should be identical');
+  assert.equal(base.canonical_url, pt.canonical_url, 'base and /pt/ should be identical');
+  assert.equal(base.canonical_url, hkEn.canonical_url, 'base and /hk-en/ should be identical');
+  assert.equal(base.canonical_url, caEn.canonical_url, 'base and /ca-en/ should be identical');
+});
+
+test('canonicalizeUrl preserves non-locale path segments', () => {
+  // "/si/" is a locale, but "/silicon/" is a real path segment — must not strip
+  const real = canonicalizeUrl('https://example.com/silicon/chips');
+  assert.ok(real.canonical_url.includes('/silicon/chips'), 'non-locale path must be preserved');
+});
+
+test('canonicalizeUrl preserves subpaths after locale strip', () => {
+  const spec = canonicalizeUrl('https://rog.asus.com/us/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace/spec');
+  const specBase = canonicalizeUrl('https://rog.asus.com/mice-mouse-pads/mice/ambidextrous/rog-harpe-ii-ace/spec');
+  assert.equal(spec.canonical_url, specBase.canonical_url, '/us/ prefix should be stripped, /spec suffix preserved');
+});
+
 test('pathSignature buckets numeric and uuid-like segments', () => {
   assert.equal(pathSignature('/products/12345/specs'), '/products/:num/specs');
   assert.equal(

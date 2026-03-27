@@ -61,7 +61,14 @@ export function browserStreamUnavailableDetail() {
 }
 
 export function shouldHydrateRetainedBrowserFrame(workerState?: string) {
-  return Boolean(workerState && workerState !== 'running' && workerState !== 'stuck');
+  // WHY: crawling/retrying are active fetch states — show live stream, not retained frame.
+  return Boolean(
+    workerState
+    && workerState !== 'running'
+    && workerState !== 'stuck'
+    && workerState !== 'crawling'
+    && workerState !== 'retrying',
+  );
 }
 
 export function BrowserStream({ runId, workerId, workerState, workerPool, fetchMode, lastError, wsUrl }: BrowserStreamProps) {

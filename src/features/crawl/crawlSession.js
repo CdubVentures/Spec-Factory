@@ -124,18 +124,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           : (response?.status ?? 200);
 
         // WHY: Detect blocks BEFORE extraction so Crawlee can retry with a new
-        // session (fresh fingerprint/cookies). Content IS captured — resolveEntry
-        // returns it to the lifecycle for classification and proxy retry.
+        // session (fresh fingerprint/cookies). Do NOT resolveEntry here — let
+        // Crawlee retry with session rotation first. If retry succeeds, the normal
+        // success path resolves. If all retries fail, failedRequestHandler resolves
+        // with the block info stored on request.userData.
         const { blocked, blockReason } = classifyBlockStatus({ status, html });
         if (blocked) {
-          // WHY: robots_blocked respects the site's rules — retrying won't help.
           if (blockReason === 'robots_blocked') request.noRetry = true;
           session?.retire();
-          resolveEntry(request.uniqueKey, {
-            url: request.url, finalUrl, status, title, html,
-            screenshots: [], workerId, videoPath: '',
-            blocked: true, blockReason,
-          });
+          request.userData.__blockInfo = { blocked: true, blockReason, status, html, title, finalUrl };
           throw new Error(`blocked:${blockReason}`);
         }
 
@@ -232,35 +229,56 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           retry_count: request.retryCount ?? 0,
         });
         // WHY: Resolve with error result instead of rejecting — prevents
-        // unhandled rejection crashes. The lifecycle classifies the block.
-        resolveEntry(request.uniqueKey, {
+        // unhandled rejection crashes. Include block info from the handler if
+        // available so the lifecycle can classify and trigger proxy retry.
+        const blockInfo = request.userData?.__blockInfo;
+        resolveEntry(request.uniqueKey, blockInfo ? {
           url: request.url,
-          finalUrl: request.url,
-          status: 0,
-          title: '',
-          html: '',
-          screenshots: [],
-          workerId,
-          videoPath: '',
+          finalUrl: blockInfo.finalUrl || request.url,
+          status: blockInfo.status || 0,
+          title: blockInfo.title || '',
+          html: blockInfo.html || '',
+          screenshots: [], workerId, videoPath: '',
+          blocked: true,
+          blockReason: blockInfo.blockReason || '',
           fetchError: errMsg,
+        } : {
+          url: request.url, finalUrl: request.url, status: 0,
+          title: '', html: '', screenshots: [],
+          workerId, videoPath: '', fetchError: errMsg,
         });
       },
 
       // WHY: Crawlee's errorHandler fires before each retry. Emit a signal
       // so the GUI worker tab shows RETRY badge during retry attempts.
-      // Non-retryable errors (downloads, DNS) are marked noRetry to fail fast.
+      // Non-retryable errors skip retry entirely — fail fast, don't waste time.
       errorHandler: async ({ request }, error) => {
         const msg = error?.message || '';
-        if (msg.includes('Download is starting') || msg.includes('ERR_NAME_NOT_RESOLVED')) {
+        // WHY: These errors cannot be resolved by retrying with a new session.
+        // Timeouts = server is slow/down, retrying burns another full handler timeout.
+        // Downloads = site serves a file. DNS = domain doesn't exist.
+        if (
+          msg.includes('Download is starting')
+          || msg.includes('ERR_NAME_NOT_RESOLVED')
+          || msg.includes('ERR_CONNECTION_REFUSED')
+          || msg.includes('ERR_CONNECTION_RESET')
+          || msg.includes('ERR_TUNNEL_CONNECTION_FAILED')
+          || msg.includes('requestHandler timed out')
+          || msg.includes('Navigation timed out')
+        ) {
           request.noRetry = true;
         }
-        const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
-        logger?.info?.('source_fetch_retrying', {
-          url: request.url,
-          worker_id: workerId,
-          retry_count: (request.retryCount ?? 0) + 1,
-          error: msg,
-        });
+        // WHY: Only emit retrying signal if an actual retry will happen.
+        // noRetry errors go straight to failedRequestHandler — no misleading flash.
+        if (!request.noRetry) {
+          const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
+          logger?.info?.('source_fetch_retrying', {
+            url: request.url,
+            worker_id: workerId,
+            retry_count: (request.retryCount ?? 0) + 1,
+            error: msg,
+          });
+        }
       },
     };
   }
@@ -422,7 +440,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                 everyNthFrame: 3,
               });
               cdpSessionMap.set(page, cdp);
-            } catch { /* CDP not available — crawl continues without live view */ }
+            } catch (err) {
+              logger?.warn?.('cdp_screencast_start_failed', {
+                worker_id: workerIds.get(request.uniqueKey) || 'fetch-x0',
+                error: err?.message ?? String(err),
+              });
+            }
           }
         },
       ],

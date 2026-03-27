@@ -67,7 +67,7 @@ export interface RuntimeSettingDefaults {
   searchEngines: string;
   searchEnginesFallback: string;
   searchMaxRetries: number;
-  serpSelectorUrlCap: number;
+  serpSelectorMaxKeep: number;
   searxngBaseUrl: string;
   searxngMinQueryIntervalMs: number;
   specDbDir: string;

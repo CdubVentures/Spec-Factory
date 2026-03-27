@@ -121,7 +121,7 @@ LlmPhaseSection.tsx -> useLlmPolicyAuthority.ts -> PUT /llm-policy
 
 - Every LLM call (4 total: NeedSet planner, Brand Resolver, Query Enhancer, SERP Selector) has try/catch + deterministic fallback
 - Identity Lock Guard validates brand AND model tokens; falls back to first query if all fail (never returns empty)
-- Hard caps enforced at every boundary: `searchProfileQueryCap`, `serpSelectorUrlCap`, `domainClassifierUrlCap`
+- Hard caps enforced at every boundary: `searchProfileQueryCap`, `serpSelectorMaxKeep`, `domainClassifierUrlCap`
 - Cumulative Zod checkpoint validation at phase boundaries
 - SERP fallback uses pre-priority-sorted candidates (pinned/multi-hit first), not random order
 
