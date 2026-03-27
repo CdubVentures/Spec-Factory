@@ -43,6 +43,7 @@ test('runtimeOpsRoutes: screencast endpoint returns cached last frame for run wo
       outputRoot,
       config: {},
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
       getLastScreencastFrame: (requestedRunId, workerId) => (
         requestedRunId === runId && workerId === 'fetch-9'
           ? {
@@ -120,6 +121,7 @@ test('runtimeOpsRoutes: screencast endpoint falls back to persisted run frame wh
       outputRoot,
       config: {},
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
       getLastScreencastFrame: () => null,
     });
     const res = createMockRes();
@@ -194,6 +196,7 @@ test('runtimeOpsRoutes: screencast endpoint synthesizes proof frame for ended br
       outputRoot,
       config: {},
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
       getLastScreencastFrame: () => null,
     });
     const res = createMockRes();
@@ -245,6 +248,7 @@ test('runtimeOpsRoutes: runtime asset route serves output-root screenshot keys r
       storage: createOutputRootStorage(outputRoot),
       config: {},
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
     });
 
     const res = createStreamingMockRes();
@@ -332,6 +336,7 @@ test('runtimeOpsRoutes: archived cache screenshot metadata resolves from cached 
       config: {},
       resolveIndexLabRunDirectory: async () => archivedRunDir,
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
 
     const res = createMockRes();
@@ -393,6 +398,7 @@ test('runtimeOpsRoutes: archived cache runtime asset route serves cached run_out
       config: {},
       resolveIndexLabRunDirectory: async () => archivedRunDir,
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
     });
 
     const res = createStreamingMockRes();

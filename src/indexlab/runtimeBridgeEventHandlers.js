@@ -871,6 +871,7 @@ async function handleExtractionPluginCompleted(state, _deps, { ts, row }) {
     plugin: String(row.plugin || 'unknown'),
     worker_id: String(row.worker_id || ''),
     url: String(row.url || ''),
+    result: row.result ?? null,
   }, ts);
 }
 
@@ -879,6 +880,18 @@ async function handleExtractionPluginFailed(state, _deps, { ts, row }) {
     scope: 'url',
     reason: String(row.reason || 'unknown'),
     worker_id: String(row.worker_id || ''),
+  }, ts);
+}
+
+// WHY: Carries artifact filenames emitted after screenshot persistence.
+// The extraction builder merges these into matching extraction_plugin_completed entries.
+async function handleExtractionArtifactsPersisted(state, _deps, { ts, row }) {
+  await emit(state, 'extraction', 'extraction_artifacts_persisted', {
+    scope: 'url',
+    plugin: String(row.plugin || ''),
+    url: String(row.url || ''),
+    worker_id: String(row.worker_id || ''),
+    filenames: Array.isArray(row.filenames) ? row.filenames : [],
   }, ts);
 }
 
@@ -937,6 +950,7 @@ const EVENT_HANDLERS = new Map([
   ['plugin_hook_completed',           handlePluginHookCompleted],
   ['extraction_plugin_completed',     handleExtractionPluginCompleted],
   ['extraction_plugin_failed',        handleExtractionPluginFailed],
+  ['extraction_artifacts_persisted',  handleExtractionArtifactsPersisted],
   ['crawler_stats',                   handleCrawlerStats],
 ]);
 

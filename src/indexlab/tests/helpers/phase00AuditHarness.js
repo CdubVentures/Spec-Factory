@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { IndexLabRuntimeBridge } from '../../runtimeBridge.js';
+import { SpecDb } from '../../../db/specDb.js';
 
 export function createAuditHarness() {
   const wsEvents = [];
@@ -12,8 +13,10 @@ export function createAuditHarness() {
   return {
     async setup() {
       tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'phase00-audit-'));
+      const specDb = new SpecDb({ dbPath: ':memory:', category: 'test' });
       bridge = new IndexLabRuntimeBridge({
         outRoot: tempDir,
+        specDb,
         onEvent: (row) => wsEvents.push({ ...row, _captured_at: Date.now() })
       });
       return bridge;
@@ -48,6 +51,13 @@ export function createAuditHarness() {
     },
 
     async getNeedSet() {
+      // WHY: Wave 5.5 — needset.json no longer written to disk. Try SQL first.
+      if (bridge.specDb && bridge.runId) {
+        try {
+          const art = bridge.specDb.getRunArtifact(bridge.runId, 'needset');
+          if (art?.payload) return art.payload;
+        } catch { /* fall through to file */ }
+      }
       const needSetPath = bridge.needSetPath;
       if (!needSetPath) return null;
       try {

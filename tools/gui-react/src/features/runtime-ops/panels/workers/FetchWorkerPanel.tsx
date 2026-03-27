@@ -1,16 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RuntimeOpsWorkerRow } from '../../types.ts';
 import { BrowserStream } from '../overview/BrowserStream.tsx';
-import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
-import {
-  workerStateBadgeClass,
-  poolBadgeClass,
-  fetchModeBadgeClass,
-  stageBadgeClass,
-  stageMeterFillClass,
-  stageLabel,
-  STAGE_ORDER,
-} from '../../helpers.ts';
 
 interface FetchWorkerPanelProps {
   worker: RuntimeOpsWorkerRow;
@@ -60,95 +50,26 @@ function ElapsedTimer({ startedAt, state }: { startedAt: string; state: string }
   return <span ref={ref} className="font-mono sf-text-caption sf-text-primary">--</span>;
 }
 
-function StageProgressStripInline({ currentStage }: { currentStage: string }) {
-  const currentIdx = STAGE_ORDER.indexOf(currentStage as typeof STAGE_ORDER[number]);
-
-  return (
-    <div className="flex items-center gap-0.5">
-      {STAGE_ORDER.map((s, i) => {
-        const isCurrent = s === currentStage;
-        const isCompleted = currentIdx > i;
-        const connectorStage = i > 0 ? STAGE_ORDER[i - 1] : s;
-        return (
-          <div key={s} className="flex items-center gap-0.5">
-            {i > 0 && (
-              <div className={`w-2 h-px ${isCompleted ? stageMeterFillClass(connectorStage) : 'sf-meter-track'}`} />
-            )}
-            <span
-              className={`px-1.5 py-0.5 rounded sf-text-caption font-medium border ${
-                isCurrent
-                  ? `${stageBadgeClass(s)} sf-border-default`
-                  : isCompleted
-                    ? `${stageBadgeClass(s)} sf-border-default`
-                    : 'sf-chip-neutral sf-border-default'
-              }`}
-            >
-              {stageLabel(s)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function FetchWorkerPanel({ worker, runId, wsUrl }: FetchWorkerPanelProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      {/* WHY: Compact header — worker ID, URL link, elapsed time. */}
       <div className="px-3 py-1.5 border-b sf-border-default sf-surface-shell flex items-center gap-2 min-h-[2rem]">
-        <span className="font-mono sf-text-caption font-semibold sf-text-primary sf-chip-neutral px-1.5 py-0.5 rounded">
+        <span className="font-mono sf-text-caption font-semibold sf-text-primary sf-chip-neutral px-1.5 py-0.5 rounded shrink-0">
           {worker.worker_id}
-        </span>
-        <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${poolBadgeClass(worker.pool)}`}>
-          Fetch Worker
-        </span>
-        <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${workerStateBadgeClass(worker.state)}`}>
-          {worker.state}
         </span>
         {worker.current_url && (
           <a
             href={worker.current_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-mono sf-text-caption sf-link-accent truncate max-w-[32rem] hover:underline"
+            className="font-mono sf-text-caption sf-link-accent truncate flex-1 min-w-0 hover:underline"
             title={worker.current_url}
           >
             {worker.current_url}
           </a>
         )}
-      </div>
-
-      {worker.idx_runtime && worker.idx_runtime.length > 0 && (
-        <div className="px-3 py-1 border-b sf-border-default sf-surface-shell">
-          <RuntimeIdxBadgeStrip badges={worker.idx_runtime} />
-        </div>
-      )}
-
-      <div className="px-3 py-1 border-b sf-border-default sf-surface-elevated flex items-center gap-3 min-h-[1.75rem]">
-        <StageProgressStripInline currentStage={worker.stage} />
         <ElapsedTimer startedAt={worker.started_at} state={worker.state} />
-        {worker.fetch_mode && (
-          <span className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${fetchModeBadgeClass(worker.fetch_mode)}`}>
-            {worker.fetch_mode}
-          </span>
-        )}
-        <span className="sf-text-caption sf-text-muted">
-          fetches:<span className="font-mono">{worker.total_fetches ?? 0}</span>
-        </span>
-        <span className="sf-text-caption sf-text-muted">
-          retries:<span className="font-mono">{worker.retries}</span>
-        </span>
-        <span className="sf-text-caption sf-text-muted">
-          docs:<span className="font-mono">{worker.docs_processed}</span>
-        </span>
-        <span className="sf-text-caption sf-text-muted">
-          fields:<span className="font-mono">{worker.fields_extracted}</span>
-        </span>
-        {worker.last_error && (
-          <span className="sf-text-caption sf-status-text-danger truncate max-w-[20rem]" title={worker.last_error}>
-            {worker.last_error}
-          </span>
-        )}
       </div>
 
       <BrowserStream {...buildBrowserStreamProps(worker, runId, wsUrl)} />

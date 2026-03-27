@@ -461,6 +461,11 @@ export function prepareStatements(db) {
       )
     `),
 
+    _insertMetric: db.prepare(`
+      INSERT INTO metrics (ts, metric_type, name, value, labels)
+      VALUES (@ts, @metric_type, @name, @value, @labels)
+    `),
+
     _upsertLlmCache: db.prepare(`
       INSERT OR REPLACE INTO llm_cache (cache_key, response, timestamp, ttl)
       VALUES (@cache_key, @response, @timestamp, @ttl)
@@ -545,22 +550,19 @@ export function prepareStatements(db) {
       LIMIT ?
     `),
 
+    // WHY: Wave 5.5 — slimmed from 22 to 13 columns. GUI telemetry now in run-summary.json.
     _upsertRun: db.prepare(`
       INSERT INTO runs (
         run_id, category, product_id, status, started_at, ended_at,
-        phase_cursor, boot_step, boot_progress,
+        phase_cursor,
         identity_fingerprint, identity_lock_status, dedupe_mode,
-        s3key, out_root,
-        counters, stages, startup_ms, browser_pool,
-        needset_summary, search_profile_summary, artifacts, extra,
+        s3key, out_root, counters,
         updated_at
       ) VALUES (
         @run_id, @category, @product_id, @status, @started_at, @ended_at,
-        @phase_cursor, @boot_step, @boot_progress,
+        @phase_cursor,
         @identity_fingerprint, @identity_lock_status, @dedupe_mode,
-        @s3key, @out_root,
-        @counters, @stages, @startup_ms, @browser_pool,
-        @needset_summary, @search_profile_summary, @artifacts, @extra,
+        @s3key, @out_root, @counters,
         datetime('now')
       )
       ON CONFLICT(run_id) DO UPDATE SET
@@ -570,21 +572,12 @@ export function prepareStatements(db) {
         started_at = excluded.started_at,
         ended_at = excluded.ended_at,
         phase_cursor = excluded.phase_cursor,
-        boot_step = excluded.boot_step,
-        boot_progress = excluded.boot_progress,
         identity_fingerprint = excluded.identity_fingerprint,
         identity_lock_status = excluded.identity_lock_status,
         dedupe_mode = excluded.dedupe_mode,
         s3key = excluded.s3key,
         out_root = excluded.out_root,
         counters = excluded.counters,
-        stages = excluded.stages,
-        startup_ms = excluded.startup_ms,
-        browser_pool = excluded.browser_pool,
-        needset_summary = excluded.needset_summary,
-        search_profile_summary = excluded.search_profile_summary,
-        artifacts = excluded.artifacts,
-        extra = excluded.extra,
         updated_at = datetime('now')
     `),
 

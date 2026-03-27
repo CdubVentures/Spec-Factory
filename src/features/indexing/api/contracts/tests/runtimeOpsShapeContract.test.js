@@ -60,9 +60,9 @@ describe('runtimeOpsShapeContract — WORKER_ROW_BASE_SHAPE state literals', () 
   });
 
   it('state literals include all builder-produced states', () => {
-    // WHY: The builder (runtimeOpsWorkerPoolBuilders.js) assigns these 6 states.
+    // WHY: The builder assigns these states (Crawlee RequestState enum + stuck/running/idle).
     // If the shape descriptor omits any, codegen produces incomplete TS union types.
-    const builderStates = ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha'];
+    const builderStates = ['idle', 'running', 'stuck', 'queued', 'crawling', 'crawled', 'retrying', 'failed', 'skipped'];
     const missing = builderStates.filter((s) => !stateEntry.literals.includes(s));
     deepStrictEqual(missing, [],
       `WORKER_ROW_BASE_SHAPE state literals missing builder states: ${missing.join(', ')}`);

@@ -119,12 +119,17 @@ describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', ()
         bundles: [],
         identity: {
           state: 'conflict',
+
           confidence: 0.32,
           manufacturer: 'TestBrand',
           model: 'TestModel'
         }
       })
     ]);
+
+    // WHY: Step 15 — mid-run artifact writes are SQL-only. Finalize
+    // triggers the JSON write so getNeedSet() can read it from disk.
+    await harness.getBridge().finalize({ status: 'completed' });
 
     const needsetArtifact = await harness.getNeedSet();
     assert.ok(needsetArtifact, 'needset artifact should be written');

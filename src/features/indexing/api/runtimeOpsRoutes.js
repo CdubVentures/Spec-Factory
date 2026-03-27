@@ -156,6 +156,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     config,
     storage,
     readIndexLabRunEvents,
+    readRunSummaryEvents,
     readIndexLabRunSearchProfile,
     readIndexLabRunMeta,
     readIndexLabRunSourceIndexingPackets,
@@ -166,6 +167,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     safeJoin,
     path,
     getIndexLabRoot: _getIndexLabRoot,
+    getSpecDbReady,
   } = ctx;
 
   const currentIndexLabRoot = () =>
@@ -192,6 +194,34 @@ export function registerRuntimeOpsRoutes(ctx) {
     // Serving them without run resolution, meta read, or event read avoids
     // triggering full S3 hydration for archived runs.
     const earlySubPath = String(parts[4] || '').trim();
+
+    // WHY: Opens local screenshots folder. Checks multiple candidate roots since
+    // screenshots may be at defaultIndexLabRoot (AppData) while run.json is elsewhere.
+    if (earlySubPath === 'extraction' && parts[5] === 'open-folder') {
+      const folder = parts[6] || 'screenshots';
+      if (folder !== 'screenshots') return jsonRes(res, 400, { error: 'invalid_folder' });
+      try {
+        const fs = await import('node:fs');
+        const { defaultIndexLabRoot } = await import('../../../../core/config/runtimeArtifactRoots.js');
+        const candidates = [
+          path.join(defaultIndexLabRoot(), runId, 'screenshots'),
+          path.join(directRunDir, 'screenshots'),
+        ];
+        const targetDir = candidates.find((d) => fs.existsSync(d));
+        if (!targetDir) {
+          return jsonRes(res, 404, { error: 'folder_not_found', tried: candidates });
+        }
+        const { exec } = await import('node:child_process');
+        const cmd = process.platform === 'win32' ? `explorer "${targetDir}"`
+          : process.platform === 'darwin' ? `open "${targetDir}"`
+          : `xdg-open "${targetDir}"`;
+        exec(cmd);
+        return jsonRes(res, 200, { opened: targetDir });
+      } catch (err) {
+        return jsonRes(res, 500, { error: 'open_failed', message: err?.message });
+      }
+    }
+
     if (earlySubPath === 'assets' && parts[5]) {
       const fastResult = await tryServeAssetFastPath({
         runId,
@@ -216,7 +246,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
 
     const subPath = String(parts[4] || '').trim();
-    const events = await readIndexLabRunEvents(runId, 2000, { category: meta?.category });
+    const events = await readRunSummaryEvents(runId, 2000, { category: meta?.category });
     const resolvedMeta = resolveInactiveRunMeta(meta, events, runId, processStatus);
 
     if (subPath === 'summary' && !parts[5]) {
@@ -387,15 +417,34 @@ export function registerRuntimeOpsRoutes(ctx) {
     }
 
     if (subPath === 'prefetch' && !parts[5]) {
+      // WHY: SQL fast path — one synchronous query replaces 3 async file reads
+      // for post-Wave-3 runs. Falls back to file I/O for pre-migration runs.
+      let needsetArt = null, profileArt = null, brandArt = null;
+      if (typeof getSpecDbReady === 'function' && resolvedMeta?.category) {
+        try {
+          const specDb = await getSpecDbReady(resolvedMeta.category);
+          if (specDb) {
+            const arts = specDb.getRunArtifactsByRunId(runId);
+            for (const art of arts) {
+              if (art.artifact_type === 'needset') needsetArt = art.payload;
+              else if (art.artifact_type === 'search_profile') profileArt = art.payload;
+              else if (art.artifact_type === 'brand_resolution') brandArt = art.payload;
+            }
+          }
+        } catch { /* fall through to file I/O */ }
+      }
       const needsetPath = path.join(runDir, 'needset.json');
       const profilePath = path.join(runDir, 'search_profile.json');
       const brandPath = path.join(runDir, 'brand_resolution.json');
-      const [needsetArt, profileArt, brandArt, planProfile] = await Promise.all([
-        safeReadJson(needsetPath),
-        safeReadJson(profilePath),
-        safeReadJson(brandPath),
+      const [needsetFallback, profileFallback, brandFallback, planProfile] = await Promise.all([
+        needsetArt ? Promise.resolve(null) : safeReadJson(needsetPath),
+        profileArt ? Promise.resolve(null) : safeReadJson(profilePath),
+        brandArt ? Promise.resolve(null) : safeReadJson(brandPath),
         readIndexLabRunSearchProfile ? readIndexLabRunSearchProfile(runId).catch(() => null) : Promise.resolve(null),
       ]);
+      needsetArt = needsetArt || needsetFallback;
+      profileArt = profileArt || profileFallback;
+      brandArt = brandArt || brandFallback;
       // WHY: Pipeline artifact (planProfile) is authoritative once executed.
       // Bridge file (profileArt) accumulates all event-observed queries
       // including unexecuted seed queries — merge only for progressive display.

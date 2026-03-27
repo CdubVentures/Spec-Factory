@@ -5,8 +5,10 @@ import { createSearchSlotScheduler } from './runtimeBridgeSearchSlots.js';
 import { createLlmCallTracker } from './runtimeBridgeLlmTracker.js';
 import {
   writeRunMeta, ensureBaselineArtifacts,
-  rememberScreencastFrame, persistAllScreencastFrames
+  rememberScreencastFrame, persistAllScreencastFrames,
+  writeRunSummaryArtifact
 } from './runtimeBridgeArtifacts.js';
+import { serializeRunSummary } from './runSummarySerializer.js';
 import { setPhaseCursor, finishStage } from './runtimeBridgeStageLifecycle.js';
 import { dispatchRuntimeEvent } from './runtimeBridgeEventHandlers.js';
 
@@ -71,6 +73,8 @@ export class IndexLabRuntimeBridge {
       search_unique_slots: 0,
       llm_missing_telemetry: 0,
       llm_orphan_finish: 0,
+      bridge_event_errors: 0,
+      bridge_finalize_errors: 0,
     };
     this._searchSlotScheduler = createSearchSlotScheduler({
       observability: this._observability,
@@ -108,7 +112,10 @@ export class IndexLabRuntimeBridge {
         searchSlots: this._searchSlotScheduler,
         llmTracker: this._llmTracker,
       }, row))
-      .catch(() => {});
+      .catch((err) => {
+        this._observability.bridge_event_errors += 1;
+        if (typeof console !== 'undefined') console.error('[IndexLabRuntimeBridge] event error:', err?.message || String(err));
+      });
     return this.queue;
   }
 
@@ -133,7 +140,18 @@ export class IndexLabRuntimeBridge {
           ...summary,
           status: this.status,
           ended_at: endedAt
-        }, { writeJson: true });
+        });
+        // WHY: Serialize all run telemetry BEFORE maps/trackers are cleared.
+        // run-summary.json captures events + LLM agg + observability for the GUI.
+        try {
+          const runSummaryPayload = await serializeRunSummary(this);
+          await writeRunSummaryArtifact(this, runSummaryPayload);
+          // WHY: bridge_events are now captured in run-summary.json. Purge the
+          // per-run SQL rows to keep WAL lean. Product artifacts stay untouched.
+          if (this.specDb) {
+            try { this.specDb.purgeBridgeEventsForRun(this.runId); } catch { /* best-effort */ }
+          }
+        } catch { /* best-effort: pipeline continues without run-summary */ }
         this.fetchByUrl.clear();
         this.fetchClosedByUrl.clear();
         this.workerByUrl.clear();
@@ -141,7 +159,10 @@ export class IndexLabRuntimeBridge {
         this._searchSlotScheduler.reset();
         this._llmTracker.reset();
       })
-      .catch(() => {});
+      .catch((err) => {
+        this._observability.bridge_finalize_errors += 1;
+        if (typeof console !== 'undefined') console.error('[IndexLabRuntimeBridge] finalize error:', err?.message || String(err));
+      });
     await this.queue;
   }
 

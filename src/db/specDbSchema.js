@@ -726,6 +726,10 @@ CREATE INDEX IF NOT EXISTS idx_be_run_id ON bridge_events(run_id);
 CREATE INDEX IF NOT EXISTS idx_be_run_stage ON bridge_events(run_id, stage);
 
 -- Run metadata: replaces per-run run.json mid-run overwrites (Wave 2)
+-- WHY: Wave 5.5 slimmed this table. GUI telemetry (boot_step, boot_progress,
+-- startup_ms, stages, browser_pool, needset_summary, search_profile_summary,
+-- artifacts, extra) now lives in run-summary.json written at finalize.
+-- This table holds only the product-relevant run record.
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   run_id TEXT NOT NULL DEFAULT '',
@@ -735,21 +739,12 @@ CREATE TABLE IF NOT EXISTS runs (
   started_at TEXT NOT NULL DEFAULT '',
   ended_at TEXT NOT NULL DEFAULT '',
   phase_cursor TEXT NOT NULL DEFAULT '',
-  boot_step TEXT NOT NULL DEFAULT '',
-  boot_progress INTEGER NOT NULL DEFAULT 0,
   identity_fingerprint TEXT NOT NULL DEFAULT '',
   identity_lock_status TEXT NOT NULL DEFAULT '',
   dedupe_mode TEXT NOT NULL DEFAULT '',
   s3key TEXT NOT NULL DEFAULT '',
   out_root TEXT NOT NULL DEFAULT '',
   counters TEXT NOT NULL DEFAULT '{}',
-  stages TEXT NOT NULL DEFAULT '{}',
-  startup_ms TEXT NOT NULL DEFAULT '{}',
-  browser_pool TEXT,
-  needset_summary TEXT,
-  search_profile_summary TEXT,
-  artifacts TEXT NOT NULL DEFAULT '{}',
-  extra TEXT NOT NULL DEFAULT '{}',
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(run_id)
@@ -935,6 +930,18 @@ CREATE TABLE IF NOT EXISTS source_pdfs (
 );
 CREATE INDEX IF NOT EXISTS idx_sp_product ON source_pdfs(product_id);
 CREATE INDEX IF NOT EXISTS idx_sp_content ON source_pdfs(content_hash);
+
+-- Wave 4: Runtime metrics (replaces _runtime/metrics.jsonl)
+CREATE TABLE IF NOT EXISTS metrics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,
+  metric_type TEXT NOT NULL DEFAULT 'gauge',
+  name TEXT NOT NULL DEFAULT 'unknown',
+  value REAL NOT NULL DEFAULT 0,
+  labels TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_metrics_name ON metrics(name);
+CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics(ts);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

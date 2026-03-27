@@ -4,6 +4,7 @@ import type { ExtractionPhasesResponse, ExtractionPluginData } from '../../types
 export interface ExtractionPanelContext {
   data: ExtractionPhasesResponse | undefined;
   persistScope: string;
+  runId?: string;
 }
 
 const EMPTY_PLUGIN: ExtractionPluginData = {
@@ -15,5 +16,6 @@ export const EXTRACTION_SELECT_PROPS: Record<ExtractionTabKey, (ctx: ExtractionP
   screenshot: (ctx) => ({
     data: ctx.data?.plugins?.screenshot ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
+    runId: ctx.runId ?? '',
   }),
 };

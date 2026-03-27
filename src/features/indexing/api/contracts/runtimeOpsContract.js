@@ -18,6 +18,7 @@ export const SUMMARY_SHAPE = Object.freeze([
   { key: 'docs_per_min', coerce: 'float' },
   { key: 'fields_per_min', coerce: 'float' },
   { key: 'top_blockers', coerce: 'array', itemRef: 'RuntimeOpsBlocker' },
+  { key: 'browser_pool', coerce: 'object', nullable: true, optional: true },
 ]);
 export const SUMMARY_KEYS = Object.freeze(SUMMARY_SHAPE.map(s => s.key));
 
@@ -57,7 +58,7 @@ export const DOCUMENT_DETAIL_KEYS = Object.freeze(DOCUMENT_DETAIL_SHAPE.map(s =>
 // ── Metrics Rail ──
 
 export const METRICS_RAIL_KEYS = Object.freeze([
-  'pool_metrics', 'quality_metrics', 'failure_metrics',
+  'pool_metrics', 'quality_metrics', 'failure_metrics', 'crawl_engine',
 ]);
 
 export const POOL_METRIC_SHAPE = Object.freeze([
@@ -182,13 +183,12 @@ export const PIPELINE_TRANSITION_KEYS = Object.freeze(PIPELINE_TRANSITION_SHAPE.
 export const WORKER_ROW_BASE_SHAPE = Object.freeze([
   { key: 'worker_id', coerce: 'string' },
   { key: 'pool', coerce: 'string' },
-  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued', 'blocked', 'captcha', 'crawling', 'crawled', 'retrying', 'rate_limited', 'failed'] },
+  { key: 'state', coerce: 'string', literals: ['idle', 'running', 'stuck', 'queued', 'crawling', 'crawled', 'retrying', 'failed', 'skipped'] },
   { key: 'stage', coerce: 'string', literals: ['search', 'fetch', 'parse', 'index', 'llm'] },
   { key: 'current_url', coerce: 'string' },
   { key: 'started_at', coerce: 'string' },
   { key: 'elapsed_ms', coerce: 'int' },
   { key: 'last_error', coerce: 'string', nullable: true },
-  { key: 'block_reason', coerce: 'string', nullable: true },
   { key: 'proxy_url', coerce: 'string', nullable: true },
   { key: 'retries', coerce: 'int' },
   { key: 'fetch_mode', coerce: 'string', nullable: true },

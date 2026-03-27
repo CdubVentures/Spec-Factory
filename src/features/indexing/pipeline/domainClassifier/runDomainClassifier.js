@@ -72,8 +72,8 @@ export function sortBySlotRank(sources) {
     const slotA = a.triage_passthrough?.search_slot ?? '\xff';
     const slotB = b.triage_passthrough?.search_slot ?? '\xff';
     if (slotA !== slotB) return slotA < slotB ? -1 : 1;
-    const rankA = Number(a.triage_passthrough?.search_rank) || Infinity;
-    const rankB = Number(b.triage_passthrough?.search_rank) || Infinity;
+    const rankA = a.triage_passthrough?.search_rank ?? Infinity;
+    const rankB = b.triage_passthrough?.search_rank ?? Infinity;
     return rankA - rankB;
   });
 }

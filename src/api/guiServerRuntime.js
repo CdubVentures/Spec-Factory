@@ -147,7 +147,7 @@ export function createGuiServerRuntime({
       runtimeOpsRouteContext: createRuntimeOpsRouteContext({
         jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
         processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
-        getIndexLabRoot,
+        getIndexLabRoot, getSpecDbReady,
       }),
       queueBillingLearningRouteContext: createQueueBillingLearningRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, OUTPUT_ROOT, path,

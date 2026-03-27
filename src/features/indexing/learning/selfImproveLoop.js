@@ -205,13 +205,7 @@ export async function loadLearningProfile({ storage, config, category, job, spec
     }
   }
 
-  /* --- JSON fallback path --- */
-  const existing = await storage.readJsonOrNull(profileKey);
-  return {
-    profileId,
-    profileKey,
-    profile: existing
-  };
+  return { profileId, profileKey, profile: null };
 }
 
 // WHY: Pure function extracting the token-matching filter from SourcePlanner.seedLearning.
@@ -333,13 +327,6 @@ export async function persistLearningProfile({
       last_run: JSON.stringify(merged.last_run || {}),
       parser_health: JSON.stringify(merged.parser_health || {}),
       updated_at: merged.updated_at || new Date().toISOString()
-    });
-  }
-
-  /* --- JSON path: write only when SQLite is unavailable (fallback) --- */
-  if (!specDb) {
-    await storage.writeObject(profileKey, Buffer.from(JSON.stringify(merged, null, 2), 'utf8'), {
-      contentType: 'application/json'
     });
   }
 

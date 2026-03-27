@@ -24,6 +24,7 @@ test('runtimeOpsRoutes: missing runId returns false (no match)', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();
     const result = await handler(['indexlab', 'run', '', 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
@@ -39,6 +40,7 @@ test('runtimeOpsRoutes: non-existent run returns 404', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();
     await handler(['indexlab', 'run', 'non-existent-run', 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
@@ -97,6 +99,7 @@ test('runtimeOpsRoutes: relocated s3 run remains readable after source indexlab 
       outputRoot,
       storage: createStorageStub(),
       readIndexLabRunEvents,
+      readRunSummaryEvents: readIndexLabRunEvents,
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
     });
@@ -158,6 +161,7 @@ test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local liv
         resolveLocalPath: (key) => path.join(outputRoot, ...String(key || '').split('/')),
       },
       readIndexLabRunEvents,
+      readRunSummaryEvents: readIndexLabRunEvents,
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
     });
@@ -184,6 +188,7 @@ test('runtimeOpsRoutes: valid run summary returns correct shape', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
     await handler(['indexlab', 'run', runId, 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
@@ -207,6 +212,7 @@ test('runtimeOpsRoutes: valid run workers returns array', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
     await handler(['indexlab', 'run', runId, 'runtime', 'workers'], new URLSearchParams(), 'GET', null, res);
@@ -230,6 +236,7 @@ test('runtimeOpsRoutes: documents endpoint respects limit param', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
     await handler(['indexlab', 'run', runId, 'runtime', 'documents'], new URLSearchParams('limit=2'), 'GET', null, res);
@@ -251,6 +258,7 @@ test('runtimeOpsRoutes: document detail for unknown URL returns 404', async () =
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
     const res = createMockRes();
     const encodedUrl = encodeURIComponent('https://unknown.com/missing');
@@ -267,6 +275,7 @@ test('runtimeOpsRoutes: unmatched paths return false', async () => {
     const handler = createRuntimeOpsHandler({
       indexLabRoot,
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
     });
     const res = createMockRes();
     const result = await handler(['other', 'route'], new URLSearchParams(), 'GET', null, res);

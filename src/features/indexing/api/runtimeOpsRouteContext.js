@@ -1,5 +1,6 @@
 import {
   readIndexLabRunEvents,
+  readRunSummaryEvents,
   readIndexLabRunSearchProfile,
   readIndexLabRunMeta,
   readIndexLabRunSourceIndexingPackets,
@@ -14,13 +15,13 @@ export function createRuntimeOpsRouteContext(options = {}) {
   const {
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
-    getIndexLabRoot,
+    getIndexLabRoot, getSpecDbReady,
   } = options;
 
   return {
     jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
-    getIndexLabRoot,
-    readIndexLabRunEvents, readIndexLabRunSearchProfile, readIndexLabRunMeta,
+    getIndexLabRoot, getSpecDbReady,
+    readIndexLabRunEvents, readRunSummaryEvents, readIndexLabRunSearchProfile, readIndexLabRunMeta,
     readIndexLabRunSourceIndexingPackets, resolveIndexLabRunDirectory,
     processStatus, getLastScreencastFrame, safeReadJson, safeJoin, path,
   };

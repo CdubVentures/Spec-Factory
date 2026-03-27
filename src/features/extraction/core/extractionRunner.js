@@ -46,11 +46,14 @@ async function runPhase(plugins, ctx, logger, { forceConcurrent = false } = {}) 
   // Sequential first (may mutate page state like scroll position for stitching)
   for (const plugin of sequential) {
     try {
-      results[plugin.name] = await plugin.onExtract(frozenCtx);
+      const result = await plugin.onExtract(frozenCtx);
+      results[plugin.name] = result;
+      const summary = typeof plugin.summarize === 'function' ? plugin.summarize(result) : {};
       logger?.info?.('extraction_plugin_completed', {
         plugin: plugin.name,
         worker_id: ctx.workerId,
         url: ctx.url,
+        result: summary,
       });
     } catch (err) {
       logger?.error?.('extraction_plugin_failed', {
@@ -66,25 +69,30 @@ async function runPhase(plugins, ctx, logger, { forceConcurrent = false } = {}) 
   if (concurrent.length > 0) {
     const settled = await Promise.allSettled(
       concurrent.map(async (plugin) => {
-        const result = await plugin.onExtract(frozenCtx);
-        logger?.info?.('extraction_plugin_completed', {
-          plugin: plugin.name,
-          worker_id: ctx.workerId,
-          url: ctx.url,
-        });
-        return { name: plugin.name, result };
+        try {
+          const result = await plugin.onExtract(frozenCtx);
+          const summary = typeof plugin.summarize === 'function' ? plugin.summarize(result) : {};
+          logger?.info?.('extraction_plugin_completed', {
+            plugin: plugin.name,
+            worker_id: ctx.workerId,
+            url: ctx.url,
+            result: summary,
+          });
+          return { name: plugin.name, result };
+        } catch (err) {
+          logger?.error?.('extraction_plugin_failed', {
+            plugin: plugin.name,
+            reason: err?.message ?? String(err),
+            worker_id: ctx.workerId,
+            url: ctx.url,
+          });
+          throw err;
+        }
       }),
     );
     for (const entry of settled) {
       if (entry.status === 'fulfilled') {
         results[entry.value.name] = entry.value.result;
-      } else {
-        logger?.error?.('extraction_plugin_failed', {
-          plugin: 'concurrent',
-          reason: entry.reason?.message ?? String(entry.reason),
-          worker_id: ctx.workerId,
-          url: ctx.url,
-        });
       }
     }
   }

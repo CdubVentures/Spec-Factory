@@ -5,7 +5,9 @@ import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
-import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
 
 interface CssOverrideRecord extends FetchPluginRecord {
@@ -76,15 +78,25 @@ export function FetchCssOverridePanel({ data, persistScope }: FetchCssOverridePa
   }
 
   return (
-    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-      <ToolBrandHeader tool="playwright" category="script" />
-      <HeroStatGrid>
-        <HeroStat value={total} label="Total Workers" />
-        <HeroStat value={totalOverridden} label="Overridden" colorClass="text-[var(--sf-token-accent)]" />
-        <HeroStat value={totalSkipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
-        <HeroStat value={totalRevealed} label="Elements Revealed" colorClass="text-[var(--sf-token-success)]" />
-        <HeroStat value={domainBlockingActive ? 'Active' : 'Off'} label="Domain Blocking" colorClass={domainBlockingActive ? 'text-[var(--sf-token-info)]' : 'text-[var(--sf-token-muted)]'} />
-      </HeroStatGrid>
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">CSS Override</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Element Reveal</span>
+        </>}
+        trailing={<>
+          <Chip label="Playwright &middot; Script" className="sf-chip-info" />
+          <Tip text="Force display:block on hidden elements for full capture (brute-force fallback)." />
+        </>}
+      >
+        <HeroStatGrid>
+          <HeroStat value={total} label="Total Workers" />
+          <HeroStat value={totalOverridden} label="Overridden" colorClass="text-[var(--sf-token-accent)]" />
+          <HeroStat value={totalSkipped} label="Skipped" colorClass="text-[var(--sf-token-muted)]" />
+          <HeroStat value={totalRevealed} label="Elements Revealed" colorClass="text-[var(--sf-token-success)]" />
+          <HeroStat value={domainBlockingActive ? 'Active' : 'Off'} label="Domain Blocking" colorClass={domainBlockingActive ? 'text-[var(--sf-token-info)]' : 'text-[var(--sf-token-muted)]'} />
+        </HeroStatGrid>
+      </HeroBand>
 
       <SectionHeader>Override Log</SectionHeader>
       <DataTable

@@ -2,6 +2,7 @@ export {
   initIndexLabDataBuilders,
   invalidateEventCache,
   readIndexLabRunEvents,
+  readRunSummaryEvents,
   readIndexLabRunMeta,
   resolveRunProductId,
   resolveIndexLabRunDirectory,

@@ -228,7 +228,6 @@ export function buildRuntimeOpsWorkers(events, options) {
         started_at: String(evt?.ts || '').trim(),
         elapsed_ms: 0,
         last_error: null,
-        block_reason: null,
         proxy_url: null,
         retries: toInt(payload.retries, 0),
         fetch_mode: String(payload.fetch_mode || payload.fetcher_kind || '').trim() || null,
@@ -313,7 +312,6 @@ export function buildRuntimeOpsWorkers(events, options) {
       w.retries += 1;
       const retryErr = String(payload.error || '').trim();
       w.last_error = retryErr || w.last_error;
-      if (retryErr.startsWith('blocked:')) w.block_reason = retryErr.slice(8);
     } else if (isStartEvent(type)) {
       // WHY: Fetch pool uses crawling/retrying; other pools use running.
       if (w.pool === 'fetch') {
@@ -351,18 +349,21 @@ export function buildRuntimeOpsWorkers(events, options) {
         if (payload.prompt_preview != null) w.prompt_preview = String(payload.prompt_preview);
       }
     } else if (isFinishEvent(type)) {
-      // WHY: For fetch workers, only fetch_finished should set the definitive state.
-      // parse_finished/index_finished arrive AFTER fetch_finished and must NOT
-      // overwrite blocked/failed/captcha/timeout_rescued states back to 'crawled'.
-      // Non-fetch workers (parse, llm) always reset to idle on their finish event.
-      const isTerminalFetchState = w.pool === 'fetch'
-        && (w.state === 'blocked' || w.state === 'failed' || w.state === 'captcha'
-          || w.state === 'rate_limited' || w.state === 'timeout_rescued');
-      if (isTerminalFetchState && type !== 'fetch_finished') {
-        // Keep the terminal state — don't overwrite with 'crawled'
+      // WHY: Worker states map directly to Crawlee's RequestState enum.
+      // For fetch workers, only fetch_finished determines the outcome.
+      // parse_finished/index_finished are ignored — they don't change
+      // what Crawlee reported about the fetch.
+      if (w.pool === 'fetch' && type !== 'fetch_finished') {
+        // Ignore — fetch outcome already determined by fetch_finished
+      } else if (w.pool === 'fetch') {
+        w.total_fetches = (w.total_fetches || 0) + 1;
+        const code = fetchStatusCode(payload, 0);
+        w.state = (code > 0 && code < 400) ? 'crawled' : 'failed';
+        w.last_error = (code >= 400 || code === 0)
+          ? String(payload.error || `HTTP ${code}`).trim()
+          : null;
       } else {
-        w.state = w.pool === 'fetch' ? 'crawled' : 'idle';
-        w.block_reason = null; // WHY: Clear stale block reason from previous retry attempt.
+        w.state = 'idle';
       }
       w.elapsed_ms = parseTsMs(evt?.ts) - parseTsMs(w.started_at);
       if (w.pool === 'fetch') {
@@ -370,47 +371,8 @@ export function buildRuntimeOpsWorkers(events, options) {
         applyFetchAssignment(w, parseTsMs(evt?.ts));
       }
       if (type === 'fetch_finished') {
-        w.total_fetches = (w.total_fetches || 0) + 1;
         const primaryUrl = extractPrimaryEventUrl(evt);
         if (primaryUrl) w._processed_urls.add(primaryUrl);
-        const code = fetchStatusCode(payload, 0);
-        if (code >= 400 || code === 0) {
-          w.last_error = String(payload.error || `HTTP ${code}`).trim();
-          // WHY: When the handler detected a content block and threw, the error
-          // message carries the block reason as 'blocked:reason'. Parse it first.
-          if (w.last_error.startsWith('blocked:')) {
-            const reason = w.last_error.slice(8);
-            w.block_reason = reason;
-            if (reason === 'captcha_detected' || reason === 'cloudflare_challenge') {
-              w.state = 'captcha';
-            } else if (reason === 'status_429') {
-              w.state = 'rate_limited';
-            } else if (reason === 'status_403' || reason === 'access_denied') {
-              w.state = 'blocked';
-            } else if (payload.timeout_rescued) {
-              // WHY: Page loaded and HTML was captured, but extraction/plugin
-              // chain ate the timeout budget. Show yellow warning badge instead
-              // of red failure badge — the worker HAS data (HTML, possibly
-              // screenshots/video), it just didn't finish the full pipeline.
-              w.state = 'timeout_rescued';
-            } else {
-              w.state = 'failed';
-            }
-          } else {
-            const errLower = w.last_error.toLowerCase();
-            if (code === 429) {
-              w.state = 'rate_limited';
-            } else if (code === 403 || errLower.includes('blocked') || errLower.includes('forbidden')) {
-              w.state = 'blocked';
-            } else if (errLower.includes('captcha') || errLower.includes('challenge') || errLower.includes('cloudflare')) {
-              w.state = 'captcha';
-            } else if (payload.timeout_rescued) {
-              w.state = 'timeout_rescued';
-            } else {
-              w.state = 'failed';
-            }
-          }
-        }
       }
       if (type === 'index_finished') {
         const primaryUrl = extractPrimaryEventUrl(evt);

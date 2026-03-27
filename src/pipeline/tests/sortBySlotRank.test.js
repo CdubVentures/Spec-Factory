@@ -85,6 +85,16 @@ describe('sortBySlotRank', () => {
     assert.equal(sources[0].url, 'https://solo.com');
   });
 
+  test('search_rank 0 sorts before search_rank 1 within same slot', () => {
+    const sources = [
+      { url: 'https://rank1.com', triage_passthrough: { search_slot: 'a', search_rank: 1 } },
+      { url: 'https://rank0.com', triage_passthrough: { search_slot: 'a', search_rank: 0 } },
+    ];
+    sortBySlotRank(sources);
+    assert.equal(sources[0].url, 'https://rank0.com');
+    assert.equal(sources[1].url, 'https://rank1.com');
+  });
+
   test('stable sort preserves input order when slot and rank are equal', () => {
     const sources = [
       { url: 'https://first.com', triage_passthrough: { search_slot: 'a', search_rank: 1 } },

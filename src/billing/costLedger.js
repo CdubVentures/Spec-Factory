@@ -26,10 +26,6 @@ function legacyLedgerKey(storage, month) {
   return storage.resolveOutputKey('_billing', 'ledger', `${month}.jsonl`);
 }
 
-function legacyFlatLedgerKey(storage) {
-  return storage.resolveOutputKey('_billing', 'ledger.jsonl');
-}
-
 function legacyMonthlyRollupKey(storage, month) {
   return storage.resolveOutputKey('_billing', 'monthly', `${month}.json`);
 }
@@ -44,10 +40,6 @@ function legacyLatestDigestKey(storage) {
 
 function ledgerKey(_storage, month) {
   return `_billing/ledger/${month}.jsonl`;
-}
-
-function flatLedgerKey(_storage) {
-  return '_billing/ledger.jsonl';
 }
 
 function monthlyRollupKey(_storage, month) {
@@ -141,29 +133,6 @@ function parseLedgerText(text) {
   return rows;
 }
 
-function serializeLedgerRows(rows) {
-  return rows.map((row) => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : '');
-}
-
-function bumpBucket(map, key, patch) {
-  if (!key) {
-    return;
-  }
-  if (!map[key]) {
-    map[key] = {
-      cost_usd: 0,
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      calls: 0
-    };
-  }
-  const bucket = map[key];
-  bucket.cost_usd = round(bucket.cost_usd + patch.cost_usd, 8);
-  bucket.prompt_tokens += patch.prompt_tokens;
-  bucket.completion_tokens += patch.completion_tokens;
-  bucket.calls += patch.calls;
-}
-
 function emptyRollup(month) {
   return {
     month,
@@ -180,27 +149,6 @@ function emptyRollup(month) {
     by_model: {},
     by_reason: {}
   };
-}
-
-function applyEntryToRollup(rollup, entry) {
-  const patch = {
-    cost_usd: round(entry.cost_usd || 0, 8),
-    prompt_tokens: safeInt(entry.prompt_tokens, 0),
-    completion_tokens: safeInt(entry.completion_tokens, 0),
-    calls: 1
-  };
-
-  rollup.generated_at = nowIso();
-  rollup.totals.cost_usd = round(rollup.totals.cost_usd + patch.cost_usd, 8);
-  rollup.totals.prompt_tokens += patch.prompt_tokens;
-  rollup.totals.completion_tokens += patch.completion_tokens;
-  rollup.totals.calls += 1;
-
-  bumpBucket(rollup.by_day, dayFromTs(entry.ts), patch);
-  bumpBucket(rollup.by_category, entry.category, patch);
-  bumpBucket(rollup.by_product, entry.productId, patch);
-  bumpBucket(rollup.by_model, `${entry.provider}:${entry.model}`, patch);
-  bumpBucket(rollup.by_reason, entry.reason, patch);
 }
 
 function collectRunBuckets(rows = []) {
@@ -432,22 +380,6 @@ export async function readLedgerMonth({ storage, month, specDb = null }) {
   return parseLedgerText(text);
 }
 
-export async function writeMonthlyRollup({ storage, month, rollup }) {
-  const key = monthlyRollupKey(storage, month);
-  const legacyKey = legacyMonthlyRollupKey(storage, month);
-  await storage.writeObject(
-    key,
-    Buffer.from(JSON.stringify(rollup, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-  await storage.writeObject(
-    legacyKey,
-    Buffer.from(JSON.stringify(rollup, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-  return key;
-}
-
 export async function appendCostLedgerEntry({
   storage,
   config,
@@ -455,90 +387,22 @@ export async function appendCostLedgerEntry({
   specDb = null
 }) {
   if (!storage || !config || !entry) {
-    return { entry: null, ledgerKey: null, monthlyRollupKey: null };
+    return { entry: null };
   }
 
   const normalized = normalizeEntry(entry);
-  const month = monthFromTs(normalized.ts);
 
-  // SQLite primary write
+  // WHY: SQL is the sole write target for billing entries.
+  // Callers without specDb (e.g. CLI healthCheck) silently skip persistence.
   if (specDb) {
     try {
       specDb.insertBillingEntry(toDbEntry(normalized));
     } catch {
-      // fall through — JSON fallback path below handles non-specDb case
+      // best-effort — billing must not crash the pipeline
     }
   }
 
-  // Write JSON/NDJSON only when specDb is not available (fallback)
-  if (!specDb) {
-    const key = ledgerKey(storage, month);
-    const legacyKey = legacyLedgerKey(storage, month);
-    const flatKey = flatLedgerKey(storage);
-    const legacyFlatKey = legacyFlatLedgerKey(storage);
-    const previous = await storage.readTextOrNull(key) ||
-      await storage.readTextOrNull(legacyKey);
-    const existingRows = parseLedgerText(previous);
-    existingRows.push(normalized);
-    await storage.writeObject(
-      key,
-      Buffer.from(serializeLedgerRows(existingRows), 'utf8'),
-      { contentType: 'application/x-ndjson' }
-    );
-    await storage.writeObject(
-      legacyKey,
-      Buffer.from(serializeLedgerRows(existingRows), 'utf8'),
-      { contentType: 'application/x-ndjson' }
-    );
-    const previousFlat = await storage.readTextOrNull(flatKey) ||
-      await storage.readTextOrNull(legacyFlatKey);
-    const flatRows = parseLedgerText(previousFlat);
-    flatRows.push(normalized);
-    await storage.writeObject(
-      flatKey,
-      Buffer.from(serializeLedgerRows(flatRows), 'utf8'),
-      { contentType: 'application/x-ndjson' }
-    );
-    await storage.writeObject(
-      legacyFlatKey,
-      Buffer.from(serializeLedgerRows(flatRows), 'utf8'),
-      { contentType: 'application/x-ndjson' }
-    );
-
-    const monthly = await readMonthlyRollup({ storage, month, specDb });
-    applyEntryToRollup(monthly, normalized);
-    const rollupKey = await writeMonthlyRollup({ storage, month, rollup: monthly });
-    const digest = await writeBillingDigest({
-      storage,
-      month,
-      rollup: monthly,
-      rows: existingRows,
-      config
-    });
-
-    return {
-      entry: normalized,
-      ledgerKey: key,
-      legacyLedgerKey: legacyKey,
-      flatLedgerKey: flatKey,
-      legacyFlatLedgerKey: legacyFlatKey,
-      monthlyRollupKey: rollupKey,
-      digestKey: digest.digestKey,
-      latestDigestKey: digest.latestDigestKey
-    };
-  }
-
-  // specDb-only path (no JSON writes)
-  return {
-    entry: normalized,
-    ledgerKey: null,
-    legacyLedgerKey: null,
-    flatLedgerKey: null,
-    legacyFlatLedgerKey: null,
-    monthlyRollupKey: null,
-    digestKey: null,
-    latestDigestKey: null
-  };
+  return { entry: normalized };
 }
 
 export async function readBillingSnapshot({

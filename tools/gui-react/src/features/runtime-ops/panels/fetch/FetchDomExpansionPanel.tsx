@@ -5,7 +5,9 @@ import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
-import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
 
 interface DomExpansionRecord extends FetchPluginRecord {
@@ -13,7 +15,12 @@ interface DomExpansionRecord extends FetchPluginRecord {
   selectors: string[];
   found: number;
   clicked: number;
+  expanded: number;
+  blocked: number;
+  skippedNav: number;
+  contentDelta: number;
   settleMs: number;
+  budgetExhausted: boolean;
 }
 
 interface FetchDomExpansionPanelProps {
@@ -39,6 +46,29 @@ const EXPANSION_COLUMNS: ColumnDef<DomExpansionRecord, unknown>[] = [
   },
   { accessorKey: 'found', header: 'Found', size: 80 },
   { accessorKey: 'clicked', header: 'Clicked', size: 80 },
+  { accessorKey: 'expanded', header: 'Expanded', size: 80 },
+  {
+    accessorKey: 'skippedNav',
+    header: 'Nav Blocked',
+    size: 90,
+    cell: ({ getValue }) => {
+      const n = getValue<number>();
+      return n > 0
+        ? <span className="sf-chip-warning">{n}</span>
+        : <span className="sf-chip-muted">0</span>;
+    },
+  },
+  {
+    accessorKey: 'contentDelta',
+    header: 'Content +/-',
+    size: 100,
+    cell: ({ getValue }) => {
+      const d = getValue<number>();
+      if (d > 0) return <span className="sf-chip-success">+{d}</span>;
+      if (d < 0) return <span className="sf-chip-warning">{d}</span>;
+      return <span className="sf-chip-muted">0</span>;
+    },
+  },
   { accessorKey: 'settleMs', header: 'Settle (ms)', size: 100 },
   { accessorKey: 'ts', header: 'Timestamp', size: 200 },
 ];
@@ -46,12 +76,13 @@ const EXPANSION_COLUMNS: ColumnDef<DomExpansionRecord, unknown>[] = [
 export function FetchDomExpansionPanel({ data, persistScope }: FetchDomExpansionPanelProps) {
   const scrollRef = usePersistedScroll(`scroll:fetchDomExpansion:${persistScope}`);
   const records = data.records as DomExpansionRecord[];
-  const totalExpanded = useMemo(() => records.filter((r) => r.enabled && r.clicked > 0).length, [records]);
-  const totalSkipped = useMemo(() => records.filter((r) => !r.enabled || !r.clicked).length, [records]);
+  const totalExpanded = useMemo(() => records.reduce((s, r) => s + (r.expanded ?? 0), 0), [records]);
+  const totalBlocked = useMemo(() => records.reduce((s, r) => s + (r.skippedNav ?? 0) + (r.blocked ?? 0), 0), [records]);
   const totalClicks = useMemo(() => records.reduce((s, r) => s + (r.clicked ?? 0), 0), [records]);
   const totalFound = useMemo(() => records.reduce((s, r) => s + (r.found ?? 0), 0), [records]);
+  const totalContentDelta = useMemo(() => records.reduce((s, r) => s + (r.contentDelta ?? 0), 0), [records]);
   const total = records.length;
-  const expandRate = totalFound > 0 ? `${Math.round((totalClicks / totalFound) * 100)}%` : '--';
+  const expandRate = totalClicks > 0 ? `${Math.round((totalExpanded / totalClicks) * 100)}%` : '--';
   const columns = useMemo(() => EXPANSION_COLUMNS, []);
 
   if (total === 0) {
@@ -65,14 +96,26 @@ export function FetchDomExpansionPanel({ data, persistScope }: FetchDomExpansion
   }
 
   return (
-    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-      <ToolBrandHeader tool="playwright" category="script" />
-      <HeroStatGrid>
-        <HeroStat value={total} label="Total Workers" />
-        <HeroStat value={totalClicks} label="Clicks" colorClass="text-[var(--sf-token-success)]" />
-        <HeroStat value={totalFound} label="Elements Found" />
-        <HeroStat value={expandRate} label="Click Rate" />
-      </HeroStatGrid>
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">DOM Expansion</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Section Reveal</span>
+        </>}
+        trailing={<>
+          <Chip label="Playwright &middot; Script" className="sf-chip-info" />
+          <Tip text="Click expand/show-more buttons to reveal collapsed sections and tables." />
+        </>}
+      >
+        <HeroStatGrid>
+          <HeroStat value={total} label="Total Workers" />
+          <HeroStat value={totalClicks} label="Clicks" colorClass="text-[var(--sf-token-success)]" />
+          <HeroStat value={totalExpanded} label="Expanded" colorClass="text-[var(--sf-token-success)]" />
+          <HeroStat value={totalBlocked} label="Nav Blocked" colorClass="text-[var(--sf-token-warning)]" />
+          <HeroStat value={expandRate} label="Success Rate" />
+          <HeroStat value={totalContentDelta > 0 ? `+${totalContentDelta}` : String(totalContentDelta)} label="Content Delta" />
+        </HeroStatGrid>
+      </HeroBand>
 
       <SectionHeader>Expansion Log</SectionHeader>
       <DataTable

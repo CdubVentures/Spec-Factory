@@ -271,14 +271,14 @@ export function createRunListBuilder({
           identity_lock_status: String(sqlRow.identity_lock_status || '').trim(),
           dedupe_mode: String(sqlRow.dedupe_mode || '').trim(),
           phase_cursor: String(sqlRow.phase_cursor || '').trim(),
-          startup_ms: normalizeStartupMs(sqlRow.startup_ms),
+          startup_ms: normalizeStartupMs(sqlRow.startup_ms || {}),
           events_path: '',
           run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
           storage_origin: storageOrigin,
           storage_state: resolveStorageState(resolvedStatus),
           picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
-          has_needset: Boolean(sqlRow.needset_summary),
-          has_search_profile: Boolean(sqlRow.search_profile_summary),
+          has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
+          has_search_profile: Boolean(sqlRow.search_profile_summary || sqlRow.has_search_profile),
           counters: sqlRow.counters,
         };
       }

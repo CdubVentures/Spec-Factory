@@ -8,14 +8,18 @@ import {
   startRun,
 } from './helpers/runtimeBridgeEventAuditHarness.js';
 
-test('run_started writes baseline needset and search profile artifacts', async () => {
-  const { bridge, tmpDir } = await makeBridge();
+test('run_started writes baseline needset and search profile artifacts to SQL', async () => {
+  const { SpecDb } = await import('../../db/specDb.js');
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const { bridge } = await makeBridge({ specDb });
   await startRun(bridge);
+  await bridge.finalize({ status: 'completed' });
 
-  const runDir = path.join(tmpDir, 'run-audit-001');
-  const needset = JSON.parse(await fs.readFile(path.join(runDir, 'needset.json'), 'utf8'));
-  const searchProfile = JSON.parse(await fs.readFile(path.join(runDir, 'search_profile.json'), 'utf8'));
-  const runMeta = JSON.parse(await fs.readFile(path.join(runDir, 'run.json'), 'utf8'));
+  // WHY: Wave 5.5 — artifacts are SQL-only, no JSON on disk.
+  const needsetArt = specDb.getRunArtifact(bridge.runId, 'needset');
+  const profileArt = specDb.getRunArtifact(bridge.runId, 'search_profile');
+  const needset = needsetArt?.payload || {};
+  const searchProfile = profileArt?.payload || {};
 
   assert.equal(Number(needset.needset_size || 0), 0);
   assert.equal(Number(needset.total_fields || 0), 0);
@@ -25,13 +29,12 @@ test('run_started writes baseline needset and search profile artifacts', async (
   assert.ok(Array.isArray(searchProfile.query_rows));
   assert.equal(searchProfile.query_rows.length, 0);
   assert.ok(Array.isArray(searchProfile.queries));
-
-  assert.equal(Boolean(runMeta?.artifacts?.has_needset), true);
-  assert.equal(Boolean(runMeta?.artifacts?.has_search_profile), true);
 });
 
-test('search_profile_generated updates the planned search-profile artifact contract', async () => {
-  const { bridge, tmpDir } = await makeBridge();
+test('search_profile_generated updates the planned search-profile artifact in SQL', async () => {
+  const { SpecDb } = await import('../../db/specDb.js');
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const { bridge } = await makeBridge({ specDb });
   await startRun(bridge);
 
   bridge.onRuntimeEvent(baseRow({
@@ -54,9 +57,11 @@ test('search_profile_generated updates the planned search-profile artifact contr
     },
   }));
   await bridge.queue;
+  await bridge.finalize({ status: 'completed' });
 
-  const runDir = path.join(tmpDir, 'run-audit-001');
-  const searchProfile = JSON.parse(await fs.readFile(path.join(runDir, 'search_profile.json'), 'utf8'));
+  // WHY: Wave 5.5 — read from SQL instead of search_profile.json
+  const artifact = specDb.getRunArtifact(bridge.runId, 'search_profile');
+  const searchProfile = artifact?.payload || {};
   assert.equal(String(searchProfile.status || ''), 'planned');
   assert.equal(Number(searchProfile.query_count || 0), 1);
   assert.equal(Number(searchProfile.selected_query_count || 0), 1);
@@ -253,8 +258,10 @@ test('multiple fetches produce unique worker_ids', async () => {
   );
 });
 
-test('search query events update search_profile artifact in run directory', async () => {
-  const { bridge, tmpDir } = await makeBridge();
+test('search query events update search_profile artifact in SQL', async () => {
+  const { SpecDb } = await import('../../db/specDb.js');
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  const { bridge, tmpDir } = await makeBridge({ specDb });
   await startRun(bridge);
 
   bridge.onRuntimeEvent(baseRow({
@@ -273,9 +280,12 @@ test('search query events update search_profile artifact in run directory', asyn
     result_count: 11
   }));
   await bridge.queue;
+  await bridge.finalize({ status: 'completed' });
 
-  const runDir = path.join(tmpDir, 'run-audit-001');
-  const searchProfile = JSON.parse(await fs.readFile(path.join(runDir, 'search_profile.json'), 'utf8'));
+  // WHY: Wave 5.5 — search_profile.json no longer written to disk (writeJson killed).
+  // Read from SQL run_artifacts instead (product knowledge stays in SQL).
+  const artifact = specDb.getRunArtifact(bridge.runId, 'search_profile');
+  const searchProfile = artifact?.payload || {};
   const row = (searchProfile.query_rows || []).find((item) => item.query === 'razer viper v3 pro specs');
 
   assert.ok(row);

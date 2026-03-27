@@ -5,7 +5,9 @@ import { DataTable } from '../../../../shared/ui/data-display/DataTable.tsx';
 import { SectionHeader } from '../../../../shared/ui/data-display/SectionHeader.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
 import { StageEmptyState } from '../shared/StageEmptyState.tsx';
-import { ToolBrandHeader } from '../shared/ToolBrandHeader.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 import type { FetchPluginData, FetchPluginRecord } from '../../types.ts';
 
 interface CookieConsentRecord extends FetchPluginRecord {
@@ -78,14 +80,24 @@ export function FetchCookieConsentPanel({ data, persistScope }: FetchCookieConse
   }
 
   return (
-    <div ref={scrollRef} className="flex flex-col gap-4 p-4 overflow-y-auto flex-1">
-      <ToolBrandHeader tool="playwright" category="script" />
-      <HeroStatGrid>
-        <HeroStat value={total} label="Total Workers" />
-        <HeroStat value={autoconsentMatches} label="Autoconsent Matches" colorClass="text-[var(--sf-token-success)]" />
-        <HeroStat value={fallbackClicks} label="Fallback Clicks" />
-        <HeroStat value={dismissRate} label="Dismiss Rate" />
-      </HeroStatGrid>
+    <div ref={scrollRef} className="flex flex-col gap-5 p-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 min-w-0">
+      <HeroBand
+        titleRow={<>
+          <span className="text-[26px] font-bold sf-text-primary tracking-tight leading-none">Cookie Consent</span>
+          <span className="text-[20px] sf-text-muted tracking-tight italic leading-none">&middot; Banner Dismissal</span>
+        </>}
+        trailing={<>
+          <Chip label="Playwright &middot; Script" className="sf-chip-info" />
+          <Tip text="Auto-dismiss cookie/privacy consent banners before page interaction." />
+        </>}
+      >
+        <HeroStatGrid>
+          <HeroStat value={total} label="Total Workers" />
+          <HeroStat value={autoconsentMatches} label="Autoconsent Matches" colorClass="text-[var(--sf-token-success)]" />
+          <HeroStat value={fallbackClicks} label="Fallback Clicks" />
+          <HeroStat value={dismissRate} label="Dismiss Rate" />
+        </HeroStatGrid>
+      </HeroBand>
 
       <SectionHeader>Consent Log</SectionHeader>
       <DataTable

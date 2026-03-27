@@ -1,0 +1,117 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "16px",
+    "primaryTextColor": "#e0e0e0",
+    "lineColor": "#6c757d",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "clusterBkg": "#161b22",
+    "clusterBorder": "#30363d",
+    "edgeLabelBackground": "#0d1117",
+    "nodeTextColor": "#e0e0e0"
+  },
+  "flowchart": {
+    "nodeSpacing": 35,
+    "rankSpacing": 45,
+    "curve": "basis",
+    "padding": 12
+  }
+}}%%
+
+flowchart TB
+
+  title["<b>PROPOSED NEXT STEPS  (Beyond Wave 4)</b><br/><i>What remains to reach full SQL-only runtime  |  2026-03-27</i>"]
+  style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:18px
+
+  %% ===== ACHIEVED (Waves 1-4) =====
+  subgraph ACHIEVED["ACHIEVED  (Waves 1-4 Complete)"]
+    direction TB
+
+    a1[("bridge_events  —  SQL only, NDJSON killed")]
+    a2[("runs  —  SQL mid-run, JSON at boundary")]
+    a3[("run_artifacts  —  SQL mid-run, JSON at boundary")]
+    a4[("billing_entries  —  SQL only, NDJSON killed")]
+    a5[("metrics  —  SQL primary, NDJSON fallback")]
+    a6["~3,000-5,000 file I/O ops eliminated per run"]
+  end
+  style ACHIEVED fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
+  style a1 fill:#238636,stroke:#3fb950,color:#fff
+  style a2 fill:#238636,stroke:#3fb950,color:#fff
+  style a3 fill:#238636,stroke:#3fb950,color:#fff
+  style a4 fill:#238636,stroke:#3fb950,color:#fff
+  style a5 fill:#238636,stroke:#3fb950,color:#fff
+  style a6 fill:#21262d,stroke:#3fb950,color:#c9d1d9
+
+  %% ===== REMAINING PROPOSED WORK =====
+  subgraph PROPOSED["PROPOSED  (not yet started)"]
+    direction TB
+
+    subgraph PROP_P1["Priority 1  -  Kill boundary JSON writes"]
+      prop1["Remove run.json start/end writes<br/><i>All data already in runs table</i>"]
+      prop2["Remove needset.json boundary writes<br/><i>All data in run_artifacts</i>"]
+      prop3["Remove search_profile.json boundary writes<br/><i>All data in run_artifacts</i>"]
+      prop4["Remove metrics NDJSON fallback<br/><i>Ensure all callers pass specDb</i>"]
+    end
+
+    subgraph PROP_P2["Priority 2  -  Migrate settings + brands"]
+      prop5["user-settings.json → settings table<br/><i>Currently JSON-only</i>"]
+      prop6["brand_registry.json → brands table<br/><i>Currently JSON-only</i>"]
+    end
+
+    subgraph PROP_P3["Priority 3  -  Complete learning migration"]
+      prop7["_learning/ profiles → learning_profiles table<br/><i>Currently dual-path</i>"]
+      prop8["_learning/ artifacts → category_brain table<br/><i>Currently dual-path</i>"]
+    end
+
+    subgraph PROP_P4["Priority 4  -  Single checkpoint"]
+      prop9["Replace per-artifact JSONs with<br/>single product-checkpoint.json<br/><i>All data from SQL, serialized once</i>"]
+      prop10["Any JSON reconstructable from SQL<br/><i>seedFromCheckpoint() for disaster recovery</i>"]
+    end
+  end
+  style PROPOSED fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+  style PROP_P1 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style PROP_P2 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style PROP_P3 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style PROP_P4 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style prop1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop4 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop5 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop6 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop7 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop8 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop9 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop10 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+
+  %% ===== KEEP AS FILES =====
+  subgraph KEEP["KEEP AS FILES  (no migration needed)"]
+    direction TB
+    keep1["category_authority/ — immutable, generated on compile"]
+    keep2["export artifacts — spec.json, summary.json, etc."]
+    keep3["content-addressed binaries — page.html.gz, screenshots"]
+    keep4["LLM traces — write-once ring buffer"]
+    keep5["screencast frames — ephemeral per-worker state"]
+  end
+  style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+
+  %% ===== FUTURE STATE =====
+  subgraph FUTURE["FUTURE STATE  -  SQL is SSOT, JSON = disaster recovery only"]
+    direction TB
+    fut_sql[("SQL owns ALL mutable state<br/><i>48+ tables: runs, events, artifacts,<br/>billing, metrics, settings, brands,<br/>learning, cache</i>")]
+    fut_json["product-checkpoint.json at completion<br/><i>single fat file, reconstructable</i>"]
+    fut_rebuild["seedFromCheckpoint() restores<br/>full SQL state from JSON"]
+    fut_sql --> fut_json --> fut_rebuild
+  end
+  style FUTURE fill:#0d1117,stroke:#58a6ff,color:#58a6ff,stroke-width:3px
+  style fut_sql fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:3px
+  style fut_json fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style fut_rebuild fill:#21262d,stroke:#3fb950,color:#c9d1d9
+
+  ACHIEVED --> PROPOSED --> KEEP --> FUTURE

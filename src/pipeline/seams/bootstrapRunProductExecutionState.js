@@ -88,6 +88,7 @@ export async function bootstrapRunProductExecutionState({
   traceWriter,
   syncRuntimeOverrides,
   frontierDb,
+  specDb = null,
   deps = {},
 } = {}) {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
@@ -152,6 +153,7 @@ export async function bootstrapRunProductExecutionState({
     storage,
     month: billingMonth,
     productId,
+    specDb,
   });
   const llmRuntime = runtimeDeps.createRunLlmRuntimeFn({
     storage,
@@ -164,6 +166,7 @@ export async function bootstrapRunProductExecutionState({
     traceWriter,
     routeMatrixPolicy,
     runtimeOverrides,
+    specDb,
     billingSnapshot,
     stableHashFn: stableHash,
     normalizeCostRatesFn: runtimeDeps.normalizeCostRatesFn,

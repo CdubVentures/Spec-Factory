@@ -80,26 +80,23 @@ export function WorkerDataDrawer({
 
   return (
     <div className="w-[36rem] shrink-0 border-l sf-border-soft flex flex-col min-h-0">
-      {/* Worker identity banner */}
+      {/* WHY: Minimal banner — URL + total time. Worker ID and state shown in tab strip already. */}
       {worker && (
-        <div className="px-3 py-2 border-b sf-border-soft sf-surface-panel text-xs space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-mono sf-chip-neutral px-1.5 py-0.5 rounded">{worker.worker_id}</span>
-            <span className={`px-1.5 py-0.5 rounded ${poolBadgeClass(worker.pool)}`}>{worker.pool}</span>
-            <span className={`px-1.5 py-0.5 rounded ${workerStateBadgeClass(worker.state)}`}>{worker.state}</span>
-            {worker.elapsed_ms > 0 && (
-              <span className="sf-text-muted font-mono ml-auto">{formatMs(worker.elapsed_ms)}</span>
-            )}
-          </div>
-          {worker.current_url && (
+        <div className="px-3 py-1.5 border-b sf-border-soft sf-surface-panel text-xs flex items-center gap-2">
+          {worker.current_url ? (
             <button
               type="button"
-              className="font-mono sf-text-muted truncate block max-w-full text-left sf-text-nano"
+              className="font-mono sf-link-accent truncate text-left sf-text-caption flex-1 min-w-0 hover:underline"
               title={`Click to copy: ${worker.current_url}`}
               onClick={handleCopyUrl}
             >
               {truncateUrl(worker.current_url, 70)}
             </button>
+          ) : (
+            <span className="sf-text-muted sf-text-caption flex-1">No URL</span>
+          )}
+          {worker.elapsed_ms > 0 && (
+            <span className="sf-text-muted font-mono shrink-0">{formatMs(worker.elapsed_ms)}</span>
           )}
         </div>
       )}

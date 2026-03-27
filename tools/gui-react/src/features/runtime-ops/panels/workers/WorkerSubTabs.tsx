@@ -16,12 +16,12 @@ interface WorkerSubTabsProps {
 // WHY: UI-specific display order — not all pools are shown, and the order differs from POOL_STAGE_KEYS.
 const POOL_ORDER: ReadonlyArray<string> = ['llm', 'search', 'fetch'];
 
-// WHY: O(1) badge label map — adding a state is one entry, not another if/else block.
+// WHY: O(1) badge label map — states map to Crawlee's RequestState enum.
+// Error sub-reasons shown via REASON_LABEL in the detail panel, not here.
 const BADGE_LABEL: Readonly<Record<string, string>> = {
   stuck: 'STUCK', crawling: 'CRAWLING', crawled: 'CRAWLED',
-  blocked: 'BLOCKED', captcha: 'CAPTCHA', retrying: 'RETRY',
-  rate_limited: '429', failed: 'FAILED', queued: 'QUEUED',
-  running: 'RUNNING',
+  failed: 'FAILED', retrying: 'RETRY', queued: 'QUEUED',
+  running: 'RUNNING', skipped: 'SKIPPED', idle: 'IDLE',
 };
 
 // WHY: Map block_reason / error messages to short human-readable badge labels.
@@ -65,15 +65,9 @@ function errorBadgeClass(error: string): string {
 }
 
 function primaryBadgeForWorker(w: RuntimeOpsWorkerRow): { label: string; cls: string } | null {
-  // WHY: When retrying, show the REASON for the retry as the primary badge.
-  if (w.state === 'retrying') {
-    const reason = w.block_reason || w.last_error || '';
-    if (reason) return { label: formatErrorLabel(reason), cls: errorBadgeClass(reason) };
-    return null;
-  }
-  // WHY: For failed, show the specific error instead of generic "FAILED".
-  if (w.state === 'failed') {
-    const label = formatErrorLabel(w.block_reason || w.last_error || '');
+  // WHY: For retrying/failed, show the specific error from Crawlee instead of generic label.
+  if (w.state === 'retrying' || w.state === 'failed') {
+    const label = formatErrorLabel(w.last_error || '');
     return { label, cls: workerStateBadgeClass(w.state) };
   }
   const label = BADGE_LABEL[w.state];

@@ -47,7 +47,7 @@ import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductEx
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
-import { resolveAllExtractionPlugins, createExtractionRunner } from '../features/extraction/index.js';
+import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts } from '../features/extraction/index.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -186,12 +186,15 @@ export async function runProduct({
     logger,
   });
   const adapter = resolveAdapter('crawlee');
+  const screenshotDir = path.join(defaultIndexLabRoot(), runId, 'screenshots');
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,
     extractionRunner,
     logger,
     onScreencastFrame: resolveScreencastCallback(config),
+    onScreenshotsPersist: ({ screenshots, workerId, url }) =>
+      persistScreenshotArtifacts({ screenshots, screenshotDir, workerId, url }),
   });
   await session.start();
   const warmUpPromise = session.warmUp?.() ?? Promise.resolve();
@@ -216,6 +219,7 @@ export async function runProduct({
         return runtimeOverrides;
       },
       frontierDb,
+      specDb: config.specDb || null,
     }),
     warmUpPromise,
   ]);

@@ -433,9 +433,15 @@ export interface FetchPhasesResponse {
 
 // ── Extraction Phases ──
 
+// WHY: Mirrors FetchPluginRecord — base fields plus index signature for
+// plugin-specific result fields spread by the builder. Panels cast to
+// their own local interface (e.g. ScreenshotRecord extends ExtractionPluginEntry).
 export interface ExtractionPluginEntry {
   url: string;
   worker_id: string;
+  host: string;
+  ts: string;
+  [key: string]: unknown;
 }
 
 export interface ExtractionPluginData {

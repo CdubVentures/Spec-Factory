@@ -26,6 +26,7 @@ function makeBuilder(tmpDir, specDb, overrides = {}) {
   });
 }
 
+// WHY: Wave 5.5 — slim runs table. GUI telemetry columns removed.
 function sampleSqlRun(overrides = {}) {
   return {
     run_id: 'run-sql-001',
@@ -35,21 +36,12 @@ function sampleSqlRun(overrides = {}) {
     started_at: '2026-03-26T10:00:00.000Z',
     ended_at: '2026-03-26T10:30:00.000Z',
     phase_cursor: 'completed',
-    boot_step: 'ready',
-    boot_progress: 100,
     identity_fingerprint: 'fp-sql',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
     s3key: 'specs/inputs/mouse/products/mouse-razer-viper.json',
     out_root: '/tmp/indexlab',
     counters: { pages_checked: 10, fetched_ok: 8, fetched_404: 1, fetched_blocked: 0, fetched_error: 1 },
-    stages: { search: { started_at: 'T', ended_at: 'T' }, fetch: { started_at: 'T', ended_at: 'T' } },
-    startup_ms: { first_event: 100, search_started: 200 },
-    browser_pool: { browsers: 2, slots: 4 },
-    needset_summary: { total_fields: 12 },
-    search_profile_summary: { status: 'executed', query_count: 5 },
-    artifacts: { has_needset: true, has_search_profile: true },
-    extra: {},
     ...overrides,
   };
 }
@@ -156,8 +148,11 @@ test('SQL row shape matches expected run list contract', async () => {
       assert.ok(key in row, `missing key: ${key}`);
     }
     assert.equal(row.identity_fingerprint, 'fp-sql');
-    assert.equal(row.has_needset, true);
-    assert.equal(row.has_search_profile, true);
+    // WHY: Wave 5.5 — has_needset/has_search_profile default to false from slim
+    // runs table (needset_summary/search_profile_summary columns dropped).
+    // The GUI now gets this from run-summary.json, not from the runs table.
+    assert.equal(row.has_needset, false);
+    assert.equal(row.has_search_profile, false);
     assert.equal(row.storage_origin, 'local');
     assert.match(String(row.picker_label), /Mouse/i);
   } finally {

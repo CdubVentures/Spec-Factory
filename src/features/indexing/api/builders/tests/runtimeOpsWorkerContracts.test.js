@@ -9,7 +9,7 @@ test('buildRuntimeOpsWorkers: empty events returns no workers', () => {
   assert.deepEqual(result, []);
 });
 
-test('buildRuntimeOpsWorkers: fetch lifecycle rows use crawled/blocked states', () => {
+test('buildRuntimeOpsWorkers: fetch lifecycle rows use crawled/failed states', () => {
   const events = [
     makeEvent('fetch_started', { url: 'https://a.com/1', worker_id: 'w1' }, { ts: '2026-02-20T00:01:00.000Z' }),
     makeEvent('fetch_finished', { url: 'https://a.com/1', worker_id: 'w1', status: 200 }, { ts: '2026-02-20T00:01:05.000Z' }),
@@ -19,12 +19,12 @@ test('buildRuntimeOpsWorkers: fetch lifecycle rows use crawled/blocked states', 
 
   const result = buildRuntimeOpsWorkers(events, {});
   const okWorker = result.find((row) => row.worker_id === 'w1');
-  const blockedWorker = result.find((row) => row.worker_id === 'w2');
+  const failedWorker = result.find((row) => row.worker_id === 'w2');
 
   assert.equal(okWorker?.state, 'crawled');
   assert.equal(okWorker?.last_error, null);
-  assert.equal(blockedWorker?.state, 'blocked');
-  assert.equal(blockedWorker?.last_error, 'HTTP 403');
+  assert.equal(failedWorker?.state, 'failed');
+  assert.equal(failedWorker?.last_error, 'HTTP 403');
 });
 
 test('buildRuntimeOpsWorkers: unmatched fetch rows distinguish crawling from stuck by threshold', () => {

@@ -35,24 +35,6 @@ function defaultStats(category) {
   };
 }
 
-async function readArtifact(storage, category, filename, fallbackFactory) {
-  const key = artifactKey(storage, category, filename);
-  const existing = await storage.readJsonOrNull(key);
-  return {
-    key,
-    value: existing || fallbackFactory()
-  };
-}
-
-async function writeArtifact(storage, key, value) {
-  await storage.writeObject(
-    key,
-    Buffer.from(JSON.stringify(value, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-  return key;
-}
-
 function normalizeSourcesOverride(input = {}) {
   return {
     approved: {
@@ -205,57 +187,26 @@ export async function loadCategoryBrain({
     field_availability: defaultFieldAvailability
   };
 
-  /* --- SQLite primary path --- */
-  if (specDb) {
-    const dbArtifacts = specDb.getCategoryBrainArtifacts(category);
-    const hasResults = dbArtifacts && Object.keys(dbArtifacts).length > 0;
+  // WHY: SQL is the sole source for category brain artifacts
+  const dbArtifacts = specDb ? specDb.getCategoryBrainArtifacts(category) : {};
 
-    if (hasResults) {
-      const resolve = (name) => {
-        const value = dbArtifacts[name] || fallbackFactories[name]();
-        const key = artifactKey(storage, category, `${name}.json`);
-        return { key, value };
-      };
-
-      return {
-        category,
-        artifacts: {
-          lexicon:          resolve('field_lexicon'),
-          constraints:      resolve('constraints'),
-          fieldYield:       resolve('field_yield'),
-          identityGrammar:  resolve('identity_grammar'),
-          queryTemplates:   resolve('query_templates'),
-          sourcePromotions: resolve('source_promotions'),
-          stats:            resolve('stats'),
-          fieldAvailability: resolve('field_availability')
-        }
-      };
-    }
-  }
-
-  /* --- JSON / storage fallback path --- */
-  const [lexicon, constraints, fieldYield, identityGrammar, queryTemplates, sourcePromotions, stats, fieldAvailability] = await Promise.all([
-    readArtifact(storage, category, 'field_lexicon.json', fallbackFactories.field_lexicon),
-    readArtifact(storage, category, 'constraints.json', fallbackFactories.constraints),
-    readArtifact(storage, category, 'field_yield.json', fallbackFactories.field_yield),
-    readArtifact(storage, category, 'identity_grammar.json', fallbackFactories.identity_grammar),
-    readArtifact(storage, category, 'query_templates.json', fallbackFactories.query_templates),
-    readArtifact(storage, category, 'source_promotions.json', fallbackFactories.source_promotions),
-    readArtifact(storage, category, 'stats.json', fallbackFactories.stats),
-    readArtifact(storage, category, 'field_availability.json', fallbackFactories.field_availability)
-  ]);
+  const resolve = (name) => {
+    const value = (dbArtifacts && dbArtifacts[name]) || fallbackFactories[name]();
+    const key = artifactKey(storage, category, `${name}.json`);
+    return { key, value };
+  };
 
   return {
     category,
     artifacts: {
-      lexicon,
-      constraints,
-      fieldYield,
-      identityGrammar,
-      queryTemplates,
-      sourcePromotions,
-      stats,
-      fieldAvailability
+      lexicon:          resolve('field_lexicon'),
+      constraints:      resolve('constraints'),
+      fieldYield:       resolve('field_yield'),
+      identityGrammar:  resolve('identity_grammar'),
+      queryTemplates:   resolve('query_templates'),
+      sourcePromotions: resolve('source_promotions'),
+      stats:            resolve('stats'),
+      fieldAvailability: resolve('field_availability')
     }
   };
 }
@@ -363,24 +314,9 @@ export async function updateCategoryBrain({
     }
   }
 
-  /* --- JSON / storage writes (fallback or dual-write) --- */
-  const writeJson = !specDb || config?.brainJsonWrite === true;
   const keys = {};
-
-  if (writeJson) {
-    const writes = await Promise.all(
-      Object.entries(artifactMap).map(([name, { key, value }]) =>
-        writeArtifact(storage, key, value)
-      )
-    );
-    const names = Object.keys(artifactMap);
-    for (let i = 0; i < names.length; i++) {
-      keys[names[i]] = writes[i];
-    }
-  } else {
-    for (const [name, { key }] of Object.entries(artifactMap)) {
-      keys[name] = key;
-    }
+  for (const [name, { key }] of Object.entries(artifactMap)) {
+    keys[name] = key;
   }
 
   return {
@@ -392,11 +328,13 @@ export async function updateCategoryBrain({
 
 export async function buildLearningReport({
   storage,
-  category
+  category,
+  specDb = null
 }) {
   const loaded = await loadCategoryBrain({
     storage,
-    category
+    category,
+    specDb
   });
   const lexicon = loaded.artifacts.lexicon.value;
   const constraints = loaded.artifacts.constraints.value;

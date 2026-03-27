@@ -188,6 +188,44 @@ export async function readIndexLabRunEvents(runId, limit = 2000, { category } = 
   return rows;
 }
 
+// WHY: Wave 5.5 — read events from run-summary.json (written at finalize)
+// instead of querying bridge_events SQL on every GUI page load.
+// 3-tier fallback: SQL artifact → file → bridge_events SQL (existing path).
+export async function readRunSummaryEvents(runId, limit = 2000, { category } = {}) {
+  const { extractEventsFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
+  const token = String(runId || '').trim();
+  if (!token) return [];
+
+  // Tier 1: SQL run_artifacts with artifact_type='run_summary'
+  if (category && typeof _getSpecDbReady === 'function') {
+    try {
+      const specDb = await _getSpecDbReady(category);
+      if (specDb) {
+        const artifact = specDb.getRunArtifact(token, 'run_summary');
+        if (artifact?.payload) {
+          const events = extractEventsFromRunSummary(artifact.payload);
+          if (events.length > 0) return events.slice(0, limit);
+        }
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Tier 2: run-summary.json file on disk
+  try {
+    const runDir = await resolveIndexLabRunDirectory(token);
+    if (runDir) {
+      const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
+      if (summary) {
+        const events = extractEventsFromRunSummary(summary);
+        if (events.length > 0) return events.slice(0, limit);
+      }
+    }
+  } catch { /* fall through */ }
+
+  // Tier 3: bridge_events SQL (existing path — for pre-migration runs)
+  return readIndexLabRunEvents(runId, limit, { category });
+}
+
 export function invalidateEventCache(runId) {
   const token = String(runId || '').trim();
   if (!token) { _eventCache.clear(); return; }

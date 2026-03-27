@@ -625,56 +625,60 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   <p>These are computed once per run and currently dumped to JSON. Store them as SQL rows, serve from SQL, write JSON only at checkpoint.</p>
 </div>
 
+<div class="done">
+<strong>Wave 3 design decisions:</strong> Single <code>run_artifacts</code> table with opaque JSON payload column, keyed by <code>(run_id, artifact_type)</code>. Simpler than 3 separate tables — the payload shape varies by type but the API serves it directly. UPSERT handles frequent search_profile updates (~12-55 per run). <code>runArtifactStore</code> follows the same factory pattern as <code>runMetaStore</code>. Prefetch API endpoint reads all 3 artifacts in one <code>getRunArtifactsByRunId()</code> query, falling back to file I/O for pre-migration runs. <code>{ writeJson }</code> flag on <code>writeNeedSet</code> / <code>writeSearchProfile</code> / <code>ensureBaselineArtifacts</code> — only finalize passes <code>true</code> for the archive bundle. brand_resolution's single mid-run write stays as-is (1× per run, negligible). Data separation verified: <code>run_artifacts</code> is run-scoped (keyed by run_id), matching the architecture's separation from product-scoped data.
+</div>
+
 <div class="step-grid">
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#993C1D">11</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">11</div></div>
     <div class="step-body">
       <div class="step-title">Create run_artifacts table</div>
-      <div class="step-desc">A single table for per-run artifacts: run_id, artifact_type ('needset' | 'search_profile' | 'brand_resolution'), payload (JSON TEXT column), created_at. One row per artifact per run. Simpler than separate tables — the payload is opaque JSON that the API serves directly.</div>
-      <div class="step-files">specDbSchema.js, specDbMigrations.js</div>
-      <div class="step-test">Test: table exists, INSERT + SELECT round-trip preserves JSON payload exactly.</div>
+      <div class="step-desc">New <code>run_artifacts</code> table: <code>id, run_id, artifact_type, category, payload (TEXT JSON), created_at, updated_at</code>. UNIQUE(run_id, artifact_type). 2 indexes. 3 prepared statements: <code>_upsertRunArtifact</code> (INSERT...ON CONFLICT UPDATE), <code>_getRunArtifact</code> (by run_id + type), <code>_getRunArtifactsByRunId</code> (all artifacts for a run). Purge support added. Existing <code>artifacts</code> table (web fetches) and <code>source_artifacts</code> (captures) are unrelated — no naming conflict.</div>
+      <div class="step-files">specDbSchema.js, specDbStatements.js, purgeStore.js</div>
+      <div class="step-test">Test: 6 tests — table creation, upsert roundtrip, conflict update, multi-artifact query, empty result, large JSON payload.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#993C1D">12</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">12</div></div>
     <div class="step-body">
-      <div class="step-title">Dual-write: needset.json + SQL</div>
-      <div class="step-desc">In runtimeBridgeArtifacts.js writeNeedSet(), add INSERT INTO run_artifacts alongside the JSON write. Both paths fire. Prove parity.</div>
-      <div class="step-files">runtimeBridgeArtifacts.js</div>
-      <div class="step-test">Test: SELECT payload FROM run_artifacts WHERE artifact_type='needset' matches needset.json content.</div>
+      <div class="step-title">Create runArtifactStore + dual-write needset.json + SQL</div>
+      <div class="step-desc">New <code>runArtifactStore.js</code> with 3 methods: <code>upsertRunArtifact()</code>, <code>getRunArtifact()</code>, <code>getRunArtifactsByRunId()</code>. JSON payload serialized on write, parsed on read. Wired into specDb.js. Added SQL dual-write to <code>writeNeedSet()</code> — same best-effort try/catch pattern as emit()'s bridge_events write. Both JSON and SQL paths fire.</div>
+      <div class="step-files">src/db/stores/runArtifactStore.js, specDb.js, runtimeBridgeArtifacts.js</div>
+      <div class="step-test">Test: 6 store roundtrip tests + 3 parity tests (JSON/SQL match, graceful null specDb).</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#993C1D">13</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">13</div></div>
     <div class="step-body">
-      <div class="step-title">Dual-write: search_profile.json + SQL</div>
-      <div class="step-desc">Same pattern as step 12 for search_profile. Also brand_resolution.json if present.</div>
-      <div class="step-files">runtimeBridgeArtifacts.js</div>
-      <div class="step-test">Test: SQL payload matches JSON file content for all three artifact types.</div>
+      <div class="step-title">Dual-write: search_profile.json + brand_resolution.json + SQL</div>
+      <div class="step-desc">Added SQL dual-write to <code>writeSearchProfile()</code> (same pattern as needset). Added SQL write to <code>handleBrandResolved()</code> inline after fs.writeFile. All 3 artifact types now dual-write. Live run verified SQL population before Step 14.</div>
+      <div class="step-files">runtimeBridgeArtifacts.js, runtimeBridgeEventHandlers.js</div>
+      <div class="step-test">Test: 4 tests — search_profile parity, brand_resolution SQL write, graceful null.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#993C1D">14</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">14</div></div>
     <div class="step-body">
-      <div class="step-title">Switch API routes to serve artifacts from SQL</div>
-      <div class="step-desc">runtimeOpsRoutes.js currently reads needset.json and search_profile.json from disk. Change to SELECT FROM run_artifacts. Fall back to file read for pre-migration runs.</div>
-      <div class="step-files">runtimeOpsRoutes.js, prefetchContract.js</div>
-      <div class="step-test">Test: GUI needset and search profile panels show identical data. API response shape unchanged.</div>
+      <div class="step-title">Switch prefetch API route to serve artifacts from SQL</div>
+      <div class="step-desc">Threaded <code>getSpecDbReady</code> through runtimeOpsRouteContext → guiServerRuntime → runtimeOpsRoutes. Prefetch endpoint now does one <code>getRunArtifactsByRunId(runId)</code> query for all 3 artifacts. Falls back to <code>safeReadJson()</code> per-artifact for pre-migration runs. Pipeline reader (<code>readIndexLabRunSearchProfile</code>) unchanged — it reads from the storage/output layer, not bridge files.</div>
+      <div class="step-files">runtimeOpsRouteContext.js, guiServerRuntime.js, runtimeOpsRoutes.js</div>
+      <div class="step-test">Test: 3 tests — SQL fast path, file fallback on empty SQL, file fallback on null specDb.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#993C1D">15</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">15</div></div>
     <div class="step-body">
       <div class="step-title">Stop mid-run needset.json + search_profile.json writes</div>
-      <div class="step-desc">Remove the file writes in runtimeBridgeArtifacts.js. SQL is the sole store during the run. Generate the JSON files at completion for the archive bundle.</div>
-      <div class="step-files">runtimeBridgeArtifacts.js</div>
-      <div class="step-kill">Kills: needset.json + search_profile.json + brand_resolution.json mid-run writes</div>
-      <div class="step-test">Test: during a run, no artifact JSONs on disk. At completion, they appear in the archive bundle.</div>
+      <div class="step-desc">Added <code>{ writeJson = false }</code> third parameter to <code>writeNeedSet</code>, <code>writeSearchProfile</code>, and <code>ensureBaselineArtifacts</code>. Default is SQL-only. Only finalize passes <code>{ writeJson: true }</code> for the archive bundle. The 4 mid-run callers (handleNeedSetGenerated, handleSearchProfileGenerated, recordSearchProfileQuery, handleRunStarted/handleRunCompleted) are completely unchanged — they use the default. brand_resolution's single mid-run write stays as-is.</div>
+      <div class="step-files">runtimeBridgeArtifacts.js, runtimeBridge.js</div>
+      <div class="step-kill">Kills: ~14-59 fs.writeFile calls per run (needset 2-4× + search_profile 12-55×)</div>
+      <div class="step-test">Test: 7 tests — SQL-only default, writeJson flag, best-effort. 4 existing bridge tests updated with finalize() calls. Full suite 6131/6141 (10 pre-existing failures).</div>
     </div>
   </div>
 
@@ -687,37 +691,41 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   <p>Billing already has dual-write. Kill the NDJSON path. Metrics needs a new table.</p>
 </div>
 
+<div class="done">
+<strong>Wave 4 design decisions:</strong> Step 16 audit found <code>specDb</code> was never threaded to billing functions — the <code>billing_entries</code> SQL table was empty. Fix: threaded <code>specDb</code> through <code>runProduct.js</code> → <code>bootstrapRunProductExecutionState</code> → <code>createRunLlmRuntime</code> → <code>appendCostLedgerEntryFn</code>. Step 17 removed the NDJSON write path entirely from <code>appendCostLedgerEntry</code> (was already either/or, not dual-write). Added optional <code>category</code> filter to <code>getBillingRollup(month, category)</code> for per-category API serving. Billing API route switched to SQL-first with JSON fallback for pre-migration data. Dead code removed: <code>writeMonthlyRollup</code>, <code>applyEntryToRollup</code>, <code>bumpBucket</code>, <code>serializeLedgerRows</code>, <code>flatLedgerKey</code>, <code>legacyFlatLedgerKey</code>. CLI healthCheck billing entries silently dropped (1× per check, negligible).
+</div>
+
 <div class="step-grid">
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#d29922">16</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">16</div></div>
     <div class="step-body">
       <div class="step-title">Audit billing_entries parity with NDJSON ledger</div>
-      <div class="step-desc">Verify every billing row that hits _billing/ledger/{YYYY-MM}.jsonl also hits the billing_entries SQL table. Run a reconciliation check. Fix any gaps.</div>
-      <div class="step-files">costLedger.js, billingStore.js</div>
-      <div class="step-test">Test: run pipeline, compare JSONL line count vs SQL row count for the same run_id. Must match.</div>
+      <div class="step-desc">Audit found <code>specDb</code> never threaded to billing functions — all billing went to NDJSON only. Fixed by threading <code>specDb</code> through <code>runProduct.js</code> → <code>bootstrapRunProductExecutionState</code> → <code>createRunLlmRuntime</code> → <code>appendCostLedgerEntryFn</code>. Also threaded to <code>readBillingSnapshotFn</code> in bootstrap. <code>appendCostLedgerEntry</code> already had correct SQL/NDJSON branching — only caller wiring was missing.</div>
+      <div class="step-files">createRunLlmRuntime.js, bootstrapRunProductExecutionState.js, runProduct.js</div>
+      <div class="step-test">Test: 3 parity tests — SQL write with specDb, no NDJSON with specDb, fallback without specDb. Full suite 6158/6167.</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#d29922">17</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">17</div></div>
     <div class="step-body">
       <div class="step-title">Stop appending to billing NDJSON ledger</div>
-      <div class="step-desc">Remove the JSONL append in costLedger.js. SQL billing_entries is the sole write target. Generate monthly rollup JSON from SQL query (SELECT SUM... GROUP BY month) instead of reading JSONL files.</div>
-      <div class="step-files">costLedger.js</div>
-      <div class="step-kill">Kills: _billing/ledger/{YYYY-MM}.jsonl appends + monthly rollup JSON writes</div>
-      <div class="step-test">Test: billing page in GUI shows correct totals. No new JSONL files created during a run.</div>
+      <div class="step-desc">Removed the entire NDJSON write block from <code>appendCostLedgerEntry</code> (~60 lines). SQL is the sole write target. Removed 6 dead helper functions. Added optional <code>category</code> param to <code>getBillingRollup(month, category)</code> for per-category filtering. Switched billing API route to SQL-first via <code>specDb.getBillingRollup(month, category)</code> with JSON fallback for pre-migration data.</div>
+      <div class="step-files">costLedger.js, billingStore.js, queueBillingLearningRoutes.js</div>
+      <div class="step-kill">Kills: _billing/ledger/{YYYY-MM}.jsonl appends, _billing/ledger.jsonl flat ledger, _billing/monthly/{YYYY-MM}.json rollup writes</div>
+      <div class="step-test">Test: 4 billing tests green, healthCheck test updated. Full suite 6158/6167 (9 pre-existing).</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#d29922">18</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">18</div></div>
     <div class="step-body">
       <div class="step-title">Create metrics table + stop NDJSON append</div>
-      <div class="step-desc">_runtime/metrics.jsonl captures timing, counters, gauges. Create a metrics table (ts, metric_type, name, value, labels JSON). Route metricsWriter.js to INSERT instead of appendFile. Metrics are low-frequency enough to do in one step.</div>
-      <div class="step-files">metricsWriter.js, specDbSchema.js, specDbMigrations.js</div>
-      <div class="step-kill">Kills: _runtime/metrics.jsonl appends</div>
-      <div class="step-test">Test: server starts, runs pipeline, no metrics.jsonl written. SQL has metric rows.</div>
+      <div class="step-desc">New <code>metrics</code> table (id, ts, metric_type, name, value, labels JSON) with 2 indexes. <code>metricsStore.js</code> factory with <code>insertMetric()</code> and <code>insertMetricsBatch()</code>. <code>MetricsWriter</code> accepts <code>specDb</code> and routes flush() to SQL when available, NDJSON fallback when not. MetricsWriter is not yet wired to production (skeleton only) — when connected it will go to SQL from the start. Also fixed Step 17 bug: <code>getBillingRollup</code> proxy in specDb.js now forwards the <code>category</code> param.</div>
+      <div class="step-files">specDbSchema.js, specDbStatements.js, metricsStore.js (new), specDb.js, metricsWriter.js</div>
+      <div class="step-kill">Kills (preventive): _runtime/metrics.jsonl appends when MetricsWriter is eventually wired to production</div>
+      <div class="step-test">Test: 4 table roundtrip tests + 15 writer tests (3 new SQL path). Full suite 6177/6186 (9 pre-existing).</div>
     </div>
   </div>
 
@@ -730,48 +738,329 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
   <p>These already have migration commands. Finish them and remove the JSON fallback readers.</p>
 </div>
 
+<div class="done">
+<strong>Wave 5 design decisions:</strong> Step 19: LLMCache has zero production callers (same orphan pattern as MetricsWriter in Step 18). Removed file-based <code>{sha256}.json</code> fallback entirely — stripped <code>fs</code>/<code>path</code> imports, <code>cacheDir</code> constructor param, <code>filePathForKey()</code> method, and file fallback blocks from <code>get()</code>/<code>set()</code>. SQL <code>llm_cache</code> table is the sole persistence path. Class went from 147 → 95 lines. Migration command Phase 3 kept as-is (one-time import tool). When LLMCache is wired into production, it will use SQL from the start.
+<br><br>Step 20: Removed JSON fallback from <code>loadLearningProfile()</code> and <code>persistLearningProfile()</code> in <code>selfImproveLoop.js</code>. Both functions already had SQL as primary path via <code>specDb.getLearningProfile()</code> / <code>upsertLearningProfile()</code>. JSON fallback read (<code>storage.readJsonOrNull</code>) removed — returns null when no SQL row found. JSON fallback write removed — profile is only persisted to SQL when specDb is available. Per-run <code>{runBase}/logs/learning.json</code> artifact write kept (run log, not profile persistence). Migration command Phase 4 kept as-is.
+<br><br>Step 21: Simplified <code>loadCategoryBrain()</code> to a single unified resolve path — tries SQL per artifact, falls back to factory defaults. Removed <code>readArtifact()</code> JSON reader and entire JSON fallback block. Removed JSON dual-write from <code>updateCategoryBrain()</code> — killed <code>brainJsonWrite</code> config flag, <code>writeArtifact()</code> helper, and conditional JSON write block. Added <code>specDb</code> param to <code>buildLearningReport()</code> and threaded through to <code>loadCategoryBrain()</code>. CLI <code>learningReportCommand</code> is a carry-forward (doesn't pass specDb — gets factory defaults). Migration command Phase 5 kept as-is.
+</div>
+
 <div class="step-grid">
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#3C3489">19</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">19</div></div>
     <div class="step-body">
       <div class="step-title">Complete LLM cache migration — SQL only</div>
-      <div class="step-desc">llmCache.js currently tries SQL first, falls back to file-based {sha256}.json. Remove the file fallback. SQL llm_cache is the sole path. Run migrateToSqliteCommand phase 3 to import any remaining file-based entries.</div>
+      <div class="step-desc">Removed file-based <code>{sha256}.json</code> fallback from <code>LLMCache</code>. Stripped <code>fs</code>/<code>path</code> imports, <code>cacheDir</code> param, <code>filePathForKey()</code>, and file fallback blocks from <code>get()</code>/<code>set()</code>. SQL <code>llm_cache</code> is the sole path. LLMCache has zero production callers — made SQL-only preventively. Migration command Phase 3 kept for importing legacy file entries.</div>
       <div class="step-files">llmCache.js</div>
-      <div class="step-kill">Kills: llm_cache/{sha256}.json file reads/writes</div>
-      <div class="step-test">Test: cache hit/miss works. No .json files created in cache directory.</div>
+      <div class="step-kill">Kills (preventive): llm_cache/{sha256}.json file reads/writes when LLMCache is wired to production</div>
+      <div class="step-test">Test: 5 tests — SQL roundtrip, TTL expiry via SQL, deterministic hashing, null specDb get/set. Full suite 6188/6197 (9 pre-existing).</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#3C3489">20</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">20</div></div>
     <div class="step-body">
       <div class="step-title">Complete learning_profiles migration — SQL only</div>
-      <div class="step-desc">Remove the JSON file readers for _learning/{cat}/profiles/*.json. SQL learning_profiles is the sole source. Run migrateToSqliteCommand phase 4 to import any remaining JSON profiles.</div>
-      <div class="step-files">sourceIntelStore.js, related readers</div>
+      <div class="step-desc">Removed JSON fallback from <code>loadLearningProfile()</code> (was <code>storage.readJsonOrNull</code>) and JSON write from <code>persistLearningProfile()</code> (was <code>storage.writeObject</code> when <code>!specDb</code>). SQL <code>learning_profiles</code> is the sole persistence path. Per-run <code>{runBase}/logs/learning.json</code> kept (run artifact, not profile persistence). Migration command Phase 4 kept as-is.</div>
+      <div class="step-files">selfImproveLoop.js</div>
       <div class="step-kill">Kills: _learning/{cat}/profiles/*.json reads/writes</div>
-      <div class="step-test">Test: learning profile queries return correct data. No JSON profile files read at runtime.</div>
+      <div class="step-test">Test: 5 tests — SQL load roundtrip, null when not found, null when no specDb, SQL persist roundtrip, run log still writes without specDb. Full suite 6200/6209 (9 pre-existing).</div>
     </div>
   </div>
 
   <div class="step">
-    <div class="step-num"><div class="step-dot" style="background:#3C3489">21</div></div>
+    <div class="step-num"><div class="step-dot" style="background:#0F6E56">21</div></div>
     <div class="step-body">
       <div class="step-title">Complete category_brain migration — SQL only</div>
-      <div class="step-desc">Remove the JSON file readers for _learning/{cat}/{artifact}.json (field_lexicon, constraints, query_templates, source_promotions, etc.). SQL category_brain is the sole source. Run migrateToSqliteCommand phase 5.</div>
-      <div class="step-files">sourceIntelStore.js, related readers</div>
-      <div class="step-kill">Kills: ~6 JSON artifact files per category</div>
-      <div class="step-test">Test: pipeline uses correct learning artifacts. No _learning/ JSON files read at runtime.</div>
+      <div class="step-desc">Simplified <code>loadCategoryBrain()</code> to unified resolve path — SQL per artifact, factory defaults when missing. Removed <code>readArtifact()</code> and <code>writeArtifact()</code> dead helpers. Removed JSON dual-write from <code>updateCategoryBrain()</code> — killed <code>brainJsonWrite</code> flag and conditional write block. Added <code>specDb</code> param to <code>buildLearningReport()</code>. Migration command Phase 5 kept as-is.</div>
+      <div class="step-files">categoryBrain.js</div>
+      <div class="step-kill">Kills: _learning/{cat}/{artifact}.json reads/writes (8 artifacts × N categories)</div>
+      <div class="step-test">Test: 3 tests — SQL update+report roundtrip, factory defaults without specDb, SQL data with specDb. Full suite 6202/6211 (9 pre-existing).</div>
     </div>
   </div>
 
 </div>
 
 
+<!-- ==================== WAVE 5.5 ==================== -->
+<div class="phase-header" style="border-left: 4px solid #ef9f27;">
+  <h3>Wave 5.5 — Run telemetry / product knowledge split (PREREQUISITE for Wave 6)</h3>
+  <p>Separate ephemeral GUI dashboard data from permanent product learning data. Without this split, the Wave 6 checkpoint serializer cannot be designed correctly — it wouldn't know what belongs in the product checkpoint vs what's throwaway run telemetry.</p>
+</div>
+
+<div class="note">
+<strong>Why this wave exists:</strong> Audit of Waves 1-4 revealed that the <code>runs</code> table (20+ columns), <code>run_artifacts</code> (full debug payloads), and <code>bridge_events</code> (500-3,000 rows/run) mix two fundamentally different data lifetimes. The GUI needs worker timelines, fetch timings, query rejection logs, and boot progress to render a past-run dashboard. The <strong>product</strong> needs field values, candidates, evidence, frontier history, and learning scores for the next run. These two concerns have different write patterns, different sizes, different lifetimes, and different consumers. Mixing them makes the checkpoint serializer (Wave 6) impossible to scope cleanly.
+</div>
+
+<div class="diagram-wrap">
+<svg width="100%" viewBox="0 0 1100 400">
+<defs><marker id="w55" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<text class="t16b" x="550" y="28" text-anchor="middle" fill="#2c2c2a">The Split: two data lifetimes, two storage strategies</text>
+
+<!-- Run telemetry side -->
+<rect x="40" y="50" width="490" height="300" rx="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+<text class="t14b" x="285" y="74" text-anchor="middle" fill="#26215C">RUN TELEMETRY (ephemeral, GUI-only)</text>
+<text class="t12" x="285" y="92" text-anchor="middle" fill="#534AB7">Written once at run completion as run-summary.json (~50-300 KB)</text>
+
+<rect x="60" y="108" width="200" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="160" y="130" text-anchor="middle" fill="#26215C">Counters, stages, phase timeline</text>
+
+<rect x="60" y="150" width="200" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="160" y="172" text-anchor="middle" fill="#26215C">Worker states + fetch timings</text>
+
+<rect x="60" y="192" width="200" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="160" y="214" text-anchor="middle" fill="#26215C">Boot progress, startup_ms</text>
+
+<rect x="280" y="108" width="230" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="395" y="130" text-anchor="middle" fill="#26215C">Query rejection logs, variant guard</text>
+
+<rect x="280" y="150" width="230" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="395" y="172" text-anchor="middle" fill="#26215C">NeedSet bundles + debug payloads</text>
+
+<rect x="280" y="192" width="230" height="34" rx="5" fill="#fff" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t12" x="395" y="214" text-anchor="middle" fill="#26215C">Browser pool, top blockers, quality</text>
+
+<text class="t12" x="285" y="252" text-anchor="middle" fill="#534AB7">Replaces: run.json, runs SQL mid-run, bridge_events (past runs),</text>
+<text class="t12" x="285" y="268" text-anchor="middle" fill="#534AB7">run_artifacts debug blobs, needset.json, search_profile.json</text>
+
+<rect x="80" y="290" width="380" height="40" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t14b" x="270" y="310" text-anchor="middle" fill="#26215C">GUI reads this one file to render a past run</text>
+<text class="t11" x="270" y="324" text-anchor="middle" fill="#534AB7">Live runs still use IPC + in-memory bridge state</text>
+
+<!-- Product knowledge side -->
+<rect x="570" y="50" width="490" height="300" rx="14" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+<text class="t14b" x="815" y="74" text-anchor="middle" fill="#04342C">PRODUCT KNOWLEDGE (permanent, SQL)</text>
+<text class="t12" x="815" y="92" text-anchor="middle" fill="#085041">Grows forever in SQLite. This is what Wave 6 checkpoints.</text>
+
+<rect x="590" y="108" width="210" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="695" y="130" text-anchor="middle" fill="#085041">item_field_state (73 rows/product)</text>
+
+<rect x="590" y="150" width="210" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="695" y="172" text-anchor="middle" fill="#085041">candidates (36K+ rows after 1K URLs)</text>
+
+<rect x="590" y="192" width="210" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="695" y="214" text-anchor="middle" fill="#085041">source_registry + evidence chain</text>
+
+<rect x="820" y="108" width="220" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="930" y="130" text-anchor="middle" fill="#085041">frontier queries + urls + yields</text>
+
+<rect x="820" y="150" width="220" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="930" y="172" text-anchor="middle" fill="#085041">key_review_state + decisions</text>
+
+<rect x="820" y="192" width="220" height="34" rx="5" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t12" x="930" y="214" text-anchor="middle" fill="#085041">domain intel + learning profiles</text>
+
+<text class="t12" x="815" y="252" text-anchor="middle" fill="#085041">~20-30 MB per product after 1,000 URLs x 73 keys.</text>
+<text class="t12" x="815" y="268" text-anchor="middle" fill="#085041">That's fine — SQLite handles 100s of MB, queries are O(log n).</text>
+
+<rect x="620" y="290" width="380" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="810" y="310" text-anchor="middle" fill="#04342C">Wave 6 checkpoints THIS data only</text>
+<text class="t11" x="810" y="324" text-anchor="middle" fill="#085041">product-checkpoint.json = everything needed for next run + rebuild</text>
+
+<!-- Separator -->
+<text class="t14b" x="550" y="380" text-anchor="middle" fill="#444441">The split enables Wave 6: the checkpoint serializer only serializes product knowledge, not run telemetry.</text>
+</svg>
+</div>
+
+<h3>run-summary.json contract (the GUI file)</h3>
+<p>One file per run. Written once at completion. Contains everything the GUI needs to render a past run's dashboard. NOT needed for product learning, NOT included in the Wave 6 product checkpoint.</p>
+
+<div class="diagram-wrap" style="padding: 16px 24px; font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; line-height: 1.8; color: #5f5e5a;">
+<strong style="color: #2c2c2a; font-size: 14px;">run-summary.json (~50-300 KB typical)</strong><br>
+<br>
+<span style="color:#534AB7">// Identity + lifecycle</span><br>
+run_id, category, product_id, status,<br>
+started_at, ended_at, duration_ms,<br>
+<br>
+<span style="color:#534AB7">// Phase timeline (for timeline visualization)</span><br>
+phase_cursor,<br>
+stages: { search: {started_at, ended_at}, fetch: {...}, parse: {...}, index: {...} },<br>
+startup_ms: { first_event, search_started, fetch_started, parse_started, index_started },<br>
+<br>
+<span style="color:#534AB7">// Counters (final snapshot)</span><br>
+counters: { pages_checked, fetched_ok, fetched_404, fetched_blocked,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fetched_error, parse_completed, indexed_docs, fields_filled },<br>
+<br>
+<span style="color:#534AB7">// Search overview (query list, not the full debug/rejection payloads)</span><br>
+search: {<br>
+&nbsp;&nbsp;query_count, selected_count,<br>
+&nbsp;&nbsp;queries: [{ query, hint_source, result_count, providers, candidate_count }],<br>
+&nbsp;&nbsp;brand_resolution: { domain, aliases, confidence }<br>
+},<br>
+<br>
+<span style="color:#534AB7">// NeedSet outcome (summary, not the planner/bundle internals)</span><br>
+needset: {<br>
+&nbsp;&nbsp;total_fields,<br>
+&nbsp;&nbsp;summary: { core_unresolved, secondary_unresolved, optional_unresolved, conflicts },<br>
+&nbsp;&nbsp;focus_fields: string[],<br>
+&nbsp;&nbsp;fields_filled_ratio<br>
+},<br>
+<br>
+<span style="color:#534AB7">// Worker timeline (derived from bridge_events, not raw events)</span><br>
+workers: [{<br>
+&nbsp;&nbsp;worker_id, urls_processed, avg_fetch_ms, avg_parse_ms,<br>
+&nbsp;&nbsp;timeline: [{ url, status_code, ms, outcome, fields_found }]<br>
+}],<br>
+<br>
+<span style="color:#534AB7">// Quality signals (for dashboard cards)</span><br>
+quality: {<br>
+&nbsp;&nbsp;fields_filled_ratio, avg_confidence,<br>
+&nbsp;&nbsp;top_blockers: [{ host, reason, count }],<br>
+&nbsp;&nbsp;top_contributors: [{ host, fields_contributed }]<br>
+},<br>
+<br>
+<span style="color:#534AB7">// Identity resolution outcome</span><br>
+identity: { fingerprint, lock_status, dedupe_mode },<br>
+<br>
+<span style="color:#534AB7">// Cost summary (totals only, not per-entry billing)</span><br>
+cost: { total_usd, llm_calls, search_calls }
+</div>
+
+<div class="removed">
+<strong>What run-summary.json replaces:</strong> run.json (20-50 mid-run overwrites reduced to 1 write at end), bridge_events table rows for past runs (500-3,000 per run summarized into worker timelines), run_artifacts debug payloads (needset bundles, search profile rejection logs stripped to outcomes only), needset.json boundary writes, search_profile.json boundary writes. The <code>runs</code> SQL table gets slimmed to just: run_id, category, product_id, status, started_at, ended_at, counters.
+</div>
+
+<h3>What stays in product SQL (Wave 6 checkpoint scope)</h3>
+<p>This is the data that grows over time and matters for the next run. It's what the Wave 6 checkpoint serializer will serialize into <code>product-checkpoint.json</code>.</p>
+
+<div class="diagram-wrap" style="padding: 16px 24px; font-size: 13px; line-height: 1.7; color: #5f5e5a;">
+<table style="width:100%; border-collapse: collapse;">
+<tr style="border-bottom: 2px solid #e8e6df;">
+  <th style="text-align:left; padding: 6px 8px; color: #444441; width: 240px;">Table</th>
+  <th style="text-align:left; padding: 6px 8px; color: #444441;">Rows after 1K URLs x 73 keys</th>
+  <th style="text-align:left; padding: 6px 8px; color: #444441;">Why it matters</th>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">item_field_state</td>
+  <td style="padding: 6px 8px;">~73</td>
+  <td style="padding: 6px 8px;">Current winning value per field</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">candidates</td>
+  <td style="padding: 6px 8px;">~36,000-73,000</td>
+  <td style="padding: 6px 8px;">Full audit trail of all extraction attempts</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">source_registry</td>
+  <td style="padding: 6px 8px;">~1,000</td>
+  <td style="padding: 6px 8px;">Every URL visited + HTTP status</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">source_assertions + evidence_refs</td>
+  <td style="padding: 6px 8px;">~15,000 + ~30,000</td>
+  <td style="padding: 6px 8px;">Provenance chain: URL to field value</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">key_review_state</td>
+  <td style="padding: 6px 8px;">~73</td>
+  <td style="padding: 6px 8px;">AI/human review decisions per field</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">field_history</td>
+  <td style="padding: 6px 8px;">~73</td>
+  <td style="padding: 6px 8px;">Field value evolution across rounds</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">component_identity + values</td>
+  <td style="padding: 6px 8px;">~50-200</td>
+  <td style="padding: 6px 8px;">Resolved components + properties</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">frontier (queries + urls + yields)</td>
+  <td style="padding: 6px 8px;">~1,000 + ~1,000 + ~5,000</td>
+  <td style="padding: 6px 8px;">Search/URL learning for next run</td>
+</tr>
+<tr>
+  <td style="padding: 6px 8px; font-family: monospace; font-weight: 600;">source_intel_* + learning</td>
+  <td style="padding: 6px 8px;">~500 (category-wide)</td>
+  <td style="padding: 6px 8px;">Domain reliability scores, field rewards</td>
+</tr>
+</table>
+<p style="margin-top: 12px; color: #085041;"><strong>Total: ~20-30 MB per product.</strong> That's fine. SQLite handles hundreds of MB. Queries are indexed. This is the learning memory — every candidate, every domain score, every field yield matters for the next run.</p>
+</div>
+
+<h3>Wave 5.5 micro-steps</h3>
+
+<div class="step-grid">
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S1</div></div>
+    <div class="step-body">
+      <div class="step-title">Define + freeze run-summary.json contract</div>
+      <div class="step-desc">Write the exact schema for run-summary.json. Define which fields come from in-memory bridge state vs derived from bridge_events. This contract is the source of truth for what the GUI needs from a past run. Use Zod schema for runtime validation.</div>
+      <div class="step-files">src/features/indexing/contracts/runSummaryContract.js (new)</div>
+      <div class="step-test">Test: contract schema validates against 3 golden-master run payloads. Shape matches GUI TypeScript types.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S2</div></div>
+    <div class="step-body">
+      <div class="step-title">Build serializeRunSummary() — in-memory state to JSON</div>
+      <div class="step-desc">Pure function: takes the bridge's in-memory state (counters, stages, startup_ms, worker timeline from bridge_events, search overview from run_artifacts, needset summary, quality metrics) and produces a run-summary.json object. No SQL reads — everything comes from the bridge's accumulated state. Derive worker timelines from bridge_events in memory.</div>
+      <div class="step-files">src/indexlab/runSummarySerializer.js (new)</div>
+      <div class="step-test">Test: serialize mock bridge state, validate against contract. Verify worker timeline derivation. Verify size is ~50-300 KB range.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S3</div></div>
+    <div class="step-body">
+      <div class="step-title">Write run-summary.json at completion (dual-write period)</div>
+      <div class="step-desc">At finishRun(), call serializeRunSummary() and write to the run directory. This is additive — existing run.json, needset.json, search_profile.json still write at boundary. Dual-write period for validation.</div>
+      <div class="step-files">runtimeBridgeArtifacts.js</div>
+      <div class="step-test">Test: after pipeline run, run-summary.json exists, validates against contract, GUI can render past run from it.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S4</div></div>
+    <div class="step-body">
+      <div class="step-title">Switch GUI past-run readers to run-summary.json</div>
+      <div class="step-desc">Update runtimeOpsRoutes.js, runListBuilder.js, and all past-run endpoints to read from run-summary.json instead of querying runs SQL + bridge_events SQL + run_artifacts SQL. For live runs, keep using IPC + in-memory state (no change). Fallback to old path for pre-migration runs.</div>
+      <div class="step-files">runtimeOpsRoutes.js, runListBuilder.js, runtimeOpsRouteContext.js</div>
+      <div class="step-test">Test: GUI dashboard renders identically from run-summary.json vs old path. Live run dashboard unchanged.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S5</div></div>
+    <div class="step-body">
+      <div class="step-title">Slim the runs table + kill boundary JSON writes</div>
+      <div class="step-desc">Remove from runs table: boot_step, boot_progress, startup_ms, stages, browser_pool, needset_summary, search_profile_summary, artifacts, extra. Keep only: run_id, category, product_id, status, started_at, ended_at, counters. Kill the <code>writeJson: true</code> calls in ensureRun() and finishRun() — run-summary.json replaces run.json, needset.json, search_profile.json at boundaries.</div>
+      <div class="step-files">specDbSchema.js, specDbStatements.js, runMetaStore.js, runtimeBridgeArtifacts.js</div>
+      <div class="step-kill">Kills: run.json (start + end writes), needset.json (start write), search_profile.json (start write), 13 unused runs table columns</div>
+      <div class="step-test">Test: full pipeline run succeeds, GUI works, no boundary JSON files created, runs table has only 7 columns.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num"><div class="step-dot" style="background:#ef9f27">S6</div></div>
+    <div class="step-body">
+      <div class="step-title">Scope bridge_events + run_artifacts for completed runs</div>
+      <div class="step-desc">For completed runs: bridge_events rows are no longer needed (summarized into run-summary.json worker timelines). Add a cleanup step at finishRun() that deletes bridge_events for the current run_id after serializing the summary. Same for run_artifacts — the debug payloads are captured in run-summary.json. For <strong>live</strong> runs: bridge_events + run_artifacts still written and read normally.</div>
+      <div class="step-files">runtimeBridgeArtifacts.js, sourceIntelStore.js, runArtifactStore.js</div>
+      <div class="step-kill">Kills: bridge_events rows for past runs (500-3,000 per run), run_artifacts rows for past runs (3 per run)</div>
+      <div class="step-test">Test: after run completes, bridge_events and run_artifacts for that run_id are empty. GUI still renders via run-summary.json.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="done">
+<strong>Wave 5.5 end state:</strong> Clean separation between GUI telemetry (run-summary.json, written once, ~50-300 KB) and product knowledge (SQL, grows forever, ~20-30 MB per product). The <code>runs</code> table is slim (7 columns). bridge_events and run_artifacts exist only for live runs and are cleaned up at completion. Boundary JSON writes (run.json, needset.json, search_profile.json) are eliminated. Wave 6's checkpoint serializer now has a clear scope: serialize only product knowledge tables.
+</div>
+
+
 <!-- ==================== WAVE 6 ==================== -->
 <div class="phase-header">
-  <h3>Wave 6 — Checkpoint architecture + Chokidar removal</h3>
-  <p>Build the product checkpoint serializer. Wire it into completion and archival. Remove file watchers.</p>
+  <h3>Wave 6 — Product checkpoint architecture + Chokidar removal</h3>
+  <p>Build the product checkpoint serializer. It ONLY serializes product knowledge (scoped by Wave 5.5's split). Wire it into completion and archival. Remove file watchers.</p>
+</div>
+
+<div class="note">
+<strong>Depends on Wave 5.5:</strong> The checkpoint serializer's scope is defined by the run/product split. It serializes item_field_state, candidates, source_registry, evidence chain, key_review_state, field_history, component data, and frontier data — NOT run telemetry, NOT worker timelines, NOT needset debug payloads. The run-summary.json (from Wave 5.5) is included in the archive bundle alongside the product checkpoint, but they are separate files with separate purposes.
 </div>
 
 <div class="step-grid">
@@ -780,9 +1069,9 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#a32d2d">22</div></div>
     <div class="step-body">
       <div class="step-title">Build product checkpoint serializer</div>
-      <div class="step-desc">New module: serializeProductCheckpoint(specDb, category, productId) → fat JSON object containing: all item_field_state rows, all candidates, all component_links, all source_assertions, all evidence_refs, all key_review decisions. This is a pure SELECT → serialize function, no side effects.</div>
+      <div class="step-desc">New module: serializeProductCheckpoint(specDb, category, productId) → fat JSON object containing: all item_field_state rows, all candidates, all component_links + values + aliases, all source_assertions + evidence_refs, all key_review_state + review decisions, field_history, frontier (queries + urls + yields). This is a pure SELECT → serialize function, no side effects. Does NOT include run telemetry (that's in run-summary.json from Wave 5.5).</div>
       <div class="step-files">src/db/checkpointSerializer.js (new)</div>
-      <div class="step-test">Test: serialize a product, delete from DB, seed from checkpoint, verify all data matches.</div>
+      <div class="step-test">Test: serialize a product with 73 fields and 1K+ candidates, delete from DB, seed from checkpoint, verify all data matches. Verify run telemetry is NOT in the checkpoint.</div>
     </div>
   </div>
 
@@ -790,9 +1079,9 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#a32d2d">23</div></div>
     <div class="step-body">
       <div class="step-title">Wire checkpoint into run completion + archival</div>
-      <div class="step-desc">At run completion, call serializeProductCheckpoint() and include the result in the archive bundle alongside the generated run.json, run_events.ndjson, and export artifacts (spec.json, summary.json, etc.). This becomes the single rebuild artifact per product.</div>
+      <div class="step-desc">At run completion, call serializeProductCheckpoint() and include the result in the archive bundle alongside run-summary.json (from Wave 5.5) and export artifacts (spec.json, summary.json, etc.). Archive bundle now contains: product-checkpoint.json (product knowledge, big), run-summary.json (GUI telemetry, small), export artifacts, and content-addressed binaries.</div>
       <div class="step-files">indexLabProcessCompletion.js, runDataRelocationService.js</div>
-      <div class="step-test">Test: S3 archive bundle contains product-checkpoint.json. Content matches DB state.</div>
+      <div class="step-test">Test: S3 archive bundle contains both product-checkpoint.json and run-summary.json. Product checkpoint matches DB state.</div>
     </div>
   </div>
 
@@ -800,10 +1089,10 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#a32d2d">24</div></div>
     <div class="step-body">
       <div class="step-title">Build seedFromCheckpoint + remove Chokidar</div>
-      <div class="step-desc">Create seedFromCheckpoint(specDb, checkpointJson) that inserts all product data from a checkpoint JSON into the DB. Wire into the startup seed path. Then remove all Chokidar file watcher setup — IPC is the sole real-time channel, SQL is the sole read source, and file watching is no longer needed.</div>
+      <div class="step-desc">Create seedFromCheckpoint(specDb, checkpointJson) that inserts all product data from a checkpoint JSON into the DB. Wire into the startup seed path. Then remove all Chokidar file watcher setup — IPC is the sole real-time channel, SQL is the sole read source, run-summary.json is the sole past-run display source, and file watching is no longer needed.</div>
       <div class="step-files">src/db/checkpointSeeder.js (new), serverBootstrap.js</div>
       <div class="step-kill">Kills: Chokidar dependency, all file watcher setup code</div>
-      <div class="step-test">Test: delete SQLite, restart server, verify full restore from checkpoints. GUI works without file watchers.</div>
+      <div class="step-test">Test: delete SQLite, restart server, verify full restore from product checkpoints. GUI works for past runs via run-summary.json. No file watchers.</div>
     </div>
   </div>
 
@@ -826,28 +1115,34 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 </tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">1</td><td style="padding: 6px 8px;">Audit runtime_events INSERT coverage (specDb wiring fix + characterization)</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Audit</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">2a</td><td style="padding: 6px 8px;">Create bridge_events table + emit() SQL writes</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Schema + Write</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fafff8;"><td style="text-align:center; padding: 6px 8px;">2b</td><td style="padding: 6px 8px;">Switch runtimeOpsRoutes reader to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">2b</td><td style="padding: 6px 8px;">Switch runtimeOpsRoutes reader to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">2c</td><td style="padding: 6px 8px;">Switch remaining 17 event reader callers to SQL</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">3</td><td style="padding: 6px 8px;">Stop appending to run_events.ndjson</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #f1efe8;"><td style="text-align:center; padding: 6px 8px;">4</td><td style="padding: 6px 8px;"><s>Generate run_events.ndjson at completion from SQL</s> — SKIPPED (no archive compat needed)</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Archive</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x23ED;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">5</td><td style="padding: 6px 8px;">Stop appending to global events.jsonl + kill Chokidar watchers</td><td style="text-align:center; padding: 6px 8px; color: #0F6E56;">1</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">6</td><td style="padding: 6px 8px;">Create runs table</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">7</td><td style="padding: 6px 8px;">Create runMetaStore with INSERT/UPDATE</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Store</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">8</td><td style="padding: 6px 8px;">Dual-write: run.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">9</td><td style="padding: 6px 8px;">Switch runListBuilder to read from SQL</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">10</td><td style="padding: 6px 8px;">Stop mid-run run.json overwrites</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff8f5;"><td style="text-align:center; padding: 6px 8px;">11</td><td style="padding: 6px 8px;">Create run_artifacts table</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff8f5;"><td style="text-align:center; padding: 6px 8px;">12</td><td style="padding: 6px 8px;">Dual-write: needset.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff8f5;"><td style="text-align:center; padding: 6px 8px;">13</td><td style="padding: 6px 8px;">Dual-write: search_profile.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff8f5;"><td style="text-align:center; padding: 6px 8px;">14</td><td style="padding: 6px 8px;">Switch API routes to serve artifacts from SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff8f5;"><td style="text-align:center; padding: 6px 8px;">15</td><td style="padding: 6px 8px;">Stop mid-run artifact JSON writes</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fffcf5;"><td style="text-align:center; padding: 6px 8px;">16</td><td style="padding: 6px 8px;">Audit billing_entries parity</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Audit</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fffcf5;"><td style="text-align:center; padding: 6px 8px;">17</td><td style="padding: 6px 8px;">Stop appending to billing NDJSON</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fffcf5;"><td style="text-align:center; padding: 6px 8px;">18</td><td style="padding: 6px 8px;">Create metrics table + stop NDJSON</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Schema + Write</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">19</td><td style="padding: 6px 8px;">Complete LLM cache migration — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">20</td><td style="padding: 6px 8px;">Complete learning_profiles — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #f8f5ff;"><td style="text-align:center; padding: 6px 8px;">21</td><td style="padding: 6px 8px;">Complete category_brain — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">22</td><td style="padding: 6px 8px;">Build product checkpoint serializer</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">New module</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">6</td><td style="padding: 6px 8px;">Create runs table</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">7</td><td style="padding: 6px 8px;">Create runMetaStore with INSERT/UPDATE</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Store</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">8</td><td style="padding: 6px 8px;">Dual-write: run.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">9</td><td style="padding: 6px 8px;">Switch runListBuilder to read from SQL</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">10</td><td style="padding: 6px 8px;">Stop mid-run run.json overwrites</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">2</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">11</td><td style="padding: 6px 8px;">Create run_artifacts table</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">12</td><td style="padding: 6px 8px;">Dual-write: needset.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">13</td><td style="padding: 6px 8px;">Dual-write: search_profile.json + SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">14</td><td style="padding: 6px 8px;">Switch API routes to serve artifacts from SQL</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">15</td><td style="padding: 6px 8px;">Stop mid-run artifact JSON writes</td><td style="text-align:center; padding: 6px 8px; color: #993C1D;">3</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">16</td><td style="padding: 6px 8px;">Audit billing_entries parity</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Audit</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">17</td><td style="padding: 6px 8px;">Stop appending to billing NDJSON</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">18</td><td style="padding: 6px 8px;">Create metrics table + stop NDJSON</td><td style="text-align:center; padding: 6px 8px; color: #d29922;">4</td><td style="text-align:center; padding: 6px 8px;">Schema + Write</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">19</td><td style="padding: 6px 8px;">Complete LLM cache migration — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">20</td><td style="padding: 6px 8px;">Complete learning_profiles — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">21</td><td style="padding: 6px 8px;">Complete category_brain — SQL only</td><td style="text-align:center; padding: 6px 8px; color: #3C3489;">5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S1</td><td style="padding: 6px 8px;">Define + freeze run-summary.json contract</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">Contract</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S2</td><td style="padding: 6px 8px;">Build serializeRunSummary() — in-memory state to JSON</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">New module</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S3</td><td style="padding: 6px 8px;">Write run-summary.json at completion (dual-write period)</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S4</td><td style="padding: 6px 8px;">Switch GUI past-run readers to run-summary.json</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">Read path</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S5</td><td style="padding: 6px 8px;">Slim runs table + kill boundary JSON writes (run.json, needset.json, search_profile.json)</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fef6e8;"><td style="text-align:center; padding: 6px 8px;">S6</td><td style="padding: 6px 8px;">Scope bridge_events + run_artifacts for completed runs (cleanup at finishRun)</td><td style="text-align:center; padding: 6px 8px; color: #ef9f27;">5.5</td><td style="text-align:center; padding: 6px 8px;">Write path</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">22</td><td style="padding: 6px 8px;">Build product checkpoint serializer (product knowledge only, per Wave 5.5 split)</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">New module</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">23</td><td style="padding: 6px 8px;">Wire checkpoint into completion + archival</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">Integration</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">24</td><td style="padding: 6px 8px;">Build seedFromCheckpoint + remove Chokidar</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">Integration</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 </table>

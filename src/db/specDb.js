@@ -31,6 +31,7 @@ import { createPurgeStore } from './stores/purgeStore.js';
 import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
+import { createMetricsStore } from './stores/metricsStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -122,6 +123,10 @@ export class SpecDb {
     });
     this._runArtifactStore = createRunArtifactStore({
       stmts: { _upsertRunArtifact: this._upsertRunArtifact, _getRunArtifact: this._getRunArtifact, _getRunArtifactsByRunId: this._getRunArtifactsByRunId }
+    });
+    this._metricsStore = createMetricsStore({
+      db: this.db,
+      stmts: { _insertMetric: this._insertMetric }
     });
   }
 
@@ -698,9 +703,14 @@ export class SpecDb {
 
   insertBillingEntry(e) { this._billingStore.insertBillingEntry(e); }
   insertBillingEntriesBatch(es) { this._billingStore.insertBillingEntriesBatch(es); }
-  getBillingRollup(m) { return this._billingStore.getBillingRollup(m); }
+  getBillingRollup(m, cat) { return this._billingStore.getBillingRollup(m, cat); }
   getBillingEntriesForMonth(m) { return this._billingStore.getBillingEntriesForMonth(m); }
   getBillingSnapshot(m, pid) { return this._billingStore.getBillingSnapshot(m, pid); }
+
+  // --- Metrics ---
+
+  insertMetric(e) { this._metricsStore.insertMetric(e); }
+  insertMetricsBatch(es) { this._metricsStore.insertMetricsBatch(es); }
 
   // --- LLM Cache ---
 
@@ -735,6 +745,7 @@ export class SpecDb {
 
   insertBridgeEvent(e) { this._sourceIntelStore.insertBridgeEvent(e); }
   getBridgeEventsByRunId(runId, limit) { return this._sourceIntelStore.getBridgeEventsByRunId(runId, limit); }
+  purgeBridgeEventsForRun(runId) { return this._sourceIntelStore.purgeBridgeEventsForRun(runId); }
 
   // --- Run Metadata (mid-run state, replaces run.json overwrites) ---
 

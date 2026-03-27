@@ -135,6 +135,7 @@ function createIndexlabRouteHandler(overrides = {}) {
     readIndexLabRunMeta: () => null,
     resolveIndexLabRunDirectory: () => '',
     readIndexLabRunEvents: () => [],
+    readRunSummaryEvents: () => [],
     readIndexLabRunNeedSet: () => null,
     readIndexLabRunSearchProfile: () => null,
     readIndexLabRunPhase07Retrieval: () => null,
@@ -344,6 +345,10 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
       readIndexLabRunMeta,
       resolveIndexLabRunDirectory,
       readIndexLabRunEvents: async () => {
+        const text = await fs.readFile(path.join(runDir, 'run_events.ndjson'), 'utf8');
+        return text.trim().split('\n').map((line) => JSON.parse(line));
+      },
+      readRunSummaryEvents: async () => {
         const text = await fs.readFile(path.join(runDir, 'run_events.ndjson'), 'utf8');
         return text.trim().split('\n').map((line) => JSON.parse(line));
       },

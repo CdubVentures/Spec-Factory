@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { createHash } from 'node:crypto';
 
 function stableStringify(value) {
@@ -24,11 +22,9 @@ function sha256(value) {
 export class LLMCache {
   constructor({
     specDb = null,
-    cacheDir = '',
     defaultTtlMs = 7 * 24 * 60 * 60 * 1000
   } = {}) {
-    this.specDb = specDb;
-    this.cacheDir = String(cacheDir || '').trim();
+    this.specDb = specDb || null;
     this.defaultTtlMs = Math.max(1, Number(defaultTtlMs || 0) || (7 * 24 * 60 * 60 * 1000));
     this._setCount = 0;
   }
@@ -48,92 +44,51 @@ export class LLMCache {
     return sha256(payload);
   }
 
-  filePathForKey(key) {
-    return path.join(this.cacheDir, `${String(key || '').trim()}.json`);
-  }
-
   async get(key) {
-    if (!key) {
+    if (!key || !this.specDb) {
       return null;
     }
 
-    // Try SQLite first when specDb is available
-    if (this.specDb) {
-      try {
-        const entry = this.specDb.getLlmCacheEntry(key);
-        if (entry) {
-          const timestamp = Number(entry.timestamp || 0);
-          const ttl = Number(entry.ttl || this.defaultTtlMs);
-          if (Number.isFinite(timestamp) && Number.isFinite(ttl) && timestamp > 0 && ttl > 0) {
-            if ((Date.now() - timestamp) <= ttl) {
-              const response = entry.response;
-              if (typeof response === 'string') {
-                try {
-                  return JSON.parse(response) ?? null;
-                } catch {
-                  return response ?? null;
-                }
+    try {
+      const entry = this.specDb.getLlmCacheEntry(key);
+      if (entry) {
+        const timestamp = Number(entry.timestamp || 0);
+        const ttl = Number(entry.ttl || this.defaultTtlMs);
+        if (Number.isFinite(timestamp) && Number.isFinite(ttl) && timestamp > 0 && ttl > 0) {
+          if ((Date.now() - timestamp) <= ttl) {
+            const response = entry.response;
+            if (typeof response === 'string') {
+              try {
+                return JSON.parse(response) ?? null;
+              } catch {
+                return response ?? null;
               }
-              return response ?? null;
             }
+            return response ?? null;
           }
         }
-      } catch {
-        // Fall through to file-based cache
       }
+    } catch {
+      // WHY: best-effort — cache must not crash the pipeline
     }
 
-    // File-based fallback
-    if (!this.cacheDir) {
-      return null;
-    }
-    const filePath = this.filePathForKey(key);
-    try {
-      const raw = await fs.readFile(filePath, 'utf8');
-      const parsed = JSON.parse(raw);
-      const timestamp = Number(parsed?.timestamp || 0);
-      const ttl = Number(parsed?.ttl || this.defaultTtlMs);
-      if (!Number.isFinite(timestamp) || !Number.isFinite(ttl) || timestamp <= 0 || ttl <= 0) {
-        return null;
-      }
-      if ((Date.now() - timestamp) > ttl) {
-        return null;
-      }
-      return parsed.response ?? null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   async set(key, response, ttlMs = this.defaultTtlMs) {
-    if (!key) {
+    if (!key || !this.specDb) {
       return;
     }
     const effectiveTtl = Math.max(1, Number(ttlMs || this.defaultTtlMs) || this.defaultTtlMs);
 
-    // Write to SQLite when specDb is available
-    if (this.specDb) {
-      try {
-        this.specDb.setLlmCacheEntry(key, JSON.stringify(response), Date.now(), effectiveTtl);
-        this._setCount += 1;
-        if (this._setCount % 100 === 0) {
-          this.specDb.evictExpiredCache(Date.now());
-        }
-      } catch {
-        // Ignore SQLite write errors; fall through to file if enabled
+    try {
+      this.specDb.setLlmCacheEntry(key, JSON.stringify(response), Date.now(), effectiveTtl);
+      this._setCount += 1;
+      if (this._setCount % 100 === 0) {
+        this.specDb.evictExpiredCache(Date.now());
       }
-    }
-
-    // Write JSON file only when specDb is not available (fallback)
-    if (!this.specDb && this.cacheDir) {
-      const filePath = this.filePathForKey(key);
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      const payload = {
-        response,
-        timestamp: Date.now(),
-        ttl: effectiveTtl
-      };
-      await fs.writeFile(filePath, `${JSON.stringify(payload)}\n`, 'utf8');
+    } catch {
+      // WHY: best-effort — cache must not crash the pipeline
     }
   }
 
@@ -143,4 +98,3 @@ export class LLMCache {
     }
   }
 }
-

@@ -79,10 +79,10 @@ test('runLlmHealthCheck validates response and writes billing ledger', async () 
     assert.equal(result.prompt_tokens > 0, true);
     assert.equal(result.cost_usd >= 0, true);
 
+    // WHY: Step 17 — billing writes are SQL-only. healthCheck doesn't pass
+    // specDb, so no billing persistence. Verify no NDJSON files created.
     const hasLedger = [...storage.map.keys()].some((key) => key.includes('_billing/ledger/'));
-    const hasRollup = [...storage.map.keys()].some((key) => key.includes('_billing/monthly/'));
-    assert.equal(hasLedger, true);
-    assert.equal(hasRollup, true);
+    assert.equal(hasLedger, false, 'no NDJSON billing files without specDb');
   } finally {
     global.fetch = originalFetch;
   }

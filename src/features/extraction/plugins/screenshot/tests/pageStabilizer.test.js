@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import { stabilizePage } from '../pageStabilizer.js';
 import { createPageDouble } from '../../../tests/factories/extractionTestDoubles.js';
 
+// WHY: The stabilizer's single page.evaluate() returns a combined object:
+// { gates: ['fonts', 'images', 'paint'], scrollHeight, viewportHeight }
+// This eliminates a separate estimatePageHeight CDP round-trip.
+const FULL_RESULT = { gates: ['fonts', 'images', 'paint'], scrollHeight: 5000, viewportHeight: 1080 };
+
 describe('stabilizePage', () => {
   it('returns stabilized true when all gates pass within timeout', async () => {
-    // WHY: Single evaluate call returns array of gate results from browser
-    const page = createPageDouble({
-      evaluateResult: ['fonts', 'images', 'paint'],
-    });
+    const page = createPageDouble({ evaluateResult: FULL_RESULT });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 
@@ -19,19 +21,37 @@ describe('stabilizePage', () => {
   });
 
   it('makes exactly one page.evaluate call (single CDP round-trip)', async () => {
-    const page = createPageDouble({
-      evaluateResult: ['fonts', 'images', 'paint'],
-    });
+    const page = createPageDouble({ evaluateResult: FULL_RESULT });
 
     await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 
     assert.equal(page.evaluateCalls.length, 1);
   });
 
-  it('returns durationMs as a non-negative number', async () => {
+  it('returns page dimensions from the same evaluate call', async () => {
     const page = createPageDouble({
-      evaluateResult: ['fonts', 'images', 'paint'],
+      evaluateResult: { gates: ['fonts', 'images', 'paint'], scrollHeight: 12000, viewportHeight: 1080 },
     });
+
+    const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
+
+    assert.equal(result.scrollHeight, 12000);
+    assert.equal(result.viewportHeight, 1080);
+    assert.equal(result.exceedsLimit, false);
+  });
+
+  it('sets exceedsLimit true when scrollHeight exceeds 16384', async () => {
+    const page = createPageDouble({
+      evaluateResult: { gates: ['fonts', 'images', 'paint'], scrollHeight: 20000, viewportHeight: 1080 },
+    });
+
+    const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
+
+    assert.equal(result.exceedsLimit, true);
+  });
+
+  it('returns durationMs as a non-negative number', async () => {
+    const page = createPageDouble({ evaluateResult: FULL_RESULT });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 
@@ -46,6 +66,8 @@ describe('stabilizePage', () => {
 
     assert.equal(result.stabilized, true);
     assert.equal(page.evaluateCalls.length, 0);
+    assert.equal(result.scrollHeight, 0);
+    assert.equal(result.exceedsLimit, false);
   });
 
   it('skips stabilization when disabled via string false', async () => {
@@ -58,9 +80,7 @@ describe('stabilizePage', () => {
   });
 
   it('defaults to enabled when setting is missing', async () => {
-    const page = createPageDouble({
-      evaluateResult: ['fonts', 'images', 'paint'],
-    });
+    const page = createPageDouble({ evaluateResult: FULL_RESULT });
 
     const result = await stabilizePage({ page, settings: {} });
 
@@ -75,6 +95,8 @@ describe('stabilizePage', () => {
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 
     assert.equal(result.stabilized, false);
+    assert.equal(result.scrollHeight, 0);
+    assert.equal(result.exceedsLimit, false);
   });
 
   it('never throws even on catastrophic failure', async () => {
@@ -82,12 +104,12 @@ describe('stabilizePage', () => {
 
     assert.equal(result.stabilized, false);
     assert.equal(typeof result.durationMs, 'number');
+    assert.equal(result.scrollHeight, 0);
   });
 
   it('handles partial gate results from the browser', async () => {
-    // WHY: If fonts failed but images and paint succeeded, only 2 entries
     const page = createPageDouble({
-      evaluateResult: [null, 'images', 'paint'],
+      evaluateResult: { gates: [null, 'images', 'paint'], scrollHeight: 3000, viewportHeight: 1080 },
     });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
@@ -99,9 +121,7 @@ describe('stabilizePage', () => {
   });
 
   it('gates object has all three boolean fields', async () => {
-    const page = createPageDouble({
-      evaluateResult: ['fonts', 'images', 'paint'],
-    });
+    const page = createPageDouble({ evaluateResult: FULL_RESULT });
 
     const result = await stabilizePage({ page, settings: { capturePageScreenshotStabilizeEnabled: true } });
 

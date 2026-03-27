@@ -6,8 +6,12 @@ function makeEvent(event, payload = {}) {
   return { event, ts: '2026-03-25T12:00:00.000Z', payload };
 }
 
-function makeExtractionEvent(plugin, url, workerId) {
-  return makeEvent('extraction_plugin_completed', { plugin, url, worker_id: workerId });
+function makeExtractionEvent(plugin, url, workerId, result = undefined, ts = undefined) {
+  const payload = { plugin, url, worker_id: workerId };
+  if (result !== undefined) payload.result = result;
+  const evt = makeEvent('extraction_plugin_completed', payload);
+  if (ts) evt.ts = ts;
+  return evt;
 }
 
 // ── 1. Empty events ────────────────────────────────────────────────────────
@@ -30,16 +34,16 @@ test('ignores events that are not extraction_plugin_completed', () => {
 
 // ── 3. Single plugin, single event ─────────────────────────────────────────
 
-test('groups a single extraction_plugin_completed event', () => {
+test('groups a single extraction_plugin_completed event with host and ts', () => {
   const events = [makeExtractionEvent('screenshot', 'https://a.com', 'fetch-1')];
   const result = buildExtractionPluginPhases(events);
 
-  assert.deepStrictEqual(result, {
-    screenshot: {
-      entries: [{ url: 'https://a.com', worker_id: 'fetch-1' }],
-      total: 1,
-    },
-  });
+  assert.equal(result.screenshot.total, 1);
+  const entry = result.screenshot.entries[0];
+  assert.equal(entry.url, 'https://a.com');
+  assert.equal(entry.worker_id, 'fetch-1');
+  assert.equal(entry.host, 'a.com');
+  assert.equal(typeof entry.ts, 'string');
 });
 
 // ── 4. Single plugin, multiple events ──────────────────────────────────────
@@ -93,4 +97,68 @@ test('skips events with empty or missing plugin name', () => {
   ];
   const result = buildExtractionPluginPhases(events);
   assert.deepStrictEqual(result, {});
+});
+
+// ── 8. Result spread (mirrors fetch builder pattern) ─────────────────────
+
+test('spreads result fields into each entry', () => {
+  const events = [
+    makeExtractionEvent('screenshot', 'https://rtings.com', 'fetch-1', {
+      screenshot_count: 2,
+      total_bytes: 150000,
+      formats: ['jpeg'],
+      has_stitched: false,
+    }),
+  ];
+
+  const result = buildExtractionPluginPhases(events);
+  const entry = result.screenshot.entries[0];
+
+  assert.equal(entry.screenshot_count, 2);
+  assert.equal(entry.total_bytes, 150000);
+  assert.deepStrictEqual(entry.formats, ['jpeg']);
+  assert.equal(entry.has_stitched, false);
+});
+
+// ── 9. Host derivation ───────────────────────────────────────────────────
+
+test('derives host from url', () => {
+  const events = [
+    makeExtractionEvent('screenshot', 'https://www.rtings.com/mouse/reviews', 'fetch-1'),
+  ];
+
+  const result = buildExtractionPluginPhases(events);
+  assert.equal(result.screenshot.entries[0].host, 'www.rtings.com');
+});
+
+test('host is empty string for invalid url', () => {
+  const events = [
+    makeExtractionEvent('screenshot', 'not-a-url', 'fetch-1'),
+  ];
+
+  const result = buildExtractionPluginPhases(events);
+  assert.equal(result.screenshot.entries[0].host, '');
+});
+
+// ── 10. Timestamp forwarded ──────────────────────────────────────────────
+
+test('includes ts from event', () => {
+  const events = [
+    makeExtractionEvent('screenshot', 'https://a.com', 'fetch-1', {}, '2026-03-27T12:34:56Z'),
+  ];
+
+  const result = buildExtractionPluginPhases(events);
+  assert.equal(result.screenshot.entries[0].ts, '2026-03-27T12:34:56Z');
+});
+
+// ── 11. Unknown plugin with custom result fields auto-grouped ────────────
+
+test('unknown plugin spreads its result without code changes (O(1))', () => {
+  const events = [
+    makeExtractionEvent('pdf_extract', 'https://b.com', 'fetch-2', { pages: 5, tables: 3 }),
+  ];
+
+  const result = buildExtractionPluginPhases(events);
+  assert.equal(result.pdf_extract.entries[0].pages, 5);
+  assert.equal(result.pdf_extract.entries[0].tables, 3);
 });

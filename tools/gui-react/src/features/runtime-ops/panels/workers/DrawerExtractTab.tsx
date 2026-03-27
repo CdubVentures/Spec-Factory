@@ -12,7 +12,7 @@ type PluginStatus = 'pending' | 'completed' | 'failed';
 
 const STATUS_BADGE: Record<PluginStatus, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'sf-chip-neutral' },
-  completed: { label: 'Done', className: 'sf-chip-success' },
+  completed: { label: 'Success', className: 'sf-chip-success' },
   failed: { label: 'Failed', className: 'sf-chip-danger' },
 };
 
@@ -22,8 +22,9 @@ function pluginLabel(name: string): string {
 }
 
 export function DrawerExtractTab({ fields, extractionPlugins, workerState }: DrawerExtractTabProps) {
-  // WHY: Derive per-plugin status from events. Multiple events per plugin
-  // (one per URL) are rolled up — if any failed, show failed; else completed.
+  // WHY: Plugin events are the ONLY source of truth for execution status.
+  // extraction_plugin_completed → Success. extraction_plugin_failed → Failed.
+  // No event → Pending. We do NOT guess from worker state.
   const pluginStatusMap = useMemo(() => {
     const map = new Map<string, PluginStatus>();
 
@@ -32,25 +33,15 @@ export function DrawerExtractTab({ fields, extractionPlugins, workerState }: Dra
       map.set(key, 'pending');
     }
 
-    // Apply actual events (last-write-wins per plugin, failed overrides completed)
+    // Apply actual plugin events — failed overrides completed (sticky failure)
     for (const evt of extractionPlugins) {
       const current = map.get(evt.plugin);
-      if (evt.status === 'failed' || current !== 'failed') {
-        map.set(evt.plugin, evt.status);
-      }
-    }
-
-    // If worker is done and plugin is still pending → mark failed (never ran)
-    if (workerState !== 'running' && workerState !== 'stuck' && workerState !== 'queued') {
-      for (const [key, status] of map) {
-        if (status === 'pending') map.set(key, 'failed');
-      }
+      if (current === 'failed') continue;
+      map.set(evt.plugin, evt.status === 'failed' ? 'failed' : 'completed');
     }
 
     return map;
-  }, [extractionPlugins, workerState]);
-
-  const isWorkerActive = workerState === 'running' || workerState === 'stuck';
+  }, [extractionPlugins]);
 
   return (
     <div className="space-y-3">
@@ -65,7 +56,7 @@ export function DrawerExtractTab({ fields, extractionPlugins, workerState }: Dra
             >
               <span className="font-medium sf-text-primary">{pluginLabel(name)}</span>
               <span className={`px-2 py-0.5 rounded font-medium ${badge.className}`}>
-                {isWorkerActive && status === 'pending' ? 'Running...' : badge.label}
+                {badge.label}
               </span>
             </div>
           );

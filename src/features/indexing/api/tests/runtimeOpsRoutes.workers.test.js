@@ -69,6 +69,7 @@ test('runtimeOpsRoutes: worker detail hydrates screenshot metadata from resolved
       safeStat: statOrNull,
       config: {},
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
     });
 
     const res = createMockRes();
@@ -212,6 +213,7 @@ test('runtimeOpsRoutes: workers and worker detail hydrate from source indexing p
       safeStat: statOrNull,
       config: {},
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
       readIndexLabRunSourceIndexingPackets: async () => packetCollection,
     });
 
@@ -362,6 +364,7 @@ test('runtimeOpsRoutes: worker detail surfaces provisional extraction fields fro
       safeStat: statOrNull,
       config: {},
       readIndexLabRunEvents: async () => events,
+      readRunSummaryEvents: async () => events,
       readIndexLabRunSourceIndexingPackets: async () => null,
     });
 

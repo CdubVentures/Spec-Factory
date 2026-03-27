@@ -43,102 +43,44 @@ export async function ensureRun(state, row = {}) {
     await writeRunMeta(state, {
       status: 'running',
       started_at: state.startedAt
-    }, { writeJson: true });
+    });
   }
 
   return true;
 }
 
-export async function writeRunMeta(state, extra = {}, { writeJson = false } = {}) {
+// WHY: Wave 5.5 — slimmed to product-relevant fields only. GUI telemetry
+// (stages, startup_ms, browser_pool, needset_summary, search_profile_summary,
+// artifacts, boot_step, boot_progress) now captured in run-summary.json at finalize.
+// JSON file writes (run.json) eliminated — run-summary.json replaces them.
+export async function writeRunMeta(state, extra = {}) {
   if (!state.runId) return;
-  const doc = {
-    run_id: state.runId || '',
-    started_at: state.startedAt || '',
-    ended_at: state.endedAt || '',
-    status: state.status || 'running',
-    category: state.context.category || '',
-    product_id: state.context.productId || '',
-    s3key: state.context.s3Key || '',
-    out_root: state.outRoot,
-    events_path: state.eventsPath || '',
-    counters: state.counters,
-    stages: state.stageState,
-    identity_fingerprint: state.identityFingerprint || '',
-    identity_lock_status: state.identityLockStatus || '',
-    dedupe_mode: state.dedupeMode || '',
-    phase_cursor: state.phaseCursor || '',
-    boot_step: state.bootStep || '',
-    boot_progress: state.bootProgress || 0,
-    browser_pool: state.browserPool || null,
-    startup_ms: state.startupMs,
-    needset: state.needSet
-      ? {
-        total_fields: asInt(state.needSet.total_fields, 0),
-        generated_at: state.needSet.generated_at || null,
-        summary: state.needSet.summary || null,
-        rows_count: Array.isArray(state.needSet.rows) ? state.needSet.rows.length : 0
-      }
-      : null,
-    search_profile: state.searchProfile
-      ? {
-        status: String(state.searchProfile.status || '').trim() || 'pending',
-        query_count: asInt(
-          state.searchProfile.query_count
-          ?? state.searchProfile.selected_query_count
-          ?? (Array.isArray(state.searchProfile.query_rows) ? state.searchProfile.query_rows.length : 0),
-          0
-        ),
-        generated_at: state.searchProfile.generated_at || null
-      }
-      : null,
-    artifacts: {
-      has_needset: Boolean(state.needSet),
-      has_search_profile: Boolean(state.searchProfile),
-      needset_path: state.needSetPath || '',
-      search_profile_path: state.searchProfilePath || '',
-      brand_resolution_path: state.brandResolutionPath || ''
-    },
-    ...extra
-  };
-  if (writeJson && state.runMetaPath) {
-    await fs.writeFile(state.runMetaPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
-  }
   if (state.specDb) {
     try {
-      const sqlExtra = {};
-      if (doc.run_base) sqlExtra.run_base = doc.run_base;
-      if (doc.latest_base) sqlExtra.latest_base = doc.latest_base;
       state.specDb.upsertRun({
-        run_id: doc.run_id,
-        category: doc.category,
-        product_id: doc.product_id,
-        status: doc.status,
-        started_at: doc.started_at,
-        ended_at: doc.ended_at,
-        phase_cursor: doc.phase_cursor,
-        boot_step: doc.boot_step,
-        boot_progress: doc.boot_progress,
-        identity_fingerprint: doc.identity_fingerprint,
-        identity_lock_status: doc.identity_lock_status,
-        dedupe_mode: doc.dedupe_mode,
-        s3key: doc.s3key,
-        out_root: doc.out_root,
-        counters: doc.counters,
-        stages: doc.stages,
-        startup_ms: doc.startup_ms,
-        browser_pool: doc.browser_pool,
-        needset_summary: doc.needset,
-        search_profile_summary: doc.search_profile,
-        artifacts: doc.artifacts,
-        extra: sqlExtra,
+        run_id: state.runId || '',
+        category: state.context?.category || '',
+        product_id: state.context?.productId || '',
+        status: extra.status || state.status || 'running',
+        started_at: extra.started_at || state.startedAt || '',
+        ended_at: extra.ended_at || state.endedAt || '',
+        phase_cursor: state.phaseCursor || '',
+        identity_fingerprint: state.identityFingerprint || '',
+        identity_lock_status: state.identityLockStatus || '',
+        dedupe_mode: state.dedupeMode || '',
+        s3key: state.context?.s3Key || '',
+        out_root: state.outRoot || '',
+        counters: state.counters || {},
       });
     } catch { /* best-effort: pipeline continues without SQL run meta */ }
   }
 }
 
-export async function writeNeedSet(state, payload = {}) {
-  if (!state.needSetPath) return;
-  await fs.writeFile(state.needSetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+export async function writeNeedSet(state, payload = {}, { writeJson = false } = {}) {
+  if (!state.needSetPath && !state.runId) return;
+  if (writeJson && state.needSetPath) {
+    await fs.writeFile(state.needSetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  }
   if (state.specDb && state.runId) {
     try {
       state.specDb.upsertRunArtifact({
@@ -151,14 +93,40 @@ export async function writeNeedSet(state, payload = {}) {
   }
 }
 
-export async function writeSearchProfile(state, payload = {}) {
-  if (!state.searchProfilePath) return;
-  await fs.writeFile(state.searchProfilePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+export async function writeSearchProfile(state, payload = {}, { writeJson = false } = {}) {
+  if (!state.searchProfilePath && !state.runId) return;
+  if (writeJson && state.searchProfilePath) {
+    await fs.writeFile(state.searchProfilePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  }
   if (state.specDb && state.runId) {
     try {
       state.specDb.upsertRunArtifact({
         run_id: state.runId,
         artifact_type: 'search_profile',
+        category: state.context?.category || '',
+        payload,
+      });
+    } catch { /* best-effort */ }
+  }
+}
+
+export async function writeRunSummaryArtifact(state, payload) {
+  if (!state.runId) return;
+  const runDir = state.runDir || (state.runMetaPath ? path.dirname(state.runMetaPath) : '');
+  if (runDir) {
+    try {
+      await fs.writeFile(
+        path.join(runDir, 'run-summary.json'),
+        `${JSON.stringify(payload, null, 2)}\n`,
+        'utf8'
+      );
+    } catch { /* best-effort: pipeline continues without run-summary file */ }
+  }
+  if (state.specDb && state.runId) {
+    try {
+      state.specDb.upsertRunArtifact({
+        run_id: state.runId,
+        artifact_type: 'run_summary',
         category: state.context?.category || '',
         payload,
       });
@@ -284,7 +252,7 @@ export function applySearchProfilePlannedPayload(state, payload = {}, ts = '') {
   return true;
 }
 
-export async function ensureBaselineArtifacts(state, ts = '') {
+export async function ensureBaselineArtifacts(state, ts = '', { writeJson = false } = {}) {
   const markerTs = toIso(ts || state.startedAt || new Date().toISOString());
   if (!state.needSet || typeof state.needSet !== 'object') {
     state.needSet = buildNeedSetBaseline(state, markerTs);
@@ -302,10 +270,10 @@ export async function ensureBaselineArtifacts(state, ts = '') {
   refreshSearchProfileCollections(state, markerTs);
 
   if (state.needSetPath) {
-    await writeNeedSet(state, state.needSet);
+    await writeNeedSet(state, state.needSet, { writeJson });
   }
   if (state.searchProfilePath) {
-    await writeSearchProfile(state, state.searchProfile);
+    await writeSearchProfile(state, state.searchProfile, { writeJson });
   }
   if (state.runtimeScreencastDir) {
     await fs.mkdir(state.runtimeScreencastDir, { recursive: true });

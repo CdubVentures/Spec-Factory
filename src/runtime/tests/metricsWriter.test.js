@@ -175,3 +175,46 @@ test('metrics writer: works without storage (no-op flush)', async () => {
   // No error thrown
   assert.ok(true);
 });
+
+// =========================================================================
+// SECTION 7: SQL path (specDb)
+// =========================================================================
+
+test('metrics writer: flush writes to specDb.insertMetric when specDb is provided', async () => {
+  const inserted = [];
+  const specDb = { insertMetric(entry) { inserted.push(entry); } };
+  const writer = new MetricsWriter({ specDb });
+  writer._flushSize = 100;
+  await writer.counter('llm.calls', 3, { provider: 'deepseek' });
+  await writer.gauge('active_fetches', 7);
+  await writer.flush();
+
+  assert.equal(inserted.length, 2);
+  assert.equal(inserted[0].name, 'llm.calls');
+  assert.equal(inserted[0].metric_type, 'counter');
+  assert.equal(inserted[0].value, 3);
+  assert.ok(inserted[0].labels.includes('deepseek'));
+  assert.equal(inserted[1].name, 'active_fetches');
+  assert.equal(inserted[1].metric_type, 'gauge');
+  assert.equal(inserted[1].value, 7);
+});
+
+test('metrics writer: specDb path skips storage.appendText', async () => {
+  const storage = mockStorage();
+  const specDb = { insertMetric() {} };
+  const writer = new MetricsWriter({ storage, specDb });
+  writer._flushSize = 1;
+  await writer.counter('test', 1);
+  assert.equal(storage.written.length, 0, 'storage should not be touched when specDb is present');
+});
+
+test('metrics writer: specDb flush clears buffer', async () => {
+  const specDb = { insertMetric() {} };
+  const writer = new MetricsWriter({ specDb });
+  writer._flushSize = 100;
+  await writer.counter('a', 1);
+  await writer.counter('b', 2);
+  assert.equal(writer.snapshot().buffered, 2);
+  await writer.flush();
+  assert.equal(writer.snapshot().buffered, 0);
+});

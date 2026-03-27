@@ -80,6 +80,7 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
         categoryAuthorityRoot: helperRoot,
       },
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
     });
 
@@ -172,6 +173,7 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
         categoryAuthorityRoot: helperRoot,
       },
       readIndexLabRunEvents: async () => [],
+      readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
     });
 

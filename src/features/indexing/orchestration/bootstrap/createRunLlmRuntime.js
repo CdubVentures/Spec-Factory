@@ -9,6 +9,7 @@ export function createRunLlmRuntime({
   traceWriter = null,
   routeMatrixPolicy = {},
   runtimeOverrides = {},
+  specDb = null,
   normalizeCostRatesFn = () => ({}),
   appendCostLedgerEntryFn = async () => {},
   recordPromptResultFn = () => {},
@@ -54,6 +55,7 @@ export function createRunLlmRuntime({
       await appendCostLedgerEntryFn({
         storage,
         config,
+        specDb,
         entry: {
           ts: nowIsoFn(),
           provider: usageRow.provider,

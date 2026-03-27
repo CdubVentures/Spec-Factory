@@ -20,10 +20,12 @@ function sanitizeMetricName(value) {
 export class MetricsWriter {
   constructor({
     storage,
+    specDb = null,
     metricsKey = '_runtime/metrics.jsonl',
     defaultLabels = {}
   } = {}) {
     this.storage = storage;
+    this.specDb = specDb || null;
     this.metricsKey = String(metricsKey || '_runtime/metrics.jsonl').trim();
     this.defaultLabels = defaultLabels && typeof defaultLabels === 'object' ? defaultLabels : {};
     this._buffer = [];
@@ -64,6 +66,23 @@ export class MetricsWriter {
 
   async flush() {
     if (this._buffer.length === 0) return;
+    // WHY: SQL is the primary write target for metrics (Wave 4 Step 18).
+    if (this.specDb) {
+      for (const row of this._buffer) {
+        try {
+          this.specDb.insertMetric({
+            ts: row.ts,
+            metric_type: row.type,
+            name: row.metric,
+            value: row.value,
+            labels: JSON.stringify(row.labels || {}),
+          });
+        } catch { /* best-effort — metrics must not crash the pipeline */ }
+      }
+      this._buffer = [];
+      return;
+    }
+    // Fallback: NDJSON append (for callers without specDb)
     const lines = this._buffer.map((row) => JSON.stringify(row)).join('\n') + '\n';
     this._buffer = [];
     if (this.storage && typeof this.storage.appendText === 'function') {

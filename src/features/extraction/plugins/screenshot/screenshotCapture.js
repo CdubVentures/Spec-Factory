@@ -44,7 +44,7 @@ export async function captureScreenshots({ page, settings }) {
   if (!settings?.capturePageScreenshotEnabled) return [];
 
   const format = resolveFormat(settings);
-  const quality = Number(settings?.capturePageScreenshotQuality) || 50;
+  const quality = Number(settings?.capturePageScreenshotQuality) || 75;
   const maxBytes = Number(settings?.capturePageScreenshotMaxBytes) || 5_000_000;
   const selectors = parseSelectors(settings);
   const captureOpts = { format, quality, maxBytes };

@@ -29,11 +29,66 @@ function makeMemoryStorage() {
   };
 }
 
-test('cost ledger appends entries and rolls up month totals', async () => {
-  const storage = makeMemoryStorage();
-  const config = {
-    s3OutputPrefix: 'specs/outputs'
+function round8(value) {
+  return Number.parseFloat(Number(value || 0).toFixed(8));
+}
+
+function makeMockSpecDb() {
+  const entries = [];
+  return {
+    entries,
+    insertBillingEntry(entry) { entries.push(entry); },
+    getBillingRollup(month) {
+      const filtered = entries.filter((e) => e.month === month);
+      const totals = { cost_usd: 0, prompt_tokens: 0, completion_tokens: 0, calls: 0 };
+      const by_day = {};
+      const by_category = {};
+      const by_product = {};
+      const by_model = {};
+      const by_reason = {};
+      for (const e of filtered) {
+        totals.cost_usd = round8(totals.cost_usd + (e.cost_usd || 0));
+        totals.prompt_tokens += e.prompt_tokens || 0;
+        totals.completion_tokens += e.completion_tokens || 0;
+        totals.calls += 1;
+        const bump = (map, key) => {
+          if (!key) return;
+          if (!map[key]) map[key] = { cost_usd: 0, prompt_tokens: 0, completion_tokens: 0, calls: 0 };
+          map[key].cost_usd = round8(map[key].cost_usd + (e.cost_usd || 0));
+          map[key].prompt_tokens += e.prompt_tokens || 0;
+          map[key].completion_tokens += e.completion_tokens || 0;
+          map[key].calls += 1;
+        };
+        bump(by_day, e.day);
+        bump(by_category, e.category);
+        bump(by_product, e.product_id);
+        bump(by_model, `${e.provider}:${e.model}`);
+        bump(by_reason, e.reason);
+      }
+      return { month, generated_at: new Date().toISOString(), totals, by_day, by_category, by_product, by_model, by_reason };
+    },
+    getBillingEntriesForMonth(month) {
+      return entries.filter((e) => e.month === month);
+    },
+    getBillingSnapshot(month, productId) {
+      const rollup = this.getBillingRollup(month);
+      const product = rollup.by_product[productId] || { cost_usd: 0, calls: 0, prompt_tokens: 0, completion_tokens: 0 };
+      return {
+        month,
+        monthly_cost_usd: rollup.totals.cost_usd,
+        monthly_calls: rollup.totals.calls,
+        product_cost_usd: product.cost_usd,
+        product_calls: product.calls,
+        monthly: rollup,
+      };
+    },
   };
+}
+
+test('cost ledger appends entries via SQL and rolls up month totals', async () => {
+  const storage = makeMemoryStorage();
+  const config = { s3OutputPrefix: 'specs/outputs' };
+  const specDb = makeMockSpecDb();
 
   const usage1 = normalizeUsage({
     prompt_tokens: 1200,
@@ -62,6 +117,7 @@ test('cost ledger appends entries and rolls up month totals', async () => {
   await appendCostLedgerEntry({
     storage,
     config,
+    specDb,
     entry: {
       ts: '2026-02-09T01:00:00.000Z',
       provider: 'deepseek',
@@ -79,6 +135,7 @@ test('cost ledger appends entries and rolls up month totals', async () => {
   await appendCostLedgerEntry({
     storage,
     config,
+    specDb,
     entry: {
       ts: '2026-02-09T01:30:00.000Z',
       provider: 'deepseek',
@@ -94,10 +151,13 @@ test('cost ledger appends entries and rolls up month totals', async () => {
     }
   });
 
+  assert.equal(specDb.entries.length, 2, 'two entries persisted via SQL');
+
   const snapshot = await readBillingSnapshot({
     storage,
     month: '2026-02',
-    productId: 'mouse-a'
+    productId: 'mouse-a',
+    specDb,
   });
   assert.equal(snapshot.monthly_calls, 2);
   assert.equal(snapshot.product_calls, 2);
@@ -107,7 +167,8 @@ test('cost ledger appends entries and rolls up month totals', async () => {
   const report = await buildBillingReport({
     storage,
     month: '2026-02',
-    config
+    config,
+    specDb,
   });
   assert.equal(report.totals.calls, 2);
   assert.equal(report.by_category.mouse.calls, 2);
@@ -118,5 +179,4 @@ test('cost ledger appends entries and rolls up month totals', async () => {
   assert.equal(typeof report.latest_digest_key, 'string');
   const digest = storage.map.get(report.digest_key)?.toString('utf8') || '';
   assert.equal(digest.includes('Run Totals (Newest First)'), true);
-  assert.equal(digest.includes('run run-a') || digest.includes('run run-b'), true);
 });

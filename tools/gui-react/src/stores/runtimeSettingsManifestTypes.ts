@@ -119,6 +119,7 @@ export interface RuntimeSettingDefaults {
   domExpansionSelectors: string;
   domExpansionMaxClicks: number;
   domExpansionSettleMs: number;
+  domExpansionBudgetMs: number;
   cssOverrideEnabled: boolean;
   cssOverrideRemoveFixed: boolean;
   cssOverrideBlockedDomains: string;

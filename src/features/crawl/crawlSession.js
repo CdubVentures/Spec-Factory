@@ -26,7 +26,7 @@ export function parseProxyUrls(jsonStr) {
   } catch { return []; }
 }
 
-export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
@@ -154,7 +154,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         // the timeout killed the handler before extraction ran.
         request.userData.__capturedPage = { html, finalUrl, title, status };
 
-        const captureCtx = { ...ctx, html, finalUrl, title, status };
+        const captureCtx = { ...ctx, url: request.url, html, finalUrl, title, status };
         try { await runner.runHook('onCapture', captureCtx); }
         catch (err) { logger?.warn?.('hook_error', { hook: 'onCapture', url: request.url, error: err?.message }); }
 
@@ -196,6 +196,44 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           }
         } catch (err) {
           logger?.warn?.('screencast_error', { url: request.url, error: err?.message });
+        }
+
+        // WHY: Persist screenshot artifacts to {runDir}/screenshots/ and emit
+        // visual_asset_captured events so the worker detail builder picks them up.
+        // DI-injected callback — no cross-feature import.
+        if (typeof onScreenshotsPersist === 'function') {
+          try {
+            const shots = extractions.screenshot?.screenshots ?? [];
+            if (shots.length > 0) {
+              const persisted = onScreenshotsPersist({ screenshots: shots, workerId, url: request.url });
+              const filenames = [];
+              for (const record of persisted) {
+                filenames.push(record.filename);
+                logger?.info?.('visual_asset_captured', {
+                  url: request.url,
+                  screenshot_uri: record.filename,
+                  width: record.width,
+                  height: record.height,
+                  bytes: record.bytes,
+                  format: record.format,
+                });
+              }
+              // WHY: Emit filenames so the extraction plugin builder can include
+              // them in the extraction panel's per-URL data. The original
+              // extraction_plugin_completed event ran before persistence — this
+              // supplements it with the artifact references.
+              if (filenames.length > 0) {
+                logger?.info?.('extraction_artifacts_persisted', {
+                  plugin: 'screenshot',
+                  url: request.url,
+                  worker_id: workerId,
+                  filenames,
+                });
+              }
+            }
+          } catch (err) {
+            logger?.warn?.('screenshot_persist_error', { url: request.url, error: err?.message });
+          }
         }
 
         // WHY: Stop CDP screencast — page processing is done. The retained

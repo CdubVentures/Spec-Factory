@@ -187,6 +187,14 @@ export function createSourceIntelStore({ db, category, stmts }) {
     });
   }
 
+  // WHY: Wave 5.5 — after run-summary.json captures all events, purge the
+  // per-run bridge_events rows to keep the SQLite WAL lean.
+  function purgeBridgeEventsForRun(runId) {
+    const token = String(runId || '').trim();
+    if (!token) return 0;
+    return db.prepare('DELETE FROM bridge_events WHERE run_id = ?').run(token).changes;
+  }
+
   // --- Source Intelligence ---
 
   function upsertSourceIntelDomain(entry) {
@@ -489,6 +497,7 @@ export function createSourceIntelStore({ db, category, stmts }) {
     insertRuntimeEventsBatch,
     insertBridgeEvent,
     getBridgeEventsByRunId,
+    purgeBridgeEventsForRun,
     upsertSourceIntelDomain,
     upsertSourceIntelFieldReward,
     upsertSourceIntelBrand,

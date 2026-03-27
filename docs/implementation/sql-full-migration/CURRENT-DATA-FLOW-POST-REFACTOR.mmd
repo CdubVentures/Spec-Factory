@@ -24,7 +24,7 @@
 
 flowchart TB
 
-  title["<b>CURRENT DATA PERSISTENCE FLOW  (Post-Refactor 2026-03-27)</b><br/><i>Every write during a pipeline run  |  Content-addressed + SQL-indexed</i>"]
+  title["<b>CURRENT DATA PERSISTENCE FLOW  (Post-Wave 4, 2026-03-27)</b><br/><i>Every write during a pipeline run  |  SQL primary, JSON at boundaries</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:18px
 
   %% ===== PHASE 1: STARTUP =====
@@ -33,22 +33,22 @@ flowchart TB
     p1_start(["processRuntime.startProcess()"])
     p1_ensure["ensureRun() + ensureBaselineArtifacts()"]
 
-    subgraph P1_FS["Filesystem Writes"]
-      p1_runjson["run.json<br/><i>status: starting</i>"]
-      p1_needset["needset.json<br/><i>baseline empty</i>"]
-      p1_profile["search_profile.json<br/><i>baseline empty</i>"]
+    subgraph P1_SQL["SQL Writes (always)"]
+      p1_runs[("runs<br/><i>UPSERT run record (Wave 2)</i>")]
+      p1_bridge[("bridge_events<br/><i>INSERT run_started (Wave 1)</i>")]
+      p1_artifact[("run_artifacts<br/><i>INSERT needset baseline (Wave 3)</i>")]
+    end
+
+    subgraph P1_FS["JSON Writes (boundary checkpoint)"]
+      p1_runjson["run.json<br/><i>writeJson: true</i>"]
+      p1_needset["needset.json<br/><i>writeJson: true</i>"]
+      p1_profile["search_profile.json<br/><i>writeJson: true</i>"]
       p1_scdir["runtime_screencast/<br/><i>directory created</i>"]
     end
 
-    subgraph P1_SQL["SQL Writes"]
-      p1_runs[("runs<br/><i>UPSERT run record</i>")]
-      p1_bridge[("bridge_events<br/><i>INSERT run_started</i>")]
-      p1_artifact[("run_artifacts<br/><i>INSERT needset baseline</i>")]
-    end
-
     p1_start --> p1_ensure
-    p1_ensure --> P1_FS
     p1_ensure --> P1_SQL
+    p1_ensure --> P1_FS
   end
   style P1 fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:2px
   style p1_start fill:#238636,stroke:#3fb950,color:#fff
@@ -56,9 +56,9 @@ flowchart TB
   style p1_needset fill:#2d333b,stroke:#f0883e,color:#e0e0e0
   style p1_profile fill:#2d333b,stroke:#f0883e,color:#e0e0e0
   style p1_scdir fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style p1_runs fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p1_bridge fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p1_artifact fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p1_runs fill:#238636,stroke:#3fb950,color:#fff
+  style p1_bridge fill:#238636,stroke:#3fb950,color:#fff
+  style p1_artifact fill:#238636,stroke:#3fb950,color:#fff
 
   %% ===== PHASE 2: CRAWL =====
   subgraph P2["PHASE 2  CRAWL + EXTRACTION  (per URL)"]
@@ -83,7 +83,7 @@ flowchart TB
 
     subgraph P2_RT["Runtime Side-Writes"]
       p2_frame["runtime_screencast/{workerId}.json<br/><i>latest frame per worker</i>"]
-      p2_event[("bridge_events<br/><i>fetch_started, fetch_finished</i>")]
+      p2_event[("bridge_events<br/><i>INSERT fetch_started, fetch_finished (Wave 1)</i>")]
       p2_trace["traces/{section}/{prefix}_{slot}.json<br/><i>LLM call traces (ring buffer)</i>"]
     end
 
@@ -103,47 +103,53 @@ flowchart TB
   style p2_shots fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p2_pdfs fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p2_frame fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p2_event fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p2_event fill:#238636,stroke:#3fb950,color:#fff
   style p2_trace fill:#2d333b,stroke:#a371f7,color:#e0e0e0
 
-  %% ===== PHASE 2B: MID-RUN UPDATES =====
-  subgraph P2B["MID-RUN UPDATES  (ongoing)"]
+  %% ===== PHASE 2B: MID-RUN UPDATES (SQL ONLY) =====
+  subgraph P2B["MID-RUN UPDATES  (SQL only — zero JSON writes)"]
     direction TB
 
-    subgraph P2B_FS["JSON Overwrites"]
-      p2b_runjson["run.json<br/><i>counters, phase_cursor, stages</i>"]
-      p2b_needset["needset.json<br/><i>updated field gaps</i>"]
-      p2b_profile["search_profile.json<br/><i>queries added/updated</i>"]
+    subgraph P2B_SQL["SQL Updates (Waves 1-4)"]
+      p2b_runs[("runs<br/><i>UPDATE counters, phase (Wave 2)</i>")]
+      p2b_bridge[("bridge_events<br/><i>INSERT per stage event (Wave 1)</i>")]
+      p2b_billing[("billing_entries<br/><i>INSERT per LLM call (Wave 4, SQL only)</i>")]
+      p2b_artifacts[("run_artifacts<br/><i>UPSERT needset + search_profile (Wave 3)</i>")]
+      p2b_metrics[("metrics<br/><i>INSERT (SQL primary, Wave 4)</i>")]
     end
 
-    subgraph P2B_SQL["SQL Updates"]
-      p2b_runs[("runs<br/><i>UPDATE counters, phase</i>")]
-      p2b_bridge[("bridge_events<br/><i>INSERT per stage event</i>")]
-      p2b_billing[("billing_entries<br/><i>INSERT per LLM call</i>")]
+    subgraph P2B_FALLBACK["Fallback (non-DB callers only)"]
+      p2b_metricslog{{"_runtime/metrics.jsonl<br/><i>NDJSON fallback if specDb is null</i>"}}
     end
 
-    subgraph P2B_METRICS["Metrics + Billing"]
-      p2b_metrics{{"_runtime/metrics.jsonl<br/><i>buffered, flushed every 20 rows</i>"}}
-      p2b_digest["_billing/monthly/{MM}.txt<br/><i>human-readable digest</i>"]
+    subgraph P2B_KILLED["ELIMINATED mid-run writes"]
+      p2b_k1["run.json overwrites KILLED"]
+      p2b_k2["needset.json rewrites KILLED"]
+      p2b_k3["search_profile.json rewrites KILLED"]
+      p2b_k4{{"billing ledger NDJSON KILLED"}}
+      p2b_k5{{"run_events.ndjson KILLED"}}
     end
 
-    P2B_FS ~~~ P2B_SQL ~~~ P2B_METRICS
+    P2B_SQL ~~~ P2B_FALLBACK ~~~ P2B_KILLED
   end
-  style P2B fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
-  style p2b_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p2b_needset fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p2b_profile fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p2b_runs fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p2b_bridge fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p2b_billing fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p2b_metrics fill:#2d333b,stroke:#a371f7,color:#e0e0e0
-  style p2b_digest fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style P2B fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:2px
+  style p2b_runs fill:#238636,stroke:#3fb950,color:#fff
+  style p2b_bridge fill:#238636,stroke:#3fb950,color:#fff
+  style p2b_billing fill:#238636,stroke:#3fb950,color:#fff
+  style p2b_artifacts fill:#238636,stroke:#3fb950,color:#fff
+  style p2b_metrics fill:#238636,stroke:#3fb950,color:#fff
+  style p2b_metricslog fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style p2b_k1 fill:#da3633,stroke:#f85149,color:#fff
+  style p2b_k2 fill:#da3633,stroke:#f85149,color:#fff
+  style p2b_k3 fill:#da3633,stroke:#f85149,color:#fff
+  style p2b_k4 fill:#da3633,stroke:#f85149,color:#fff
+  style p2b_k5 fill:#da3633,stroke:#f85149,color:#fff
 
   %% ===== PHASE 3: EXPORT =====
   subgraph P3["PHASE 3  RUN COMPLETION  (exportRunArtifacts)"]
     direction TB
 
-    subgraph P3_FS["Run-Scoped Writes  (still JSON, moves to SQL in migration)"]
+    subgraph P3_FS["Run-Scoped File Writes"]
       p3_norm["runs/{runId}/normalized/{cat}.normalized.json"]
       p3_tsv["runs/{runId}/normalized/{cat}.row.tsv"]
       p3_prov["runs/{runId}/provenance/fields.provenance.json"]
@@ -152,7 +158,7 @@ flowchart TB
       p3_summary["runs/{runId}/logs/summary.json"]
     end
 
-    subgraph P3_SQL["SQL Dual-Write  (exportToSpecDb)"]
+    subgraph P3_SQL["SQL Writes  (exportToSpecDb)"]
       p3_items[("item_field_state<br/><i>UPSERT per field</i>")]
       p3_candidates[("candidates<br/><i>INSERT all with lineage</i>")]
       p3_product[("product_runs<br/><i>UPSERT is_latest, validated</i>")]
@@ -160,7 +166,13 @@ flowchart TB
       p3_history[("field_history<br/><i>UPSERT per field/round</i>")]
     end
 
-    P3_FS ~~~ P3_SQL
+    subgraph P3_BOUNDARY["JSON Boundary Writes (finishRun)"]
+      p3_runjson["run.json<br/><i>writeJson: true, status: completed</i>"]
+      p3_bridge[("bridge_events<br/><i>INSERT run_finished (Wave 1)</i>")]
+      p3_runsql[("runs<br/><i>UPDATE status: completed (Wave 2)</i>")]
+    end
+
+    P3_FS ~~~ P3_SQL ~~~ P3_BOUNDARY
   end
   style P3 fill:#0d1117,stroke:#a371f7,color:#a371f7,stroke-width:2px
   style p3_norm fill:#2d333b,stroke:#f0883e,color:#e0e0e0
@@ -174,6 +186,9 @@ flowchart TB
   style p3_product fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p3_queue fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p3_history fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p3_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p3_bridge fill:#238636,stroke:#3fb950,color:#fff
+  style p3_runsql fill:#238636,stroke:#3fb950,color:#fff
 
   %% ===== PHASE 4: ARCHIVAL =====
   subgraph P4["PHASE 4  ARCHIVAL  (relocateRunDataForCompletedRun)"]
@@ -184,7 +199,7 @@ flowchart TB
 
     subgraph P4_BUNDLE["Staged Bundle"]
       p4_ro["run_output/  <i>normalized, provenance, logs</i>"]
-      p4_ix["indexlab/  <i>run.json, events, needset, profile</i>"]
+      p4_ix["indexlab/  <i>run.json, needset, profile</i>"]
       p4_tr["runtime_traces/  <i>LLM traces</i>"]
       p4_sl["shared_logs/  <i>filtered events + billing</i>"]
       p4_mf["manifest.json"]
@@ -229,12 +244,14 @@ flowchart TB
     direction LR
     lg1["JSON / Binary File"]
     lg2[("SQLite Table")]
-    lg3{{"NDJSON Append"}}
-    lg1 ~~~ lg2 ~~~ lg3
+    lg3{{"NDJSON (fallback only)"}}
+    lg4["KILLED write path"]
+    lg1 ~~~ lg2 ~~~ lg3 ~~~ lg4
   end
   style LEGEND fill:#161b22,stroke:#30363d,color:#8b949e
   style lg1 fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style lg2 fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style lg3 fill:#2d333b,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+  style lg3 fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
+  style lg4 fill:#da3633,stroke:#f85149,color:#fff,stroke-width:2px
 
   style p1_ensure fill:#21262d,stroke:#4a90d9,color:#c9d1d9

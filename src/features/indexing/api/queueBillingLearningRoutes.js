@@ -156,6 +156,15 @@ export function registerQueueBillingLearningRoutes(ctx) {
     // Billing
     if (parts[0] === 'billing' && parts[1] && parts[2] === 'monthly' && method === 'GET') {
       const category = parts[1];
+      const specDb = getSpecDb(category);
+      const month = new Date().toISOString().slice(0, 7);
+      if (specDb) {
+        try {
+          const data = specDb.getBillingRollup(month, category);
+          return jsonRes(res, 200, data || { totals: {} });
+        } catch { /* fall through to JSON */ }
+      }
+      // WHY: fallback for pre-migration data when SQL is empty
       const billingDir = path.join(OUTPUT_ROOT, '_billing', category);
       const files = await listFiles(billingDir, '.json');
       if (files.length === 0) return jsonRes(res, 200, { totals: {} });
