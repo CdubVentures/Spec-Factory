@@ -23,7 +23,6 @@ const SCREENSHOT_CONFIG: ArtifactPanelConfig = {
   countLabel: 'Screenshots',
   locationPrefix: 'screenshots/',
   previewType: 'image',
-  formatFields: ['formats'],
   assetUrl: (runId, _entry, filename) =>
     filename ? `/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(filename)}` : '',
   extraColumns: ['stitched'],
@@ -60,10 +59,28 @@ export function ExtractionScreenshotPanel({ data, persistScope, runId }: Extract
     return () => <HeroStat value={stitchedCount} label="Stitched" />;
   }, [records]);
 
+  const extraHeroBand = useMemo(() => {
+    const formatSet = new Set<string>();
+    for (const r of records) {
+      if (Array.isArray(r.formats)) for (const f of r.formats) formatSet.add(f);
+    }
+    const formats = [...formatSet];
+    if (formats.length === 0) return undefined;
+    return () => (
+      <div className="flex items-center gap-2">
+        <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Formats</span>
+        {formats.map((f) => (
+          <Chip key={f} label={f.toUpperCase()} className="sf-chip-info" />
+        ))}
+      </div>
+    );
+  }, [records]);
+
   const config = useMemo(() => ({
     ...SCREENSHOT_CONFIG,
     extraHeroStats,
-  }), [extraHeroStats]);
+    extraHeroBand,
+  }), [extraHeroStats, extraHeroBand]);
 
   return <ExtractionArtifactPanel config={config} data={data} persistScope={persistScope} runId={runId} />;
 }

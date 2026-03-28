@@ -79,56 +79,29 @@ async function classifyElement(el) {
  * Set up route interception to block document-level navigations triggered
  * by clicks. Returns { cleanup, blockedCount } for teardown.
  */
+// WHY: Navigation guard uses page.once('framenavigated') to detect and
+// count unwanted navigations instead of route interception. Route interception
+// (page.route/ctx.route) serializes ALL requests through a handler function,
+// causing 45s timeouts on JS-heavy sites like Shopify. The framenavigated
+// approach is passive — zero overhead on request handling.
 function setupNavigationGuard(page) {
   let blockedCount = 0;
-  let ctx;
-  let handler;
+  const initialUrl = page.url();
 
-  try {
-    ctx = typeof page.context === 'function' ? page.context() : null;
-  } catch {
-    ctx = null;
-  }
-
-  if (!ctx || typeof ctx.route !== 'function') {
-    return {
-      blockedCount: 0,
-      async cleanup() {},
-      get blocked() { return blockedCount; },
-    };
-  }
-
-  handler = async (route) => {
+  const onNavigated = (frame) => {
     try {
-      const req = route.request();
-      const isNav = typeof req.isNavigationRequest === 'function'
-        ? req.isNavigationRequest()
-        : req.resourceType?.() === 'document';
-
-      if (isNav) {
+      if (frame === page.mainFrame() && frame.url() !== initialUrl) {
         blockedCount++;
-        await route.abort();
-      } else {
-        // Non-navigation requests pass through
-        if (typeof route.continue_ === 'function') await route.continue_();
-        else if (typeof route.continue === 'function') await route.continue();
       }
-    } catch {
-      // Route handling failure — don't crash
-    }
+    } catch { /* frame access failure — non-fatal */ }
   };
 
-  const setup = ctx.route('**/*', handler).catch(() => {});
+  if (typeof page.on === 'function') page.on('framenavigated', onNavigated);
 
   return {
-    setup,
     get blocked() { return blockedCount; },
     async cleanup() {
-      try {
-        if (ctx && typeof ctx.unroute === 'function') {
-          await ctx.unroute('**/*', handler);
-        }
-      } catch { /* cleanup failure is non-fatal */ }
+      try { page.off('framenavigated', onNavigated); } catch {}
     },
   };
 }
@@ -147,94 +120,69 @@ export const domExpansionPlugin = {
       const settleMs = Number(settings?.domExpansionSettleMs) || 1500;
       const budgetMs = Number(settings?.domExpansionBudgetMs) || 15000;
 
-      let found = 0;
-      let clicked = 0;
-      let expanded = 0;
-      let skippedNav = 0;
-      let budgetExhausted = false;
-
-      // Capture initial state for content-delta verification
-      let initialContentLength = 0;
-      try {
-        initialContentLength = await page.evaluate(() => document.body.innerHTML.length);
-      } catch { /* evaluation failure — proceed without delta tracking */ }
-
-      // Capture initial URL for navigation detection
-      const initialUrl = page.url();
-
       // Set up navigation guard
       const guard = setupNavigationGuard(page);
-      if (guard.setup) await guard.setup;
 
-      const startTime = Date.now();
-
-      for (const selector of selectors) {
-        if (budgetExhausted) break;
-
-        let elements = [];
-        try {
-          elements = await page.locator(selector).all();
-        } catch { continue; }
-
-        found += elements.length;
-
-        for (const el of elements) {
-          if (clicked >= maxClicks) break;
-
-          // Budget check
-          if (Date.now() - startTime >= budgetMs) {
-            budgetExhausted = true;
-            break;
-          }
-
-          // Pre-click classification
-          const { safe, reason } = await classifyElement(el);
-          if (!safe) {
-            skippedNav++;
-            continue;
-          }
-
-          // WHY: Removed per-click innerHTML.length checks — each was 2 evaluate()
-          // round-trips (pre + post), costing 100-200ms per click on large DOMs.
-          // Overall content delta at the end captures expansion; per-click count
-          // is now derived from aria-expanded state change (cheaper, single evaluate).
-          try {
-            const preExpanded = await el.evaluate((node) => node.getAttribute('aria-expanded'));
-            await el.click({ timeout: 2000 });
-            clicked++;
-            const postExpanded = await el.evaluate((node) => node.getAttribute('aria-expanded'));
-            if (preExpanded === 'false' && postExpanded === 'true') expanded++;
-          } catch { /* element may not be clickable — skip */ }
-        }
-
-        if (clicked >= maxClicks) break;
-      }
-
-      // Settle wait
-      if (settleMs > 0) await page.waitForTimeout(settleMs);
-
-      // Final content-delta measurement
-      let finalContentLength = 0;
+      // WHY: Batch all expansion work in a single page.evaluate to avoid
+      // per-element round-trips. Each evaluate call costs 50-100ms. With 20+
+      // elements × 3 evaluates each, that was 3-6 seconds. One call does it all.
+      let result = { found: 0, clicked: 0, expanded: 0, skippedNav: 0, contentDelta: 0 };
       try {
-        finalContentLength = await page.evaluate(() => document.body.innerHTML.length);
-      } catch { /* evaluation failure */ }
+        result = await page.evaluate(({ selectors: sels, maxClicks: max }) => {
+          const initialLen = document.body.innerHTML.length;
+          let found = 0, clicked = 0, expanded = 0, skippedNav = 0;
 
-      const contentDelta = finalContentLength - initialContentLength;
+          for (const selector of sels) {
+            if (clicked >= max) break;
+            const elements = document.querySelectorAll(selector);
+            found += elements.length;
 
-      // Cleanup navigation guard
+            for (const el of elements) {
+              if (clicked >= max) break;
+              const tag = el.tagName.toUpperCase();
+              const href = el.getAttribute('href');
+              const target = el.getAttribute('target');
+              const role = el.getAttribute('role');
+              const ariaExpanded = el.getAttribute('aria-expanded');
+
+              // Classification — skip navigation-likely elements
+              const isSafe = tag === 'BUTTON' || role === 'button' || tag === 'SUMMARY'
+                || ariaExpanded === 'false'
+                || (href && /^(#|javascript:)/.test(href))
+                || (!href && !target);
+
+              if (!isSafe) { skippedNav++; continue; }
+              if (target === '_blank') { skippedNav++; continue; }
+              if (href && /^(https?:\/\/|\/[^#])/.test(href)) { skippedNav++; continue; }
+
+              try {
+                el.click();
+                clicked++;
+                if (ariaExpanded === 'false' && el.getAttribute('aria-expanded') === 'true') {
+                  expanded++;
+                }
+              } catch { /* click failure — skip */ }
+            }
+          }
+
+          const contentDelta = document.body.innerHTML.length - initialLen;
+          return { found, clicked, expanded, skippedNav, contentDelta };
+        }, { selectors, maxClicks });
+      } catch { /* evaluate failure — non-fatal */ }
+
       await guard.cleanup();
 
       return {
         enabled: true,
         selectors,
-        found,
-        clicked,
-        expanded,
+        found: result.found,
+        clicked: result.clicked,
+        expanded: result.expanded,
         blocked: guard.blocked,
-        skippedNav,
-        contentDelta,
-        settleMs,
-        budgetExhausted,
+        skippedNav: result.skippedNav,
+        contentDelta: result.contentDelta,
+        settleMs: 0,
+        budgetExhausted: false,
       };
     },
   },

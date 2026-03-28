@@ -262,22 +262,14 @@ describe('overlayDismissalPlugin', () => {
     });
   });
 
-  // ---- Settle wait ----
-  describe('settle wait', () => {
-    it('waits configured settleMs', async () => {
+  // ---- No settle wait ----
+  describe('no settle wait', () => {
+    it('does not wait after dismissal (Crawlee already loaded the page)', async () => {
       const page = createPageDouble();
       await overlayDismissalPlugin.hooks.onDismiss({
-        page, settings: defaultSettings({ overlayDismissalSettleMs: 2000 }),
+        page, settings: defaultSettings(),
       });
-      assert.ok(page.waitedMs.includes(2000));
-    });
-
-    it('skips wait when settleMs is 0', async () => {
-      const page = createPageDouble();
-      await overlayDismissalPlugin.hooks.onDismiss({
-        page, settings: defaultSettings({ overlayDismissalSettleMs: 0 }),
-      });
-      assert.ok(!page.waitedMs.includes(0) || page.waitedMs.length === 0);
+      assert.equal(page.waitedMs.length, 0);
     });
   });
 

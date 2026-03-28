@@ -7,7 +7,6 @@
  */
 import path from 'node:path';
 import fs from 'node:fs';
-import { recordQueryResult } from '../shared/queryIndex.js';
 import { defaultIndexLabRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { runSearchProviders as _defaultRunSearchProviders } from './searchProviders.js';
 import { searchSourceCorpus as _defaultSearchSourceCorpus } from '../../../../intel/sourceCorpus.js';
@@ -241,21 +240,20 @@ export async function executeSearchQueries({
             });
           }
         }
-        // Record discovery search query to NDJSON index + SQL
+        // Record discovery search query to SQL index
         try {
-          const _dqDir = path.join(defaultIndexLabRoot(), job.category || categoryConfig.category || 'mouse');
-          fs.mkdirSync(_dqDir, { recursive: true });
-          const _dqRecord = {
-            query,
-            provider: configValue(config, 'searchEngines'),
-            result_count: providerResults.length,
-            run_id: runId,
-            category: job.category || categoryConfig.category || '',
-            product_id: job.productId || '',
-          };
-          recordQueryResult(_dqRecord, path.join(_dqDir, 'query-index.ndjson'));
-          const _specDb = config.specDb || null;
-          if (_specDb) try { _specDb.insertQueryIndexEntry({ ..._dqRecord, ts: new Date().toISOString() }); } catch { /* best-effort */ }
+          const _dqSpecDb = config.specDb || null;
+          if (_dqSpecDb) {
+            _dqSpecDb.insertQueryIndexEntry({
+              query,
+              provider: configValue(config, 'searchEngines'),
+              result_count: providerResults.length,
+              run_id: runId,
+              category: job.category || categoryConfig.category || '',
+              product_id: job.productId || '',
+              ts: new Date().toISOString(),
+            });
+          }
         } catch { /* index recording must not crash the pipeline */ }
         const externalSelectedRow = resolveSelectedQueryRow(query);
         const queryRecord = frontierDb?.recordQuery?.({

@@ -1,0 +1,239 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "16px",
+    "primaryColor": "#1a1a2e",
+    "primaryTextColor": "#e0e0e0",
+    "primaryBorderColor": "#4a90d9",
+    "lineColor": "#6c757d",
+    "secondaryColor": "#16213e",
+    "tertiaryColor": "#0f3460",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "nodeBorder": "#4a90d9",
+    "clusterBkg": "#161b22",
+    "clusterBorder": "#30363d",
+    "titleColor": "#e0e0e0",
+    "edgeLabelBackground": "#0d1117",
+    "nodeTextColor": "#e0e0e0"
+  },
+  "flowchart": {
+    "nodeSpacing": 40,
+    "rankSpacing": 50,
+    "curve": "basis",
+    "padding": 15
+  }
+}}%%
+
+flowchart TB
+
+  title["<b>SPEC FACTORY DATA PERSISTENCE MAP</b><br/><i>Post-Wave 6 — 53 tables in specDb  |  Code-verified 2026-03-27</i>"]
+  style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
+
+  %% ============================================================
+  %%  SECTION 1: RUN STATE (Waves 1-3 + 5.5)
+  %% ============================================================
+  subgraph RUN_STATE["RUN STATE  (SQL primary, run-summary = SQL artifact at finalize)"]
+    direction TB
+    rba["runtimeBridgeArtifacts.js"]
+    rbeh["runtimeBridgeEventHandlers.js"]
+
+    runs_sql[("runs (16 cols total)<br/><i>SQL only — Wave 2 + 5.5<br/>13 user cols + 3 auto</i>")]
+    bridge_sql[("bridge_events<br/><i>SQL during run, purged at finalize</i>")]
+    artifacts_sql[("run_artifacts<br/><i>needset + search_profile + run_summary<br/>PRODUCT knowledge stays in SQL</i>")]
+    summary_note["run-summary = SQL artifact<br/><i>Stored via upsertRunArtifact()<br/>artifact_type='run_summary'<br/>NOT written to disk</i>"]
+
+    rba -->|"SQL mid-run"| runs_sql
+    rba -->|"SQL mid-run"| artifacts_sql
+    rba -->|"finalize only"| summary_note
+    rbeh -->|"INSERT during run"| bridge_sql
+
+    killed1["run.json KILLED"]
+    killed2["needset.json KILLED"]
+    killed3["search_profile.json KILLED"]
+    killed4["bridge_events purged at finalize"]
+  end
+  style RUN_STATE fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
+
+  subgraph RUN_READERS["Run State Readers  (GUI uses REST API only)"]
+    direction TB
+    runlistbuilder["runListBuilder.js — SQL runs table for list"]
+    runtimeops["runtimeOpsRoutes.js — run-summary from run_artifacts SQL<br/><i>Backward compat: can read pre-migration file-based runs</i>"]
+    guiapi["GUI: GET /indexlab/runs, /runtime/summary, /workers, /documents<br/><i>No direct file I/O from GUI layer</i>"]
+  end
+
+  runs_sql --> runlistbuilder
+  artifacts_sql --> runtimeops
+  runtimeops --> guiapi
+
+  %% ============================================================
+  %%  SECTION 2: LEARNING + LLM CACHE (Wave 6, SQL only)
+  %% ============================================================
+  subgraph LEARNING["LEARNING + LLM CACHE  (SQL only — Wave 6 complete)"]
+    direction TB
+    learn_sql[("learning_profiles (13 cols)<br/><i>SQL only, in-mem fallback if no specDb</i>")]
+    brain_sql[("category_brain (4 cols)<br/><i>SQL only — WHY: SQL is sole source</i>")]
+    cache_sql[("llm_cache (4 cols)<br/><i>SQL only, best-effort silent</i>")]
+    learn_killed["_learning/ file writes KILLED"]
+    cache_killed["llm_cache/ file writes KILLED"]
+  end
+  style LEARNING fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
+
+  %% ============================================================
+  %%  SECTION 3: BILLING & TELEMETRY (Wave 4)
+  %% ============================================================
+  subgraph BILLING["BILLING & TELEMETRY  (SQL primary — Wave 4)"]
+    direction TB
+    costLedger["costLedger.js"]
+    metricsWriter["metricsWriter.js"]
+
+    billing_sql[("billing_entries (18 cols)<br/><i>SQL only — NDJSON killed</i>")]
+    metrics_sql[("metrics (5 cols)<br/><i>SQL primary</i>")]
+    metricslog{{"metrics.jsonl — NDJSON fallback<br/><i>Only when specDb unavailable</i>"}}
+
+    costLedger -->|"INSERT"| billing_sql
+    metricsWriter -->|"INSERT"| metrics_sql
+    metricsWriter -.->|"fallback"| metricslog
+  end
+  style BILLING fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
+
+  %% ============================================================
+  %%  SECTION 4: NDJSON TELEMETRY (tables exist, writes not wired)
+  %% ============================================================
+  subgraph NDJSON_TELEM["NDJSON TELEMETRY INDEXES  (SQL tables exist, runtime writes still NDJSON)"]
+    direction TB
+    qi_ndjson["query-index.ndjson<br/><i>appendFileSync in createQueryIndex.js</i>"]
+    ui_ndjson["url-index.ndjson"]
+    pi_ndjson["prompt-index.ndjson"]
+    ks_ndjson["knob-snapshots.ndjson"]
+
+    qi_sql[("query_index (9 cols) — empty")]
+    ui_sql[("url_index (9 cols) — empty")]
+    pi_sql[("prompt_index (7 cols) — empty")]
+    ks_sql[("knob_snapshots (6 cols) — empty")]
+
+    qi_ndjson -.->|"not wired"| qi_sql
+    ui_ndjson -.->|"not wired"| ui_sql
+    pi_ndjson -.->|"not wired"| pi_sql
+    ks_ndjson -.->|"not wired"| ks_sql
+  end
+  style NDJSON_TELEM fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+
+  %% ============================================================
+  %%  SECTION 5: SETTINGS (JSON only)
+  %% ============================================================
+  subgraph SETTINGS["SETTINGS  (JSON only — not migrated to SQL)"]
+    direction TB
+    usersettings["user-settings.json<br/><i>Handler: settingsDocumentMeta.js<br/>Reader: loadConfigWithUserSettings()</i>"]
+    brandreg["brand_registry.json<br/><i>Handler: brandRegistry.js<br/>Pure file I/O (loadBrandRegistry/saveBrandRegistry)</i>"]
+  end
+  style SETTINGS fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
+
+  %% ============================================================
+  %%  SECTION 6: SPEC DATABASE (53 tables)
+  %% ============================================================
+  subgraph SPECDB["SPEC DATABASE  (.specfactory_tmp/{cat}/spec.sqlite — 53 tables)"]
+    direction TB
+    candidates[("candidates + reviews")]
+    components[("component_identity + aliases + values")]
+    items[("item_field_state + links")]
+    enums[("enum_lists + list_values")]
+    reviews[("key_review_state + audit + runs + sources")]
+    queue[("product_queue + product_runs")]
+    sources[("source_registry + assertions + evidence")]
+    intel[("source_intel_domains + brands + paths + corpus")]
+    routematrix[("llm_route_matrix (43 cols)")]
+    crawl_tables[("crawl_sources + source_screenshots +<br/>source_videos + source_pdfs")]
+    wave_tables[("Wave 1-6: bridge_events + runs +<br/>run_artifacts + billing_entries + metrics +<br/>learning_profiles + category_brain + llm_cache")]
+    telem_tables[("Telemetry: knob_snapshots + query_index +<br/>url_index + prompt_index + runtime_events")]
+    other[("products + brands + artifacts + brand_domains +<br/>domain_classifications + field_history +<br/>data_authority_sync + curation_suggestions")]
+  end
+  style SPECDB fill:#0d1117,stroke:#1f6feb,color:#e0e0e0,stroke-width:3px
+
+  %% ============================================================
+  %%  SECTION 7: EVIDENCE INDEX DB (separate SQLite)
+  %% ============================================================
+  subgraph EVIDENCEDB["EVIDENCE INDEX DB  (separate SQLite per category)"]
+    direction TB
+    evdocs[("evidence_documents")]
+    evchunks[("evidence_chunks + FTS")]
+    evfacts[("evidence_facts")]
+  end
+  style EVIDENCEDB fill:#0d1117,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+
+  %% ============================================================
+  %%  SECTION 8: KEEP AS FILES
+  %% ============================================================
+  subgraph KEEPFILES["KEEP AS FILES  (immutable artifacts)"]
+    direction TB
+    catalog["category_authority/ — field_rules, known_values, component_db"]
+    exports["export artifacts — spec.json, summary.json, provenance.json"]
+    binaries["content-addressed — *.html.gz, screenshot.jpg/png/webm, *.pdf"]
+    traces["LLM traces — ring buffer JSON files"]
+    screencast["runtime_screencast/ — worker frame data"]
+  end
+  style KEEPFILES fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style catalog fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
+  style exports fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
+  style binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
+  style traces fill:#2d333b,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+  style screencast fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+
+  %% ===== Node styles =====
+  style rba fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style rbeh fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style runs_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style bridge_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style artifacts_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style summary_note fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
+  style killed1 fill:#da3633,stroke:#f85149,color:#fff
+  style killed2 fill:#da3633,stroke:#f85149,color:#fff
+  style killed3 fill:#da3633,stroke:#f85149,color:#fff
+  style killed4 fill:#da3633,stroke:#f85149,color:#fff
+  style runlistbuilder fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style runtimeops fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style guiapi fill:#21262d,stroke:#58a6ff,color:#c9d1d9
+  style learn_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style brain_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style cache_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style learn_killed fill:#da3633,stroke:#f85149,color:#fff
+  style cache_killed fill:#da3633,stroke:#f85149,color:#fff
+  style usersettings fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
+  style brandreg fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
+  style costLedger fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style metricsWriter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style billing_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style metrics_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style metricslog fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
+  style qi_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style ui_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style pi_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style ks_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style qi_sql fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style ui_sql fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style pi_sql fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style ks_sql fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style candidates fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style components fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style items fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style enums fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style reviews fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style queue fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style sources fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style intel fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style routematrix fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style crawl_tables fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style wave_tables fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
+  style telem_tables fill:#d29922,stroke:#e3b341,color:#fff,stroke-width:2px
+  style other fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
+  style evdocs fill:#a371f7,stroke:#bc8cff,color:#fff,stroke-width:2px
+  style evchunks fill:#a371f7,stroke:#bc8cff,color:#fff,stroke-width:2px
+  style evfacts fill:#a371f7,stroke:#bc8cff,color:#fff,stroke-width:2px
+
+  RUN_STATE --> LEARNING
+  LEARNING --> BILLING
+  BILLING --> NDJSON_TELEM
+  NDJSON_TELEM --> SETTINGS
+  SETTINGS --> SPECDB
+  SPECDB --> EVIDENCEDB
+  EVIDENCEDB --> KEEPFILES

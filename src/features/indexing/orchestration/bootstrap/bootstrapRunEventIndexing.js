@@ -13,20 +13,19 @@ export function bootstrapRunEventIndexing({
   runId = '',
   env = process.env,
   manifestDefaults = {},
-  defaultIndexLabRootFn = () => '.',
-  joinPathFn = (...parts) => parts.join('/'),
-  mkdirSyncFn = () => {},
   captureKnobSnapshotFn = () => ({}),
   recordKnobSnapshotFn = () => {},
   recordUrlVisitFn = () => {},
   recordQueryResultFn = () => {},
+  // WHY: Legacy params kept for backward compat with callers that still pass them
+  defaultIndexLabRootFn = () => '.',
+  joinPathFn = (...parts) => parts.join('/'),
+  mkdirSyncFn = () => {},
 } = {}) {
-  const indexingRoot = joinPathFn(defaultIndexLabRootFn(), category);
 
   try {
-    mkdirSyncFn(indexingRoot, { recursive: true });
     const knobSnapshot = captureKnobSnapshotFn(env, manifestDefaults);
-    recordKnobSnapshotFn(knobSnapshot, joinPathFn(indexingRoot, 'knob-snapshots.ndjson'));
+    recordKnobSnapshotFn(knobSnapshot);
   } catch {
     // Index recording must not crash the pipeline.
   }
@@ -44,7 +43,6 @@ export function bootstrapRunEventIndexing({
       if (row?.event === 'source_processed') {
         const url = String(row.url || row.final_url || '').trim();
         if (url) {
-          mkdirSyncFn(indexingRoot, { recursive: true });
           recordUrlVisitFn({
             url,
             host: String(row.host || '').trim(),
@@ -53,12 +51,11 @@ export function bootstrapRunEventIndexing({
             fields_filled: buildFilledFields(row.candidates),
             fetch_success: row.outcome === 'ok',
             run_id: runId,
-          }, joinPathFn(indexingRoot, 'url-index.ndjson'));
+          });
         }
       }
 
       if (row?.event === 'discovery_query_completed') {
-        mkdirSyncFn(indexingRoot, { recursive: true });
         recordQueryResultFn({
           query: row.query || '',
           provider: row.provider || '',
@@ -67,7 +64,7 @@ export function bootstrapRunEventIndexing({
           run_id: runId,
           category,
           product_id: productId,
-        }, joinPathFn(indexingRoot, 'query-index.ndjson'));
+        });
       }
     } catch {
       // Index recording must not crash the pipeline.

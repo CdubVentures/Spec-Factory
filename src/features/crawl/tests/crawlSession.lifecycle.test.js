@@ -27,10 +27,8 @@ describe('createCrawlSession lifecycle', () => {
 
   // WHY: Suite orchestrator drives the hook order now.
   // onInit fires in preNavigationHooks (not visible to requestHandler test doubles).
-  // requestHandler runs: [loading delay] → onDismiss → (onScroll → onDismiss?) × rounds → onCapture → onComplete.
-  // Early exit: if initial dismiss finds 0 overlays, subsequent dismiss rounds are skipped
-  // (scroll rounds still run to trigger lazy content).
-  // Default fetchDismissRounds=2 with no overlays: onDismiss, onScroll, onScroll, onCapture, onComplete.
+  // requestHandler runs: [loading delay] → onDismiss → (onScroll → onDismiss) × rounds → onCapture → onComplete.
+  // Default fetchDismissRounds=2, so: onDismiss, onScroll, onDismiss, onScroll, onDismiss, onCapture, onComplete.
   it('runs plugin hooks in documented lifecycle order', async () => {
     const hookOrder = [];
     const plugin = createPluginDouble({
@@ -51,12 +49,11 @@ describe('createCrawlSession lifecycle', () => {
 
     await session.processUrl('http://example.com');
 
-    // WHY: Early exit — test double has no overlays, so dismiss rounds in the
-    // loop are skipped. Scroll rounds still run. Initial dismiss always runs.
+    // Round-based: dismiss(0), scroll(1), dismiss(1), scroll(2), dismiss(2), capture, complete
     assert.deepEqual(hookOrder, [
       'onDismiss',
-      'onScroll',
-      'onScroll',
+      'onScroll', 'onDismiss',
+      'onScroll', 'onDismiss',
       'onCapture',
       'onComplete',
     ]);

@@ -144,7 +144,7 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 
 <!-- ============================================================ -->
 <h2>2. During a run (the hot path)</h2>
-<p>Every event writes to SQLite only. The IPC channel pushes events to the GUI server, which broadcasts via WebSocket. No Chokidar. One write path, one push path. <strong>Note (2026-03-27):</strong> 4 NDJSON telemetry indexes (query-index, url-index, prompt-index, knob-snapshots) still use appendFileSync — SQL tables exist but writers not yet wired.</p>
+<p>Every event writes to SQLite only. The IPC channel pushes events to the GUI server, which broadcasts via WebSocket. No Chokidar. One write path, one push path. <strong>Update (2026-03-28):</strong> 4 NDJSON telemetry indexes (query-index, url-index, prompt-index, knob-snapshots) migrated to SQL — writers and readers wired, NDJSON removed from pipeline. Only metrics.jsonl NDJSON fallback remains.</p>
 
 <div class="diagram-wrap">
 <svg width="100%" viewBox="0 0 1100 480">

@@ -55,7 +55,6 @@ export function persistScreenshotArtifacts({ screenshots, screenshotDir, workerI
 
       const record = {
         filename,
-        file_path: path.join(screenshotDir, filename),
         width: shot.width || 0,
         height: shot.height || 0,
         bytes: shot.bytes.length,

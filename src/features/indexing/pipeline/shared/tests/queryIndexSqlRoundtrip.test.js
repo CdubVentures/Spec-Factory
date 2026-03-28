@@ -1,5 +1,4 @@
 // WHY: Contract test — SQL insert → read → pure aggregation produces correct summary shapes.
-// Verifies that computeQueryIndexSummary and computeUrlIndexSummary work with SQL rows.
 
 import { describe, it } from 'node:test';
 import { strictEqual, ok, deepStrictEqual } from 'node:assert';
@@ -93,16 +92,13 @@ describe('urlIndex SQL → computeUrlIndexSummary', () => {
 
   it('deduplicates same url+run_id', () => {
     const specDb = createHarness();
-    // Same url, same run — should dedupe
     specDb.insertUrlIndexEntry({ category: 'mouse', run_id: 'r1', url: 'https://a.com', host: 'a.com', tier: 't1', doc_kind: 'spec', fields_filled: ['weight'], fetch_success: true, ts: '2026-01-01T00:00:00Z' });
     specDb.insertUrlIndexEntry({ category: 'mouse', run_id: 'r1', url: 'https://a.com', host: 'a.com', tier: 't1', doc_kind: 'spec', fields_filled: ['dpi'], fetch_success: true, ts: '2026-01-01T00:01:00Z' });
-    // Same url, different run — should NOT dedupe
     specDb.insertUrlIndexEntry({ category: 'mouse', run_id: 'r2', url: 'https://a.com', host: 'a.com', tier: 't1', doc_kind: 'spec', fields_filled: ['weight'], fetch_success: true, ts: '2026-01-02T00:00:00Z' });
 
     const rows = specDb.getUrlIndexByCategory('mouse');
     const summary = computeUrlIndexSummary(rows);
-    // 3 raw rows but dedupe means 2 unique url+run combos
-    strictEqual(summary.reuse_distribution['2'], 1); // url 'a.com' visited in 2 runs
+    strictEqual(summary.reuse_distribution['2'], 1);
   });
 
   it('high_yield requires 3+ visits and 5+ fields', () => {

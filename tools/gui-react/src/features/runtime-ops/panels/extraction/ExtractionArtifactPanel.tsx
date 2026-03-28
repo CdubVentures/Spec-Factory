@@ -1,7 +1,7 @@
 // WHY: Generic extraction artifact panel — shared layout for screenshots, videos,
 // and future capture plugins. O(1) scaling: add a config object, not a new component.
 
-import { Fragment, useMemo, useState, useCallback, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import { usePersistedExpandMap } from '../../../../stores/tabStore.ts';
 import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
@@ -17,7 +17,6 @@ interface ArtifactRecord extends ExtractionPluginEntry {
   display_label: string;
   filenames: string[];
   file_sizes: number[];
-  file_paths: string[];
   total_bytes: number;
   [key: string]: unknown;
 }
@@ -43,8 +42,6 @@ export interface ArtifactPanelConfig {
   locationPrefix: string;
   previewType: 'image' | 'video';
   assetUrl: (runId: string, entry: ArtifactRecord, filename: string) => string;
-  /** Fields to collect format strings from — checks both array (formats) and scalar (format) */
-  formatFields?: string[];
   extraHeroStats?: (records: ArtifactRecord[]) => ReactNode;
   extraHeroBand?: (records: ArtifactRecord[]) => ReactNode;
   extraColumns?: string[];
@@ -65,6 +62,7 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     `runtimeOps:extraction:${config.pluginKey}:expanded:${persistScope}`,
   );
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+  const [resolvedPath, setResolvedPath] = useState<string | null>(null);
 
   const records = data.entries as ArtifactRecord[];
 
@@ -77,19 +75,6 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     }
     return { totalCount, totalBytes };
   }, [records, config.countField]);
-
-  const formats = useMemo(() => {
-    if (!config.formatFields?.length) return [];
-    const set = new Set<string>();
-    for (const r of records) {
-      for (const field of config.formatFields) {
-        const val = r[field];
-        if (Array.isArray(val)) { for (const f of val) if (f) set.add(String(f)); }
-        else if (val) set.add(String(val));
-      }
-    }
-    return [...set];
-  }, [records, config.formatFields]);
 
   const groups = useMemo((): DomainGroup[] => {
     const map = new Map<string, ArtifactRecord[]>();
@@ -117,20 +102,20 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     setPreviewSrc(config.assetUrl(runId, entry, filename));
   }, [runId, config]);
 
-  const openFolder = useCallback((filePath: string) => {
+  const openFolder = useCallback(() => {
     if (!runId) return;
-    const folder = config.locationPrefix.replace(/\/+$/, '');
-    if (filePath) {
-      fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${encodeURIComponent(folder)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_path: filePath }),
-      }).catch(() => {});
-    } else {
-      fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${encodeURIComponent(folder)}`)
-        .catch(() => {});
-    }
-  }, [runId, config.locationPrefix]);
+    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${config.pluginKey}`)
+      .catch(() => {});
+  }, [runId, config.pluginKey]);
+
+  const hasRecords = records.length > 0;
+  useEffect(() => {
+    if (!runId || !hasRecords) return;
+    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/resolve-folder/${config.pluginKey}`)
+      .then((r) => r.json() as Promise<{ path: string | null }>)
+      .then((body) => { if (body.path) setResolvedPath(body.path); })
+      .catch(() => {});
+  }, [runId, config.pluginKey, hasRecords]);
 
   if (!data.entries.length) {
     return (
@@ -164,13 +149,18 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
           {config.extraHeroStats?.(records)}
         </HeroStatGrid>
         {config.extraHeroBand?.(records)}
-
-        {formats.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Formats</span>
-            {formats.map((f) => (
-              <Chip key={f} label={f.toUpperCase()} className="sf-chip-info" />
-            ))}
+        {resolvedPath && (
+          <div className="flex items-center gap-2 mt-1">
+            <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Storage</span>
+            <Chip label="LOCAL" className="sf-chip-neutral" />
+            <button
+              type="button"
+              onClick={openFolder}
+              title={resolvedPath}
+              className="font-mono text-[11px] sf-text-subtle hover:sf-text-primary hover:underline cursor-pointer truncate max-w-[600px]"
+            >
+              {resolvedPath}
+            </button>
           </div>
         )}
       </HeroBand>
@@ -262,18 +252,21 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
                       {Array.isArray(entry.filenames) && entry.filenames.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
                           {entry.filenames.map((fn, fi) => {
-                            const fp = Array.isArray(entry.file_paths) ? entry.file_paths[fi] : '';
+                            const sep = resolvedPath?.includes('\\') ? '\\' : '/';
+                            const fullFilePath = resolvedPath
+                              ? `${resolvedPath}${sep}${fn}`
+                              : `${config.locationPrefix}${fn}`;
                             return (
                               <button
                                 key={fi}
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); openFolder(fp); }}
-                                title={fp || `${config.locationPrefix}${fn}`}
+                                onClick={(e) => { e.stopPropagation(); openFolder(); }}
+                                title={fullFilePath}
                                 className="flex items-center gap-1.5 text-left group cursor-pointer"
                               >
                                 <Chip label="LOCAL" className="sf-chip-neutral group-hover:sf-chip-info transition-colors shrink-0" />
-                                <span className="sf-text-caption font-mono sf-text-subtle group-hover:sf-text-primary group-hover:underline whitespace-nowrap truncate max-w-[20rem]">
-                                  {fp || `${config.locationPrefix}${fn}`}
+                                <span className="sf-text-caption font-mono sf-text-subtle group-hover:sf-text-primary group-hover:underline truncate max-w-[400px]">
+                                  {fullFilePath}
                                 </span>
                               </button>
                             );

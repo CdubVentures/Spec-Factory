@@ -222,19 +222,10 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
     );
   }
 
-  // WHY: Video save is async (prePageCloseHook → pendingVideoSaves). The GUI
-  // receives source_processed BEFORE the video file is written to disk. Without
-  // retry, the <video> 404s and the user sees "Stream ended" instead of the
-  // recording loop. 3 retries at 2s intervals covers the typical save latency.
-  const videoRetryRef = useRef(0);
-  const VIDEO_MAX_RETRIES = 3;
-  const VIDEO_RETRY_DELAY_MS = 2000;
-
   if (videoUrl) {
     return (
       <div className="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
         <video
-          key={videoUrl}
           src={videoUrl}
           autoPlay
           loop
@@ -242,19 +233,10 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
           playsInline
           controls
           className="w-full h-full object-contain"
-          onLoadedData={() => { videoRetryRef.current = 0; }}
           onError={() => {
-            if (videoRetryRef.current < VIDEO_MAX_RETRIES) {
-              videoRetryRef.current += 1;
-              const attempt = videoRetryRef.current;
-              setTimeout(() => {
-                // WHY: Append cache-buster so the browser doesn't serve the cached 404.
-                setVideoUrl(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/video/${encodeURIComponent(workerId)}?r=${attempt}`);
-              }, VIDEO_RETRY_DELAY_MS);
-            } else {
-              videoRetryRef.current = 0;
-              setVideoUrl('');
-            }
+            // WHY: Video 404 or load failure — clear URL so the component
+            // falls through to the static retained frame view.
+            setVideoUrl('');
           }}
         />
         <div className="absolute top-2 right-2 flex items-center gap-1.5 sf-chip-neutral px-2 py-0.5 rounded sf-text-caption font-medium">

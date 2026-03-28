@@ -82,24 +82,18 @@ export function createRunLlmRuntime({
         },
       });
 
-      try {
-        const promptIndexRoot = joinPathFn(defaultIndexLabRootFn(), category);
-        mkdirSyncFn(promptIndexRoot, { recursive: true });
-        const promptRecord = {
-          prompt_version: usageRow.reason || 'extract',
-          prompt_hash: '',
-          model: usageRow.model || '',
-          field_count: 0,
-          token_count: usageRow.total_tokens || 0,
-          latency_ms: 0,
-          success: true,
-          run_id: runId,
-          category,
-        };
-        recordPromptResultFn(promptRecord, joinPathFn(promptIndexRoot, 'prompt-index.ndjson'));
-        if (specDb) try { specDb.insertPromptIndexEntry({ ...promptRecord, ts: nowIsoFn() }); } catch { /* best-effort */ }
-      } catch {
-        // Index recording must not crash the pipeline.
+      if (specDb) {
+        try {
+          specDb.insertPromptIndexEntry({
+            prompt_version: usageRow.reason || 'extract',
+            model: usageRow.model || '',
+            token_count: usageRow.total_tokens || 0,
+            success: true,
+            run_id: runId,
+            category,
+            ts: nowIsoFn(),
+          });
+        } catch { /* best-effort — index recording must not crash the pipeline */ }
       }
     },
   };

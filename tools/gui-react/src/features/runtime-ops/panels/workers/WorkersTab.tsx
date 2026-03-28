@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../../stores/tabStore.ts';
-import { TabStrip } from '../../../../shared/ui/navigation/TabStrip.tsx';
 import { useRuntimeSettingsReader } from '../../../pipeline-settings/index.ts';
 import type { RuntimeOpsWorkerRow, PrefetchTabKey, PreFetchPhasesResponse, PrefetchLiveSettings, FetchPhasesResponse, ExtractionPhasesResponse } from '../../types.ts';
 import { getRefetchInterval } from '../../helpers.ts';
@@ -35,13 +34,6 @@ interface WorkersTabProps {
   browserPoolMeta?: { status?: string; browsers?: number; slots?: number; pages_per_browser?: number } | null;
 }
 
-// WHY: Group-level tab definitions for the TabStrip selector.
-const GROUP_TAB_ITEMS = STAGE_GROUP_REGISTRY.map((g) => ({
-  id: g.id,
-  label: g.label,
-  description: g.tip,
-}));
-
 function toOptionalPositiveInt(value: unknown): number | undefined {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
@@ -59,7 +51,6 @@ function toOptionalString(value: unknown): string | undefined {
 }
 
 export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, category, isRunning, wsUrl, browserPoolMeta }: WorkersTabProps) {
-  const [poolFilter, setPoolFilter] = usePersistedTab<string>(`runtimeOps:workers:poolFilter:${category}`, 'all');
   const [drawerOpen, toggleDrawerOpen] = usePersistedToggle(`runtimeOps:workers:drawer:${category}`, true);
 
   // ── Group-level state ─────────────────────────────────────────────
@@ -140,16 +131,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   const activeBusyTabs: Set<string> | undefined = isPrefetchGroup ? busyPrefetchTabs : undefined;
   const activeDisabledTabs: Set<string> | undefined = isPrefetchGroup ? disabledPrefetchTabs : undefined;
 
-  // ── Worker filtering ──────────────────────────────────────────────
-  const pools = useMemo(() => {
-    const set = new Set(workers.map((w) => w.pool));
-    return ['all', ...Array.from(set).sort()];
-  }, [workers]);
-
-  const filtered = useMemo(() => {
-    const list = poolFilter === 'all' ? workers : workers.filter((w) => w.pool === poolFilter);
-    return sortWorkersForTabs(list);
-  }, [workers, poolFilter]);
+  const sorted = useMemo(() => sortWorkersForTabs(workers), [workers]);
 
   // ── Tab normalization (clear disabled selections) ─────────────────
   useEffect(() => {
@@ -164,24 +146,11 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
 
   // ── Auto-select first worker when no stage tab active ─────────────
   useEffect(() => {
-    if (!selectedWorker && filtered.length > 0 && stageTab === null) {
-      const running = filtered.find((w) => w.state === 'running' || w.state === 'crawling' || w.state === 'retrying');
-      onSelectWorker(running ?? filtered[0]);
+    if (!selectedWorker && sorted.length > 0 && stageTab === null) {
+      const running = sorted.find((w) => w.state === 'running');
+      onSelectWorker(running ?? sorted[0]);
     }
-  }, [filtered, selectedWorker, stageTab, onSelectWorker]);
-
-  // ── Auto-advance to next active worker when selected worker finishes ──
-  // WHY: Without this, the live view cuts to a completed/blocked screen
-  // when the watched worker finishes. The user has to manually tab back.
-  const TERMINAL_STATES = new Set(['crawled', 'blocked', 'captcha', 'failed', 'rate_limited']);
-  useEffect(() => {
-    if (!selectedWorker || !TERMINAL_STATES.has(selectedWorker.state)) return;
-    const nextActive = filtered.find(
-      (w) => w.worker_id !== selectedWorker.worker_id
-        && (w.state === 'running' || w.state === 'crawling' || w.state === 'retrying' || w.state === 'stuck'),
-    );
-    if (nextActive) onSelectWorker(nextActive);
-  }, [selectedWorker, filtered, onSelectWorker]);
+  }, [sorted, selectedWorker, stageTab, onSelectWorker]);
 
   // ── Handlers ──────────────────────────────────────────────────────
   const handleSelectWorker = (workerId: string) => {
@@ -201,63 +170,49 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
     handleSelectStageTab(tab);
   };
 
-  const handleGroupChange = (groupId: StageGroupId) => {
-    setActiveGroup(groupId);
-  };
-
   const activeWorker = selectedWorker
     ? workers.find((w) => w.worker_id === selectedWorker.worker_id) ?? selectedWorker
     : null;
 
   const isStageActive = stageTab !== null;
 
+  // WHY: Each row gets a handler that switches activeGroup before setting the tab,
+  // so clicking a tab in a different row deselects the previous row's tab.
+  const handleGroupTabSelect = (groupId: StageGroupId) => (tab: string | null) => {
+    if (tab !== null && groupId !== activeGroup) {
+      setActiveGroup(groupId);
+    }
+    handleSelectStageTab(tab);
+  };
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b sf-border-default sf-surface-shell">
-        <TabStrip
-          tabs={GROUP_TAB_ITEMS}
-          activeTab={activeGroup}
-          onSelect={handleGroupChange}
-          className="flex gap-1 px-1 py-0.5 sf-tab-strip rounded"
+      {/* ── All 3 stage rows stacked ──────────────────────────────── */}
+      {STAGE_GROUP_REGISTRY.map((group) => (
+        <StageGroupTabRow
+          key={group.id}
+          groupLabel={group.label}
+          registry={group.registry}
+          activeTab={activeGroup === group.id ? stageTab : null}
+          onSelectTab={handleGroupTabSelect(group.id)}
+          busyTabs={group.id === 'prefetch' ? activeBusyTabs : undefined}
+          disabledTabs={group.id === 'prefetch' ? activeDisabledTabs : undefined}
+          rightContent={group.id === 'fetch' ? (
+            <BrowserPoolBadge
+              workers={workers}
+              slotCount={Number(runtimeSettingsSnapshot?.crawlMaxConcurrentSlots) || 8}
+              isRunning={isRunning}
+              browserPoolMeta={browserPoolMeta}
+            />
+          ) : undefined}
         />
-      </div>
-
-      <StageGroupTabRow
-        groupLabel={activeGroupDef.label}
-        registry={activeGroupDef.registry}
-        activeTab={stageTab}
-        onSelectTab={handleSelectStageTab}
-        busyTabs={activeBusyTabs}
-        disabledTabs={activeDisabledTabs}
-        rightContent={
-          <BrowserPoolBadge
-            workers={workers}
-            slotCount={Number(runtimeSettingsSnapshot?.crawlMaxConcurrentSlots) || 8}
-            isRunning={isRunning}
-            browserPoolMeta={browserPoolMeta}
-          />
-        }
-      />
-
-      <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-default sf-surface-shell">
-        <label className="sf-text-caption sf-text-muted">Pool:</label>
-        <select
-          value={poolFilter}
-          onChange={(e) => setPoolFilter(e.target.value)}
-          className="sf-select sf-text-caption px-2 py-1"
-        >
-          {pools.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
-      </div>
+      ))}
 
       <WorkerSubTabs
-        workers={filtered}
+        workers={sorted}
         selectedWorkerId={isStageActive ? null : (activeWorker?.worker_id ?? null)}
         onSelectWorker={handleSelectWorker}
-        poolFilter={poolFilter}
       />
 
       <div className="flex flex-1 min-h-0">

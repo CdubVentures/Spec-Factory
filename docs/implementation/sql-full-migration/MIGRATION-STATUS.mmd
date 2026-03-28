@@ -102,26 +102,22 @@ flowchart TB
   style w6_killed2 fill:#da3633,stroke:#f85149,color:#fff
 
   %% ==========================================
-  %%  NDJSON TELEMETRY (SQL tables exist, writes NOT wired)
+  %%  TELEMETRY INDEXES (Wave B2-B3 COMPLETE 2026-03-28)
   %% ==========================================
-  subgraph NDJSON["NDJSON TELEMETRY  (SQL tables exist, runtime writes still NDJSON)"]
+  subgraph NDJSON["TELEMETRY INDEXES  (SQL wired, NDJSON killed in pipeline)"]
     direction TB
-    nj1["query-index.ndjson"] -->|"pure aggregation extracted<br/>SQL write + read wiring next"| nj1s[("query_index<br/><i>9 cols — store exists, empty</i>")]
-    nj2["url-index.ndjson"] -->|"pure aggregation extracted<br/>SQL write + read wiring next"| nj2s[("url_index<br/><i>9 cols — store exists, empty</i>")]
-    nj3["prompt-index.ndjson"] -->|"pure aggregation extracted<br/>SQL write + read wiring next"| nj3s[("prompt_index<br/><i>7 cols — store exists, empty</i>")]
-    nj4["knob-snapshots.ndjson"] -->|"pure aggregation extracted<br/>SQL write + read wiring next"| nj4s[("knob_snapshots<br/><i>6 cols — store exists, empty</i>")]
+    nj1[("query_index<br/><i>9 cols — SQL writes + reads wired</i>")]
+    nj2[("url_index<br/><i>9 cols — SQL writes + reads wired</i>")]
+    nj3[("prompt_index<br/><i>7 cols — SQL writes + reads wired</i>")]
+    nj4[("knob_snapshots<br/><i>6 cols — SQL writes + reads wired</i>")]
     nj5{{"metrics.jsonl"}} -.->|"NDJSON fallback only<br/>when specDb unavailable"| nj5s[("metrics<br/><i>SQL primary</i>")]
   end
-  style NDJSON fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:3px
-  style nj1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style nj2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style nj3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style nj4 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style NDJSON fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
+  style nj1 fill:#238636,stroke:#3fb950,color:#fff
+  style nj2 fill:#238636,stroke:#3fb950,color:#fff
+  style nj3 fill:#238636,stroke:#3fb950,color:#fff
+  style nj4 fill:#238636,stroke:#3fb950,color:#fff
   style nj5 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style nj1s fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style nj2s fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style nj3s fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style nj4s fill:#1f6feb,stroke:#58a6ff,color:#fff
   style nj5s fill:#238636,stroke:#3fb950,color:#fff
 
   %% ==========================================
@@ -180,7 +176,7 @@ flowchart TB
     imp_sql[("53 SQL tables in specDb<br/><i>+ evidenceIndexDb (4 tables)<br/>+ frontierDb (separate)</i>")]
     imp_summary["run-summary = SQL artifact<br/><i>Replaces run.json + needset.json +<br/>search_profile.json + bridge_events for past runs</i>"]
     imp_killed["Killed: run.json, needset.json, search_profile.json,<br/>billing NDJSON, run_events.ndjson, _learning/ files,<br/>llm_cache/ files"]
-    imp_remaining["Remaining NDJSON: 4 telemetry indexes<br/><i>query-index, url-index, prompt-index, knob-snapshots<br/>+ metrics.jsonl fallback</i>"]
+    imp_remaining["Remaining NDJSON: metrics.jsonl fallback only<br/><i>4 telemetry indexes migrated to SQL (2026-03-28)</i>"]
     imp_sql --> imp_summary --> imp_killed --> imp_remaining
   end
   style IMPACT fill:#0d1117,stroke:#58a6ff,color:#58a6ff,stroke-width:3px
@@ -189,23 +185,4 @@ flowchart TB
   style imp_killed fill:#21262d,stroke:#da3633,color:#c9d1d9
   style imp_remaining fill:#2d333b,stroke:#d29922,color:#e0e0e0
 
-  %% ==========================================
-  %%  REMAINING WORK (priority order)
-  %% ==========================================
-  subgraph TODO["REMAINING WORK  (priority order)"]
-    direction TB
-    todo1["P1: Wire 4 NDJSON telemetry → SQL writes + reads<br/><i>Tables + stores exist. Wire appendFileSync → specDb.insertXxx()</i>"]
-    todo2["P2: Remove metrics.jsonl NDJSON fallback"]
-    todo3["P3: Redesign data relocation (service gutted)"]
-    todo4["P4: Exporter dual-writes → run_artifacts"]
-    todo5["P5: Product checkpoint serializer (greenfield)"]
-    todo1 --> todo2 --> todo3 --> todo4 --> todo5
-  end
-  style TODO fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
-  style todo1 fill:#2d333b,stroke:#da3633,color:#e0e0e0
-  style todo2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style todo3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style todo4 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
-  style todo5 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
-
-  WAVES --> W6 --> NDJSON --> REMAIN --> KEEP --> INFRA --> TODO --> IMPACT
+  WAVES --> W6 --> NDJSON --> REMAIN --> KEEP --> INFRA --> IMPACT

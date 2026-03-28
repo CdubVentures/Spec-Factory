@@ -29,9 +29,7 @@ describe('knobSnapshots SQL → computeKnobSnapshots', () => {
     const result = computeKnobSnapshots(rows);
     strictEqual(result.length, 1);
     strictEqual(result[0].mismatch_count, 1);
-    // Non-sensitive knob preserved
     strictEqual(result[0].entries[0].config_value, 'true');
-    // Sensitive knob redacted
     strictEqual(result[0].entries[1].config_value, '***REDACTED***');
     strictEqual(result[0].entries[1].effective_value, '***REDACTED***');
   });
@@ -44,7 +42,7 @@ describe('knobSnapshots SQL → computeKnobSnapshots', () => {
     const rows = specDb.getKnobSnapshots('mouse');
     const result = computeKnobSnapshots(rows);
     strictEqual(result.length, 2);
-    strictEqual(result[0].run_id, 'r1'); // earlier ts first
+    strictEqual(result[0].run_id, 'r1');
     strictEqual(result[1].run_id, 'r2');
   });
 });

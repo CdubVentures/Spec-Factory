@@ -256,14 +256,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               // supplements it with the artifact references.
               if (filenames.length > 0) {
                 const fileSizes = persisted.map((r) => r.bytes || 0);
-                const filePaths = persisted.map((r) => r.file_path || '');
                 logger?.info?.('extraction_artifacts_persisted', {
                   plugin: 'screenshot',
                   url: request.url,
                   worker_id: workerId,
                   filenames,
                   file_sizes: fileSizes,
-                  file_paths: filePaths,
                 });
               }
             }
@@ -432,12 +430,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
   function buildFullCrawlerOptions() {
     const config = buildCrawlerConfig();
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
-    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 30;
-    const navTimeoutSecs = Number(settings.crawleeNavigationTimeoutSecs) || 15;
+    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 45;
+    const navTimeoutSecs = Number(settings.crawleeNavigationTimeoutSecs) || 20;
     // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
     // Default 1 — one native retry with session rotation (new fingerprint/cookies).
     // After native retry exhausted, lifecycle calls retryWithProxy as final proxy pass.
-    // Total worst case: nav(15) + handler(30) + buffer(10) = 55s per attempt.
+    // Total worst case: nav(20) + handler(45) + buffer(10) = 75s per attempt.
     const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
     // WHY: Derived from slotCount — not a user knob. With maxOpenPagesPerBrowser=1,
     // each slot needs its own browser launch (~600ms each), causing 5+ second ramp-up
@@ -563,7 +561,6 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                             format: 'webm',
                             filenames: [persisted.filename],
                             file_sizes: [persisted.size_bytes],
-                            file_paths: [persisted.file_path],
                           },
                         });
                         logger?.info?.('extraction_artifacts_persisted', {
@@ -572,7 +569,6 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                           worker_id: wid,
                           filenames: [persisted.filename],
                           file_sizes: [persisted.size_bytes],
-                          file_paths: [persisted.file_path],
                         });
                       }
                     } catch (err) {

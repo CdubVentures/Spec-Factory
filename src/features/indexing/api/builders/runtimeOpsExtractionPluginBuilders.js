@@ -58,8 +58,6 @@ export function buildExtractionPluginPhases(events) {
 
       const fileSizes = Array.isArray(p.file_sizes) ? p.file_sizes : [];
 
-      const filePaths = Array.isArray(p.file_paths) ? p.file_paths : [];
-
       if (pluginName && groups[pluginName] && filenames.length > 0) {
         const entry = groups[pluginName].entries.find(
           (e) => e.url === url && e.worker_id === workerId,
@@ -67,7 +65,6 @@ export function buildExtractionPluginPhases(events) {
         if (entry) {
           entry.filenames = filenames;
           if (fileSizes.length > 0) entry.file_sizes = fileSizes;
-          if (filePaths.length > 0) entry.file_paths = filePaths;
         }
       }
     }

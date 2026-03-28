@@ -38,7 +38,6 @@ export function persistVideoArtifact({ videoPath, videoDir, workerId, url, inser
 
     const record = {
       filename,
-      file_path: destPath,
       worker_id: wid,
       size_bytes: stat.size,
       format: 'webm',

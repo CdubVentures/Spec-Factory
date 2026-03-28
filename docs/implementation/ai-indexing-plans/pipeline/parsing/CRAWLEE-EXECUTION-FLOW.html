@@ -1546,6 +1546,375 @@
   </tbody>
 </table>
 
+<!-- ── DETAILED PLUGIN + CRAWLEE INTERNALS GANTT ── -->
+<h3 style="color:var(--orange);">Detailed Breakdown &mdash; Every Crawlee Internal + Fetch Plugin + Extraction Plugin</h3>
+<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
+  Each row is a distinct call inside the request lifecycle. Crawlee owns navigation and page management.
+  Fetch plugins fire inside <code>runFetchSuiteLoop</code>. Extraction plugins fire after <code>page.content()</code>.
+  <strong>No plugin should use waits or timers</strong> &mdash; Crawlee already confirmed the page is loaded.
+</p>
+
+<style>
+  .gc-crawlee-int { background: var(--accent); opacity: 0.7; }
+  .gc-fetch-init  { background: var(--purple); }
+  .gc-fetch-dismiss { background: var(--orange); }
+  .gc-fetch-scroll  { background: var(--teal); }
+  .gc-extract-cap   { background: var(--pink); }
+  .gc-extract-xform { background: var(--pink); opacity: 0.5; }
+  .gc-video-rec     { background: var(--cyan); opacity: 0.6; }
+</style>
+
+<table class="gantt">
+  <thead>
+    <tr>
+      <th style="min-width:220px;">Step</th>
+      <th style="min-width:60px;">Phase</th>
+      <th>Target</th>
+      <th style="min-width:500px;">Timeline (0s &rarr; ~15s typical success)</th>
+      <th>Owner</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- ── CRAWLEE INTERNALS ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--accent);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">CRAWLEE INTERNALS (before requestHandler)</td></tr>
+    <tr>
+      <td class="phase-label">browserPool.newPage()</td>
+      <td style="font-size:0.65rem;color:var(--accent);">pre</td>
+      <td style="font-size:0.65rem;">incognito context</td>
+      <td class="bar-col"><span class="gantt-bar gc-crawlee-int" style="width:1%; margin-left:0%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label">fingerprint injection</td>
+      <td style="font-size:0.65rem;color:var(--accent);">pre</td>
+      <td style="font-size:0.65rem;">UA, viewport, locale, HW</td>
+      <td class="bar-col"><span class="gantt-bar gc-crawlee-int" style="width:0.5%; margin-left:1%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">fingerprint-suite</td>
+    </tr>
+    <tr>
+      <td class="phase-label">session binding</td>
+      <td style="font-size:0.65rem;color:var(--accent);">pre</td>
+      <td style="font-size:0.65rem;">cookies + session ID</td>
+      <td class="bar-col"><span class="gantt-bar gc-crawlee-int" style="width:0.3%; margin-left:1.5%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">SessionPool</td>
+    </tr>
+    <tr>
+      <td class="phase-label">video recordVideo config</td>
+      <td style="font-size:0.65rem;color:var(--cyan);">pre</td>
+      <td style="font-size:0.65rem;">prePageCreateHook &rarr; dir+size</td>
+      <td class="bar-col"><span class="gantt-bar gc-video-rec" style="width:0.3%; margin-left:1.8%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">browserPool</td>
+    </tr>
+
+    <!-- ── PRE-NAVIGATION HOOKS ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--purple);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">PRE-NAVIGATION HOOKS (preNavigationHooks &mdash; before page.goto)</td></tr>
+    <tr>
+      <td class="phase-label">same-domain delay + jitter</td>
+      <td style="font-size:0.65rem;color:var(--purple);">preNav</td>
+      <td style="font-size:0.65rem;">anti-bot rate limit</td>
+      <td class="bar-col"><span class="gantt-bar gc-delay" style="width:8%; margin-left:2%"><span class="bar-label" style="color:var(--text-muted)">jitter</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label">CDP startScreencast</td>
+      <td style="font-size:0.65rem;color:var(--purple);">preNav</td>
+      <td style="font-size:0.65rem;">JPEG q=30, 1280&times;720</td>
+      <td class="bar-col"><span class="gantt-bar gc-screencast" style="width:0.5%; margin-left:10%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--purple);">stealth &rarr; onInit</td>
+      <td style="font-size:0.65rem;color:var(--purple);">onInit</td>
+      <td style="font-size:0.65rem;">addInitScript (webdriver, chrome.*)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-init" style="width:0.5%; margin-left:10.5%"><span class="bar-label" style="font-size:0.5rem">stealth</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">stealthPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--purple);">overlayDismissal &rarr; onInit</td>
+      <td style="font-size:0.65rem;color:var(--purple);">onInit</td>
+      <td style="font-size:0.65rem;">addInitScript (CSS suppress + observer)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-init" style="width:0.5%; margin-left:11%"><span class="bar-label" style="font-size:0.5rem">overlay</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">overlayDismissalPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--purple);">cssOverride &rarr; onInit</td>
+      <td style="font-size:0.65rem;color:var(--purple);">onInit</td>
+      <td style="font-size:0.65rem;">page.route (disabled by default)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-init" style="width:0.3%; margin-left:11.5%; opacity:0.3"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">cssOverridePlugin</td>
+    </tr>
+
+    <!-- ── NAVIGATION ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--green);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">NAVIGATION (Crawlee native &mdash; page.goto + waitUntil)</td></tr>
+    <tr>
+      <td class="phase-label">page.goto(url, {waitUntil})</td>
+      <td style="font-size:0.65rem;color:var(--green);">nav</td>
+      <td style="font-size:0.65rem;">DNS + TLS + HTTP + DOM parse</td>
+      <td class="bar-col"><span class="gantt-bar gc-nav" style="width:20%; margin-left:12%"><span class="bar-label">navigation (Crawlee)</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee native</td>
+    </tr>
+
+    <!-- ── REQUEST HANDLER (our code) ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--orange);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">FETCH SUITE &mdash; onDismiss Round 0 (initial dismiss, before scroll)</td></tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">cookieConsent &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">autoconsent (1s) + fallback selectors</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:3%; margin-left:32%"><span class="bar-label" style="font-size:0.5rem">cookie</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">cookieConsentPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">overlayDismissal &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">heuristic scan + remove + scroll-lock</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:1%; margin-left:35%"><span class="bar-label" style="font-size:0.5rem">overlay</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">overlayDismissalPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">domExpansion &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">batched click (single evaluate)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:1%; margin-left:36%"><span class="bar-label" style="font-size:0.5rem">expand</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">domExpansionPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">cssOverride &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">addStyleTag (disabled by default)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:0.3%; margin-left:37%; opacity:0.3"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">cssOverridePlugin</td>
+    </tr>
+
+    <!-- ── ROUND 1 ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--teal);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">FETCH SUITE &mdash; Round 1: onScroll + onDismiss</td></tr>
+    <tr>
+      <td class="phase-label" style="color:var(--teal);">autoScroll &rarr; onScroll</td>
+      <td style="font-size:0.65rem;color:var(--teal);">scroll</td>
+      <td style="font-size:0.65rem;">incremental wheel (2 passes)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-scroll" style="width:5%; margin-left:38%"><span class="bar-label" style="font-size:0.5rem">scroll</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">autoScrollPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">cookieConsent &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">re-check (fast if no CMP on R0)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:2%; margin-left:43%"><span class="bar-label" style="font-size:0.5rem">cookie</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">cookieConsentPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">overlayDismissal &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">catch scroll-triggered popups</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:0.5%; margin-left:45%"><span class="bar-label" style="font-size:0.5rem">ov</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">overlayDismissalPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">domExpansion &rarr; onDismiss</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">expand new lazy-loaded sections</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:0.5%; margin-left:45.5%"><span class="bar-label" style="font-size:0.5rem">ex</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">domExpansionPlugin</td>
+    </tr>
+
+    <!-- ── ROUND 2 ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--teal);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">FETCH SUITE &mdash; Round 2: onScroll + onDismiss</td></tr>
+    <tr>
+      <td class="phase-label" style="color:var(--teal);">autoScroll &rarr; onScroll</td>
+      <td style="font-size:0.65rem;color:var(--teal);">scroll</td>
+      <td style="font-size:0.65rem;">incremental wheel (2 passes)</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-scroll" style="width:5%; margin-left:46%"><span class="bar-label" style="font-size:0.5rem">scroll</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">autoScrollPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">dismiss suite (cookie+overlay+expand)</td>
+      <td style="font-size:0.65rem;color:var(--orange);">dismiss</td>
+      <td style="font-size:0.65rem;">final cleanup pass</td>
+      <td class="bar-col"><span class="gantt-bar gc-fetch-dismiss" style="width:2%; margin-left:51%"><span class="bar-label" style="font-size:0.5rem">dismiss</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">pluginRunner</td>
+    </tr>
+
+    <!-- ── CAPTURE + EXTRACTION ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--pink);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">CAPTURE + EXTRACTION (requestHandler &mdash; after suite completes)</td></tr>
+    <tr>
+      <td class="phase-label">page.content() + title()</td>
+      <td style="font-size:0.65rem;color:var(--pink);">capture</td>
+      <td style="font-size:0.65rem;">HTML serialization</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.5%; margin-left:53%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">classifyBlockStatus()</td>
+      <td style="font-size:0.65rem;color:var(--pink);">capture</td>
+      <td style="font-size:0.65rem;">status + HTML markers check</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.3%; margin-left:53.5%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">bypassStrategies</td>
+    </tr>
+    <tr>
+      <td class="phase-label">stash __capturedPage</td>
+      <td style="font-size:0.65rem;color:var(--pink);">capture</td>
+      <td style="font-size:0.65rem;">timeout rescue safety net</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.2%; margin-left:53.8%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--pink);">screenshot &rarr; runCaptures</td>
+      <td style="font-size:0.65rem;color:var(--pink);">extract</td>
+      <td style="font-size:0.65rem;">stabilize + page.screenshot (capture phase)</td>
+      <td class="bar-col"><span class="gantt-bar gc-extract-cap" style="width:8%; margin-left:54%"><span class="bar-label">screenshot capture</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">screenshotPlugin</td>
+    </tr>
+    <tr>
+      <td class="phase-label">screencast final frame emit</td>
+      <td style="font-size:0.65rem;color:var(--cyan);">extract</td>
+      <td style="font-size:0.65rem;">last screenshot &rarr; GUI live view</td>
+      <td class="bar-col"><span class="gantt-bar gc-screencast" style="width:0.3%; margin-left:62%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">screenshotPersister (disk + events)</td>
+      <td style="font-size:0.65rem;color:var(--yellow);">persist</td>
+      <td style="font-size:0.65rem;">write to runDir/screenshots/</td>
+      <td class="bar-col"><span class="gantt-bar gc-persist" style="width:2%; margin-left:62.5%"><span class="bar-label" style="color:var(--bg);font-size:0.5rem">persist</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">screenshotArtifactPersister</td>
+    </tr>
+    <tr>
+      <td class="phase-label">CDP stopScreencast + detach</td>
+      <td style="font-size:0.65rem;color:var(--cyan);">cleanup</td>
+      <td style="font-size:0.65rem;">stop frame stream</td>
+      <td class="bar-col"><span class="gantt-bar gc-screencast" style="width:0.3%; margin-left:64.5%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">onComplete hook</td>
+      <td style="font-size:0.65rem;color:var(--teal);">complete</td>
+      <td style="font-size:0.65rem;">telemetry emit + resolveEntry</td>
+      <td class="bar-col"><span class="gantt-bar gc-resolve" style="width:0.5%; margin-left:65%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+
+    <!-- ── POST-HANDLER ── -->
+    <tr><td colspan="5" style="background:var(--surface-2);color:var(--cyan);font-weight:600;font-size:0.7rem;letter-spacing:0.05em;padding:0.3rem 0.6rem;">POST-HANDLER (Crawlee owns page close, then transform phase)</td></tr>
+    <tr>
+      <td class="phase-label">video.saveAs() + trim</td>
+      <td style="font-size:0.65rem;color:var(--cyan);">persist</td>
+      <td style="font-size:0.65rem;">prePageCloseHook (async, fire-and-forget)</td>
+      <td class="bar-col"><span class="gantt-bar gc-video-rec" style="width:1%; margin-left:66%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">videoArtifactPersister</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--green);font-weight:600">PAGE CLOSE</td>
+      <td style="font-size:0.65rem;color:var(--green);">close</td>
+      <td style="font-size:0.65rem;">finally { page.close() }</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:67%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--pink);opacity:0.6;">transform phase (no page)</td>
+      <td style="font-size:0.65rem;color:var(--pink);">xform</td>
+      <td style="font-size:0.65rem;">HTML processing (future plugins)</td>
+      <td class="bar-col"><span class="gantt-bar gc-extract-xform" style="width:2%; margin-left:68%"><span class="bar-label" style="font-size:0.5rem">transform</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">extractionRunner</td>
+    </tr>
+
+    <!-- ── BUDGET BARS ── -->
+    <tr style="border-top: 2px solid var(--border);">
+      <td class="phase-label" style="color:var(--red);">Handler timeout budget</td>
+      <td class="time-col" style="color:var(--red);">45s</td>
+      <td></td>
+      <td class="bar-col"><span class="gantt-bar outline gc-budget" style="width:100%"><span class="bar-label" style="color:var(--red);left:auto;right:4px;">requestHandlerTimeoutSecs: 45</span></span></td>
+      <td style="font-size:0.65rem;color:var(--red);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--cyan);">Video recording span</td>
+      <td class="time-col" style="color:var(--cyan);">~15s</td>
+      <td></td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:67%; margin-left:0%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);left:auto;right:4px;">&#9679; REC &mdash; page open &rarr; page close</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── PLUGIN REGISTRY REFERENCE ── -->
+<h3 style="color:var(--purple);">Plugin Registry &mdash; Execution Order</h3>
+<table class="gantt" style="font-size:0.75rem;">
+  <thead>
+    <tr>
+      <th>Plugin</th>
+      <th>System</th>
+      <th>Suites</th>
+      <th>Hooks</th>
+      <th>What it does</th>
+      <th>Overhead</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="color:var(--purple);font-family:var(--font-mono);">stealth</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">init</td>
+      <td style="font-size:0.65rem;">onInit</td>
+      <td style="font-size:0.65rem;">addInitScript &mdash; webdriver, chrome.* patches</td>
+      <td style="font-size:0.65rem;color:var(--green);">&lt;10ms</td>
+    </tr>
+    <tr>
+      <td style="color:var(--orange);font-family:var(--font-mono);">cookieConsent</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">dismiss</td>
+      <td style="font-size:0.65rem;">onDismiss</td>
+      <td style="font-size:0.65rem;">autoconsent (1s timeout) + fallback CSS selectors</td>
+      <td style="font-size:0.65rem;color:var(--yellow);">200ms&ndash;1.5s</td>
+    </tr>
+    <tr>
+      <td style="color:var(--orange);font-family:var(--font-mono);">overlayDismissal</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">init, dismiss</td>
+      <td style="font-size:0.65rem;">onInit, onDismiss</td>
+      <td style="font-size:0.65rem;">CSS suppression + observer (init), heuristic scan + remove (dismiss)</td>
+      <td style="font-size:0.65rem;color:var(--green);">&lt;200ms</td>
+    </tr>
+    <tr>
+      <td style="color:var(--orange);font-family:var(--font-mono);">domExpansion</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">dismiss</td>
+      <td style="font-size:0.65rem;">onDismiss</td>
+      <td style="font-size:0.65rem;">batched click via single page.evaluate (aria-expanded, summary, etc.)</td>
+      <td style="font-size:0.65rem;color:var(--green);">&lt;100ms</td>
+    </tr>
+    <tr>
+      <td style="color:var(--orange);font-family:var(--font-mono);">cssOverride</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">init, dismiss</td>
+      <td style="font-size:0.65rem;">onInit, onDismiss</td>
+      <td style="font-size:0.65rem;">force-reveal hidden els, block widget domains (disabled by default)</td>
+      <td style="font-size:0.65rem;color:var(--green);">0ms (off)</td>
+    </tr>
+    <tr>
+      <td style="color:var(--teal);font-family:var(--font-mono);">autoScroll</td>
+      <td style="font-size:0.65rem;">fetch</td>
+      <td style="font-size:0.65rem;">scroll</td>
+      <td style="font-size:0.65rem;">onScroll</td>
+      <td style="font-size:0.65rem;">incremental wheel or jump scrollTo (triggers lazy content)</td>
+      <td style="font-size:0.65rem;color:var(--yellow);">2&ndash;6s</td>
+    </tr>
+    <tr style="border-top: 2px solid var(--border);">
+      <td style="color:var(--pink);font-family:var(--font-mono);">screenshot</td>
+      <td style="font-size:0.65rem;">extraction</td>
+      <td style="font-size:0.65rem;">capture</td>
+      <td style="font-size:0.65rem;">runCaptures</td>
+      <td style="font-size:0.65rem;">page + element screenshots via CDP, concurrent</td>
+      <td style="font-size:0.65rem;color:var(--yellow);">1.5&ndash;3s</td>
+    </tr>
+    <tr>
+      <td style="color:var(--cyan);font-family:var(--font-mono);">video</td>
+      <td style="font-size:0.65rem;">extraction</td>
+      <td style="font-size:0.65rem;">lifecycle</td>
+      <td style="font-size:0.65rem;">prePageCreate/Close</td>
+      <td style="font-size:0.65rem;">WebM recording via Playwright recordVideo, trimmed by ffmpeg</td>
+      <td style="font-size:0.65rem;color:var(--green);">async (no block)</td>
+    </tr>
+  </tbody>
+</table>
+
 <!-- ── FAILURE PATH: TIMEOUT RESCUE ── -->
 <h3 style="color:var(--yellow);">Failure Path &mdash; Timeout Rescue (page loaded, plugins slow)</h3>
 <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">

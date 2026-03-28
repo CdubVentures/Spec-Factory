@@ -1,0 +1,149 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "16px",
+    "primaryTextColor": "#e0e0e0",
+    "lineColor": "#6c757d",
+    "background": "#0d1117",
+    "mainBkg": "#161b22",
+    "clusterBkg": "#161b22",
+    "clusterBorder": "#30363d",
+    "edgeLabelBackground": "#0d1117",
+    "nodeTextColor": "#e0e0e0"
+  },
+  "flowchart": {
+    "nodeSpacing": 35,
+    "rankSpacing": 45,
+    "curve": "basis",
+    "padding": 12
+  }
+}}%%
+
+flowchart TB
+
+  title["<b>MIGRATION STATUS + REMAINING WORK</b><br/><i>Code-verified audit  |  2026-03-27</i>"]
+  style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:18px
+
+  %% ===== ACHIEVED (Waves 1-6 + Infrastructure) =====
+  subgraph ACHIEVED["ACHIEVED  (All verified against actual code)"]
+    direction TB
+
+    subgraph ACH_W15["Waves 1-5.5: Core Runtime"]
+      a1[("bridge_events — SQL only, NDJSON killed")]
+      a2[("runs — 16 cols (13 user + 3 auto), SQL only")]
+      a3[("run_artifacts — needset + search_profile + run_summary")]
+      a4[("billing_entries — SQL only, NDJSON killed")]
+      a5[("metrics — SQL primary, NDJSON fallback")]
+      a6["run-summary = SQL artifact in run_artifacts<br/><i>NOT written to disk (upsertRunArtifact)</i>"]
+      a7["Boundary JSONs KILLED<br/><i>run.json, needset.json, search_profile.json</i>"]
+      a8["bridge_events PURGED after capture"]
+    end
+
+    subgraph ACH_W6["Wave 6: Learning + LLM Cache"]
+      a9[("learning_profiles — SQL only (13 cols)")]
+      a10[("category_brain — SQL only (4 cols)")]
+      a11[("llm_cache — SQL only (4 cols)")]
+      a12["_learning/ file writes KILLED"]
+      a13["llm_cache/ file writes KILLED"]
+    end
+
+    subgraph ACH_INFRA["Infrastructure Cleanup"]
+      a14["storageMetricsService.js DELETED"]
+      a15["storageSyncService.js DELETED"]
+      a16["archivedRunLocationHelpers.js DELETED"]
+      a17["Relocation service gutted (settings-only)"]
+      a18["GUI: Compound (6), Validation (4),<br/>Fallbacks, Queue panels DELETED"]
+      a19["RuntimeOps: Overview + Workers + Documents only"]
+    end
+  end
+  style ACHIEVED fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
+  style ACH_W15 fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style ACH_W6 fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style ACH_INFRA fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style a1 fill:#238636,stroke:#3fb950,color:#fff
+  style a2 fill:#238636,stroke:#3fb950,color:#fff
+  style a3 fill:#238636,stroke:#3fb950,color:#fff
+  style a4 fill:#238636,stroke:#3fb950,color:#fff
+  style a5 fill:#238636,stroke:#3fb950,color:#fff
+  style a6 fill:#238636,stroke:#3fb950,color:#fff
+  style a7 fill:#da3633,stroke:#f85149,color:#fff
+  style a8 fill:#238636,stroke:#3fb950,color:#fff
+  style a9 fill:#238636,stroke:#3fb950,color:#fff
+  style a10 fill:#238636,stroke:#3fb950,color:#fff
+  style a11 fill:#238636,stroke:#3fb950,color:#fff
+  style a12 fill:#da3633,stroke:#f85149,color:#fff
+  style a13 fill:#da3633,stroke:#f85149,color:#fff
+  style a14 fill:#da3633,stroke:#f85149,color:#fff
+  style a15 fill:#da3633,stroke:#f85149,color:#fff
+  style a16 fill:#da3633,stroke:#f85149,color:#fff
+  style a17 fill:#da3633,stroke:#f85149,color:#fff
+  style a18 fill:#da3633,stroke:#f85149,color:#fff
+  style a19 fill:#21262d,stroke:#3fb950,color:#c9d1d9
+
+  %% ===== REMAINING WORK =====
+  subgraph PROPOSED["REMAINING WORK"]
+    direction TB
+
+    subgraph PROP_P1["Priority 1 — Wire NDJSON telemetry to SQL tables"]
+      prop1["query-index.ndjson → query_index table (9 cols)<br/><i>SQL table exists, appendFileSync still active<br/>Location: createQueryIndex.js</i>"]
+      prop2["url-index.ndjson → url_index table (9 cols)<br/><i>SQL table exists, writes not wired</i>"]
+      prop3["prompt-index.ndjson → prompt_index table (7 cols)<br/><i>SQL table exists, writes not wired</i>"]
+      prop4["knob-snapshots.ndjson → knob_snapshots table (6 cols)<br/><i>SQL table exists, writes not wired</i>"]
+    end
+
+    subgraph PROP_P2["Priority 2 — Remove metrics NDJSON fallback"]
+      prop5["Ensure all MetricsWriter callers pass specDb<br/><i>metricsWriter.js:85-92 still has appendFile fallback</i>"]
+    end
+
+    subgraph PROP_P3["Priority 3 — Redesign data relocation"]
+      prop6["Relocation service was gutted<br/><i>S3Client, copyDirectory, pruneJsonl all removed<br/>Only normalizeRunDataStorageSettings remains</i>"]
+      prop7["Needs: bundle runs → LOCAL or S3 destination"]
+      prop8["Needs: storage_state tracking in product_runs"]
+    end
+
+    subgraph PROP_P4["Priority 4 — Optional migrations"]
+      prop9["user-settings.json → settings table (optional)"]
+      prop10["brand_registry.json → brands table (optional)"]
+    end
+
+    subgraph PROP_P5["Future — Product checkpoint architecture"]
+      prop11["serializeProductCheckpoint() — product knowledge only"]
+      prop12["seedFromCheckpoint() — disaster recovery"]
+    end
+  end
+  style PROPOSED fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+  style PROP_P1 fill:#0d1117,stroke:#da3633,color:#e0e0e0
+  style PROP_P2 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style PROP_P3 fill:#0d1117,stroke:#d29922,color:#e0e0e0
+  style PROP_P4 fill:#0d1117,stroke:#8b949e,color:#e0e0e0
+  style PROP_P5 fill:#0d1117,stroke:#8b949e,color:#e0e0e0
+  style prop1 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style prop2 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style prop3 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style prop4 fill:#2d333b,stroke:#da3633,color:#e0e0e0
+  style prop5 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop6 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop7 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop8 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style prop9 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style prop10 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style prop11 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style prop12 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+
+  %% ===== KEEP AS FILES =====
+  subgraph KEEP["KEEP AS FILES  (no migration needed)"]
+    direction TB
+    keep1["category_authority/ — immutable, generated on compile"]
+    keep2["export artifacts — spec.json, summary.json, provenance.json"]
+    keep3["content-addressed binaries — page.html.gz, screenshots, video"]
+    keep4["LLM traces — write-once ring buffer"]
+    keep5["runtime_screencast/ — worker frame data"]
+  end
+  style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+
+  ACHIEVED --> PROPOSED --> KEEP

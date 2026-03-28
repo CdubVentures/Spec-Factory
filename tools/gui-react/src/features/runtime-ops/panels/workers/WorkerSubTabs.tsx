@@ -10,7 +10,6 @@ interface WorkerSubTabsProps {
   workers: RuntimeOpsWorkerRow[];
   selectedWorkerId: string | null;
   onSelectWorker: (workerId: string) => void;
-  poolFilter: string;
 }
 
 // WHY: UI-specific display order — not all pools are shown, and the order differs from POOL_STAGE_KEYS.
@@ -159,29 +158,28 @@ interface PoolGroup {
   runningCount: number;
 }
 
-export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolFilter }: WorkerSubTabsProps) {
+export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker }: WorkerSubTabsProps) {
   const grouped = useMemo((): PoolGroup[] => {
-    const list = poolFilter === 'all' ? workers : workers.filter((w) => w.pool === poolFilter);
     const groups: PoolGroup[] = [];
+    // WHY: Always show all pool groups — even empty ones get placeholder rows
+    // so the user sees the full pipeline layout before workers fire.
     for (const pool of POOL_ORDER) {
-      const poolWorkers = sortWorkersForTabs(list.filter((w) => w.pool === pool));
-      if (poolWorkers.length > 0) {
-        const vis = resolvePoolStage(pool);
-        groups.push({
-          pool,
-          meta: vis,
-          workers: poolWorkers,
-          runningCount: poolWorkers.filter((w) => w.state === 'running' || w.state === 'crawling' || w.state === 'retrying').length,
-        });
-      }
+      const poolWorkers = sortWorkersForTabs(workers.filter((w) => w.pool === pool));
+      const vis = resolvePoolStage(pool);
+      groups.push({
+        pool,
+        meta: vis,
+        workers: poolWorkers,
+        runningCount: poolWorkers.filter((w) => w.state === 'running' || w.state === 'crawling' || w.state === 'retrying').length,
+      });
     }
-    const otherWorkers = sortWorkersForTabs(list.filter((w) => !POOL_ORDER.includes(w.pool)));
+    const otherWorkers = sortWorkersForTabs(workers.filter((w) => !POOL_ORDER.includes(w.pool)));
     if (otherWorkers.length > 0) {
       const fallback = resolvePoolStage('other');
       groups.push({ pool: 'other', meta: fallback, workers: otherWorkers, runningCount: 0 });
     }
     return groups;
-  }, [workers, poolFilter]);
+  }, [workers]);
 
   if (grouped.length === 0) return null;
 
@@ -206,6 +204,9 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker, poolF
 
           {/* ── Worker buttons ── */}
           <div className="flex items-center gap-1.5 overflow-x-auto flex-1 py-2 pr-3">
+            {group.workers.length === 0 && (
+              <span className="sf-text-nano sf-text-muted italic px-1">Waiting…</span>
+            )}
             {group.workers.map((w) => {
               const isSelected = w.worker_id === selectedWorkerId;
               const subtitle = buildWorkerButtonSubtitle(w);

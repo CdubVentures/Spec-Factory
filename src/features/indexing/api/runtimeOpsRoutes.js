@@ -197,55 +197,52 @@ export function registerRuntimeOpsRoutes(ctx) {
     // triggering full S3 hydration for archived runs.
     const earlySubPath = String(parts[4] || '').trim();
 
-    // WHY: Opens the local folder containing an extraction artifact.
-    // Accepts GET with folder name (legacy) or POST with { file_path } body (preferred).
+    // WHY: Opens local screenshots folder. Checks multiple candidate roots since
+    // screenshots may be at defaultIndexLabRoot (AppData) while run.json is elsewhere.
     if (earlySubPath === 'extraction' && parts[5] === 'open-folder') {
+      const folder = parts[6] || 'screenshots';
+      // WHY: Allow any extraction artifact folder (screenshots, video, etc.)
+      // but reject path traversal and absolute paths.
+      const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
+      if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
       try {
         const fs = await import('node:fs');
-        let targetDir = '';
-
-        // POST with file_path — open containing directory of the given file.
-        if (method === 'POST' && req) {
-          const body = await new Promise((resolve) => {
-            let data = '';
-            req.on('data', (chunk) => { data += chunk; });
-            req.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({}); } });
-          });
-          const filePath = String(body?.file_path || '').trim();
-          if (!filePath) return jsonRes(res, 400, { error: 'missing_file_path' });
-          const dir = path.dirname(filePath);
-          if (fs.existsSync(dir)) targetDir = dir;
-          else if (fs.existsSync(filePath)) targetDir = filePath;
-        }
-
-        // GET fallback — resolve folder name against known roots.
+        const candidates = [
+          path.join(defaultIndexLabRoot(), runId, safeFolder),
+          path.join(directRunDir, safeFolder),
+          ...(runDir && runDir !== directRunDir ? [path.join(runDir, safeFolder)] : []),
+        ];
+        const targetDir = candidates.find((d) => fs.existsSync(d));
         if (!targetDir) {
-          const folder = parts[6] || 'screenshots';
-          const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
-          if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
-          const candidates = [
-            path.join(defaultIndexLabRoot(), runId, safeFolder),
-            path.join(directRunDir, safeFolder),
-          ];
-          targetDir = candidates.find((d) => fs.existsSync(d)) || '';
-        }
-
-        if (!targetDir) {
-          return jsonRes(res, 404, { error: 'folder_not_found' });
+          return jsonRes(res, 404, { error: 'folder_not_found', tried: candidates });
         }
         const { exec } = await import('node:child_process');
-        // WHY: Windows explorer requires backslashes. Node path.dirname may
-        // return forward slashes depending on how the path was constructed.
-        const nativePath = process.platform === 'win32'
-          ? targetDir.replace(/\//g, '\\')
-          : targetDir;
-        const cmd = process.platform === 'win32' ? `explorer "${nativePath}"`
-          : process.platform === 'darwin' ? `open "${nativePath}"`
-          : `xdg-open "${nativePath}"`;
+        const cmd = process.platform === 'win32' ? `explorer "${targetDir}"`
+          : process.platform === 'darwin' ? `open "${targetDir}"`
+          : `xdg-open "${targetDir}"`;
         exec(cmd);
-        return jsonRes(res, 200, { opened: nativePath });
+        return jsonRes(res, 200, { opened: targetDir });
       } catch (err) {
         return jsonRes(res, 500, { error: 'open_failed', message: err?.message });
+      }
+    }
+
+    // WHY: Resolves the full local folder path for an extraction artifact type
+    // without opening Explorer. Used by the GUI to display full file paths.
+    if (earlySubPath === 'extraction' && parts[5] === 'resolve-folder') {
+      const folder = parts[6] || 'screenshots';
+      const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
+      if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
+      try {
+        const fs = await import('node:fs');
+        const candidates = [
+          path.join(defaultIndexLabRoot(), runId, safeFolder),
+          path.join(directRunDir, safeFolder),
+        ];
+        const targetDir = candidates.find((d) => fs.existsSync(d));
+        return jsonRes(res, 200, { path: targetDir || null, folder: safeFolder, type: 'local' });
+      } catch {
+        return jsonRes(res, 200, { path: null, folder: safeFolder, type: 'local' });
       }
     }
 

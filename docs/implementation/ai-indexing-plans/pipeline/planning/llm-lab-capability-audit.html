@@ -3,436 +3,397 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LLM Lab Capability Audit — Brand Resolver Simulation</title>
+<title>LLM Lab Capability Audit &mdash; Brand Resolver Simulation</title>
 <style>
-  :root {
-    --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3;
-    --muted: #8b949e; --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --accent: #58a6ff; --purple: #bc8cff; --orange: #f0883e;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1400px; margin: 0 auto; }
-  h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.25rem; background: linear-gradient(135deg, var(--accent), var(--purple), var(--orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
-  h2 { font-size: 1.5rem; font-weight: 600; margin: 2.5rem 0 1rem 0; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
-  h2 .icon { font-size: 1.2rem; }
-  h2.claude-h2 { color: #d4a574; }
-  h2.gemini-h2 { color: #4285f4; }
-  h3 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; color: var(--text); }
-  p, li { color: var(--text); font-size: 0.92rem; } p { margin-bottom: 0.75rem; }
-  ul { padding-left: 1.5rem; margin-bottom: 1rem; } li { margin-bottom: 0.3rem; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
-  .summary-card .num { font-size: 2rem; font-weight: 700; display: block; margin-bottom: 0.25rem; }
-  .summary-card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.82rem; }
-  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { background: var(--surface); color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; z-index: 1; }
-  tr:hover td { background: rgba(88,166,255,0.04); }
-  td.model-name { font-weight: 600; font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.8rem; white-space: nowrap; }
-  td.center { text-align: center; }
-  .pass { color: var(--green); font-weight: 600; }
-  .fail { color: var(--red); font-weight: 600; }
-  .pending { color: var(--yellow); font-weight: 600; }
-  .think-sparkle { color: var(--purple); font-size: 0.7rem; }
-  .time { color: var(--muted); font-size: 0.72rem; }
-  code { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.82rem; background: rgba(110,118,129,0.15); padding: 2px 6px; border-radius: 4px; color: var(--orange); }
-  .note { background: rgba(210,153,34,0.08); border-left: 3px solid var(--yellow); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: 0.88rem; }
-  .note strong { color: var(--yellow); }
-  .legend { margin-top: 1.5rem; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; color: var(--muted); }
-  .legend span { margin-right: 1.5rem; white-space: nowrap; }
-  .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; }
-  .family-sep td { border-top: 2px solid var(--border); }
-  @media (max-width: 900px) { body { padding: 1rem; } table { font-size: 0.75rem; } th, td { padding: 6px 6px; } }
-  @media print { body { background: #fff; color: #1a1a1a; } .card, .summary-card { border: 1px solid #ddd; } th { background: #f5f5f5; color: #333; } .pass { color: #1a7f37; } .fail { color: #cf222e; } .pending { color: #9a6700; } h1 { background: none; -webkit-text-fill-color: #0969da; } h2 { color: #0969da; } }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 40px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 15px;
+  color: #8b949e;
+  margin-bottom: 32px;
+}
+
+/* ---- Summary cards ---- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.card-value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.card-label {
+  font-size: 13px;
+  color: #8b949e;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.card-value.green { color: #3fb950; }
+.card-value.red { color: #f85149; }
+.card-value.blue { color: #58a6ff; }
+.card-value.white { color: #e6edf3; }
+
+/* ---- Note box ---- */
+.note-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-left: 4px solid #58a6ff;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: #c9d1d9;
+}
+.note-box strong { color: #58a6ff; }
+.note-box code {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #d29922;
+}
+
+/* ---- Provider sections ---- */
+.provider-section {
+  margin-bottom: 48px;
+}
+.provider-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.provider-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #bc8cff20;
+  color: #bc8cff;
+}
+.provider-tag.openai { background: #3fb95020; color: #3fb950; }
+.provider-tag.claude { background: #58a6ff20; color: #58a6ff; }
+.provider-tag.gemini { background: #d2992220; color: #d29922; }
+.provider-stats {
+  font-size: 13px;
+  color: #8b949e;
+}
+
+/* ---- Tables ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+th {
+  background: #0d1117;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8b949e;
+  border-bottom: 2px solid #30363d;
+}
+th:first-child {
+  text-align: left;
+  min-width: 180px;
+}
+td {
+  padding: 8px 14px;
+  text-align: center;
+  border-bottom: 1px solid #21262d;
+  font-size: 14px;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+.model-name {
+  text-align: left;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #e6edf3;
+  white-space: nowrap;
+}
+.avg-time {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+/* ---- Cell states ---- */
+.cell { position: relative; }
+.cell.pass .pass-icon { color: #3fb950; font-size: 18px; font-weight: bold; }
+.cell.fail .fail-icon { color: #f85149; font-size: 18px; font-weight: bold; }
+.cell.na { color: #484f58; font-size: 13px; }
+.cell-time {
+  font-size: 11px;
+  color: #6e7681;
+  margin-top: 2px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+}
+.think-icon {
+  color: #bc8cff;
+  font-size: 12px;
+}
+
+/* ---- Family separator ---- */
+.family-sep td {
+  background: #0d1117;
+  border-bottom: 2px solid #30363d;
+  padding: 6px 14px;
+}
+.family-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #58a6ff;
+  text-align: left !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* ---- Known issues ---- */
+.issues-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-left: 4px solid #d29922;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: #c9d1d9;
+}
+.issues-box strong { color: #d29922; }
+.issues-box ul {
+  margin: 8px 0 0 20px;
+}
+.issues-box li {
+  margin-bottom: 4px;
+}
+.issues-box code {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #d29922;
+}
+
+/* ---- Legend ---- */
+.legend {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #8b949e;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .pass-icon { color: #3fb950; font-size: 16px; }
+.legend .fail-icon { color: #f85149; font-size: 16px; }
+.legend .think-icon { color: #bc8cff; font-size: 14px; }
+
+/* ---- Date stamp ---- */
+.datestamp {
+  text-align: right;
+  font-size: 12px;
+  color: #484f58;
+  margin-top: 8px;
+}
 </style>
 </head>
 <body>
 
-<h1>LLM Lab Capability Audit</h1>
-<p class="subtitle">Brand Resolver Simulation &mdash; 28 models, 154 tests &mdash; 2026-03-28</p>
+<h1>LLM Lab Capability Audit &mdash; Brand Resolver Simulation</h1>
+<p class="subtitle">Multi-provider model + reasoning-effort matrix &middot; Spec Factory IndexLab</p>
 
-<!-- Summary Cards -->
-<div class="summary-grid">
-  <div class="summary-card">
-    <span class="num" style="color:var(--text);">154</span>
-    <span class="label">Total Tests</span>
+<!-- Summary cards -->
+<div class="cards">
+  <div class="card">
+    <div class="card-value white">153</div>
+    <div class="card-label">Total Tests</div>
   </div>
-  <div class="summary-card">
-    <span class="num" style="color:var(--green);">150</span>
-    <span class="label">Pass</span>
+  <div class="card">
+    <div class="card-value green">151</div>
+    <div class="card-label">Pass (98.7%)</div>
   </div>
-  <div class="summary-card">
-    <span class="num" style="color:var(--yellow);">2</span>
-    <span class="label">Pending</span>
+  <div class="card">
+    <div class="card-value red">2</div>
+    <div class="card-label">Fail</div>
   </div>
-  <div class="summary-card">
-    <span class="num" style="color:var(--red);">2</span>
-    <span class="label">Error</span>
-  </div>
-  <div class="summary-card">
-    <span class="num" style="color:var(--purple);">3</span>
-    <span class="label">Providers</span>
-  </div>
-  <div class="summary-card">
-    <span class="num" style="color:var(--accent);">28</span>
-    <span class="label">Models</span>
+  <div class="card">
+    <div class="card-value blue">2.9s</div>
+    <div class="card-label">Avg Response</div>
   </div>
 </div>
 
-<div class="card">
-  <p><strong>Task:</strong> Given a product title (<em>"Logitech G502 X Plus Wireless Gaming Mouse"</em>), extract the brand name. Expected answer: <code>Logitech</code>.</p>
-  <p><strong>Modes tested:</strong> base (no options), web (web search enabled), minimal/low/medium/high/xhigh (reasoning effort levels).</p>
-  <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0;"><strong>Errors:</strong> gpt-5 xhigh (unsupported effort level for that model), gemini-3-flash-preview (Code Assist API rate limit). <strong>Pending:</strong> claude-sonnet-4-6, claude-opus-4-5 (Docker container recreation needed).</p>
+<!-- Test prompt note -->
+<div class="note-box">
+  <strong>Test Prompt:</strong> Brand resolver simulation &mdash; identify the manufacturer brand from a product title.
+  Target product: <code>Logitech G502 X Plus</code>. Expected answer: <code>Logitech</code>.
+  Each cell represents one API call with the given model + reasoning effort mode.
 </div>
 
-<!-- ============================================================ -->
-<!-- OPENAI SECTION -->
-<!-- ============================================================ -->
-<h2><span class="icon">&#9889;</span> OpenAI &mdash; 19 Models &times; 7 Modes</h2>
-<p>Port <code>5001</code>. All 19 models tested across base, web, minimal, low, medium, high, xhigh. <strong>132 of 133 passed</strong> (1 error: gpt-5 does not support xhigh effort).</p>
+<!-- ============ OPENAI ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag openai">OpenAI</span>
+    <span class="provider-stats">133 tests &middot; 132 pass &middot; 1 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>web</th>
+        <th>minimal</th>
+        <th>low</th>
+        <th>medium</th>
+        <th>high</th>
+        <th>xhigh</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5 Family</td></tr>
+<tr><td class="model-name">gpt-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="cell fail"><span class="fail-icon">&#10007;</span><div class="cell-time">0.7s</div></td><td class="avg-time">2.6s</td></tr>
+<tr><td class="model-name">gpt-5-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="avg-time">3.6s</td></tr>
+<tr><td class="model-name">gpt-5-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">6.0s</div></td><td class="avg-time">3.8s</td></tr>
+<tr><td class="model-name">gpt-5-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="avg-time">4.0s</td></tr>
+<tr><td class="model-name">gpt-5-minimal</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="avg-time">1.8s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.1 Family</td></tr>
+<tr><td class="model-name">gpt-5.1</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="avg-time">2.6s</td></tr>
+<tr><td class="model-name">gpt-5.1-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="avg-time">3.2s</td></tr>
+<tr><td class="model-name">gpt-5.1-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.7s</div></td><td class="avg-time">2.8s</td></tr>
+<tr><td class="model-name">gpt-5.1-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="avg-time">2.9s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.2 Family</td></tr>
+<tr><td class="model-name">gpt-5.2</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.1s</div></td><td class="avg-time">1.9s</td></tr>
+<tr><td class="model-name">gpt-5.2-xhigh</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">5.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">5.1s</div></td><td class="avg-time">3.0s</td></tr>
+<tr><td class="model-name">gpt-5.2-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="avg-time">1.5s</td></tr>
+<tr><td class="model-name">gpt-5.2-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="avg-time">1.4s</td></tr>
+<tr><td class="model-name">gpt-5.2-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="avg-time">1.6s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.4 Family</td></tr>
+<tr><td class="model-name">gpt-5.4-xhigh</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">10.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.6s</div></td><td class="avg-time">5.2s</td></tr>
+<tr><td class="model-name">gpt-5.4</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.1s</div></td><td class="avg-time">3.2s</td></tr>
+<tr><td class="model-name">gpt-5.4-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">6.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.4s</div></td><td class="avg-time">3.9s</td></tr>
+<tr><td class="model-name">gpt-5.4-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">3.1s</td></tr>
+<tr><td class="model-name">gpt-5.4-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="avg-time">2.3s</td></tr>
 
-<div style="overflow-x:auto;">
-<table>
-  <thead>
-    <tr>
-      <th>Model</th>
-      <th style="text-align:center">base</th>
-      <th style="text-align:center">web</th>
-      <th style="text-align:center">minimal</th>
-      <th style="text-align:center">low</th>
-      <th style="text-align:center">medium</th>
-      <th style="text-align:center">high</th>
-      <th style="text-align:center">xhigh</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- GPT-5 family -->
-    <tr>
-      <td class="model-name">gpt-5</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">3.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="fail">&#10007;</span> <span class="time">n/a</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5-high</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">3.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.7s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5-medium</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.9s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5-low</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">5.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.7s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5-minimal</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-    </tr>
-    <!-- GPT-5.1 family -->
-    <tr class="family-sep">
-      <td class="model-name">gpt-5.1</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.1-high</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.1-medium</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.3s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.1-low</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">3.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.3s</span></td>
-    </tr>
-    <!-- GPT-5.2 family -->
-    <tr class="family-sep">
-      <td class="model-name">gpt-5.2</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.9s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.2-xhigh</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">5.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">6.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">6.0s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.2-high</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.2-medium</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.2-low</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-    </tr>
-    <!-- GPT-5.4 family -->
-    <tr class="family-sep">
-      <td class="model-name">gpt-5.4</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">7.4s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.4-xhigh</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">7.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">3.9s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.4-high</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">4.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="think-sparkle">&#10024;</span> <span class="time">5.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.4s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.4-medium</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">5.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.7s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.4s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">gpt-5.4-low</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.3s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.9s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.6s</span></td>
-    </tr>
-  </tbody>
-</table>
+    </tbody>
+  </table>
 </div>
 
-<!-- ============================================================ -->
-<!-- CLAUDE SECTION -->
-<!-- ============================================================ -->
-<h2 class="claude-h2"><span class="icon">&#9733;</span> Claude &mdash; 6 Models &times; 4 Modes</h2>
-<p>Port <code>5003</code>. 4 models tested across base, low, medium, high. 2 models pending Docker container recreation. <strong>16 of 16 verified tests passed.</strong></p>
+<!-- ============ CLAUDE ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag claude">Claude</span>
+    <span class="provider-stats">16 tests &middot; 16 pass &middot; 0 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>low</th>
+        <th>medium</th>
+        <th>high</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr><td class="model-name">claude-sonnet-4-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">4.1s</td></tr>
+<tr><td class="model-name">claude-opus-4-1</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="avg-time">3.9s</td></tr>
+<tr><td class="model-name">claude-opus-4-6</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.8s</div></td><td class="avg-time">4.7s</td></tr>
+<tr><td class="model-name">claude-haiku-4-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="avg-time">2.7s</td></tr>
 
-<div style="overflow-x:auto;">
-<table>
-  <thead>
-    <tr>
-      <th>Model</th>
-      <th style="text-align:center">base</th>
-      <th style="text-align:center">low</th>
-      <th style="text-align:center">medium</th>
-      <th style="text-align:center">high</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Sonnet -->
-    <tr>
-      <td class="model-name">claude-sonnet-4-6</td>
-      <td class="center" colspan="4"><span class="pending">?</span> <span class="time">PENDING &mdash; Docker recreation needed</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">claude-sonnet-4-5</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.5s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.9s</span></td>
-    </tr>
-    <!-- Opus -->
-    <tr class="family-sep">
-      <td class="model-name">claude-opus-4-6</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">5.1s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.2s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.7s</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">claude-opus-4-5</td>
-      <td class="center" colspan="4"><span class="pending">?</span> <span class="time">PENDING &mdash; Docker recreation needed</span></td>
-    </tr>
-    <tr>
-      <td class="model-name">claude-opus-4-1</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.0s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">3.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">4.1s</span></td>
-    </tr>
-    <!-- Haiku -->
-    <tr class="family-sep">
-      <td class="model-name">claude-haiku-4-5</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.8s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.4s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.6s</span></td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">2.7s</span></td>
-    </tr>
-  </tbody>
-</table>
+    </tbody>
+  </table>
 </div>
 
-<!-- ============================================================ -->
-<!-- GEMINI SECTION -->
-<!-- ============================================================ -->
-<h2 class="gemini-h2"><span class="icon">&#9670;</span> Gemini &mdash; 3 Models &times; 1 Mode</h2>
-<p>Port <code>5002</code>. Base mode only (thinking/web search are prompt-hint-only on Code Assist API). <strong>2 of 3 passed</strong>, 1 rate-limited.</p>
+<!-- ============ GEMINI ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag gemini">Gemini</span>
+    <span class="provider-stats">4 tests &middot; 3 pass &middot; 1 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr><td class="model-name">gemini-2.5-flash-lite</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">0.6s</div></td><td class="avg-time">0.6s</td></tr>
+<tr><td class="model-name">gemini-2.5-flash</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">0.8s</div></td><td class="avg-time">0.8s</td></tr>
+<tr><td class="model-name">gemini-2.5-pro</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">3.6s</td></tr>
+<tr><td class="model-name">gemini-3-flash-preview</td><td class="cell fail"><span class="fail-icon">&#10007;</span><div class="cell-time">0.1s</div></td><td class="avg-time">0.1s</td></tr>
 
-<div style="overflow-x:auto;">
-<table>
-  <thead>
-    <tr>
-      <th>Model</th>
-      <th style="text-align:center">base</th>
-      <th>Notes</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td class="model-name">gemini-2.5-flash-lite</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.0s</span></td>
-      <td style="color:var(--muted);font-size:0.82rem;">Fastest model in the entire audit.</td>
-    </tr>
-    <tr>
-      <td class="model-name">gemini-2.5-flash</td>
-      <td class="center"><span class="pass">&#10003;</span> <span class="time">1.2s</span></td>
-      <td style="color:var(--muted);font-size:0.82rem;">Default Gemini model. Reliable.</td>
-    </tr>
-    <tr class="family-sep">
-      <td class="model-name">gemini-3-flash-preview</td>
-      <td class="center"><span class="fail">&#10007;</span> <span class="time">0.6s</span></td>
-      <td style="color:var(--red);font-size:0.82rem;">Capacity exhausted &mdash; Code Assist API rate limit.</td>
-    </tr>
-  </tbody>
-</table>
+    </tbody>
+  </table>
 </div>
 
-<!-- ============================================================ -->
-<!-- KNOWN ISSUES -->
-<!-- ============================================================ -->
-<h2><span class="icon">&#9888;</span> Known Issues</h2>
-<div class="card">
+<!-- Known issues -->
+<div class="issues-box">
+  <strong>Known Issues</strong>
   <ul>
-    <li><strong>gpt-5 + xhigh:</strong> Returns <code>Unsupported value: 'xhigh' is not supported with the 'gpt-5' model</code>. The base gpt-5 model does not accept xhigh effort &mdash; use <code>gpt-5-high</code> variant instead.</li>
-    <li><strong>gemini-3-flash-preview:</strong> Very strict rate limit (~1 call/60s) on Code Assist API. Failed because the audit ran models in rapid succession. Works fine with spacing.</li>
-    <li><strong>claude-sonnet-4-6 &amp; claude-opus-4-5:</strong> Not tested because the Docker container hosting the Claude CLI proxy needs recreation. Both models were previously verified working.</li>
-    <li><strong>Think tag production is non-deterministic:</strong> The same model may or may not produce <code>&lt;think&gt;</code> tags depending on question complexity, effort level, and run-to-run variance. The sparkle indicator shows which runs happened to produce them.</li>
+    <li><code>gpt-5</code> + <code>xhigh</code> reasoning effort returns an API error (unsupported combination)</li>
+    <li><code>gemini-3-flash-preview</code> hit rate-limit / quota exhaustion during test run</li>
   </ul>
 </div>
 
-<!-- ============================================================ -->
-<!-- LEGEND -->
-<!-- ============================================================ -->
+<!-- Legend -->
 <div class="legend">
-  <strong>Legend:</strong><br>
-  <span><span class="pass">&#10003;</span> PASS &mdash; correct answer returned</span>
-  <span><span class="fail">&#10007;</span> ERROR &mdash; API error or wrong answer</span>
-  <span><span class="pending">?</span> PENDING &mdash; not yet tested</span>
-  <span><span class="think-sparkle">&#10024;</span> Think tags &mdash; model produced <code>&lt;think&gt;</code> reasoning traces</span>
-  <br><span style="color:var(--muted);">Times shown are end-to-end response latency in seconds.</span>
+  <div class="legend-item"><span class="pass-icon">&#10003;</span> Pass (correct brand extracted)</div>
+  <div class="legend-item"><span class="fail-icon">&#10007;</span> Fail (wrong answer or API error)</div>
+  <div class="legend-item"><span class="think-icon">&#10024;</span> Think tags detected in response</div>
+  <div class="legend-item"><span style="color: #6e7681; font-family: monospace; font-size: 12px;">1.2s</span> Response latency</div>
 </div>
 
-<!-- ============================================================ -->
-<div class="footer">
-  <p>Generated from <code>combined-audit.json</code> on <strong>2026-03-28</strong>. 154 total tests across 3 providers, 28 models, 7 mode variations.</p>
-  <p>OpenAI: port 5001, ChatGPT Pro plan. Claude: port 5003, Claude Max (2 accounts). Gemini: port 5002, Code Assist API via OAuth proxy.</p>
-  <p>Task: brand extraction from product title &mdash; deterministic single-word answer expected (<code>Logitech</code>).</p>
-</div>
+<div class="datestamp">Generated: 2026-03-28 &middot; Spec Factory LLM Lab</div>
 
 </body>
 </html>

@@ -58,15 +58,15 @@ export function createCookieConsentPlugin({ _consentHandler = handleCookieConsen
           && settings?.cookieConsentEnabled !== 'false';
         if (!enabled) return { enabled: false, autoconsentMatched: false, fallbackClicked: 0, settleMs: 0 };
 
-        const timeoutMs = Number(settings?.cookieConsentTimeoutMs) || 5000;
+        const timeoutMs = Number(settings?.cookieConsentTimeoutMs) || 1000;
         const selectorStr = String(settings?.cookieConsentFallbackSelectors || DEFAULT_FALLBACK_SELECTORS);
         const selectors = selectorStr.split(',').map((s) => s.trim()).filter(Boolean);
-        const settleMs = Number(settings?.cookieConsentSettleMs ?? 1000);
 
         let autoconsentMatched = false;
         let fallbackClicked = 0;
 
         // WHY: Autoconsent first — handles 95%+ of CMPs via DuckDuckGo's rule engine.
+        // 1s timeout — if autoconsent doesn't detect a CMP immediately, it won't.
         try {
           const result = await _consentHandler(page, { action: 'optIn', timeout: timeoutMs });
           autoconsentMatched = Boolean(result?.handled);
@@ -80,16 +80,14 @@ export function createCookieConsentPlugin({ _consentHandler = handleCookieConsen
             const elements = await page.locator(selector).all();
             for (const el of elements) {
               try {
-                await el.click({ timeout: 2000 });
+                await el.click({ timeout: 500 });
                 fallbackClicked++;
               } catch { /* element may not be clickable — skip */ }
             }
           }
         }
 
-        if (settleMs > 0) await page.waitForTimeout(settleMs);
-
-        return { enabled: true, autoconsentMatched, fallbackClicked, settleMs };
+        return { enabled: true, autoconsentMatched, fallbackClicked, settleMs: 0 };
       },
     },
   };

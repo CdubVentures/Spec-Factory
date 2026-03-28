@@ -20,7 +20,6 @@ interface OverviewTabProps {
   onNavigateToWorkers?: (pool: string) => void;
 }
 
-// WHY: Status → chip class mapping. Centralised here since it's OverviewTab-only.
 const STATUS_CHIP: Record<string, string> = {
   running: 'sf-chip-success',
   completed: 'sf-chip-info',

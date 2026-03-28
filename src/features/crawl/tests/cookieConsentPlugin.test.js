@@ -150,14 +150,14 @@ describe('cookieConsentPlugin — autoconsent', () => {
     assert.equal(handler.invocations[0].options.timeout, 8000);
   });
 
-  it('uses default timeout of 5000ms when not configured', async () => {
+  it('uses default timeout of 1000ms when not configured', async () => {
     const handler = createConsentHandlerDouble({ handled: true });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
     await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
-    assert.equal(handler.invocations[0].options.timeout, 5000);
+    assert.equal(handler.invocations[0].options.timeout, 1000);
   });
 
   it('skips fallback selectors when autoconsent matched', async () => {
@@ -230,25 +230,10 @@ describe('cookieConsentPlugin — fallback selectors', () => {
   });
 });
 
-// ── Settle wait ──────────────────────────────────────────────────────────────
+// ── No settle wait ───────────────────────────────────────────────────────────
 
-describe('cookieConsentPlugin — settle wait', () => {
-  it('waits configured settleMs after dismissal', async () => {
-    const handler = createConsentHandlerDouble({ handled: true });
-    const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
-
-    const result = await plugin.hooks.onDismiss({
-      page,
-      settings: { cookieConsentEnabled: true, cookieConsentSettleMs: 2000 },
-    });
-
-    const waitCalls = page.calls.filter((c) => c.type === 'waitForTimeout');
-    assert.ok(waitCalls.some((c) => c.ms === 2000));
-    assert.equal(result.settleMs, 2000);
-  });
-
-  it('uses default 1000ms settle when not configured', async () => {
+describe('cookieConsentPlugin — no settle wait', () => {
+  it('does not wait after dismissal (Crawlee already loaded the page)', async () => {
     const handler = createConsentHandlerDouble({ handled: true });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
@@ -258,21 +243,9 @@ describe('cookieConsentPlugin — settle wait', () => {
       settings: { cookieConsentEnabled: true },
     });
 
-    assert.equal(result.settleMs, 1000);
-  });
-
-  it('skips settle wait when settleMs is 0', async () => {
-    const handler = createConsentHandlerDouble({ handled: true });
-    const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
-
-    await plugin.hooks.onDismiss({
-      page,
-      settings: { cookieConsentEnabled: true, cookieConsentSettleMs: 0 },
-    });
-
     const waitCalls = page.calls.filter((c) => c.type === 'waitForTimeout');
     assert.equal(waitCalls.length, 0);
+    assert.equal(result.settleMs, 0);
   });
 });
 

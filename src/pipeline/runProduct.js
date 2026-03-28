@@ -2,8 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { buildRunId } from '../shared/primitives.js';
 import { EventLogger } from '../logger.js';
-import { recordQueryResult, recordUrlVisit } from '../features/indexing/pipeline/shared/index.js';
-import { captureKnobSnapshot, recordKnobSnapshot } from '../features/indexing/telemetry/index.js';
+import { captureKnobSnapshot } from '../features/indexing/telemetry/index.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
 import {
@@ -123,7 +122,7 @@ export async function runProduct({
   logger.setContext(loggerContext);
   logger.info('run_context', runContextPayload);
 
-  const specDb = config.specDb || null;
+  const _telemetrySpecDb = config.specDb || null;
 
   bootstrapRunEventIndexing({
     logger,
@@ -136,17 +135,14 @@ export async function runProduct({
     joinPathFn: path.join,
     mkdirSyncFn: fs.mkdirSync,
     captureKnobSnapshotFn: captureKnobSnapshot,
-    recordKnobSnapshotFn: (snapshot, logPath) => {
-      recordKnobSnapshot(snapshot, logPath);
-      if (specDb) try { specDb.insertKnobSnapshot({ ...snapshot, category, run_id: runId }); } catch { /* best-effort */ }
+    recordKnobSnapshotFn: (snapshot) => {
+      if (_telemetrySpecDb) try { _telemetrySpecDb.insertKnobSnapshot({ ...snapshot, category, run_id: runId }); } catch { /* best-effort */ }
     },
-    recordUrlVisitFn: (record, logPath) => {
-      recordUrlVisit(record, logPath);
-      if (specDb) try { specDb.insertUrlIndexEntry({ ...record, category, ts: new Date().toISOString() }); } catch { /* best-effort */ }
+    recordUrlVisitFn: (record) => {
+      if (_telemetrySpecDb) try { _telemetrySpecDb.insertUrlIndexEntry({ ...record, category, ts: new Date().toISOString() }); } catch { /* best-effort */ }
     },
-    recordQueryResultFn: (record, logPath) => {
-      recordQueryResult(record, logPath);
-      if (specDb) try { specDb.insertQueryIndexEntry({ ...record, ts: new Date().toISOString() }); } catch { /* best-effort */ }
+    recordQueryResultFn: (record) => {
+      if (_telemetrySpecDb) try { _telemetrySpecDb.insertQueryIndexEntry({ ...record, ts: new Date().toISOString() }); } catch { /* best-effort */ }
     },
   });
 
