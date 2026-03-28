@@ -15,8 +15,9 @@ import {
 import { collectPreviewExtractionFields } from './runtimeOpsExtractionFieldBuilders.js';
 import { inferPool } from './runtimeOpsWorkerPoolBuilders.js';
 import { normalizeHost } from '../../pipeline/shared/hostParser.js';
+import { isVideoUrl } from '../../pipeline/shared/urlClassifier.js';
 
-// WHY: Minimal normalization to match canonicalizeUrl's output (hash, sort, trailing slash).
+// WHY: Normalize to match canonicalizeUrl's output + strip www prefix for cross-stage matching.
 function normalizeTriageUrl(url) {
   try {
     const u = new URL(url);
@@ -24,6 +25,9 @@ function normalizeTriageUrl(url) {
     u.searchParams.sort();
     if (u.pathname.length > 1 && u.pathname.endsWith('/')) {
       u.pathname = u.pathname.slice(0, -1);
+    }
+    if (u.hostname.startsWith('www.')) {
+      u.hostname = u.hostname.slice(4);
     }
     return u.toString();
   } catch {
@@ -100,6 +104,8 @@ export function buildWorkerDetail(events, workerId, options = {}) {
     const triageByUrl = {};
     const hostToFetchWorkers = {};
     const domainSafetyByHost = {};
+    // WHY: Track URLs across all queries to detect cross-query duplicates (Search Results phase dedup).
+    const seenResultUrls = new Set();
     // Track queries assigned to ANY search worker (for multi-worker reconciliation)
     const queriesTrackedByAnyWorker = new Set();
     for (const evt of events) {
@@ -116,21 +122,39 @@ export function buildWorkerDetail(events, workerId, options = {}) {
           queryResultsMap[q] = {
             query: rawQ,
             resolved_provider: String(payload.provider || '').trim(),
-            results: Array.isArray(payload.results) ? payload.results.map((r, i) => ({
-              url: String(r?.url || '').trim(),
-              domain: String(r?.domain || '').trim(),
-              title: String(r?.title || '').trim(),
-              rank: toInt(r?.rank, i + 1),
-              provider: String(r?.provider || payload.provider || '').trim(),
-              fetch_worker_id: null,
-              fetched: false,
-              fetch_link_type: 'none',
-              decision: String(r?.decision || '').trim() || 'unknown',
-              score: 0,
-              rationale: '',
-              score_components: null,
-              already_crawled: Boolean(r?.already_crawled),
-            })) : [],
+            results: Array.isArray(payload.results) ? payload.results.map((r, i) => {
+              const url = String(r?.url || '').trim();
+              const alreadyCrawled = Boolean(r?.already_crawled);
+              // WHY: Deterministic drops from Search Results phase — same logic the pipeline
+              // applies internally, but the search_results_collected event carries raw results.
+              let decision = String(r?.decision || '').trim();
+              let rationale = '';
+              if (!decision) {
+                if (isVideoUrl(url)) {
+                  decision = 'hard_drop';
+                  rationale = 'video_platform';
+                } else if (seenResultUrls.has(url)) {
+                  decision = 'hard_drop';
+                  rationale = 'duplicate';
+                }
+              }
+              seenResultUrls.add(url);
+              return {
+                url,
+                domain: String(r?.domain || '').trim(),
+                title: String(r?.title || '').trim(),
+                rank: toInt(r?.rank, i + 1),
+                provider: String(r?.provider || payload.provider || '').trim(),
+                fetch_worker_id: null,
+                fetched: false,
+                fetch_link_type: 'none',
+                decision: decision || 'unknown',
+                score: 0,
+                rationale,
+                score_components: null,
+                already_crawled: alreadyCrawled,
+              };
+            }) : [],
           };
         }
       }

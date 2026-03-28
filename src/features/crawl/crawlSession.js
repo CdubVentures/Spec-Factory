@@ -166,7 +166,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         // just the fetch window (dismiss→scroll). Without this, the video
         // includes blank tab, navigation, extraction, and teardown.
         if (videoDir && suiteResult.fetchWindowStartMs) {
+          const existing = pageTimestampMap.get(page) || {};
           pageTimestampMap.set(page, {
+            ...existing,
             pageStartMs,
             fetchWindowStartMs: suiteResult.fetchWindowStartMs,
             fetchWindowEndMs: suiteResult.fetchWindowEndMs,
@@ -539,6 +541,14 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               pageOptions.recordVideo = { dir: videoDir, size: videoSize };
             },
           ],
+          // WHY: Record exact video start time on the page object so trim
+          // uses real timestamps. Video starts at page creation, not at
+          // handler start. This eliminates guesswork about navigation offset.
+          postPageCreateHooks: [
+            (page) => {
+              pageTimestampMap.set(page, { ...(pageTimestampMap.get(page) || {}), videoCreatedMs: Date.now() });
+            },
+          ],
           // WHY: prePageCloseHooks receives the actual page object (postPageCloseHooks
           // only gets a pageId string). We fire-and-forget video.saveAs() — it resolves
           // AFTER the page closes (which happens right after this hook returns).
@@ -558,27 +568,19 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               const pageUrl = pageWorkerUrlMap.get(page) || '';
               const savePromise = video.saveAs(videoPath)
                 .then(async () => {
-                  // WHY: With domcontentloaded, the total video is 3-8 seconds:
-                  //   ~0.5s blank tab + goto
-                  //   ~0.2s paint gate
-                  //   ~0.5s dismiss suite
-                  //   ~2-3s auto-scroll (2 passes incremental)
-                  //   ~0.5s final dismiss
-                  //   ~0.5s extraction
-                  // This is short enough to keep untrimmed. Trimming to the exact
-                  // suite window (fetchWindowStart→End) risks producing 0-second
-                  // videos when the suite runs in <200ms. The full 3-8s video
-                  // shows page load → dismiss → scroll → final state which is
-                  // exactly what an LLM reviewer needs to see.
-                  //
-                  // If the video exceeds 15s (slow site or long scroll), trim
-                  // the end to remove extraction + teardown noise.
+                  // WHY: Trim uses exact timestamps from when things actually fire.
+                  // videoCreatedMs = page creation (video recording starts here)
+                  // pageStartMs = handler fires (page loaded, visible content)
+                  // fetchWindowEndMs = suite loop done (dismiss + scroll complete)
+                  // Video shows: page load → dismiss → scroll × 2 → final state
+                  // Extraction (after fetchWindowEndMs) is cut out.
                   const ts = pageTimestampMap.get(page);
                   if (ts && ts.fetchWindowEndMs) {
-                    const totalVideoSec = (Date.now() - ts.pageStartMs) / 1000;
-                    if (totalVideoSec > 15) {
-                      const endSec = (ts.fetchWindowEndMs - ts.pageStartMs) / 1000 + 1.0;
-                      await trimVideo(videoPath, 0, endSec);
+                    const videoOrigin = ts.videoCreatedMs || ts.pageStartMs;
+                    const startSec = Math.max(0, (ts.pageStartMs - videoOrigin) / 1000);
+                    const endSec = (ts.fetchWindowEndMs - videoOrigin) / 1000;
+                    if (endSec > startSec + 0.5) {
+                      await trimVideo(videoPath, startSec, endSec);
                     }
                   }
                   // WHY: DI callback persists video to run directory and indexes in SQL.

@@ -263,6 +263,7 @@ const HARD_DROP_LABELS = {
   utility_shell: 'Utility Shell',
   invalid_url: 'Invalid URL',
   invalid_protocol: 'Invalid Protocol',
+  duplicate: 'Dup',
 };
 
 export function resolveDecisionDisplay(result, { isDuplicate = false, isCrawled = false, isVideo = false } = {}) {

@@ -210,7 +210,6 @@ describe('autoScrollPlugin — smooth strategy (video recording)', () => {
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'jump', autoScrollPasses: 2, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
     });
     assert.equal(result.strategy, 'smooth');
-    assert.ok(page.mouseWheelCalls.length > 0, 'should use wheel events, not scrollTo');
   });
 
   it('forces smooth when video on + strategy=incremental', async () => {
@@ -222,81 +221,47 @@ describe('autoScrollPlugin — smooth strategy (video recording)', () => {
     assert.equal(result.strategy, 'smooth');
   });
 
-  it('uses micro-steps smaller than viewport height', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 5000, 5000, 5000] });
-    await autoScrollPlugin.hooks.onScroll({
-      page,
-      settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
-    });
-    const expectedStep = Math.round(1080 / 8);
-    const positiveWheels = page.mouseWheelCalls.filter((c) => c.deltaY > 0);
-    assert.ok(positiveWheels.length > 0, 'should have positive wheel calls');
-    for (const call of positiveWheels) {
-      assert.ok(call.deltaY < 1080, `deltaY ${call.deltaY} should be less than viewport`);
-      assert.equal(call.deltaY, expectedStep, `deltaY should be viewport/8 = ${expectedStep}`);
-    }
-  });
-
-  it('waits 33ms (frame-aligned) between micro-steps', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 5000, 5000, 5000] });
-    await autoScrollPlugin.hooks.onScroll({
-      page,
-      settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
-    });
-    const frameWaits = page.waitedMs.filter((ms) => ms === 33);
-    assert.ok(frameWaits.length >= 4, `should have several 33ms frame waits, got ${frameWaits.length}`);
-  });
-
-  it('inserts settle pause at viewport boundaries using delayMs', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 5000, 6000, 7000, 7000, 7000] });
-    await autoScrollPlugin.hooks.onScroll({
-      page,
-      settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 1200, crawlVideoRecordingEnabled: true },
-    });
-    const settleWaits = page.waitedMs.filter((ms) => ms === 1200);
-    assert.ok(settleWaits.length >= 1, `should have settle pauses of 1200ms, got ${settleWaits.length}`);
-    const frameWaits = page.waitedMs.filter((ms) => ms === 33);
-    assert.ok(frameWaits.length > 0, 'should also have frame-aligned waits');
-  });
-
-  it('fires IntersectionObserver nudge at viewport boundaries', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 5000, 6000, 7000, 7000, 7000] });
+  it('scrolls via evaluate (scrollTo), not mouse.wheel', async () => {
+    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000, 3000] });
     await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
     });
-    const negativeWheels = page.mouseWheelCalls.filter((c) => c.deltaY < 0);
-    assert.ok(negativeWheels.length >= 1, 'should have at least one upward nudge');
-    // Verify nudge pattern: negative followed by positive
-    for (let i = 0; i < page.mouseWheelCalls.length; i++) {
-      if (page.mouseWheelCalls[i].deltaY < 0) {
-        assert.ok(i + 1 < page.mouseWheelCalls.length, 'nudge-up should be followed by another call');
-        assert.ok(page.mouseWheelCalls[i + 1].deltaY > 0, 'nudge-up should be followed by nudge-down');
-      }
-    }
+    assert.equal(page.mouseWheelCalls.length, 0, 'smooth uses scrollTo, not wheel');
+    assert.ok(page.evaluateCalls.length >= 3, 'should call evaluate for scrollTo + height checks');
   });
 
-  it('injects CSS scroll-behavior override', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000] });
+  it('pauses 250ms per viewport chunk for video', async () => {
+    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000, 3000] });
     await autoScrollPlugin.hooks.onScroll({
       page,
-      settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
+      settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
     });
-    assert.ok(page.styleTags.length >= 1, 'should inject a style tag');
-    assert.ok(page.styleTags[0].content.includes('scroll-behavior: auto'), 'should override scroll-behavior');
+    const chunkPauses = page.waitedMs.filter((ms) => ms === 250);
+    assert.ok(chunkPauses.length >= 2, `should pause per chunk, got ${chunkPauses.length}`);
   });
 
-  it('stops after 2 consecutive stable heights', async () => {
-    // Height never changes — should stop quickly
-    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000] });
+  it('scrolls full page height based on scrollHeight', async () => {
+    // Page is ~3 viewports tall (3000/1080=3). Should scroll all 3.
+    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000, 3000, 3000] });
     const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 20, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
     });
-    assert.ok(result.passes <= 3, `should stop early, got ${result.passes} passes`);
+    assert.ok(result.passes >= 3, `should scroll full page (3 segments), got ${result.passes}`);
   });
 
-  it('continues when height grows', async () => {
+  it('scrolls full page even when passes is small', async () => {
+    // Page is ~5 viewports (5400/1080). passes=2 but should scroll all 5.
+    const page = createPageDouble({ evaluateResults: [1080, 5400, 5400, 5400, 5400, 5400, 5400] });
+    const result = await autoScrollPlugin.hooks.onScroll({
+      page,
+      settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
+    });
+    assert.ok(result.passes >= 5, `should scroll full page height, got ${result.passes}`);
+  });
+
+  it('continues when height grows (lazy content)', async () => {
     const page = createPageDouble({ evaluateResults: [1080, 2000, 3000, 4000, 5000, 5000, 5000] });
     const result = await autoScrollPlugin.hooks.onScroll({
       page,
@@ -305,25 +270,24 @@ describe('autoScrollPlugin — smooth strategy (video recording)', () => {
     assert.ok(result.passes >= 3, `should continue through growth, got ${result.passes}`);
   });
 
-  it('resets to top with 500ms final rest', async () => {
-    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000] });
-    await autoScrollPlugin.hooks.onScroll({
-      page,
-      settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 200, crawlVideoRecordingEnabled: true },
-    });
-    // Final rest should be 500ms regardless of postLoadWaitMs setting
-    assert.ok(page.waitedMs.includes(500), 'should have 500ms final rest');
-    assert.ok(page.evaluateCalls.length >= 1, 'should call evaluate for scrollTo reset');
-  });
-
-  it('caps at autoScrollPasses maximum', async () => {
-    // Height always grows — but capped at 2 passes
-    const page = createPageDouble({ evaluateResults: [1080, 1000, 2000, 3000, 4000, 5000, 6000] });
+  it('caps growth on infinite-scroll pages', async () => {
+    const page = createPageDouble({ evaluateResults: [1080, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000] });
     const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
     });
-    assert.equal(result.passes, 2, 'should cap at passes max');
+    assert.ok(result.passes > 2, `should scroll beyond passes=2 when page grows, got ${result.passes}`);
+    assert.ok(result.passes <= 10, `should cap total scrolling, got ${result.passes}`);
+  });
+
+  it('ends with 500ms rest then scrolls to top', async () => {
+    const page = createPageDouble({ evaluateResults: [1080, 3000, 3000, 3000] });
+    await autoScrollPlugin.hooks.onScroll({
+      page,
+      settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, crawlVideoRecordingEnabled: true },
+    });
+    assert.ok(page.waitedMs.includes(500), 'should have 500ms final rest');
+    assert.ok(page.evaluateCalls.length >= 1, 'should call evaluate for scrollTo reset');
   });
 
   it('does not activate smooth when video is off', async () => {
