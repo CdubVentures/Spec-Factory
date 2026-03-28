@@ -36,6 +36,16 @@ const DEFAULT_FALLBACK_SELECTORS = [
   '[class*="cookie"] button[class*="btn"]',
   '[id*="gdpr"] button[class*="accept"]',
   '[id*="gdpr"] button[class*="allow"]',
+  // CookieYes CMP (razer.com, many Shopify stores)
+  '.cky-btn-accept',
+  'button[class*="cky-btn-accept"]',
+  // Osano CMP (steelseries.com)
+  '.osano-cm-accept-all',
+  'button[class*="osano-cm-accept"]',
+  // Generic cookie-banner class with accept button
+  '.cookie-banner button[class*="accept"]',
+  '.cookie-banner button[class*="btn"]',
+  '[class*="cookie-banner"] button:first-of-type',
 ].join(',');
 
 export function createCookieConsentPlugin({ _consentHandler = handleCookieConsent } = {}) {

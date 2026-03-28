@@ -26,7 +26,9 @@ const SUPPRESSION_CSS = `
   .bis-reset,.klaviyo-popup,.omnisend-popup,.privy-popup,
   [id*="privy"],[id*="klaviyo"],[class*="wheelio"],[class*="spin-to-win"],
   [id*="reminder-info"],[class*="reminder-info"],[class*="region-popup"],
-  [class*="locale-popup"],[class*="country-selector-popup"],[class*="geo-redirect"] {
+  [class*="locale-popup"],[class*="country-selector-popup"],[class*="geo-redirect"],
+  #onetrust-banner-sdk,.cky-consent-container,.osano-cm-window,
+  [class*="cookie-banner"],[id*="cookie-consent"],[class*="consent-banner"] {
     display: none !important;
     visibility: hidden !important;
     z-index: -9999 !important;
