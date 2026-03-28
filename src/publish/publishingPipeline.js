@@ -162,8 +162,8 @@ export function evaluatePublishGate({
   };
 }
 
-async function publishSingleProduct({ storage, config, category, productId }) {
-  const latest = await readLatestArtifacts(storage, category, productId);
+async function publishSingleProduct({ storage, config, category, productId, specDb = null }) {
+  const latest = await readLatestArtifacts(storage, category, productId, specDb);
   const override = await readOverrideDoc({ config, category, productId });
   const reviewStatus = normalizeToken(override.payload?.review_status || '');
   const overrides = reviewStatus === 'approved' && isObject(override.payload?.overrides)
@@ -331,7 +331,8 @@ export async function publishProducts({
   category,
   productIds = [],
   allApproved = false,
-  format = 'all'
+  format = 'all',
+  specDb = null,
 }) {
   const normalizedCategory = normalizeCategory(category || '');
   if (!normalizedCategory) {
@@ -354,7 +355,8 @@ export async function publishProducts({
         storage,
         config,
         category: normalizedCategory,
-        productId
+        productId,
+        specDb,
       });
       results.push(row);
       if (row.ok) {

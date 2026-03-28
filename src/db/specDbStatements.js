@@ -716,5 +716,18 @@ export function prepareStatements(db) {
     _getPromptIndexByCategory: db.prepare(`
       SELECT * FROM prompt_index WHERE category = ? ORDER BY ts DESC LIMIT ?
     `),
+    _getProvenanceForProduct: db.prepare(`
+      SELECT
+        ifs.field_key, ifs.value, ifs.confidence, ifs.source, ifs.accepted_candidate_id,
+        c.source_url, c.source_host, c.source_root_domain,
+        c.source_tier, c.source_method, c.approved_domain,
+        c.snippet_id, c.snippet_hash, c.snippet_text,
+        c.quote, c.quote_span_start, c.quote_span_end,
+        c.evidence_url, c.evidence_retrieved_at
+      FROM item_field_state ifs
+      LEFT JOIN candidates c ON c.candidate_id = ifs.accepted_candidate_id
+      WHERE ifs.category = ? AND ifs.product_id = ?
+      ORDER BY ifs.field_key
+    `),
   };
 }

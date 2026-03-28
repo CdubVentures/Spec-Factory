@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ExtractionArtifactPanel, type ArtifactPanelConfig } from './ExtractionArtifactPanel.tsx';
 import { HeroStat } from '../../components/HeroStat.tsx';
 import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { FormatBadge } from '../../../../shared/ui/icons/FormatBadge.tsx';
 import type { ExtractionPluginData, ExtractionPluginEntry } from '../../types.ts';
 
 interface ScreenshotRecord extends ExtractionPluginEntry {
@@ -70,7 +71,7 @@ export function ExtractionScreenshotPanel({ data, persistScope, runId }: Extract
       <div className="flex items-center gap-2">
         <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Formats</span>
         {formats.map((f) => (
-          <Chip key={f} label={f.toUpperCase()} className="sf-chip-info" />
+          <FormatBadge key={f} format={f} />
         ))}
       </div>
     );

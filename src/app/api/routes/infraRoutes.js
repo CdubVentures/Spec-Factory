@@ -1,6 +1,7 @@
 import { createInfraHealthRoutes } from './infra/healthRoutes.js';
 import { createInfraCategoryRoutes } from './infra/categoryRoutes.js';
 import { createInfraSearxngRoutes } from './infra/searxngRoutes.js';
+import { createInfraSerperRoutes } from './infra/serperRoutes.js';
 import { createInfraProcessRoutes } from './infra/processRoutes.js';
 import { createInfraGraphqlRoutes } from './infra/graphqlRoutes.js';
 import { scaffoldCategory } from '../../../field-rules/compilerCategoryInit.js';
@@ -14,6 +15,7 @@ export function registerInfraRoutes(ctx) {
       scaffoldCategoryFn: ctx.scaffoldCategoryFn || scaffoldCategory,
     }),
     createInfraSearxngRoutes(ctx),
+    createInfraSerperRoutes(ctx),
     createInfraProcessRoutes({
       ...ctx,
       pathApi: ctx.path,

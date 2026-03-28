@@ -64,29 +64,10 @@ export async function resolveIndexLabRunDirectory(runId) {
 export async function readIndexLabRunMeta(runId) {
   const token = String(runId || '').trim();
   if (!token) return null;
-  const runDir = await resolveIndexLabRunDirectory(token);
 
-  // Tier 1: run-summary.json (completed runs, post Wave 5.5)
-  if (runDir) {
-    const { extractMetaFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
-    const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
-    if (summary) {
-      const meta = extractMetaFromRunSummary(summary);
-      if (meta) return meta;
-    }
-  }
-
-  // Tier 2: run.json (pre-migration runs)
-  if (runDir) {
-    const meta = await safeReadJson(path.join(runDir, 'run.json'));
-    if (meta && typeof meta === 'object') return meta;
-  }
-
-  // Tier 3: SQL lookup (live runs — directory exists but no JSON files yet)
-  // WHY: Wave 5.5 killed run.json writes. During a live run, only the SQL
-  // runs table has metadata. Use processStatus to get the active category.
+  // Tier 1: SQL lookup (primary path post Wave 5.5)
   if (typeof _getSpecDbReady === 'function') {
-    // 3a: Active process — get category directly from process status
+    // 1a: Active process — get category directly from process status
     if (typeof _processStatus === 'function') {
       try {
         const snap = _processStatus();
@@ -100,9 +81,7 @@ export async function readIndexLabRunMeta(runId) {
         }
       } catch { /* best-effort */ }
     }
-    // 3b: Scan specDb directory for category databases
-    // WHY: INDEXLAB_ROOT may only contain runId directories (no category dirs).
-    // The specDb directory (.specfactory_tmp/) has the actual category subdirs.
+    // 1b: Scan specDb directory for category databases
     const scanDirs = [
       _config?.specDbDir,
       _resolveIndexLabRoot(),
@@ -124,6 +103,23 @@ export async function readIndexLabRunMeta(runId) {
         }
       } catch { continue; }
     }
+  }
+
+  // Tier 2: run-summary.json (file fallback for pre-migration runs)
+  const runDir = await resolveIndexLabRunDirectory(token);
+  if (runDir) {
+    const { extractMetaFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
+    const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
+    if (summary) {
+      const meta = extractMetaFromRunSummary(summary);
+      if (meta) return meta;
+    }
+  }
+
+  // Tier 3: run.json (legacy pre-migration runs)
+  if (runDir) {
+    const meta = await safeReadJson(path.join(runDir, 'run.json'));
+    if (meta && typeof meta === 'object') return meta;
   }
 
   return null;
@@ -195,6 +191,7 @@ export function initIndexLabDataBuilders({
     getStorage: () => _storage,
     readOutputRootJson,
     getOutputRoot: () => _outputRoot,
+    getSpecDbReady: _getSpecDbReady,
   });
   _evidenceReader = createEvidenceIndexReader({
     resolveContext: resolveIndexLabRunContext,
@@ -313,12 +310,9 @@ export async function readOutputRootJson(storageKey) {
 export async function resolveIndexLabRunContext(runId) {
   const token = String(runId || '').trim();
   if (!token) return null;
-  const runDir = await resolveIndexLabRunDirectory(token);
-  if (!runDir) return null;
   const meta = await readIndexLabRunMeta(token);
-  if (!meta || typeof meta !== 'object') {
-    return null;
-  }
+  if (!meta || typeof meta !== 'object') return null;
+  const runDir = await resolveIndexLabRunDirectory(token);
   const category = String(meta?.category || '').trim();
   const resolvedRunId = String(meta?.run_id || token).trim();
   if (!category || !resolvedRunId) {

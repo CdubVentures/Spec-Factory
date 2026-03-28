@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 /* ── Logic helpers (exported for unit testing) ───────────────────── */
 
-const BASE_CLS = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item';
+const BASE_CLS = 'px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item';
 
 export function buildTabItemClass(active: boolean): string {
   return active ? `${BASE_CLS} sf-tab-item-active` : BASE_CLS;

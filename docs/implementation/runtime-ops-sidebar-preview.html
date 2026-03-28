@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RuntimeOps — v10</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-tint: #f9fafb;
+    --border: #e4e7ec;
+    --border-soft: #eef0f4;
+    --border-faint: #f4f5f7;
+    --text: #0f1419;
+    --text-2: #536471;
+    --text-3: #8899a6;
+    --accent: #1d9bf0;
+    --accent-soft: rgba(29,155,240,0.08);
+    --purple: #7856ff;
+    --purple-soft: rgba(120,86,255,0.08);
+    --green: #00ba7c;
+    --green-soft: rgba(0,186,124,0.06);
+    --amber: #ffad1f;
+    --amber-soft: rgba(255,173,31,0.08);
+    --cyan: #1abcfe;
+    --orange: #f97316;
+    --orange-soft: rgba(249,115,22,0.07);
+    --red: #f4212e;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  .mono { font-family: 'SF Mono', 'Cascadia Code', monospace; letter-spacing: -0.02em; }
+  @keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes glow { 0%,100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 4px rgba(0,186,124,0.12); } }
+
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+
+  /* HEADER */
+  .header { display: flex; align-items: center; gap: 12px; padding: 8px 20px; background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 10; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 4px 12px 4px 9px; border-radius: 20px; }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-pill .dot.live { animation: breathe 1.8s infinite; }
+  .run-chip { font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 8px; background: var(--surface-tint); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  .run-chip .dim { color: var(--text-3); font-weight: 400; }
+  .stepper { display: flex; align-items: center; flex: 1; max-width: 180px; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sdot.done { opacity: 0.9; } .sdot.active { animation: glow 2s infinite; } .sdot.pending { opacity: 0.12; }
+  .sline { flex: 1; height: 2px; border-radius: 1px; margin: 0 1px; }
+  .sline.done { background: var(--border); } .sline.pending { background: var(--border-faint); }
+  .tabs { display: flex; margin-left: auto; background: var(--bg); border-radius: 10px; padding: 3px; }
+  .tab-btn { font-size: 12px; font-weight: 600; padding: 6px 16px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: var(--text-3); }
+  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 216px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+  .sidebar-pools { padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .pool { display: flex; align-items: stretch; padding: 10px 12px 10px 0; border-radius: 10px; transition: background 0.1s; }
+  .pool:hover { background: var(--bg); }
+  .pool-bar { width: 3px; flex-shrink: 0; border-radius: 3px; margin-right: 12px; opacity: 0.85; }
+  .pool-body { flex: 1; }
+  .pool-top { display: flex; align-items: center; margin-bottom: 6px; height: 20px; }
+  .pool-name { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; letter-spacing: -0.025em; }
+  .pool-badge { font-size: 10px; font-weight: 800; min-width: 22px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; }
+  .pool-badge.live { animation: breathe 1.8s infinite; } .pool-badge.none { visibility: hidden; }
+  .pool-bottom { display: flex; align-items: center; gap: 10px; }
+  .pool-track { flex: 1; height: 4px; border-radius: 3px; background: var(--border-faint); overflow: hidden; }
+  .pool-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .pool-nums { font-size: 12px; font-weight: 700; color: var(--text-2); min-width: 30px; text-align: right; }
+  .pool-nums .fail { color: var(--red); } .pool-nums .slash { color: var(--text-3); font-weight: 400; }
+  .sidebar-divider { height: 1px; background: var(--border-soft); margin: 4px 16px; }
+  .engine-block { padding: 12px 16px 16px 15px; }
+  .engine-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); margin-bottom: 10px; }
+  .engine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+  .eg-label { font-size: 10px; color: var(--text-3); font-weight: 500; margin-bottom: 1px; }
+  .eg-value { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; }
+  .eg-value.bad { color: var(--red); }
+
+  .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ═══ STAGE BAND ═══ */
+  .stage-band {
+    border-bottom: 1px solid var(--border);
+  }
+  .stage-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 20px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border-faint);
+    height: 46px;
+  }
+  .stage-row:last-child { border-bottom: none; }
+  .stage-row.tint-amber { background: var(--surface); }
+  .stage-row.tint-green { background: var(--surface); }
+  .stage-row.tint-purple { background: var(--surface); }
+  .sg-label {
+    font-size: 9px; font-weight: 700; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap; min-width: 72px;
+  }
+  .sg-tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    padding: 0 10px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-2);
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.12s;
+    height: 38px;
+  }
+  .sg-tab:hover { border-color: #c0c7d1; }
+  .sg-tab.active-amber { background: var(--amber-soft); color: #92400e; border-color: var(--amber); }
+  .sg-tab.active-accent { background: var(--accent-soft); color: #1e40af; border-color: var(--accent); }
+  .sg-tab.active-green { background: var(--green-soft); color: #065f46; border-color: var(--green); }
+  .sg-tab.active-purple { background: var(--purple-soft); color: #5b21b6; border-color: var(--purple); }
+  .sg-tab .tdot { width: 5px; height: 5px; border-radius: 50%; }
+  .sg-tab .tdot.busy { animation: breathe 1s infinite; }
+  .browser-pill { margin-left: auto; font-size: 9px; font-weight: 600; color: var(--text-3); padding: 3px 8px; border-radius: 6px; background: var(--border-faint); white-space: nowrap; }
+
+  /* ═══ WORKER BAND ═══ */
+  .worker-band {
+    border-bottom: 1px solid var(--border);
+  }
+  .wk-row {
+    display: flex; align-items: stretch;
+    height: 46px;
+    border-bottom: 1px solid var(--border-faint);
+  }
+  .wk-row:last-child { border-bottom: none; }
+  .wk-row.tint-amber { background: rgba(255,173,31,0.03); }
+  .wk-row.tint-accent { background: rgba(29,155,240,0.03); }
+  .wk-row.tint-green { background: rgba(0,186,124,0.025); }
+  .wk-lane {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 14px; min-width: 96px;
+    border-left: 3px solid transparent;
+  }
+  .wk-lane-name { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); }
+  .wk-lane-num { font-size: 9px; color: var(--text-3); white-space: nowrap; }
+  .wk-lane-num .act { color: var(--green); font-weight: 800; }
+  .wk-chips { display: flex; align-items: center; gap: 6px; padding: 8px 20px 8px 8px; overflow-x: auto; flex: 1; }
+  .wk-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 10px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.12s;
+    height: 38px;
+  }
+  .wk-chip:hover { border-color: #c0c7d1; box-shadow: var(--shadow-sm); }
+  .wk-chip.sel-amber { background: var(--amber-soft); border-color: var(--amber); color: #92400e; }
+  .wk-chip.sel-accent { background: var(--accent-soft); border-color: var(--accent); color: #1e40af; }
+  .wk-chip.sel-green { background: var(--green-soft); border-color: var(--green); color: #065f46; }
+  .wk-chip.queued { opacity: 0.3; cursor: default; }
+  .wk-chip .cd { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .wk-chip .cd.run { animation: breathe 1.2s infinite; }
+  .wk-chip-text { display: flex; flex-direction: column; justify-content: center; min-height: 28px; }
+  .wk-chip-id { font-size: 11px; font-weight: 600; letter-spacing: -0.02em; line-height: 14px; }
+  .wk-chip-sub { font-size: 9px; color: var(--text-3); line-height: 12px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  .wk-chip[class*="sel-"] .wk-chip-sub { color: var(--text-2); }
+  .wk-badge { font-size: 8px; font-weight: 900; padding: 2px 5px; border-radius: 4px; flex-shrink: 0; }
+  .wk-badge.api { background: var(--accent-soft); color: var(--accent); }
+  .wk-badge.lab { background: var(--purple-soft); color: var(--purple); }
+  .wk-chip[class*="sel-"] .wk-badge { opacity: 0.8; }
+  .wk-timer { font-size: 9px; color: var(--text-3); flex-shrink: 0; }
+  .wk-chip[class*="sel-"] .wk-timer { color: var(--text-2); }
+  .wk-waiting { font-size: 11px; color: var(--text-3); font-style: italic; }
+
+  .panel { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-3); font-size: 13px; background: var(--bg); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="status-pill" style="background: var(--green-soft); color: var(--green);"><div class="dot live" style="background: var(--green);"></div>Live</div>
+    <div class="run-chip mono"><span class="dim">Run</span> &nbsp;Mouse &bull; Razer Viper V3 Pro <span class="dim">&mdash; 6a0b3</span></div>
+    <div class="stepper">
+      <div class="sdot done" style="background: var(--purple);"></div><div class="sline done"></div>
+      <div class="sdot done" style="background: var(--accent);"></div><div class="sline done"></div>
+      <div class="sdot done" style="background: var(--cyan);"></div><div class="sline done"></div>
+      <div class="sdot active" style="background: var(--green);"></div><div class="sline pending"></div>
+      <div class="sdot pending" style="background: var(--orange);"></div>
+    </div>
+    <div class="tabs"><button class="tab-btn">Overview</button><button class="tab-btn active">Workers</button><button class="tab-btn">Documents</button></div>
+  </div>
+  <div class="body">
+    <div class="sidebar">
+      <div class="sidebar-pools">
+        <div class="pool"><div class="pool-bar" style="background: var(--amber);"></div><div class="pool-body"><div class="pool-top"><span class="pool-name">LLM</span><span class="pool-badge live" style="background: var(--amber-soft); color: var(--amber);">3</span></div><div class="pool-bottom"><div class="pool-track"><div class="pool-fill" style="width:65%; background: var(--amber);"></div></div><span class="pool-nums mono">24 <span class="slash">/</span> <span class="fail">2</span></span></div></div></div>
+        <div class="pool"><div class="pool-bar" style="background: var(--accent);"></div><div class="pool-body"><div class="pool-top"><span class="pool-name">Search</span><span class="pool-badge none">0</span></div><div class="pool-bottom"><div class="pool-track"><div class="pool-fill" style="width:100%; background: var(--accent);"></div></div><span class="pool-nums mono">8</span></div></div></div>
+        <div class="pool"><div class="pool-bar" style="background: var(--green);"></div><div class="pool-body"><div class="pool-top"><span class="pool-name">Fetch</span><span class="pool-badge live" style="background: var(--green-soft); color: var(--green);">1</span></div><div class="pool-bottom"><div class="pool-track"><div class="pool-fill" style="width:80%; background: var(--green);"></div></div><span class="pool-nums mono">29 <span class="slash">/</span> <span class="fail">3</span></span></div></div></div>
+        <div class="pool"><div class="pool-bar" style="background: var(--cyan);"></div><div class="pool-body"><div class="pool-top"><span class="pool-name">Parse</span><span class="pool-badge none">0</span></div><div class="pool-bottom"><div class="pool-track"><div class="pool-fill" style="width:90%; background: var(--cyan);"></div></div><span class="pool-nums mono">26</span></div></div></div>
+        <div class="pool"><div class="pool-bar" style="background: var(--orange);"></div><div class="pool-body"><div class="pool-top"><span class="pool-name">Extraction</span><span class="pool-badge none">0</span></div><div class="pool-bottom"><div class="pool-track"><div class="pool-fill" style="width:50%; background: var(--orange);"></div></div><span class="pool-nums mono">18</span></div></div></div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="engine-block">
+        <div class="engine-title">Crawl Engine</div>
+        <div class="engine-grid">
+          <div><div class="eg-label">Avg OK</div><div class="eg-value mono">1.2s</div></div>
+          <div><div class="eg-label">Avg Fail</div><div class="eg-value bad mono">4.8s</div></div>
+          <div><div class="eg-label">200</div><div class="eg-value mono">26</div></div>
+          <div><div class="eg-label">403</div><div class="eg-value bad mono">3</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      <!-- STAGE BAND — tinted shelf with bordered tabs -->
+      <div class="stage-band">
+        <div class="stage-row tint-amber">
+          <span class="sg-label">Pre-Fetch</span>
+          <button class="sg-tab"><span class="tdot busy" style="background: var(--amber);"></span>NeedSet</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--amber);"></span>Brand Resolver</button>
+          <button class="sg-tab active-accent"><span class="tdot" style="background: var(--accent);"></span>Search Profile</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--amber);"></span>Search Planner</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--accent);"></span>Query Journey</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--accent);"></span>Search Results</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--amber);"></span>SERP Selector</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--accent);"></span>Domain Classifier</button>
+        </div>
+        <div class="stage-row tint-green">
+          <span class="sg-label">Fetch</span>
+          <button class="sg-tab"><span class="tdot" style="background: var(--green);"></span>Stealth</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--green);"></span>Cookie Consent</button>
+          <button class="sg-tab"><span class="tdot busy" style="background: var(--green);"></span>Overlay Dismissal</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--green);"></span>Auto-Scroll</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--green);"></span>DOM Expansion</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--green);"></span>CSS Override</button>
+          <span class="browser-pill">4 / 8 slots</span>
+        </div>
+        <div class="stage-row tint-purple">
+          <span class="sg-label">Extraction</span>
+          <button class="sg-tab"><span class="tdot" style="background: var(--purple);"></span>Screenshots</button>
+          <button class="sg-tab"><span class="tdot" style="background: var(--purple);"></span>Videos</button>
+        </div>
+      </div>
+      <!-- WORKER BAND — white, primary content feel -->
+      <div class="worker-band">
+        <div class="wk-row tint-amber">
+          <div class="wk-lane" style="border-left-color: var(--amber);"><span class="wk-lane-name">LLM</span><span class="wk-lane-num"><span class="act">3</span> / 5</span></div>
+          <div class="wk-chips">
+            <div class="wk-chip sel-amber"><span class="cd run" style="background: var(--amber);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">llm-1</span><span class="wk-chip-sub">extract batch</span></span><span class="wk-badge api">API</span><span class="wk-timer mono">12s</span></div>
+            <div class="wk-chip"><span class="cd run" style="background: var(--amber);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">llm-2</span><span class="wk-chip-sub">extract batch</span></span><span class="wk-badge api">API</span><span class="wk-timer mono">8s</span></div>
+            <div class="wk-chip"><span class="cd run" style="background: var(--amber);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">llm-3</span><span class="wk-chip-sub">brand resolver</span></span><span class="wk-badge lab">LAB</span><span class="wk-timer mono">3s</span></div>
+            <div class="wk-chip"><span class="cd" style="background: var(--green);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">llm-4</span></span><span class="wk-badge api">API</span></div>
+            <div class="wk-chip queued"><span class="cd" style="background: var(--text-3);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">llm-5</span></span></div>
+          </div>
+        </div>
+        <div class="wk-row tint-accent">
+          <div class="wk-lane" style="border-left-color: var(--accent);"><span class="wk-lane-name">Search</span><span class="wk-lane-num">0</span></div>
+          <div class="wk-chips"><span class="wk-waiting">Waiting&hellip;</span></div>
+        </div>
+        <div class="wk-row tint-green">
+          <div class="wk-lane" style="border-left-color: var(--green);"><span class="wk-lane-name">Fetch</span><span class="wk-lane-num"><span class="act">2</span> / 4</span></div>
+          <div class="wk-chips">
+            <div class="wk-chip"><span class="cd run" style="background: var(--green);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">fetch-a1</span><span class="wk-chip-sub">razer.com/viper-v3</span></span><span class="wk-timer mono">4s</span></div>
+            <div class="wk-chip"><span class="cd run" style="background: var(--green);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">fetch-b2</span><span class="wk-chip-sub">rtings.com/mouse</span></span><span class="wk-timer mono">7s</span></div>
+            <div class="wk-chip"><span class="cd" style="background: var(--green);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">fetch-c3</span><span class="wk-chip-sub">techpowerup.com</span></span></div>
+            <div class="wk-chip queued"><span class="cd" style="background: var(--text-3);"></span><span class="wk-chip-text"><span class="wk-chip-id mono">fetch-d4</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">Selected worker detail or stage panel</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

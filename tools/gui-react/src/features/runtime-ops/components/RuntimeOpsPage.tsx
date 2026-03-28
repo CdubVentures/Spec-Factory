@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { wsManager } from '../../../api/ws.ts';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import type { ProcessStatus } from '../../../types/events.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore.ts';
@@ -10,7 +9,7 @@ import { useIndexLabStore } from '../../indexing/state/indexlabStore.ts';
 import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery.ts';
 import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types.ts';
 import { resolveRunActiveScope } from '../selectors/runActivityScopeHelpers.js';
-import { BootProgressBar } from './BootProgressBar.tsx';
+import { StageStepperBar } from './StageStepperBar.tsx';
 import { MetricsRail } from '../panels/overview/MetricsRail.tsx';
 import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
 import { WorkersTab } from '../panels/workers/WorkersTab.tsx';
@@ -253,26 +252,6 @@ export function RuntimeOpsPage() {
     refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'overview', 2000, 10000),
   });
 
-  const runHeaderStatus = useMemo(() => {
-    if (runsLoading) {
-      return { text: 'Loading run history...', spinner: true, tone: 'muted' as const };
-    }
-    // WHY: Only show "Starting..." when process is genuinely transitioning —
-    // processStatus reports the run but isRunning hasn't flipped yet.
-    if (selectedRun?.status === 'starting' && processStatusRunId === effectiveRunId && !isRunning) {
-      return { text: 'Starting...', spinner: true, tone: 'muted' as const };
-    }
-    if (isSelectedRunActive) {
-      // WHY: During boot (phase_00_bootstrap) or before first poll,
-      // show spinner + progress bar. Prefetch tabs take over at needset.
-      if (!summary || summary.phase_cursor === 'phase_00_bootstrap') {
-        return { text: '', spinner: true, tone: 'muted' as const };
-      }
-      return { text: 'Live', spinner: false, tone: 'success' as const };
-    }
-    return null;
-  }, [runsLoading, selectedRun?.status, isSelectedRunActive, processStatusRunId, effectiveRunId, isRunning, summary?.phase_cursor]);
-
   useEffect(() => {
     if (!summary) return;
     setThroughputHistory((prev) => {
@@ -322,46 +301,29 @@ export function RuntimeOpsPage() {
 
   return (
     <div className="flex flex-col h-full -ml-4">
-      <div className="flex items-end gap-4 border-b sf-border-default sf-surface-shell px-4">
-        <div className="flex flex-col py-2">
-          <div className="flex min-h-5 items-center gap-2 pb-1">
-            {runHeaderStatus ? (
-              <>
-                {runHeaderStatus.spinner ? <Spinner className="h-3.5 w-3.5" /> : null}
-                {runHeaderStatus.text ? (
-                  <span className={`sf-text-caption ${
-                    runHeaderStatus.tone === 'success'
-                      ? 'sf-status-text-success'
-                      : 'sf-text-muted'
-                  }`}>
-                    {runHeaderStatus.text}
-                  </span>
-                ) : null}
-              </>
-            ) : null}
-            {isSelectedRunActive && (!summary || summary.phase_cursor === 'phase_00_bootstrap') && (
-              <BootProgressBar step={summary?.boot_step ?? 'config'} progress={summary?.boot_progress ?? 0} />
-            )}
-          </div>
-          <div className="flex min-w-0 items-center gap-2">
-            <label className="shrink-0 sf-text-caption sf-text-muted font-medium">Run:</label>
-            <div className="min-w-0">
-              <RuntimeOpsRunPicker
-                runs={runOptions}
-                value={effectiveRunId}
-                onChange={setSelectedRunId}
-                isLoading={runsLoading}
-                isRefreshing={runsFetching && !runsLoading}
-              />
-            </div>
-          </div>
+      <div className="flex items-center gap-2 border-b sf-border-default sf-surface-shell px-4 h-[40px]">
+        {effectiveRunId && (
+          <StageStepperBar
+            phaseCursor={summary?.phase_cursor ?? ''}
+            isRunning={isSelectedRunActive}
+            isCompleted={selectedRun?.status === 'completed'}
+          />
+        )}
+        <label className="shrink-0 sf-text-caption sf-text-muted font-medium">Run:</label>
+        <div className="min-w-0">
+          <RuntimeOpsRunPicker
+            runs={runOptions}
+            value={effectiveRunId}
+            onChange={setSelectedRunId}
+            isLoading={runsLoading}
+            isRefreshing={runsFetching && !runsLoading}
+          />
         </div>
-
         <TabStrip
           tabs={TAB_DEFS}
           activeTab={activeTab}
           onSelect={setActiveTab}
-          className="flex shrink-0 gap-1 px-1 py-1 sf-tab-strip rounded"
+          className="flex shrink-0 gap-0.5 px-0.5 sf-tab-strip rounded"
         />
       </div>
 

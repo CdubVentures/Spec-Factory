@@ -90,7 +90,7 @@ pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; fo
 │
 ├── _runtime/
 │   ├── <span class="r">events.jsonl</span>                   <span class="d">← KILLED (Wave 1, cross-run telemetry in SQL)</span>
-│   ├── <span class="y">metrics.jsonl</span>                  <span class="d">← NDJSON fallback only (SQL primary since Wave 4)</span>
+│   ├── <span class="r">metrics.jsonl</span>                  <span class="d">← KILLED (Wave B4, NDJSON fallback removed — SQL only)</span>
 │   └── traces/runs/{runId}/
 │       └── {productId}/phase.json    <span class="d">← phase completion traces</span>
 │
@@ -305,8 +305,8 @@ OUTPUT_ROOT/
 <tr style="border-bottom: 1px solid #f0efe8;">
   <td style="padding: 6px 8px;">Metrics</td>
   <td style="padding: 6px 8px; font-family: monospace;">metrics</td>
-  <td style="padding: 6px 8px; font-family: monospace;">metrics.jsonl (fallback)</td>
-  <td style="text-align:center; padding: 6px 8px;">Fallback only</td>
+  <td style="padding: 6px 8px; font-family: monospace; text-decoration: line-through; color: #a32d2d;">metrics.jsonl (killed Wave B4)</td>
+  <td style="text-align:center; padding: 6px 8px;">No (SQL only)</td>
 </tr>
 <tr style="border-bottom: 1px solid #f0efe8;">
   <td style="padding: 6px 8px;">Field values</td>

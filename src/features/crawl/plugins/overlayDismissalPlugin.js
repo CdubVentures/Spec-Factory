@@ -3,16 +3,14 @@
  * page capture: newsletter signups, chat widgets, paywall overlays, age gates,
  * exit-intent modals, "disable adblock" notices, and scroll-locked body states.
  *
- * 3-layer approach:
- *   Layer 1 (beforeNavigate): CSS suppression + MutationObserver guard via addInitScript
- *   Layer 2 (afterNavigate):  Heuristic DOM scan — close-click first, DOM removal fallback
- *   Layer 3 (afterNavigate):  Scroll-lock reset (body overflow:hidden → auto)
+ * 2-layer approach:
+ *   Layer 1 (onInit): CSS suppression + MutationObserver guard via addInitScript
+ *   Layer 2 (onDismiss): Single page.evaluate — scan, close-click, DOM removal,
+ *           scroll-lock reset, and observer telemetry in ONE in-browser call.
  *
  * Runs AFTER cookieConsent (no duplication) but BEFORE autoScroll/domExpansion.
  */
 
-// WHY: Selectors from Fanboy's Annoyance List + Crawl4AI overlay patterns.
-// These cover the most common non-cookie popup patterns across the web.
 // WHY: Selectors from Fanboy's Annoyance List + Crawl4AI overlay patterns +
 // real-world discoveries from live crawls (e.g. Shopify "Back In Stock" widget).
 const SUPPRESSION_CSS = `
@@ -48,24 +46,28 @@ function buildInitScript(mode) {
 
   // WHY: MutationObserver catches delayed popups (scroll-triggered newsletters,
   // timed modals, exit-intent overlays) that appear after initial page load.
-  // Exposes window.__sfOverlayGuard for telemetry queries from afterNavigate.
-  // WHY: addInitScript runs before page scripts but after document creation.
-  // The observer must handle both cases: body already exists OR body appears later.
-  // Using both DOMContentLoaded AND a fallback polling loop ensures attachment
-  // regardless of timing. Polling stops after 5 seconds to avoid infinite loops.
+  // Exposes window.__sfOverlayGuard for telemetry queries from onDismiss.
+  //
+  // CRITICAL: Init scripts must be lightweight. The old observer called
+  // getComputedStyle() + getBoundingClientRect() on EVERY added DOM node.
+  // On Shopify pages (hundreds of dynamic nodes during hydration), this
+  // triggered continuous layout reflows that locked the main thread for 30s+,
+  // causing page.content() to timeout ("page.content: Timeout 30000ms exceeded").
+  //
+  // Fix: check inline style strings only (zero reflow). Overlays where
+  // position/z-index are set via CSS classes are already handled by the
+  // SUPPRESSION_CSS rules. The onDismiss evaluate does the thorough
+  // getComputedStyle scan once when called.
   const observer = `
     window.__sfOverlayGuard = { caught: 0 };
     function _sfCheckOverlay(node) {
       try {
         if (node.nodeType !== 1) return;
-        var s = window.getComputedStyle(node);
-        var pos = s.position;
-        if (pos !== 'fixed' && pos !== 'absolute') return;
-        var z = parseInt(s.zIndex, 10);
-        if (isNaN(z) || z < 900) return;
-        var r = node.getBoundingClientRect();
-        var cov = (r.width * r.height) / (window.innerWidth * window.innerHeight);
-        if (cov < 0.3) return;
+        var s = node.getAttribute('style') || '';
+        if (s.indexOf('position') === -1) return;
+        if (s.indexOf('fixed') === -1 && s.indexOf('absolute') === -1) return;
+        var zMatch = s.match(/z-index\\s*:\\s*(\\d+)/);
+        if (!zMatch || parseInt(zMatch[1], 10) < 900) return;
         node.style.display = 'none';
         window.__sfOverlayGuard.caught++;
       } catch(e) {}
@@ -106,101 +108,6 @@ function buildInitScript(mode) {
   `;
 }
 
-/**
- * Heuristic DOM scan — finds overlay elements by CSS properties.
- * Returns array of { index, zIndex, coverage, removed, closeClicked }.
- */
-async function scanAndDismissOverlays(page, { zIndexThreshold, closeSelectors, aggressive }) {
-  try {
-    // Step 1: Detect overlays via page.evaluate
-    const detected = await page.evaluate((threshold) => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      if (vw === 0 || vh === 0) return [];
-
-      const results = [];
-      const all = document.querySelectorAll('*');
-      for (let i = 0; i < all.length; i++) {
-        const el = all[i];
-        const s = window.getComputedStyle(el);
-        const pos = s.position;
-        if (pos !== 'fixed' && pos !== 'absolute') continue;
-        const z = parseInt(s.zIndex, 10);
-        if (isNaN(z) || z < threshold) continue;
-        const rect = el.getBoundingClientRect();
-        const coverage = (rect.width * rect.height) / (vw * vh);
-        if (coverage < 0.3) continue;
-        // WHY: Mark element with data attribute so we can target it from Playwright
-        el.setAttribute('data-sf-overlay', String(i));
-        results.push({ index: i, zIndex: z, coverage, tagName: el.tagName });
-      }
-      return results;
-    }, zIndexThreshold);
-
-    if (!detected || detected.length === 0) return { overlaysDetected: 0, closeClicked: 0, domRemoved: 0 };
-
-    let closeClicked = 0;
-    let domRemoved = 0;
-
-    // Step 2: For each overlay, try close button, then DOM removal
-    for (const overlay of detected) {
-      if (aggressive) {
-        // Aggressive mode: skip close-click, go straight to removal
-        try {
-          await page.evaluate((idx) => {
-            const el = document.querySelector(`[data-sf-overlay="${idx}"]`);
-            if (el) el.remove();
-          }, overlay.index);
-          domRemoved++;
-        } catch { /* removal failure — non-fatal */ }
-        continue;
-      }
-
-      // Moderate mode: try close button first
-      let closed = false;
-      if (closeSelectors) {
-        const selectors = closeSelectors.split(',').map((s) => s.trim()).filter(Boolean);
-        for (const sel of selectors) {
-          try {
-            const containerSel = `[data-sf-overlay="${overlay.index}"]`;
-            const closeBtns = await page.locator(`${containerSel} ${sel}`).all();
-            for (const btn of closeBtns) {
-              // Safety: only click button-like elements
-              const attrs = await btn.evaluate((node) => ({
-                tagName: node.tagName,
-                href: node.getAttribute('href'),
-              }));
-              if (attrs.tagName === 'A' && attrs.href && !attrs.href.startsWith('#') && !attrs.href.startsWith('javascript:')) {
-                continue; // Skip navigation links
-              }
-              await btn.click({ timeout: 1500 });
-              closeClicked++;
-              closed = true;
-              break;
-            }
-          } catch { /* click failure — try next selector */ }
-          if (closed) break;
-        }
-      }
-
-      // Fallback: remove from DOM if no close button worked
-      if (!closed) {
-        try {
-          await page.evaluate((idx) => {
-            const el = document.querySelector(`[data-sf-overlay="${idx}"]`);
-            if (el) el.remove();
-          }, overlay.index);
-          domRemoved++;
-        } catch { /* removal failure — non-fatal */ }
-      }
-    }
-
-    return { overlaysDetected: detected.length, closeClicked, domRemoved };
-  } catch {
-    return { overlaysDetected: 0, closeClicked: 0, domRemoved: 0 };
-  }
-}
-
 export const overlayDismissalPlugin = {
   name: 'overlayDismissal',
   suites: ['init', 'dismiss'],
@@ -219,6 +126,13 @@ export const overlayDismissalPlugin = {
       return undefined;
     },
 
+    // WHY: Single page.evaluate replaces the old 3-evaluate + N-locator/click
+    // approach. The old code did: (1) evaluate to detect overlays, (2) per-overlay
+    // page.locator().all() + btn.click({ timeout: 1500 }) round-trips, (3) evaluate
+    // for scroll-lock reset, (4) evaluate for observer telemetry. On Shopify pages
+    // with thousands of DOM nodes, this consumed 3-10s of handler timeout budget.
+    // Now: one evaluate does all DOM work in-browser — scan, close-click, removal,
+    // scroll-lock, and observer read. Total: ~20-50ms.
     async onDismiss({ page, settings }) {
       const enabled = settings?.overlayDismissalEnabled !== false
         && settings?.overlayDismissalEnabled !== 'false';
@@ -232,50 +146,98 @@ export const overlayDismissalPlugin = {
 
       const mode = settings?.overlayDismissalMode || 'moderate';
       const closeSelectors = String(settings?.overlayDismissalCloseSelectors || '');
-      const settleMs = Number(settings?.overlayDismissalSettleMs ?? 800);
       const zIndexThreshold = mode === 'aggressive'
         ? Math.min(Number(settings?.overlayDismissalZIndexThreshold) || 999, 500)
         : (Number(settings?.overlayDismissalZIndexThreshold) || 999);
 
-      // Layer 2: Heuristic DOM scan + dismiss
-      const scan = await scanAndDismissOverlays(page, {
-        zIndexThreshold,
-        closeSelectors,
-        aggressive: mode === 'aggressive',
-      });
-
-      // Layer 3: Scroll-lock reset
-      let scrollLockReset = false;
+      let result;
       try {
-        scrollLockReset = await page.evaluate(() => {
-          const body = document.body;
-          const html = document.documentElement;
-          const bodyStyle = window.getComputedStyle(body);
-          const htmlStyle = window.getComputedStyle(html);
-          const locked = bodyStyle.overflow === 'hidden' || htmlStyle.overflow === 'hidden';
-          if (locked) {
-            body.style.overflow = 'auto';
-            html.style.overflow = 'auto';
+        result = await page.evaluate(({ threshold, closeSels, aggressive }) => {
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          const out = {
+            overlaysDetected: 0, closeClicked: 0, domRemoved: 0,
+            scrollLockReset: false, observerCaught: 0,
+          };
+
+          // --- Layer 2: Heuristic overlay scan + dismiss ---
+          if (vw > 0 && vh > 0) {
+            const all = document.querySelectorAll('*');
+            for (let i = 0; i < all.length; i++) {
+              const el = all[i];
+              const s = window.getComputedStyle(el);
+              const pos = s.position;
+              if (pos !== 'fixed' && pos !== 'absolute') continue;
+              const z = parseInt(s.zIndex, 10);
+              if (isNaN(z) || z < threshold) continue;
+              const rect = el.getBoundingClientRect();
+              const coverage = (rect.width * rect.height) / (vw * vh);
+              if (coverage < 0.3) continue;
+
+              out.overlaysDetected++;
+
+              if (aggressive) {
+                try { el.remove(); out.domRemoved++; } catch {}
+                continue;
+              }
+
+              // Moderate: try close button first, then DOM removal
+              let closed = false;
+              if (closeSels) {
+                const selectors = closeSels.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+                for (const sel of selectors) {
+                  try {
+                    const btn = el.querySelector(sel);
+                    if (!btn) continue;
+                    // Safety: skip navigation links
+                    const tag = btn.tagName.toUpperCase();
+                    const href = btn.getAttribute('href');
+                    if (tag === 'A' && href && !href.startsWith('#') && !href.startsWith('javascript:')) continue;
+                    btn.click();
+                    out.closeClicked++;
+                    closed = true;
+                    break;
+                  } catch {}
+                }
+              }
+              if (!closed) {
+                try { el.remove(); out.domRemoved++; } catch {}
+              }
+            }
           }
-          return locked;
-        });
-      } catch { scrollLockReset = false; }
 
-      // Observer telemetry
-      let observerCaught = 0;
-      try {
-        const guard = await page.evaluate(() => window.__sfOverlayGuard);
-        observerCaught = guard?.caught ?? 0;
-      } catch { observerCaught = 0; }
+          // --- Layer 3: Scroll-lock reset ---
+          try {
+            const body = document.body;
+            const html = document.documentElement;
+            const bodyOverflow = window.getComputedStyle(body).overflow;
+            const htmlOverflow = window.getComputedStyle(html).overflow;
+            if (bodyOverflow === 'hidden' || htmlOverflow === 'hidden') {
+              body.style.overflow = 'auto';
+              html.style.overflow = 'auto';
+              out.scrollLockReset = true;
+            }
+          } catch {}
+
+          // --- Observer telemetry ---
+          try {
+            out.observerCaught = (window.__sfOverlayGuard && window.__sfOverlayGuard.caught) || 0;
+          } catch {}
+
+          return out;
+        }, { threshold: zIndexThreshold, closeSels: closeSelectors, aggressive: mode === 'aggressive' });
+      } catch {
+        result = { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: false, observerCaught: 0 };
+      }
 
       return {
         enabled: true,
         cssInjected: true,
-        overlaysDetected: scan.overlaysDetected,
-        closeClicked: scan.closeClicked,
-        domRemoved: scan.domRemoved,
-        scrollLockReset,
-        observerCaught,
+        overlaysDetected: result.overlaysDetected,
+        closeClicked: result.closeClicked,
+        domRemoved: result.domRemoved,
+        scrollLockReset: result.scrollLockReset,
+        observerCaught: result.observerCaught,
         settleMs: 0,
       };
     },

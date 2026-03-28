@@ -29,8 +29,6 @@ export async function ensureRun(state, row = {}) {
 
   state.runId = runId;
   state.runDir = path.join(state.outRoot, state._previousRunIds?.[0] || runId);
-  state.runMetaPath = path.join(state.runDir, 'run.json');
-
   if (!isNewRound) {
     state.startedAt = toIso(row.ts || new Date().toISOString());
     await fs.mkdir(state.runDir, { recursive: true });

@@ -10,6 +10,7 @@ import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 const TierHierarchyPanel = lazy(() => import('../sections/TierHierarchyPanel.tsx'));
+const VideoSectionPanel = lazy(() => import('./VideoSectionPanel.tsx').then((m) => ({ default: m.VideoSectionPanel })));
 
 export interface CategoryPanelProps {
   categoryId: SettingsCategoryId;
@@ -204,6 +205,18 @@ export function CategoryPanel({
                 <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
                   <TierHierarchyPanel
                     runtimeDraft={runtimeDraft}
+                    onStringChange={onStringChange}
+                    disabled={disabled}
+                  />
+                </Suspense>
+              ) : activeSectionDef.customComponent === 'VideoRecording' ? (
+                <Suspense fallback={<p className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Loading...</p>}>
+                  <VideoSectionPanel
+                    categoryId={categoryId}
+                    sectionId={activeSection}
+                    runtimeDraft={runtimeDraft}
+                    onBoolChange={onBoolChange}
+                    onNumberChange={onNumberChange}
                     onStringChange={onStringChange}
                     disabled={disabled}
                   />

@@ -273,6 +273,7 @@ test('catalog routes: product detail resolves identity through specDb when catal
                 variant: 'Db Variant',
               }
             : null),
+          getProvenanceForProduct: () => ({}),
         }
       : null),
   }));

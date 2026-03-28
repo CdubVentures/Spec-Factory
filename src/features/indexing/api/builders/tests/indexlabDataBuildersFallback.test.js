@@ -83,3 +83,96 @@ test('readIndexLabRunNeedSet: falls back to empty payload when run exists withou
 
 // WHY: Wave 5.5 killed latest_base fallback path. Test retired.
 // SQL run_artifacts is the sole source for search_profile.
+
+// ---------------------------------------------------------------------------
+// SQL Tier 1: readIndexLabRunMeta returns SQL row when no run dir on disk
+// ---------------------------------------------------------------------------
+
+import { readIndexLabRunMeta, resolveIndexLabRunContext } from '../indexlabDataBuilders.js';
+
+test('readIndexLabRunMeta: returns SQL row when no run dir exists on disk', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-meta-sql-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab-empty');
+  const specDbDir = path.join(tempRoot, 'specdb');
+  await fs.mkdir(indexLabRoot, { recursive: true });
+  await fs.mkdir(path.join(specDbDir, 'mouse'), { recursive: true });
+
+  const sqlRow = {
+    run_id: 'run-sql-only',
+    category: 'mouse',
+    product_id: 'mouse-test',
+    status: 'completed',
+    started_at: '2026-03-01T00:00:00Z',
+    ended_at: '2026-03-01T00:05:00Z',
+    counters: { pages_checked: 20 },
+  };
+
+  const mockSpecDb = {
+    getRunByRunId: (id) => id === 'run-sql-only' ? sqlRow : null,
+    getRunsByCategory: () => [sqlRow],
+    getBridgeEventsByRunId: () => [],
+  };
+
+  try {
+    initIndexLabDataBuilders({
+      indexLabRoot,
+      outputRoot: path.join(tempRoot, 'out'),
+      storage: createStorageStub(),
+      config: { specDbDir },
+      getSpecDbReady: async (cat) => cat === 'mouse' ? mockSpecDb : null,
+      isProcessRunning: () => false,
+    });
+
+    const meta = await readIndexLabRunMeta('run-sql-only');
+    assert.ok(meta, 'should return SQL row, not null');
+    assert.equal(meta.run_id, 'run-sql-only');
+    assert.equal(meta.category, 'mouse');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('resolveIndexLabRunContext: returns context when runDir is empty but SQL meta exists', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'indexlab-ctx-sql-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab-empty');
+  const specDbDir = path.join(tempRoot, 'specdb');
+  await fs.mkdir(indexLabRoot, { recursive: true });
+  await fs.mkdir(path.join(specDbDir, 'mouse'), { recursive: true });
+
+  const sqlRow = {
+    run_id: 'run-ctx-sql',
+    category: 'mouse',
+    product_id: 'mouse-test',
+    status: 'completed',
+    started_at: '2026-03-01T00:00:00Z',
+    ended_at: '2026-03-01T00:05:00Z',
+    counters: { pages_checked: 20 },
+  };
+
+  const mockSpecDb = {
+    getRunByRunId: (id) => id === 'run-ctx-sql' ? sqlRow : null,
+    getRunsByCategory: () => [sqlRow],
+    getBridgeEventsByRunId: () => [
+      { event: 'fetch_started', ts: '2026-03-01T00:01:00Z', payload: { url: 'https://example.com' } },
+    ],
+  };
+
+  try {
+    initIndexLabDataBuilders({
+      indexLabRoot,
+      outputRoot: path.join(tempRoot, 'out'),
+      storage: createStorageStub(),
+      config: { specDbDir },
+      getSpecDbReady: async (cat) => cat === 'mouse' ? mockSpecDb : null,
+      isProcessRunning: () => false,
+    });
+
+    const ctx = await resolveIndexLabRunContext('run-ctx-sql');
+    assert.ok(ctx, 'should return context, not null — even with no run dir on disk');
+    assert.equal(ctx.category, 'mouse');
+    assert.equal(ctx.resolvedRunId, 'run-ctx-sql');
+    assert.equal(ctx.productId, 'mouse-test');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});

@@ -127,9 +127,11 @@ export function createGuiServerRuntime({
     const routeCtx = {
       infraRouteContext: createInfraRouteContext({
         jsonRes, readJsonBody, listDirs, canonicalSlugify, HELPER_ROOT, DIST_ROOT: resolvedDistRoot,
-        OUTPUT_ROOT, INDEXLAB_ROOT, fs, path, runDataStorageState, getSearxngStatus,
-        startSearxngStack, startProcess, stopProcess, processStatus, isProcessRunning,
-        waitForProcessExit, broadcastWs,
+        OUTPUT_ROOT, INDEXLAB_ROOT, fs, path, runDataStorageState,
+        getSerperApiKey: () => config.serperApiKey,
+        getSerperEnabled: () => config.serperEnabled,
+        getSearxngStatus, startSearxngStack, startProcess, stopProcess, processStatus,
+        isProcessRunning, waitForProcessExit, broadcastWs,
       }),
       dataAuthorityRouteContext: createDataAuthorityRouteContext({
         jsonRes, config, sessionCache, getSpecDb,

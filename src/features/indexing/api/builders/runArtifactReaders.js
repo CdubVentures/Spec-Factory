@@ -152,38 +152,51 @@ export function createRunArtifactReaders({
   getStorage,
   readOutputRootJson,
   getOutputRoot,
+  getSpecDbReady,
 }) {
 
   async function readIndexLabRunNeedSet(runId) {
     const token = String(runId || '').trim();
     if (!token) return null;
-    const runDir = await resolveRunDir(token);
-    if (!runDir) return null;
-
-    const directPath = path.join(runDir, 'needset.json');
-    const direct = await safeReadJson(directPath);
 
     const meta = await readMeta(token);
-    if (!meta || typeof meta !== 'object') {
-      return null;
-    }
+    if (!meta || typeof meta !== 'object') return null;
     const category = String(meta?.category || '').trim();
+
+    // SQL Tier 1: run_artifacts
+    if (typeof getSpecDbReady === 'function' && category) {
+      try {
+        const specDb = await getSpecDbReady(category);
+        if (specDb) {
+          const row = specDb.getRunArtifact(token, 'needset');
+          if (row?.payload && typeof row.payload === 'object') return row.payload;
+        }
+      } catch { /* fall through to file probes */ }
+    }
+
+    const runDir = await resolveRunDir(token);
     const eventRows = await readEvents(token, 3000, { category });
     const resolvedRunId = String(meta?.run_id || token).trim();
     const productId = resolveProductId(meta, eventRows);
-    const storage = getStorage();
-    if (category && resolvedRunId && productId && storage && typeof storage.resolveOutputKey === 'function') {
-      const runNeedSetKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'needset.json');
-      const outputRoot = getOutputRoot();
-      const runNeedSetPath = path.join(outputRoot, ...String(runNeedSetKey || '').split('/'));
-      const fromRunArtifact = await safeReadJson(runNeedSetPath);
-      if (fromRunArtifact && typeof fromRunArtifact === 'object') {
-        return fromRunArtifact;
-      }
-    }
 
-    if (direct && typeof direct === 'object') {
-      return direct;
+    if (runDir) {
+      const directPath = path.join(runDir, 'needset.json');
+      const direct = await safeReadJson(directPath);
+
+      const storage = getStorage();
+      if (category && resolvedRunId && productId && storage && typeof storage.resolveOutputKey === 'function') {
+        const runNeedSetKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'needset.json');
+        const outputRoot = getOutputRoot();
+        const runNeedSetPath = path.join(outputRoot, ...String(runNeedSetKey || '').split('/'));
+        const fromRunArtifact = await safeReadJson(runNeedSetPath);
+        if (fromRunArtifact && typeof fromRunArtifact === 'object') {
+          return fromRunArtifact;
+        }
+      }
+
+      if (direct && typeof direct === 'object') {
+        return direct;
+      }
     }
 
     return buildNeedSetFromEvents(meta, eventRows);
@@ -192,85 +205,73 @@ export function createRunArtifactReaders({
   async function readIndexLabRunSearchProfile(runId) {
     const token = String(runId || '').trim();
     if (!token) return null;
-    const runDir = await resolveRunDir(token);
-    if (!runDir) return null;
 
     const meta = await readMeta(token);
-    if (!meta || typeof meta !== 'object') {
-      return null;
-    }
+    if (!meta || typeof meta !== 'object') return null;
     const category = String(meta?.category || '').trim();
+
+    // SQL Tier 1: run_artifacts
+    if (typeof getSpecDbReady === 'function' && category) {
+      try {
+        const specDb = await getSpecDbReady(category);
+        if (specDb) {
+          const row = specDb.getRunArtifact(token, 'search_profile');
+          if (row?.payload && typeof row.payload === 'object') return row.payload;
+        }
+      } catch { /* fall through to file probes */ }
+    }
+
+    const runDir = await resolveRunDir(token);
     const eventRows = await readEvents(token, 3000, { category });
     const resolvedRunId = String(meta?.run_id || token).trim();
     const productId = resolveProductId(meta, eventRows);
     const normalizedRunBase = resolveMetaPath(meta, 'run_base', 'runBase')
       .replace(/\\/g, '/')
       .replace(/^\/+|\/+$/g, '');
-    const normalizedLatestBase = resolveMetaPath(meta, 'latest_base', 'latestBase')
-      .replace(/\\/g, '/')
-      .replace(/^\/+|\/+$/g, '');
 
-    const storage = getStorage();
-    if (productId && storage && typeof storage.resolveOutputKey === 'function' && typeof storage.readJsonOrNull === 'function') {
-      const runProfileKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'search_profile.json');
-      const runProfile = await storage.readJsonOrNull(runProfileKey);
-      if (runProfile && typeof runProfile === 'object') {
-        return runProfile;
+    if (runDir) {
+      const storage = getStorage();
+      if (productId && storage && typeof storage.resolveOutputKey === 'function' && typeof storage.readJsonOrNull === 'function') {
+        const runProfileKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'search_profile.json');
+        const runProfile = await storage.readJsonOrNull(runProfileKey);
+        if (runProfile && typeof runProfile === 'object') return runProfile;
+
+        const runProfileFromOutputRoot = await readOutputRootJson(runProfileKey);
+        if (runProfileFromOutputRoot && typeof runProfileFromOutputRoot === 'object') return runProfileFromOutputRoot;
       }
 
-      const runProfileFromOutputRoot = await readOutputRootJson(runProfileKey);
-      if (runProfileFromOutputRoot && typeof runProfileFromOutputRoot === 'object') {
-        return runProfileFromOutputRoot;
-      }
-    }
-
-    if (normalizedRunBase) {
-      const runBaseProfile = await readOutputRootJson(`${normalizedRunBase}/analysis/search_profile.json`);
-      if (runBaseProfile && typeof runBaseProfile === 'object') {
-        return runBaseProfile;
-      }
-    }
-
-    if (category && resolvedRunId && storage && typeof storage.resolveInputKey === 'function' && typeof storage.readJsonOrNull === 'function') {
-      const discoveryProfileKey = storage.resolveInputKey('_discovery', category, `${resolvedRunId}.search_profile.json`);
-      const fromDiscoveryProfile = await storage.readJsonOrNull(discoveryProfileKey);
-      if (fromDiscoveryProfile && typeof fromDiscoveryProfile === 'object') {
-        return fromDiscoveryProfile;
+      if (normalizedRunBase) {
+        const runBaseProfile = await readOutputRootJson(`${normalizedRunBase}/analysis/search_profile.json`);
+        if (runBaseProfile && typeof runBaseProfile === 'object') return runBaseProfile;
       }
 
-      const fromDiscoveryProfileFromOutputRoot = await readOutputRootJson(discoveryProfileKey);
-      if (fromDiscoveryProfileFromOutputRoot && typeof fromDiscoveryProfileFromOutputRoot === 'object') {
-        return fromDiscoveryProfileFromOutputRoot;
+      if (category && resolvedRunId && storage && typeof storage.resolveInputKey === 'function' && typeof storage.readJsonOrNull === 'function') {
+        const discoveryProfileKey = storage.resolveInputKey('_discovery', category, `${resolvedRunId}.search_profile.json`);
+        const fromDiscoveryProfile = await storage.readJsonOrNull(discoveryProfileKey);
+        if (fromDiscoveryProfile && typeof fromDiscoveryProfile === 'object') return fromDiscoveryProfile;
+
+        const fromDiscoveryProfileFromOutputRoot = await readOutputRootJson(discoveryProfileKey);
+        if (fromDiscoveryProfileFromOutputRoot && typeof fromDiscoveryProfileFromOutputRoot === 'object') return fromDiscoveryProfileFromOutputRoot;
+
+        const discoveryLegacyKey = storage.resolveInputKey('_discovery', category, `${resolvedRunId}.json`);
+        const fromDiscovery = await storage.readJsonOrNull(discoveryLegacyKey);
+        if (fromDiscovery?.search_profile && typeof fromDiscovery.search_profile === 'object') return fromDiscovery.search_profile;
+
+        const fromDiscoveryFromOutputRoot = await readOutputRootJson(discoveryLegacyKey);
+        if (fromDiscoveryFromOutputRoot?.search_profile && typeof fromDiscoveryFromOutputRoot.search_profile === 'object') return fromDiscoveryFromOutputRoot.search_profile;
       }
 
-      const discoveryLegacyKey = storage.resolveInputKey('_discovery', category, `${resolvedRunId}.json`);
-      const fromDiscovery = await storage.readJsonOrNull(discoveryLegacyKey);
-      if (fromDiscovery?.search_profile && typeof fromDiscovery.search_profile === 'object') {
-        return fromDiscovery.search_profile;
-      }
+      const localDiscoveryProfilePath = path.join(runDir, '_discovery', `${resolvedRunId}.search_profile.json`);
+      const localDiscoveryProfile = await safeReadJson(localDiscoveryProfilePath);
+      if (localDiscoveryProfile && typeof localDiscoveryProfile === 'object') return localDiscoveryProfile;
 
-      const fromDiscoveryFromOutputRoot = await readOutputRootJson(discoveryLegacyKey);
-      if (fromDiscoveryFromOutputRoot?.search_profile && typeof fromDiscoveryFromOutputRoot.search_profile === 'object') {
-        return fromDiscoveryFromOutputRoot.search_profile;
-      }
-    }
+      const localDiscoveryLegacyPath = path.join(runDir, '_discovery', `${resolvedRunId}.json`);
+      const localDiscoveryLegacy = await safeReadJson(localDiscoveryLegacyPath);
+      if (localDiscoveryLegacy?.search_profile && typeof localDiscoveryLegacy.search_profile === 'object') return localDiscoveryLegacy.search_profile;
 
-    const localDiscoveryProfilePath = path.join(runDir, '_discovery', `${resolvedRunId}.search_profile.json`);
-    const localDiscoveryProfile = await safeReadJson(localDiscoveryProfilePath);
-    if (localDiscoveryProfile && typeof localDiscoveryProfile === 'object') {
-      return localDiscoveryProfile;
-    }
-
-    const localDiscoveryLegacyPath = path.join(runDir, '_discovery', `${resolvedRunId}.json`);
-    const localDiscoveryLegacy = await safeReadJson(localDiscoveryLegacyPath);
-    if (localDiscoveryLegacy?.search_profile && typeof localDiscoveryLegacy.search_profile === 'object') {
-      return localDiscoveryLegacy.search_profile;
-    }
-
-    const directPath = path.join(runDir, 'search_profile.json');
-    const direct = await safeReadJson(directPath);
-    if (direct && typeof direct === 'object') {
-      return direct;
+      const directPath = path.join(runDir, 'search_profile.json');
+      const direct = await safeReadJson(directPath);
+      if (direct && typeof direct === 'object') return direct;
     }
 
     return buildSearchProfileFromEvents(meta, eventRows);

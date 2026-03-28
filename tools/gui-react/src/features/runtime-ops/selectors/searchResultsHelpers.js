@@ -268,14 +268,16 @@ const HARD_DROP_LABELS = {
 export function resolveDecisionDisplay(result, { isDuplicate = false, isCrawled = false, isVideo = false } = {}) {
   const d = result.decision || '';
   const r = result.rationale || result.reason || '';
+  // Pipeline decisions (highest priority)
   if (d === 'hard_drop') return { label: HARD_DROP_LABELS[r] || 'Hard Drop', chipClass: 'sf-chip-warning' };
   if (d === 'keep') return { label: 'Keep', chipClass: 'sf-chip-success' };
   if (d === 'drop') return { label: 'LLM Drop', chipClass: 'sf-chip-danger' };
   if (d === 'maybe') return { label: 'Maybe', chipClass: 'sf-chip-info' };
-  if (d === 'unknown') return { label: 'Unknown', chipClass: 'sf-chip-neutral' };
+  // WHY: Flags before 'unknown' — derived state gives more context than a bare "Unknown".
   if (isVideo) return { label: 'Video', chipClass: 'sf-chip-danger' };
   if (isDuplicate) return { label: 'Dup', chipClass: 'sf-chip-danger' };
   if (isCrawled) return { label: 'Crawled', chipClass: 'sf-chip-purple' };
+  if (d === 'unknown') return { label: 'Unknown', chipClass: 'sf-chip-neutral' };
   return { label: 'Pass', chipClass: 'sf-chip-success' };
 }
 

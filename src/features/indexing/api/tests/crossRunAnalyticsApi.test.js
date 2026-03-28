@@ -21,6 +21,13 @@ function toFloat(v, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const mockSpecDb = {
+  getQueryIndexByCategory: () => [],
+  getUrlIndexByCategory: () => [],
+  getPromptIndexByCategory: () => [],
+  getKnobSnapshots: () => [],
+};
+
 function createMockCtx(overrides = {}) {
   return {
     jsonRes,
@@ -31,6 +38,7 @@ function createMockCtx(overrides = {}) {
     path,
     INDEXLAB_ROOT: '/tmp/indexlab',
     processStatus: () => ({ running: false }),
+    getSpecDb: () => mockSpecDb,
     readIndexLabRunMeta: async () => null,
     resolveIndexLabRunDirectory: async () => '',
     readIndexLabRunEvents: async () => [],
@@ -52,11 +60,6 @@ function createMockCtx(overrides = {}) {
     buildSearchHints: () => [],
     buildAnchorsSuggestions: () => [],
     buildKnownValuesSuggestions: () => [],
-    queryIndexSummary: () => ({ total: 0 }),
-    urlIndexSummary: () => ({ total: 0 }),
-    highYieldUrls: () => [],
-    promptIndexSummary: () => ({ total: 0 }),
-    readKnobSnapshots: () => [],
     evaluateAllSections: () => ({}),
     buildEvidenceReport: () => ({}),
     buildEffectiveSettingsSnapshot: () => ({}),

@@ -25,8 +25,8 @@ interface StageGroupTabRowProps {
 
 export function StageGroupTabRow({ groupLabel, registry, activeTab, onSelectTab, busyTabs, disabledTabs, rightContent }: StageGroupTabRowProps) {
   return (
-    <div className="flex items-center gap-1 px-3 py-2 border-b sf-border-default overflow-x-auto sf-surface-shell">
-      <span className="sf-text-caption font-semibold uppercase tracking-wider sf-text-subtle mr-1 shrink-0">
+    <div className="flex items-center gap-1.5 px-4 border-b sf-border-soft overflow-x-auto h-[46px]">
+      <span className="text-[9px] font-bold uppercase tracking-[0.06em] sf-text-subtle mr-1 shrink-0 min-w-[72px]">
         {groupLabel}
       </span>
       {registry.map((t) => {
@@ -47,7 +47,7 @@ export function StageGroupTabRow({ groupLabel, registry, activeTab, onSelectTab,
                   tabKey: t.key,
                   disabledTabs,
                 }))}
-                className={`sf-prefetch-tab-button flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs whitespace-nowrap border transition-colors ${
+                className={`sf-prefetch-tab-button flex items-center gap-1.5 h-[34px] px-2.5 rounded-lg text-xs whitespace-nowrap border transition-colors ${
                   isSelected
                     ? isDisabled
                       ? 'sf-prefetch-tab-selected-disabled'

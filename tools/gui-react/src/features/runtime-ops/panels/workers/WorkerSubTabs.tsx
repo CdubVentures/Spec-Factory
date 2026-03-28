@@ -188,14 +188,14 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker }: Wor
       {grouped.map((group, i) => (
         <div
           key={group.pool}
-          className={`flex items-stretch border-l-[3px] ${group.meta.laneClass} ${group.meta.tintClass} ${i > 0 ? 'border-t sf-border-default' : ''}`}
+          className={`flex items-stretch border-l-[3px] ${group.meta.laneClass} ${group.meta.tintClass} ${i > 0 ? 'border-t sf-border-soft' : ''} h-[46px]`}
         >
           {/* ── Lane sidebar ── */}
-          <div className="flex items-center gap-2.5 pl-3 pr-4 py-2 shrink-0">
-            <span className={`sf-text-caption font-bold uppercase tracking-widest ${group.meta.labelClass} select-none`}>
+          <div className="flex items-center gap-2 pl-3 pr-4 shrink-0 min-w-[96px]">
+            <span className={`text-[10px] font-bold uppercase tracking-[0.05em] ${group.meta.labelClass} select-none`}>
               {group.meta.shortLabel}
             </span>
-            <span className="sf-text-nano font-mono tabular-nums sf-text-muted leading-none">
+            <span className="text-[9px] font-mono tabular-nums sf-text-muted leading-none">
               {group.runningCount > 0
                 ? <><span className="sf-text-success font-semibold">{group.runningCount}</span><span className="opacity-40"> / </span>{group.workers.length}</>
                 : group.workers.length}
@@ -203,9 +203,9 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker }: Wor
           </div>
 
           {/* ── Worker buttons ── */}
-          <div className="flex items-center gap-1.5 overflow-x-auto flex-1 py-2 pr-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto flex-1 pr-4">
             {group.workers.length === 0 && (
-              <span className="sf-text-nano sf-text-muted italic px-1">Waiting…</span>
+              <span className="text-[11px] sf-text-muted italic">Waiting…</span>
             )}
             {group.workers.map((w) => {
               const isSelected = w.worker_id === selectedWorkerId;
@@ -219,17 +219,17 @@ export function WorkerSubTabs({ workers, selectedWorkerId, onSelectWorker }: Wor
                   type="button"
                   onClick={isQueued ? undefined : () => onSelectWorker(w.worker_id)}
                   disabled={isQueued}
-                  className={`sf-prefetch-tab-button flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap border transition-all ${
+                  className={`sf-prefetch-tab-button flex items-center gap-2 h-[34px] px-2.5 rounded-lg text-xs whitespace-nowrap border transition-all ${
                     isQueued
-                      ? 'opacity-60 cursor-default'
+                      ? 'opacity-30 cursor-default'
                       : isSelected
                         ? `sf-prefetch-tab-selected ${poolSelectedTabClass(w.pool)} shadow-sm`
                         : `${poolOutlineTabClass(w.pool)} hover:shadow-sm`
                   }`}
                   title={`${w.worker_id} — ${w.state}${w.pool === 'llm' && w.call_type ? ` — ${w.call_type}` : ''}${w.pool === 'search' && w.current_query ? ` — ${w.current_query}` : ''}`}
                 >
-                  <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${poolDotClass(w.pool)} ${stateAnimClass(w.state)}`} />
-                  <span className="flex flex-col items-start leading-tight">
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${poolDotClass(w.pool)} ${stateAnimClass(w.state)}`} />
+                  <span className="flex flex-col items-start justify-center leading-tight">
                     <span className="font-mono font-medium sf-text-primary">
                       {buildWorkerButtonLabel(w)}
                     </span>

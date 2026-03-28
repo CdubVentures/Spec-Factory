@@ -102,20 +102,33 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     setPreviewSrc(config.assetUrl(runId, entry, filename));
   }, [runId, config]);
 
+  // WHY: locationPrefix already carries the correct disk folder name (e.g. 'screenshots/').
+  // pluginKey is singular ('screenshot') which doesn't match the disk folder.
+  const folderName = config.locationPrefix.replace(/\/$/, '');
+
   const openFolder = useCallback(() => {
     if (!runId) return;
-    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${config.pluginKey}`)
+    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${folderName}`)
       .catch(() => {});
-  }, [runId, config.pluginKey]);
+  }, [runId, folderName]);
+
+  useEffect(() => {
+    if (!previewSrc) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewSrc(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewSrc]);
 
   const hasRecords = records.length > 0;
   useEffect(() => {
     if (!runId || !hasRecords) return;
-    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/resolve-folder/${config.pluginKey}`)
+    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/resolve-folder/${folderName}`)
       .then((r) => r.json() as Promise<{ path: string | null }>)
       .then((body) => { if (body.path) setResolvedPath(body.path); })
       .catch(() => {});
-  }, [runId, config.pluginKey, hasRecords]);
+  }, [runId, folderName, hasRecords]);
 
   if (!data.entries.length) {
     return (
@@ -149,20 +162,6 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
           {config.extraHeroStats?.(records)}
         </HeroStatGrid>
         {config.extraHeroBand?.(records)}
-        {resolvedPath && (
-          <div className="flex items-center gap-2 mt-1">
-            <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Storage</span>
-            <Chip label="LOCAL" className="sf-chip-neutral" />
-            <button
-              type="button"
-              onClick={openFolder}
-              title={resolvedPath}
-              className="font-mono text-[11px] sf-text-subtle hover:sf-text-primary hover:underline cursor-pointer truncate max-w-[600px]"
-            >
-              {resolvedPath}
-            </button>
-          </div>
-        )}
       </HeroBand>
 
       <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">

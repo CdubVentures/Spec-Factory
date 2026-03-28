@@ -297,11 +297,13 @@ async function persistDriftReport(storage, category, report = {}) {
   await writeJsonDual(storage, [category, 'reports', `drift_${dateKey}.json`], report);
 }
 
-async function readLatestArtifacts(storage, category, productId) {
+async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   const [normalized, provenance, summary] = await Promise.all([
     storage.readJsonOrNull(`${latestBase}/normalized.json`),
-    storage.readJsonOrNull(`${latestBase}/provenance.json`),
+    specDb
+      ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
+      : storage.readJsonOrNull(`${latestBase}/provenance.json`),
     storage.readJsonOrNull(`${latestBase}/summary.json`)
   ]);
   return {
@@ -444,7 +446,8 @@ export async function reconcileDriftedProduct({
   category,
   productId,
   autoRepublish = true,
-  publishFn = publishProducts
+  publishFn = publishProducts,
+  specDb = null,
 }) {
   const normalizedCategory = normalizeCategory(category || '');
   const normalizedProductId = String(productId || '').trim();
@@ -463,7 +466,7 @@ export async function reconcileDriftedProduct({
     };
   }
 
-  const latest = await readLatestArtifacts(storage, normalizedCategory, normalizedProductId);
+  const latest = await readLatestArtifacts(storage, normalizedCategory, normalizedProductId, specDb);
   const latestFields = latest.normalized?.fields || {};
   if (!latest.normalized || typeof latestFields !== 'object') {
     return {

@@ -45,18 +45,28 @@ function buildHostToFetchWorkers(events, eventType, payloadOf) {
   return hostToFetchWorkers;
 }
 
-function enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFetchWorkers) {
+// WHY: Contract mirror of the enrichment logic in runtimeOpsWorkerDetailBuilders.js.
+// Three enrichment sources feed into the decision:
+//   1. search_results_collected — initial decision from search provider (preserved if non-empty)
+//   2. serp_selector_completed — triage decision (always wins when matched)
+//   3. domains_classified — blocked/unsafe → hard_drop fallback when still unknown
+function enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFetchWorkers, domainSafetyByHost = {}) {
   const triage = triageByUrl[result.url];
   if (triage) {
     result.decision = triage.decision;
     result.score = triage.score;
     result.rationale = triage.rationale;
     result.score_components = triage.score_components;
-  } else {
-    result.decision = 'unknown';
-    result.score = 0;
-    result.rationale = '';
-    result.score_components = null;
+  }
+  // No triage match — keep the initial decision from search_results_collected
+  // (may be 'unknown' if the event carried no decision)
+
+  // Domain classifier fallback: blocked/unsafe → hard_drop when still unknown
+  const host = result.domain?.replace(/^www\./, '') || '';
+  const safety = (domainSafetyByHost[host] || '').toLowerCase();
+  if (result.decision === 'unknown' && (safety === 'blocked' || safety === 'unsafe')) {
+    result.decision = 'hard_drop';
+    result.rationale = 'denied_host';
   }
 
   // Exact URL match first
@@ -68,7 +78,6 @@ function enrichResultWithTriage(result, triageByUrl, urlToFetchWorker, hostToFet
   }
 
   // Host-level fallback
-  const host = result.domain?.replace(/^www\./, '') || '';
   const hostWorkers = hostToFetchWorkers[host];
   if (hostWorkers && hostWorkers.length > 0) {
     result.fetch_worker_id = hostWorkers[0].worker_id;
@@ -99,6 +108,10 @@ function makeSearchResultRow(overrides = {}) {
     domain: 'example.com',
     fetch_worker_id: null,
     fetched: false,
+    decision: 'unknown',
+    score: 0,
+    rationale: '',
+    score_components: null,
     ...overrides,
   };
 }
@@ -267,5 +280,87 @@ describe('Search worker triage enrichment', () => {
     assert.equal(hostMap['razer.com'].length, 2);
     assert.equal(hostMap['rtings.com'].length, 1);
     assert.equal(hostMap['ignored.com'], undefined, 'scope=batch is ignored');
+  });
+
+  it('9. Initial decision from search_results_collected preserved when no serp_selector match', () => {
+    const result = makeSearchResultRow({
+      url: 'https://razer.com/viper',
+      domain: 'razer.com',
+      decision: 'keep',
+    });
+    enrichResultWithTriage(result, {}, {}, {});
+    assert.equal(result.decision, 'keep', 'Initial decision from search phase preserved');
+  });
+
+  it('10. Serp selector decision overrides initial decision from search phase', () => {
+    const result = makeSearchResultRow({
+      url: 'https://razer.com/viper',
+      domain: 'razer.com',
+      decision: 'maybe',
+    });
+    const triageByUrl = {
+      'https://razer.com/viper': { decision: 'drop', score: 1, rationale: 'irrelevant', score_components: null },
+    };
+    enrichResultWithTriage(result, triageByUrl, {}, {});
+    assert.equal(result.decision, 'drop', 'Serp selector always wins');
+  });
+
+  it('11. Domain classifier blocked → hard_drop when decision is still unknown', () => {
+    const result = makeSearchResultRow({
+      url: 'https://example.com/page',
+      domain: 'example.com',
+      decision: 'unknown',
+    });
+    const domainSafetyByHost = { 'example.com': 'blocked' };
+    enrichResultWithTriage(result, {}, {}, {}, domainSafetyByHost);
+    assert.equal(result.decision, 'hard_drop');
+    assert.equal(result.rationale, 'denied_host');
+  });
+
+  it('12. Domain classifier unsafe → hard_drop when decision is still unknown', () => {
+    const result = makeSearchResultRow({
+      url: 'https://sketchy.net/page',
+      domain: 'sketchy.net',
+      decision: 'unknown',
+    });
+    const domainSafetyByHost = { 'sketchy.net': 'unsafe' };
+    enrichResultWithTriage(result, {}, {}, {}, domainSafetyByHost);
+    assert.equal(result.decision, 'hard_drop');
+    assert.equal(result.rationale, 'denied_host');
+  });
+
+  it('13. Domain classifier does NOT override serp_selector decision', () => {
+    const result = makeSearchResultRow({
+      url: 'https://example.com/page',
+      domain: 'example.com',
+    });
+    const triageByUrl = {
+      'https://example.com/page': { decision: 'keep', score: 8, rationale: 'good', score_components: null },
+    };
+    const domainSafetyByHost = { 'example.com': 'blocked' };
+    enrichResultWithTriage(result, triageByUrl, {}, {}, domainSafetyByHost);
+    assert.equal(result.decision, 'keep', 'Serp selector wins over domain classifier');
+  });
+
+  it('14. Domain classifier caution does NOT derive hard_drop', () => {
+    const result = makeSearchResultRow({
+      url: 'https://caution.com/page',
+      domain: 'caution.com',
+      decision: 'unknown',
+    });
+    const domainSafetyByHost = { 'caution.com': 'caution' };
+    enrichResultWithTriage(result, {}, {}, {}, domainSafetyByHost);
+    assert.equal(result.decision, 'unknown', 'Caution does not escalate to hard_drop');
+  });
+
+  it('15. Domain classifier does NOT override initial keep from search phase', () => {
+    const result = makeSearchResultRow({
+      url: 'https://example.com/page',
+      domain: 'example.com',
+      decision: 'keep',
+    });
+    const domainSafetyByHost = { 'example.com': 'blocked' };
+    enrichResultWithTriage(result, {}, {}, {}, domainSafetyByHost);
+    assert.equal(result.decision, 'keep', 'Initial decision from search phase wins over domain classifier');
   });
 });

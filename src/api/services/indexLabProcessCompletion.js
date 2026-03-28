@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 function parseCliArg(cliArgs, argName) {
@@ -9,145 +7,10 @@ function parseCliArg(cliArgs, argName) {
   return String(cliArgs[index + 1]).trim();
 }
 
-async function safeReadJson(filePath) {
-  try {
-    const text = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-async function safeReadJsonLines(filePath) {
-  try {
-    const text = await fs.readFile(filePath, 'utf8');
-    return String(text || '')
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => JSON.parse(line));
-  } catch {
-    return [];
-  }
-}
 
 function isIndexLabCommand(cliArgs) {
   if (!Array.isArray(cliArgs) || cliArgs.length === 0) return false;
   return String(cliArgs[0] || '').trim() === 'indexlab';
-}
-
-function scoreRunMeta(row = {}, { category = '', productId = '', startedAt = '' } = {}) {
-  let score = 0;
-  if (category && String(row.category || '').trim() === category) score += 3;
-  if (productId && String(row.product_id || row.productId || '').trim() === productId) score += 5;
-
-  const startedTargetMs = Date.parse(String(startedAt || ''));
-  const startedRowMs = Date.parse(String(row.started_at || ''));
-  if (Number.isFinite(startedTargetMs) && Number.isFinite(startedRowMs)) {
-    const diffMs = Math.abs(startedTargetMs - startedRowMs);
-    if (diffMs <= 30_000) score += 5;
-    else if (diffMs <= 5 * 60_000) score += 3;
-    else if (diffMs <= 30 * 60_000) score += 1;
-  }
-
-  const endedRowMs = Date.parse(String(row.ended_at || ''));
-  if (Number.isFinite(endedRowMs)) score += 1;
-  return score;
-}
-
-async function resolveCompletedRunMeta({
-  indexLabRoot,
-  cliArgs,
-  startedAt,
-  getSpecDb,
-} = {}) {
-  const requestedRunId = parseCliArg(cliArgs, '--run-id');
-  const category = parseCliArg(cliArgs, '--category');
-  const productId = parseCliArg(cliArgs, '--product-id');
-
-  // SQL-first path (Wave 5.5+)
-  if (typeof getSpecDb === 'function' && category) {
-    try {
-      const specDb = getSpecDb(category);
-      if (specDb) {
-        if (requestedRunId) {
-          const row = specDb.getRunByRunId(requestedRunId);
-          if (row) return row;
-        }
-        const runs = specDb.getRunsByCategory(category, 50);
-        if (runs && runs.length > 0) {
-          const sorted = [...runs].sort((a, b) => {
-            const scoreA = scoreRunMeta(a, { category, productId, startedAt });
-            const scoreB = scoreRunMeta(b, { category, productId, startedAt });
-            if (scoreA !== scoreB) return scoreB - scoreA;
-            return String(b.run_id || '').localeCompare(String(a.run_id || ''));
-          });
-          return sorted[0] || null;
-        }
-      }
-    } catch { /* fall through to filesystem */ }
-  }
-
-  // Filesystem fallback (pre-migration runs)
-  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
-  if (requestedRunId) {
-    const directMeta = await safeReadJson(path.join(rootDir, requestedRunId, 'run.json'));
-    if (directMeta && typeof directMeta === 'object') {
-      return directMeta;
-    }
-  }
-
-  let entries = [];
-  try {
-    entries = await fs.readdir(rootDir, { withFileTypes: true });
-  } catch {
-    return null;
-  }
-
-  const rows = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const runMetaPath = path.join(rootDir, entry.name, 'run.json');
-    try {
-      const text = await fs.readFile(runMetaPath, 'utf8');
-      const parsed = JSON.parse(text);
-      if (!parsed || typeof parsed !== 'object') continue;
-      rows.push(parsed);
-    } catch {
-      continue;
-    }
-  }
-
-  if (rows.length === 0) return null;
-
-  const sorted = rows.sort((a, b) => {
-    const scoreA = scoreRunMeta(a, { category, productId, startedAt });
-    const scoreB = scoreRunMeta(b, { category, productId, startedAt });
-    if (scoreA !== scoreB) return scoreB - scoreA;
-    const endedA = Date.parse(String(a.ended_at || ''));
-    const endedB = Date.parse(String(b.ended_at || ''));
-    if (Number.isFinite(endedA) || Number.isFinite(endedB)) {
-      return (Number.isFinite(endedB) ? endedB : 0) - (Number.isFinite(endedA) ? endedA : 0);
-    }
-    return String(b.run_id || '').localeCompare(String(a.run_id || ''));
-  });
-
-  return sorted[0] || null;
-}
-
-function closeOpenStages(stages = {}, endedAt = '') {
-  const source = stages && typeof stages === 'object' ? stages : {};
-  const next = {};
-  for (const [stageName, stageState] of Object.entries(source)) {
-    const safeState = stageState && typeof stageState === 'object' ? stageState : {};
-    const startedAt = String(safeState.started_at || '').trim();
-    const stageEndedAt = String(safeState.ended_at || '').trim();
-    next[stageName] = {
-      ...safeState,
-      ended_at: startedAt && !stageEndedAt ? endedAt : stageEndedAt,
-    };
-  }
-  return next;
 }
 
 function extractTerminalErrorReason(events = []) {
@@ -225,61 +88,10 @@ async function reconcileInterruptedRunArtifacts({
           return { ...meta, status: nextStatus, ended_at: endedAt };
         }
       }
-    } catch { /* fall through to filesystem */ }
+    } catch { /* best-effort */ }
   }
 
-  // Filesystem fallback (pre-migration runs)
-  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
-  const runDir = path.join(rootDir, runId);
-  const runMetaPath = path.join(runDir, 'run.json');
-  const runEventsPath = path.join(runDir, 'run_events.ndjson');
-
-  const meta = await safeReadJson(runMetaPath);
-  if (!meta || typeof meta !== 'object') return null;
-
-  const events = await safeReadJsonLines(runEventsPath);
-  const hasCompletedEvent = events.some((row) => String(row?.event || '').trim() === 'run_completed');
-  const terminalReason = extractTerminalErrorReason(events) || (hasCompletedEvent ? '' : 'process_interrupted');
-  const endedAt = String(meta.ended_at || '').trim() || new Date().toISOString();
-
-  if (!hasCompletedEvent && !extractTerminalErrorReason(events)) {
-    await fs.mkdir(path.dirname(runEventsPath), { recursive: true });
-    await fs.appendFile(
-      runEventsPath,
-      `${JSON.stringify({
-        run_id: runId,
-        category: String(meta.category || '').trim(),
-        product_id: String(meta.product_id || meta.productId || '').trim(),
-        ts: endedAt,
-        stage: 'error',
-        event: 'error',
-        payload: {
-          event: terminalReason,
-          message: 'IndexLab process exited before run_completed.',
-        },
-      })}\n`,
-      'utf8',
-    );
-  }
-
-  const nextStatus = hasCompletedEvent ? 'completed' : 'failed';
-  await fs.writeFile(
-    runMetaPath,
-    JSON.stringify({
-      ...meta,
-      status: nextStatus,
-      ended_at: endedAt,
-      stages: closeOpenStages(meta.stages, endedAt),
-    }, null, 2),
-    'utf8',
-  );
-
-  return {
-    ...meta,
-    status: nextStatus,
-    ended_at: endedAt,
-    stages: closeOpenStages(meta.stages, endedAt),
-  };
+  return null;
 }
 
 export async function handleIndexLabProcessCompletion({

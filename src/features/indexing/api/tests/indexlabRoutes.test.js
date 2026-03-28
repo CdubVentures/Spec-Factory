@@ -80,6 +80,13 @@ function createRunMeta(overrides = {}) {
   };
 }
 
+const mockSpecDb = {
+  getQueryIndexByCategory: () => [],
+  getUrlIndexByCategory: () => [],
+  getPromptIndexByCategory: () => [],
+  getKnobSnapshots: () => [],
+};
+
 function createIndexlabRouteHandler(overrides = {}) {
   return registerIndexlabRoutes({
     jsonRes,
@@ -101,6 +108,7 @@ function createIndexlabRouteHandler(overrides = {}) {
     path,
     INDEXLAB_ROOT: '/tmp/indexlab',
     processStatus: () => ({ running: false, run_id: null }),
+    getSpecDb: () => mockSpecDb,
     readIndexLabRunMeta: () => null,
     resolveIndexLabRunDirectory: () => '',
     readIndexLabRunEvents: () => [],
@@ -122,11 +130,6 @@ function createIndexlabRouteHandler(overrides = {}) {
     buildSearchHints: () => [],
     buildAnchorsSuggestions: () => [],
     buildKnownValuesSuggestions: () => [],
-    queryIndexSummary: () => null,
-    urlIndexSummary: () => null,
-    highYieldUrls: () => [],
-    promptIndexSummary: () => null,
-    readKnobSnapshots: () => null,
     evaluateAllSections: () => null,
     buildEvidenceReport: () => null,
     buildEffectiveSettingsSnapshot: () => null,

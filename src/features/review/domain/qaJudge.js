@@ -8,7 +8,8 @@ export async function runQaJudge({
   config,
   category,
   productId,
-  logger = null
+  specDb = null,
+  logger = null,
 }) {
   if (!category || !productId) {
     return { ok: false, error: 'category and productId are required' };
@@ -20,8 +21,11 @@ export async function runQaJudge({
     return { ok: false, error: `spec not found: ${specKey}` };
   }
 
-  const provenanceKey = storage.resolveOutputKey(category, productId, 'final', 'provenance.json');
-  const provenance = await storage.readJsonOrNull(provenanceKey) || {};
+  const provenance = specDb
+    ? (specDb.getProvenanceForProduct(category, productId) ?? {})
+    : (await storage.readJsonOrNull(
+        storage.resolveOutputKey(category, productId, 'final', 'provenance.json')
+      ) || {});
 
   let engine = null;
   try {

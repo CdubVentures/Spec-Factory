@@ -27,11 +27,13 @@ import {
   toMarkdownRecord
 } from './publishSpecBuilders.js';
 
-export async function readLatestArtifacts(storage, category, productId) {
+export async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   const [normalized, provenance, summary] = await Promise.all([
     storage.readJsonOrNull(`${latestBase}/normalized.json`),
-    storage.readJsonOrNull(`${latestBase}/provenance.json`),
+    specDb
+      ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
+      : storage.readJsonOrNull(`${latestBase}/provenance.json`),
     storage.readJsonOrNull(`${latestBase}/summary.json`)
   ]);
 

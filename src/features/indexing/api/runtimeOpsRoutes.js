@@ -197,30 +197,34 @@ export function registerRuntimeOpsRoutes(ctx) {
     // triggering full S3 hydration for archived runs.
     const earlySubPath = String(parts[4] || '').trim();
 
+    // WHY: Plugin keys are singular (screenshot, video) but disk folders may differ.
+    const PLUGIN_FOLDER = { screenshot: 'screenshots' };
+
     // WHY: Opens local screenshots folder. Checks multiple candidate roots since
     // screenshots may be at defaultIndexLabRoot (AppData) while run.json is elsewhere.
     if (earlySubPath === 'extraction' && parts[5] === 'open-folder') {
-      const folder = parts[6] || 'screenshots';
+      const rawFolder = parts[6] || 'screenshots';
       // WHY: Allow any extraction artifact folder (screenshots, video, etc.)
       // but reject path traversal and absolute paths.
-      const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
+      const safeFolder = String(PLUGIN_FOLDER[rawFolder] || rawFolder).replace(/[^a-z0-9_-]/gi, '');
       if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
       try {
         const fs = await import('node:fs');
         const candidates = [
           path.join(defaultIndexLabRoot(), runId, safeFolder),
           path.join(directRunDir, safeFolder),
-          ...(runDir && runDir !== directRunDir ? [path.join(runDir, safeFolder)] : []),
         ];
         const targetDir = candidates.find((d) => fs.existsSync(d));
         if (!targetDir) {
           return jsonRes(res, 404, { error: 'folder_not_found', tried: candidates });
         }
-        const { exec } = await import('node:child_process');
-        const cmd = process.platform === 'win32' ? `explorer "${targetDir}"`
-          : process.platform === 'darwin' ? `open "${targetDir}"`
-          : `xdg-open "${targetDir}"`;
-        exec(cmd);
+        const { spawn } = await import('node:child_process');
+        if (process.platform === 'win32') {
+          spawn('explorer', [targetDir], { detached: true, stdio: 'ignore' }).unref();
+        } else {
+          const bin = process.platform === 'darwin' ? 'open' : 'xdg-open';
+          spawn(bin, [targetDir], { detached: true, stdio: 'ignore' }).unref();
+        }
         return jsonRes(res, 200, { opened: targetDir });
       } catch (err) {
         return jsonRes(res, 500, { error: 'open_failed', message: err?.message });
@@ -230,8 +234,8 @@ export function registerRuntimeOpsRoutes(ctx) {
     // WHY: Resolves the full local folder path for an extraction artifact type
     // without opening Explorer. Used by the GUI to display full file paths.
     if (earlySubPath === 'extraction' && parts[5] === 'resolve-folder') {
-      const folder = parts[6] || 'screenshots';
-      const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
+      const rawFolder = parts[6] || 'screenshots';
+      const safeFolder = String(PLUGIN_FOLDER[rawFolder] || rawFolder).replace(/[^a-z0-9_-]/gi, '');
       if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
       try {
         const fs = await import('node:fs');

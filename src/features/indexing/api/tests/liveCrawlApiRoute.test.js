@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerIndexlabRoutes } from '../indexlabRoutes.js';
 
+const mockSpecDb = {
+  getQueryIndexByCategory: () => [],
+  getUrlIndexByCategory: () => [],
+  getPromptIndexByCategory: () => [],
+  getKnobSnapshots: () => [],
+};
+
 function createMockCtx(overrides = {}) {
   const responses = [];
   return {
@@ -14,6 +21,7 @@ function createMockCtx(overrides = {}) {
       path: { join: (...args) => args.join('/') },
       INDEXLAB_ROOT: '/tmp/indexlab',
       processStatus: () => ({ running: false }),
+      getSpecDb: () => mockSpecDb,
       readIndexLabRunMeta: async () => null,
       resolveIndexLabRunDirectory: async () => '',
       readIndexLabRunEvents: async () => [],
@@ -35,11 +43,6 @@ function createMockCtx(overrides = {}) {
       buildSearchHints: () => [],
       buildAnchorsSuggestions: () => [],
       buildKnownValuesSuggestions: () => [],
-      queryIndexSummary: () => ({ total: 0, dead_count: 0, top_yield: [], provider_breakdown: {} }),
-      urlIndexSummary: () => ({ total: 0, reuse_distribution: {}, high_yield: [], tier_breakdown: {} }),
-      highYieldUrls: () => [],
-      promptIndexSummary: () => ({ total_calls: 0, total_tokens: 0, unique_versions: 0, versions: [], model_breakdown: {} }),
-      readKnobSnapshots: () => [],
       evaluateAllSections: (runData) => ({
         section_results: {},
         verdicts: { defaults_aligned: 'RED', crawl_alive: 'RED', parser_alive: 'RED', extraction_alive: 'RED', publishable_alive: 'RED' },

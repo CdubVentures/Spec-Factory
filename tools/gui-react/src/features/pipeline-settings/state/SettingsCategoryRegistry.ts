@@ -71,7 +71,7 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     subtitle: 'Screenshots, video recording, and page capture',
     sections: Object.freeze([
       { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, selectors, and size limits' },
-      { id: 'video', label: 'Video Recording', tip: 'Video capture resolution and recording settings' },
+      { id: 'video', label: 'Video Recording', tip: 'Video capture resolution and recording settings', customComponent: 'VideoRecording' },
     ]),
   },
   // WHY: LLM/extraction settings are managed by the dedicated LLM Config page

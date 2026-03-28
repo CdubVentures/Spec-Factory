@@ -94,11 +94,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     return {
       maxConcurrency: slotCount,
 
-      // WHY: Disable Crawlee's built-in block detection. Crawlee throws
-      // _throwOnBlockedRequest for 403/429 BEFORE requestHandler fires,
-      // causing unhandled rejections. We detect blocks ourselves in
-      // bypassStrategies.js after capturing the page content.
-      retryOnBlocked: false,
+      // WHY: Configurable via setting. Default false — we detect blocks
+      // ourselves in bypassStrategies.js after capturing the page content.
+      // Crawlee's built-in detection throws before requestHandler fires.
+      retryOnBlocked: settings.crawleeRetryOnBlocked === true || settings.crawleeRetryOnBlocked === 'true',
 
       requestHandler: async ({ page, request, response, session, proxyInfo }) => {
         // WHY: Warmup requests force browser pool pre-launch at run start.
@@ -129,6 +128,34 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           retry_count: request.retryCount ?? 0,
           proxy_url: proxyInfo?.url || '',
         });
+
+        // WHY: With waitUntil:'domcontentloaded', page.goto resolves as soon as
+        // the HTML is parsed — before CSS/images/fonts render. The screencast and
+        // video need at least one paint frame to show content. This single evaluate
+        // waits for 2 requestAnimationFrame callbacks (~32ms) which guarantees the
+        // browser has composited at least one visual frame. Without this, the live
+        // feed, video, and screenshots capture a blank/unstyled page.
+        try {
+          await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+        } catch { /* page closed or navigated — non-fatal */ }
+
+        // WHY: With domcontentloaded, the handler completes in 1-2s — too fast
+        // for CDP screencast to capture frames (everyNthFrame:3 + async delivery).
+        // Capture one lightweight JPEG right after the paint gate so the GUI
+        // always has a retained frame to display, regardless of whether the
+        // extraction screenshot setting is enabled.
+        if (typeof onScreencastFrame === 'function') {
+          try {
+            const frameBytes = await page.screenshot({ type: 'jpeg', quality: 40 });
+            onScreencastFrame({
+              worker_id: workerId,
+              data: frameBytes.toString('base64'),
+              width: 1280,
+              height: 720,
+              ts: new Date().toISOString(),
+            });
+          } catch { /* screenshot failed — non-fatal, screencast may still have frames */ }
+        }
 
         // WHY: Suite orchestrator replaces the old sequential 3-hook sequence.
         // onInit runs in preNavigationHooks (before page.goto).
@@ -437,12 +464,10 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
     // After native retry exhausted, lifecycle calls retryWithProxy as final proxy pass.
     // Total worst case: nav(20) + handler(45) + buffer(10) = 75s per attempt.
     const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
-    // WHY: Derived from slotCount — not a user knob. With maxOpenPagesPerBrowser=1,
-    // each slot needs its own browser launch (~600ms each), causing 5+ second ramp-up
-    // for 16 slots. With 4 pages/browser, only ceil(16/4)=4 browsers launch. Beyond 4
-    // pages/browser there are diminishing returns and higher crash blast radius.
-    // Incognito pages ensure each page gets its own browser context (cookies, fingerprints).
-    const maxPages = Math.min(slotCount, 4);
+    // WHY: Configurable via setting (default 4). Capped at slotCount — can't
+    // have more pages per browser than total slots. Higher = fewer browsers
+    // launched (faster start) but shared crash blast radius.
+    const maxPages = Math.min(Number(settings.crawleeMaxOpenPagesPerBrowser) || 4, slotCount);
     const retireAfter = Number(settings.crawleeBrowserRetirePageCount) || 10;
     const sameDomainDelay = Number(settings.crawleeSameDomainDelaySecs) || 0;
     const maxReqPerMin = Number(settings.crawleeMaxRequestsPerMinute) || 0;
@@ -475,6 +500,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
       navigationTimeoutSecs: navTimeoutSecs,
+      maxSessionRotations: Number(settings.crawleeMaxSessionRotations) || 10,
       ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
       useSessionPool,
       persistCookiesPerSession: persistCookies,
@@ -532,13 +558,28 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               const pageUrl = pageWorkerUrlMap.get(page) || '';
               const savePromise = video.saveAs(videoPath)
                 .then(async () => {
-                  // WHY: Trim video to just the fetch window (dismiss→scroll).
-                  // Falls back gracefully if ffmpeg is not installed.
+                  // WHY: With domcontentloaded, the total video is 3-8 seconds:
+                  //   ~0.5s blank tab + goto
+                  //   ~0.2s paint gate
+                  //   ~0.5s dismiss suite
+                  //   ~2-3s auto-scroll (2 passes incremental)
+                  //   ~0.5s final dismiss
+                  //   ~0.5s extraction
+                  // This is short enough to keep untrimmed. Trimming to the exact
+                  // suite window (fetchWindowStart→End) risks producing 0-second
+                  // videos when the suite runs in <200ms. The full 3-8s video
+                  // shows page load → dismiss → scroll → final state which is
+                  // exactly what an LLM reviewer needs to see.
+                  //
+                  // If the video exceeds 15s (slow site or long scroll), trim
+                  // the end to remove extraction + teardown noise.
                   const ts = pageTimestampMap.get(page);
-                  if (ts && ts.fetchWindowStartMs && ts.fetchWindowEndMs) {
-                    const startSec = Math.max(0, (ts.fetchWindowStartMs - ts.pageStartMs) / 1000);
-                    const endSec = (ts.fetchWindowEndMs - ts.pageStartMs) / 1000;
-                    await trimVideo(videoPath, startSec, endSec);
+                  if (ts && ts.fetchWindowEndMs) {
+                    const totalVideoSec = (Date.now() - ts.pageStartMs) / 1000;
+                    if (totalVideoSec > 15) {
+                      const endSec = (ts.fetchWindowEndMs - ts.pageStartMs) / 1000 + 1.0;
+                      await trimVideo(videoPath, 0, endSec);
+                    }
                   }
                   // WHY: DI callback persists video to run directory and indexes in SQL.
                   // Same pattern as onScreenshotsPersist — no cross-feature imports.
@@ -595,6 +636,15 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           // worker row in the GUI.
           if (request.userData?.__warmup) return;
 
+          // WHY: Crawlee passes gotoOptions with only { timeout } — no waitUntil.
+          // Playwright defaults to 'load' which waits for ALL resources (analytics,
+          // tracking pixels, fonts). On modern sites this takes 30-60s and often
+          // never completes. 'domcontentloaded' fires when HTML is parsed (~1s)
+          // which is sufficient — product data is in the initial HTML, and our
+          // plugins handle lazy content via scrolling and DOM expansion.
+          const waitUntil = settings.crawleeWaitUntil || 'domcontentloaded';
+          gotoOptions.waitUntil = waitUntil;
+
           if (sameDomainDelay > 0) {
             const base = sameDomainDelay * 1000;
             const jitter = Math.floor(Math.random() * base * 0.5);
@@ -617,12 +667,16 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                 });
                 cdp.send('Page.screencastFrameAck', { sessionId: frame.sessionId }).catch(() => {});
               });
+              // WHY: everyNthFrame:1 captures every composited frame (max ~60fps).
+              // With domcontentloaded the handler finishes in 2-5s so we need
+              // every frame we can get for the live stream. Quality 50 is a
+              // balance between visual clarity and bandwidth.
               await cdp.send('Page.startScreencast', {
                 format: 'jpeg',
-                quality: 30,
+                quality: 50,
                 maxWidth: 1280,
                 maxHeight: 720,
-                everyNthFrame: 3,
+                everyNthFrame: 1,
               });
               cdpSessionMap.set(page, cdp);
             } catch (err) {

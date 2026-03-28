@@ -190,10 +190,12 @@ export async function buildReviewLayout({
   };
 }
 
-export async function readLatestArtifacts(storage, category, productId) {
+export async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
-  const provenance = await storage.readJsonOrNull(`${latestBase}/provenance.json`);
+  const provenance = specDb
+    ? (specDb.getProvenanceForProduct(category, productId) ?? {})
+    : (await storage.readJsonOrNull(`${latestBase}/provenance.json`) || {});
   const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
   let candidates = await storage.readJsonOrNull(`${latestBase}/candidates.json`);
   if (!candidates && summary?.runId) {
@@ -400,7 +402,7 @@ export async function buildProductReviewPayload({
   catalogProduct = null,
 }) {
   const resolvedLayout = layout || await buildReviewLayout({ storage, config, category });
-  const latest = await readLatestArtifacts(storage, category, productId);
+  const latest = await readLatestArtifacts(storage, category, productId, specDb);
   const rows = {};
   let reviewableFlags = 0;
   let missingCount = 0;
@@ -793,7 +795,7 @@ export async function buildReviewQueue({
     if (!productId) {
       continue;
     }
-    const latest = await readLatestArtifacts(storage, category, productId);
+    const latest = await readLatestArtifacts(storage, category, productId, specDb);
     const keys = reviewKeys(storage, category, productId);
     let reviewQueue = await storage.readJsonOrNull(keys.reviewQueueKey);
     if (!reviewQueue) {

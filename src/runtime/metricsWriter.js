@@ -1,12 +1,8 @@
 /**
- * Runtime metrics jsonl writer.
+ * Runtime metrics writer — SQL only.
  *
- * Appends timestamped JSON lines to a configurable storage key for
- * cross-run telemetry: LLM call timings, fetch outcomes, pipeline
- * stage durations, error rates.
- *
- * Each line is a self-contained JSON object with:
- *   { ts, metric, type, value, labels }
+ * Buffers timestamped metrics and flushes to specDb.insertMetric().
+ * Each row: { ts, metric, type, value, labels }
  */
 
 function sanitizeMetricName(value) {
@@ -18,15 +14,8 @@ function sanitizeMetricName(value) {
 }
 
 export class MetricsWriter {
-  constructor({
-    storage,
-    specDb = null,
-    metricsKey = '_runtime/metrics.jsonl',
-    defaultLabels = {}
-  } = {}) {
-    this.storage = storage;
+  constructor({ specDb = null, defaultLabels = {} } = {}) {
     this.specDb = specDb || null;
-    this.metricsKey = String(metricsKey || '_runtime/metrics.jsonl').trim();
     this.defaultLabels = defaultLabels && typeof defaultLabels === 'object' ? defaultLabels : {};
     this._buffer = [];
     this._flushSize = 20;
@@ -66,7 +55,6 @@ export class MetricsWriter {
 
   async flush() {
     if (this._buffer.length === 0) return;
-    // WHY: SQL is the primary write target for metrics (Wave 4 Step 18).
     if (this.specDb) {
       for (const row of this._buffer) {
         try {
@@ -79,22 +67,12 @@ export class MetricsWriter {
           });
         } catch { /* best-effort — metrics must not crash the pipeline */ }
       }
-      this._buffer = [];
-      return;
     }
-    // Fallback: NDJSON append (for callers without specDb)
-    const lines = this._buffer.map((row) => JSON.stringify(row)).join('\n') + '\n';
     this._buffer = [];
-    if (this.storage && typeof this.storage.appendText === 'function') {
-      await this.storage.appendText(this.metricsKey, lines, {
-        contentType: 'application/x-ndjson'
-      });
-    }
   }
 
   snapshot() {
     return {
-      metrics_key: this.metricsKey,
       buffered: this._buffer.length,
       default_labels: { ...this.defaultLabels }
     };

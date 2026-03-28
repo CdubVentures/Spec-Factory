@@ -266,9 +266,11 @@ test('readIndexLabRunNeedSet: empty runId → null', async () => {
   assert.equal(await readers.readIndexLabRunNeedSet(null), null);
 });
 
-test('readIndexLabRunNeedSet: no run dir → null', async () => {
+test('readIndexLabRunNeedSet: no run dir → falls back to events (not null)', async () => {
   const readers = makeReaders({ resolveRunDir: async () => '' });
-  assert.equal(await readers.readIndexLabRunNeedSet('run-1'), null);
+  const result = await readers.readIndexLabRunNeedSet('run-1');
+  assert.ok(result, 'should fall through to events fallback, not return null');
+  assert.equal(result.source, 'empty_fallback');
 });
 
 test('readIndexLabRunNeedSet: falls back to events when no artifacts', async () => {
@@ -298,9 +300,23 @@ test('readIndexLabRunSearchProfile: empty runId → null', async () => {
   assert.equal(await readers.readIndexLabRunSearchProfile(''), null);
 });
 
-test('readIndexLabRunSearchProfile: no run dir → null', async () => {
+test('readIndexLabRunSearchProfile: no run dir + no events → null (events fallback returns null for empty)', async () => {
   const readers = makeReaders({ resolveRunDir: async () => '' });
-  assert.equal(await readers.readIndexLabRunSearchProfile('run-1'), null);
+  const result = await readers.readIndexLabRunSearchProfile('run-1');
+  assert.equal(result, null);
+});
+
+test('readIndexLabRunSearchProfile: no run dir + search events → events fallback', async () => {
+  const readers = makeReaders({
+    resolveRunDir: async () => '',
+    readEvents: async () => [
+      { event: 'search_started', payload: { query: 'test query' } },
+      { event: 'search_finished', payload: { query: 'test query', result_count: 5 } },
+    ],
+  });
+  const result = await readers.readIndexLabRunSearchProfile('run-1');
+  assert.ok(result, 'should return events fallback');
+  assert.equal(result.source, 'events_fallback');
 });
 
 test('readIndexLabRunSearchProfile: returns storage artifact when available', async () => {
@@ -514,4 +530,34 @@ test('pickSearchQueryFromEvent: falls back to payload.search_query', () => {
 
 test('pickSearchQueryFromEvent: falls back to payload.searchQuery', () => {
   assert.equal(pickSearchQueryFromEvent({ payload: { searchQuery: 'cq' } }), 'cq');
+});
+
+// ---------------------------------------------------------------------------
+// SQL Tier 1: reads from run_artifacts when no run dir exists
+// ---------------------------------------------------------------------------
+
+test('readIndexLabRunNeedSet: returns SQL artifact when no run dir on disk', async () => {
+  const sqlPayload = { fields: [{ field_key: 'weight', state: 'missing' }], total_fields: 40, source: 'sql' };
+  const mockSpecDb = { getRunArtifact: (runId, type) => type === 'needset' ? { payload: sqlPayload } : null };
+  const readers = makeReaders({
+    resolveRunDir: async () => '',
+    getSpecDbReady: async (cat) => cat === 'mouse' ? mockSpecDb : null,
+  });
+  const result = await readers.readIndexLabRunNeedSet('run-1');
+  assert.ok(result, 'should return SQL payload, not null');
+  assert.equal(result.total_fields, 40);
+  assert.equal(result.source, 'sql');
+});
+
+test('readIndexLabRunSearchProfile: returns SQL artifact when no run dir on disk', async () => {
+  const sqlPayload = { query_count: 12, source: 'sql' };
+  const mockSpecDb = { getRunArtifact: (runId, type) => type === 'search_profile' ? { payload: sqlPayload } : null };
+  const readers = makeReaders({
+    resolveRunDir: async () => '',
+    getSpecDbReady: async (cat) => cat === 'mouse' ? mockSpecDb : null,
+  });
+  const result = await readers.readIndexLabRunSearchProfile('run-1');
+  assert.ok(result, 'should return SQL payload, not null');
+  assert.equal(result.query_count, 12);
+  assert.equal(result.source, 'sql');
 });

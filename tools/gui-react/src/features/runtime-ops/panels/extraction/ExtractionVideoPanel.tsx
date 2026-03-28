@@ -1,5 +1,12 @@
+import { useMemo } from 'react';
 import { ExtractionArtifactPanel, type ArtifactPanelConfig } from './ExtractionArtifactPanel.tsx';
-import type { ExtractionPluginData } from '../../types.ts';
+import { FormatBadge } from '../../../../shared/ui/icons/FormatBadge.tsx';
+import type { ExtractionPluginData, ExtractionPluginEntry } from '../../types.ts';
+
+interface VideoRecord extends ExtractionPluginEntry {
+  format?: string;
+  [key: string]: unknown;
+}
 
 const VIDEO_CONFIG: ArtifactPanelConfig = {
   pluginKey: 'video',
@@ -25,5 +32,30 @@ interface ExtractionVideoPanelProps {
 }
 
 export function ExtractionVideoPanel({ data, persistScope, runId }: ExtractionVideoPanelProps) {
-  return <ExtractionArtifactPanel config={VIDEO_CONFIG} data={data} persistScope={persistScope} runId={runId} />;
+  const records = data.entries as VideoRecord[];
+
+  const extraHeroBand = useMemo(() => {
+    const formatSet = new Set<string>();
+    for (const r of records) {
+      const fmt = typeof r.format === 'string' ? r.format : '';
+      if (fmt) formatSet.add(fmt);
+    }
+    if (formatSet.size === 0) formatSet.add('webm');
+    const formats = [...formatSet];
+    return () => (
+      <div className="flex items-center gap-2">
+        <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Formats</span>
+        {formats.map((f) => (
+          <FormatBadge key={f} format={f} />
+        ))}
+      </div>
+    );
+  }, [records]);
+
+  const config = useMemo(() => ({
+    ...VIDEO_CONFIG,
+    extraHeroBand,
+  }), [extraHeroBand]);
+
+  return <ExtractionArtifactPanel config={config} data={data} persistScope={persistScope} runId={runId} />;
 }

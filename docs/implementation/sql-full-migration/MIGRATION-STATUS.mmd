@@ -27,162 +27,134 @@
 
 flowchart TB
 
-  title["<b>SQL MIGRATION STATUS</b><br/><i>53 tables in specDb  |  Code-verified 2026-03-28</i>"]
+  title["<b>SQL MIGRATION STATUS</b><br/><i>56 tables in specDb  |  Code-verified 2026-03-28</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
 
   %% ==========================================
-  %%  WAVES 1-4 + 5.5 (ALL COMPLETE)
+  %%  COMPLETED WAVES (all green)
   %% ==========================================
-  subgraph WAVES["WAVES 1-5.5  (ALL COMPLETE  -  SQL only, verified against code)"]
+  subgraph DONE["ALL COMPLETED  (verified against code 2026-03-28)"]
     direction TB
 
-    subgraph W1["Wave 1: Bridge Events"]
-      w1_old{{"run_events.ndjson KILLED"}} -.->|"replaced by"| w1_new[("bridge_events<br/><i>8 cols, sourceIntelStore</i>")]
+    subgraph W15["Waves 1-5.5: Core Runtime"]
+      w1[("bridge_events — SQL only")]
+      w2[("runs — 16 cols, SQL Tier 1")]
+      w3[("run_artifacts — needset + search_profile + run_summary<br/><i>SQL Tier 1 readers wired (2026-03-28)</i>")]
+      w4[("billing_entries — SQL writes only<br/><i>publishAnalytics still reads JSONL</i>")]
+      w5[("metrics — table + writer exist<br/><i>not production-wired yet</i>")]
+      w6["run-summary = SQL artifact, boundary JSONs KILLED"]
     end
 
-    subgraph W2["Wave 2: Run Metadata"]
-      w2_new[("runs<br/><i>16 total cols (13 user + 3 auto)<br/>Code comment: slimmed from 22 to 13</i>")]
-      w2_note["run.json KILLED"]
+    subgraph W6G["Wave 6: Learning + LLM Cache"]
+      w6a[("learning_profiles — SQL only")]
+      w6b[("category_brain — SQL only")]
+      w6c[("llm_cache — SQL only")]
     end
 
-    subgraph W3["Wave 3: Run Artifacts"]
-      w3_new[("run_artifacts<br/><i>needset + search_profile + brand_resolution<br/>+ run_summary (Wave 5.5)</i>")]
-      w3_note["needset.json + search_profile.json KILLED"]
+    subgraph WB["Waves B1-B4: Telemetry Indexes"]
+      wb1[("query_index — 10 cols, SQL writes + reads")]
+      wb2[("url_index — 11 cols, SQL writes + reads")]
+      wb3[("prompt_index — 9 cols, SQL writes + reads")]
+      wb4[("knob_snapshots — 8 cols, SQL writes + reads")]
+      wb5["NDJSON factories DELETED (2026-03-28)<br/><i>Pipeline hot path SQL-only. Exporter NDJSON remains (Wave C/D).</i>"]
     end
 
-    subgraph W4["Wave 4: Billing + Metrics"]
-      w4a_old{{"billing NDJSON KILLED"}} -.->|"replaced by"| w4a_new[("billing_entries<br/><i>18 cols, billingStore — SQL only</i>")]
-      w4b_old{{"metrics.jsonl NDJSON fallback"}} -.->|"SQL primary"| w4b_new[("metrics<br/><i>5 cols, metricsStore</i>")]
-    end
-
-    subgraph W55["Wave 5.5: Run/Product Split"]
-      w55_summary["run-summary = SQL artifact<br/><i>Stored in run_artifacts (artifact_type='run_summary')<br/>NOT written to disk — schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
-      w55_slim["runs table slimmed 22 to 13 user cols<br/><i>Dropped: stages, startup_ms, browser_pool,<br/>needset_summary, search_profile_summary,<br/>artifacts, extra, boot_step, boot_progress</i>"]
-      w55_purge["bridge_events PURGED after finalize<br/><i>Captured in run-summary artifact first</i>"]
-      w55_kill["Boundary JSONs KILLED<br/><i>run.json, needset.json, search_profile.json</i>"]
+    subgraph WR["R1: Relocation Stripped"]
+      wr1["storageMetricsService DELETED"]
+      wr2["storageSyncService DELETED"]
+      wr3["archivedRunLocationHelpers DELETED"]
+      wr4["Pipeline writes directly to storage-backed destination"]
     end
   end
-  style WAVES fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
-  style W1 fill:#0d1117,stroke:#238636,color:#e0e0e0
-  style W2 fill:#0d1117,stroke:#238636,color:#e0e0e0
-  style W3 fill:#0d1117,stroke:#238636,color:#e0e0e0
-  style W4 fill:#0d1117,stroke:#238636,color:#e0e0e0
-  style W55 fill:#0d1117,stroke:#238636,color:#e0e0e0
-  style w1_old fill:#da3633,stroke:#f85149,color:#fff
-  style w1_new fill:#238636,stroke:#3fb950,color:#fff
-  style w2_new fill:#238636,stroke:#3fb950,color:#fff
-  style w2_note fill:#da3633,stroke:#f85149,color:#fff
-  style w3_new fill:#238636,stroke:#3fb950,color:#fff
-  style w3_note fill:#da3633,stroke:#f85149,color:#fff
-  style w4a_old fill:#da3633,stroke:#f85149,color:#fff
-  style w4a_new fill:#238636,stroke:#3fb950,color:#fff
-  style w4b_old fill:#d29922,stroke:#e3b341,color:#fff
-  style w4b_new fill:#238636,stroke:#3fb950,color:#fff
-  style w55_summary fill:#238636,stroke:#3fb950,color:#fff
-  style w55_slim fill:#238636,stroke:#3fb950,color:#fff
-  style w55_purge fill:#238636,stroke:#3fb950,color:#fff
-  style w55_kill fill:#da3633,stroke:#f85149,color:#fff
+  style DONE fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
+  style W15 fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style W6G fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style WB fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style WR fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style w1 fill:#238636,stroke:#3fb950,color:#fff
+  style w2 fill:#238636,stroke:#3fb950,color:#fff
+  style w3 fill:#238636,stroke:#3fb950,color:#fff
+  style w4 fill:#238636,stroke:#3fb950,color:#fff
+  style w5 fill:#238636,stroke:#3fb950,color:#fff
+  style w6 fill:#238636,stroke:#3fb950,color:#fff
+  style w6a fill:#238636,stroke:#3fb950,color:#fff
+  style w6b fill:#238636,stroke:#3fb950,color:#fff
+  style w6c fill:#238636,stroke:#3fb950,color:#fff
+  style wb1 fill:#238636,stroke:#3fb950,color:#fff
+  style wb2 fill:#238636,stroke:#3fb950,color:#fff
+  style wb3 fill:#238636,stroke:#3fb950,color:#fff
+  style wb4 fill:#238636,stroke:#3fb950,color:#fff
+  style wb5 fill:#238636,stroke:#3fb950,color:#fff
+  style wr1 fill:#da3633,stroke:#f85149,color:#fff
+  style wr2 fill:#da3633,stroke:#f85149,color:#fff
+  style wr3 fill:#da3633,stroke:#f85149,color:#fff
+  style wr4 fill:#238636,stroke:#3fb950,color:#fff
 
   %% ==========================================
-  %%  WAVE 6: LEARNING + LLM_CACHE (COMPLETE)
+  %%  REMAINING WORK
   %% ==========================================
-  subgraph W6["WAVE 6  (COMPLETE  -  Learning + LLM Cache = SQL only)"]
+  subgraph WAVEC["Wave C — Kill Exporter Dual-Writes"]
     direction TB
-    w6_learn[("learning_profiles<br/><i>13 cols — SQL only<br/>In-mem fallback if no specDb</i>")]
-    w6_brain[("category_brain<br/><i>4 cols — SQL only<br/>WHY comment: SQL is sole source</i>")]
-    w6_cache[("llm_cache<br/><i>4 cols — SQL only<br/>Best-effort silent if no specDb</i>")]
-    w6_killed["_learning/ file writes KILLED<br/><i>profiles/*.json + {artifact}.json</i>"]
-    w6_killed2["llm_cache/{sha256}.json KILLED"]
+    c1["C1: Store provenance + traffic_light as run_artifacts"]
+    c2["C2: Migrate file readers to SQL<br/><i>seed.js, domainChecklist, reviewGrid, catalogRoutes<br/>latest/ writes already dead — readers remain</i>"]
+    c3["C3: Kill exporter file writes<br/><i>normalized, provenance, candidates, events.gz</i>"]
+    c1 --> c2 --> c3
   end
-  style W6 fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
-  style w6_learn fill:#238636,stroke:#3fb950,color:#fff
-  style w6_brain fill:#238636,stroke:#3fb950,color:#fff
-  style w6_cache fill:#238636,stroke:#3fb950,color:#fff
-  style w6_killed fill:#da3633,stroke:#f85149,color:#fff
-  style w6_killed2 fill:#da3633,stroke:#f85149,color:#fff
 
-  %% ==========================================
-  %%  TELEMETRY INDEXES (Wave B2-B3 COMPLETE 2026-03-28)
-  %% ==========================================
-  subgraph NDJSON["TELEMETRY INDEXES  (SQL wired, NDJSON killed in pipeline)"]
+  subgraph WAVED["Wave D — Final Published Specs → SQL"]
     direction TB
-    nj1[("query_index<br/><i>9 cols — SQL writes + reads wired</i>")]
-    nj2[("url_index<br/><i>9 cols — SQL writes + reads wired</i>")]
-    nj3[("prompt_index<br/><i>7 cols — SQL writes + reads wired</i>")]
-    nj4[("knob_snapshots<br/><i>6 cols — SQL writes + reads wired</i>")]
-    nj5{{"metrics.jsonl"}} -.->|"NDJSON fallback only<br/>when specDb unavailable"| nj5s[("metrics<br/><i>SQL primary</i>")]
+    d1["D1: Store final outputs as run_artifacts<br/><i>spec, summary, provenance, traffic_light, evidence</i>"]
+    d2["D2: Migrate final/ readers to SQL<br/><i>qaJudge, publishingPipeline, publishAnalytics, driftScheduler</i>"]
+    d3["D3: Kill final/ file writes + debug copies"]
+    d1 --> d2 --> d3
   end
-  style NDJSON fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
-  style nj1 fill:#238636,stroke:#3fb950,color:#fff
-  style nj2 fill:#238636,stroke:#3fb950,color:#fff
-  style nj3 fill:#238636,stroke:#3fb950,color:#fff
-  style nj4 fill:#238636,stroke:#3fb950,color:#fff
-  style nj5 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style nj5s fill:#238636,stroke:#3fb950,color:#fff
 
-  %% ==========================================
-  %%  JSON-ONLY (not yet migrated)
-  %% ==========================================
-  subgraph REMAIN["JSON-ONLY  (not migrated, low priority)"]
+  subgraph WAVE6["Wave 6 — Product Checkpoint + Recovery"]
     direction TB
-    rem1["user-settings.json<br/><i>global prefs (schema v2)<br/>Handler: settingsDocumentMeta.js</i>"]
-    rem2["brand_registry.json<br/><i>brands, aliases, domains<br/>Handler: brandRegistry.js (pure file I/O)</i>"]
+    s22["22: Build product checkpoint serializer"]
+    s23["23: Wire checkpoint into completion + archival"]
+    s24["24: Build seedFromCheckpoint + remove Chokidar"]
+    s22 --> s23 --> s24
   end
-  style REMAIN fill:#0d1117,stroke:#f0883e,color:#f0883e,stroke-width:2px
-  style rem1 fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style rem2 fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+
+  subgraph HYGIENE["Schema Hygiene"]
+    direction TB
+    h1["H1: Drop dead tables (brands, artifacts)<br/><i>Add missing indexes. evidence_documents/chunks/facts are ACTIVE — do not drop.</i>"]
+  end
+
+  style WAVEC fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+  style WAVED fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
+  style WAVE6 fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style HYGIENE fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style c1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style c2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style c3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style d1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style d2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style d3 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style s22 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style s23 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style s24 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style h1 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
 
   %% ==========================================
   %%  KEEP AS FILES
   %% ==========================================
-  subgraph KEEP["KEEP AS FILES  (generated artifacts, not mutable state)"]
+  subgraph KEEP["KEEP AS FILES  (no migration needed)"]
     direction TB
-    keep1["category_authority: field_rules.json, known_values.json,<br/>ui_field_catalog.json, component_db/*.json"]
-    keep2["export artifacts: spec.json, summary.json, provenance.json,<br/>traffic_light.json, evidence_pack.json"]
-    keep3["raw extractions: *.html.gz, screenshot.jpg/png, *.pdf<br/><i>Content-addressed by SHA256 hash</i>"]
-    keep4["LLM traces: ring buffer JSON files"]
-    keep5["runtime_screencast/{workerId}.json"]
+    keep1["category_authority/  |  export artifacts  |  content-addressed binaries  |  LLM traces"]
   end
   style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
   style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style keep2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style keep3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style keep4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style keep5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
   %% ==========================================
-  %%  INFRASTRUCTURE CLEANUP (recent)
+  %%  JSON-ONLY (optional, low priority)
   %% ==========================================
-  subgraph INFRA["INFRASTRUCTURE CLEANUP  (recent deletions)"]
+  subgraph OPTIONAL["OPTIONAL  (JSON-only, low priority)"]
     direction TB
-    inf1["storageMetricsService.js DELETED<br/><i>Stats now computed on-the-fly from runs table</i>"]
-    inf2["storageSyncService.js DELETED"]
-    inf3["archivedRunLocationHelpers.js DELETED"]
-    inf4["Relocation service GUTTED<br/><i>Only settings normalization remains<br/>S3Client, copyDirectory, pruneJsonl all removed</i>"]
-    inf5["GUI panels pruned:<br/><i>Compound (6 files), Validation (4 files),<br/>FallbacksTab, QueueTab all DELETED<br/>RuntimeOps now: Overview + Workers + Documents only</i>"]
+    opt1["user-settings.json  |  brand_registry.json"]
   end
-  style INFRA fill:#0d1117,stroke:#da3633,color:#f85149,stroke-width:2px
-  style inf1 fill:#da3633,stroke:#f85149,color:#fff
-  style inf2 fill:#da3633,stroke:#f85149,color:#fff
-  style inf3 fill:#da3633,stroke:#f85149,color:#fff
-  style inf4 fill:#da3633,stroke:#f85149,color:#fff
-  style inf5 fill:#da3633,stroke:#f85149,color:#fff
+  style OPTIONAL fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style opt1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
-  %% ==========================================
-  %%  IMPACT SUMMARY
-  %% ==========================================
-  subgraph IMPACT["IMPACT"]
-    direction TB
-    imp_sql[("53 SQL tables in specDb<br/><i>+ evidenceIndexDb (4 tables)<br/>+ frontierDb (separate)</i>")]
-    imp_summary["run-summary = SQL artifact<br/><i>Replaces run.json + needset.json +<br/>search_profile.json + bridge_events for past runs</i>"]
-    imp_killed["Killed: run.json, needset.json, search_profile.json,<br/>billing NDJSON, run_events.ndjson, _learning/ files,<br/>llm_cache/ files"]
-    imp_remaining["Remaining NDJSON: metrics.jsonl fallback only<br/><i>4 telemetry indexes migrated to SQL (2026-03-28)</i>"]
-    imp_sql --> imp_summary --> imp_killed --> imp_remaining
-  end
-  style IMPACT fill:#0d1117,stroke:#58a6ff,color:#58a6ff,stroke-width:3px
-  style imp_sql fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:3px
-  style imp_summary fill:#238636,stroke:#3fb950,color:#e0e0e0
-  style imp_killed fill:#21262d,stroke:#da3633,color:#c9d1d9
-  style imp_remaining fill:#2d333b,stroke:#d29922,color:#e0e0e0
-
-  WAVES --> W6 --> NDJSON --> REMAIN --> KEEP --> INFRA --> IMPACT
+  DONE --> WAVEC --> WAVED --> WAVE6 --> HYGIENE --> KEEP --> OPTIONAL

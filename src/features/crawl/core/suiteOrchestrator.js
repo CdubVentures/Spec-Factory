@@ -26,7 +26,11 @@ export async function runFetchSuiteLoop({ runner, settings, ctx, logger }) {
   // No reason to stall. User can override via settings if a specific site needs it.
   const loadingDelayMs = Number(settings?.fetchLoadingDelayMs ?? 0);
   const rounds = Math.max(1, Number(settings?.fetchDismissRounds ?? 2));
-  const suiteMode = settings?.fetchSuiteMode || 'sequential';
+  // WHY: Default concurrent — all dismiss plugins fire via Promise.allSettled.
+  // Each plugin does a single page.evaluate() (~20-50ms), so concurrent wall
+  // time ≈ slowest single plugin (~220ms) instead of sum of all plugins sequentially.
+  // Override to 'sequential' if a specific site needs ordered dismiss execution.
+  const suiteMode = settings?.fetchSuiteMode || 'concurrent';
 
   const runDismiss = suiteMode === 'concurrent'
     ? (c) => runner.runHookConcurrent('onDismiss', c)

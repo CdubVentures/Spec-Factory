@@ -1,81 +1,149 @@
 # Crawl Pipeline Settings
 
-> Settings that control the crawl pipeline behavior. All from `src/shared/settingsRegistry.js`.
+> All settings from `src/shared/settingsRegistry.js`. GUI: fetcher category.
+> Validated: 2026-03-28.
 
-## Concurrency & Scheduling
+## Browser & Crawlee (GUI: fetcher → browser)
 
-| Key | Default | Range | What it controls |
-|-----|---------|-------|-----------------|
-| `crawlSessionCount` | 4 | 1–20 | Number of concurrent browser pages (maxConcurrency) |
-| `fetchConcurrency` | 4 | 1–64 | Legacy alias (crawlSessionCount preferred) |
-| `perHostMinDelayMs` | 1500 | 0–120000 | Minimum delay between requests to same host |
-| `fetchPerHostConcurrencyCap` | 1 | 1–64 | Max concurrent requests to same host |
-| `maxRunSeconds` | varies | — | Global time budget for entire run |
-| `fetchBudgetMs` | 45000 | 5000–300000 | Per-page time budget |
-| `fetchDrainTimeoutMs` | 120000 | 10000–600000 | Hard timeout on batch drain |
+### Heroes (top-level toggles)
 
-## Browser Behavior
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `crawleeHeadless` | bool | `true` | Run browser headless |
+| `crawlMaxConcurrentSlots` | int | `8` | Max parallel browser pages (min=max, skips autoscale ramp) |
+| `crawleeSameDomainDelaySecs` | int | `2` | Min seconds between requests to same domain |
+| `crawleeUseSessionPool` | bool | `true` | Session rotation on blocks (fingerprint + cookie isolation) |
+| `crawleeUseFingerprints` | bool | `true` | Generate realistic browser fingerprints |
+| `crawleeProxyRetryEnabled` | bool | `false` | Retry blocked URLs through proxy after native retries fail |
 
-| Key | Default | What it controls |
-|-----|---------|-----------------|
-| `crawleeHeadless` | true | Run browser headless (false = visible for debugging) |
-| `crawleeRequestHandlerTimeoutSecs` | 75 | Crawlee per-request timeout |
-| `pageGotoTimeoutMs` | 12000 | Navigation timeout per page |
-| `pageNetworkIdleTimeoutMs` | 2000 | Wait for network idle after navigation |
-| `postLoadWaitMs` | (per-host) | Additional wait after page load |
+### Crawlee Internals (collapsed by default)
 
-## Auto-Scroll (lazy content)
+| Key | Type | Default | Range | What it controls |
+|-----|------|---------|-------|-----------------|
+| `crawleeWaitUntil` | enum | `domcontentloaded` | domcontentloaded, load, networkidle, commit | When navigation is complete. `domcontentloaded` = HTML parsed (~1s). `load` = all resources (~30-60s on analytics-heavy sites). |
+| `crawleeRequestHandlerTimeoutSecs` | int | `45` | 0–300 | Per-page handler timeout (covers suite loop + page.content + extraction) |
+| `crawleeNavigationTimeoutSecs` | int | `20` | 1–120 | Navigation timeout (page.goto) |
+| `crawleeMaxRequestRetries` | int | `1` | 0–5 | Native retries with session rotation. We do our own block detection + proxy retry. |
+| `crawleeBrowserRetirePageCount` | int | `10` | 1–50 | Retire browser after N pages |
+| `crawleeMaxRequestsPerMinute` | int | `0` | 0–1000 | Global RPM cap (0 = unlimited) |
+| `crawleeMaxSessionRotations` | int | `10` | 1–50 | Max session swaps before giving up on a URL |
+| `crawleeRetryOnBlocked` | bool | `false` | — | Crawlee's built-in 403/429 auto-retry (disabled — we use bypassStrategies.js) |
+| `crawleeMaxOpenPagesPerBrowser` | int | `4` | 1–20 | Tabs per browser. Capped at slotCount. Each tab is incognito-isolated. |
 
-| Key | Default | What it controls |
-|-----|---------|-----------------|
-| `autoScrollEnabled` | true | Enable/disable scroll passes |
-| `autoScrollPasses` | 2 | Number of scroll-to-bottom passes |
-| `autoScrollDelayMs` | 1200 | Delay between scroll passes |
+### Session Pool (gated by `crawleeUseSessionPool`)
 
-## Screenshots
+| Key | Type | Default | Range | What it controls |
+|-----|------|---------|-------|-----------------|
+| `crawleePersistCookiesPerSession` | bool | `true` | — | Carry cookies across requests within a session |
+| `crawleeSessionPoolSize` | int | `100` | 10–1000 | Max concurrent session identities |
+| `crawleeSessionMaxUsageCount` | int | `50` | 1–500 | Retire session after N requests |
+| `crawleeSessionMaxAgeSecs` | int | `3000` | 60–86400 | Retire session after N seconds |
 
-| Key | Default | What it controls |
-|-----|---------|-----------------|
-| `capturePageScreenshotEnabled` | true | Enable/disable screenshots |
-| `capturePageScreenshotFormat` | jpeg | Format: jpeg or png |
-| `capturePageScreenshotQuality` | 50 | JPEG quality (1–100) |
-| `capturePageScreenshotMaxBytes` | 5000000 | Max screenshot size (reject if larger) |
-| `capturePageScreenshotSelectors` | `table,[data-spec-table],...` | CSS selectors for targeted crops |
+### Proxy (gated by `crawleeProxyRetryEnabled`)
 
-## Retry & Proxy
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `crawleeProxyMaxRetries` | int | `2` | Max retries on the proxy crawler |
+| `crawleeProxyUrlsJson` | string | `""` | JSON array of proxy URLs (secret field) |
 
-| Key | Default | What it controls |
-|-----|---------|-----------------|
-| `crawleeMaxRequestRetries` | 1 (code default) | Native retries with session rotation. Only retryable errors (blocks) get retried. Timeouts, DNS, downloads set `request.noRetry` and fail fast. |
-| `crawleeProxyUrlsJson` | `""` | JSON array of proxy URLs for the proxy retry pass. Empty = no proxy retry. |
-| `robotsTxtCompliant` | true | Respect robots.txt (451 → `robots_blocked`, no retry) |
+## Fetch Global (GUI: fetcher → fetch-global)
 
-**Non-retryable errors** (fail immediately, no retry):
-`Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked`.
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `fetchLoadingDelayMs` | int | `0` | Wait after page load before first dismiss round (0 = no delay, waitUntil already confirms loaded) |
+| `fetchDismissRounds` | int | `2` | Dismiss→scroll cycles. Suite fires before, between, and after each scroll. |
+| `fetchSuiteMode` | enum | `concurrent` | How dismiss plugins execute: concurrent (all at once) or sequential |
 
-**Retryable timeouts**: `requestHandler timed out` IS retried — the page may have loaded (CDP screencast proves it) but post-navigation processing (extraction, auto-scroll, hooks) was slow. Retry with fresh session may succeed faster.
+## Suppress Suite Plugins
 
-**Retryable errors** (1 native retry with session rotation, then proxy retry):
-403, 429, captcha, cloudflare, access denied, empty response, server error.
+### Stealth (GUI: fetcher → stealth)
 
-**Timing budget**: worst case per URL = 30s direct + 30s proxy = ~60s. Blocked URLs detected in ~2s get retried within seconds.
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `stealthEnabled` | bool | `true` | Hide webdriver detection, patch chrome APIs |
 
-## Per-Host Overrides
+### Cookie Consent (GUI: fetcher → cookie-consent)
 
-`dynamicFetchPolicyMapJson` — JSON string keyed by hostname. Each entry can override:
-`perHostMinDelayMs`, `pageGotoTimeoutMs`, `pageNetworkIdleTimeoutMs`, `postLoadWaitMs`,
-`autoScrollEnabled`, `autoScrollPasses`, `autoScrollDelayMs`, `retryBudget`, `retryBackoffMs`.
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `cookieConsentEnabled` | bool | `true` | Auto-dismiss cookie/consent banners |
+| `cookieConsentTimeoutMs` | int | `200` | Autoconsent CMP detection timeout (fast-fail) |
+| `cookieConsentFallbackSelectors` | string | (30+ selectors) | CSS selectors for manual banner dismissal |
+| `cookieConsentSettleMs` | int | `0` | Post-dismiss settle wait (0 = instant evaluate) |
 
-Hostname matching uses suffix-walk (e.g. `example.com` matches `shop.example.com`).
+### Overlay Dismissal (GUI: fetcher → overlay-dismissal)
 
-## Frontier Cooldowns
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `overlayDismissalEnabled` | bool | `true` | Detect/dismiss newsletter popups, chat widgets, paywalls, age gates |
+| `overlayDismissalMode` | enum | `moderate` | moderate: close-click first, then DOM removal. aggressive: direct removal, lower thresholds. |
+| `overlayDismissalCloseSelectors` | string | (10+ selectors) | CSS selectors for overlay close buttons |
+| `overlayDismissalSettleMs` | int | `0` | Post-dismiss settle wait (0 = instant evaluate) |
+| `overlayDismissalZIndexThreshold` | int | `999` | Min z-index for overlay detection |
 
-| Key | Default | What it controls |
-|-----|---------|-----------------|
-| `frontierCooldown404Seconds` | 259200 (3d) | Cooldown after first 404 |
-| `frontierCooldown404RepeatSeconds` | 1209600 (14d) | Cooldown after 3rd+ 404 |
-| `frontierCooldown410Seconds` | 7776000 (90d) | Cooldown after 410 Gone |
-| `frontierCooldown403BaseSeconds` | 1800 | Base cooldown for 403 (exponential) |
-| `frontierCooldown429BaseSeconds` | 600 | Base cooldown for 429 (exponential) |
-| `frontierCooldownTimeoutSeconds` | 21600 (6h) | Cooldown after timeout |
-| `frontierBlockedDomainThreshold` | 1 | Consecutive blocks before domain block |
+### DOM Expansion (GUI: fetcher → dom-expansion)
+
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `domExpansionEnabled` | bool | `true` | Click expand/show-more buttons |
+| `domExpansionSelectors` | string | `[aria-expanded="false"],...` | CSS selectors for expand triggers |
+| `domExpansionMaxClicks` | int | `50` | Max clicks per page |
+| `domExpansionSettleMs` | int | `0` | Post-expand settle wait (0 = instant evaluate) |
+| `domExpansionBudgetMs` | int | `15000` | Total time budget for expansion |
+
+### CSS Override (GUI: fetcher → css-override)
+
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `cssOverrideEnabled` | bool | `false` | Force-display hidden elements via CSS injection |
+| `cssOverrideRemoveFixed` | bool | `false` | Hide fixed/sticky elements |
+| `cssOverrideBlockedDomains` | string | `""` | Comma-separated domains to block via page.route (widget/analytics blocking) |
+
+### Auto Scroll (GUI: fetcher → auto-scroll)
+
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `autoScrollEnabled` | bool | `true` | Scroll pages to trigger lazy-loaded content |
+| `autoScrollPasses` | int | `2` | Scroll-to-bottom passes |
+| `autoScrollDelayMs` | int | `0` | Delay between passes |
+| `autoScrollStrategy` | enum | `incremental` | jump (instant scrollTo) or incremental (wheel events for IntersectionObserver) |
+
+## Observability (GUI: fetcher → observability)
+
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `runtimeScreencastEnabled` | bool | `true` | Live CDP screencast feed to GUI |
+| `runtimeTraceEnabled` | bool | `true` | Runtime trace file output |
+| `runtimeTraceLlmPayloads` | bool | `true` | Include LLM payloads in traces |
+
+## Video & Screenshots (GUI: extraction)
+
+| Key | Type | Default | What it controls |
+|-----|------|---------|-----------------|
+| `crawlVideoRecordingEnabled` | bool | `true` | Record browser video per page |
+| `crawlVideoRecordingSize` | string | `1280x720` | Video resolution |
+| `capturePageScreenshotEnabled` | bool | `true` | Screenshot capture during extraction |
+| `capturePageScreenshotStabilizeEnabled` | bool | `true` | Wait for fonts/images/paint before screenshot |
+| `capturePageScreenshotStabilizeTimeoutMs` | int | `1500` | Stabilization timeout |
+| `capturePageScreenshotStitchEnabled` | bool | `true` | Stitch long pages exceeding 16,384px texture limit |
+
+## Non-retryable Errors (fail fast)
+
+`Navigation timed out`, `Download is starting`, `ERR_NAME_NOT_RESOLVED`, `ERR_CONNECTION_REFUSED`, `ERR_CONNECTION_RESET`, `ERR_TUNNEL_CONNECTION_FAILED`, `robots_blocked` (451).
+
+Also: `requestHandler timed out` with `__capturedPage` already stashed → `noRetry` (page loaded but plugins were slow — retrying wastes another full timeout).
+
+## Testing
+
+`tools/crawl-probe.mjs` — standalone test harness. Runs baseline (raw Crawlee, no plugins) vs full suite on same URLs. Generates HTML comparison reports in `.specfactory_tmp/crawl-probe-reports/`.
+
+```bash
+# Direct URLs
+node tools/crawl-probe.mjs https://lamzu.com/products/lamzu-maya-x --verbose
+
+# Product search → crawl
+node tools/crawl-probe.mjs --product "Lamzu Maya X" --max-urls 15 --slots 4
+
+# Non-headless (watch the browser)
+node tools/crawl-probe.mjs --product "Razer Viper V3 Pro" --headless false
+```

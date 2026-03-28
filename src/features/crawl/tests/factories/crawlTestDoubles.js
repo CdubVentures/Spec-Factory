@@ -51,8 +51,8 @@ export function createPageDouble({
     routeCalls,
     styleTags,
     mouse: {
-      async wheel(options) {
-        mouseWheelCalls.push(options);
+      async wheel(deltaX, deltaY) {
+        mouseWheelCalls.push({ deltaX, deltaY });
       },
     },
     async $(selector) {

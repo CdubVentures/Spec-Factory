@@ -320,6 +320,7 @@ export interface SearchResultEntry {
   rationale: string;
   score_components: SearchResultScoreComponents | null;
   domain_safety?: string;
+  already_crawled?: boolean;
 }
 
 export interface SearchWorkerAttempt {

@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerIndexlabRoutes } from '../indexlabRoutes.js';
 
+const mockSpecDb = {
+  getQueryIndexByCategory: () => [],
+  getUrlIndexByCategory: () => [],
+  getPromptIndexByCategory: () => [],
+  getKnobSnapshots: () => [
+    { ts: '2026-03-01T00:00:00.000Z', entries: [], mismatch_count: 0, total_knobs: 0 },
+  ],
+};
+
 function createMockCtx(overrides = {}) {
   const responses = [];
   return {
@@ -14,6 +23,7 @@ function createMockCtx(overrides = {}) {
       path: { join: (...args) => args.join('/') },
       INDEXLAB_ROOT: '/tmp/indexlab',
       processStatus: () => ({ running: false }),
+      getSpecDb: () => mockSpecDb,
       readIndexLabRunMeta: async () => null,
       resolveIndexLabRunDirectory: async () => '',
       readIndexLabRunEvents: async () => [],
@@ -35,11 +45,6 @@ function createMockCtx(overrides = {}) {
       buildSearchHints: () => [],
       buildAnchorsSuggestions: () => [],
       buildKnownValuesSuggestions: () => [],
-      queryIndexSummary: () => ({ total: 0, dead_count: 0, top_yield: [], provider_breakdown: {} }),
-      urlIndexSummary: () => ({ total: 3, reuse_distribution: {}, high_yield: [], tier_breakdown: {} }),
-      highYieldUrls: () => [],
-      promptIndexSummary: () => ({ total_calls: 0, total_tokens: 0, unique_versions: 0, versions: [], model_breakdown: {} }),
-      readKnobSnapshots: () => [{ ts: '2026-01-01T00:00:00.000Z', entries: [], mismatch_count: 0, total_knobs: 5 }],
       ...overrides
     },
     responses

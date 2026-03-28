@@ -27,7 +27,7 @@
 
 flowchart TB
 
-  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Completion</b><br/><i>15 actual phases (phase_00 - phase_09 + sub-cursors)  |  Code-verified 2026-03-27</i>"]
+  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Completion</b><br/><i>15 actual phases (phase_00 - phase_09 + sub-cursors)  |  Code-verified 2026-03-28</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:22px
 
   %% ===== PHASE 00: BOOTSTRAP =====
@@ -64,7 +64,7 @@ flowchart TB
     p8_domain["phase_08_domain_classifier"]
 
     p18_sql[("SQL writes:<br/>bridge_events, run_artifacts,<br/>billing_entries, runs (counters)")]
-    p18_ndjson["NDJSON side-writes:<br/><i>query-index, url-index,<br/>prompt-index, knob-snapshots</i>"]
+    p18_ndjson["NDJSON factories DELETED (2026-03-28)<br/><i>query-index, url-index, prompt-index,<br/>knob-snapshots — all SQL-only via callbacks</i>"]
 
     p1_needset --> p2_brand --> p3_profile --> p4_planner
     p4_planner --> p5_query --> p6_results --> p7_serp --> p8_domain
@@ -81,7 +81,7 @@ flowchart TB
   style p7_serp fill:#21262d,stroke:#d29922,color:#c9d1d9
   style p8_domain fill:#21262d,stroke:#3fb950,color:#c9d1d9
   style p18_sql fill:#238636,stroke:#3fb950,color:#fff
-  style p18_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style p18_ndjson fill:#da3633,stroke:#f85149,color:#fff
 
   %% ===== PHASE 09: CRAWL =====
   subgraph P09["phase_09_crawl  CRAWL + EXTRACTION"]

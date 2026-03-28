@@ -125,10 +125,11 @@ export function buildWorkerDetail(events, workerId, options = {}) {
               fetch_worker_id: null,
               fetched: false,
               fetch_link_type: 'none',
-              decision: 'unknown',
+              decision: String(r?.decision || '').trim() || 'unknown',
               score: 0,
               rationale: '',
               score_components: null,
+              already_crawled: Boolean(r?.already_crawled),
             })) : [],
           };
         }
@@ -166,7 +167,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
       }
       if (type === 'domains_classified' && Array.isArray(payload.classifications)) {
         for (const cls of payload.classifications) {
-          const host = String(cls?.domain || '').trim();
+          const host = normalizeHost(String(cls?.domain || '').trim());
           if (host) domainSafetyByHost[host] = String(cls?.safety_class || '').trim();
         }
       }
@@ -201,6 +202,15 @@ export function buildWorkerDetail(events, workerId, options = {}) {
         // Domain safety from domain classifier
         const host = normalizeHost(r.domain || '');
         r.domain_safety = domainSafetyByHost[host] || '';
+        // WHY: blocked/unsafe domains should show as hard_drop, not unknown.
+        // serp_selector decision (if set) always wins — this only fires for unknown.
+        if (r.decision === 'unknown' && r.domain_safety) {
+          const safety = r.domain_safety.toLowerCase();
+          if (safety === 'blocked' || safety === 'unsafe') {
+            r.decision = 'hard_drop';
+            r.rationale = 'denied_host';
+          }
+        }
       }
     }
 

@@ -9,7 +9,7 @@ interface RuntimeOpsRunPickerProps {
   isRefreshing: boolean;
 }
 
-const PICKER_WIDTH_CLASS = 'w-[400px] max-w-full';
+const PICKER_WIDTH_CLASS = 'w-[360px] max-w-full';
 
 function toToken(value: unknown): string {
   return String(value || '').trim();
@@ -168,8 +168,8 @@ export function RuntimeOpsRunPicker({
 
   if (isLoading && runs.length === 0) {
     return (
-      <div className={`flex ${PICKER_WIDTH_CLASS} items-center gap-2 sf-surface-elevated border sf-border-default px-2 py-1.5`}>
-        <Spinner className="h-4 w-4" />
+      <div className={`flex ${PICKER_WIDTH_CLASS} items-center gap-2 sf-surface-elevated border sf-border-default rounded px-2 h-[28px]`}>
+        <Spinner className="h-3.5 w-3.5" />
         <span className="sf-text-caption font-medium">Loading runs...</span>
       </div>
     );
@@ -177,7 +177,7 @@ export function RuntimeOpsRunPicker({
 
   if (runs.length === 0) {
     return (
-      <div className={`flex ${PICKER_WIDTH_CLASS} items-center gap-2 sf-surface-elevated border sf-border-default px-2 py-1.5`}>
+      <div className={`flex ${PICKER_WIDTH_CLASS} items-center gap-2 sf-surface-elevated border sf-border-default rounded px-2 h-[28px]`}>
         <span className="sf-text-caption sf-text-subtle italic">No runs yet</span>
       </div>
     );
@@ -185,8 +185,8 @@ export function RuntimeOpsRunPicker({
 
   return (
     <details className={`relative min-w-0 ${PICKER_WIDTH_CLASS}`}>
-      <summary className="block w-full list-none cursor-pointer rounded-none sf-surface-elevated border sf-border-default px-2 py-1.5">
-        <div className="flex min-w-0 items-center gap-2">
+      <summary className="block w-full list-none cursor-pointer rounded sf-surface-elevated border sf-border-default px-2 h-[28px]">
+        <div className="flex min-w-0 items-center gap-1.5 h-full">
           <span className="min-w-0 flex-1 truncate whitespace-nowrap sf-text-caption font-medium">
             {selectedLabel}
           </span>
@@ -206,14 +206,14 @@ export function RuntimeOpsRunPicker({
         </div>
       </summary>
 
-      <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-auto rounded-none sf-surface-elevated border sf-border-default shadow-lg">
+      <div className="absolute left-0 top-full z-20 mt-1 w-full max-h-[320px] overflow-auto rounded sf-surface-elevated border sf-border-default shadow-lg">
         {runs.map((run) => {
           const runLabel = buildInlineRunLabel(run);
           return (
             <button
               key={run.run_id}
               type="button"
-              className={`flex w-full min-w-0 items-center gap-2 rounded-none px-3 py-2 text-left sf-nav-item ${
+              className={`flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left sf-nav-item ${
                 run.run_id === selectedRun?.run_id ? 'sf-nav-item-active' : 'sf-nav-item-muted'
               }`}
               onClick={(event) => {

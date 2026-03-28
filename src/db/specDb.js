@@ -33,6 +33,7 @@ import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createMetricsStore } from './stores/metricsStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
+import { createProvenanceStore } from './stores/provenanceStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -142,6 +143,10 @@ export class SpecDb {
         _insertPromptIndexEntry: this._insertPromptIndexEntry,
         _getPromptIndexByCategory: this._getPromptIndexByCategory,
       }
+    });
+    this._provenanceStore = createProvenanceStore({
+      category: this.category,
+      stmts: { _getProvenanceForProduct: this._getProvenanceForProduct },
     });
   }
 
@@ -319,6 +324,7 @@ export class SpecDb {
   syncItemListLinkForFieldValue(opts) { return this._itemStateStore.syncItemListLinkForFieldValue(opts); }
   getItemComponentLinks(productId) { return this._itemStateStore.getItemComponentLinks(productId); }
   getItemListLinks(productId) { return this._itemStateStore.getItemListLinks(productId); }
+  getProvenanceForProduct(cat, productId) { return this._provenanceStore.getProvenanceForProduct(cat ?? this.category, productId); }
 
   // --- Reverse-Lookup Queries (component/enum review) ---
 

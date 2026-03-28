@@ -1,0 +1,305 @@
+{
+  "selected_count": 50,
+  "selected_urls": [
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOorxDmo3x-FTgTLfq0Ly39h7ngCbF3brtaJcrhWCLj7Xlgu_gtim",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/collections/maya-x?srsltid=AfmBOorA4eplpbn8kNJGpQSrzARG3zqGgEnjopceBXT2VbLkAvAPo6w1",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-x-aimlabs-maya-x?srsltid=AfmBOopFcgmGUAme-vIGuuyb02K1dueXtpHP1JuDktttDwYJxrqMP07b",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x-mouse-ptfe-skates?srsltid=AfmBOor-OUs59VwrxLJvB4Z8r4peLsyA2d96QfWsSai92iTb6W6Q1jYb",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/pages/download?srsltid=AfmBOopMnCL-yql7gKHRx7VCydV1kOMeKCw9wQ3vubu-BOaav5nvrIAw",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-champion-edition?srsltid=AfmBOor1sUTrFYKUJvuuD1WQ5WDL0nf-AY5TzlU4F8hUx9YFFuDyNnPL",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOoq4V7fhOue1PbpZCGEpI6ooqrEqMRBGVfULTkLmGKQ3m0n11TCt",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOooyeN0IGEBbBm1ld7NNm6M7D6SvX-c9JHQ4_VF-sZl_CgS_huM0",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOorqBAgq2xAfhOE_o_Ory19b7HFd-eD_-_G-YJUxaFksRqv1mtZZ",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOop-LPoSgeuErKN-2e4-Sv4WHlmV89c2Ub6A5Qt5IuLpgS44gttF",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/collections/maya-x?srsltid=AfmBOory-GiG40zFa_k521X_KZmeI9NcDz-TldcUwZ5uXWgIckaFVb0L",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOopN1SvGtecEL-18UHdZxT0P884R8OOlFh5bnNZtBs35kA9h9RkE",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-x-aimlabs-maya-x?srsltid=AfmBOopO_ubIF3dUYmk1Ypia7em7kYx0BGRrBDuV7pOHx3tZjbL_xDZ3",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-maya-x?srsltid=AfmBOorqFf-MXbUtjeARBYzaachsYgQXHewthU3pU7m0oxyy52Qyg9mI",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/products/lamzu-x-aimlabs-maya-x?srsltid=AfmBOopgOp6U2yfw6WYBYDgNkKf-Mm6nZuPrw2_1LxbFHkY3eo4E7vHf",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/collections/maya-x?srsltid=AfmBOoqPgnN_m9sIjBg8M-j4DBWipnH60BZfHbRKpKJIuT1yYhKFGSmW",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/?srsltid=AfmBOopGK8jb5QukhBKMfVLuWDbMXb02EaG2Cmzrc092-DuCzDLHpKBt",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/pages/aurora-tech?srsltid=AfmBOoq71geSVIugFeim33_J1DsDkj3APUSWc5Py8lQL8pvkMMO9mKI6",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/pages/maya-tools?srsltid=AfmBOorBwIMDakRWVVoxe7N1raFW614bRcFHnVLZBzq9H0UmzKLYkYoV",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/blogs/faq/how-do-i-use-the-maya-x-firmware-update-tools?srsltid=AfmBOoqB4sm6QrXRQfklx5EhlWKd6e64hGIUPQIyvBWDqITeNKbzYRiC",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/blogs/faq/mouse-wireless-mode-pairing?srsltid=AfmBOoq8740myFyl05g3fF6DmqHwjXgydZeAe6cvOj_2mU-qnUJtzJw6",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/pages/details-for-this-new-driver?srsltid=AfmBOorOvM3mwx7irX8804sf85k_aS9M122e0APFIBi9wMeW72or2L6s",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://lamzu.com/blogs/faq/how-to-pair-the-8k-dongle-with-the-lamzu-mouse?srsltid=AfmBOooWG_sNbh-5wqMzEoFrMOjUxL5qIDp7eOo-a_dxAu6jQiMIT67l",
+      "host": "lamzu.com",
+      "tier": "manufacturer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.lamzu.net/",
+      "host": "lamzu.net",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://x.com/Lamzugear",
+      "host": "x.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.amazon.com/Lamzu-Wireless-Lightweight-Symmetrical-Dust-Proof/dp/B0DFGYHVPZ",
+      "host": "amazon.com",
+      "tier": "retailer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://us.maxgaming.com/us/wireless-mouses/lamzu-maya-x-purple-shadow",
+      "host": "us.maxgaming.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.rtings.com/mouse/reviews/lamzu/maya-x",
+      "host": "rtings.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://prosettings.net/reviews/lamzu-maya-x",
+      "host": "prosettings.net",
+      "tier": "database",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.reddit.com/r/MouseReview/comments/1g4uw14/lamzu_maya_x_review_after_3_weeks",
+      "host": "reddit.com",
+      "tier": "database",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.microcenter.com/product/692185/lamzu-maya-x-wireless-gaming-mouse-black",
+      "host": "microcenter.com",
+      "tier": "retailer",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://ausmodshop.com/products/lamzu-maya-x-8k-wireless-gaming-mouse?srsltid=AfmBOooq19s1CVOBDzH-dZ9DjNvdoWMzg0u6PFdh-ug4tUBmHTKiTTrJ",
+      "host": "ausmodshop.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.rtings.com/mouse/reviews/fnatic/x-lamzu-maya-8k",
+      "host": "rtings.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.reddit.com/r/MouseReview/comments/1mo2x6y/anyone_disappointed_in_lamzu_maya_x_8k_terrible",
+      "host": "reddit.com",
+      "tier": "database",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.rtings.com/mouse/tools/compare/lamzu-maya-vs-lamzu-maya-x/48500/77249",
+      "host": "rtings.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://x.com/rtingsdotcom/status/1865079062324036095",
+      "host": "x.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.instagram.com/p/DDPp2qXgCqK",
+      "host": "instagram.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.techpowerup.com/review/lamzu-maya-x/4.html",
+      "host": "techpowerup.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.reddit.com/r/MouseReview/comments/1hxrw4t/lamzu_maya_x_the_techpowerup_review",
+      "host": "reddit.com",
+      "tier": "database",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.techpowerup.com/review/lamzu-maya/3.html",
+      "host": "techpowerup.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.linkedin.com/posts/techpowerup_lamzu-maya-x-review-activity-7283208021868969985-zJRx",
+      "host": "linkedin.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.techpowerup.com/reviewdb/Mouse/LAMZU",
+      "host": "techpowerup.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.rtings.com/mouse/reviews/lamzu/maya",
+      "host": "rtings.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.tomsguide.com/computing/peripherals/fnatic-x-lamzu-maya-8k-maya-x-8k-mouse-review",
+      "host": "tomsguide.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://hardwaremarket.net/product/lamzu-maya-x-wireless-gaming-mouse-ultra-lightweight-47g-8k-polling-rate-optical-switch-maximum-30000-dpi-symmetrical-mcu-nordic-52840-dust-proof-encoder-paw3950-sensor-white?srsltid=AfmBOop-hRdR3eKvtU580e7Emr4hGfWRfvOylI8ntV7wHecXP-r0zESq",
+      "host": "hardwaremarket.net",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.tomshardware.com/peripherals/mice/gaming-mice",
+      "host": "tomshardware.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.reddit.com/r/MouseReview/comments/1p75p6c/lamzu_maya_x_aimlabs_edition_review",
+      "host": "reddit.com",
+      "tier": "database",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://us.maxgaming.com/us/wireless-mouses/lamzu-aimlabs-maya-x",
+      "host": "us.maxgaming.com",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://www.lttlabs.com/",
+      "host": "lttlabs.com",
+      "tier": "lab",
+      "reason": "fetch_high"
+    },
+    {
+      "url": "https://keybay.tech/products/lamzu-x-aimlabs-maya-x-esport-gaming-mouse?srsltid=AfmBOor131wPP66A3orP7DjRAhf38pb0XU6MNdg3VwVOlY9jBOxIMO1F",
+      "host": "keybay.tech",
+      "tier": "candidate",
+      "reason": "fetch_high"
+    }
+  ]
+}

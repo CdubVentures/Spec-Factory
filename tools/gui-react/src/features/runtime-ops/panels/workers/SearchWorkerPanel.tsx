@@ -451,7 +451,7 @@ function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.fetched ? 'bg-green-500' : 'sf-bg-muted'}`}
                   title={r.fetched ? `Fetched by ${r.fetch_worker_id}` : 'Not fetched'}
                 />
-                {(() => { const dd = resolveDecisionDisplay(r); return (
+                {(() => { const dd = resolveDecisionDisplay(r, { isCrawled: Boolean(r.already_crawled) }); return (
                   <span className={`px-1.5 py-0.5 rounded-full sf-text-nano font-medium shrink-0 ${dd.chipClass}`}>
                     {dd.label}
                   </span>
@@ -526,7 +526,7 @@ function AttemptResultsPreview({ results }: { results: SearchResultEntry[] }) {
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="sf-text-nano font-mono sf-text-dim shrink-0">{`#${rank}`}</span>
-                      {(() => { const dd = resolveDecisionDisplay(result); return (
+                      {(() => { const dd = resolveDecisionDisplay(result, { isCrawled: Boolean(result.already_crawled) }); return (
                         <span className={`px-1 py-0 rounded-full sf-text-nano font-medium ${dd.chipClass}`}>
                           {dd.label}
                         </span>

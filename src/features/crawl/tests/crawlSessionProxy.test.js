@@ -179,16 +179,37 @@ test('preNavigationHooks are present', () => {
   assert.ok(config.preNavigationHooks.length >= 1);
 });
 
-test('preNavigationHook does not override gotoOptions timeout or waitUntil', async () => {
+test('preNavigationHook does not override gotoOptions timeout', async () => {
   const config = captureConfig({});
-  const gotoOptions = { timeout: 99999, waitUntil: 'networkidle' };
+  const gotoOptions = { timeout: 99999 };
   const mockPage = { context: () => ({ newCDPSession: async () => ({ on: () => {}, send: async () => {} }) }) };
   await config.preNavigationHooks[0](
     { request: { uniqueKey: 'test-key', userData: {} }, page: mockPage },
     gotoOptions,
   );
   assert.equal(gotoOptions.timeout, 99999, 'timeout must not be overridden by hook');
-  assert.equal(gotoOptions.waitUntil, 'networkidle', 'waitUntil must not be overridden by hook');
+});
+
+test('preNavigationHook sets waitUntil from crawleeWaitUntil setting', async () => {
+  const config = captureConfig({ crawleeWaitUntil: 'load' });
+  const gotoOptions = { timeout: 30000 };
+  const mockPage = { context: () => ({ newCDPSession: async () => ({ on: () => {}, send: async () => {} }) }) };
+  await config.preNavigationHooks[0](
+    { request: { uniqueKey: 'test-key', userData: {} }, page: mockPage },
+    gotoOptions,
+  );
+  assert.equal(gotoOptions.waitUntil, 'load', 'waitUntil must reflect the setting value');
+});
+
+test('preNavigationHook defaults waitUntil to domcontentloaded when setting is absent', async () => {
+  const config = captureConfig({});
+  const gotoOptions = { timeout: 30000 };
+  const mockPage = { context: () => ({ newCDPSession: async () => ({ on: () => {}, send: async () => {} }) }) };
+  await config.preNavigationHooks[0](
+    { request: { uniqueKey: 'test-key', userData: {} }, page: mockPage },
+    gotoOptions,
+  );
+  assert.equal(gotoOptions.waitUntil, 'domcontentloaded', 'default waitUntil must be domcontentloaded');
 });
 
 test('postNavigationHooks not configured', () => {

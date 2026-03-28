@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RuntimeOps Header Preview</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --border: #e4e7ec;
+    --border-soft: #eef0f4;
+    --text: #0f1419;
+    --text-2: #536471;
+    --text-3: #8899a6;
+    --accent: #1d9bf0;
+    --purple: #7856ff;
+    --green: #00ba7c;
+    --cyan: #1abcfe;
+    --orange: #f97316;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; padding: 40px 20px; }
+  .mono { font-family: 'SF Mono', 'Cascadia Code', monospace; letter-spacing: -0.02em; }
+  @keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 8px; }
+  .gap { height: 32px; }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    height: 46px;
+    padding: 0 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  /* Status pill */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; letter-spacing: -0.01em;
+    padding: 4px 10px 4px 8px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .pill .dot.live { animation: breathe 1.8s infinite; }
+
+  /* Run picker */
+  .run {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .run .dim { color: var(--text-3); }
+  .run .badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+  .run .badge-live { background: rgba(0,186,124,0.08); color: var(--green); }
+  .run .badge-local { background: rgba(29,155,240,0.08); color: var(--accent); }
+
+  /* Stepper */
+  .stepper {
+    display: flex; align-items: center;
+    flex: 1; max-width: 200px; min-width: 120px;
+  }
+  .s-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    transition: opacity 0.3s;
+  }
+  .s-dot.done { opacity: 0.85; }
+  .s-dot.active { animation: breathe 2s infinite; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+  .s-dot.pending { opacity: 0.12; }
+  .s-line {
+    flex: 1; height: 2px; border-radius: 1px; margin: 0 2px;
+  }
+  .s-line.done { background: #d1d5db; }
+  .s-line.pending { background: #eef0f4; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 1px;
+    background: var(--bg); border-radius: 8px; padding: 3px;
+    flex-shrink: 0;
+  }
+  .tab {
+    font-size: 12px; font-weight: 600; padding: 5px 14px; border-radius: 6px;
+    border: none; cursor: pointer; background: transparent; color: var(--text-3);
+    transition: all 0.1s;
+  }
+  .tab:hover { color: var(--text-2); }
+  .tab.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+
+  .demo { display: flex; gap: 6px; margin-bottom: 20px; }
+  .demo button { font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text-3); }
+  .demo button.on { background: var(--text); color: white; border-color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="demo">
+  <button class="on" onclick="set('live',this)">Live</button>
+  <button onclick="set('boot',this)">Booting</button>
+  <button onclick="set('done',this)">Completed</button>
+  <button onclick="set('idle',this)">Idle</button>
+</div>
+
+<div class="label">Header (46px — matches all rows)</div>
+<div class="header" id="hdr">
+  <div class="pill" id="pill" style="background: rgba(0,186,124,0.06); color: var(--green);">
+    <div class="dot live" id="dot" style="background: var(--green);"></div>
+    <span id="pill-text">Live</span>
+  </div>
+
+  <div class="stepper" id="stepper">
+    <div class="s-dot done" style="background: var(--purple);"></div>
+    <div class="s-line done"></div>
+    <div class="s-dot done" style="background: var(--accent);"></div>
+    <div class="s-line done"></div>
+    <div class="s-dot done" style="background: var(--cyan);"></div>
+    <div class="s-line done"></div>
+    <div class="s-dot active" style="background: var(--green);"></div>
+    <div class="s-line pending"></div>
+    <div class="s-dot pending" style="background: var(--orange);"></div>
+  </div>
+
+  <div class="run mono">
+    <span class="dim">Run:</span>
+    Mouse Lamzu Maya X
+    <span class="dim">e87e6</span>
+    <span class="badge badge-live">Live</span>
+    <span class="badge badge-local">Local</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab">Overview</button>
+    <button class="tab on">Workers</button>
+    <button class="tab">Documents</button>
+  </div>
+</div>
+
+<div class="gap"></div>
+<div class="label">Comparison — same height as worker/stage rows</div>
+<div style="display:flex; gap:0; border: 1px solid var(--border); border-radius: 8px; overflow:hidden;">
+  <div style="height:46px; display:flex; align-items:center; padding:0 16px; gap:6px; flex:1; border-right:1px solid #eef0f4;">
+    <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-3); min-width:72px;">Pre-Fetch</span>
+    <span style="font-size:11px; font-weight:600; padding:4px 10px; border-radius:8px; border:1px solid var(--border); background:white;">NeedSet</span>
+    <span style="font-size:11px; font-weight:600; padding:4px 10px; border-radius:8px; border:1px solid var(--border); background:white;">Brand Resolver</span>
+    <span style="font-size:11px; font-weight:600; padding:4px 10px; border-radius:8px; border:1px solid var(--border); background:white;">Search Profile</span>
+  </div>
+</div>
+
+<script>
+function set(mode, btn) {
+  document.querySelectorAll('.demo button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const pill = document.getElementById('pill');
+  const dot = document.getElementById('dot');
+  const text = document.getElementById('pill-text');
+  const stepper = document.getElementById('stepper');
+  const dots = stepper.querySelectorAll('.s-dot');
+  const lines = stepper.querySelectorAll('.s-line');
+
+  if (mode === 'live') {
+    pill.style.cssText = 'background:rgba(0,186,124,0.06);color:var(--green);';
+    dot.className = 'dot live'; dot.style.background = 'var(--green)'; dot.style.display = '';
+    text.textContent = 'Live';
+    stepper.style.display = '';
+    [0,1,2].forEach(i => { dots[i].className = 's-dot done'; });
+    dots[3].className = 's-dot active'; dots[4].className = 's-dot pending';
+    [0,1,2].forEach(i => lines[i].className = 's-line done');
+    lines[3].className = 's-line pending';
+  } else if (mode === 'boot') {
+    pill.style.cssText = 'background:rgba(120,86,255,0.06);color:var(--purple);';
+    dot.className = 'dot live'; dot.style.background = 'var(--purple)'; dot.style.display = '';
+    text.textContent = 'Booting';
+    stepper.style.display = '';
+    dots[0].className = 's-dot active';
+    [1,2,3,4].forEach(i => dots[i].className = 's-dot pending');
+    lines.forEach(l => l.className = 's-line pending');
+  } else if (mode === 'done') {
+    pill.style.cssText = 'background:rgba(29,155,240,0.06);color:var(--accent);';
+    dot.style.display = 'none';
+    text.textContent = 'Completed';
+    stepper.style.display = '';
+    dots.forEach(d => d.className = 's-dot done');
+    lines.forEach(l => l.className = 's-line done');
+  } else {
+    pill.style.cssText = 'background:var(--border-soft);color:var(--text-3);';
+    dot.style.display = 'none';
+    text.textContent = 'Idle';
+    stepper.style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>

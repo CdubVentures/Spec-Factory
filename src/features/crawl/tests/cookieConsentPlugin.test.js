@@ -4,23 +4,16 @@ import { createCookieConsentPlugin, cookieConsentPlugin } from '../plugins/cooki
 
 // ── Test doubles ─────────────────────────────────────────────────────────────
 
-function createPageDouble() {
+// WHY: Plugin now uses page.evaluate() for fallback selectors instead of
+// per-selector page.locator().all() + el.click() round-trips. The page double
+// must support evaluate with a selector string argument.
+function createPageDouble({ evaluateResult = 0 } = {}) {
   const calls = [];
   return {
     calls,
-    locator(selector) {
-      return {
-        async all() {
-          const count = calls.filter((c) => c.type === 'locator' && c.selector === selector).length;
-          if (count > 0) return [];
-          calls.push({ type: 'locator', selector });
-          // Return fake elements that can be clicked
-          return [
-            { async click() { calls.push({ type: 'click', selector }); } },
-            { async click() { calls.push({ type: 'click', selector }); } },
-          ];
-        },
-      };
+    async evaluate(fn, ...args) {
+      calls.push({ type: 'evaluate', args });
+      return evaluateResult;
     },
     async waitForTimeout(ms) {
       calls.push({ type: 'waitForTimeout', ms });
@@ -150,14 +143,14 @@ describe('cookieConsentPlugin — autoconsent', () => {
     assert.equal(handler.invocations[0].options.timeout, 8000);
   });
 
-  it('uses default timeout of 1000ms when not configured', async () => {
+  it('uses default timeout of 200ms when not configured', async () => {
     const handler = createConsentHandlerDouble({ handled: true });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
     await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
-    assert.equal(handler.invocations[0].options.timeout, 1000);
+    assert.equal(handler.invocations[0].options.timeout, 200);
   });
 
   it('skips fallback selectors when autoconsent matched', async () => {
@@ -169,16 +162,17 @@ describe('cookieConsentPlugin — autoconsent', () => {
 
     assert.equal(result.autoconsentMatched, true);
     assert.equal(result.fallbackClicked, 0);
+    assert.equal(page.calls.filter((c) => c.type === 'evaluate').length, 0, 'no evaluate when autoconsent matched');
   });
 });
 
 // ── Fallback selectors ───────────────────────────────────────────────────────
 
 describe('cookieConsentPlugin — fallback selectors', () => {
-  it('uses fallback selectors when autoconsent finds no CMP', async () => {
+  it('uses page.evaluate for fallback when autoconsent misses', async () => {
     const handler = createConsentHandlerDouble({ handled: false });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
+    const page = createPageDouble({ evaluateResult: 3 });
 
     const result = await plugin.hooks.onDismiss({
       page,
@@ -189,13 +183,14 @@ describe('cookieConsentPlugin — fallback selectors', () => {
     });
 
     assert.equal(result.autoconsentMatched, false);
-    assert.ok(result.fallbackClicked >= 0);
+    const evalCalls = page.calls.filter((c) => c.type === 'evaluate');
+    assert.equal(evalCalls.length, 1, 'exactly one evaluate call for fallback');
   });
 
-  it('counts fallback clicks', async () => {
+  it('counts fallback clicks from evaluate result', async () => {
     const handler = createConsentHandlerDouble({ handled: false });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
+    const page = createPageDouble({ evaluateResult: 5 });
 
     const result = await plugin.hooks.onDismiss({
       page,
@@ -206,14 +201,13 @@ describe('cookieConsentPlugin — fallback selectors', () => {
     });
 
     assert.equal(result.autoconsentMatched, false);
-    assert.ok(typeof result.fallbackClicked === 'number');
-    assert.ok(result.fallbackClicked > 0);
+    assert.equal(result.fallbackClicked, 5);
   });
 
-  it('uses custom fallback selectors from settings', async () => {
+  it('passes selector string to evaluate', async () => {
     const handler = createConsentHandlerDouble({ handled: false });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
+    const page = createPageDouble({ evaluateResult: 0 });
 
     await plugin.hooks.onDismiss({
       page,
@@ -223,10 +217,9 @@ describe('cookieConsentPlugin — fallback selectors', () => {
       },
     });
 
-    const locatorCalls = page.calls.filter((c) => c.type === 'locator');
-    const selectors = locatorCalls.map((c) => c.selector);
-    assert.ok(selectors.includes('#my-custom-btn'));
-    assert.ok(selectors.includes('.other-btn'));
+    const evalCalls = page.calls.filter((c) => c.type === 'evaluate');
+    assert.equal(evalCalls.length, 1);
+    assert.equal(evalCalls[0].args[0], '#my-custom-btn,.other-btn');
   });
 });
 
@@ -252,10 +245,10 @@ describe('cookieConsentPlugin — no settle wait', () => {
 // ── Error resilience ─────────────────────────────────────────────────────────
 
 describe('cookieConsentPlugin — error resilience', () => {
-  it('catches autoconsent errors and tries fallback', async () => {
+  it('catches autoconsent errors and tries fallback via evaluate', async () => {
     const handler = createThrowingConsentHandler('CMP detection crashed');
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-    const page = createPageDouble();
+    const page = createPageDouble({ evaluateResult: 2 });
 
     const result = await plugin.hooks.onDismiss({
       page,
@@ -267,25 +260,16 @@ describe('cookieConsentPlugin — error resilience', () => {
 
     assert.equal(result.enabled, true);
     assert.equal(result.autoconsentMatched, false);
-    assert.ok(typeof result.fallbackClicked === 'number');
+    assert.equal(result.fallbackClicked, 2);
   });
 
-  it('catches fallback click errors gracefully', async () => {
+  it('catches evaluate errors gracefully', async () => {
     const handler = createConsentHandlerDouble({ handled: false });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
 
-    // Page double with elements that throw on click
     const page = {
       calls: [],
-      locator() {
-        return {
-          async all() {
-            return [
-              { async click() { throw new Error('element detached'); } },
-            ];
-          },
-        };
-      },
+      async evaluate() { throw new Error('evaluate failed'); },
       async waitForTimeout(ms) { page.calls.push({ type: 'waitForTimeout', ms }); },
     };
 
@@ -298,7 +282,7 @@ describe('cookieConsentPlugin — error resilience', () => {
     });
 
     assert.equal(result.enabled, true);
-    // Should not throw, just return gracefully
+    assert.equal(result.fallbackClicked, 0);
   });
 });
 
@@ -308,15 +292,7 @@ describe('cookieConsentPlugin — no banner', () => {
   it('returns zero interaction when no banner found anywhere', async () => {
     const handler = createConsentHandlerDouble({ handled: false });
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
-
-    // Page double where locator returns empty arrays
-    const page = {
-      calls: [],
-      locator() {
-        return { async all() { return []; } };
-      },
-      async waitForTimeout(ms) { page.calls.push({ type: 'waitForTimeout', ms }); },
-    };
+    const page = createPageDouble({ evaluateResult: 0 });
 
     const result = await plugin.hooks.onDismiss({
       page,

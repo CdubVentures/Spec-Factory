@@ -4,11 +4,42 @@
  * the original untrimmed video is kept.
  */
 
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { rename, unlink } from 'node:fs/promises';
+import { existsSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 
 const execFileAsync = promisify(execFile);
+
+// WHY: On Windows, winget installs ffmpeg but the running process may not
+// have the updated PATH. Resolve the ffmpeg binary path once at module load.
+function resolveFfmpegPath() {
+  try {
+    execFileSync('ffmpeg', ['-version'], { timeout: 3000, stdio: 'ignore' });
+    return 'ffmpeg';
+  } catch { /* not in PATH */ }
+
+  if (process.platform === 'win32') {
+    try {
+      const wingetPkgs = path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WinGet', 'Packages');
+      if (existsSync(wingetPkgs)) {
+        const ffmpegDirs = readdirSync(wingetPkgs).filter((d) => d.startsWith('Gyan.FFmpeg'));
+        for (const dir of ffmpegDirs) {
+          const binDir = path.join(wingetPkgs, dir);
+          try {
+            const sub = readdirSync(binDir).find((s) => existsSync(path.join(binDir, s, 'bin', 'ffmpeg.exe')));
+            if (sub) return path.join(binDir, sub, 'bin', 'ffmpeg.exe');
+          } catch { /* scan failed */ }
+        }
+      }
+    } catch { /* not accessible */ }
+  }
+
+  return 'ffmpeg';
+}
+
+const _ffmpegBin = resolveFfmpegPath();
 
 /**
  * @param {string} inputPath — path to the .webm file
@@ -20,7 +51,7 @@ export async function trimVideo(inputPath, startSec, endSec) {
 
   const tmpPath = inputPath + '.trimmed.webm';
   try {
-    await execFileAsync('ffmpeg', [
+    await execFileAsync(_ffmpegBin, [
       '-y', '-i', inputPath,
       '-ss', String(startSec),
       '-to', String(endSec),
@@ -31,7 +62,6 @@ export async function trimVideo(inputPath, startSec, endSec) {
     await rename(tmpPath, inputPath);
   } catch {
     // WHY: ffmpeg not installed or trim failed — keep untrimmed original.
-    // This is expected on systems without ffmpeg. Non-fatal.
     try { await unlink(tmpPath); } catch { /* cleanup best-effort */ }
   }
 }

@@ -40,7 +40,6 @@ import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { normalizeCostRates } from '../../billing/costRates.js';
 import { normalizeFieldList } from '../../utils/fieldKeys.js';
 import { computeNeedSet } from '../../features/indexing/pipeline/needSet/needsetEngine.js';
-import { recordPromptResult } from '../../features/indexing/pipeline/shared/index.js';
 import { appendCostLedgerEntry } from '../../billing/costLedger.js';
 
 const DEFAULT_DEPS = {
@@ -55,7 +54,7 @@ const DEFAULT_DEPS = {
   createRunLlmRuntimeFn: createRunLlmRuntime,
   normalizeCostRatesFn: normalizeCostRates,
   appendCostLedgerEntryFn: appendCostLedgerEntry,
-  recordPromptResultFn: recordPromptResult,
+  recordPromptResultFn: () => {},
   defaultIndexLabRootFn: defaultIndexLabRoot,
   joinPathFn: path.join,
   mkdirSyncFn: fs.mkdirSync,

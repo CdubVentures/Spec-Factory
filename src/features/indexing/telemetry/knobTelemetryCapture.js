@@ -1,8 +1,6 @@
 // WHY: Captures config-vs-default snapshots for knob drift detection.
 // Each snapshot records which knobs diverge from manifest defaults.
 
-import fs from 'node:fs';
-
 /**
  * Compare resolved config against manifest defaults.
  */
@@ -37,14 +35,6 @@ export function captureKnobSnapshot(config, defaults) {
 }
 
 /**
- * Append a knob snapshot to the NDJSON log.
- */
-export function recordKnobSnapshot(snapshot, logPath) {
-  const line = JSON.stringify(snapshot);
-  fs.appendFileSync(logPath, line + '\n', 'utf8');
-}
-
-/**
  * Apply redaction + sort to pre-fetched snapshot rows.
  * Pure function — no I/O. Works with both NDJSON-parsed and SQL rows.
  */
@@ -64,15 +54,3 @@ export function computeKnobSnapshots(snapshots) {
   return results;
 }
 
-/**
- * Read all knob snapshots from the NDJSON log, sorted by ts ascending.
- */
-export function readKnobSnapshots(logPath) {
-  if (!fs.existsSync(logPath)) return [];
-  const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n').filter(Boolean);
-  const parsed = [];
-  for (const line of lines) {
-    try { parsed.push(JSON.parse(line)); } catch { /* skip malformed */ }
-  }
-  return computeKnobSnapshots(parsed);
-}

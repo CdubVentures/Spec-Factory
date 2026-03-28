@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { deriveLlmKeyGateErrors, deriveSerperKeyGateError } from '../../../hooks/llmKeyGateHelpers.js';
+import { useSerperCreditQuery } from '../../../hooks/useSerperCreditQuery.ts';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore.ts';
@@ -30,7 +32,6 @@ import { useIndexingRunSelectionState } from '../state/indexingRunSelectionState
 import { useIndexingRunQueries } from '../api/indexingRunQueries.ts';
 import { useIndexingRunViewHandlers } from '../state/indexingRunViewHandlers.ts';
 import { useIndexingProcessUnloadStop } from '../state/indexingProcessUnloadStop.ts';
-import { useIndexingEventActivityDerivations } from '../selectors/indexingEventActivityDerivations.ts';
 import { useIndexingCatalogDerivations } from '../selectors/indexingCatalogDerivations.ts';
 import { useIndexingRunMutations } from '../api/indexingRunMutations.ts';
 import { useIndexingLlmModelDerivations } from '../selectors/indexingLlmModelDerivations.ts';
@@ -109,6 +110,14 @@ export function IndexingPage() {
     refetchInterval: 15_000
   });
 
+  const { data: serperCredit } = useSerperCreditQuery();
+
+  const llmKeyGateErrors = useMemo(() => {
+    const llmErrors = deriveLlmKeyGateErrors(indexingLlmConfig?.routing_snapshot);
+    const serperError = deriveSerperKeyGateError(serperCredit);
+    return serperError ? [...llmErrors, serperError] : llmErrors;
+  }, [indexingLlmConfig?.routing_snapshot, serperCredit]);
+
   const { data: catalog = [] } = useQuery({
     queryKey: ['catalog', category, 'indexing'],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
@@ -186,14 +195,6 @@ export function IndexingPage() {
   }, [category]);
 
   const processRunning = isProcessRunning;
-  const eventActivity = useIndexingEventActivityDerivations({
-    liveIndexLabByRun,
-    selectedIndexLabRunId,
-    runViewCleared,
-    indexlabEventsResp,
-    indexlabRuns,
-    singleProductId,
-  });
   useIndexingProcessUnloadStop(processRunning);
 
   const noop = () => {};
@@ -289,7 +290,7 @@ export function IndexingPage() {
     selectedIndexLabRunId,
     onClearSelectedRunView: clearSelectedRunView,
     onReplaySelectedRunView: replaySelectedRunView,
-    productPickerActivity: eventActivity.productPickerActivity,
+    llmKeyGateErrors,
   };
 
   return (

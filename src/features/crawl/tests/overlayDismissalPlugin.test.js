@@ -6,25 +6,23 @@ import { overlayDismissalPlugin } from '../plugins/overlayDismissalPlugin.js';
 // Test doubles
 // ---------------------------------------------------------------------------
 
+// WHY: The plugin now does ALL onDismiss work in a single page.evaluate() call.
+// The page double must return a result object matching the in-browser logic's
+// output shape: { overlaysDetected, closeClicked, domRemoved, scrollLockReset, observerCaught }.
 function createPageDouble(opts = {}) {
   const {
-    initScripts = [],
-    overlays = [],        // [{ zIndex, coverage, hasCloseBtn, closeTag }]
-    bodyOverflowHidden = false,
-    observerCaught = 0,
+    evaluateResult = { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: false, observerCaught: 0 },
     evaluateThrows = false,
   } = opts;
 
   const addedInitScripts = [];
   const evaluateCalls = [];
   const waitedMs = [];
-  const clickedSelectors = [];
 
   return {
     addedInitScripts,
     evaluateCalls,
     waitedMs,
-    clickedSelectors,
 
     async addInitScript(script) {
       addedInitScripts.push(typeof script === 'function' ? script.toString() : String(script));
@@ -32,51 +30,8 @@ function createPageDouble(opts = {}) {
 
     async evaluate(fn, ...args) {
       if (evaluateThrows) throw new Error('evaluate failed');
-      const fnStr = fn.toString();
-      evaluateCalls.push({ fn: fnStr, args });
-
-      // Heuristic scan — detect overlays (matches threshold arg pattern)
-      if (fnStr.includes('getComputedStyle') && fnStr.includes('data-sf-overlay')) {
-        return overlays.map((o, i) => ({
-          index: i,
-          zIndex: o.zIndex,
-          coverage: o.coverage,
-          tagName: 'DIV',
-        }));
-      }
-
-      // DOM removal of specific overlay (matches data-sf-overlay query + remove)
-      if (fnStr.includes('data-sf-overlay') && fnStr.includes('remove')) {
-        return undefined;
-      }
-
-      // Scroll-lock detect + reset (matches body + overflow + hidden + auto)
-      if (fnStr.includes('overflow') && fnStr.includes('hidden') && fnStr.includes('auto')) {
-        return bodyOverflowHidden;
-      }
-
-      // Observer telemetry query
-      if (fnStr.includes('__sfOverlayGuard')) {
-        return { caught: observerCaught };
-      }
-
-      return null;
-    },
-
-    locator(selector) {
-      const matching = overlays.filter((o) => o.hasCloseBtn);
-      const elements = matching.map((o) => ({
-        async click(clickOpts) {
-          clickedSelectors.push(selector);
-        },
-        async evaluate(fn) {
-          return { tagName: o.closeTag || 'BUTTON', role: null, href: null };
-        },
-      }));
-      return {
-        async all() { return elements; },
-        async first() { return elements[0] || null; },
-      };
+      evaluateCalls.push({ fn: fn.toString(), args });
+      return evaluateResult;
     },
 
     async waitForTimeout(ms) { waitedMs.push(ms); },
@@ -128,6 +83,16 @@ describe('overlayDismissalPlugin', () => {
       assert.equal(typeof result.scrollLockReset, 'boolean');
       assert.equal(typeof result.observerCaught, 'number');
       assert.equal(typeof result.settleMs, 'number');
+    });
+
+    it('onDismiss uses exactly one evaluate call', async () => {
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 2, closeClicked: 1, domRemoved: 1, scrollLockReset: false, observerCaught: 0 },
+      });
+      await overlayDismissalPlugin.hooks.onDismiss({
+        page, settings: defaultSettings(),
+      });
+      assert.equal(page.evaluateCalls.length, 1, 'must use exactly one evaluate for all DOM work');
     });
   });
 
@@ -210,21 +175,22 @@ describe('overlayDismissalPlugin', () => {
 
   // ---- Heuristic DOM scan ----
   describe('heuristic DOM scan', () => {
-    it('detects overlays via evaluate', async () => {
+    it('propagates overlay detection from evaluate result', async () => {
       const page = createPageDouble({
-        overlays: [
-          { zIndex: 10000, coverage: 0.8, hasCloseBtn: false },
-          { zIndex: 5000, coverage: 0.6, hasCloseBtn: true, closeTag: 'BUTTON' },
-        ],
+        evaluateResult: { overlaysDetected: 2, closeClicked: 1, domRemoved: 1, scrollLockReset: false, observerCaught: 0 },
       });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings(),
       });
-      assert.ok(result.overlaysDetected >= 0);
+      assert.equal(result.overlaysDetected, 2);
+      assert.equal(result.closeClicked, 1);
+      assert.equal(result.domRemoved, 1);
     });
 
     it('reports zero overlays when none found', async () => {
-      const page = createPageDouble({ overlays: [] });
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: false, observerCaught: 0 },
+      });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings(),
       });
@@ -234,8 +200,10 @@ describe('overlayDismissalPlugin', () => {
 
   // ---- Scroll-lock reset ----
   describe('scroll-lock reset', () => {
-    it('detects and resets overflow:hidden on body', async () => {
-      const page = createPageDouble({ bodyOverflowHidden: true });
+    it('propagates scroll-lock reset from evaluate result', async () => {
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: true, observerCaught: 0 },
+      });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings(),
       });
@@ -243,7 +211,9 @@ describe('overlayDismissalPlugin', () => {
     });
 
     it('reports false when body is not scroll-locked', async () => {
-      const page = createPageDouble({ bodyOverflowHidden: false });
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: false, observerCaught: 0 },
+      });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings(),
       });
@@ -253,8 +223,10 @@ describe('overlayDismissalPlugin', () => {
 
   // ---- Observer telemetry ----
   describe('MutationObserver telemetry', () => {
-    it('reports observer caught count', async () => {
-      const page = createPageDouble({ observerCaught: 3 });
+    it('propagates observer caught count from evaluate result', async () => {
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 0, closeClicked: 0, domRemoved: 0, scrollLockReset: false, observerCaught: 3 },
+      });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings(),
       });
@@ -303,11 +275,31 @@ describe('overlayDismissalPlugin', () => {
     });
 
     it('handles empty close selectors', async () => {
-      const page = createPageDouble({ overlays: [{ zIndex: 10000, coverage: 0.8, hasCloseBtn: false }] });
+      const page = createPageDouble({
+        evaluateResult: { overlaysDetected: 1, closeClicked: 0, domRemoved: 1, scrollLockReset: false, observerCaught: 0 },
+      });
       const result = await overlayDismissalPlugin.hooks.onDismiss({
         page, settings: defaultSettings({ overlayDismissalCloseSelectors: '' }),
       });
       assert.equal(typeof result.overlaysDetected, 'number');
+    });
+
+    it('passes settings to evaluate argument', async () => {
+      const page = createPageDouble();
+      await overlayDismissalPlugin.hooks.onDismiss({
+        page, settings: defaultSettings({ overlayDismissalZIndexThreshold: 500 }),
+      });
+      const evalArgs = page.evaluateCalls[0]?.args[0];
+      assert.equal(evalArgs.threshold, 500);
+    });
+
+    it('passes aggressive flag for aggressive mode', async () => {
+      const page = createPageDouble();
+      await overlayDismissalPlugin.hooks.onDismiss({
+        page, settings: defaultSettings({ overlayDismissalMode: 'aggressive' }),
+      });
+      const evalArgs = page.evaluateCalls[0]?.args[0];
+      assert.equal(evalArgs.aggressive, true);
     });
   });
 });

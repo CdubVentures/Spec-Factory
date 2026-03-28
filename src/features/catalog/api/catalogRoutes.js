@@ -346,7 +346,9 @@ export function registerCatalogRoutes(ctx) {
       const [summary, normalized, provenance] = await Promise.all([
         storage.readJsonOrNull(`${latestBase}/summary.json`),
         storage.readJsonOrNull(`${latestBase}/normalized.json`),
-        storage.readJsonOrNull(`${latestBase}/provenance.json`),
+        specDb
+          ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
+          : storage.readJsonOrNull(`${latestBase}/provenance.json`),
       ]);
       const trafficLight = await storage.readJsonOrNull(`${latestBase}/traffic_light.json`);
       if (normalized && typeof normalized === 'object') {
@@ -361,33 +363,6 @@ export function registerCatalogRoutes(ctx) {
       }
       const sessionProduct = await sessionCache.getSessionRules(category);
       return jsonRes(res, 200, { summary, normalized, provenance, trafficLight, fieldOrder: sessionProduct.cleanFieldOrder });
-    }
-
-    // Events
-    if (parts[0] === 'events' && parts[1] && method === 'GET') {
-      const category = parts[1];
-      const productId = params.get('productId') || '';
-      const limit = toInt(params.get('limit'), 500);
-      const eventsPath = path.join(OUTPUT_ROOT, '_runtime', 'events.jsonl');
-      let lines = [];
-      try {
-        const text = await fs.readFile(eventsPath, 'utf8');
-        lines = text.split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-      } catch { /* no events file */ }
-      const normalizedCategory = String(category || '').trim().toLowerCase();
-      if (normalizedCategory && normalizedCategory !== 'all') {
-        lines = lines.filter((e) => {
-          const eventCategory = String(e.category || e.cat || '').trim().toLowerCase();
-          if (eventCategory) return eventCategory === normalizedCategory;
-          const pid = String(e.productId || e.product_id || '').trim().toLowerCase();
-          return pid.startsWith(`${normalizedCategory}-`);
-        });
-      }
-      if (productId) {
-        const normalizedProductId = String(productId).trim();
-        lines = lines.filter((e) => String(e.productId || e.product_id || '').trim() === normalizedProductId);
-      }
-      return jsonRes(res, 200, lines.slice(-limit));
     }
 
     return false;

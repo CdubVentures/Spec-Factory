@@ -1,7 +1,13 @@
 import { NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { isTestCategory } from '../../utils/testMode.ts';
 import { CATALOG_TABS, OPS_TABS, SETTINGS_TABS, type TabDef } from '../../registries/pageRegistry.ts';
+import { useSerperCreditQuery, creditChipClass, formatCredit } from '../../hooks/useSerperCreditQuery.ts';
+import { hasLlmKeyGateErrors, deriveSerperKeyGateError } from '../../hooks/llmKeyGateHelpers.js';
+import { api } from '../../api/client.ts';
+import { Chip } from '../../shared/ui/feedback/Chip.tsx';
+import type { IndexingLlmConfigResponse } from '../../features/indexing/types.ts';
 
 const activeCls = 'border-accent text-accent';
 const inactiveCls = 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300/70 dark:hover:text-white';
@@ -69,6 +75,15 @@ export function TabNav() {
   const category = useUiStore((s) => s.category);
   const isAll = category === 'all';
   const testMode = isTestCategory(category);
+  const { data: serper } = useSerperCreditQuery();
+  const { data: llmConfig } = useQuery({
+    queryKey: ['indexing', 'llm-config'],
+    queryFn: () => api.get<IndexingLlmConfigResponse>('/indexing/llm-config'),
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  });
+  const llmKeysMissing = hasLlmKeyGateErrors(llmConfig?.routing_snapshot);
+  const serperKeyMissing = Boolean(deriveSerperKeyGateError(serper));
 
   const borderCls = 'border-b sf-border-default';
 
@@ -84,6 +99,20 @@ export function TabNav() {
           Settings
         </span>
         <TabGroup tabs={SETTINGS_TABS} isAll={isAll} isTestMode={testMode} />
+        {serper?.configured && (
+          <span className="ml-1.5 pl-1.5 border-l sf-border-default inline-flex items-center" title="Serper API credits remaining">
+            <Chip
+              label={`Serper: ${formatCredit(serper.credit)}`}
+              className={creditChipClass(serper.credit)}
+            />
+          </span>
+        )}
+        {(llmKeysMissing || serperKeyMissing) && (
+          <span className="ml-1.5 pl-1.5 border-l sf-border-default inline-flex items-center gap-1" title="API keys missing — pipeline runs blocked">
+            {llmKeysMissing && <Chip label="LLM Keys Missing" className="sf-chip-danger" />}
+            {serperKeyMissing && <Chip label="Serper Key Missing" className="sf-chip-danger" />}
+          </span>
+        )}
       </div>
     </nav>
   );

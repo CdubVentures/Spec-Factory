@@ -179,12 +179,14 @@ function productLatestKeys(storage, category, productId) {
   };
 }
 
-async function readProductSnapshot({ storage, category, productId }) {
+async function readProductSnapshot({ storage, category, productId, specDb = null }) {
   const keys = productLatestKeys(storage, category, productId);
   const [summary, normalized, provenance] = await Promise.all([
     storage.readJsonOrNull(keys.summaryKey),
     storage.readJsonOrNull(keys.normalizedKey),
-    storage.readJsonOrNull(keys.provenanceKey)
+    specDb
+      ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? null)
+      : storage.readJsonOrNull(keys.provenanceKey),
   ]);
 
   if (!summary && !normalized && !provenance) {
@@ -219,7 +221,7 @@ function includesOperation(query, operationName) {
   return new RegExp(`\\b${operationName}\\b`).test(String(query || ''));
 }
 
-async function resolveGraphRequest({ storage, config, defaultCategory, query, variables }) {
+async function resolveGraphRequest({ storage, config, defaultCategory, query, variables, specDb = null }) {
   const category = String(variables.category || defaultCategory || 'mouse');
   const intel = await loadSourceIntel({ storage, config, category });
   const domains = Object.values(intel.data.domains || {});
@@ -259,7 +261,7 @@ async function resolveGraphRequest({ storage, config, defaultCategory, query, va
     if (!productId) {
       throw new Error('productId is required for product-based queries');
     }
-    productSnapshot = await readProductSnapshot({ storage, category, productId });
+    productSnapshot = await readProductSnapshot({ storage, category, productId, specDb });
     if (includesOperation(query, 'product')) {
       data.product = productSnapshot;
     }
@@ -313,7 +315,8 @@ export async function startIntelGraphApi({
   config,
   category = 'mouse',
   port = 8787,
-  host = '0.0.0.0'
+  host = '0.0.0.0',
+  specDb = null,
 }) {
   const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
@@ -356,7 +359,8 @@ export async function startIntelGraphApi({
         config,
         defaultCategory: category,
         query,
-        variables
+        variables,
+        specDb,
       });
       jsonResponse(res, 200, { data });
     } catch (error) {

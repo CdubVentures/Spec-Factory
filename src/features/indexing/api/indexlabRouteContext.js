@@ -9,8 +9,6 @@ import {
   listIndexLabRuns,
 } from './index.js';
 import { buildSearchHints, buildAnchorsSuggestions, buildKnownValuesSuggestions } from '../learning/index.js';
-import { queryIndexSummary, urlIndexSummary, highYieldUrls, promptIndexSummary } from '../pipeline/shared/index.js';
-import { readKnobSnapshots } from '../telemetry/index.js';
 import {
   evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,
   buildScreenshotManifestFromEvents,
@@ -46,8 +44,7 @@ export function createIndexlabRouteContext(options = {}) {
     readIndexLabRunSerpExplorer, readIndexLabRunLlmTraces,
     readIndexLabRunAutomationQueue, readIndexLabRunEvidenceIndex,
     listIndexLabRuns, buildRoundSummaryFromEvents, buildSearchHints,
-    buildAnchorsSuggestions, buildKnownValuesSuggestions, queryIndexSummary,
-    urlIndexSummary, highYieldUrls, promptIndexSummary, readKnobSnapshots,
+    buildAnchorsSuggestions, buildKnownValuesSuggestions,
     evaluateAllSections, buildEvidenceReport, buildEffectiveSettingsSnapshot,
     buildScreenshotManifestFromEvents, computeCompoundCurve, diffRunPlans,
     buildFieldMapFromPacket, aggregateCrossRunMetrics, aggregateHostHealth,

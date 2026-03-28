@@ -1,6 +1,7 @@
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
-import { ActivityGauge, formatNumber } from '../helpers.tsx';
+import { formatNumber } from '../helpers.tsx';
 import type { CatalogRow } from '../../../types/product.ts';
+import type { LlmKeyGateError } from '../../../hooks/llmKeyGateHelpers.js';
 
 interface AmbiguityMeterShape {
   count: number;
@@ -44,7 +45,7 @@ interface PickerPanelProps {
   selectedIndexLabRunId: string;
   onClearSelectedRunView: () => void;
   onReplaySelectedRunView: () => void;
-  productPickerActivity: { currentPerMin: number; peakPerMin: number };
+  llmKeyGateErrors: LlmKeyGateError[];
 }
 
 function resolveAmbiguityToken(level: string): 'success' | 'warning' | 'danger' | 'neutral' {
@@ -99,8 +100,9 @@ export function PickerPanel({
   selectedIndexLabRunId,
   onClearSelectedRunView,
   onReplaySelectedRunView,
-  productPickerActivity,
+  llmKeyGateErrors,
 }: PickerPanelProps) {
+  const hasKeyGateBlock = llmKeyGateErrors.length > 0;
   return (
     <div className="sf-surface-panel p-3 space-y-3" style={{ order: -20 }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -115,12 +117,6 @@ export function PickerPanel({
           <span>Product Picker</span>
           <Tip text="Pick one exact product, then run IndexLab." />
         </div>
-        <ActivityGauge
-          label="selected product activity"
-          currentPerMin={productPickerActivity.currentPerMin}
-          peakPerMin={productPickerActivity.peakPerMin}
-          active={processRunning}
-        />
       </div>
       {!collapsed ? (
         <>
@@ -213,17 +209,25 @@ Variant-empty review hint:
           />
         </div>
       </div>
+          {hasKeyGateBlock && (
+            <div className="sf-callout sf-callout-danger px-3 py-2 sf-text-caption">
+              <span className="font-semibold">Missing API Keys</span>
+              <span> — {llmKeyGateErrors.map((e) => e.label).join(', ')}. Configure keys in the LLM settings tab.</span>
+            </div>
+          )}
           <button
             onClick={onRunIndexLab}
-            disabled={!canRunSingle || busy || processRunning || !runtimeSettingsReady}
+            disabled={!canRunSingle || busy || processRunning || !runtimeSettingsReady || hasKeyGateBlock}
             className={`w-full px-3 py-2 text-sm rounded sf-primary-button transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed ${
               processRunning
                 ? 'translate-y-px scale-[0.99] shadow-inner'
                 : 'shadow-sm hover:shadow active:translate-y-px active:scale-[0.99] active:shadow-inner'
             }`}
-            title={runtimeSettingsReady
-              ? 'Run IndexLab for selected product and stream events.'
-              : 'Run start is locked until shared pipeline settings finish hydrating.'}
+            title={hasKeyGateBlock
+              ? 'Run blocked — LLM API keys are missing.'
+              : runtimeSettingsReady
+                ? 'Run IndexLab for selected product and stream events.'
+                : 'Run start is locked until shared pipeline settings finish hydrating.'}
           >
             Run IndexLab
           </button>

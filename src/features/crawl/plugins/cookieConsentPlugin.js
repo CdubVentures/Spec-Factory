@@ -58,15 +58,17 @@ export function createCookieConsentPlugin({ _consentHandler = handleCookieConsen
           && settings?.cookieConsentEnabled !== 'false';
         if (!enabled) return { enabled: false, autoconsentMatched: false, fallbackClicked: 0, settleMs: 0 };
 
-        const timeoutMs = Number(settings?.cookieConsentTimeoutMs) || 1000;
+        // WHY: 200ms fast-fail — autoconsent detects known CMPs instantly via
+        // pre-injected content scripts. If it hasn't matched in 200ms, it won't.
+        // The old 1s default wasted 800ms per page on Shopify sites where
+        // autoconsent never matches (Shopify uses a non-standard banner).
+        const timeoutMs = Number(settings?.cookieConsentTimeoutMs) || 200;
         const selectorStr = String(settings?.cookieConsentFallbackSelectors || DEFAULT_FALLBACK_SELECTORS);
-        const selectors = selectorStr.split(',').map((s) => s.trim()).filter(Boolean);
 
         let autoconsentMatched = false;
         let fallbackClicked = 0;
 
         // WHY: Autoconsent first — handles 95%+ of CMPs via DuckDuckGo's rule engine.
-        // 1s timeout — if autoconsent doesn't detect a CMP immediately, it won't.
         try {
           const result = await _consentHandler(page, { action: 'optIn', timeout: timeoutMs });
           autoconsentMatched = Boolean(result?.handled);
@@ -74,16 +76,25 @@ export function createCookieConsentPlugin({ _consentHandler = handleCookieConsen
           autoconsentMatched = false;
         }
 
-        // WHY: Fallback selectors only when autoconsent finds no CMP.
+        // WHY: Single page.evaluate replaces per-selector page.locator().all() +
+        // el.click() round-trips. The old approach did 30+ Playwright IPC calls
+        // (each ~50-100ms) totalling 1.5-3s. One evaluate does all DOM work
+        // in-browser: querySelectorAll for all selectors, native el.click() on
+        // each match. Total: ~20ms.
         if (!autoconsentMatched) {
-          for (const selector of selectors) {
-            const elements = await page.locator(selector).all();
-            for (const el of elements) {
+          try {
+            fallbackClicked = await page.evaluate((selStr) => {
+              let clicked = 0;
               try {
-                await el.click({ timeout: 500 });
-                fallbackClicked++;
-              } catch { /* element may not be clickable — skip */ }
-            }
+                const els = document.querySelectorAll(selStr);
+                for (const el of els) {
+                  try { el.click(); clicked++; } catch { /* not clickable */ }
+                }
+              } catch { /* invalid selector — skip */ }
+              return clicked;
+            }, selectorStr);
+          } catch {
+            fallbackClicked = 0;
           }
         }
 

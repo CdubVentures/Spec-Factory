@@ -81,10 +81,25 @@ describe('resolveDecisionDisplay', () => {
     assert.deepEqual(resolveDecisionDisplay(result), { label: 'Pass', chipClass: 'sf-chip-success' });
   });
 
-  // ── Priority: enriched > client-side ──
+  // ── Priority: enriched > flags > unknown ──
 
   it('enriched keep overrides isVideo flag', () => {
     const result = makeResult({ decision: 'keep' });
     assert.deepEqual(resolveDecisionDisplay(result, { isVideo: true }), { label: 'Keep', chipClass: 'sf-chip-success' });
+  });
+
+  it('isCrawled overrides unknown decision', () => {
+    const result = makeResult({ decision: 'unknown' });
+    assert.deepEqual(resolveDecisionDisplay(result, { isCrawled: true }), { label: 'Crawled', chipClass: 'sf-chip-purple' });
+  });
+
+  it('isVideo overrides unknown decision', () => {
+    const result = makeResult({ decision: 'unknown' });
+    assert.deepEqual(resolveDecisionDisplay(result, { isVideo: true }), { label: 'Video', chipClass: 'sf-chip-danger' });
+  });
+
+  it('isDuplicate overrides unknown decision', () => {
+    const result = makeResult({ decision: 'unknown' });
+    assert.deepEqual(resolveDecisionDisplay(result, { isDuplicate: true }), { label: 'Dup', chipClass: 'sf-chip-danger' });
   });
 });
