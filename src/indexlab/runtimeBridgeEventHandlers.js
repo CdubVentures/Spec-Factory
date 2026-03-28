@@ -889,6 +889,7 @@ async function handleExtractionArtifactsPersisted(state, _deps, { ts, row }) {
     worker_id: String(row.worker_id || ''),
     filenames: Array.isArray(row.filenames) ? row.filenames : [],
     file_sizes: Array.isArray(row.file_sizes) ? row.file_sizes : [],
+    file_paths: Array.isArray(row.file_paths) ? row.file_paths : [],
   }, ts);
 }
 

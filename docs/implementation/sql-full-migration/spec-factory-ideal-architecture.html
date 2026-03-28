@@ -137,14 +137,14 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <rect x="875" y="251" width="160" height="40" rx="6" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t14" x="955" y="275" text-anchor="middle" fill="#085041">learning + intel</text>
 
-<text class="t12" x="815" y="310" text-anchor="middle" fill="#085041">43 tables, 48 indexes — already exists, just make it the authority</text>
+<text class="t12" x="815" y="310" text-anchor="middle" fill="#085041">53 tables — SQLite is the authority (verified 2026-03-27)</text>
 </svg>
 </div>
 
 
 <!-- ============================================================ -->
 <h2>2. During a run (the hot path)</h2>
-<p>Every event writes to SQLite only. The IPC channel pushes events to the GUI server, which broadcasts via WebSocket. No NDJSON files. No Chokidar. One write path, one push path.</p>
+<p>Every event writes to SQLite only. The IPC channel pushes events to the GUI server, which broadcasts via WebSocket. No Chokidar. One write path, one push path. <strong>Note (2026-03-27):</strong> 4 NDJSON telemetry indexes (query-index, url-index, prompt-index, knob-snapshots) still use appendFileSync — SQL tables exist but writers not yet wired.</p>
 
 <div class="diagram-wrap">
 <svg width="100%" viewBox="0 0 1100 480">
@@ -167,7 +167,7 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 
 <rect x="120" y="210" width="380" height="60" rx="12" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t14b" x="310" y="236" text-anchor="middle" fill="#04342C">SQLite tables</text>
-<text class="t12" x="310" y="254" text-anchor="middle" fill="#085041">run_events, runs (UPDATE meta), billing_entries</text>
+<text class="t12" x="310" y="254" text-anchor="middle" fill="#085041">bridge_events, runs (UPDATE meta), billing_entries, run_artifacts</text>
 
 <rect x="600" y="210" width="380" height="60" rx="12" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text class="t14b" x="790" y="236" text-anchor="middle" fill="#26215C">GUI server (parent process)</text>
@@ -1171,13 +1171,13 @@ cost: { total_usd, llm_calls, search_calls }
 <tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">23</td><td style="padding: 6px 8px;">Wire checkpoint into completion + archival</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">Integration</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">24</td><td style="padding: 6px 8px;">Build seedFromCheckpoint + remove Chokidar</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">6</td><td style="text-align:center; padding: 6px 8px;">Integration</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 <tr style="border-bottom: 2px solid #e8e6df;"><td colspan="6" style="padding: 10px 8px; font-weight: 600; color: #444441; background: #f8f7f2;">Relocation + Schema Hygiene</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">R1</td><td style="padding: 6px 8px;">Rework/kill relocation service — write directly to storage destination, SQL is the index</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">R</td><td style="text-align:center; padding: 6px 8px;">Architecture</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">R1</td><td style="padding: 6px 8px;">Kill relocation service — stripped staging/copy/delete cycle, state machine, events, directory scanner, S3 sync. 9 files deleted, ~1500 lines removed, ~50 files touched. SQL is the index, files stay where written.</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">R</td><td style="text-align:center; padding: 6px 8px;">Architecture</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #fff5f5;"><td style="text-align:center; padding: 6px 8px;">H1</td><td style="padding: 6px 8px;">Drop dead SQL tables (brands, artifacts), remove evidence tables from specDb, add missing indexes</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">H</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px;">—</td><td style="text-align:center; padding: 6px 8px;">☐</td></tr>
 </table>
 </div>
 
 <div class="done">
-<strong>End state after all 24 steps:</strong> SQLite is the single source of truth for all mutable state. JSON files exist only as checkpoint snapshots written at pivotal moments (run completion, settings change, compile). Any JSON artifact can be regenerated from SQL. The S3 archive bundle still contains the same files it does today — they're just generated from SQL queries at completion instead of accumulated during the run. Chokidar is gone. IPC is the sole real-time channel. The app went from 5 write paths to 2 (SQLite + IPC) without ever breaking between steps.
+<strong>End state after all steps:</strong> SQLite is the single source of truth for all mutable state. JSON files exist only as checkpoint snapshots written at pivotal moments (run completion, settings change, compile). Any JSON artifact can be regenerated from SQL. There is no relocation — the pipeline writes directly to the storage-backed destination and SQL indexes the run location. Binary artifacts (screenshots, video) live at indexLabRoot/&lt;runId&gt;/. Chokidar is gone. IPC is the sole real-time channel. The app went from 5 write paths to 2 (SQLite + IPC) without ever breaking between steps.
 </div>
 
 <p style="margin-top: 32px; font-size: 13px; color: #888780; text-align: center;">Spec Factory Data Architecture & Migration Plan — Generated March 2026</p>

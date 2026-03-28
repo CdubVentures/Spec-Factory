@@ -47,7 +47,7 @@ function linearSlope(values) {
  * @param {{ category: string, runSummaries: object[], queryIndexPath: string, urlIndexPath: string }} opts
  * @returns {CompoundCurveResult}
  */
-export function computeCompoundCurve({ category, runSummaries, queryIndexPath, urlIndexPath }) {
+export function computeCompoundCurve({ category, runSummaries, queryIndexPath, urlIndexPath, queryRows: _queryRows, urlRows: _urlRows }) {
   const runs = Array.isArray(runSummaries) ? runSummaries : [];
 
   if (runs.length === 0) {
@@ -60,9 +60,9 @@ export function computeCompoundCurve({ category, runSummaries, queryIndexPath, u
     };
   }
 
-  // Read NDJSON indexes
-  const queryRows = readNdjsonLines(queryIndexPath);
-  const urlRows = readNdjsonLines(urlIndexPath);
+  // WHY: SQL rows preferred; NDJSON fallback for backward compat
+  const queryRows = _queryRows || readNdjsonLines(queryIndexPath);
+  const urlRows = _urlRows || readNdjsonLines(urlIndexPath);
 
   // Group queries by run_id
   const queriesByRun = new Map();

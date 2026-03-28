@@ -262,7 +262,6 @@ describe('buildRuntimeAssetCandidatePaths', () => {
       runId: 'run123',
     });
     assert.ok(result.length >= 2);
-    assert.ok(result.some((p) => p.includes('archived_runs')));
     assert.ok(result.some((p) => p.includes('run_output')));
     assert.ok(result.some((p) => p.includes('latest_snapshot')));
   });

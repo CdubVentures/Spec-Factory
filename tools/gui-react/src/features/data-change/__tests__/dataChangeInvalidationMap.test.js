@@ -105,18 +105,6 @@ test('storage settings event invalidates indexlab runs query key', () => {
   assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true);
 });
 
-test('storage relocation started event invalidates storage settings query key', () => {
-  const keys = resolveDataChangeInvalidationQueryKeys({
-    message: {
-      type: 'data-change',
-      event: 'indexlab-run-data-relocation-started',
-    },
-    categories: ['mouse'],
-  });
-
-  assert.equal(hasQueryKey(keys, ['storage-settings']), true);
-});
-
 test('runtime settings event invalidates runtime settings query key', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

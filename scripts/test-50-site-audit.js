@@ -104,8 +104,49 @@ async function auditSite(browser, site) {
   const page = await context.newPage();
 
   try {
-    // Layer 1: CSS suppression (before goto)
-    await page.addInitScript(`var s=document.createElement('style');s.textContent=${JSON.stringify(CSS_SUPPRESSION)};(document.head||document.documentElement).appendChild(s);`);
+    // Layer 0: Block CMP scripts from loading entirely via route interception
+    await page.route('**/*', (route) => {
+      const url = route.request().url().toLowerCase();
+      if (
+        url.includes('onetrust.com') || url.includes('cookielaw.org') ||
+        url.includes('cookie-script.com') || url.includes('cookieyes.com') ||
+        url.includes('osano.com') || url.includes('transcend-cdn.com') ||
+        url.includes('cookiebot.com') || url.includes('didomi.io') ||
+        url.includes('quantcast.com') || url.includes('trustarc.com') ||
+        url.includes('consent-manager') || url.includes('sourcepoint') ||
+        url.includes('fundingchoices')
+      ) {
+        return route.abort();
+      }
+      return route.continue();
+    });
+
+    // Layer 1: CSS suppression + MutationObserver (before goto) — mirrors real plugin
+    await page.addInitScript(`
+      var s=document.createElement('style');s.textContent=${JSON.stringify(CSS_SUPPRESSION)};(document.head||document.documentElement).appendChild(s);
+      window.__sfOverlayGuard={caught:0};window.__sfObsStarted=false;
+      function _sfCheck(n){try{if(n.nodeType!==1)return;var s=window.getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden')return;if(s.position!=='fixed'&&s.position!=='absolute')return;var z=parseInt(s.zIndex,10);if(isNaN(z)||z<500)return;var r=n.getBoundingClientRect();if(r.width<100||r.height<40)return;var cov=(r.width*r.height)/(window.innerWidth*window.innerHeight);if(cov<0.08)return;if(n.tagName==='NAV'||n.tagName==='HEADER')return;var cls=(n.className||'').toString().toLowerCase();if(cls.includes('nav-')&&!cls.includes('consent')&&!cls.includes('cookie')&&!cls.includes('banner'))return;n.remove();window.__sfOverlayGuard.caught++;}catch(e){}}
+      function _sfStart(){if(!document.body||window.__sfObsStarted)return false;window.__sfObsStarted=true;
+        var obs=new MutationObserver(function(muts){for(var i=0;i<muts.length;i++){var added=muts[i].addedNodes;for(var j=0;j<added.length;j++){_sfCheck(added[j]);if(added[j].nodeType===1){var kids=added[j].querySelectorAll('*');for(var k=0;k<kids.length;k++)_sfCheck(kids[k]);}}}});
+        obs.observe(document.body,{childList:true,subtree:true});
+        // Also scan existing fixed elements on first run
+        var all=document.querySelectorAll('*');for(var i=0;i<all.length;i++)_sfCheck(all[i]);
+        return true;}
+      if(!_sfStart()){document.addEventListener('DOMContentLoaded',_sfStart);var _p=0,_pi=setInterval(function(){_p++;if(_sfStart()||_p>50)clearInterval(_pi);},100);}
+
+      // WHY: Targeted CMP neutralization — these CMPs re-inject themselves after
+      // DOM removal and override inline styles. The only way to beat them is to
+      // kill their bootstrap JS before it runs.
+      // OneTrust: stub the global OneTrust object
+      Object.defineProperty(window,'OneTrust',{get:function(){return{Init:function(){},LoadBanner:function(){},ToggleInfoDisplay:function(){},Close:function(){}}},set:function(){},configurable:true});
+      Object.defineProperty(window,'OptanonWrapper',{get:function(){return function(){}},set:function(){},configurable:true});
+      // CookieYes: stub initCookieConsent
+      Object.defineProperty(window,'ckyBannerInit',{get:function(){return function(){}},set:function(){},configurable:true});
+      // Osano: stub osano
+      Object.defineProperty(window,'Osano',{get:function(){return{cm:{addEventListener:function(){},showDrawer:function(){},mode:'production'}}},set:function(){},configurable:true});
+      // Shopify Privacy: stub Shopify.CustomerPrivacy
+      try{window.Shopify=window.Shopify||{};Object.defineProperty(window.Shopify,'CustomerPrivacy',{get:function(){return{setTrackingConsent:function(){},shouldShowBanner:function(){return false},currentVisitorConsent:function(){return{marketing:'yes',analytics:'yes',preferences:'yes',sale_of_data:'yes'}}}},set:function(){},configurable:true});}catch(e){}
+    `);
 
     await page.goto(site.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(4000);

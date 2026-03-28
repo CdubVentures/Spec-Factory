@@ -4,7 +4,6 @@ import path from 'node:path';
 
 import {
   cleanupTempRoot,
-  createArchivedS3StorageStub,
   createMockRes,
   createRunFixture,
   createRuntimeOpsHandler,
@@ -50,69 +49,6 @@ test('runtimeOpsRoutes: non-existent run returns 404', async () => {
   }
 });
 
-
-test('runtimeOpsRoutes: relocated s3 run remains readable after source indexlab directory is removed', async () => {
-  const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-s3-relocated-');
-  const runId = 'run-ops-s3-relocated';
-  const category = 'mouse';
-  const productId = 'mouse-test-brand-model';
-  const s3Prefix = 'spec-factory-runs';
-  const archiveBase = `${s3Prefix}/${category}/${productId}/${runId}/indexlab`;
-  const archiveStorage = createArchivedS3StorageStub({
-    [`${archiveBase}/run.json`]: JSON.stringify({
-      run_id: runId,
-      category,
-      product_id: productId,
-      started_at: '2026-02-20T00:00:00.000Z',
-      ended_at: '2026-02-20T00:10:00.000Z',
-      status: 'completed',
-      round: 2,
-    }),
-    [`${archiveBase}/run_events.ndjson`]: `${JSON.stringify({
-      run_id: runId,
-      ts: '2026-02-20T00:01:00.000Z',
-      event: 'fetch_finished',
-      payload: { url: 'https://a.com/1', worker_id: 'w1', status_code: 200, bytes: 5000 },
-    })}\n`,
-  });
-
-  initIndexLabDataBuilders({
-    indexLabRoot,
-    outputRoot,
-    storage: createStorageStub(),
-    config: {},
-    getSpecDbReady: () => false,
-    isProcessRunning: () => false,
-    runDataStorageState: {
-      enabled: true,
-      destinationType: 's3',
-      localDirectory: '',
-      s3Bucket: 'test-bucket',
-      s3Prefix,
-    },
-    runDataArchiveStorage: archiveStorage,
-  });
-
-  try {
-    const handler = createRuntimeOpsHandler({
-      indexLabRoot,
-      outputRoot,
-      storage: createStorageStub(),
-      readIndexLabRunEvents,
-      readRunSummaryEvents: readIndexLabRunEvents,
-      readIndexLabRunMeta,
-      resolveIndexLabRunDirectory,
-    });
-    const res = createMockRes();
-    await handler(['indexlab', 'run', runId, 'runtime', 'summary'], new URLSearchParams(), 'GET', null, res);
-    assert.equal(res.statusCode, 200);
-    const body = parseResBody(res);
-    assert.equal(body?.run_id, runId);
-    assert.equal(body?.status, 'completed');
-  } finally {
-    await cleanupTempRoot(tempRoot);
-  }
-});
 
 test('runtimeOpsRoutes: canonical run_id resolves back to a mismatched local live-run directory', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-run-id-alias-');

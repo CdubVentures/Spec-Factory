@@ -67,7 +67,7 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
       const status = String(run.status || '').trim().toLowerCase();
       const pagesChecked = Number(run.counters?.pages_checked || 0);
       return (
-        ['completed', 'failed', 'running', 'starting', 'relocating'].includes(status)
+        ['completed', 'failed', 'running', 'starting'].includes(status)
         && (
           pagesChecked > 0
           || run.has_needset === true

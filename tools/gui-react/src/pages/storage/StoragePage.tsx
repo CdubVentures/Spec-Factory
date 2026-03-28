@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
-import { wsManager } from '../../api/ws.ts';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { StorageManagerPanel } from '../../features/storage-manager/index.ts';
 import { resolveStorageSettingsStatusText } from '../../shared/ui/feedback/settingsStatus.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
@@ -63,20 +61,6 @@ function statusCls(kind: 'ok' | 'error' | '') {
   return 'sf-status-text-muted';
 }
 
-function migrationStatusCls(kind: 'running' | 'ok' | 'error' | 'idle') {
-  if (kind === 'running') return 'sf-status-text-info';
-  if (kind === 'ok') return 'sf-status-text-info';
-  if (kind === 'error') return 'sf-status-text-danger';
-  return 'sf-status-text-muted';
-}
-
-function destinationLabel(destinationType = '') {
-  const token = String(destinationType || '').trim().toLowerCase();
-  if (token === 's3') return 'S3';
-  if (token === 'local') return 'local storage';
-  return 'selected destination';
-}
-
 function buildComparableState({
   destinationType,
   form,
@@ -129,8 +113,6 @@ export function StoragePage() {
     'storage:browse:path',
     storageSettingsBootstrap.localDirectory,
   );
-  const [migrationStatusKind, setMigrationStatusKind] = useState<'running' | 'ok' | 'error' | 'idle'>('idle');
-  const [migrationStatusText, setMigrationStatusText] = useState('No active archival operation.');
   const hasLocalEditsRef = useRef(false);
   const [savedComparableState, setSavedComparableState] = useState(() => buildComparableState({
     destinationType,
@@ -255,55 +237,6 @@ export function StoragePage() {
     }
     hasLocalEditsRef.current = false;
   }, [storageSettings, setDestinationType, storageSettingsReady]);
-
-  useEffect(() => {
-    const unsubscribe = wsManager.onMessage((channel, data) => {
-      if (channel !== 'data-change') return;
-      if (!data || typeof data !== 'object') return;
-      const payload = data as {
-        event?: string;
-        meta?: {
-          run_id?: string;
-          destination_type?: string;
-          message?: string;
-        };
-      };
-      const event = String(payload.event || '').trim();
-      if (!event) return;
-      const runId = String(payload.meta?.run_id || '').trim();
-      const destination = destinationLabel(payload.meta?.destination_type || '');
-      if (event === 'indexlab-run-data-relocation-started') {
-        setMigrationStatusKind('running');
-        setMigrationStatusText(
-          runId
-            ? `Migrating run data for ${runId} to ${destination}...`
-            : `Migrating run data to ${destination}...`,
-        );
-        return;
-      }
-      if (event === 'indexlab-run-data-relocated') {
-        setMigrationStatusKind('ok');
-        setMigrationStatusText(
-          runId
-            ? `Migration complete for ${runId}.`
-            : 'Run-data migration complete.',
-        );
-        return;
-      }
-      if (event === 'indexlab-run-data-relocation-failed') {
-        const reason = String(payload.meta?.message || '').trim();
-        setMigrationStatusKind('error');
-        setMigrationStatusText(
-          runId
-            ? `Migration failed for ${runId}${reason ? `: ${reason}` : '.'}`
-            : `Run-data migration failed${reason ? `: ${reason}` : '.'}`,
-        );
-      }
-    });
-    return () => {
-      unsubscribe?.();
-    };
-  }, []);
 
   const browseQuery = useQuery({
     queryKey: ['storage-settings', 'local-browse', browsePath],
@@ -432,16 +365,6 @@ export function StoragePage() {
             </p>
           </div>
         )}
-        <div className="mt-2 flex items-center gap-2">
-          {migrationStatusKind === 'running' ? (
-            <Spinner className="h-3 w-3" />
-          ) : (
-            <span className="inline-block h-2 w-2 rounded-full sf-chip-neutral" />
-          )}
-          <span className={`sf-text-label ${migrationStatusCls(migrationStatusKind)}`}>
-            {migrationStatusText}
-          </span>
-        </div>
       </div>
 
       {destinationType === 'local' && (

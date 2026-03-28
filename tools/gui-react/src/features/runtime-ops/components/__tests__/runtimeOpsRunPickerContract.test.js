@@ -86,7 +86,7 @@ test('runtime ops run picker renders readable labels with storage-origin badges'
         product_id: 'mouse-razer-viper-v3-pro-white',
         status: 'completed',
         picker_label: 'Mouse \u2022 Razer Viper V3 Pro White - bcdef',
-        storage_origin: 's3',
+        storage_origin: 'local',
         storage_state: 'stored',
       },
       {
@@ -109,7 +109,6 @@ test('runtime ops run picker renders readable labels with storage-origin badges'
   assert.match(text, /Razer Viper V3 Pro White/);
   assert.match(text, /\bMouse\b/);
   assert.match(text, /\bbcdef\b/);
-  assert.match(text, /\bS3\b/);
   assert.match(text, /\bLocal\b/);
   assert.match(text, /\bStored\b/);
   assert.match(text, /\bLive\b/);
@@ -125,7 +124,7 @@ test('runtime ops run picker caps itself at 400px and keeps the selected summary
         product_id: 'mouse-razer-viper-v3-pro-white',
         status: 'completed',
         picker_label: 'Mouse \u2022 Razer Viper V3 Pro White - bcdef',
-        storage_origin: 's3',
+        storage_origin: 'local',
         storage_state: 'stored',
       },
       {
@@ -152,7 +151,7 @@ test('runtime ops run picker caps itself at 400px and keeps the selected summary
   const summaryText = flattenText(summary);
   assert.match(summaryText, /Mouse\s+Razer Viper V3 Pro White\s+bcdef/);
   assert.match(summaryText, /\bStored\b/);
-  assert.match(summaryText, /\bS3\b/);
+  assert.match(summaryText, /\bLocal\b/);
   assert.doesNotMatch(summaryText, /\bcompleted\b/i);
 
   const summaryRow = findFirst(
@@ -187,7 +186,7 @@ test('runtime ops run picker keeps the selected row visible without showing inli
         product_id: 'mouse-razer-viper-v3-pro-white',
         status: 'running',
         picker_label: 'Mouse \u2022 Razer Viper V3 Pro White - 6a0b3',
-        storage_origin: 's3',
+        storage_origin: 'local',
         storage_state: 'live',
       },
     ],
@@ -215,7 +214,7 @@ test('runtime ops run picker does not duplicate the category when identity is mi
         product_id: '',
         status: 'completed',
         picker_label: 'Mouse - bff1e',
-        storage_origin: 's3',
+        storage_origin: 'local',
         storage_state: 'stored',
       },
     ],

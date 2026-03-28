@@ -153,8 +153,8 @@ test('incognito pages always enabled for fingerprint isolation', () => {
 
 test('optimized defaults are applied', () => {
   const config = captureConfig({});
-  assert.equal(config.requestHandlerTimeoutSecs, 45);
-  assert.equal(config.navigationTimeoutSecs, 20);
+  assert.equal(config.requestHandlerTimeoutSecs, 30);
+  assert.equal(config.navigationTimeoutSecs, 15);
   assert.equal(config.maxRequestRetries, 1);
   assert.equal(config.browserPoolOptions.retireBrowserAfterPageCount, 10);
 });

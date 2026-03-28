@@ -4,4 +4,5 @@ export {
   captureKnobSnapshot,
   recordKnobSnapshot,
   readKnobSnapshots,
+  computeKnobSnapshots,
 } from './knobTelemetryCapture.js';

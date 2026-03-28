@@ -50,7 +50,7 @@ pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; fo
 <span class="d">── INDEXLAB_ROOT ({LOCALAPPDATA}/spec-factory/indexlab/) ──</span>
 <span class="w">{runId}/</span>
 ├── <span class="r">run.json</span>                          <span class="d">← KILLED (Wave 5.5, replaced by run-summary.json)</span>
-├── <span class="g">run-summary.json</span>                   <span class="d">← NEW (Wave 5.5, GUI telemetry)</span>
+├── <span class="r">run-summary.json</span>                   <span class="d">← KILLED as file (Wave 5.5→6, now SQL artifact in run_artifacts table)</span>
 ├── <span class="r">needset.json</span>                       <span class="d">← KILLED (Wave 5.5, data in run_artifacts SQL)</span>
 ├── <span class="r">search_profile.json</span>                <span class="d">← KILLED (Wave 5.5, data in run_artifacts SQL)</span>
 ├── <span class="r">brand_resolution.json</span>              <span class="d">← KILLED (Wave 3, data in run_artifacts SQL)</span>
@@ -109,16 +109,19 @@ pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; fo
     └── debug/                         <span class="d">← always written (even if not promoted)</span>
         └── ... (mirrors final structure)
 
-<span class="d">── ARCHIVAL BUNDLE (LOCAL or S3) ──</span>
-<span class="w">{category}/{product}/{runId}/bundle/</span>
-├── manifest.json
-├── run_output/                        <span class="d">← COPY of OUTPUT_ROOT/.../runs/{runId}/</span>
-├── <span class="r">latest_snapshot/</span>                   <span class="d">← COPY of OUTPUT_ROOT/.../latest/ (redundant)</span>
-├── indexlab/                          <span class="d">← COPY of INDEXLAB_ROOT/{runId}/</span>
-├── runtime_traces/                    <span class="d">← COPY of OUTPUT_ROOT/_runtime/traces/runs/{runId}/</span>
-└── shared_logs/                       <span class="d">← FILTERED from shared JSONL files</span>
-    ├── runtime_events.jsonl           <span class="d">← filtered by runId (now redundant — in run-summary.json)</span>
-    └── billing_*.jsonl                <span class="d">← filtered billing (now redundant — in billing_entries SQL)</span>
+<span class="r">── ARCHIVAL BUNDLE — GUTTED (2026-03-27) ──</span>
+<span class="d">Relocation service stripped: S3Client, copyDirectory, pruneJsonl removed.</span>
+<span class="d">Pipeline now writes directly to storage-backed destination.</span>
+<span class="d">SQL indexes run location (storage_state='live' for all new runs).</span>
+<span class="d">No post-run file movement. Storage manager provides CRUD + prune + purge.</span>
+<span class="d">Old bundle structure below is DEAD CODE — no longer generated:</span>
+<span class="r">{category}/{product}/{runId}/bundle/</span>
+├── <span class="r">manifest.json</span>                      <span class="d">← ELIMINATED</span>
+├── <span class="r">run_output/</span>                        <span class="d">← ELIMINATED (was COPY of OUTPUT_ROOT/.../runs/{runId}/)</span>
+├── <span class="r">latest_snapshot/</span>                   <span class="d">← ELIMINATED (was redundant copy of latest/)</span>
+├── <span class="r">indexlab/</span>                          <span class="d">← ELIMINATED (was COPY of INDEXLAB_ROOT/{runId}/)</span>
+├── <span class="r">runtime_traces/</span>                    <span class="d">← ELIMINATED (was COPY of traces)</span>
+└── <span class="r">shared_logs/</span>                       <span class="d">← ELIMINATED (was FILTERED from shared JSONL files)</span>
 </pre>
 
 
@@ -244,8 +247,9 @@ OUTPUT_ROOT/
 │   └── history/runs.jsonl
 │
 └── <span class="g">spec.sqlite</span>                   <span class="g">← ALL structured data</span>
-    48 tables: runs, candidates,
-    evidence, billing, metrics...
+    53 tables: runs, candidates,
+    evidence, billing, metrics,
+    learning, telemetry indexes...
 </pre>
 </div>
 </div>
@@ -264,15 +268,15 @@ OUTPUT_ROOT/
 </tr>
 <tr style="border-bottom: 1px solid #f0efe8;">
   <td style="padding: 6px 8px;">Run metadata</td>
-  <td style="padding: 6px 8px; font-family: monospace;">runs (14 cols)</td>
+  <td style="padding: 6px 8px; font-family: monospace;">runs (16 cols: 13 user + 3 auto)</td>
   <td style="padding: 6px 8px; text-decoration: line-through; color: #a32d2d;">run.json</td>
   <td style="text-align:center; padding: 6px 8px;">No (killed)</td>
 </tr>
 <tr style="border-bottom: 1px solid #f0efe8;">
   <td style="padding: 6px 8px;">Run telemetry</td>
   <td style="padding: 6px 8px; font-family: monospace;">run_artifacts (run_summary)</td>
-  <td style="padding: 6px 8px; font-family: monospace;">run-summary.json</td>
-  <td style="text-align:center; padding: 6px 8px;">Yes (archive + GUI)</td>
+  <td style="padding: 6px 8px; font-family: monospace;">run-summary.json (KILLED as file)</td>
+  <td style="text-align:center; padding: 6px 8px;">No (SQL artifact only)</td>
 </tr>
 <tr style="border-bottom: 1px solid #f0efe8;">
   <td style="padding: 6px 8px;">NeedSet</td>

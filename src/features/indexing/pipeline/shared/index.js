@@ -31,12 +31,15 @@ export {
   queryIndexSummary,
   urlIndexSummary,
   highYieldUrls,
+  computeQueryIndexSummary,
+  computeUrlIndexSummary,
 } from './queryIndex.js';
 
 export {
   recordPromptResult,
   lookupPromptHistory,
   promptIndexSummary,
+  computePromptIndexSummary,
 } from './promptIndex.js';
 
 export { createPhaseCallLlm } from './createPhaseCallLlm.js';

@@ -29,7 +29,6 @@ import {
   buildRuntimeAssetCandidatePaths,
   createRuntimeScreenshotMetadataResolver,
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
-import { buildArchivedS3CacheRoot } from './builders/archivedRunLocationHelpers.js';
 import { resolveVideoFilePath } from './runtimeOpsVideoHelpers.js';
 import { defaultIndexLabRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
@@ -112,10 +111,6 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
   const defaultDir = path.join(defaultIndexLabRoot(), runId);
   if (path.resolve(defaultDir) !== path.resolve(directRunDir)) {
     candidateRunDirs.push(defaultDir);
-  }
-  const s3CacheRoot = buildArchivedS3CacheRoot(runId);
-  if (s3CacheRoot) {
-    candidateRunDirs.push(path.join(s3CacheRoot, 'indexlab'));
   }
 
   // Security boundaries
@@ -202,27 +197,53 @@ export function registerRuntimeOpsRoutes(ctx) {
     // triggering full S3 hydration for archived runs.
     const earlySubPath = String(parts[4] || '').trim();
 
-    // WHY: Opens local screenshots folder. Checks multiple candidate roots since
-    // screenshots may be at defaultIndexLabRoot (AppData) while run.json is elsewhere.
+    // WHY: Opens the local folder containing an extraction artifact.
+    // Accepts GET with folder name (legacy) or POST with { file_path } body (preferred).
     if (earlySubPath === 'extraction' && parts[5] === 'open-folder') {
-      const folder = parts[6] || 'screenshots';
-      if (folder !== 'screenshots') return jsonRes(res, 400, { error: 'invalid_folder' });
       try {
         const fs = await import('node:fs');
-        const candidates = [
-          path.join(defaultIndexLabRoot(), runId, 'screenshots'),
-          path.join(directRunDir, 'screenshots'),
-        ];
-        const targetDir = candidates.find((d) => fs.existsSync(d));
+        let targetDir = '';
+
+        // POST with file_path — open containing directory of the given file.
+        if (method === 'POST' && req) {
+          const body = await new Promise((resolve) => {
+            let data = '';
+            req.on('data', (chunk) => { data += chunk; });
+            req.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({}); } });
+          });
+          const filePath = String(body?.file_path || '').trim();
+          if (!filePath) return jsonRes(res, 400, { error: 'missing_file_path' });
+          const dir = path.dirname(filePath);
+          if (fs.existsSync(dir)) targetDir = dir;
+          else if (fs.existsSync(filePath)) targetDir = filePath;
+        }
+
+        // GET fallback — resolve folder name against known roots.
         if (!targetDir) {
-          return jsonRes(res, 404, { error: 'folder_not_found', tried: candidates });
+          const folder = parts[6] || 'screenshots';
+          const safeFolder = String(folder).replace(/[^a-z0-9_-]/gi, '');
+          if (!safeFolder) return jsonRes(res, 400, { error: 'invalid_folder' });
+          const candidates = [
+            path.join(defaultIndexLabRoot(), runId, safeFolder),
+            path.join(directRunDir, safeFolder),
+          ];
+          targetDir = candidates.find((d) => fs.existsSync(d)) || '';
+        }
+
+        if (!targetDir) {
+          return jsonRes(res, 404, { error: 'folder_not_found' });
         }
         const { exec } = await import('node:child_process');
-        const cmd = process.platform === 'win32' ? `explorer "${targetDir}"`
-          : process.platform === 'darwin' ? `open "${targetDir}"`
-          : `xdg-open "${targetDir}"`;
+        // WHY: Windows explorer requires backslashes. Node path.dirname may
+        // return forward slashes depending on how the path was constructed.
+        const nativePath = process.platform === 'win32'
+          ? targetDir.replace(/\//g, '\\')
+          : targetDir;
+        const cmd = process.platform === 'win32' ? `explorer "${nativePath}"`
+          : process.platform === 'darwin' ? `open "${nativePath}"`
+          : `xdg-open "${nativePath}"`;
         exec(cmd);
-        return jsonRes(res, 200, { opened: targetDir });
+        return jsonRes(res, 200, { opened: nativePath });
       } catch (err) {
         return jsonRes(res, 500, { error: 'open_failed', message: err?.message });
       }

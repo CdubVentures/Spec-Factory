@@ -1,11 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { emitDataChange } from '../../core/events/dataChangeContract.js';
-import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../../core/config/runtimeArtifactRoots.js';
-import {
-  shouldRelocateRunData,
-  relocateRunDataForCompletedRun,
-} from './runDataRelocationService.js';
+import { defaultIndexLabRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 function parseCliArg(cliArgs, argName) {
   if (!Array.isArray(cliArgs) || !argName) return '';
@@ -291,13 +286,9 @@ export async function handleIndexLabProcessCompletion({
   exitCode,
   cliArgs,
   startedAt = '',
-  runDataStorageSettings = {},
   indexLabRoot = defaultIndexLabRoot(),
-  outputRoot = defaultLocalOutputRoot(),
-  outputPrefix = 'specs/outputs',
   broadcastWs,
   logError = console.error,
-  onRelocationComplete,
   getSpecDb,
 } = {}) {
   if (!isIndexLabCommand(cliArgs)) return null;
@@ -311,90 +302,28 @@ export async function handleIndexLabProcessCompletion({
     getSpecDb,
   });
 
-  if (!shouldRelocateRunData(runDataStorageSettings)) return null;
-  const runMeta = await resolveCompletedRunMeta({
-    indexLabRoot: effectiveIndexLabRoot,
-    cliArgs,
-    startedAt,
-    getSpecDb,
-  });
-  if (!runMeta) {
-    return {
-      ok: false,
-      skipped: 'run_meta_not_found',
-    };
-  }
-
-  const category = String(runMeta.category || '').trim().toLowerCase();
-  const runId = String(runMeta.run_id || '');
-  const configuredDestinationType = String(runDataStorageSettings?.destinationType || '')
-    .trim()
-    .toLowerCase();
-  const relocationTarget = configuredDestinationType === 's3' || configuredDestinationType === 'local'
-    ? configuredDestinationType
-    : 'unknown';
-
-  emitDataChange({
-    broadcastWs,
-    event: 'indexlab-run-data-relocation-started',
-    category,
-    meta: {
-      run_id: runId,
-      destination_type: relocationTarget,
-    },
-  });
-  broadcastWs?.('process', [
-    `[storage] relocating run ${runId} (${relocationTarget})`,
-  ]);
-
-  try {
-    const relocation = await relocateRunDataForCompletedRun({
-      settings: runDataStorageSettings,
-      runMeta,
-      outputRoot,
-      outputPrefix,
-      indexLabRoot: effectiveIndexLabRoot,
-    });
-
-    emitDataChange({
-      broadcastWs,
-      event: 'indexlab-run-data-relocated',
-      category,
-      meta: {
-        run_id: runId,
-        destination_type: relocation.destination_type || 'unknown',
-      },
-    });
-    broadcastWs?.('process', [
-      `[storage] relocated run ${runId} (${relocation.destination_type || 'unknown'})`,
-    ]);
-    if (typeof onRelocationComplete === 'function') {
-      try {
-        onRelocationComplete({ relocation, category, productId: String(runMeta.product_id || runMeta.productId || '').trim(), runId });
-      } catch (cbErr) {
-        logError?.('[indexlab-relocation] onRelocationComplete callback error', cbErr);
+  // Record storage location in SQL
+  const category = parseCliArg(cliArgs, '--category');
+  const productId = parseCliArg(cliArgs, '--product-id');
+  const runId = parseCliArg(cliArgs, '--run-id');
+  if (typeof getSpecDb === 'function' && category) {
+    try {
+      const db = getSpecDb(category);
+      if (db && runId) {
+        db.updateRunStorageLocation({
+          productId,
+          runId,
+          storageState: 'live',
+          localPath: effectiveIndexLabRoot,
+          s3Key: '',
+          sizeBytes: 0,
+          relocatedAt: '',
+        });
       }
+    } catch (err) {
+      logError?.('[indexlab-completion] failed to record storage location', err);
     }
-    return relocation;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error || 'run_data_relocation_failed');
-    emitDataChange({
-      broadcastWs,
-      event: 'indexlab-run-data-relocation-failed',
-      category,
-      meta: {
-        run_id: runId,
-        message,
-      },
-    });
-    broadcastWs?.('process', [
-      `[storage] relocation failed for ${runId}: ${message}`,
-    ]);
-    logError?.('[indexlab-relocation] failed', error);
-    return {
-      ok: false,
-      error: message,
-      run_id: runId,
-    };
   }
+
+  return null;
 }

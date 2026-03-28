@@ -165,10 +165,23 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
   // ── Auto-select first worker when no stage tab active ─────────────
   useEffect(() => {
     if (!selectedWorker && filtered.length > 0 && stageTab === null) {
-      const running = filtered.find((w) => w.state === 'running');
+      const running = filtered.find((w) => w.state === 'running' || w.state === 'crawling' || w.state === 'retrying');
       onSelectWorker(running ?? filtered[0]);
     }
   }, [filtered, selectedWorker, stageTab, onSelectWorker]);
+
+  // ── Auto-advance to next active worker when selected worker finishes ──
+  // WHY: Without this, the live view cuts to a completed/blocked screen
+  // when the watched worker finishes. The user has to manually tab back.
+  const TERMINAL_STATES = new Set(['crawled', 'blocked', 'captcha', 'failed', 'rate_limited']);
+  useEffect(() => {
+    if (!selectedWorker || !TERMINAL_STATES.has(selectedWorker.state)) return;
+    const nextActive = filtered.find(
+      (w) => w.worker_id !== selectedWorker.worker_id
+        && (w.state === 'running' || w.state === 'crawling' || w.state === 'retrying' || w.state === 'stuck'),
+    );
+    if (nextActive) onSelectWorker(nextActive);
+  }, [selectedWorker, filtered, onSelectWorker]);
 
   // ── Handlers ──────────────────────────────────────────────────────
   const handleSelectWorker = (workerId: string) => {

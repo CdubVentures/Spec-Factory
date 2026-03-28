@@ -194,23 +194,16 @@ export const domExpansionPlugin = {
             continue;
           }
 
-          // Capture pre-click content length for per-element delta
-          let preClickLength = 0;
+          // WHY: Removed per-click innerHTML.length checks — each was 2 evaluate()
+          // round-trips (pre + post), costing 100-200ms per click on large DOMs.
+          // Overall content delta at the end captures expansion; per-click count
+          // is now derived from aria-expanded state change (cheaper, single evaluate).
           try {
-            preClickLength = await page.evaluate(() => document.body.innerHTML.length);
-          } catch { /* proceed without per-element delta */ }
-
-          try {
+            const preExpanded = await el.evaluate((node) => node.getAttribute('aria-expanded'));
             await el.click({ timeout: 2000 });
             clicked++;
-
-            // Post-click content verification
-            try {
-              const postClickLength = await page.evaluate(() => document.body.innerHTML.length);
-              if (postClickLength > preClickLength) {
-                expanded++;
-              }
-            } catch { /* post-click eval failure — count as expanded optimistically */ }
+            const postExpanded = await el.evaluate((node) => node.getAttribute('aria-expanded'));
+            if (preExpanded === 'false' && postExpanded === 'true') expanded++;
           } catch { /* element may not be clickable — skip */ }
         }
 

@@ -187,29 +187,6 @@ export function buildRuntimeAssetCandidatePaths({ filename, storage, OUTPUT_ROOT
       pushCandidate(path.join(OUTPUT_ROOT, ...normalized.split('/')));
     }
 
-    const runMatch = normalized.match(/(?:^|\/)runs\/([^/]+)\/(.+)$/);
-    const archiveRunId = String(runId || runMatch?.[1] || '').trim();
-    const relativeRunPath = String(runMatch?.[2] || '').trim();
-    if (OUTPUT_ROOT && archiveRunId && relativeRunPath) {
-      pushCandidate(path.join(
-        OUTPUT_ROOT,
-        '_runtime',
-        'archived_runs',
-        's3',
-        archiveRunId,
-        'run_output',
-        ...relativeRunPath.split('/'),
-      ));
-      pushCandidate(path.join(
-        OUTPUT_ROOT,
-        '_runtime',
-        'archived_runs',
-        's3',
-        archiveRunId,
-        'latest_snapshot',
-        ...relativeRunPath.split('/'),
-      ));
-    }
     return candidates;
   }
 

@@ -45,14 +45,16 @@ export const PAGE_REGISTRY: readonly PageEntry[] = Object.freeze([
 
   // ── Ops group ───────────────────────────────────────────────────
   { path: '/indexing',           label: 'Indexing Lab',        tabGroup: 'ops', loader: () => import('../features/indexing/components/IndexingPage.tsx'),              exportName: 'IndexingPage',           disabledOnAll: true, disabledOnTest: true },
-  { path: '/pipeline-settings',  label: 'Pipeline Settings',   tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage', disabledOnAll: true, disabledOnTest: true },
-  { path: '/runtime-ops',        label: 'Runtime Ops',         tabGroup: 'ops', loader: () => import('../features/runtime-ops/components/RuntimeOpsPage.tsx'),        exportName: 'RuntimeOpsPage',         disabledOnTest: true },
-  { path: '/llm-settings',       label: 'Review Settings',      tabGroup: 'settings', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        disabledOnAll: true },
+  { path: '/runtime-ops',        label: 'Runtime Ops',         tabGroup: 'ops', loader: () => import('../features/runtime-ops/components/RuntimeOpsPage.tsx'),        exportName: 'RuntimeOpsPage',         disabledOnTest: true, dividerAfter: true },
   { path: '/review',             label: 'Review Grid',         tabGroup: 'ops', loader: () => import('../features/review/components/ReviewPage.tsx'),                 exportName: 'ReviewPage',             disabledOnAll: true },
   { path: '/review-components',  label: 'Review Components',   tabGroup: 'ops', loader: () => import('../pages/component-review/ComponentReviewPage.tsx'),            exportName: 'ComponentReviewPage',    disabledOnAll: true, dividerAfter: true },
-  { path: '/llm-config',         label: 'LLM',                 tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage',          disabledOnAll: true, disabledOnTest: true },
   { path: '/billing',            label: 'Billing & Learning',  tabGroup: 'ops', loader: () => import('../pages/billing/BillingPage.tsx'),                             exportName: 'BillingPage',            disabledOnTest: true },
   { path: '/storage',            label: 'Storage',             tabGroup: 'ops', loader: () => import('../pages/storage/StoragePage.tsx'),                             exportName: 'StoragePage' },
+
+  // ── Settings group (far-right) ─────────────────────────────────
+  { path: '/llm-config',         label: 'LLM',                tabGroup: 'settings', loader: () => import('../features/llm-config/components/LlmConfigPage.tsx'),          exportName: 'LlmConfigPage',          disabledOnAll: true, disabledOnTest: true },
+  { path: '/pipeline-settings',  label: 'Pipeline',           tabGroup: 'settings', loader: () => import('../features/pipeline-settings/components/PipelineSettingsPage.tsx'), exportName: 'PipelineSettingsPage', disabledOnAll: true, disabledOnTest: true },
+  { path: '/llm-settings',       label: 'Review',             tabGroup: 'settings', loader: () => import('../pages/llm-settings/LlmSettingsPage.tsx'),                   exportName: 'LlmSettingsPage',        disabledOnAll: true },
 ]);
 
 // ── Derived exports ─────────────────────────────────────────────────

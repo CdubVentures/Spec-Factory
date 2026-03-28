@@ -140,21 +140,6 @@ async function loadRuntimeOpsPageModule() {
           return null;
         }
       `,
-      '../panels/overview/FallbacksTab': `
-        export function FallbacksTab() {
-          return null;
-        }
-      `,
-      '../panels/overview/QueueTab': `
-        export function QueueTab() {
-          return null;
-        }
-      `,
-      '../panels/compound/CompoundTab': `
-        export function CompoundTab() {
-          return null;
-        }
-      `,
       './RuntimeOpsRunPicker': `
         export function RuntimeOpsRunPicker() {
           return null;
@@ -181,7 +166,6 @@ test('runtime ops page synthesizes a live fallback row while run history is stil
     processStatusResult: {
       data: {
         running: true,
-        relocating: false,
         run_id: '20260318061504-16a0b3',
         runId: '20260318061504-16a0b3',
         startedAt: '2026-03-18T06:15:04.000Z',

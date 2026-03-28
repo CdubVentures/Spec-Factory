@@ -26,7 +26,6 @@ export const METHOD_BADGE_REGISTRY: Readonly<Record<string, MethodBadgeEntry>> =
   chart_payload:            { badge: 'sf-chip-accent',  label: 'Chart Data' },
   network_json:             { badge: 'sf-chip-accent',  label: 'Network JSON' },
   llm_extract:              { badge: 'sf-chip-warning', label: 'LLM Extraction' },
-  llm_validate:             { badge: 'sf-chip-warning', label: 'LLM Validation' },
   deterministic_normalizer: { badge: 'sf-chip-success', label: 'Normalizer' },
   consensus_policy_reducer: { badge: 'sf-chip-success', label: 'Consensus' },
 });

@@ -6,8 +6,6 @@ import { STAGE_GROUP_KEYS, type StageGroupId, type AnyStageGroupDef } from './st
 import { PREFETCH_STAGE_KEYS, PREFETCH_STAGE_REGISTRY } from '../prefetch/prefetchStageRegistry.ts';
 import { FETCH_STAGE_KEYS, FETCH_STAGE_REGISTRY } from '../fetch/fetchStageRegistry.ts';
 import { EXTRACTION_STAGE_KEYS, EXTRACTION_STAGE_REGISTRY } from '../extraction/extractionStageRegistry.ts';
-import { VALIDATION_STAGE_KEYS, VALIDATION_STAGE_REGISTRY } from '../validation/validationStageRegistry.ts';
-
 export { STAGE_GROUP_KEYS, type StageGroupId } from './stageGroupContracts.ts';
 
 export const STAGE_GROUP_REGISTRY: readonly AnyStageGroupDef[] = [
@@ -31,12 +29,5 @@ export const STAGE_GROUP_REGISTRY: readonly AnyStageGroupDef[] = [
     tip: 'Data extraction and field parsing modules',
     keys: EXTRACTION_STAGE_KEYS,
     registry: EXTRACTION_STAGE_REGISTRY,
-  },
-  {
-    id: 'validation',
-    label: 'Validation',
-    tip: 'Schema enforcement and quality gate modules',
-    keys: VALIDATION_STAGE_KEYS,
-    registry: VALIDATION_STAGE_REGISTRY,
   },
 ];

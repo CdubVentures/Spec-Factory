@@ -85,7 +85,7 @@ export function createRunLlmRuntime({
       try {
         const promptIndexRoot = joinPathFn(defaultIndexLabRootFn(), category);
         mkdirSyncFn(promptIndexRoot, { recursive: true });
-        recordPromptResultFn({
+        const promptRecord = {
           prompt_version: usageRow.reason || 'extract',
           prompt_hash: '',
           model: usageRow.model || '',
@@ -95,7 +95,9 @@ export function createRunLlmRuntime({
           success: true,
           run_id: runId,
           category,
-        }, joinPathFn(promptIndexRoot, 'prompt-index.ndjson'));
+        };
+        recordPromptResultFn(promptRecord, joinPathFn(promptIndexRoot, 'prompt-index.ndjson'));
+        if (specDb) try { specDb.insertPromptIndexEntry({ ...promptRecord, ts: nowIsoFn() }); } catch { /* best-effort */ }
       } catch {
         // Index recording must not crash the pipeline.
       }

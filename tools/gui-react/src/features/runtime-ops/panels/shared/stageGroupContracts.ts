@@ -1,5 +1,5 @@
 // WHY: Generic foundation for registry-driven stage panel groups.
-// Each pipeline stage group (prefetch, fetch, extraction, validation) follows
+// Each pipeline stage group (prefetch, fetch, extraction) follows
 // the same pattern: keys file → selectProps file → registry file → panel components.
 // This file provides the shared contracts so groups don't duplicate structure.
 
@@ -7,7 +7,7 @@ import { createElement, type ReactElement, type ComponentType } from 'react';
 
 // ── Group identity ──────────────────────────────────────────────────
 
-export const STAGE_GROUP_KEYS = ['prefetch', 'fetch', 'extraction', 'validation'] as const;
+export const STAGE_GROUP_KEYS = ['prefetch', 'fetch', 'extraction'] as const;
 export type StageGroupId = (typeof STAGE_GROUP_KEYS)[number];
 
 // ── Generic stage entry ─────────────────────────────────────────────

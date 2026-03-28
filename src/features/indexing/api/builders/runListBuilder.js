@@ -2,15 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { toInt } from '../../../../shared/valueNormalizers.js';
 import { safeJoin, safeReadJson, safeStat } from '../../../../shared/fileHelpers.js';
-import { buildArchivedS3CacheRoot } from './archivedRunLocationHelpers.js';
 
 export function createRunListBuilder({
   getIndexLabRoot,
   isRunStillActive,
   readEvents,
-  refreshArchivedRunDirIndex,
-  materializeArchivedRunLocation,
-  readArchivedS3RunMetaOnly = async () => null,
   getSpecDbReady = null,
 }) {
   const toToken = (value) => String(value || '').trim();
@@ -57,13 +53,6 @@ export function createRunListBuilder({
     const lead = [categoryLabel, productLabel].filter(Boolean).join(' • ');
     if (!lead) return runToken;
     return runToken ? `${lead} - ${runToken}` : lead;
-  };
-
-  const resolveStorageOrigin = (runLocation) => {
-    if (typeof runLocation === 'string') return 'local';
-    const type = toToken(runLocation?.type).toLowerCase();
-    if (type === 's3') return 's3';
-    return 'local';
   };
 
   const resolveStorageState = (status = '') => {
@@ -153,17 +142,6 @@ export function createRunListBuilder({
     } catch {
       // ignore missing live run root
     }
-    const archivedIndex = await refreshArchivedRunDirIndex(false);
-    for (const [runId, runLocation] of archivedIndex.entries()) {
-      if (!runLocations.has(runId)) {
-        runLocations.set(runId, runLocation);
-      } else if (!isRunStillActive(runId)) {
-        // WHY: Archived entry carries richer storage metadata (type: 's3' or 'local').
-        // For completed runs, prefer the archived entry so resolveStorageOrigin
-        // returns the correct storage type instead of always 'local' from a string path.
-        runLocations.set(runId, runLocation);
-      }
-    }
     let dirs = [...runLocations.keys()];
     if (dirs.length === 0) return [];
     // WHY: Sort by mtime of run directory (newest first) so recent live runs
@@ -205,52 +183,6 @@ export function createRunListBuilder({
     // With 120 runs that's 120 serial round-trips — parallelizing cuts
     // wall-clock time dramatically.
     async function processRun(dir) {
-      const runLocation = runLocations.get(dir);
-      const storageOrigin = resolveStorageOrigin(runLocation);
-      const isS3Location = runLocation && typeof runLocation === 'object' && runLocation.type === 's3';
-
-      // S3 archived run: try metadata-only read first.
-      if (isS3Location) {
-        const s3Meta = await readArchivedS3RunMetaOnly(runLocation, dir);
-        const s3Status = String(s3Meta?.status || '').trim().toLowerCase();
-        const s3HasCounters = s3Meta?.counters && typeof s3Meta.counters === 'object';
-        const s3HasArtifactReadiness = Boolean(
-          s3Meta?.artifacts?.has_needset
-          || s3Meta?.artifacts?.has_search_profile
-          || s3Meta?.needset
-          || s3Meta?.search_profile
-        );
-        if (s3Meta && s3HasCounters && s3Status !== 'running' && s3HasArtifactReadiness) {
-          const rowCategory = toToken(s3Meta.category);
-          if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
-          const rowRunId = toToken(s3Meta.run_id || dir);
-          const rowProductId = toToken(s3Meta.product_id);
-          const resolvedStatus = String(s3Meta.status || 'unknown').trim();
-          return {
-            run_id: rowRunId,
-            category: rowCategory,
-            product_id: rowProductId,
-            status: resolvedStatus,
-            started_at: String(s3Meta.started_at || '').trim(),
-            ended_at: String(s3Meta.ended_at || '').trim(),
-            identity_fingerprint: String(s3Meta.identity_fingerprint || '').trim(),
-            identity_lock_status: String(s3Meta.identity_lock_status || '').trim(),
-            dedupe_mode: String(s3Meta.dedupe_mode || '').trim(),
-            phase_cursor: String(s3Meta.phase_cursor || '').trim(),
-            startup_ms: normalizeStartupMs(s3Meta.startup_ms),
-            events_path: '',
-            run_dir: path.join(buildArchivedS3CacheRoot(rowRunId), 'indexlab'),
-            storage_origin: storageOrigin,
-            storage_state: resolveStorageState(resolvedStatus),
-            picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
-            has_needset: Boolean(s3Meta.artifacts?.has_needset || s3Meta.needset),
-            has_search_profile: Boolean(s3Meta.artifacts?.has_search_profile || s3Meta.search_profile),
-            counters: s3Meta.counters,
-          };
-        }
-        // Metadata insufficient — fall through to full materialization.
-      }
-
       // SQL fast path for runs with complete metadata in the runs table
       const sqlRow = sqlRunMap.get(dir);
       if (sqlRow && sqlRow.counters && typeof sqlRow.counters === 'object'
@@ -277,7 +209,7 @@ export function createRunListBuilder({
           startup_ms: normalizeStartupMs(sqlRow.startup_ms || {}),
           events_path: '',
           run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
-          storage_origin: storageOrigin,
+          storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
           picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
           has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
@@ -286,9 +218,7 @@ export function createRunListBuilder({
         };
       }
 
-      const runDir = typeof runLocation === 'string'
-        ? String(runLocation || '').trim()
-        : await materializeArchivedRunLocation(runLocation, dir);
+      const runDir = String(runLocations.get(dir) || '').trim();
       if (!runDir) return null;
       // WHY: Wave 5.5 killed run.json — try run-summary.json first
       let meta = null;
@@ -329,7 +259,7 @@ export function createRunListBuilder({
           startup_ms: normalizeStartupMs(meta?.startup_ms),
           events_path: '',
           run_dir: runDir,
-          storage_origin: storageOrigin,
+          storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
           picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
           has_needset: hasNeedSet,
@@ -362,7 +292,7 @@ export function createRunListBuilder({
         startup_ms: normalizeStartupMs(meta?.startup_ms),
         events_path: '',
         run_dir: runDir,
-        storage_origin: storageOrigin,
+        storage_origin: 'local',
         storage_state: resolveStorageState(resolvedStatus),
         picker_label: buildPickerLabel({
           category: rowCategory,

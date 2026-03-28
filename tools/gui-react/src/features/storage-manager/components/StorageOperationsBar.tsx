@@ -5,9 +5,6 @@ import {
   useDeleteRun,
   usePruneRuns,
   usePurgeRuns,
-  useRecalculateMetrics,
-  usePushToS3,
-  usePullFromS3,
 } from '../state/useStorageActions.ts';
 import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
 import { PurgeConfirmModal } from './PurgeConfirmModal.tsx';
@@ -16,14 +13,12 @@ interface StorageOperationsBarProps {
   selectedRunIds: Set<string>;
   totalRuns: number;
   onClearSelection: () => void;
-  destinationType?: string;
 }
 
 export function StorageOperationsBar({
   selectedRunIds,
   totalRuns,
   onClearSelection,
-  destinationType,
 }: StorageOperationsBarProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showPurgeModal, setShowPurgeModal] = useState(false);
@@ -33,9 +28,6 @@ export function StorageOperationsBar({
   const deleteRun = useDeleteRun();
   const pruneRuns = usePruneRuns();
   const purgeRuns = usePurgeRuns();
-  const recalculate = useRecalculateMetrics();
-  const pushToS3 = usePushToS3();
-  const pullFromS3 = usePullFromS3();
 
   const selectedIds = [...selectedRunIds];
 
@@ -78,33 +70,11 @@ export function StorageOperationsBar({
     });
   };
 
-  const handleRecalculate = () => {
-    recalculate.mutate(undefined, {
-      onSuccess: (data) => {
-        showResult(
-          `Scanned ${data.runs_scanned}, updated ${data.runs_updated}. Total: ${Math.round(data.total_size_bytes / 1024)} KB.`
-        );
-      },
-    });
-  };
-
   const handleExport = () => {
     window.open('/api/v1/storage/export', '_blank');
   };
 
-  const anyPending = deleteRun.isPending || pruneRuns.isPending || purgeRuns.isPending || recalculate.isPending || pushToS3.isPending || pullFromS3.isPending;
-
-  const handlePushToS3 = () => {
-    pushToS3.mutate(undefined, {
-      onSuccess: (data) => showResult(`Pushed ${data.pushed} run(s) to S3.${data.errors.length > 0 ? ` ${data.errors.length} error(s).` : ''}`),
-    });
-  };
-
-  const handlePullFromS3 = () => {
-    pullFromS3.mutate(undefined, {
-      onSuccess: (data) => showResult(`Pulled ${data.pulled} run(s) from S3.${data.errors.length > 0 ? ` ${data.errors.length} error(s).` : ''}`),
-    });
-  };
+  const anyPending = deleteRun.isPending || pruneRuns.isPending || purgeRuns.isPending;
 
   return (
     <div className="space-y-2 pt-3 border-t sf-border-soft">
@@ -158,34 +128,6 @@ export function StorageOperationsBar({
         </button>
 
         <div className="ml-auto flex items-center gap-2">
-          {destinationType === 's3' && (
-            <button
-              type="button"
-              className="rounded sf-icon-button px-3 py-1.5 text-xs font-semibold"
-              disabled={anyPending}
-              onClick={handlePushToS3}
-            >
-              {pushToS3.isPending ? <Spinner className="h-3 w-3" /> : 'Push All to S3'}
-            </button>
-          )}
-          {destinationType === 'local' && (
-            <button
-              type="button"
-              className="rounded sf-icon-button px-3 py-1.5 text-xs font-semibold"
-              disabled={anyPending}
-              onClick={handlePullFromS3}
-            >
-              {pullFromS3.isPending ? <Spinner className="h-3 w-3" /> : 'Pull All from S3'}
-            </button>
-          )}
-          <button
-            type="button"
-            className="rounded sf-icon-button px-3 py-1.5 text-xs"
-            disabled={anyPending}
-            onClick={handleRecalculate}
-          >
-            {recalculate.isPending ? <Spinner className="h-3 w-3" /> : 'Recalculate Sizes'}
-          </button>
           <button
             type="button"
             className="rounded sf-icon-button px-3 py-1.5 text-xs"

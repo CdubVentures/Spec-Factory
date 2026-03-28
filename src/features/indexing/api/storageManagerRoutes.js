@@ -5,7 +5,6 @@ export function createStorageManagerHandler({
   broadcastWs,
   listIndexLabRuns,
   resolveIndexLabRunDirectory,
-  refreshArchivedRunDirIndex,
   runDataStorageState,
   indexLabRoot,
   outputRoot,
@@ -13,8 +12,6 @@ export function createStorageManagerHandler({
   isRunStillActive,
   readRunMeta,
   deleteArchivedRun,
-  recalculateAllStorageMetrics,
-  storageSyncService,
 }) {
 
   function resolveBackend() {
@@ -93,7 +90,6 @@ export function createStorageManagerHandler({
         }
         try {
           const result = await deleteArchivedRun(runId);
-          await refreshArchivedRunDirIndex(true);
           return jsonRes(res, 200, { ok: true, ...result });
         } catch (err) {
           return jsonRes(res, 500, { ok: false, error: String(err?.message || err), run_id: runId });
@@ -118,7 +114,6 @@ export function createStorageManagerHandler({
             errors.push({ run_id: id, error: String(err?.message || err) });
           }
         }
-        await refreshArchivedRunDirIndex(true);
         return jsonRes(res, 200, { ok: errors.length === 0, deleted, errors });
       }
 
@@ -159,7 +154,6 @@ export function createStorageManagerHandler({
           errors.push({ run_id: id, error: String(err?.message || err) });
         }
       }
-      if (pruned.length > 0) await refreshArchivedRunDirIndex(true);
       return jsonRes(res, 200, { ok: true, pruned: pruned.length, errors });
     }
 
@@ -182,7 +176,6 @@ export function createStorageManagerHandler({
           // Best-effort purge
         }
       }
-      if (purged > 0) await refreshArchivedRunDirIndex(true);
       return jsonRes(res, 200, { ok: true, purged });
     }
 
@@ -197,43 +190,6 @@ export function createStorageManagerHandler({
         storage_backend: resolveBackend().type,
         runs,
       });
-    }
-
-    // POST /storage/recalculate
-    if (parts[1] === 'recalculate' && !parts[2] && method === 'POST') {
-      const result = await recalculateAllStorageMetrics();
-      const response = {
-        ok: true,
-        runs_scanned: result.runsScanned,
-        runs_updated: result.runsUpdated,
-        total_size_bytes: result.totalSizeBytes,
-        errors: result.errors || [],
-      };
-      if (result.runsScanned > 200) {
-        response.warning = 'large_storage_tree';
-      }
-      return jsonRes(res, 200, response);
-    }
-
-    // GET /storage/sync/status
-    if (parts[1] === 'sync' && parts[2] === 'status' && !parts[3] && method === 'GET') {
-      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
-      const status = await storageSyncService.syncStatus();
-      return jsonRes(res, 200, status);
-    }
-
-    // POST /storage/sync/push
-    if (parts[1] === 'sync' && parts[2] === 'push' && !parts[3] && method === 'POST') {
-      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
-      const result = await storageSyncService.pushAllToS3();
-      return jsonRes(res, 200, result);
-    }
-
-    // POST /storage/sync/pull
-    if (parts[1] === 'sync' && parts[2] === 'pull' && !parts[3] && method === 'POST') {
-      if (!storageSyncService) return jsonRes(res, 501, { error: 'sync_service_not_configured' });
-      const result = await storageSyncService.pullAllFromS3();
-      return jsonRes(res, 200, result);
     }
 
     return false;

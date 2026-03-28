@@ -3,7 +3,7 @@ import {
 } from './runtimeOpsEventPrimitives.js';
 
 const CROSS_CUTTING_METHODS = new Set([
-  'llm_extract', 'llm_validate', 'deterministic_normalizer', 'consensus_policy_reducer',
+  'llm_extract', 'deterministic_normalizer', 'consensus_policy_reducer',
 ]);
 
 const PHASE_LABELS = {

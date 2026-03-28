@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import {} from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { usePersistedTab } from '../../../../stores/tabStore.ts';
@@ -54,12 +54,6 @@ export function WorkerDataDrawer({
     refetchInterval: isRunning ? 3000 : false,
   });
 
-  const handleCopyUrl = useCallback(() => {
-    if (worker?.current_url) {
-      navigator.clipboard.writeText(worker.current_url).catch(() => {});
-    }
-  }, [worker?.current_url]);
-
   if (!isOpen) {
     return (
       <button
@@ -84,14 +78,15 @@ export function WorkerDataDrawer({
       {worker && (
         <div className="px-3 py-1.5 border-b sf-border-soft sf-surface-panel text-xs flex items-center gap-2">
           {worker.current_url ? (
-            <button
-              type="button"
+            <a
+              href={worker.current_url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-mono sf-link-accent truncate text-left sf-text-caption flex-1 min-w-0 hover:underline"
-              title={`Click to copy: ${worker.current_url}`}
-              onClick={handleCopyUrl}
+              title={worker.current_url}
             >
               {truncateUrl(worker.current_url, 70)}
-            </button>
+            </a>
           ) : (
             <span className="sf-text-muted sf-text-caption flex-1">No URL</span>
           )}

@@ -14,6 +14,7 @@ const VIDEO_CONFIG: ArtifactPanelConfig = {
   countLabel: 'Videos',
   locationPrefix: 'video/',
   previewType: 'video',
+  formatFields: ['format'],
   assetUrl: (runId, entry, _filename) =>
     `/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/video/${encodeURIComponent(entry.worker_id)}`,
 };

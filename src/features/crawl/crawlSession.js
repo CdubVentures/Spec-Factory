@@ -40,6 +40,11 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
   // WHY: Stores fetch window timestamps per page so prePageCloseHook can
   // trim the video to just the dismiss→scroll window.
   const pageTimestampMap = new WeakMap();
+  // WHY: Gate video persistence — only pages that pass block detection and
+  // complete extraction should persist their video. Without this, every
+  // retry attempt (blocked → session rotate → new page) saves a video,
+  // inflating the count far beyond the number of URLs actually fetched.
+  const pageVideoGateMap = new WeakMap();
   const pendingVideoSaves = [];
   let crawler = null;
   // WHY: Lazy proxy crawler — created once on first retryWithProxy call, reused
@@ -176,6 +181,11 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         // the timeout killed the handler before extraction ran.
         request.userData.__capturedPage = { html, finalUrl, title, status };
 
+        // WHY: Page passed block detection — mark it as video-worthy so
+        // prePageCloseHook will persist the recording. Blocked/retried pages
+        // are not marked, so their throwaway videos are silently discarded.
+        if (videoDir) pageVideoGateMap.set(page, true);
+
         const captureCtx = { ...ctx, url: request.url, html, finalUrl, title, status };
         try { await runner.runHook('onCapture', captureCtx); }
         catch (err) { logger?.warn?.('hook_error', { hook: 'onCapture', url: request.url, error: err?.message }); }
@@ -246,12 +256,14 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               // supplements it with the artifact references.
               if (filenames.length > 0) {
                 const fileSizes = persisted.map((r) => r.bytes || 0);
+                const filePaths = persisted.map((r) => r.file_path || '');
                 logger?.info?.('extraction_artifacts_persisted', {
                   plugin: 'screenshot',
                   url: request.url,
                   worker_id: workerId,
                   filenames,
                   file_sizes: fileSizes,
+                  file_paths: filePaths,
                 });
               }
             }
@@ -420,12 +432,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
   function buildFullCrawlerOptions() {
     const config = buildCrawlerConfig();
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
-    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 45;
-    const navTimeoutSecs = Number(settings.crawleeNavigationTimeoutSecs) || 20;
+    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 30;
+    const navTimeoutSecs = Number(settings.crawleeNavigationTimeoutSecs) || 15;
     // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
     // Default 1 — one native retry with session rotation (new fingerprint/cookies).
     // After native retry exhausted, lifecycle calls retryWithProxy as final proxy pass.
-    // Total worst case: nav(20) + handler(45) + buffer(10) = 75s per attempt.
+    // Total worst case: nav(15) + handler(30) + buffer(10) = 55s per attempt.
     const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
     // WHY: Derived from slotCount — not a user knob. With maxOpenPagesPerBrowser=1,
     // each slot needs its own browser launch (~600ms each), causing 5+ second ramp-up
@@ -511,6 +523,9 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
             (page) => {
               const wid = pageWorkerMap.get(page);
               if (!wid) return;
+              // WHY: Only persist videos for pages that passed block detection.
+              // Blocked/retried pages are not gated, so their videos are discarded.
+              if (!pageVideoGateMap.get(page)) return;
               const video = page.video?.();
               if (!video) return;
               const videoPath = path.join(videoDir, `${wid}.webm`);
@@ -533,11 +548,23 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                     try {
                       const persisted = onVideoPersist({ videoPath, workerId: wid, url: pageUrl });
                       if (persisted) {
+                        // WHY: Include filenames + file_sizes directly in result so the
+                        // builder spreads them into the entry. The separate artifacts_persisted
+                        // event is also emitted for consistency with the screenshot pattern,
+                        // but having them in result guarantees they arrive even if event
+                        // ordering shifts.
                         logger?.info?.('extraction_plugin_completed', {
                           plugin: 'video',
                           worker_id: wid,
                           url: pageUrl,
-                          result: { video_count: 1, total_bytes: persisted.size_bytes, format: 'webm' },
+                          result: {
+                            video_count: 1,
+                            total_bytes: persisted.size_bytes,
+                            format: 'webm',
+                            filenames: [persisted.filename],
+                            file_sizes: [persisted.size_bytes],
+                            file_paths: [persisted.file_path],
+                          },
                         });
                         logger?.info?.('extraction_artifacts_persisted', {
                           plugin: 'video',
@@ -545,6 +572,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
                           worker_id: wid,
                           filenames: [persisted.filename],
                           file_sizes: [persisted.size_bytes],
+                          file_paths: [persisted.file_path],
                         });
                       }
                     } catch (err) {
@@ -726,7 +754,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       _proxyCrawler = new crawlee.PlaywrightCrawler({
         ...baseConfig,
         proxyConfiguration: proxyConfig,
-        maxRequestRetries: 2,
+        maxRequestRetries: Number(settings.crawleeProxyMaxRetries) || 2,
       });
     }
 
@@ -891,9 +919,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
 
       // WHY: Two-pass proxy retry. Blocked URLs (except robots_blocked — respect
       // robots.txt) are retried through a dedicated proxy-enabled crawler.
-      const blockedUrls = batchResults
-        .filter((r) => r.blocked && r.blockReason !== 'robots_blocked')
-        .map((r) => r.url);
+      // Gated on crawleeProxyRetryEnabled — when disabled, blocked URLs fail
+      // after native Crawlee session-rotation retries only.
+      const proxyRetryEnabled = settings.crawleeProxyRetryEnabled === true || settings.crawleeProxyRetryEnabled === 'true';
+      const blockedUrls = proxyRetryEnabled
+        ? batchResults.filter((r) => r.blocked && r.blockReason !== 'robots_blocked').map((r) => r.url)
+        : [];
 
       if (blockedUrls.length > 0 && typeof retryWithProxy === 'function') {
         const retrySettled = await retryWithProxy(blockedUrls, { workerIdMap });

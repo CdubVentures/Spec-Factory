@@ -8,7 +8,7 @@ export interface IndexLabRunSummary {
   started_at: string;
   ended_at: string;
   storage_origin?: 'local' | 's3';
-  storage_state?: 'live' | 'relocating' | 'stored';
+  storage_state?: 'live' | 'stored';
   picker_label?: string;
   has_needset?: boolean;
   has_search_profile?: boolean;

@@ -133,8 +133,6 @@ test('process runtime start publishes run metadata and preserves the completed s
     variant: 'White',
     storage_destination: 's3',
     storageDestination: 's3',
-    relocating: false,
-    relocatingRunId: null,
   });
   assert.match(status.startedAt, /^\d{4}-\d{2}-\d{2}T/);
 
@@ -212,7 +210,6 @@ test('process runtime completion forwards storage-derived output and indexlab ro
   await flushProcessLifecycle();
 
   assert.equal(h.indexCalls.length, 1);
-  assert.equal(h.indexCalls[0]?.outputRoot, expectedOutputRoot);
   assert.equal(h.indexCalls[0]?.indexLabRoot, expectedIndexLabRoot);
 });
 

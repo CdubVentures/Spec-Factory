@@ -177,15 +177,6 @@ export async function createRuntimeOpsRunListHarness({
         '../panels/overview/ExtractionTab': `
           export function ExtractionTab() { return null; }
         `,
-        '../panels/overview/FallbacksTab': `
-          export function FallbacksTab() { return null; }
-        `,
-        '../panels/overview/QueueTab': `
-          export function QueueTab() { return null; }
-        `,
-        '../panels/compound/CompoundTab': `
-          export function CompoundTab() { return null; }
-        `,
         './RuntimeOpsRunPicker': `
           export function RuntimeOpsRunPicker(props) {
             const harness = globalThis.__runtimeOpsRunQueryHarness;

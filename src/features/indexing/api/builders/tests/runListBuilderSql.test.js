@@ -19,8 +19,6 @@ function makeBuilder(tmpDir, specDb, overrides = {}) {
     getIndexLabRoot: () => tmpDir,
     isRunStillActive: () => false,
     readEvents: async () => [],
-    refreshArchivedRunDirIndex: async () => new Map(),
-    materializeArchivedRunLocation: async () => null,
     getSpecDbReady: specDb ? async () => specDb : null,
     ...overrides,
   });

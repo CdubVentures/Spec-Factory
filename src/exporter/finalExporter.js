@@ -350,7 +350,7 @@ async function writeDebugRunArtifacts({
   evidencePack
 }) {
   const debugBase = ['runs', slug(category), slug(productId), runId];
-  // WHY: Keep spec/summary/provenance — archivedRunLocationHelpers reads these for run detection.
+  // WHY: Keep spec/summary/provenance — these are read for run detection.
   // traffic_light, evidence_pack, sources.jsonl killed (zero readers).
   await Promise.all([
     writeJson(storage, `${debugBase.join('/')}/spec.json`, normalized.fields || {}),

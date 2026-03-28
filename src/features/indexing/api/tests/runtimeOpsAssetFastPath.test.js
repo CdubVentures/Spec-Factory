@@ -102,12 +102,6 @@ async function createAssetFixture() {
   const pngContent = Buffer.from('fake-png-bytes');
   await fs.writeFile(path.join(screenshotsDir, 'shot1.png'), pngContent);
 
-  // Screenshot in S3 cache location
-  const s3CacheDir = path.join(outputRoot, '_runtime', 'archived_runs', 's3', runId, 'indexlab', 'screenshots');
-  await fs.mkdir(s3CacheDir, { recursive: true });
-  const jpgContent = Buffer.from('fake-jpg-bytes');
-  await fs.writeFile(path.join(s3CacheDir, 'cached-shot.jpg'), jpgContent);
-
   initIndexLabDataBuilders({
     indexLabRoot,
     outputRoot,
@@ -121,7 +115,7 @@ async function createAssetFixture() {
     isProcessRunning: () => false,
   });
 
-  return { tempRoot, indexLabRoot, outputRoot, runId, runDir, pngContent, jpgContent };
+  return { tempRoot, indexLabRoot, outputRoot, runId, runDir, pngContent };
 }
 
 // ---------------------------------------------------------------------------
@@ -162,45 +156,6 @@ describe('runtimeOpsAssetFastPath', () => {
       assert.equal(res.statusCode, 200);
       assert.equal(res.headers['content-type'], 'image/png');
       assert.deepEqual(res.body, pngContent);
-    } finally {
-      await fs.rm(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  test('S3-cached asset is served from the runtime asset route', async () => {
-    const { tempRoot, indexLabRoot, outputRoot, runId, jpgContent } = await createAssetFixture();
-    try {
-      const handler = registerRuntimeOpsRoutes({
-        jsonRes,
-        toInt,
-        INDEXLAB_ROOT: indexLabRoot,
-        OUTPUT_ROOT: outputRoot,
-        config: {},
-        storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
-        readIndexLabRunEvents: async () => [],
-        readRunSummaryEvents: async () => [],
-        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
-        resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
-        safeReadJson: async () => null,
-        safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
-        path,
-      });
-
-      // Request an asset that only exists in the S3 cache, not in the local run dir
-      const res = createStreamingMockRes();
-      const result = await handler(
-        ['indexlab', 'run', runId, 'runtime', 'assets', 'cached-shot.jpg'],
-        new URLSearchParams(),
-        'GET',
-        null,
-        res,
-      );
-      await waitForStream(res);
-
-      assert.equal(result, true, 'handler should return true for served S3-cached asset');
-      assert.equal(res.statusCode, 200);
-      assert.equal(res.headers['content-type'], 'image/jpeg');
-      assert.deepEqual(res.body, jpgContent);
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }

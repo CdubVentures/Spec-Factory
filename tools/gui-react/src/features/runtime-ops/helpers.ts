@@ -72,6 +72,7 @@ export const METRIC_TIPS: Record<string, string> = {
   pool_fetch: 'Fetch pool: workers downloading web pages, PDFs, and other documents from discovered URLs.',
   pool_parse: 'Parse pool: workers extracting structured data from downloaded documents (HTML tables, JSON-LD, article text, PDF text).',
   pool_llm: 'LLM pool: workers sending extraction/validation requests to language models.',
+  pool_extraction: 'Extraction pool: plugin executions that capture screenshots, video, and field artifacts from fetched pages.',
   pool_active: 'Currently executing tasks in this pool.',
   pool_done: 'Tasks completed successfully.',
   pool_fail: 'Tasks that ended in error (timeout, HTTP error, parse failure, etc).',

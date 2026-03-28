@@ -28,7 +28,6 @@ function toOriginBadgeClass(origin = '') {
 function toStorageStateLabel(state = '') {
   const token = toToken(state).toLowerCase();
   if (token === 'live') return 'Live';
-  if (token === 'relocating') return 'Relocating';
   if (token === 'stored') return 'Stored';
   return '';
 }
@@ -36,7 +35,6 @@ function toStorageStateLabel(state = '') {
 function toStorageStateBadgeClass(state = '') {
   const token = toToken(state).toLowerCase();
   if (token === 'live') return 'sf-chip-success';
-  if (token === 'relocating') return 'sf-chip-warning';
   return 'sf-chip-neutral';
 }
 

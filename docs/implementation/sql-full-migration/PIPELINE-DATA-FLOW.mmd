@@ -27,15 +27,15 @@
 
 flowchart TB
 
-  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Archive</b><br/><i>Post-Wave 5.5 — SQL + run-summary.json  |  2026-03-27</i>"]
+  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Completion</b><br/><i>15 actual phases (phase_00 - phase_09 + sub-cursors)  |  Code-verified 2026-03-27</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:22px
 
-  %% ===== PHASE 0: INITIALIZATION =====
-  subgraph P0["PHASE 0  INITIALIZATION"]
+  %% ===== PHASE 00: BOOTSTRAP =====
+  subgraph P00["phase_00_bootstrap  INITIALIZATION"]
     direction LR
-    p0_start(["processRuntime.startProcess()"])
-    p0_runsql[("UPSERT runs (slim 14 cols)<br/><i>status: starting</i>")]
-    p0_artifacts[("INSERT run_artifacts<br/><i>needset + search_profile baseline</i>")]
+    p0_start(["processRuntime.startProcess()<br/><i>Spawns child Node process (spec.js)</i>"])
+    p0_runsql[("UPSERT runs (16 cols)<br/><i>status: starting<br/>via writeRunMeta()</i>")]
+    p0_artifacts[("INSERT run_artifacts<br/><i>needset + search_profile baseline<br/>via ensureBaselineArtifacts()</i>")]
     p0_ws["WS broadcast<br/><i>process-status: running</i>"]
     p0_nofiles["NO JSON files written<br/><i>run.json, needset.json, search_profile.json KILLED</i>"]
 
@@ -44,92 +44,118 @@ flowchart TB
     p0_start --> p0_ws
     p0_start --> p0_nofiles
   end
-  style P0 fill:#0d1117,stroke:#58a6ff,color:#e0e0e0,stroke-width:2px
+  style P00 fill:#0d1117,stroke:#58a6ff,color:#e0e0e0,stroke-width:2px
   style p0_start fill:#238636,stroke:#3fb950,color:#fff
   style p0_runsql fill:#238636,stroke:#3fb950,color:#fff
   style p0_artifacts fill:#238636,stroke:#3fb950,color:#fff
   style p0_ws fill:#21262d,stroke:#8b949e,color:#c9d1d9
   style p0_nofiles fill:#da3633,stroke:#f85149,color:#fff
 
-  %% ===== PHASES 1-7: SEARCH + DISCOVERY =====
-  subgraph P17["PHASES 1-7  SEARCH + DISCOVERY"]
+  %% ===== PHASES 01-08: SEARCH + DISCOVERY =====
+  subgraph P18["phases 01-08  SEARCH + DISCOVERY + DOMAIN CLASSIFICATION"]
     direction LR
-    p1_needset["NeedSet + Brand<br/><i>LLM calls</i>"]
-    p2_search["Search Execution<br/><i>Bing/Google</i>"]
-    p3_serp["SERP Selector<br/><i>LLM triage</i>"]
-    p4_domain["Domain Classifier<br/><i>URL ranking</i>"]
+    p1_needset["phase_01_needset<br/><i>Parallel discovery (LLM)</i>"]
+    p2_brand["phase_02_brand_resolver<br/><i>+ phase_02_search sub-cursor</i>"]
+    p3_profile["phase_03_search_profile"]
+    p4_planner["phase_04_search_planner"]
+    p5_query["phase_05_query_journey<br/><i>+ phase_05_fetch sub-cursor</i>"]
+    p6_results["phase_06_search_results<br/><i>+ phase_06_parse, phase_06_index</i>"]
+    p7_serp["phase_07_serp_selector<br/><i>+ phase_07_prime_sources</i>"]
+    p8_domain["phase_08_domain_classifier"]
 
-    p17_sql[("SQL writes:<br/>bridge_events, run_artifacts,<br/>billing_entries, runs (counters)")]
+    p18_sql[("SQL writes:<br/>bridge_events, run_artifacts,<br/>billing_entries, runs (counters)")]
+    p18_ndjson["NDJSON side-writes:<br/><i>query-index, url-index,<br/>prompt-index, knob-snapshots</i>"]
 
-    p1_needset --> p2_search --> p3_serp --> p4_domain
-    p4_domain --> p17_sql
+    p1_needset --> p2_brand --> p3_profile --> p4_planner
+    p4_planner --> p5_query --> p6_results --> p7_serp --> p8_domain
+    p8_domain --> p18_sql
+    p8_domain --> p18_ndjson
   end
-  style P17 fill:#0d1117,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+  style P18 fill:#0d1117,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
   style p1_needset fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p2_search fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p3_serp fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p4_domain fill:#21262d,stroke:#3fb950,color:#c9d1d9
-  style p17_sql fill:#238636,stroke:#3fb950,color:#fff
+  style p2_brand fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p3_profile fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p4_planner fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p5_query fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p6_results fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p7_serp fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p8_domain fill:#21262d,stroke:#3fb950,color:#c9d1d9
+  style p18_sql fill:#238636,stroke:#3fb950,color:#fff
+  style p18_ndjson fill:#2d333b,stroke:#d29922,color:#e0e0e0
 
-  %% ===== PHASE 8: CRAWL =====
-  subgraph P8["PHASE 8  CRAWL"]
+  %% ===== PHASE 09: CRAWL =====
+  subgraph P09["phase_09_crawl  CRAWL + EXTRACTION"]
     direction LR
-    p8_batch["processBatch()<br/><i>concurrent workers</i>"]
-    p8_frontier[("frontierDb.urls")]
-    p8_events[("bridge_events<br/><i>fetch events</i>")]
-    p8_runs[("runs<br/><i>counters++</i>")]
-    p8_binaries["Content-addressed<br/><i>page.html.gz, screenshot</i>"]
+    p9_batch["crawlSession.processBatch()<br/><i>concurrent workers via runFetchPlan()</i>"]
+    p9_frontier[("frontierDb.urls<br/><i>recordFetch() per URL</i>")]
+    p9_events[("bridge_events<br/><i>fetch events</i>")]
+    p9_runs[("runs<br/><i>counters++</i>")]
+    p9_binaries["Content-addressed<br/><i>page.html.gz, screenshot, video</i>"]
+    p9_evidence[("evidenceIndexDb<br/><i>evidence_documents, chunks, facts</i>")]
 
-    p8_batch --> p8_frontier
-    p8_batch --> p8_events
-    p8_batch --> p8_runs
-    p8_batch --> p8_binaries
+    p9_batch --> p9_frontier
+    p9_batch --> p9_events
+    p9_batch --> p9_runs
+    p9_batch --> p9_binaries
+    p9_batch --> p9_evidence
   end
-  style P8 fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style p8_batch fill:#21262d,stroke:#f0883e,color:#c9d1d9
-  style p8_frontier fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p8_events fill:#238636,stroke:#3fb950,color:#fff
-  style p8_runs fill:#238636,stroke:#3fb950,color:#fff
-  style p8_binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0
+  style P09 fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
+  style p9_batch fill:#21262d,stroke:#f0883e,color:#c9d1d9
+  style p9_frontier fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style p9_events fill:#238636,stroke:#3fb950,color:#fff
+  style p9_runs fill:#238636,stroke:#3fb950,color:#fff
+  style p9_binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0
+  style p9_evidence fill:#a371f7,stroke:#bc8cff,color:#fff
 
-  %% ===== PHASE 9: PARSE + INDEX =====
-  subgraph P9["PHASE 9  PARSE + INDEX + EXPORT"]
+  %% ===== EXPORT =====
+  subgraph EXPORT["EXPORT + INDEX"]
     direction LR
-    p9_parse["extractCandidates()"]
-    p9_specdb[("candidates, item_field_state,<br/>source_registry, evidence")]
-    p9_export["spec.json, summary.json,<br/>provenance.json"]
-    p9_billing[("billing_entries<br/><i>SQL only</i>")]
+    exp_parse["extractCandidates()"]
+    exp_specdb[("candidates, item_field_state,<br/>source_registry, evidence")]
+    exp_output["spec.json, summary.json,<br/>provenance.json"]
+    exp_billing[("billing_entries<br/><i>SQL only</i>")]
 
-    p9_parse --> p9_specdb
-    p9_parse --> p9_export
-    p9_parse --> p9_billing
+    exp_parse --> exp_specdb
+    exp_parse --> exp_output
+    exp_parse --> exp_billing
   end
-  style P9 fill:#0d1117,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style p9_parse fill:#21262d,stroke:#f778ba,color:#c9d1d9
-  style p9_specdb fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p9_export fill:#2d333b,stroke:#f778ba,color:#e0e0e0
-  style p9_billing fill:#238636,stroke:#3fb950,color:#fff
+  style EXPORT fill:#0d1117,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
+  style exp_parse fill:#21262d,stroke:#f778ba,color:#c9d1d9
+  style exp_specdb fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style exp_output fill:#2d333b,stroke:#f778ba,color:#e0e0e0
+  style exp_billing fill:#238636,stroke:#3fb950,color:#fff
 
-  %% ===== PHASE 10: FINALIZE + ARCHIVE =====
-  subgraph P10["PHASE 10  FINALIZE + ARCHIVE"]
+  %% ===== FINALIZE =====
+  subgraph FINALIZE["FINALIZE"]
     direction LR
-    p10_summary["WRITE run-summary.json<br/><i>schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
-    p10_runsql[("UPDATE runs<br/><i>status: completed</i>")]
-    p10_purge["PURGE bridge_events<br/><i>captured in run-summary.json</i>"]
-    p10_relocate["relocateRunData()<br/><i>bundle → LOCAL or S3</i>"]
-    p10_dbupdate[("product_runs<br/><i>storage_state, s3_key</i>")]
+    fin_summary["writeRunSummaryArtifact()<br/><i>→ upsertRunArtifact(artifact_type='run_summary')<br/>schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
+    fin_runsql[("UPDATE runs<br/><i>status: completed</i>")]
+    fin_purge["PURGE bridge_events<br/><i>DELETE WHERE run_id = ?</i>"]
+    fin_complete["indexLabProcessCompletion.js<br/><i>handles run result, updates product_runs</i>"]
 
-    p10_summary --> p10_runsql --> p10_purge --> p10_relocate --> p10_dbupdate
+    fin_summary --> fin_runsql --> fin_purge --> fin_complete
   end
-  style P10 fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
-  style p10_summary fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
-  style p10_runsql fill:#238636,stroke:#3fb950,color:#fff
-  style p10_purge fill:#da3633,stroke:#f85149,color:#fff
-  style p10_relocate fill:#21262d,stroke:#238636,color:#c9d1d9
-  style p10_dbupdate fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style FINALIZE fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
+  style fin_summary fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
+  style fin_runsql fill:#238636,stroke:#3fb950,color:#fff
+  style fin_purge fill:#da3633,stroke:#f85149,color:#fff
+  style fin_complete fill:#21262d,stroke:#238636,color:#c9d1d9
+
+  %% ===== POST-RUN =====
+  subgraph POSTRUN["POST-RUN  (relocation gutted — needs redesign)"]
+    direction LR
+    post_note["Run data stays in place<br/><i>No active relocation/archival<br/>S3 upload logic removed</i>"]
+    post_storage["Storage Manager: CRUD + prune<br/><i>GET /storage/overview, DELETE, prune, purge</i>"]
+
+    post_note --> post_storage
+  end
+  style POSTRUN fill:#0d1117,stroke:#da3633,color:#f85149,stroke-width:2px
+  style post_note fill:#da3633,stroke:#f85149,color:#fff
+  style post_storage fill:#21262d,stroke:#58a6ff,color:#c9d1d9
 
   %% ===== FLOW =====
-  P0 --> P17
-  P17 --> P8
-  P8 --> P9
-  P9 --> P10
+  P00 --> P18
+  P18 --> P09
+  P09 --> EXPORT
+  EXPORT --> FINALIZE
+  FINALIZE --> POSTRUN

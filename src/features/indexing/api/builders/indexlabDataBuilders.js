@@ -14,13 +14,6 @@ export {
   toStringList, addUniqueStrings, buildAutomationJobId,
   normalizeAutomationStatus, normalizeAutomationQuery, buildSearchProfileQueryMaps,
 } from './automationQueueHelpers.js';
-import {
-  initArchivedRunLocationHelpers,
-  resolveArchivedIndexLabRunDirectory,
-  refreshArchivedRunDirIndex,
-  materializeArchivedRunLocation,
-  readArchivedS3RunMetaOnly,
-} from './archivedRunLocationHelpers.js';
 
 let _resolveIndexLabRoot = () => '';
 let _outputRoot = '';
@@ -48,35 +41,24 @@ export async function resolveIndexLabRunDirectory(runId) {
   const indexLabRoot = _resolveIndexLabRoot();
   const directRunDir = safeJoin(indexLabRoot, token);
   if (directRunDir) {
-    // WHY: Wave 5.5 killed run.json — check directory existence instead.
-    // The bridge creates this dir in ensureRun() via fs.mkdir().
     try {
       const stat = await fs.stat(directRunDir);
       if (stat.isDirectory()) return directRunDir;
     } catch { /* directory doesn't exist */ }
   }
+  // WHY: Directory name may differ from canonical run_id (e.g. live-watch alias).
+  // Lightweight scan of live indexLabRoot to match by run.json metadata.
   try {
     const entries = await fs.readdir(indexLabRoot, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      const candidateToken = String(entry.name || '').trim();
-      const candidateRunDir = safeJoin(indexLabRoot, candidateToken);
-      if (!candidateToken || !candidateRunDir) continue;
-      // WHY: Check run-summary.json (post Wave 5.5) then run.json (pre-migration)
-      const summary = await safeReadJson(path.join(candidateRunDir, 'run-summary.json'));
-      if (summary && typeof summary === 'object') {
-        if (String(summary?.telemetry?.meta?.run_id || '').trim() === token) return candidateRunDir;
-      }
-      const meta = await safeReadJson(path.join(candidateRunDir, 'run.json'));
-      if (!meta || typeof meta !== 'object') continue;
-      if (String(meta.run_id || '').trim() === token) {
-        return candidateRunDir;
-      }
+      const candidateDir = safeJoin(indexLabRoot, entry.name);
+      if (!candidateDir) continue;
+      const meta = await safeReadJson(path.join(candidateDir, 'run.json'));
+      if (meta && String(meta.run_id || '').trim() === token) return candidateDir;
     }
-  } catch {
-    // ignore missing live run root
-  }
-  return resolveArchivedIndexLabRunDirectory(token);
+  } catch { /* indexLabRoot doesn't exist or unreadable */ }
+  return '';
 }
 
 export async function readIndexLabRunMeta(runId) {
@@ -196,7 +178,6 @@ export function initIndexLabDataBuilders({
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;
   _processStatus = processStatus;
-  initArchivedRunLocationHelpers({ outputRoot, runDataArchiveStorage, runDataStorageState, getRunDataArchiveStorage });
   _phaseReaders = createPhaseDataReaders({
     resolveRunDir: resolveIndexLabRunDirectory,
     readMeta: readIndexLabRunMeta,
@@ -235,9 +216,6 @@ export function initIndexLabDataBuilders({
     getIndexLabRoot: _resolveIndexLabRoot,
     isRunStillActive,
     readEvents: readIndexLabRunEvents,
-    refreshArchivedRunDirIndex,
-    materializeArchivedRunLocation,
-    readArchivedS3RunMetaOnly,
     getSpecDbReady: _getSpecDbReady,
   });
 }

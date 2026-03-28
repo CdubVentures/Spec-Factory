@@ -21,6 +21,9 @@ export interface RuntimeSettingDefaults {
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
+  fetchDismissRounds: number;
+  fetchLoadingDelayMs: number;
+  fetchSuiteMode: string;
   geminiApiKey: string;
   googleSearchMaxRetries: number;
   googleSearchMinQueryIntervalMs: number;
@@ -108,15 +111,14 @@ export interface RuntimeSettingDefaults {
   crawleeSessionMaxUsageCount: number;
   crawleeSessionMaxAgeSecs: number;
   crawleeUseFingerprints: boolean;
+  crawleeProxyRetryEnabled: boolean;
+  crawleeProxyMaxRetries: number;
   crawleeProxyUrlsJson: string;
   autoScrollPostLoadWaitMs: number;
   cookieConsentEnabled: boolean;
   cookieConsentTimeoutMs: number;
   cookieConsentFallbackSelectors: string;
   cookieConsentSettleMs: number;
-  fetchDismissRounds: number;
-  fetchLoadingDelayMs: number;
-  fetchSuiteMode: string;
   overlayDismissalEnabled: boolean;
   overlayDismissalMode: string;
   overlayDismissalCloseSelectors: string;

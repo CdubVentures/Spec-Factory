@@ -18,6 +18,20 @@ interface DocumentsTabProps {
 const DOCUMENT_PAGE_SIZE_KEYS = ['25', '50', '100'] as const;
 type DocumentPageSize = (typeof DOCUMENT_PAGE_SIZE_KEYS)[number];
 
+// WHY: Short display labels for MIME types. Falls back to the raw value.
+function shortContentType(raw: string | null): string {
+  if (!raw) return '-';
+  const lower = raw.toLowerCase();
+  if (lower.includes('html')) return 'HTML';
+  if (lower.includes('pdf')) return 'PDF';
+  if (lower.includes('json')) return 'JSON';
+  if (lower.includes('xml')) return 'XML';
+  if (lower.includes('text/plain')) return 'Text';
+  if (lower.includes('csv')) return 'CSV';
+  if (lower.includes('image')) return 'Image';
+  return raw.split('/').pop()?.split(';')[0] ?? raw;
+}
+
 export function DocumentsTab({ documents, runId, category, isRunning }: DocumentsTabProps) {
   const scrollRef = usePersistedScroll(`scroll:documents:${category}`);
   const [searchFilter, setSearchFilter] = usePersistedTab<string>(
@@ -60,8 +74,8 @@ export function DocumentsTab({ documents, runId, category, isRunning }: Document
 
   return (
     <div className="flex flex-1 min-h-0">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-soft">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="px-4 py-2 flex items-center gap-2 border-b sf-border-soft shrink-0">
           <input
             type="text"
             placeholder="Filter by URL, host, status..."
@@ -78,21 +92,20 @@ export function DocumentsTab({ documents, runId, category, isRunning }: Document
             <option value="50">50</option>
             <option value="100">100</option>
           </select>
-          <span className="text-xs sf-text-subtle">{filtered.length}/{documents.length}</span>
+          <span className="text-xs sf-text-subtle whitespace-nowrap">{filtered.length}/{documents.length}</span>
         </div>
 
-        <div className="sf-table-shell rounded overflow-hidden">
+        <div ref={scrollRef} className="flex-1 overflow-auto">
           <table className="w-full text-xs">
-            <thead className="sf-table-head sticky top-0">
+            <thead className="sf-table-head sticky top-0 z-10">
               <tr>
-                <th className="sf-table-head-cell text-left px-3 py-2">URL<Tip text={METRIC_TIPS.doc_url} /></th>
-                <th className="sf-table-head-cell text-left px-3 py-2">Host<Tip text={METRIC_TIPS.doc_host} /></th>
-                <th className="sf-table-head-cell text-left px-3 py-2">Status<Tip text={METRIC_TIPS.doc_status} /></th>
-                <th className="sf-table-head-cell text-right px-3 py-2">Code<Tip text={METRIC_TIPS.doc_code} /></th>
-                <th className="sf-table-head-cell text-right px-3 py-2">Size<Tip text={METRIC_TIPS.doc_size} /></th>
-                <th className="sf-table-head-cell text-left px-3 py-2">Hash<Tip text={METRIC_TIPS.doc_hash} /></th>
-                <th className="sf-table-head-cell text-left px-3 py-2">Dedupe<Tip text={METRIC_TIPS.doc_dedupe} /></th>
-                <th className="sf-table-head-cell text-left px-3 py-2">Parse<Tip text={METRIC_TIPS.doc_parse} /></th>
+                <th className="sf-table-head-cell text-left px-3 py-2 whitespace-nowrap">URL<Tip text={METRIC_TIPS.doc_url} /></th>
+                <th className="sf-table-head-cell text-left px-3 py-2 whitespace-nowrap">Host<Tip text={METRIC_TIPS.doc_host} /></th>
+                <th className="sf-table-head-cell text-left px-3 py-2 whitespace-nowrap">Status<Tip text={METRIC_TIPS.doc_status} /></th>
+                <th className="sf-table-head-cell text-right px-3 py-2 whitespace-nowrap">Code<Tip text={METRIC_TIPS.doc_code} /></th>
+                <th className="sf-table-head-cell text-left px-3 py-2 whitespace-nowrap">Type</th>
+                <th className="sf-table-head-cell text-left px-3 py-2 whitespace-nowrap">Parse<Tip text={METRIC_TIPS.doc_parse} /></th>
+                <th className="sf-table-head-cell text-right px-3 py-2 whitespace-nowrap">Size<Tip text={METRIC_TIPS.doc_size} /></th>
               </tr>
             </thead>
             <tbody>
@@ -102,23 +115,22 @@ export function DocumentsTab({ documents, runId, category, isRunning }: Document
                   onClick={() => setSelectedDocUrl(selectedDocUrl === d.url ? null : d.url)}
                   className={`cursor-pointer sf-table-row ${selectedDocUrl === d.url ? 'sf-table-row-active' : ''}`}
                 >
-                  <td className="px-3 py-2 font-mono sf-text-muted max-w-xs truncate">
-                    {truncateUrl(d.url, 50)}
+                  <td className="px-3 py-2 font-mono sf-text-primary max-w-xs truncate whitespace-nowrap" title={d.url}>
+                    {truncateUrl(d.url, 55)}
                   </td>
-                  <td className="px-3 py-2 font-mono sf-text-subtle">{d.host}</td>
-                  <td className="px-3 py-2">
-                    <span className={`px-1.5 py-0.5 rounded ${statusBadgeClass(d.status)}`}>{d.status}</span>
+                  <td className="px-3 py-2 font-mono sf-text-muted whitespace-nowrap">{d.host}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${statusBadgeClass(d.status)}`}>{d.status}</span>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono">{d.status_code ?? '-'}</td>
-                  <td className="px-3 py-2 text-right font-mono">{formatBytes(d.bytes)}</td>
-                  <td className="px-3 py-2 font-mono sf-text-subtle">{d.content_hash || '-'}</td>
-                  <td className="px-3 py-2">{d.dedupe_outcome || '-'}</td>
-                  <td className="px-3 py-2">{d.parse_method || '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{d.status_code ?? '-'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap sf-text-muted">{shortContentType(d.content_type)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap sf-text-muted">{d.parse_method || '-'}</td>
+                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">{formatBytes(d.bytes)}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center sf-text-subtle">
+                  <td colSpan={7} className="px-3 py-8 text-center sf-text-subtle">
                     No documents found
                   </td>
                 </tr>
@@ -160,6 +172,23 @@ export function DocumentsTab({ documents, runId, category, isRunning }: Document
               <div className="font-mono">{docDetail.evidence_chunks ?? '-'}</div>
             </div>
           </div>
+
+          {/* Technical details moved from table columns — sourced from row data */}
+          {(() => {
+            const row = documents.find((d) => d.url === selectedDocUrl);
+            return row ? (
+              <div className="grid grid-cols-2 gap-2 mb-3 text-xs border-t sf-border-soft pt-2">
+                <div>
+                  <span className="sf-text-subtle">Hash<Tip text={METRIC_TIPS.doc_hash} /></span>
+                  <div className="font-mono sf-text-muted">{row.content_hash || '-'}</div>
+                </div>
+                <div>
+                  <span className="sf-text-subtle">Dedupe<Tip text={METRIC_TIPS.doc_dedupe} /></span>
+                  <div className="font-mono sf-text-muted">{row.dedupe_outcome || '-'}</div>
+                </div>
+              </div>
+            ) : null;
+          })()}
 
           <h4 className="text-xs font-semibold sf-text-subtle uppercase tracking-wide mb-2">
             Timeline

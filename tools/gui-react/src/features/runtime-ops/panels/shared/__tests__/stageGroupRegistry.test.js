@@ -43,9 +43,6 @@ async function getModule() {
         '../extraction/extractionStageRegistry.ts': createStageRegistryStub('EXTRACTION', [
           'field_extraction',
         ]),
-        '../validation/validationStageRegistry.ts': createStageRegistryStub('VALIDATION', [
-          'quality_gate',
-        ]),
       },
     },
   );
@@ -53,9 +50,9 @@ async function getModule() {
 }
 
 describe('STAGE_GROUP_REGISTRY', () => {
-  it('has exactly 4 entries', async () => {
+  it('has exactly 3 entries', async () => {
     const { STAGE_GROUP_REGISTRY } = await getModule();
-    assert.equal(STAGE_GROUP_REGISTRY.length, 4);
+    assert.equal(STAGE_GROUP_REGISTRY.length, 3);
   });
 
   it('each entry has a unique id from STAGE_GROUP_KEYS', async () => {
@@ -105,7 +102,7 @@ describe('STAGE_GROUP_REGISTRY', () => {
 
   it('each new group has at least 1 entry', async () => {
     const { STAGE_GROUP_REGISTRY } = await getModule();
-    for (const id of ['fetch', 'extraction', 'validation']) {
+    for (const id of ['fetch', 'extraction']) {
       const group = STAGE_GROUP_REGISTRY.find((g) => g.id === id);
       assert.ok(group, `${id} group must exist`);
       assert.ok(group.registry.length >= 1, `${id} must have at least 1 registry entry`);

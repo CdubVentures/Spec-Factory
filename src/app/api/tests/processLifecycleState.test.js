@@ -29,15 +29,13 @@ function reduceLifecycle(actions) {
 }
 
 describe('process lifecycle status contract', () => {
-  test('drives the public status surface from start through exit and relocation', () => {
+  test('drives the public status surface from start through exit to idle', () => {
     const running = reduceLifecycle([
       { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
     ]);
 
     assert.deepEqual(deriveProcessStatus(running, {}), {
       running: true,
-      relocating: false,
-      relocatingRunId: null,
       run_id: 'run_test1234',
       runId: 'run_test1234',
       category: 'mouse',
@@ -59,43 +57,12 @@ describe('process lifecycle status contract', () => {
       type: 'PROCESS_EXITED',
       payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' },
     });
+    assert.equal(exited.phase, 'idle');
     const exitedStatus = deriveProcessStatus(exited, {});
     assert.equal(exitedStatus.running, false);
-    assert.equal(exitedStatus.relocating, false);
     assert.equal(exitedStatus.exitCode, 0);
     assert.equal(exitedStatus.endedAt, '2026-03-20T10:05:00.000Z');
     assert.equal(exitedStatus.runId, 'run_test1234');
-
-    const relocating = processStateReducer(exited, {
-      type: 'RELOCATION_STARTED',
-      payload: { runId: 'run_test1234' },
-    });
-    const relocatingStatus = deriveProcessStatus(relocating, {});
-    assert.equal(relocatingStatus.running, false);
-    assert.equal(relocatingStatus.relocating, true);
-    assert.equal(relocatingStatus.relocatingRunId, 'run_test1234');
-    assert.equal(relocatingStatus.runId, 'run_test1234');
-
-    const idleAgain = processStateReducer(relocating, { type: 'RELOCATION_COMPLETED' });
-    const idleStatus = deriveProcessStatus(idleAgain, {});
-    assert.equal(idleAgain.phase, 'idle');
-    assert.equal(idleStatus.running, false);
-    assert.equal(idleStatus.relocating, false);
-    assert.equal(idleStatus.runId, 'run_test1234');
-  });
-
-  test('preserves the last valid public run id when relocation uses the internal unknown marker', () => {
-    const state = reduceLifecycle([
-      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
-      { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } },
-      { type: 'RELOCATION_STARTED', payload: { runId: 'unknown' } },
-    ]);
-
-    const status = deriveProcessStatus(state, {});
-    assert.equal(status.relocating, true);
-    assert.equal(status.relocatingRunId, 'unknown');
-    assert.equal(status.runId, 'run_test1234');
-    assert.equal(status.run_id, 'run_test1234');
   });
 
   test('ignores invalid lifecycle actions instead of changing state', () => {
@@ -103,17 +70,10 @@ describe('process lifecycle status contract', () => {
     const running = reduceLifecycle([
       { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
     ]);
-    const relocating = reduceLifecycle([
-      { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
-      { type: 'PROCESS_EXITED', payload: { exitCode: 0, endedAt: '2026-03-20T10:05:00.000Z' } },
-      { type: 'RELOCATION_STARTED', payload: { runId: 'run_test1234' } },
-    ]);
 
     const cases = [
       [idle, { type: 'PROCESS_EXITED', payload: { exitCode: 1 } }],
       [running, { type: 'PROCESS_STARTED', payload: { ...STARTED_PAYLOAD, pid: 9999 } }],
-      [running, { type: 'RELOCATION_STARTED', payload: { runId: 'run_other' } }],
-      [relocating, { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD }],
     ];
 
     for (const [state, action] of cases) {

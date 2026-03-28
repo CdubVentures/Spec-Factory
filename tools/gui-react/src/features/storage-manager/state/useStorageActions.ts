@@ -1,14 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import type {
   DeleteRunResponse,
   BulkDeleteResponse,
   PruneResponse,
   PurgeResponse,
-  RecalculateResponse,
-  SyncStatusResponse,
-  SyncPushResponse,
-  SyncPullResponse,
 } from '../types.ts';
 
 function useInvalidateStorage() {
@@ -55,42 +51,6 @@ export function usePurgeRuns() {
   return useMutation({
     mutationFn: () =>
       api.post<PurgeResponse>('/storage/purge', { confirmToken: 'DELETE' }),
-    onSuccess: invalidate,
-  });
-}
-
-export function useRecalculateMetrics() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
-    mutationFn: () =>
-      api.post<RecalculateResponse>('/storage/recalculate'),
-    onSuccess: invalidate,
-  });
-}
-
-export function useSyncStatus(enabled: boolean) {
-  return useQuery<SyncStatusResponse>({
-    queryKey: ['storage', 'sync', 'status'],
-    queryFn: () => api.get<SyncStatusResponse>('/storage/sync/status'),
-    enabled,
-    staleTime: 15_000,
-  });
-}
-
-export function usePushToS3() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
-    mutationFn: () =>
-      api.post<SyncPushResponse>('/storage/sync/push'),
-    onSuccess: invalidate,
-  });
-}
-
-export function usePullFromS3() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
-    mutationFn: () =>
-      api.post<SyncPullResponse>('/storage/sync/pull'),
     onSuccess: invalidate,
   });
 }

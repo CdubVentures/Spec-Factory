@@ -11,30 +11,35 @@ import fs from 'node:fs';
  * @param {{ urlIndexPath: string, category: string }} opts
  * @returns {HostHealthRow[]}
  */
-export function aggregateHostHealth({ urlIndexPath, category }) {
-  if (!fs.existsSync(urlIndexPath)) return [];
+export function aggregateHostHealth({ urlIndexPath, category, urlRows: _urlRows }) {
+  // WHY: SQL rows preferred; NDJSON fallback for backward compat
+  let rows;
+  if (_urlRows) {
+    rows = _urlRows;
+  } else {
+    if (!fs.existsSync(urlIndexPath)) return [];
+    const raw = fs.readFileSync(urlIndexPath, 'utf8').trim();
+    if (!raw) return [];
+    rows = [];
+    for (const line of raw.split('\n').filter(Boolean)) {
+      try { rows.push(JSON.parse(line)); } catch { /* skip malformed */ }
+    }
+  }
 
-  const raw = fs.readFileSync(urlIndexPath, 'utf8').trim();
-  if (!raw) return [];
-
-  const lines = raw.split('\n').filter(Boolean);
   const hostMap = new Map();
 
-  for (const line of lines) {
-    try {
-      const row = JSON.parse(line);
-      const host = String(row.host || '').trim();
-      if (!host) continue;
+  for (const row of rows) {
+    const host = String(row?.host || '').trim();
+    if (!host) continue;
 
-      if (!hostMap.has(host)) {
-        hostMap.set(host, { total: 0, failed: 0, totalFields: 0 });
-      }
-      const entry = hostMap.get(host);
-      entry.total++;
-      if (!row.fetch_success) entry.failed++;
-      const fields = Array.isArray(row.fields_filled) ? row.fields_filled.length : 0;
-      entry.totalFields += fields;
-    } catch { /* skip malformed */ }
+    if (!hostMap.has(host)) {
+      hostMap.set(host, { total: 0, failed: 0, totalFields: 0 });
+    }
+    const entry = hostMap.get(host);
+    entry.total++;
+    if (!row.fetch_success) entry.failed++;
+    const fields = Array.isArray(row.fields_filled) ? row.fields_filled.length : 0;
+    entry.totalFields += fields;
   }
 
   const results = [];

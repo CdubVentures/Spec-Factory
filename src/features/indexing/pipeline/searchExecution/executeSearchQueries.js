@@ -241,18 +241,21 @@ export async function executeSearchQueries({
             });
           }
         }
-        // Record discovery search query to NDJSON index
+        // Record discovery search query to NDJSON index + SQL
         try {
           const _dqDir = path.join(defaultIndexLabRoot(), job.category || categoryConfig.category || 'mouse');
           fs.mkdirSync(_dqDir, { recursive: true });
-          recordQueryResult({
+          const _dqRecord = {
             query,
             provider: configValue(config, 'searchEngines'),
             result_count: providerResults.length,
             run_id: runId,
             category: job.category || categoryConfig.category || '',
             product_id: job.productId || '',
-          }, path.join(_dqDir, 'query-index.ndjson'));
+          };
+          recordQueryResult(_dqRecord, path.join(_dqDir, 'query-index.ndjson'));
+          const _specDb = config.specDb || null;
+          if (_specDb) try { _specDb.insertQueryIndexEntry({ ..._dqRecord, ts: new Date().toISOString() }); } catch { /* best-effort */ }
         } catch { /* index recording must not crash the pipeline */ }
         const externalSelectedRow = resolveSelectedQueryRow(query);
         const queryRecord = frontierDb?.recordQuery?.({

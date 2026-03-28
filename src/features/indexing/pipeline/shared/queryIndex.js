@@ -2,7 +2,7 @@
 // to prove v2 improvements compound. NDJSON storage — portable, no new deps.
 // Delegates to createQueryIndex factory with in-memory cache.
 
-import { createQueryIndex } from './createQueryIndex.js';
+import { createQueryIndex, computeQueryIndexSummary, computeUrlIndexSummary } from './createQueryIndex.js';
 
 const _default = createQueryIndex();
 
@@ -15,4 +15,4 @@ export const queryIndexSummary = _default.queryIndexSummary;
 export const urlIndexSummary = _default.urlIndexSummary;
 export const highYieldUrls = _default.highYieldUrls;
 
-export { createQueryIndex };
+export { createQueryIndex, computeQueryIndexSummary, computeUrlIndexSummary };

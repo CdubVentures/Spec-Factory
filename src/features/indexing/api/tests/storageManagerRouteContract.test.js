@@ -36,7 +36,6 @@ function buildMockCtx(overrides = {}) {
       const run = runs.find(r => r.run_id === runId);
       return run ? `/fake/path/${runId}/indexlab` : '';
     },
-    refreshArchivedRunDirIndex: async () => new Map(),
     runDataStorageState: {
       enabled: true,
       destinationType: 'local',
@@ -51,12 +50,6 @@ function buildMockCtx(overrides = {}) {
       deletedRuns.push(runId);
       return { ok: true, run_id: runId, deleted_from: 'local' };
     },
-    recalculateAllStorageMetrics: async () => ({
-      runsScanned: runs.length,
-      runsUpdated: 1,
-      totalSizeBytes: 2048,
-      errors: [],
-    }),
     _deletedRuns: deletedRuns,
     ...overrides,
   };
@@ -257,21 +250,6 @@ describe('storageManagerRoutes', () => {
       ok(typeof result.body.storage_backend === 'string');
       ok(Array.isArray(result.body.runs));
       strictEqual(result.body.runs.length, 2);
-    });
-  });
-
-  describe('POST /storage/recalculate', () => {
-    it('returns recalculate results', async () => {
-      const ctx = buildMockCtx();
-      const handler = createStorageManagerHandler(ctx);
-      const result = await handler(['storage', 'recalculate'], new URLSearchParams(), 'POST', {}, {});
-
-      strictEqual(result.status, 200);
-      strictEqual(result.body.ok, true);
-      ok(typeof result.body.runs_scanned === 'number');
-      ok(typeof result.body.runs_updated === 'number');
-      ok(typeof result.body.total_size_bytes === 'number');
-      ok(Array.isArray(result.body.errors));
     });
   });
 

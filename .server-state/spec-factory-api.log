@@ -802,3 +802,144 @@
 [gui-server] Canonical settings writes: ON
 [gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
 [gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CxUktDhk.js, BulkPasteGrid-CzXB6JUS.js, buttonClasses-DdWdVcJt.js, CatalogPage-DLmX8c40.js, CategoryManager-3cNyB6uw.js, Chip-DT26XC1B.js, ComponentReviewPage-Dl1_Vmog.js, DataTable-C356pbxG.js, DrawerShell-C9H_LMHh.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-CNaYUcwk.js, FlagsSection-BP_Vru3b.js, formatting-B6A_RRxb.js, index-DJ39CGLA.css, index-YBLpcr5Z.js, IndexingPage-DFaOJ7Wm.js, indexlabRunsQuery-B_bZOHUX.js, LlmConfigPage-C6uv71Rt.js, LlmGlobalSection-BoKrjL4J.js, LlmPhaseSection-ZKEtGJIV.js, llmPolicyDefaults-B0RsSJrB.js, LlmProviderRegistrySection-NyuttksE.js, LlmSettingsPage-DtFvyQG4.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-Co6ree0T.js, OverviewPage-BeN3PJB4.js, PipelineDeterministicStrategySection-C4-t5Iql.js, PipelineSettingsPage-F4zIYrO5.js, PipelineSourceStrategySection-DhcCNTDh.js, ProductPage-BeN962do.js, ReviewPage-DqNNEbZV.js, RuntimeFlowDraftPayload-CPjgAufs.js, RuntimeFlowHeaderControls-B8DpS-aG.js, RuntimeOpsPage-5n6HaT5C.js, settingsStatus-hgmxKD6F.js, sortable.esm-DHLR6drX.js, StoragePage-DwR6hjZe.js, StudioPage-BsIIHSq8.js, TabStrip-Klqv926z.js, TestModePage-aI3yJ7qE.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-B6Ku9wHP.js, useFieldLabels-CeVXvrhr.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CrNwhEfp.js, BulkPasteGrid-B2o0GvrY.js, buttonClasses-DdWdVcJt.js, CatalogPage-DaqijkVi.js, CategoryManager-CcTt-kgv.js, Chip-DT26XC1B.js, ComponentReviewPage-DqqWjaaQ.js, DataTable-C356pbxG.js, DrawerShell-n_DNrp2j.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-Bfkyrjqg.js, FlagsSection-NKJrus1H.js, formatting-B6A_RRxb.js, index-CSdZIDOZ.js, index-CWsnjLkx.css, IndexingPage-D6bVAMSl.js, indexlabRunsQuery-erqU2EqB.js, LlmConfigPage-Bfxr1D-A.js, LlmGlobalSection-BJMqqLyX.js, LlmPhaseSection-Dd7BbnxR.js, llmPolicyDefaults-BBy66x7X.js, LlmProviderRegistrySection-CpSbYE9x.js, LlmSettingsPage-sSwH1a65.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-C9qgaZCn.js, PipelineDeterministicStrategySection-cYTbEV7R.js, PipelineSettingsPage-DU2QR5TD.js, PipelineSourceStrategySection-is97c4lL.js, ProductPage-CyhN6nkz.js, ReviewPage-X2pekNVf.js, RuntimeFlowDraftPayload-D0FZ5sLn.js, RuntimeFlowHeaderControls-dJzNf2-m.js, RuntimeOpsPage-FVK5mqAN.js, settingsStatus-hgmxKD6F.js, sortable.esm-DHLR6drX.js, StoragePage-usq7rZuD.js, StudioPage-C_eJ6SMP.js, TabStrip-Klqv926z.js, TestModePage-zcLKY-NC.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-DTQYLCFB.js, useFieldLabels-rzSt7VHe.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DxDvUkSF.js, BulkPasteGrid-BIQWIkQ_.js, buttonClasses-DdWdVcJt.js, CatalogPage-B1T4ZvpT.js, CategoryManager-DvjSm81j.js, Chip-DT26XC1B.js, ComponentReviewPage-BLd_VbTQ.js, DataTable-C356pbxG.js, DrawerShell-BolZFJ-U.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-CzUPbESe.js, FlagsSection-CNEIQWxl.js, formatting-B6A_RRxb.js, index-BKZpw-I5.css, index-LA-Vt0Iw.js, IndexingPage-oEjXhcpn.js, indexlabRunsQuery-AnwMN841.js, LlmConfigPage-BMkGnjGF.js, LlmGlobalSection-BjjnoS4a.js, LlmPhaseSection-CkU2_ZyH.js, llmPolicyDefaults-CBfciOWE.js, LlmProviderRegistrySection-RIjJE6KI.js, LlmSettingsPage-CFf6o_Ui.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-DTXz60cC.js, PipelineDeterministicStrategySection-pOAXZnP6.js, PipelineSettingsPage-C0sfgul9.js, PipelineSourceStrategySection-Bp6DnALh.js, ProductPage-82gyJtGe.js, ReviewPage-BYZCFN_i.js, RuntimeFlowDraftPayload-Cb_w_jVu.js, RuntimeFlowHeaderControls-DFKP2Px9.js, RuntimeOpsPage-DfOTWrDl.js, settingsStatus-hgmxKD6F.js, sortable.esm-DHLR6drX.js, StoragePage-MxHLqcti.js, StudioPage-CAd0X32Z.js, TabStrip-Klqv926z.js, TestModePage-DI8CLTDM.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-DrW_ckOr.js, useFieldLabels-6XzhMBSc.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'C:\Users\Chris\Desktop\Spec Factory\src\features\indexing\api\builders\archivedRunLocationHelpers.js' imported from C:\Users\Chris\Desktop\Spec Factory\src\features\indexing\api\builders\runListBuilder.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:866:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:719:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:736:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:765:52)
+    at #resolve (node:internal/modules/esm/loader:701:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:621:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///C:/Users/Chris/Desktop/Spec%20Factory/src/features/indexing/api/builders/archivedRunLocationHelpers.js'
+}
+
+Node.js v24.13.1
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CvvUNG2u.js, BulkPasteGrid-DSPn_xsN.js, buttonClasses-DdWdVcJt.js, CatalogPage-CEqjwgHv.js, CategoryManager-BcAGSJGa.js, Chip-DT26XC1B.js, ComponentReviewPage-DkD3oLdX.js, DataTable-C356pbxG.js, DrawerShell-BKyL5UST.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-CUxMOvPO.js, FlagsSection-wyCSVyaa.js, formatting-B6A_RRxb.js, index-C3x9bRyZ.js, index-DfRtQJUa.css, IndexingPage-Cnuj7MWT.js, indexlabRunsQuery-BgFkCZpH.js, LlmConfigPage-DEsdLsJP.js, LlmGlobalSection-DtSVxwd3.js, LlmPhaseSection-BWzTDDwH.js, llmPolicyDefaults-BR6v27vu.js, LlmProviderRegistrySection-B7C0kWF3.js, LlmSettingsPage-CEG64zIL.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-DYN364ys.js, PipelineDeterministicStrategySection-DAFsDYLA.js, PipelineSettingsPage-DA3Esm_O.js, PipelineSourceStrategySection-CoMr2ENj.js, ProductPage-B0f77Bcv.js, ReviewPage-Dkimlmd9.js, RuntimeFlowDraftPayload-Da4eFMCN.js, RuntimeFlowHeaderControls-BECwTuwd.js, RuntimeOpsPage-y5Zy7R-p.js, settingsStatus-hgmxKD6F.js, sortable.esm-DHLR6drX.js, StoragePage-g_BognbO.js, StudioPage-BOm6YiUy.js, TabStrip-Klqv926z.js, TestModePage-CDB3jSPD.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-OO1fRfmF.js, useFieldLabels-BWtEPqq-.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-D2E5l0lG.js, BulkPasteGrid-PhEf1x3K.js, buttonClasses-DdWdVcJt.js, CatalogPage-QXocxMge.js, CategoryManager-CA160Onc.js, Chip-DT26XC1B.js, ComponentReviewPage-DhxgeXL8.js, DataTable-C356pbxG.js, DrawerShell-Du3lGB_U.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-DQdQNYB9.js, FlagsSection-boeOlDpR.js, formatting-B6A_RRxb.js, index-DfRtQJUa.css, index-g9q94rKE.js, IndexingPage-nEN_ReN2.js, indexlabRunsQuery-DqURGWaL.js, LlmConfigPage-2Jof2f0-.js, LlmGlobalSection-CsPVfj1J.js, LlmPhaseSection-B4znvkhJ.js, llmPolicyDefaults-m4xM_Q-C.js, LlmProviderRegistrySection-7H6eLQFQ.js, LlmSettingsPage-DYfVgfqf.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-B6d6GRAz.js, PipelineDeterministicStrategySection-Lbx8_Y7C.js, PipelineSettingsPage-CzbATz9h.js, PipelineSourceStrategySection-CBobU5H1.js, ProductPage-Ct4_eEmY.js, ReviewPage-DnPz7_d7.js, RuntimeFlowDraftPayload-BAnPUjr5.js, RuntimeOpsPage-C3N9DiLZ.js, settingsStatus-_03yJrbD.js, SidebarShell-C7TiZ_nP.js, sortable.esm-DHLR6drX.js, StoragePage-CYsLfEak.js, StudioPage-D0usTVAB.js, TabStrip-Klqv926z.js, TestModePage-BjrLJG89.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-BSNbHGfO.js, useFieldLabels-DuLaXCEy.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-BaQ5laxP.js, BulkPasteGrid-CFdQhJYX.js, buttonClasses-DdWdVcJt.js, CatalogPage--OA5thVR.js, CategoryManager-BAV19lcV.js, Chip-DT26XC1B.js, ComponentReviewPage-YcZGxteh.js, DataTable-C356pbxG.js, DrawerShell-D5gCb2Bh.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-CFmhDLWu.js, FlagsSection-D14833hl.js, formatting-B6A_RRxb.js, index-DfRtQJUa.css, index-DjYOJJQo.js, IndexingPage-CiEnXpoT.js, indexlabRunsQuery-B1FrjsC8.js, LlmConfigPage-Ctd-4qiT.js, LlmGlobalSection-B6TyS1Qm.js, LlmPhaseSection-Ba9vJ-Gn.js, llmPolicyDefaults-oHvUwn-O.js, LlmProviderRegistrySection-CApqgL6_.js, LlmSettingsPage-CxFpp_aD.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-CldqDREp.js, PipelineDeterministicStrategySection-BfzWJYte.js, PipelineSettingsPage-ROKYl7SR.js, PipelineSourceStrategySection-B7mhQ36s.js, ProductPage-XUFjOekV.js, ReviewPage-COjrMkKM.js, RuntimeFlowDraftPayload-CveQyV_u.js, RuntimeOpsPage-BBbaqRCz.js, settingsStatus-_03yJrbD.js, SidebarShell-CEO-_hnj.js, sortable.esm-DHLR6drX.js, StoragePage-C8PF2PM6.js, StudioPage-HllfRr9G.js, TabStrip-Klqv926z.js, TestModePage-fFB1DIHq.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-DXd3oNV8.js, useFieldLabels-DXRKfdf_.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-DPSS0wjc.js, BulkPasteGrid-B-FioxmN.js, buttonClasses-DdWdVcJt.js, CatalogPage-CIH8Mp0N.js, CategoryManager-B2yhMGhe.js, Chip-DT26XC1B.js, ComponentReviewPage-C2B4anke.js, DataTable-C356pbxG.js, DrawerShell-sdLfFgXc.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-BGkxY-Xc.js, FlagsSection-Cl-7UTLu.js, formatting-B6A_RRxb.js, index-Coaic5qK.js, index-DxpMoyy5.css, IndexingPage-D0Nqupr4.js, indexlabRunsQuery-JhwLJK3e.js, LlmConfigPage-Db-MrcgS.js, LlmGlobalSection-Df61e_Mm.js, LlmPhaseSection-CTTWaPYK.js, llmPolicyDefaults-hHg5_48b.js, LlmProviderRegistrySection-BtOg_m5z.js, LlmSettingsPage-3j59YNfX.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-ENpUVqUt.js, PipelineDeterministicStrategySection-C3EW9rRP.js, PipelineSettingsPage-fEQhJMLg.js, PipelineSourceStrategySection-BMVM_ejO.js, ProductPage-BqeFsZ5m.js, ReviewPage-DWv3mJkC.js, RuntimeFlowDraftPayload-BK-6jo4i.js, RuntimeOpsPage-1UrUOM30.js, settingsStatus-_03yJrbD.js, SidebarShell-xNtD0ikf.js, sortable.esm-DHLR6drX.js, StoragePage-C1UTbdDP.js, StudioPage-Bva0jKEu.js, TabStrip-Klqv926z.js, TestModePage-44B15pA5.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-Dqnt_EZg.js, useFieldLabels-C5E1XHL1.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-Bot3xGt1.js, BulkPasteGrid-DQz1l0wX.js, buttonClasses-DdWdVcJt.js, CatalogPage-hxcR1emo.js, CategoryManager-D6orHXP3.js, Chip-DT26XC1B.js, ComponentReviewPage-BsPM5XOS.js, DataTable-C356pbxG.js, DrawerShell-CE2vu9xa.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-CYjvZmS5.js, FlagsSection-BC1k1wnp.js, formatting-B6A_RRxb.js, index-DxpMoyy5.css, index-rzByn3ZR.js, IndexingPage-NX2u9EzT.js, indexlabRunsQuery-CfuCYDlo.js, LlmConfigPage-CADS47JW.js, LlmGlobalSection-CL_SoezU.js, LlmPhaseSection-BKjQvBRC.js, llmPolicyDefaults-BOgILJFU.js, LlmProviderRegistrySection-DX0CyZjZ.js, LlmSettingsPage-D_S48ovf.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-DLnTWXCO.js, PipelineDeterministicStrategySection-ByfklvjH.js, PipelineSettingsPage-Cl29NlYg.js, PipelineSourceStrategySection-Di4gFrfU.js, ProductPage-Bu_vipGt.js, ReviewPage-Bs51ohcG.js, RuntimeFlowDraftPayload-Dy4h4J4v.js, RuntimeOpsPage-Cnwq9OG8.js, settingsStatus-_03yJrbD.js, SidebarShell-8weh9T1U.js, sortable.esm-DHLR6drX.js, StoragePage-CHf29YWi.js, StudioPage-CvOacKYG.js, TabStrip-Klqv926z.js, TestModePage-Be8rlmuw.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-CDE8r2dX.js, useFieldLabels-BeC8aF_g.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-BiA7kCLC.js, BulkPasteGrid-DXNmyq6c.js, buttonClasses-DdWdVcJt.js, CatalogPage-w03Be1pX.js, CategoryManager-DhP7lp4x.js, Chip-DT26XC1B.js, ComponentReviewPage-Ak1gryC7.js, DataTable-C356pbxG.js, DrawerShell-BCu9rP3I.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-BEdFRu1X.js, FlagsSection-mX5iDt-n.js, formatting-B6A_RRxb.js, index-Dhz7FfWC.js, index-D_m7MGHs.css, IndexingPage-BklL-rxk.js, indexlabRunsQuery-OdPJp949.js, LlmConfigPage-qEsb4jzQ.js, LlmGlobalSection-CI9eNBTf.js, LlmPhaseSection-CK2cd7O9.js, llmPolicyDefaults-CwauOoAp.js, LlmProviderRegistrySection-BIJzVVjZ.js, LlmSettingsPage-Cf4be4BV.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-Crv5N3VX.js, PipelineDeterministicStrategySection-Bxt7Dqvw.js, PipelineSettingsPage-BhsPU3xt.js, PipelineSourceStrategySection-CFHJByUv.js, ProductPage-Cqc622Q0.js, ReviewPage-CvuyeV6n.js, RuntimeFlowDraftPayload-CiW8wId1.js, RuntimeOpsPage-DVVnmtiz.js, settingsStatus-_03yJrbD.js, SidebarShell-CIjMEuk9.js, sortable.esm-DHLR6drX.js, StoragePage-Cgvfb-zI.js, StudioPage-Yo6NKgck.js, TabStrip-Klqv926z.js, TestModePage-BjD7QGWm.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-DBg_9vNG.js, useFieldLabels-BuZ51NSs.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CVzQQgEg.js, BulkPasteGrid-O8nIfX01.js, buttonClasses-DdWdVcJt.js, CatalogPage-_mGYqeWO.js, CategoryManager-C1Tc7AOD.js, Chip-DT26XC1B.js, ComponentReviewPage-BRMtCU1V.js, DataTable-C356pbxG.js, DrawerShell-D0M-as-8.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-Bk035d0s.js, FlagsSection-OCs1-ghl.js, formatting-B6A_RRxb.js, index-BohOYsh-.js, index-D_m7MGHs.css, IndexingPage-CnMWh_x4.js, indexlabRunsQuery-DID8arfi.js, LlmConfigPage-BkaqdHck.js, LlmGlobalSection-DH6iam7f.js, LlmPhaseSection-Dtpnz-D0.js, llmPolicyDefaults-DjPWjFVP.js, LlmProviderRegistrySection-DXgv0YAo.js, LlmSettingsPage-DxkJANn5.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-Y6ef5PmJ.js, PipelineDeterministicStrategySection-D3pnEIAe.js, PipelineSettingsPage-BoV-gfxD.js, PipelineSourceStrategySection-DlB_-54O.js, ProductPage-D5JLB8lA.js, ReviewPage-CK-l8CJx.js, RuntimeFlowDraftPayload-D2IvV8fU.js, RuntimeOpsPage-b238b_Gg.js, settingsStatus-_03yJrbD.js, SidebarShell-TmtLn_ru.js, sortable.esm-DHLR6drX.js, StoragePage-D0DfI7qX.js, StudioPage-C975X-Cp.js, TabStrip-Klqv926z.js, TestModePage-DJaQweJe.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-BX_qimZr.js, useFieldLabels-DCRIdCkZ.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CEV4C64J.js, BulkPasteGrid-D5EGaFVr.js, buttonClasses-DdWdVcJt.js, CatalogPage-v7nI6Ers.js, CategoryManager-ZzOb10T2.js, Chip-BfUIeTwv.js, ComponentReviewPage-JKb5xrR1.js, DataTable-C356pbxG.js, DrawerShell-CbvMlHQb.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-DBZcd8re.js, FlagsSection-BjVg3OyT.js, formatting-B6A_RRxb.js, index-DKYJOl8m.js, index-WEshKA-i.css, IndexingPage-CpDqwl1v.js, indexlabRunsQuery-mvGOtLnT.js, LlmConfigPage-DaZUmjc3.js, LlmGlobalSection-DcdRGcDZ.js, LlmPhaseSection-DQ1x2UT3.js, llmPolicyDefaults-DaI9730f.js, LlmProviderRegistrySection-DQkizFbj.js, LlmSettingsPage-CK7QvF1Q.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-BqYWAio2.js, PipelineDeterministicStrategySection-Ber8qNOe.js, PipelineSettingsPage-DtBjAQu5.js, PipelineSourceStrategySection-B96DRsyi.js, ProductPage-Dv9qdVo6.js, ReviewPage-COZbwGcv.js, RuntimeFlowDraftPayload-BsRYzTZy.js, RuntimeOpsPage-DudaKJ9q.js, settingsStatus-_03yJrbD.js, SidebarShell-DLu5draW.js, sortable.esm-DHLR6drX.js, StoragePage-BvsqvkGl.js, StudioPage-Dm6ZJRU1.js, TabStrip-Klqv926z.js, TestModePage-CCBDVY_t.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-B1-oYmso.js, useFieldLabels-Ctm62Arh.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\SpecFactoryRuns\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\SpecFactoryRuns\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-VhkylnFI.js, BulkPasteGrid-DO2pWniL.js, buttonClasses-DdWdVcJt.js, CatalogPage-DD5w9_Vx.js, CategoryManager-Dfo9A7HP.js, Chip-BfUIeTwv.js, ComponentReviewPage-d58CUPep.js, DataTable-C356pbxG.js, DrawerShell-DzohXwOb.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-Csl6rJBy.js, FlagsSection-eGh-o2Gr.js, formatting-B6A_RRxb.js, index-s8jQPQJV.js, index-WEshKA-i.css, IndexingPage-Ds86pqn0.js, indexlabRunsQuery-Cn-5syM3.js, LlmConfigPage-DoG6bPa5.js, LlmGlobalSection-BhWsCKMH.js, LlmPhaseSection-BWGkWpE9.js, llmPolicyDefaults-CT--qA-r.js, LlmProviderRegistrySection-BFkVg0lc.js, LlmSettingsPage-BT2AppLs.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-CyrQPOIL.js, PipelineDeterministicStrategySection-Fjzk8YpQ.js, PipelineSettingsPage-C3PArqK-.js, PipelineSourceStrategySection-DThP9tXP.js, ProductPage-CV8kUJcT.js, ReviewPage-DrH3q4bB.js, RuntimeFlowDraftPayload-RGAgCHr7.js, RuntimeOpsPage-Bc0rEFoB.js, settingsStatus-_03yJrbD.js, SidebarShell-BMCGZsd-.js, sortable.esm-DHLR6drX.js, StoragePage-NAhTgVcR.js, StudioPage-DHMN_-qk.js, TabStrip-Klqv926z.js, TestModePage-CWLwUn-6.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-BXzLL2xo.js, useFieldLabels-xVHMObLy.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js

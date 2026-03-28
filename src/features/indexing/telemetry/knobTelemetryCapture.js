@@ -45,26 +45,34 @@ export function recordKnobSnapshot(snapshot, logPath) {
 }
 
 /**
+ * Apply redaction + sort to pre-fetched snapshot rows.
+ * Pure function — no I/O. Works with both NDJSON-parsed and SQL rows.
+ */
+export function computeKnobSnapshots(snapshots) {
+  const results = [];
+  for (const snap of snapshots) {
+    if (Array.isArray(snap.entries)) {
+      for (const entry of snap.entries) {
+        entry.config_value = redact(entry.knob, entry.config_value);
+        entry.default_value = redact(entry.knob, entry.default_value);
+        entry.effective_value = redact(entry.knob, entry.effective_value);
+      }
+    }
+    results.push(snap);
+  }
+  results.sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
+  return results;
+}
+
+/**
  * Read all knob snapshots from the NDJSON log, sorted by ts ascending.
  */
 export function readKnobSnapshots(logPath) {
   if (!fs.existsSync(logPath)) return [];
   const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n').filter(Boolean);
-  const results = [];
+  const parsed = [];
   for (const line of lines) {
-    try {
-      const snap = JSON.parse(line);
-      // Apply read-time redaction for entries written before write-time redaction existed
-      if (Array.isArray(snap.entries)) {
-        for (const entry of snap.entries) {
-          entry.config_value = redact(entry.knob, entry.config_value);
-          entry.default_value = redact(entry.knob, entry.default_value);
-          entry.effective_value = redact(entry.knob, entry.effective_value);
-        }
-      }
-      results.push(snap);
-    } catch { /* skip malformed */ }
+    try { parsed.push(JSON.parse(line)); } catch { /* skip malformed */ }
   }
-  results.sort((a, b) => String(a.ts || '').localeCompare(String(b.ts || '')));
-  return results;
+  return computeKnobSnapshots(parsed);
 }

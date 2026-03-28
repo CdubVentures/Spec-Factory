@@ -37,7 +37,6 @@ export function createInitialProcessState() {
       exitCode: null,
       endedAt: null,
     },
-    relocatingRunId: null,
   };
 }
 
@@ -62,37 +61,18 @@ export function processStateReducer(state, action) {
           exitCode: null,
           endedAt: null,
         },
-        relocatingRunId: null,
       };
     }
     case 'PROCESS_EXITED': {
       if (state.phase !== 'running') return state;
       const p = action.payload || {};
       return {
-        phase: 'exited',
+        phase: 'idle',
         snapshot: {
           ...state.snapshot,
           exitCode: p.exitCode ?? null,
           endedAt: p.endedAt ?? null,
         },
-        relocatingRunId: null,
-      };
-    }
-    case 'RELOCATION_STARTED': {
-      if (state.phase !== 'exited') return state;
-      const p = action.payload || {};
-      return {
-        ...state,
-        phase: 'relocating',
-        relocatingRunId: p.runId || 'unknown',
-      };
-    }
-    case 'RELOCATION_COMPLETED': {
-      if (state.phase !== 'relocating') return state;
-      return {
-        ...state,
-        phase: 'idle',
-        relocatingRunId: null,
       };
     }
     default:
@@ -102,10 +82,9 @@ export function processStateReducer(state, action) {
 
 export function deriveProcessStatus(state, { runDataStorageState } = {}) {
   const running = state.phase === 'running';
-  const relocating = state.phase === 'relocating';
   const { snapshot } = state;
 
-  const runId = normalizeRunIdToken(snapshot.runId || state.relocatingRunId || '');
+  const runId = normalizeRunIdToken(snapshot.runId || '');
   const productId = String(snapshot.productId || '').trim();
   const storageDestination = normalizeStorageDestinationToken(
     snapshot.storageDestination
@@ -114,8 +93,6 @@ export function deriveProcessStatus(state, { runDataStorageState } = {}) {
 
   return {
     running,
-    relocating,
-    relocatingRunId: state.relocatingRunId || null,
     run_id: runId || null,
     runId: runId || null,
     category: String(snapshot.category || '').trim() || null,

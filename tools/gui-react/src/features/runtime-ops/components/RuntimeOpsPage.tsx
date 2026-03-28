@@ -15,9 +15,6 @@ import { MetricsRail } from '../panels/overview/MetricsRail.tsx';
 import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
 import { WorkersTab } from '../panels/workers/WorkersTab.tsx';
 import { DocumentsTab } from '../panels/overview/DocumentsTab.tsx';
-import { FallbacksTab } from '../panels/overview/FallbacksTab.tsx';
-import { QueueTab } from '../panels/overview/QueueTab.tsx';
-import { CompoundTab } from '../panels/compound/CompoundTab.tsx';
 import { RuntimeOpsRunPicker } from './RuntimeOpsRunPicker.tsx';
 import type {
   RuntimeOpsTab,
@@ -25,26 +22,18 @@ import type {
   RuntimeOpsWorkersResponse,
   RuntimeOpsDocumentsResponse,
   RuntimeOpsMetricsResponse,
-  FallbacksResponse,
-  QueueStateResponse,
 } from '../types.ts';
 
 const TAB_DEFS = [
   { id: 'overview', label: 'Overview', description: 'Health cards, throughput, blockers' },
   { id: 'workers', label: 'Workers', description: 'Live worker table with stuck detection' },
   { id: 'documents', label: 'Documents', description: 'Document lifecycle tracing' },
-  { id: 'fallbacks', label: 'Fallbacks', description: 'Fetch mode transitions and host degradation' },
-  { id: 'queue', label: 'Queue', description: 'Repair queue lanes and job inspection' },
-  { id: 'compound', label: 'Compound', description: 'Cross-run learning curves and index analytics' },
 ] as const;
 
 const RUNTIME_OPS_TAB_KEYS = [
   'overview',
   'workers',
   'documents',
-  'fallbacks',
-  'queue',
-  'compound',
 ] as const satisfies ReadonlyArray<RuntimeOpsTab>;
 
 import { TabStrip } from '../../../shared/ui/navigation/TabStrip.tsx';
@@ -137,8 +126,7 @@ function resolveStorageDestination(status: ProcessStatus | undefined): 'local' |
     : 'local';
 }
 
-function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'relocating' | 'stored' {
-  if (status?.relocating) return 'relocating';
+function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'stored' {
   if (status?.running) return 'live';
   return 'stored';
 }
@@ -208,7 +196,7 @@ export function RuntimeOpsPage() {
         product_id: fallbackProductId,
         started_at: String(processStatus?.startedAt || ''),
         ended_at: '',
-        status: processStatus?.relocating ? 'relocating' : (isRunning ? 'running' : 'starting'),
+        status: isRunning ? 'running' : 'starting',
         storage_origin: resolveStorageDestination(processStatus),
         storage_state: resolveStorageState(processStatus),
         picker_label: buildRunPickerLabel({
@@ -269,9 +257,6 @@ export function RuntimeOpsPage() {
     if (runsLoading) {
       return { text: 'Loading run history...', spinner: true, tone: 'muted' as const };
     }
-    if (selectedRun?.storage_state === 'relocating' || selectedRun?.status === 'relocating') {
-      return { text: 'Relocating run artifacts...', spinner: true, tone: 'warning' as const };
-    }
     // WHY: Only show "Starting..." when process is genuinely transitioning —
     // processStatus reports the run but isRunning hasn't flipped yet.
     if (selectedRun?.status === 'starting' && processStatusRunId === effectiveRunId && !isRunning) {
@@ -286,23 +271,7 @@ export function RuntimeOpsPage() {
       return { text: 'Live', spinner: false, tone: 'success' as const };
     }
     return null;
-  }, [runsLoading, selectedRun?.status, selectedRun?.storage_state, isSelectedRunActive, processStatusRunId, effectiveRunId, isRunning, summary?.phase_cursor]);
-
-  const blockerValidValues = useMemo(
-    () => (summary?.top_blockers ?? []).map((blocker) => blocker.host),
-    [summary?.top_blockers],
-  );
-
-  const [selectedBlockerHost, setSelectedBlockerHost] = usePersistedNullableTab<string>(
-    `runtimeOps:overview:selectedBlocker:${category}`,
-    null,
-    { validValues: blockerValidValues },
-  );
-
-  const selectedBlocker = useMemo(() => {
-    if (!selectedBlockerHost) return null;
-    return (summary?.top_blockers ?? []).find((blocker) => blocker.host === selectedBlockerHost) ?? null;
-  }, [selectedBlockerHost, summary?.top_blockers]);
+  }, [runsLoading, selectedRun?.status, isSelectedRunActive, processStatusRunId, effectiveRunId, isRunning, summary?.phase_cursor]);
 
   useEffect(() => {
     if (!summary) return;
@@ -350,26 +319,9 @@ export function RuntimeOpsPage() {
     refetchInterval: getRefetchInterval(isSelectedRunActive, false, 2000, 10000),
   });
 
-  const { data: fallbacksResp } = useQuery({
-    queryKey: ['runtime-ops', effectiveRunId, 'fallbacks'],
-    queryFn: () => api.get<FallbacksResponse>(`/indexlab/run/${effectiveRunId}/runtime/fallbacks`),
-    enabled: Boolean(effectiveRunId) && activeTab === 'fallbacks',
-    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'fallbacks', 2000, 10000),
-  });
-
-  const { data: queueResp } = useQuery({
-    queryKey: ['runtime-ops', effectiveRunId, 'queue'],
-    queryFn: () => api.get<QueueStateResponse>(`/indexlab/run/${effectiveRunId}/runtime/queue`),
-    enabled: Boolean(effectiveRunId) && activeTab === 'queue',
-    refetchInterval: getRefetchInterval(isSelectedRunActive, activeTab !== 'queue', 2000, 10000),
-  });
-
-  const handleNavigateToDocument = (_url: string) => {
-    setActiveTab('documents');
-  };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full -ml-4">
       <div className="flex items-end gap-4 border-b sf-border-default sf-surface-shell px-4">
         <div className="flex flex-col py-2">
           <div className="flex min-h-5 items-center gap-2 pb-1">
@@ -380,9 +332,7 @@ export function RuntimeOpsPage() {
                   <span className={`sf-text-caption ${
                     runHeaderStatus.tone === 'success'
                       ? 'sf-status-text-success'
-                      : runHeaderStatus.tone === 'warning'
-                        ? 'sf-status-text-warning'
-                        : 'sf-text-muted'
+                      : 'sf-text-muted'
                   }`}>
                     {runHeaderStatus.text}
                   </span>
@@ -444,8 +394,6 @@ export function RuntimeOpsPage() {
               {activeTab === 'overview' && (
                 <OverviewTab
                   summary={summary}
-                  selectedBlocker={selectedBlocker}
-                  onSelectBlocker={(blocker) => setSelectedBlockerHost(blocker?.host ?? null)}
                   throughputHistory={throughputHistory}
                   runId={effectiveRunId}
                   isRunning={isSelectedRunActive}
@@ -471,27 +419,6 @@ export function RuntimeOpsPage() {
                   documents={documentsResp?.documents ?? []}
                   runId={effectiveRunId}
                   category={category}
-                  isRunning={isSelectedRunActive}
-                />
-              )}
-              {activeTab === 'fallbacks' && (
-                <FallbacksTab
-                  fallbacks={fallbacksResp}
-                  category={category}
-                  onNavigateToDocuments={handleNavigateToDocument}
-                />
-              )}
-              {activeTab === 'queue' && (
-                <QueueTab
-                  queueState={queueResp}
-                  category={category}
-                  onNavigateToDocuments={handleNavigateToDocument}
-                />
-              )}
-              {activeTab === 'compound' && (
-                <CompoundTab
-                  category={category}
-                  runs={runs}
                   isRunning={isSelectedRunActive}
                 />
               )}

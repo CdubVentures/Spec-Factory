@@ -1,7 +1,7 @@
 // WHY: Single source of truth for all pool/stage visual properties.
 // Adding a new pool requires editing only this record — O(1) scaling.
 
-export const POOL_STAGE_KEYS = ['search', 'fetch', 'parse', 'llm', 'index'] as const;
+export const POOL_STAGE_KEYS = ['search', 'fetch', 'parse', 'llm', 'index', 'extraction'] as const;
 export type PoolStageKey = (typeof POOL_STAGE_KEYS)[number];
 
 export interface PoolStageVisuals {
@@ -97,6 +97,19 @@ export const POOL_STAGE_REGISTRY: Record<PoolStageKey, PoolStageVisuals> = {
     labelClass: 'sf-pool-label-other',
     tintClass: '',
     shortLabel: 'Index',
+  },
+  extraction: {
+    badge: 'sf-chip-confirm',
+    dot: 'sf-dot-confirm',
+    meterFill: 'sf-meter-fill-info',
+    selectedTab: 'sf-prefetch-tab-idle-info',
+    outlineTab: 'sf-prefetch-tab-outline-info',
+    stageLabel: 'Extracting',
+    activeCount: 'sf-status-text-info',
+    laneClass: 'sf-pool-lane-other',
+    labelClass: 'sf-pool-label-other',
+    tintClass: '',
+    shortLabel: 'Extraction',
   },
 };
 

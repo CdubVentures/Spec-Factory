@@ -25,5 +25,4 @@ export const PHASE_SCHEMA_REGISTRY = Object.freeze({
     system_prompt: SERP_SELECT_URLS_SYSTEM_PROMPT,
     response_schema: serpSelectorOutputSchema(),
   },
-  'validate': null,
 });

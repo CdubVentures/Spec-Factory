@@ -69,17 +69,13 @@ export function AppShell() {
 
   // ── Local UI state ────────────────────────────────────────────────
   const isRunning = Boolean(processStatus?.running);
-  const isRelocating = Boolean(processStatus?.relocating);
-  const showIndicator = isRunning || isRelocating;
   const [headerTaskDrawerOpen, toggleHeaderTaskDrawer] = usePersistedToggle('appShell:header:taskDrawer:open', false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
   const settingsPanelRef = useRef<HTMLDivElement | null>(null);
   const blockUntilSettingsReady = !settingsReady && !allowDegradedRender;
   const indicatorTitle = isRunning
     ? `Run active${processStatus?.pid ? ` (PID ${processStatus.pid})` : ''}`
-    : isRelocating
-      ? `Uploading run data${processStatus?.relocatingRunId ? ` (${processStatus.relocatingRunId})` : ''}`
-      : '';
+    : '';
 
   // ── Settings panel click-outside ──────────────────────────────────
   useEffect(() => {
@@ -108,13 +104,13 @@ export function AppShell() {
       <header className="sf-shell-header z-30 flex items-center justify-between px-4 py-2 border-b border-white/10">
         <div className="flex items-center gap-2">
           <h1 className="sf-shell-title text-lg font-bold">Spec Factory</h1>
-          {showIndicator && (
+          {isRunning && (
             <span title={indicatorTitle} className="relative flex items-center justify-center w-5 h-5">
               <svg className="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2"
-                  className={isRunning ? 'text-sky-300' : 'text-amber-200'} />
+                  className="text-sky-300" />
                 <path d="M10 2a8 8 0 0 1 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                  className={isRunning ? 'text-sky-400' : 'text-amber-400'} />
+                  className="text-sky-400" />
               </svg>
             </span>
           )}

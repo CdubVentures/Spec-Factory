@@ -1,9 +1,7 @@
 import { createStorageManagerHandler } from './storageManagerRoutes.js';
-import { refreshArchivedRunDirIndex } from './builders/archivedRunLocationHelpers.js';
-import { materializeArchivedRunLocation } from './builders/archivedRunLocationHelpers.js';
-import { recalculateAllStorageMetrics } from '../../../api/services/storageMetricsService.js';
-import { createStorageSyncService } from '../../../api/services/storageSyncService.js';
-import { relocateRunDataForCompletedRun } from '../../../api/services/runDataRelocationService.js';
+import { computeQueryIndexSummary, computeUrlIndexSummary } from '../pipeline/shared/createQueryIndex.js';
+import { computePromptIndexSummary } from '../pipeline/shared/createPromptIndex.js';
+import { computeKnobSnapshots } from '../telemetry/knobTelemetryCapture.js';
 
 export function registerIndexlabRoutes(ctx) {
   const {
@@ -16,6 +14,7 @@ export function registerIndexlabRoutes(ctx) {
     INDEXLAB_ROOT,
     processStatus,
     getIndexLabRoot: _getIndexLabRoot,
+    getSpecDb,
     readIndexLabRunMeta,
     resolveIndexLabRunDirectory,
     readIndexLabRunEvents,
@@ -109,38 +108,6 @@ export function registerIndexlabRoutes(ctx) {
       typeof ctx.readJsonBody + ' runDataStorageState=' + typeof ctx.runDataStorageState + '\n');
   }
 
-  // WHY: Sync service needs per-category DBs. getCategoryDbs discovers categories
-  // from the runs list and lazily fetches each DB via getSpecDb.
-  const storageSyncService = (storageGuardOk && typeof ctx.getSpecDb === 'function')
-    ? createStorageSyncService({
-      getCategoryDbs: () => {
-        const dbs = {};
-        // WHY: Use the specDbCache keys as the category list — these are the
-        // categories that have been accessed during this session.
-        for (const cat of ['mouse', 'keyboard', 'monitor', 'gaming_mice']) {
-          try {
-            const db = ctx.getSpecDb(cat);
-            if (db) dbs[cat] = db;
-          } catch { /* category not initialized yet */ }
-        }
-        return dbs;
-      },
-      relocateToS3: async ({ runMeta }) => relocateRunDataForCompletedRun({
-        settings: { ...ctx.runDataStorageState, destinationType: 's3' },
-        runMeta,
-        outputRoot: ctx.OUTPUT_ROOT || '',
-        outputPrefix: 'specs/outputs',
-        indexLabRoot: currentIndexLabRoot(),
-      }),
-      materializeFromS3: async ({ runId }) => {
-        const index = await refreshArchivedRunDirIndex(true);
-        const location = index.get(runId);
-        if (!location) return '';
-        return materializeArchivedRunLocation(location, runId);
-      },
-    })
-    : null;
-
   const handleStorageManagerRoutes = storageGuardOk
     ? createStorageManagerHandler({
       jsonRes,
@@ -149,7 +116,6 @@ export function registerIndexlabRoutes(ctx) {
       broadcastWs: ctx.broadcastWs || (() => {}),
       listIndexLabRuns,
       resolveIndexLabRunDirectory,
-      refreshArchivedRunDirIndex,
       runDataStorageState: ctx.runDataStorageState,
       indexLabRoot: currentIndexLabRoot(),
       outputRoot: ctx.OUTPUT_ROOT || '',
@@ -157,26 +123,13 @@ export function registerIndexlabRoutes(ctx) {
       isRunStillActive,
       readRunMeta: readIndexLabRunMeta,
       deleteArchivedRun: async (runId) => {
-        const runDir = typeof resolveIndexLabRunDirectory === 'function'
-          ? (await resolveIndexLabRunDirectory(runId).catch(() => ''))
-          : '';
-        if (!runDir) throw new Error('run_directory_not_found');
         const fs = await import('node:fs/promises');
-        const bundleDir = path.dirname(runDir);
-        await fs.default.rm(bundleDir, { recursive: true, force: true });
-        const liveDir = safeJoin(currentIndexLabRoot(), runId);
-        if (liveDir) {
-          await fs.default.rm(liveDir, { recursive: true, force: true }).catch(() => {});
+        const runDir = safeJoin(currentIndexLabRoot(), runId);
+        if (runDir) {
+          await fs.default.rm(runDir, { recursive: true, force: true });
         }
         return { ok: true, run_id: runId, deleted_from: 'local' };
       },
-      recalculateAllStorageMetrics: () => recalculateAllStorageMetrics({
-        runDataStorageState: ctx.runDataStorageState,
-        indexLabRoot: currentIndexLabRoot(),
-        listIndexLabRuns,
-        resolveIndexLabRunDirectory,
-      }),
-      storageSyncService,
     })
     : null;
 
@@ -414,32 +367,36 @@ export function registerIndexlabRoutes(ctx) {
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'query-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(currentIndexLabRoot(), category, 'query-index.ndjson');
-      const summary = queryIndexSummary(logPath);
+      const _specDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
+      const rows = _specDb ? _specDb.getQueryIndexByCategory(category) : [];
+      const summary = computeQueryIndexSummary(rows);
       return jsonRes(res, 200, { category, ...summary });
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'url-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(currentIndexLabRoot(), category, 'url-index.ndjson');
-      const summary = urlIndexSummary(logPath);
+      const _specDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
+      const rows = _specDb ? _specDb.getUrlIndexByCategory(category) : [];
+      const summary = computeUrlIndexSummary(rows);
       return jsonRes(res, 200, { category, ...summary });
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'prompt-summary' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(currentIndexLabRoot(), category, 'prompt-index.ndjson');
-      const summary = promptIndexSummary(logPath);
+      const _specDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
+      const rows = _specDb ? _specDb.getPromptIndexByCategory(category) : [];
+      const summary = computePromptIndexSummary(rows);
       return jsonRes(res, 200, { category, ...summary });
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'indexes' && parts[2] === 'knob-snapshots' && method === 'GET') {
       const category = String(params.get('category') || '').trim();
       if (!category) return jsonRes(res, 400, { error: 'missing_category' });
-      const logPath = path.join(currentIndexLabRoot(), category, 'knob-snapshots.ndjson');
-      const snapshots = readKnobSnapshots(logPath);
+      const _specDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
+      const rows = _specDb ? _specDb.getKnobSnapshots(category) : [];
+      const snapshots = computeKnobSnapshots(rows);
       return jsonRes(res, 200, { category, snapshots });
     }
 
@@ -462,11 +419,14 @@ export function registerIndexlabRoutes(ctx) {
         runs = allRuns.filter((r) => String(r.category || '').trim() === category);
       }
       if (!effectiveCategory) return jsonRes(res, 200, { category, verdict: 'NOT_PROVEN', search_reduction_pct: 0, url_reuse_trend: 'flat', runs: [] });
+      const _ccSpecDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
       const result = computeCompoundCurve({
         category: effectiveCategory,
         runSummaries: runs,
         queryIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'query-index.ndjson'),
         urlIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'url-index.ndjson'),
+        queryRows: _ccSpecDb ? _ccSpecDb.getQueryIndexByCategory(effectiveCategory) : undefined,
+        urlRows: _ccSpecDb ? _ccSpecDb.getUrlIndexByCategory(effectiveCategory) : undefined,
       });
       return jsonRes(res, 200, result);
     }
@@ -517,8 +477,13 @@ export function registerIndexlabRoutes(ctx) {
         for (const r of allRuns) { const c = String(r.category || '').trim(); if (c) counts[c] = (counts[c] || 0) + 1; }
         effectiveCat = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || category;
       }
+      const _hhSpecDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
       const urlIndexPath = path.join(currentIndexLabRoot(), effectiveCat, 'url-index.ndjson');
-      const hosts = aggregateHostHealth({ urlIndexPath, category: effectiveCat });
+      const hosts = aggregateHostHealth({
+        urlIndexPath,
+        category: effectiveCat,
+        urlRows: _hhSpecDb ? _hhSpecDb.getUrlIndexByCategory(effectiveCat) : undefined,
+      });
       return jsonRes(res, 200, { category: effectiveCat, hosts });
     }
 

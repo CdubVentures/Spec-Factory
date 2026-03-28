@@ -294,8 +294,6 @@ test('buildPreFetchPhases: non-prefetch LLM calls are not included in any group'
   const events = [
     makeEvent('llm_started', { reason: 'extract_candidates_batch', batch_id: 'ex-1' }),
     makeEvent('llm_finished', { reason: 'extract_candidates_batch', batch_id: 'ex-1' }),
-    makeEvent('llm_started', { reason: 'validate_field_batch', batch_id: 'vl-1' }),
-    makeEvent('llm_finished', { reason: 'validate_field_batch', batch_id: 'vl-1' }),
   ];
   const result = buildPreFetchPhases(events, makeMeta(), {});
   assert.equal(result.llm_calls.brand_resolver.length, 0);

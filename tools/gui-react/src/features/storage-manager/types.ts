@@ -142,21 +142,3 @@ export interface ExportResponse {
   runs: RunInventoryRow[];
 }
 
-export interface SyncStatusResponse {
-  live: number;
-  local: number;
-  s3: number;
-  synced: number;
-}
-
-export interface SyncPushResponse {
-  ok: boolean;
-  pushed: number;
-  errors: Array<{ run_id: string; category: string; error: string }>;
-}
-
-export interface SyncPullResponse {
-  ok: boolean;
-  pulled: number;
-  errors: Array<{ run_id: string; category: string; error: string }>;
-}

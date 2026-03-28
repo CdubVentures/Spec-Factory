@@ -10,10 +10,6 @@ import type {
   FailureMetric,
   ExtractionCandidate,
   ExtractionFieldRow,
-  FallbackEventRow,
-  HostFallbackProfile,
-  LaneSummary,
-  BlockedHostEntry,
   PipelineStage,
   PipelineTransition,
   LlmCallRow,
@@ -46,10 +42,6 @@ export type {
   FailureMetric,
   ExtractionCandidate,
   ExtractionFieldRow,
-  FallbackEventRow,
-  HostFallbackProfile,
-  LaneSummary,
-  BlockedHostEntry,
   PipelineStage,
   PipelineTransition,
   LlmCallRow,
@@ -64,7 +56,7 @@ export type {
 
 // ── UI-only tab / badge types ──
 
-export type RuntimeOpsTab = 'overview' | 'workers' | 'documents' | 'fallbacks' | 'queue' | 'compound';
+export type RuntimeOpsTab = 'overview' | 'workers' | 'documents';
 
 export type RuntimeIdxBadgeState = 'active' | 'off';
 
@@ -268,21 +260,6 @@ export interface ExtractionFieldsResponse {
   fields: ExtractionFieldRow[];
 }
 
-// ── Fallbacks Tab ──
-
-export interface FallbacksResponse {
-  run_id: string;
-  events: FallbackEventRow[];
-  host_profiles: HostFallbackProfile[];
-}
-
-
-export interface QueueStateResponse {
-  run_id: string;
-  jobs: QueueJobRow[];
-  lane_summary: LaneSummary[];
-  blocked_hosts: BlockedHostEntry[];
-}
 
 // ── Worker Dashboard (Phase 13.3) ──
 
@@ -706,144 +683,3 @@ export interface PreFetchPhasesResponse {
   idx_runtime?: Partial<Record<PrefetchTabKey, RuntimeIdxBadge[]>>;
 }
 
-// ── Compound Learning Dashboard (Phase 4C) ──
-
-export type CompoundVerdict = 'PROVEN' | 'PARTIAL' | 'NOT_PROVEN';
-export type UrlReuseTrend = 'increasing' | 'flat' | 'decreasing';
-
-export interface CompoundCurveRun {
-  run_id: string;
-  searches: number;
-  url_reuse_pct: number;
-  new_urls: number;
-  fill_rate_pct: number;
-}
-
-export interface CompoundCurveResponse {
-  category: string;
-  verdict: CompoundVerdict;
-  search_reduction_pct: number;
-  url_reuse_trend: UrlReuseTrend;
-  runs: CompoundCurveRun[];
-}
-
-export interface QueryTopYieldEntry {
-  query: string;
-  provider: string;
-  avg_yield: number;
-}
-
-export interface QueryProviderBreakdown {
-  query_count: number;
-  total_results: number;
-  avg_field_yield: number;
-}
-
-export interface QuerySummaryResponse {
-  category: string;
-  total: number;
-  dead_count: number;
-  top_yield: QueryTopYieldEntry[];
-  provider_breakdown: Record<string, QueryProviderBreakdown>;
-}
-
-export interface UrlHighYieldEntry {
-  url: string;
-  times_visited: number;
-  fields_filled: string[];
-}
-
-export interface UrlTierBreakdown {
-  url_count: number;
-  total_fields: number;
-  avg_success_rate: number;
-}
-
-export interface UrlSummaryResponse {
-  category: string;
-  total: number;
-  reuse_distribution: Record<string, number>;
-  high_yield: UrlHighYieldEntry[];
-  tier_breakdown: Record<string, UrlTierBreakdown>;
-}
-
-export type HostHealthStatus = 'healthy' | 'cooldown' | 'degraded' | 'blocked';
-
-export interface HostHealthRow {
-  host: string;
-  total: number;
-  failed: number;
-  block_rate: number;
-  status: HostHealthStatus;
-  avg_fields_per_fetch: number;
-}
-
-export interface HostHealthResponse {
-  category: string;
-  hosts: HostHealthRow[];
-}
-
-export interface PlanDiffFieldSide {
-  value: string | null;
-  host: string | null;
-  tier: number | null;
-  confidence: number;
-  found: boolean;
-}
-
-export type PlanDiffWinner = 'run1' | 'run2' | 'tie' | 'neither';
-
-export interface PlanDiffFieldRow {
-  field: string;
-  run1: PlanDiffFieldSide;
-  run2: PlanDiffFieldSide;
-  winner: PlanDiffWinner;
-  reason: string;
-}
-
-export interface PlanDiffResponse {
-  run1_id: string;
-  run2_id: string;
-  fields: PlanDiffFieldRow[];
-  run1_wins: number;
-  run2_wins: number;
-  ties: number;
-  neither: number;
-}
-
-export interface CrossRunSparklineData {
-  fill_rate: number[];
-  searches: number[];
-  block_rate: number[];
-}
-
-export interface CrossRunMetricsResponse {
-  category: string;
-  run_count: number;
-  field_fill_rate: number;
-  searches_per_product: number;
-  block_rate_by_host: Record<string, number>;
-  sparkline_data: CrossRunSparklineData;
-}
-
-export interface KnobSnapshotEntry {
-  knob: string;
-  config_value: string;
-  default_value: string;
-  effective_value: string;
-  match: boolean;
-}
-
-export interface KnobSnapshot {
-  ts: string;
-  entries: KnobSnapshotEntry[];
-  mismatch_count: number;
-  total_knobs: number;
-}
-
-export interface KnobSnapshotsResponse {
-  category: string;
-  snapshots: KnobSnapshot[];
-}
-
-export type CompoundSubTab = 'curve' | 'queries' | 'urls' | 'plan-diff' | 'knobs';

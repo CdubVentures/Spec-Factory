@@ -17,6 +17,7 @@ interface ArtifactRecord extends ExtractionPluginEntry {
   display_label: string;
   filenames: string[];
   file_sizes: number[];
+  file_paths: string[];
   total_bytes: number;
   [key: string]: unknown;
 }
@@ -42,6 +43,8 @@ export interface ArtifactPanelConfig {
   locationPrefix: string;
   previewType: 'image' | 'video';
   assetUrl: (runId: string, entry: ArtifactRecord, filename: string) => string;
+  /** Fields to collect format strings from — checks both array (formats) and scalar (format) */
+  formatFields?: string[];
   extraHeroStats?: (records: ArtifactRecord[]) => ReactNode;
   extraHeroBand?: (records: ArtifactRecord[]) => ReactNode;
   extraColumns?: string[];
@@ -75,6 +78,19 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     return { totalCount, totalBytes };
   }, [records, config.countField]);
 
+  const formats = useMemo(() => {
+    if (!config.formatFields?.length) return [];
+    const set = new Set<string>();
+    for (const r of records) {
+      for (const field of config.formatFields) {
+        const val = r[field];
+        if (Array.isArray(val)) { for (const f of val) if (f) set.add(String(f)); }
+        else if (val) set.add(String(val));
+      }
+    }
+    return [...set];
+  }, [records, config.formatFields]);
+
   const groups = useMemo((): DomainGroup[] => {
     const map = new Map<string, ArtifactRecord[]>();
     for (const r of records) {
@@ -101,11 +117,20 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
     setPreviewSrc(config.assetUrl(runId, entry, filename));
   }, [runId, config]);
 
-  const openFolder = useCallback(() => {
+  const openFolder = useCallback((filePath: string) => {
     if (!runId) return;
-    fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${config.pluginKey}`)
-      .catch(() => {});
-  }, [runId, config.pluginKey]);
+    const folder = config.locationPrefix.replace(/\/+$/, '');
+    if (filePath) {
+      fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${encodeURIComponent(folder)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_path: filePath }),
+      }).catch(() => {});
+    } else {
+      fetch(`/api/v1/indexlab/run/${encodeURIComponent(runId)}/runtime/extraction/open-folder/${encodeURIComponent(folder)}`)
+        .catch(() => {});
+    }
+  }, [runId, config.locationPrefix]);
 
   if (!data.entries.length) {
     return (
@@ -139,6 +164,15 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
           {config.extraHeroStats?.(records)}
         </HeroStatGrid>
         {config.extraHeroBand?.(records)}
+
+        {formats.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="sf-text-nano sf-text-muted uppercase tracking-wide font-semibold">Formats</span>
+            {formats.map((f) => (
+              <Chip key={f} label={f.toUpperCase()} className="sf-chip-info" />
+            ))}
+          </div>
+        )}
       </HeroBand>
 
       <div className="flex items-baseline gap-2 pt-2 pb-1.5 mb-3 border-b-[1.5px] border-[var(--sf-token-text-primary)]">
@@ -200,9 +234,16 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
                     <td />
                     <td colSpan={2} className="py-1 px-4 pl-8">
                       {entry.url ? (
-                        <div className="sf-text-caption font-mono sf-link-accent truncate max-w-[24rem]" title={entry.url}>
+                        <a
+                          href={entry.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="sf-text-caption font-mono sf-link-accent truncate max-w-[24rem] block"
+                          title={entry.url}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {truncateUrl(entry.url, 60)}
-                        </div>
+                        </a>
                       ) : (
                         <div className="sf-text-caption font-mono sf-text-muted">(URL pending)</div>
                       )}
@@ -220,20 +261,23 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
                     <td className="py-1 px-4">
                       {Array.isArray(entry.filenames) && entry.filenames.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
-                          {entry.filenames.map((fn, fi) => (
-                            <button
-                              key={fi}
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); openFolder(); }}
-                              title="Click to open folder"
-                              className="flex items-center gap-1.5 text-left group cursor-pointer"
-                            >
-                              <Chip label="LOCAL" className="sf-chip-neutral group-hover:sf-chip-info transition-colors shrink-0" />
-                              <span className="sf-text-caption font-mono sf-text-subtle group-hover:sf-text-primary group-hover:underline whitespace-nowrap">
-                                {config.locationPrefix}{fn}
-                              </span>
-                            </button>
-                          ))}
+                          {entry.filenames.map((fn, fi) => {
+                            const fp = Array.isArray(entry.file_paths) ? entry.file_paths[fi] : '';
+                            return (
+                              <button
+                                key={fi}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openFolder(fp); }}
+                                title={fp || `${config.locationPrefix}${fn}`}
+                                className="flex items-center gap-1.5 text-left group cursor-pointer"
+                              >
+                                <Chip label="LOCAL" className="sf-chip-neutral group-hover:sf-chip-info transition-colors shrink-0" />
+                                <span className="sf-text-caption font-mono sf-text-subtle group-hover:sf-text-primary group-hover:underline whitespace-nowrap truncate max-w-[20rem]">
+                                  {fp || `${config.locationPrefix}${fn}`}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : (
                         <span className="sf-text-muted sf-text-nano">not persisted</span>

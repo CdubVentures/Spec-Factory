@@ -8,7 +8,7 @@ import { defaultLocalOutputRoot } from '../runtimeArtifactRoots.js';
 const MANIFEST_GROUPS = Object.freeze([
   { id: 'core', title: 'Core Application Settings', notes: 'Boot/runtime environment and top-level API binding.' },
   { id: 'caching', title: 'Caching and Data Layer', notes: 'External cache knobs; currently reserved for future non-SQLite cache integration.' },
-  { id: 'storage', title: 'Storage and Cloud Infrastructure', notes: 'S3/AWS and run-data relocation settings.' },
+  { id: 'storage', title: 'Storage and Cloud Infrastructure', notes: 'S3/AWS and run-data storage settings.' },
   { id: 'security', title: 'Security and Auth', notes: 'Authentication and trust-boundary controls.' },
   { id: 'llm', title: 'LLM and Model Routing', notes: 'Provider endpoints, keys, model ladders, pricing, and fallback policies.' },
   { id: 'discovery', title: 'Discovery and Search Providers', notes: 'Internet search endpoints and provider selection defaults.' },

@@ -123,6 +123,8 @@ export async function runProduct({
   logger.setContext(loggerContext);
   logger.info('run_context', runContextPayload);
 
+  const specDb = config.specDb || null;
+
   bootstrapRunEventIndexing({
     logger,
     category,
@@ -134,9 +136,18 @@ export async function runProduct({
     joinPathFn: path.join,
     mkdirSyncFn: fs.mkdirSync,
     captureKnobSnapshotFn: captureKnobSnapshot,
-    recordKnobSnapshotFn: recordKnobSnapshot,
-    recordUrlVisitFn: recordUrlVisit,
-    recordQueryResultFn: recordQueryResult,
+    recordKnobSnapshotFn: (snapshot, logPath) => {
+      recordKnobSnapshot(snapshot, logPath);
+      if (specDb) try { specDb.insertKnobSnapshot({ ...snapshot, category, run_id: runId }); } catch { /* best-effort */ }
+    },
+    recordUrlVisitFn: (record, logPath) => {
+      recordUrlVisit(record, logPath);
+      if (specDb) try { specDb.insertUrlIndexEntry({ ...record, category, ts: new Date().toISOString() }); } catch { /* best-effort */ }
+    },
+    recordQueryResultFn: (record, logPath) => {
+      recordQueryResult(record, logPath);
+      if (specDb) try { specDb.insertQueryIndexEntry({ ...record, ts: new Date().toISOString() }); } catch { /* best-effort */ }
+    },
   });
 
   const traceWriter = createRunTraceWriter({

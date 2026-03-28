@@ -342,6 +342,12 @@ const METRICS_HANDLERS = {
     ms.acceptanceRate = toFloat(payload.acceptance_rate, 0);
     ms.meanConfidence = toFloat(payload.mean_confidence, 0);
   },
+  extraction_plugin_completed: (_payload, _url, ms) => {
+    ms.pools.extraction.completed += 1;
+  },
+  extraction_plugin_failed: (_payload, _url, ms) => {
+    ms.pools.extraction.failed += 1;
+  },
   // WHY: Crawlee's native stats snapshot — last-write-wins. Contains data
   // not derivable from fetch events: per-status-code counts, retry distribution,
   // classified error groups, and precise per-request timing.
@@ -363,6 +369,7 @@ export function buildRuntimeOpsMetricsRail(events, options) {
     fetch: { active: 0, queued: 0, completed: 0, failed: 0 },
     parse: { active: 0, queued: 0, completed: 0, failed: 0 },
     llm: { active: 0, queued: 0, completed: 0, failed: 0 },
+    extraction: { active: 0, queued: 0, completed: 0, failed: 0 },
   };
 
   const activeSearch = new Set();

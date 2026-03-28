@@ -4,7 +4,7 @@
 // are intentional legacy compat — both camelCase and snake_case sent to frontend.
 
 export const PROCESS_STATUS_KEYS = Object.freeze([
-  'running', 'relocating', 'relocatingRunId',
+  'running',
   'run_id', 'runId',
   'category',
   'product_id', 'productId',

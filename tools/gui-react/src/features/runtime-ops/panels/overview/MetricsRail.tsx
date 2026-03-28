@@ -1,35 +1,55 @@
 import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { RuntimeOpsMetricsRailData, PoolMetric, CrawlEngineStats } from '../../types.ts';
-import { poolBadgeClass, poolMeterFillClass, pctString, METRIC_TIPS } from '../../helpers.ts';
+import { poolMeterFillClass, METRIC_TIPS } from '../../helpers.ts';
+import { resolvePoolStage } from '../../poolStageRegistry.ts';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 
 interface MetricsRailProps {
   data: RuntimeOpsMetricsRailData | undefined;
 }
 
-function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
+// WHY: Pipeline display order — matches the conceptual flow from planning to output.
+const POOL_ORDER = ['llm', 'search', 'fetch', 'parse', 'extraction'] as const;
+
+function PoolRow({ poolKey, pool }: { poolKey: string; pool: PoolMetric }) {
   const total = pool.completed + pool.failed + pool.active + pool.queued;
-  const utilization = total > 0 ? (pool.completed + pool.failed) / total : 0;
-  const widthPct = Math.round(utilization * 100);
-  const poolTipKey = `pool_${label}` as keyof typeof METRIC_TIPS;
+  const widthPct = total > 0 ? Math.round(((pool.completed + pool.failed) / total) * 100) : 0;
+  const vis = resolvePoolStage(poolKey);
+  const tipKey = `pool_${poolKey}` as keyof typeof METRIC_TIPS;
+  const hasActive = pool.active > 0;
+  const hasFail = pool.failed > 0;
 
   return (
-    <div className="rounded sf-surface-card p-2">
-      <div className="flex items-center justify-between mb-1">
-        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${poolBadgeClass(label)}`}>
-          {label}<Tip text={METRIC_TIPS[poolTipKey] ?? ''} />
+    <div className="group px-2 py-1.5 rounded transition-colors sf-hover-bg-surface-soft">
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${vis.dot} ${hasActive ? 'animate-pulse' : ''}`} />
+        <span className="sf-text-caption font-semibold uppercase tracking-wider sf-text-primary flex-1">
+          {vis.shortLabel}
+          <Tip text={METRIC_TIPS[tipKey] ?? ''} />
         </span>
-        <span className="sf-text-caption sf-text-muted">{pool.active} active</span>
+        {hasActive && (
+          <span className={`sf-text-nano font-mono font-semibold ${vis.activeCount}`}>
+            {pool.active}
+          </span>
+        )}
       </div>
-      <div className="h-1.5 sf-meter-track rounded-full mb-1">
-        <div
-          className={`h-full rounded-full transition-all ${poolMeterFillClass(label)}`}
-          style={{ width: `${widthPct}%` }}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-x-2 sf-text-caption sf-text-muted">
-        <span>done: {pool.completed}<Tip text={METRIC_TIPS.pool_done} /></span>
-        <span>fail: {pool.failed}<Tip text={METRIC_TIPS.pool_fail} /></span>
+
+      <div className="ml-4">
+        <div className="h-1 sf-meter-track rounded-full mb-1">
+          <div
+            className={`h-full rounded-full transition-all ${poolMeterFillClass(poolKey)}`}
+            style={{ width: `${widthPct}%` }}
+          />
+        </div>
+        <div className="flex items-center gap-1 sf-text-nano sf-text-muted font-mono">
+          <span>{pool.completed}</span>
+          {hasFail && (
+            <>
+              <span className="opacity-40">/</span>
+              <span className="sf-text-danger">{pool.failed}</span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -38,50 +58,26 @@ function PoolCard({ label, pool }: { label: string; pool: PoolMetric }) {
 export function MetricsRail({ data }: MetricsRailProps) {
   const scrollRef = usePersistedScroll('scroll:metricsRail');
   const pools = data?.pool_metrics ?? {};
-  const failure = data?.failure_metrics ?? { total_fetches: 0, fallback_count: 0, fallback_rate: 0, blocked_hosts: 0, retry_total: 0, no_progress_streak: 0 };
   const engine = data?.crawl_engine;
   const hasEngineData = Boolean(engine && (Object.keys(engine.status_codes).length > 0 || engine.retry_histogram.length > 0));
 
   return (
-    <aside ref={scrollRef} className="w-60 shrink-0 border-r sf-border-default overflow-y-auto p-3 space-y-4">
+    <aside ref={scrollRef} className="w-52 shrink-0 border-r sf-border-default overflow-y-auto p-2 space-y-3">
       <div>
-        <h3 className="sf-text-caption font-semibold sf-text-subtle uppercase tracking-wide mb-2">
-          Pools
+        <h3 className="sf-text-nano font-semibold sf-text-subtle uppercase tracking-widest px-2 mb-1">
+          Pipeline
         </h3>
-        <div className="space-y-2">
-          {['search', 'fetch', 'parse', 'llm'].map((key) => (
-            <PoolCard
+        <div className="space-y-0.5">
+          {POOL_ORDER.map((key) => (
+            <PoolRow
               key={key}
-              label={key}
+              poolKey={key}
               pool={pools[key] ?? { active: 0, queued: 0, completed: 0, failed: 0 }}
             />
           ))}
         </div>
       </div>
 
-      <div>
-        <h3 className="sf-text-caption font-semibold sf-text-subtle uppercase tracking-wide mb-2">
-          Failures
-        </h3>
-        <div className="space-y-1.5 sf-text-caption">
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Fallback rate<Tip text={METRIC_TIPS.fallback_rate} /></span>
-            <span className="font-mono">{pctString(failure.fallback_rate)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Blocked hosts<Tip text={METRIC_TIPS.blocked_hosts} /></span>
-            <span className="font-mono">{failure.blocked_hosts}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">Retries<Tip text={METRIC_TIPS.retries} /></span>
-            <span className="font-mono">{failure.retry_total}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="sf-text-muted">No-progress<Tip text={METRIC_TIPS.no_progress} /></span>
-            <span className="font-mono">{failure.no_progress_streak}</span>
-          </div>
-        </div>
-      </div>
       {engine && hasEngineData && (
         <CrawlEngineSection engine={engine} />
       )}
@@ -102,8 +98,8 @@ function CrawlEngineSection({ engine }: { engine: CrawlEngineStats }) {
   const errors = engine.top_errors.slice(0, 5);
 
   return (
-    <div>
-      <h3 className="sf-text-caption font-semibold sf-text-subtle uppercase tracking-wide mb-2">
+    <div className="px-2">
+      <h3 className="sf-text-nano font-semibold sf-text-subtle uppercase tracking-widest mb-1">
         Crawl Engine
       </h3>
       <div className="space-y-2 sf-text-caption">

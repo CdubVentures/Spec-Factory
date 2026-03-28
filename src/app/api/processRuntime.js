@@ -191,45 +191,15 @@ export function createProcessRuntime({
               broadcastWs,
             });
           }
-          dispatch({
-            type: 'RELOCATION_STARTED',
-            payload: { runId: state.snapshot.runId || 'unknown' },
+          await handleIndexLabProcessCompletion({
+            exitCode: resolvedExitCode,
+            cliArgs,
+            startedAt,
+            indexLabRoot: resolvedIndexLabRoot,
+            broadcastWs,
+            getSpecDb,
           });
           broadcastWs('process-status', processStatus());
-          try {
-            await handleIndexLabProcessCompletion({
-              exitCode: resolvedExitCode,
-              cliArgs,
-              startedAt,
-              runDataStorageSettings: runDataStorageState,
-              indexLabRoot: resolvedIndexLabRoot,
-              outputRoot: resolvedOutputRoot,
-              outputPrefix,
-              broadcastWs,
-              getSpecDb,
-              onRelocationComplete: ({ relocation, category, productId, runId }) => {
-                if (typeof getSpecDb !== 'function') return;
-                try {
-                  const db = getSpecDb(category);
-                  if (!db || typeof db.updateRunStorageLocation !== 'function') return;
-                  const destType = String(relocation.destination_type || '').trim().toLowerCase();
-                  const storageState = (destType === 's3') ? 's3' : 'local';
-                  db.updateRunStorageLocation({
-                    productId,
-                    runId,
-                    storageState,
-                    localPath: relocation.destination_path || '',
-                    s3Key: relocation.s3_prefix || '',
-                    sizeBytes: relocation.staged_run_output ? 1 : 0,
-                    relocatedAt: new Date().toISOString(),
-                  });
-                } catch { /* non-fatal */ }
-              },
-            });
-          } finally {
-            dispatch({ type: 'RELOCATION_COMPLETED' });
-            broadcastWs('process-status', processStatus());
-          }
         } catch (error) {
           logger.error('[process-completion] failed', error);
         }
