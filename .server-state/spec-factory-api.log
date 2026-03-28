@@ -1275,3 +1275,15 @@ Emitted 'error' event on ChildProcess instance at:
 }
 
 Node.js v24.13.1
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\AppData\Local\spec-factory\output
+[gui-server] IndexLab:C:\Users\Chris\AppData\Local\spec-factory\indexlab
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-BljZ_S6k.js, BulkPasteGrid-Dz8HzXgT.js, buttonClasses-DdWdVcJt.js, CatalogPage-ewLxvBZa.js, CategoryManager-BoQ6isGB.js, ComponentReviewPage-Ca0FG_2H.js, DataTable-C356pbxG.js, DrawerShell-PJk2ZWia.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-Do7wIgdD.js, FlagsSection--vyuEewi.js, formatting-B6A_RRxb.js, HeroBand-tO3Lu-Ce.js, index-20d3SGwH.css, index-SUTC3tRG.js, IndexingPage-DKUjlbaY.js, indexlabRunsQuery-CWwV1me6.js, LlmConfigPage-BGU6RPF2.js, LlmGlobalSection-B0Szc6I6.js, LlmPhaseSection-CeI4uorR.js, llmPolicyDefaults-C7CxkxNQ.js, LlmProviderRegistrySection-DWWjXgHL.js, LlmSettingsPage-DRq__e13.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-CgCYawUL.js, PipelineDeterministicStrategySection-C_9O9A0C.js, PipelineSettingsPage-BMSoZ9bw.js, PipelineSourceStrategySection-CMD0JG4x.js, ProductPage-DF04zjPZ.js, ReviewPage-pGjNxsDQ.js, RuntimeFlowDraftPayload-CEa8uuR8.js, RuntimeOpsPage-DWviDTQ-.js, settingsStatus-_03yJrbD.js, SidebarShell-C8zc0g9r.js, sortable.esm-DHLR6drX.js, StoragePage-D4sgAkzu.js, StudioPage-CkrQi6p7.js, TabStrip-r04xn31b.js, TestModePage-DkMZ-qmt.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-Cf7cl7MV.js, useFieldLabels-DlboAZQu.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-CIcqZI03.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-BVTyqpxS.js
+[auto-seed] crawl_probe_reports failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\crawl_probe_reports\_generated\field_rules.json
