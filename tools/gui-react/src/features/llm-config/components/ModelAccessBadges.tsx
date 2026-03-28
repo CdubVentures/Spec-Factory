@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { ACCESS_MODE_BADGE_STYLE, ROLE_ICON_STYLE } from '../state/llmRoleBadgeStyles.ts';
+import { ACCESS_MODE_BADGE_STYLE, ROLE_ICON_STYLE, CAPABILITY_BADGE_STYLE } from '../state/llmRoleBadgeStyles.ts';
 import type { LlmAccessMode, LlmModelRole } from '../types/llmProviderRegistryTypes.ts';
 
 const ICON_SIZE = 10;
@@ -41,14 +41,40 @@ function ReasoningIcon() {
   );
 }
 
+function ThinkingIcon() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5.5 9.5C3.5 8.5 2 6.5 2 4.5A4.5 4.5 0 0 1 11 4.5c0 2-1.5 4-3.5 5" />
+      <path d="M5.5 9.5v2a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-2" />
+      <circle cx="12.5" cy="3" r="1" fill="currentColor" stroke="none" />
+      <circle cx="14" cy="5.5" r="0.7" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function WebSearchIcon() {
+  return (
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="7" cy="7" r="5.5" />
+      <ellipse cx="7" cy="7" rx="2.2" ry="5.5" />
+      <path d="M1.5 7h11" />
+      <path d="M2.5 4h9M2.5 10h9" />
+    </svg>
+  );
+}
+
 interface ModelBadgeGroupProps {
   accessMode?: LlmAccessMode;
   role?: LlmModelRole;
+  thinking?: boolean;
+  webSearch?: boolean;
 }
 
 export const ModelBadgeGroup = memo(function ModelBadgeGroup({
   accessMode,
   role,
+  thinking,
+  webSearch,
 }: ModelBadgeGroupProps) {
   const modeStyle = accessMode ? ACCESS_MODE_BADGE_STYLE[accessMode] : ACCESS_MODE_BADGE_STYLE.api;
   const roleStyle = role ? ROLE_ICON_STYLE[role] : null;
@@ -70,6 +96,24 @@ export const ModelBadgeGroup = memo(function ModelBadgeGroup({
           title={roleStyle.title}
         >
           {role === 'reasoning' ? <ReasoningIcon /> : <PrimaryIcon />}
+        </span>
+      )}
+      {thinking && (
+        <span
+          className="sf-custom-select-badge"
+          style={{ color: CAPABILITY_BADGE_STYLE.thinking.fg, backgroundColor: CAPABILITY_BADGE_STYLE.thinking.bg }}
+          title={CAPABILITY_BADGE_STYLE.thinking.title}
+        >
+          <ThinkingIcon />
+        </span>
+      )}
+      {webSearch && (
+        <span
+          className="sf-custom-select-badge"
+          style={{ color: CAPABILITY_BADGE_STYLE.webSearch.fg, backgroundColor: CAPABILITY_BADGE_STYLE.webSearch.bg }}
+          title={CAPABILITY_BADGE_STYLE.webSearch.title}
+        >
+          <WebSearchIcon />
         </span>
       )}
     </>

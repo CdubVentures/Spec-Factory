@@ -638,13 +638,19 @@ export async function callLlmProvider({
   });
 
   const buildBody = ({ useJsonSchema }) => {
+    // WHY: Gemini Code Assist API rejects the 'system' role. Merge system
+    // content into the user message as a preamble for Gemini providers.
+    const isGeminiProvider = inferredProvider === 'gemini';
+    const messages = isGeminiProvider
+      ? [{ role: 'user', content: effectiveSystem + '\n\n' + userMessage.content }]
+      : [
+          { role: 'system', content: effectiveSystem },
+          { role: 'user', content: userMessage.content }
+        ];
     const body = {
       model,
       temperature: 0,
-      messages: [
-        { role: 'system', content: effectiveSystem },
-        { role: 'user', content: userMessage.content }
-      ]
+      messages,
     };
 
     if (effectiveMaxTokens > 0) {

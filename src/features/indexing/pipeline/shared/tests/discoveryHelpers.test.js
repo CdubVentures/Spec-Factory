@@ -136,10 +136,9 @@ test('buildSearchProfileKeys: builds all three keys', () => {
   assert.ok(result.inputKey.includes('_discovery'));
   assert.ok(result.inputKey.includes('run-001'));
   assert.ok(result.runKey);
-  assert.ok(result.latestKey);
 });
 
-test('buildSearchProfileKeys: null runKey/latestKey when missing params', () => {
+test('buildSearchProfileKeys: null runKey when missing params', () => {
   const storage = {
     resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
   };
@@ -151,7 +150,6 @@ test('buildSearchProfileKeys: null runKey/latestKey when missing params', () => 
     runId: 'run-001',
   });
   assert.equal(result.runKey, null);
-  assert.equal(result.latestKey, null);
   assert.ok(result.inputKey);
 });
 
@@ -167,9 +165,9 @@ test('writeSearchProfileArtifacts: writes to all unique keys', async () => {
   await writeSearchProfileArtifacts({
     storage,
     payload: { status: 'test' },
-    keys: { inputKey: 'a', runKey: 'b', latestKey: 'c' },
+    keys: { inputKey: 'a', runKey: 'b' },
   });
-  assert.equal(written.size, 3);
+  assert.equal(written.size, 2);
   assert.deepStrictEqual(written.get('a'), { status: 'test' });
 });
 
@@ -181,7 +179,7 @@ test('writeSearchProfileArtifacts: deduplicates keys', async () => {
   await writeSearchProfileArtifacts({
     storage,
     payload: { status: 'test' },
-    keys: { inputKey: 'same', runKey: 'same', latestKey: null },
+    keys: { inputKey: 'same', runKey: 'same' },
   });
   assert.equal(written.size, 1);
 });

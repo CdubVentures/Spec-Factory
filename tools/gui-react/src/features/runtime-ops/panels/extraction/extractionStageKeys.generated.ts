@@ -3,6 +3,7 @@
 
 export const EXTRACTION_STAGE_KEYS = [
   'screenshot',
+  'video',
 ] as const;
 
 export type ExtractionTabKey = (typeof EXTRACTION_STAGE_KEYS)[number];
@@ -15,4 +16,5 @@ export interface StageMeta {
 
 export const EXTRACTION_STAGE_META: Record<ExtractionTabKey, StageMeta> = {
   'screenshot': { label: 'Screenshots', tip: 'Full-page and targeted selector screenshots captured from each URL.', tone: 'info' },
+  'video': { label: 'Videos', tip: 'WebM video recordings captured from each fetch worker during page interaction.', tone: 'info' },
 };

@@ -179,6 +179,37 @@ describe('buildModelDropdownOptions merge contracts', () => {
     }
   });
 
+  it('lab models carry thinking/webSearch capability flags in dropdown options', () => {
+    const registry = [
+      makeProvider({
+        id: 'lab-openai',
+        name: 'LLM Lab OpenAI',
+        accessMode: 'lab' as const,
+        models: [
+          { ...makeModel('gpt-5'), accessMode: 'lab' as const, thinking: true, webSearch: true },
+          { ...makeModel('gpt-5-minimal'), accessMode: 'lab' as const, thinking: false, webSearch: true },
+        ],
+      }),
+      makeProvider({
+        id: 'default-openai',
+        name: 'OpenAI',
+        models: [makeModel('gpt-5')],
+      }),
+    ];
+
+    const result = buildModelDropdownOptions([], registry);
+    const labGpt5 = result.find((o) => o.providerId === 'lab-openai' && o.label === 'gpt-5');
+    const labMinimal = result.find((o) => o.providerId === 'lab-openai' && o.label === 'gpt-5-minimal');
+    const apiGpt5 = result.find((o) => o.providerId === 'default-openai');
+
+    deepStrictEqual(labGpt5?.thinking, true);
+    deepStrictEqual(labGpt5?.webSearch, true);
+    deepStrictEqual(labMinimal?.thinking, undefined, 'false capabilities omitted');
+    deepStrictEqual(labMinimal?.webSearch, true);
+    deepStrictEqual(apiGpt5?.thinking, undefined, 'API model has no capabilities');
+    deepStrictEqual(apiGpt5?.webSearch, undefined, 'API model has no capabilities');
+  });
+
   it('lab models carry accessMode in dropdown options', () => {
     const registry = [
       makeProvider({

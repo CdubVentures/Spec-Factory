@@ -33,13 +33,13 @@ function createPageDouble({ evaluateResult = 0 } = {}) {
 describe('cssOverridePlugin', () => {
   it('has correct plugin shape', () => {
     assert.equal(cssOverridePlugin.name, 'cssOverride');
-    assert.equal(typeof cssOverridePlugin.hooks.onInteract, 'function');
-    assert.equal(typeof cssOverridePlugin.hooks.beforeNavigate, 'function');
+    assert.equal(typeof cssOverridePlugin.hooks.onDismiss, 'function');
+    assert.equal(typeof cssOverridePlugin.hooks.onInit, 'function');
   });
 
   it('returns disabled when cssOverrideEnabled is false', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: false },
     });
@@ -53,7 +53,7 @@ describe('cssOverridePlugin', () => {
 
   it('returns disabled when cssOverrideEnabled is undefined (default off)', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: {},
     });
@@ -65,7 +65,7 @@ describe('cssOverridePlugin', () => {
 
   it('injects CSS and counts hidden elements when enabled', async () => {
     const page = createPageDouble({ evaluateResult: 7 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true },
     });
@@ -79,7 +79,7 @@ describe('cssOverridePlugin', () => {
 
   it('works with string "true" for cssOverrideEnabled', async () => {
     const page = createPageDouble({ evaluateResult: 3 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: 'true' },
     });
@@ -89,7 +89,7 @@ describe('cssOverridePlugin', () => {
 
   it('calls page.evaluate to count hidden elements', async () => {
     const page = createPageDouble({ evaluateResult: 0 });
-    await cssOverridePlugin.hooks.onInteract({
+    await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true },
     });
@@ -102,7 +102,7 @@ describe('cssOverridePlugin', () => {
 describe('cssOverridePlugin — fixed/sticky removal', () => {
   it('does not inject fixed CSS when cssOverrideRemoveFixed is false', async () => {
     const page = createPageDouble({ evaluateResult: 2 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideRemoveFixed: false },
     });
@@ -112,7 +112,7 @@ describe('cssOverridePlugin — fixed/sticky removal', () => {
 
   it('injects fixed CSS when cssOverrideRemoveFixed is true', async () => {
     const page = createPageDouble({ evaluateResult: 2 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideRemoveFixed: true },
     });
@@ -124,7 +124,7 @@ describe('cssOverridePlugin — fixed/sticky removal', () => {
 
   it('works with string "true" for cssOverrideRemoveFixed', async () => {
     const page = createPageDouble({ evaluateResult: 0 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideRemoveFixed: 'true' },
     });
@@ -134,7 +134,7 @@ describe('cssOverridePlugin — fixed/sticky removal', () => {
 
   it('does not inject fixed CSS when main plugin is disabled', async () => {
     const page = createPageDouble();
-    await cssOverridePlugin.hooks.onInteract({
+    await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: false, cssOverrideRemoveFixed: true },
     });
@@ -149,12 +149,12 @@ describe('cssOverridePlugin — fixed/sticky removal', () => {
   });
 });
 
-// ── Domain blocking (beforeNavigate) ────────────────────────────────────────
+// ── Domain blocking (onInit) ────────────────────────────────────────
 
 describe('cssOverridePlugin — domain blocking', () => {
   it('returns undefined when cssOverrideEnabled is false', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.beforeNavigate({
+    const result = await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: false, cssOverrideBlockedDomains: 'intercom.io' },
     });
@@ -164,7 +164,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('returns undefined when blockedDomains is empty', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.beforeNavigate({
+    const result = await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: '' },
     });
@@ -174,7 +174,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('returns undefined when blockedDomains is undefined', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.beforeNavigate({
+    const result = await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true },
     });
@@ -184,7 +184,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('sets up page.route when domains are provided', async () => {
     const page = createPageDouble();
-    const result = await cssOverridePlugin.hooks.beforeNavigate({
+    const result = await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: 'intercom.io,drift.com' },
     });
@@ -195,7 +195,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('route handler aborts matching domain requests', async () => {
     const page = createPageDouble();
-    await cssOverridePlugin.hooks.beforeNavigate({
+    await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: 'intercom.io,drift.com' },
     });
@@ -214,7 +214,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('route handler continues non-matching requests', async () => {
     const page = createPageDouble();
-    await cssOverridePlugin.hooks.beforeNavigate({
+    await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: 'intercom.io' },
     });
@@ -233,7 +233,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('trims and lowercases domain entries', async () => {
     const page = createPageDouble();
-    await cssOverridePlugin.hooks.beforeNavigate({
+    await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: ' Intercom.IO , DRIFT.com ' },
     });
@@ -248,7 +248,7 @@ describe('cssOverridePlugin — domain blocking', () => {
 
   it('ignores empty entries from trailing commas', async () => {
     const page = createPageDouble();
-    await cssOverridePlugin.hooks.beforeNavigate({
+    await cssOverridePlugin.hooks.onInit({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: 'intercom.io,,drift.com,' },
     });
@@ -257,12 +257,12 @@ describe('cssOverridePlugin — domain blocking', () => {
   });
 });
 
-// ── domainBlockingEnabled in onInteract ─────────────────────────────────────
+// ── domainBlockingEnabled in onDismiss ─────────────────────────────────────
 
 describe('cssOverridePlugin — domainBlockingEnabled reporting', () => {
   it('reports domainBlockingEnabled true when blockedDomains is set', async () => {
     const page = createPageDouble({ evaluateResult: 0 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: 'intercom.io' },
     });
@@ -271,7 +271,7 @@ describe('cssOverridePlugin — domainBlockingEnabled reporting', () => {
 
   it('reports domainBlockingEnabled false when blockedDomains is empty', async () => {
     const page = createPageDouble({ evaluateResult: 0 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true, cssOverrideBlockedDomains: '' },
     });
@@ -280,7 +280,7 @@ describe('cssOverridePlugin — domainBlockingEnabled reporting', () => {
 
   it('reports domainBlockingEnabled false when blockedDomains is undefined', async () => {
     const page = createPageDouble({ evaluateResult: 0 });
-    const result = await cssOverridePlugin.hooks.onInteract({
+    const result = await cssOverridePlugin.hooks.onDismiss({
       page,
       settings: { cssOverrideEnabled: true },
     });

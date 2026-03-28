@@ -83,13 +83,34 @@ export function buildRuntimeOpsSummary(events, meta) {
     .sort((a, b) => b.error_count - a.error_count)
     .slice(0, 10);
 
+  // WHY: Wave 5.5 removed boot_step, boot_progress, browser_pool from the
+  // slim runs SQL table. For live runs, derive from bridge events instead.
+  let bootStep = String(safeMeta.boot_step || '').trim();
+  let bootProgress = Math.max(0, Math.min(100, Number(safeMeta.boot_progress) || 0));
+  let browserPool = safeMeta.browser_pool || null;
+  if (!bootStep || !browserPool) {
+    for (let i = events.length - 1; i >= 0; i -= 1) {
+      const evt = events[i];
+      const type = eventType(evt);
+      if (!bootStep && type === 'bootstrap_step') {
+        const p = payloadOf(evt);
+        bootStep = String(p.step || '').trim();
+        bootProgress = Math.max(0, Math.min(100, Number(p.progress) || 0));
+      }
+      if (!browserPool && type === 'browser_pool_warmed') {
+        browserPool = payloadOf(evt);
+      }
+      if (bootStep && browserPool) break;
+    }
+  }
+
   return {
     status,
     round,
     phase_cursor: String(safeMeta.phase_cursor || '').trim(),
-    boot_step: String(safeMeta.boot_step || '').trim(),
-    boot_progress: Math.max(0, Math.min(100, Number(safeMeta.boot_progress) || 0)),
-    browser_pool: safeMeta.browser_pool || null,
+    boot_step: bootStep,
+    boot_progress: bootProgress,
+    browser_pool: browserPool,
     total_fetches: totalFetches,
     total_parses: s.parseFinished,
     total_llm_calls: s.llmFinished,

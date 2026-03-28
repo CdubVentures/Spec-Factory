@@ -16,12 +16,14 @@ export const PREFETCH_STAGE_DEFS = Object.freeze([
 
 export const FETCH_STAGE_DEFS = Object.freeze([
   { key: 'stealth',         label: 'Stealth',         tip: 'Anti-detection fingerprint injection \u2014 masks webdriver flag, spoofs plugins and languages.', tone: 'info' },
-  { key: 'cookie_consent',  label: 'Cookie Consent',  tip: 'Auto-dismiss cookie/privacy consent banners before page interaction.', tone: 'info' },
-  { key: 'auto_scroll',     label: 'Auto-Scroll',     tip: 'Scroll passes to trigger lazy-loaded content and reveal dynamic elements.', tone: 'info' },
+  { key: 'cookie_consent',      label: 'Cookie Consent',      tip: 'Auto-dismiss cookie/privacy consent banners before page interaction.', tone: 'info' },
+  { key: 'overlay_dismissal',  label: 'Overlay Dismissal',  tip: 'Detect and dismiss non-cookie popups \u2014 newsletter signups, chat widgets, paywalls, age gates, and scroll-locked body states.', tone: 'info' },
+  { key: 'auto_scroll',        label: 'Auto-Scroll',        tip: 'Scroll passes to trigger lazy-loaded content and reveal dynamic elements.', tone: 'info' },
   { key: 'dom_expansion', label: 'DOM Expansion',  tip: 'Click expand/show-more buttons to reveal collapsed sections and tables.', tone: 'info' },
   { key: 'css_override',  label: 'CSS Override',   tip: 'Force display:block on hidden elements for full capture (brute-force fallback).', tone: 'info' },
 ]);
 
 export const EXTRACTION_STAGE_DEFS = Object.freeze([
   { key: 'screenshot', label: 'Screenshots', tip: 'Full-page and targeted selector screenshots captured from each URL.', tone: 'info' },
+  { key: 'video', label: 'Videos', tip: 'WebM video recordings captured from each fetch worker during page interaction.', tone: 'info' },
 ]);

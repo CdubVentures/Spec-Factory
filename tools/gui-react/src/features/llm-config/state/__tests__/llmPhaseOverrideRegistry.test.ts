@@ -94,6 +94,74 @@ describe('resolvePhaseModel — webSearch defaults', () => {
   });
 });
 
+describe('resolvePhaseModel — thinking defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+  };
+
+  it('thinking defaults to false when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.thinking, false);
+  });
+
+  it('thinking resolves to true when phase override is set', () => {
+    const overrides = { needset: { thinking: true } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.thinking, true);
+  });
+
+  it('thinking is independent per phase', () => {
+    const overrides = {
+      needset: { thinking: true },
+      brandResolver: { thinking: false },
+    };
+    const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
+    const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
+    strictEqual(needset?.thinking, true);
+    strictEqual(brand?.thinking, false);
+  });
+});
+
+describe('resolvePhaseModel — thinkingEffort defaults', () => {
+  const globalDraft = {
+    llmModelPlan: 'gemini-2.5-flash',
+    llmModelReasoning: 'deepseek-reasoner',
+    llmPlanUseReasoning: false,
+    llmMaxOutputTokensPlan: 4096,
+    llmMaxOutputTokensTriage: 20000,
+    llmTimeoutMs: 30000,
+    llmMaxTokens: 16384,
+  };
+
+  it('thinkingEffort defaults to empty string when no override set', () => {
+    const result = resolvePhaseModel({}, 'needset', globalDraft);
+    strictEqual(result?.thinkingEffort, '');
+  });
+
+  it('thinkingEffort resolves to value when phase override is set', () => {
+    const overrides = { needset: { thinkingEffort: 'high' } };
+    const result = resolvePhaseModel(overrides, 'needset', globalDraft);
+    strictEqual(result?.thinkingEffort, 'high');
+  });
+
+  it('thinkingEffort is independent per phase', () => {
+    const overrides = {
+      needset: { thinkingEffort: 'xhigh' },
+      brandResolver: { thinkingEffort: 'low' },
+    };
+    const needset = resolvePhaseModel(overrides, 'needset', globalDraft);
+    const brand = resolvePhaseModel(overrides, 'brandResolver', globalDraft);
+    strictEqual(needset?.thinkingEffort, 'xhigh');
+    strictEqual(brand?.thinkingEffort, 'low');
+  });
+});
+
 describe('resolvePhaseModel with unmapped phase', () => {
   it('returns null for unmapped phase', () => {
     const result = resolvePhaseModel({}, 'nonexistent' as never, {

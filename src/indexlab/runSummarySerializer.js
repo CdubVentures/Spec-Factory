@@ -57,9 +57,6 @@ export async function serializeRunSummary(state) {
     artifacts: {
       has_needset: Boolean(state.needSet),
       has_search_profile: Boolean(state.searchProfile),
-      needset_path: state.needSetPath || '',
-      search_profile_path: state.searchProfilePath || '',
-      brand_resolution_path: state.brandResolutionPath || '',
     },
   };
 

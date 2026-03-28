@@ -101,13 +101,9 @@ export function buildSearchProfileKeys({
   const runKey = category && productId && runId
     ? storage.resolveOutputKey(category, productId, 'runs', runId, 'analysis', 'search_profile.json')
     : null;
-  const latestKey = category && productId
-    ? storage.resolveOutputKey(category, productId, 'latest', 'search_profile.json')
-    : null;
   return {
     inputKey,
     runKey,
-    latestKey
   };
 }
 
@@ -121,7 +117,7 @@ export async function writeSearchProfileArtifacts({
   keys = {}
 }) {
   const body = Buffer.from(JSON.stringify(payload, null, 2), 'utf8');
-  const uniqueKeys = [...new Set([keys.inputKey, keys.runKey, keys.latestKey].filter(Boolean))];
+  const uniqueKeys = [...new Set([keys.inputKey, keys.runKey].filter(Boolean))];
   await Promise.all(
     uniqueKeys.map((key) =>
       storage.writeObject(key, body, { contentType: 'application/json' })

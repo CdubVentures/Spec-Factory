@@ -252,6 +252,8 @@ CREATE TABLE IF NOT EXISTS product_runs (
   UNIQUE(category, product_id, run_id)
 );
 
+-- DEPRECATED: legacy table — superseded by crawl_sources, source_screenshots, source_pdfs.
+-- Only referenced by purgeStore DELETE. No runtime inserts or reads.
 CREATE TABLE IF NOT EXISTS artifacts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL, product_id TEXT, run_id TEXT,
@@ -911,6 +913,26 @@ CREATE TABLE IF NOT EXISTS source_screenshots (
 CREATE INDEX IF NOT EXISTS idx_ss_product ON source_screenshots(product_id);
 CREATE INDEX IF NOT EXISTS idx_ss_content ON source_screenshots(content_hash);
 
+CREATE TABLE IF NOT EXISTS source_videos (
+  video_id           TEXT PRIMARY KEY,
+  content_hash       TEXT NOT NULL DEFAULT '',
+  category           TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  run_id             TEXT NOT NULL,
+  source_url         TEXT NOT NULL DEFAULT '',
+  host               TEXT NOT NULL DEFAULT '',
+  worker_id          TEXT NOT NULL DEFAULT '',
+  format             TEXT NOT NULL DEFAULT 'webm',
+  width              INTEGER DEFAULT 0,
+  height             INTEGER DEFAULT 0,
+  size_bytes         INTEGER DEFAULT 0,
+  duration_ms        INTEGER DEFAULT 0,
+  file_path          TEXT NOT NULL DEFAULT '',
+  captured_at        TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sv_product ON source_videos(product_id);
+CREATE INDEX IF NOT EXISTS idx_sv_run ON source_videos(run_id);
+
 CREATE TABLE IF NOT EXISTS source_pdfs (
   pdf_id             TEXT PRIMARY KEY,
   content_hash       TEXT NOT NULL,
@@ -942,6 +964,66 @@ CREATE TABLE IF NOT EXISTS metrics (
 );
 CREATE INDEX IF NOT EXISTS idx_metrics_name ON metrics(name);
 CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics(ts);
+
+-- Telemetry indexes (replaces NDJSON files in INDEXLAB_ROOT/{category}/)
+
+CREATE TABLE IF NOT EXISTS knob_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  run_id TEXT,
+  ts TEXT NOT NULL,
+  mismatch_count INTEGER NOT NULL DEFAULT 0,
+  total_knobs INTEGER NOT NULL DEFAULT 0,
+  entries TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS query_index (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  run_id TEXT,
+  product_id TEXT,
+  query TEXT,
+  provider TEXT,
+  result_count INTEGER NOT NULL DEFAULT 0,
+  field_yield TEXT,
+  ts TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_qi_cat ON query_index(category);
+CREATE INDEX IF NOT EXISTS idx_qi_run ON query_index(run_id);
+CREATE INDEX IF NOT EXISTS idx_qi_query ON query_index(query, provider);
+
+CREATE TABLE IF NOT EXISTS url_index (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  run_id TEXT,
+  url TEXT,
+  host TEXT,
+  tier TEXT,
+  doc_kind TEXT,
+  fields_filled TEXT,
+  fetch_success INTEGER NOT NULL DEFAULT 0,
+  ts TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_ui_cat ON url_index(category);
+CREATE INDEX IF NOT EXISTS idx_ui_run ON url_index(run_id);
+CREATE INDEX IF NOT EXISTS idx_ui_host ON url_index(host);
+
+CREATE TABLE IF NOT EXISTS prompt_index (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  run_id TEXT,
+  prompt_version TEXT,
+  model TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  success INTEGER NOT NULL DEFAULT 1,
+  ts TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pi_cat ON prompt_index(category);
+CREATE INDEX IF NOT EXISTS idx_pi_run ON prompt_index(run_id);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

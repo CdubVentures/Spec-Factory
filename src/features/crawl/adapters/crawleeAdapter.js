@@ -3,6 +3,6 @@
 
 import { createCrawlSession } from '../crawlSession.js';
 
-export function createCrawleeAdapter({ settings, plugins, extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, _crawlerFactory }) {
-  return createCrawlSession({ settings, plugins, extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, _crawlerFactory });
+export function createCrawleeAdapter({ settings, plugins, extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, _crawlerFactory }) {
+  return createCrawlSession({ settings, plugins, extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, _crawlerFactory });
 }

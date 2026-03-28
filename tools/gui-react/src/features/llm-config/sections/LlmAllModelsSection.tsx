@@ -56,6 +56,9 @@ export const LlmAllModelsSection = memo(function LlmAllModelsSection({
             <th className="sf-table-head-cell">In $/1M</th>
             <th className="sf-table-head-cell">Out $/1M</th>
             <th className="sf-table-head-cell">Cache $/1M</th>
+            <th className="sf-table-head-cell">Think</th>
+            <th className="sf-table-head-cell">Effort</th>
+            <th className="sf-table-head-cell">Web</th>
             <th className="sf-table-head-cell">Max Context</th>
             <th className="sf-table-head-cell">Max Output</th>
           </tr>
@@ -81,6 +84,9 @@ export const LlmAllModelsSection = memo(function LlmAllModelsSection({
                 <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(m.costInputPer1M)}</td>
                 <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(m.costOutputPer1M)}</td>
                 <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatCost(m.costCachedPer1M)}</td>
+                <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)', textAlign: 'center' }}>{m.thinking ? '\u2713' : '\u2014'}</td>
+                <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)', textAlign: 'center', fontSize: 'var(--sf-token-font-size-micro)' }}>{m.thinkingEffortOptions?.join(', ') || '\u2014'}</td>
+                <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)', textAlign: 'center' }}>{m.webSearch ? '\u2713' : '\u2014'}</td>
                 <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatTokens(m.maxContextTokens)}</td>
                 <td className="sf-text-caption" style={{ padding: 'var(--sf-space-1-5) var(--sf-space-2)' }}>{formatTokens(m.maxOutputTokens)}</td>
               </tr>

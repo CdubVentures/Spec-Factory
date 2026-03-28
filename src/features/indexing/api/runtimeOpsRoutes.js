@@ -31,6 +31,7 @@ import {
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
 import { buildArchivedS3CacheRoot } from './builders/archivedRunLocationHelpers.js';
 import { resolveVideoFilePath } from './runtimeOpsVideoHelpers.js';
+import { defaultIndexLabRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 function isRunStillActive(processStatus, runId = '') {
   if (typeof processStatus !== 'function') return false;
@@ -104,8 +105,14 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
   const fs = await import('node:fs');
   const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.webm': 'video/webm' };
 
-  // Build candidate runDirs: direct local path + S3 cache path
+  // Build candidate runDirs: direct local path + AppData default + S3 cache path
+  // WHY: The server's currentIndexLabRoot (directRunDir) may differ from
+  // defaultIndexLabRoot (AppData) where the pipeline actually writes screenshots.
   const candidateRunDirs = [directRunDir];
+  const defaultDir = path.join(defaultIndexLabRoot(), runId);
+  if (path.resolve(defaultDir) !== path.resolve(directRunDir)) {
+    candidateRunDirs.push(defaultDir);
+  }
   const s3CacheRoot = buildArchivedS3CacheRoot(runId);
   if (s3CacheRoot) {
     candidateRunDirs.push(path.join(s3CacheRoot, 'indexlab'));
@@ -202,7 +209,6 @@ export function registerRuntimeOpsRoutes(ctx) {
       if (folder !== 'screenshots') return jsonRes(res, 400, { error: 'invalid_folder' });
       try {
         const fs = await import('node:fs');
-        const { defaultIndexLabRoot } = await import('../../../../core/config/runtimeArtifactRoots.js');
         const candidates = [
           path.join(defaultIndexLabRoot(), runId, 'screenshots'),
           path.join(directRunDir, 'screenshots'),
@@ -337,15 +343,6 @@ export function registerRuntimeOpsRoutes(ctx) {
         ? getLastScreencastFrame(runId, workerIdParam)
         : null;
       if (!frame) {
-        const persistedFramePath = path.join(runDir, 'runtime_screencast', `${workerIdParam}.json`);
-        const persistedFrame = await safeReadJson(persistedFramePath);
-        if (persistedFrame && typeof persistedFrame === 'object') {
-          frame = persistedFrame.frame && typeof persistedFrame.frame === 'object'
-            ? persistedFrame.frame
-            : persistedFrame;
-        }
-      }
-      if (!frame) {
         const workers = buildRuntimeOpsWorkers(events, {});
         const worker = Array.isArray(workers)
           ? workers.find((row) => String(row?.worker_id || '').trim() === workerIdParam)
@@ -417,8 +414,7 @@ export function registerRuntimeOpsRoutes(ctx) {
     }
 
     if (subPath === 'prefetch' && !parts[5]) {
-      // WHY: SQL fast path — one synchronous query replaces 3 async file reads
-      // for post-Wave-3 runs. Falls back to file I/O for pre-migration runs.
+      // WHY: SQL is the sole source for run artifacts (Wave 5.5 killed JSON file writes).
       let needsetArt = null, profileArt = null, brandArt = null;
       if (typeof getSpecDbReady === 'function' && resolvedMeta?.category) {
         try {
@@ -431,20 +427,11 @@ export function registerRuntimeOpsRoutes(ctx) {
               else if (art.artifact_type === 'brand_resolution') brandArt = art.payload;
             }
           }
-        } catch { /* fall through to file I/O */ }
+        } catch { /* best-effort */ }
       }
-      const needsetPath = path.join(runDir, 'needset.json');
-      const profilePath = path.join(runDir, 'search_profile.json');
-      const brandPath = path.join(runDir, 'brand_resolution.json');
-      const [needsetFallback, profileFallback, brandFallback, planProfile] = await Promise.all([
-        needsetArt ? Promise.resolve(null) : safeReadJson(needsetPath),
-        profileArt ? Promise.resolve(null) : safeReadJson(profilePath),
-        brandArt ? Promise.resolve(null) : safeReadJson(brandPath),
-        readIndexLabRunSearchProfile ? readIndexLabRunSearchProfile(runId).catch(() => null) : Promise.resolve(null),
-      ]);
-      needsetArt = needsetArt || needsetFallback;
-      profileArt = profileArt || profileFallback;
-      brandArt = brandArt || brandFallback;
+      const planProfile = readIndexLabRunSearchProfile
+        ? await readIndexLabRunSearchProfile(runId).catch(() => null)
+        : null;
       // WHY: Pipeline artifact (planProfile) is authoritative once executed.
       // Bridge file (profileArt) accumulates all event-observed queries
       // including unexecuted seed queries — merge only for progressive display.
@@ -503,17 +490,19 @@ export function registerRuntimeOpsRoutes(ctx) {
         return jsonRes(res, 400, { error: 'invalid_filename' });
       }
 
-      const screenshotDir = path.resolve(path.join(runDir, 'screenshots'));
+      const screenshotDirs = [path.resolve(path.join(runDir, 'screenshots'))];
+      // WHY: Pipeline may write to defaultIndexLabRoot (AppData) while the
+      // server's runDir resolves to a different location.
+      const defaultScreenshotDir = path.resolve(path.join(defaultIndexLabRoot(), runId, 'screenshots'));
+      if (!screenshotDirs.includes(defaultScreenshotDir)) screenshotDirs.push(defaultScreenshotDir);
       const outputRootResolved = OUTPUT_ROOT ? path.resolve(OUTPUT_ROOT) : '';
-      const candidatePaths = buildRuntimeAssetCandidatePaths({
-        filename,
-        storage,
-        OUTPUT_ROOT,
-        path,
-        runDir,
-        runId,
-      }).filter((candidatePath) => (
-        candidatePath.startsWith(screenshotDir)
+      const allRunDirs = [runDir];
+      const defaultFallbackDir = path.join(defaultIndexLabRoot(), runId);
+      if (path.resolve(defaultFallbackDir) !== path.resolve(runDir)) allRunDirs.push(defaultFallbackDir);
+      const candidatePaths = allRunDirs.flatMap((rd) =>
+        buildRuntimeAssetCandidatePaths({ filename, storage, OUTPUT_ROOT, path, runDir: rd, runId })
+      ).filter((candidatePath) => (
+        screenshotDirs.some((sd) => candidatePath.startsWith(sd))
         || (outputRootResolved && candidatePath.startsWith(outputRootResolved))
       ));
 

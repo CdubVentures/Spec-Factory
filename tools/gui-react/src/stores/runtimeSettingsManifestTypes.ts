@@ -21,7 +21,6 @@ export interface RuntimeSettingDefaults {
   deepseekApiKey: string;
   searchProfileQueryCap: number;
   domainClassifierUrlCap: number;
-  eventsJsonWrite: boolean;
   geminiApiKey: string;
   googleSearchMaxRetries: number;
   googleSearchMinQueryIntervalMs: number;
@@ -99,7 +98,7 @@ export interface RuntimeSettingDefaults {
   searchLoopMaxLowQualityRounds: number;
   crawleeMaxRequestRetries: number;
   crawleeBrowserRetirePageCount: number;
-  crawleeNavigationTimeoutMs: number;
+  crawleeNavigationTimeoutSecs: number;
   crawlMaxConcurrentSlots: number;
   crawleeSameDomainDelaySecs: number;
   crawleeMaxRequestsPerMinute: number;
@@ -115,6 +114,14 @@ export interface RuntimeSettingDefaults {
   cookieConsentTimeoutMs: number;
   cookieConsentFallbackSelectors: string;
   cookieConsentSettleMs: number;
+  fetchDismissRounds: number;
+  fetchLoadingDelayMs: number;
+  fetchSuiteMode: string;
+  overlayDismissalEnabled: boolean;
+  overlayDismissalMode: string;
+  overlayDismissalCloseSelectors: string;
+  overlayDismissalSettleMs: number;
+  overlayDismissalZIndexThreshold: number;
   domExpansionEnabled: boolean;
   domExpansionSelectors: string;
   domExpansionMaxClicks: number;
@@ -124,6 +131,9 @@ export interface RuntimeSettingDefaults {
   cssOverrideRemoveFixed: boolean;
   cssOverrideBlockedDomains: string;
   capturePageScreenshotMaxSelectors: number;
+  capturePageScreenshotStabilizeEnabled: boolean;
+  capturePageScreenshotStabilizeTimeoutMs: number;
+  capturePageScreenshotStitchEnabled: boolean;
 }
 
 export type RuntimeProfile = 'standard';

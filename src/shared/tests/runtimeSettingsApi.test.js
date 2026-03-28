@@ -88,7 +88,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
       'crawleeHeadless', 'runtimeScreencastEnabled',
       'autoScrollEnabled',
       'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
-      'eventsJsonWrite',
     ];
     for (const key of BOOL_KEYS) {
       assert.equal(typeof body[key], 'boolean', `expected boolean for ${key}, got ${typeof body[key]}`);

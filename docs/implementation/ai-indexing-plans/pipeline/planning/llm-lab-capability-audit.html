@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Lab Capability Audit &mdash; Brand Resolver Simulation</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 40px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 15px;
+  color: #8b949e;
+  margin-bottom: 32px;
+}
+
+/* ---- Summary cards ---- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.card-value {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.card-label {
+  font-size: 13px;
+  color: #8b949e;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.card-value.green { color: #3fb950; }
+.card-value.red { color: #f85149; }
+.card-value.blue { color: #58a6ff; }
+.card-value.white { color: #e6edf3; }
+
+/* ---- Note box ---- */
+.note-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-left: 4px solid #58a6ff;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: #c9d1d9;
+}
+.note-box strong { color: #58a6ff; }
+.note-box code {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #d29922;
+}
+
+/* ---- Provider sections ---- */
+.provider-section {
+  margin-bottom: 48px;
+}
+.provider-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.provider-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #bc8cff20;
+  color: #bc8cff;
+}
+.provider-tag.openai { background: #3fb95020; color: #3fb950; }
+.provider-tag.claude { background: #58a6ff20; color: #58a6ff; }
+.provider-tag.gemini { background: #d2992220; color: #d29922; }
+.provider-stats {
+  font-size: 13px;
+  color: #8b949e;
+}
+
+/* ---- Tables ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+th {
+  background: #0d1117;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8b949e;
+  border-bottom: 2px solid #30363d;
+}
+th:first-child {
+  text-align: left;
+  min-width: 180px;
+}
+td {
+  padding: 8px 14px;
+  text-align: center;
+  border-bottom: 1px solid #21262d;
+  font-size: 14px;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+.model-name {
+  text-align: left;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #e6edf3;
+  white-space: nowrap;
+}
+.avg-time {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+  color: #8b949e;
+}
+
+/* ---- Cell states ---- */
+.cell { position: relative; }
+.cell.pass .pass-icon { color: #3fb950; font-size: 18px; font-weight: bold; }
+.cell.fail .fail-icon { color: #f85149; font-size: 18px; font-weight: bold; }
+.cell.na { color: #484f58; font-size: 13px; }
+.cell-time {
+  font-size: 11px;
+  color: #6e7681;
+  margin-top: 2px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+}
+.think-icon {
+  color: #bc8cff;
+  font-size: 12px;
+}
+
+/* ---- Family separator ---- */
+.family-sep td {
+  background: #0d1117;
+  border-bottom: 2px solid #30363d;
+  padding: 6px 14px;
+}
+.family-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #58a6ff;
+  text-align: left !important;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* ---- Known issues ---- */
+.issues-box {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-left: 4px solid #d29922;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: #c9d1d9;
+}
+.issues-box strong { color: #d29922; }
+.issues-box ul {
+  margin: 8px 0 0 20px;
+}
+.issues-box li {
+  margin-bottom: 4px;
+}
+.issues-box code {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #d29922;
+}
+
+/* ---- Legend ---- */
+.legend {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #8b949e;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .pass-icon { color: #3fb950; font-size: 16px; }
+.legend .fail-icon { color: #f85149; font-size: 16px; }
+.legend .think-icon { color: #bc8cff; font-size: 14px; }
+
+/* ---- Date stamp ---- */
+.datestamp {
+  text-align: right;
+  font-size: 12px;
+  color: #484f58;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<h1>LLM Lab Capability Audit &mdash; Brand Resolver Simulation</h1>
+<p class="subtitle">Multi-provider model + reasoning-effort matrix &middot; Spec Factory IndexLab</p>
+
+<!-- Summary cards -->
+<div class="cards">
+  <div class="card">
+    <div class="card-value white">153</div>
+    <div class="card-label">Total Tests</div>
+  </div>
+  <div class="card">
+    <div class="card-value green">151</div>
+    <div class="card-label">Pass (98.7%)</div>
+  </div>
+  <div class="card">
+    <div class="card-value red">2</div>
+    <div class="card-label">Fail</div>
+  </div>
+  <div class="card">
+    <div class="card-value blue">2.9s</div>
+    <div class="card-label">Avg Response</div>
+  </div>
+</div>
+
+<!-- Test prompt note -->
+<div class="note-box">
+  <strong>Test Prompt:</strong> Brand resolver simulation &mdash; identify the manufacturer brand from a product title.
+  Target product: <code>Logitech G502 X Plus</code>. Expected answer: <code>Logitech</code>.
+  Each cell represents one API call with the given model + reasoning effort mode.
+</div>
+
+<!-- ============ OPENAI ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag openai">OpenAI</span>
+    <span class="provider-stats">133 tests &middot; 132 pass &middot; 1 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>web</th>
+        <th>minimal</th>
+        <th>low</th>
+        <th>medium</th>
+        <th>high</th>
+        <th>xhigh</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5 Family</td></tr>
+<tr><td class="model-name">gpt-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="cell fail"><span class="fail-icon">&#10007;</span><div class="cell-time">0.7s</div></td><td class="avg-time">2.6s</td></tr>
+<tr><td class="model-name">gpt-5-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="avg-time">3.6s</td></tr>
+<tr><td class="model-name">gpt-5-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">6.0s</div></td><td class="avg-time">3.8s</td></tr>
+<tr><td class="model-name">gpt-5-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="avg-time">4.0s</td></tr>
+<tr><td class="model-name">gpt-5-minimal</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="avg-time">1.8s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.1 Family</td></tr>
+<tr><td class="model-name">gpt-5.1</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="avg-time">2.6s</td></tr>
+<tr><td class="model-name">gpt-5.1-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="avg-time">3.2s</td></tr>
+<tr><td class="model-name">gpt-5.1-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.7s</div></td><td class="avg-time">2.8s</td></tr>
+<tr><td class="model-name">gpt-5.1-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="avg-time">2.9s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.2 Family</td></tr>
+<tr><td class="model-name">gpt-5.2</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.1s</div></td><td class="avg-time">1.9s</td></tr>
+<tr><td class="model-name">gpt-5.2-xhigh</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">5.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">5.1s</div></td><td class="avg-time">3.0s</td></tr>
+<tr><td class="model-name">gpt-5.2-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="avg-time">1.5s</td></tr>
+<tr><td class="model-name">gpt-5.2-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="avg-time">1.4s</td></tr>
+<tr><td class="model-name">gpt-5.2-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.9s</div></td><td class="avg-time">1.6s</td></tr>
+<tr class="family-sep"><td colspan="9" class="family-label">GPT-5.4 Family</td></tr>
+<tr><td class="model-name">gpt-5.4-xhigh</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">10.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.6s</div></td><td class="avg-time">5.2s</td></tr>
+<tr><td class="model-name">gpt-5.4</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.1s</div></td><td class="avg-time">3.2s</td></tr>
+<tr><td class="model-name">gpt-5.4-high</td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">6.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">3.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span> <span class="think-icon">&#10024;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.4s</div></td><td class="avg-time">3.9s</td></tr>
+<tr><td class="model-name">gpt-5.4-medium</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.8s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">3.1s</td></tr>
+<tr><td class="model-name">gpt-5.4-low</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.9s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.7s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">1.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="avg-time">2.3s</td></tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ CLAUDE ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag claude">Claude</span>
+    <span class="provider-stats">16 tests &middot; 16 pass &middot; 0 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>low</th>
+        <th>medium</th>
+        <th>high</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr><td class="model-name">claude-sonnet-4-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.1s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">4.1s</td></tr>
+<tr><td class="model-name">claude-opus-4-1</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.5s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.2s</div></td><td class="avg-time">3.9s</td></tr>
+<tr><td class="model-name">claude-opus-4-6</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">5.0s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.2s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">4.8s</div></td><td class="avg-time">4.7s</td></tr>
+<tr><td class="model-name">claude-haiku-4-5</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.4s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.3s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.6s</div></td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">2.7s</div></td><td class="avg-time">2.7s</td></tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ GEMINI ============ -->
+<div class="provider-section">
+  <div class="provider-header">
+    <span class="provider-tag gemini">Gemini</span>
+    <span class="provider-stats">4 tests &middot; 3 pass &middot; 1 fail</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>base</th>
+        <th>Avg Time</th>
+      </tr>
+    </thead>
+    <tbody>
+<tr><td class="model-name">gemini-2.5-flash-lite</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">0.6s</div></td><td class="avg-time">0.6s</td></tr>
+<tr><td class="model-name">gemini-2.5-flash</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">0.8s</div></td><td class="avg-time">0.8s</td></tr>
+<tr><td class="model-name">gemini-2.5-pro</td><td class="cell pass"><span class="pass-icon">&#10003;</span><div class="cell-time">3.6s</div></td><td class="avg-time">3.6s</td></tr>
+<tr><td class="model-name">gemini-3-flash-preview</td><td class="cell fail"><span class="fail-icon">&#10007;</span><div class="cell-time">0.1s</div></td><td class="avg-time">0.1s</td></tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- Known issues -->
+<div class="issues-box">
+  <strong>Known Issues</strong>
+  <ul>
+    <li><code>gpt-5</code> + <code>xhigh</code> reasoning effort returns an API error (unsupported combination)</li>
+    <li><code>gemini-3-flash-preview</code> hit rate-limit / quota exhaustion during test run</li>
+  </ul>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><span class="pass-icon">&#10003;</span> Pass (correct brand extracted)</div>
+  <div class="legend-item"><span class="fail-icon">&#10007;</span> Fail (wrong answer or API error)</div>
+  <div class="legend-item"><span class="think-icon">&#10024;</span> Think tags detected in response</div>
+  <div class="legend-item"><span style="color: #6e7681; font-family: monospace; font-size: 12px;">1.2s</span> Response latency</div>
+</div>
+
+<div class="datestamp">Generated: 2026-03-28 &middot; Spec Factory LLM Lab</div>
+
+</body>
+</html>

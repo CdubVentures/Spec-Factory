@@ -185,7 +185,7 @@
 | `crawleeBrowserRetirePageCount` | int | 5 | 1–50 | `CRAWLEE_BROWSER_RETIRE_PAGE_COUNT` |
 | `crawleeHeadless` | bool | true | — | `CRAWLEE_HEADLESS` |
 | `crawleeMaxRequestRetries` | int | 1 | 0–5 | `CRAWLEE_MAX_REQUEST_RETRIES` | Code default 1. Only retryable errors (blocks) get retried. Timeouts, DNS, downloads set `request.noRetry` and fail fast. |
-| `crawleeNavigationTimeoutMs` | int | 12000 | 1000–120000 | `CRAWLEE_NAVIGATION_TIMEOUT_MS` |
+| `crawleeNavigationTimeoutSecs` | int | 20 | 1–120 | `CRAWLEE_NAVIGATION_TIMEOUT_SECS` | Passed natively to Crawlee `navigationTimeoutSecs`. |
 | `crawleeRequestHandlerTimeoutSecs` | int | 75 | 0–300 | `CRAWLEE_REQUEST_HANDLER_TIMEOUT_SECS` |
 | `crawlMaxConcurrentSlots` | int | 4 | 1–16 | `CRAWL_MAX_CONCURRENT_SLOTS` |
 | `robotsTxtCompliant` | bool | true | — | `ROBOTS_TXT_COMPLIANT` |

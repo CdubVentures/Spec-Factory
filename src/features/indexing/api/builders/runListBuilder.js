@@ -166,14 +166,17 @@ export function createRunListBuilder({
     }
     let dirs = [...runLocations.keys()];
     if (dirs.length === 0) return [];
-    // WHY: Sort by mtime of run.json (newest first) so recent live runs
+    // WHY: Sort by mtime of run directory (newest first) so recent live runs
     // aren't cut off by scanLimit when the archived index is large.
+    // Wave 5.5 killed run.json — use run-summary.json or the directory itself.
     const mtimeCache = new Map();
     await Promise.all(dirs.map(async (dir) => {
       const loc = runLocations.get(dir);
       const runDir = typeof loc === 'string' ? loc : '';
       if (!runDir) { mtimeCache.set(dir, 0); return; }
-      const st = await safeStat(path.join(runDir, 'run.json'));
+      const st = await safeStat(path.join(runDir, 'run-summary.json'))
+        || await safeStat(path.join(runDir, 'run.json'))
+        || await safeStat(runDir);
       mtimeCache.set(dir, st?.mtimeMs ?? 0);
     }));
     dirs.sort((a, b) => (mtimeCache.get(b) ?? 0) - (mtimeCache.get(a) ?? 0));
@@ -287,29 +290,23 @@ export function createRunListBuilder({
         ? String(runLocation || '').trim()
         : await materializeArchivedRunLocation(runLocation, dir);
       if (!runDir) return null;
-      const runMetaPath = path.join(runDir, 'run.json');
-      const runEventsPath = path.join(runDir, 'run_events.ndjson');
-      const runNeedSetPath = path.join(runDir, 'needset.json');
-      const runSearchProfilePath = path.join(runDir, 'search_profile.json');
-      const meta = await safeReadJson(runMetaPath);
+      // WHY: Wave 5.5 killed run.json — try run-summary.json first
+      let meta = null;
+      const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
+      if (summary?.telemetry?.meta) {
+        meta = summary.telemetry.meta;
+      }
+      if (!meta) {
+        meta = await safeReadJson(path.join(runDir, 'run.json'));
+      }
       const rawStatus = String(meta?.status || 'unknown').trim();
       const resolvedStatus = (
         rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
       ) ? 'completed' : rawStatus;
       const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
       const needsEvents = rawStatus.toLowerCase() === 'running' || !hasMetaCounters;
-      const needSetStat = await safeStat(runNeedSetPath);
-      const searchProfileStat = await safeStat(runSearchProfilePath);
-      const hasNeedSet = Boolean(
-        meta?.artifacts?.has_needset
-        || meta?.needset
-        || needSetStat
-      );
-      const hasSearchProfile = Boolean(
-        meta?.artifacts?.has_search_profile
-        || meta?.search_profile
-        || searchProfileStat
-      );
+      const hasNeedSet = Boolean(meta?.artifacts?.has_needset || meta?.needset);
+      const hasSearchProfile = Boolean(meta?.artifacts?.has_search_profile || meta?.search_profile);
 
       // Skip expensive event reading + stat calls when run.json
       // already carries counters and the run is not active.
@@ -330,7 +327,7 @@ export function createRunListBuilder({
           dedupe_mode: String(meta?.dedupe_mode || '').trim(),
           phase_cursor: String(meta?.phase_cursor || '').trim(),
           startup_ms: normalizeStartupMs(meta?.startup_ms),
-          events_path: runEventsPath,
+          events_path: '',
           run_dir: runDir,
           storage_origin: storageOrigin,
           storage_state: resolveStorageState(resolvedStatus),
@@ -341,7 +338,9 @@ export function createRunListBuilder({
         };
       }
 
-      const stat = await safeStat(runMetaPath) || await safeStat(runEventsPath);
+      const stat = await safeStat(path.join(runDir, 'run-summary.json'))
+        || await safeStat(path.join(runDir, 'run.json'))
+        || await safeStat(runDir);
       const rowCategory = toToken(meta?.category);
       const eventRows = await readEvents(meta?.run_id || dir, 6000, { category: rowCategory });
       const eventSummary = summarizeEvents(eventRows);
@@ -361,7 +360,7 @@ export function createRunListBuilder({
         dedupe_mode: String(meta?.dedupe_mode || '').trim(),
         phase_cursor: String(meta?.phase_cursor || '').trim(),
         startup_ms: normalizeStartupMs(meta?.startup_ms),
-        events_path: runEventsPath,
+        events_path: '',
         run_dir: runDir,
         storage_origin: storageOrigin,
         storage_state: resolveStorageState(resolvedStatus),

@@ -153,9 +153,15 @@ test('incognito pages always enabled for fingerprint isolation', () => {
 
 test('optimized defaults are applied', () => {
   const config = captureConfig({});
-  assert.equal(config.requestHandlerTimeoutSecs, 30);
+  assert.equal(config.requestHandlerTimeoutSecs, 45);
+  assert.equal(config.navigationTimeoutSecs, 20);
   assert.equal(config.maxRequestRetries, 1);
   assert.equal(config.browserPoolOptions.retireBrowserAfterPageCount, 10);
+});
+
+test('navigationTimeoutSecs flows from crawleeNavigationTimeoutSecs setting', () => {
+  const config = captureConfig({ crawleeNavigationTimeoutSecs: 30 });
+  assert.equal(config.navigationTimeoutSecs, 30);
 });
 
 // ---------------------------------------------------------------------------
@@ -171,6 +177,24 @@ test('preNavigationHooks are present', () => {
   const config = captureConfig({});
   assert.ok(Array.isArray(config.preNavigationHooks));
   assert.ok(config.preNavigationHooks.length >= 1);
+});
+
+test('preNavigationHook does not override gotoOptions timeout or waitUntil', async () => {
+  const config = captureConfig({});
+  const gotoOptions = { timeout: 99999, waitUntil: 'networkidle' };
+  const mockPage = { context: () => ({ newCDPSession: async () => ({ on: () => {}, send: async () => {} }) }) };
+  await config.preNavigationHooks[0](
+    { request: { uniqueKey: 'test-key', userData: {} }, page: mockPage },
+    gotoOptions,
+  );
+  assert.equal(gotoOptions.timeout, 99999, 'timeout must not be overridden by hook');
+  assert.equal(gotoOptions.waitUntil, 'networkidle', 'waitUntil must not be overridden by hook');
+});
+
+test('postNavigationHooks not configured', () => {
+  const config = captureConfig({});
+  const hooks = config.postNavigationHooks;
+  assert.ok(!hooks || hooks.length === 0, 'postNavigationHooks should be absent or empty');
 });
 
 // ---------------------------------------------------------------------------

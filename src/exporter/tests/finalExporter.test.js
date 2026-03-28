@@ -199,8 +199,7 @@ test('writeFinalOutputs promotes only when summary improves and always appends h
 
     const finalSpec = await storage.readJson('final/mouse/logitech/g-pro-x-superlight-2/spec.json');
     assert.equal(finalSpec.dpi, '32000');
-    const history = await storage.readText('final/mouse/logitech/g-pro-x-superlight-2/history/runs.jsonl');
-    assert.equal(history.split(/\r?\n/).filter(Boolean).length, 3);
+    // WHY: history/runs.jsonl killed (Wave A) — product_runs SQL is the source of run history.
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

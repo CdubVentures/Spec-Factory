@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const KNOWN_ARTIFACT_TYPES = ['indexlab', 'run_output', 'latest_snapshot', 'runtime_traces', 'shared_logs'];
+const KNOWN_ARTIFACT_TYPES = ['indexlab', 'run_output', 'runtime_traces'];
 
 async function walkDirectory(dir) {
   const files = [];

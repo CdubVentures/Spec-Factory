@@ -107,6 +107,9 @@ function ProviderModelRow({
           onChange={(e) => onModelChange({ ...model, costCachedPer1M: Number(e.target.value) || 0 })}
         />
       </td>
+      <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>{model.thinking ? '\u2713' : '\u2014'}</td>
+      <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center', fontSize: 'var(--sf-token-font-size-micro)' }}>{model.thinkingEffortOptions?.join(', ') || '\u2014'}</td>
+      <td className="sf-text-caption" style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)', textAlign: 'center' }}>{model.webSearch ? '\u2713' : '\u2014'}</td>
       <td style={{ padding: 'var(--sf-space-0-5) var(--sf-space-1)' }}>
         <input
           className="sf-input sf-text-caption"
@@ -346,6 +349,9 @@ function ProviderPanel({
                         <th className="sf-table-head-cell">In $/1M</th>
                         <th className="sf-table-head-cell">Out $/1M</th>
                         <th className="sf-table-head-cell">Cache $/1M</th>
+                        <th className="sf-table-head-cell">Think</th>
+                        <th className="sf-table-head-cell">Effort</th>
+                        <th className="sf-table-head-cell">Web</th>
                         <th className="sf-table-head-cell">Max Context</th>
                         <th className="sf-table-head-cell">Max Output</th>
                         <th className="sf-table-head-cell" style={{ width: 32 }} />

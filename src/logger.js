@@ -25,7 +25,6 @@ export class EventLogger {
     this.category = options.category || '';
     this.runId = options.runId || '';
     const config = options.config || {};
-    this.eventsJsonWrite = config.eventsJsonWrite !== false; // default true
     this.onEvent = typeof options.onEvent === 'function' ? options.onEvent : null;
   }
 

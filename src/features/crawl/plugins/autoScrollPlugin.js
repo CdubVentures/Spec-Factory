@@ -42,8 +42,9 @@ async function scrollIncremental({ page, passes, delayMs, postLoadWaitMs }) {
 
 export const autoScrollPlugin = {
   name: 'autoScroll',
+  suites: ['scroll'],
   hooks: {
-    async onInteract({ page, settings }) {
+    async onScroll({ page, settings }) {
       const enabled = settings?.autoScrollEnabled !== false && settings?.autoScrollEnabled !== 'false';
       const passes = Number(settings?.autoScrollPasses) || 0;
       if (!enabled || passes <= 0) {

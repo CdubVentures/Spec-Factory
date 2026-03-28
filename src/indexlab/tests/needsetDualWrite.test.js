@@ -40,27 +40,6 @@ test('writeNeedSet default writes SQL only — no JSON file created', async () =
   }
 });
 
-test('writeNeedSet with writeJson: true writes both JSON and SQL', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    const needSetPath = path.join(tmpDir, 'needset.json');
-    const state = buildMockState({ needSetPath, specDb });
-    const payload = { total_fields: 12, summary: 'test', fields: [{ field_key: 'weight' }] };
-
-    await writeNeedSet(state, payload, { writeJson: true });
-
-    const jsonDoc = JSON.parse(await fs.readFile(needSetPath, 'utf8'));
-    assert.deepEqual(jsonDoc, payload, 'JSON file should match payload');
-
-    const sqlRow = specDb.getRunArtifact('run-ns-001', 'needset');
-    assert.ok(sqlRow, 'SQL row should exist');
-    assert.deepEqual(sqlRow.payload, payload);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
 test('SQL write is best-effort — no crash if specDb is null', async () => {
   const state = buildMockState({ specDb: null });
   await writeNeedSet(state, { total_fields: 5 });

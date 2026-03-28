@@ -4,6 +4,7 @@ import Database from 'better-sqlite3';
 import { SCHEMA } from '../../specDbSchema.js';
 import { applyMigrations } from '../../specDbMigrations.js';
 import { createArtifactStore } from '../artifactStore.js';
+import { SpecDb } from '../../specDb.js';
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -164,4 +165,84 @@ test('insertPdf inserts and is queryable', () => {
   assert.equal(row.filename, 'datasheet.pdf');
   assert.equal(row.pages_scanned, 5);
   db.close();
+});
+
+// --- specDb public delegation (Step 0: fix broken public API) ---
+
+test('specDb.insertScreenshot delegates to artifactStore', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertScreenshot({
+    screenshot_id: 'delegate-shot-001',
+    content_hash: 'delegate-hash',
+    product_id: 'mouse-test',
+    run_id: 'run-001',
+    source_url: 'https://example.com',
+    host: 'example.com',
+    selector: 'fullpage',
+    format: 'jpg',
+    width: 1920,
+    height: 1080,
+    size_bytes: 50000,
+    file_path: 'screenshots/test.jpg',
+    captured_at: '2026-03-27T00:00:00Z',
+  });
+  const rows = specDb.getScreenshotsByProduct('mouse-test');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].screenshot_id, 'delegate-shot-001');
+  assert.equal(rows[0].content_hash, 'delegate-hash');
+  specDb.db.close();
+});
+
+test('specDb.insertCrawlSource delegates to artifactStore', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertCrawlSource({
+    content_hash: 'delegate-crawl-hash',
+    product_id: 'mouse-test',
+    run_id: 'run-001',
+    source_url: 'https://example.com',
+    host: 'example.com',
+    crawled_at: '2026-03-27T00:00:00Z',
+  });
+  const rows = specDb.getCrawlSourcesByProduct('mouse-test');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].content_hash, 'delegate-crawl-hash');
+  specDb.db.close();
+});
+
+test('specDb.getCrawlSourceByHash delegates to artifactStore', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertCrawlSource({
+    content_hash: 'lookup-hash',
+    product_id: 'mouse-test',
+    run_id: 'run-001',
+    source_url: 'https://example.com',
+    crawled_at: '2026-03-27T00:00:00Z',
+  });
+  const found = specDb.getCrawlSourceByHash('lookup-hash', 'mouse-test');
+  assert.ok(found);
+  assert.equal(found.content_hash, 'lookup-hash');
+  const missing = specDb.getCrawlSourceByHash('no-such-hash', 'mouse-test');
+  assert.equal(missing, undefined);
+  specDb.db.close();
+});
+
+test('specDb.insertPdf delegates to artifactStore', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertPdf({
+    pdf_id: 'delegate-pdf-001',
+    content_hash: 'pdf-hash',
+    parent_content_hash: 'page-hash',
+    product_id: 'mouse-test',
+    run_id: 'run-001',
+    source_url: 'https://example.com/doc.pdf',
+    host: 'example.com',
+    filename: 'doc.pdf',
+    size_bytes: 100000,
+    file_path: 'pdfs/doc.pdf',
+    crawled_at: '2026-03-27T00:00:00Z',
+  });
+  const row = specDb.db.prepare('SELECT * FROM source_pdfs WHERE pdf_id = ?').get('delegate-pdf-001');
+  assert.ok(row);
+  assert.equal(row.filename, 'doc.pdf');
+  specDb.db.close();
 });

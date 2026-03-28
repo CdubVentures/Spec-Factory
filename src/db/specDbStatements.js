@@ -667,8 +667,54 @@ export function prepareStatements(db) {
       SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC
     `),
 
+    _insertVideo: db.prepare(`
+      INSERT OR REPLACE INTO source_videos (
+        video_id, content_hash, category, product_id, run_id, source_url,
+        host, worker_id, format, width, height, size_bytes,
+        duration_ms, file_path, captured_at
+      ) VALUES (
+        @video_id, @content_hash, @category, @product_id, @run_id, @source_url,
+        @host, @worker_id, @format, @width, @height, @size_bytes,
+        @duration_ms, @file_path, @captured_at
+      )
+    `),
+
+    _getVideosByProduct: db.prepare(`
+      SELECT * FROM source_videos WHERE product_id = ? ORDER BY captured_at DESC
+    `),
+
     _getCrawlSourceByHash: db.prepare(`
       SELECT * FROM crawl_sources WHERE content_hash = ? AND product_id = ?
+    `),
+
+    // Telemetry indexes
+    _insertKnobSnapshot: db.prepare(`
+      INSERT INTO knob_snapshots (category, run_id, ts, mismatch_count, total_knobs, entries)
+      VALUES (@category, @run_id, @ts, @mismatch_count, @total_knobs, @entries)
+    `),
+    _getKnobSnapshots: db.prepare(`
+      SELECT * FROM knob_snapshots WHERE category = ? ORDER BY ts DESC LIMIT ?
+    `),
+    _insertQueryIndexEntry: db.prepare(`
+      INSERT INTO query_index (category, run_id, product_id, query, provider, result_count, field_yield, ts)
+      VALUES (@category, @run_id, @product_id, @query, @provider, @result_count, @field_yield, @ts)
+    `),
+    _getQueryIndexByCategory: db.prepare(`
+      SELECT * FROM query_index WHERE category = ? ORDER BY ts DESC LIMIT ?
+    `),
+    _insertUrlIndexEntry: db.prepare(`
+      INSERT INTO url_index (category, run_id, url, host, tier, doc_kind, fields_filled, fetch_success, ts)
+      VALUES (@category, @run_id, @url, @host, @tier, @doc_kind, @fields_filled, @fetch_success, @ts)
+    `),
+    _getUrlIndexByCategory: db.prepare(`
+      SELECT * FROM url_index WHERE category = ? ORDER BY ts DESC LIMIT ?
+    `),
+    _insertPromptIndexEntry: db.prepare(`
+      INSERT INTO prompt_index (category, run_id, prompt_version, model, token_count, success, ts)
+      VALUES (@category, @run_id, @prompt_version, @model, @token_count, @success, @ts)
+    `),
+    _getPromptIndexByCategory: db.prepare(`
+      SELECT * FROM prompt_index WHERE category = ? ORDER BY ts DESC LIMIT ?
     `),
   };
 }

@@ -20,6 +20,10 @@ export const FETCH_SELECT_PROPS: Record<FetchTabKey, (ctx: FetchPanelContext) =>
     data: ctx.data?.cookie_consent ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,
   }),
+  overlay_dismissal: (ctx) => ({
+    data: ctx.data?.overlay_dismissal ?? EMPTY_PLUGIN,
+    persistScope: ctx.persistScope,
+  }),
   auto_scroll: (ctx) => ({
     data: ctx.data?.auto_scroll ?? EMPTY_PLUGIN,
     persistScope: ctx.persistScope,

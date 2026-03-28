@@ -217,7 +217,7 @@ export async function exportRunArtifacts({
       db = new SpecDb({ dbPath, category });
     } catch { /* no DB available */ }
   }
-  const artifactStore = db?._artifactStore || null;
+  const artifactStore = db || null;
 
   const writes = [];
 
@@ -225,33 +225,13 @@ export async function exportRunArtifacts({
     await writePageArtifacts({ writes, storage, category, productId, runId, host, artifact, artifactStore });
   }
 
-  // WHY: Adapter artifacts are not page-based — keep run-scoped for now.
-  for (const artifact of adapterArtifacts || []) {
-    const name = safeName(artifact.name || 'adapter');
-    writes.push(
-      storage.writeObject(
-        `${runBase}/raw/adapters/${name}.json`,
-        jsonBuffer(artifact.payload || artifact),
-        { contentType: 'application/json' }
-      )
-    );
-  }
-
-  // WHY: Normalized, provenance, summary, events still written to run-scoped paths.
-  // These move to SQL in migration waves 2-3 (run metadata + pipeline artifacts).
+  // WHY: Normalized, provenance, events still written to run-scoped paths.
+  // These move to SQL in migration waves C-D.
   writes.push(
     storage.writeObject(
       `${runBase}/normalized/${category}.normalized.json`,
       jsonBuffer(normalized),
       { contentType: 'application/json' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${runBase}/normalized/${category}.row.tsv`,
-      Buffer.from(`${rowTsv}\n`, 'utf8'),
-      { contentType: 'text/tab-separated-values' }
     )
   );
 
@@ -276,14 +256,6 @@ export async function exportRunArtifacts({
       `${runBase}/logs/events.jsonl.gz`,
       gzipBuffer(toNdjson(events || [])),
       { contentType: 'application/x-ndjson', contentEncoding: 'gzip' }
-    )
-  );
-
-  writes.push(
-    storage.writeObject(
-      `${runBase}/logs/summary.json`,
-      jsonBuffer(summary),
-      { contentType: 'application/json' }
     )
   );
 

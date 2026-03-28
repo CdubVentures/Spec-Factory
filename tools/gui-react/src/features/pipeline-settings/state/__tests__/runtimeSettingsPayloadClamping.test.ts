@@ -89,7 +89,6 @@ function makeInput(
     runtimeScreencastEnabled: false,
     runtimeTraceEnabled: false,
     runtimeTraceLlmPayloads: false,
-    eventsJsonWrite: true,
     runtimeSettingsFallbackBaseline: makeBaselineZeros() as never,
     resolveModelTokenDefaults,
     ...overrides,

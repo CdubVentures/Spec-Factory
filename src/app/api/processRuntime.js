@@ -206,6 +206,7 @@ export function createProcessRuntime({
               outputRoot: resolvedOutputRoot,
               outputPrefix,
               broadcastWs,
+              getSpecDb,
               onRelocationComplete: ({ relocation, category, productId, runId }) => {
                 if (typeof getSpecDb !== 'function') return;
                 try {

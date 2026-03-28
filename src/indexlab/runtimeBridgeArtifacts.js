@@ -29,12 +29,7 @@ export async function ensureRun(state, row = {}) {
 
   state.runId = runId;
   state.runDir = path.join(state.outRoot, state._previousRunIds?.[0] || runId);
-  state.eventsPath = path.join(state.runDir, 'run_events.ndjson');
   state.runMetaPath = path.join(state.runDir, 'run.json');
-  state.needSetPath = path.join(state.runDir, 'needset.json');
-  state.searchProfilePath = path.join(state.runDir, 'search_profile.json');
-  state.brandResolutionPath = path.join(state.runDir, 'brand_resolution.json');
-  state.runtimeScreencastDir = path.join(state.runDir, 'runtime_screencast');
 
   if (!isNewRound) {
     state.startedAt = toIso(row.ts || new Date().toISOString());
@@ -76,12 +71,9 @@ export async function writeRunMeta(state, extra = {}) {
   }
 }
 
-export async function writeNeedSet(state, payload = {}, { writeJson = false } = {}) {
-  if (!state.needSetPath && !state.runId) return;
-  if (writeJson && state.needSetPath) {
-    await fs.writeFile(state.needSetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-  }
-  if (state.specDb && state.runId) {
+export async function writeNeedSet(state, payload = {}) {
+  if (!state.runId) return;
+  if (state.specDb) {
     try {
       state.specDb.upsertRunArtifact({
         run_id: state.runId,
@@ -93,12 +85,9 @@ export async function writeNeedSet(state, payload = {}, { writeJson = false } = 
   }
 }
 
-export async function writeSearchProfile(state, payload = {}, { writeJson = false } = {}) {
-  if (!state.searchProfilePath && !state.runId) return;
-  if (writeJson && state.searchProfilePath) {
-    await fs.writeFile(state.searchProfilePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-  }
-  if (state.specDb && state.runId) {
+export async function writeSearchProfile(state, payload = {}) {
+  if (!state.runId) return;
+  if (state.specDb) {
     try {
       state.specDb.upsertRunArtifact({
         run_id: state.runId,
@@ -112,17 +101,9 @@ export async function writeSearchProfile(state, payload = {}, { writeJson = fals
 
 export async function writeRunSummaryArtifact(state, payload) {
   if (!state.runId) return;
-  const runDir = state.runDir || (state.runMetaPath ? path.dirname(state.runMetaPath) : '');
-  if (runDir) {
-    try {
-      await fs.writeFile(
-        path.join(runDir, 'run-summary.json'),
-        `${JSON.stringify(payload, null, 2)}\n`,
-        'utf8'
-      );
-    } catch { /* best-effort: pipeline continues without run-summary file */ }
-  }
-  if (state.specDb && state.runId) {
+  // WHY: SQL is the sole source for run-summary (Wave 5.5+).
+  // File write killed — readers use SQL run_artifacts with fallback to bridge_events.
+  if (state.specDb) {
     try {
       state.specDb.upsertRunArtifact({
         run_id: state.runId,
@@ -252,7 +233,7 @@ export function applySearchProfilePlannedPayload(state, payload = {}, ts = '') {
   return true;
 }
 
-export async function ensureBaselineArtifacts(state, ts = '', { writeJson = false } = {}) {
+export async function ensureBaselineArtifacts(state, ts = '') {
   const markerTs = toIso(ts || state.startedAt || new Date().toISOString());
   if (!state.needSet || typeof state.needSet !== 'object') {
     state.needSet = buildNeedSetBaseline(state, markerTs);
@@ -269,54 +250,8 @@ export async function ensureBaselineArtifacts(state, ts = '', { writeJson = fals
   state.searchProfile.product_id = state.context.productId || '';
   refreshSearchProfileCollections(state, markerTs);
 
-  if (state.needSetPath) {
-    await writeNeedSet(state, state.needSet, { writeJson });
-  }
-  if (state.searchProfilePath) {
-    await writeSearchProfile(state, state.searchProfile, { writeJson });
-  }
-  if (state.runtimeScreencastDir) {
-    await fs.mkdir(state.runtimeScreencastDir, { recursive: true });
-  }
-}
-
-export function rememberScreencastFrame(state, frame = {}) {
-  const workerId = String(frame.worker_id || '').trim();
-  const data = String(frame.data || '').trim();
-  if (!workerId || !data) return;
-  state._lastScreencastFrameByWorker.set(workerId, {
-    run_id: state.runId || '',
-    worker_id: workerId,
-    data,
-    width: asInt(frame.width, 0),
-    height: asInt(frame.height, 0),
-    ts: toIso(frame.ts || new Date().toISOString()),
-  });
-}
-
-export function runtimeScreencastArtifactPath(state, workerId = '') {
-  const normalizedWorkerId = String(workerId || '').trim();
-  if (!state.runtimeScreencastDir || !normalizedWorkerId) return '';
-  return path.join(state.runtimeScreencastDir, `${normalizedWorkerId}.json`);
-}
-
-export async function persistScreencastFrame(state, workerId = '') {
-  const normalizedWorkerId = String(workerId || '').trim();
-  if (!normalizedWorkerId) return false;
-  const frame = state._lastScreencastFrameByWorker.get(normalizedWorkerId);
-  if (!frame || !state.runtimeScreencastDir) return false;
-  await fs.mkdir(state.runtimeScreencastDir, { recursive: true });
-  const artifactPath = runtimeScreencastArtifactPath(state, normalizedWorkerId);
-  if (!artifactPath) return false;
-  await fs.writeFile(artifactPath, `${JSON.stringify(frame)}\n`, 'utf8');
-  return true;
-}
-
-export async function persistAllScreencastFrames(state) {
-  const workerIds = Array.from(state._lastScreencastFrameByWorker.keys());
-  for (const workerId of workerIds) {
-    await persistScreencastFrame(state, workerId);
-  }
+  await writeNeedSet(state, state.needSet);
+  await writeSearchProfile(state, state.searchProfile);
 }
 
 export async function emit(state, stage, event, payload = {}, ts = '') {
@@ -442,5 +377,4 @@ export async function finishFetchUrl(state, {
     // instead of 'failed' (red) when the page actually loaded and has data.
     ...(timeoutRescued ? { timeout_rescued: true } : {}),
   }, ts);
-  await persistScreencastFrame(state, workerId);
 }

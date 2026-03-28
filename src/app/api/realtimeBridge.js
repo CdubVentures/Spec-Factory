@@ -1,5 +1,4 @@
 import { WebSocketServer } from 'ws';
-import { watch as watchFiles } from 'chokidar';
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {

@@ -5,7 +5,6 @@ import { createSearchSlotScheduler } from './runtimeBridgeSearchSlots.js';
 import { createLlmCallTracker } from './runtimeBridgeLlmTracker.js';
 import {
   writeRunMeta, ensureBaselineArtifacts,
-  rememberScreencastFrame, persistAllScreencastFrames,
   writeRunSummaryArtifact
 } from './runtimeBridgeArtifacts.js';
 import { serializeRunSummary } from './runSummarySerializer.js';
@@ -22,12 +21,7 @@ export class IndexLabRuntimeBridge {
 
     this.runId = '';
     this.runDir = '';
-    this.eventsPath = '';
     this.runMetaPath = '';
-    this.needSetPath = '';
-    this.searchProfilePath = '';
-    this.brandResolutionPath = '';
-    this.runtimeScreencastDir = '';
     this.startedAt = '';
     this.endedAt = '';
     this.status = 'running';
@@ -54,7 +48,6 @@ export class IndexLabRuntimeBridge {
     this.fetchByUrl = new Map();
     this.fetchClosedByUrl = new Set();
     this.workerByUrl = new Map();
-    this._lastScreencastFrameByWorker = new Map();
     this.queue = Promise.resolve();
     this.counters = {
       pages_checked: 0,
@@ -135,7 +128,6 @@ export class IndexLabRuntimeBridge {
         await finishStage(this, 'index', endedAt, { reason: 'run_finalize' });
         setPhaseCursor(this, String(summary?.phase_cursor || '').trim() || 'completed');
         await ensureBaselineArtifacts(this, endedAt);
-        await persistAllScreencastFrames(this);
         await writeRunMeta(this, {
           ...summary,
           status: this.status,
@@ -155,7 +147,6 @@ export class IndexLabRuntimeBridge {
         this.fetchByUrl.clear();
         this.fetchClosedByUrl.clear();
         this.workerByUrl.clear();
-        this._lastScreencastFrameByWorker.clear();
         this._searchSlotScheduler.reset();
         this._llmTracker.reset();
       })
@@ -167,7 +158,6 @@ export class IndexLabRuntimeBridge {
   }
 
   broadcastScreencastFrame(frame = {}) {
-    rememberScreencastFrame(this, frame);
     if (!this.onEvent) return;
     const target = this.screencastTarget;
     if (target && target !== '*' && target !== String(frame.worker_id || '')) return;

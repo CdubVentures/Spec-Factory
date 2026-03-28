@@ -9,6 +9,8 @@ import path from 'node:path';
 import os from 'node:os';
 import fsSync from 'node:fs';
 import { createPluginRunner } from './core/pluginRunner.js';
+import { runFetchSuiteLoop } from './core/suiteOrchestrator.js';
+import { trimVideo } from './videoTrim.js';
 import { classifyBlockStatus } from './bypassStrategies.js';
 
 // WHY: Eager import — Crawlee takes ~1.2s to import (heavy deps: playwright,
@@ -26,14 +28,18 @@ export function parseProxyUrls(jsonStr) {
   } catch { return []; }
 }
 
-export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
   // WHY: WeakMap so page references don't leak after GC. Maps page → workerId
   // so prePageCloseHook can save the video with the correct filename.
   const pageWorkerMap = new WeakMap();
+  const pageWorkerUrlMap = new WeakMap();
   const cdpSessionMap = new WeakMap();
+  // WHY: Stores fetch window timestamps per page so prePageCloseHook can
+  // trim the video to just the dismiss→scroll window.
+  const pageTimestampMap = new WeakMap();
   const pendingVideoSaves = [];
   let crawler = null;
   // WHY: Lazy proxy crawler — created once on first retryWithProxy call, reused
@@ -98,9 +104,13 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         }
 
         const workerId = workerIds.get(request.uniqueKey) || 'fetch-x0';
+        const pageStartMs = Date.now();
         // WHY: Map page → workerId IMMEDIATELY so prePageCloseHook can save
         // the video regardless of whether the page is blocked, retried, or succeeds.
-        if (videoDir) pageWorkerMap.set(page, workerId);
+        if (videoDir) {
+          pageWorkerMap.set(page, workerId);
+          pageWorkerUrlMap.set(page, request.url);
+        }
         const ctx = { page, request, response, settings, workerId };
 
         // WHY: Event name must be 'source_fetch_started' — the runtime bridge
@@ -115,9 +125,21 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
           proxy_url: proxyInfo?.url || '',
         });
 
-        await runner.runHook('beforeNavigate', ctx);
-        await runner.runHook('afterNavigate', ctx);
-        await runner.runHook('onInteract', ctx);
+        // WHY: Suite orchestrator replaces the old sequential 3-hook sequence.
+        // onInit runs in preNavigationHooks (before page.goto).
+        // The loop runs: [loading delay] → dismiss → (scroll → dismiss) × N rounds.
+        const suiteResult = await runFetchSuiteLoop({ runner, settings, ctx, logger });
+
+        // WHY: Store timestamps so prePageCloseHook can trim the video to
+        // just the fetch window (dismiss→scroll). Without this, the video
+        // includes blank tab, navigation, extraction, and teardown.
+        if (videoDir && suiteResult.fetchWindowStartMs) {
+          pageTimestampMap.set(page, {
+            pageStartMs,
+            fetchWindowStartMs: suiteResult.fetchWindowStartMs,
+            fetchWindowEndMs: suiteResult.fetchWindowEndMs,
+          });
+        }
 
         const html = await page.content();
         const finalUrl = page.url?.() ?? request.url;
@@ -223,11 +245,13 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               // extraction_plugin_completed event ran before persistence — this
               // supplements it with the artifact references.
               if (filenames.length > 0) {
+                const fileSizes = persisted.map((r) => r.bytes || 0);
                 logger?.info?.('extraction_artifacts_persisted', {
                   plugin: 'screenshot',
                   url: request.url,
                   worker_id: workerId,
                   filenames,
+                  file_sizes: fileSizes,
                 });
               }
             }
@@ -396,12 +420,12 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
   function buildFullCrawlerOptions() {
     const config = buildCrawlerConfig();
     const headless = settings.crawleeHeadless !== false && settings.crawleeHeadless !== 'false';
-    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 30;
-    const navTimeoutMs = Number(settings.crawleeNavigationTimeoutMs) || 12000;
+    const handlerTimeoutSecs = Number(settings.crawleeRequestHandlerTimeoutSecs) || 45;
+    const navTimeoutSecs = Number(settings.crawleeNavigationTimeoutSecs) || 20;
     // WHY: 0 is a valid value for maxRetries (no retries), so can't use `|| 1`.
     // Default 1 — one native retry with session rotation (new fingerprint/cookies).
     // After native retry exhausted, lifecycle calls retryWithProxy as final proxy pass.
-    // Total worst case: 30s direct + 30s retry + 30s proxy = 90s per URL.
+    // Total worst case: nav(20) + handler(45) + buffer(10) = 75s per attempt.
     const maxRetries = settings.crawleeMaxRequestRetries != null ? Number(settings.crawleeMaxRequestRetries) : 1;
     // WHY: Derived from slotCount — not a user knob. With maxOpenPagesPerBrowser=1,
     // each slot needs its own browser launch (~600ms each), causing 5+ second ramp-up
@@ -440,6 +464,7 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       minConcurrency: slotCount,
       maxRequestRetries: maxRetries,
       requestHandlerTimeoutSecs: handlerTimeoutSecs,
+      navigationTimeoutSecs: navTimeoutSecs,
       ...(maxReqPerMin > 0 ? { maxRequestsPerMinute: maxReqPerMin } : {}),
       useSessionPool,
       persistCookiesPerSession: persistCookies,
@@ -488,7 +513,45 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               if (!wid) return;
               const video = page.video?.();
               if (!video) return;
-              const savePromise = video.saveAs(path.join(videoDir, `${wid}.webm`))
+              const videoPath = path.join(videoDir, `${wid}.webm`);
+              // WHY: Resolve the URL for this page so onVideoPersist and events
+              // can associate the video with the source URL.
+              const pageUrl = pageWorkerUrlMap.get(page) || '';
+              const savePromise = video.saveAs(videoPath)
+                .then(async () => {
+                  // WHY: Trim video to just the fetch window (dismiss→scroll).
+                  // Falls back gracefully if ffmpeg is not installed.
+                  const ts = pageTimestampMap.get(page);
+                  if (ts && ts.fetchWindowStartMs && ts.fetchWindowEndMs) {
+                    const startSec = Math.max(0, (ts.fetchWindowStartMs - ts.pageStartMs) / 1000);
+                    const endSec = (ts.fetchWindowEndMs - ts.pageStartMs) / 1000;
+                    await trimVideo(videoPath, startSec, endSec);
+                  }
+                  // WHY: DI callback persists video to run directory and indexes in SQL.
+                  // Same pattern as onScreenshotsPersist — no cross-feature imports.
+                  if (typeof onVideoPersist === 'function') {
+                    try {
+                      const persisted = onVideoPersist({ videoPath, workerId: wid, url: pageUrl });
+                      if (persisted) {
+                        logger?.info?.('extraction_plugin_completed', {
+                          plugin: 'video',
+                          worker_id: wid,
+                          url: pageUrl,
+                          result: { video_count: 1, total_bytes: persisted.size_bytes, format: 'webm' },
+                        });
+                        logger?.info?.('extraction_artifacts_persisted', {
+                          plugin: 'video',
+                          url: pageUrl,
+                          worker_id: wid,
+                          filenames: [persisted.filename],
+                          file_sizes: [persisted.size_bytes],
+                        });
+                      }
+                    } catch (err) {
+                      logger?.warn?.('video_persist_error', { worker_id: wid, error: err?.message });
+                    }
+                  }
+                })
                 .catch((err) => {
                   logger?.warn?.('video_save_failed', {
                     worker_id: wid,
@@ -502,14 +565,17 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
       },
       preNavigationHooks: [
         async ({ request, page }, gotoOptions) => {
+          // WHY: Warmup requests only need browser pool pre-launch — skip
+          // screencast, plugins, and delays. Without this guard, onInit hooks
+          // fire with worker_id='fetch-x0' (the fallback) and create a ghost
+          // worker row in the GUI.
+          if (request.userData?.__warmup) return;
+
           if (sameDomainDelay > 0) {
             const base = sameDomainDelay * 1000;
             const jitter = Math.floor(Math.random() * base * 0.5);
             await new Promise((r) => setTimeout(r, base + jitter));
           }
-          gotoOptions.waitUntil = 'domcontentloaded';
-          gotoOptions.timeout = navTimeoutMs;
-
           // WHY: Start CDP screencast BEFORE page.goto() so the GUI shows the
           // page loading in real-time. Gated on onScreencastFrame which is
           // undefined when runtimeScreencastEnabled=false.
@@ -542,22 +608,13 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
               });
             }
           }
-        },
-      ],
-      // WHY: Wait for page resources (images, fonts, stylesheets) to load
-      // BEFORE the plugin chain starts. domcontentloaded fires fast but only
-      // means the DOM is parsed — images/fonts may still be loading. This gives
-      // the page up to 5s to finish loading resources. If 5s expires, continue
-      // anyway — domcontentloaded already fired, page is usable. This prevents
-      // screenshots of half-rendered pages where images show as blank.
-      postNavigationHooks: [
-        async ({ page, request }) => {
-          if (request.userData?.__warmup) return;
-          try {
-            await page.waitForLoadState('load', { timeout: 5000 });
-          } catch {
-            // domcontentloaded already fired — page is usable, continue
-          }
+
+          // WHY: onInit runs BEFORE page.goto() so addInitScript and page.route
+          // take effect on the initial page load. This fixes the bug where stealth,
+          // overlayDismissal CSS, and cssOverride routes were injected AFTER goto
+          // and didn't apply to the first page load.
+          const wid = workerIds.get(request.uniqueKey) || 'fetch-x0';
+          await runner.runHook('onInit', { page, request, settings, workerId: wid });
         },
       ],
       // WHY: Expose proxy URLs for test assertions (not used by Crawlee).

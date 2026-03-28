@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crawlee Execution Flow &mdash; Domain Classifier to Extraction Persistence</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2128;
+    --border: #30363d;
+    --border-accent: #58a6ff;
+    --text: #c9d1d9;
+    --text-muted: #8b949e;
+    --text-bright: #f0f6fc;
+    --accent: #58a6ff;
+    --accent-dim: #1f6feb33;
+    --green: #3fb950;
+    --green-dim: #238636;
+    --yellow: #d29922;
+    --yellow-dim: #9e6a03;
+    --orange: #db6d28;
+    --red: #f85149;
+    --red-dim: #da3633;
+    --purple: #bc8cff;
+    --purple-dim: #8957e5;
+    --cyan: #39d353;
+    --teal: #56d4dd;
+    --pink: #f778ba;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', Consolas, monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --radius: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    color: var(--text-bright);
+    border-bottom: 2px solid var(--border-accent);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    color: var(--accent);
+    margin: 2rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    color: var(--purple);
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── Flow Diagram ── */
+  .flow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding: 1.5rem 0;
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    position: relative;
+  }
+
+  .flow-arrow::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+    transform: translateX(-50%);
+  }
+
+  .flow-arrow span {
+    background: var(--bg);
+    padding: 0 0.5rem;
+    z-index: 1;
+  }
+
+  .flow-arrow .label {
+    font-size: 0.7rem;
+    color: var(--yellow);
+    font-family: var(--font-mono);
+    background: var(--bg);
+    padding: 0.1rem 0.5rem;
+    border-radius: 3px;
+    position: absolute;
+    right: calc(50% + 2rem);
+    white-space: nowrap;
+  }
+
+  .flow-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .flow-node:hover {
+    border-color: var(--border-accent);
+  }
+
+  .flow-node .node-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .flow-node .node-number {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 0.7rem;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .flow-node .node-title {
+    font-weight: 600;
+    color: var(--text-bright);
+    font-size: 0.95rem;
+  }
+
+  .flow-node .node-file {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  .flow-node .node-body {
+    font-size: 0.85rem;
+    color: var(--text);
+    padding-left: 2.1rem;
+  }
+
+  .flow-node .node-body ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .flow-node .node-body li {
+    padding: 0.15rem 0;
+    position: relative;
+    padding-left: 1rem;
+  }
+
+  .flow-node .node-body li::before {
+    content: '\25B8';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+  }
+
+  /* ── Timer Badges ── */
+  .timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--yellow-dim);
+    color: var(--yellow);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .timer::before { content: '\23F1'; font-size: 0.65rem; }
+
+  .timer.green { background: var(--green-dim); color: var(--green); }
+  .timer.red { background: var(--red-dim); color: var(--red); }
+  .timer.purple { background: var(--purple-dim); color: var(--purple); }
+
+  /* ── Event Badges ── */
+  .event {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--teal);
+    background: rgba(86,212,221,0.1);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .event::before { content: '\26A1'; font-size: 0.6rem; }
+
+  /* ── Phase Colors ── */
+  .phase-domain   { border-left: 3px solid var(--purple); }
+  .phase-warmup   { border-left: 3px solid var(--teal); }
+  .phase-crawlee  { border-left: 3px solid var(--accent); }
+  .phase-nav      { border-left: 3px solid var(--green); }
+  .phase-plugin   { border-left: 3px solid var(--orange); }
+  .phase-extract  { border-left: 3px solid var(--pink); }
+  .phase-persist  { border-left: 3px solid var(--yellow); }
+  .phase-error    { border-left: 3px solid var(--red); }
+  .phase-video    { border-left: 3px solid var(--cyan); }
+  .phase-transform{ border-left: 3px solid var(--purple); }
+
+  /* ── Parallel Container ── */
+  .parallel-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    position: relative;
+  }
+
+  .parallel-group::before {
+    content: 'PARALLEL';
+    position: absolute;
+    top: -0.6rem;
+    left: 1rem;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0 0.4rem;
+  }
+
+  .parallel-group .flow-node {
+    margin: 0;
+  }
+
+  /* ── Timer Table ── */
+  .timer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+  }
+
+  .timer-table th {
+    background: var(--surface-2);
+    color: var(--text-bright);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 0.8rem;
+  }
+
+  .timer-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .timer-table tr:nth-child(even) td {
+    background: var(--surface);
+  }
+
+  .timer-table .setting-name {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .timer-table .default-val {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--yellow);
+  }
+
+  /* ── Hierarchy Tree ── */
+  .hierarchy {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+  }
+
+  .hierarchy .h-phase   { color: var(--accent); font-weight: 600; }
+  .hierarchy .h-file    { color: var(--text-muted); }
+  .hierarchy .h-timer   { color: var(--yellow); }
+  .hierarchy .h-event   { color: var(--teal); }
+  .hierarchy .h-plugin  { color: var(--orange); }
+  .hierarchy .h-extract { color: var(--pink); }
+  .hierarchy .h-branch  { color: var(--border); }
+  .hierarchy .h-error   { color: var(--red); }
+  .hierarchy .h-comment { color: var(--text-muted); font-style: italic; }
+
+  /* ── Sections ── */
+  .section {
+    margin: 2rem 0;
+  }
+
+  .note {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin: 1rem 0;
+  }
+
+  .note strong { color: var(--accent); }
+
+  .warn {
+    background: rgba(248,81,73,0.08);
+    border: 1px solid var(--red);
+  }
+  .warn strong { color: var(--red); }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    background: var(--surface-2);
+    padding: 0.15rem 0.35rem;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Nested flow (sub-steps inside a node) ── */
+  .sub-flow {
+    margin: 0.5rem 0 0 2.1rem;
+    padding: 0.5rem 0;
+    border-left: 2px solid var(--border);
+    padding-left: 1rem;
+  }
+
+  .sub-step {
+    padding: 0.3rem 0;
+    font-size: 0.8rem;
+    position: relative;
+  }
+
+  .sub-step::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    width: 0.75rem;
+    height: 2px;
+    background: var(--border);
+  }
+
+  .sub-step .step-num {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    margin-right: 0.3rem;
+  }
+
+  /* ── Collapsible ── */
+  details {
+    margin: 0.5rem 0;
+  }
+
+  details summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.3rem 0;
+    user-select: none;
+  }
+
+  details summary:hover {
+    color: var(--text-bright);
+  }
+
+  details[open] summary {
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .parallel-group { grid-template-columns: 1fr; }
+    body { padding: 1rem; }
+  }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.85rem;
+    display: block;
+    padding: 0.2rem 0;
+  }
+
+  .toc a:hover { text-decoration: underline; }
+  .toc .toc-indent { padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+
+<h1>Crawlee Execution Flow</h1>
+<p class="subtitle">
+  Domain Classifier &rarr; Crawlee Lifecycle &rarr; Plugin Hooks &rarr; Extraction (Screenshot &amp; Video) &rarr; Artifact Persistence<br>
+  <span style="color:var(--text-muted);">Scope: <code>phase_08_domain_classifier</code> through <code>phase_09_crawl</code> completion</span>
+</p>
+
+<nav class="toc">
+  <strong style="color:var(--text-bright);">Contents</strong>
+  <a href="#legend">Legend</a>
+  <a href="#overview">1. High-Level Pipeline Overview</a>
+  <a href="#hierarchy">2. Full Execution Hierarchy (ASCII Tree)</a>
+  <a href="#flow">3. Step-by-Step Flow Diagram</a>
+  <a class="toc-indent" href="#phase-domain">Phase A &mdash; Domain Classifier</a>
+  <a class="toc-indent" href="#phase-batch">Phase B &mdash; Batch Loop &amp; Crawlee Dispatch</a>
+  <a class="toc-indent" href="#phase-prenav">Phase C &mdash; Pre-Navigation Hooks</a>
+  <a class="toc-indent" href="#phase-nav">Phase D &mdash; Page Navigation</a>
+  <a class="toc-indent" href="#phase-postnav">Phase E &mdash; Post-Navigation &amp; Stabilization</a>
+  <a class="toc-indent" href="#phase-plugins">Phase F &mdash; Crawl Plugin Hooks</a>
+  <a class="toc-indent" href="#phase-capture">Phase G &mdash; Page Capture &amp; Block Detection</a>
+  <a class="toc-indent" href="#phase-extraction">Phase H &mdash; Extraction Plugins (Screenshot &amp; Video)</a>
+  <a class="toc-indent" href="#phase-persist">Phase I &mdash; Artifact Persistence</a>
+  <a class="toc-indent" href="#phase-resolve">Phase J &mdash; Resolution &amp; Events</a>
+  <a class="toc-indent" href="#phase-transform">Phase K &mdash; Transform Phase (Post-Page)</a>
+  <a class="toc-indent" href="#phase-error">Error Paths &mdash; Timeout Rescue &amp; Retry</a>
+  <a href="#timers">4. Complete Timer &amp; Timeout Reference</a>
+  <a href="#gantt">4b. Gantt Charts &mdash; Success vs Failure Lifecycle</a>
+  <a href="#settings">5. Configurable Settings (Crawlee Knobs)</a>
+  <a href="#files">6. Key Source File Map</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="legend" class="section">
+<h2>Legend</h2>
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--purple)"></div> Domain Classifier</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--teal)"></div> Browser Warmup</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--accent)"></div> Crawlee Core</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--green)"></div> Navigation</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--orange)"></div> Crawl Plugins</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--pink)"></div> Extraction</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--yellow)"></div> Persistence</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--cyan)"></div> Video / Screencast</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--red)"></div> Error / Rescue</div>
+  <div class="legend-item"><span class="timer" style="margin:0;">30s</span> Timer/Timeout</div>
+  <div class="legend-item"><span class="event" style="margin:0;">event_name</span> Event Emission</div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="overview" class="section">
+<h2>1. High-Level Pipeline Overview</h2>
+
+<div class="note">
+  <strong>Scope of this document:</strong> Everything that happens from when the Domain Classifier produces the ordered fetch plan
+  through Crawlee execution, plugin hooks, extraction (screenshot capture, video recording), artifact persistence to disk and database,
+  and the transform phase that runs after page closure.
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;font-family:var(--font-mono);font-size:0.8rem;line-height:2;overflow-x:auto;">
+<span style="color:var(--purple);font-weight:700">DOMAIN CLASSIFIER</span> <span style="color:var(--border)">&mdash;&mdash;&gt;</span> <span style="color:var(--accent);font-weight:700">CRAWLEE BATCH LOOP</span> <span style="color:var(--border)">&mdash;&mdash;&gt;</span> <span style="color:var(--green);font-weight:700">NAVIGATION</span> <span style="color:var(--border)">&mdash;&mdash;&gt;</span> <span style="color:var(--orange);font-weight:700">PLUGIN HOOKS</span><br>
+<span style="color:var(--border);padding-left:2rem">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
+<span style="color:var(--yellow);font-weight:700">ARTIFACT PERSIST</span> <span style="color:var(--border)">&larr;&mdash;&mdash;</span> <span style="color:var(--pink);font-weight:700">EXTRACTION (Screenshot/Video)</span> <span style="color:var(--border)">&larr;&mdash;&mdash;</span> <span style="color:var(--accent);font-weight:700">PAGE CAPTURE</span> <span style="color:var(--border)">&larr;&mdash;&mdash;</span> <span style="color:var(--orange);font-weight:700">BLOCK DETECT</span><br>
+<span style="color:var(--border);padding-left:2rem">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
+<span style="color:var(--teal);font-weight:700">RESOLVE + EVENTS</span> <span style="color:var(--border)">&mdash;&mdash;&gt;</span> <span style="color:var(--purple);font-weight:700">TRANSFORM PHASE</span> <span style="color:var(--text-muted)">(no page, no timeout pressure)</span> <span style="color:var(--border)">&mdash;&mdash;&gt;</span> <span style="color:var(--green);font-weight:700">NEXT BATCH</span>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="hierarchy" class="section">
+<h2>2. Full Execution Hierarchy (ASCII Tree)</h2>
+
+<div class="hierarchy">
+<span class="h-phase">runProduct.js &mdash; Pipeline Orchestrator</span>
+<span class="h-branch">&#9474;</span>
+<span class="h-branch">&#9500;&#9472;&#9472;</span> <span class="h-phase">PHASE 8: Domain Classifier</span> <span class="h-file">runDomainClassifier.js</span>
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> Merge discovery URLs + seed URLs + learning seed URLs
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> Filter blocked hosts (runtime overrides)
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> Sort by SERP slot rank (highest first)
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> Assign worker IDs: <code>fetch-1</code>, <code>fetch-2</code>, ...
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> Apply URL cap <span class="h-file">domainClassifierUrlCap</span>
+<span class="h-branch">&#9474;   &#9492;&#9472;&#9472;</span> <span class="h-event">source_fetch_queued</span> <span class="h-comment">(per URL)</span>
+<span class="h-branch">&#9474;</span>
+<span class="h-branch">&#9500;&#9472;&#9472;</span> <span class="h-phase">Browser Pool Warmup</span> <span class="h-file">crawlSession.js:warmUp()</span>  <span class="h-timer">~3s parallel</span>
+<span class="h-branch">&#9474;   &#9492;&#9472;&#9472;</span> Launch Playwright browsers, warm page pool
+<span class="h-branch">&#9474;</span>
+<span class="h-branch">&#9500;&#9472;&#9472;</span> <span class="h-phase">PHASE 9: session.runFetchPlan()</span> <span class="h-file">crawlSession.js</span>
+<span class="h-branch">&#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">BATCH LOOP</span> <span class="h-comment">batch size = slotCount * 2 (default: 8)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-timer">Global timeout check</span>: <code>if (Date.now() - startMs >= maxRunMs) break</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Generate uniqueKeys: <code>url::timestamp::random8</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">processBatch()</span> &rarr; <code>crawler.run(requests)</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>   <span class="h-comment">&mdash;&mdash; PER URL (parallel, up to slotCount concurrent) &mdash;&mdash;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">preNavigationHooks[]</span> <span class="h-timer">sameDomainDelay: 2s &plusmn; 50%</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Same-domain jitter delay (anti-bot)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">Start CDP Screencast</span> (JPEG, quality 30, every 3rd frame, 1280x720)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-plugin">runner.runHook('onInit')</span> <span class="h-comment">BEFORE page.goto()</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> <span class="h-plugin">stealth</span> <span class="h-comment">addInitScript: fingerprint spoof</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> <span class="h-plugin">overlayDismissal</span> <span class="h-comment">addInitScript: CSS suppression + MutationObserver</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;       &#9492;&#9472;&#9472;</span> <span class="h-plugin">cssOverride</span> <span class="h-comment">page.route(): block CSS domains</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">page.goto(url)</span> <span class="h-timer">navigationTimeoutSecs: 20s (Crawlee native)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Fires: DNS &rarr; TCP &rarr; TLS &rarr; HTTP &rarr; load (Playwright default waitUntil)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">requestHandler</span> <span class="h-timer">handlerTimeout: 45s (total budget)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">runFetchSuiteLoop()</span> <span class="h-file">suiteOrchestrator.js</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-timer">fetchLoadingDelayMs: 3s</span> <span class="h-comment">wait for JS hydration</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">onDismiss (initial cleanup)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">cookieConsent</span> <span class="h-timer">cmpTimeout: 5s</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">overlayDismissal</span> <span class="h-comment">Layer 2: DOM scan + close-click; Layer 3: scroll-lock reset</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">domExpansion</span> <span class="h-timer">expansionBudget: 15s</span> <span class="h-comment">nav-guard + content-delta</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-plugin">cssOverride</span> <span class="h-comment">unhide display:none</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">Round 1..N</span> <span class="h-comment">(fetchDismissRounds, default 2)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">onScroll</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-plugin">autoScroll</span> <span class="h-timer">scrollDelay: 1.2s/pass</span> <span class="h-comment">trigger lazy-load</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-plugin">onDismiss</span> <span class="h-comment">catch scroll-triggered popups</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> cookieConsent &rarr; overlayDismissal &rarr; domExpansion &rarr; cssOverride
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-comment">Return telemetry</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">4. Capture Page State</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>html = page.content()</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>finalUrl = page.url()</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>title = page.title()</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>status = response.status()</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Stash <code>__capturedPage</code> on request.userData <span class="h-comment">(timeout rescue anchor)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">5. Block Detection</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>classifyBlockStatus({ status, html })</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Checks: 429, 403, 451, 500+, Cloudflare, CAPTCHA, empty
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Quality gate: pages &gt;5KB with &lt;body&gt; are real content
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> If blocked: <code>session.retire()</code> + throw <span class="h-error">&rarr; errorHandler</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-plugin">6. runner.runHook('onCapture')</span> <span class="h-comment">custom plugin hook</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">7. extractionRunner.runCaptures(ctx)</span> <span class="h-timer">within handler budget</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">Sequential plugins first</span> <span class="h-comment">(may mutate page state)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">Concurrent plugins via Promise.all()</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">SCREENSHOT PLUGIN</span> <span class="h-comment">(phase: capture, concurrent: true)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">a. Page Stabilization</span> <span class="h-timer">stabilize: 1.5s</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Wait for fonts ready
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Wait for images decoded
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Wait for paint cycle (double rAF) <span class="h-timer">~33ms</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Measure page dimensions (scrollHeight vs viewport)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">b. Full-page screenshot</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>page.screenshot({ fullPage: true })</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Format: JPEG (quality 75) or PNG
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Max: 5 MB
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">c. Selector crops</span> <span class="h-comment">(optional, max 12)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Per selector: <code>page.$(sel) &rarr; el.screenshot()</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-extract">d. Scroll-and-stitch</span> <span class="h-comment">(if &gt;16,384px)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> Scroll viewport-by-viewport
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> Double-rAF between scrolls <span class="h-timer">~33ms/section</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> Composite via <code>sharp</code> (optional dep)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;       &#9492;&#9472;&#9472;</span> Reset scroll to 0, mark <code>stitched: true</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-comment">(VIDEO plugin &mdash; lifecycle phase, not yet wired)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Stash <code>__capturedExtractions</code> on request.userData
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">8. Screencast frame emission</span> <span class="h-comment">(final screenshot &rarr; GUI)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <code>onScreencastFrame({ worker_id, data: base64, width, height })</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">9. Screenshot Persistence</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Disk: <code>{runDir}/screenshots/screenshot-{wid}-{hash8}-{idx}-{kind}.{ext}</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> SQL: <code>source_screenshots</code> table (SHA256 content_hash)
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-event">visual_asset_captured</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-event">extraction_artifacts_persisted</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">10. Stop CDP Screencast</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-event">source_processed</span> <span class="h-comment">(marks fetch complete in GUI)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <code>resolveEntry(uniqueKey, result)</code> <span class="h-comment">&rarr; wakes processUrl promise</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">VIDEO: prePageCloseHook</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <code>video.saveAs(videoDir/{workerId}.webm)</code> <span class="h-comment">(async, queued)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> Push to <code>pendingVideoSaves[]</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-error">ERROR PATH: errorHandler</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Non-retryable: DNS fail, conn refused, download start, nav timeout
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9500;&#9472;&#9472;</span> Timeout rescue: if <code>__capturedPage</code> exists &rarr; <code>noRetry = true</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-event">source_fetch_retrying</span> <span class="h-comment">(if actual retry)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <span class="h-error">FAILED PATH: failedRequestHandler</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> Rescue <code>__capturedPage</code> + <code>__capturedExtractions</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;       &#9500;&#9472;&#9472;</span> Return partial result with <code>timeoutRescued: true</code>
+<span class="h-branch">&#9474;   &#9474;   &#9474;       &#9492;&#9472;&#9472;</span> <span class="h-event">source_fetch_failed</span> <span class="h-comment">(timeout_rescued flag for GUI)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-extract">Await pendingVideoSaves[]</span> <span class="h-comment">(after batch completes)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">Block detection + proxy retry</span> <span class="h-comment">(blocked URLs, max 2 retries)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-phase">Transform-phase extraction</span> <span class="h-comment">(after page closes, no timeout pressure)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;   &#9492;&#9472;&#9472;</span> <code>extractionRunner.runTransforms()</code> &mdash; concurrent, no page
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9500;&#9472;&#9472;</span> <span class="h-event">crawler_stats</span> <span class="h-comment">(status codes, retry histogram, avg ms)</span>
+<span class="h-branch">&#9474;   &#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9474;   &#9492;&#9472;&#9472;</span> &rarr; next batch (or exit if all URLs processed / global timeout)
+<span class="h-branch">&#9474;   &#9474;</span>
+<span class="h-branch">&#9474;   &#9492;&#9472;&#9472;</span> Return <code>{ crawlResults }</code>
+<span class="h-branch">&#9474;</span>
+<span class="h-branch">&#9500;&#9472;&#9472;</span> <span class="h-event">run_completed</span> <span class="h-comment">(urls_crawled, urls_successful, urls_blocked, duration_ms)</span>
+<span class="h-branch">&#9474;</span>
+<span class="h-branch">&#9492;&#9472;&#9472;</span> <code>session.shutdown()</code> <span class="h-comment">(close Crawlee + proxy crawler)</span>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="flow" class="section">
+<h2>3. Step-by-Step Flow Diagram</h2>
+
+<!-- Phase A -->
+<div id="phase-domain" class="flow-node phase-domain">
+  <div class="node-header">
+    <span class="node-number">A</span>
+    <span class="node-title">Domain Classifier &mdash; Build Ordered Fetch Plan</span>
+    <span class="node-file">runDomainClassifier.js</span>
+  </div>
+  <div class="node-body">
+    <p>Transforms discovery results into an executable crawl plan. Runs synchronously before any browser work begins.</p>
+    <ul>
+      <li>Merge sources: discovery-approved URLs + seed URLs + learning seed URLs</li>
+      <li>Filter out blocked hosts (runtime overrides from operator)</li>
+      <li>Sort all URLs by SERP slot rank (highest search relevance first)</li>
+      <li>Apply URL cap via <code>domainClassifierUrlCap</code> setting</li>
+      <li>Assign sequential worker IDs: <code>fetch-1</code>, <code>fetch-2</code>, <code>fetch-3</code>, ...</li>
+      <li>Emit <span class="event">source_fetch_queued</span> per URL with triage metadata</li>
+    </ul>
+    <p style="margin-top:0.5rem;"><strong>Output:</strong> <code>{ orderedSources[], workerIdMap, stats }</code></p>
+    <p>Each source carries: <code>url</code>, <code>host</code>, <code>discoveredFrom</code> (seed | learning_seed | discovery_approved), <code>triageMeta</code> (triage_score, search_slot, search_rank, identity_prelim, host_trust_class), <code>workerId</code></p>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">orderedSources + workerIdMap</span></div>
+
+<!-- Phase B -->
+<div id="phase-batch" class="flow-node phase-crawlee">
+  <div class="node-header">
+    <span class="node-number">B</span>
+    <span class="node-title">Batch Loop &amp; Crawlee Dispatch</span>
+    <span class="node-file">crawlSession.js:runFetchPlan()</span>
+  </div>
+  <div class="node-body">
+    <p>URLs are processed in batches through Crawlee's AutoscaledPool. Each batch runs up to <code>slotCount</code> concurrent browser pages.</p>
+    <ul>
+      <li>Batch size = <code>slotCount &times; 2</code> (default: 4 slots &times; 2 = 8 URLs per batch)</li>
+      <li>Each URL gets a unique key: <code>url::timestamp::random8</code> &rarr; mapped to a Promise</li>
+      <li>Calls <code>crawler.run(requests)</code> &mdash; Crawlee dequeues from its internal AutoscaledPool</li>
+      <li><span class="timer">Global timeout check</span> at start of each batch: <code>if (Date.now() - startMs &ge; maxRunMs) break</code></li>
+      <li>After batch: block detection &rarr; proxy retry for blocked URLs &rarr; transform phase &rarr; next batch</li>
+    </ul>
+
+    <details>
+      <summary>Concurrency Architecture</summary>
+      <table class="timer-table" style="margin-top:0.5rem;">
+        <tr><th>Setting</th><th>Default</th><th>Effect</th></tr>
+        <tr><td class="setting-name">crawlMaxConcurrentSlots</td><td class="default-val">4</td><td>Parallel browser pages (min &amp; max concurrency)</td></tr>
+        <tr><td class="setting-name">maxOpenPagesPerBrowser</td><td class="default-val">4</td><td>Pages per Chromium process</td></tr>
+        <tr><td class="setting-name">retireBrowserAfterPageCount</td><td class="default-val">10</td><td>Restart browser after N pages (memory hygiene)</td></tr>
+        <tr><td class="setting-name">useIncognitoPages</td><td class="default-val">true</td><td>Each page gets isolated context (cookies/storage)</td></tr>
+      </table>
+    </details>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">per URL (parallel, up to slotCount)</span></div>
+
+<div class="note" style="border-color:var(--accent);">
+  <strong>Handler Timeout Budget:</strong> Everything below (steps C through J) must complete within the handler timeout.
+  Default: <span class="timer red">45 seconds total</span>. If exceeded, the timeout rescue mechanism activates &mdash; see Error Paths below.
+</div>
+
+<!-- Phase C -->
+<div id="phase-prenav" class="flow-node phase-nav">
+  <div class="node-header">
+    <span class="node-number">C</span>
+    <span class="node-title">Pre-Navigation Hooks</span>
+    <span class="node-file">crawlSession.js:preNavigationHooks[]</span>
+  </div>
+  <div class="node-body">
+    <p>Runs <em>before</em> <code>page.goto()</code>. Sets up anti-bot delay, live streaming, and fires <code>onInit</code> plugin hook so <code>addInitScript()</code> and <code>page.route()</code> take effect on initial page load.</p>
+    <ul>
+      <li><strong>Same-domain delay:</strong> <span class="timer">2s &plusmn; 50% jitter</span> between requests to same host (anti-bot)</li>
+      <li><strong>Start CDP Screencast</strong> (JPEG, quality 30, 1280&times;720, every 3rd frame)</li>
+      <li><strong><code>onInit</code> hook</strong> &mdash; plugins that must run before navigation:
+        <ul>
+          <li><code>stealth</code> &mdash; <code>addInitScript()</code>: fingerprint spoofing, webdriver flag hide</li>
+          <li><code>overlayDismissal</code> &mdash; <code>addInitScript()</code>: CSS suppression for popups + MutationObserver for delayed overlays</li>
+          <li><code>cssOverride</code> &mdash; <code>page.route()</code>: block CSS domain requests</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">screencast streaming, delay applied</span></div>
+
+<!-- Phase D -->
+<div id="phase-nav" class="flow-node phase-nav">
+  <div class="node-header">
+    <span class="node-number">D</span>
+    <span class="node-title">Page Navigation (Crawlee Native)</span>
+    <span class="node-file">Crawlee &rarr; page.goto(url, gotoOptions)</span>
+  </div>
+  <div class="node-body">
+    <p>Crawlee handles navigation natively via <code>navigationTimeoutSecs</code>. Playwright uses default <code>waitUntil: 'load'</code>.</p>
+    <ul>
+      <li><code>page.goto(url, { timeout: navigationTimeoutSecs * 1000 })</code> &mdash; set by Crawlee internally</li>
+      <li>Waits for <code>load</code> event (DOM + images + fonts + stylesheets)</li>
+      <li><span class="timer red">Navigation timeout: 20s</span> (configurable via <code>crawleeNavigationTimeoutSecs</code>)</li>
+      <li>On timeout: <code>errorHandler</code> marks as non-retryable (page genuinely unresponsive)</li>
+      <li>Total Crawlee budget: nav(20) + handler(45) + buffer(10) = <span class="timer">75s</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">load event fired (page fully loaded)</span></div>
+
+<!-- Phase F -->
+<div id="phase-plugins" class="flow-node phase-plugin">
+  <div class="node-header">
+    <span class="node-number">F</span>
+    <span class="node-title">Fetch Suite Loop &mdash; Dismiss / Scroll / Dismiss</span>
+    <span class="node-file">suiteOrchestrator.js &rarr; pluginRunner.js</span>
+  </div>
+  <div class="node-body">
+    <p>Round-based orchestrator replaces the old sequential hook model. Six plugins across 3 hook types, with configurable rounds.</p>
+
+    <div class="sub-flow">
+      <div class="sub-step"><span class="step-num">F.1</span> <strong>Loading delay</strong> <span class="timer">fetchLoadingDelayMs: 3s</span> &mdash; wait for JS hydration before first dismiss</div>
+      <div class="sub-step"><span class="step-num">F.2</span> <strong>onDismiss</strong> (initial cleanup) &mdash; sequential or concurrent per <code>fetchSuiteMode</code></div>
+      <div class="sub-step"><span class="step-num">F.3</span> <strong>Rounds 1..N</strong> (<code>fetchDismissRounds</code>, default 2):
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>onScroll</strong> &rarr; <strong>onDismiss</strong> (catches scroll-triggered popups)</div>
+    </div>
+
+    <h3 style="margin-top:1rem;font-size:0.9rem;">Plugin &times; Hook Matrix</h3>
+    <table class="timer-table" style="margin:0.5rem 0;">
+      <tr><th>Plugin</th><th>onInit</th><th>onDismiss</th><th>onScroll</th><th>Timeout</th><th>What It Does</th></tr>
+      <tr>
+        <td><code>stealth</code></td>
+        <td style="color:var(--green);">&#10003;</td><td>&mdash;</td><td>&mdash;</td>
+        <td class="default-val">immediate</td>
+        <td><code>addInitScript()</code>: fingerprint spoof, webdriver hide</td>
+      </tr>
+      <tr>
+        <td><code>cookieConsent</code></td>
+        <td>&mdash;</td><td style="color:var(--green);">&#10003;</td><td>&mdash;</td>
+        <td class="default-val"><span class="timer">5s</span></td>
+        <td>CMP detection + banner dismissal (Shopify, OneTrust, etc.)</td>
+      </tr>
+      <tr>
+        <td><code>overlayDismissal</code></td>
+        <td style="color:var(--green);">&#10003;</td><td style="color:var(--green);">&#10003;</td><td>&mdash;</td>
+        <td class="default-val"><span class="timer">800ms settle</span></td>
+        <td>Layer 1: CSS suppression + MutationObserver (onInit). Layer 2: DOM scan + close-click. Layer 3: scroll-lock reset (onDismiss).</td>
+      </tr>
+      <tr>
+        <td><code>domExpansion</code></td>
+        <td>&mdash;</td><td style="color:var(--green);">&#10003;</td><td>&mdash;</td>
+        <td class="default-val"><span class="timer">15s budget</span></td>
+        <td>Pre-click classification, navigation guard (<code>page.route</code>), content-delta verification. Skips nav links, allows buttons/summaries.</td>
+      </tr>
+      <tr>
+        <td><code>cssOverride</code></td>
+        <td style="color:var(--green);">&#10003;</td><td style="color:var(--green);">&#10003;</td><td>&mdash;</td>
+        <td class="default-val">immediate</td>
+        <td>onInit: <code>page.route()</code> blocks CSS domains. onDismiss: unhide <code>display:none</code>.</td>
+      </tr>
+      <tr>
+        <td><code>autoScroll</code></td>
+        <td>&mdash;</td><td>&mdash;</td><td style="color:var(--green);">&#10003;</td>
+        <td class="default-val"><span class="timer">1.2s/pass</span></td>
+        <td>Scroll-to-bottom passes to trigger lazy-loaded content. Always sequential.</td>
+      </tr>
+    </table>
+
+    <div class="note" style="margin-top:0.75rem;">
+      <strong>Suite lifecycle:</strong> <code>[3s loading delay]</code> &rarr; <code>onDismiss</code> &rarr; (<code>onScroll</code> &rarr; <code>onDismiss</code>) &times; 2 rounds &rarr; capture.
+      Total dismiss-suite time: ~8-25s depending on content. The <code>domExpansion</code> budget (15s) prevents starvation of downstream extraction.
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">page interactive, overlays dismissed, content expanded</span></div>
+
+<!-- Phase G -->
+<div id="phase-capture" class="flow-node phase-crawlee">
+  <div class="node-header">
+    <span class="node-number">G</span>
+    <span class="node-title">Page Capture &amp; Block Detection</span>
+    <span class="node-file">crawlSession.js:requestHandler L122-155</span>
+  </div>
+  <div class="node-body">
+    <p>Capture the page's current state and check for bot blocks before proceeding to extraction.</p>
+
+    <div class="sub-flow">
+      <div class="sub-step"><span class="step-num">G.1</span> <code>html = await page.content()</code> &mdash; full DOM serialization</div>
+      <div class="sub-step"><span class="step-num">G.2</span> <code>finalUrl = page.url()</code> &mdash; may differ from original (redirects)</div>
+      <div class="sub-step"><span class="step-num">G.3</span> <code>title = await page.title()</code></div>
+      <div class="sub-step"><span class="step-num">G.4</span> <code>status = response.status()</code> (or 200 if unavailable)</div>
+      <div class="sub-step"><span class="step-num">G.5</span> <strong>Stash rescue anchor:</strong> <code>request.userData.__capturedPage = { html, finalUrl, title, status }</code></div>
+      <div class="sub-step"><span class="step-num">G.6</span> <strong>Block detection:</strong> <code>classifyBlockStatus({ status, html })</code></div>
+    </div>
+
+    <details>
+      <summary>Block Classification Rules</summary>
+      <table class="timer-table" style="margin-top:0.5rem;">
+        <tr><th>Signal</th><th>Classification</th><th>Action</th></tr>
+        <tr><td>HTTP 429</td><td>status_429</td><td>session.retire() + retry</td></tr>
+        <tr><td>HTTP 403 + &lt;5KB</td><td>status_403</td><td>session.retire() + retry</td></tr>
+        <tr><td>HTTP 451</td><td>robots_blocked</td><td>No proxy retry (respect robots.txt)</td></tr>
+        <tr><td>HTTP 500+</td><td>server_error</td><td>retry</td></tr>
+        <tr><td>Cloudflare markers + &lt;5KB</td><td>cloudflare_challenge</td><td>session.retire() + proxy retry</td></tr>
+        <tr><td>CAPTCHA markers</td><td>captcha_blocked</td><td>session.retire() + proxy retry</td></tr>
+        <tr><td>&gt;5KB with &lt;body&gt;</td><td>real content</td><td>Not blocked (quality gate pass)</td></tr>
+      </table>
+    </details>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">HTML + metadata captured, not blocked</span></div>
+
+<!-- Phase G.5 - onCapture hook -->
+<div class="flow-node phase-plugin" style="border-left-width:2px;">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--orange);">G+</span>
+    <span class="node-title">onCapture Hook</span>
+    <span class="node-file">pluginRunner.js</span>
+  </div>
+  <div class="node-body">
+    <p><code>runner.runHook('onCapture', captureCtx)</code> &mdash; custom plugin hook for capture-time processing. Logged but not failure-blocking.</p>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span></div>
+
+<!-- Phase H -->
+<div id="phase-extraction" class="flow-node phase-extract">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--pink);">H</span>
+    <span class="node-title">Extraction Plugins &mdash; Capture Phase</span>
+    <span class="node-file">extractionRunner.js:runCaptures()</span>
+  </div>
+  <div class="node-body">
+    <p>Two-phase extraction runner. <strong>Capture phase</strong> runs inside the handler with live page access, under timeout pressure.</p>
+    <ul>
+      <li><strong>Sequential plugins</strong> run first (for-of await loop) &mdash; may mutate page state</li>
+      <li><strong>Concurrent plugins</strong> run after via <code>Promise.all()</code> &mdash; read-only operations</li>
+      <li>All contexts frozen via <code>Object.freeze()</code> to prevent cross-plugin mutation</li>
+      <li>Per-plugin try/catch &mdash; one failure doesn't affect others</li>
+    </ul>
+
+    <h3 style="margin-top:1rem;">Screenshot Plugin <span style="font-weight:normal;color:var(--text-muted);">(phase: capture, concurrent: true)</span></h3>
+
+    <div class="sub-flow">
+      <div class="sub-step">
+        <span class="step-num">H.1</span>
+        <strong>Check enabled:</strong> <code>settings.capturePageScreenshotEnabled</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If false &rarr; return <code>{ screenshots: [] }</code> immediately
+      </div>
+
+      <div class="sub-step">
+        <span class="step-num">H.2</span>
+        <strong>Page Stabilization</strong> <span class="timer">1,500ms timeout</span>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Single <code>page.evaluate()</code> runs all gates in parallel inside browser:
+        <ul style="margin:0.3rem 0 0 2rem;list-style:disc;">
+          <li><code>document.fonts.ready</code> &mdash; all web fonts loaded</li>
+          <li><code>HTMLImageElement.decode()</code> &mdash; all images decoded</li>
+          <li>Double <code>requestAnimationFrame</code> &mdash; paint cycle complete <span class="timer green">~33ms</span></li>
+          <li>Measure <code>scrollHeight</code> vs <code>viewportHeight</code> &mdash; detect tall pages</li>
+        </ul>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns: <code>{ stabilized, durationMs, gates, scrollHeight, viewportHeight, exceedsLimit }</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Never throws &mdash; returns <code>{ stabilized: false }</code> on timeout
+      </div>
+
+      <div class="sub-step">
+        <span class="step-num">H.3</span>
+        <strong>Full-page screenshot</strong> (captured first &mdash; priority)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>page.screenshot({ fullPage: true, type: 'jpeg', quality: 75 })</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Max file size: 5 MB. Format/quality configurable.
+      </div>
+
+      <div class="sub-step">
+        <span class="step-num">H.4</span>
+        <strong>Selector crops</strong> (optional, max 12 selectors)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Parse comma-separated selectors from <code>capturePageScreenshotSelectors</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Per selector: <code>page.$(sel)</code> &rarr; <code>element.screenshot()</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Failures swallowed per-selector (one bad selector doesn't stop others)
+      </div>
+
+      <div class="sub-step">
+        <span class="step-num">H.5</span>
+        <strong>Scroll-and-stitch</strong> (if page exceeds 16,384px Chromium limit)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Requires <code>sharp</code> library (optional dependency, skip if unavailable)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Scroll viewport-by-viewport, capture each section
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Double-rAF between scrolls <span class="timer green">~33ms/section</span> to ensure paint
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Composite all sections &rarr; single tall image, mark <code>stitched: true</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset scroll position to 0 after stitching
+      </div>
+    </div>
+
+    <h3 style="margin-top:1rem;">Video Recording <span style="font-weight:normal;color:var(--text-muted);">(Playwright built-in, not extraction plugin)</span></h3>
+
+    <div class="sub-flow">
+      <div class="sub-step">
+        <span class="step-num">V.1</span>
+        <strong>Setup:</strong> <code>prePageCreateHook</code> sets <code>pageOptions.recordVideo = { dir, size }</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Directory: <code>$TMPDIR/spec-factory-crawl-videos/{runId}/</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Default size: 1280&times;720 (configurable via <code>crawlVideoRecordingSize</code>)
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enabled only when <code>crawlVideoRecordingEnabled === true</code>
+      </div>
+      <div class="sub-step">
+        <span class="step-num">V.2</span>
+        <strong>Recording:</strong> Playwright records automatically during entire page lifecycle
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;From page creation through navigation, plugins, extraction
+      </div>
+      <div class="sub-step">
+        <span class="step-num">V.3</span>
+        <strong>Save:</strong> <code>prePageCloseHook</code> calls <code>video.saveAs(videoDir/{workerId}.webm)</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Async, fire-and-forget &mdash; pushed to <code>pendingVideoSaves[]</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Awaited after batch completes via <code>Promise.allSettled(pendingVideoSaves)</code>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:0.75rem;">
+      <strong>Timeout rescue for extraction:</strong> After extraction completes, results are stashed on
+      <code>request.userData.__capturedExtractions</code>. If the handler times out after this point but before
+      <code>resolveEntry()</code>, the failedRequestHandler recovers these extractions with <code>timeoutRescued: true</code>.
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">screenshots[] + extraction results</span></div>
+
+<!-- Phase I -->
+<div id="phase-persist" class="flow-node phase-persist">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--yellow);color:var(--bg);">I</span>
+    <span class="node-title">Artifact Persistence (Disk + Database)</span>
+    <span class="node-file">screenshotArtifactPersister.js</span>
+  </div>
+  <div class="node-body">
+    <p>Two-stage persistence: disk write (always) + SQL index (best-effort).</p>
+
+    <div class="sub-flow">
+      <div class="sub-step">
+        <span class="step-num">I.1</span>
+        <strong>Disk write:</strong> <code>{runDir}/screenshots/screenshot-{workerId}-{urlHash8}-{index:02d}-{kind}.{ext}</code>
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SHA256 first 8 chars for content-addressed filenames
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Per-file try/catch &mdash; one failure doesn't stop others
+      </div>
+      <div class="sub-step">
+        <span class="step-num">I.2</span>
+        <strong>SQL index:</strong> Insert to <code>source_screenshots</code> table
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Fields: screenshot_id (SHA256), content_hash, category, product_id, run_id,
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source_url, host, selector, format, width, height, size_bytes, file_path, captured_at
+        <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Injected via DI callback <code>insertScreenshot(row)</code> &mdash; SQL failures don't block pipeline
+      </div>
+      <div class="sub-step">
+        <span class="step-num">I.3</span>
+        <strong>Events:</strong>
+        <span class="event">visual_asset_captured</span>
+        <span class="event">extraction_artifacts_persisted</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span></div>
+
+<!-- Screencast final frame -->
+<div class="flow-node phase-video" style="border-left-width:2px;">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--cyan);color:var(--bg);">I+</span>
+    <span class="node-title">Final Screencast Frame &rarr; GUI</span>
+    <span class="node-file">crawlSession.js L181-199</span>
+  </div>
+  <div class="node-body">
+    <p>Emit latest screenshot as screencast frame for live GUI worker detail view.</p>
+    <ul>
+      <li>Find last <code>kind === 'page'</code> screenshot from extraction results</li>
+      <li>Convert to base64, emit via <code>onScreencastFrame({ worker_id, data, width, height, ts })</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span></div>
+
+<!-- Phase J -->
+<div id="phase-resolve" class="flow-node phase-crawlee">
+  <div class="node-header">
+    <span class="node-number">J</span>
+    <span class="node-title">Resolution &amp; Event Emission</span>
+    <span class="node-file">crawlSession.js L240-275</span>
+  </div>
+  <div class="node-body">
+    <ul>
+      <li><strong>Stop CDP screencast</strong> for this page</li>
+      <li>Emit <span class="event">source_processed</span> (marks fetch complete in GUI, increments worker doc count)</li>
+      <li><code>resolveEntry(uniqueKey, result)</code> &rarr; resolves the processUrl promise</li>
+      <li>Crawlee closes the page &rarr; <code>prePageCloseHook</code> saves video (if recording enabled)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">all URLs in batch resolved</span></div>
+
+<!-- Phase K -->
+<div id="phase-transform" class="flow-node phase-transform">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--purple);">K</span>
+    <span class="node-title">Transform Phase (Post-Page, No Timeout Pressure)</span>
+    <span class="node-file">extractionRunner.js:runTransforms()</span>
+  </div>
+  <div class="node-body">
+    <p>Runs <em>after</em> all pages in the batch close. No page object available. No handler timeout.</p>
+    <ul>
+      <li>Always concurrent via <code>Promise.all()</code> (ignores <code>concurrent</code> flag)</li>
+      <li>Context: <code>{ html, finalUrl, title, status, settings, captures }</code></li>
+      <li>Use case: HTML parsing, image compression, metadata extraction</li>
+      <li>Results merged into <code>result.extractions</code></li>
+      <li>Errors logged but don't fail the URL</li>
+    </ul>
+
+    <p style="margin-top:0.5rem;">After transform: <code>await Promise.allSettled(pendingVideoSaves)</code> &rarr; consolidate video files</p>
+    <p>Emit <span class="event">crawler_stats</span> (status codes, retry histogram, avg ms per request)</p>
+    <p style="margin-top:0.5rem;">&rarr; <strong>Next batch</strong> (or exit if all URLs processed / global timeout exceeded)</p>
+  </div>
+</div>
+
+<div class="flow-arrow"><span>&darr;</span><span class="label">all batches complete</span></div>
+
+<div class="flow-node" style="border-left:3px solid var(--green);background:var(--surface-2);">
+  <div class="node-header">
+    <span class="node-number" style="background:var(--green);color:var(--bg);">END</span>
+    <span class="node-title">Run Complete</span>
+    <span class="node-file">runProduct.js</span>
+  </div>
+  <div class="node-body">
+    <ul>
+      <li>Return <code>{ crawlResults }</code> to pipeline orchestrator</li>
+      <li>Emit <span class="event">run_completed</span> with <code>urls_crawled, urls_successful, urls_blocked, duration_ms</code></li>
+      <li><code>session.shutdown()</code> &mdash; close Crawlee crawler + proxy crawler</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ── Error Paths ── -->
+<div id="phase-error" style="margin-top:2rem;">
+  <h3 style="color:var(--red);border-left:3px solid var(--red);padding-left:0.5rem;">Error Paths &mdash; Timeout Rescue &amp; Retry</h3>
+
+  <div class="flow-node phase-error" style="margin-top:1rem;">
+    <div class="node-header">
+      <span class="node-number" style="background:var(--red);">E1</span>
+      <span class="node-title">errorHandler (before each retry)</span>
+      <span class="node-file">crawlSession.js L339-377</span>
+    </div>
+    <div class="node-body">
+      <p>Fires when <code>requestHandler</code> throws. Decides whether retry is worthwhile.</p>
+
+      <table class="timer-table" style="margin:0.5rem 0;">
+        <tr><th>Error</th><th>Action</th><th>Reason</th></tr>
+        <tr><td><code>ERR_NAME_NOT_RESOLVED</code></td><td>noRetry = true</td><td>Domain doesn't exist</td></tr>
+        <tr><td><code>ERR_CONNECTION_REFUSED</code></td><td>noRetry = true</td><td>Server not listening</td></tr>
+        <tr><td><code>ERR_TUNNEL_CONNECTION_FAILED</code></td><td>noRetry = true</td><td>Proxy tunnel broken</td></tr>
+        <tr><td><code>Download is starting</code></td><td>noRetry = true</td><td>Site serves file download</td></tr>
+        <tr><td><code>Navigation timed out</code></td><td>noRetry = true</td><td>Page genuinely unresponsive</td></tr>
+        <tr><td>Handler timeout + <code>__capturedPage</code></td><td>noRetry = true</td><td>Page loaded; plugins were slow. Rescue captured data.</td></tr>
+        <tr><td>Other errors</td><td>Retry (session rotation)</td><td>Fresh fingerprint may help</td></tr>
+      </table>
+
+      <p>If retrying: emit <span class="event">source_fetch_retrying</span></p>
+    </div>
+  </div>
+
+  <div class="flow-arrow"><span>&darr;</span><span class="label" style="color:var(--red);">retries exhausted or noRetry</span></div>
+
+  <div class="flow-node phase-error">
+    <div class="node-header">
+      <span class="node-number" style="background:var(--red);">E2</span>
+      <span class="node-title">failedRequestHandler (final failure)</span>
+      <span class="node-file">crawlSession.js L278-334</span>
+    </div>
+    <div class="node-body">
+      <p>Executes when request exhausts retries or errorHandler sets <code>noRetry = true</code>.</p>
+
+      <div class="sub-flow">
+        <div class="sub-step">
+          <span class="step-num">1</span>
+          <strong>Block detected?</strong> Return block info with HTML/status
+        </div>
+        <div class="sub-step">
+          <span class="step-num">2</span>
+          <strong>Page captured before timeout?</strong> Rescue HTML + screenshots from <code>__capturedPage</code> / <code>__capturedExtractions</code>
+          <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Return partial result with <code>timeoutRescued: true</code>
+          <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GUI shows "Partial" (yellow) instead of "Failed" (red)
+        </div>
+        <div class="sub-step">
+          <span class="step-num">3</span>
+          <strong>No data captured?</strong> Return empty result with <code>fetchError</code>
+        </div>
+      </div>
+
+      <p style="margin-top:0.5rem;">Emit <span class="event">source_fetch_failed</span> with <code>timeout_rescued</code> flag</p>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;" class="flow-node phase-error" style="border-left-width:2px;">
+    <div class="node-header">
+      <span class="node-number" style="background:var(--red);">E3</span>
+      <span class="node-title">Two-Pass Proxy Retry</span>
+      <span class="node-file">crawlSession.js:retryWithProxy()</span>
+    </div>
+    <div class="node-body">
+      <p>After batch completes, blocked URLs (except <code>robots_blocked</code>) are retried through a dedicated proxy crawler.</p>
+      <ul>
+        <li>Separate PlaywrightCrawler instance with <code>ProxyConfiguration</code></li>
+        <li>Max 2 retries on proxy crawler</li>
+        <li>Results replace blocked results from main batch</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="timers" class="section">
+<h2>4. Complete Timer &amp; Timeout Reference</h2>
+
+<table class="timer-table">
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Timer</th>
+      <th>Default</th>
+      <th>Setting Key</th>
+      <th>When It Fires</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="font-weight:600;color:var(--green);">Navigation</td>
+      <td>page.goto() timeout</td>
+      <td class="default-val">20s</td>
+      <td class="setting-name">crawleeNavigationTimeoutSecs</td>
+      <td>Passed natively to Crawlee <code>navigationTimeoutSecs</code>. Playwright waits for <code>load</code> event within this budget. Non-retryable on timeout.</td>
+    </tr>
+    <tr>
+      <td rowspan="2" style="font-weight:600;color:var(--accent);">Crawlee Core</td>
+      <td>Handler timeout</td>
+      <td class="default-val">45s</td>
+      <td class="setting-name">crawleeRequestHandlerTimeoutSecs</td>
+      <td>Total budget for entire requestHandler (plugins + extraction + persistence). Triggers timeout rescue if <code>__capturedPage</code> exists.</td>
+    </tr>
+    <tr>
+      <td>Same-domain delay</td>
+      <td class="default-val">2s &plusmn; 50%</td>
+      <td class="setting-name">crawleeSameDomainDelaySecs</td>
+      <td>Anti-bot jitter between requests to same host. Applied in preNavigationHook.</td>
+    </tr>
+    <tr>
+      <td rowspan="3" style="font-weight:600;color:var(--orange);">Fetch Suite</td>
+      <td>Loading delay</td>
+      <td class="default-val">3,000ms</td>
+      <td class="setting-name">fetchLoadingDelayMs</td>
+      <td>Wait for JS hydration before first dismiss round.</td>
+    </tr>
+    <tr>
+      <td>Dismiss rounds</td>
+      <td class="default-val">2</td>
+      <td class="setting-name">fetchDismissRounds</td>
+      <td>Number of scroll &rarr; dismiss cycles. Catches scroll-triggered popups.</td>
+    </tr>
+    <tr>
+      <td>Suite mode</td>
+      <td class="default-val">sequential</td>
+      <td class="setting-name">fetchSuiteMode</td>
+      <td>sequential (runHook) or concurrent (runHookConcurrent) for onDismiss.</td>
+    </tr>
+    <tr>
+      <td rowspan="5" style="font-weight:600;color:var(--orange);">Crawl Plugins</td>
+      <td>Auto-scroll delay</td>
+      <td class="default-val">1,200ms/pass</td>
+      <td class="setting-name">autoScrollDelayMs</td>
+      <td>Delay between scroll passes (onScroll hook).</td>
+    </tr>
+    <tr>
+      <td>Cookie consent timeout</td>
+      <td class="default-val">5,000ms</td>
+      <td class="setting-name">cookieConsentTimeoutMs</td>
+      <td>CMP detection and banner dismissal (onDismiss hook).</td>
+    </tr>
+    <tr>
+      <td>Overlay dismissal settle</td>
+      <td class="default-val">800ms</td>
+      <td class="setting-name">overlayDismissalSettleMs</td>
+      <td>Wait after overlay dismiss for DOM to settle (onDismiss hook).</td>
+    </tr>
+    <tr>
+      <td>DOM expansion budget</td>
+      <td class="default-val">15,000ms</td>
+      <td class="setting-name">domExpansionBudgetMs</td>
+      <td>Time budget for expand clicks. Nav-guarded, content-delta verified (onDismiss hook).</td>
+    </tr>
+    <tr>
+      <td>CSS override</td>
+      <td class="default-val">immediate</td>
+      <td class="setting-name">&mdash;</td>
+      <td>onInit: route blocking. onDismiss: unhide display:none.</td>
+    </tr>
+    <tr>
+      <td rowspan="2" style="font-weight:600;color:var(--pink);">Extraction</td>
+      <td>Page stabilization</td>
+      <td class="default-val">1,500ms</td>
+      <td class="setting-name">capturePageScreenshotStabilizeTimeoutMs</td>
+      <td>Fonts + images + paint cycle. Returns <code>{ stabilized: false }</code> on timeout (never throws).</td>
+    </tr>
+    <tr>
+      <td>Paint cycle (double rAF)</td>
+      <td class="default-val">~33ms</td>
+      <td class="setting-name">(hardcoded)</td>
+      <td>Two requestAnimationFrame calls to ensure browser has painted.</td>
+    </tr>
+    <tr>
+      <td rowspan="2" style="font-weight:600;color:var(--yellow);">Session</td>
+      <td>Session max age</td>
+      <td class="default-val">3,000s (50min)</td>
+      <td class="setting-name">crawleeSessionMaxAgeSecs</td>
+      <td>Session retired after 50 minutes &mdash; fresh fingerprint assigned.</td>
+    </tr>
+    <tr>
+      <td>Session max usage</td>
+      <td class="default-val">50 requests</td>
+      <td class="setting-name">crawleeSessionMaxUsageCount</td>
+      <td>Session retired after 50 requests &mdash; fresh fingerprint assigned.</td>
+    </tr>
+    <tr>
+      <td style="font-weight:600;color:var(--text-bright);">Global</td>
+      <td>Max run time</td>
+      <td class="default-val">job-specific</td>
+      <td class="setting-name">maxRunSeconds</td>
+      <td>Total run timeout. Checked at start of each batch loop. Stops new batches.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Timer Budget Waterfall (Typical Successful Request)</h3>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;overflow-x:auto;">
+  <div style="font-family:var(--font-mono);font-size:0.75rem;line-height:2.2;">
+    <div style="color:var(--text-muted);">t=0ms</div>
+    <div>&nbsp;&nbsp;<span style="color:var(--green);">&#9608;&#9608;&#9608;&#9608;</span> <span style="color:var(--text-muted);">Same-domain delay</span> <span style="color:var(--yellow);">~2,000ms &plusmn; 50%</span></div>
+    <div style="color:var(--text-muted);">t=~2,000ms</div>
+    <div>&nbsp;&nbsp;<span style="color:var(--cyan);">&#9608;</span> <span style="color:var(--text-muted);">CDP screencast start</span> <span style="color:var(--yellow);">~50ms</span></div>
+    <div style="color:var(--text-muted);">t=~2,050ms</div>
+    <div>&nbsp;&nbsp;<span style="color:var(--accent);">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span> <span style="color:var(--text-muted);">page.goto() waitUntil:'load' (Crawlee native)</span> <span style="color:var(--yellow);">1,000-20,000ms</span></div>
+    <div style="color:var(--text-muted);">t=~7,000ms <span style="font-style:italic;">(typical, includes resource load)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--orange);">&#9608;</span> <span style="color:var(--text-muted);">onInit (stealth+overlay+css) &mdash; ran in preNavHook before goto</span> <span style="color:var(--yellow);">~10ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--border);">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span> <span style="color:var(--text-muted);">loading delay (JS hydration)</span> <span style="color:var(--yellow);">3,000ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--orange);">&#9608;&#9608;</span> <span style="color:var(--text-muted);">onDismiss: cookie+overlay+expand+css (initial)</span> <span style="color:var(--yellow);">1-5s</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--teal);">&#9608;&#9608;</span><span style="color:var(--orange);">&#9608;&#9608;</span> <span style="color:var(--text-muted);">round 1: onScroll + onDismiss</span> <span style="color:var(--yellow);">2-8s</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--teal);">&#9608;&#9608;</span><span style="color:var(--orange);">&#9608;&#9608;</span> <span style="color:var(--text-muted);">round 2: onScroll + onDismiss</span> <span style="color:var(--yellow);">2-8s</span></div>
+    <div style="color:var(--text-muted);">t=~18,000ms <span style="font-style:italic;">(typical, suite takes ~11s)</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--accent);">&#9608;</span> <span style="color:var(--text-muted);">page.content() + block detect</span> <span style="color:var(--yellow);">~50ms</span></div>
+    <div style="color:var(--text-muted);">t=~18,050ms</div>
+    <div>&nbsp;&nbsp;<span style="color:var(--pink);">&#9608;&#9608;&#9608;</span> <span style="color:var(--text-muted);">screenshot: stabilize</span> <span style="color:var(--yellow);">0-1,500ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--pink);">&#9608;&#9608;</span> <span style="color:var(--text-muted);">screenshot: full-page capture</span> <span style="color:var(--yellow);">200-2,000ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--pink);">&#9608;</span> <span style="color:var(--text-muted);">screenshot: selector crops</span> <span style="color:var(--yellow);">0-500ms/each</span></div>
+    <div style="color:var(--text-muted);">t=~15,000ms</div>
+    <div>&nbsp;&nbsp;<span style="color:var(--yellow);">&#9608;&#9608;</span> <span style="color:var(--text-muted);">persist: disk write + SQL index</span> <span style="color:var(--yellow);">50-500ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--teal);">&#9608;</span> <span style="color:var(--text-muted);">screencast final frame</span> <span style="color:var(--yellow);">~20ms</span></div>
+    <div>&nbsp;&nbsp;<span style="color:var(--green);">&#9608;</span> <span style="color:var(--text-muted);">resolve + events</span> <span style="color:var(--yellow);">~10ms</span></div>
+    <div style="color:var(--text-muted);">t=~22,000ms <span style="font-style:italic;">(typical total per URL, excluding same-domain delay)</span></div>
+    <div style="margin-top:0.5rem;color:var(--red);">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; <span style="color:var(--red);">HANDLER TIMEOUT: 45s</span></div>
+    <div style="color:var(--red);">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; <span style="color:var(--red);">TOTAL CRAWLEE BUDGET: nav(20) + handler(45) + buffer(10) = 75s</span></div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="gantt" class="section">
+<h2>4b. Gantt Charts &mdash; Success vs Failure Lifecycle</h2>
+
+<p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+  Page is opened by <code>browserPool.newPage()</code> at the start of <code>_runRequestHandler</code>.
+  Page is closed by <code>page.close()</code> in the <code>finally</code> block of <code>BasicCrawler</code> &mdash; <strong>always runs</strong>, whether success or failure.
+</p>
+
+<style>
+  .gantt { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.75rem; }
+  .gantt th { background: var(--surface-2); color: var(--text-bright); text-align: left; padding: 0.4rem 0.6rem; border: 1px solid var(--border); font-weight: 600; font-size: 0.7rem; }
+  .gantt td { padding: 0.35rem 0.6rem; border: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+  .gantt tr:nth-child(even) td { background: var(--surface); }
+  .gantt .phase-label { font-family: var(--font-mono); color: var(--text); min-width: 160px; }
+  .gantt .time-col { font-family: var(--font-mono); color: var(--yellow); text-align: right; min-width: 70px; }
+  .gantt .bar-col { min-width: 420px; position: relative; padding: 0.2rem 0; }
+  .gantt-bar { height: 18px; border-radius: 3px; display: inline-block; position: relative; vertical-align: middle; }
+  .gantt-bar .bar-label { position: absolute; left: 4px; top: 1px; font-size: 0.6rem; color: var(--bg); font-weight: 600; white-space: nowrap; }
+  .gantt-bar.outline { background: transparent !important; border: 1px dashed; height: 16px; }
+
+  .gc-nav     { background: var(--green); }
+  .gc-plugin  { background: var(--orange); }
+  .gc-capture { background: var(--accent); }
+  .gc-extract { background: var(--pink); }
+  .gc-persist { background: var(--yellow); }
+  .gc-resolve { background: var(--teal); }
+  .gc-close   { background: var(--text-muted); }
+  .gc-error   { background: var(--red); }
+  .gc-rescue  { background: var(--red); opacity: 0.6; }
+  .gc-retry   { background: var(--orange); opacity: 0.7; }
+  .gc-block   { background: var(--red); opacity: 0.8; }
+  .gc-video   { background: var(--cyan); }
+  .gc-delay   { background: var(--border); }
+  .gc-screencast { background: var(--cyan); opacity: 0.5; }
+  .gc-budget  { border-color: var(--red) !important; }
+  .gc-crawlee { border-color: var(--accent) !important; }
+</style>
+
+<!-- ── SUCCESS PATH ── -->
+<h3 style="color:var(--green);">Success Path (typical ~15s)</h3>
+
+<table class="gantt">
+  <thead>
+    <tr>
+      <th>Phase</th>
+      <th>Duration</th>
+      <th style="min-width:500px;">Timeline (0s &rarr; 20s)</th>
+      <th>Owner</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="phase-label">PAGE OPEN</td>
+      <td class="time-col">~200ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:1%; margin-left:0%"><span class="bar-label"></span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee browserPool</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Same-domain delay</td>
+      <td class="time-col">2s &plusmn;50%</td>
+      <td class="bar-col"><span class="gantt-bar gc-delay" style="width:13%; margin-left:1%"><span class="bar-label" style="color:var(--text-muted)">jitter</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">preNavHook</td>
+    </tr>
+    <tr>
+      <td class="phase-label">CDP screencast start</td>
+      <td class="time-col">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-screencast" style="width:0.5%; margin-left:14%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">preNavHook</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.goto() waitUntil:load</td>
+      <td class="time-col">3-7s typ</td>
+      <td class="bar-col"><span class="gantt-bar gc-nav" style="width:25%; margin-left:15%"><span class="bar-label">navigation</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee native</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Loading delay</td>
+      <td class="time-col">3s</td>
+      <td class="bar-col"><span class="gantt-bar gc-delay" style="width:6%; margin-left:40%"><span class="bar-label" style="color:var(--text-muted)">hydrate</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">suiteOrchestrator</td>
+    </tr>
+    <tr>
+      <td class="phase-label">onDismiss (initial)</td>
+      <td class="time-col">1-5s</td>
+      <td class="bar-col"><span class="gantt-bar gc-plugin" style="width:5%; margin-left:46%"><span class="bar-label">dismiss</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">pluginRunner</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Round 1: onScroll + onDismiss</td>
+      <td class="time-col">2-8s</td>
+      <td class="bar-col"><span class="gantt-bar" style="width:3%; margin-left:51%; background:var(--teal);"><span class="bar-label" style="font-size:0.55rem">scroll</span></span><span class="gantt-bar gc-plugin" style="width:3%; margin-left:0.5%"><span class="bar-label" style="font-size:0.55rem">dismiss</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">suiteOrchestrator</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Round 2: onScroll + onDismiss</td>
+      <td class="time-col">2-8s</td>
+      <td class="bar-col"><span class="gantt-bar" style="width:3%; margin-left:58%; background:var(--teal);"><span class="bar-label" style="font-size:0.55rem">scroll</span></span><span class="gantt-bar gc-plugin" style="width:3%; margin-left:0.5%"><span class="bar-label" style="font-size:0.55rem">dismiss</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">suiteOrchestrator</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.content() + block detect</td>
+      <td class="time-col">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.5%; margin-left:65%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Stash __capturedPage</td>
+      <td class="time-col">~1ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.2%; margin-left:65.5%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Screenshot (stabilize + capture)</td>
+      <td class="time-col">1.5-3s</td>
+      <td class="bar-col"><span class="gantt-bar gc-extract" style="width:10%; margin-left:66%"><span class="bar-label">screenshot</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">extractionRunner</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Persist (disk + SQL)</td>
+      <td class="time-col">50-500ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-persist" style="width:3%; margin-left:76%"><span class="bar-label" style="color:var(--bg)">persist</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">screenshotPersister</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Stop screencast + resolve</td>
+      <td class="time-col">~20ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-resolve" style="width:0.5%; margin-left:79%"><span class="bar-label"></span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--text-muted);font-style:italic">requestHandler returns</td>
+      <td class="time-col" style="color:var(--text-muted);">—</td>
+      <td class="bar-col" style="color:var(--text-muted);font-size:0.65rem;padding-left:80%;">&#9660; handler done</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="phase-label">Video save (async)</td>
+      <td class="time-col">~100ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-video" style="width:1%; margin-left:80%"><span class="bar-label"></span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">prePageCloseHook</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--green);font-weight:600">PAGE CLOSE</td>
+      <td class="time-col" style="color:var(--green);">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:81%"></span> <span style="font-size:0.65rem;color:var(--green);">&larr; finally { page.close() }</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Transform phase (no page)</td>
+      <td class="time-col">0-500ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-extract" style="width:3%; margin-left:82%; opacity:0.5"><span class="bar-label">transform</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">extractionRunner</td>
+    </tr>
+    <tr style="border-top: 2px solid var(--border);">
+      <td class="phase-label" style="color:var(--red);">Handler timeout budget</td>
+      <td class="time-col" style="color:var(--red);">45s</td>
+      <td class="bar-col"><span class="gantt-bar outline gc-budget" style="width:100%"><span class="bar-label" style="color:var(--red);left:auto;right:4px;">requestHandlerTimeoutSecs: 45</span></span></td>
+      <td style="font-size:0.65rem;color:var(--red);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--accent);">Total Crawlee budget</td>
+      <td class="time-col" style="color:var(--accent);">75s</td>
+      <td class="bar-col"><span class="gantt-bar outline gc-crawlee" style="width:100%"><span class="bar-label" style="color:var(--accent);left:auto;right:4px;">nav(20) + handler(45) + buffer(10)</span></span></td>
+      <td style="font-size:0.65rem;color:var(--accent);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--cyan);">Video recording</td>
+      <td class="time-col" style="color:var(--cyan);">~20s</td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:81%; margin-left:0%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);left:auto;right:4px;">&#9679; REC &mdash; prePageCreateHook &rarr; prePageCloseHook &rarr; video.saveAs()</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── FAILURE PATH: TIMEOUT RESCUE ── -->
+<h3 style="color:var(--yellow);">Failure Path &mdash; Timeout Rescue (page loaded, plugins slow)</h3>
+<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
+  Handler timeout fires during extraction/persistence. HTML + screenshots rescued from <code>__capturedPage</code> / <code>__capturedExtractions</code>.
+  Result returned with <code>timeoutRescued: true</code>. GUI shows yellow "Partial" badge.
+</p>
+
+<table class="gantt">
+  <thead>
+    <tr>
+      <th>Phase</th>
+      <th>Duration</th>
+      <th style="min-width:500px;">Timeline (0s &rarr; 45s handler budget)</th>
+      <th>Owner</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="phase-label">PAGE OPEN</td>
+      <td class="time-col">~200ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:0%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Same-domain delay</td>
+      <td class="time-col">2s &plusmn;50%</td>
+      <td class="bar-col"><span class="gantt-bar gc-delay" style="width:5%; margin-left:0.5%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">preNavHook</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.goto() (slow site)</td>
+      <td class="time-col">10-18s</td>
+      <td class="bar-col"><span class="gantt-bar gc-nav" style="width:30%; margin-left:6%"><span class="bar-label">slow navigation</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee native</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Fetch suite loop (heavy expansion)</td>
+      <td class="time-col">10-15s</td>
+      <td class="bar-col"><span class="gantt-bar gc-plugin" style="width:25%; margin-left:36%"><span class="bar-label">heavy expand/scroll</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">pluginRunner</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.content() + stash</td>
+      <td class="time-col">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.5%; margin-left:61%"></span> <span style="font-size:0.6rem;color:var(--accent);">__capturedPage saved</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Screenshot (slow stabilize)</td>
+      <td class="time-col">1.5s</td>
+      <td class="bar-col"><span class="gantt-bar gc-extract" style="width:4%; margin-left:62%"><span class="bar-label">screenshot</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">extractionRunner</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--yellow);">__capturedExtractions saved</td>
+      <td class="time-col" style="color:var(--yellow);">~1ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-persist" style="width:0.3%; margin-left:66%"></span> <span style="font-size:0.6rem;color:var(--yellow);">stashed for rescue</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Persist (disk write...)</td>
+      <td class="time-col">starts</td>
+      <td class="bar-col"><span class="gantt-bar gc-persist" style="width:8%; margin-left:67%"><span class="bar-label" style="color:var(--bg)">persist...</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">screenshotPersister</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);font-weight:700">TIMEOUT FIRES</td>
+      <td class="time-col" style="color:var(--red);">@ 45s</td>
+      <td class="bar-col" style="position:relative;">
+        <span style="position:absolute;left:75%;top:0;bottom:0;width:2px;background:var(--red);"></span>
+        <span style="position:absolute;left:76%;top:2px;font-size:0.6rem;color:var(--red);font-weight:700;">&#9889; handler timeout</span>
+      </td>
+      <td style="font-size:0.65rem;color:var(--red);">Crawlee watchdog</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">errorHandler</td>
+      <td class="time-col">~5ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-error" style="width:1%; margin-left:76%"><span class="bar-label"></span></span> <span style="font-size:0.6rem;color:var(--red);">noRetry = true (capturedPage exists)</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--yellow);">failedRequestHandler</td>
+      <td class="time-col">~10ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-rescue" style="width:1.5%; margin-left:77%"><span class="bar-label"></span></span> <span style="font-size:0.6rem;color:var(--yellow);">rescue __capturedPage + __capturedExtractions</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--green);font-weight:600">PAGE CLOSE</td>
+      <td class="time-col" style="color:var(--green);">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:79%"></span> <span style="font-size:0.65rem;color:var(--green);">finally { page.close() }</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr style="border-top: 2px solid var(--border);">
+      <td class="phase-label" style="color:var(--red);">Handler timeout budget</td>
+      <td class="time-col" style="color:var(--red);">45s</td>
+      <td class="bar-col"><span class="gantt-bar outline gc-budget" style="width:75%"></span><span style="font-size:0.6rem;color:var(--red);margin-left:4px;">&#9888; exceeded</span></td>
+      <td style="font-size:0.65rem;color:var(--red);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--cyan);">Video recording</td>
+      <td class="time-col" style="color:var(--cyan);">~45s</td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:79%; margin-left:0%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);left:auto;right:4px;">&#9679; REC &mdash; records through timeout, saved at page close</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── FAILURE PATH: BLOCK DETECTED ── -->
+<h3 style="color:var(--red);">Failure Path &mdash; Block Detected (403/429/CAPTCHA)</h3>
+<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
+  Page loads but block detected by <code>classifyBlockStatus()</code>. Session retired, error thrown.
+  Crawlee retries with fresh session (1 retry). If still blocked, <code>failedRequestHandler</code> resolves with block info.
+  Blocked URLs later retried via proxy crawler.
+</p>
+
+<table class="gantt">
+  <thead>
+    <tr>
+      <th>Phase</th>
+      <th>Duration</th>
+      <th style="min-width:500px;">Timeline</th>
+      <th>Owner</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="phase-label">PAGE OPEN</td>
+      <td class="time-col">~200ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:0%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.goto() (block page fast)</td>
+      <td class="time-col">1-3s</td>
+      <td class="bar-col"><span class="gantt-bar gc-nav" style="width:8%; margin-left:1%"><span class="bar-label">nav</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee native</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Fetch suite loop (minimal)</td>
+      <td class="time-col">~1s</td>
+      <td class="bar-col"><span class="gantt-bar gc-plugin" style="width:3%; margin-left:9%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">pluginRunner</td>
+    </tr>
+    <tr>
+      <td class="phase-label">page.content() + block detect</td>
+      <td class="time-col">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-capture" style="width:0.5%; margin-left:12%"></span> <span style="font-size:0.6rem;color:var(--red);">blocked: status_429</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">session.retire() + throw</td>
+      <td class="time-col">~5ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-block" style="width:0.5%; margin-left:13%"></span> <span style="font-size:0.6rem;color:var(--red);">throw "blocked:status_429"</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">requestHandler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);font-weight:600">PAGE CLOSE (attempt 1)</td>
+      <td class="time-col" style="color:var(--green);">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:14%"></span> <span style="font-size:0.65rem;color:var(--green);">finally { page.close() }</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">errorHandler &rarr; retry</td>
+      <td class="time-col">~5ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-retry" style="width:0.5%; margin-left:15%"></span> <span style="font-size:0.6rem;color:var(--orange);">fresh session (new fingerprint + cookies)</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--orange);">RETRY: new page + nav + detect</td>
+      <td class="time-col">3-5s</td>
+      <td class="bar-col"><span class="gantt-bar gc-retry" style="width:12%; margin-left:16%"><span class="bar-label">retry with new session</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">Still blocked &rarr; failedRequestHandler</td>
+      <td class="time-col">~10ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-error" style="width:1%; margin-left:28%"></span> <span style="font-size:0.6rem;color:var(--red);">resolve with block info</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--green);font-weight:600">PAGE CLOSE (attempt 2)</td>
+      <td class="time-col" style="color:var(--green);">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:29%"></span> <span style="font-size:0.65rem;color:var(--green);">finally { page.close() }</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--purple);">Proxy retry (after batch)</td>
+      <td class="time-col">5-30s</td>
+      <td class="bar-col"><span class="gantt-bar" style="width:25%; margin-left:30%; background:var(--purple); opacity:0.6;"><span class="bar-label">retryWithProxy() &mdash; new crawler instance</span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr style="border-top: 2px solid var(--border);">
+      <td class="phase-label" style="color:var(--cyan);">Video recording (attempt 1)</td>
+      <td class="time-col" style="color:var(--cyan);">~5s</td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:14%; margin-left:0%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);">&#9679; REC (block page)</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--cyan);">Video recording (retry)</td>
+      <td class="time-col" style="color:var(--cyan);">~5s</td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:13%; margin-left:16%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);">&#9679; REC (retry page)</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── FAILURE PATH: NAV TIMEOUT ── -->
+<h3 style="color:var(--red);">Failure Path &mdash; Navigation Timeout (page unresponsive)</h3>
+<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
+  <code>page.goto()</code> exceeds <code>navigationTimeoutSecs</code> (20s). Crawlee throws before <code>requestHandler</code> even runs.
+  No HTML captured, no screenshots, no rescue possible. Marked non-retryable.
+</p>
+
+<table class="gantt">
+  <thead>
+    <tr>
+      <th>Phase</th>
+      <th>Duration</th>
+      <th style="min-width:500px;">Timeline</th>
+      <th>Owner</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="phase-label">PAGE OPEN</td>
+      <td class="time-col">~200ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:0%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee</td>
+    </tr>
+    <tr>
+      <td class="phase-label">Same-domain delay</td>
+      <td class="time-col">2s &plusmn;50%</td>
+      <td class="bar-col"><span class="gantt-bar gc-delay" style="width:8%; margin-left:1%"></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">preNavHook</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">page.goto() &mdash; HANGS</td>
+      <td class="time-col" style="color:var(--red);">20s (full)</td>
+      <td class="bar-col"><span class="gantt-bar gc-nav" style="width:72%; margin-left:9%; opacity:0.5;"><span class="bar-label">waiting for load... (never fires)</span></span><span style="position:relative;"><span style="position:absolute;left:0;top:-8px;width:2px;height:18px;background:var(--red);"></span></span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee native</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);font-weight:700">NAV TIMEOUT FIRES</td>
+      <td class="time-col" style="color:var(--red);">@ 20s</td>
+      <td class="bar-col"><span style="margin-left:81%;font-size:0.6rem;color:var(--red);font-weight:700;">&#9889; Navigation timed out</span></td>
+      <td style="font-size:0.65rem;color:var(--red);">Playwright</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">Crawlee _handleNavigationTimeout</td>
+      <td class="time-col">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-error" style="width:1%; margin-left:82%"></span> <span style="font-size:0.6rem;color:var(--red);">page.close() + throw</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">BrowserCrawler</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">errorHandler</td>
+      <td class="time-col">~5ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-error" style="width:0.5%; margin-left:83%"></span> <span style="font-size:0.6rem;color:var(--red);">noRetry = true ("Navigation timed out")</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--red);">failedRequestHandler</td>
+      <td class="time-col">~10ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-error" style="width:1%; margin-left:84%"></span> <span style="font-size:0.6rem;color:var(--red);">no __capturedPage &rarr; empty result + fetchError</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">crawlSession</td>
+    </tr>
+    <tr>
+      <td class="phase-label" style="color:var(--green);font-weight:600">PAGE CLOSE</td>
+      <td class="time-col" style="color:var(--green);">~50ms</td>
+      <td class="bar-col"><span class="gantt-bar gc-close" style="width:0.5%; margin-left:85%"></span> <span style="font-size:0.65rem;color:var(--green);">finally { page.close() } (may already be closed)</span></td>
+      <td style="font-size:0.65rem;color:var(--text-muted);">Crawlee BasicCrawler</td>
+    </tr>
+    <tr style="border-top: 2px solid var(--border);">
+      <td class="phase-label" style="color:var(--cyan);">Video recording</td>
+      <td class="time-col" style="color:var(--cyan);">~22s</td>
+      <td class="bar-col"><span class="gantt-bar outline" style="width:85%; margin-left:0%; border-color:var(--cyan);"><span class="bar-label" style="color:var(--cyan);left:auto;right:4px;">&#9679; REC &mdash; records blank/loading page for full nav timeout, saved at close</span></span></td>
+      <td style="font-size:0.65rem;color:var(--cyan);">Playwright</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note" style="margin-top:1.5rem;">
+  <strong>Page close summary:</strong> In ALL paths, the page is closed in Crawlee's <code>finally</code> block via
+  <code>_cleanupContext() &rarr; page.close()</code>. This runs after <code>requestHandler</code> returns (success),
+  after <code>failedRequestHandler</code> completes (failure), or after <code>_handleNavigationTimeout</code> (nav timeout
+  &mdash; note: Crawlee closes the page <em>twice</em> in this case: once in <code>_handleNavigationTimeout</code> and once
+  in <code>finally</code>, but <code>page.close()</code> is idempotent). The <code>prePageCloseHook</code> (video save)
+  fires inside <code>browserPool</code> just before the actual page close.
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="settings" class="section">
+<h2>5. Configurable Settings (Crawlee Knobs)</h2>
+
+<table class="timer-table">
+  <thead>
+    <tr><th>Setting</th><th>Type</th><th>Default</th><th>Range</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="setting-name">crawleeHeadless</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Browser visibility (false = visible window)</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeRequestHandlerTimeoutSecs</td><td>int</td><td class="default-val">45</td><td>0-300</td>
+      <td>Total handler timeout per page</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeMaxRequestRetries</td><td>int</td><td class="default-val">1</td><td>0-5</td>
+      <td>Native Crawlee retries with session rotation</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeNavigationTimeoutSecs</td><td>int</td><td class="default-val">20</td><td>1-120</td>
+      <td>page.goto() timeout (Crawlee native <code>navigationTimeoutSecs</code>)</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeBrowserRetirePageCount</td><td>int</td><td class="default-val">10</td><td>1-50</td>
+      <td>Pages before browser restart</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeSameDomainDelaySecs</td><td>int</td><td class="default-val">2</td><td>0-30</td>
+      <td>Anti-bot delay between same-domain requests</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeMaxRequestsPerMinute</td><td>int</td><td class="default-val">0</td><td>0=unlimited</td>
+      <td>Global RPM cap</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeUseSessionPool</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Enable session rotation + cookies</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleePersistCookiesPerSession</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Carry cookies within a session</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeSessionPoolSize</td><td>int</td><td class="default-val">100</td><td>10-1,000</td>
+      <td>Max concurrent session identities</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeSessionMaxUsageCount</td><td>int</td><td class="default-val">50</td><td>1-500</td>
+      <td>Requests before session retirement</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeSessionMaxAgeSecs</td><td>int</td><td class="default-val">3,000</td><td>60-86,400</td>
+      <td>Session lifetime before retirement</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeUseFingerprints</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Realistic browser fingerprints</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawleeProxyUrlsJson</td><td>string</td><td class="default-val">""</td><td>JSON array</td>
+      <td>Proxy URLs for fallback retry</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawlMaxConcurrentSlots</td><td>int</td><td class="default-val">4</td><td>1-16</td>
+      <td>Parallel browser pages</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawlVideoRecordingEnabled</td><td>bool</td><td class="default-val">false</td><td>&mdash;</td>
+      <td>Record page loading video (WebM)</td>
+    </tr>
+    <tr>
+      <td class="setting-name">crawlVideoRecordingSize</td><td>string</td><td class="default-val">1280x720</td><td>&mdash;</td>
+      <td>Video recording dimensions</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotEnabled</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Enable screenshot capture</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotStabilizeEnabled</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Wait for fonts/images/paint before capture</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotStabilizeTimeoutMs</td><td>int</td><td class="default-val">1,500</td><td>500-10,000</td>
+      <td>Stabilization timeout</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotFormat</td><td>string</td><td class="default-val">jpeg</td><td>jpeg | png</td>
+      <td>Screenshot image format</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotQuality</td><td>int</td><td class="default-val">75</td><td>0-100</td>
+      <td>JPEG quality</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotMaxBytes</td><td>int</td><td class="default-val">5,000,000</td><td>&mdash;</td>
+      <td>Max screenshot file size</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotSelectors</td><td>string</td><td class="default-val">""</td><td>CSV</td>
+      <td>CSS selectors for targeted crops</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotMaxSelectors</td><td>int</td><td class="default-val">12</td><td>&mdash;</td>
+      <td>Max selector crops to attempt</td>
+    </tr>
+    <tr>
+      <td class="setting-name">capturePageScreenshotStitchEnabled</td><td>bool</td><td class="default-val">true</td><td>&mdash;</td>
+      <td>Enable scroll-and-stitch for tall pages</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<section id="files" class="section">
+<h2>6. Key Source File Map</h2>
+
+<table class="timer-table">
+  <thead>
+    <tr><th>File</th><th>Responsibility</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="setting-name">src/pipeline/runProduct.js</td><td>Pipeline orchestrator &mdash; session creation, fetch plan execution, shutdown</td></tr>
+    <tr><td class="setting-name">src/pipeline/seams/bootstrapRunProductExecutionState.js</td><td>Bootstrap executor &mdash; runs discovery pipeline, calls domain classifier</td></tr>
+    <tr><td class="setting-name">src/features/indexing/pipeline/domainClassifier/runDomainClassifier.js</td><td>Domain classifier &mdash; builds ordered fetch plan, assigns worker IDs</td></tr>
+    <tr><td class="setting-name">src/features/crawl/crawlSession.js</td><td>Crawlee session wrapper &mdash; requestHandler, errorHandler, failedRequestHandler, runFetchPlan</td></tr>
+    <tr><td class="setting-name">src/features/crawl/adapters/crawleeAdapter.js</td><td>Adapter entry point (thin wrapper around crawlSession)</td></tr>
+    <tr><td class="setting-name">src/features/crawl/core/pluginRunner.js</td><td>Plugin hook execution engine &mdash; runHook (sequential) + runHookConcurrent (parallel via Promise.allSettled)</td></tr>
+    <tr><td class="setting-name">src/features/crawl/core/suiteOrchestrator.js</td><td>Fetch suite loop &mdash; [loading delay] &rarr; onDismiss &rarr; (onScroll &rarr; onDismiss) &times; N rounds</td></tr>
+    <tr><td class="setting-name">src/features/crawl/plugins/pluginRegistry.js</td><td>6 crawl plugins: stealth, cookieConsent, overlayDismissal, domExpansion, cssOverride, autoScroll</td></tr>
+    <tr><td class="setting-name">src/features/crawl/plugins/overlayDismissalPlugin.js</td><td>3-layer overlay removal: CSS suppression (onInit) + DOM scan/close-click + scroll-lock reset (onDismiss)</td></tr>
+    <tr><td class="setting-name">src/features/crawl/bypassStrategies.js</td><td>Block detection &mdash; classifyBlockStatus() for 429/403/captcha/cloudflare</td></tr>
+    <tr><td class="setting-name">src/features/extraction/core/extractionRunner.js</td><td>Two-phase extraction engine &mdash; runCaptures() + runTransforms()</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/pluginRegistry.js</td><td>Extraction plugin registry (currently: screenshot)</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/screenshot/screenshotPlugin.js</td><td>Screenshot plugin orchestrator &mdash; stabilize, capture, stitch</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/screenshot/screenshotCapture.js</td><td>Screenshot capture logic &mdash; full-page + selector crops</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/screenshot/pageStabilizer.js</td><td>Page readiness gates &mdash; fonts, images, paint cycle</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/screenshot/viewportStitcher.js</td><td>Scroll-and-stitch for pages exceeding 16,384px Chromium limit</td></tr>
+    <tr><td class="setting-name">src/features/extraction/plugins/screenshot/screenshotArtifactPersister.js</td><td>Disk write + SQL index for screenshot artifacts</td></tr>
+    <tr><td class="setting-name">src/indexlab/runtimeBridge.js</td><td>State machine &mdash; phase cursor, stage lifecycle, event queue</td></tr>
+    <tr><td class="setting-name">src/indexlab/runtimeBridgeEventHandlers.js</td><td>Event dispatcher (20+ handler functions)</td></tr>
+    <tr><td class="setting-name">src/indexlab/runtimeBridgeArtifacts.js</td><td>Event emission, file I/O (run.json, needset.json, search_profile.json)</td></tr>
+    <tr><td class="setting-name">src/indexlab/runtimeBridgeStageLifecycle.js</td><td>Phase cursor progression + stage start/finish</td></tr>
+    <tr><td class="setting-name">src/shared/settingsRegistry.js</td><td>All configurable timeout/delay knobs</td></tr>
+  </tbody>
+</table>
+</section>
+
+<footer style="margin-top:3rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--text-muted);font-size:0.75rem;">
+  Generated 2026-03-27 &mdash; Spec Factory Pipeline Documentation
+</footer>
+
+</body>
+</html>

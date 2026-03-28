@@ -8,6 +8,7 @@ import { buildStageEntry, type StageEntry } from '../shared/stageGroupContracts.
 import { EXTRACTION_STAGE_KEYS, EXTRACTION_STAGE_META, type ExtractionTabKey } from './extractionStageKeys.generated.ts';
 import { EXTRACTION_SELECT_PROPS, type ExtractionPanelContext } from './extractionStageSelectProps.ts';
 import { ExtractionScreenshotPanel } from './ExtractionScreenshotPanel.tsx';
+import { ExtractionVideoPanel } from './ExtractionVideoPanel.tsx';
 
 export type ExtractionStageEntry = StageEntry<ExtractionTabKey, ExtractionPanelContext>;
 
@@ -19,6 +20,7 @@ export { type ExtractionPanelContext } from './extractionStageSelectProps.ts';
 /* eslint-disable @typescript-eslint/no-explicit-any -- Component generics erased at registry boundary */
 const EXTRACTION_COMPONENTS: Record<ExtractionTabKey, ComponentType<any>> = {
   screenshot: ExtractionScreenshotPanel,
+  video: ExtractionVideoPanel,
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

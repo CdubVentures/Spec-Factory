@@ -105,18 +105,13 @@ async function enrichArchivedS3MetaWithArtifacts(parsed = null, { storage = null
   const existingArtifacts = parsed.artifacts && typeof parsed.artifacts === 'object'
     ? parsed.artifacts
     : {};
-  const needsetKey = `${normalizedKeyBase}/indexlab/needset.json`;
-  const searchProfileKey = `${normalizedKeyBase}/indexlab/search_profile.json`;
-
   const hasNeedset = Boolean(
     existingArtifacts.has_needset
     || parsed.needset
-    || await objectExists(storage, needsetKey)
   );
   const hasSearchProfile = Boolean(
     existingArtifacts.has_search_profile
     || parsed.search_profile
-    || await objectExists(storage, searchProfileKey)
   );
   const hasExplicitArtifactHints = Object.hasOwn(existingArtifacts, 'has_needset')
     || Object.hasOwn(existingArtifacts, 'has_search_profile');

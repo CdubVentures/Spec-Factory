@@ -47,7 +47,7 @@ import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductEx
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
-import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts } from '../features/extraction/index.js';
+import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts, persistVideoArtifact } from '../features/extraction/index.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -130,7 +130,7 @@ export async function runProduct({
     runId,
     env: process.env,
     manifestDefaults: CONFIG_MANIFEST_DEFAULTS,
-    defaultIndexLabRootFn: defaultIndexLabRoot,
+    defaultIndexLabRootFn: () => config.indexLabRoot || defaultIndexLabRoot(),
     joinPathFn: path.join,
     mkdirSyncFn: fs.mkdirSync,
     captureKnobSnapshotFn: captureKnobSnapshot,
@@ -186,15 +186,37 @@ export async function runProduct({
     logger,
   });
   const adapter = resolveAdapter('crawlee');
-  const screenshotDir = path.join(defaultIndexLabRoot(), runId, 'screenshots');
+  // WHY: Use config.indexLabRoot (storage-backed) instead of hardcoded default.
+  // The parent process passes --out which resolves to the storage destination.
+  const effectiveIndexLabRoot = config.indexLabRoot || defaultIndexLabRoot();
+  const screenshotDir = path.join(effectiveIndexLabRoot, runId, 'screenshots');
+  const videoDir = path.join(effectiveIndexLabRoot, runId, 'video');
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,
     extractionRunner,
     logger,
     onScreencastFrame: resolveScreencastCallback(config),
-    onScreenshotsPersist: ({ screenshots, workerId, url }) =>
-      persistScreenshotArtifacts({ screenshots, screenshotDir, workerId, url }),
+    onScreenshotsPersist: ({ screenshots, workerId, url }) => {
+      const specDb = config.specDb || null;
+      let host = '';
+      try { host = new URL(url).hostname; } catch { /* invalid URL */ }
+      return persistScreenshotArtifacts({
+        screenshots, screenshotDir, workerId, url,
+        insertScreenshot: specDb ? (row) => specDb.insertScreenshot(row) : undefined,
+        runContext: { category, productId, runId, host },
+      });
+    },
+    onVideoPersist: ({ videoPath, workerId, url }) => {
+      const specDb = config.specDb || null;
+      let host = '';
+      try { host = new URL(url).hostname; } catch { /* invalid URL */ }
+      return persistVideoArtifact({
+        videoPath, videoDir, workerId, url,
+        insertVideo: specDb ? (row) => specDb.insertVideo(row) : undefined,
+        runContext: { category, productId, runId, host },
+      });
+    },
   });
   await session.start();
   const warmUpPromise = session.warmUp?.() ?? Promise.resolve();

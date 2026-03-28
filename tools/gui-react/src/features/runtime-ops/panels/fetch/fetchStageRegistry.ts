@@ -9,6 +9,7 @@ import { FETCH_STAGE_KEYS, FETCH_STAGE_META, type FetchTabKey } from './fetchSta
 import { FETCH_SELECT_PROPS, type FetchPanelContext } from './fetchStageSelectProps.ts';
 import { FetchStealthPanel } from './FetchStealthPanel.tsx';
 import { FetchCookieConsentPanel } from './FetchCookieConsentPanel.tsx';
+import { FetchOverlayDismissalPanel } from './FetchOverlayDismissalPanel.tsx';
 import { FetchAutoScrollPanel } from './FetchAutoScrollPanel.tsx';
 import { FetchDomExpansionPanel } from './FetchDomExpansionPanel.tsx';
 import { FetchCssOverridePanel } from './FetchCssOverridePanel.tsx';
@@ -24,6 +25,7 @@ export { FETCH_SELECT_PROPS, type FetchPanelContext } from './fetchStageSelectPr
 const FETCH_COMPONENTS: Record<FetchTabKey, ComponentType<any>> = {
   stealth: FetchStealthPanel,
   cookie_consent: FetchCookieConsentPanel,
+  overlay_dismissal: FetchOverlayDismissalPanel,
   auto_scroll: FetchAutoScrollPanel,
   dom_expansion: FetchDomExpansionPanel,
   css_override: FetchCssOverridePanel,

@@ -163,3 +163,152 @@ describe('persistScreenshotArtifacts', () => {
     assert.equal(result[0].format, 'jpeg');
   });
 });
+
+// --- Content-hash + SQL indexing (Step 1-2: evolved persister) ---
+
+describe('persistScreenshotArtifacts — content_hash', () => {
+  it('returns content_hash for each persisted screenshot', () => {
+    const result = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('hash-test'), width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    assert.equal(result.length, 1);
+    assert.ok(result[0].content_hash, 'should have content_hash');
+    assert.equal(typeof result[0].content_hash, 'string');
+    assert.equal(result[0].content_hash.length, 64, 'SHA-256 hex is 64 chars');
+  });
+
+  it('produces deterministic content_hash for same bytes', () => {
+    const bytes = Buffer.from('deterministic-test-data');
+    const r1 = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes, width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    const r2 = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes, width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    assert.equal(r1[0].content_hash, r2[0].content_hash);
+  });
+
+  it('produces different content_hash for different bytes', () => {
+    const r1 = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('data-A'), width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    const r2 = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('data-B'), width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    assert.notEqual(r1[0].content_hash, r2[0].content_hash);
+  });
+});
+
+describe('persistScreenshotArtifacts — SQL indexing', () => {
+  it('calls insertScreenshot with correct row when provided', () => {
+    const calls = [];
+    const insertScreenshot = (row) => calls.push(row);
+
+    const result = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('sql-test'), width: 1920, height: 1080, captured_at: '2026-03-27T12:00:00Z' }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://example.com/product',
+      insertScreenshot,
+      runContext: { category: 'mouse', productId: 'mouse-test', runId: 'run-001', host: 'example.com' },
+    });
+
+    assert.equal(calls.length, 1);
+    const row = calls[0];
+    assert.equal(row.category, 'mouse');
+    assert.equal(row.product_id, 'mouse-test');
+    assert.equal(row.run_id, 'run-001');
+    assert.equal(row.source_url, 'https://example.com/product');
+    assert.equal(row.host, 'example.com');
+    assert.equal(row.selector, 'fullpage');
+    assert.equal(row.format, 'jpg');
+    assert.equal(row.width, 1920);
+    assert.equal(row.height, 1080);
+    assert.equal(row.size_bytes, Buffer.from('sql-test').length);
+    assert.ok(row.screenshot_id, 'should have screenshot_id');
+    assert.ok(row.content_hash, 'should have content_hash');
+    assert.ok(row.file_path, 'should have file_path');
+    assert.ok(row.captured_at, 'should have captured_at');
+  });
+
+  it('does not call insertScreenshot when not provided', () => {
+    const result = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('no-sql'), width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+    });
+    assert.equal(result.length, 1);
+    // No crash — insertScreenshot was undefined
+  });
+
+  it('does not call insertScreenshot when runContext is missing', () => {
+    const calls = [];
+    const result = persistScreenshotArtifacts({
+      screenshots: [{ kind: 'page', format: 'jpeg', bytes: Buffer.from('no-ctx'), width: 100, height: 100 }],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+      insertScreenshot: (row) => calls.push(row),
+      // runContext deliberately omitted
+    });
+    assert.equal(calls.length, 0, 'should not call insertScreenshot without runContext');
+    assert.equal(result.length, 1);
+  });
+
+  it('catches insertScreenshot errors without stopping other screenshots', () => {
+    let callCount = 0;
+    const insertScreenshot = () => {
+      callCount++;
+      if (callCount === 1) throw new Error('SQL failure');
+    };
+
+    const result = persistScreenshotArtifacts({
+      screenshots: [
+        { kind: 'page', format: 'jpeg', bytes: Buffer.from('shot-1'), width: 100, height: 100 },
+        { kind: 'crop', format: 'jpeg', bytes: Buffer.from('shot-2'), width: 200, height: 200 },
+      ],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+      insertScreenshot,
+      runContext: { category: 'mouse', productId: 'p1', runId: 'r1', host: 'a.com' },
+    });
+
+    assert.equal(result.length, 2, 'both screenshots should persist to disk');
+    assert.equal(callCount, 2, 'insertScreenshot called for both');
+  });
+
+  it('maps selector from screenshot metadata or defaults to fullpage', () => {
+    const calls = [];
+    persistScreenshotArtifacts({
+      screenshots: [
+        { kind: 'page', format: 'jpeg', bytes: Buffer.from('a'), width: 100, height: 100 },
+        { kind: 'crop', format: 'jpeg', bytes: Buffer.from('b'), width: 100, height: 100, selector: '.hero-image' },
+      ],
+      screenshotDir: tmpDir,
+      workerId: 'fetch-1',
+      url: 'https://a.com',
+      insertScreenshot: (row) => calls.push(row),
+      runContext: { category: 'mouse', productId: 'p1', runId: 'r1', host: 'a.com' },
+    });
+
+    assert.equal(calls[0].selector, 'fullpage');
+    assert.equal(calls[1].selector, '.hero-image');
+  });
+});

@@ -182,7 +182,7 @@ const RAW_CHECKS = [
   ['SS-01', 'S9', 'Retained frame visible mid-run', 'Not just after completion', false],
   ['SS-02', 'S9', 'Retained frame timestamp advances', 'Multiple timestamps observed', false],
   ['SS-03', 'S9', 'Thumbnail grid changes during run', 'Grid count or images update while running', false],
-  ['SS-04', 'S9', 'Runtime screencast files written', 'Screencast directory populated', true],
+  ['SS-04', 'S9', 'Extraction screenshots persisted', 'Screenshots directory populated', true],
   ['SS-05', 'S9', 'Screenshot count plausible', 'Not wildly disconnected from fetched page count', true],
   ['SS-06', 'S9', 'Lightbox opens', 'User can inspect selected screenshot', false],
   ['SS-07', 'S9', 'Keyboard nav works', 'Left/right/escape work', false],

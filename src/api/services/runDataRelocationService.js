@@ -456,7 +456,6 @@ export async function relocateRunDataForCompletedRun({
   const category = resolveRunToken(runMeta, ['category']) || 'unknown-category';
   const productId = resolveRunToken(runMeta, ['product_id', 'productId']) || 'unknown-product';
   const runBaseKey = resolveRunToken(runMeta, ['run_base', 'runBase']);
-  const latestBaseKey = resolveRunToken(runMeta, ['latest_base', 'latestBase']);
   if (!runId) {
     throw new Error('missing_run_id');
   }
@@ -465,7 +464,6 @@ export async function relocateRunDataForCompletedRun({
   const indexLabRootAbs = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
 
   const runOutputDir = resolveOutputPathFromKey(outputRootAbs, runBaseKey);
-  const latestOutputDir = resolveOutputPathFromKey(outputRootAbs, latestBaseKey);
   const indexLabRunDir = path.resolve(path.join(indexLabRootAbs, runId));
   const runtimeTraceRunDir = (await (async () => {
     const candidates = resolveRuntimeTraceRunCandidates(outputRootAbs, outputPrefix, runId);
@@ -474,20 +472,9 @@ export async function relocateRunDataForCompletedRun({
     }
     return '';
   })());
-  const runtimeEventsSourcePath = (await (async () => {
-    const candidates = resolveRuntimeEventsCandidates(outputRootAbs, outputPrefix);
-    for (const candidate of candidates) {
-      if (await pathExists(candidate)) return candidate;
-    }
-    return '';
-  })());
-  const billingLedgerPaths = await resolveBillingLedgerCandidates(outputRootAbs, outputPrefix);
-
   const runOutputInsideRoot = runOutputDir && isSubPath(outputRootAbs, runOutputDir);
-  const latestOutputInsideRoot = latestOutputDir && isSubPath(outputRootAbs, latestOutputDir);
   const indexLabInsideRoot = indexLabRunDir && isSubPath(indexLabRootAbs, indexLabRunDir);
   if (runOutputDir && !runOutputInsideRoot) throw new Error('run_output_outside_root');
-  if (latestOutputDir && !latestOutputInsideRoot) throw new Error('latest_output_outside_root');
   if (indexLabRunDir && !indexLabInsideRoot) throw new Error('indexlab_output_outside_root');
 
   const stageRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-run-stage-'));
@@ -497,21 +484,12 @@ export async function relocateRunDataForCompletedRun({
 
   const copyReport = {
     staged_run_output: false,
-    staged_latest_snapshot: false,
     staged_indexlab: false,
     staged_runtime_traces: false,
-    runtime_event_rows: 0,
-    billing_rows: 0,
-    billing_files: 0,
-    purged_runtime_event_rows: 0,
-    purged_billing_rows: 0,
   };
 
   if (runOutputDir) {
     copyReport.staged_run_output = await copyDirectoryIfPresent(runOutputDir, path.join(stageRunRoot, 'run_output'));
-  }
-  if (latestOutputDir) {
-    copyReport.staged_latest_snapshot = await copyDirectoryIfPresent(latestOutputDir, path.join(stageRunRoot, 'latest_snapshot'));
   }
   if (indexLabRunDir) {
     copyReport.staged_indexlab = await copyDirectoryIfPresent(indexLabRunDir, path.join(stageRunRoot, 'indexlab'));
@@ -520,33 +498,7 @@ export async function relocateRunDataForCompletedRun({
     copyReport.staged_runtime_traces = await copyDirectoryIfPresent(runtimeTraceRunDir, path.join(stageRunRoot, 'runtime_traces'));
   }
 
-  const sharedLogsDir = path.join(stageRunRoot, 'shared_logs');
-  await fs.mkdir(sharedLogsDir, { recursive: true });
-
-  if (runtimeEventsSourcePath) {
-    const runtimeRows = await filterJsonlByRunId(runtimeEventsSourcePath, runId);
-    copyReport.runtime_event_rows = runtimeRows.length;
-    if (runtimeRows.length > 0) {
-      await fs.writeFile(
-        path.join(sharedLogsDir, 'runtime_events.jsonl'),
-        `${runtimeRows.join('\n')}\n`,
-        'utf8',
-      );
-    }
-  }
-
-  for (const ledgerPath of billingLedgerPaths) {
-    const rows = await filterJsonlByRunId(ledgerPath, runId);
-    if (rows.length === 0) continue;
-    const basename = path.basename(ledgerPath).replace(/[^a-zA-Z0-9._-]+/g, '_');
-    const parentToken = sanitizePathToken(path.basename(path.dirname(ledgerPath)), 'billing');
-    const outputName = parentToken === 'ledger'
-      ? `billing_ledger_${basename}`
-      : `billing_${parentToken}_${basename}`;
-    await fs.writeFile(path.join(sharedLogsDir, outputName), `${rows.join('\n')}\n`, 'utf8');
-    copyReport.billing_rows += rows.length;
-    copyReport.billing_files += 1;
-  }
+  // WHY: shared_logs/ staging killed — runtime events + billing entries are SQL-only (Wave 5.5+).
 
   const manifest = {
     run_id: runId,
@@ -554,7 +506,6 @@ export async function relocateRunDataForCompletedRun({
     product_id: productId,
     source: {
       run_base: runBaseKey || null,
-      latest_base: latestBaseKey || null,
       output_root: outputRootAbs,
       indexlab_root: indexLabRootAbs,
     },
@@ -589,7 +540,6 @@ export async function relocateRunDataForCompletedRun({
 
   const sourceDirsToDelete = [...new Set([
     copyReport.staged_run_output ? runOutputDir : '',
-    copyReport.staged_latest_snapshot ? latestOutputDir : '',
     copyReport.staged_indexlab ? indexLabRunDir : '',
     copyReport.staged_runtime_traces ? runtimeTraceRunDir : '',
   ].filter(Boolean))];
@@ -604,13 +554,6 @@ export async function relocateRunDataForCompletedRun({
     await fs.mkdir(path.dirname(destinationRoot), { recursive: true });
     await fs.rm(destinationRoot, { recursive: true, force: true });
     await fs.cp(stageRunRoot, destinationRoot, { recursive: true, force: true });
-    const purgeReport = await purgeSharedJsonlSources({
-      runId,
-      runtimeEventsSourcePath,
-      billingLedgerPaths,
-    });
-    copyReport.purged_runtime_event_rows = purgeReport.runtimeRowsRemoved;
-    copyReport.purged_billing_rows = purgeReport.billingRowsRemoved;
     for (const sourceDir of sourceDirsToDelete) {
       try {
         await deleteDirectoryIfPresent(sourceDir);
@@ -646,13 +589,6 @@ export async function relocateRunDataForCompletedRun({
     prefix: destinationPrefix,
     credentials: toS3Credentials(normalizedSettings),
   });
-  const purgeReport = await purgeSharedJsonlSources({
-    runId,
-    runtimeEventsSourcePath,
-    billingLedgerPaths,
-  });
-  copyReport.purged_runtime_event_rows = purgeReport.runtimeRowsRemoved;
-  copyReport.purged_billing_rows = purgeReport.billingRowsRemoved;
   for (const sourceDir of sourceDirsToDelete) {
     try {
       await deleteDirectoryIfPresent(sourceDir);

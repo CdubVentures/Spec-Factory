@@ -41,26 +41,6 @@ test('writeSearchProfile default writes SQL only — no JSON file created', asyn
   }
 });
 
-test('writeSearchProfile with writeJson: true writes both JSON and SQL', async () => {
-  const tmpDir = await makeTmpDir();
-  try {
-    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
-    const searchProfilePath = path.join(tmpDir, 'search_profile.json');
-    const state = buildMockState({ searchProfilePath, specDb });
-    const payload = { status: 'executed', query_count: 5, query_rows: [{ query: 'razer viper' }] };
-
-    await writeSearchProfile(state, payload, { writeJson: true });
-
-    const jsonDoc = JSON.parse(await fs.readFile(searchProfilePath, 'utf8'));
-    assert.deepEqual(jsonDoc, payload);
-
-    const sqlRow = specDb.getRunArtifact('run-art-001', 'search_profile');
-    assert.deepEqual(sqlRow.payload, payload);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
-});
-
 test('SQL write is best-effort — no crash if specDb is null', async () => {
   const state = buildMockState({ specDb: null });
   await writeSearchProfile(state, { status: 'planned' });

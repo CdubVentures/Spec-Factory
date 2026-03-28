@@ -56,12 +56,15 @@ export function buildExtractionPluginPhases(events) {
       const workerId = String(p.worker_id || '');
       const filenames = Array.isArray(p.filenames) ? p.filenames : [];
 
+      const fileSizes = Array.isArray(p.file_sizes) ? p.file_sizes : [];
+
       if (pluginName && groups[pluginName] && filenames.length > 0) {
         const entry = groups[pluginName].entries.find(
           (e) => e.url === url && e.worker_id === workerId,
         );
         if (entry) {
           entry.filenames = filenames;
+          if (fileSizes.length > 0) entry.file_sizes = fileSizes;
         }
       }
     }

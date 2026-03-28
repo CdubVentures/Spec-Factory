@@ -90,13 +90,9 @@ describe('readArchivedS3RunMetaOnly', () => {
       const location = { type: 's3', keyBase: 'archive/keyboard/kb-product/run-artifacts', runId: 'run-artifacts' };
       const result = await readArchivedS3RunMetaOnly(location, 'run-artifacts');
 
-      assert.deepEqual(result, {
-        ...runMeta,
-        artifacts: {
-          has_needset: true,
-          has_search_profile: true,
-        },
-      });
+      // WHY: Wave 5.5 killed needset.json/search_profile.json S3 file probes.
+      // Without explicit artifact hints in meta, no artifacts wrapper is added.
+      assert.deepEqual(result, runMeta);
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }

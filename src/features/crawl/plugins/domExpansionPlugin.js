@@ -135,8 +135,9 @@ function setupNavigationGuard(page) {
 
 export const domExpansionPlugin = {
   name: 'domExpansion',
+  suites: ['dismiss'],
   hooks: {
-    async onInteract({ page, settings }) {
+    async onDismiss({ page, settings }) {
       const enabled = settings?.domExpansionEnabled !== false && settings?.domExpansionEnabled !== 'false';
       if (!enabled) return { enabled: false, selectors: [], found: 0, clicked: 0, expanded: 0, blocked: 0, skippedNav: 0, contentDelta: 0, settleMs: 0, budgetExhausted: false };
 

@@ -27,7 +27,7 @@
 
 flowchart TB
 
-  title["<b>SQL MIGRATION STATUS</b><br/><i>Waves 1-4 Complete  |  Audited 2026-03-27</i>"]
+  title["<b>SQL MIGRATION STATUS</b><br/><i>Waves 1-4 + Wave 5.5 Complete  |  Audited 2026-03-27</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
 
   %% ==========================================
@@ -63,28 +63,35 @@ flowchart TB
   style df1 fill:#238636,stroke:#3fb950,color:#fff
 
   %% ==========================================
-  %%  WAVE 1-4 MIGRATIONS (ALL COMPLETE)
+  %%  WAVE 1-4 + 5.5 MIGRATIONS (ALL COMPLETE)
   %% ==========================================
-  subgraph WAVES["WAVES 1-4  (ALL COMPLETE  -  5 new SQL tables)"]
+  subgraph WAVES["WAVES 1-4 + 5.5  (ALL COMPLETE)"]
     direction TB
 
     subgraph W1["Wave 1: Bridge Events"]
-      w1_old{{"run_events.ndjson<br/><i>KILLED</i>"}} -.->|"replaced by"| w1_new[("bridge_events<br/><i>8 cols, sourceIntelStore</i>")]
+      w1_old{{"run_events.ndjson KILLED"}} -.->|"replaced by"| w1_new[("bridge_events<br/><i>8 cols, sourceIntelStore</i>")]
     end
 
     subgraph W2["Wave 2: Run Metadata"]
-      w2_old["run.json mid-run overwrites<br/><i>KILLED</i>"] -.->|"replaced by"| w2_new[("runs<br/><i>20+ cols, runMetaStore</i>")]
-      w2_note["run.json still at start + end"]
+      w2_new[("runs<br/><i>14 cols (slimmed in 5.5)</i>")]
+      w2_note["run.json KILLED (replaced by run-summary.json)"]
     end
 
     subgraph W3["Wave 3: Run Artifacts"]
-      w3_old["needset.json + search_profile.json<br/>mid-run rewrites<br/><i>KILLED</i>"] -.->|"replaced by"| w3_new[("run_artifacts<br/><i>6 cols, runArtifactStore</i>")]
-      w3_note["brand_resolution: SQL only"]
+      w3_new[("run_artifacts<br/><i>needset + search_profile + brand_resolution</i>")]
+      w3_note["needset.json + search_profile.json KILLED"]
     end
 
     subgraph W4["Wave 4: Billing + Metrics"]
-      w4a_old{{"_billing/ledger/*.jsonl<br/><i>KILLED</i>"}} -.->|"replaced by"| w4a_new[("billing_entries<br/><i>20 cols, billingStore</i>")]
-      w4b_old{{"_runtime/metrics.jsonl<br/><i>NDJSON fallback only</i>"}} -.->|"SQL primary"| w4b_new[("metrics<br/><i>6 cols, metricsStore</i>")]
+      w4a_old{{"billing NDJSON KILLED"}} -.->|"replaced by"| w4a_new[("billing_entries<br/><i>20 cols, billingStore</i>")]
+      w4b_old{{"metrics NDJSON fallback"}} -.->|"SQL primary"| w4b_new[("metrics<br/><i>6 cols, metricsStore</i>")]
+    end
+
+    subgraph W55["Wave 5.5: Run/Product Split"]
+      w55_summary["run-summary.json<br/><i>Written once at finalize<br/>Contains: meta + events + llm_agg + observability</i>"]
+      w55_slim["runs table slimmed 22 → 14 cols<br/><i>Dropped: stages, startup_ms, browser_pool,<br/>needset_summary, search_profile_summary,<br/>artifacts, extra, boot_step, boot_progress</i>"]
+      w55_purge["bridge_events purged after finalize<br/><i>Captured in run-summary.json first</i>"]
+      w55_kill["Boundary JSONs KILLED<br/><i>run.json, needset.json, search_profile.json</i>"]
     end
   end
   style WAVES fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
@@ -92,18 +99,21 @@ flowchart TB
   style W2 fill:#0d1117,stroke:#238636,color:#e0e0e0
   style W3 fill:#0d1117,stroke:#238636,color:#e0e0e0
   style W4 fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style W55 fill:#0d1117,stroke:#238636,color:#e0e0e0
   style w1_old fill:#da3633,stroke:#f85149,color:#fff
   style w1_new fill:#238636,stroke:#3fb950,color:#fff
-  style w2_old fill:#da3633,stroke:#f85149,color:#fff
   style w2_new fill:#238636,stroke:#3fb950,color:#fff
-  style w2_note fill:#21262d,stroke:#8b949e,color:#c9d1d9
-  style w3_old fill:#da3633,stroke:#f85149,color:#fff
+  style w2_note fill:#da3633,stroke:#f85149,color:#fff
   style w3_new fill:#238636,stroke:#3fb950,color:#fff
-  style w3_note fill:#21262d,stroke:#8b949e,color:#c9d1d9
+  style w3_note fill:#da3633,stroke:#f85149,color:#fff
   style w4a_old fill:#da3633,stroke:#f85149,color:#fff
   style w4a_new fill:#238636,stroke:#3fb950,color:#fff
   style w4b_old fill:#d29922,stroke:#e3b341,color:#fff
   style w4b_new fill:#238636,stroke:#3fb950,color:#fff
+  style w55_summary fill:#238636,stroke:#3fb950,color:#fff
+  style w55_slim fill:#238636,stroke:#3fb950,color:#fff
+  style w55_purge fill:#238636,stroke:#3fb950,color:#fff
+  style w55_kill fill:#da3633,stroke:#f85149,color:#fff
 
   %% ==========================================
   %%  DUAL-PATH (SQL preferred, file fallback)
@@ -139,14 +149,16 @@ flowchart TB
   %% ==========================================
   subgraph KEEP["KEEP AS FILES  (generated artifacts, not mutable state)"]
     direction TB
-    keep1["category_authority: field_rules.json, known_values.json,<br/>ui_field_catalog.json, component_db/*.json, _compile_report.json"]
-    keep2["export artifacts: spec.json, summary.json, provenance.json,<br/>traffic_light.json, evidence_pack.json, candidates.json"]
-    keep3["raw extractions: *.html.gz, ldjson.json,<br/>screenshot.jpg/png, *.pdf"]
+    keep1["category_authority: field_rules.json, known_values.json,<br/>ui_field_catalog.json, component_db/*.json"]
+    keep2["export artifacts: spec.json, summary.json, provenance.json,<br/>traffic_light.json, evidence_pack.json"]
+    keep3["raw extractions: *.html.gz, screenshot.jpg/png, *.pdf"]
+    keep4["run-summary.json: GUI telemetry snapshot<br/><i>Written once at finalize, archived with run</i>"]
   end
   style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
   style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style keep2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style keep3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style keep4 fill:#2d333b,stroke:#3fb950,color:#c9d1d9
 
   %% ==========================================
   %%  IMPACT SUMMARY
@@ -154,13 +166,13 @@ flowchart TB
   subgraph IMPACT["IMPACT  -  ~3,000-5,000 file I/O ops eliminated per run"]
     direction TB
     imp_sql[("48 SQL tables total<br/><i>43 pre-existing + 5 new (Waves 1-4)</i>")]
-    imp_json["JSON at boundaries only<br/><i>run.json, needset.json, search_profile.json<br/>at start + end via writeJson flag</i>"]
-    imp_killed["NDJSON completely eliminated<br/><i>bridge events, billing ledger<br/>metrics: SQL primary, NDJSON fallback</i>"]
-    imp_sql --> imp_json --> imp_killed
+    imp_summary["run-summary.json at finalize only<br/><i>Single file replaces run.json + needset.json +<br/>search_profile.json + bridge_events SQL for past runs</i>"]
+    imp_killed["All boundary JSONs eliminated<br/><i>run.json, needset.json, search_profile.json KILLED<br/>bridge_events purged after capture<br/>NDJSON billing + metrics: killed/fallback</i>"]
+    imp_sql --> imp_summary --> imp_killed
   end
   style IMPACT fill:#0d1117,stroke:#58a6ff,color:#58a6ff,stroke-width:3px
   style imp_sql fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:3px
-  style imp_json fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style imp_killed fill:#21262d,stroke:#3fb950,color:#c9d1d9
+  style imp_summary fill:#2d333b,stroke:#3fb950,color:#e0e0e0
+  style imp_killed fill:#21262d,stroke:#da3633,color:#c9d1d9
 
   PREEXIST --> WAVES --> DUAL --> REMAIN --> KEEP --> IMPACT

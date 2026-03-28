@@ -24,7 +24,7 @@
 
 flowchart TB
 
-  title["<b>CURRENT DATA PERSISTENCE FLOW  (Post-Wave 4, 2026-03-27)</b><br/><i>Every write during a pipeline run  |  SQL primary, JSON at boundaries</i>"]
+  title["<b>CURRENT DATA PERSISTENCE FLOW  (Post-Wave 5.5, 2026-03-27)</b><br/><i>Every write during a pipeline run  |  SQL primary, run-summary.json at finalize</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:18px
 
   %% ===== PHASE 1: STARTUP =====
@@ -34,16 +34,14 @@ flowchart TB
     p1_ensure["ensureRun() + ensureBaselineArtifacts()"]
 
     subgraph P1_SQL["SQL Writes (always)"]
-      p1_runs[("runs<br/><i>UPSERT run record (Wave 2)</i>")]
-      p1_bridge[("bridge_events<br/><i>INSERT run_started (Wave 1)</i>")]
-      p1_artifact[("run_artifacts<br/><i>INSERT needset baseline (Wave 3)</i>")]
+      p1_runs[("runs (slim 14 cols)<br/><i>UPSERT run record</i>")]
+      p1_bridge[("bridge_events<br/><i>INSERT run_started</i>")]
+      p1_artifact[("run_artifacts<br/><i>INSERT needset + search_profile baseline</i>")]
     end
 
-    subgraph P1_FS["JSON Writes (boundary checkpoint)"]
-      p1_runjson["run.json<br/><i>writeJson: true</i>"]
-      p1_needset["needset.json<br/><i>writeJson: true</i>"]
-      p1_profile["search_profile.json<br/><i>writeJson: true</i>"]
+    subgraph P1_FS["Filesystem (directory only)"]
       p1_scdir["runtime_screencast/<br/><i>directory created</i>"]
+      p1_nofiles["NO run.json, needset.json,<br/>search_profile.json written"]
     end
 
     p1_start --> p1_ensure
@@ -52,10 +50,8 @@ flowchart TB
   end
   style P1 fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:2px
   style p1_start fill:#238636,stroke:#3fb950,color:#fff
-  style p1_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p1_needset fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p1_profile fill:#2d333b,stroke:#f0883e,color:#e0e0e0
   style p1_scdir fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style p1_nofiles fill:#da3633,stroke:#f85149,color:#fff
   style p1_runs fill:#238636,stroke:#3fb950,color:#fff
   style p1_bridge fill:#238636,stroke:#3fb950,color:#fff
   style p1_artifact fill:#238636,stroke:#3fb950,color:#fff
@@ -63,28 +59,24 @@ flowchart TB
   %% ===== PHASE 2: CRAWL =====
   subgraph P2["PHASE 2  CRAWL + EXTRACTION  (per URL)"]
     direction TB
-
     p2_fetch["Fetch URL via Playwright"]
 
     subgraph P2_CA["Content-Addressed Writes  (dedup by hash)"]
       p2_html["artifacts/{cat}/{prod}/sources/{hash12}/<br/><b>page.html.gz</b>"]
-      p2_ldjson["<b>ldjson.json</b>  <i>if present</i>"]
-      p2_state["<b>embedded_state.json</b>  <i>if present</i>"]
-      p2_dom["<b>dom_snippet.html</b>  <i>if present</i>"]
       p2_shot["<b>screenshot.jpg|png</b>  <i>if captured</i>"]
       p2_pdf["<b>{filename}.pdf</b>  <i>if PDF source</i>"]
     end
 
-    subgraph P2_SQL["SQL Metadata  (always, even on dedup)"]
-      p2_crawl[("crawl_sources<br/><i>content_hash, url, host,<br/>file_path, flags</i>")]
-      p2_shots[("source_screenshots<br/><i>dimensions, format,<br/>selector, file_path</i>")]
-      p2_pdfs[("source_pdfs<br/><i>filename, pages,<br/>tables, file_path</i>")]
+    subgraph P2_SQL["SQL Metadata"]
+      p2_crawl[("crawl_sources")]
+      p2_shots[("source_screenshots")]
+      p2_pdfs[("source_pdfs")]
     end
 
     subgraph P2_RT["Runtime Side-Writes"]
-      p2_frame["runtime_screencast/{workerId}.json<br/><i>latest frame per worker</i>"]
-      p2_event[("bridge_events<br/><i>INSERT fetch_started, fetch_finished (Wave 1)</i>")]
-      p2_trace["traces/{section}/{prefix}_{slot}.json<br/><i>LLM call traces (ring buffer)</i>"]
+      p2_frame["runtime_screencast/{workerId}.json"]
+      p2_event[("bridge_events<br/><i>INSERT fetch/parse events</i>")]
+      p2_trace["traces/{section}/{prefix}_{slot}.json"]
     end
 
     p2_fetch --> P2_CA
@@ -94,9 +86,6 @@ flowchart TB
   style P2 fill:#0d1117,stroke:#f0883e,color:#f0883e,stroke-width:2px
   style p2_fetch fill:#21262d,stroke:#f0883e,color:#c9d1d9
   style p2_html fill:#2d333b,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
-  style p2_ldjson fill:#2d333b,stroke:#3fb950,color:#c9d1d9
-  style p2_state fill:#2d333b,stroke:#3fb950,color:#c9d1d9
-  style p2_dom fill:#2d333b,stroke:#3fb950,color:#c9d1d9
   style p2_shot fill:#2d333b,stroke:#3fb950,color:#c9d1d9
   style p2_pdf fill:#2d333b,stroke:#3fb950,color:#c9d1d9
   style p2_crawl fill:#1f6feb,stroke:#58a6ff,color:#fff
@@ -107,30 +96,26 @@ flowchart TB
   style p2_trace fill:#2d333b,stroke:#a371f7,color:#e0e0e0
 
   %% ===== PHASE 2B: MID-RUN UPDATES (SQL ONLY) =====
-  subgraph P2B["MID-RUN UPDATES  (SQL only — zero JSON writes)"]
+  subgraph P2B["MID-RUN UPDATES  (SQL only — zero JSON or file writes)"]
     direction TB
 
-    subgraph P2B_SQL["SQL Updates (Waves 1-4)"]
-      p2b_runs[("runs<br/><i>UPDATE counters, phase (Wave 2)</i>")]
-      p2b_bridge[("bridge_events<br/><i>INSERT per stage event (Wave 1)</i>")]
-      p2b_billing[("billing_entries<br/><i>INSERT per LLM call (Wave 4, SQL only)</i>")]
-      p2b_artifacts[("run_artifacts<br/><i>UPSERT needset + search_profile (Wave 3)</i>")]
-      p2b_metrics[("metrics<br/><i>INSERT (SQL primary, Wave 4)</i>")]
+    subgraph P2B_SQL["SQL Updates"]
+      p2b_runs[("runs (slim)<br/><i>UPDATE counters, phase</i>")]
+      p2b_bridge[("bridge_events<br/><i>INSERT per stage event</i>")]
+      p2b_billing[("billing_entries<br/><i>INSERT per LLM call (SQL only)</i>")]
+      p2b_artifacts[("run_artifacts<br/><i>UPSERT needset + search_profile</i>")]
+      p2b_metrics[("metrics<br/><i>INSERT (SQL primary)</i>")]
     end
 
-    subgraph P2B_FALLBACK["Fallback (non-DB callers only)"]
-      p2b_metricslog{{"_runtime/metrics.jsonl<br/><i>NDJSON fallback if specDb is null</i>"}}
-    end
-
-    subgraph P2B_KILLED["ELIMINATED mid-run writes"]
+    subgraph P2B_KILLED["ELIMINATED write paths"]
       p2b_k1["run.json overwrites KILLED"]
       p2b_k2["needset.json rewrites KILLED"]
       p2b_k3["search_profile.json rewrites KILLED"]
-      p2b_k4{{"billing ledger NDJSON KILLED"}}
+      p2b_k4{{"billing NDJSON KILLED"}}
       p2b_k5{{"run_events.ndjson KILLED"}}
     end
 
-    P2B_SQL ~~~ P2B_FALLBACK ~~~ P2B_KILLED
+    P2B_SQL ~~~ P2B_KILLED
   end
   style P2B fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:2px
   style p2b_runs fill:#238636,stroke:#3fb950,color:#fff
@@ -138,7 +123,6 @@ flowchart TB
   style p2b_billing fill:#238636,stroke:#3fb950,color:#fff
   style p2b_artifacts fill:#238636,stroke:#3fb950,color:#fff
   style p2b_metrics fill:#238636,stroke:#3fb950,color:#fff
-  style p2b_metricslog fill:#2d333b,stroke:#d29922,color:#e0e0e0
   style p2b_k1 fill:#da3633,stroke:#f85149,color:#fff
   style p2b_k2 fill:#da3633,stroke:#f85149,color:#fff
   style p2b_k3 fill:#da3633,stroke:#f85149,color:#fff
@@ -146,90 +130,66 @@ flowchart TB
   style p2b_k5 fill:#da3633,stroke:#f85149,color:#fff
 
   %% ===== PHASE 3: EXPORT =====
-  subgraph P3["PHASE 3  RUN COMPLETION  (exportRunArtifacts)"]
+  subgraph P3["PHASE 3  RUN COMPLETION + EXPORT"]
     direction TB
 
     subgraph P3_FS["Run-Scoped File Writes"]
       p3_norm["runs/{runId}/normalized/{cat}.normalized.json"]
-      p3_tsv["runs/{runId}/normalized/{cat}.row.tsv"]
       p3_prov["runs/{runId}/provenance/fields.provenance.json"]
-      p3_cands["runs/{runId}/provenance/fields.candidates.json"]
-      p3_events["runs/{runId}/logs/events.jsonl.gz"]
       p3_summary["runs/{runId}/logs/summary.json"]
     end
 
-    subgraph P3_SQL["SQL Writes  (exportToSpecDb)"]
+    subgraph P3_SQL["SQL Writes"]
       p3_items[("item_field_state<br/><i>UPSERT per field</i>")]
       p3_candidates[("candidates<br/><i>INSERT all with lineage</i>")]
-      p3_product[("product_runs<br/><i>UPSERT is_latest, validated</i>")]
-      p3_queue[("product_queue<br/><i>UPDATE status</i>")]
-      p3_history[("field_history<br/><i>UPSERT per field/round</i>")]
+      p3_product[("product_runs<br/><i>UPSERT is_latest</i>")]
     end
 
-    subgraph P3_BOUNDARY["JSON Boundary Writes (finishRun)"]
-      p3_runjson["run.json<br/><i>writeJson: true, status: completed</i>"]
-      p3_bridge[("bridge_events<br/><i>INSERT run_finished (Wave 1)</i>")]
-      p3_runsql[("runs<br/><i>UPDATE status: completed (Wave 2)</i>")]
+    subgraph P3_FINALIZE["Finalize (run-summary.json)"]
+      p3_runsummary["run-summary.json<br/><i>schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
+      p3_runsql[("runs (slim)<br/><i>UPDATE status: completed</i>")]
+      p3_purge["bridge_events PURGED<br/><i>Captured in run-summary.json</i>"]
     end
 
-    P3_FS ~~~ P3_SQL ~~~ P3_BOUNDARY
+    P3_FS ~~~ P3_SQL ~~~ P3_FINALIZE
   end
   style P3 fill:#0d1117,stroke:#a371f7,color:#a371f7,stroke-width:2px
   style p3_norm fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p3_tsv fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style p3_prov fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p3_cands fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p3_events fill:#2d333b,stroke:#a371f7,color:#e0e0e0
   style p3_summary fill:#2d333b,stroke:#f0883e,color:#e0e0e0
   style p3_items fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p3_candidates fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p3_product fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p3_queue fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p3_history fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p3_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p3_bridge fill:#238636,stroke:#3fb950,color:#fff
+  style p3_runsummary fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
   style p3_runsql fill:#238636,stroke:#3fb950,color:#fff
+  style p3_purge fill:#da3633,stroke:#f85149,color:#fff
 
   %% ===== PHASE 4: ARCHIVAL =====
-  subgraph P4["PHASE 4  ARCHIVAL  (relocateRunDataForCompletedRun)"]
+  subgraph P4["PHASE 4  ARCHIVAL"]
     direction TB
-
     p4_stage["Stage to tmpdir/bundle/"]
-    p4_enrich["Enrich run.json with storage_metrics"]
 
     subgraph P4_BUNDLE["Staged Bundle"]
       p4_ro["run_output/  <i>normalized, provenance, logs</i>"]
-      p4_ix["indexlab/  <i>run.json, needset, profile</i>"]
+      p4_ix["indexlab/  <i>run-summary.json (sole meta file)</i>"]
       p4_tr["runtime_traces/  <i>LLM traces</i>"]
-      p4_sl["shared_logs/  <i>filtered events + billing</i>"]
-      p4_mf["manifest.json"]
     end
 
     subgraph P4_DEST["Destination"]
-      p4_local["LOCAL<br/>{localDir}/{cat}/{prod}/{runId}/"]
-      p4_s3["S3<br/>s3://{bucket}/{prefix}/{cat}/{prod}/{runId}/"]
+      p4_local["LOCAL or S3"]
     end
 
-    p4_cleanup["DELETE source dirs<br/><i>indexlab, output, traces</i>"]
-    p4_dbupdate[("product_runs<br/><i>UPDATE storage_state,<br/>s3_key, local_path</i>")]
+    p4_cleanup["DELETE source dirs"]
+    p4_dbupdate[("product_runs<br/><i>UPDATE storage_state</i>")]
 
-    p4_stage --> p4_enrich --> P4_BUNDLE
-    P4_BUNDLE --> p4_local
-    P4_BUNDLE --> p4_s3
-    p4_local --> p4_cleanup
-    p4_s3 --> p4_cleanup
-    p4_cleanup --> p4_dbupdate
+    p4_stage --> P4_BUNDLE --> P4_DEST --> p4_cleanup --> p4_dbupdate
   end
   style P4 fill:#0d1117,stroke:#da3633,color:#f85149,stroke-width:2px
   style p4_stage fill:#21262d,stroke:#da3633,color:#c9d1d9
-  style p4_enrich fill:#21262d,stroke:#da3633,color:#c9d1d9
   style p4_ro fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p4_ix fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p4_ix fill:#2d333b,stroke:#3fb950,color:#e0e0e0
   style p4_tr fill:#2d333b,stroke:#a371f7,color:#e0e0e0
-  style p4_sl fill:#2d333b,stroke:#a371f7,color:#e0e0e0
-  style p4_mf fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style p4_local fill:#21262d,stroke:#3fb950,color:#c9d1d9
-  style p4_s3 fill:#21262d,stroke:#58a6ff,color:#c9d1d9
+  style p4_local fill:#21262d,stroke:#58a6ff,color:#c9d1d9
   style p4_cleanup fill:#da3633,stroke:#f85149,color:#fff
   style p4_dbupdate fill:#1f6feb,stroke:#58a6ff,color:#fff
 
@@ -244,14 +204,14 @@ flowchart TB
     direction LR
     lg1["JSON / Binary File"]
     lg2[("SQLite Table")]
-    lg3{{"NDJSON (fallback only)"}}
-    lg4["KILLED write path"]
-    lg1 ~~~ lg2 ~~~ lg3 ~~~ lg4
+    lg4["KILLED / PURGED"]
+    lg5["run-summary.json (NEW)"]
+    lg1 ~~~ lg2 ~~~ lg4 ~~~ lg5
   end
   style LEGEND fill:#161b22,stroke:#30363d,color:#8b949e
   style lg1 fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style lg2 fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style lg3 fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
   style lg4 fill:#da3633,stroke:#f85149,color:#fff,stroke-width:2px
+  style lg5 fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
 
   style p1_ensure fill:#21262d,stroke:#4a90d9,color:#c9d1d9

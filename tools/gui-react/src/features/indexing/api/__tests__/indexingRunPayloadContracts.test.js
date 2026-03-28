@@ -83,7 +83,6 @@ test('buildIndexingRunStartPayload composes and clamps cross-domain run payload 
     runtimeSettingsPayload: createPayload({
       searchEngines: ' bing,brave,duckduckgo ',
       runtimeScreencastEnabled: true,
-      eventsJsonWrite: true,
       llmProvider: '  openai  ',
       llmModelPlan: '  gpt-plan  ',
       llmModelTriage: '  gpt-triage  ',

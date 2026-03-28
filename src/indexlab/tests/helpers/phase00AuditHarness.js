@@ -40,6 +40,17 @@ export function createAuditHarness() {
     },
 
     async getRunMeta() {
+      // WHY: Wave 5.5 — run.json no longer written. Try run-summary.json meta first, then SQL, then file fallback.
+      if (bridge.specDb && bridge.runId) {
+        try {
+          const art = bridge.specDb.getRunArtifact(bridge.runId, 'run_summary');
+          if (art?.payload?.telemetry?.meta) return art.payload.telemetry.meta;
+        } catch { /* fall through */ }
+        try {
+          const row = bridge.specDb.getRunByRunId(bridge.runId);
+          if (row) return row;
+        } catch { /* fall through */ }
+      }
       const metaPath = bridge.runMetaPath;
       if (!metaPath) return null;
       try {

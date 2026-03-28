@@ -1,4 +1,4 @@
-import type { LlmProviderEntry, LlmModelRole } from '../../types/llmProviderRegistryTypes.ts';
+import type { LlmProviderEntry, LlmProviderModel, LlmModelRole } from '../../types/llmProviderRegistryTypes.ts';
 
 export function makeProvider(
   overrides: Partial<LlmProviderEntry> & { id: string; name: string },
@@ -13,7 +13,11 @@ export function makeProvider(
   };
 }
 
-export function makeModel(modelId: string, role: LlmModelRole = 'primary') {
+export function makeModel(
+  modelId: string,
+  role: LlmModelRole = 'primary',
+  overrides?: Partial<LlmProviderModel>,
+): LlmProviderModel {
   return {
     id: `m-${modelId}`,
     modelId,
@@ -23,5 +27,6 @@ export function makeModel(modelId: string, role: LlmModelRole = 'primary') {
     costCachedPer1M: 0,
     maxContextTokens: null,
     maxOutputTokens: null,
+    ...overrides,
   };
 }

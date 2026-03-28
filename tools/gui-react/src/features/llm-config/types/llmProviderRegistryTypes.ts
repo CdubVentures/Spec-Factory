@@ -14,6 +14,9 @@ export interface LlmProviderModel {
   accessMode?: LlmAccessMode;
   tier?: 'fast' | 'deep' | 'vision';
   transport?: 'sync' | 'async';
+  thinking?: boolean;
+  webSearch?: boolean;
+  thinkingEffortOptions?: string[];
 }
 
 export type LlmProviderHealthStatus = 'green' | 'gray' | 'red';

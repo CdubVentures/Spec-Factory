@@ -29,5 +29,32 @@ export function createPluginRunner({ plugins = [], logger } = {}) {
     }
   }
 
-  return { runHook };
+  // WHY: Same contract as runHook but fires all matching plugins concurrently
+  // via Promise.allSettled. Used when fetchSuiteMode === 'concurrent'.
+  async function runHookConcurrent(hookName, context) {
+    const promises = plugins
+      .filter((p) => typeof p?.hooks?.[hookName] === 'function')
+      .map(async (plugin) => {
+        try {
+          const result = await plugin.hooks[hookName](context);
+          if (result !== undefined) {
+            logger?.info?.('plugin_hook_completed', {
+              plugin: plugin.name ?? 'unknown',
+              hook: hookName,
+              worker_id: context?.workerId || '',
+              result,
+            });
+          }
+        } catch (err) {
+          logger?.warn?.('plugin_hook_error', {
+            plugin: plugin.name ?? 'unknown',
+            hook: hookName,
+            error: err?.message ?? String(err),
+          });
+        }
+      });
+    await Promise.allSettled(promises);
+  }
+
+  return { runHook, runHookConcurrent };
 }

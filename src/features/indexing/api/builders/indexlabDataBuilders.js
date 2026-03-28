@@ -25,6 +25,7 @@ import {
 let _resolveIndexLabRoot = () => '';
 let _outputRoot = '';
 let _storage = null;
+let _config = null;
 let _getSpecDbReady = null;
 let _isProcessRunning = null;
 let _processStatus = null;
@@ -47,10 +48,12 @@ export async function resolveIndexLabRunDirectory(runId) {
   const indexLabRoot = _resolveIndexLabRoot();
   const directRunDir = safeJoin(indexLabRoot, token);
   if (directRunDir) {
-    const meta = await safeReadJson(path.join(directRunDir, 'run.json'));
-    if (meta && typeof meta === 'object') {
-      return directRunDir;
-    }
+    // WHY: Wave 5.5 killed run.json — check directory existence instead.
+    // The bridge creates this dir in ensureRun() via fs.mkdir().
+    try {
+      const stat = await fs.stat(directRunDir);
+      if (stat.isDirectory()) return directRunDir;
+    } catch { /* directory doesn't exist */ }
   }
   try {
     const entries = await fs.readdir(indexLabRoot, { withFileTypes: true });
@@ -59,6 +62,11 @@ export async function resolveIndexLabRunDirectory(runId) {
       const candidateToken = String(entry.name || '').trim();
       const candidateRunDir = safeJoin(indexLabRoot, candidateToken);
       if (!candidateToken || !candidateRunDir) continue;
+      // WHY: Check run-summary.json (post Wave 5.5) then run.json (pre-migration)
+      const summary = await safeReadJson(path.join(candidateRunDir, 'run-summary.json'));
+      if (summary && typeof summary === 'object') {
+        if (String(summary?.telemetry?.meta?.run_id || '').trim() === token) return candidateRunDir;
+      }
       const meta = await safeReadJson(path.join(candidateRunDir, 'run.json'));
       if (!meta || typeof meta !== 'object') continue;
       if (String(meta.run_id || '').trim() === token) {
@@ -72,10 +80,71 @@ export async function resolveIndexLabRunDirectory(runId) {
 }
 
 export async function readIndexLabRunMeta(runId) {
-  const runDir = await resolveIndexLabRunDirectory(runId);
-  if (!runDir) return null;
-  const meta = await safeReadJson(path.join(runDir, 'run.json'));
-  return meta && typeof meta === 'object' ? meta : null;
+  const token = String(runId || '').trim();
+  if (!token) return null;
+  const runDir = await resolveIndexLabRunDirectory(token);
+
+  // Tier 1: run-summary.json (completed runs, post Wave 5.5)
+  if (runDir) {
+    const { extractMetaFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
+    const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
+    if (summary) {
+      const meta = extractMetaFromRunSummary(summary);
+      if (meta) return meta;
+    }
+  }
+
+  // Tier 2: run.json (pre-migration runs)
+  if (runDir) {
+    const meta = await safeReadJson(path.join(runDir, 'run.json'));
+    if (meta && typeof meta === 'object') return meta;
+  }
+
+  // Tier 3: SQL lookup (live runs — directory exists but no JSON files yet)
+  // WHY: Wave 5.5 killed run.json writes. During a live run, only the SQL
+  // runs table has metadata. Use processStatus to get the active category.
+  if (typeof _getSpecDbReady === 'function') {
+    // 3a: Active process — get category directly from process status
+    if (typeof _processStatus === 'function') {
+      try {
+        const snap = _processStatus();
+        const cat = String(snap?.category || '').trim();
+        if (cat) {
+          const specDb = await _getSpecDbReady(cat);
+          if (specDb) {
+            const row = specDb.getRunByRunId(token);
+            if (row) return row;
+          }
+        }
+      } catch { /* best-effort */ }
+    }
+    // 3b: Scan specDb directory for category databases
+    // WHY: INDEXLAB_ROOT may only contain runId directories (no category dirs).
+    // The specDb directory (.specfactory_tmp/) has the actual category subdirs.
+    const scanDirs = [
+      _config?.specDbDir,
+      _resolveIndexLabRoot(),
+    ].filter(Boolean);
+    for (const scanDir of scanDirs) {
+      try {
+        const entries = await fs.readdir(scanDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (!entry.isDirectory()) continue;
+          const name = entry.name;
+          if (/^\d/.test(name) || name.startsWith('.') || name.startsWith('_')) continue;
+          try {
+            const specDb = await _getSpecDbReady(name);
+            if (specDb) {
+              const row = specDb.getRunByRunId(token);
+              if (row) return row;
+            }
+          } catch { continue; }
+        }
+      } catch { continue; }
+    }
+  }
+
+  return null;
 }
 
 function isRunStillActive(runId = '') {
@@ -122,6 +191,7 @@ export function initIndexLabDataBuilders({
     : () => indexLabRoot;
   _outputRoot = outputRoot;
   _storage = storage;
+  _config = config;
   _eventCache = new Map();
   _getSpecDbReady = getSpecDbReady;
   _isProcessRunning = isProcessRunning;

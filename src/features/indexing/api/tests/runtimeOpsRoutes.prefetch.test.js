@@ -30,22 +30,18 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
     events: [],
   });
 
-  const runDir = path.join(indexLabRoot, runId);
-  await fs.writeFile(
-    path.join(runDir, 'search_profile.json'),
-    JSON.stringify({
-      query_count: 2,
-      provider: 'searxng',
-      query_rows: [
-        { query: 'Razer Viper V3 Pro specs', hint_source: 'field_rules.search_hints' },
-        { query: 'Razer Viper V3 Pro support', hint_source: 'field_rules.search_hints' },
-      ],
-      hint_source_counts: {
-        'field_rules.search_hints': 72,
-      },
-    }),
-    'utf8',
-  );
+  // WHY: Wave 5.5 killed file fallbacks — provide search_profile via readIndexLabRunSearchProfile
+  const searchProfilePayload = {
+    query_count: 2,
+    provider: 'searxng',
+    query_rows: [
+      { query: 'Razer Viper V3 Pro specs', hint_source: 'field_rules.search_hints' },
+      { query: 'Razer Viper V3 Pro support', hint_source: 'field_rules.search_hints' },
+    ],
+    hint_source_counts: {
+      'field_rules.search_hints': 72,
+    },
+  };
 
   const generated = path.join(helperRoot, 'mouse', '_generated');
   await fs.mkdir(generated, { recursive: true });
@@ -81,7 +77,7 @@ test('runtimeOpsRoutes: prefetch hydrates missing field_rule_gate_counts from fi
       },
       readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
-      readIndexLabRunSearchProfile: async () => null,
+      readIndexLabRunSearchProfile: async () => searchProfilePayload,
     });
 
     const res = createMockRes();
@@ -131,21 +127,16 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
     events: [],
   });
 
-  const runDir = path.join(indexLabRoot, runId);
-  await fs.writeFile(
-    path.join(runDir, 'search_profile.json'),
-    JSON.stringify({
-      query_count: 1,
-      provider: 'searxng',
-      query_rows: [
-        { query: 'Razer Viper V3 Pro weight', hint_source: 'field_rules.search_hints', target_fields: ['weight'] },
-      ],
-      hint_source_counts: {
-        'field_rules.search_hints': 1,
-      },
-    }),
-    'utf8',
-  );
+  const domainHintsProfile = {
+    query_count: 1,
+    provider: 'searxng',
+    query_rows: [
+      { query: 'Razer Viper V3 Pro weight', hint_source: 'field_rules.search_hints', target_fields: ['weight'] },
+    ],
+    hint_source_counts: {
+      'field_rules.search_hints': 1,
+    },
+  };
 
   const generated = path.join(helperRoot, 'mouse', '_generated');
   await fs.mkdir(generated, { recursive: true });
@@ -174,7 +165,7 @@ test('runtimeOpsRoutes: prefetch domain_hints expose effective vs total counts',
       },
       readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
-      readIndexLabRunSearchProfile: async () => null,
+      readIndexLabRunSearchProfile: async () => domainHintsProfile,
     });
 
     const res = createMockRes();

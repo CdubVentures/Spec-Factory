@@ -27,242 +27,109 @@
 
 flowchart TB
 
-  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Archive</b><br/><i>Post-Wave 4 — SQL is primary write target  |  Audited 2026-03-27</i>"]
+  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Archive</b><br/><i>Post-Wave 5.5 — SQL + run-summary.json  |  2026-03-27</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:22px
 
   %% ===== PHASE 0: INITIALIZATION =====
   subgraph P0["PHASE 0  INITIALIZATION"]
     direction LR
-    p0_start(["processRuntime.js<br/>startProcess()"])
-    p0_state["In-Memory State<br/><i>pid, runId, category,<br/>productId, storageDestination</i>"]
-    p0_snapshot["WRITE  {runId}-settings.json<br/><i>frozen config snapshot</i>"]
-    p0_runsql[("UPSERT  runs table<br/><i>status: starting (Wave 2)</i>")]
-    p0_runjson["WRITE  run.json<br/><i>boundary checkpoint</i>"]
+    p0_start(["processRuntime.startProcess()"])
+    p0_runsql[("UPSERT runs (slim 14 cols)<br/><i>status: starting</i>")]
+    p0_artifacts[("INSERT run_artifacts<br/><i>needset + search_profile baseline</i>")]
     p0_ws["WS broadcast<br/><i>process-status: running</i>"]
+    p0_nofiles["NO JSON files written<br/><i>run.json, needset.json, search_profile.json KILLED</i>"]
 
-    p0_start --> p0_state
-    p0_state --> p0_snapshot
-    p0_state --> p0_runsql
-    p0_state --> p0_runjson
-    p0_state --> p0_ws
+    p0_start --> p0_runsql
+    p0_start --> p0_artifacts
+    p0_start --> p0_ws
+    p0_start --> p0_nofiles
   end
   style P0 fill:#0d1117,stroke:#58a6ff,color:#e0e0e0,stroke-width:2px
   style p0_start fill:#238636,stroke:#3fb950,color:#fff
-  style p0_snapshot fill:#2d333b,stroke:#f0883e,color:#e0e0e0
   style p0_runsql fill:#238636,stroke:#3fb950,color:#fff
-  style p0_runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p0_state fill:#21262d,stroke:#4a90d9,color:#c9d1d9
+  style p0_artifacts fill:#238636,stroke:#3fb950,color:#fff
   style p0_ws fill:#21262d,stroke:#8b949e,color:#c9d1d9
+  style p0_nofiles fill:#da3633,stroke:#f85149,color:#fff
 
-  %% ===== PHASE 1: NEEDSET + BRAND =====
-  subgraph P1["PHASE 1  NEEDSET + BRAND RESOLUTION  (parallel)"]
-    direction TB
-
-    subgraph P1A["NeedSet Computation"]
-      p1a_input["READ  field_rules.json<br/>READ  category schema"]
-      p1a_llm["LLM Call<br/><i>buildSearchPlan()</i>"]
-      p1a_out["In-Memory<br/><i>focusGroups, seedSearchPlan</i>"]
-      p1a_input --> p1a_llm --> p1a_out
-    end
-
-    subgraph P1B["Brand Resolver"]
-      p1b_input["READ  brand_registry.json"]
-      p1b_llm["LLM Call<br/><i>resolveBrandDomain()</i>"]
-      p1b_out["In-Memory<br/><i>brandResolution</i>"]
-      p1b_input --> p1b_llm --> p1b_out
-    end
-
-    p1_events[("INSERT  bridge_events<br/><i>needset_computed, brand_resolved (Wave 1)</i>")]
-    p1a_out --> p1_events
-    p1b_out --> p1_events
-  end
-  style P1 fill:#0d1117,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
-  style p1a_input fill:#2d333b,stroke:#e3b341,color:#e0e0e0
-  style p1b_input fill:#2d333b,stroke:#e3b341,color:#e0e0e0
-  style p1a_llm fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p1b_llm fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p1a_out fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p1b_out fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p1_events fill:#238636,stroke:#3fb950,color:#fff
-
-  %% ===== PHASE 2-3: SEARCH PLANNING =====
-  subgraph P23["PHASE 2-3  SEARCH PROFILE + QUERY PLANNING"]
+  %% ===== PHASES 1-7: SEARCH + DISCOVERY =====
+  subgraph P17["PHASES 1-7  SEARCH + DISCOVERY"]
     direction LR
-    p2_build["buildSearchProfile()<br/><i>deterministic templates</i>"]
-    p3_enhance["LLM Enhancement<br/><i>enhanceQueryRows()</i>"]
-    p3_frontier_read[("READ  frontierDb.queries<br/><i>prior-round query history</i>")]
-    p3_sql["UPSERT  run_artifacts<br/><i>needset + search_profile (Wave 3)</i>"]
-    p3_write["WRITE  needset.json + search_profile.json<br/><i>boundary checkpoint only</i>"]
-    p3_events[("INSERT  bridge_events<br/><i>search_profile_generated (Wave 1)</i>")]
+    p1_needset["NeedSet + Brand<br/><i>LLM calls</i>"]
+    p2_search["Search Execution<br/><i>Bing/Google</i>"]
+    p3_serp["SERP Selector<br/><i>LLM triage</i>"]
+    p4_domain["Domain Classifier<br/><i>URL ranking</i>"]
 
-    p2_build --> p3_enhance
-    p3_frontier_read --> p3_enhance
-    p3_enhance --> p3_sql
-    p3_enhance --> p3_write
-    p3_enhance --> p3_events
+    p17_sql[("SQL writes:<br/>bridge_events, run_artifacts,<br/>billing_entries, runs (counters)")]
+
+    p1_needset --> p2_search --> p3_serp --> p4_domain
+    p4_domain --> p17_sql
   end
-  style P23 fill:#0d1117,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
-  style p2_build fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p3_enhance fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p3_frontier_read fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p3_sql fill:#238636,stroke:#3fb950,color:#fff
-  style p3_write fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-  style p3_events fill:#238636,stroke:#3fb950,color:#fff
-
-  %% ===== PHASE 4: QUERY JOURNEY =====
-  subgraph P4["PHASE 4  QUERY JOURNEY"]
-    direction LR
-    p4_dedup["dedupeQueryRows()<br/>enforceIdentityQueryGuard()"]
-    p4_cap["applyCap()<br/><i>searchProfileQueryCap</i>"]
-    p4_sql[("UPDATE  run_artifacts<br/><i>search_profile (Wave 3)</i>")]
-    p4_runsql[("UPDATE  runs<br/><i>phase_cursor, summary (Wave 2)</i>")]
-
-    p4_dedup --> p4_cap --> p4_sql
-    p4_cap --> p4_runsql
-  end
-  style P4 fill:#0d1117,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
-  style p4_dedup fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p4_cap fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p4_sql fill:#238636,stroke:#3fb950,color:#fff
-  style p4_runsql fill:#238636,stroke:#3fb950,color:#fff
-
-  %% ===== PHASE 5: SEARCH EXECUTION =====
-  subgraph P5["PHASE 5  SEARCH EXECUTION"]
-    direction LR
-    p5_cache_check[("READ  frontierDb.queries<br/><i>cache lookup</i>")]
-    p5_search["runSearchProviders()<br/><i>Bing / Google</i>"]
-    p5_frontier_write[("WRITE  frontierDb.queries<br/><i>recordQuery()</i>")]
-    p5_events[("INSERT  bridge_events<br/><i>discovery_query events (Wave 1)</i>")]
-    p5_billing[("INSERT  billing_entries<br/><i>search API costs (Wave 4, SQL only)</i>")]
-
-    p5_cache_check --> p5_search
-    p5_search --> p5_frontier_write
-    p5_search --> p5_events
-    p5_search --> p5_billing
-  end
-  style P5 fill:#0d1117,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style p5_cache_check fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p5_search fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p5_frontier_write fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p5_events fill:#238636,stroke:#3fb950,color:#fff
-  style p5_billing fill:#238636,stroke:#3fb950,color:#fff
-
-  %% ===== PHASE 6: RESULT PROCESSING =====
-  subgraph P6["PHASE 6  RESULT PROCESSING  (SERP Selector)"]
-    direction LR
-    p6_filter["hardDropFilter()<br/>classify + deduplicate"]
-    p6_llm["LLM Call<br/><i>SERP selector triage</i>"]
-    p6_out["In-Memory<br/><i>selectedUrls, candidates</i>"]
-    p6_events[("INSERT  bridge_events<br/><i>discovery_processed (Wave 1)</i>")]
-    p6_trace["WRITE  traces/llm/*.json<br/><i>SERP selector trace</i>"]
-
-    p6_filter --> p6_llm --> p6_out
-    p6_llm --> p6_events
-    p6_llm --> p6_trace
-  end
-  style P6 fill:#0d1117,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style p6_filter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p6_llm fill:#21262d,stroke:#d29922,color:#c9d1d9
-  style p6_out fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p6_events fill:#238636,stroke:#3fb950,color:#fff
-  style p6_trace fill:#2d333b,stroke:#f0883e,color:#e0e0e0
-
-  %% ===== PHASE 7: DOMAIN CLASSIFIER =====
-  subgraph P7["PHASE 7  DOMAIN CLASSIFIER"]
-    direction LR
-    p7_classify["rankByTriageScore()<br/>applyUrlCap()"]
-    p7_planner["In-Memory Planner<br/><i>enqueue approved URLs</i>"]
-    p7_events[("INSERT  bridge_events<br/><i>discovery_enqueue_summary (Wave 1)</i>")]
-
-    p7_classify --> p7_planner --> p7_events
-  end
-  style P7 fill:#0d1117,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
-  style p7_classify fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p7_planner fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style p7_events fill:#238636,stroke:#3fb950,color:#fff
+  style P17 fill:#0d1117,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
+  style p1_needset fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p2_search fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p3_serp fill:#21262d,stroke:#d29922,color:#c9d1d9
+  style p4_domain fill:#21262d,stroke:#3fb950,color:#c9d1d9
+  style p17_sql fill:#238636,stroke:#3fb950,color:#fff
 
   %% ===== PHASE 8: CRAWL =====
-  subgraph P8["PHASE 8  CRAWL PROCESSING"]
+  subgraph P8["PHASE 8  CRAWL"]
     direction LR
-    p8_batch["processBatch()<br/><i>concurrent fetch workers</i>"]
-    p8_frontier_write[("WRITE  frontierDb.urls<br/><i>recordFetch() per URL</i>")]
-    p8_video["WRITE  {tmpdir}/videos/<br/><i>*.webm recordings</i>"]
-    p8_screencast["WRITE  screencast/*.json<br/><i>per-worker frames</i>"]
-    p8_events[("INSERT  bridge_events<br/><i>source_fetch events (Wave 1)</i>")]
-    p8_runsql[("UPDATE  runs<br/><i>counters: pages_checked++ (Wave 2)</i>")]
+    p8_batch["processBatch()<br/><i>concurrent workers</i>"]
+    p8_frontier[("frontierDb.urls")]
+    p8_events[("bridge_events<br/><i>fetch events</i>")]
+    p8_runs[("runs<br/><i>counters++</i>")]
+    p8_binaries["Content-addressed<br/><i>page.html.gz, screenshot</i>"]
 
-    p8_batch --> p8_frontier_write
-    p8_batch --> p8_video
-    p8_batch --> p8_screencast
+    p8_batch --> p8_frontier
     p8_batch --> p8_events
-    p8_batch --> p8_runsql
+    p8_batch --> p8_runs
+    p8_batch --> p8_binaries
   end
   style P8 fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style p8_batch fill:#21262d,stroke:#f0883e,color:#c9d1d9
-  style p8_frontier_write fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p8_video fill:#2d333b,stroke:#8b949e,color:#e0e0e0
-  style p8_screencast fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p8_frontier fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p8_events fill:#238636,stroke:#3fb950,color:#fff
-  style p8_runsql fill:#238636,stroke:#3fb950,color:#fff
+  style p8_runs fill:#238636,stroke:#3fb950,color:#fff
+  style p8_binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0
 
   %% ===== PHASE 9: PARSE + INDEX =====
   subgraph P9["PHASE 9  PARSE + INDEX + EXPORT"]
     direction LR
-    p9_parse["extractCandidates()<br/><i>HTML parse, LLM extract</i>"]
-    p9_specdb[("WRITE  specDb<br/><i>candidates, item_field_state,<br/>source_registry, source_assertions,<br/>component_identity</i>")]
-    p9_export["WRITE  spec.json<br/>summary.json<br/>provenance.json<br/>traffic_light.json<br/>evidence_pack.json"]
-    p9_events[("INSERT  bridge_events<br/><i>source_processed, index_finished (Wave 1)</i>")]
-    p9_billing[("INSERT  billing_entries<br/><i>LLM extraction costs (Wave 4, SQL only)</i>")]
+    p9_parse["extractCandidates()"]
+    p9_specdb[("candidates, item_field_state,<br/>source_registry, evidence")]
+    p9_export["spec.json, summary.json,<br/>provenance.json"]
+    p9_billing[("billing_entries<br/><i>SQL only</i>")]
 
     p9_parse --> p9_specdb
     p9_parse --> p9_export
-    p9_parse --> p9_events
     p9_parse --> p9_billing
   end
   style P9 fill:#0d1117,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
   style p9_parse fill:#21262d,stroke:#f778ba,color:#c9d1d9
   style p9_specdb fill:#1f6feb,stroke:#58a6ff,color:#fff
   style p9_export fill:#2d333b,stroke:#f778ba,color:#e0e0e0
-  style p9_events fill:#238636,stroke:#3fb950,color:#fff
   style p9_billing fill:#238636,stroke:#3fb950,color:#fff
 
-  %% ===== PHASE 10: COMPLETION + RELOCATION =====
-  subgraph P10["PHASE 10  COMPLETION + RELOCATION"]
+  %% ===== PHASE 10: FINALIZE + ARCHIVE =====
+  subgraph P10["PHASE 10  FINALIZE + ARCHIVE"]
     direction LR
-    p10_finalize_sql[("UPDATE  runs<br/><i>status: completed (Wave 2)</i>")]
-    p10_finalize_json["WRITE  run.json<br/><i>boundary checkpoint (writeJson: true)</i>"]
-    p10_relocate["relocateRunData()<br/><i>stage + copy/upload</i>"]
-    p10_local["LOCAL: fs.cp() to<br/>archive directory"]
-    p10_s3["S3: uploadDirectoryToS3()<br/><i>to {prefix}/{cat}/{prod}/{run}/</i>"]
-    p10_cleanup["DELETE source dirs<br/><i>(indexlab, output, traces)</i>"]
-    p10_dbupdate[("WRITE  product_runs<br/><i>storage_state, s3_key,<br/>local_path, size_bytes</i>")]
-    p10_ws["WS broadcast<br/><i>indexlab-run-data-relocated</i>"]
+    p10_summary["WRITE run-summary.json<br/><i>schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
+    p10_runsql[("UPDATE runs<br/><i>status: completed</i>")]
+    p10_purge["PURGE bridge_events<br/><i>captured in run-summary.json</i>"]
+    p10_relocate["relocateRunData()<br/><i>bundle → LOCAL or S3</i>"]
+    p10_dbupdate[("product_runs<br/><i>storage_state, s3_key</i>")]
 
-    p10_finalize_sql --> p10_finalize_json --> p10_relocate
-    p10_relocate --> p10_local
-    p10_relocate --> p10_s3
-    p10_local --> p10_cleanup
-    p10_s3 --> p10_cleanup
-    p10_cleanup --> p10_dbupdate
-    p10_cleanup --> p10_ws
+    p10_summary --> p10_runsql --> p10_purge --> p10_relocate --> p10_dbupdate
   end
   style P10 fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
-  style p10_finalize_sql fill:#238636,stroke:#3fb950,color:#fff
-  style p10_finalize_json fill:#2d333b,stroke:#f0883e,color:#e0e0e0
+  style p10_summary fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
+  style p10_runsql fill:#238636,stroke:#3fb950,color:#fff
+  style p10_purge fill:#da3633,stroke:#f85149,color:#fff
   style p10_relocate fill:#21262d,stroke:#238636,color:#c9d1d9
-  style p10_local fill:#21262d,stroke:#3fb950,color:#c9d1d9
-  style p10_s3 fill:#21262d,stroke:#58a6ff,color:#c9d1d9
-  style p10_cleanup fill:#da3633,stroke:#f85149,color:#fff
   style p10_dbupdate fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style p10_ws fill:#21262d,stroke:#8b949e,color:#c9d1d9
 
-  %% ===== FLOW CONNECTIONS =====
-  P0 --> P1
-  P1 --> P23
-  P23 --> P4
-  P4 --> P5
-  P5 --> P6
-  P6 --> P7
-  P7 --> P8
+  %% ===== FLOW =====
+  P0 --> P17
+  P17 --> P8
   P8 --> P9
   P9 --> P10

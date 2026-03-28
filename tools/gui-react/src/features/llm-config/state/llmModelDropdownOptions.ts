@@ -8,6 +8,8 @@ export interface DropdownModelOption {
   costInputPer1M?: number;
   maxContextTokens?: number | null;
   accessMode?: LlmAccessMode;
+  thinking?: boolean;
+  webSearch?: boolean;
 }
 
 const ROLE_SORT_PRIORITY: Record<string, number> = {
@@ -102,6 +104,8 @@ export function buildModelDropdownOptions(
         costInputPer1M: model.costInputPer1M,
         maxContextTokens: model.maxContextTokens,
         ...(effectiveAccessMode ? { accessMode: effectiveAccessMode } : {}),
+        ...(model.thinking ? { thinking: true } : {}),
+        ...(model.webSearch ? { webSearch: true } : {}),
       });
       registryModelIds.add(model.modelId);
     }

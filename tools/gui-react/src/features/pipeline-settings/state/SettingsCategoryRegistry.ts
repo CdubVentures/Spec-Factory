@@ -12,8 +12,8 @@ export interface SettingsSectionDef {
   readonly tip: string;
   /** When set, CategoryPanel renders this named component instead of GenericSectionPanel */
   readonly customComponent?: string;
-  /** When true, section button shows a small plug icon badge */
-  readonly isPlugin?: boolean;
+  /** Fetch plugin lifecycle phase — drives the badge icon next to the label */
+  readonly phase?: 'pre-load' | 'suite' | 'scroll';
 }
 
 export interface SettingsCategoryDef {
@@ -54,22 +54,24 @@ export const SETTINGS_CATEGORY_REGISTRY: readonly SettingsCategoryDef[] = Object
     label: 'Runtime Fetcher',
     subtitle: 'Fetch plugins, browser config, network, observability',
     sections: Object.freeze([
-      { id: 'stealth', label: 'Stealth', tip: 'Anti-detection fingerprint injection', isPlugin: true },
-      { id: 'cookie-consent', label: 'Cookie Consent', tip: 'Auto-dismiss cookie/privacy consent banners', isPlugin: true },
-      { id: 'auto-scroll', label: 'Auto Scroll', tip: 'Scroll passes to trigger lazy-loaded content', isPlugin: true },
-      { id: 'dom-expansion', label: 'DOM Expansion', tip: 'Click expand/show-more buttons to reveal collapsed sections', isPlugin: true },
-      { id: 'css-override', label: 'CSS Override', tip: 'Force-display hidden elements via CSS injection', isPlugin: true },
-      { id: 'capture', label: 'Capture & Recording', tip: 'Video recording settings for fetch worker playback' },
       { id: 'browser', label: 'Browser & Crawlee', tip: 'Headless mode, robots.txt, Crawlee internals, and request timeouts' },
       { id: 'observability', label: 'Observability', tip: 'Runtime trace, event diagnostics, and screencast capture' },
+      { id: 'fetch-global', label: 'Fetch Global', tip: 'Loading delay, dismiss round count, and suite execution mode' },
+      { id: 'stealth', label: 'Stealth', tip: 'Pre-load fingerprint injection — masks webdriver flag before page loads', phase: 'pre-load' as const },
+      { id: 'cookie-consent', label: 'Cookie Consent', tip: 'Dismiss cookie/privacy consent banners each round', phase: 'suite' as const },
+      { id: 'overlay-dismissal', label: 'Overlay Dismissal', tip: 'Dismiss non-cookie popups — newsletter signups, chat widgets, paywalls', phase: 'suite' as const },
+      { id: 'dom-expansion', label: 'DOM Expansion', tip: 'Click expand/show-more buttons to reveal collapsed sections', phase: 'suite' as const },
+      { id: 'css-override', label: 'CSS Override', tip: 'Force-display hidden elements via CSS injection', phase: 'suite' as const },
+      { id: 'auto-scroll', label: 'Auto Scroll', tip: 'Scroll passes between dismiss rounds to trigger lazy content', phase: 'scroll' as const },
     ]),
   },
   {
     id: 'extraction',
     label: 'Runtime Extraction',
-    subtitle: 'Screenshots and page capture',
+    subtitle: 'Screenshots, video recording, and page capture',
     sections: Object.freeze([
       { id: 'screenshots', label: 'Screenshots', tip: 'Page capture format, quality, selectors, and size limits' },
+      { id: 'video', label: 'Video Recording', tip: 'Video capture resolution and recording settings' },
     ]),
   },
   // WHY: LLM/extraction settings are managed by the dedicated LLM Config page

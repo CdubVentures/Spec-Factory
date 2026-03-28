@@ -43,12 +43,6 @@ export function createPhaseDataReaders({
       return runPayload;
     }
 
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'phase07_retrieval.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
-    }
-
     const runSummaryKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'logs', 'summary.json');
     const runSummary = await storage.readJsonOrNull(runSummaryKey);
     if (runSummary?.phase07 && typeof runSummary.phase07 === 'object') {
@@ -93,12 +87,6 @@ export function createPhaseDataReaders({
     const runPayload = await storage.readJsonOrNull(runKey);
     if (runPayload && typeof runPayload === 'object') {
       return runPayload;
-    }
-
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'phase08_extraction.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
     }
 
     const runSummaryKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'logs', 'summary.json');
@@ -147,12 +135,6 @@ export function createPhaseDataReaders({
     const runPayload = await storage.readJsonOrNull(runKey);
     if (runPayload && typeof runPayload === 'object') {
       return runPayload;
-    }
-
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'dynamic_fetch_dashboard.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
     }
 
     const runSummaryKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'logs', 'summary.json');
@@ -221,27 +203,10 @@ export function createPhaseDataReaders({
       return runPayloadFromOutputRoot;
     }
 
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'source_indexing_extraction_packets.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
-    }
-    const latestPayloadFromOutputRoot = await readOutputRootJson(latestKey);
-    if (latestPayloadFromOutputRoot && typeof latestPayloadFromOutputRoot === 'object') {
-      return latestPayloadFromOutputRoot;
-    }
-
     if (normalizedRunBase) {
       const runBasePayload = await readOutputRootJson(`${normalizedRunBase}/analysis/source_indexing_extraction_packets.json`);
       if (runBasePayload && typeof runBasePayload === 'object') {
         return runBasePayload;
-      }
-    }
-
-    if (normalizedLatestBase) {
-      const latestBasePayload = await readOutputRootJson(`${normalizedLatestBase}/source_indexing_extraction_packets.json`);
-      if (latestBasePayload && typeof latestBasePayload === 'object') {
-        return latestBasePayload;
       }
     }
 

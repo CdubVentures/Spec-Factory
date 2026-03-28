@@ -6,6 +6,9 @@
 
 import { handleCookieConsent } from 'playwright-autoconsent';
 
+// WHY: Fallback selectors for cookie banners that autoconsent doesn't recognize.
+// Shopify's native banner (#shopify-pc__banner) is NOT a standard CMP —
+// autoconsent misses it entirely. Shopify accept button has class shopify-pc__banner__btn-accept.
 const DEFAULT_FALLBACK_SELECTORS = [
   '#onetrust-accept-btn-handler',
   '.cc-accept',
@@ -13,13 +16,34 @@ const DEFAULT_FALLBACK_SELECTORS = [
   '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
   '[id*="cookie"] button[class*="accept"]',
   '.cmp-accept',
+  '.shopify-pc__banner__btn-accept',
+  '#shopify-pc__banner button[class*="accept"]',
+  '.js-cookie-accept',
+  '[data-cookie-accept]',
+  'button[class*="cookie-accept"]',
+  'button[class*="consent-accept"]',
+  // ASUS ROG, generic "Accept all" patterns
+  '#cookie-policy-info .btn-ok',
+  'button[class*="btn-read-ck"]',
+  'button[class*="accept-all"]',
+  'button[class*="acceptAll"]',
+  // Generic cookie policy containers with misspellings (e.g. madcatz.com "cookirPolicy")
+  '[id*="cookir"] button',
+  '[id*="cookie-policy"] button',
+  '[id*="cookiePolicy"] button',
+  // Generic agree/consent buttons inside banner-like containers
+  '[class*="cookie"] button[class*="agree"]',
+  '[class*="cookie"] button[class*="btn"]',
+  '[id*="gdpr"] button[class*="accept"]',
+  '[id*="gdpr"] button[class*="allow"]',
 ].join(',');
 
 export function createCookieConsentPlugin({ _consentHandler = handleCookieConsent } = {}) {
   return {
     name: 'cookieConsent',
+    suites: ['dismiss'],
     hooks: {
-      async afterNavigate({ page, settings }) {
+      async onDismiss({ page, settings }) {
         const enabled = settings?.cookieConsentEnabled !== false
           && settings?.cookieConsentEnabled !== 'false';
         if (!enabled) return { enabled: false, autoconsentMatched: false, fallbackClicked: 0, settleMs: 0 };

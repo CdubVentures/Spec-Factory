@@ -62,7 +62,7 @@ test('prefetch returns SQL artifacts when specDb has data', async () => {
   }
 });
 
-test('prefetch falls back to file I/O when specDb has no artifact data', async () => {
+test('prefetch returns null needset when specDb has no artifact data (no file fallback)', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-sql-fallback-');
   const runId = 'run-sql-fallback-001';
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
@@ -74,12 +74,6 @@ test('prefetch falls back to file I/O when specDb has no artifact data', async (
             started_at: '2026-03-26T10:00:00Z', ended_at: '2026-03-26T10:30:00Z' },
     events: [],
   });
-
-  // Write needset.json on disk but NOT in SQL — should fall back to file
-  const fs = await import('node:fs/promises');
-  const runDir = path.join(indexLabRoot, runId);
-  await fs.writeFile(path.join(runDir, 'needset.json'),
-    JSON.stringify({ total_fields: 99, fields: [], summary: {} }), 'utf8');
 
   initIndexLabDataBuilders({
     indexLabRoot, outputRoot, storage: createStorageStub(), config: {},
@@ -100,13 +94,14 @@ test('prefetch falls back to file I/O when specDb has no artifact data', async (
     const body = parseResBody(res);
 
     assert.ok(body);
-    assert.equal(body.needset?.total_fields, 99, 'should get needset from file fallback');
+    // WHY: Wave 5.5 killed file fallbacks — SQL is sole source. No SQL data → empty needset.
+    assert.equal(body.needset?.total_fields ?? 0, 0, 'needset should have no fields when SQL has no data');
   } finally {
     await cleanupTempRoot(tempRoot);
   }
 });
 
-test('prefetch falls back to file I/O when getSpecDbReady is null', async () => {
+test('prefetch returns null needset when getSpecDbReady is null (no file fallback)', async () => {
   const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-sql-null-');
   const runId = 'run-sql-null-001';
 
@@ -117,11 +112,6 @@ test('prefetch falls back to file I/O when getSpecDbReady is null', async () => 
             started_at: '2026-03-26T10:00:00Z', ended_at: '2026-03-26T10:30:00Z' },
     events: [],
   });
-
-  const fs = await import('node:fs/promises');
-  const runDir = path.join(indexLabRoot, runId);
-  await fs.writeFile(path.join(runDir, 'needset.json'),
-    JSON.stringify({ total_fields: 77 }), 'utf8');
 
   initIndexLabDataBuilders({
     indexLabRoot, outputRoot, storage: createStorageStub(), config: {},
@@ -134,7 +124,6 @@ test('prefetch falls back to file I/O when getSpecDbReady is null', async () => 
       readIndexLabRunEvents: async () => [],
       readRunSummaryEvents: async () => [],
       readIndexLabRunSearchProfile: async () => null,
-      // No getSpecDbReady — should gracefully fall back
     });
 
     const res = createMockRes();
@@ -142,7 +131,8 @@ test('prefetch falls back to file I/O when getSpecDbReady is null', async () => 
     const body = parseResBody(res);
 
     assert.ok(body);
-    assert.equal(body.needset?.total_fields, 77, 'should get needset from file without specDb');
+    // WHY: Wave 5.5 killed file fallbacks — no specDb means no artifacts → empty needset.
+    assert.equal(body.needset?.total_fields ?? 0, 0, 'needset should have no fields without specDb');
   } finally {
     await cleanupTempRoot(tempRoot);
   }

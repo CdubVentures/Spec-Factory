@@ -16,8 +16,9 @@ export const STEALTH_PATCHES = [
 
 export const stealthPlugin = {
   name: 'stealth',
+  suites: ['init'],
   hooks: {
-    async beforeNavigate({ page, settings }) {
+    async onInit({ page, settings }) {
       const enabled = settings?.stealthEnabled !== false && settings?.stealthEnabled !== 'false';
       if (!enabled) return { enabled: false, patches: [], injected: false };
       await page.addInitScript(STEALTH_INIT_SCRIPT);

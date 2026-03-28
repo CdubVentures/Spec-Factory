@@ -177,12 +177,12 @@ describe('domExpansionPlugin', () => {
   describe('contract', () => {
     it('has correct plugin shape', () => {
       assert.equal(domExpansionPlugin.name, 'domExpansion');
-      assert.equal(typeof domExpansionPlugin.hooks.onInteract, 'function');
+      assert.equal(typeof domExpansionPlugin.hooks.onDismiss, 'function');
     });
 
     it('returns a result object with required fields', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings(),
       });
@@ -201,7 +201,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '[aria-expanded="false"]' }),
       });
@@ -210,7 +210,7 @@ describe('domExpansionPlugin', () => {
 
     it('returns blocked field counting intercepted navigations', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings(),
       });
@@ -222,7 +222,7 @@ describe('domExpansionPlugin', () => {
   describe('disabled', () => {
     it('returns disabled result when domExpansionEnabled is false', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: { domExpansionEnabled: false },
       });
@@ -233,7 +233,7 @@ describe('domExpansionPlugin', () => {
 
     it('returns disabled result when domExpansionEnabled is string "false"', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: { domExpansionEnabled: 'false' },
       });
@@ -244,7 +244,7 @@ describe('domExpansionPlugin', () => {
       const page = createPageDouble({
         elements: { '.expand-btn': [{ expandsContent: true }] },
       });
-      await domExpansionPlugin.hooks.onInteract({
+      await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: { domExpansionEnabled: false },
       });
@@ -267,7 +267,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: '[aria-expanded="false"],.show-more',
@@ -287,7 +287,7 @@ describe('domExpansionPlugin', () => {
           })),
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: '.expand-btn',
@@ -300,7 +300,7 @@ describe('domExpansionPlugin', () => {
 
     it('returns selectors array in result', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: '[aria-expanded="false"],.show-more',
@@ -313,7 +313,7 @@ describe('domExpansionPlugin', () => {
       const page = createPageDouble({
         elements: { '.expand-btn': [{ expandsContent: true }] },
       });
-      await domExpansionPlugin.hooks.onInteract({
+      await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: '.expand-btn',
@@ -336,7 +336,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.expand-btn' }),
       });
@@ -350,7 +350,7 @@ describe('domExpansionPlugin', () => {
         elements: { '.show-more': [{ expandsContent: true }] },
         onEvaluate: () => { throw new Error('evaluation failed'); },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -366,7 +366,7 @@ describe('domExpansionPlugin', () => {
         async route() { throw new Error('route failed'); },
         async unroute() {},
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -384,7 +384,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -401,7 +401,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -417,7 +417,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '[aria-expanded="false"]' }),
       });
@@ -432,7 +432,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: 'details:not([open]) > summary',
@@ -450,7 +450,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -465,7 +465,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -480,7 +480,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -495,7 +495,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -510,7 +510,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -524,7 +524,7 @@ describe('domExpansionPlugin', () => {
       const page = createPageDouble({
         elements: { '.show-more': [{ expandsContent: true }] },
       });
-      await domExpansionPlugin.hooks.onInteract({
+      await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -542,7 +542,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -562,7 +562,7 @@ describe('domExpansionPlugin', () => {
           ],
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -582,7 +582,7 @@ describe('domExpansionPlugin', () => {
           })),
         },
       });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({
           domExpansionSelectors: '.expand-btn',
@@ -600,7 +600,7 @@ describe('domExpansionPlugin', () => {
   describe('edge cases', () => {
     it('handles empty selectors string', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '' }),
       });
@@ -611,7 +611,7 @@ describe('domExpansionPlugin', () => {
 
     it('handles undefined settings gracefully', async () => {
       const page = createPageDouble();
-      const result = await domExpansionPlugin.hooks.onInteract({ page });
+      const result = await domExpansionPlugin.hooks.onDismiss({ page });
       // Should use defaults or disable gracefully
       assert.equal(typeof result.enabled, 'boolean');
     });
@@ -621,7 +621,7 @@ describe('domExpansionPlugin', () => {
         elements: { '.show-more': [{ expandsContent: true }] },
       });
       page.context = undefined;
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings({ domExpansionSelectors: '.show-more' }),
       });
@@ -631,7 +631,7 @@ describe('domExpansionPlugin', () => {
 
     it('handles zero elements found', async () => {
       const page = createPageDouble({ elements: {} });
-      const result = await domExpansionPlugin.hooks.onInteract({
+      const result = await domExpansionPlugin.hooks.onDismiss({
         page,
         settings: defaultSettings(),
       });

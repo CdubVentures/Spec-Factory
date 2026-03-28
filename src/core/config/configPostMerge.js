@@ -133,6 +133,8 @@ export function resolvePhaseOverrides(merged) {
     merged[`${prefix}TimeoutMs`] = phaseOverride.timeoutMs ?? merged[def.globalTimeout];
     merged[`${prefix}MaxContextTokens`] = phaseOverride.maxContextTokens ?? merged[def.globalContextTokens];
     merged[`${prefix}WebSearch`] = phaseOverride.webSearch ?? false;
+    merged[`${prefix}Thinking`] = phaseOverride.thinking ?? false;
+    merged[`${prefix}ThinkingEffort`] = phaseOverride.thinkingEffort || '';
   }
 
   // WHY: Cache the assembled composite so routing.js can read it without

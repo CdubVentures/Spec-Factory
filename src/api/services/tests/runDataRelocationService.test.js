@@ -73,27 +73,13 @@ test('run-data relocation archives completed run artifacts and keeps only non-ru
   const archiveRunRoot = path.join(destinationRoot, category, productId, runId);
   const archivedIndexLabRunJson = path.join(archiveRunRoot, 'indexlab', 'run.json');
   const archivedRunSummary = path.join(archiveRunRoot, 'run_output', 'logs', 'summary.json');
-  const archivedRuntimeEvents = path.join(archiveRunRoot, 'shared_logs', 'runtime_events.jsonl');
-  const archivedBillingRows = path.join(archiveRunRoot, 'shared_logs', 'billing_ledger_2026-02.jsonl');
 
   assert.equal(await pathExists(archivedIndexLabRunJson), true);
   assert.equal(await pathExists(archivedRunSummary), true);
-  assert.equal(await pathExists(archivedRuntimeEvents), true);
-  assert.equal(await pathExists(archivedBillingRows), true);
 
-  const runtimeRows = (await fs.readFile(archivedRuntimeEvents, 'utf8'))
-    .trim()
-    .split('\n')
-    .map((line) => JSON.parse(line));
-  assert.equal(runtimeRows.length, 2);
-  assert.equal(runtimeRows.every((row) => (row.runId || row.run_id) === runId), true);
-
-  const billingRows = (await fs.readFile(archivedBillingRows, 'utf8'))
-    .trim()
-    .split('\n')
-    .map((line) => JSON.parse(line));
-  assert.equal(billingRows.length, 2);
-  assert.equal(billingRows.every((row) => (row.runId || row.run_id) === runId), true);
+  // WHY: shared_logs/ staging killed — runtime events + billing are SQL-only (Wave 5.5+)
+  const archivedSharedLogs = path.join(archiveRunRoot, 'shared_logs');
+  assert.equal(await pathExists(archivedSharedLogs), false, 'shared_logs should not be staged');
 
   const sourceRunDir = path.join(outputRoot, 'specs', 'outputs', category, productId, 'runs', runId);
   const sourceIndexLabDir = path.join(indexLabRoot, runId);
@@ -106,19 +92,19 @@ test('run-data relocation archives completed run artifacts and keeps only non-ru
   assert.equal(await pathExists(sourceIndexLabDir), false);
   assert.equal(await pathExists(sourceTraceRunDir), false);
 
+  // WHY: Shared JSONL pruning killed — events + billing are SQL-only.
+  // Source files are left untouched (no rows removed).
   const remainingRuntimeRows = (await fs.readFile(sourceRuntimeEvents, 'utf8'))
     .trim()
     .split('\n')
-    .map((line) => JSON.parse(line));
-  assert.equal(remainingRuntimeRows.length, 1);
-  assert.equal((remainingRuntimeRows[0].runId || remainingRuntimeRows[0].run_id), 'run-other');
+    .filter(Boolean);
+  assert.equal(remainingRuntimeRows.length, 3, 'source runtime events untouched (no pruning)');
 
   const remainingBillingRows = (await fs.readFile(sourceBillingLedger, 'utf8'))
     .trim()
     .split('\n')
-    .map((line) => JSON.parse(line));
-  assert.equal(remainingBillingRows.length, 1);
-  assert.equal((remainingBillingRows[0].runId || remainingBillingRows[0].run_id), 'run-other');
+    .filter(Boolean);
+  assert.equal(remainingBillingRows.length, 3, 'source billing ledger untouched (no pruning)');
 });
 
 test('run-data relocation removes the staging directory when destination creation fails', async (t) => {

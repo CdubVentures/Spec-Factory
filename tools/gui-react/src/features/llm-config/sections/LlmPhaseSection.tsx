@@ -60,17 +60,19 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
-  // WHY: web_search is a per-call Lab feature, available when any model is from a Lab provider.
-  const reasoningModelIsLab = useMemo((): boolean => {
-    if (!resolved?.useReasoning) return false;
-    const provider = resolveProviderForModel(registry, resolved.reasoningModel);
-    return provider?.accessMode === 'lab';
-  }, [resolved, registry]);
-
-  const baseModelIsLab = useMemo((): boolean => {
-    if (!resolved?.baseModel) return false;
-    const provider = resolveProviderForModel(registry, resolved.baseModel);
-    return provider?.accessMode === 'lab';
+  // WHY: Capability flags gate Lab-only toggles per-model, not per-provider.
+  const effectiveModelCapabilities = useMemo((): { thinking: boolean; webSearch: boolean; thinkingEffortOptions: string[] } => {
+    const effectiveKey = resolved?.useReasoning ? resolved.reasoningModel : resolved?.baseModel;
+    if (!effectiveKey) return { thinking: false, webSearch: false, thinkingEffortOptions: [] };
+    const provider = resolveProviderForModel(registry, effectiveKey);
+    if (!provider) return { thinking: false, webSearch: false, thinkingEffortOptions: [] };
+    const { modelId } = parseModelKey(effectiveKey);
+    const model = provider.models.find((m) => m.modelId === modelId);
+    return {
+      thinking: model?.thinking === true,
+      webSearch: model?.webSearch === true,
+      thinkingEffortOptions: model?.thinkingEffortOptions ?? [],
+    };
   }, [resolved, registry]);
 
   const phaseTokenWarnings = useMemo(() => {
@@ -186,7 +188,28 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           />
         </div>
       </SettingRow>
-      {(reasoningModelIsLab || baseModelIsLab) && (
+      {effectiveModelCapabilities.thinking && (
+        <SettingRow label="Enable Thinking" tip="Send thinking flag to the Lab model for extended chain-of-thought reasoning.">
+          <SettingToggle
+            checked={phaseOverrides[overrideKey]?.thinking ?? false}
+            onChange={(v) => updateOverrideField('thinking', v)}
+          />
+        </SettingRow>
+      )}
+      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && effectiveModelCapabilities.thinkingEffortOptions.length > 1 && (
+        <SettingRow label="Thinking Effort" tip="Reasoning effort level sent to the Lab model.">
+          <select
+            className={inputCls}
+            value={phaseOverrides[overrideKey]?.thinkingEffort ?? 'medium'}
+            onChange={(e) => updateOverrideField('thinkingEffort', e.target.value)}
+          >
+            {effectiveModelCapabilities.thinkingEffortOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </SettingRow>
+      )}
+      {effectiveModelCapabilities.webSearch && (
         <SettingRow label="Enable Web Search" tip="Send web_search flag to the Lab model for this phase.">
           <SettingToggle
             checked={phaseOverrides[overrideKey]?.webSearch ?? false}

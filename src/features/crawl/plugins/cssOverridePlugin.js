@@ -35,8 +35,9 @@ function parseDomains(raw) {
 
 export const cssOverridePlugin = {
   name: 'cssOverride',
+  suites: ['init', 'dismiss'],
   hooks: {
-    async beforeNavigate({ page, settings }) {
+    async onInit({ page, settings }) {
       const enabled = settings?.cssOverrideEnabled === true || settings?.cssOverrideEnabled === 'true';
       if (!enabled) return undefined;
 
@@ -56,7 +57,7 @@ export const cssOverridePlugin = {
       return undefined;
     },
 
-    async onInteract({ page, settings }) {
+    async onDismiss({ page, settings }) {
       const enabled = settings?.cssOverrideEnabled === true || settings?.cssOverrideEnabled === 'true';
       const domainBlockingEnabled = Boolean(String(settings?.cssOverrideBlockedDomains ?? '').trim());
 

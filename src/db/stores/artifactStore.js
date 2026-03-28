@@ -1,4 +1,4 @@
-// WHY: Store module for crawl_sources, source_screenshots, source_pdfs tables.
+// WHY: Store module for crawl_sources, source_screenshots, source_pdfs, source_videos tables.
 // Indexes raw binary artifacts (HTML, screenshots, PDFs) stored on disk.
 // SQL rows point to content-addressed file paths — binaries never live in the DB.
 
@@ -76,6 +76,30 @@ export function createArtifactStore({ db, category, stmts }) {
     return stmts._getScreenshotsByProduct.all(String(productId || ''));
   }
 
+  function insertVideo(row) {
+    stmts._insertVideo.run({
+      video_id: row.video_id || '',
+      content_hash: row.content_hash || '',
+      category: row.category || category,
+      product_id: row.product_id || '',
+      run_id: row.run_id || '',
+      source_url: row.source_url || '',
+      host: row.host || '',
+      worker_id: row.worker_id || '',
+      format: row.format || 'webm',
+      width: Number(row.width) || 0,
+      height: Number(row.height) || 0,
+      size_bytes: Number(row.size_bytes) || 0,
+      duration_ms: Number(row.duration_ms) || 0,
+      file_path: row.file_path || '',
+      captured_at: row.captured_at || new Date().toISOString(),
+    });
+  }
+
+  function getVideosByProduct(productId) {
+    return stmts._getVideosByProduct.all(String(productId || ''));
+  }
+
   function getCrawlSourceByHash(contentHash, productId) {
     return stmts._getCrawlSourceByHash.get(
       String(contentHash || ''),
@@ -87,8 +111,10 @@ export function createArtifactStore({ db, category, stmts }) {
     insertCrawlSource,
     insertScreenshot,
     insertPdf,
+    insertVideo,
     getCrawlSourcesByProduct,
     getScreenshotsByProduct,
+    getVideosByProduct,
     getCrawlSourceByHash,
   };
 }

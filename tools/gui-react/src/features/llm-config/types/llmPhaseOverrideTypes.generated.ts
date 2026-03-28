@@ -9,6 +9,8 @@ export interface LlmPhaseOverride {
   timeoutMs: number | null;
   maxContextTokens: number | null;
   webSearch: boolean;
+  thinking: boolean;
+  thinkingEffort: string;
 }
 
 export type LlmOverridePhaseId = 'needset' | 'searchPlanner' | 'brandResolver' | 'serpSelector' | 'validate';

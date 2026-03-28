@@ -44,6 +44,15 @@ function SectionIcon({ sectionId, active }: { sectionId: string; active: boolean
     models: <><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="M3.27 6.96 12 12.01l8.73-5.05" /><path d="M12 22.08V12" /></>,
     limits: <><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></>,
     schema: <><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>,
+    // Fetch plugin sections
+    'fetch-global': <><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></>,
+    stealth: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></>,
+    'cookie-consent': <><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" /><circle cx="8" cy="10" r="1" fill="currentColor" /><circle cx="12" cy="15" r="1" fill="currentColor" /><circle cx="16" cy="11" r="1" fill="currentColor" /></>,
+    'overlay-dismissal': <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="m9 9 6 6M15 9l-6 6" /></>,
+    'dom-expansion': <><path d="M12 3v18M3 12h18" /><rect x="5" y="5" width="14" height="14" rx="2" /></>,
+    'css-override': <><path d="m4 17 6-6-6-6M12 19h8" /></>,
+    'auto-scroll': <><path d="M12 3v18M6 15l6 6 6-6" /></>,
+    capture: <><circle cx="12" cy="12" r="3" /><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M9 2h6v2H9Z" /></>,
   };
 
   return (
@@ -85,9 +94,19 @@ function SectionNavButton({
           <div className="flex items-start justify-between gap-2">
             <div className="sf-text-label font-semibold leading-5 flex items-center gap-1.5">
               {section.label}
-              {section.isPlugin && (
-                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 sf-text-muted" fill="none" stroke="currentColor" strokeWidth={1.5} aria-label="Plugin">
-                  <path d="M6 2v3M10 2v3M4 5h8a1 1 0 0 1 1 1v2a4 4 0 0 1-4 4h-2a4 4 0 0 1-4-4V6a1 1 0 0 1 1-1ZM8 12v2.5M6 14.5h4" />
+              {section.phase === 'pre-load' && (
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 sf-text-muted" fill="none" stroke="currentColor" strokeWidth={1.5} aria-label="Pre-load phase">
+                  <path d="M8 1v5l3 2M8 1 5 6h6Z" /><path d="M4 9a5 5 0 1 0 8 0" />
+                </svg>
+              )}
+              {section.phase === 'suite' && (
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 sf-text-muted" fill="none" stroke="currentColor" strokeWidth={1.5} aria-label="Dismiss suite">
+                  <path d="M13.5 5.5A5.5 5.5 0 0 0 3 7" /><path d="M2.5 10.5A5.5 5.5 0 0 0 13 9" /><path d="m5 5-2 2-2-2" /><path d="m11 11 2-2 2 2" />
+                </svg>
+              )}
+              {section.phase === 'scroll' && (
+                <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 sf-text-muted" fill="none" stroke="currentColor" strokeWidth={1.5} aria-label="Scroll phase">
+                  <path d="M8 2v12M4 10l4 4 4-4" />
                 </svg>
               )}
             </div>

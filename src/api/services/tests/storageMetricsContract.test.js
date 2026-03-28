@@ -11,7 +11,7 @@ import {
   computeRunStorageMetrics,
 } from '../storageMetricsService.js';
 
-const KNOWN_ARTIFACT_TYPES = ['indexlab', 'run_output', 'latest_snapshot', 'runtime_traces', 'shared_logs'];
+const KNOWN_ARTIFACT_TYPES = ['indexlab', 'run_output', 'runtime_traces'];
 
 function assertBreakdownEntry(entry) {
   ok(typeof entry.type === 'string', 'type is string');
@@ -37,16 +37,11 @@ describe('computeRunStorageMetrics', () => {
     const runDir = path.join(tmpDir, 'populated-run');
     const indexlabDir = path.join(runDir, 'indexlab');
     const runOutputDir = path.join(runDir, 'run_output');
-    const sharedLogsDir = path.join(runDir, 'shared_logs');
-
     await fs.mkdir(indexlabDir, { recursive: true });
     await fs.mkdir(runOutputDir, { recursive: true });
-    await fs.mkdir(sharedLogsDir, { recursive: true });
 
     await fs.writeFile(path.join(indexlabDir, 'run.json'), '{"run_id":"test"}');
-    await fs.writeFile(path.join(indexlabDir, 'needset.json'), '{"fields":[]}');
     await fs.writeFile(path.join(runOutputDir, 'output.json'), '{"data":true}');
-    await fs.writeFile(path.join(sharedLogsDir, 'events.jsonl'), 'line1\nline2\n');
 
     const result = await computeRunStorageMetrics(runDir);
 

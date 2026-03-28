@@ -11,7 +11,6 @@ const REQUIRED_ACTIVE_GROUP_IDS = [
   'llm',
   'discovery',
   'runtime',
-  'observability',
   'paths',
   'misc',
 ];

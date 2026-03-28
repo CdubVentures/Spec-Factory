@@ -32,6 +32,7 @@ import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createMetricsStore } from './stores/metricsStore.js';
+import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -116,8 +117,8 @@ export class SpecDb {
     this._artifactStore = createArtifactStore({
       db: this.db, category: this.category,
       stmts: {
-        _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertPdf: this._insertPdf,
-        _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getScreenshotsByProduct: this._getScreenshotsByProduct,
+        _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertPdf: this._insertPdf, _insertVideo: this._insertVideo,
+        _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getScreenshotsByProduct: this._getScreenshotsByProduct, _getVideosByProduct: this._getVideosByProduct,
         _getCrawlSourceByHash: this._getCrawlSourceByHash,
       }
     });
@@ -127,6 +128,20 @@ export class SpecDb {
     this._metricsStore = createMetricsStore({
       db: this.db,
       stmts: { _insertMetric: this._insertMetric }
+    });
+    this._telemetryIndexStore = createTelemetryIndexStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _insertKnobSnapshot: this._insertKnobSnapshot,
+        _getKnobSnapshots: this._getKnobSnapshots,
+        _insertQueryIndexEntry: this._insertQueryIndexEntry,
+        _getQueryIndexByCategory: this._getQueryIndexByCategory,
+        _insertUrlIndexEntry: this._insertUrlIndexEntry,
+        _getUrlIndexByCategory: this._getUrlIndexByCategory,
+        _insertPromptIndexEntry: this._insertPromptIndexEntry,
+        _getPromptIndexByCategory: this._getPromptIndexByCategory,
+      }
     });
   }
 
@@ -712,6 +727,16 @@ export class SpecDb {
   insertMetric(e) { this._metricsStore.insertMetric(e); }
   insertMetricsBatch(es) { this._metricsStore.insertMetricsBatch(es); }
 
+  // --- Telemetry Indexes ---
+  insertKnobSnapshot(row) { this._telemetryIndexStore.insertKnobSnapshot(row); }
+  getKnobSnapshots(cat, limit) { return this._telemetryIndexStore.getKnobSnapshots(cat, limit); }
+  insertQueryIndexEntry(row) { this._telemetryIndexStore.insertQueryIndexEntry(row); }
+  getQueryIndexByCategory(cat, limit) { return this._telemetryIndexStore.getQueryIndexByCategory(cat, limit); }
+  insertUrlIndexEntry(row) { this._telemetryIndexStore.insertUrlIndexEntry(row); }
+  getUrlIndexByCategory(cat, limit) { return this._telemetryIndexStore.getUrlIndexByCategory(cat, limit); }
+  insertPromptIndexEntry(row) { this._telemetryIndexStore.insertPromptIndexEntry(row); }
+  getPromptIndexByCategory(cat, limit) { return this._telemetryIndexStore.getPromptIndexByCategory(cat, limit); }
+
   // --- LLM Cache ---
 
   getLlmCacheEntry(k) { return this._sourceIntelStore.getLlmCacheEntry(k); }
@@ -758,6 +783,17 @@ export class SpecDb {
   upsertRunArtifact(row) { this._runArtifactStore.upsertRunArtifact(row); }
   getRunArtifact(runId, type) { return this._runArtifactStore.getRunArtifact(runId, type); }
   getRunArtifactsByRunId(runId) { return this._runArtifactStore.getRunArtifactsByRunId(runId); }
+
+  // --- Artifact Store (crawl_sources, source_screenshots, source_pdfs) ---
+
+  insertCrawlSource(row) { return this._artifactStore.insertCrawlSource(row); }
+  insertScreenshot(row) { return this._artifactStore.insertScreenshot(row); }
+  insertPdf(row) { return this._artifactStore.insertPdf(row); }
+  insertVideo(row) { return this._artifactStore.insertVideo(row); }
+  getCrawlSourcesByProduct(pid) { return this._artifactStore.getCrawlSourcesByProduct(pid); }
+  getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
+  getVideosByProduct(pid) { return this._artifactStore.getVideosByProduct(pid); }
+  getCrawlSourceByHash(hash, pid) { return this._artifactStore.getCrawlSourceByHash(hash, pid); }
 
   // --- Source Intelligence ---
 

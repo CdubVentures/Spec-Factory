@@ -1,7 +1,6 @@
 // WHY: Table-driven event dispatcher replacing the 767-line if/else chain.
 // Each handler is a named function for independent readability and greppability.
 
-import fs from 'node:fs/promises';
 import {
   toIso, asInt, asFloat, asNullableInt, asNullableFloat, asNullableText, asBool,
   normalizeRunId, isSearchEvent,
@@ -472,9 +471,6 @@ async function handleBrandResolved(state, deps, { ts, row }) {
     })) : [],
   };
   await emit(state, 'search', 'brand_resolved', brandPayload, ts);
-  if (state.brandResolutionPath) {
-    await fs.writeFile(state.brandResolutionPath, `${JSON.stringify(brandPayload, null, 2)}\n`, 'utf8');
-  }
   if (state.specDb && state.runId) {
     try {
       state.specDb.upsertRunArtifact({
@@ -892,6 +888,7 @@ async function handleExtractionArtifactsPersisted(state, _deps, { ts, row }) {
     url: String(row.url || ''),
     worker_id: String(row.worker_id || ''),
     filenames: Array.isArray(row.filenames) ? row.filenames : [],
+    file_sizes: Array.isArray(row.file_sizes) ? row.file_sizes : [],
   }, ts);
 }
 

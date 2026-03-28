@@ -55,8 +55,8 @@ describe('cookieConsentPlugin — contract', () => {
     assert.equal(cookieConsentPlugin.name, 'cookieConsent');
   });
 
-  it('has afterNavigate hook', () => {
-    assert.equal(typeof cookieConsentPlugin.hooks.afterNavigate, 'function');
+  it('has onDismiss hook', () => {
+    assert.equal(typeof cookieConsentPlugin.hooks.onDismiss, 'function');
   });
 
   it('factory creates plugin with correct name', () => {
@@ -73,7 +73,7 @@ describe('cookieConsentPlugin — settings gate', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: false },
     });
@@ -88,7 +88,7 @@ describe('cookieConsentPlugin — settings gate', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: 'false' },
     });
@@ -102,7 +102,7 @@ describe('cookieConsentPlugin — settings gate', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {},
     });
@@ -119,7 +119,7 @@ describe('cookieConsentPlugin — autoconsent', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    await plugin.hooks.afterNavigate({ page, settings: { cookieConsentEnabled: true } });
+    await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
     assert.equal(handler.invocations.length, 1);
     assert.equal(handler.invocations[0].page, page);
@@ -130,7 +130,7 @@ describe('cookieConsentPlugin — autoconsent', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({ page, settings: { cookieConsentEnabled: true } });
+    const result = await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
     assert.equal(result.autoconsentMatched, true);
     assert.equal(result.enabled, true);
@@ -141,7 +141,7 @@ describe('cookieConsentPlugin — autoconsent', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    await plugin.hooks.afterNavigate({
+    await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: true, cookieConsentTimeoutMs: 8000 },
     });
@@ -155,7 +155,7 @@ describe('cookieConsentPlugin — autoconsent', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    await plugin.hooks.afterNavigate({ page, settings: { cookieConsentEnabled: true } });
+    await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
     assert.equal(handler.invocations[0].options.timeout, 5000);
   });
@@ -165,7 +165,7 @@ describe('cookieConsentPlugin — autoconsent', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({ page, settings: { cookieConsentEnabled: true } });
+    const result = await plugin.hooks.onDismiss({ page, settings: { cookieConsentEnabled: true } });
 
     assert.equal(result.autoconsentMatched, true);
     assert.equal(result.fallbackClicked, 0);
@@ -180,7 +180,7 @@ describe('cookieConsentPlugin — fallback selectors', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,
@@ -197,7 +197,7 @@ describe('cookieConsentPlugin — fallback selectors', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,
@@ -215,7 +215,7 @@ describe('cookieConsentPlugin — fallback selectors', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    await plugin.hooks.afterNavigate({
+    await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,
@@ -238,7 +238,7 @@ describe('cookieConsentPlugin — settle wait', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: true, cookieConsentSettleMs: 2000 },
     });
@@ -253,7 +253,7 @@ describe('cookieConsentPlugin — settle wait', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: true },
     });
@@ -266,7 +266,7 @@ describe('cookieConsentPlugin — settle wait', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    await plugin.hooks.afterNavigate({
+    await plugin.hooks.onDismiss({
       page,
       settings: { cookieConsentEnabled: true, cookieConsentSettleMs: 0 },
     });
@@ -284,7 +284,7 @@ describe('cookieConsentPlugin — error resilience', () => {
     const plugin = createCookieConsentPlugin({ _consentHandler: handler });
     const page = createPageDouble();
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,
@@ -316,7 +316,7 @@ describe('cookieConsentPlugin — error resilience', () => {
       async waitForTimeout(ms) { page.calls.push({ type: 'waitForTimeout', ms }); },
     };
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,
@@ -345,7 +345,7 @@ describe('cookieConsentPlugin — no banner', () => {
       async waitForTimeout(ms) { page.calls.push({ type: 'waitForTimeout', ms }); },
     };
 
-    const result = await plugin.hooks.afterNavigate({
+    const result = await plugin.hooks.onDismiss({
       page,
       settings: {
         cookieConsentEnabled: true,

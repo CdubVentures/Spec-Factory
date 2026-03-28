@@ -76,20 +76,23 @@ async function startBridge(specDb, runId = 'run-fin-001') {
 }
 
 describe('runSummaryFinalize — run-summary.json written at finalize', () => {
-  it('run-summary.json exists on disk after finalize', async () => {
+  it('run-summary.json is NOT written to disk (SQL-only)', async () => {
     const specDb = makeMockSpecDb();
     const { bridge, tmpDir } = await startBridge(specDb);
 
     await bridge.finalize({ status: 'completed' });
 
+    // WHY: Wave 5.5+ — file write killed, SQL is sole source
     const summaryPath = path.join(bridge.runDir, 'run-summary.json');
     const stat = await fs.stat(summaryPath).catch(() => null);
-    ok(stat, 'run-summary.json should exist on disk');
+    strictEqual(stat, null, 'run-summary.json should NOT exist on disk');
 
-    const content = JSON.parse(await fs.readFile(summaryPath, 'utf8'));
-    strictEqual(content.schema_version, RUN_SUMMARY_SCHEMA_VERSION);
-    deepStrictEqual(sorted(Object.keys(content)), sorted(RUN_SUMMARY_TOP_KEYS));
-    deepStrictEqual(sorted(Object.keys(content.telemetry)), sorted(RUN_SUMMARY_TELEMETRY_KEYS));
+    // Verify SQL has the data instead
+    const artifact = specDb.getRunArtifact(bridge.runId, 'run_summary');
+    ok(artifact, 'run_summary should be in SQL');
+    strictEqual(artifact.payload.schema_version, RUN_SUMMARY_SCHEMA_VERSION);
+    deepStrictEqual(sorted(Object.keys(artifact.payload)), sorted(RUN_SUMMARY_TOP_KEYS));
+    deepStrictEqual(sorted(Object.keys(artifact.payload.telemetry)), sorted(RUN_SUMMARY_TELEMETRY_KEYS));
 
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
@@ -155,7 +158,7 @@ describe('runSummaryFinalize — run-summary.json written at finalize', () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('finalize succeeds without specDb', async () => {
+  it('finalize succeeds without specDb (no file, no SQL)', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rsf-'));
     const bridge = new IndexLabRuntimeBridge({
       outRoot: tmpDir,
@@ -167,14 +170,13 @@ describe('runSummaryFinalize — run-summary.json written at finalize', () => {
     bridge.runMetaPath = path.join(bridge.runDir, 'run.json');
     await fs.mkdir(bridge.runDir, { recursive: true });
 
+    // Should not throw — gracefully does nothing without specDb
     await bridge.finalize({ status: 'completed' });
 
+    // No file written (file write killed), no SQL (no specDb)
     const summaryPath = path.join(bridge.runDir, 'run-summary.json');
     const stat = await fs.stat(summaryPath).catch(() => null);
-    ok(stat, 'run-summary.json should exist even without specDb');
-
-    const content = JSON.parse(await fs.readFile(summaryPath, 'utf8'));
-    deepStrictEqual(content.telemetry.events, [], 'events empty without specDb');
+    strictEqual(stat, null, 'no file without specDb');
 
     await fs.rm(tmpDir, { recursive: true, force: true });
   });

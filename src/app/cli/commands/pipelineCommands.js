@@ -143,6 +143,7 @@ export function createPipelineCommands({
     const runConfig = {
       ...config,
       specDb,
+      indexLabRoot: outRoot,
       onRuntimeEvent: (row) => bridge.onRuntimeEvent(row),
       onScreencastFrame
     };
@@ -213,8 +214,6 @@ export function createPipelineCommands({
       indexlab: {
         out_root: pathNode.resolve(outRoot),
         run_dir: pathNode.resolve(outRoot, result.runId),
-        events_path: pathNode.resolve(outRoot, result.runId, 'run_events.ndjson'),
-        run_meta_path: pathNode.resolve(outRoot, result.runId, 'run.json')
       }
     };
   }

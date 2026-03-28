@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Run Artifact &amp; Folder Structure Audit</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fafaf8; color: #2c2c2a; padding: 40px 20px; max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+h2 { font-size: 20px; font-weight: 600; margin: 48px 0 16px; color: #444441; border-bottom: 2px solid #e8e6df; padding-bottom: 8px; }
+h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; color: #5f5e5a; }
+.subtitle { font-size: 16px; color: #888780; margin-bottom: 32px; }
+.diagram-wrap { background: #fff; border: 1px solid #e8e6df; border-radius: 12px; padding: 24px; margin: 16px 0; overflow-x: auto; }
+.note { background: #faeeda; border-left: 3px solid #ef9f27; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #633806; }
+.removed { background: #fcebeb; border-left: 3px solid #e24b4a; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #791f1f; }
+.done { background: #e6f6ee; border-left: 3px solid #0f6e56; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; color: #084d3b; }
+p { font-size: 15px; line-height: 1.7; color: #444441; margin: 8px 0; }
+code { background: #f0efe8; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+pre { background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 8px; font-size: 13px; line-height: 1.7; overflow-x: auto; margin: 12px 0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+.g { color: #a6e3a1; } /* green — SQL or good */
+.r { color: #f38ba8; } /* red — killed/wasteful */
+.y { color: #f9e2af; } /* yellow — keep but relocate */
+.b { color: #89b4fa; } /* blue — new/proposed */
+.d { color: #6c7086; } /* dim — comment */
+.w { color: #cdd6f4; } /* white — normal */
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+.cmp-col { background: #fff; border: 1px solid #e8e6df; border-radius: 12px; padding: 20px; }
+.cmp-col h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.drift-row { display: grid; grid-template-columns: 260px 1fr 120px; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f0efe8; font-size: 13px; }
+.drift-row:last-child { border-bottom: none; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-waste { background: #fcebeb; color: #a32d2d; }
+.badge-dup { background: #faeeda; color: #633806; }
+.badge-good { background: #e6f6ee; color: #084d3b; }
+.badge-move { background: #e8edfe; color: #3C3489; }
+@media (max-width: 900px) { .cmp-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Run Artifact &amp; Folder Structure Audit</h1>
+<p class="subtitle">Current state vs optimal structure for SQL-primary architecture | 2026-03-27</p>
+
+<!-- ============================================================ -->
+<h2>1. Current Folder Layout (3 scattered roots)</h2>
+<p>Today, a single run scatters files across 3 independent directory roots. The archival bundle then re-copies everything into a 4th location. This creates duplicate data, orphaned files, and makes disaster recovery fragile.</p>
+
+<pre>
+<span class="d">── INDEXLAB_ROOT ({LOCALAPPDATA}/spec-factory/indexlab/) ──</span>
+<span class="w">{runId}/</span>
+├── <span class="r">run.json</span>                          <span class="d">← KILLED (Wave 5.5, replaced by run-summary.json)</span>
+├── <span class="g">run-summary.json</span>                   <span class="d">← NEW (Wave 5.5, GUI telemetry)</span>
+├── <span class="r">needset.json</span>                       <span class="d">← KILLED (Wave 5.5, data in run_artifacts SQL)</span>
+├── <span class="r">search_profile.json</span>                <span class="d">← KILLED (Wave 5.5, data in run_artifacts SQL)</span>
+├── <span class="r">brand_resolution.json</span>              <span class="d">← KILLED (Wave 3, data in run_artifacts SQL)</span>
+├── <span class="r">run_events.ndjson</span>                  <span class="d">← KILLED (Wave 1, data in bridge_events SQL)</span>
+└── runtime_screencast/
+    └── {workerId}.json                <span class="d">← ephemeral per-worker frames (overwritten constantly)</span>
+
+<span class="d">── OUTPUT_ROOT ({LOCALAPPDATA}/spec-factory/output/) ──</span>
+<span class="w">specs/outputs/</span>
+├── {category}/{product}/
+│   ├── runs/{runId}/
+│   │   ├── raw/
+│   │   │   └── adapters/{name}.json   <span class="d">← adapter payloads (rare)</span>
+│   │   ├── normalized/
+│   │   │   ├── {cat}.normalized.json  <span class="d">← extracted field values</span>
+│   │   │   └── {cat}.row.tsv         <span class="d">← TSV for bulk import</span>
+│   │   ├── provenance/
+│   │   │   ├── fields.provenance.json <span class="d">← field-level source attribution</span>
+│   │   │   └── fields.candidates.json <span class="d">← all candidates ranked per field</span>
+│   │   ├── logs/
+│   │   │   ├── events.jsonl.gz        <span class="d">← compressed event stream</span>
+│   │   │   └── summary.json          <span class="d">← run summary</span>
+│   │   └── evidence/
+│   │       └── evidence_pack.json     <span class="d">← aggregated evidence</span>
+│   │
+│   └── <span class="r">latest/</span>                        <span class="d">← STALE: duplicate of latest run's output (SQL is SSOT)</span>
+│       └── {cat}.normalized.json      <span class="d">← redundant copy</span>
+│
+├── artifacts/{category}/{product}/
+│   └── sources/{hash12}/             <span class="d">← CONTENT-ADDRESSED (deduped by SHA-256)</span>
+│       ├── page.html.gz              <span class="d">← gzipped HTML</span>
+│       ├── screenshot.{jpg|png}      <span class="d">← captured screenshot</span>
+│       ├── ldjson.json               <span class="d">← JSON-LD blocks</span>
+│       ├── embedded_state.json       <span class="d">← JS/React state</span>
+│       ├── dom_snippet.html          <span class="d">← key DOM fragment</span>
+│       └── {filename}.pdf            <span class="d">← extracted PDFs</span>
+│
+├── _runtime/
+│   ├── <span class="r">events.jsonl</span>                   <span class="d">← KILLED (Wave 1, cross-run telemetry in SQL)</span>
+│   ├── <span class="y">metrics.jsonl</span>                  <span class="d">← NDJSON fallback only (SQL primary since Wave 4)</span>
+│   └── traces/runs/{runId}/
+│       └── {productId}/phase.json    <span class="d">← phase completion traces</span>
+│
+├── <span class="r">_billing/ledger/*.jsonl</span>             <span class="d">← KILLED (Wave 4, SQL only)</span>
+│
+└── final/{category}/{brand}/{model}/
+    ├── spec.json                      <span class="d">← final validated output (if promoted)</span>
+    ├── summary.json
+    ├── provenance.json
+    ├── traffic_light.json
+    ├── meta.json
+    ├── evidence/
+    │   ├── evidence_pack.json
+    │   └── sources.jsonl              <span class="d">← append-only per source URL</span>
+    ├── history/runs.jsonl             <span class="d">← append-only per run</span>
+    └── debug/                         <span class="d">← always written (even if not promoted)</span>
+        └── ... (mirrors final structure)
+
+<span class="d">── ARCHIVAL BUNDLE (LOCAL or S3) ──</span>
+<span class="w">{category}/{product}/{runId}/bundle/</span>
+├── manifest.json
+├── run_output/                        <span class="d">← COPY of OUTPUT_ROOT/.../runs/{runId}/</span>
+├── <span class="r">latest_snapshot/</span>                   <span class="d">← COPY of OUTPUT_ROOT/.../latest/ (redundant)</span>
+├── indexlab/                          <span class="d">← COPY of INDEXLAB_ROOT/{runId}/</span>
+├── runtime_traces/                    <span class="d">← COPY of OUTPUT_ROOT/_runtime/traces/runs/{runId}/</span>
+└── shared_logs/                       <span class="d">← FILTERED from shared JSONL files</span>
+    ├── runtime_events.jsonl           <span class="d">← filtered by runId (now redundant — in run-summary.json)</span>
+    └── billing_*.jsonl                <span class="d">← filtered billing (now redundant — in billing_entries SQL)</span>
+</pre>
+
+
+<!-- ============================================================ -->
+<h2>2. Drift &amp; Waste Found</h2>
+
+<div class="diagram-wrap" style="padding: 16px 24px;">
+<div class="drift-row" style="font-weight: 600; border-bottom: 2px solid #e8e6df;">
+  <div>Artifact</div><div>Problem</div><div>Verdict</div>
+</div>
+<div class="drift-row">
+  <div><code>latest/</code> directory</div>
+  <div>Full copy of latest run's normalized output. SQL <code>product_runs.is_latest</code> is the SSOT. This directory is a stale cache that can diverge.</div>
+  <div><span class="badge badge-waste">eliminate</span></div>
+</div>
+<div class="drift-row">
+  <div><code>shared_logs/runtime_events.jsonl</code></div>
+  <div>Filtered copy of bridge events for this run. Already captured in <code>run-summary.json</code> (Wave 5.5). Redundant data in the archive bundle.</div>
+  <div><span class="badge badge-waste">eliminate</span></div>
+</div>
+<div class="drift-row">
+  <div><code>shared_logs/billing_*.jsonl</code></div>
+  <div>Filtered copy of billing entries. Already in <code>billing_entries</code> SQL (Wave 4). Redundant in archive.</div>
+  <div><span class="badge badge-waste">eliminate</span></div>
+</div>
+<div class="drift-row">
+  <div><code>latest_snapshot/</code> in bundle</div>
+  <div>Copy of <code>latest/</code> directory in the archive. Doubly redundant: latest/ itself is a duplicate, and the archive copies it again.</div>
+  <div><span class="badge badge-waste">eliminate</span></div>
+</div>
+<div class="drift-row">
+  <div><code>logs/events.jsonl.gz</code></div>
+  <div>Compressed event stream in run output. Events are now in <code>run-summary.json</code>. If archival needs a compact event log, generate from run-summary.json instead of accumulating during the run.</div>
+  <div><span class="badge badge-dup">replace</span></div>
+</div>
+<div class="drift-row">
+  <div>3 separate roots</div>
+  <div>INDEXLAB_ROOT, OUTPUT_ROOT, and archive location are all different directories. A run's files are scattered. Orphaned directories accumulate if archival fails midway.</div>
+  <div><span class="badge badge-move">consolidate</span></div>
+</div>
+<div class="drift-row">
+  <div><code>indexlab/</code> in archive bundle</div>
+  <div>Copies the entire INDEXLAB_ROOT/{runId}/ including killed files (run.json, needset.json, etc.) and screencast frames. Only <code>run-summary.json</code> has value here.</div>
+  <div><span class="badge badge-move">slim</span></div>
+</div>
+<div class="drift-row">
+  <div><code>debug/</code> in final output</div>
+  <div>Full parallel copy of spec.json + provenance + evidence for every run, even non-promoted ones. Can grow very large with many runs. Should be optional/configurable.</div>
+  <div><span class="badge badge-dup">configurable</span></div>
+</div>
+<div class="drift-row">
+  <div>Content-addressed sources</div>
+  <div>Good architecture. Deduped by SHA-256. SQL has full metadata. No changes needed.</div>
+  <div><span class="badge badge-good">keep</span></div>
+</div>
+<div class="drift-row">
+  <div><code>run-summary.json</code></div>
+  <div>Single telemetry file, written once at finalize. Contains everything the GUI needs for past runs. Correct architecture.</div>
+  <div><span class="badge badge-good">keep</span></div>
+</div>
+<div class="drift-row">
+  <div><code>normalized/</code> + <code>provenance/</code></div>
+  <div>Per-run extraction output. These are the product's "work product" — needed for export, review, and archival. Keep, but consider if SQL can replace them (Wave 6+).</div>
+  <div><span class="badge badge-good">keep (for now)</span></div>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<h2>3. Optimal Structure (SQL-primary)</h2>
+<p>The goal: a single run directory per run, with only files that can't live in SQL. SQL owns all structured metadata. Files exist only for binaries (HTML, screenshots, PDFs) and export products (spec.json, provenance.json). No copies, no duplicates, no scattered roots.</p>
+
+<div class="cmp-grid">
+<div class="cmp-col" style="border-color: #e24b4a;">
+  <h4 style="color: #a32d2d;">Current: 3 roots + archive copy</h4>
+<pre style="font-size: 12px; padding: 12px;">
+INDEXLAB_ROOT/{runId}/         <span class="r">← root 1</span>
+  run-summary.json
+  runtime_screencast/
+
+OUTPUT_ROOT/specs/outputs/
+  {cat}/{prod}/runs/{runId}/   <span class="r">← root 2</span>
+    normalized/, provenance/,
+    logs/, evidence/
+  {cat}/{prod}/latest/         <span class="r">← redundant copy</span>
+  artifacts/{cat}/{prod}/      <span class="r">← root 3</span>
+    sources/{hash12}/
+
+ARCHIVE/{cat}/{prod}/{runId}/  <span class="r">← root 4 (copy)</span>
+  bundle/
+    run_output/   ← copy of root 2
+    indexlab/      ← copy of root 1
+    latest_snapshot/ ← copy of latest/
+    shared_logs/  ← filtered JSONL
+    runtime_traces/ ← copy of traces
+</pre>
+</div>
+<div class="cmp-col" style="border-color: #0f6e56;">
+  <h4 style="color: #0f6e56;">Optimal: single run directory + content-addressed sources</h4>
+<pre style="font-size: 12px; padding: 12px;">
+OUTPUT_ROOT/
+├── runs/{runId}/              <span class="g">← single run dir</span>
+│   ├── run-summary.json       <span class="g">← GUI telemetry</span>
+│   ├── normalized/
+│   │   ├── {cat}.normalized.json
+│   │   └── {cat}.row.tsv
+│   ├── provenance/
+│   │   ├── fields.provenance.json
+│   │   └── fields.candidates.json
+│   ├── evidence/
+│   │   └── evidence_pack.json
+│   └── summary.json
+│
+├── sources/{cat}/{prod}/{hash12}/ <span class="g">← content-addressed</span>
+│   ├── page.html.gz
+│   ├── screenshot.{ext}
+│   ├── ldjson.json
+│   └── {filename}.pdf
+│
+├── final/{cat}/{brand}/{model}/ <span class="g">← promoted output</span>
+│   ├── spec.json
+│   ├── provenance.json
+│   └── history/runs.jsonl
+│
+└── <span class="g">spec.sqlite</span>                   <span class="g">← ALL structured data</span>
+    48 tables: runs, candidates,
+    evidence, billing, metrics...
+</pre>
+</div>
+</div>
+
+
+<!-- ============================================================ -->
+<h2>4. What SQL Already Owns (no files needed)</h2>
+
+<div class="diagram-wrap" style="padding: 16px 24px;">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+<tr style="border-bottom: 2px solid #e8e6df;">
+  <th style="text-align:left; padding: 6px 8px;">Data</th>
+  <th style="text-align:left; padding: 6px 8px;">SQL Table</th>
+  <th style="text-align:left; padding: 6px 8px;">File Equivalent (current)</th>
+  <th style="text-align:center; padding: 6px 8px;">File needed?</th>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Run metadata</td>
+  <td style="padding: 6px 8px; font-family: monospace;">runs (14 cols)</td>
+  <td style="padding: 6px 8px; text-decoration: line-through; color: #a32d2d;">run.json</td>
+  <td style="text-align:center; padding: 6px 8px;">No (killed)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Run telemetry</td>
+  <td style="padding: 6px 8px; font-family: monospace;">run_artifacts (run_summary)</td>
+  <td style="padding: 6px 8px; font-family: monospace;">run-summary.json</td>
+  <td style="text-align:center; padding: 6px 8px;">Yes (archive + GUI)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">NeedSet</td>
+  <td style="padding: 6px 8px; font-family: monospace;">run_artifacts (needset)</td>
+  <td style="padding: 6px 8px; text-decoration: line-through; color: #a32d2d;">needset.json</td>
+  <td style="text-align:center; padding: 6px 8px;">No (killed)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Search profile</td>
+  <td style="padding: 6px 8px; font-family: monospace;">run_artifacts (search_profile)</td>
+  <td style="padding: 6px 8px; text-decoration: line-through; color: #a32d2d;">search_profile.json</td>
+  <td style="text-align:center; padding: 6px 8px;">No (killed)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Bridge events</td>
+  <td style="padding: 6px 8px; font-family: monospace;">bridge_events (purged)</td>
+  <td style="padding: 6px 8px; font-family: monospace;">Embedded in run-summary.json</td>
+  <td style="text-align:center; padding: 6px 8px;">No (in summary)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Billing</td>
+  <td style="padding: 6px 8px; font-family: monospace;">billing_entries</td>
+  <td style="padding: 6px 8px; text-decoration: line-through; color: #a32d2d;">_billing/ledger/*.jsonl</td>
+  <td style="text-align:center; padding: 6px 8px;">No (killed)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Metrics</td>
+  <td style="padding: 6px 8px; font-family: monospace;">metrics</td>
+  <td style="padding: 6px 8px; font-family: monospace;">metrics.jsonl (fallback)</td>
+  <td style="text-align:center; padding: 6px 8px;">Fallback only</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Field values</td>
+  <td style="padding: 6px 8px; font-family: monospace;">item_field_state</td>
+  <td style="padding: 6px 8px; font-family: monospace;">normalized.json</td>
+  <td style="text-align:center; padding: 6px 8px;">Yes (export artifact)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Candidates</td>
+  <td style="padding: 6px 8px; font-family: monospace;">candidates</td>
+  <td style="padding: 6px 8px; font-family: monospace;">fields.candidates.json</td>
+  <td style="text-align:center; padding: 6px 8px;">Yes (export artifact)</td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">Source evidence</td>
+  <td style="padding: 6px 8px; font-family: monospace;">source_assertions + evidence_refs</td>
+  <td style="padding: 6px 8px; font-family: monospace;">fields.provenance.json</td>
+  <td style="text-align:center; padding: 6px 8px;">Yes (export artifact)</td>
+</tr>
+<tr>
+  <td style="padding: 6px 8px;">Page content</td>
+  <td style="padding: 6px 8px; font-family: monospace;">crawl_sources (metadata)</td>
+  <td style="padding: 6px 8px; font-family: monospace;">sources/{hash12}/page.html.gz</td>
+  <td style="text-align:center; padding: 6px 8px;">Yes (binary, not in SQL)</td>
+</tr>
+</table>
+</div>
+
+
+<!-- ============================================================ -->
+<h2>5. Optimal Run Directory (what should be saved)</h2>
+<p>A completed run should produce exactly this file tree. Everything else is in SQL or derivable from SQL.</p>
+
+<pre>
+<span class="b">runs/{runId}/</span>                          <span class="d">← single directory per run</span>
+├── <span class="g">run-summary.json</span>                   <span class="d">← GUI telemetry (schema v1, ~150KB-1MB)</span>
+│                                      <span class="d">   Contains: meta, events[], llm_agg, observability</span>
+│                                      <span class="d">   GUI reads this for past-run dashboard</span>
+│
+├── <span class="y">normalized/</span>                        <span class="d">← extraction work product</span>
+│   ├── {category}.normalized.json     <span class="d">   All field values + confidence + source</span>
+│   └── {category}.row.tsv            <span class="d">   TSV for bulk import/export</span>
+│
+├── <span class="y">provenance/</span>                        <span class="d">← field-level audit trail</span>
+│   ├── fields.provenance.json         <span class="d">   Why each field value was chosen</span>
+│   └── fields.candidates.json         <span class="d">   All candidates ranked per field</span>
+│
+├── <span class="y">evidence/</span>                          <span class="d">← aggregated evidence</span>
+│   └── evidence_pack.json            <span class="d">   Source snippets + quotes per field</span>
+│
+└── <span class="y">summary.json</span>                       <span class="d">← compact run outcome</span>
+                                       <span class="d">   validated, confidence, completeness, cost</span>
+
+<span class="d">── NOT in the run directory (shared, content-addressed) ──</span>
+
+<span class="g">sources/{category}/{product}/{hash12}/</span> <span class="d">← deduped binary artifacts</span>
+├── page.html.gz                       <span class="d">← shared across runs (same content = same hash)</span>
+├── screenshot.{ext}
+├── ldjson.json
+└── {filename}.pdf
+
+<span class="d">── NOT saved as files (SQL owns this) ──</span>
+
+<span class="g">spec.sqlite</span>                            <span class="d">← ALL structured data</span>
+├── runs                               <span class="d">   14-col slim run record</span>
+├── run_artifacts                      <span class="d">   needset, search_profile, brand_resolution, run_summary</span>
+├── candidates                         <span class="d">   36K+ rows per product (all extraction attempts)</span>
+├── item_field_state                   <span class="d">   73 rows per product (current winners)</span>
+├── source_registry                    <span class="d">   every URL visited + status</span>
+├── source_assertions + evidence_refs  <span class="d">   provenance chain</span>
+├── billing_entries                    <span class="d">   per-LLM-call costs</span>
+├── metrics                            <span class="d">   timing + gauges</span>
+├── crawl_sources                      <span class="d">   content_hash → file_path mapping</span>
+├── source_screenshots                 <span class="d">   screenshot metadata</span>
+├── source_pdfs                        <span class="d">   PDF metadata</span>
+└── ... (48 tables total)
+</pre>
+
+<div class="done">
+<strong>Key principle:</strong> If data is structured and queryable, it belongs in SQL. If it's a binary blob (HTML, images, PDFs), it belongs in content-addressed file storage. If it's a human-readable export product (spec.json, provenance.json), it belongs as a file in the run directory. Everything else (run metadata, events, billing, metrics, candidates, evidence) is SQL-only.
+</div>
+
+
+<!-- ============================================================ -->
+<h2>6. Archive Bundle (what should be archived)</h2>
+<p>The archive bundle should be the minimum set of files needed to (a) understand what happened in a run, (b) review the extraction output, and (c) rebuild SQL state if needed.</p>
+
+<pre>
+<span class="b">ARCHIVE: {category}/{product}/{runId}/</span>
+│
+├── <span class="g">run-summary.json</span>                   <span class="d">← what happened (GUI telemetry)</span>
+├── <span class="y">summary.json</span>                       <span class="d">← outcome (validated, confidence, cost)</span>
+│
+├── <span class="y">normalized/</span>                        <span class="d">← what was extracted</span>
+│   ├── {cat}.normalized.json
+│   └── {cat}.row.tsv
+│
+├── <span class="y">provenance/</span>                        <span class="d">← why each value was chosen</span>
+│   ├── fields.provenance.json
+│   └── fields.candidates.json
+│
+├── <span class="y">evidence/</span>                          <span class="d">← supporting evidence</span>
+│   └── evidence_pack.json
+│
+└── <span class="r">NOT included:</span>
+    <span class="r">latest_snapshot/</span>                   <span class="d">← redundant (SQL is SSOT)</span>
+    <span class="r">shared_logs/</span>                       <span class="d">← redundant (events in run-summary, billing in SQL)</span>
+    <span class="r">runtime_traces/</span>                    <span class="d">← low value for archive (debug only)</span>
+    <span class="r">indexlab/</span>                          <span class="d">← redundant (only had run-summary.json + screencast)</span>
+    <span class="r">manifest.json</span>                      <span class="d">← can be generated from run-summary.json metadata</span>
+</pre>
+
+<div class="note">
+<strong>Archive size reduction:</strong> The current bundle includes 5 subdirectories (run_output, latest_snapshot, indexlab, runtime_traces, shared_logs) plus a manifest. The optimal bundle is just the run directory itself — flat, no copies, no subdirectories named after their source location. The archive IS the run directory.
+</div>
+
+
+<!-- ============================================================ -->
+<h2>7. Changes Needed</h2>
+
+<div class="diagram-wrap" style="padding: 16px 24px;">
+<table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+<tr style="border-bottom: 2px solid #e8e6df;">
+  <th style="text-align:left; padding: 6px 8px; width: 40px;">#</th>
+  <th style="text-align:left; padding: 6px 8px;">Change</th>
+  <th style="text-align:left; padding: 6px 8px;">Files</th>
+  <th style="text-align:center; padding: 6px 8px; width: 80px;">Priority</th>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">1</td>
+  <td style="padding: 6px 8px;"><strong>Unify run directory.</strong> Write normalized/, provenance/, evidence/, summary.json into the same directory as run-summary.json. Stop scattering across INDEXLAB_ROOT and OUTPUT_ROOT.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">exporter.js, runtimeBridgeArtifacts.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-move">high</span></td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">2</td>
+  <td style="padding: 6px 8px;"><strong>Kill latest/ directory.</strong> SQL <code>product_runs.is_latest</code> is the SSOT. Remove latest/ writes from exporter and finalExporter.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">exporter.js, finalExporter.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-waste">high</span></td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">3</td>
+  <td style="padding: 6px 8px;"><strong>Slim the archive bundle.</strong> Stop copying latest_snapshot/, shared_logs/, runtime_traces/. The archive = the run directory + content-addressed sources (if local archival).</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">runDataRelocationService.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-move">high</span></td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">4</td>
+  <td style="padding: 6px 8px;"><strong>Kill logs/events.jsonl.gz.</strong> Events are in run-summary.json. If a compressed event log is needed for S3, generate it from run-summary.json at archive time.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">exporter.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-dup">medium</span></td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">5</td>
+  <td style="padding: 6px 8px;"><strong>Make debug/ output configurable.</strong> Currently writes a full parallel tree for every run. Should be opt-in via a setting, not always-on.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">finalExporter.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-dup">low</span></td>
+</tr>
+<tr style="border-bottom: 1px solid #f0efe8;">
+  <td style="padding: 6px 8px;">6</td>
+  <td style="padding: 6px 8px;"><strong>Kill screencast frames from archive.</strong> These are ephemeral per-worker frames overwritten constantly during a run. Zero value in an archive. runtime_screencast/ should not be copied.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">runDataRelocationService.js</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-waste">medium</span></td>
+</tr>
+<tr>
+  <td style="padding: 6px 8px;">7</td>
+  <td style="padding: 6px 8px;"><strong>Wave 6: product-checkpoint.json.</strong> When the checkpoint serializer is built, it serializes all product SQL data into a single file. This is the disaster recovery artifact — not per-run, but per-product.</td>
+  <td style="padding: 6px 8px; font-size: 12px; font-family: monospace;">checkpointSerializer.js (new)</td>
+  <td style="text-align:center; padding: 6px 8px;"><span class="badge badge-move">Wave 6</span></td>
+</tr>
+</table>
+</div>
+
+
+<!-- ============================================================ -->
+<h2>8. Content-Addressed Sources (keep as-is)</h2>
+<p>The content-addressed source storage is already optimal. No changes needed.</p>
+
+<pre>
+<span class="g">sources/{category}/{product}/{hash12}/</span>
+│
+├── page.html.gz          <span class="d">← gzipped HTML (deduped: same content = same dir)</span>
+├── screenshot.{ext}      <span class="d">← fullpage or selector screenshot</span>
+├── ldjson.json           <span class="d">← JSON-LD structured data</span>
+├── embedded_state.json   <span class="d">← JS/React state objects</span>
+├── dom_snippet.html      <span class="d">← key DOM fragment</span>
+└── {filename}.pdf        <span class="d">← extracted PDFs</span>
+
+<span class="d">SQL metadata (crawl_sources table):</span>
+  content_hash → directory key
+  source_url → original URL
+  file_path → relative path to page.html.gz
+  has_screenshot, has_pdf, has_ldjson → boolean flags
+  http_status, size_bytes, doc_kind, source_tier
+
+<span class="d">SQL screenshot metadata (source_screenshots table):</span>
+  screenshot_id, file_path, format, dimensions
+
+<span class="d">SQL PDF metadata (source_pdfs table):</span>
+  pdf_id, file_path, filename, pages_scanned
+</pre>
+
+<div class="done">
+<strong>Why this works:</strong> Binary files can't go in SQLite (too large, not queryable). Content-addressing means the same page crawled in 3 different runs only stores 1 copy. SQL has all the metadata to find and serve any artifact by content_hash. This is the correct architecture for binary artifacts.
+</div>
+
+<p style="margin-top: 32px; font-size: 13px; color: #888780; text-align: center;">Spec Factory — Run Artifact &amp; Folder Structure Audit — 2026-03-27</p>
+
+</body>
+</html>

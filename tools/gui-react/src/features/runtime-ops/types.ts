@@ -426,6 +426,7 @@ export interface FetchPhasesResponse {
   run_id: string;
   stealth?: FetchPluginData;
   cookie_consent?: FetchPluginData;
+  overlay_dismissal?: FetchPluginData;
   auto_scroll?: FetchPluginData;
   dom_expansion?: FetchPluginData;
   css_override?: FetchPluginData;

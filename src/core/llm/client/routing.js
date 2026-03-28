@@ -244,11 +244,19 @@ export function resolvePhaseMaxContextTokens(config = {}, phase = '') {
 }
 
 // WHY: Resolves per-phase boolean flags from config.
-// configPostMerge writes _resolved${Phase}WebSearch.
+// configPostMerge writes _resolved${Phase}WebSearch, _resolved${Phase}Thinking.
 function resolvePhaseFlag(config = {}, phase = '', flagSuffix = '') {
   const cap = capitalize(String(phase || '').trim());
   if (!cap || !flagSuffix) return false;
   return Boolean(config[`_resolved${cap}${flagSuffix}`]);
+}
+
+// WHY: Resolves per-phase string values from config.
+// configPostMerge writes _resolved${Phase}ThinkingEffort.
+function resolvePhaseString(config = {}, phase = '', suffix = '') {
+  const cap = capitalize(String(phase || '').trim());
+  if (!cap || !suffix) return '';
+  return String(config[`_resolved${cap}${suffix}`] || '');
 }
 
 function roleReasoningCap(config = {}, role = 'extract', reason = '', isFallback = false) {
@@ -402,11 +410,16 @@ export async function callLlmWithRouting({
           : null)
   );
 
-  // WHY: Phase-level web_search flag from LLM settings panel.
+  // WHY: Phase-level web_search and thinking flags from LLM settings panel.
   const phaseWebSearch = resolvePhaseFlag(config, phase, 'WebSearch');
-  const effectiveRequestOptions = phaseWebSearch
-    ? { ...(baseRequestOptions || {}), web_search: true }
-    : baseRequestOptions;
+  const phaseThinking = resolvePhaseFlag(config, phase, 'Thinking');
+  const phaseThinkingEffort = resolvePhaseString(config, phase, 'ThinkingEffort');
+  const mergedOptions = {
+    ...(baseRequestOptions || {}),
+    ...(phaseWebSearch ? { web_search: true } : {}),
+    ...(phaseThinking ? { reasoning_effort: phaseThinkingEffort || 'medium' } : {}),
+  };
+  const effectiveRequestOptions = Object.keys(mergedOptions).length > 0 ? mergedOptions : baseRequestOptions;
 
   // WHY: Reasoning + tokens auto-resolved from config via phase. Callers never set these.
   // The LLM Settings panel is the SSOT — configPostMerge writes _resolved${Phase}* keys.

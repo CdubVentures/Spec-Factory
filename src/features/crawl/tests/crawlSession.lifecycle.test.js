@@ -25,31 +25,35 @@ describe('createCrawlSession lifecycle', () => {
     ]);
   });
 
+  // WHY: Suite orchestrator drives the hook order now.
+  // onInit fires in preNavigationHooks (not visible to requestHandler test doubles).
+  // requestHandler runs: [loading delay] → onDismiss → (onScroll → onDismiss) × rounds → onCapture → onComplete.
+  // Default fetchDismissRounds=2, so: onDismiss, onScroll, onDismiss, onScroll, onDismiss, onCapture, onComplete.
   it('runs plugin hooks in documented lifecycle order', async () => {
     const hookOrder = [];
     const plugin = createPluginDouble({
       name: 'tracker',
       hooks: {
-        beforeNavigate: async () => { hookOrder.push('beforeNavigate'); },
-        afterNavigate: async () => { hookOrder.push('afterNavigate'); },
-        onInteract: async () => { hookOrder.push('onInteract'); },
+        onDismiss: async () => { hookOrder.push('onDismiss'); },
+        onScroll: async () => { hookOrder.push('onScroll'); },
         onCapture: async () => { hookOrder.push('onCapture'); },
         onComplete: async () => { hookOrder.push('onComplete'); },
       },
     });
     const crawler = createCrawlerFactoryDouble();
     const session = createCrawlSession({
-      settings: {},
+      settings: { fetchLoadingDelayMs: 0 },
       plugins: [plugin],
       _crawlerFactory: crawler.factory,
     });
 
     await session.processUrl('http://example.com');
 
+    // Round-based: dismiss(0), scroll(1), dismiss(1), scroll(2), dismiss(2), capture, complete
     assert.deepEqual(hookOrder, [
-      'beforeNavigate',
-      'afterNavigate',
-      'onInteract',
+      'onDismiss',
+      'onScroll', 'onDismiss',
+      'onScroll', 'onDismiss',
       'onCapture',
       'onComplete',
     ]);

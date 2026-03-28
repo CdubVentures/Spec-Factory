@@ -27,80 +27,54 @@
 
 flowchart TB
 
-  title["<b>SPEC FACTORY DATA PERSISTENCE MAP</b><br/><i>Post-Wave 4 — All hot-path state in SQL  |  Audited 2026-03-27</i>"]
+  title["<b>SPEC FACTORY DATA PERSISTENCE MAP</b><br/><i>Post-Wave 5.5 — SQL primary, run-summary.json at finalize  |  2026-03-27</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
 
-  %% ===== LEGEND =====
-  subgraph LEGEND["LEGEND"]
-    direction LR
-    L1["JSON File (boundary only)"]
-    L2[("SQLite Table (primary)")]
-    L3{{"NDJSON (fallback only)"}}
-    L4["Eliminated"]
-    L1 ~~~ L2 ~~~ L3 ~~~ L4
-  end
-  style LEGEND fill:#161b22,stroke:#30363d,color:#8b949e
-  style L1 fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style L2 fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style L3 fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style L4 fill:#da3633,stroke:#f85149,color:#fff,stroke-width:2px
-
   %% ============================================================
-  %%  SECTION 1: RUN STATE (Waves 1-3)
+  %%  SECTION 1: RUN STATE (Waves 1-3 + 5.5)
   %% ============================================================
-  subgraph RUN_STATE["RUN STATE  (SQL primary — Waves 1-3)"]
+  subgraph RUN_STATE["RUN STATE  (SQL primary + run-summary.json at finalize)"]
     direction TB
     rba["runtimeBridgeArtifacts.js"]
     rbeh["runtimeBridgeEventHandlers.js"]
 
-    runjson["run.json<br/><i>boundary only (start + end)</i>"]
-    needsetjson["needset.json<br/><i>boundary only (start)</i>"]
-    searchprofilejson["search_profile.json<br/><i>boundary only (start)</i>"]
-    screencastjson["runtime_screencast/*.json<br/><i>per-worker screenshot frames</i>"]
-
-    runs_sql[("runs<br/><i>SQL primary — Wave 2</i>")]
-    bridge_sql[("bridge_events<br/><i>SQL only — Wave 1</i>")]
-    artifacts_sql[("run_artifacts<br/><i>SQL primary — Wave 3<br/>needset + search_profile + brand_resolution</i>")]
+    runs_sql[("runs (slim 14 cols)<br/><i>SQL only — Wave 2 + 5.5</i>")]
+    bridge_sql[("bridge_events<br/><i>SQL during run, purged at finalize</i>")]
+    artifacts_sql[("run_artifacts<br/><i>needset + search_profile + brand_resolution<br/>PRODUCT knowledge — stays in SQL</i>")]
+    summary_json["run-summary.json<br/><i>Written once at finalize<br/>schema_version + telemetry:<br/>meta, events, llm_agg, observability</i>"]
 
     rba -->|"SQL mid-run"| runs_sql
     rba -->|"SQL mid-run"| artifacts_sql
-    rba -->|"JSON at boundary"| runjson
-    rba -->|"JSON at boundary"| needsetjson
-    rba -->|"JSON at boundary"| searchprofilejson
-    rba -->|"WRITE"| screencastjson
-    rbeh -->|"INSERT"| bridge_sql
+    rba -->|"finalize only"| summary_json
+    rbeh -->|"INSERT during run"| bridge_sql
 
-    killed1["run_events.ndjson KILLED"]
-    killed2["mid-run run.json overwrites KILLED"]
-    killed3["mid-run needset/profile rewrites KILLED"]
+    killed1["run.json KILLED"]
+    killed2["needset.json KILLED"]
+    killed3["search_profile.json KILLED"]
+    killed4["bridge_events purged at finalize"]
   end
   style RUN_STATE fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
 
   subgraph RUN_READERS["Run State Readers"]
     direction TB
-    runlistbuilder["runListBuilder.js  READ runs SQL + run.json fallback"]
-    runtimeops["runtimeOpsRoutes.js  READ run_artifacts SQL"]
-    relocationSvc["runDataRelocationService.js  READ all + relocate"]
+    runlistbuilder["runListBuilder.js — SQL runs table for list"]
+    runtimeops["runtimeOpsRoutes.js — run-summary.json events<br/><i>fallback: bridge_events SQL for pre-migration runs</i>"]
   end
 
   runs_sql --> runlistbuilder
-  artifacts_sql --> runtimeops
+  summary_json --> runtimeops
 
   %% ============================================================
   %%  SECTION 2: SETTINGS
   %% ============================================================
   subgraph SETTINGS["SETTINGS  (JSON only — not yet migrated)"]
     direction TB
-    usersettings["user-settings.json<br/><i>all user prefs (schema v2):<br/>storage, LLM, runtime knobs</i>"]
-    settingssnapshot["{runId}-settings.json<br/><i>frozen config for run</i>"]
-    storagesettings["storage-settings.json<br/><i>legacy compat copy</i>"]
-
+    usersettings["user-settings.json"]
+    storagesettings["storage-settings.json (legacy)"]
     configHandler["configStorageSettingsHandler.js"]
-    userSettingsSvc["userSettingsService.js"]
 
     configHandler -->|"WRITE"| usersettings
     configHandler -->|"WRITE"| storagesettings
-    userSettingsSvc -->|"READ/WRITE"| usersettings
   end
   style SETTINGS fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
 
@@ -111,161 +85,74 @@ flowchart TB
     direction TB
     costLedger["costLedger.js"]
     metricsWriter["metricsWriter.js"]
-    traceWriter["runtimeTraceWriter.js"]
 
-    billing_sql[("billing_entries<br/><i>SQL only — Wave 4</i>")]
-    metrics_sql[("metrics<br/><i>SQL primary — Wave 4</i>")]
-    metricslog{{"_runtime/metrics.jsonl<br/><i>NDJSON fallback only<br/>(when specDb is null)</i>"}}
-    llmtraces["traces/{section}/{prefix}.json<br/><i>LLM call traces (ring buffer)</i>"]
+    billing_sql[("billing_entries — SQL only")]
+    metrics_sql[("metrics — SQL primary")]
+    metricslog{{"metrics.jsonl — NDJSON fallback only"}}
 
-    costLedger -->|"INSERT SQL only"| billing_sql
-    metricsWriter -->|"INSERT SQL primary"| metrics_sql
-    metricsWriter -.->|"NDJSON fallback"| metricslog
-    traceWriter -->|"WRITE"| llmtraces
-
-    killed4{{"_billing/ledger/*.jsonl KILLED"}}
+    costLedger -->|"INSERT"| billing_sql
+    metricsWriter -->|"INSERT"| metrics_sql
+    metricsWriter -.->|"fallback"| metricslog
   end
   style BILLING fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
 
   %% ============================================================
-  %%  SECTION 4: SPEC DATABASE (48 tables total)
+  %%  SECTION 4: SPEC DATABASE (48 tables)
   %% ============================================================
-  subgraph SPECDB["SPEC DATABASE  (.specfactory_tmp/{cat}/spec.sqlite  -  48 tables)"]
+  subgraph SPECDB["SPEC DATABASE  (.specfactory_tmp/{cat}/spec.sqlite — 48 tables)"]
     direction TB
-    candidates[("candidates + candidate_reviews<br/><i>evidence-backed value proposals</i>")]
-    components[("component_identity + aliases + values<br/><i>canonical component definitions</i>")]
-    items[("item_field_state + links<br/><i>per-product extracted values</i>")]
-    enums[("enum_lists + list_values<br/><i>allowed categorical values</i>")]
-    reviews[("key_review_state + runs + audit<br/><i>AI/human decisions + audit trail</i>")]
-    queue[("product_queue + product_runs + artifacts<br/><i>queue management + run history</i>")]
-    sources[("source_registry + assertions + evidence_refs<br/><i>evidence lineage</i>")]
-    intel[("source_intel_domains + brands + paths + corpus<br/><i>domain/brand reputation</i>")]
-    routematrix[("llm_route_matrix<br/><i>per-field extraction routing</i>")]
-    learningdb[("learning_profiles + category_brain<br/><i>per-brand metrics + artifacts</i>")]
+    candidates[("candidates + reviews")]
+    components[("component_identity + aliases + values")]
+    items[("item_field_state + links")]
+    enums[("enum_lists + list_values")]
+    reviews[("key_review_state + audit")]
+    queue[("product_queue + product_runs")]
+    sources[("source_registry + assertions + evidence")]
+    intel[("source_intel_domains + brands + paths")]
+    routematrix[("llm_route_matrix")]
     wave_tables[("Wave 1-4: bridge_events + runs +<br/>run_artifacts + billing_entries + metrics")]
   end
   style SPECDB fill:#0d1117,stroke:#1f6feb,color:#e0e0e0,stroke-width:3px
 
   %% ============================================================
-  %%  SECTION 5: FRONTIER DB
+  %%  SECTION 5: KEEP AS FILES
   %% ============================================================
-  subgraph FRONTIER["FRONTIER DB  (SQLite  -  query/URL learning)"]
+  subgraph KEEPFILES["KEEP AS FILES  (immutable artifacts)"]
     direction TB
-    frontierQueries[("queries<br/><i>query_hash, product_id, results</i>")]
-    frontierUrls[("urls<br/><i>canonical_url, fetch_count, cooldown</i>")]
-    frontierYields[("yields<br/><i>url, field_key, confidence</i>")]
+    catalog["category_authority/ — field_rules, known_values, component_db"]
+    exports["export artifacts — spec.json, summary.json, provenance.json"]
+    binaries["content-addressed — *.html.gz, screenshot.jpg, *.pdf"]
+    runsummary["run-summary.json — GUI telemetry at finalize"]
+    traces["LLM traces — ring buffer JSON files"]
   end
-  style FRONTIER fill:#0d1117,stroke:#1f6feb,color:#e0e0e0,stroke-width:2px
-
-  %% ============================================================
-  %%  SECTION 6: CATALOG & FIELD AUTHORITY
-  %% ============================================================
-  subgraph CATALOG["CATALOG & FIELD AUTHORITY  (category_authority/ — immutable artifacts)"]
-    direction TB
-    compileWriter["compileOutputWriter.js"]
-    brandRegistryMod["brandRegistry.js"]
-
-    fieldrules["field_rules.json + field_rules.full.json"]
-    knownvalues["_generated/known_values.json"]
-    uicatalog["_generated/ui_field_catalog.json"]
-    componentdb["_generated/component_db/*.json"]
-    compilereport["_generated/_compile_report.json"]
-    brandregistryjson["_global/brand_registry.json"]
-    suggestions["_suggestions/enums.json + components.json"]
-
-    compileWriter -->|"WRITE"| fieldrules
-    compileWriter -->|"WRITE"| knownvalues
-    compileWriter -->|"WRITE"| uicatalog
-    compileWriter -->|"WRITE"| componentdb
-    compileWriter -->|"WRITE"| compilereport
-    compileWriter -->|"WRITE"| suggestions
-    brandRegistryMod -->|"READ/WRITE"| brandregistryjson
-  end
-  style CATALOG fill:#0d1117,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-
-  %% ============================================================
-  %%  SECTION 7: EXPORT ARTIFACTS
-  %% ============================================================
-  subgraph EXPORT["EXPORT ARTIFACTS  (per-product, write-once per run)"]
-    direction TB
-    exporter["exporter.js"]
-    finalExporter["finalExporter.js"]
-
-    specjson["spec.json  -  final extracted spec"]
-    summaryjson["summary.json  -  validation summary"]
-    provenancejson["provenance.json  -  data sources"]
-    trafficjson["traffic_light.json  -  confidence scores"]
-    evidencejson["evidence/evidence_pack.json"]
-    candidatesjson["extracted/{host}/candidates.json"]
-    ldjsonjson["raw/pages/{host}/ldjson.json"]
-    runhistory{{"final/{product}/history/runs.jsonl"}}
-
-    exporter -->|"WRITE"| specjson
-    exporter -->|"WRITE"| summaryjson
-    exporter -->|"WRITE"| provenancejson
-    exporter -->|"WRITE"| trafficjson
-    exporter -->|"WRITE"| evidencejson
-    exporter -->|"WRITE"| candidatesjson
-    exporter -->|"WRITE"| ldjsonjson
-    finalExporter -->|"APPEND"| runhistory
-  end
-  style EXPORT fill:#0d1117,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-
-  %% ============================================================
-  %%  SECTION 8: LLM CACHE (dual-path)
-  %% ============================================================
-  subgraph LLMCACHE["LLM CACHE  (dual-path)"]
-    direction TB
-    llmCacheModule["llmCache.js"]
-    llmcachejson["llm_cache/{sha256}.json<br/><i>file-based fallback</i>"]
-    llmcachesql[("llm_cache table<br/><i>SQL preferred</i>")]
-    llmCacheModule -->|"fallback"| llmcachejson
-    llmCacheModule -->|"preferred"| llmcachesql
-  end
-  style LLMCACHE fill:#0d1117,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-
-  %% ============================================================
-  %%  SECTION 9: LEARNING (dual-path)
-  %% ============================================================
-  subgraph LEARNING["LEARNING  (dual-path, migrating to SQL)"]
-    direction TB
-    learningjson["_learning/{cat}/profiles/*.json"]
-    brainjson["_learning/{cat}/{artifact}.json<br/><i>field_lexicon, constraints,<br/>query_templates, etc.</i>"]
-    learningTarget[("learning_profiles + category_brain<br/><i>SQL target</i>")]
-    learningjson -.->|"migrating"| learningTarget
-    brainjson -.->|"migrating"| learningTarget
-  end
-  style LEARNING fill:#0d1117,stroke:#d29922,color:#e0e0e0,stroke-width:2px
+  style KEEPFILES fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style catalog fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
+  style exports fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
+  style binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0,stroke-width:2px
+  style runsummary fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style traces fill:#2d333b,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
 
   %% ===== Node styles =====
   style rba fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style rbeh fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style runjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style needsetjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style searchprofilejson fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style screencastjson fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style runs_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
   style bridge_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
   style artifacts_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
+  style summary_json fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
   style killed1 fill:#da3633,stroke:#f85149,color:#fff
   style killed2 fill:#da3633,stroke:#f85149,color:#fff
   style killed3 fill:#da3633,stroke:#f85149,color:#fff
   style killed4 fill:#da3633,stroke:#f85149,color:#fff
   style runlistbuilder fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style runtimeops fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style relocationSvc fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style usersettings fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
-  style settingssnapshot fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style storagesettings fill:#2d333b,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
   style configHandler fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style userSettingsSvc fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style costLedger fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style metricsWriter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style traceWriter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
   style billing_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
   style metrics_sql fill:#238636,stroke:#3fb950,color:#fff,stroke-width:2px
   style metricslog fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style llmtraces fill:#2d333b,stroke:#a371f7,color:#e0e0e0,stroke-width:2px
   style candidates fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
   style components fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
   style items fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
@@ -275,45 +162,9 @@ flowchart TB
   style sources fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
   style intel fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
   style routematrix fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style learningdb fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
   style wave_tables fill:#238636,stroke:#3fb950,color:#fff,stroke-width:3px
-  style frontierQueries fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style frontierUrls fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style frontierYields fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style compileWriter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style brandRegistryMod fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style fieldrules fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style knownvalues fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style uicatalog fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style componentdb fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style compilereport fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style brandregistryjson fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style suggestions fill:#2d333b,stroke:#e3b341,color:#e0e0e0,stroke-width:2px
-  style exporter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style finalExporter fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style specjson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style summaryjson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style provenancejson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style trafficjson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style evidencejson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style candidatesjson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style ldjsonjson fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style runhistory fill:#2d333b,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style llmCacheModule fill:#21262d,stroke:#4a90d9,color:#c9d1d9
-  style llmcachejson fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style llmcachesql fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
-  style learningjson fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style brainjson fill:#2d333b,stroke:#d29922,color:#e0e0e0,stroke-width:2px
-  style learningTarget fill:#1f6feb,stroke:#58a6ff,color:#fff,stroke-width:2px
 
-  %% ===== Force vertical layout via section links =====
   RUN_STATE --> SETTINGS
   SETTINGS --> BILLING
   BILLING --> SPECDB
-  SPECDB --> FRONTIER
-  FRONTIER --> CATALOG
-  CATALOG --> EXPORT
-  EXPORT --> LLMCACHE
-  LLMCACHE --> LEARNING
-
-  linkStyle 18,19,20,21,22,23,24,25 stroke:#30363d,stroke-width:1px,stroke-dasharray:5 5
+  SPECDB --> KEEPFILES

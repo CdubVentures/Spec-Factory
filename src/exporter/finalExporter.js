@@ -350,20 +350,12 @@ async function writeDebugRunArtifacts({
   evidencePack
 }) {
   const debugBase = ['runs', slug(category), slug(productId), runId];
+  // WHY: Keep spec/summary/provenance — archivedRunLocationHelpers reads these for run detection.
+  // traffic_light, evidence_pack, sources.jsonl killed (zero readers).
   await Promise.all([
     writeJson(storage, `${debugBase.join('/')}/spec.json`, normalized.fields || {}),
     writeJson(storage, `${debugBase.join('/')}/summary.json`, compactSummary(summary)),
     writeJson(storage, `${debugBase.join('/')}/provenance.json`, provenance || {}),
-    writeJson(storage, `${debugBase.join('/')}/traffic_light.json`, trafficLight || {}),
-    writeJson(storage, `${debugBase.join('/')}/evidence/evidence_pack.json`, evidencePack || {}),
-    storage.writeObject(
-      `${debugBase.join('/')}/evidence/sources.jsonl`,
-      Buffer.from(
-        sourceRowsForHistory(sourceResults, runId).map((row) => JSON.stringify(row)).join('\n') + '\n',
-        'utf8'
-      ),
-      { contentType: 'application/x-ndjson' }
-    )
   ]);
 
   return `${debugBase.join('/')}`;
@@ -435,6 +427,8 @@ export async function writeFinalOutputs({
     sourceResults
   });
 
+  // WHY: Wave D will migrate all final/ writes to SQL (run_artifacts).
+  // For now, keep only files with active production readers.
   if (promote) {
     await Promise.all([
       writeJson(storage, `${finalBase}/spec.json`, exportNormalized.fields || {}),
@@ -448,16 +442,11 @@ export async function writeFinalOutputs({
         traffic_light: trafficLight?.by_field || {}
       }),
       writeJson(storage, `${finalBase}/traffic_light.json`, trafficLight || {}),
-      writeJson(storage, `${finalBase}/meta.json`, meta),
-      writeJson(storage, `${finalBase}/evidence/evidence_pack.json`, evidencePack)
     ]);
   }
 
-  await appendJsonl(
-    storage,
-    `${finalBase}/history/runs.jsonl`,
-    runSnapshot(summary, runId)
-  );
+  // WHY: sources.jsonl kept — publishAnalytics + driftScheduler read it.
+  // Will be migrated to SQL in Wave D.
   for (const row of sourceRowsForHistory(sourceResults, runId)) {
     await appendJsonl(storage, `${finalBase}/evidence/sources.jsonl`, row);
   }

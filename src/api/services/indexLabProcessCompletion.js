@@ -64,9 +64,37 @@ async function resolveCompletedRunMeta({
   indexLabRoot,
   cliArgs,
   startedAt,
+  getSpecDb,
 } = {}) {
-  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
   const requestedRunId = parseCliArg(cliArgs, '--run-id');
+  const category = parseCliArg(cliArgs, '--category');
+  const productId = parseCliArg(cliArgs, '--product-id');
+
+  // SQL-first path (Wave 5.5+)
+  if (typeof getSpecDb === 'function' && category) {
+    try {
+      const specDb = getSpecDb(category);
+      if (specDb) {
+        if (requestedRunId) {
+          const row = specDb.getRunByRunId(requestedRunId);
+          if (row) return row;
+        }
+        const runs = specDb.getRunsByCategory(category, 50);
+        if (runs && runs.length > 0) {
+          const sorted = [...runs].sort((a, b) => {
+            const scoreA = scoreRunMeta(a, { category, productId, startedAt });
+            const scoreB = scoreRunMeta(b, { category, productId, startedAt });
+            if (scoreA !== scoreB) return scoreB - scoreA;
+            return String(b.run_id || '').localeCompare(String(a.run_id || ''));
+          });
+          return sorted[0] || null;
+        }
+      }
+    } catch { /* fall through to filesystem */ }
+  }
+
+  // Filesystem fallback (pre-migration runs)
+  const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
   if (requestedRunId) {
     const directMeta = await safeReadJson(path.join(rootDir, requestedRunId, 'run.json'));
     if (directMeta && typeof directMeta === 'object') {
@@ -81,10 +109,7 @@ async function resolveCompletedRunMeta({
     return null;
   }
 
-  const category = parseCliArg(cliArgs, '--category');
-  const productId = parseCliArg(cliArgs, '--product-id');
   const rows = [];
-
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const runMetaPath = path.join(rootDir, entry.name, 'run.json');
@@ -154,12 +179,61 @@ async function reconcileInterruptedRunArtifacts({
   exitCode,
   cliArgs,
   indexLabRoot,
+  getSpecDb,
 } = {}) {
   if (exitCode === 0) return null;
 
   const runId = parseCliArg(cliArgs, '--run-id');
   if (!runId) return null;
 
+  const category = parseCliArg(cliArgs, '--category');
+
+  // SQL-first path (Wave 5.5+)
+  if (typeof getSpecDb === 'function' && category) {
+    try {
+      const specDb = getSpecDb(category);
+      if (specDb) {
+        const meta = specDb.getRunByRunId(runId);
+        if (meta) {
+          const events = specDb.getBridgeEventsByRunId(runId, 3000) || [];
+          const hasCompletedEvent = events.some((row) => String(row?.event || '').trim() === 'run_completed');
+          const terminalReason = extractTerminalErrorReason(events) || (hasCompletedEvent ? '' : 'process_interrupted');
+          const endedAt = String(meta.ended_at || '').trim() || new Date().toISOString();
+
+          if (!hasCompletedEvent && !extractTerminalErrorReason(events)) {
+            try {
+              specDb.insertBridgeEvent({
+                run_id: runId,
+                category: String(meta.category || '').trim(),
+                product_id: String(meta.product_id || '').trim(),
+                ts: endedAt,
+                stage: 'error',
+                event: 'error',
+                payload: JSON.stringify({
+                  event: terminalReason,
+                  message: 'IndexLab process exited before run_completed.',
+                }),
+              });
+            } catch { /* best-effort */ }
+          }
+
+          const nextStatus = hasCompletedEvent ? 'completed' : 'failed';
+          try {
+            specDb.upsertRun({
+              ...meta,
+              counters: typeof meta.counters === 'string' ? meta.counters : JSON.stringify(meta.counters || {}),
+              status: nextStatus,
+              ended_at: endedAt,
+            });
+          } catch { /* best-effort */ }
+
+          return { ...meta, status: nextStatus, ended_at: endedAt };
+        }
+      }
+    } catch { /* fall through to filesystem */ }
+  }
+
+  // Filesystem fallback (pre-migration runs)
   const rootDir = path.resolve(String(indexLabRoot || defaultIndexLabRoot()));
   const runDir = path.join(rootDir, runId);
   const runMetaPath = path.join(runDir, 'run.json');
@@ -224,6 +298,7 @@ export async function handleIndexLabProcessCompletion({
   broadcastWs,
   logError = console.error,
   onRelocationComplete,
+  getSpecDb,
 } = {}) {
   if (!isIndexLabCommand(cliArgs)) return null;
 
@@ -233,6 +308,7 @@ export async function handleIndexLabProcessCompletion({
     exitCode,
     cliArgs,
     indexLabRoot: effectiveIndexLabRoot,
+    getSpecDb,
   });
 
   if (!shouldRelocateRunData(runDataStorageSettings)) return null;
@@ -240,6 +316,7 @@ export async function handleIndexLabProcessCompletion({
     indexLabRoot: effectiveIndexLabRoot,
     cliArgs,
     startedAt,
+    getSpecDb,
   });
   if (!runMeta) {
     return {

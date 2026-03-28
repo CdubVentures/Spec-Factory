@@ -136,10 +136,10 @@ describe('assembleConfigFromRegistry', () => {
 
   it('env override propagates for bool settings', () => {
     clearAppEnv();
-    process.env.EVENTS_JSON_WRITE = 'false';
+    process.env.STEALTH_ENABLED = 'false';
     const overrideCfg = assembleConfigFromRegistry(RUNTIME_SETTINGS_REGISTRY);
-    strictEqual(overrideCfg.eventsJsonWrite, false);
-    delete process.env.EVENTS_JSON_WRITE;
+    strictEqual(overrideCfg.stealthEnabled, false);
+    delete process.env.STEALTH_ENABLED;
   });
 
   it('env override propagates for string settings', () => {

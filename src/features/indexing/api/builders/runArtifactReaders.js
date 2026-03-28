@@ -180,13 +180,6 @@ export function createRunArtifactReaders({
       if (fromRunArtifact && typeof fromRunArtifact === 'object') {
         return fromRunArtifact;
       }
-
-      const latestNeedSetKey = storage.resolveOutputKey(category, productId, 'latest', 'needset.json');
-      const latestNeedSetPath = path.join(outputRoot, ...String(latestNeedSetKey || '').split('/'));
-      const fromLatest = await safeReadJson(latestNeedSetPath);
-      if (fromLatest && typeof fromLatest === 'object') {
-        return fromLatest;
-      }
     }
 
     if (direct && typeof direct === 'object') {
@@ -229,30 +222,12 @@ export function createRunArtifactReaders({
       if (runProfileFromOutputRoot && typeof runProfileFromOutputRoot === 'object') {
         return runProfileFromOutputRoot;
       }
-
-      const latestProfileKey = storage.resolveOutputKey(category, productId, 'latest', 'search_profile.json');
-      const latestProfile = await storage.readJsonOrNull(latestProfileKey);
-      if (latestProfile && typeof latestProfile === 'object') {
-        return latestProfile;
-      }
-
-      const latestProfileFromOutputRoot = await readOutputRootJson(latestProfileKey);
-      if (latestProfileFromOutputRoot && typeof latestProfileFromOutputRoot === 'object') {
-        return latestProfileFromOutputRoot;
-      }
     }
 
     if (normalizedRunBase) {
       const runBaseProfile = await readOutputRootJson(`${normalizedRunBase}/analysis/search_profile.json`);
       if (runBaseProfile && typeof runBaseProfile === 'object') {
         return runBaseProfile;
-      }
-    }
-
-    if (normalizedLatestBase) {
-      const latestBaseProfile = await readOutputRootJson(`${normalizedLatestBase}/search_profile.json`);
-      if (latestBaseProfile && typeof latestBaseProfile === 'object') {
-        return latestBaseProfile;
       }
     }
 
@@ -330,12 +305,6 @@ export function createRunArtifactReaders({
       return runPayload;
     }
 
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'item_indexing_extraction_packet.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
-    }
-
     return null;
   }
 
@@ -366,12 +335,6 @@ export function createRunArtifactReaders({
     const runPayload = await storage.readJsonOrNull(runKey);
     if (runPayload && typeof runPayload === 'object') {
       return runPayload;
-    }
-
-    const latestKey = storage.resolveOutputKey(category, productId, 'latest', 'run_meta_packet.json');
-    const latestPayload = await storage.readJsonOrNull(latestKey);
-    if (latestPayload && typeof latestPayload === 'object') {
-      return latestPayload;
     }
 
     return null;

@@ -6,12 +6,12 @@ import { createPageDouble } from './factories/crawlTestDoubles.js';
 describe('autoScrollPlugin', () => {
   it('has correct plugin shape', () => {
     assert.equal(autoScrollPlugin.name, 'autoScroll');
-    assert.equal(typeof autoScrollPlugin.hooks.onInteract, 'function');
+    assert.equal(typeof autoScrollPlugin.hooks.onScroll, 'function');
   });
 
   it('does not scroll when autoScrollEnabled is false', async () => {
     const page = createPageDouble();
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: false, autoScrollPasses: 2, autoScrollDelayMs: 100 },
     });
@@ -21,7 +21,7 @@ describe('autoScrollPlugin', () => {
 
   it('no-ops when autoScrollPasses is 0', async () => {
     const page = createPageDouble();
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 0, autoScrollDelayMs: 0 },
     });
@@ -35,7 +35,7 @@ describe('autoScrollPlugin', () => {
 describe('autoScrollPlugin — jump strategy', () => {
   it('uses evaluate for scrollTo, not mouse.wheel', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'jump', autoScrollPasses: 3, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -45,7 +45,7 @@ describe('autoScrollPlugin — jump strategy', () => {
 
   it('defaults to jump when strategy is undefined', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 2, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -55,7 +55,7 @@ describe('autoScrollPlugin — jump strategy', () => {
 
   it('defaults to jump when strategy is missing from settings', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollPasses: 1, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -64,7 +64,7 @@ describe('autoScrollPlugin — jump strategy', () => {
 
   it('returns strategy: jump in result', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'jump', autoScrollPasses: 1, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -81,7 +81,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 3000, 3000, 3000, 3000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 5, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -96,7 +96,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 3000, 3000, 3000, 3000, 3000, 3000, 3000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 20, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -109,7 +109,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 2000, 3000, 4000, 5000, 5000, 5000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 10, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -122,7 +122,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 1000, 2000, 3000, 4000, 5000, 6000, 7000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 3, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -133,7 +133,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 3000, 3000, 3000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 5, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -146,7 +146,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 3000, 3000, 3000],
     });
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 10, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -159,7 +159,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
     const page = createPageDouble({
       evaluateResults: [1080, 1000, 2000, 3000, 3000, 3000],
     });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'incremental', autoScrollPasses: 5, autoScrollDelayMs: 500, autoScrollPostLoadWaitMs: 0 },
     });
@@ -169,7 +169,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
 
   it('does not fire wheel when disabled', async () => {
     const page = createPageDouble();
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: false, autoScrollStrategy: 'incremental', autoScrollPasses: 5 },
     });
@@ -182,7 +182,7 @@ describe('autoScrollPlugin — incremental strategy', () => {
 describe('autoScrollPlugin — edge cases', () => {
   it('unknown strategy falls back to jump', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    const result = await autoScrollPlugin.hooks.onInteract({
+    const result = await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'invalid', autoScrollPasses: 2, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });
@@ -192,7 +192,7 @@ describe('autoScrollPlugin — edge cases', () => {
 
   it('delayMs of 0 skips waitForTimeout between steps', async () => {
     const page = createPageDouble({ evaluateResult: 1000 });
-    await autoScrollPlugin.hooks.onInteract({
+    await autoScrollPlugin.hooks.onScroll({
       page,
       settings: { autoScrollEnabled: true, autoScrollStrategy: 'jump', autoScrollPasses: 2, autoScrollDelayMs: 0, autoScrollPostLoadWaitMs: 0 },
     });

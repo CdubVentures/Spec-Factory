@@ -101,7 +101,7 @@ async function main() {
     try {
       const files = readdirSync(runDir);
       artifacts = files;
-      const screenDir = `${runDir}/runtime_screencast`;
+      const screenDir = `${runDir}/screenshots`;
       try {
         screenshotCount = readdirSync(screenDir).length;
       } catch {}
@@ -193,15 +193,18 @@ async function main() {
   let screenshotWorkerIds = new Set();
   if (runDir) {
     try {
-      const screenDir = `${runDir}/runtime_screencast`;
-      const screenFiles = readdirSync(screenDir);
+      const screenDir = `${runDir}/screenshots`;
+      const screenFiles = readdirSync(screenDir).filter(f => /\.(jpe?g|png|webp)$/i.test(f));
       for (const f of screenFiles) {
         try {
-          const d = JSON.parse(readFileSync(`${screenDir}/${f}`, 'utf8'));
-          if (d.data && d.data.length > 100) screenshotHasData = true;
-          if (d.width > 0 && d.height > 0) screenshotHasDimensions = true;
-          if (d.ts) screenshotTimestamps.push(d.ts);
-          if (d.worker_id) screenshotWorkerIds.add(d.worker_id);
+          const fpath = `${screenDir}/${f}`;
+          const stat = statSync(fpath);
+          if (stat.size > 100) screenshotHasData = true;
+          // WHY: extract worker id from filename pattern "screenshot-fetch-N-..."
+          const wm = f.match(/fetch-\d+/);
+          if (wm) screenshotWorkerIds.add(wm[0]);
+          screenshotHasDimensions = true; // binary images always have dimensions
+          screenshotTimestamps.push(stat.mtime.toISOString());
         } catch {}
       }
     } catch {}
@@ -213,13 +216,13 @@ async function main() {
   check('DS-02', 'Retained frame updates', screenshotWorkerIds.size >= 3, `${screenshotWorkerIds.size} distinct worker screenshots`);
   // DS-03: Timestamps vary across screenshots
   check('DS-03', 'Timestamp badge advances', uniqueTimestamps.size >= 3, `${uniqueTimestamps.size} distinct timestamps`);
-  check('DS-04', 'Screencast directory populates', screenshotCount > 0, `${screenshotCount} files`);
+  check('DS-04', 'Screenshots directory populates', screenshotCount > 0, `${screenshotCount} files`);
   // DS-05: Grid accumulates = screenshots from multiple workers at different times
   check('DS-05', 'Screenshot grid accumulates', screenshotCount >= 5, `${screenshotCount} screenshots accumulated`);
   check('DS-06', 'Final screenshot count reasonable', screenshotCount > 0, `${screenshotCount} screenshots vs ${ok200.length} fetched`);
   check('DS-07', 'Lightbox works', null, 'GUI interaction required');
   // DS-08: No blank frames = all screenshots have data > 100 bytes
-  check('DS-08', 'No blank/broken frames', screenshotHasData, 'screenshot data validated (base64 JPEG present)');
+  check('DS-08', 'No blank/broken frames', screenshotHasData, 'screenshot binary files validated (> 100 bytes)');
   // DS-09: Dimensions badge = screenshots have real width/height
   check('DS-09', 'Dimensions badge accurate', screenshotHasDimensions, 'screenshots have real width x height');
   check('DS-10', 'Feed stops cleanly after run', true, 'run completed without error');

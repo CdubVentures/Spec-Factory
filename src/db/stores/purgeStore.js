@@ -19,9 +19,9 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     if (!ids.length) return 0;
     const idPlaceholders = ids.map(() => '?').join(',');
     // WHY: Cascade key_review_runs → key_review_run_sources → key_review_audit before state
-    db.prepare(`DELETE FROM key_review_run_sources WHERE source_id IN (SELECT source_id FROM key_review_runs WHERE state_id IN (${idPlaceholders}))`).run(...ids);
-    db.prepare(`DELETE FROM key_review_runs WHERE state_id IN (${idPlaceholders})`).run(...ids);
-    db.prepare(`DELETE FROM key_review_audit WHERE state_id IN (${idPlaceholders})`).run(...ids);
+    db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${idPlaceholders}))`).run(...ids);
+    db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${idPlaceholders})`).run(...ids);
+    db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${idPlaceholders})`).run(...ids);
     return db.prepare(`DELETE FROM key_review_state WHERE id IN (${idPlaceholders})`).run(...ids).changes;
   }
 
@@ -35,9 +35,9 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     `).all(cat, targetKind, pid).map((row) => row.id);
     if (!ids.length) return 0;
     const placeholders = ids.map(() => '?').join(',');
-    db.prepare(`DELETE FROM key_review_run_sources WHERE source_id IN (SELECT source_id FROM key_review_runs WHERE state_id IN (${placeholders}))`).run(...ids);
-    db.prepare(`DELETE FROM key_review_runs WHERE state_id IN (${placeholders})`).run(...ids);
-    db.prepare(`DELETE FROM key_review_audit WHERE state_id IN (${placeholders})`).run(...ids);
+    db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${placeholders}))`).run(...ids);
+    db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${placeholders})`).run(...ids);
+    db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${placeholders})`).run(...ids);
     return db.prepare(`DELETE FROM key_review_state WHERE id IN (${placeholders})`).run(...ids).changes;
   }
 
@@ -62,11 +62,12 @@ export function createPurgeStore({ db, category: defaultCategory }) {
     return cleared;
   }
 
-  function deleteCandidatesByItemFieldStates(itemFieldStateIds) {
-    if (!itemFieldStateIds?.length) return 0;
-    const placeholders = itemFieldStateIds.map(() => '?').join(',');
-    db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE item_field_state_id IN (${placeholders}))`).run(...itemFieldStateIds);
-    return db.prepare(`DELETE FROM candidates WHERE item_field_state_id IN (${placeholders})`).run(...itemFieldStateIds).changes;
+  function deleteCandidatesByProduct(category, productId) {
+    const cat = String(category || '').trim();
+    const pid = String(productId || '').trim();
+    if (!cat || !pid) return 0;
+    db.prepare(`DELETE FROM candidate_reviews WHERE candidate_id IN (SELECT candidate_id FROM candidates WHERE category = ? AND product_id = ?)`).run(cat, pid);
+    return db.prepare('DELETE FROM candidates WHERE category = ? AND product_id = ?').run(cat, pid).changes;
   }
 
   function purgeCategoryState(category) {
@@ -83,9 +84,9 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       const keyReviewIds = db.prepare('SELECT id FROM key_review_state WHERE category = ?').all(cat).map((r) => r.id);
       if (keyReviewIds.length > 0) {
         const ph = keyReviewIds.map(() => '?').join(',');
-        db.prepare(`DELETE FROM key_review_run_sources WHERE source_id IN (SELECT source_id FROM key_review_runs WHERE state_id IN (${ph}))`).run(...keyReviewIds);
-        db.prepare(`DELETE FROM key_review_runs WHERE state_id IN (${ph})`).run(...keyReviewIds);
-        db.prepare(`DELETE FROM key_review_audit WHERE state_id IN (${ph})`).run(...keyReviewIds);
+        db.prepare(`DELETE FROM key_review_run_sources WHERE key_review_run_id IN (SELECT run_id FROM key_review_runs WHERE key_review_state_id IN (${ph}))`).run(...keyReviewIds);
+        db.prepare(`DELETE FROM key_review_runs WHERE key_review_state_id IN (${ph})`).run(...keyReviewIds);
+        db.prepare(`DELETE FROM key_review_audit WHERE key_review_state_id IN (${ph})`).run(...keyReviewIds);
         clearedKeyReview = db.prepare(`DELETE FROM key_review_state WHERE id IN (${ph})`).run(...keyReviewIds).changes;
       }
 
@@ -129,9 +130,6 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       try { clearedArtifacts += db.prepare('DELETE FROM runs WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM run_artifacts WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM source_intel_domains WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
-      try { clearedArtifacts += db.prepare('DELETE FROM source_intel_field_rewards WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
-      try { clearedArtifacts += db.prepare('DELETE FROM source_intel_brands WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
-      try { clearedArtifacts += db.prepare('DELETE FROM source_intel_paths WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
     });
     tx();
 
@@ -158,9 +156,7 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       if (sourceIds.length > 0) {
         deletedSources += deleteSourcesByCategory(cat, sourceIds);
       }
-      if (itemFieldStateIds.length > 0) {
-        deletedCandidates = deleteCandidatesByItemFieldStates(itemFieldStateIds);
-      }
+      deletedCandidates = deleteCandidatesByProduct(cat, pid);
 
       deletedLinks = db.prepare('DELETE FROM item_list_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;
       deletedLinks += db.prepare('DELETE FROM item_component_links WHERE category = ? AND product_id = ?').run(cat, pid).changes;

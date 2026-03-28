@@ -289,6 +289,120 @@ describe('mergeDefaultsIntoRegistry — lab providers', () => {
   });
 });
 
+describe('mergeDefaultsIntoRegistry — capability backfill', () => {
+  const LAB_WITH_CAPS: LlmProviderEntry[] = [
+    ...DEFAULTS,
+    makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      models: [
+        { ...makeModel('lab-oai-gpt5', 'gpt-5'), thinking: true, webSearch: true, thinkingEffortOptions: ['minimal', 'low', 'medium', 'high', 'xhigh'] },
+        { ...makeModel('lab-oai-gpt5-minimal', 'gpt-5-minimal'), thinking: false, webSearch: true },
+      ],
+    }),
+    makeProvider({
+      id: 'lab-claude',
+      name: 'LLM Lab Claude',
+      accessMode: 'lab' as const,
+      models: [
+        { ...makeModel('lab-claude-opus46', 'claude-opus-4-6', 'reasoning'), thinking: true, webSearch: false, thinkingEffortOptions: ['low', 'medium', 'high'] },
+      ],
+    }),
+  ];
+
+  it('backfills thinking/webSearch onto user models missing these fields', () => {
+    const userLab = makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      models: [
+        makeModel('lab-oai-gpt5', 'gpt-5'),
+        makeModel('lab-oai-gpt5-minimal', 'gpt-5-minimal'),
+      ],
+    });
+    const result = mergeDefaultsIntoRegistry([userLab], LAB_WITH_CAPS);
+    const lab = result.find((p) => p.id === 'lab-openai')!;
+    const gpt5 = lab.models.find((m) => m.id === 'lab-oai-gpt5')!;
+    strictEqual(gpt5.thinking, true);
+    strictEqual(gpt5.webSearch, true);
+    const minimal = lab.models.find((m) => m.id === 'lab-oai-gpt5-minimal')!;
+    strictEqual(minimal.thinking, false);
+    strictEqual(minimal.webSearch, true);
+  });
+
+  it('does not overwrite user-set capability fields', () => {
+    const userLab = makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      models: [
+        { ...makeModel('lab-oai-gpt5', 'gpt-5'), thinking: false, webSearch: false },
+      ],
+    });
+    const result = mergeDefaultsIntoRegistry([userLab], LAB_WITH_CAPS);
+    const lab = result.find((p) => p.id === 'lab-openai')!;
+    const gpt5 = lab.models.find((m) => m.id === 'lab-oai-gpt5')!;
+    strictEqual(gpt5.thinking, false, 'user explicitly set to false — should not overwrite');
+    strictEqual(gpt5.webSearch, false, 'user explicitly set to false — should not overwrite');
+  });
+
+  it('preserves user edits to non-capability fields during backfill', () => {
+    const userLab = makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      models: [
+        { ...makeModel('lab-oai-gpt5', 'gpt-5'), costInputPer1M: 99 },
+      ],
+    });
+    const result = mergeDefaultsIntoRegistry([userLab], LAB_WITH_CAPS);
+    const lab = result.find((p) => p.id === 'lab-openai')!;
+    const gpt5 = lab.models.find((m) => m.id === 'lab-oai-gpt5')!;
+    strictEqual(gpt5.costInputPer1M, 99, 'user cost edit preserved');
+    strictEqual(gpt5.thinking, true, 'capability backfilled');
+  });
+
+  it('leaves API provider models untouched', () => {
+    const result = mergeDefaultsIntoRegistry([], LAB_WITH_CAPS);
+    const gemini = result.find((p) => p.id === 'default-gemini')!;
+    const flash = gemini.models.find((m) => m.modelId === 'gemini-2.5-flash');
+    strictEqual(flash?.thinking, undefined);
+    strictEqual(flash?.webSearch, undefined);
+  });
+
+  it('backfills thinkingEffortOptions array onto user models missing the field', () => {
+    const userLab = makeProvider({
+      id: 'lab-openai',
+      name: 'LLM Lab OpenAI',
+      accessMode: 'lab' as const,
+      models: [
+        { ...makeModel('lab-oai-gpt5', 'gpt-5'), thinking: true, webSearch: true },
+      ],
+    });
+    const result = mergeDefaultsIntoRegistry([userLab], LAB_WITH_CAPS);
+    const lab = result.find((p) => p.id === 'lab-openai')!;
+    const gpt5 = lab.models.find((m) => m.id === 'lab-oai-gpt5')!;
+    deepStrictEqual(gpt5.thinkingEffortOptions, ['minimal', 'low', 'medium', 'high', 'xhigh'], 'array backfilled');
+  });
+
+  it('backfills Claude Lab capabilities', () => {
+    const userClaude = makeProvider({
+      id: 'lab-claude',
+      name: 'LLM Lab Claude',
+      accessMode: 'lab' as const,
+      models: [
+        makeModel('lab-claude-opus46', 'claude-opus-4-6', 'reasoning'),
+      ],
+    });
+    const result = mergeDefaultsIntoRegistry([userClaude], LAB_WITH_CAPS);
+    const lab = result.find((p) => p.id === 'lab-claude')!;
+    const opus = lab.models.find((m) => m.id === 'lab-claude-opus46')!;
+    strictEqual(opus.thinking, true);
+    strictEqual(opus.webSearch, false);
+  });
+});
+
 describe('isDefaultModel', () => {
   it('returns true for default-gemini-flash-lite', () => {
     strictEqual(isDefaultModel('default-gemini-flash-lite'), true);

@@ -17,8 +17,6 @@ function makeState() {
     fetchClosedByUrl: new Set(),
     workerByUrl: new Map(),
     counters: { fetched_ok: 0, fetched_404: 0, fetched_blocked: 0, fetched_error: 0 },
-    _lastScreencastFrameByWorker: new Map(),
-    runtimeScreencastDir: '',
     specDb: null,
     onEvent(row) { emitted.push(row); },
     stageState: {},

@@ -41,6 +41,7 @@ export declare const SETTINGS_OPTION_VALUES: {
     pipelineSchemaEnforcementMode: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];
+    overlayDismissalMode: readonly string[];
   }>;
   readonly storage: Readonly<{
     destinationType: readonly ('local' | 's3')[];

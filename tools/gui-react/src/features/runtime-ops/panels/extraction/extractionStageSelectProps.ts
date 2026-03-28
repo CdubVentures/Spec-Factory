@@ -18,4 +18,9 @@ export const EXTRACTION_SELECT_PROPS: Record<ExtractionTabKey, (ctx: ExtractionP
     persistScope: ctx.persistScope,
     runId: ctx.runId ?? '',
   }),
+  video: (ctx) => ({
+    data: ctx.data?.plugins?.video ?? EMPTY_PLUGIN,
+    persistScope: ctx.persistScope,
+    runId: ctx.runId ?? '',
+  }),
 };
