@@ -1,3 +1,6 @@
+// GENERATED from src/features/studio/contracts/studioSchemas.js
+// Do not edit manually. Run: node scripts/generate-studio-types.js
+
 export interface FieldRule {
   key?: string;
   label?: string;
@@ -7,6 +10,7 @@ export interface FieldRule {
     type?: string;
     unit?: string;
     shape?: string;
+    [k: string]: unknown;
   };
   parse?: {
     template?: string;
@@ -19,19 +23,9 @@ export interface FieldRule {
     label?: string;
     order?: number;
     aliases?: string[];
+    [k: string]: unknown;
   };
   [k: string]: unknown;
-}
-
-export interface StudioPayload {
-  category: string;
-  fieldRules: Record<string, FieldRule>;
-  fieldOrder: string[];
-  uiFieldCatalog: Record<string, unknown> | null;
-  guardrails?: Record<string, unknown>;
-  compiledAt?: string | null;
-  mapSavedAt?: string | null;
-  compileStale?: boolean;
 }
 
 export interface PriorityProfile {
@@ -65,6 +59,7 @@ export interface ComponentSource {
     aliases?: string[];
     links?: string[];
     properties?: ComponentSourceProperty[];
+    [k: string]: unknown;
   };
   priority?: PriorityProfile;
   ai_assist?: AiAssistConfig;
@@ -86,6 +81,7 @@ export interface StudioConfig {
   version?: number;
   tooltip_source?: {
     path?: string;
+    [k: string]: unknown;
   };
   component_sources?: ComponentSource[];
   enum_lists?: EnumEntry[];
@@ -97,10 +93,22 @@ export interface StudioConfig {
   [k: string]: unknown;
 }
 
+export interface StudioPayload {
+  category: string;
+  fieldRules: Record<string, FieldRule>;
+  fieldOrder: string[];
+  uiFieldCatalog: Record<string, unknown> | null;
+  guardrails: Record<string, unknown> | null;
+  compiledAt: string | null;
+  mapSavedAt: string | null;
+  compileStale: boolean;
+}
+
 export interface FieldStudioMapResponse {
   file_path: string;
   map: StudioConfig;
   error?: string;
+  [k: string]: unknown;
 }
 
 export interface TooltipBankResponse {
@@ -116,10 +124,10 @@ export interface ArtifactEntry {
 }
 
 export interface KnownValuesResponse {
-  category?: string;
-  source?: string | null;
+  category: string;
+  source: string | null;
   fields: Record<string, string[]>;
-  enum_lists?: EnumEntry[];
+  enum_lists: EnumEntry[];
 }
 
 export interface ComponentDbItem {

@@ -13,6 +13,7 @@ import path from 'node:path';
 import { normalizeProductIdentity } from '../identity/identityDedup.js';
 import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
 import { generateIdentifier, nextAvailableId } from '../identity/productIdentity.js';
+import { buildProductId } from '../../../shared/primitives.js';
 import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
 
@@ -53,6 +54,22 @@ function buildInputFile({ productId, category, brand, model, variant, id, identi
     seedUrls: Array.isArray(seedUrls) ? seedUrls : [],
     anchors: {}
   };
+}
+
+// WHY: With decoupled productIds (random hex), duplicate detection must be
+// identity-based, not ID-based. Returns the existing productId or null.
+function findProductByIdentity(catalog, brand, model, variant) {
+  const b = String(brand ?? '').trim().toLowerCase();
+  const m = String(model ?? '').trim().toLowerCase();
+  const v = String(variant ?? '').trim().toLowerCase();
+  for (const [pid, p] of Object.entries(catalog.products || {})) {
+    if (String(p.brand ?? '').trim().toLowerCase() === b &&
+        String(p.model ?? '').trim().toLowerCase() === m &&
+        String(p.variant ?? '').trim().toLowerCase() === v) {
+      return pid;
+    }
+  }
+  return null;
 }
 
 // ── Load / Save ───────────────────────────────────────────────────
@@ -107,13 +124,15 @@ export async function addProduct({
 
   // Normalize identity (strips fabricated variants)
   const identity = normalizeProductIdentity(cat, cleanBrand, cleanModel, variant);
-  const pid = identity.productId;
 
   const catalog = await loadProductCatalog(config, cat);
 
-  if (catalog.products[pid]) {
-    return { ok: false, error: 'product_already_exists', productId: pid };
+  const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+  if (existingPid) {
+    return { ok: false, error: 'product_already_exists', productId: existingPid };
   }
+
+  const pid = buildProductId(cat);
 
   const product = {
     id: nextAvailableId(catalog),
@@ -224,27 +243,30 @@ export async function addProductsBulk({
     }
 
     const identity = normalizeProductIdentity(cat, rowBrand, rowModel, rowVariant);
-    const pid = identity.productId;
+    const identityKey = `${identity.brand.toLowerCase()}||${identity.model.toLowerCase()}||${identity.variant.toLowerCase()}`;
     const normalizedResult = {
       ...baseResult,
       brand: identity.brand,
       model: identity.model,
       variant: identity.variant,
-      productId: pid
     };
 
-    if (seenInRequest.has(pid)) {
+    if (seenInRequest.has(identityKey)) {
       skippedDuplicate += 1;
       results.push({ ...normalizedResult, status: 'skipped_duplicate', reason: 'duplicate_in_request' });
       continue;
     }
-    seenInRequest.add(pid);
+    seenInRequest.add(identityKey);
 
-    if (catalog.products[pid]) {
+    const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    if (existingPid) {
       skippedExisting += 1;
-      results.push({ ...normalizedResult, status: 'skipped_existing', reason: 'already_exists' });
+      results.push({ ...normalizedResult, productId: existingPid, status: 'skipped_existing', reason: 'already_exists' });
       continue;
     }
+
+    const pid = buildProductId(cat);
+    normalizedResult.productId = pid;
 
     const product = {
       id: nextAvailableId(catalog),
@@ -323,7 +345,7 @@ export async function addProductsBulk({
 
 /**
  * Update a product. Patches provided fields.
- * If brand/model/variant change, the productId changes → old files removed, new files created.
+ * ProductId is immutable — identity changes (brand/model/variant) update metadata only.
  */
 export async function updateProduct({
   config,
@@ -356,67 +378,8 @@ export async function updateProduct({
     existing.status = patch.status;
   }
 
-  // Check if identity changed → productId changes
+  // WHY: Normalize identity (strip fabricated variants) but productId stays immutable
   const identity = normalizeProductIdentity(cat, newBrand, newModel, newVariant);
-  const newPid = identity.productId;
-
-  let migrationResult = null;
-
-  if (newPid !== productId) {
-    // Ensure new pid doesn't already exist
-    if (catalog.products[newPid]) {
-      return { ok: false, error: 'product_already_exists', productId: newPid };
-    }
-
-    // Migrate all storage artifacts from old slug to new slug
-    if (storage) {
-      migrationResult = await migrateProductArtifacts({
-        storage,
-        config,
-        category: cat,
-        oldProductId: productId,
-        newProductId: newPid,
-        identifier: existing.identifier,
-        specDb,
-      });
-    } else {
-      migrationResult = { ok: true, migrated_count: 0, failed_count: 0 };
-    }
-
-    // Record rename in per-product history
-    existing.rename_history = [
-      ...(existing.rename_history || []),
-      {
-        previous_slug: productId,
-        previous_model: existing.model,
-        previous_variant: existing.variant || '',
-        renamed_at: nowIso(),
-        migration_result: { migrated_count: migrationResult.migrated_count, failed_count: migrationResult.failed_count }
-      }
-    ];
-
-    // Append to category rename log
-    await appendRenameLog(config, cat, {
-      identifier: existing.identifier,
-      id: existing.id,
-      old_slug: productId,
-      new_slug: newPid,
-      migrated_count: migrationResult.migrated_count,
-      failed_count: migrationResult.failed_count
-    });
-
-    // Remove old catalog entry
-    delete catalog.products[productId];
-
-    // Delete old input file (migration engine handles other artifacts, but input file
-    // is recreated below so we delete the old one explicitly)
-    if (storage) {
-      const oldKey = `specs/inputs/${cat}/products/${productId}.json`;
-      try { await storage.deleteObject(oldKey); } catch {}
-    }
-  } else {
-    delete catalog.products[productId];
-  }
 
   const updated = {
     ...existing,
@@ -426,14 +389,14 @@ export async function updateProduct({
     updated_at: nowIso()
   };
 
-  catalog.products[newPid] = updated;
+  catalog.products[productId] = updated;
   await saveProductCatalog(config, cat, catalog);
 
-  // Write new input file
+  // Write updated input file
   if (storage) {
-    const newKey = `specs/inputs/${cat}/products/${newPid}.json`;
+    const inputKey = `specs/inputs/${cat}/products/${productId}.json`;
     const inputFile = buildInputFile({
-      productId: newPid,
+      productId,
       category: cat,
       brand: identity.brand,
       model: identity.model,
@@ -442,24 +405,15 @@ export async function updateProduct({
       identifier: updated.identifier,
       seedUrls: updated.seed_urls
     });
-    await storage.writeObject(newKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
+    await storage.writeObject(inputKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
   }
 
-  // Upsert queue (only if no migration — migration already handles queue)
-  if (upsertQueue && !migrationResult?.queue_migrated) {
-    const s3key = `specs/inputs/${cat}/products/${newPid}.json`;
-    await upsertQueue({ storage, category: cat, productId: newPid, s3key, patch: { status: 'pending' }, specDb });
+  if (upsertQueue) {
+    const s3key = `specs/inputs/${cat}/products/${productId}.json`;
+    await upsertQueue({ storage, category: cat, productId, s3key, patch: { status: 'pending' }, specDb });
   }
 
-  const result = { ok: true, productId: newPid, previousProductId: productId !== newPid ? productId : undefined, product: updated };
-  if (migrationResult) {
-    result.migration = {
-      ok: migrationResult.ok,
-      migrated_count: migrationResult.migrated_count,
-      failed_count: migrationResult.failed_count
-    };
-  }
-  return result;
+  return { ok: true, productId, product: updated };
 }
 
 /**
@@ -549,9 +503,10 @@ export async function seedFromCatalog({
     }
 
     const identity = normalizeProductIdentity(cat, brand, model, rawVariant);
-    const pid = identity.productId;
+    const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    const pid = existingPid || buildProductId(cat);
 
-    const isExisting = Boolean(catalog.products[pid]);
+    const isExisting = Boolean(existingPid);
     if (isExisting && !isFullMode) {
       skipped += 1;
       continue;

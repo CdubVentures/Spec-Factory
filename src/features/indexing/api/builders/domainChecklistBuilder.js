@@ -52,11 +52,6 @@ export function createDomainChecklistBuilder({
     }
 
     if (resolvedProductId) {
-      const pidParts = resolvedProductId.split('-').filter(Boolean);
-      if (pidParts.length >= 2) {
-        addTokensFromText(brandTokens, pidParts[1]);
-        addTokensFromText(brandTokens, `${pidParts[1]} ${pidParts[2] || ''}`.trim());
-      }
       try {
         const catalog = await loadProductCatalog(config, normalizedCategory);
         const entry = catalog?.products?.[resolvedProductId] || null;

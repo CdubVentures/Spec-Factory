@@ -945,3 +945,58 @@ export interface TimedIndexLabEvent {
   event: string;
   productId: string;
 }
+
+/* ── Product Run History ─────────────────────────────────────────── */
+
+export interface ProductHistoryRunRow {
+  run_id: string;
+  status: string;
+  cost_usd_run: number | null;
+  sources_attempted: number;
+  run_at: string;
+  started_at: string;
+  ended_at: string;
+  is_latest: boolean | number;
+  storage_state: string;
+}
+
+export interface ProductHistoryQueryRow {
+  query: string;
+  provider: string;
+  result_count: number;
+  run_id: string;
+  ts: string;
+}
+
+export interface ProductHistoryUrlRow {
+  url: string;
+  host: string;
+  tier: string;
+  doc_kind: string;
+  fetch_success: boolean;
+  run_id: string;
+  ts: string;
+}
+
+export interface ProductHistoryMetrics {
+  total_runs: number;
+  completed_runs: number;
+  failed_runs: number;
+  total_cost_usd: number;
+  avg_cost_per_run: number;
+  total_queries: number;
+  unique_queries: number;
+  total_urls: number;
+  urls_success: number;
+  urls_failed: number;
+  unique_hosts: number;
+}
+
+export interface ProductHistoryResponse {
+  product_id: string;
+  category: string;
+  runs: ProductHistoryRunRow[];
+  queries: ProductHistoryQueryRow[];
+  urls: ProductHistoryUrlRow[];
+  metrics: ProductHistoryMetrics;
+}

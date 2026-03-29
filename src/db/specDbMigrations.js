@@ -25,6 +25,9 @@ export const MIGRATIONS = [
   `ALTER TABLE product_runs ADD COLUMN s3_key TEXT DEFAULT ''`,
   `ALTER TABLE product_runs ADD COLUMN size_bytes INTEGER DEFAULT 0`,
   `ALTER TABLE product_runs ADD COLUMN relocated_at TEXT DEFAULT ''`,
+  `DROP TABLE IF EXISTS brands`,
+  `DROP INDEX IF EXISTS idx_art_product`,
+  `DROP TABLE IF EXISTS artifacts`,
 ];
 
 export const SECONDARY_INDEXES = `

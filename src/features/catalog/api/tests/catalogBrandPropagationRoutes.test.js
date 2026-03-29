@@ -116,25 +116,19 @@ test('catalog routes: product add passes specDb into queue upsert and upserts pr
   assert.equal(upsertRows[0].brand, 'Razer');
 });
 
-test('catalog routes: product rename syncs old/new products in specDb', async () => {
+test('catalog routes: product identity update upserts same productId in specDb (immutable ID)', async () => {
   const upsertRows = [];
-  const deleted = [];
   const specDb = {
     category: 'mouse',
     upsertProduct: (row) => { upsertRows.push(row); },
-    deleteProduct: (productId) => {
-      deleted.push(productId);
-      return { changes: 1 };
-    },
   };
 
   const handler = registerCatalogRoutes(makeCatalogCtx({
-    readJsonBody: async () => ({ model: 'Viper V3' }),
+    readJsonBody: async () => ({ model: 'Viper V3', brand: 'Razer' }),
     getSpecDb: (category) => (category === 'mouse' ? specDb : null),
     catalogUpdateProduct: async () => ({
       ok: true,
-      previousProductId: 'mouse-razer-viper',
-      productId: 'mouse-razer-viper-v3',
+      productId: 'mouse-a1b2c3d4',
       product: {
         brand: 'Razer',
         model: 'Viper V3',
@@ -146,11 +140,11 @@ test('catalog routes: product rename syncs old/new products in specDb', async ()
     }),
   }));
 
-  const result = await handler(['catalog', 'mouse', 'products', 'mouse-razer-viper'], new URLSearchParams(), 'PUT', {}, {});
+  const result = await handler(['catalog', 'mouse', 'products', 'mouse-a1b2c3d4'], new URLSearchParams(), 'PUT', {}, {});
   assert.equal(result.status, 200);
-  assert.deepEqual(deleted, ['mouse-razer-viper']);
   assert.equal(upsertRows.length, 1);
-  assert.equal(upsertRows[0].product_id, 'mouse-razer-viper-v3');
+  assert.equal(upsertRows[0].product_id, 'mouse-a1b2c3d4');
+  assert.equal(upsertRows[0].model, 'Viper V3');
 });
 
 test('catalog routes: product delete surfaces queue cleanup failures', async () => {
@@ -274,6 +268,9 @@ test('catalog routes: product detail resolves identity through specDb when catal
               }
             : null),
           getProvenanceForProduct: () => ({}),
+          getNormalizedForProduct: () => ({ identity: {}, fields: {} }),
+          getSummaryForProduct: () => ({ confidence: 0.7 }),
+          getTrafficLightForProduct: () => null,
         }
       : null),
   }));

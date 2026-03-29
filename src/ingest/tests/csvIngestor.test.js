@@ -6,6 +6,8 @@ import path from 'node:path';
 import { createStorage } from '../../s3/storage.js';
 import { ingestCsvFile } from '../csvIngestor.js';
 
+const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
+
 test('ingestCsvFile parses rows, creates product jobs, and updates queue state', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-ingest-'));
   const localInputRoot = path.join(tempRoot, 'fixtures');
@@ -45,11 +47,10 @@ test('ingestCsvFile parses rows, creates product jobs, and updates queue state',
 
     assert.equal(result.skipped, false);
     assert.equal(result.job_count, 1);
-    assert.equal(result.jobs[0].productId, 'mouse-logitech-g-pro-x-superlight-2-wireless');
+    assert.match(result.jobs[0].productId, HEX_PID_RE);
 
-    const job = await storage.readJson(
-      'specs/inputs/mouse/products/mouse-logitech-g-pro-x-superlight-2-wireless.json'
-    );
+    const pid = result.jobs[0].productId;
+    const job = await storage.readJson(`specs/inputs/mouse/products/${pid}.json`);
     assert.equal(job.identityLock.brand, 'Logitech');
     assert.equal(job.identityLock.model, 'G Pro X Superlight 2');
     assert.equal(job.identityLock.variant, 'Wireless');
@@ -58,12 +59,9 @@ test('ingestCsvFile parses rows, creates product jobs, and updates queue state',
     assert.equal(job.requirements.targetConfidence, 0.9);
 
     const queue = await storage.readJson('specs/outputs/_queue/mouse/state.json');
-    const row = queue.products['mouse-logitech-g-pro-x-superlight-2-wireless'];
+    const row = queue.products[pid];
     assert.equal(row.status, 'pending');
-    assert.equal(
-      row.s3key,
-      'specs/inputs/mouse/products/mouse-logitech-g-pro-x-superlight-2-wireless.json'
-    );
+    assert.equal(row.s3key, `specs/inputs/mouse/products/${pid}.json`);
 
     const processedDir = path.join(importsRoot, 'mouse', 'processed');
     const processedFiles = await fs.readdir(processedDir);

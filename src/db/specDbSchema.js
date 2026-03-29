@@ -190,14 +190,6 @@ CREATE TABLE IF NOT EXISTS products (
   UNIQUE(category, product_id)
 );
 
-CREATE TABLE IF NOT EXISTS brands (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  brand_key TEXT NOT NULL, canonical_name TEXT NOT NULL,
-  aliases TEXT, categories TEXT, website TEXT, identifier TEXT,
-  created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
-  UNIQUE(brand_key)
-);
-
 CREATE TABLE IF NOT EXISTS product_queue (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL, product_id TEXT NOT NULL,
@@ -250,16 +242,6 @@ CREATE TABLE IF NOT EXISTS product_runs (
   cost_usd_run REAL DEFAULT 0, sources_attempted INTEGER DEFAULT 0,
   run_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, product_id, run_id)
-);
-
--- DEPRECATED: legacy table — superseded by crawl_sources, source_screenshots, source_pdfs.
--- Only referenced by purgeStore DELETE. No runtime inserts or reads.
-CREATE TABLE IF NOT EXISTS artifacts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL, product_id TEXT, run_id TEXT,
-  artifact_type TEXT NOT NULL, url TEXT,
-  local_path TEXT, content_hash TEXT, mime_type TEXT, size_bytes INTEGER,
-  fetched_at TEXT, created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -318,7 +300,6 @@ CREATE INDEX IF NOT EXISTS idx_cs_category ON curation_suggestions(category, sug
 CREATE INDEX IF NOT EXISTS idx_crq_category ON component_review_queue(category, component_type, status);
 CREATE INDEX IF NOT EXISTS idx_pr_product ON product_runs(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, is_latest) WHERE is_latest = 1;
-CREATE INDEX IF NOT EXISTS idx_art_product ON artifacts(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 CREATE INDEX IF NOT EXISTS idx_lrm_cat_scope ON llm_route_matrix(category, scope);

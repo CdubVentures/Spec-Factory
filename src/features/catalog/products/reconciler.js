@@ -8,7 +8,6 @@
  */
 
 import { isFabricatedVariant, cleanVariant } from '../identity/identityDedup.js';
-import { buildProductId } from '../identity/slugify.js';
 import { loadQueueState, saveQueueState } from '../../../queue/queueState.js';
 import { loadCanonicalIdentityIndex } from '../identity/identityGate.js';
 
@@ -90,14 +89,13 @@ export async function scanOrphans({ storage, category, config = {} }) {
       }
 
       if (cleanVariant(p.variant)) {
-        const expectedCanonicalId = buildProductId(category, p.brand, p.model, '');
+        const canonicalPid = canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.model, '')) || '';
         const reason = isFabricatedVariant(p.model, p.variant)
           ? 'fabricated_variant_with_canonical'
           : 'variant_not_in_canonical';
         orphans.push({
           ...p,
-          canonicalProductId: canonicalIndex.tupleToProductId.get(tupleKey(p.brand, p.model, ''))
-            || expectedCanonicalId,
+          canonicalProductId: canonicalPid,
           reason
         });
         continue;
@@ -124,8 +122,7 @@ export async function scanOrphans({ storage, category, config = {} }) {
     };
   }
 
-  // Build a set of canonical productIds (no variant or real variant)
-  const canonicalIds = new Set();
+  // Build identity lookup: brand+model → productId for canonical products
   const canonical = [];
   const fabricated = [];
 
@@ -134,8 +131,13 @@ export async function scanOrphans({ storage, category, config = {} }) {
       fabricated.push(p);
     } else {
       canonical.push(p);
-      canonicalIds.add(p.productId);
     }
+  }
+
+  const canonicalByIdentity = new Map();
+  for (const p of canonical) {
+    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.model)}`;
+    canonicalByIdentity.set(key, p.productId);
   }
 
   // Classify fabricated: orphan (canonical exists) vs warning (no canonical)
@@ -143,17 +145,17 @@ export async function scanOrphans({ storage, category, config = {} }) {
   const warnings = [];
 
   for (const p of fabricated) {
-    const expectedCanonicalId = buildProductId(category, p.brand, p.model, '');
-    if (canonicalIds.has(expectedCanonicalId)) {
+    const key = `${normalizeTokenCollapsed(p.brand)}||${normalizeTokenCollapsed(p.model)}`;
+    const matchedPid = canonicalByIdentity.get(key);
+    if (matchedPid) {
       orphans.push({
         ...p,
-        canonicalProductId: expectedCanonicalId,
+        canonicalProductId: matchedPid,
         reason: 'fabricated_variant_with_canonical'
       });
     } else {
       warnings.push({
         ...p,
-        expectedCanonicalId,
         reason: 'fabricated_variant_no_canonical'
       });
     }

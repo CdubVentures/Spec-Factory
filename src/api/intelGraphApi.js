@@ -182,8 +182,12 @@ function productLatestKeys(storage, category, productId) {
 async function readProductSnapshot({ storage, category, productId, specDb = null }) {
   const keys = productLatestKeys(storage, category, productId);
   const [summary, normalized, provenance] = await Promise.all([
-    storage.readJsonOrNull(keys.summaryKey),
-    storage.readJsonOrNull(keys.normalizedKey),
+    specDb
+      ? Promise.resolve(specDb.getSummaryForProduct(productId))
+      : storage.readJsonOrNull(keys.summaryKey),
+    specDb
+      ? Promise.resolve(specDb.getNormalizedForProduct(productId))
+      : storage.readJsonOrNull(keys.normalizedKey),
     specDb
       ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? null)
       : storage.readJsonOrNull(keys.provenanceKey),

@@ -143,7 +143,6 @@ export function normalizeFieldRulesForPhase1(fieldRules = {}) {
 
 async function ensurePhase1Artifacts({ category, generatedRoot }) {
   const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
-  const fieldRulesRuntimePath = path.join(generatedRoot, 'field_rules.runtime.json');
   const uiCatalogPath = path.join(generatedRoot, 'ui_field_catalog.json');
   const knownValuesPath = path.join(generatedRoot, 'known_values.json');
   const parseTemplatesPath = path.join(generatedRoot, 'parse_templates.json');
@@ -165,9 +164,6 @@ async function ensurePhase1Artifacts({ category, generatedRoot }) {
   // Preserve insertion-order key layout from compileCategoryFieldStudio
   const canonicalJson = JSON.stringify(normalizedFieldRules, null, 2) + '\n';
   await fs.writeFile(fieldRulesPath, canonicalJson, 'utf8');
-  if (await fileExists(fieldRulesRuntimePath)) {
-    await fs.writeFile(fieldRulesRuntimePath, canonicalJson, 'utf8');
-  }
 
   await writeJsonStable(parseTemplatesPath, buildParseTemplates(normalizedFieldRules));
   await writeJsonStable(crossValidationPath, buildCrossValidationRules(normalizedFieldRules));

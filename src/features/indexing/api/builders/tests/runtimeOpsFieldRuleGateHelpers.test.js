@@ -319,7 +319,7 @@ describe('loadRuntimeFieldRulesPayload', () => {
       category: 'mouse',
       config: {},
       safeReadJson: async (p) => {
-        if (p.includes('field_rules.runtime.json')) return fakeRules;
+        if (p.includes('field_rules.json')) return fakeRules;
         return null;
       },
       path,

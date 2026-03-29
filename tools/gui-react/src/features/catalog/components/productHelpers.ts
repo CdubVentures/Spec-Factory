@@ -35,19 +35,6 @@ export function isFabricatedVariantToken(model: string, variant: string): boolea
   return variantTokens.length > 0 && variantTokens.every((token) => modelTokens.has(token));
 }
 
-export function normalizeVariantForPreview(model: string, variant: string): string {
-  const cleanedVariant = cleanVariantToken(variant);
-  if (!cleanedVariant) return '';
-  if (isFabricatedVariantToken(model, cleanedVariant)) return '';
-  return cleanedVariant;
-}
-
-export function buildPreviewProductId(category: string, brand: string, model: string, variant: string): string {
-  return [category, brand, model, variant]
-    .map((value) => slugToken(value))
-    .filter(Boolean)
-    .join('-');
-}
 
 export function isHeaderRow(model: string, variant: string): boolean {
   const m = String(model || '').trim().toLowerCase();

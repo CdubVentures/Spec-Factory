@@ -1,6 +1,6 @@
 # Crawl Pipeline Overview
 
-> Validated: 2026-03-28. Sources: `src/features/crawl/`, `src/features/extraction/`, `src/pipeline/runProduct.js`.
+> Validated: 2026-03-29. Sources: `src/features/crawl/`, `src/features/extraction/`, `src/pipeline/runProduct.js`.
 
 ## Architecture
 
@@ -25,6 +25,8 @@ Discovery (stages 01–08)
             │    ├─ classifyBlockStatus({ status, html })
             │    │    ├─ Blocked → session.retire() → throw → Crawlee retries
             │    │    └─ Not blocked → stash __capturedPage for timeout rescue
+            │    ├─ HTML persistence → onHtmlPersist callback
+            │    │    └─ gzip + content-addressed write + crawl_sources SQL
             │    ├─ Extraction (capture phase, inside handler with live page):
             │    │    └─ screenshotPlugin.onExtract → stabilize + capture + stitch
             │    ├─ Screenshot persistence → onScreenshotsPersist callback
@@ -114,6 +116,10 @@ Non-retryable errors (fail fast): `Navigation timed out`, `Download is starting`
 | `src/features/crawl/bypassStrategies.js` | Pure block detection |
 | `src/features/crawl/plugins/pluginRegistry.js` | Plugin registration (6 plugins) |
 | `src/features/extraction/core/extractionRunner.js` | Two-phase extraction (capture + transform) |
-| `src/features/extraction/plugins/screenshot/` | Screenshot: stabilizer, capture, stitch |
-| `src/pipeline/runProduct.js` | Main orchestrator (~290 LOC) |
+| `src/features/extraction/plugins/screenshot/` | Screenshot: stabilizer, capture, stitch, persist |
+| `src/features/extraction/plugins/html/htmlArtifactPersister.js` | HTML: gzip + content-addressed dedup + crawl_sources SQL |
+| `src/features/extraction/plugins/video/videoArtifactPersister.js` | Video: copy + source_videos SQL |
+| `src/pipeline/runProduct.js` | Main orchestrator (~304 LOC) |
+| `src/pipeline/checkpoint/buildCrawlCheckpoint.js` | run.json builder (crawl results + bridge telemetry) |
+| `src/pipeline/checkpoint/buildProductCheckpoint.js` | product.json builder (identity + accumulated sources) |
 | `tools/crawl-probe.mjs` | Standalone test harness: baseline vs suite comparison |

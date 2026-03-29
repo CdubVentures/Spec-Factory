@@ -21,3 +21,27 @@ export {
   choosePreferredStudioMap,
   applyEnumConsistencyToSuggestions,
 } from './api/studioRouteHelpers.js';
+
+// Schema contracts (O(1) SSOT for studio shapes).
+export {
+  StudioPayloadSchema,
+  FieldStudioMapResponseSchema,
+  TooltipBankResponseSchema,
+  ArtifactEntrySchema,
+  KnownValuesResponseSchema,
+  ComponentDbItemSchema,
+  ComponentDbResponseSchema,
+  FieldRuleSchema,
+  EnumEntrySchema,
+  PriorityProfileSchema,
+  AiAssistConfigSchema,
+  ComponentSourcePropertySchema,
+  ComponentSourceSchema,
+  StudioConfigSchema,
+  STUDIO_PAYLOAD_KEYS,
+  FIELD_STUDIO_MAP_RESPONSE_KEYS,
+  TOOLTIP_BANK_RESPONSE_KEYS,
+  ARTIFACT_ENTRY_KEYS,
+  KNOWN_VALUES_RESPONSE_KEYS,
+  COMPONENT_DB_ITEM_KEYS,
+} from './contracts/studioSchemas.js';

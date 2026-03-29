@@ -46,9 +46,9 @@ async function seedPublishedCurrent(tempRoot, category, productId, specs = {}) {
   );
 }
 
-async function seedFinalSourceHistory(tempRoot, category, rows = []) {
+async function seedFinalSourceHistory(tempRoot, category, productId, rows = []) {
   await writeText(
-    path.join(tempRoot, 'out', 'final', category, 'razer', 'viper-v3-pro', 'wireless', 'evidence', 'sources.jsonl'),
+    path.join(tempRoot, 'out', 'final', category, productId, 'evidence', 'sources.jsonl'),
     rows.map((row) => JSON.stringify(row)).join('\n') + '\n'
   );
 }
@@ -74,7 +74,7 @@ test('scanAndEnqueueDriftedProducts seeds baseline then enqueues product when ha
 
   try {
     await seedPublishedCurrent(tempRoot, category, productId, { weight: 59 });
-    await seedFinalSourceHistory(tempRoot, category, [
+    await seedFinalSourceHistory(tempRoot, category, productId, [
       {
         ts: '2026-02-13T00:00:00.000Z',
         host: 'manufacturer.example',
@@ -94,7 +94,7 @@ test('scanAndEnqueueDriftedProducts seeds baseline then enqueues product when ha
     assert.equal(first.drift_detected_count, 0);
     assert.equal(first.queued_count, 0);
 
-    await seedFinalSourceHistory(tempRoot, category, [
+    await seedFinalSourceHistory(tempRoot, category, productId, [
       {
         ts: '2026-02-13T00:00:00.000Z',
         host: 'manufacturer.example',

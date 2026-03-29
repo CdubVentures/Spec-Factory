@@ -46,7 +46,7 @@ import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductEx
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
 import { resolveAllPlugins } from '../features/crawl/plugins/pluginRegistry.js';
-import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts, persistVideoArtifact } from '../features/extraction/index.js';
+import { resolveAllExtractionPlugins, createExtractionRunner, persistScreenshotArtifacts, persistVideoArtifact, persistHtmlArtifact } from '../features/extraction/index.js';
 
 const RUN_DEDUPE_MODE = 'serp_url+content_hash';
 
@@ -198,6 +198,7 @@ export async function runProduct({
   const effectiveIndexLabRoot = config.indexLabRoot || defaultIndexLabRoot();
   const screenshotDir = path.join(effectiveIndexLabRoot, runId, 'screenshots');
   const videoDir = path.join(effectiveIndexLabRoot, runId, 'video');
+  const htmlDir = path.join(effectiveIndexLabRoot, runId, 'html');
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,
@@ -221,6 +222,16 @@ export async function runProduct({
       return persistVideoArtifact({
         videoPath, videoDir, workerId, url,
         insertVideo: specDb ? (row) => specDb.insertVideo(row) : undefined,
+        runContext: { category, productId, runId, host },
+      });
+    },
+    onHtmlPersist: ({ html, workerId, url, finalUrl, status, title }) => {
+      const specDb = config.specDb || null;
+      let host = '';
+      try { host = new URL(url).hostname; } catch { /* invalid URL */ }
+      return persistHtmlArtifact({
+        html, htmlDir, workerId, url, finalUrl, status, title,
+        insertCrawlSource: specDb ? (row) => specDb.insertCrawlSource(row) : undefined,
         runContext: { category, productId, runId, host },
       });
     },
@@ -286,7 +297,7 @@ export async function runProduct({
       duration_ms: Date.now() - startMs,
     });
 
-    return { crawlResults, runId, category, productId };
+    return { crawlResults, runId, category, productId, fetchPlanStats, startMs, job };
   } finally {
     await session.shutdown();
   }

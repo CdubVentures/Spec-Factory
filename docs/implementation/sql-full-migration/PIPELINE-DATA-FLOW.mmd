@@ -27,7 +27,7 @@
 
 flowchart TB
 
-  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Completion</b><br/><i>15 actual phases (phase_00 - phase_09 + sub-cursors)  |  Code-verified 2026-03-28</i>"]
+  title["<b>PIPELINE DATA FLOW  |  Run Lifecycle Start-to-Completion</b><br/><i>15 actual phases (phase_00 - phase_09 + sub-cursors)  |  Code-verified 2026-03-29</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:22px
 
   %% ===== PHASE 00: BOOTSTRAP =====
@@ -90,13 +90,15 @@ flowchart TB
     p9_frontier[("frontierDb.urls<br/><i>recordFetch() per URL</i>")]
     p9_events[("bridge_events<br/><i>fetch events</i>")]
     p9_runs[("runs<br/><i>counters++</i>")]
-    p9_binaries["Content-addressed<br/><i>page.html.gz, screenshot, video</i>"]
+    p9_binaries["Content-addressed binaries<br/><i>screenshot → {runId}/screenshots/<br/>video → {runId}/video/</i>"]
+    p9_html["HTML persistence<br/><i>{runId}/html/{hash12}.html.gz<br/>+ crawl_sources SQL (DI callback)</i>"]
     p9_evidence[("evidenceIndexDb<br/><i>evidence_documents, chunks, facts</i>")]
 
     p9_batch --> p9_frontier
     p9_batch --> p9_events
     p9_batch --> p9_runs
     p9_batch --> p9_binaries
+    p9_batch --> p9_html
     p9_batch --> p9_evidence
   end
   style P09 fill:#0d1117,stroke:#f0883e,color:#e0e0e0,stroke-width:2px
@@ -105,25 +107,26 @@ flowchart TB
   style p9_events fill:#238636,stroke:#3fb950,color:#fff
   style p9_runs fill:#238636,stroke:#3fb950,color:#fff
   style p9_binaries fill:#2d333b,stroke:#3fb950,color:#e0e0e0
+  style p9_html fill:#238636,stroke:#3fb950,color:#fff
   style p9_evidence fill:#a371f7,stroke:#bc8cff,color:#fff
 
-  %% ===== EXPORT =====
-  subgraph EXPORT["EXPORT + INDEX"]
+  %% ===== CHECKPOINT (Two-JSON System) =====
+  subgraph CHECKPOINT["CHECKPOINT  (after crawl, before finalize)"]
     direction LR
-    exp_parse["extractCandidates()"]
-    exp_specdb[("candidates, item_field_state,<br/>source_registry, evidence")]
-    exp_output["spec.json, summary.json,<br/>provenance.json"]
-    exp_billing[("billing_entries<br/><i>SQL only</i>")]
+    cp_summary["serializeRunSummary(bridge)<br/><i>Captures all GUI panel data:<br/>events, counters, stages, LLM agg</i>"]
+    cp_run["run.json<br/><i>{runId}/run.json — schema v2<br/>sources + needset + search_profile + run_summary</i>"]
+    cp_product["product.json<br/><i>{outRoot}/product.json — accumulated<br/>identity + deduped sources across all runs</i>"]
+    cp_sql[("run_artifacts<br/><i>artifact_type: run_checkpoint</i>")]
 
-    exp_parse --> exp_specdb
-    exp_parse --> exp_output
-    exp_parse --> exp_billing
+    cp_summary --> cp_run
+    cp_run --> cp_product
+    cp_run --> cp_sql
   end
-  style EXPORT fill:#0d1117,stroke:#f778ba,color:#e0e0e0,stroke-width:2px
-  style exp_parse fill:#21262d,stroke:#f778ba,color:#c9d1d9
-  style exp_specdb fill:#1f6feb,stroke:#58a6ff,color:#fff
-  style exp_output fill:#2d333b,stroke:#f778ba,color:#e0e0e0
-  style exp_billing fill:#238636,stroke:#3fb950,color:#fff
+  style CHECKPOINT fill:#0d1117,stroke:#238636,color:#e0e0e0,stroke-width:2px
+  style cp_summary fill:#21262d,stroke:#238636,color:#c9d1d9
+  style cp_run fill:#238636,stroke:#3fb950,color:#fff
+  style cp_product fill:#238636,stroke:#3fb950,color:#fff
+  style cp_sql fill:#238636,stroke:#3fb950,color:#fff
 
   %% ===== FINALIZE =====
   subgraph FINALIZE["FINALIZE"]
@@ -156,6 +159,6 @@ flowchart TB
   %% ===== FLOW =====
   P00 --> P18
   P18 --> P09
-  P09 --> EXPORT
-  EXPORT --> FINALIZE
+  P09 --> CHECKPOINT
+  CHECKPOINT --> FINALIZE
   FINALIZE --> POSTRUN

@@ -85,31 +85,7 @@ export async function writeCompileOutput({
     generatedRoot,
     runtimePayload: fieldRulesCanonical
   });
-  if (!canonicalPair.identical) {
-    compileReport.errors.push('field_rules.json and field_rules.runtime.json must be byte-identical');
-    compileReport.compiled = false;
-    await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);
-    return {
-      controlPlaneSnapshot,
-      earlyReturn: {
-        category,
-        compiled: false,
-        field_studio_source_path: resolvedFieldStudioSourcePath,
-        field_studio_source_hash: fieldStudioSourceHash,
-        map_path: resolvedControlMapPath,
-        map_hash: mapHash,
-        selected_key_count: keyRows.length,
-        errors: compileReport.errors,
-        warnings: compileReport.warnings,
-        compile_report: compileReport,
-        control_plane_version: controlPlaneSnapshot
-      },
-    };
-  }
   compileReport.artifacts.field_rules.hash = canonicalPair.field_rules_hash;
-  compileReport.artifacts.field_rules_runtime.hash = canonicalPair.field_rules_runtime_hash;
-  compileReport.artifacts.field_rules_runtime.identical_to_field_rules = true;
-  compileReport.artifacts.field_rules_runtime.bytes = canonicalPair.bytes;
   await writeJsonStable(path.join(generatedRoot, 'ui_field_catalog.json'), uiFieldCatalog);
   await writeJsonStable(path.join(generatedRoot, 'known_values.json'), knownValuesArtifact);
   await fs.rm(path.join(generatedRoot, 'schema.json'), { force: true });
@@ -196,9 +172,7 @@ export async function writeCompileOutput({
   await fs.mkdir(suggestionsRoot, { recursive: true });
   const suggestionDefaults = {
     enums: { version: 1, category, suggestions: [] },
-    components: { version: 1, category, suggestions: [] },
-    lexicon: { version: 1, category, suggestions: [] },
-    constraints: { version: 1, category, suggestions: [] }
+    components: { version: 1, category, suggestions: [] }
   };
   for (const [name, payload] of Object.entries(suggestionDefaults)) {
     const filePath = path.join(suggestionsRoot, `${name}.json`);

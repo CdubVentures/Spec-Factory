@@ -5,6 +5,7 @@ export function createBatchCommand({
   loadSourceIntel,
   rankBatchWithBandit,
   runProduct,
+  openSpecDbForCategory,
 }) {
   async function runWithConcurrency(items, concurrency, worker) {
     const results = [];
@@ -34,7 +35,7 @@ export function createBatchCommand({
     return 'mixed';
   }
 
-  async function collectBatchMetadata({ storage, config, category, key }) {
+  async function collectBatchMetadata({ storage, config, category, key, specDb = null }) {
     const job = await storage.readJsonOrNull(key);
     const productId = job?.productId;
     const brand = String(job?.identityLock?.brand || '').trim().toLowerCase();
@@ -56,7 +57,9 @@ export function createBatchCommand({
     }
 
     const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-    const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
+    const summary = specDb
+      ? specDb.getSummaryForProduct(productId)
+      : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
     return {
       key,
       productId,
@@ -191,12 +194,14 @@ export function createBatchCommand({
 
   async function commandRunBatch(config, storage, args) {
     const category = args.category || 'mouse';
+    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
+    try {
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
     const allKeys = await storage.listInputKeys(category);
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
     const strategy = normalizeBatchStrategy(args.strategy || 'bandit');
     const metadataRows = await runWithConcurrency(keys, config.concurrency, async (key) =>
-      collectBatchMetadata({ storage, config, category, key })
+      collectBatchMetadata({ storage, config, category, key, specDb })
     );
     const metadataByKey = new Map(metadataRows.map((row) => [row.key, row]));
     const intel = await loadSourceIntel({ storage, config, category });
@@ -248,6 +253,9 @@ export function createBatchCommand({
         : [],
       runs
     };
+    } finally {
+      try { specDb?.close(); } catch { /* */ }
+    }
   }
 
   return {

@@ -156,7 +156,6 @@ const loadQueueCommandHandler = createLazyLoader(async () => {
     import('../queue/queueState.js'),
   ]);
   return createQueueCommand({
-    slug,
     toPosixKey,
     parseCsvList,
     parseJsonArg,
@@ -261,6 +260,7 @@ const loadBenchmarkCommandHandler = createLazyLoader(async () => {
   ]);
   return createBenchmarkCommand({
     runGoldenBenchmark,
+    openSpecDbForCategory,
   });
 });
 
@@ -296,9 +296,7 @@ const loadLearningReportCommandHandler = createLazyLoader(async () => {
 
 const loadExplainUnkCommandHandler = createLazyLoader(async () => {
   const { createExplainUnkCommand } = await import('../app/cli/commands/explainUnkCommand.js');
-  return createExplainUnkCommand({
-    slug,
-  });
+  return createExplainUnkCommand({ openSpecDbForCategory });
 });
 
 const loadLlmHealthCommandHandler = createLazyLoader(async () => {
@@ -373,6 +371,7 @@ const loadTestingQualityCommands = createLazyLoader(async () => {
     renderAccuracyReportMarkdown: goldenFiles.renderAccuracyReportMarkdown,
     runAccuracyBenchmarkReport: goldenFiles.runAccuracyBenchmarkReport,
     buildAccuracyTrend: goldenFiles.buildAccuracyTrend,
+    openSpecDbForCategory,
   });
 });
 
@@ -451,6 +450,7 @@ const loadBatchCommandGroup = createLazyLoader(async () => {
     loadSourceIntel,
     rankBatchWithBandit,
     runProduct,
+    openSpecDbForCategory,
   });
 });
 

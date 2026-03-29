@@ -6,3 +6,4 @@ export { resolveExtractionPlugins, resolveAllExtractionPlugins, resolvePluginsBy
 export { captureScreenshots } from './plugins/screenshot/screenshotCapture.js';
 export { persistScreenshotArtifacts } from './plugins/screenshot/screenshotArtifactPersister.js';
 export { persistVideoArtifact } from './plugins/video/videoArtifactPersister.js';
+export { persistHtmlArtifact } from './plugins/html/htmlArtifactPersister.js';

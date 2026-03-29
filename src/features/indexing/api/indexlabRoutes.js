@@ -2,6 +2,7 @@ import { createStorageManagerHandler } from './storageManagerRoutes.js';
 import { computeQueryIndexSummary, computeUrlIndexSummary } from '../pipeline/shared/createQueryIndex.js';
 import { computePromptIndexSummary } from '../pipeline/shared/createPromptIndex.js';
 import { computeKnobSnapshots } from '../telemetry/knobTelemetryCapture.js';
+import { computeProductHistoryMetrics } from '../domain/computeProductHistoryMetrics.js';
 
 export function registerIndexlabRoutes(ctx) {
   const {
@@ -355,6 +356,77 @@ export function registerIndexlabRoutes(ctx) {
           known_values: buildKnownValuesSuggestions(acceptedUpdates)
         },
         gate_summary: { total: updates.length, accepted, rejected, rejection_reasons: rejectionReasons }
+      });
+    }
+
+    // ── Product run history ─────────────────────────────────────
+    if (parts[0] === 'indexlab' && parts[1] === 'product-history' && method === 'GET') {
+      const category = String(params.get('category') || '').trim();
+      const productId = String(params.get('product_id') || '').trim();
+      if (!category) return jsonRes(res, 400, { error: 'missing_category' });
+      if (!productId) return jsonRes(res, 400, { error: 'missing_product_id' });
+
+      const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      if (!specDb) return jsonRes(res, 500, { error: 'db_unavailable' });
+
+      const productRuns = specDb.getProductRuns(productId);
+      const runIdSet = new Set(productRuns.map((r) => r.run_id));
+
+      // WHY: Enrich with started_at/ended_at from the runs table for duration.
+      const runsMetaMap = new Map();
+      const allRunsMeta = specDb.getRunsByCategory(category, 500);
+      for (const rm of allRunsMeta) {
+        if (runIdSet.has(rm.run_id)) runsMetaMap.set(rm.run_id, rm);
+      }
+
+      const runs = productRuns.map((pr) => {
+        const rm = runsMetaMap.get(pr.run_id);
+        return {
+          run_id: pr.run_id,
+          status: pr.status || rm?.status || '',
+          cost_usd_run: pr.cost_usd_run,
+          sources_attempted: pr.sources_attempted,
+          run_at: pr.run_at,
+          started_at: rm?.started_at || pr.run_at || '',
+          ended_at: rm?.ended_at || '',
+          is_latest: pr.is_latest,
+          storage_state: pr.storage_state || '',
+        };
+      });
+
+      const allQueries = specDb.getQueryIndexByCategory(category);
+      const queries = allQueries
+        .filter((q) => q.product_id === productId)
+        .map((q) => ({
+          query: q.query,
+          provider: q.provider,
+          result_count: q.result_count,
+          run_id: q.run_id,
+          ts: q.ts,
+        }));
+
+      const allUrls = specDb.getUrlIndexByCategory(category);
+      const urls = allUrls
+        .filter((u) => runIdSet.has(u.run_id))
+        .map((u) => ({
+          url: u.url,
+          host: u.host,
+          tier: u.tier,
+          doc_kind: u.doc_kind,
+          fetch_success: u.fetch_success,
+          run_id: u.run_id,
+          ts: u.ts,
+        }));
+
+      const metrics = computeProductHistoryMetrics({ runs, queries, urls });
+
+      return jsonRes(res, 200, {
+        product_id: productId,
+        category,
+        runs,
+        queries,
+        urls,
+        metrics,
       });
     }
 

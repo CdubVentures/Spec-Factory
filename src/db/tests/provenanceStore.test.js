@@ -260,3 +260,121 @@ test('DB: evidence array sub-fields match candidates row', () => {
   assert.deepStrictEqual(ev.quote_span, [12, 15]);
   assert.equal(ev.retrieved_at, '2026-03-01T12:00:00Z');
 });
+
+// ── getNormalizedForProduct ──
+
+function seedProduct(db, { category = 'mouse', productId, brand = '', model = '', variant = '' }) {
+  db.db.prepare(`INSERT INTO products (category, product_id, brand, model, variant) VALUES (?, ?, ?, ?, ?)`).run(
+    category, productId, brand, model, variant,
+  );
+}
+
+test('getNormalizedForProduct: no rows → empty fields + empty identity', () => {
+  const db = createHarness();
+  const result = db.getNormalizedForProduct('mouse-nonexistent');
+  assert.deepStrictEqual(result.fields, {});
+  assert.equal(result.identity.brand, '');
+  assert.equal(result.identity.model, '');
+  assert.equal(result.identity.variant, '');
+});
+
+test('getNormalizedForProduct: returns fields map from item_field_state', () => {
+  const db = createHarness();
+  seedField(db, { productId: 'mouse-test', fieldKey: 'weight', value: '59g' });
+  seedField(db, { productId: 'mouse-test', fieldKey: 'sensor', value: 'PAW3950' });
+
+  const result = db.getNormalizedForProduct('mouse-test');
+  assert.equal(result.fields.weight, '59g');
+  assert.equal(result.fields.sensor, 'PAW3950');
+  assert.equal(Object.keys(result.fields).length, 2);
+});
+
+test('getNormalizedForProduct: returns identity from products table', () => {
+  const db = createHarness();
+  seedProduct(db, { productId: 'mouse-test', brand: 'Razer', model: 'Viper V3 Pro', variant: 'White' });
+  seedField(db, { productId: 'mouse-test', fieldKey: 'weight', value: '59g' });
+
+  const result = db.getNormalizedForProduct('mouse-test');
+  assert.equal(result.identity.brand, 'Razer');
+  assert.equal(result.identity.model, 'Viper V3 Pro');
+  assert.equal(result.identity.variant, 'White');
+  assert.equal(result.fields.weight, '59g');
+});
+
+// --- getSummaryForProduct / getTrafficLightForProduct (C4) ---
+
+test('getSummaryForProduct: no product run → null', () => {
+  const db = createHarness();
+  const result = db.getSummaryForProduct('mouse-nonexistent');
+  assert.equal(result, null);
+});
+
+test('getSummaryForProduct: returns parsed summary from product_runs', () => {
+  const db = createHarness();
+  db.upsertProductRun({
+    product_id: 'mouse-test',
+    run_id: 'run_001',
+    is_latest: true,
+    summary: {
+      validated: true,
+      confidence: 0.85,
+      coverage_overall: 0.92,
+      missing_required_fields: ['sensor'],
+    },
+    validated: true,
+    confidence: 0.85,
+    run_at: '2026-03-29T00:00:00.000Z',
+  });
+  const summary = db.getSummaryForProduct('mouse-test');
+  assert.equal(summary.validated, true);
+  assert.equal(summary.confidence, 0.85);
+  assert.equal(summary.coverage_overall, 0.92);
+  assert.deepStrictEqual(summary.missing_required_fields, ['sensor']);
+});
+
+test('getSummaryForProduct: includes nested traffic_light', () => {
+  const db = createHarness();
+  db.upsertProductRun({
+    product_id: 'mouse-tl',
+    run_id: 'run_002',
+    is_latest: true,
+    summary: {
+      validated: true,
+      confidence: 0.9,
+      traffic_light: { counts: { green: 5, yellow: 2, red: 1 }, by_field: {} },
+    },
+    validated: true,
+    confidence: 0.9,
+    run_at: '2026-03-29T00:00:00.000Z',
+  });
+  const summary = db.getSummaryForProduct('mouse-tl');
+  assert.equal(summary.traffic_light.counts.green, 5);
+  assert.equal(summary.traffic_light.counts.yellow, 2);
+  assert.equal(summary.traffic_light.counts.red, 1);
+});
+
+test('getTrafficLightForProduct: extracts traffic_light from summary', () => {
+  const db = createHarness();
+  db.upsertProductRun({
+    product_id: 'mouse-tl2',
+    run_id: 'run_003',
+    is_latest: true,
+    summary: {
+      validated: true,
+      confidence: 0.8,
+      traffic_light: { counts: { green: 3 }, by_field: { weight: 'green' } },
+    },
+    validated: true,
+    confidence: 0.8,
+    run_at: '2026-03-29T00:00:00.000Z',
+  });
+  const tl = db.getTrafficLightForProduct('mouse-tl2');
+  assert.equal(tl.counts.green, 3);
+  assert.equal(tl.by_field.weight, 'green');
+});
+
+test('getTrafficLightForProduct: no product run → null', () => {
+  const db = createHarness();
+  const result = db.getTrafficLightForProduct('mouse-nonexistent');
+  assert.equal(result, null);
+});

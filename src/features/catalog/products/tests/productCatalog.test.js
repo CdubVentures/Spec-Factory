@@ -49,6 +49,8 @@ function mockUpsertQueue() {
   return fn;
 }
 
+const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
+
 // --- loadProductCatalog ---
 
 test('loadProductCatalog: returns empty catalog when file does not exist', async () => {
@@ -70,12 +72,12 @@ test('loadProductCatalog: reads existing catalog', async () => {
     await fs.writeFile(path.join(cpDir, 'product_catalog.json'), JSON.stringify({
       _version: 1,
       products: {
-        'mouse-razer-viper-v3-pro': { brand: 'Razer', model: 'Viper V3 Pro', variant: '', status: 'active' }
+        'mouse-a1b2c3d4': { brand: 'Razer', model: 'Viper V3 Pro', variant: '', status: 'active' }
       }
     }));
     const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(cat.products['mouse-razer-viper-v3-pro']);
-    assert.equal(cat.products['mouse-razer-viper-v3-pro'].brand, 'Razer');
+    assert.ok(cat.products['mouse-a1b2c3d4']);
+    assert.equal(cat.products['mouse-a1b2c3d4'].brand, 'Razer');
   } finally {
     await cleanup(config);
   }
@@ -83,7 +85,7 @@ test('loadProductCatalog: reads existing catalog', async () => {
 
 // --- addProduct ---
 
-test('addProduct: creates product with correct productId', async () => {
+test('addProduct: creates product with hex-based productId', async () => {
   const config = await tmpConfig();
   const storage = mockStorage();
   const upsertQueue = mockUpsertQueue();
@@ -94,7 +96,7 @@ test('addProduct: creates product with correct productId', async () => {
     });
 
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-logitech-g-pro-x-superlight-2');
+    assert.match(result.productId, HEX_PID_RE);
     assert.equal(result.product.brand, 'Logitech');
     assert.equal(result.product.model, 'G Pro X Superlight 2');
     assert.equal(result.product.variant, '');
@@ -102,11 +104,12 @@ test('addProduct: creates product with correct productId', async () => {
 
     // Verify catalog persisted
     const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(cat.products['mouse-logitech-g-pro-x-superlight-2']);
+    assert.ok(cat.products[result.productId]);
 
     // Verify input file created
-    assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-logitech-g-pro-x-superlight-2.json'));
-    const inputFile = JSON.parse(storage.store.get('specs/inputs/mouse/products/mouse-logitech-g-pro-x-superlight-2.json').toString());
+    const inputKey = `specs/inputs/mouse/products/${result.productId}.json`;
+    assert.ok(storage.store.has(inputKey));
+    const inputFile = JSON.parse(storage.store.get(inputKey).toString());
     assert.equal(inputFile.identityLock.brand, 'Logitech');
     assert.deepEqual(inputFile.seedUrls, ['https://example.com']);
 
@@ -154,7 +157,7 @@ test('addProduct: strips fabricated variant', async () => {
   try {
     const result = await addProduct({ config, category: 'mouse', brand: 'Acer', model: 'Cestus 310', variant: '310' });
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-acer-cestus-310');
+    assert.match(result.productId, HEX_PID_RE);
     assert.equal(result.product.variant, '');
   } finally {
     await cleanup(config);
@@ -166,7 +169,7 @@ test('addProduct: preserves real variant', async () => {
   try {
     const result = await addProduct({ config, category: 'mouse', brand: 'Corsair', model: 'M55', variant: 'Wireless' });
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-corsair-m55-wireless');
+    assert.match(result.productId, HEX_PID_RE);
     assert.equal(result.product.variant, 'Wireless');
   } finally {
     await cleanup(config);
@@ -178,7 +181,7 @@ test('addProduct: works without storage or queue', async () => {
   try {
     const result = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'DeathAdder V3' });
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-razer-deathadder-v3');
+    assert.match(result.productId, HEX_PID_RE);
   } finally {
     await cleanup(config);
   }
@@ -186,18 +189,20 @@ test('addProduct: works without storage or queue', async () => {
 
 // --- updateProduct ---
 
-test('updateProduct: patches seed_urls without changing identity', async () => {
+test('updateProduct: patches seed_urls without changing productId', async () => {
   const config = await tmpConfig();
   const storage = mockStorage();
   try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper V3 Pro', storage });
+    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper V3 Pro', storage });
+    const pid = created.productId;
+
     const result = await updateProduct({
-      config, category: 'mouse', productId: 'mouse-razer-viper-v3-pro',
+      config, category: 'mouse', productId: pid,
       patch: { seed_urls: ['https://razer.com/viper'] }, storage
     });
 
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-razer-viper-v3-pro');
+    assert.equal(result.productId, pid);
     assert.deepEqual(result.product.seed_urls, ['https://razer.com/viper']);
     assert.ok(result.product.updated_at);
   } finally {
@@ -205,46 +210,27 @@ test('updateProduct: patches seed_urls without changing identity', async () => {
   }
 });
 
-test('updateProduct: identity change regenerates productId', async () => {
+test('updateProduct: identity change keeps same productId (immutable)', async () => {
   const config = await tmpConfig();
   const storage = mockStorage();
   try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
+    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
+    const pid = created.productId;
 
     const result = await updateProduct({
-      config, category: 'mouse', productId: 'mouse-razer-viper',
+      config, category: 'mouse', productId: pid,
       patch: { model: 'Viper V3 Pro' }, storage
     });
 
     assert.equal(result.ok, true);
-    assert.equal(result.productId, 'mouse-razer-viper-v3-pro');
-    assert.equal(result.previousProductId, 'mouse-razer-viper');
+    assert.equal(result.productId, pid);
+    assert.equal(result.product.model, 'Viper V3 Pro');
 
-    // Old file deleted, new file created
-    assert.ok(!storage.store.has('specs/inputs/mouse/products/mouse-razer-viper.json'));
-    assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json'));
-
-    // Old catalog entry gone, new one present
+    // Same catalog key, same input file
     const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(!cat.products['mouse-razer-viper']);
-    assert.ok(cat.products['mouse-razer-viper-v3-pro']);
-  } finally {
-    await cleanup(config);
-  }
-});
-
-test('updateProduct: rejects rename to existing productId', async () => {
-  const config = await tmpConfig();
-  try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'DeathAdder' });
-
-    const result = await updateProduct({
-      config, category: 'mouse', productId: 'mouse-razer-viper',
-      patch: { model: 'DeathAdder' }
-    });
-    assert.equal(result.ok, false);
-    assert.equal(result.error, 'product_already_exists');
+    assert.ok(cat.products[pid]);
+    assert.equal(cat.products[pid].model, 'Viper V3 Pro');
+    assert.ok(storage.store.has(`specs/inputs/mouse/products/${pid}.json`));
   } finally {
     await cleanup(config);
   }
@@ -253,7 +239,7 @@ test('updateProduct: rejects rename to existing productId', async () => {
 test('updateProduct: returns error for non-existent product', async () => {
   const config = await tmpConfig();
   try {
-    const result = await updateProduct({ config, category: 'mouse', productId: 'mouse-nope', patch: {} });
+    const result = await updateProduct({ config, category: 'mouse', productId: 'mouse-nope0000', patch: {} });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'product_not_found');
   } finally {
@@ -267,19 +253,21 @@ test('removeProduct: removes product and deletes input file', async () => {
   const config = await tmpConfig();
   const storage = mockStorage();
   try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
-    assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-razer-viper.json'));
+    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
+    const pid = created.productId;
+    const inputKey = `specs/inputs/mouse/products/${pid}.json`;
+    assert.ok(storage.store.has(inputKey));
 
-    const result = await removeProduct({ config, category: 'mouse', productId: 'mouse-razer-viper', storage });
+    const result = await removeProduct({ config, category: 'mouse', productId: pid, storage });
     assert.equal(result.ok, true);
     assert.equal(result.removed, true);
 
     // Catalog empty
     const cat = await loadProductCatalog(config, 'mouse');
-    assert.equal(cat.products['mouse-razer-viper'], undefined);
+    assert.equal(cat.products[pid], undefined);
 
     // Input file deleted
-    assert.ok(!storage.store.has('specs/inputs/mouse/products/mouse-razer-viper.json'));
+    assert.ok(!storage.store.has(inputKey));
   } finally {
     await cleanup(config);
   }
@@ -288,7 +276,7 @@ test('removeProduct: removes product and deletes input file', async () => {
 test('removeProduct: returns error for non-existent product', async () => {
   const config = await tmpConfig();
   try {
-    const result = await removeProduct({ config, category: 'mouse', productId: 'mouse-nope' });
+    const result = await removeProduct({ config, category: 'mouse', productId: 'mouse-nope0000' });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'product_not_found');
   } finally {
@@ -297,8 +285,6 @@ test('removeProduct: returns error for non-existent product', async () => {
 });
 
 // --- seedFromCatalog ---
-// Note: seedFromCatalog reads app-native catalog + override sources.
-// These tests cover graceful behavior when no catalog/override files are present.
 
 test('seedFromCatalog: handles missing catalog gracefully', async () => {
   const config = await tmpConfig();

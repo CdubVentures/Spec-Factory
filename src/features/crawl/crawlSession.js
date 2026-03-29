@@ -28,7 +28,7 @@ export function parseProxyUrls(jsonStr) {
   } catch { return []; }
 }
 
-export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, _crawlerFactory } = {}) {
+export function createCrawlSession({ settings = {}, plugins = [], extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, onHtmlPersist, _crawlerFactory } = {}) {
   const runner = createPluginRunner({ plugins, logger });
   const pending = new Map();
   const workerIds = new Map();
@@ -209,6 +209,21 @@ export function createCrawlSession({ settings = {}, plugins = [], extractionRunn
         // (28-69KB screencast frames, 2-4MB videos) but HTML was lost because
         // the timeout killed the handler before extraction ran.
         request.userData.__capturedPage = { html, finalUrl, title, status };
+
+        // WHY: Persist HTML BEFORE extraction — if extraction timeout kills the
+        // handler, HTML is already safely on disk + indexed in crawl_sources.
+        if (typeof onHtmlPersist === 'function') {
+          try {
+            const htmlResult = onHtmlPersist({
+              html, workerId, url: request.url, finalUrl, status, title,
+            });
+            if (htmlResult) {
+              request.userData.__capturedPage.htmlArtifact = htmlResult;
+            }
+          } catch (err) {
+            logger?.warn?.('html_persist_error', { url: request.url, error: err?.message });
+          }
+        }
 
         // WHY: Page passed block detection — mark it as video-worthy so
         // prePageCloseHook will persist the recording. Blocked/retried pages

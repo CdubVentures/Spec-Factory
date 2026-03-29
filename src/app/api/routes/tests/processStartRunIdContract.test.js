@@ -137,7 +137,6 @@ test('process/start rejects launches when generated field rules are missing', as
   const helperRoot = path.resolve('category_authority');
   const expectedMissingPaths = [
     path.resolve(path.join(helperRoot, 'mouse', '_generated', 'field_rules.json')),
-    path.resolve(path.join(helperRoot, 'mouse', '_generated', 'field_rules.runtime.json')),
   ];
   const expectedMissingPathSet = new Set(expectedMissingPaths);
   const handler = createProcessStartHandler({
@@ -172,7 +171,6 @@ test('process/start validates generated field rules against the effective helper
   const overrideRoot = path.resolve('category_authority');
   const missingForOverride = [
     path.resolve(path.join(overrideRoot, 'mouse', '_generated', 'field_rules.json')),
-    path.resolve(path.join(overrideRoot, 'mouse', '_generated', 'field_rules.runtime.json')),
   ];
   const missingForOverrideSet = new Set(missingForOverride);
   const handler = createProcessStartHandler({

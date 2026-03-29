@@ -1,8 +1,14 @@
-import { slug, parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
+import { parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } from '../cliHelpers.js';
 import pathNode from 'node:path';
 import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
 import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
+import { buildProductId } from '../../../shared/primitives.js';
+import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlCheckpoint.js';
+import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
+import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
+import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProductCheckpoint.js';
+import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 
 export function createPipelineCommands({
   asBool,
@@ -70,10 +76,7 @@ export function createPipelineCommands({
       const variant = String(args.variant || '').trim();
       const sku = String(args.sku || '').trim();
       const title = String(args.title || (!seedIsUrl ? seed : '')).trim();
-      const generatedProductId = productIdArg
-        || [category, slug(brand), slug(model), slug(variant), `indexlab-${Date.now()}`]
-          .filter(Boolean)
-          .join('-');
+      const generatedProductId = productIdArg || buildProductId(category);
       const job = {
         productId: generatedProductId,
         category,
@@ -180,42 +183,84 @@ export function createPipelineCommands({
       runConfig.discoveryEnabled = true;
     }
 
-    const result = await runProduct({
-      storage,
-      config: runConfig,
-      s3Key,
-      runIdOverride: requestedRunId || undefined,
-    });
+    try {
+      const result = await runProduct({
+        storage,
+        config: runConfig,
+        s3Key,
+        runIdOverride: requestedRunId || undefined,
+      });
 
-    bridge.setContext({
-      category,
-      productId: result.productId,
-      s3Key
-    });
-    await bridge.finalize({
-      status: 'completed',
-      run_id: result.runId,
-      run_base: result.exportInfo?.runBase || '',
-      latest_base: result.exportInfo?.latestBase || ''
-    });
+      // WHY: Write run.json + product.json BEFORE finalize. If finalize or the
+      // process exit crashes, both JSONs are already on disk. serializeRunSummary
+      // reads bridge state which is still populated (finalize clears it after).
+      try {
+        const runSummary = await serializeRunSummary(bridge).catch(() => null);
+        const checkpoint = buildCrawlCheckpoint({
+          crawlResults: result.crawlResults,
+          runId: result.runId,
+          category,
+          productId: result.productId,
+          s3Key,
+          startMs: result.startMs,
+          fetchPlanStats: result.fetchPlanStats,
+          needset: bridge.needSet,
+          searchProfile: bridge.searchProfile,
+          runSummary,
+          status: 'completed',
+          identityLock: result.job?.identityLock || null,
+        });
+        writeCrawlCheckpoint({
+          checkpoint,
+          outRoot,
+          runId: result.runId,
+          upsertRunArtifact: specDb ? (row) => specDb.upsertRunArtifact(row) : undefined,
+          category,
+        });
+        // WHY: Product.json accumulates sources across runs. Content-addressed
+        // dedup means same page content → update last_seen, not duplicate.
+        const productCp = buildProductCheckpoint({
+          identity: result.job?.identityLock || {},
+          category,
+          productId: result.productId,
+          runId: result.runId,
+          sources: checkpoint.sources,
+        });
+        writeProductCheckpoint({ productCheckpoint: productCp, outRoot, runId: result.runId });
+      } catch { /* best-effort: pipeline continues without checkpoints */ }
 
-    return {
-      command: 'indexlab',
-      category,
-      productId: result.productId,
-      runId: result.runId,
-      s3Key,
-      validated: result.summary?.validated,
-      confidence: result.summary?.confidence,
-      completeness_required_percent: result.summary?.completeness_required_percent,
-      coverage_overall_percent: result.summary?.coverage_overall_percent,
-      runBase: result.exportInfo?.runBase,
-      latestBase: result.exportInfo?.latestBase,
-      indexlab: {
-        out_root: pathNode.resolve(outRoot),
-        run_dir: pathNode.resolve(outRoot, result.runId),
-      }
-    };
+      bridge.setContext({
+        category,
+        productId: result.productId,
+        s3Key
+      });
+      await bridge.finalize({
+        status: 'completed',
+        run_id: result.runId,
+        run_base: result.exportInfo?.runBase || '',
+        latest_base: result.exportInfo?.latestBase || ''
+      });
+
+      return {
+        command: 'indexlab',
+        category,
+        productId: result.productId,
+        runId: result.runId,
+        s3Key,
+        validated: result.summary?.validated,
+        confidence: result.summary?.confidence,
+        completeness_required_percent: result.summary?.completeness_required_percent,
+        coverage_overall_percent: result.summary?.coverage_overall_percent,
+        runBase: result.exportInfo?.runBase,
+        latestBase: result.exportInfo?.latestBase,
+        indexlab: {
+          out_root: pathNode.resolve(outRoot),
+          run_dir: pathNode.resolve(outRoot, result.runId),
+        }
+      };
+    } finally {
+      try { specDb?.close(); } catch { /* best-effort */ }
+    }
   }
 
   async function commandRunAdHoc(config, storage, args) {
@@ -231,10 +276,7 @@ export function createPipelineCommands({
 
     await assertCategorySchemaReady({ category, storage, config });
 
-    const autoProductId = [category, slug(brand), slug(model), slug(variant)]
-      .filter(Boolean)
-      .join('-');
-    const productId = String(args['product-id'] || autoProductId || `${category}-${Date.now()}`).trim();
+    const productId = String(args['product-id'] || '').trim() || buildProductId(category);
 
     const identityLock = {
       brand,

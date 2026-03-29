@@ -64,7 +64,12 @@ function createBuildCatalog(overrides = {}) {
   return createCatalogBuilder({
     config: { localMode: true },
     storage: createCatalogStorageFixture(),
-    getSpecDb: () => ({ id: 'fake-specdb' }),
+    getSpecDb: () => ({
+      id: 'fake-specdb',
+      getSummaryForProduct: (pid) => pid === 'mouse-acme-orbit-x1' ? createCatalogSummary() : null,
+      getNormalizedForProduct: (pid) => pid === 'mouse-acme-orbit-x1' ? createNormalizedIdentity() : null,
+      getTrafficLightForProduct: () => null,
+    }),
     loadQueueState: async () => ({
       state: {
         products: {
@@ -128,6 +133,7 @@ test('catalog builder falls back to pending defaults when queue state loading fa
         return false;
       },
     },
+    getSpecDb: () => null,
     loadQueueState: async () => {
       throw new Error('queue offline');
     },

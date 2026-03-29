@@ -31,25 +31,17 @@ export async function writeCanonicalFieldRulesPair({
   const canonicalHash = hashBuffer(canonicalBuffer);
   const canonicalBytes = canonicalBuffer.length;
   const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
-  const runtimePath = path.join(generatedRoot, 'field_rules.runtime.json');
 
   await fs.mkdir(generatedRoot, { recursive: true });
   await fs.writeFile(fieldRulesPath, canonicalBuffer);
-  await fs.writeFile(runtimePath, canonicalBuffer);
 
-  const [fieldRulesWritten, runtimeWritten] = await Promise.all([
-    fs.readFile(fieldRulesPath),
-    fs.readFile(runtimePath)
-  ]);
+  const fieldRulesWritten = await fs.readFile(fieldRulesPath);
   const fieldRulesHash = hashBuffer(fieldRulesWritten);
-  const runtimeHash = hashBuffer(runtimeWritten);
-  const identical = fieldRulesHash === runtimeHash && fieldRulesHash === canonicalHash;
+  const identical = fieldRulesHash === canonicalHash;
 
   return {
     field_rules_path: fieldRulesPath,
-    field_rules_runtime_path: runtimePath,
     field_rules_hash: fieldRulesHash,
-    field_rules_runtime_hash: runtimeHash,
     expected_hash: canonicalHash,
     bytes: canonicalBytes,
     identical
@@ -87,37 +79,10 @@ export function diffFieldRuleSets(previousRules = {}, currentRules = {}) {
   };
 }
 
-export async function writeControlPlaneSnapshot({
-  controlPlaneRoot,
-  fieldStudioMap = null,
-  fieldRulesFull = null,
-  note = ''
-} = {}) {
-  const versionId = snapshotVersionId();
-  const versionRoot = path.join(controlPlaneRoot, '_versions', versionId);
-  await fs.mkdir(versionRoot, { recursive: true });
-  if (isObject(fieldStudioMap)) {
-    await writeJsonStable(path.join(versionRoot, 'field_studio_map.json'), fieldStudioMap);
-  }
-  if (isObject(fieldRulesFull)) {
-    await writeJsonStable(path.join(versionRoot, 'field_rules.full.json'), fieldRulesFull);
-  }
-  const noteText = normalizeText(note) || 'category-compile';
-  await fs.writeFile(path.join(versionRoot, 'notes.txt'), `${noteText}\n`, 'utf8');
-  await writeJsonStable(path.join(versionRoot, 'manifest.json'), {
-    version: 1,
-    version_id: versionId,
-    created_at: nowIso(),
-    note: noteText,
-    files: {
-      field_studio_map: isObject(fieldStudioMap),
-      field_rules_full: isObject(fieldRulesFull),
-    }
-  });
-  return {
-    version_id: versionId,
-    path: versionRoot
-  };
+// WHY: _versions/ snapshots removed — no rollback mechanism existed, just unbounded disk growth.
+// Callers still expect { version_id, path } return shape.
+export async function writeControlPlaneSnapshot() {
+  return { version_id: null, path: null };
 }
 
 export async function readJsonIfExists(filePath) {

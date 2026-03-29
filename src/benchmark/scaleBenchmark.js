@@ -69,7 +69,11 @@ export function aggregateScaleMetrics(rows = []) {
   };
 }
 
-async function readLatestSummary(storage, category, productId) {
+async function readLatestSummary(storage, category, productId, specDb = null) {
+  if (specDb) {
+    const summary = specDb.getSummaryForProduct(productId);
+    if (summary) return summary;
+  }
   const summaryKey = storage.resolveOutputKey(category, productId, 'latest', 'summary.json');
   const summary = await storage.readJsonOrNull(summaryKey);
   return summary && typeof summary === 'object' ? summary : null;
@@ -95,7 +99,8 @@ function rowFromSummary({ productId, summary }) {
 export async function buildScaleBenchmarkReport({
   storage,
   category,
-  sizes = [100, 500, 1000]
+  sizes = [100, 500, 1000],
+  specDb = null
 }) {
   const normalizedSizes = parseSizes(sizes);
   const keys = await storage.listInputKeys(category);
@@ -108,7 +113,7 @@ export async function buildScaleBenchmarkReport({
 
   const rows = [];
   for (const productId of productIds) {
-    const summary = await readLatestSummary(storage, category, productId);
+    const summary = await readLatestSummary(storage, category, productId, specDb);
     if (!summary) {
       continue;
     }

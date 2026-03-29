@@ -67,8 +67,17 @@ function loadSpecDbProduct({
   }
 }
 
+// WHY: Hex-format IDs ({category}-{8-hex}) are opaque — no identity can be inferred.
+// Only attempt slug parsing for legacy IDs that embed brand/model tokens.
+const HEX_ID_RE = /^[a-z][a-z0-9-]*-[a-f0-9]{8}$/;
+
 export function inferIdentityFromProductId(productId, category = '') {
-  const tokens = normalizeToken(productId)
+  const pid = normalizeToken(productId);
+  if (!pid || HEX_ID_RE.test(pid)) {
+    return { brand: '', model: '', variant: '' };
+  }
+
+  const tokens = pid
     .split('-')
     .map((part) => String(part || '').trim())
     .filter(Boolean);

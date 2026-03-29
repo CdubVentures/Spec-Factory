@@ -56,6 +56,6 @@ export function createFooStore({ db, category, stmts }) {
 ## Consumers
 
 - `src/api/guiServer.js` — constructs SpecDb, passes to routes/services
-- `src/exporter/exporter.js` — reads candidates, field state, components
 - `src/app/api/specDbRuntime.js` — wraps SpecDb with lifecycle management
+- `src/features/extraction/plugins/html/htmlArtifactPersister.js` — indexes HTML via `insertCrawlSource` (DI callback)
 - 12+ test files directly import `SpecDb`

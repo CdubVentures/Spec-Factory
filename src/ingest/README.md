@@ -16,7 +16,7 @@ Category field rule compilation pipeline. Transforms a Field Studio map (spreads
 
 ## Domain Invariants
 
-- Deterministic output: same inputs → byte-identical `field_rules.json` and `field_rules.runtime.json` (canonical pair identity).
+- Deterministic output: same inputs → byte-identical `field_rules.json` (canonical identity).
 - Runtime/UI key alignment: every key in `field_rules.json` must appear in `ui_field_catalog.json` and vice versa.
 - Key migration cycles are rejected (compile fails, no artifacts written).
 - Compile timestamp is reused when map hash and source hash are unchanged (prevents false diffs).

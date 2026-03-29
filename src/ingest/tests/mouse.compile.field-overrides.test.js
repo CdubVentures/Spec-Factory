@@ -51,7 +51,6 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
     assert.equal(result.compiled, true);
 
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
-    const runtimeRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.runtime.json'), 'utf8'));
 
     assert.deepEqual(fieldRules?.fields?.connection?.consumers, {
       'contract.type': {
@@ -62,7 +61,6 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
         review: false,
       },
     });
-    assert.deepEqual(runtimeRules?.fields?.connection?.consumers, fieldRules?.fields?.connection?.consumers);
   } finally {
     await cleanup();
   }

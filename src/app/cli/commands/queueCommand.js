@@ -1,7 +1,7 @@
 import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
+import { buildProductId } from '../../../shared/primitives.js';
 
 export function createQueueCommand({
-  slug,
   toPosixKey,
   parseCsvList,
   parseJsonArg,
@@ -25,9 +25,7 @@ export function createQueueCommand({
       const brand = String(args.brand || '').trim();
       const model = String(args.model || '').trim();
       const variant = String(args.variant || '').trim();
-      const productId = String(
-        args['product-id'] || [category, slug(brand), slug(model), slug(variant)].filter(Boolean).join('-')
-      ).trim();
+      const productId = String(args['product-id'] || '').trim() || buildProductId(category);
       if (!productId) {
         throw new Error('queue add requires --product-id or --brand/--model');
       }

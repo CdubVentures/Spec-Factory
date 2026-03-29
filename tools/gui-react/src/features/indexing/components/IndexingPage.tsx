@@ -42,6 +42,7 @@ import {
   buildIndexingRuntimeSettingsProjection,
 } from '../state/indexingRuntimeSettingsProjection.ts';
 import { PickerPanel } from '../panels/PickerPanel.tsx';
+import { ProductHistoryPanel } from '../panels/ProductHistoryPanel.tsx';
 
 export function IndexingPage() {
   const category = useUiStore((s) => s.category);
@@ -296,6 +297,7 @@ export function IndexingPage() {
   return (
     <div className="space-y-4 flex flex-col">
       <PickerPanel {...pickerPanelProps} />
+      <ProductHistoryPanel productId={singleProductId} category={category} />
 
       {actionError && (
         <div className="sf-callout sf-callout-danger px-3 py-2 sf-text-caption" style={{ order: 100 }}>

@@ -102,7 +102,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
     : pathApi.resolve(String(env.CATEGORY_AUTHORITY_ROOT || env.HELPER_FILES_ROOT || helperRoot || 'category_authority'));
   const generatedRulesCandidates = [
     pathApi.join(effectiveHelperRoot, cat, '_generated', 'field_rules.json'),
-    pathApi.join(effectiveHelperRoot, cat, '_generated', 'field_rules.runtime.json'),
   ];
 
   const rawRequestedRunId = String(body?.requestedRunId || body?.runId || '').trim();

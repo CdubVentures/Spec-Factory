@@ -120,8 +120,7 @@ export function createPurgeStore({ db, category: defaultCategory }) {
       clearedCatalogState += db.prepare('DELETE FROM component_review_queue WHERE category = ?').run(cat).changes;
       clearedCatalogState += db.prepare('DELETE FROM llm_route_matrix WHERE category = ?').run(cat).changes;
 
-      // Artifacts + optional tables
-      clearedArtifacts += db.prepare('DELETE FROM artifacts WHERE category = ?').run(cat).changes;
+      // Audit + optional tables
       clearedArtifacts += db.prepare('DELETE FROM audit_log WHERE category = ?').run(cat).changes;
       try { clearedArtifacts += db.prepare('DELETE FROM category_brain WHERE category = ?').run(cat).changes; } catch { /* ignore */ }
       try { clearedArtifacts += db.prepare('DELETE FROM source_corpus WHERE category = ?').run(cat).changes; } catch { /* ignore */ }

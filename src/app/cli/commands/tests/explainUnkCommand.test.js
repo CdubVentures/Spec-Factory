@@ -1,16 +1,9 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createExplainUnkCommand } from '../explainUnkCommand.js';
 
-function createDeps(overrides = {}) {
-  return {
-    slug: (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '-'),
-    ...overrides,
-  };
-}
-
-test('explain-unk derives product id and returns unknown field breakdown from latest artifacts', async () => {
+test('explain-unk returns unknown field breakdown for given product-id', async () => {
   const outputCalls = [];
   const storage = {
     resolveOutputKey(category, productId, label) {
@@ -47,24 +40,22 @@ test('explain-unk derives product id and returns unknown field breakdown from la
     },
   };
 
-  const commandExplainUnk = createExplainUnkCommand(createDeps());
+  const commandExplainUnk = createExplainUnkCommand();
   const result = await commandExplainUnk({}, storage, {
     category: 'mouse',
-    brand: 'Logitech',
-    model: 'MX Master',
-    variant: '3S',
+    'product-id': 'mouse-a1b2c3d4',
   });
 
   assert.equal(outputCalls.length, 1);
   assert.deepEqual(outputCalls[0], {
     category: 'mouse',
-    productId: 'mouse-logitech-mx-master-3s',
+    productId: 'mouse-a1b2c3d4',
     label: 'latest',
   });
 
   assert.equal(result.command, 'explain-unk');
   assert.equal(result.category, 'mouse');
-  assert.equal(result.productId, 'mouse-logitech-mx-master-3s');
+  assert.equal(result.productId, 'mouse-a1b2c3d4');
   assert.equal(result.run_id, 'run-001');
   assert.equal(result.validated, true);
   assert.equal(result.unknown_field_count, 2);
@@ -75,27 +66,24 @@ test('explain-unk derives product id and returns unknown field breakdown from la
   assert.equal(result.urls_fetched_count, 1);
 });
 
-test('explain-unk throws when product id cannot be resolved', async () => {
-  const commandExplainUnk = createExplainUnkCommand(createDeps({
-    slug: () => '',
-  }));
+test('explain-unk throws when --product-id is not provided', async () => {
+  const commandExplainUnk = createExplainUnkCommand();
 
   await assert.rejects(
     commandExplainUnk({}, {
       resolveOutputKey: () => 'unused',
       readJsonOrNull: async () => null,
     }, {
-      category: '   ',
-      brand: '',
-      model: '',
-      variant: '',
+      category: 'mouse',
+      brand: 'Logitech',
+      model: 'MX Master',
     }),
-    /explain-unk requires --product-id or --category\/--brand\/--model/
+    /explain-unk requires --product-id/
   );
 });
 
 test('explain-unk throws when latest artifacts are missing for resolved product id', async () => {
-  const commandExplainUnk = createExplainUnkCommand(createDeps());
+  const commandExplainUnk = createExplainUnkCommand();
 
   await assert.rejects(
     commandExplainUnk({}, {
@@ -110,7 +98,7 @@ test('explain-unk throws when latest artifacts are missing for resolved product 
 });
 
 test('explain-unk falls back to legacy run_id and empty unknown output when normalized fields are absent', async () => {
-  const commandExplainUnk = createExplainUnkCommand(createDeps());
+  const commandExplainUnk = createExplainUnkCommand();
 
   const result = await commandExplainUnk({}, {
     resolveOutputKey: (category, productId) => `out/${category}/${productId}/latest`,

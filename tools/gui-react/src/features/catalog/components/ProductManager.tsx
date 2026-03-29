@@ -18,7 +18,7 @@ const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft roun
 // ── Types ──────────────────────────────────────────────────────────
 import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product.ts';
 import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes.ts';
-import { PRODUCT_STATUS_VALUES, BULK_VARIANT_PLACEHOLDERS, slugToken, cleanVariantToken, isFabricatedVariantToken, normalizeVariantForPreview, buildPreviewProductId, isHeaderRow, relativeTime } from './productHelpers.ts';
+import { PRODUCT_STATUS_VALUES, slugToken, cleanVariantToken, isFabricatedVariantToken, isHeaderRow, relativeTime } from './productHelpers.ts';
 import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 
 // ── Component ──────────────────────────────────────────────────────
@@ -62,16 +62,14 @@ export function ProductManager() {
   const [formSeedUrls, setFormSeedUrls] = useState('');
   const [formStatus, setFormStatus] = useState('active');
   // Track original values for change detection
+  const [origBrand, setOrigBrand] = useState('');
   const [origModel, setOrigModel] = useState('');
   const [origVariant, setOrigVariant] = useState('');
   const [origStatus, setOrigStatus] = useState('active');
   const [origSeedUrls, setOrigSeedUrls] = useState('');
-  // Confirmation state
-  const [confirmAction, setConfirmAction] = useState<'rename' | 'delete' | 'save' | null>(null);
+  // Confirmation state (delete only — identity changes save directly)
+  const [confirmAction, setConfirmAction] = useState<'delete' | null>(null);
   const [confirmInput, setConfirmInput] = useState('');
-
-  // Migration result banner
-  const [migrationResult, setMigrationResult] = useState<MutationResult | null>(null);
   // Bulk paste modal state
   const [bulkOpen, , setBulkOpen] = usePersistedToggle(`catalog:products:bulkOpen:${category}`, false);
   const [bulkBrand, setBulkBrand] = usePersistedTab<string>(`catalog:products:bulkBrand:${category}`, '');
@@ -100,24 +98,9 @@ export function ProductManager() {
   const updateMut = useMutation({
     mutationFn: ({ pid, patch }: { pid: string; patch: Record<string, unknown> }) =>
       api.put<MutationResult>(`/catalog/${category}/products/${pid}`, patch),
-    onSuccess: (data) => {
+    onSuccess: () => {
       invalidate();
-      // If this was a rename, update productStore if the old product was selected
-      if (data?.previousProductId && data?.productId) {
-        const currentPid = useProductStore.getState().selectedProductId;
-        if (currentPid === data.previousProductId) {
-          setSelectedProduct(
-            data.productId,
-            data.product?.brand || '',
-            data.product?.model || '',
-          );
-        }
-      }
       closeDrawer();
-      if (data?.migration) {
-        setMigrationResult(data);
-        setTimeout(() => setMigrationResult(null), 8000);
-      }
     },
   });
 
@@ -165,6 +148,7 @@ export function ProductManager() {
     setFormBrand(product.brand);
     setFormModel(product.model);
     setFormVariant(product.variant || '');
+    setOrigBrand(product.brand);
     setOrigModel(product.model);
     setOrigVariant(product.variant || '');
     const urls = (product.seed_urls || []).join('\n');
@@ -205,6 +189,7 @@ export function ProductManager() {
     setFormBrand(product.brand);
     setFormModel(product.model);
     setFormVariant(product.variant || '');
+    setOrigBrand(product.brand);
     setOrigModel(product.model);
     setOrigVariant(product.variant || '');
     const urls = (product.seed_urls || []).join('\n');
@@ -239,18 +224,11 @@ export function ProductManager() {
   ]);
 
   // ── Change detection ──────────────────────────────────────────
-  const isRename = Boolean(editPid && (formModel !== origModel || formVariant !== origVariant));
+  const hasIdentityChange = Boolean(editPid && (formBrand !== origBrand || formModel !== origModel || formVariant !== origVariant));
   const isStatusChange = Boolean(editPid && formStatus !== origStatus);
   const isSeedUrlChange = Boolean(editPid && formSeedUrls !== origSeedUrls);
-  const hasAnyChange = isRename || isStatusChange || isSeedUrlChange;
+  const hasAnyChange = hasIdentityChange || isStatusChange || isSeedUrlChange;
 
-  // Compute the new slug for rename preview
-  const newSlugPreview = isRename
-    ? [category, formBrand, formModel, formVariant].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '')).join('-')
-    : editPid || '';
-
-  // The confirmation phrase the user must type for rename
-  const renameConfirmPhrase = newSlugPreview;
   // The confirmation phrase the user must type for delete
   const deleteConfirmPhrase = editPid || '';
 
@@ -261,20 +239,6 @@ export function ProductManager() {
       addMut.mutate({ brand: formBrand, model: formModel, variant: formVariant, seedUrls });
       return;
     }
-    // Rename requires type-to-confirm with new slug
-    if (isRename && confirmAction !== 'rename') {
-      setConfirmAction('rename');
-      setConfirmInput('');
-      return;
-    }
-    // Non-rename changes (status, seed URLs) require type-to-confirm with current slug
-    if (!isRename && hasAnyChange && confirmAction !== 'save') {
-      setConfirmAction('save');
-      setConfirmInput('');
-      return;
-    }
-    setConfirmAction(null);
-    setConfirmInput('');
     const seedUrls = formSeedUrls.split('\n').map((u) => u.trim()).filter(Boolean);
     updateMut.mutate({
       pid: editPid,
@@ -316,8 +280,10 @@ export function ProductManager() {
     return [...set].sort();
   }, [brands, products]);
 
-  const existingProductIds = useMemo(() => {
-    return new Set(products.map((p) => String(p.productId || '').trim()).filter(Boolean));
+  const existingIdentityKeys = useMemo(() => {
+    return new Set(products.map((p) =>
+      `${(p.brand || '').toLowerCase()}||${(p.model || '').toLowerCase()}||${(p.variant || '').toLowerCase()}`
+    ));
   }, [products]);
 
   const bulkPreviewRows = useMemo<BulkPreviewRow[]>(() => {

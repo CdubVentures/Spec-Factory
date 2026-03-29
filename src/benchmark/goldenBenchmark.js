@@ -63,10 +63,14 @@ function compareFields(expected, actualFields) {
   };
 }
 
-async function readLatestNormalized(storage, category, productId) {
+async function readLatestNormalized(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
-  const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
+  const normalized = specDb
+    ? specDb.getNormalizedForProduct(productId)
+    : (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
+  const summary = specDb
+    ? specDb.getSummaryForProduct(productId)
+    : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
   return {
     normalized,
     summary
@@ -77,7 +81,8 @@ export async function runGoldenBenchmark({
   storage,
   category,
   fixturePath,
-  maxCases = 0
+  maxCases = 0,
+  specDb = null
 }) {
   const fixture = await loadFixture(category, fixturePath);
   const cases = maxCases > 0
@@ -92,7 +97,7 @@ export async function runGoldenBenchmark({
     }
 
     const expectedFields = row.expected?.fields || row.expected_fields || {};
-    const snapshot = await readLatestNormalized(storage, fixture.category, productId);
+    const snapshot = await readLatestNormalized(storage, fixture.category, productId, specDb);
 
     if (!snapshot.normalized) {
       results.push({

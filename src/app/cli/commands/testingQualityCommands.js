@@ -11,6 +11,7 @@ export function createTestingQualityCommands({
   renderAccuracyReportMarkdown,
   runAccuracyBenchmarkReport,
   buildAccuracyTrend,
+  openSpecDbForCategory,
 }) {
   async function commandCreateGolden(config, _storage, args) {
     const category = String(args.category || '').trim();
@@ -95,6 +96,8 @@ export function createTestingQualityCommands({
     }
     const productId = String(args['product-id'] || '').trim();
 
+    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
+    try {
     const predictions = [];
     const productIds = [];
 
@@ -110,8 +113,12 @@ export function createTestingQualityCommands({
 
     for (const pid of productIds) {
       const latestBase = storage.resolveOutputKey(category, pid, 'latest');
-      const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
-      const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
+      const summary = specDb
+        ? specDb.getSummaryForProduct(pid)
+        : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
+      const normalized = specDb
+        ? specDb.getNormalizedForProduct(pid)
+        : (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
       if (!normalized?.fields) continue;
 
       for (const [field, value] of Object.entries(normalized.fields)) {
@@ -143,6 +150,9 @@ export function createTestingQualityCommands({
       product_count: productIds.length,
       ...report
     };
+    } finally {
+      try { specDb?.close(); } catch { /* */ }
+    }
   }
 
   async function commandAccuracyReport(config, storage, args) {

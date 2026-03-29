@@ -3,7 +3,7 @@ Own API route registration for field studio payloads, map management, known-valu
 This boundary coordinates studio-facing control-plane actions while delegating settings persistence and indexing review logic to explicit seams.
 
 ## Public API (The Contract)
-- `src/features/studio/index.js`: `registerStudioRoutes`, `createStudioRouteContext`, plus 14 domain helpers from `studioRouteHelpers.js`.
+- `src/features/studio/index.js`: `registerStudioRoutes`, `createStudioRouteContext`, 14 domain helpers from `studioRouteHelpers.js`, and schema contracts (13 Zod schemas + 6 derived key arrays) from `studioSchemas.js`.
 - Consumers must import from `index.js`, not from internal `api/` paths.
 
 ## Dependencies

@@ -73,7 +73,7 @@ export function registerTestModeRoutes(ctx) {
       await fs.mkdir(path.join(testDir, '_suggestions'), { recursive: true });
 
       // Copy generated rule files with progress broadcasts
-      const ruleFiles = ['field_rules.json', 'field_rules.runtime.json', 'known_values.json',
+      const ruleFiles = ['field_rules.json', 'known_values.json',
         'cross_validation_rules.json', 'parse_templates.json', 'ui_field_catalog.json',
         'key_migrations.json', 'field_groups.json', 'manifest.json'];
 

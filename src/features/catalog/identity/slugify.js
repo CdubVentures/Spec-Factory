@@ -16,8 +16,3 @@ export function slugify(str) {
     .replace(/^-+|-+$/g, '');
 }
 
-export function buildProductId(category, brand, model, variant) {
-  return [slugify(category), slugify(brand), slugify(model), slugify(variant)]
-    .filter(Boolean)
-    .join('-');
-}

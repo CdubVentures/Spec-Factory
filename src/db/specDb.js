@@ -325,6 +325,22 @@ export class SpecDb {
   getItemComponentLinks(productId) { return this._itemStateStore.getItemComponentLinks(productId); }
   getItemListLinks(productId) { return this._itemStateStore.getItemListLinks(productId); }
   getProvenanceForProduct(cat, productId) { return this._provenanceStore.getProvenanceForProduct(cat ?? this.category, productId); }
+  getNormalizedForProduct(productId) {
+    const rows = this.getItemFieldState(productId);
+    const product = this.getProduct(productId);
+    return {
+      identity: { brand: product?.brand ?? '', model: product?.model ?? '', variant: product?.variant ?? '' },
+      fields: Object.fromEntries(rows.filter(r => r.value != null).map(r => [r.field_key, r.value])),
+    };
+  }
+  getSummaryForProduct(productId) {
+    const run = this.getLatestProductRun(productId);
+    return run?.summary || null;
+  }
+  getTrafficLightForProduct(productId) {
+    const run = this.getLatestProductRun(productId);
+    return run?.summary?.traffic_light || null;
+  }
 
   // --- Reverse-Lookup Queries (component/enum review) ---
 
@@ -688,7 +704,7 @@ export class SpecDb {
       'candidates', 'candidate_reviews', 'component_values', 'component_identity',
       'component_aliases', 'enum_lists', 'list_values', 'item_field_state', 'item_component_links',
       'item_list_links', 'product_queue', 'product_runs', 'products', 'audit_log',
-      'curation_suggestions', 'component_review_queue', 'artifacts', 'llm_route_matrix',
+      'curation_suggestions', 'component_review_queue', 'llm_route_matrix',
       'source_registry', 'source_artifacts', 'source_assertions', 'source_evidence_refs',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries', 'llm_cache', 'learning_profiles', 'category_brain',

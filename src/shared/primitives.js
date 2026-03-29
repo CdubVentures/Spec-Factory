@@ -50,6 +50,18 @@ export function buildRunId(date = new Date()) {
   return `${stamp}-${suffix}`;
 }
 
+/**
+ * Generate a stable product ID: {category}-{8-char-hex}.
+ * Category provides human context; the hex suffix is crypto-random and immutable.
+ * Identity fields (brand, model, variant) are NOT encoded in the ID.
+ */
+export function buildProductId(category) {
+  const cat = String(category ?? '').trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!cat) throw new Error('buildProductId requires a non-empty category');
+  return `${cat}-${crypto.randomBytes(4).toString('hex')}`;
+}
+
 export function safeJsonParse(value, fallback = null) {
   try {
     return JSON.parse(value);

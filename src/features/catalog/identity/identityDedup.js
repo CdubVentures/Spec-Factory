@@ -7,7 +7,7 @@
  * These duplicates arose from a legacy seed import with an empty variant row.
  */
 
-import { slugify, buildProductId } from './slugify.js';
+import { slugify } from './slugify.js';
 
 const VARIANT_PLACEHOLDERS = new Set([
   '', 'unk', 'unknown', 'na', 'n/a', 'none', 'null', '-', 'default'
@@ -68,10 +68,7 @@ export function normalizeProductIdentity(category, brand, model, variant) {
     reason = 'fabricated_variant_stripped';
   }
 
-  const productId = buildProductId(category, cleanedBrand, cleanedModel, cleanedVariant);
-
   return {
-    productId,
     brand: cleanedBrand,
     model: cleanedModel,
     variant: cleanedVariant,

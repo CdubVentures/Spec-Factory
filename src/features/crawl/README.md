@@ -6,7 +6,7 @@ Crawlee-based page crawler with a plugin lifecycle. Opens pages, bypasses blocks
 
 Exported from `index.js`:
 
-- `createCrawlSession({ settings, plugins, logger, _crawlerFactory })` — boots a persistent PlaywrightCrawler. Returns `{ start(), processUrl(url), shutdown() }`.
+- `createCrawlSession({ settings, plugins, extractionRunner, logger, onScreencastFrame, onScreenshotsPersist, onVideoPersist, onHtmlPersist, _crawlerFactory })` — boots a persistent PlaywrightCrawler with DI-injected artifact persistence callbacks. Returns `{ start(), processUrl(url), processBatch(urls), runFetchPlan(opts), shutdown(), warmUp(), slotCount }`.
 - `crawlPage({ url, settings, frontierDb, session, logger })` — crawls one URL. Returns `{ success, url, finalUrl, status, blocked, blockReason, screenshots, html, fetchDurationMs, attempts, bypassUsed }`. Always records to frontier DB.
 - `createPluginRunner({ plugins, logger })` — runs plugins through named lifecycle hooks. Returns `{ runHook(hookName, context) }`.
 - `classifyBlockStatus({ status, html })` — pure block detection. Returns `{ blocked, blockReason }`.

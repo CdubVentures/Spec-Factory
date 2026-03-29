@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { slugify, buildProductId } from '../slugify.js';
+import { slugify } from '../slugify.js';
 
 // --- slugify ---
 
@@ -53,51 +53,4 @@ test('slugify: trims whitespace before processing', () => {
 test('slugify: handles brands with ampersands and dots', () => {
   // dots are non-alphanumeric so they get stripped; adjacent letters merge
   assert.equal(slugify('Mad Catz R.A.T. 8+'), 'mad-catz-rat-8');
-});
-
-// --- buildProductId ---
-
-test('buildProductId: category + brand + model, no variant', () => {
-  assert.equal(
-    buildProductId('mouse', 'Razer', 'Viper V3 Pro', ''),
-    'mouse-razer-viper-v3-pro'
-  );
-});
-
-test('buildProductId: with variant', () => {
-  assert.equal(
-    buildProductId('mouse', 'Razer', 'Viper V3 Pro', 'Wireless'),
-    'mouse-razer-viper-v3-pro-wireless'
-  );
-});
-
-test('buildProductId: empty variant is omitted (no trailing hyphen)', () => {
-  const id = buildProductId('mouse', 'Logitech', 'G Pro X Superlight 2', '');
-  assert.equal(id, 'mouse-logitech-g-pro-x-superlight-2');
-  assert.ok(!id.endsWith('-'));
-});
-
-test('buildProductId: null/undefined variant omitted', () => {
-  assert.equal(
-    buildProductId('mouse', 'Acer', 'Cestus 310', null),
-    'mouse-acer-cestus-310'
-  );
-  assert.equal(
-    buildProductId('mouse', 'Acer', 'Cestus 310', undefined),
-    'mouse-acer-cestus-310'
-  );
-});
-
-test('buildProductId: diacritics in brand', () => {
-  assert.equal(
-    buildProductId('mouse', 'Señor Mouse Co', 'Model X', ''),
-    'mouse-senor-mouse-co-model-x'
-  );
-});
-
-test('buildProductId: preserves underscores in model', () => {
-  assert.equal(
-    buildProductId('mouse', 'Corsair', 'M65_RGB_Ultra', ''),
-    'mouse-corsair-m65_rgb_ultra'
-  );
 });

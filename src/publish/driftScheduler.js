@@ -17,13 +17,6 @@ function toPosix(...parts) {
   return parts.filter(Boolean).join('/').replace(/\\/g, '/').replace(/\/+/g, '/');
 }
 
-function slug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 
 function parseJsonLines(text = '') {
   const rows = [];
@@ -181,19 +174,8 @@ function diffSourceHashes(previous = {}, current = {}) {
   return changes;
 }
 
-function finalPathPartsFromIdentity(category, identity = {}) {
-  const brand = slug(identity.brand || 'unknown-brand');
-  const model = slug(identity.model || identity.base_model || 'unknown-model');
-  const variant = slug(identity.variant || '');
-  const parts = [slug(category || 'unknown-category'), brand, model];
-  if (variant && variant !== 'unk' && variant !== 'na' && variant !== 'n-a') {
-    parts.push(variant);
-  }
-  return parts;
-}
-
-async function readSourceHistoryRows(storage, category, identity = {}) {
-  const parts = [...finalPathPartsFromIdentity(category, identity), 'evidence', 'sources.jsonl'];
+async function readSourceHistoryRows(storage, category, productId) {
+  const parts = [category, productId, 'evidence', 'sources.jsonl'];
   const candidates = [
     finalModernKey(parts),
     finalLegacyKey(storage, parts)
@@ -300,11 +282,15 @@ async function persistDriftReport(storage, category, report = {}) {
 async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   const [normalized, provenance, summary] = await Promise.all([
-    storage.readJsonOrNull(`${latestBase}/normalized.json`),
+    specDb
+      ? Promise.resolve(specDb.getNormalizedForProduct(productId))
+      : storage.readJsonOrNull(`${latestBase}/normalized.json`),
     specDb
       ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
       : storage.readJsonOrNull(`${latestBase}/provenance.json`),
-    storage.readJsonOrNull(`${latestBase}/summary.json`)
+    specDb
+      ? Promise.resolve(specDb.getSummaryForProduct(productId))
+      : storage.readJsonOrNull(`${latestBase}/summary.json`)
   ]);
   return {
     normalized: normalized || null,
@@ -343,7 +329,7 @@ export async function scanAndEnqueueDriftedProducts({
       continue;
     }
 
-    const sourceRows = await readSourceHistoryRows(storage, normalizedCategory, current.identity || {});
+    const sourceRows = await readSourceHistoryRows(storage, normalizedCategory, productId);
     const snapshot = normalizeSourceHashRows(sourceRows);
     if (Object.keys(snapshot).length === 0) {
       rows.push({

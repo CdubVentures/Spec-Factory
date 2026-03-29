@@ -1,7 +1,7 @@
 # Crawl Pipeline Settings
 
 > All settings from `src/shared/settingsRegistry.js`. GUI: fetcher category.
-> Validated: 2026-03-28.
+> Validated: 2026-03-29.
 
 ## Browser & Crawlee (GUI: fetcher → browser)
 
@@ -106,6 +106,7 @@
 | `autoScrollEnabled` | bool | `true` | Scroll pages to trigger lazy-loaded content |
 | `autoScrollPasses` | int | `2` | Scroll-to-bottom passes |
 | `autoScrollDelayMs` | int | `0` | Delay between passes |
+| `autoScrollMaxPixels` | int | `30000` | Hard pixel cap — stop scrolling regardless of page height (prevents infinite-scroll traps) |
 | `autoScrollStrategy` | enum | `incremental` | jump (instant scrollTo) or incremental (wheel events for IntersectionObserver) |
 
 ## Observability (GUI: fetcher → observability)
@@ -123,6 +124,11 @@
 | `crawlVideoRecordingEnabled` | bool | `true` | Record browser video per page |
 | `crawlVideoRecordingSize` | string | `1280x720` | Video resolution |
 | `capturePageScreenshotEnabled` | bool | `true` | Screenshot capture during extraction |
+| `capturePageScreenshotFormat` | string | `jpeg` | Image format (jpeg or png) |
+| `capturePageScreenshotQuality` | int | `75` | JPEG quality (1–100) |
+| `capturePageScreenshotMaxBytes` | int | `5000000` | Max file size per screenshot (~5 MB) |
+| `capturePageScreenshotSelectors` | string | `table,[data-spec-table],...` | CSS selectors for spec table detection |
+| `capturePageScreenshotMaxSelectors` | int | `12` | Max matching selectors to screenshot per page |
 | `capturePageScreenshotStabilizeEnabled` | bool | `true` | Wait for fonts/images/paint before screenshot |
 | `capturePageScreenshotStabilizeTimeoutMs` | int | `1500` | Stabilization timeout |
 | `capturePageScreenshotStitchEnabled` | bool | `true` | Stitch long pages exceeding 16,384px texture limit |

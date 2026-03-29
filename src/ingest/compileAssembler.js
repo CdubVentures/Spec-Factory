@@ -350,10 +350,6 @@ export function assembleCompileOutput({
         hash: currentHash,
         changed
       },
-      field_rules_runtime: {
-        path: path.join(generatedRoot, 'field_rules.runtime.json'),
-        hash: currentHash
-      },
       ui_field_catalog: {
         path: path.join(generatedRoot, 'ui_field_catalog.json'),
         hash: hashJson(uiFieldCatalog)

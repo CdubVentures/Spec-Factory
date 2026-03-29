@@ -6,9 +6,9 @@ import zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
 import { toPosixKey } from '../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { nowIso } from '../shared/primitives.js';
+import { nowIso, buildProductId } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
-import { slugify as canonicalSlugify, buildProductId as canonicalBuildProductId } from '../features/catalog/identity/slugify.js';
+import { slugify as canonicalSlugify } from '../features/catalog/identity/slugify.js';
 import { loadCatalogProductsWithFields } from '../features/catalog/products/catalogProductLoader.js';
 import {
   evaluateIdentityGate,
@@ -428,9 +428,6 @@ function extractFieldStudioPayloadWithNode({
   });
 }
 
-function buildProductId({ category, brand, model, variant }) {
-  return canonicalBuildProductId(category, brand, model, variant);
-}
 
 function helperCategoryDir({ category, config = {} }) {
   return path.resolve(config.categoryAuthorityRoot || 'category_authority', category);
@@ -438,8 +435,7 @@ function helperCategoryDir({ category, config = {} }) {
 
 export function fieldRulesPathCandidates({ category, config = {} }) {
   return [
-    path.join(helperCategoryDir({ category, config }), '_generated', 'field_rules.json'),
-    path.join(helperCategoryDir({ category, config }), '_generated', 'field_rules.runtime.json')
+    path.join(helperCategoryDir({ category, config }), '_generated', 'field_rules.json')
   ];
 }
 
@@ -855,8 +851,18 @@ export async function syncJobsFromCatalogSeed({
     }
 
     const identity = gate.normalized;
-    const productId = identity.productId;
-    if (!productId) continue;
+    // WHY: Check canonical index for existing product before generating new hex ID.
+    // gate.canonicalProductId is the real catalog key when identity exists in the index.
+    const checkPid = gate.canonicalProductId;
+    if (checkPid) {
+      const checkKey = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${checkPid}.json`);
+      const exists = await storage.objectExists(checkKey);
+      if (exists) {
+        skippedExisting += 1;
+        continue;
+      }
+    }
+    const productId = buildProductId(category);
     registerCanonicalIdentity({
       canonicalIndex,
       brand: identity.brand,
@@ -866,11 +872,6 @@ export async function syncJobsFromCatalogSeed({
     });
 
     const s3key = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`);
-    const exists = await storage.objectExists(s3key);
-    if (exists) {
-      skippedExisting += 1;
-      continue;
-    }
     const job = {
       productId,
       category,

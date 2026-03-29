@@ -1,8 +1,8 @@
 {
   "artifacts": {
     "control_plane_version": {
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\monitor\\_control_plane\\_versions\\20260325T030536Z",
-      "version_id": "20260325T030536Z"
+      "path": null,
+      "version_id": null
     },
     "field_rules": {
       "changed": false,

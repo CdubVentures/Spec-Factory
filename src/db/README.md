@@ -12,6 +12,9 @@ SQLite-backed persistence layer for candidate data, review state, component iden
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
   - Key review: `getKeyReviewState`, `setKeyReviewState`
   - Provenance: `getProvenanceForProduct(category, productId)` → flat `{ [fieldKey]: { value, confidence, host, evidence: [...] } }`
+  - Normalized: `getNormalizedForProduct(productId)` → `{ identity: { brand, model, variant }, fields: { [fieldKey]: value } }`
+  - Summary: `getSummaryForProduct(productId)` → full summary object from `product_runs.summary_json`
+  - Traffic Light: `getTrafficLightForProduct(productId)` → `summary.traffic_light` extraction
   - Billing / source intel / queue product stores
   - `close()` — cleanup
 - `specDbSchema.js` → `SCHEMA` — DDL string for table/index creation

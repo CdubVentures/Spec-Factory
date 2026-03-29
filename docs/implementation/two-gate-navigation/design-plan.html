@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two-Gate Navigation — Design Plan</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-raised: #1c2333;
+    --border: #30363d;
+    --border-accent: #4a90d9;
+    --text: #e0e0e0;
+    --text-muted: #8b949e;
+    --text-bright: #f0f6fc;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-yellow: #d29922;
+    --accent-orange: #f0883e;
+    --accent-red: #f85149;
+    --accent-purple: #bc8cff;
+    --accent-pink: #f778ba;
+    --gate1-bg: #1a2332;
+    --gate1-border: #2d6a9f;
+    --gate2-bg: #2a1a2e;
+    --gate2-border: #8b5cf6;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 0;
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #1a1a2e 40%, #16213e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 50%, rgba(88,166,255,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(139,92,246,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--text-bright);
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .hero h1 span.g1 { color: var(--accent-blue); }
+  .hero h1 span.g2 { color: var(--accent-purple); }
+  .hero .subtitle {
+    font-size: 18px;
+    color: var(--text-muted);
+    max-width: 700px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+  }
+  .hero .meta-row {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .hero .meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .hero .meta-badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot-blue { background: var(--accent-blue); }
+  .dot-purple { background: var(--accent-purple); }
+  .dot-green { background: var(--accent-green); }
+  .dot-yellow { background: var(--accent-yellow); }
+
+  /* ── Layout ─────────────────────────────────────── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  section {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .section-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .section-desc {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom: 32px;
+    max-width: 800px;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 28px 0 12px;
+  }
+
+  /* ── Cards ──────────────────────────────────────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-accent); }
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title .icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .card p, .card li {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .card ul { padding-left: 18px; margin-top: 8px; }
+  .card li { margin-bottom: 4px; }
+
+  /* ── Gate Panels ────────────────────────────────── */
+  .gate-panel {
+    border-radius: var(--radius);
+    padding: 32px;
+    margin: 24px 0;
+    position: relative;
+  }
+  .gate-panel.gate1 {
+    background: var(--gate1-bg);
+    border: 2px solid var(--gate1-border);
+  }
+  .gate-panel.gate2 {
+    background: var(--gate2-bg);
+    border: 2px solid var(--gate2-border);
+  }
+  .gate-label {
+    position: absolute;
+    top: -14px;
+    left: 24px;
+    padding: 2px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .gate1 .gate-label {
+    background: var(--gate1-border);
+    color: #fff;
+  }
+  .gate2 .gate-label {
+    background: var(--gate2-border);
+    color: #fff;
+  }
+  .gate-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-top: 4px;
+  }
+  .gate-header .model-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .gate1 .model-badge {
+    background: rgba(45,106,159,0.3);
+    color: var(--accent-blue);
+    border: 1px solid var(--gate1-border);
+  }
+  .gate2 .model-badge {
+    background: rgba(139,92,246,0.2);
+    color: var(--accent-purple);
+    border: 1px solid var(--gate2-border);
+  }
+  .gate-header .model-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .gate-header .model-meta strong {
+    color: var(--text);
+  }
+
+  /* ── Flow Diagram ───────────────────────────────── */
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px 32px;
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 600px;
+  }
+  .flow-node {
+    padding: 16px 28px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 14px;
+    text-align: center;
+    position: relative;
+    max-width: 520px;
+    width: 100%;
+  }
+  .flow-node.start {
+    background: linear-gradient(135deg, #238636, #196c2e);
+    color: #fff;
+    border: none;
+  }
+  .flow-node.process {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .flow-node.gate1-node {
+    background: var(--gate1-bg);
+    border: 2px solid var(--gate1-border);
+    color: var(--accent-blue);
+  }
+  .flow-node.decision {
+    background: var(--surface-raised);
+    border: 2px solid var(--accent-yellow);
+    color: var(--accent-yellow);
+    transform: rotate(0deg);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    padding: 32px 28px;
+    font-size: 13px;
+  }
+  .flow-node.gate2-node {
+    background: var(--gate2-bg);
+    border: 2px solid var(--gate2-border);
+    color: var(--accent-purple);
+  }
+  .flow-node.end {
+    background: linear-gradient(135deg, #238636, #196c2e);
+    color: #fff;
+  }
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 4px 0;
+  }
+  .flow-arrow .arrow-line {
+    width: 2px;
+    height: 24px;
+    background: var(--border);
+  }
+  .flow-arrow .arrow-label {
+    padding: 2px 12px;
+    background: var(--bg);
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .flow-branch {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    margin: 8px 0;
+  }
+  .flow-branch-arm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    max-width: 260px;
+  }
+  .branch-label {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 14px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .branch-label.yes { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .branch-label.no { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+
+  /* ── Decision Diamond (CSS) ─────────────────────── */
+  .diamond-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+  }
+  .diamond {
+    width: 200px;
+    height: 100px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .diamond::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--surface-raised);
+    border: 2px solid var(--accent-yellow);
+    transform: rotate(45deg);
+    border-radius: 6px;
+  }
+  .diamond span {
+    position: relative;
+    z-index: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-yellow);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* ── Table ──────────────────────────────────────── */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .styled-table th {
+    background: var(--surface-raised);
+    color: var(--text-bright);
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--border);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .styled-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+  .styled-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .styled-table .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .tag-green { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .tag-yellow { background: rgba(210,153,34,0.15); color: var(--accent-yellow); }
+  .tag-red { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+  .tag-blue { background: rgba(88,166,255,0.15); color: var(--accent-blue); }
+  .tag-purple { background: rgba(188,140,255,0.15); color: var(--accent-purple); }
+
+  /* ── Code blocks ────────────────────────────────── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 16px 0;
+    color: var(--text-muted);
+  }
+  .code-block .kw { color: var(--accent-purple); }
+  .code-block .fn { color: var(--accent-blue); }
+  .code-block .str { color: var(--accent-green); }
+  .code-block .cmt { color: #484f58; font-style: italic; }
+  .code-block .num { color: var(--accent-orange); }
+  .code-block .bool { color: var(--accent-yellow); }
+
+  /* ── Info boxes ─────────────────────────────────── */
+  .info-box {
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    display: flex;
+    gap: 12px;
+  }
+  .info-box.note {
+    background: rgba(88,166,255,0.08);
+    border-left: 3px solid var(--accent-blue);
+    color: var(--text);
+  }
+  .info-box.warn {
+    background: rgba(210,153,34,0.08);
+    border-left: 3px solid var(--accent-yellow);
+    color: var(--text);
+  }
+  .info-box.success {
+    background: rgba(63,185,80,0.08);
+    border-left: 3px solid var(--accent-green);
+    color: var(--text);
+  }
+  .info-box .info-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* ── Metric strips ──────────────────────────────── */
+  .metric-strip {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 24px;
+    flex: 1;
+    min-width: 160px;
+    text-align: center;
+  }
+  .metric .metric-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+  }
+  .metric .metric-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  /* ── Hierarchy tree ─────────────────────────────── */
+  .tree {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 2;
+    padding: 24px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .tree .dir { color: var(--accent-blue); font-weight: 600; }
+  .tree .file { color: var(--text-muted); }
+  .tree .new { color: var(--accent-green); font-weight: 600; }
+  .tree .replace { color: var(--accent-yellow); }
+  .tree .keep { color: var(--text-muted); opacity: 0.6; }
+  .tree .anno {
+    color: var(--text-muted);
+    font-size: 12px;
+    opacity: 0.7;
+    margin-left: 8px;
+  }
+
+  /* ── Tool cards ─────────────────────────────────── */
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .tool-card.local::before { background: var(--accent-green); }
+  .tool-card.browser::before { background: var(--accent-blue); }
+  .tool-card.protocol::before { background: var(--accent-purple); }
+  .tool-card .tool-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .tool-card .tool-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .tool-card.local .tool-type { color: var(--accent-green); }
+  .tool-card.browser .tool-type { color: var(--accent-blue); }
+  .tool-card.protocol .tool-type { color: var(--accent-purple); }
+  .tool-card .tool-desc {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .tool-card .tool-specs {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tool-card .spec-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-muted);
+  }
+
+  /* ── Phase timeline ─────────────────────────────── */
+  .timeline {
+    margin: 24px 0;
+    position: relative;
+    padding-left: 36px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+    padding: 16px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -29px;
+    top: 22px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+  }
+  .timeline-item.done::before { background: var(--accent-green); border-color: var(--accent-green); }
+  .timeline-item.current::before { background: var(--accent-yellow); border-color: var(--accent-yellow); }
+  .timeline-item.future::before { background: var(--surface); border-color: var(--text-muted); }
+  .timeline-item .tl-title {
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+  }
+  .timeline-item .tl-desc {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* ── Utilities ──────────────────────────────────── */
+  .mt-0 { margin-top: 0; }
+  .mb-0 { margin-bottom: 0; }
+  .text-muted { color: var(--text-muted); }
+  .text-blue { color: var(--accent-blue); }
+  .text-purple { color: var(--accent-purple); }
+  .text-green { color: var(--accent-green); }
+  .text-yellow { color: var(--accent-yellow); }
+  .text-bright { color: var(--text-bright); }
+  strong { color: var(--text-bright); }
+  a { color: var(--accent-blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  p { margin-bottom: 12px; }
+  p:last-child { margin-bottom: 0; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 16px 0;
+  }
+  @media (max-width: 800px) {
+    .two-col { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    .flow-branch { flex-direction: column; align-items: center; }
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  HERO                                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="hero">
+  <h1><span class="g1">Two-Gate</span> Navigation <span class="g2">Agent</span></h1>
+  <p class="subtitle">
+    Post-extraction intelligence for crawled pages. Local Nemotron triages extraction gaps.
+    Local Qwen navigates pages that need deeper interaction via Web MCP.
+  </p>
+  <div class="meta-row">
+    <span class="meta-badge"><span class="dot dot-green"></span> All models local (vLLM / llama.cpp)</span>
+    <span class="meta-badge"><span class="dot dot-blue"></span> Gate 1: Nemotron (fast classifier)</span>
+    <span class="meta-badge"><span class="dot dot-purple"></span> Gate 2: Qwen 3.5 27B (visual agent)</span>
+    <span class="meta-badge"><span class="dot dot-yellow"></span> Web MCP: browser tool interface</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  1. THE PROBLEM                                -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(248,81,73,0.15);color:var(--accent-red);">1</span>
+    The Problem
+  </h2>
+  <p class="section-desc">
+    The current crawl pipeline is blind to page structure. Every URL gets the same treatment:
+    load, dismiss overlays, scroll, grab HTML. High-value content hiding behind interactive
+    elements is systematically missed.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128268;</span> Specs Behind Tabs</div>
+      <p>Manufacturer sites (Razer, Corsair, ASUS, Logitech) hide technical specifications
+         behind a "Tech Specs" or "Specifications" tab. The current pipeline never clicks it.
+         The extraction gets the marketing overview, not the spec table.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#127912;</span> Image Carousels</div>
+      <p>Product cutout images, 360-degree views, and detail shots live in JavaScript carousels
+         with 4-12 slides. The pipeline captures only whatever slide is visible on load.
+         Razer's gallery, Corsair's hero carousel, Logitech's product shots are all missed.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128269;</span> Collapsed Sections</div>
+      <p>Amazon "See more product details", ASUS "Full Specifications" accordions,
+         SteelSeries nested spec groups. Content exists in the DOM but is hidden.
+         DOM expansion plugin only clicks elements matching hardcoded selectors.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#9888;</span> XHR-Loaded Data</div>
+      <p>Some sites load spec data via XHR only when a tab is clicked (SteelSeries, Dell).
+         Content is not in the initial HTML at all. No amount of CSS override will reveal it.
+         It requires actual page interaction to trigger the fetch.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  2. THE SOLUTION: TWO-GATE ARCHITECTURE        -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(88,166,255,0.15);color:var(--accent-blue);">2</span>
+    Two-Gate Architecture
+  </h2>
+  <p class="section-desc">
+    Don't burn LLM inference on every page. Run normal extraction first. Then use a fast local
+    model to triage whether the page has untapped content. Only pages with gaps get the
+    expensive interactive agent.
+  </p>
+
+  <!-- ── Flow Diagram ── -->
+  <div class="flow-container">
+    <div class="flow">
+      <div class="flow-node start">page.goto() &rarr; Plugin Suite (stealth, dismiss, scroll) &rarr; page.content()</div>
+
+      <div class="flow-arrow"><div class="arrow-line"></div><span class="arrow-label">HTML + extraction JSON</span></div>
+
+      <div class="flow-node process">Normal Extraction Pipeline (existing) &mdash; fields, confidence scores, evidence</div>
+
+      <div class="flow-arrow"><div class="arrow-line"></div><span class="arrow-label">extraction gaps + HTML structure signals</span></div>
+
+      <div class="flow-node gate1-node" style="font-size:16px;">
+        GATE 1 &mdash; Nemotron Triage<br>
+        <span style="font-size:12px;color:var(--text-muted);">Local inference &bull; ~200 tokens in &bull; ~50 tokens out &bull; &lt;100ms</span>
+      </div>
+
+      <div class="flow-arrow"><div class="arrow-line" style="height:16px;"></div></div>
+
+      <div class="flow-branch">
+        <div class="flow-branch-arm">
+          <span class="branch-label no">navigate: false &nbsp;(~70-85%)</span>
+          <div class="flow-arrow"><div class="arrow-line"></div></div>
+          <div class="flow-node end" style="font-size:13px;">DONE &mdash; Normal extraction is sufficient</div>
+        </div>
+        <div class="flow-branch-arm">
+          <span class="branch-label yes">navigate: true &nbsp;(~15-30%)</span>
+          <div class="flow-arrow"><div class="arrow-line"></div><span class="arrow-label">targets: tabs, carousels, sections</span></div>
+          <div class="flow-node gate2-node" style="font-size:16px;">
+            GATE 2 &mdash; Qwen 3.5 27B Agent<br>
+            <span style="font-size:12px;color:var(--text-muted);">Local inference &bull; visual tool-use &bull; MCP actions &bull; 5-8 steps</span>
+          </div>
+          <div class="flow-arrow"><div class="arrow-line"></div><span class="arrow-label">enriched screenshots + new HTML</span></div>
+          <div class="flow-node end" style="font-size:13px;">DONE &mdash; Merge enriched data into extraction result</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box success">
+    <span class="info-icon">&#9989;</span>
+    <div><strong>Key insight:</strong> Gate 2 inherits a page that's already loaded, cookies dismissed,
+    overlays removed, stealth applied. All existing plugin work is preserved. Qwen operates on a clean, warm page.</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  3. GATE 1 — NEMOTRON TRIAGE                  -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <div class="gate-panel gate1">
+    <span class="gate-label">Gate 1</span>
+    <div class="gate-header">
+      <span class="model-badge">Nemotron</span>
+      <div class="model-meta">
+        <strong>Role:</strong> Fast binary classifier — does this page have untapped content?<br>
+        <strong>Runtime:</strong> Local vLLM / llama.cpp &bull; INT4/INT8 quantized<br>
+        <strong>Latency target:</strong> &lt;100ms per page
+      </div>
+    </div>
+
+    <h3 class="mt-0">Input Signal (No Raw HTML)</h3>
+    <p>Nemotron doesn't see the full HTML. It receives a lightweight <strong>extraction gap report</strong> &mdash;
+       a structured summary built by a pure-function DOM scanner running in <code>page.evaluate()</code> (~5ms, zero network).</p>
+
+    <div class="code-block">
+<span class="cmt">// Extraction gap report — ~200 tokens to Nemotron</span>
+{
+  <span class="str">"product"</span>: <span class="str">"Razer DeathAdder V3 Pro"</span>,
+  <span class="str">"category"</span>: <span class="str">"mouse"</span>,
+  <span class="str">"extraction"</span>: {
+    <span class="str">"fields_total"</span>: <span class="num">18</span>,
+    <span class="str">"fields_filled"</span>: <span class="num">12</span>,
+    <span class="str">"low_confidence"</span>: [<span class="str">"dpi_range"</span>, <span class="str">"switch_type"</span>, <span class="str">"battery_life"</span>],
+    <span class="str">"missing"</span>: [<span class="str">"weight"</span>, <span class="str">"dimensions"</span>, <span class="str">"sensor"</span>, <span class="str">"polling_rate"</span>, <span class="str">"cable_type"</span>, <span class="str">"rgb_zones"</span>]
+  },
+  <span class="str">"page_structure"</span>: {
+    <span class="str">"tabs"</span>: [<span class="str">"Overview"</span>, <span class="str">"Tech Specs"</span>, <span class="str">"Gallery"</span>, <span class="str">"Reviews"</span>],
+    <span class="str">"active_tab"</span>: <span class="str">"Overview"</span>,
+    <span class="str">"carousels"</span>: <span class="num">2</span>,
+    <span class="str">"carousel_slides"</span>: [<span class="num">8</span>, <span class="num">4</span>],
+    <span class="str">"collapsed_sections"</span>: <span class="num">3</span>,
+    <span class="str">"collapsed_labels"</span>: [<span class="str">"Full Specifications"</span>, <span class="str">"In The Box"</span>, <span class="str">"Compatibility"</span>],
+    <span class="str">"hidden_with_content"</span>: <span class="num">14</span>
+  }
+}
+    </div>
+
+    <h3>Output Decision</h3>
+    <div class="code-block">
+<span class="cmt">// Nemotron returns — ~50 tokens</span>
+{
+  <span class="str">"navigate"</span>: <span class="bool">true</span>,
+  <span class="str">"reason"</span>: <span class="str">"6 missing fields likely behind Tech Specs tab; 8-slide carousel has product images"</span>,
+  <span class="str">"targets"</span>: [
+    { <span class="str">"type"</span>: <span class="str">"tab"</span>, <span class="str">"label"</span>: <span class="str">"Tech Specs"</span>, <span class="str">"priority"</span>: <span class="num">1</span> },
+    { <span class="str">"type"</span>: <span class="str">"carousel"</span>, <span class="str">"index"</span>: <span class="num">0</span>, <span class="str">"priority"</span>: <span class="num">2</span> },
+    { <span class="str">"type"</span>: <span class="str">"expand"</span>, <span class="str">"label"</span>: <span class="str">"Full Specifications"</span>, <span class="str">"priority"</span>: <span class="num">3</span> }
+  ]
+}
+    </div>
+
+    <h3>HTML Signal Scanner (Pre-Nemotron, No LLM)</h3>
+    <p>A pure-function <code>page.evaluate()</code> call extracts structural hints from the live DOM.
+       Patterns reuse existing logic from <code>domExpansionPlugin</code> and <code>overlayDismissalPlugin</code>.</p>
+
+    <div class="two-col">
+      <div>
+        <strong>Detects:</strong>
+        <ul style="padding-left:18px;margin-top:6px;">
+          <li><code>[role="tab"]</code>, <code>.tab</code>, <code>[data-tab]</code> &mdash; tab elements + active state</li>
+          <li><code>.swiper-slide</code>, <code>.carousel-item</code>, <code>[data-slide]</code> &mdash; carousel slide counts</li>
+          <li><code>[aria-expanded="false"]</code>, <code>details:not([open])</code> &mdash; collapsed sections with labels</li>
+          <li><code>display:none</code> elements with &gt;100 chars content inside</li>
+          <li>"Show all specs" / "View full specifications" type buttons</li>
+        </ul>
+      </div>
+      <div>
+        <strong>Performance:</strong>
+        <ul style="padding-left:18px;margin-top:6px;">
+          <li>Single <code>page.evaluate()</code> call</li>
+          <li>~5ms execution time</li>
+          <li>Zero network cost</li>
+          <li>Runs after normal extraction completes</li>
+          <li>Reuses selector patterns from existing plugins</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box note">
+      <span class="info-icon">&#128161;</span>
+      <div><strong>Why Nemotron for this:</strong> This is structured-data-in, binary-decision-out.
+      No vision, no multi-step reasoning. A fast quantized model handles this at &lt;100ms.
+      The extraction gap report is the same shape every time &mdash; Nemotron learns the pattern instantly.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  4. GATE 2 — QWEN NAVIGATION AGENT            -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <div class="gate-panel gate2">
+    <span class="gate-label">Gate 2</span>
+    <div class="gate-header">
+      <span class="model-badge">Qwen 3.5 27B</span>
+      <div class="model-meta">
+        <strong>Role:</strong> Visual page navigation agent &mdash; interacts with live browser via MCP<br>
+        <strong>Runtime:</strong> Local vLLM &bull; AWQ/GPTQ quantized &bull; needs ~18GB VRAM<br>
+        <strong>Latency target:</strong> 500ms-1s per action &bull; 5-8 actions max per page
+      </div>
+    </div>
+
+    <h3 class="mt-0">Agent Loop</h3>
+    <p>Qwen receives the page screenshot + Nemotron's target list. It executes MCP tool calls
+       in a tight loop until targets are exhausted or budget is spent.</p>
+
+    <div class="code-block">
+<span class="cmt">// Example: Razer product page — carousel + spec tab</span>
+
+<span class="cmt">// Step 1: Qwen sees page screenshot + targets</span>
+Context: Product "Razer DeathAdder V3 Pro" (mouse)
+Targets: [tab: "Tech Specs", carousel: 0 (8 slides)]
+Budget: <span class="num">8</span> actions, <span class="num">15</span> seconds
+
+<span class="cmt">// Step 2: Qwen clicks the spec tab</span>
+<span class="fn">mcp.click</span>(<span class="str">'[data-tab="tech-specs"]'</span>)
+<span class="fn">mcp.wait</span>(<span class="num">500</span>)              <span class="cmt">// let XHR-loaded content render</span>
+<span class="fn">mcp.screenshot</span>()            <span class="cmt">// capture spec table</span>
+
+<span class="cmt">// Step 3: Qwen cycles the carousel</span>
+<span class="fn">mcp.click</span>(<span class="str">'.carousel-next'</span>)
+<span class="fn">mcp.screenshot</span>()            <span class="cmt">// slide 2</span>
+<span class="fn">mcp.click</span>(<span class="str">'.carousel-next'</span>)
+<span class="fn">mcp.screenshot</span>()            <span class="cmt">// slide 3</span>
+<span class="cmt">// ... continues until carousel wraps</span>
+
+<span class="cmt">// Step 4: Qwen signals completion</span>
+<span class="fn">mcp.done</span>()
+    </div>
+
+    <h3>MCP Tool Interface</h3>
+    <p>Web MCP wraps the existing Playwright <code>page</code> object as tool calls.
+       Qwen calls them like any MCP tool. The MCP server runs locally.</p>
+
+    <table class="styled-table">
+      <thead>
+        <tr><th>Tool</th><th>Signature</th><th>What It Does</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>screenshot</code></td>
+          <td><code>() &rarr; jpeg</code></td>
+          <td>Captures current page state as JPEG. Fed back to Qwen for next decision. Also persisted as extraction artifact.</td>
+        </tr>
+        <tr>
+          <td><code>click</code></td>
+          <td><code>(selector) &rarr; bool</code></td>
+          <td>Clicks an element. Navigation-safe &mdash; blocks page navigation, only allows in-page actions.</td>
+        </tr>
+        <tr>
+          <td><code>scroll</code></td>
+          <td><code>(direction, px) &rarr; void</code></td>
+          <td>Scrolls the page. Used when content is below the fold.</td>
+        </tr>
+        <tr>
+          <td><code>wait</code></td>
+          <td><code>(ms) &rarr; void</code></td>
+          <td>Waits for content to render (XHR responses, animations). Capped at 2 seconds.</td>
+        </tr>
+        <tr>
+          <td><code>extract_text</code></td>
+          <td><code>(selector?) &rarr; string</code></td>
+          <td>Gets text content of an element or full page. Cheaper than screenshot for text data.</td>
+        </tr>
+        <tr>
+          <td><code>done</code></td>
+          <td><code>() &rarr; void</code></td>
+          <td>Signals that all targets are addressed. Returns to normal pipeline.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Budget &amp; Safety Constraints</h3>
+    <div class="metric-strip">
+      <div class="metric">
+        <div class="metric-value">8</div>
+        <div class="metric-label">Max Actions</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">15s</div>
+        <div class="metric-label">Time Budget</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">0</div>
+        <div class="metric-label">Navigations Allowed</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">2s</div>
+        <div class="metric-label">Max Wait Per Call</div>
+      </div>
+    </div>
+
+    <div class="info-box warn">
+      <span class="info-icon">&#9888;&#65039;</span>
+      <div><strong>Navigation guard:</strong> The MCP <code>click</code> tool inherits the same
+      <code>setupNavigationGuard</code> from <code>domExpansionPlugin</code>. If Qwen accidentally
+      clicks a link that triggers page navigation, it's intercepted and counted &mdash; not followed.
+      The page URL never changes.</div>
+    </div>
+
+    <div class="info-box note">
+      <span class="info-icon">&#128161;</span>
+      <div><strong>Why Qwen 3.5 27B for this:</strong> This requires multi-step visual tool-use.
+      The model sees a screenshot, identifies interactive elements, plans a click sequence, and
+      verifies results. Bigger than a classifier but doesn't need frontier-tier reasoning.
+      27B is the sweet spot: capable enough for visual grounding, small enough to run locally
+      on a single GPU with AWQ quantization (~18GB VRAM).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  5. TOOLING STACK                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(63,185,80,0.15);color:var(--accent-green);">3</span>
+    Tooling Stack
+  </h2>
+  <p class="section-desc">
+    All models run locally. No API calls, no cloud dependency. The MCP server bridges
+    your existing Playwright page object to the LLM's tool-use interface.
+  </p>
+
+  <div class="tool-grid">
+    <div class="tool-card local">
+      <div class="tool-name">Nemotron (Gate 1)</div>
+      <div class="tool-type">Local LLM &mdash; Classifier</div>
+      <div class="tool-desc">
+        NVIDIA Nemotron. Fast, efficient text classifier. Reads structured extraction gap reports
+        and returns a navigate/skip decision with target hints. No vision needed.
+      </div>
+      <div class="tool-specs">
+        <span class="spec-tag">INT4 quant</span>
+        <span class="spec-tag">~4-8GB VRAM</span>
+        <span class="spec-tag">&lt;100ms latency</span>
+        <span class="spec-tag">vLLM / llama.cpp</span>
+      </div>
+    </div>
+    <div class="tool-card local">
+      <div class="tool-name">Qwen 3.5 27B (Gate 2)</div>
+      <div class="tool-type">Local LLM &mdash; Visual Agent</div>
+      <div class="tool-desc">
+        Alibaba Qwen 3.5 27B with vision. Multi-step tool-use agent that receives page
+        screenshots, reasons about interactive elements, and executes MCP actions.
+        Runs only on pages Nemotron flags (~15-30% of URLs).
+      </div>
+      <div class="tool-specs">
+        <span class="spec-tag">AWQ / GPTQ quant</span>
+        <span class="spec-tag">~18GB VRAM</span>
+        <span class="spec-tag">500ms-1s/step</span>
+        <span class="spec-tag">vLLM</span>
+        <span class="spec-tag">vision-enabled</span>
+      </div>
+    </div>
+    <div class="tool-card protocol">
+      <div class="tool-name">Web MCP Server</div>
+      <div class="tool-type">Standalone Service &mdash; On-Demand</div>
+      <div class="tool-desc">
+        Standalone MCP server process running locally. Spawned on-demand only when Gate 2
+        triggers (~15-30% of URLs). Owns its own Playwright browser context &mdash; fully
+        independent from the Crawlee crawl session. Self-maintaining: updates to MCP
+        server (new tools, Playwright version bumps) require zero changes to the crawl pipeline.
+      </div>
+      <div class="tool-specs">
+        <span class="spec-tag">MCP JSON-RPC 2.0</span>
+        <span class="spec-tag">localhost stdio/HTTP</span>
+        <span class="spec-tag">own Playwright context</span>
+        <span class="spec-tag">on-demand lifecycle</span>
+        <span class="spec-tag">nav-guard built-in</span>
+      </div>
+    </div>
+    <div class="tool-card browser">
+      <div class="tool-name">Crawlee + Playwright</div>
+      <div class="tool-type">Browser &mdash; Existing Infrastructure</div>
+      <div class="tool-desc">
+        Unchanged. PlaywrightCrawler manages browser lifecycle, session pool, fingerprinting,
+        proxy rotation, retry logic. Handles the initial page load, plugin suite, and
+        extraction. MCP server is a separate process &mdash; crawlSession is never modified.
+      </div>
+      <div class="tool-specs">
+        <span class="spec-tag">existing</span>
+        <span class="spec-tag">session pool</span>
+        <span class="spec-tag">proxy rotation</span>
+        <span class="spec-tag">fingerprint-suite</span>
+        <span class="spec-tag">CDP screencast</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>MCP as Standalone Service &mdash; Why</h3>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128260;</span> Independent Update Cycle</div>
+      <p>Web MCP server updates (new tools, bug fixes, Playwright version bumps) ship independently.
+         No crawl pipeline code changes needed. The harness calls <code>tools/list</code> at connect time
+         and gets whatever tools the current MCP version exposes.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128737;</span> Process Isolation</div>
+      <p>MCP server runs its own process with its own Playwright context. If the agent loop
+         crashes, hangs, or OOMs, the main crawl session is unaffected. The plugin catches
+         the error and falls back to the normal extraction result.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#9889;</span> On-Demand Only</div>
+      <p>~70-85% of pages skip Gate 2 entirely. The MCP server only spins up when Nemotron
+         says <code>navigate: true</code>. No idle resource consumption. Spawn on first
+         Gate 2 trigger per batch, reuse across the batch, tear down after.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128295;</span> Tool Config is SSOT</div>
+      <p>The MCP server's tool definitions are the single source of truth. Your harness
+         discovers tools dynamically via <code>tools/list</code>. If Web MCP adds
+         <code>hover</code>, <code>select_option</code>, or <code>drag</code> &mdash;
+         Qwen picks them up automatically on next connect. Zero code changes.</p>
+    </div>
+  </div>
+
+  <div class="info-box warn">
+    <span class="info-icon">&#9888;&#65039;</span>
+    <div><strong>MCP protocol clarification:</strong> MCP is a <em>transport protocol</em>, not an LLM integration layer.
+    The MCP server exposes tool schemas via <code>tools/list</code> (JSON-RPC 2.0). <strong>Your app</strong>
+    (<code>qwenAgentLoop.js</code>) is responsible for:
+    <ul style="margin:8px 0 0 18px;">
+      <li>Calling <code>tools/list</code> to discover available tools at connect time</li>
+      <li>Formatting those tool schemas into Qwen's native tool-use format (OpenAI-compatible <code>tools</code> param via vLLM)</li>
+      <li>Parsing Qwen's tool-call responses and routing them back through <code>tools/call</code> to the MCP server</li>
+      <li>Encoding MCP results (screenshots as base64 images) and feeding them back to Qwen as the next turn</li>
+    </ul>
+    MCP gives you the clean tool interface. Your agent harness wires it to the model.</div>
+  </div>
+
+  <h3>Local Process Layout</h3>
+  <div class="code-block">
+<span class="cmt"># ── Always-on (started with the app) ──────────────────────</span>
+
+<span class="cmt"># Nemotron — lightweight triage model, handles every URL</span>
+vLLM serve nemotron-model --port <span class="num">8001</span> --quantization awq
+  <span class="cmt"># ~4-8GB VRAM, sub-100ms inference, always running</span>
+
+<span class="cmt"># Qwen 3.5 27B — visual agent model, handles ~15-30% of URLs</span>
+vLLM serve qwen3.5-27b-instruct-awq --port <span class="num">8002</span> --quantization awq
+  <span class="cmt"># ~18GB VRAM, 500ms-1s per tool-use step, always running</span>
+
+<span class="cmt"># ── On-demand (spawned when Gate 2 triggers) ─────────────</span>
+
+<span class="cmt"># Web MCP server — standalone browser agent service</span>
+<span class="cmt"># Spawned by mcpNavigatorPlugin on first Gate 2 trigger per batch</span>
+<span class="cmt"># Owns its own Playwright context (not Crawlee's)</span>
+<span class="cmt"># Receives target URL, launches browser, exposes tools via MCP</span>
+<span class="cmt"># Torn down after batch completes or idle timeout</span>
+web-mcp-server --transport stdio
+  <span class="cmt"># OR: web-mcp-server --port 8003 --transport http (persistent mode)</span>
+  </div>
+
+  <h3>Tool Discovery &rarr; LLM Prompt Flow</h3>
+  <div class="code-block">
+<span class="cmt">// qwenAgentLoop.js — the bridge between MCP and Qwen</span>
+
+<span class="cmt">// 1. Connect to MCP server, discover tools</span>
+<span class="kw">const</span> mcpClient = <span class="kw">await</span> <span class="fn">connectMcp</span>(<span class="str">'stdio'</span>, mcpServerProcess);
+<span class="kw">const</span> { tools } = <span class="kw">await</span> mcpClient.<span class="fn">request</span>(<span class="str">'tools/list'</span>);
+
+<span class="cmt">// 2. Convert MCP tool schemas → Qwen's OpenAI-compatible format</span>
+<span class="kw">const</span> qwenTools = tools.map(<span class="fn">mcpToolToOpenAiTool</span>);
+<span class="cmt">//    { name, description, inputSchema } → { type:"function", function: { name, description, parameters } }</span>
+
+<span class="cmt">// 3. Build Qwen prompt with tools + screenshot + mission</span>
+<span class="kw">const</span> messages = [
+  { role: <span class="str">'system'</span>, content: systemPrompt },
+  { role: <span class="str">'user'</span>, content: [
+    { type: <span class="str">'text'</span>, text: <span class="str">`Product: ${product}. Targets: ${targets}`</span> },
+    { type: <span class="str">'image_url'</span>, image_url: { url: <span class="str">`data:image/jpeg;base64,${screenshot}`</span> } }
+  ]}
+];
+
+<span class="cmt">// 4. Agent loop — Qwen decides, MCP executes</span>
+<span class="kw">while</span> (budget > <span class="num">0</span>) {
+  <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">vllmChat</span>({ messages, tools: qwenTools });
+
+  <span class="kw">if</span> (response.finish_reason === <span class="str">'tool_calls'</span>) {
+    <span class="kw">for</span> (<span class="kw">const</span> call <span class="kw">of</span> response.tool_calls) {
+      <span class="cmt">// Route tool call through MCP protocol</span>
+      <span class="kw">const</span> result = <span class="kw">await</span> mcpClient.<span class="fn">request</span>(<span class="str">'tools/call'</span>, {
+        name: call.function.name,
+        arguments: JSON.parse(call.function.arguments)
+      });
+      <span class="cmt">// Feed result back to Qwen (screenshots become image messages)</span>
+      messages.push(formatToolResult(call, result));
+    }
+    budget--;
+  } <span class="kw">else</span> {
+    <span class="kw">break</span>; <span class="cmt">// Qwen said "done" or returned text</span>
+  }
+}
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  6. INTEGRATION POINT                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(210,153,34,0.15);color:var(--accent-yellow);">4</span>
+    Integration Point
+  </h2>
+  <p class="section-desc">
+    Where exactly does this slot into the existing pipeline? One new plugin in the existing registry.
+    No changes to crawlSession, no changes to the orchestrator.
+  </p>
+
+  <h3>File Hierarchy &mdash; What Changes</h3>
+  <div class="tree">
+<span class="dir">src/features/crawl/</span>
+  <span class="dir">plugins/</span>
+    <span class="keep">stealthPlugin.js</span> <span class="anno">KEEP &mdash; still needed for fingerprint patches</span>
+    <span class="keep">cookieConsentPlugin.js</span> <span class="anno">KEEP &mdash; runs before Gate 1</span>
+    <span class="keep">overlayDismissalPlugin.js</span> <span class="anno">KEEP &mdash; runs before Gate 1</span>
+    <span class="keep">domExpansionPlugin.js</span> <span class="anno">KEEP &mdash; basic expand still runs first</span>
+    <span class="keep">autoScrollPlugin.js</span> <span class="anno">KEEP &mdash; lazy-load triggering</span>
+    <span class="keep">cssOverridePlugin.js</span> <span class="anno">KEEP &mdash; domain blocking</span>
+    <span class="keep">pluginRegistry.js</span> <span class="anno">MODIFY &mdash; add mcpNavigator entry</span>
+    <span class="new">mcpNavigatorPlugin.js</span> <span class="anno">NEW &mdash; Gate 1 + Gate 2 orchestration (thin glue)</span>
+  <span class="dir">core/</span>
+    <span class="keep">pluginRunner.js</span> <span class="anno">KEEP &mdash; unchanged, runs the new plugin like any other</span>
+    <span class="keep">suiteOrchestrator.js</span> <span class="anno">KEEP &mdash; unchanged</span>
+
+<span class="dir">src/features/navigation/</span> <span class="anno">NEW FEATURE BOUNDARY &mdash; standalone domain</span>
+  <span class="new">index.js</span> <span class="anno">Public API: startMcpSession, runNavigationAgent, stopMcpSession</span>
+  <span class="new">nemotronClient.js</span> <span class="anno">HTTP client to local Nemotron vLLM endpoint</span>
+  <span class="new">qwenAgentLoop.js</span> <span class="anno">Agent loop: tools/list &rarr; format &rarr; screenshot &rarr; decide &rarr; act</span>
+  <span class="new">mcpLifecycle.js</span> <span class="anno">Spawn/connect/teardown MCP server process (stdio or HTTP)</span>
+  <span class="new">toolSchemaAdapter.js</span> <span class="anno">MCP tool schema &rarr; OpenAI-compatible tool format for Qwen</span>
+  <span class="new">htmlSignalScanner.js</span> <span class="anno">page.evaluate() DOM structure extractor (tabs, carousels, etc.)</span>
+  <span class="dir">tests/</span>
+    <span class="new">nemotronClient.test.js</span>
+    <span class="new">qwenAgentLoop.test.js</span>
+    <span class="new">toolSchemaAdapter.test.js</span>
+    <span class="new">htmlSignalScanner.test.js</span>
+
+<span class="dir">tools/mcp-web-server/</span> <span class="anno">STANDALONE MCP SERVER &mdash; own update cycle</span>
+  <span class="new">server.js</span> <span class="anno">MCP server entry point (stdio + HTTP transports)</span>
+  <span class="new">browserTools.js</span> <span class="anno">Tool implementations: click, screenshot, scroll, wait, extract, done</span>
+  <span class="new">navigationGuard.js</span> <span class="anno">Prevents page navigation during agent interaction</span>
+  <span class="new">package.json</span> <span class="anno">Own deps: @anthropic/mcp-sdk, playwright</span>
+  </div>
+
+  <h3>Plugin Registry Change</h3>
+  <div class="code-block">
+<span class="cmt">// pluginRegistry.js — one line added</span>
+<span class="kw">import</span> { mcpNavigatorPlugin } <span class="kw">from</span> <span class="str">'./mcpNavigatorPlugin.js'</span>;
+
+<span class="kw">export const</span> PLUGIN_REGISTRY = Object.freeze({
+  stealth:          stealthPlugin,
+  cookieConsent:    cookieConsentPlugin,
+  overlayDismissal: overlayDismissalPlugin,
+  domExpansion:     domExpansionPlugin,
+  cssOverride:      cssOverridePlugin,
+  autoScroll:       autoScrollPlugin,
+  <span class="new">mcpNavigator:     mcpNavigatorPlugin,</span>   <span class="cmt">// NEW — runs in onCapture hook (after extraction)</span>
+});
+  </div>
+
+  <div class="info-box success">
+    <span class="info-icon">&#9989;</span>
+    <div><strong>Plugin boundary respected:</strong> Per <code>CLAUDE.md</code> rule
+    <em>"Never modify orchestrator/crawlSession/Crawlee integration when working on plugins."</em>
+    The new plugin uses only its hooks. No <code>ctx.route</code>, no <code>page.evaluate</code>
+    in the orchestrator. CrawlSession is untouched.</div>
+  </div>
+
+  <h3>Hook Lifecycle Position</h3>
+  <div class="code-block">
+<span class="cmt">// Existing crawl lifecycle (unchanged):</span>
+<span class="num">1.</span> preNavigationHooks: <span class="fn">onInit</span> (stealth, overlay CSS, cssOverride routes)
+<span class="num">2.</span> page.goto(url, { waitUntil: <span class="str">'domcontentloaded'</span> })
+<span class="num">3.</span> Paint gate (2x rAF)
+<span class="num">4.</span> Suite loop: <span class="fn">onDismiss</span> &rarr; (<span class="fn">onScroll</span> &rarr; <span class="fn">onDismiss</span>) x N
+<span class="num">5.</span> page.content() &rarr; HTML capture
+<span class="num">6.</span> Block detection
+<span class="num">7.</span> <span class="fn">onCapture</span>  <span class="cmt">&larr;&larr;&larr; mcpNavigator hooks HERE</span>
+<span class="num">8.</span> Extraction plugins (screenshot capture)
+<span class="num">9.</span> resolveEntry &rarr; result
+
+<span class="cmt">// mcpNavigator in onCapture:</span>
+<span class="cmt">//   a. Run htmlSignalScanner (page.evaluate, ~5ms)</span>
+<span class="cmt">//   b. Build extraction gap report</span>
+<span class="cmt">//   c. Call Nemotron (local HTTP, ~100ms)</span>
+<span class="cmt">//   d. If navigate:false → return (no-op, ~105ms total)</span>
+<span class="cmt">//   e. If navigate:true → run Qwen agent loop via MCP (~5-15s)</span>
+<span class="cmt">//   f. Second page.content() → merge enriched HTML</span>
+<span class="cmt">//   g. Capture additional screenshots</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  7. WHAT THIS CATCHES                          -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(188,140,255,0.15);color:var(--accent-purple);">5</span>
+    What This Catches
+  </h2>
+  <p class="section-desc">
+    Real-world site patterns that the current pipeline misses, and how the two-gate
+    architecture handles each one.
+  </p>
+
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th>Site Pattern</th>
+        <th>Current Result</th>
+        <th>With Two-Gate</th>
+        <th>Gate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Razer</strong> &mdash; JS carousel with 8 product cutout images</td>
+        <td><span class="tag tag-red">Gets 1 static image</span></td>
+        <td>Qwen cycles through all 8 slides, captures each</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>Corsair</strong> &mdash; specs behind "Technical Specifications" tab</td>
+        <td><span class="tag tag-red">Misses specs entirely</span></td>
+        <td>Nemotron flags 6 missing fields + inactive tab. Qwen clicks tab.</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>ASUS ROG</strong> &mdash; nested expandable spec groups</td>
+        <td><span class="tag tag-yellow">Gets top-level only</span></td>
+        <td>Qwen expands all nested groups sequentially</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>Logitech</strong> &mdash; "Compare" view with full spec table</td>
+        <td><span class="tag tag-red">Never reached</span></td>
+        <td>Qwen clicks "View all specs" link</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>SteelSeries</strong> &mdash; spec data loaded via XHR on tab click</td>
+        <td><span class="tag tag-red">Missing from initial HTML</span></td>
+        <td>Qwen clicks tab, waits for XHR render, captures</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>Amazon</strong> &mdash; "See more product details" fold</td>
+        <td><span class="tag tag-yellow">Above-fold only</span></td>
+        <td>Qwen expands the detail fold</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>Dell</strong> &mdash; spec page is a separate client-side route</td>
+        <td><span class="tag tag-red">Wrong page content</span></td>
+        <td>Qwen recognizes the sub-nav pattern, stays on page</td>
+        <td><span class="tag tag-purple">Gate 2</span></td>
+      </tr>
+      <tr>
+        <td><strong>Simple review site</strong> &mdash; all specs in visible table</td>
+        <td><span class="tag tag-green">Full extraction</span></td>
+        <td>Nemotron returns <code>navigate: false</code>. No cost added.</td>
+        <td><span class="tag tag-blue">Gate 1 only</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  8. DECISION TREE                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(240,136,62,0.15);color:var(--accent-orange);">6</span>
+    Decision Logic
+  </h2>
+  <p class="section-desc">
+    The complete decision tree for when each gate fires, including fallback behavior.
+  </p>
+
+  <div class="flow-container">
+    <div class="flow" style="gap:0;">
+      <div class="flow-node process" style="max-width:400px;">Page extracted<br><span style="font-size:12px;color:var(--text-muted)">fields, confidence scores, HTML captured</span></div>
+      <div class="flow-arrow"><div class="arrow-line"></div></div>
+
+      <div class="flow-node process" style="max-width:400px;border-color:var(--accent-blue);">
+        htmlSignalScanner()<br>
+        <span style="font-size:12px;color:var(--text-muted)">page.evaluate &bull; tabs? carousels? collapsed? hidden?</span>
+      </div>
+      <div class="flow-arrow"><div class="arrow-line"></div></div>
+
+      <div class="diamond-wrap"><div class="diamond"><span>Signals<br>present?</span></div></div>
+
+      <div class="flow-branch" style="margin-top:8px;">
+        <div class="flow-branch-arm">
+          <span class="branch-label no">No signals &mdash; simple page</span>
+          <div class="flow-arrow"><div class="arrow-line"></div></div>
+          <div class="flow-node end" style="font-size:13px;max-width:200px;">Skip both gates<br><span style="font-size:11px;color:rgba(255,255,255,0.6)">~5ms overhead</span></div>
+        </div>
+        <div class="flow-branch-arm">
+          <span class="branch-label yes">Signals found</span>
+          <div class="flow-arrow"><div class="arrow-line"></div></div>
+          <div class="flow-node gate1-node" style="max-width:260px;font-size:13px;">Gate 1: Nemotron<br><span style="font-size:11px;">gap report + signals &rarr; decision</span></div>
+          <div class="flow-arrow"><div class="arrow-line"></div></div>
+
+          <div class="diamond-wrap"><div class="diamond"><span>navigate<br>= true?</span></div></div>
+
+          <div class="flow-branch" style="margin-top:8px;">
+            <div class="flow-branch-arm">
+              <span class="branch-label no">false</span>
+              <div class="flow-arrow"><div class="arrow-line"></div></div>
+              <div class="flow-node end" style="font-size:12px;max-width:180px;">DONE<br><span style="font-size:11px;color:rgba(255,255,255,0.6)">~105ms overhead</span></div>
+            </div>
+            <div class="flow-branch-arm">
+              <span class="branch-label yes">true</span>
+              <div class="flow-arrow"><div class="arrow-line"></div></div>
+
+              <div class="diamond-wrap"><div class="diamond"><span>Qwen<br>available?</span></div></div>
+
+              <div class="flow-branch" style="margin-top:8px;">
+                <div class="flow-branch-arm">
+                  <span class="branch-label no">Offline</span>
+                  <div class="flow-arrow"><div class="arrow-line"></div></div>
+                  <div class="flow-node process" style="font-size:12px;max-width:160px;border-color:var(--accent-yellow);">Log &amp; skip<br><span style="font-size:11px;color:var(--text-muted)">zero regression</span></div>
+                </div>
+                <div class="flow-branch-arm">
+                  <span class="branch-label yes">Online</span>
+                  <div class="flow-arrow"><div class="arrow-line"></div></div>
+                  <div class="flow-node gate2-node" style="font-size:12px;max-width:200px;">Gate 2: Qwen<br>MCP agent loop<br><span style="font-size:11px;">5-8 actions, 15s cap</span></div>
+                  <div class="flow-arrow"><div class="arrow-line"></div></div>
+                  <div class="flow-node end" style="font-size:12px;max-width:200px;">Merge enriched data<br><span style="font-size:11px;color:rgba(255,255,255,0.6)">+screenshots +HTML</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box note">
+    <span class="info-icon">&#128736;</span>
+    <div><strong>Fallback at every level:</strong> If the HTML signal scanner finds nothing &rarr; skip both gates (~5ms).
+    If Nemotron returns <code>navigate: false</code> &rarr; no Gate 2 (~105ms). If Qwen is offline &rarr; log and proceed with
+    original extraction (zero regression). If Qwen's actions timeout &rarr; use whatever was captured before timeout.</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  9. COST MODEL                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(63,185,80,0.15);color:var(--accent-green);">7</span>
+    Cost &amp; Performance Model
+  </h2>
+  <p class="section-desc">
+    All inference is local &mdash; no API costs. The only costs are VRAM allocation and wall-clock time.
+  </p>
+
+  <div class="metric-strip">
+    <div class="metric">
+      <div class="metric-value">~22-26</div>
+      <div class="metric-label">Total VRAM (GB)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value">~5ms</div>
+      <div class="metric-label">Scanner Overhead</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value">&lt;100ms</div>
+      <div class="metric-label">Gate 1 Latency</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value">5-15s</div>
+      <div class="metric-label">Gate 2 Per Page</div>
+    </div>
+  </div>
+
+  <h3>Per-URL Time Budget</h3>
+  <table class="styled-table">
+    <thead>
+      <tr><th>Scenario</th><th>Added Latency</th><th>Frequency</th><th>VRAM Used</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Simple page &mdash; no signals</td>
+        <td><strong>~5ms</strong> (scanner only)</td>
+        <td>~40% of URLs</td>
+        <td>0 (no model called)</td>
+      </tr>
+      <tr>
+        <td>Signals found, Nemotron says skip</td>
+        <td><strong>~105ms</strong> (scanner + Nemotron)</td>
+        <td>~30-45% of URLs</td>
+        <td>Nemotron (~4-8GB)</td>
+      </tr>
+      <tr>
+        <td>Nemotron says navigate, Qwen acts</td>
+        <td><strong>5-15s</strong> (full agent loop)</td>
+        <td>~15-30% of URLs</td>
+        <td>Both (~22-26GB)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box note">
+    <span class="info-icon">&#128200;</span>
+    <div><strong>Timeout compatibility:</strong> Your <code>requestHandlerTimeoutSecs</code> is 45s.
+    The current suite loop uses ~3-5s. Extraction ~2-5s. That leaves <strong>~30s</strong> for Gate 2.
+    With a 15s cap, you're well within budget with margin for variance.</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  10. ROLLOUT PHASES                            -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(247,120,186,0.15);color:var(--accent-pink);">8</span>
+    Rollout Phases
+  </h2>
+  <p class="section-desc">
+    Incremental rollout. Each phase is independently useful and fully reversible.
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-item future">
+      <div class="tl-title">Phase 1 &mdash; HTML Signal Scanner + Telemetry</div>
+      <div class="tl-desc">
+        Build <code>htmlSignalScanner.js</code> and wire it into the <code>onCapture</code> hook.
+        Log signals to <code>bridge_events</code> but don't call any LLM. Collect data on how
+        many pages have tabs, carousels, collapsed sections. Validate that the scanner produces
+        useful signals before investing in the LLM integration.
+      </div>
+    </div>
+    <div class="timeline-item future">
+      <div class="tl-title">Phase 2 &mdash; Gate 1 (Nemotron Triage)</div>
+      <div class="tl-desc">
+        Stand up local Nemotron. Wire <code>nemotronClient.js</code> into the plugin.
+        Log navigate decisions but don't act on them yet. Compare Nemotron's "should navigate"
+        predictions against the Phase 1 signal data. Tune the prompt and thresholds.
+      </div>
+    </div>
+    <div class="timeline-item future">
+      <div class="tl-title">Phase 3 &mdash; Gate 2 (Qwen Agent via Standalone MCP)</div>
+      <div class="tl-desc">
+        Stand up local Qwen + standalone Web MCP server in <code>tools/mcp-web-server/</code>.
+        Build <code>src/features/navigation/</code> feature boundary: <code>qwenAgentLoop.js</code>,
+        <code>mcpLifecycle.js</code>, <code>toolSchemaAdapter.js</code>. MCP server spawned on-demand
+        via stdio. Enable on a single test category first. Measure: additional fields extracted,
+        screenshots captured, time overhead per URL. Compare extraction quality with and without Gate 2.
+      </div>
+    </div>
+    <div class="timeline-item future">
+      <div class="tl-title">Phase 4 &mdash; Confidence Feedback Loop</div>
+      <div class="tl-desc">
+        Feed post-Gate-2 extraction confidence back to Nemotron. If Gate 2 consistently
+        improves extraction for certain page patterns, Nemotron learns which signals
+        predict high-value navigation targets. Tighten the gate over time &mdash; fewer
+        false positives, more targeted Qwen usage.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  11. WHAT STAYS, WHAT CHANGES                  -->
+<!-- ═══════════════════════════════════════════════ -->
+<section>
+  <h2>
+    <span class="section-num" style="background:rgba(88,166,255,0.15);color:var(--accent-blue);">9</span>
+    Impact Matrix
+  </h2>
+  <p class="section-desc">
+    Nothing in the existing crawl pipeline is removed or modified. This is purely additive.
+  </p>
+
+  <table class="styled-table">
+    <thead>
+      <tr><th>Component</th><th>Status</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>crawlSession.js</td>
+        <td><span class="tag tag-green">UNTOUCHED</span></td>
+        <td>No modifications. Plugin runs via existing hook system.</td>
+      </tr>
+      <tr>
+        <td>suiteOrchestrator.js</td>
+        <td><span class="tag tag-green">UNTOUCHED</span></td>
+        <td>Dismiss/scroll loop unchanged.</td>
+      </tr>
+      <tr>
+        <td>Crawlee PlaywrightCrawler</td>
+        <td><span class="tag tag-green">UNTOUCHED</span></td>
+        <td>Browser lifecycle, session pool, proxy, fingerprints all unchanged.</td>
+      </tr>
+      <tr>
+        <td>stealthPlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>Fingerprint patches still needed before goto.</td>
+      </tr>
+      <tr>
+        <td>cookieConsentPlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>Runs before Gate 1. Fast, reliable for known CMPs.</td>
+      </tr>
+      <tr>
+        <td>overlayDismissalPlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>CSS suppression + MutationObserver still fires before Gate 1.</td>
+      </tr>
+      <tr>
+        <td>domExpansionPlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>Basic expansion still runs first. Gate 2 handles what it misses.</td>
+      </tr>
+      <tr>
+        <td>autoScrollPlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>Lazy-load triggering still needed before extraction.</td>
+      </tr>
+      <tr>
+        <td>cssOverridePlugin</td>
+        <td><span class="tag tag-green">KEEP</span></td>
+        <td>Domain blocking still valuable as pre-filter.</td>
+      </tr>
+      <tr>
+        <td>pluginRegistry.js</td>
+        <td><span class="tag tag-yellow">+1 LINE</span></td>
+        <td>Add <code>mcpNavigator</code> entry.</td>
+      </tr>
+      <tr>
+        <td>Extraction pipeline</td>
+        <td><span class="tag tag-green">UNTOUCHED</span></td>
+        <td>Gate 2 screenshots flow through existing <code>onScreenshotsPersist</code> path.</td>
+      </tr>
+      <tr>
+        <td>src/features/navigation/</td>
+        <td><span class="tag tag-purple">NEW (6 files)</span></td>
+        <td>Standalone feature boundary: nemotronClient, qwenAgentLoop, mcpLifecycle, toolSchemaAdapter, htmlSignalScanner, index.js</td>
+      </tr>
+      <tr>
+        <td>tools/mcp-web-server/</td>
+        <td><span class="tag tag-purple">NEW (standalone)</span></td>
+        <td>Own package.json, own deps, own update cycle. MCP server with browser tools. Spawned on-demand by navigation feature.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--  FOOTER                                        -->
+<!-- ═══════════════════════════════════════════════ -->
+<section style="text-align:center;padding:40px 0;border:none;">
+  <p style="color:var(--text-muted);font-size:13px;">
+    Spec Factory &mdash; Two-Gate Navigation Agent Design Plan<br>
+    Generated 2026-03-29 &bull; All models run locally &bull; Zero cloud dependency
+  </p>
+</section>
+
+</div>
+</body>
+</html>

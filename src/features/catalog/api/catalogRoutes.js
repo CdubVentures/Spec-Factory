@@ -262,10 +262,6 @@ export function registerCatalogRoutes(ctx) {
         });
         if (result?.ok) {
           const syncedSpecDb = resolveSpecDb(category);
-          const previousProductId = String(result.previousProductId || '').trim();
-          if (syncedSpecDb && previousProductId && previousProductId !== String(result.productId || '').trim()) {
-            deleteCatalogProductRow(syncedSpecDb, category, previousProductId);
-          }
           if (syncedSpecDb) {
             upsertCatalogProductRow(
               syncedSpecDb,
@@ -279,10 +275,7 @@ export function registerCatalogRoutes(ctx) {
             event: 'catalog-product-update',
             category,
             entities: {
-              productIds: [result.productId || parts[3], result.previousProductId || null],
-            },
-            meta: {
-              previousProductId: result.previousProductId || null,
+              productIds: [result.productId || parts[3]],
             },
           });
         }
@@ -344,13 +337,19 @@ export function registerCatalogRoutes(ctx) {
       const latestBase = storage.resolveOutputKey(category, productId, 'latest');
       const specDb = resolveSpecDb(category);
       const [summary, normalized, provenance] = await Promise.all([
-        storage.readJsonOrNull(`${latestBase}/summary.json`),
-        storage.readJsonOrNull(`${latestBase}/normalized.json`),
+        specDb
+          ? Promise.resolve(specDb.getSummaryForProduct(productId))
+          : storage.readJsonOrNull(`${latestBase}/summary.json`),
+        specDb
+          ? Promise.resolve(specDb.getNormalizedForProduct(productId))
+          : storage.readJsonOrNull(`${latestBase}/normalized.json`),
         specDb
           ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
           : storage.readJsonOrNull(`${latestBase}/provenance.json`),
       ]);
-      const trafficLight = await storage.readJsonOrNull(`${latestBase}/traffic_light.json`);
+      const trafficLight = specDb
+        ? specDb.getTrafficLightForProduct(productId)
+        : (await storage.readJsonOrNull(`${latestBase}/traffic_light.json`));
       if (normalized && typeof normalized === 'object') {
         normalized.identity = await resolveProductIdentity({
           productId,

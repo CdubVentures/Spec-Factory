@@ -4,8 +4,12 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 
 ## Public API (The Contract)
 
-- `runProduct.js` → `runProduct({ storage, config, s3Key, ... })` — main pipeline entry point (async)
-- `runCrawlProcessingLifecycle.js` → crawl session orchestration
+- `runProduct.js` → `runProduct({ storage, config, s3Key, ... })` — main pipeline entry point. Returns `{ crawlResults, runId, category, productId, fetchPlanStats, startMs, job }`
+- `checkpoint/buildCrawlCheckpoint.js` → `buildCrawlCheckpoint(opts)` — pure builder for run.json (schema v2: sources + needset + search_profile + run_summary + identity)
+- `checkpoint/writeCrawlCheckpoint.js` → `writeCrawlCheckpoint(opts)` — writes `{runId}/run.json` + optional SQL run_artifacts
+- `checkpoint/buildProductCheckpoint.js` → `buildProductCheckpoint(opts)` — pure builder for product.json (identity + sources)
+- `checkpoint/mergeProductSources.js` → `mergeProductSources(opts)` — content-addressed source dedup across runs
+- `checkpoint/writeProductCheckpoint.js` → `writeProductCheckpoint(opts)` — read-merge-write `{outRoot}/product.json`
 - `seams/bootstrapRunProductExecutionState.js` → prepare execution state (planner, LLM runtime, learning stores)
 - `urlQualityGate.js` → `isLowValueHost`
 - `dedupeOutcomeEvent.js` → `dedupeOutcomeToEventKey`, `buildDedupeOutcomeEvent`

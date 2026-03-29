@@ -77,8 +77,12 @@ export function createCatalogBuilder({
 
       const latestBase = storage.resolveOutputKey(category, existingProductId, 'latest');
       const [summary, normalized, hasFinal] = await Promise.all([
-        storage.readJsonOrNull(`${latestBase}/summary.json`),
-        storage.readJsonOrNull(`${latestBase}/normalized.json`),
+        specDb
+          ? Promise.resolve(specDb.getSummaryForProduct(existingProductId))
+          : storage.readJsonOrNull(`${latestBase}/summary.json`),
+        specDb
+          ? Promise.resolve(specDb.getNormalizedForProduct(existingProductId))
+          : storage.readJsonOrNull(`${latestBase}/normalized.json`),
         storage.objectExists(`final/${category}/${existingProductId}/normalized.json`).catch(() => false),
       ]);
       const identity = normalized?.identity || {};

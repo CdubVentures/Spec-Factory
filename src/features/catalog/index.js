@@ -28,8 +28,6 @@ export {
   loadCanonicalIdentityIndex,
   evaluateIdentityGate,
   registerCanonicalIdentity,
-  maybeCanonicalProductId,
-  normalizeIdentityForGate,
 } from './identity/identityGate.js';
 export {
   cleanVariant,
@@ -42,7 +40,7 @@ export {
   resolveProductIdentity,
 } from './identity/productIdentityAuthority.js';
 export { generateIdentifier, nextAvailableId } from './identity/productIdentity.js';
-export { slugify, buildProductId } from './identity/slugify.js';
+export { slugify } from './identity/slugify.js';
 export {
   loadCatalogProducts,
   loadCatalogProductsWithFields,

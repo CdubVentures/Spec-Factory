@@ -30,11 +30,15 @@ import {
 export async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
   const [normalized, provenance, summary] = await Promise.all([
-    storage.readJsonOrNull(`${latestBase}/normalized.json`),
+    specDb
+      ? Promise.resolve(specDb.getNormalizedForProduct(productId))
+      : storage.readJsonOrNull(`${latestBase}/normalized.json`),
     specDb
       ? Promise.resolve(specDb.getProvenanceForProduct(category, productId) ?? {})
       : storage.readJsonOrNull(`${latestBase}/provenance.json`),
-    storage.readJsonOrNull(`${latestBase}/summary.json`)
+    specDb
+      ? Promise.resolve(specDb.getSummaryForProduct(productId))
+      : storage.readJsonOrNull(`${latestBase}/summary.json`)
   ]);
 
   if (!isObject(normalized) || !isObject(normalized.fields)) {

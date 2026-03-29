@@ -103,7 +103,6 @@ test('scanOrphans: fabricated variant WITHOUT canonical is a warning, not orphan
   assert.equal(result.orphan_count, 0);
   assert.equal(result.warning_count, 1);
   assert.equal(result.warnings[0].reason, 'fabricated_variant_no_canonical');
-  assert.equal(result.warnings[0].expectedCanonicalId, 'mouse-acer-cestus-310');
 });
 
 test('scanOrphans: real variants are NOT flagged', async () => {

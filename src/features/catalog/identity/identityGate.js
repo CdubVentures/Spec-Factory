@@ -6,7 +6,7 @@
  * 2) activeFiltering.json (fallback)
  */
 
-import { buildProductId, slugify } from './slugify.js';
+import { slugify } from './slugify.js';
 import { cleanVariant, isFabricatedVariant } from './identityDedup.js';
 import { loadProductCatalog } from '../products/productCatalog.js';
 import { normalizeText, normalizeTokenCollapsed } from '../../../shared/primitives.js';
@@ -53,7 +53,7 @@ export function buildCanonicalIdentityIndex({
     if (!pairVariants.has(pKey)) pairVariants.set(pKey, new Set());
     pairVariants.get(pKey).add(normalizeTokenCollapsed(variant));
 
-    const pid = normalizeText(row.productId) || buildProductId(cat, brand, model, variant);
+    const pid = normalizeText(row.productId) || '';
     tupleToProductId.set(tupleKey(brand, model, variant), pid);
   }
 
@@ -111,8 +111,7 @@ export function evaluateIdentityGate({
       normalized: {
         brand: cleanBrand,
         model: cleanModel,
-        variant: cleanVar,
-        productId: ''
+        variant: cleanVar
       }
     };
   }
@@ -120,14 +119,13 @@ export function evaluateIdentityGate({
   const normalized = {
     brand: cleanBrand,
     model: cleanModel,
-    variant: cleanVar,
-    productId: buildProductId(cat, cleanBrand, cleanModel, cleanVar)
+    variant: cleanVar
   };
 
   if (cleanVar && isFabricatedVariant(cleanModel, cleanVar)) {
     const canonicalProductId =
       canonicalIndex?.tupleToProductId?.get(tupleKey(cleanBrand, cleanModel, ''))
-      || buildProductId(cat, cleanBrand, cleanModel, '');
+      || '';
     return {
       valid: false,
       reason: 'variant_is_model_substring',
@@ -142,7 +140,7 @@ export function evaluateIdentityGate({
     return {
       valid: true,
       reason: null,
-      canonicalProductId: normalized.productId,
+      canonicalProductId: '',
       normalized
     };
   }
@@ -151,7 +149,7 @@ export function evaluateIdentityGate({
   if (knownVariants.has(variantToken)) {
     const canonicalProductId =
       canonicalIndex?.tupleToProductId?.get(tupleKey(cleanBrand, cleanModel, cleanVar))
-      || normalized.productId;
+      || '';
     return {
       valid: true,
       reason: null,
@@ -166,7 +164,7 @@ export function evaluateIdentityGate({
       reason: 'canonical_without_variant_exists',
       canonicalProductId:
         canonicalIndex?.tupleToProductId?.get(tupleKey(cleanBrand, cleanModel, ''))
-        || buildProductId(cat, cleanBrand, cleanModel, ''),
+        || '',
       normalized
     };
   }
@@ -207,24 +205,7 @@ export function registerCanonicalIdentity({
   }
   canonicalIndex.pairVariants.get(pKey).add(normalizeTokenCollapsed(cleanVar));
 
-  const pid = normalizeText(productId)
-    || buildProductId(canonicalIndex.category, cleanBrand, cleanModel, cleanVar);
+  const pid = normalizeText(productId) || '';
   canonicalIndex.tupleToProductId.set(tupleKey(cleanBrand, cleanModel, cleanVar), pid);
 }
 
-export function maybeCanonicalProductId(category, brand, model, variant = '') {
-  const cat = normalizeText(category).toLowerCase();
-  if (!cat || !normalizeText(brand) || !normalizeText(model)) return '';
-  return buildProductId(cat, normalizeText(brand), normalizeText(model), cleanVariant(variant));
-}
-
-export function normalizeIdentityForGate(brand, model, variant = '') {
-  return {
-    brand: normalizeText(brand),
-    model: normalizeText(model),
-    variant: cleanVariant(variant),
-    brand_slug: slugify(brand),
-    model_slug: slugify(model),
-    variant_slug: slugify(cleanVariant(variant))
-  };
-}

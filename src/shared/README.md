@@ -9,6 +9,7 @@ This boundary stays intentionally small so shared values remain stable and depen
 - `src/shared/primitives.js`: `isObject`, `toArray`, `normalizeText`, `normalizeToken`, `normalizeFieldKey` — SSOT for pure type-guard and text-normalization primitives. All domain-helper files re-export from here.
 - `src/shared/valueNormalizers.js`: `toInt`, `toFloat`, `toUnitRatio`, `hasKnownValue`, `normalizeModelToken`, `normalizePathToken`, `normalizeJsonText`, `normalizeDomainToken`, `domainFromUrl`, and other pure type coercion utilities.
 - `src/shared/fileHelpers.js`: `safeReadJson`, `safeStat`, `listDirs`, `listFiles`, `readJsonlEvents`, `readGzipJsonlEvents`, `parseNdjson`, `safeJoin`, and other safe file I/O utilities.
+- `src/shared/contentHash.js`: `computePageContentHash(html)`, `computeFileContentHash(buffer)` — SHA-256 content hashing for artifact dedup and content-addressed file naming.
 
 ## Dependencies
 - Allowed: dependency-light modules that remain generic across the repo.

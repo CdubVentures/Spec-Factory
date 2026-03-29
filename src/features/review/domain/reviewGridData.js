@@ -192,11 +192,15 @@ export async function buildReviewLayout({
 
 export async function readLatestArtifacts(storage, category, productId, specDb = null) {
   const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-  const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
+  const normalized = specDb
+    ? specDb.getNormalizedForProduct(productId)
+    : (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
   const provenance = specDb
     ? (specDb.getProvenanceForProduct(category, productId) ?? {})
     : (await storage.readJsonOrNull(`${latestBase}/provenance.json`) || {});
-  const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
+  const summary = specDb
+    ? specDb.getSummaryForProduct(productId)
+    : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
   let candidates = await storage.readJsonOrNull(`${latestBase}/candidates.json`);
   if (!candidates && summary?.runId) {
     const runBase = storage.resolveOutputKey(category, productId, 'runs', summary.runId);

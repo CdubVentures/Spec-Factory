@@ -77,18 +77,19 @@ test('isFabricatedVariant: case insensitive', () => {
 });
 
 // --- normalizeProductIdentity ---
+// WHY: productId is no longer returned (decoupled from identity).
+// Tests verify identity normalization and fabricated variant stripping only.
 
-test('normalizeProductIdentity: strips fabricated variant and builds correct ID', () => {
+test('normalizeProductIdentity: strips fabricated variant', () => {
   const result = normalizeProductIdentity('mouse', 'Acer', 'Cestus 310', '310');
-  assert.equal(result.productId, 'mouse-acer-cestus-310');
   assert.equal(result.variant, '');
   assert.equal(result.wasCleaned, true);
   assert.equal(result.reason, 'fabricated_variant_stripped');
+  assert.equal(result.productId, undefined);
 });
 
 test('normalizeProductIdentity: keeps real variant', () => {
   const result = normalizeProductIdentity('mouse', 'Razer', 'Viper V3 Pro', 'Wireless');
-  assert.equal(result.productId, 'mouse-razer-viper-v3-pro-wireless');
   assert.equal(result.variant, 'Wireless');
   assert.equal(result.wasCleaned, false);
   assert.equal(result.reason, null);
@@ -96,34 +97,29 @@ test('normalizeProductIdentity: keeps real variant', () => {
 
 test('normalizeProductIdentity: empty variant remains empty, no fabrication flag', () => {
   const result = normalizeProductIdentity('mouse', 'Logitech', 'G Pro X Superlight 2', '');
-  assert.equal(result.productId, 'mouse-logitech-g-pro-x-superlight-2');
   assert.equal(result.variant, '');
   assert.equal(result.wasCleaned, false);
 });
 
 test('normalizeProductIdentity: placeholder variant cleaned', () => {
   const result = normalizeProductIdentity('mouse', 'Corsair', 'M65 RGB Ultra', 'N/A');
-  assert.equal(result.productId, 'mouse-corsair-m65-rgb-ultra');
   assert.equal(result.variant, '');
   assert.equal(result.wasCleaned, false); // placeholder cleaning is not "fabricated"
 });
 
 test('normalizeProductIdentity: diacritics handled correctly', () => {
   const result = normalizeProductIdentity('mouse', 'Señor', 'Café Mouse', '');
-  assert.equal(result.productId, 'mouse-senor-cafe-mouse');
   assert.equal(result.brand, 'Señor'); // original brand preserved, only slug is NFD-normalized
 });
 
 test('normalizeProductIdentity: Redragon Woki M994 fabricated variant', () => {
   const result = normalizeProductIdentity('mouse', 'Redragon', 'Woki M994', 'M994');
-  assert.equal(result.productId, 'mouse-redragon-woki-m994');
   assert.equal(result.variant, '');
   assert.equal(result.wasCleaned, true);
 });
 
-test('normalizeProductIdentity: null inputs produce empty productId', () => {
+test('normalizeProductIdentity: null inputs produce empty strings', () => {
   const result = normalizeProductIdentity('mouse', null, null, null);
-  assert.equal(result.productId, 'mouse');
   assert.equal(result.brand, '');
   assert.equal(result.model, '');
   assert.equal(result.variant, '');

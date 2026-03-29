@@ -3,15 +3,9 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { toPosixKey } from '../s3/storage.js';
 import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { nowIso } from '../shared/primitives.js';
+import { nowIso, buildProductId } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 
-function slug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 function safeJsonParse(value, fallback = null) {
   const text = String(value || '').trim();
@@ -101,11 +95,6 @@ function parseCsv(text) {
   });
 }
 
-function buildProductId({ category, brand, model, variant }) {
-  return [slug(category), slug(brand), slug(model), slug(variant)]
-    .filter(Boolean)
-    .join('-');
-}
 
 function buildImportHash({ csvPath, content }) {
   const hash = crypto.createHash('sha256');
@@ -173,12 +162,7 @@ function buildJobFromRow({ category, row }) {
     return null;
   }
 
-  const productId = buildProductId({
-    category,
-    brand: identityLock.brand,
-    model: identityLock.model,
-    variant: identityLock.variant
-  });
+  const productId = buildProductId(category);
   if (!productId) {
     return null;
   }

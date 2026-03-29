@@ -1,23 +1,21 @@
-﻿export function createExplainUnkCommand({
-  slug,
-}) {
-  return async function commandExplainUnk(_config, storage, args) {
+export function createExplainUnkCommand({ openSpecDbForCategory } = {}) {
+  return async function commandExplainUnk(config, storage, args) {
     const category = String(args.category || 'mouse').trim();
-    const brand = String(args.brand || '').trim();
-    const model = String(args.model || '').trim();
-    const variant = String(args.variant || '').trim();
-    const productId = String(
-      args['product-id'] ||
-      [category, slug(brand), slug(model), slug(variant)].filter(Boolean).join('-')
-    ).trim();
+    const productId = String(args['product-id'] || '').trim();
 
     if (!productId) {
-      throw new Error('explain-unk requires --product-id or --category/--brand/--model');
+      throw new Error('explain-unk requires --product-id (random IDs cannot be derived from identity)');
     }
 
+    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
+    try {
     const latestBase = storage.resolveOutputKey(category, productId, 'latest');
-    const summary = await storage.readJsonOrNull(`${latestBase}/summary.json`);
-    const normalized = await storage.readJsonOrNull(`${latestBase}/normalized.json`);
+    const summary = specDb
+      ? specDb.getSummaryForProduct(productId)
+      : (await storage.readJsonOrNull(`${latestBase}/summary.json`));
+    const normalized = specDb
+      ? specDb.getNormalizedForProduct(productId)
+      : (await storage.readJsonOrNull(`${latestBase}/normalized.json`));
     if (!summary && !normalized) {
       throw new Error(`No latest run found for productId '${productId}' in category '${category}'`);
     }
@@ -50,5 +48,8 @@
       urls_fetched_count: (summary?.urls_fetched || []).length,
       top_evidence_references: summary?.top_evidence_references || [],
     };
+    } finally {
+      try { specDb?.close(); } catch { /* */ }
+    }
   };
 }

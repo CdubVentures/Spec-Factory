@@ -12,6 +12,14 @@ import {
   readEnumConsistencyFormatHint,
   summarizeStudioMapPayload,
 } from './studioRouteHelpers.js';
+import {
+  StudioPayloadSchema,
+  FieldStudioMapResponseSchema,
+  TooltipBankResponseSchema,
+  ArtifactEntrySchema,
+  KnownValuesResponseSchema,
+  ComponentDbResponseSchema,
+} from '../contracts/studioSchemas.js';
 
 export function registerStudioRoutes(ctx) {
   const {
@@ -73,7 +81,7 @@ export function registerStudioRoutes(ctx) {
       const category = parts[1];
       const catConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
       const session = await sessionCache.getSessionRules(category);
-      return jsonRes(res, 200, {
+      return jsonRes(res, 200, StudioPayloadSchema.parse({
         category,
         fieldRules: session.mergedFields,
         fieldOrder: session.mergedFieldOrder,
@@ -82,7 +90,7 @@ export function registerStudioRoutes(ctx) {
         compiledAt: session.compiledAt,
         mapSavedAt: session.mapSavedAt,
         compileStale: session.compileStale,
-      });
+      }));
     }
 
     // Studio products (reads from product catalog)
@@ -153,7 +161,7 @@ export function registerStudioRoutes(ctx) {
       }
       const specDbPayload = buildStudioKnownValuesFromSpecDb(runtimeSpecDb, category);
       if (specDbPayload) {
-        return jsonRes(res, 200, specDbPayload);
+        return jsonRes(res, 200, KnownValuesResponseSchema.parse(specDbPayload));
       }
       return jsonRes(res, 503, {
         error: 'specdb_not_ready',
@@ -302,7 +310,7 @@ export function registerStudioRoutes(ctx) {
         : null;
       const specDbResult = buildStudioComponentDbFromSpecDb(runtimeSpecDb);
       if (specDbResult) {
-        return jsonRes(res, 200, specDbResult);
+        return jsonRes(res, 200, ComponentDbResponseSchema.parse(specDbResult));
       }
       return jsonRes(res, 503, {
         error: 'specdb_not_ready',
@@ -328,12 +336,12 @@ export function registerStudioRoutes(ctx) {
         controlPlaneMap = await loadFieldStudioMap({ category, config });
       } catch (err) {
         const preferred = choosePreferredStudioMap(settingsMap, null, { validateMap: validateFieldStudioMap });
-        if (preferred) return jsonRes(res, 200, preferred);
-        return jsonRes(res, 200, { file_path: '', map: {}, error: err.message });
+        if (preferred) return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(preferred));
+        return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: '', map: {}, error: err.message }));
       }
 
       const preferred = choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap: validateFieldStudioMap });
-      return jsonRes(res, 200, preferred || { file_path: '', map: {} });
+      return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(preferred || { file_path: '', map: {} }));
     }
 
     // Studio map PUT (save)
@@ -449,7 +457,7 @@ export function registerStudioRoutes(ctx) {
           }
         }
       } catch { /* no files */ }
-      return jsonRes(res, 200, { entries: tooltipEntries, files: tooltipFiles, configuredPath: tooltipPath });
+      return jsonRes(res, 200, TooltipBankResponseSchema.parse({ entries: tooltipEntries, files: tooltipFiles, configuredPath: tooltipPath }));
     }
 
     // Studio cache invalidation
@@ -471,7 +479,7 @@ export function registerStudioRoutes(ctx) {
         const st = await safeStat(path.join(generatedRoot, f));
         artifacts.push({ name: f, size: st?.size || 0, updated: st?.mtime?.toISOString() || '' });
       }
-      return jsonRes(res, 200, artifacts);
+      return jsonRes(res, 200, artifacts.map(a => ArtifactEntrySchema.parse(a)));
     }
 
     return false;

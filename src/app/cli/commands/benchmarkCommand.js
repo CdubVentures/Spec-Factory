@@ -1,16 +1,20 @@
-﻿export function createBenchmarkCommand({
+export function createBenchmarkCommand({
   runGoldenBenchmark,
+  openSpecDbForCategory,
 }) {
   return async function commandBenchmark(config, storage, args, commandName = 'benchmark') {
     const category = args.category || 'mouse';
     const fixturePath = args.fixture || null;
     const maxCases = Math.max(0, Number.parseInt(String(args['max-cases'] || '0'), 10) || 0);
 
+    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
+    try {
     const result = await runGoldenBenchmark({
       storage,
       category,
       fixturePath,
       maxCases,
+      specDb,
     });
 
     return {
@@ -26,5 +30,8 @@
       field_pass_rate: result.field_pass_rate,
       results: result.results,
     };
+    } finally {
+      try { specDb?.close(); } catch { /* */ }
+    }
   };
 }

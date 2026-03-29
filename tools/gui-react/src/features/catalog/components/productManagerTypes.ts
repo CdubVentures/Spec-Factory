@@ -4,17 +4,11 @@ export interface MutationResult {
   ok: boolean;
   error?: string;
   productId?: string;
-  previousProductId?: string;
   product?: CatalogProduct;
   seeded?: number;
   skipped?: number;
   total?: number;
   fields_imported?: number;
-  migration?: {
-    ok: boolean;
-    migrated_count: number;
-    failed_count: number;
-  };
 }
 
 export type BulkPreviewStatus = 'ready' | 'already_exists' | 'duplicate_in_paste' | 'invalid';

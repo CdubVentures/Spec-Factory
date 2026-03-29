@@ -70,7 +70,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     assert.equal(result.effectiveHelperRoot, overrideRoot);
     assert.deepEqual(result.generatedRulesCandidates, [
       path.join(overrideRoot, 'mouse', '_generated', 'field_rules.json'),
-      path.join(overrideRoot, 'mouse', '_generated', 'field_rules.runtime.json'),
     ]);
 
     assert.deepEqual(result.cliArgs, [
