@@ -387,7 +387,7 @@ export function ProductManager() {
     }
 
     return rows;
-  }, [bulkBrand, bulkGridRows, category, existingProductIds]);
+  }, [bulkBrand, bulkGridRows, existingIdentityKeys]);
 
   const bulkCounts = useMemo(() => {
     const counts = { ready: 0, existing: 0, duplicate: 0, invalid: 0 };
@@ -470,19 +470,6 @@ export function ProductManager() {
           </div>
         )}
 
-        {/* Migration result banner */}
-        {migrationResult?.migration && (
-          <div className={`px-4 py-2 text-sm rounded ${migrationResult.migration.ok
-            ? 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
-            : 'sf-bg-surface-soft sf-bg-surface-soft border sf-border-default sf-border-default'
-          }`}>
-            Renamed successfully. Migrated <strong>{migrationResult.migration.migrated_count}</strong> artifact{migrationResult.migration.migrated_count !== 1 ? 's' : ''} to new slug.
-            {migrationResult.migration.failed_count > 0 && (
-              <span className="sf-status-text-warning sf-status-text-warning"> ({migrationResult.migration.failed_count} failed)</span>
-            )}
-          </div>
-        )}
-
         {/* Product table */}
         <div className={sectionCls}>
           <DataTable
@@ -507,9 +494,7 @@ export function ProductManager() {
           {/* Brand */}
           <div>
             <label className={labelCls}>Brand *</label>
-            {editPid ? (
-              <input type="text" value={formBrand} disabled className={`${inputCls} w-full opacity-60`} />
-            ) : brandNames.length > 0 ? (
+            {brandNames.length > 0 ? (
               <select
                 value={formBrand}
                 onChange={(e) => setFormBrand(e.target.value)}
@@ -537,7 +522,7 @@ export function ProductManager() {
             <input
               type="text"
               value={formModel}
-              onChange={(e) => { setFormModel(e.target.value); setConfirmAction(null); setConfirmInput(''); }}
+              onChange={(e) => setFormModel(e.target.value)}
               placeholder="e.g. Viper V3 Pro"
               className={`${inputCls} w-full`}
             />
