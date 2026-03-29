@@ -340,24 +340,12 @@ export function ProductManager() {
         continue;
       }
 
-      const normalizedVariant = normalizeVariantForPreview(model, variant);
-      const productId = buildPreviewProductId(category, brand, model, normalizedVariant);
+      const normalizedVariant = isFabricatedVariantToken(model, variant)
+        ? ''
+        : cleanVariantToken(variant);
+      const identityKey = `${brand.toLowerCase()}||${model.toLowerCase()}||${normalizedVariant.toLowerCase()}`;
 
-      if (!productId) {
-        rows.push({
-          rowNumber: i + 1,
-          raw,
-          brand,
-          model,
-          variant,
-          status: 'invalid',
-          reason: 'Could not build slug',
-          productId: ''
-        });
-        continue;
-      }
-
-      if (seenInPaste.has(productId)) {
+      if (seenInPaste.has(identityKey)) {
         rows.push({
           rowNumber: i + 1,
           raw,
@@ -366,13 +354,13 @@ export function ProductManager() {
           variant: normalizedVariant,
           status: 'duplicate_in_paste',
           reason: 'Duplicate within pasted list',
-          productId
+          productId: ''
         });
         continue;
       }
-      seenInPaste.add(productId);
+      seenInPaste.add(identityKey);
 
-      if (existingProductIds.has(productId)) {
+      if (existingIdentityKeys.has(identityKey)) {
         rows.push({
           rowNumber: i + 1,
           raw,
@@ -381,7 +369,7 @@ export function ProductManager() {
           variant: normalizedVariant,
           status: 'already_exists',
           reason: 'Already in catalog',
-          productId
+          productId: ''
         });
         continue;
       }
@@ -394,7 +382,7 @@ export function ProductManager() {
         variant: normalizedVariant,
         status: 'ready',
         reason: 'Ready',
-        productId
+        productId: ''
       });
     }
 
