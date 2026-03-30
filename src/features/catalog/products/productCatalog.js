@@ -503,10 +503,12 @@ export async function seedFromCatalog({
     }
 
     const identity = normalizeProductIdentity(cat, brand, model, rawVariant);
-    const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
-    const pid = existingPid || buildProductId(cat);
+    // WHY: Prefer productId from catalog loader (preserves existing ID on re-seed),
+    // then identity lookup, then generate new hex ID only for truly new products.
+    const foundByIdentity = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+    const pid = row.productId || foundByIdentity || buildProductId(cat);
 
-    const isExisting = Boolean(existingPid);
+    const isExisting = Boolean(row.productId || foundByIdentity);
     if (isExisting && !isFullMode) {
       skipped += 1;
       continue;

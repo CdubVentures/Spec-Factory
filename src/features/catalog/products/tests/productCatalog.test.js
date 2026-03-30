@@ -321,6 +321,26 @@ test('seedFromCatalog: rejects missing category', async () => {
   }
 });
 
+test('seedFromCatalog: skips existing products in identity mode', async () => {
+  const config = await tmpConfig();
+  try {
+    // Pre-add a product so it exists in the catalog
+    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
+
+    // Seed from catalog — the existing product should be SKIPPED in identity mode
+    const result = await seedFromCatalog({ config, category: 'mouse' });
+    assert.equal(result.ok, true);
+    // The existing product should be counted as skipped, not seeded again
+    assert.equal(result.skipped >= 1, true, `expected at least 1 skipped, got ${result.skipped}`);
+
+    // Verify only 1 product exists (no duplicate created)
+    const products = await listProducts(config, 'mouse');
+    assert.equal(products.length, 1);
+  } finally {
+    await cleanup(config);
+  }
+});
+
 // --- listProducts ---
 
 test('listProducts: returns sorted product list', async () => {

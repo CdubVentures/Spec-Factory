@@ -18,7 +18,7 @@ test('buildReviewMetrics reports throughput and override ratios from finalized o
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-metrics',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
   await seedLatestArtifacts(harness);
@@ -28,6 +28,7 @@ test('buildReviewMetrics reports throughput and override ratios from finalized o
     config,
     category,
     productId,
+    specDb,
     reviewer: 'reviewer_metrics',
     reason: 'bulk_green_approve',
   });
@@ -36,12 +37,14 @@ test('buildReviewMetrics reports throughput and override ratios from finalized o
     config,
     category,
     productId,
+    specDb,
     applyOverrides: true,
   });
 
   const metrics = await buildReviewMetrics({
     config,
     category,
+    specDb,
     windowHours: 24,
   });
 

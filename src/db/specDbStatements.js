@@ -117,10 +117,14 @@ export function prepareStatements(db) {
     _upsertItemFieldState: db.prepare(`
       INSERT INTO item_field_state (
         category, product_id, field_key, value, confidence, source,
-        accepted_candidate_id, overridden, needs_ai_review, ai_review_complete
+        accepted_candidate_id, overridden, needs_ai_review, ai_review_complete,
+        override_source, override_value, override_reason, override_provenance,
+        overridden_by, overridden_at
       ) VALUES (
         @category, @product_id, @field_key, @value, @confidence, @source,
-        @accepted_candidate_id, @overridden, @needs_ai_review, @ai_review_complete
+        @accepted_candidate_id, @overridden, @needs_ai_review, @ai_review_complete,
+        @override_source, @override_value, @override_reason, @override_provenance,
+        @overridden_by, @overridden_at
       )
       ON CONFLICT(category, product_id, field_key) DO UPDATE SET
         value = excluded.value,
@@ -130,6 +134,12 @@ export function prepareStatements(db) {
         overridden = excluded.overridden,
         needs_ai_review = excluded.needs_ai_review,
         ai_review_complete = excluded.ai_review_complete,
+        override_source = COALESCE(excluded.override_source, override_source),
+        override_value = COALESCE(excluded.override_value, override_value),
+        override_reason = COALESCE(excluded.override_reason, override_reason),
+        override_provenance = COALESCE(excluded.override_provenance, override_provenance),
+        overridden_by = COALESCE(excluded.overridden_by, overridden_by),
+        overridden_at = COALESCE(excluded.overridden_at, overridden_at),
         updated_at = datetime('now')
     `),
 

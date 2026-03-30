@@ -82,8 +82,28 @@ export function Sidebar() {
     { validValues: variants },
   );
 
-  // Auto-select productId when brand+model are chosen
+  // WHY: Persist productId directly so selection survives identity renames.
+  // Brand/model/variant dropdowns are navigation UI; productId is the stable anchor.
+  const [persistedPid, setPersistedPid] = usePersistedTab<string>(
+    `sidebar:product:pid:${category}`,
+    '',
+  );
+
+  // Auto-select productId when brand+model are chosen, or restore from persisted pid
   useEffect(() => {
+    // WHY: ProductId is the stable anchor. Always check it first, regardless of
+    // brand/model state. If the product exists in the catalog, sync dropdowns from it.
+    if (persistedPid) {
+      const entry = catalog.find((r) => r.productId === persistedPid);
+      if (entry) {
+        if (entry.brand !== selectedBrand) setSelectedBrand(entry.brand);
+        if (entry.model !== selectedModel) setSelectedModel(entry.model);
+        const ev = cleanVariant(entry.variant);
+        if (ev && ev !== selectedVariant) setSelectedVariant(ev);
+        setSelectedProduct(entry.productId, entry.brand, entry.model, cleanVariant(entry.variant));
+        return;
+      }
+    }
     if (!selectedBrand || !selectedModel) {
       if (selectedProductId) setSelectedProduct('');
       return;
@@ -94,7 +114,8 @@ export function Sidebar() {
       (variants.length === 0 || !selectedVariant || cleanVariant(r.variant) === selectedVariant)
     );
     if (match) {
-      setSelectedProduct(match.productId, match.brand, match.model);
+      setSelectedProduct(match.productId, match.brand, match.model, cleanVariant(match.variant));
+      setPersistedPid(match.productId);
     } else if (selectedProductId) {
       setSelectedProduct('');
     }
@@ -103,6 +124,7 @@ export function Sidebar() {
   // Sync store → local when Overview row click updates productStore
   const storeBrand = useProductStore((s) => s.selectedBrand);
   const storeModel = useProductStore((s) => s.selectedModel);
+  const storeVariant = useProductStore((s) => s.selectedVariant);
 
   useEffect(() => {
     if (storeBrand && brands.includes(storeBrand) && storeBrand !== selectedBrand) {
@@ -111,7 +133,10 @@ export function Sidebar() {
     if (storeModel && models.includes(storeModel) && storeModel !== selectedModel) {
       setSelectedModel(storeModel);
     }
-  }, [storeBrand, storeModel, brands, models, selectedBrand, selectedModel, setSelectedBrand, setSelectedModel]);
+    if (storeVariant && variants.includes(storeVariant) && storeVariant !== selectedVariant) {
+      setSelectedVariant(storeVariant);
+    }
+  }, [storeBrand, storeModel, storeVariant, brands, models, variants, selectedBrand, selectedModel, selectedVariant, setSelectedBrand, setSelectedModel, setSelectedVariant]);
 
   // Reset model when brand changes
   function handleBrandChange(brand: string) {

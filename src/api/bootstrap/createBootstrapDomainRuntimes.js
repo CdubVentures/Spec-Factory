@@ -20,7 +20,7 @@ import { normalizePathToken } from '../helpers/valueNormalizers.js';
 import { safeReadJson, listFiles } from '../helpers/fileHelpers.js';
 
 export function createBootstrapDomainRuntimes({
-  config, HELPER_ROOT, storage, getSpecDb, cleanVariant, catalogKey,
+  config, HELPER_ROOT, storage, getSpecDb, cleanVariant,
 }) {
   const {
     ensureGridKeyReviewState,
@@ -65,7 +65,6 @@ export function createBootstrapDomainRuntimes({
     loadQueueState,
     loadProductCatalog,
     cleanVariant,
-    catalogKey,
     path,
   });
 

@@ -46,9 +46,12 @@ export function createRunListBuilder({
     return token.slice(-5);
   };
 
-  const buildPickerLabel = ({ category = '', productId = '', runId = '' } = {}) => {
+  const buildPickerLabel = ({ category = '', productId = '', brand = '', model = '', variant = '', runId = '' } = {}) => {
     const categoryLabel = titleCaseWords(category);
-    const productLabel = humanizeProductId({ category, productId });
+    // WHY: Prefer brand+model+variant from catalog/identity for display. Hex IDs are opaque.
+    const productLabel = (brand || model)
+      ? [brand, model, variant].filter(Boolean).join(' ')
+      : humanizeProductId({ category, productId });
     const runToken = toRunDisplayToken(runId);
     const lead = [categoryLabel, productLabel].filter(Boolean).join(' • ');
     if (!lead) return runToken;
@@ -126,7 +129,15 @@ export function createRunListBuilder({
     };
   };
 
-  async function listIndexLabRuns({ limit = 50, category = '' } = {}) {
+  async function listIndexLabRuns({ limit = 50, category = '', catalogProducts = null } = {}) {
+    // WHY: catalogProducts is an optional Map<productId, {brand, model, variant}> for label resolution.
+    // With hex-based product IDs, parsing the ID as a slug produces garbage labels.
+    const resolveBrandModel = (pid) => {
+      if (!catalogProducts) return {};
+      const entry = catalogProducts instanceof Map ? catalogProducts.get(pid) : catalogProducts[pid];
+      if (!entry) return {};
+      return { brand: String(entry.brand || '').trim(), model: String(entry.model || '').trim(), variant: String(entry.variant || '').trim() };
+    };
     const indexLabRoot = getIndexLabRoot();
     const categoryFilter = toToken(category).toLowerCase();
     const runLocations = new Map();
@@ -211,7 +222,7 @@ export function createRunListBuilder({
           run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
           storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolveBrandModel(rowProductId), runId: rowRunId }),
           has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
           has_search_profile: Boolean(sqlRow.search_profile_summary || sqlRow.has_search_profile),
           counters: sqlRow.counters,
@@ -261,7 +272,7 @@ export function createRunListBuilder({
           run_dir: runDir,
           storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, runId: rowRunId }),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolveBrandModel(rowProductId), runId: rowRunId }),
           has_needset: hasNeedSet,
           has_search_profile: hasSearchProfile,
           counters: meta.counters,
@@ -297,6 +308,7 @@ export function createRunListBuilder({
         picker_label: buildPickerLabel({
           category: rowCategory,
           productId: rowProductId,
+          ...resolveBrandModel(rowProductId),
           runId: rowRunId,
         }),
         has_needset: hasNeedSet,

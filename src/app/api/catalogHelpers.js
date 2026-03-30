@@ -17,7 +17,6 @@ export function createCatalogBuilder({
   loadQueueState,
   loadProductCatalog,
   cleanVariant,
-  catalogKey,
   path,
 } = {}) {
   assertObject('config', config);
@@ -26,7 +25,6 @@ export function createCatalogBuilder({
   assertFunction('loadQueueState', loadQueueState);
   assertFunction('loadProductCatalog', loadProductCatalog);
   assertFunction('cleanVariant', cleanVariant);
-  assertFunction('catalogKey', catalogKey);
   assertObject('path', path);
 
   return async function buildCatalog(category) {
@@ -43,9 +41,8 @@ export function createCatalogBuilder({
       const model = String(entry.model || '').trim();
       const variant = cleanVariant(entry.variant);
       if (!brand || !model) continue;
-      const key = catalogKey(brand, model, variant);
-      if (seen.has(key)) continue;
-      seen.set(key, {
+      if (seen.has(pid)) continue;
+      seen.set(pid, {
         productId: pid,
         id: entry.id || 0,
         identifier: entry.identifier || '',
@@ -68,44 +65,20 @@ export function createCatalogBuilder({
     for (const inputKey of inputKeys) {
       const input = await storage.readJsonOrNull(inputKey);
       if (!input) continue;
-      const existingProductId = input.productId || path.basename(inputKey, '.json').replace(`${category}-`, '');
-      const il = input.identityLock || {};
-      const brand = String(il.brand || input.brand || '').trim();
-      const model = String(il.model || input.model || '').trim();
-      const variant = cleanVariant(il.variant || input.variant);
-      if (!brand || !model) continue;
+      const existingProductId = input.productId || path.basename(inputKey, '.json');
+      if (!seen.has(existingProductId)) continue;
 
       const latestBase = storage.resolveOutputKey(category, existingProductId, 'latest');
-      const [summary, normalized, hasFinal] = await Promise.all([
+      const [summary, hasFinal] = await Promise.all([
         specDb
           ? Promise.resolve(specDb.getSummaryForProduct(existingProductId))
           : storage.readJsonOrNull(`${latestBase}/summary.json`),
-        specDb
-          ? Promise.resolve(specDb.getNormalizedForProduct(existingProductId))
-          : storage.readJsonOrNull(`${latestBase}/normalized.json`),
         storage.objectExists(`final/${category}/${existingProductId}/normalized.json`).catch(() => false),
       ]);
-      const identity = normalized?.identity || {};
       const qp = queueProducts[existingProductId] || {};
 
-      const resolvedBrand = identity.brand || brand;
-      const resolvedModel = identity.model || model;
-      let resolvedVariant = cleanVariant(identity.variant || variant);
-
-      let key = catalogKey(resolvedBrand, resolvedModel, resolvedVariant);
-      if (!seen.has(key) && resolvedVariant) {
-        const keyNoVariant = catalogKey(resolvedBrand, resolvedModel, '');
-        if (seen.has(keyNoVariant)) {
-          resolvedVariant = '';
-          key = keyNoVariant;
-        }
-      }
-
-      if (!seen.has(key)) continue;
-
-      const existing = seen.get(key);
+      const existing = seen.get(existingProductId);
       Object.assign(existing, {
-        productId: existingProductId,
         status: qp.status || (summary ? 'complete' : 'pending'),
         hasFinal,
         validated: !!(summary?.validated),

@@ -5,14 +5,6 @@
 //   src/features/catalog/contracts/catalogShapes.js
 //   src/features/catalog/contracts/productShapes.js
 
-export interface RenameHistoryEntryGen {
-  previous_slug: string;
-  previous_model: string;
-  previous_variant: string;
-  renamed_at: string;
-  migration_result: Record<string, unknown>;
-}
-
 export interface BrandRenameHistoryEntryGen {
   previous_slug: string;
   previous_name: string;
@@ -31,7 +23,6 @@ export interface CatalogProductGen {
   added_at: string;
   added_by: string;
   updated_at?: string;
-  rename_history?: RenameHistoryEntryGen[];
 }
 
 export interface CatalogRowGen {

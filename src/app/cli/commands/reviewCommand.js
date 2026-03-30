@@ -202,14 +202,21 @@ export function createReviewCommand({
       if (!productId) {
         throw new Error('review approve-greens requires --product-id <id>');
       }
-      const result = await approveGreenOverrides({
-        storage,
-        config,
-        category,
-        productId,
-        reason: String(args.reason || '').trim(),
-        reviewer: String(args.reviewer || '').trim()
-      });
+      const specDb = await openSpecDbForCategory(config, category);
+      let result;
+      try {
+        result = await approveGreenOverrides({
+          storage,
+          config,
+          category,
+          productId,
+          reason: String(args.reason || '').trim(),
+          reviewer: String(args.reviewer || '').trim(),
+          specDb
+        });
+      } finally {
+        try { specDb?.close(); } catch { /* no-op */ }
+      }
       return {
         command: 'review',
         action,
@@ -310,10 +317,13 @@ export function createReviewCommand({
       if (!type || !field || !value) {
         throw new Error('review suggest requires --type --field --value');
       }
+      let suggestSpecDb = null;
+      try { suggestSpecDb = await openSpecDbForCategory(config, category); } catch { /* optional */ }
       const result = await appendReviewSuggestion({
         config,
         category,
         type,
+        specDb: suggestSpecDb,
         payload: {
           product_id: String(args['product-id'] || '').trim(),
           field,
@@ -330,6 +340,7 @@ export function createReviewCommand({
           }
         }
       });
+      try { suggestSpecDb?.close(); } catch { /* no-op */ }
       return {
         command: 'review',
         action,

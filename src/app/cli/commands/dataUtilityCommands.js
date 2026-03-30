@@ -83,9 +83,54 @@ export function createDataUtilityCommands({
     };
   }
 
+  async function commandSeedCheckpoint(config, _storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) throw new Error('seed-checkpoint requires --category');
+
+    const { SpecDb } = await import('../../../db/specDb.js');
+    const { scanAndSeedCheckpoints } = await import('../../../pipeline/checkpoint/scanAndSeedCheckpoints.js');
+    const { defaultIndexLabRoot } = await import('../../../core/config/runtimeArtifactRoots.js');
+
+    const indexLabRoot = String(args.out || defaultIndexLabRoot()).trim();
+    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+    await fsNode.mkdir(dbDir, { recursive: true });
+    const dbPath = pathNode.join(dbDir, 'spec.sqlite');
+    const db = new SpecDb({ dbPath, category });
+
+    try {
+      const result = await scanAndSeedCheckpoints({ specDb: db, indexLabRoot });
+      return { command: 'seed-checkpoint', category, db_path: dbPath, ...result };
+    } finally {
+      db.close();
+    }
+  }
+
+  async function commandMigrateProductIds(config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) throw new Error('migrate-product-ids requires --category');
+
+    const { SpecDb } = await import('../../../db/specDb.js');
+    const { migrateProductIds } = await import('../../../features/catalog/migrations/idFormatMigration.js');
+
+    const dryRun = asBool(args['dry-run']);
+    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+    await fsNode.mkdir(dbDir, { recursive: true });
+    const dbPath = pathNode.join(dbDir, 'spec.sqlite');
+    const db = new SpecDb({ dbPath, category });
+
+    try {
+      const result = await migrateProductIds({ config, category, storage, specDb: db, dryRun });
+      return { command: 'migrate-product-ids', db_path: dbPath, ...result };
+    } finally {
+      db.close();
+    }
+  }
+
   return {
     commandIngestCsv,
     commandSeedDb,
+    commandSeedCheckpoint,
+    commandMigrateProductIds,
     commandTestS3,
     commandGenerateTypes,
   };

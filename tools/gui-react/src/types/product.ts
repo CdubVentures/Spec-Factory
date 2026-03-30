@@ -3,7 +3,6 @@
 // Run: node tools/gui-react/scripts/generateProductTypes.js
 
 import type {
-  RenameHistoryEntryGen,
   BrandRenameHistoryEntryGen,
   CatalogProductGen,
   CatalogRowGen,
@@ -14,15 +13,8 @@ import type {
 
 // ── Generated re-exports (stable names for consumers) ──
 
-// WHY: Overrides migration_result from Record<string,unknown> to specific shape
-// needed by ProductManager.tsx for .migrated_count rendering.
-export interface RenameHistoryEntry extends Omit<RenameHistoryEntryGen, 'migration_result'> {
-  migration_result: { migrated_count: number; failed_count: number };
-}
 export type BrandRenameHistoryEntry = BrandRenameHistoryEntryGen;
-export interface CatalogProduct extends Omit<CatalogProductGen, 'rename_history'> {
-  rename_history?: RenameHistoryEntry[];
-}
+export type CatalogProduct = CatalogProductGen;
 export type CatalogRow = CatalogRowGen;
 export type Brand = BrandGen;
 export type QueueProduct = QueueProductGen;
@@ -43,11 +35,6 @@ export interface ProductSummary extends ProductSummaryGen {
 
 // ── Manual types (no backend shape descriptor) ──
 
-export interface MigrationResult {
-  ok: boolean;
-  migrated_count: number;
-  failed_count: number;
-}
 
 export interface NormalizedProduct {
   identity: {

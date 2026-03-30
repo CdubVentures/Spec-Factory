@@ -275,9 +275,11 @@ test('initCategory creates category scaffolding only in category_authority for c
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_overrides')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'schema.json')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'sources.json')), true);
-    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'required_fields.json')), true);
-    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'search_templates.json')), true);
-    assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'anchors.json')), true);
+    const initSchema = JSON.parse(await fs.readFile(path.join(helperRoot, 'monitor', 'schema.json'), 'utf8'));
+    assert.equal(Array.isArray(initSchema.required_fields), true);
+    assert.equal(typeof initSchema.anchor_fields, 'object');
+    assert.equal(Array.isArray(initSchema.search_templates), true);
+    assert.equal(initSchema.search_templates.length > 0, true);
     assert.equal(initResult.shared_schema_root, path.join(helperRoot, '_global', '_shared'));
     assert.equal(await pathExists(path.join(helperRoot, '_global', '_shared', 'base_field_schema.json')), true);
     assert.equal(await pathExists(path.join(helperRoot, '_global', '_shared', 'base_component_schema.json')), true);

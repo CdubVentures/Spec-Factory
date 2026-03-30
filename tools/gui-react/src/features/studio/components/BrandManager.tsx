@@ -478,7 +478,7 @@ export function BrandManager() {
   const isFormValid = formName.trim().length > 0 && formCategories.length > 0;
   const isSaving = addMut.isPending || updateMut.isPending;
   const saveError = addMut.error || updateMut.error;
-  const renameConfirmPhrase = newSlugPreview;
+  const renameConfirmPhrase = formName.trim();
   const deleteConfirmPhrase = editSlug || "";
   const saveConfirmPhrase = editSlug || "";
   const allCategories = useMemo(() => {
@@ -641,10 +641,10 @@ export function BrandManager() {
             >
               {" "}
               Brand renamed: <strong>{renameResult.oldName}</strong> &rarr;{" "}
-              <strong>{renameResult.newName}</strong>. Cascaded to{" "}
+              <strong>{renameResult.newName}</strong>. Brand updated on{" "}
               <strong>{renameResult.cascaded_products}</strong> product
-              {renameResult.cascaded_products !== 1 ? "s" : ""} (slugs rebuilt,
-              artifacts migrated).{" "}
+              {renameResult.cascaded_products !== 1 ? "s" : ""}. Product IDs
+              unchanged.{" "}
               {(renameResult.cascade_failures ?? 0) > 0 && (
                 <span className={textWarningStrongCls}>
                   {" "}
@@ -883,8 +883,8 @@ export function BrandManager() {
                   {/* Hint when no changes */}{" "}
                   {!hasAnyChange && totalProducts > 0 && (
                     <p className={`text-[10px] ${textMutedCls} pt-0.5`}>
-                      Renaming this brand will rebuild all product slugs above
-                      and migrate their artifacts.
+                      Renaming this brand will update the brand name on all
+                      products above. Product IDs are unchanged.
                     </p>
                   )}{" "}
                 </div>{" "}
@@ -900,8 +900,8 @@ export function BrandManager() {
                 <p className={`text-xs ${textDangerStrongCls}`}>
                   {" "}
                   This will rename <strong>{origName}</strong> to{" "}
-                  <strong>{formName.trim()}</strong>, rebuild all product slugs
-                  under this brand, and migrate all artifacts.{" "}
+                  <strong>{formName.trim()}</strong>, and update the brand name
+                  on all products under this brand.{" "}
                   {totalProducts > 0 && (
                     <>
                       {" "}
@@ -911,7 +911,7 @@ export function BrandManager() {
                   )}{" "}
                 </p>{" "}
                 <p className={`text-xs ${textDangerStrongCls}`}>
-                  To confirm, type the new brand slug below:
+                  To confirm, type the new brand name below:
                 </p>{" "}
                 <div className="font-mono text-xs sf-chip-danger rounded px-2 py-1 sf-status-text-danger select-all">
                   {" "}
@@ -921,7 +921,7 @@ export function BrandManager() {
                   type="text"
                   value={confirmInput}
                   onChange={(e) => setConfirmInput(e.target.value)}
-                  placeholder="Type the new slug to confirm"
+                  placeholder="Type the new name to confirm"
                   className={redConfirmInputCls}
                   autoFocus
                 />{" "}

@@ -87,6 +87,8 @@ function usage() {
     '  intel-graph-api --category <category> [--host <host>] [--port <port>] [--local]',
     '  product-reconcile --category <category> [--dry-run] [--local]',
     '  seed-db --category <category> [--local]',
+    '  seed-checkpoint --category <category> [--out <path>] [--local]',
+    '  migrate-product-ids --category <category> [--dry-run] [--local]',
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
     '',
     'Global options:',
@@ -194,6 +196,11 @@ const loadReviewCommandHandler = createLazyLoader(async () => {
   });
 });
 
+const loadExportOverridesCommandHandler = createLazyLoader(async () => {
+  const { createExportOverridesCommand } = await import('../app/cli/commands/exportOverridesCommand.js');
+  return createExportOverridesCommand({ openSpecDbForCategory });
+});
+
 const loadDiscoverCommandHandler = createLazyLoader(async () => {
   const [
     { createDiscoverCommand },
@@ -250,6 +257,7 @@ const loadRebuildIndexCommandHandler = createLazyLoader(async () => {
   ]);
   return createRebuildIndexCommand({
     rebuildCategoryIndex,
+    openSpecDbForCategory,
   });
 });
 
@@ -550,6 +558,8 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadQueueCommandHandler())(config, storage, args);
     case 'review':
       return (await loadReviewCommandHandler())(config, storage, args);
+    case 'export-overrides':
+      return (await loadExportOverridesCommandHandler())(config, storage, args);
     case 'billing-report':
       return (await loadBillingReportCommandHandler())(config, storage, args);
     case 'learning-report':
@@ -576,6 +586,10 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadPublishingCommands()).commandProductReconcile(config, storage, args);
     case 'seed-db':
       return (await loadDataUtilityCommands()).commandSeedDb(config, storage, args);
+    case 'seed-checkpoint':
+      return (await loadDataUtilityCommands()).commandSeedCheckpoint(config, storage, args);
+    case 'migrate-product-ids':
+      return (await loadDataUtilityCommands()).commandMigrateProductIds(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
     default:

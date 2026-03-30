@@ -66,7 +66,7 @@ export function bootstrapServer({ projectRoot }) {
   const {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
     storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
-    resolveProjectPath, cleanVariant, catalogKey, markEnumSuggestionStatusBound,
+    resolveProjectPath, cleanVariant, markEnumSuggestionStatusBound,
   } = env;
 
   // ── Native module guard (fail-loud before Phase 2) ──
@@ -134,7 +134,7 @@ export function bootstrapServer({ projectRoot }) {
 
   // ── Phase 3: Domain runtimes (review + catalog) ──
   const domain = createBootstrapDomainRuntimes({
-    config, HELPER_ROOT, storage, getSpecDb, cleanVariant, catalogKey,
+    config, HELPER_ROOT, storage, getSpecDb, cleanVariant,
   });
 
   // ── Crawl video cleanup (fire-and-forget, 24h TTL) ──

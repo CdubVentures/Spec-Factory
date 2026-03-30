@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import { formatMs, getRefetchInterval, serpSelectorDecisionBadgeClass } from '../../helpers.ts';
 import { providerDisplayLabel, resolveDecisionDisplay } from '../../selectors/searchResultsHelpers.js';
 import type { RuntimeOpsWorkerRow, WorkerDetailResponse, SearchWorkerAttempt, SearchResultEntry, PrefetchTabKey } from '../../types.ts';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
+import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
+import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
+import { usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../../stores/collapseStore.ts';
+import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
+import {
+  getProviderColors, searchStatusLabel, formatTime, stateBadgeContent, attemptLabel,
+  computeSearchStats, buildSearchNarrative, computeProviderUsage, computeTriageSummary,
+} from './searchWorkerHelpers.ts';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -18,625 +28,15 @@ interface SearchWorkerPanelProps {
   onOpenPrefetchTab: (tab: PrefetchTabKey | null) => void;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-const PROVIDER_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  google: { text: 'rgb(29 78 216)',  bg: 'rgb(59 130 246 / 0.06)',  border: 'rgb(59 130 246 / 0.21)' },
-  bing:   { text: 'rgb(8 145 178)',  bg: 'rgb(6 182 212 / 0.06)',   border: 'rgb(6 182 212 / 0.21)' },
-  brave:  { text: 'rgb(146 64 14)',  bg: 'rgb(245 158 11 / 0.06)',  border: 'rgb(245 158 11 / 0.21)' },
-  serper: { text: 'rgb(15 118 110)', bg: 'rgb(20 184 166 / 0.06)',  border: 'rgb(20 184 166 / 0.21)' },
-};
-
-const PROVIDER_COLORS_DARK: Record<string, { text: string; bg: string; border: string }> = {
-  google: { text: 'rgb(147 197 253)', bg: 'rgb(59 130 246 / 0.1)',   border: 'rgb(59 130 246 / 0.28)' },
-  bing:   { text: 'rgb(103 232 249)', bg: 'rgb(6 182 212 / 0.1)',    border: 'rgb(6 182 212 / 0.28)' },
-  brave:  { text: 'rgb(253 224 71)',  bg: 'rgb(245 158 11 / 0.1)',   border: 'rgb(245 158 11 / 0.28)' },
-  serper: { text: 'rgb(94 234 212)',  bg: 'rgb(20 184 166 / 0.1)',   border: 'rgb(20 184 166 / 0.28)' },
-};
-
-function getProviderColors(provider: string): { text: string; bg: string; border: string } {
-  const p = provider.toLowerCase();
-  const isDark = document.documentElement.getAttribute('data-sf-theme-mode') === 'dark';
-  const map = isDark ? PROVIDER_COLORS_DARK : PROVIDER_COLORS;
-  for (const key of Object.keys(map)) {
-    if (p.includes(key)) return map[key];
-  }
-  return isDark
-    ? { text: 'rgb(156 163 175)', bg: 'rgb(156 163 175 / 0.08)', border: 'rgb(156 163 175 / 0.2)' }
-    : { text: 'rgb(107 114 128)', bg: 'rgb(107 114 128 / 0.06)', border: 'rgb(107 114 128 / 0.18)' };
-}
-
-function searchStatusLabel(status: string): { label: string; chipClass: string } {
-  switch (status) {
-    case 'done':
-      return { label: 'Done', chipClass: 'sf-chip-success' };
-    case 'zero':
-      return { label: '0 results', chipClass: 'sf-chip-warning' };
-    case 'running':
-      return { label: 'Running\u2026', chipClass: 'sf-chip-info' };
-    default:
-      return { label: status, chipClass: 'sf-chip-neutral' };
-  }
-}
-
-function formatTime(ts: string | null): string {
-  if (!ts) return '\u2014';
-  const match = ts.match(/(\d{2}:\d{2}:\d{2})/);
-  if (match) return match[1];
-  try {
-    const d = new Date(ts);
-    if (Number.isNaN(d.getTime())) return '\u2014';
-    return d.toTimeString().slice(0, 8);
-  } catch {
-    return '\u2014';
-  }
-}
-
-function stateBadgeContent(state: string): { label: string; chipClass: string; pulse: boolean } {
-  switch (state) {
-    case 'running':
-      return { label: 'Running', chipClass: 'sf-chip-success', pulse: true };
-    case 'stuck':
-      return { label: '\u26A0 Stalled', chipClass: 'sf-chip-warning', pulse: false };
-    case 'queued':
-      return { label: 'Queued', chipClass: 'sf-chip-neutral opacity-50', pulse: false };
-    case 'idle':
-      return { label: '\u25CB Idle', chipClass: 'sf-chip-neutral', pulse: false };
-    default:
-      return { label: state, chipClass: 'sf-chip-neutral', pulse: false };
-  }
-}
-
-// ── Inline sub-components ────────────────────────────────────────────────────
-
-function SlotIcon({ slot }: { slot: string }) {
-  return (
-    <div
-      className="w-14 h-14 rounded-lg flex flex-col items-center justify-center shrink-0"
-      style={{
-        background: 'rgb(var(--sf-color-accent-rgb) / 0.07)',
-        border: '1px solid rgb(var(--sf-color-accent-rgb) / 0.25)',
-        boxShadow: '0 0 0 3px rgb(var(--sf-color-accent-rgb) / 0.07)',
-      }}
-    >
-      <span className="text-[22px] font-bold leading-none" style={{ color: 'rgb(var(--sf-color-accent-rgb))' }}>
-        {slot}
-      </span>
-      <span className="sf-text-nano font-medium" style={{ color: 'rgb(var(--sf-color-accent-strong-rgb))' }}>
-        slot
-      </span>
-    </div>
-  );
-}
-
-function ProviderPill({ provider }: { provider: string }) {
-  const label = providerDisplayLabel(provider) || provider || '\u2014';
-  const colors = getProviderColors(provider);
-  return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded sf-text-caption font-mono whitespace-nowrap"
-      style={{ color: colors.text, background: colors.bg, border: `1px solid ${colors.border}` }}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StoryCard({ label, note, isActive, isDone, isStuck }: {
-  label: string;
-  note: string;
-  isActive: boolean;
-  isDone: boolean;
-  isStuck: boolean;
-}) {
-  const active = isActive;
-  const done = isDone && !isActive;
-  const stuckActive = isActive && isStuck;
-
-  const borderStyle = active
-    ? (stuckActive
-      ? '1px solid rgb(245 158 11 / 0.4)'
-      : '1px solid rgb(var(--sf-color-accent-rgb) / 0.4)')
-    : done
-      ? '1px solid rgb(var(--sf-color-accent-rgb) / 0.2)'
-      : undefined;
-
-  const bgStyle = active
-    ? (stuckActive
-      ? 'rgb(245 158 11 / 0.04)'
-      : 'rgb(var(--sf-color-accent-rgb) / 0.04)')
-    : undefined;
-
-  const shadowStyle = active
-    ? (stuckActive
-      ? '0 0 0 2px rgb(245 158 11 / 0.1)'
-      : '0 0 0 2px rgb(var(--sf-color-accent-rgb) / 0.1)')
-    : undefined;
-
-  /* Step circle — done gets a colored fill, active gets spin glyph */
-  const circleColor = (active || done)
-    ? 'rgb(var(--sf-color-accent-rgb))'
-    : undefined;
-
-  const circleBorderColor = (active || done)
-    ? 'rgb(var(--sf-color-accent-rgb))'
-    : undefined;
-
-  const circleBgColor = done
-    ? 'rgb(var(--sf-color-accent-rgb) / 0.1)'
-    : undefined;
-
-  return (
-    <div
-      className={`flex-1 rounded-lg p-3 ${
-        !active && !done ? 'sf-surface-card sf-border-soft border' : 'sf-surface-card'
-      }`}
-      style={{
-        ...(borderStyle ? { border: borderStyle } : {}),
-        ...(bgStyle ? { background: bgStyle } : {}),
-        ...(shadowStyle ? { boxShadow: shadowStyle } : {}),
-      }}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <div
-          className="w-[18px] h-[18px] rounded-full flex items-center justify-center sf-text-nano font-bold shrink-0"
-          style={{
-            borderWidth: '1.5px',
-            borderStyle: 'solid',
-            borderColor: circleBorderColor ?? 'var(--sf-token-border-subtle)',
-            color: circleColor ?? 'var(--sf-token-text-dim)',
-            background: circleBgColor,
-          }}
-        >
-          {active ? '\u21BB' : done ? '\u2713' : ''}
-        </div>
-        <span className={`text-xs ${active ? 'font-semibold sf-text-primary' : done ? 'font-medium sf-text-primary' : 'sf-text-muted'}`}>
-          {label}
-        </span>
-      </div>
-      <div className="sf-text-caption sf-text-muted font-mono pl-[26px]">{note}</div>
-    </div>
-  );
-}
-
-function KpiCard({ label, value, glow, valueClass }: {
-  label: string;
-  value: string;
-  glow?: boolean;
-  valueClass?: string;
-}) {
-  return (
-    <div
-      className={`flex-1 min-w-0 sf-surface-card rounded-lg px-4 py-3.5 ${glow ? 'sf-kpi-glow-accent' : ''}`}
-      style={glow
-        ? undefined
-        : { border: '1px solid var(--sf-token-border-default)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }
-      }
-    >
-      <div className="sf-text-nano font-semibold tracking-wider uppercase sf-text-muted mb-1.5">{label}</div>
-      <div className={`text-[22px] font-bold leading-none tabular-nums ${valueClass ?? 'sf-text-primary'}`}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function AttemptRow({ attempt, isDebugOpen, isResultsOpen, onToggleDebug, onToggleResults, onJourney, onResults }: {
-  attempt: SearchWorkerAttempt;
-  isDebugOpen: boolean;
-  isResultsOpen: boolean;
-  onToggleDebug: () => void;
-  onToggleResults: () => void;
-  onJourney: () => void;
-  onResults: () => void;
-}) {
-  const isAttemptRunning = attempt.status === 'running';
-  const status = searchStatusLabel(attempt.status);
-  const resultCount = attempt.result_count;
-  const durationMs = attempt.duration_ms;
-  const displayProvider = attempt.resolved_provider || attempt.provider;
-  const hasResults = attempt.results && attempt.results.length > 0;
-
-  return (
-    <tr className={`border-t sf-border-soft sf-table-row ${
-      isAttemptRunning ? 'sf-table-row-accent' : ''
-    } ${isDebugOpen || isResultsOpen ? 'sf-table-row-highlight' : ''}`}>
-      <td className="px-2.5 py-2.5 text-right font-mono sf-text-caption">
-        <span
-          className="font-semibold"
-          style={{ color: attempt.attempt_type === 'fallback' ? 'rgb(146 64 14)' : 'rgb(var(--sf-color-accent-rgb))' }}
-          title={attempt.attempt_type === 'fallback' ? `Fallback attempt #${attempt.attempt_no}` : `Primary attempt #${attempt.attempt_no}`}
-        >
-          {attempt.attempt_type_label || `p${attempt.attempt_no}`}
-        </span>
-      </td>
-      <td className="px-2.5 py-2.5 min-w-0">
-        <span
-          className={`font-mono text-xs block truncate max-w-full ${isAttemptRunning ? '' : 'sf-text-primary'}`}
-          style={isAttemptRunning ? { color: 'rgb(var(--sf-color-accent-rgb))' } : undefined}
-        >
-          {isAttemptRunning && (
-            <span className="sf-blink mr-1" style={{ color: 'rgb(var(--sf-color-accent-rgb))' }}>{'\u258C'}</span>
-          )}
-          {attempt.query || '\u2014'}
-        </span>
-      </td>
-      <td className="px-2 py-2.5">
-        <ProviderPill provider={displayProvider} />
-      </td>
-      <td className="px-2 py-2.5">
-        <span className={`px-2 py-0.5 rounded-full sf-text-caption font-medium ${status.chipClass}`}>
-          {status.label}
-        </span>
-      </td>
-      <td className="px-2.5 py-2.5 text-right font-mono font-medium">
-        <span style={{
-          color: attempt.status === 'running'
-            ? 'var(--sf-token-text-dim)'
-            : resultCount === 0
-              ? 'rgb(146 64 14)'
-              : undefined,
-          fontWeight: resultCount != null && resultCount > 0 ? 500 : 400,
-        }}>
-          {attempt.status === 'running' ? '\u2014' : String(resultCount)}
-        </span>
-      </td>
-      <td className="px-2.5 py-2.5 text-right font-mono sf-text-caption">
-        <span style={{
-          color: attempt.status === 'running'
-            ? 'var(--sf-token-text-dim)'
-            : durationMs > 2000
-              ? 'rgb(146 64 14)'
-              : 'var(--sf-token-text-muted)',
-          fontWeight: durationMs > 2000 ? 600 : 400,
-        }}>
-          {attempt.status === 'running' ? '\u2014' : formatMs(durationMs)}
-        </span>
-      </td>
-      <td className="px-2.5 py-2.5 text-right font-mono sf-text-dim sf-text-caption">
-        {formatTime(attempt.started_ts)}
-      </td>
-      <td className="px-2 py-2">
-        {!isAttemptRunning ? (
-          <div className="flex items-center gap-1 justify-end">
-            {hasResults && (
-              <button
-                type="button"
-                onClick={onToggleResults}
-                className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${
-                  isResultsOpen ? 'sf-chip-active' : 'sf-icon-button border sf-border-soft'
-                }`}
-                title="Toggle search results"
-              >
-                URLs
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onJourney}
-              className="px-1.5 py-0.5 rounded sf-text-caption font-medium sf-icon-button border sf-border-soft"
-              title="Query Journey"
-            >
-              JRN
-            </button>
-            <button
-              type="button"
-              onClick={onResults}
-              className="px-1.5 py-0.5 rounded sf-text-caption font-medium sf-icon-button border sf-border-soft"
-              title="Search Results"
-            >
-              RES
-            </button>
-            <button
-              type="button"
-              onClick={onToggleDebug}
-              className={`px-1.5 py-0.5 rounded sf-text-caption font-medium ${
-                isDebugOpen ? 'sf-chip-active' : 'sf-icon-button border sf-border-soft'
-              }`}
-              title="Toggle debug payload"
-            >
-              {'\u00B7\u00B7\u00B7'}
-            </button>
-          </div>
-        ) : null}
-      </td>
-    </tr>
-  );
-}
-
-function triageRowBg(decision: string): React.CSSProperties | undefined {
-  switch (decision) {
-    case 'drop':
-    case 'skip':
-      return { background: 'rgb(239 68 68 / 0.06)', borderLeft: '2px solid rgb(239 68 68 / 0.3)' };
-    case 'hard_drop':
-      return { background: 'rgb(245 158 11 / 0.06)', borderLeft: '2px solid rgb(245 158 11 / 0.3)' };
-    case 'maybe':
-      return { background: 'rgb(245 158 11 / 0.06)', borderLeft: '2px solid rgb(245 158 11 / 0.3)' };
-    default:
-      return undefined;
-  }
-}
-
-function fetchStatusBadge(r: SearchResultEntry): React.ReactNode {
-  if (r.fetched && r.fetch_worker_id) {
-    const shortId = r.fetch_worker_id.length > 12
-      ? r.fetch_worker_id.slice(-6)
-      : r.fetch_worker_id;
-    const displayWorkerId = shortId.startsWith('fetch-') ? shortId : `fetch-${shortId}`;
-    const linkageLabel = r.fetch_link_type === 'host_fallback'
-      ? 'Host fallback'
-      : 'Exact';
-    return (
-      <span
-        className="sf-text-nano font-mono px-1.5 py-0.5 rounded sf-chip-success shrink-0"
-        title={`${linkageLabel === 'Exact' ? 'Exact URL match' : 'Same-host fallback'} via ${r.fetch_worker_id}`}
-      >
-        {`${linkageLabel} ${displayWorkerId}`}
-      </span>
-    );
-  }
-  if (!r.fetched && r.decision === 'keep') {
-    return <span className="sf-text-nano px-1.5 py-0.5 rounded sf-chip-neutral shrink-0">Queued</span>;
-  }
-  if (!r.fetched && r.decision === 'drop') {
-    return null;
-  }
-  if (!r.fetched && r.decision === 'unknown') {
-    return <span className="sf-text-nano px-1.5 py-0.5 rounded sf-chip-neutral shrink-0 opacity-50">No triage data</span>;
-  }
-  return null;
-}
-
-function formatScoreComponent(value: number): string {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed.toFixed(1) : '0.0';
-}
-
-function ScoreEvidence({ rationale, scoreComponents }: {
-  rationale: string;
-  scoreComponents: SearchResultEntry['score_components'];
-}) {
-  if (!rationale && !scoreComponents) {
-    return null;
-  }
-  return (
-    <div className="mt-1 flex flex-col gap-0.5">
-      {rationale ? (
-        <div className="sf-text-nano sf-text-muted truncate" title={rationale}>
-          {rationale}
-        </div>
-      ) : null}
-      {scoreComponents ? (
-        <div
-          className="sf-text-nano font-mono sf-text-dim truncate"
-          title={`base ${formatScoreComponent(scoreComponents.base_relevance)} · tier ${formatScoreComponent(scoreComponents.tier_boost)} · id ${formatScoreComponent(scoreComponents.identity_match)} · pen ${formatScoreComponent(scoreComponents.penalties)}`}
-        >
-          {`base ${formatScoreComponent(scoreComponents.base_relevance)} · tier ${formatScoreComponent(scoreComponents.tier_boost)} · id ${formatScoreComponent(scoreComponents.identity_match)} · pen ${formatScoreComponent(scoreComponents.penalties)}`}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ResultsDrawer({ results }: { results: SearchResultEntry[] }) {
-  const fetchedCount = results.filter((r) => r.fetched).length;
-  const keptCount = results.filter((r) => r.decision === 'keep').length;
-  const droppedCount = results.filter((r) => r.decision === 'drop').length;
-  const hardDropCount = results.filter((r) => r.decision === 'hard_drop').length;
-  const maybeCount = results.filter((r) => r.decision === 'maybe').length;
-  return (
-    <tr className="border-t sf-border-soft">
-      <td colSpan={8} className="px-0 py-0">
-        <div className="px-5 py-2.5" style={{ background: 'rgb(var(--sf-color-accent-rgb) / 0.02)' }}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="sf-text-caption font-semibold sf-text-primary">
-              Search Results
-            </span>
-            <span className="sf-text-nano sf-text-muted">
-              {results.length} URLs &middot; {fetchedCount} fetched &middot; {keptCount} kept, {droppedCount} LLM-dropped{hardDropCount > 0 ? `, ${hardDropCount} hard-dropped` : ''}, {maybeCount} maybe
-            </span>
-          </div>
-          <div className="flex flex-col gap-px overflow-hidden border sf-border-soft">
-            {results.map((r, i) => (
-              <div
-                key={r.url}
-                className="flex items-center gap-2.5 px-3 py-1.5 sf-surface-card"
-                style={triageRowBg(r.decision)}
-              >
-                <span className="sf-text-nano font-mono sf-text-dim w-5 text-right shrink-0">
-                  {r.rank || i + 1}
-                </span>
-                <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.fetched ? 'bg-green-500' : 'sf-bg-muted'}`}
-                  title={r.fetched ? `Fetched by ${r.fetch_worker_id}` : 'Not fetched'}
-                />
-                {(() => { const dd = resolveDecisionDisplay(r, { isCrawled: Boolean(r.already_crawled) }); return (
-                  <span className={`px-1.5 py-0.5 rounded-full sf-text-nano font-medium shrink-0 ${dd.chipClass}`}>
-                    {dd.label}
-                  </span>
-                ); })()}
-                {r.score > 0 && (
-                  <span className="sf-text-nano font-mono sf-text-dim shrink-0" title={r.rationale || undefined}>
-                    {r.score.toFixed(1)}
-                  </span>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={r.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono sf-text-caption truncate sf-link"
-                      title={r.url}
-                    >
-                      {r.domain}
-                    </a>
-                    {r.domain_safety && (
-                      <span className={`px-1 py-0 rounded sf-text-nano font-medium shrink-0 ${
-                        r.domain_safety === 'safe' ? 'sf-chip-success'
-                        : r.domain_safety === 'blocked' ? 'sf-chip-danger'
-                        : 'sf-chip-warning'
-                      }`}>
-                        {r.domain_safety}
-                      </span>
-                    )}
-                    {fetchStatusBadge(r)}
-                  </div>
-                  <div className="sf-text-nano sf-text-muted truncate" title={r.url}>
-                    {r.title || r.url}
-                  </div>
-                  <ScoreEvidence rationale={r.rationale} scoreComponents={r.score_components} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function AttemptResultsPreview({ results }: { results: SearchResultEntry[] }) {
-  const keptCount = results.filter((r) => r.decision === 'keep').length;
-  const droppedCount = results.filter((r) => r.decision === 'drop').length;
-  const hardDropCount = results.filter((r) => r.decision === 'hard_drop').length;
-  const maybeCount = results.filter((r) => r.decision === 'maybe').length;
-
-  return (
-    <tr className="border-t sf-border-soft">
-      <td colSpan={8} className="px-0 py-0">
-        <div className="px-5 py-2.5 sf-surface-card">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="sf-text-caption font-semibold sf-text-primary">Query results</span>
-            <span className="sf-text-nano sf-text-muted">
-              {results.length} results &mdash; {keptCount} kept, {droppedCount} LLM-dropped{hardDropCount > 0 ? `, ${hardDropCount} hard-dropped` : ''}, {maybeCount} maybe
-            </span>
-          </div>
-          <div className="mt-2 overflow-x-auto">
-            <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
-              {results.map((result, index) => {
-                const rank = result.rank || index + 1;
-                const domain = result.domain || result.url;
-                return (
-                  <div
-                    key={`${result.url}:${rank}`}
-                    className="w-[14rem] shrink-0 border sf-border-soft px-3 py-2"
-                    style={triageRowBg(result.decision)}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="sf-text-nano font-mono sf-text-dim shrink-0">{`#${rank}`}</span>
-                      {(() => { const dd = resolveDecisionDisplay(result, { isCrawled: Boolean(result.already_crawled) }); return (
-                        <span className={`px-1 py-0 rounded-full sf-text-nano font-medium ${dd.chipClass}`}>
-                          {dd.label}
-                        </span>
-                      ); })()}
-                      {result.score > 0 && (
-                        <span className="sf-text-nano font-mono sf-text-dim">{result.score.toFixed(1)}</span>
-                      )}
-                    </div>
-                    <div className="mt-1">
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="truncate font-mono sf-text-caption sf-link block"
-                        title={result.url}
-                      >
-                        {domain}
-                      </a>
-                    </div>
-                    <div className="mt-1 truncate sf-text-nano sf-text-muted" title={result.title || result.url}>
-                      {result.title || result.url}
-                    </div>
-                    <ScoreEvidence rationale={result.rationale} scoreComponents={result.score_components} />
-                    <div className="mt-1.5">
-                      {fetchStatusBadge(result)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function AttemptRowWithDrawer({ attempt, isDebugOpen, isResultsOpen, onToggleDebug, onToggleResults, onJourney, onResults, workerId }: {
-  attempt: SearchWorkerAttempt;
-  isDebugOpen: boolean;
-  isResultsOpen: boolean;
-  onToggleDebug: () => void;
-  onToggleResults: () => void;
-  onJourney: () => void;
-  onResults: () => void;
-  workerId: string;
-}) {
-  return (
-    <>
-      <AttemptRow
-        attempt={attempt}
-        isDebugOpen={isDebugOpen}
-        isResultsOpen={isResultsOpen}
-        onToggleDebug={onToggleDebug}
-        onToggleResults={onToggleResults}
-        onJourney={onJourney}
-        onResults={onResults}
-      />
-      {!isResultsOpen && attempt.results && attempt.results.length > 0 && (
-        <AttemptResultsPreview results={attempt.results} />
-      )}
-      {isResultsOpen && attempt.results && attempt.results.length > 0 && (
-        <ResultsDrawer results={attempt.results} />
-      )}
-      {isDebugOpen && <DebugDrawer attempt={attempt} workerId={workerId} />}
-    </>
-  );
-}
-
-function DebugDrawer({ attempt, workerId }: { attempt: SearchWorkerAttempt; workerId: string }) {
-  const payload = {
-    attempt_no: attempt.attempt_no,
-    query: attempt.query,
-    provider: attempt.provider,
-    status: attempt.status,
-    result_count: attempt.result_count,
-    duration_ms: attempt.duration_ms,
-    started_ts: attempt.started_ts,
-    finished_ts: attempt.finished_ts,
-    worker_id: workerId,
-    slot_reuse: true,
-  };
-
-  return (
-    <tr className="border-t sf-border-soft">
-      <td colSpan={8} className="sf-debug-drawer">
-        <div className="sf-debug-drawer-label">
-          Debug payload &mdash; attempt #{attempt.attempt_no}
-        </div>
-        <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-x-auto whitespace-pre-wrap leading-relaxed">
-          {JSON.stringify(payload, null, 2)}
-        </pre>
-      </td>
-    </tr>
-  );
-}
-
-// ── Main component ───────────────────────────────────────────────────────────
+// ── Main Component ───────────────────────────────────────────────────────────
 
 export function SearchWorkerPanel({
-  runId,
-  worker,
-  isRunning,
-  category: _category,
-  onOpenQueryJourney,
-  onOpenSearchResults,
-  onOpenPrefetchTab: _onOpenPrefetchTab,
+  runId, worker, isRunning, category,
+  onOpenQueryJourney, onOpenSearchResults, onOpenPrefetchTab: _onOpenPrefetchTab,
 }: SearchWorkerPanelProps) {
-  const [debugRows, setDebugRows] = useState<Set<number>>(new Set());
-  const [resultsRows, setResultsRows] = useState<Set<number>>(new Set());
+  const [expandedRows, toggleExpandedRow] = usePersistedExpandMap(`runtimeOps:searchDash:expanded:${category}`);
+  const heroScrollRef = usePersistedScroll(`scroll:searchDash:hero:${category}`);
+  const tableScrollRef = usePersistedScroll(`scroll:searchDash:table:${category}`);
 
   const { data } = useQuery({
     queryKey: ['runtime-ops', runId, 'search-worker-panel', worker.worker_id],
@@ -649,281 +49,422 @@ export function SearchWorkerPanel({
   const latestAttempt = attempts[0] ?? null;
   const activeProvider = String(worker.current_provider ?? latestAttempt?.provider ?? '').trim();
   const activeQuery = String(worker.current_query ?? latestAttempt?.query ?? '').trim();
-  const providerLabel = providerDisplayLabel(activeProvider) || activeProvider || '\u2014';
-  const slotLabel = String(worker.slot ?? '\u2014').trim() || '\u2014';
-  const tasksStarted = worker.tasks_started ?? 0;
-  const tasksCompleted = worker.tasks_completed ?? attempts.length;
-  const zeroResultCount = worker.zero_result_count ?? attempts.filter((a) => a.status === 'zero').length;
-  const avgResults = worker.avg_result_count ?? 0;
-  const avgDurationMs = worker.avg_duration_ms ?? 0;
+  const slotLabel = worker.slot ?? '?';
 
   const isWorkerRunning = worker.state === 'running';
   const isWorkerStuck = worker.state === 'stuck';
-  const isWorkerQueued = worker.state === 'queued';
+
+  const stats = useMemo(() => computeSearchStats(attempts, worker), [attempts, worker]);
+  const narrative = useMemo(() => buildSearchNarrative(stats, activeProvider, formatMs), [stats, activeProvider]);
+  const providerUsage = useMemo(() => computeProviderUsage(attempts), [attempts]);
   const badge = stateBadgeContent(worker.state);
 
-  const toggleDebug = (attemptNo: number) => {
-    setDebugRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(attemptNo)) next.delete(attemptNo); else next.add(attemptNo);
-      return next;
-    });
-  };
+  const stepsData = useMemo(() => [
+    { label: 'Assigned', note: `slot ${slotLabel} \u00B7 ${stats.started} tasks`, isActive: false, isDone: true },
+    { label: 'Executing', note: activeProvider || 'no provider', isActive: isWorkerRunning, isDone: !isWorkerRunning && stats.completed > 0 },
+    { label: 'Results', note: `${stats.completed} done \u00B7 ${stats.avgResults.toFixed(1)} avg`, isActive: false, isDone: stats.completed > 0 },
+  ], [slotLabel, stats, activeProvider, isWorkerRunning]);
 
-  const toggleResults = (attemptNo: number) => {
-    setResultsRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(attemptNo)) next.delete(attemptNo); else next.add(attemptNo);
-      return next;
-    });
-  };
-
-  // Story strip step states
-  const stepsData = [
-    {
-      label: 'Assigned',
-      note: `slot ${slotLabel} \u00B7 ${tasksStarted} tasks`,
-      isActive: false,
-      isDone: tasksStarted > 0,
-    },
-    {
-      label: 'Executing',
-      note: isWorkerRunning || isWorkerStuck ? providerLabel : 'no active provider',
-      isActive: isWorkerRunning || isWorkerStuck,
-      isDone: worker.state === 'idle',
-    },
-    {
-      label: 'Results',
-      note: `${tasksCompleted} done \u00B7 avg ${avgResults.toFixed(1)} res/q`,
-      isActive: false,
-      isDone: tasksCompleted > 0,
-    },
-  ];
-
-  /* KPI value colors — match mockup's per-card coloring */
-  const completedValueClass = tasksCompleted > 0 ? 'text-green-600 dark:text-green-400' : 'sf-text-muted';
-  const zeroValueClass = zeroResultCount > 0 ? 'sf-text-amber' : 'sf-text-muted';
-  const latencyValueClass = avgDurationMs > 2000 ? 'sf-text-amber' : 'sf-text-primary';
+  const primaryCount = attempts.filter((a) => a.attempt_type === 'primary').length;
+  const fallbackCount = attempts.filter((a) => a.attempt_type === 'fallback').length;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-
-      {/* ── Top section (pinned, no scroll) ── */}
-      <div className="shrink-0 px-5 pt-4 pb-0 flex flex-col gap-3.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold sf-text-primary">Search Worker</h3>
-          <span className="px-2 py-0.5 rounded sf-text-caption font-medium sf-chip-neutral">
-            Slot {slotLabel}
-          </span>
-          <span className="px-2 py-0.5 rounded sf-text-caption font-medium sf-chip-info">
-            Provider: {providerLabel}
-          </span>
-        </div>
-
-        {/* ── Slot identity row ── */}
-        <RuntimeIdxBadgeStrip badges={worker.idx_runtime} />
-
-        <div className="flex items-center gap-3.5 flex-wrap">
-          <SlotIcon slot={slotLabel} />
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-lg font-bold sf-text-primary">{worker.worker_id}</span>
-              <span
-                className="text-[13px] font-semibold font-mono px-2 py-0.5 rounded"
-                style={{
-                  color: 'rgb(var(--sf-color-accent-strong-rgb))',
-                  background: 'rgb(var(--sf-color-accent-rgb) / 0.07)',
-                  border: '1px solid rgb(var(--sf-color-accent-rgb) / 0.22)',
-                }}
-              >
-                [{tasksStarted}]
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full sf-text-caption font-medium ${badge.chipClass}`}>
-                {badge.pulse && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block shrink-0" />
-                )}
-                {badge.label}
-              </span>
-              {activeProvider && <ProviderPill provider={activeProvider} />}
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onOpenQueryJourney}
-              className="px-3 py-1.5 rounded sf-text-caption font-medium sf-icon-button"
-            >
-              Open Query Journey
+      <div ref={heroScrollRef} className="shrink-0 overflow-y-auto max-h-[55vh] p-4 pb-0 space-y-4">
+        <HeroBand
+          titleRow={<>
+            <span className="text-[26px] font-bold sf-text-primary">Search Worker</span>
+            <span className="text-[20px] sf-text-muted italic">&middot; Slot {slotLabel}</span>
+            {badge.pulse ? (
+              <Chip label={badge.label} className="sf-chip-success animate-pulse" />
+            ) : (
+              <Chip label={badge.label} className={badge.chipClass} />
+            )}
+          </>}
+          trailing={<>
+            <ProviderPill provider={activeProvider} />
+            <Chip label={worker.worker_id} className="sf-chip-neutral" />
+            <button type="button" onClick={onOpenQueryJourney} className="px-2 py-1 rounded sf-text-caption font-medium sf-icon-button border sf-border-soft">
+              Query Journey
             </button>
-            <button
-              type="button"
-              onClick={onOpenSearchResults}
-              className="px-3 py-1.5 rounded sf-text-caption font-medium sf-primary-button"
-            >
-              Open Search Results
+            <button type="button" onClick={onOpenSearchResults} className="px-2 py-1 rounded sf-text-caption font-medium sf-primary-button">
+              Search Results
             </button>
-          </div>
-        </div>
+          </>}
+          footer={<>
+            <span>Worker ID: <strong className="sf-text-primary">{worker.worker_id}</strong></span>
+            <span>Slot: <strong className="sf-text-primary">{slotLabel}</strong></span>
+            <span>Primary: <strong className="sf-text-primary">{primaryCount}</strong></span>
+            <span>Fallback: <strong className="sf-text-primary">{fallbackCount}</strong></span>
+            <span>Total URLs fetched: <strong className="sf-text-primary">{attempts.reduce((s, a) => s + a.results.filter((r) => r.fetched).length, 0)}</strong></span>
+          </>}
+        >
+          <RuntimeIdxBadgeStrip badges={worker.idx_runtime} />
 
-        {/* ── Current query banner ── */}
-        <div
-          className="rounded-lg px-3.5 py-2.5"
+          <HeroStatGrid columns={6}>
+            <HeroStat value={stats.started} label="started" />
+            <HeroStat value={stats.completed} label="completed" colorClass="text-[var(--sf-token-state-success-fg)]" />
+            <HeroStat value={stats.zeroResults} label="zero results" colorClass={stats.zeroResults > 0 ? 'text-[var(--sf-token-state-warning-fg)]' : 'sf-text-primary'} />
+            <HeroStat value={stats.avgLatencyMs > 0 ? formatMs(stats.avgLatencyMs) : '\u2014'} label="avg latency" colorClass="sf-text-primary" />
+            <HeroStat value={stats.avgResults.toFixed(1)} label="avg res / q" colorClass="text-[var(--sf-token-state-info-fg)]" />
+            <HeroStat value={stats.totalResults} label="total results" colorClass="sf-text-primary" />
+          </HeroStatGrid>
+
+          <div className="text-sm sf-text-muted italic max-w-3xl">
+            Completed <strong className="sf-text-primary not-italic">{narrative.completed}</strong> of{' '}
+            <strong className="sf-text-primary not-italic">{narrative.started}</strong> search attempts via{' '}
+            <strong className="sf-text-primary not-italic">{narrative.provider}</strong>.{' '}
+            {narrative.zeroResults > 0 && <><strong className="sf-text-primary not-italic">{narrative.zeroResults}</strong> returned zero results. </>}
+            Average <strong className="sf-text-primary not-italic">{narrative.avgResults}</strong> results per query
+            with <strong className="sf-text-primary not-italic">{narrative.avgLatency}</strong> avg latency.
+          </div>
+
+          {/* Visuals row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CurrentQueryCard
+              query={activeQuery}
+              isRunning={isWorkerRunning}
+              isStuck={isWorkerStuck}
+              worker={worker}
+            />
+            <ProviderUsageCard usage={providerUsage} />
+            <StoryStripCard steps={stepsData} isStuck={isWorkerStuck} />
+          </div>
+        </HeroBand>
+      </div>
+
+      <div ref={tableScrollRef} className="flex-1 min-h-0 overflow-y-auto p-4 pt-4">
+        <AttemptsSection
+          attempts={attempts}
+          expandedRows={expandedRows}
+          onToggleRow={toggleExpandedRow}
+          onJourney={onOpenQueryJourney}
+          onResults={onOpenSearchResults}
+          workerId={worker.worker_id}
+          hasData={Boolean(data)}
+          category={category}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Current Query Card ───────────────────────────────────────────────────────
+
+function CurrentQueryCard({ query, isRunning, isStuck, worker }: {
+  query: string; isRunning: boolean; isStuck: boolean; worker: RuntimeOpsWorkerRow;
+}) {
+  const borderClass = isStuck ? 'border-[var(--sf-token-state-warning-fg)]' : query ? 'border-[var(--sf-token-accent)]' : 'sf-border-soft';
+  return (
+    <div className={`sf-surface-panel rounded-lg p-4 border ${borderClass}`}
+      style={query ? { background: isStuck ? 'rgba(234,179,8,0.04)' : 'rgba(99,102,241,0.04)' } : undefined}
+    >
+      <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim mb-2">Current Query</div>
+      <div className="font-mono text-[13px] break-all leading-relaxed" style={{ color: isStuck ? 'var(--sf-token-state-warning-fg)' : query ? 'var(--sf-token-accent)' : undefined }}>
+        {isRunning && query && <span className="sf-blink mr-1" style={{ color: 'var(--sf-token-accent)' }}>{'\u258C'}</span>}
+        {query || 'No active query'}
+      </div>
+      <div className="mt-2 flex gap-4 text-xs sf-text-dim">
+        <span>Results: <span className="font-mono font-medium sf-text-muted">{worker.last_result_count ?? 0}</span></span>
+        <span>Duration: <span className="font-mono font-medium sf-text-muted">{formatMs(worker.last_duration_ms ?? 0)}</span></span>
+        {(isRunning || isStuck) && worker.elapsed_ms > 0 && (
+          <span>Elapsed: <span className={`font-mono font-medium ${worker.elapsed_ms > 10000 ? 'text-[var(--sf-token-state-warning-fg)]' : 'sf-text-muted'}`}>{formatMs(worker.elapsed_ms)}</span></span>
+        )}
+      </div>
+      {isStuck && <div className="mt-2 text-xs font-medium text-[var(--sf-token-state-warning-fg)]">{'\u26A0'} Worker may be stalled</div>}
+      {worker.last_error && <div className="mt-2 text-xs font-medium sf-chip-danger px-2 py-1 rounded inline-block">{'\u2717'} {worker.last_error}</div>}
+    </div>
+  );
+}
+
+// ── Provider Usage Card ──────────────────────────────────────────────────────
+
+function ProviderUsageCard({ usage }: { usage: Array<{ provider: string; queries: number; results: number }> }) {
+  return (
+    <div className="sf-surface-panel rounded-lg p-4 border sf-border-soft">
+      <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim mb-3">Provider Usage</div>
+      {usage.map((u) => (
+        <div key={u.provider} className="flex items-center gap-2 py-1.5 border-b sf-border-soft last:border-b-0">
+          <ProviderPill provider={u.provider} />
+          <span className="text-[11px] sf-text-dim">{u.queries} queries</span>
+          <span className="ml-auto text-[11px] font-mono font-bold sf-text-primary">{u.results} results</span>
+        </div>
+      ))}
+      {usage.length === 0 && <span className="text-[11px] sf-text-dim">no queries yet</span>}
+    </div>
+  );
+}
+
+// ── Story Strip Card ─────────────────────────────────────────────────────────
+
+function StoryStripCard({ steps, isStuck }: { steps: Array<{ label: string; note: string; isActive: boolean; isDone: boolean }>; isStuck: boolean }) {
+  return (
+    <div className="sf-surface-panel rounded-lg p-4 border sf-border-soft flex flex-col justify-center">
+      <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim mb-3">Pipeline Progress</div>
+      <div className="flex items-center gap-2">
+        {steps.map((step, i) => (
+          <div key={step.label} className="contents">
+            <StoryCard label={step.label} note={step.note} isActive={step.isActive} isDone={step.isDone} isStuck={isStuck} />
+            {i < steps.length - 1 && <span className="sf-text-dim text-sm shrink-0">{'\u2192'}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StoryCard({ label, note, isActive, isDone, isStuck }: {
+  label: string; note: string; isActive: boolean; isDone: boolean; isStuck: boolean;
+}) {
+  const done = isDone && !isActive;
+  const stuckActive = isActive && isStuck;
+  const borderStyle = isActive
+    ? (stuckActive ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(var(--sf-color-accent-rgb) / 0.4)')
+    : done ? '1px solid rgba(var(--sf-color-accent-rgb) / 0.2)' : undefined;
+  const bgStyle = isActive
+    ? (stuckActive ? 'rgba(245,158,11,0.04)' : 'rgba(var(--sf-color-accent-rgb) / 0.04)') : undefined;
+
+  return (
+    <div className={`flex-1 rounded-lg p-2.5 ${!isActive && !done ? 'sf-surface-card sf-border-soft border' : 'sf-surface-card'}`}
+      style={{ ...(borderStyle ? { border: borderStyle } : {}), ...(bgStyle ? { background: bgStyle } : {}) }}
+    >
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <div className="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
           style={{
-            background: isWorkerStuck
-              ? 'rgb(255 251 235)'
-              : activeQuery
-                ? 'rgb(var(--sf-color-accent-rgb) / 0.07)'
-                : undefined,
-            border: isWorkerStuck
-              ? '1px solid rgb(253 230 138)'
-              : activeQuery
-                ? '1px solid rgb(var(--sf-color-accent-rgb) / 0.20)'
-                : '1px solid var(--sf-token-border-default)',
+            borderWidth: '1.5px', borderStyle: 'solid',
+            borderColor: (isActive || done) ? 'rgba(var(--sf-color-accent-rgb))' : 'var(--sf-token-border-subtle)',
+            color: (isActive || done) ? 'rgba(var(--sf-color-accent-rgb))' : 'var(--sf-token-text-dim)',
+            background: done ? 'rgba(var(--sf-color-accent-rgb) / 0.1)' : undefined,
           }}
         >
-          <div className="sf-text-nano font-semibold sf-text-muted mb-1">Current Query</div>
-          <div className="flex items-center gap-1.5 font-mono text-[13px]">
-            {isWorkerRunning && activeQuery && (
-              <span className="sf-blink shrink-0" style={{ color: 'rgb(var(--sf-color-accent-rgb))' }}>{'\u258C'}</span>
-            )}
-            <span
-              className="break-all"
-              style={{
-                color: isWorkerStuck
-                  ? 'rgb(146 64 14)'
-                  : activeQuery
-                    ? 'rgb(var(--sf-color-accent-rgb))'
-                    : undefined,
-              }}
-            >
-              {activeQuery || 'No active query'}
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-center gap-3 text-xs sf-text-muted">
-            <span>
-              Last result count: <span className="font-mono font-medium sf-text-primary">{worker.last_result_count ?? 0}</span>
-            </span>
-            <span>
-              Last duration: <span className="font-mono font-medium sf-text-primary">{formatMs(worker.last_duration_ms ?? 0)}</span>
-            </span>
-            {(isWorkerRunning || isWorkerStuck) && worker.elapsed_ms > 0 && (
-              <span>
-                Elapsed: <span className={`font-mono font-medium ${worker.elapsed_ms > 10000 ? 'sf-text-amber' : 'sf-text-primary'}`}>
-                  {formatMs(worker.elapsed_ms)}
-                </span>
-              </span>
-            )}
-          </div>
-          {isWorkerQueued && (
-            <div className="mt-1.5 text-xs font-medium sf-text-muted">
-              Waiting &mdash; query will execute after prior workers complete
-            </div>
-          )}
-          {isWorkerStuck && (
-            <div className="mt-1.5 text-xs font-medium" style={{ color: 'rgb(146 64 14)' }}>
-              {'\u26A0'} No response from {providerLabel} &mdash; worker may be stalled
-            </div>
-          )}
-          {worker.last_error && (
-            <div className="mt-1.5 text-xs font-medium sf-chip-danger px-2 py-1 rounded inline-block">
-              {'\u2717'} {worker.last_error}
-            </div>
-          )}
+          {isActive ? '\u21BB' : done ? '\u2713' : ''}
         </div>
+        <span className={`text-[11px] ${isActive ? 'font-semibold sf-text-primary' : done ? 'font-medium sf-text-primary' : 'sf-text-muted'}`}>{label}</span>
+      </div>
+      <div className="text-[10px] sf-text-dim font-mono pl-[22px]">{note}</div>
+    </div>
+  );
+}
 
-        {/* ── Story strip ── */}
+// ── Provider Pill ────────────────────────────────────────────────────────────
+
+function ProviderPill({ provider }: { provider: string }) {
+  const label = providerDisplayLabel(provider) || provider || '\u2014';
+  const colors = getProviderColors(provider);
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold whitespace-nowrap"
+      style={{ color: colors.text, background: colors.bg, border: `1px solid ${colors.border}` }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ── Attempts Section ─────────────────────────────────────────────────────────
+
+function AttemptsSection({ attempts, expandedRows, onToggleRow, onJourney, onResults, workerId, hasData, category }: {
+  attempts: SearchWorkerAttempt[];
+  expandedRows: Record<string, boolean>;
+  onToggleRow: (id: string) => void;
+  onJourney: () => void;
+  onResults: () => void;
+  workerId: string;
+  hasData: boolean;
+  category: string;
+}) {
+  const completed = attempts.filter((a) => a.status === 'done' || a.status === 'zero').length;
+  return (
+    <div className="sf-table-shell rounded overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 sf-table-head border-b sf-border-soft">
         <div className="flex items-center gap-2">
-          {stepsData.map((step, i) => (
-            <div key={step.label} className="contents">
-              <StoryCard
-                label={step.label}
-                note={step.note}
-                isActive={step.isActive}
-                isDone={step.isDone}
-                isStuck={isWorkerStuck}
-              />
-              {i < stepsData.length - 1 && (
-                <span className="sf-text-dim text-base shrink-0 font-light">{'\u2192'}</span>
-              )}
-            </div>
-          ))}
+          <span className="sf-table-head-cell p-0 border-0 text-sm font-semibold">Search Attempts</span>
+          <span className="sf-table-head-cell p-0 border-0 font-normal">{attempts.length} queries &middot; {completed} completed</span>
         </div>
+        <span className="sf-table-head-cell p-0 border-0 font-normal">click row to expand</span>
+      </div>
 
-        {/* ── KPI cards ── */}
-        <div className="flex gap-2.5 flex-wrap pb-4">
-          <KpiCard
-            label="Started"
-            value={String(tasksStarted)}
-            glow={isWorkerRunning}
-            valueClass="sf-text-accent"
+      {attempts.length === 0 && (
+        <div className="py-8 text-center sf-text-muted text-sm">
+          {hasData ? 'No search attempts recorded yet.' : 'Loading attempts\u2026'}
+        </div>
+      )}
+
+      {attempts.map((attempt) => {
+        const key = `attempt:${attempt.attempt_no}`;
+        const isExpanded = expandedRows[key] !== false;
+        return (
+          <AttemptCard
+            key={attempt.attempt_no}
+            attempt={attempt}
+            expanded={isExpanded}
+            onToggle={() => onToggleRow(key)}
+            onJourney={onJourney}
+            onResults={onResults}
+            workerId={workerId}
+            category={category}
           />
-          <KpiCard label="Completed" value={String(tasksCompleted)} valueClass={completedValueClass} />
-          <KpiCard label="Zero Results" value={String(zeroResultCount)} valueClass={zeroValueClass} />
-          <KpiCard label="Avg Latency" value={formatMs(avgDurationMs)} valueClass={latencyValueClass} />
-          <KpiCard label="Avg Res / Q" value={avgResults.toFixed(1)} valueClass="text-teal-600 dark:text-teal-400" />
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Attempt Card ─────────────────────────────────────────────────────────────
+
+function AttemptCard({ attempt, expanded, onToggle, onJourney, onResults, workerId, category }: {
+  attempt: SearchWorkerAttempt;
+  expanded: boolean;
+  onToggle: () => void;
+  onJourney: () => void;
+  onResults: () => void;
+  workerId: string;
+  category: string;
+}) {
+  const isRunning = attempt.status === 'running';
+  const isZero = attempt.status === 'zero';
+  const status = searchStatusLabel(attempt.status);
+  const label = attemptLabel(attempt);
+  const displayProvider = attempt.resolved_provider || attempt.provider;
+
+  const stateClass = isRunning ? 'sf-table-row sf-table-row-accent border-l-[3px] border-l-[var(--sf-token-accent)] pl-[13px]'
+    : isZero ? 'sf-table-row border-l-[3px] border-l-[var(--sf-token-state-warning-fg)] pl-[13px]'
+    : 'sf-table-row pl-4';
+
+  return (
+    <>
+      <div className={`flex items-center gap-2.5 py-2.5 pr-4 border-b sf-border-soft cursor-pointer ${stateClass}`} onClick={onToggle}>
+        <span className={`font-mono text-xs font-bold w-7 text-right shrink-0 ${attempt.attempt_type === 'fallback' ? 'text-[var(--sf-token-state-warning-fg)]' : 'sf-text-dim'}`}>
+          {label}
+        </span>
+        <span className={`text-xs font-medium flex-1 min-w-0 truncate ${isRunning ? 'text-[var(--sf-token-accent)]' : 'sf-text-primary'}`}>
+          {isRunning && <span className="sf-blink mr-1" style={{ color: 'var(--sf-token-accent)' }}>{'\u258C'}</span>}
+          {attempt.query || '\u2014'}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <ProviderPill provider={displayProvider} />
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${status.chipClass}`}>{status.label}</span>
+          <span className={`font-mono text-[11px] font-semibold ${isRunning ? 'sf-text-dim' : isZero ? 'text-[var(--sf-token-state-warning-fg)]' : 'sf-text-muted'}`}>
+            {isRunning ? '\u2014' : `${attempt.result_count} res`}
+          </span>
+          <span className={`font-mono text-[11px] ${isRunning ? 'text-[var(--sf-token-state-info-fg)] animate-pulse' : attempt.duration_ms > 2000 ? 'text-[var(--sf-token-state-warning-fg)] font-bold' : 'sf-text-dim'}`}>
+            {isRunning ? formatMs(attempt.duration_ms || 0) : formatMs(attempt.duration_ms)}
+          </span>
+          <button className={`w-6 h-6 rounded flex items-center justify-center text-[10px] transition-all ${expanded ? 'sf-chip-active border border-current' : 'sf-icon-button border sf-border-soft'}`}
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          >
+            {expanded ? '\u25B2' : '\u25BC'}
+          </button>
         </div>
       </div>
 
-      {/* ── Attempts table (fills remaining space, own scroll) ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto border-t sf-border-default">
-        <div style={{ minWidth: 680 }}>
-          {/* Sticky header legend */}
-          <div className="flex items-center justify-between gap-3 px-5 py-2 sf-surface-shell sticky top-0 z-10 border-b sf-border-soft">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold sf-text-primary">Attempts</span>
-              <span className="sf-text-caption sf-text-subtle">
-                Every search attempt routed through this slot.
-              </span>
-            </div>
-            <span className="sf-text-nano sf-text-dim">
-              JRN = query journey &middot; RES = search results &middot; {'\u00B7\u00B7\u00B7'} = debug
-            </span>
-          </div>
+      {expanded && (
+        <AttemptDetail attempt={attempt} workerId={workerId} onJourney={onJourney} onResults={onResults} category={category} />
+      )}
+    </>
+  );
+}
 
-          <table className="w-full text-xs">
-            <thead className="sticky top-[37px] z-[9]">
-              <tr className="sf-table-head">
-                <th className="sf-table-head-cell text-right px-2.5 py-2" style={{ width: 40 }}>#</th>
-                <th className="sf-table-head-cell text-left px-2.5 py-2">Query</th>
-                <th className="sf-table-head-cell text-left px-2 py-2" style={{ width: 86 }}>Provider</th>
-                <th className="sf-table-head-cell text-left px-2 py-2" style={{ width: 100 }}>Status</th>
-                <th className="sf-table-head-cell text-right px-2.5 py-2" style={{ width: 56 }}>Res</th>
-                <th className="sf-table-head-cell text-right px-2.5 py-2" style={{ width: 72 }}>Dur</th>
-                <th className="sf-table-head-cell text-right px-2.5 py-2" style={{ width: 62 }}>Time</th>
-                <th className="sf-table-head-cell text-right px-2 py-2" style={{ width: 106 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attempts.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-6 text-center sf-text-muted text-xs">
-                    {data ? 'No search attempts recorded yet.' : 'Loading attempts\u2026'}
-                  </td>
-                </tr>
-              ) : (
-                attempts.map((attempt) => {
-                  const isDbgOpen = debugRows.has(attempt.attempt_no);
-                  const isResOpen = resultsRows.has(attempt.attempt_no);
-                  return (
-                    <AttemptRowWithDrawer
-                      key={attempt.attempt_no}
-                      attempt={attempt}
-                      isDebugOpen={isDbgOpen}
-                      isResultsOpen={isResOpen}
-                      onToggleDebug={() => toggleDebug(attempt.attempt_no)}
-                      onToggleResults={() => toggleResults(attempt.attempt_no)}
-                      onJourney={onOpenQueryJourney}
-                      onResults={onOpenSearchResults}
-                      workerId={worker.worker_id}
-                    />
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+// ── Attempt Detail (expanded) ────────────────────────────────────────────────
+
+function AttemptDetail({ attempt, workerId, onJourney, onResults, category }: {
+  attempt: SearchWorkerAttempt; workerId: string;
+  onJourney: () => void; onResults: () => void; category: string;
+}) {
+  const [rawOpen, toggleRawOpen] = usePersistedToggle(`runtimeOps:searchDash:raw:${category}:${attempt.attempt_no}`, false);
+  const triage = useMemo(() => computeTriageSummary(attempt.results ?? []), [attempt.results]);
+  const results = attempt.results ?? [];
+
+  return (
+    <div className="sf-table-expanded-row border-b sf-border-soft px-4 py-3">
+      {/* Header: query + meta inline */}
+      <div className="flex items-baseline gap-3 flex-wrap pb-2.5 mb-3 border-b sf-border-soft">
+        <span className="font-mono text-[13px] font-semibold text-[var(--sf-token-accent-strong)] break-all flex-1 min-w-[200px]">
+          {attempt.query}
+        </span>
+        <div className="flex gap-3.5 text-[10px] sf-text-dim shrink-0">
+          <span>Provider: <strong className="sf-text-muted font-mono">{attempt.provider}</strong></span>
+          <span>Type: <strong className="sf-text-muted font-mono">{attempt.attempt_type}</strong></span>
+          <span>Duration: <strong className="sf-text-muted font-mono">{formatMs(attempt.duration_ms)}</strong></span>
+          <span>Started: <strong className="sf-text-muted font-mono">{formatTime(attempt.started_ts)}</strong></span>
         </div>
+        <div className="flex gap-1 shrink-0">
+          <button type="button" onClick={onJourney} className="px-1.5 py-0.5 rounded text-[10px] font-semibold sf-icon-button border sf-border-soft">JRN</button>
+          <button type="button" onClick={onResults} className="px-1.5 py-0.5 rounded text-[10px] font-semibold sf-icon-button border sf-border-soft">RES</button>
+        </div>
+      </div>
+
+      {/* Triage bar */}
+      {triage.total > 0 && (
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim">Triage</span>
+            <span className="text-[10px] sf-text-muted font-mono">{triage.total} results &rarr; {triage.fetched} fetched</span>
+          </div>
+          <div className="h-1.5 rounded overflow-hidden sf-surface-panel flex mb-1.5">
+            {triage.keep > 0 && <div className="h-full" style={{ width: `${(triage.keep / triage.total) * 100}%`, background: 'var(--sf-token-state-success-fg)' }} />}
+            {triage.maybe > 0 && <div className="h-full" style={{ width: `${(triage.maybe / triage.total) * 100}%`, background: 'var(--sf-token-state-warning-fg)' }} />}
+            {triage.drop > 0 && <div className="h-full" style={{ width: `${(triage.drop / triage.total) * 100}%`, background: 'rgba(248,113,113,0.6)' }} />}
+            {triage.hardDrop > 0 && <div className="h-full" style={{ width: `${(triage.hardDrop / triage.total) * 100}%`, background: 'var(--sf-token-state-error-fg)' }} />}
+          </div>
+          <div className="flex gap-3 text-[10px]">
+            <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-success-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-success-fg)' }}>{triage.keep}</strong> <span className="sf-text-dim">keep</span></span>
+            {triage.maybe > 0 && <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-warning-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-warning-fg)' }}>{triage.maybe}</strong> <span className="sf-text-dim">maybe</span></span>}
+            <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'rgba(248,113,113,0.6)' }} /> <strong style={{ color: 'var(--sf-token-state-error-fg)' }}>{triage.drop}</strong> <span className="sf-text-dim">drop</span></span>
+            {triage.hardDrop > 0 && <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-error-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-error-fg)' }}>{triage.hardDrop}</strong> <span className="sf-text-dim">hard drop</span></span>}
+          </div>
+        </div>
+      )}
+
+      {/* Result rows */}
+      {results.length > 0 && (
+        <div className="mb-3">
+          {results.map((r, i) => {
+            const dd = resolveDecisionDisplay(r, { isCrawled: Boolean(r.already_crawled) });
+            const isDropped = r.decision === 'drop' || r.decision === 'hard_drop';
+            return (
+              <div key={r.url} className={`grid grid-cols-[28px_18px_60px_44px_1fr_80px] items-center gap-1.5 py-1.5 border-b sf-border-soft last:border-b-0 text-[11px] ${isDropped ? 'opacity-50' : ''}`}>
+                <span className="font-mono font-bold sf-text-dim text-right">#{r.rank || i + 1}</span>
+                <span className={`w-[7px] h-[7px] rounded-full justify-self-center ${r.fetched ? 'bg-[var(--sf-token-state-success-fg)]' : 'bg-[var(--sf-token-state-error-fg)] opacity-40'}`} />
+                <span className={`text-[9px] font-extrabold uppercase text-center px-1.5 py-0.5 rounded ${dd.chipClass}`}>{dd.label}</span>
+                <span className="font-mono font-bold sf-text-muted text-right">{r.score > 0 ? r.score.toFixed(1) : '\u2014'}</span>
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="sf-link font-mono truncate min-w-0 text-[10px]" title={r.url}>
+                  {r.url}
+                </a>
+                <span className="text-[9px] font-mono sf-text-dim text-right truncate">
+                  {r.fetched && r.fetch_worker_id ? `${r.fetch_link_type === 'host_fallback' ? 'Host' : 'Exact'} \u2192 ${r.fetch_worker_id.slice(-6)}` : ''}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Raw Request & Response — collapsible */}
+      <div className="border-t sf-border-soft pt-2.5">
+        <button onClick={toggleRawOpen} className="flex items-center gap-2 text-left w-full py-1 cursor-pointer">
+          <span className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim">Raw Request &amp; Response</span>
+          <span className={`text-[10px] sf-text-dim transition-transform inline-block ${rawOpen ? 'rotate-180' : ''}`}>{'\u25BC'}</span>
+        </button>
+        {rawOpen && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+            <div>
+              <div className="text-[9px] font-extrabold uppercase tracking-[0.08em] sf-text-dim mb-1.5">Request</div>
+              <pre className="sf-pre-block text-[10px] font-mono rounded p-3 overflow-auto max-h-[200px] whitespace-pre-wrap leading-relaxed">
+                {JSON.stringify({ q: attempt.query, provider: attempt.provider, type: attempt.attempt_type, num: attempt.result_count || 15 }, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <div className="text-[9px] font-extrabold uppercase tracking-[0.08em] sf-text-dim mb-1.5">Debug Payload</div>
+              <pre className="sf-pre-block text-[10px] font-mono rounded p-3 overflow-auto max-h-[200px] whitespace-pre-wrap leading-relaxed">
+                {JSON.stringify({
+                  attempt_no: attempt.attempt_no, query: attempt.query, provider: attempt.provider,
+                  status: attempt.status, result_count: attempt.result_count, duration_ms: attempt.duration_ms,
+                  started_ts: attempt.started_ts, finished_ts: attempt.finished_ts, worker_id: workerId,
+                }, null, 2)}
+              </pre>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

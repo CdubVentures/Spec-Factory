@@ -72,8 +72,23 @@ export function useIndexingCatalogDerivations(input: UseIndexingCatalogDerivatio
     [catalogFamilyCountLookup, selectedCatalogProduct, singleBrand, singleModel],
   );
 
+  // WHY: ProductId is the stable anchor. If it's still in the catalog, restore
+  // brand/model from the catalog entry (they may have been renamed).
   useEffect(() => {
     if (catalogRows.length === 0) return;
+
+    if (singleProductId) {
+      const entry = catalogRows.find((r) => r.productId === singleProductId);
+      if (entry) {
+        if (normalizeToken(entry.brand) !== normalizeToken(singleBrand)) {
+          setSingleBrand(entry.brand);
+        }
+        if (normalizeToken(entry.model) !== normalizeToken(singleModel)) {
+          setSingleModel(entry.model);
+        }
+        return;
+      }
+    }
 
     if (singleBrand && !brandOptions.some((brand) => normalizeToken(brand) === normalizeToken(singleBrand))) {
       setSingleBrand('');

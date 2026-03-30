@@ -26,7 +26,6 @@ export async function writeCompileOutput({
   categoryRoot,
   map,
   fieldRulesCanonical,
-  fieldRulesFull,
   uiFieldCatalog,
   knownValuesArtifact,
   compileReport,
@@ -47,11 +46,9 @@ export async function writeCompileOutput({
   if (resolvedControlMapPath !== controlPlaneFieldStudioMapPath) {
     await writeJsonStable(controlPlaneFieldStudioMapPath, map);
   }
-  await writeJsonStable(path.join(controlPlaneRoot, 'field_rules.full.json'), fieldRulesFull);
   const controlPlaneSnapshot = await writeControlPlaneSnapshot({
     controlPlaneRoot,
     fieldStudioMap: map,
-    fieldRulesFull,
     note: 'category-compile'
   });
   compileReport.artifacts.control_plane_version = {

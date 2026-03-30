@@ -8,7 +8,7 @@ export interface FieldRule {
   required_level?: string;
   contract?: {
     type?: string;
-    unit?: string;
+    unit?: string | null;
     shape?: string;
     [k: string]: unknown;
   };

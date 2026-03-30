@@ -1,8 +1,7 @@
 import path from 'node:path';
 import { nowIso } from '../shared/primitives.js';
 import { normalizeFieldKey } from './engineTextHelpers.js';
-import { generateSuggestionId, deduplicateByKey, stableSortSuggestions } from './curationPureDomain.js';
-import { readJsonDoc, writeJsonDoc } from './curationPersistence.js';
+import { generateSuggestionId, deduplicateByKey } from './curationPureDomain.js';
 
 function normalizeCategory(value) {
   return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+$/g, '') || 'category';
@@ -10,14 +9,6 @@ function normalizeCategory(value) {
 
 function normalizeValueToken(value) {
   return String(value ?? '').trim();
-}
-
-function suggestionDocDefaults(category) {
-  return {
-    version: 1,
-    category: normalizeCategory(category),
-    suggestions: []
-  };
 }
 
 export function enumSuggestionPath({ config = {}, category }) {
@@ -39,8 +30,10 @@ export async function appendComponentCurationSuggestions({
   specDb = null
 }) {
   const filePath = componentSuggestionPath({ config, category });
-  const next = await readJsonDoc(filePath, () => suggestionDocDefaults(category));
-  const currentSuggestions = Array.isArray(next.suggestions) ? next.suggestions : [];
+
+  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+
+  const existing = specDb.getCurationSuggestions('new_component') || [];
 
   const compKeyFn = (row) => {
     const ct = normalizeFieldKey(row?.component_type);
@@ -68,28 +61,20 @@ export async function appendComponentCurationSuggestions({
     })
     .filter(Boolean);
 
-  const { appended } = deduplicateByKey(currentSuggestions, incoming, compKeyFn);
-  currentSuggestions.push(...appended);
+  const { appended } = deduplicateByKey(existing, incoming, compKeyFn);
 
   for (const suggestion of appended) {
-    if (specDb) {
-      try {
-        specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
-      } catch { /* best-effort */ }
-    }
+    try {
+      specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
+    } catch { /* best-effort */ }
   }
 
-  next.version = 1;
-  next.category = normalizeCategory(category);
-  next.suggestions = stableSortSuggestions(currentSuggestions);
-  next.updated_at = nowIso();
-
-  await writeJsonDoc(filePath, next);
+  const totalCount = (specDb.getCurationSuggestions('new_component') || []).length;
 
   return {
     path: filePath,
     appended_count: appended.length,
-    total_count: next.suggestions.length
+    total_count: totalCount
   };
 }
 
@@ -102,8 +87,10 @@ export async function appendEnumCurationSuggestions({
   specDb = null
 }) {
   const filePath = enumSuggestionPath({ config, category });
-  const next = await readJsonDoc(filePath, () => suggestionDocDefaults(category));
-  const currentSuggestions = Array.isArray(next.suggestions) ? next.suggestions : [];
+
+  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+
+  const existing = specDb.getCurationSuggestions('enum_value') || [];
 
   const enumKeyFn = (row) => {
     const fk = normalizeFieldKey(row?.field_key);
@@ -135,28 +122,20 @@ export async function appendEnumCurationSuggestions({
       .filter(Boolean);
   });
 
-  const { appended } = deduplicateByKey(currentSuggestions, incoming, enumKeyFn);
-  currentSuggestions.push(...appended);
+  const { appended } = deduplicateByKey(existing, incoming, enumKeyFn);
 
   for (const suggestion of appended) {
-    if (specDb) {
-      try {
-        specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
-      } catch { /* best-effort */ }
-    }
+    try {
+      specDb.upsertCurationSuggestion({ ...suggestion, last_seen_at: nowIso() });
+    } catch { /* best-effort */ }
   }
 
-  next.version = 1;
-  next.category = normalizeCategory(category);
-  next.suggestions = stableSortSuggestions(currentSuggestions);
-  next.updated_at = nowIso();
-
-  await writeJsonDoc(filePath, next);
+  const totalCount = (specDb.getCurationSuggestions('enum_value') || []).length;
 
   return {
     path: filePath,
     appended_count: appended.length,
-    total_count: next.suggestions.length
+    total_count: totalCount
   };
 }
 
@@ -176,9 +155,18 @@ export async function appendComponentReviewItems({
   specDb = null
 }) {
   const filePath = componentReviewPath({ config, category });
-  const next = await readJsonDoc(filePath, () => ({ version: 1, category: normalizeCategory(category), items: [] }));
-  const currentItems = Array.isArray(next.items) ? next.items : [];
 
+  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+
+  // Collect unique component types from incoming items for SQL read
+  const componentTypes = new Set();
+  for (const row of items) {
+    const ct = normalizeFieldKey(row?.component_type);
+    if (ct) componentTypes.add(ct);
+  }
+
+  // Build existing index from SQL across all relevant component types
+  const existingIndex = new Map();
   const reviewKeyFn = (row) => {
     const ct = normalizeFieldKey(row?.component_type);
     const rq = normalizeValueToken(row?.raw_query);
@@ -186,11 +174,12 @@ export async function appendComponentReviewItems({
     return ct && rq ? `${ct}::${rq.toLowerCase()}::${pid}` : '';
   };
 
-  // Build index for score updates on existing duplicates
-  const existingIndex = new Map();
-  for (const row of currentItems) {
-    const key = reviewKeyFn(row);
-    if (key) existingIndex.set(key, row);
+  for (const ct of componentTypes) {
+    const rows = specDb.getComponentReviewItems(ct) || [];
+    for (const row of rows) {
+      const key = reviewKeyFn(row);
+      if (key) existingIndex.set(key, row);
+    }
   }
 
   let appendedCount = 0;
@@ -200,14 +189,6 @@ export async function appendComponentReviewItems({
     if (!componentType || !rawQuery) continue;
     const pid = String(productId || '').trim();
     const dedupKey = `${componentType}::${rawQuery.toLowerCase()}::${pid}`;
-
-    if (existingIndex.has(dedupKey)) {
-      const entry = existingIndex.get(dedupKey);
-      entry.name_score = row.name_score ?? entry.name_score;
-      entry.property_score = row.property_score ?? entry.property_score;
-      entry.combined_score = row.combined_score ?? entry.combined_score;
-      continue;
-    }
 
     const item = {
       review_id: generateSuggestionId('cr', componentType, rawQuery) + `_${pid.replace(/[^a-z0-9]+/gi, '_').substring(0, 30)}`,
@@ -227,28 +208,26 @@ export async function appendComponentReviewItems({
       product_attributes: row.product_attributes && typeof row.product_attributes === 'object' ? row.product_attributes : {},
       created_at: nowIso(),
     };
-    existingIndex.set(dedupKey, item);
-    currentItems.push(item);
-    appendedCount += 1;
 
-    if (specDb) {
-      try {
-        specDb.upsertComponentReviewItem(item);
-      } catch { /* best-effort */ }
+    if (!existingIndex.has(dedupKey)) {
+      appendedCount += 1;
     }
+
+    try {
+      specDb.upsertComponentReviewItem(item);
+    } catch { /* best-effort */ }
   }
 
-  next.version = 1;
-  next.category = normalizeCategory(category);
-  next.items = currentItems;
-  next.updated_at = nowIso();
-
-  await writeJsonDoc(filePath, next);
+  // Get total count across all component types we touched
+  let totalCount = 0;
+  for (const ct of componentTypes) {
+    totalCount += (specDb.getComponentReviewItems(ct) || []).length;
+  }
 
   return {
     path: filePath,
     appended_count: appendedCount,
-    total_count: next.items.length
+    total_count: totalCount
   };
 }
 
@@ -268,15 +247,8 @@ export async function appendComponentIdentityObservations({
   specDb = null
 }) {
   const filePath = componentIdentityPath({ config, category });
-  const next = await readJsonDoc(filePath, () => ({ version: 1, category: normalizeCategory(category), observations: [] }));
-  const currentObs = Array.isArray(next.observations) ? next.observations : [];
 
-  const identityKeyFn = (row) => {
-    const ct = normalizeFieldKey(row?.component_type);
-    const rq = normalizeValueToken(row?.raw_query);
-    const pid = normalizeValueToken(row?.product_id);
-    return ct && rq ? `${ct}::${rq.toLowerCase()}::${pid}` : '';
-  };
+  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
 
   const incoming = observations
     .map((row) => {
@@ -298,11 +270,10 @@ export async function appendComponentIdentityObservations({
     })
     .filter(Boolean);
 
-  const { appended } = deduplicateByKey(currentObs, incoming, identityKeyFn);
-  currentObs.push(...appended);
-
-  for (const obs of appended) {
-    if (specDb && obs.canonical_name && obs.product_id) {
+  // SQL upsert handles dedup via UNIQUE constraint
+  let upsertedCount = 0;
+  for (const obs of incoming) {
+    if (obs.canonical_name && obs.product_id) {
       try {
         specDb.upsertItemComponentLink({
           productId: obs.product_id,
@@ -313,21 +284,15 @@ export async function appendComponentIdentityObservations({
           matchType: obs.match_type || 'exact_or_alias',
           matchScore: obs.score ?? 1.0
         });
+        upsertedCount += 1;
       } catch { /* best-effort */ }
     }
   }
 
-  next.version = 1;
-  next.category = normalizeCategory(category);
-  next.observations = currentObs;
-  next.updated_at = nowIso();
-
-  await writeJsonDoc(filePath, next);
-
   return {
     path: filePath,
-    appended_count: appended.length,
-    total_count: next.observations.length
+    appended_count: upsertedCount,
+    total_count: upsertedCount
   };
 }
 

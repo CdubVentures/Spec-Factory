@@ -24,7 +24,8 @@ export function createDomainChecklistBuilder({
     productId = '',
     runId = '',
     windowMinutes = 120,
-    includeUrls = false
+    includeUrls = false,
+    specDb = null,
   } = {}) {
     const normalizedCategory = String(category || '').trim().toLowerCase();
     const resolvedProductId = String(productId || '').trim();
@@ -65,7 +66,9 @@ export function createDomainChecklistBuilder({
 
     if (!resolvedRunId && resolvedProductId) {
       const latestBase = storage.resolveOutputKey(normalizedCategory, resolvedProductId, 'latest');
-      const latestSummary = await storage.readJsonOrNull(`${latestBase}/summary.json`).catch(() => null);
+      const latestSummary = specDb
+        ? specDb.getSummaryForProduct(resolvedProductId)
+        : (await storage.readJsonOrNull(`${latestBase}/summary.json`).catch(() => null));
       resolvedRunId = String(latestSummary?.runId || '').trim();
     }
 

@@ -34,7 +34,7 @@ export function resolveNextStageTabSelection<K extends string>({
   disabledTabs?: Set<K>;
 }) {
   if (disabledTabs?.has(tabKey)) return activeTab;
-  return activeTab === tabKey ? null : tabKey;
+  return tabKey;
 }
 
 export function normalizeActiveStageTab<K extends string>(

@@ -66,6 +66,7 @@ export function registerConfigRoutes(ctx) {
     collectLlmModels, llmProviderFromModel, resolvePricingForModel,
     resolveTokenProfileForModel, resolveLlmRoleDefaults, resolveLlmKnobDefaults,
     llmRoutingSnapshot, buildLlmMetrics, buildIndexingDomainChecklist, buildReviewMetrics,
+    getSpecDb,
   });
 
   const llmHandler = createLlmSettingsHandler({

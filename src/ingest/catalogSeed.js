@@ -862,7 +862,8 @@ export async function syncJobsFromCatalogSeed({
         continue;
       }
     }
-    const productId = buildProductId(category);
+    // WHY: Reuse canonical pid when available — only generate fresh for truly new products.
+    const productId = checkPid || buildProductId(category);
     registerCanonicalIdentity({
       canonicalIndex,
       brand: identity.brand,

@@ -21,7 +21,6 @@ import {
   findKeyMigrationCycle,
 } from './compileFieldInference.js';
 import {
-  buildGlobalContractMetadata,
   buildParseTemplateCatalog,
   buildCompileValidation,
 } from './compileValidation.js';
@@ -228,41 +227,6 @@ export function assembleCompileOutput({
     )
   };
 
-  const fieldRulesFull = sortDeep({
-    version: 1,
-    category,
-    generated_at: compileTimestamp,
-    source_context: compileMode === 'field_studio' ? 'field_studio_map' : 'field_studio_source',
-    field_studio_source: {
-      path: '',
-      hash: null
-    },
-    field_studio_map_hash: mapHash,
-    key_source: {
-      sheet: normalizeText(map?.key_list?.sheet || ''),
-      range: keySourceRange
-    },
-    schema: {
-      identity_fields: identityKeys,
-      required_fields: requiredKeys,
-      critical_fields: criticalKeys,
-      expected_easy_fields: expectedEasy,
-      expected_sometimes_fields: expectedSometimes,
-      deep_fields: deepFields,
-      include_fields: stableSortStrings(Object.keys(canonicalFields)),
-      exclude_fields: ['id', 'brand', 'model', 'base_model', 'category', 'sku'],
-      preserve_existing_fields: false
-    },
-    source_tabs: sourceTabs,
-    enum_buckets: enumBuckets,
-    component_db_sources: componentDbSources,
-    parse_templates: parseTemplates,
-    fields: canonicalFields,
-    known_values: sortDeep(knownValues),
-    key_migrations_suggested: sortDeep(keyMigrations),
-    global: buildGlobalContractMetadata()
-  });
-
   const uiFieldCatalog = {
     version: 1,
     category,
@@ -341,10 +305,6 @@ export function assembleCompileOutput({
       fields: fieldDiff
     },
     artifacts: {
-      field_rules_full: {
-        path: path.join(controlPlaneRoot, 'field_rules.full.json'),
-        hash: hashJson(fieldRulesFull)
-      },
       field_rules: {
         path: path.join(generatedRoot, 'field_rules.json'),
         hash: currentHash,
@@ -370,7 +330,6 @@ export function assembleCompileOutput({
   return {
     earlyReturn: null,
     fieldRulesCanonical,
-    fieldRulesFull,
     uiFieldCatalog,
     knownValuesArtifact,
     compileReport,

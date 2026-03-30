@@ -186,12 +186,14 @@ export function KeyNavigatorTab({
   );
 
   const saveIfAutoSaveEnabled = useCallback(() => {
+    console.log('[key-nav] saveIfAutoSaveEnabled, autoSave:', autoSaveEnabled);
     if (!autoSaveEnabled) return;
     onSave();
   }, [autoSaveEnabled, onSave]);
 
   const handleReorder = useCallback(
     (activeItem: string, overItem: string) => {
+      console.log('[key-nav] handleReorder', activeItem, '->', overItem);
       reorder(activeItem, overItem);
       saveIfAutoSaveEnabled();
     },
@@ -199,6 +201,7 @@ export function KeyNavigatorTab({
   );
 
   function handleSaveAll() {
+    console.log('[key-nav] handleSaveAll');
     onSave();
   }
 

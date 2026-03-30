@@ -31,7 +31,10 @@ function defaultCategorySchema(category, templateName) {
     targets: {
       targetCompleteness: 0.9,
       targetConfidence: 0.8
-    }
+    },
+    required_fields: [],
+    anchor_fields: {},
+    search_templates: defaultSearchTemplates(category)
   };
 }
 
@@ -194,10 +197,7 @@ export async function initCategory({
   const maybeCreated = [
     [path.join(sourceRoot, 'field_catalog.seed.json'), defaultSourceSeed(normalizedCategory, templateName)],
     [path.join(categoryConfigRoot, 'schema.json'), defaultCategorySchema(normalizedCategory, templateName)],
-    [path.join(categoryConfigRoot, 'sources.json'), defaultSources()],
-    [path.join(categoryConfigRoot, 'required_fields.json'), []],
-    [path.join(categoryConfigRoot, 'search_templates.json'), defaultSearchTemplates(normalizedCategory)],
-    [path.join(categoryConfigRoot, 'anchors.json'), {}]
+    [path.join(categoryConfigRoot, 'sources.json'), defaultSources()]
   ];
 
   for (const [filePath, payload] of maybeCreated) {

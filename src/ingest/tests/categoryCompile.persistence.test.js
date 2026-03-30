@@ -206,7 +206,6 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
     assert.equal(await fs.stat(fieldRulesPath).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(knownValuesPath).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(uiCatalogPath).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(controlRoot, 'field_rules.full.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(suggestionsRoot, 'enums.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(suggestionsRoot, 'components.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(componentRoot, 'sensors.json')).then(() => true).catch(() => false), true);

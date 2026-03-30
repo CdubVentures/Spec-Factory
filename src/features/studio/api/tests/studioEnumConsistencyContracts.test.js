@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 
 import { invokeStudioRoute } from './helpers/studioRoutesHarness.js';
 
+function mockSpecDb(pendingSuggestions = []) {
+  return {
+    getCurationSuggestions: () => pendingSuggestions,
+    updateCurationSuggestionStatus: () => {},
+    close: () => {},
+  };
+}
+
 test('studio enum consistency skips when review consumer is disabled', async () => {
   const emitted = [];
   const result = await invokeStudioRoute({
@@ -10,13 +18,13 @@ test('studio enum consistency skips when review consumer is disabled', async () 
       field: 'lighting',
       apply: true,
     }),
+    getSpecDbReady: async () => mockSpecDb([
+      { field_key: 'lighting', value: '1 zone rgb', status: 'pending' },
+    ]),
     safeReadJson: async (targetPath) => {
       const p = String(targetPath || '');
       if (p.includes('_generated/known_values.json')) {
         return { fields: { lighting: ['1 zone (rgb)', '7 zone (led)'] } };
-      }
-      if (p.includes('_suggestions/enums.json')) {
-        return { fields: { lighting: ['1 zone rgb'] } };
       }
       return null;
     },
@@ -51,13 +59,13 @@ test('studio enum consistency uses field format hint when request guidance is om
       field: 'lighting',
       apply: false,
     }),
+    getSpecDbReady: async () => mockSpecDb([
+      { field_key: 'lighting', value: '1 zone rgb', status: 'pending' },
+    ]),
     safeReadJson: async (targetPath) => {
       const p = String(targetPath || '');
       if (p.includes('_generated/known_values.json')) {
         return { fields: { lighting: ['1 zone (rgb)', '7 zone (led)'] } };
-      }
-      if (p.includes('_suggestions/enums.json')) {
-        return { fields: { lighting: ['1 zone rgb'] } };
       }
       return null;
     },

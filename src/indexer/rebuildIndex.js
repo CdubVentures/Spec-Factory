@@ -7,7 +7,7 @@ function productIdFromKey(key) {
   return name.replace(/\.json$/i, '');
 }
 
-export async function rebuildCategoryIndex({ storage, config, category }) {
+export async function rebuildCategoryIndex({ storage, config, category, specDb = null }) {
   const inputKeys = await storage.listInputKeys(category);
   const rows = [];
 
@@ -21,7 +21,9 @@ export async function rebuildCategoryIndex({ storage, config, category }) {
       'summary.json'
     );
 
-    const latestSummary = await storage.readJsonOrNull(latestSummaryKey);
+    const latestSummary = specDb
+      ? specDb.getSummaryForProduct(productId)
+      : (await storage.readJsonOrNull(latestSummaryKey));
 
     rows.push({
       productId,

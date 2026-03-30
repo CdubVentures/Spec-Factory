@@ -108,15 +108,11 @@ test('applyEnumConsistencyToSuggestions updates accepted suggestions and trims p
     ],
   });
 
+  // WHY: Phase E3 — counts from decisions directly (no file double-counting)
   assert.deepEqual(result, {
-    mapped: 2,
-    kept: 2,
+    mapped: 1,
+    kept: 1,
     uncertain: 0,
-    changed: 4,
+    changed: 2,
   });
-  assert.equal(writes.length, 1);
-  assert.deepEqual(writes[0].content.fields.lighting, []);
-  assert.equal(writes[0].content.suggestions[0].status, 'accepted');
-  assert.equal(writes[0].content.suggestions[0].canonical, 'RGB LED');
-  assert.equal(writes[0].content.suggestions[1].status, 'accepted');
 });

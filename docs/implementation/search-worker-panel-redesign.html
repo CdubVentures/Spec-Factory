@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en" data-sf-theme-mode="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Search Worker Panel — Redesign Preview v3</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sf-font-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --sf-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --sf-surface-canvas: #060b1a; --sf-surface-base: #0a1330;
+  --sf-surface-elevated: #111f41; --sf-surface-panel: #0d1834;
+  --sf-text-primary: #ecf1ff; --sf-text-muted: #adc2eb; --sf-text-subtle: #94a3b8; --sf-text-dim: #6b7fa0;
+  --sf-border-soft: #243a65; --sf-border-soft-alpha: rgba(36, 58, 101, 0.6);
+  --sf-accent: #6366f1; --sf-accent-strong: #818cf8; --sf-accent-glow: rgba(99, 102, 241, 0.12);
+  --sf-success-fg: #86efac; --sf-success-bg: rgba(34, 197, 94, 0.2);
+  --sf-warning-fg: #fcd34d; --sf-warning-bg: rgba(234, 179, 8, 0.2);
+  --sf-danger-fg: #f87171; --sf-danger-bg: rgba(248, 113, 113, 0.2);
+  --sf-info-fg: #93c5fd; --sf-info-bg: rgba(14, 165, 233, 0.2);
+  --sf-neutral-fg: #94a3b8; --sf-neutral-bg: rgba(148, 163, 184, 0.24);
+  --sf-teal-fg: #5eead4; --sf-teal-bg: rgba(19, 78, 74, 0.4);
+}
+
+body { font-family: var(--sf-font-ui); background: linear-gradient(180deg, var(--sf-surface-canvas), var(--sf-surface-base)); color: var(--sf-text-primary); min-height: 100vh; padding: 24px; line-height: 1.45; }
+.panel-root { max-width: 1260px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.design-label { text-align: center; font-size: 13px; color: var(--sf-text-dim); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; padding: 6px 16px; background: rgba(99,102,241,0.08); border: 1px dashed rgba(99,102,241,0.3); border-radius: 6px; }
+
+/* ── HeroBand ──────────────────────────────────────────────────────── */
+.hero-band { background: var(--sf-surface-elevated); border-radius: 4px; border: 1px solid var(--sf-border-soft); padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+.hero-title-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.hero-title { font-size: 26px; font-weight: 700; line-height: 1; }
+.hero-subtitle { font-size: 20px; color: var(--sf-text-dim); font-style: italic; }
+.hero-trailing { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 800; white-space: nowrap; border: 1.5px solid currentColor; font-family: var(--sf-font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.chip-sm { padding: 2px 7px; font-size: 9px; }
+.chip-success { color: var(--sf-success-fg); background: var(--sf-success-bg); }
+.chip-warning { color: var(--sf-warning-fg); background: var(--sf-warning-bg); }
+.chip-info { color: var(--sf-info-fg); background: var(--sf-info-bg); }
+.chip-neutral { color: var(--sf-neutral-fg); background: var(--sf-neutral-bg); }
+.chip-accent { color: var(--sf-accent-strong); background: rgba(99,102,241,0.18); }
+.chip-danger { color: var(--sf-danger-fg); background: var(--sf-danger-bg); }
+
+.hero-stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 24px; }
+@media (max-width: 1000px) { .hero-stat-grid { grid-template-columns: repeat(3, 1fr); } }
+.hero-stat .value { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-family: var(--sf-font-mono); }
+.hero-stat .label { margin-top: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sf-text-dim); }
+.color-accent { color: var(--sf-accent-strong); } .color-success { color: var(--sf-success-fg); }
+.color-warning { color: var(--sf-warning-fg); } .color-primary { color: var(--sf-text-primary); }
+.color-teal { color: var(--sf-teal-fg); }
+
+.hero-narrative { font-size: 13px; color: var(--sf-text-dim); font-style: italic; max-width: 720px; line-height: 1.55; }
+.hero-narrative strong { color: var(--sf-text-muted); font-style: normal; font-weight: 600; }
+
+.hero-visuals-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .hero-visuals-row { grid-template-columns: 1fr; } }
+.visual-card { background: rgba(10,19,48,0.45); border: 1px solid var(--sf-border-soft-alpha); border-radius: 8px; padding: 14px 16px; }
+.visual-heading { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-dim); margin-bottom: 12px; }
+
+.query-card { background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 14px 16px; }
+.blink { color: var(--sf-accent); font-size: 16px; animation: blink-anim 1s step-end infinite; margin-right: 4px; }
+@keyframes blink-anim { 50% { opacity: 0; } }
+.query-text { font-family: var(--sf-font-mono); font-size: 13px; color: var(--sf-accent); word-break: break-all; line-height: 1.45; }
+.query-meta { margin-top: 8px; display: flex; gap: 16px; font-size: 11px; color: var(--sf-text-dim); }
+.query-meta strong { color: var(--sf-text-muted); font-family: var(--sf-font-mono); font-weight: 600; }
+
+.provider-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(36,58,101,0.3); }
+.provider-row:last-child { border-bottom: none; }
+.provider-pill { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: var(--sf-font-mono); }
+.provider-serper { color: #5eead4; background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.28); }
+.provider-google { color: #93c5fd; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.28); }
+.provider-count { font-size: 11px; color: var(--sf-text-dim); }
+.provider-results { margin-left: auto; font-size: 11px; font-family: var(--sf-font-mono); font-weight: 700; color: var(--sf-text-primary); }
+
+.story-strip { display: flex; align-items: center; gap: 8px; }
+.story-card { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--sf-border-soft-alpha); min-width: 130px; }
+.story-card.active { border-color: rgba(99,102,241,0.35); background: rgba(99,102,241,0.06); box-shadow: 0 0 0 2px rgba(99,102,241,0.08); }
+.story-card.done { border-color: rgba(99,102,241,0.2); }
+.story-circle { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1.5px solid var(--sf-border-soft); color: var(--sf-text-dim); flex-shrink: 0; }
+.story-card.active .story-circle { border-color: var(--sf-accent); color: var(--sf-accent); animation: spin 2s linear infinite; }
+.story-card.done .story-circle { border-color: var(--sf-accent); color: var(--sf-accent); background: rgba(99,102,241,0.12); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.story-label { font-size: 11px; font-weight: 600; }
+.story-note { font-size: 10px; font-family: var(--sf-font-mono); color: var(--sf-text-dim); }
+.story-arrow { color: var(--sf-text-dim); font-size: 14px; flex-shrink: 0; }
+.story-card.active .story-label { color: var(--sf-accent-strong); }
+
+.hero-footer { display: flex; flex-wrap: wrap; align-items: baseline; gap: 24px; row-gap: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sf-text-dim); padding-top: 14px; border-top: 1px solid var(--sf-border-soft); }
+.hero-footer strong { color: var(--sf-text-muted); font-weight: 700; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ATTEMPT CARDS — each attempt is a self-contained query/response unit
+   ══════════════════════════════════════════════════════════════════════ */
+.attempts-section { background: linear-gradient(180deg, var(--sf-surface-elevated), var(--sf-surface-base)); border: 1px solid var(--sf-border-soft); border-radius: 4px; overflow: hidden; }
+.attempts-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: linear-gradient(180deg, rgba(17,31,65,0.94), rgba(13,24,52,0.7)); border-bottom: 1px solid var(--sf-border-soft-alpha); }
+
+/* Collapsed attempt row — the clickable summary */
+.attempt-summary {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  border-bottom: 1px solid rgba(36,58,101,0.35); cursor: pointer; transition: background 120ms;
+}
+.attempt-summary:hover { background: rgba(13,24,52,0.55); }
+.attempt-summary.running { background: rgba(99,102,241,0.04); border-left: 3px solid var(--sf-accent); padding-left: 13px; }
+.attempt-summary.zero-result { border-left: 3px solid var(--sf-warning-fg); padding-left: 13px; background: rgba(234,179,8,0.03); }
+
+.attempt-no { font-family: var(--sf-font-mono); font-size: 12px; font-weight: 700; color: var(--sf-text-dim); width: 28px; text-align: right; flex-shrink: 0; }
+.attempt-no.fallback { color: var(--sf-warning-fg); }
+
+.attempt-query-text { font-size: 12px; color: var(--sf-text-primary); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.attempt-pills { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.status-chip { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+.status-done { color: var(--sf-success-fg); background: var(--sf-success-bg); }
+.status-zero { color: var(--sf-warning-fg); background: var(--sf-warning-bg); }
+.status-running { color: var(--sf-info-fg); background: var(--sf-info-bg); }
+
+.attempt-stat { font-family: var(--sf-font-mono); font-size: 11px; color: var(--sf-text-muted); font-weight: 600; }
+.attempt-stat.warn { color: var(--sf-warning-fg); }
+
+.expand-chevron { font-size: 10px; color: var(--sf-text-dim); transition: transform 200ms; flex-shrink: 0; width: 16px; text-align: center; }
+.expand-chevron.open { transform: rotate(180deg); color: var(--sf-accent-strong); }
+
+/* ── Expanded Attempt Detail ───────────────────────────────────────── */
+.attempt-detail {
+  padding: 0 16px 16px; background: rgba(13,24,52,0.4); border-bottom: 1px solid var(--sf-border-soft-alpha);
+}
+
+/* Top bar: query + meta inline */
+.attempt-detail-header {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0 10px; border-bottom: 1px solid rgba(36,58,101,0.3); margin-bottom: 12px;
+}
+.detail-query {
+  font-family: var(--sf-font-mono); font-size: 13px; font-weight: 600;
+  color: var(--sf-accent-strong); word-break: break-all; flex: 1; min-width: 200px;
+}
+.detail-meta-inline {
+  display: flex; gap: 14px; font-size: 10px; color: var(--sf-text-dim); flex-shrink: 0;
+}
+.detail-meta-inline strong { color: var(--sf-text-muted); font-family: var(--sf-font-mono); font-weight: 700; }
+
+/* Triage bar — visual ratio of keep/maybe/drop */
+.triage-bar-container { margin-bottom: 12px; }
+.triage-bar-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sf-text-dim); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.triage-bar { height: 6px; border-radius: 3px; display: flex; overflow: hidden; background: var(--sf-surface-panel); }
+.triage-bar .seg-keep { background: var(--sf-success-fg); }
+.triage-bar .seg-maybe { background: var(--sf-warning-fg); }
+.triage-bar .seg-drop { background: rgba(248,113,113,0.6); }
+.triage-bar .seg-hard { background: var(--sf-danger-fg); }
+.triage-counts { display: flex; gap: 12px; margin-top: 5px; font-size: 10px; }
+.triage-counts span { display: flex; align-items: center; gap: 4px; }
+.triage-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+
+/* Result rows */
+.results-list { display: flex; flex-direction: column; }
+.result-row {
+  display: grid; grid-template-columns: 28px 18px 60px 50px 1fr 80px;
+  align-items: center; gap: 6px; padding: 5px 4px;
+  border-bottom: 1px solid rgba(36,58,101,0.18); font-size: 11px;
+}
+.result-row:last-child { border-bottom: none; }
+.result-row.dropped { opacity: 0.5; }
+
+.r-rank { font-family: var(--sf-font-mono); font-weight: 700; color: var(--sf-text-dim); text-align: right; }
+.r-dot { width: 7px; height: 7px; border-radius: 50%; justify-self: center; }
+.r-dot.fetched { background: var(--sf-success-fg); }
+.r-dot.not-fetched { background: var(--sf-danger-fg); opacity: 0.4; }
+.r-decision { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; text-align: center; }
+.dec-keep { color: var(--sf-success-fg); background: var(--sf-success-bg); }
+.dec-maybe { color: var(--sf-warning-fg); background: var(--sf-warning-bg); }
+.dec-drop { color: var(--sf-danger-fg); background: var(--sf-danger-bg); }
+.dec-hard { color: #fff; background: rgba(248,113,113,0.6); }
+.r-score { font-family: var(--sf-font-mono); font-weight: 700; color: var(--sf-text-muted); text-align: right; }
+.r-domain { color: var(--sf-info-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.r-fetch-tag { font-size: 9px; font-family: var(--sf-font-mono); color: var(--sf-text-dim); text-align: right; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+</style>
+</head>
+<body>
+
+<div class="panel-root">
+
+  <div class="design-label">Search Worker Panel — Redesign v3 (integrated query/response)</div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!--  HERO BAND                                                       -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="hero-band">
+    <div class="hero-title-row">
+      <span class="hero-title">Search Worker</span>
+      <span class="hero-subtitle">&middot; Slot 2</span>
+      <span class="chip chip-sm chip-success" style="animation: pulse 2s infinite;">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--sf-success-fg);display:inline-block;margin-right:2px;"></span> Running
+      </span>
+      <div class="hero-trailing">
+        <span class="provider-pill provider-serper">Serper</span>
+        <span class="chip chip-sm chip-neutral">search-w-02a1</span>
+      </div>
+    </div>
+
+    <div class="hero-stat-grid">
+      <div class="hero-stat"><div class="value color-accent">8</div><div class="label">started</div></div>
+      <div class="hero-stat"><div class="value color-success">7</div><div class="label">completed</div></div>
+      <div class="hero-stat"><div class="value color-warning">1</div><div class="label">zero results</div></div>
+      <div class="hero-stat"><div class="value color-primary">1.4s</div><div class="label">avg latency</div></div>
+      <div class="hero-stat"><div class="value color-teal">8.3</div><div class="label">avg res / q</div></div>
+      <div class="hero-stat"><div class="value color-primary">58</div><div class="label">total results</div></div>
+    </div>
+
+    <div class="hero-narrative">
+      Completed <strong>7</strong> of <strong>8</strong> search attempts via <strong>Serper</strong>.
+      <strong>1</strong> query returned zero results. Average <strong>8.3</strong> results per query with <strong>1.4s</strong> avg latency.
+    </div>
+
+    <div class="hero-visuals-row">
+      <div class="query-card">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--sf-text-dim);margin-bottom:8px;">Current Query</div>
+        <div class="query-text"><span class="blink">&#x258C;</span>razer deathadder v3 pro full specifications sensor dpi weight</div>
+        <div class="query-meta">
+          <span>Last results: <strong>12</strong></span>
+          <span>Last duration: <strong>1.2s</strong></span>
+          <span>Elapsed: <strong>3.1s</strong></span>
+        </div>
+      </div>
+      <div class="visual-card">
+        <div class="visual-heading">Provider Usage</div>
+        <div class="provider-row"><span class="provider-pill provider-serper">Serper</span><span class="provider-count">6 queries</span><span class="provider-results">52 results</span></div>
+        <div class="provider-row"><span class="provider-pill provider-google">Google</span><span class="provider-count">2 queries</span><span class="provider-results">6 results</span></div>
+      </div>
+      <div class="visual-card" style="display:flex;flex-direction:column;justify-content:center;">
+        <div class="visual-heading">Pipeline Progress</div>
+        <div class="story-strip">
+          <div class="story-card done"><div class="story-circle">&#x2713;</div><div><div class="story-label">Assigned</div><div class="story-note">slot 2 &middot; 8 tasks</div></div></div>
+          <span class="story-arrow">&rarr;</span>
+          <div class="story-card active"><div class="story-circle">&#x21BB;</div><div><div class="story-label">Executing</div><div class="story-note">serper</div></div></div>
+          <span class="story-arrow">&rarr;</span>
+          <div class="story-card done"><div class="story-circle">&#x2713;</div><div><div class="story-label">Results</div><div class="story-note">7 done &middot; 8.3 avg</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-footer">
+      <span>Worker ID: <strong>search-w-02a1</strong></span>
+      <span>Slot: <strong>2</strong></span>
+      <span>Primary: <strong>6</strong></span>
+      <span>Fallback: <strong>2</strong></span>
+      <span>URLs fetched: <strong>42</strong></span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!--  ATTEMPTS — each is a self-contained query/response card          -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="attempts-section">
+    <div class="attempts-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;font-weight:600;">Search Attempts</span>
+        <span style="font-size:11px;color:var(--sf-text-subtle);">8 queries &middot; 7 completed</span>
+      </div>
+      <span style="font-size:9px;color:var(--sf-text-dim);text-transform:uppercase;letter-spacing:0.04em;">click to expand query &amp; response</span>
+    </div>
+
+    <!-- ── Attempt 1: p1, done, EXPANDED ───────────────────────────── -->
+    <div class="attempt-summary" onclick="document.getElementById('d1').style.display=document.getElementById('d1').style.display==='none'?'block':'none'" style="background:rgba(99,102,241,0.04);">
+      <span class="attempt-no">p1</span>
+      <span class="attempt-query-text">razer deathadder v3 pro specifications</span>
+      <div class="attempt-pills">
+        <span class="provider-pill provider-serper" style="font-size:10px;padding:2px 7px;">Serper</span>
+        <span class="status-chip status-done">Done</span>
+        <span class="attempt-stat">12 res</span>
+        <span class="attempt-stat">1.2s</span>
+      </div>
+      <span class="expand-chevron open">&#x25BC;</span>
+    </div>
+
+    <div class="attempt-detail" id="d1">
+      <!-- Query + meta inline header -->
+      <div class="attempt-detail-header">
+        <div class="detail-query">razer deathadder v3 pro specifications</div>
+        <div class="detail-meta-inline">
+          <span>Provider: <strong>serper</strong></span>
+          <span>Type: <strong>primary</strong></span>
+          <span>Duration: <strong>1.2s</strong></span>
+          <span>Started: <strong>10:23:41</strong></span>
+        </div>
+      </div>
+
+      <!-- Triage bar -->
+      <div class="triage-bar-container">
+        <div class="triage-bar-label">
+          Triage
+          <span style="font-size:10px;font-weight:500;color:var(--sf-text-muted);font-family:var(--sf-font-mono);">12 results &rarr; 5 fetched</span>
+        </div>
+        <div class="triage-bar">
+          <div class="seg-keep" style="width:33%;"></div>
+          <div class="seg-maybe" style="width:8%;"></div>
+          <div class="seg-drop" style="width:42%;"></div>
+          <div class="seg-hard" style="width:17%;"></div>
+        </div>
+        <div class="triage-counts">
+          <span><span class="triage-dot" style="background:var(--sf-success-fg);"></span> <strong style="color:var(--sf-success-fg);">4</strong> <span style="color:var(--sf-text-dim);">keep</span></span>
+          <span><span class="triage-dot" style="background:var(--sf-warning-fg);"></span> <strong style="color:var(--sf-warning-fg);">1</strong> <span style="color:var(--sf-text-dim);">maybe</span></span>
+          <span><span class="triage-dot" style="background:rgba(248,113,113,0.6);"></span> <strong style="color:var(--sf-danger-fg);">5</strong> <span style="color:var(--sf-text-dim);">drop</span></span>
+          <span><span class="triage-dot" style="background:var(--sf-danger-fg);"></span> <strong style="color:var(--sf-danger-fg);">2</strong> <span style="color:var(--sf-text-dim);">hard drop</span></span>
+        </div>
+      </div>
+
+      <!-- Results list -->
+      <div class="results-list">
+        <div class="result-row">
+          <span class="r-rank">#1</span>
+          <span class="r-dot fetched"></span>
+          <span class="r-decision dec-keep">keep</span>
+          <span class="r-score">0.92</span>
+          <span class="r-domain">rtings.com/mouse/reviews/razer/deathadder-v3-pro</span>
+          <span class="r-fetch-tag">Exact &rarr; fetch-w-01</span>
+        </div>
+        <div class="result-row">
+          <span class="r-rank">#2</span>
+          <span class="r-dot fetched"></span>
+          <span class="r-decision dec-keep">keep</span>
+          <span class="r-score">0.88</span>
+          <span class="r-domain">techpowerup.com/review/razer-deathadder-v3-pro</span>
+          <span class="r-fetch-tag">Exact &rarr; fetch-w-03</span>
+        </div>
+        <div class="result-row">
+          <span class="r-rank">#3</span>
+          <span class="r-dot fetched"></span>
+          <span class="r-decision dec-maybe">maybe</span>
+          <span class="r-score">0.71</span>
+          <span class="r-domain">razer.com/gaming-mice/razer-deathadder-v3-pro/specs</span>
+          <span class="r-fetch-tag">Exact &rarr; fetch-w-02</span>
+        </div>
+        <div class="result-row dropped">
+          <span class="r-rank">#4</span>
+          <span class="r-dot not-fetched"></span>
+          <span class="r-decision dec-drop">drop</span>
+          <span class="r-score">0.34</span>
+          <span class="r-domain">reddit.com/r/MouseReview/comments/abc123/is_v3_pro_worth</span>
+          <span class="r-fetch-tag"></span>
+        </div>
+        <div class="result-row">
+          <span class="r-rank">#5</span>
+          <span class="r-dot fetched"></span>
+          <span class="r-decision dec-keep">keep</span>
+          <span class="r-score">0.85</span>
+          <span class="r-domain">rocketjumpninja.com/razer-deathadder-v3-pro-review</span>
+          <span class="r-fetch-tag">Exact &rarr; fetch-w-04</span>
+        </div>
+        <div class="result-row dropped">
+          <span class="r-rank">#6</span>
+          <span class="r-dot not-fetched"></span>
+          <span class="r-decision dec-hard">hard drop</span>
+          <span class="r-score">0.12</span>
+          <span class="r-domain">amazon.com/Razer-DeathAdder-Wireless-Gaming/dp/B0CG...</span>
+          <span class="r-fetch-tag"></span>
+        </div>
+        <div class="result-row">
+          <span class="r-rank">#7</span>
+          <span class="r-dot fetched"></span>
+          <span class="r-decision dec-keep">keep</span>
+          <span class="r-score">0.79</span>
+          <span class="r-domain">tomshardware.com/reviews/razer-deathadder-v3-pro</span>
+          <span class="r-fetch-tag">Host &rarr; fetch-w-01</span>
+        </div>
+      </div>
+
+      <!-- Raw Query & Response — collapsible -->
+      <div style="margin-top:12px; border-top: 1px solid rgba(36,58,101,0.3); padding-top:10px;">
+        <div onclick="var el=document.getElementById('raw1'); el.style.display=el.style.display==='none'?'grid':'none'; this.querySelector('.raw-chev').classList.toggle('open');"
+             style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:4px 0;">
+          <span style="font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-dim);">Raw Request &amp; Response</span>
+          <span class="raw-chev" style="font-size:10px; color:var(--sf-text-dim); transition:transform 200ms;">&#x25BC;</span>
+        </div>
+        <div id="raw1" style="display:none; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+          <!-- Request -->
+          <div>
+            <div style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-dim); margin-bottom:6px;">Request</div>
+            <pre style="font-family:var(--sf-font-mono); font-size:10px; line-height:1.5; color:var(--sf-text-muted); background:rgba(10,19,48,0.62); border:1px solid rgba(36,58,101,0.88); border-radius:6px; padding:12px 14px; overflow:auto; max-height:200px; white-space:pre-wrap; word-break:break-word;">{
+  "q": "razer deathadder v3 pro specifications",
+  "gl": "us",
+  "hl": "en",
+  "num": 15,
+  "type": "search"
+}</pre>
+          </div>
+          <!-- Response -->
+          <div>
+            <div style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--sf-text-dim); margin-bottom:6px;">Serper Response</div>
+            <pre style="font-family:var(--sf-font-mono); font-size:10px; line-height:1.5; color:var(--sf-text-muted); background:rgba(10,19,48,0.62); border:1px solid rgba(36,58,101,0.88); border-radius:6px; padding:12px 14px; overflow:auto; max-height:200px; white-space:pre-wrap; word-break:break-word;">{
+  "searchParameters": {
+    "q": "razer deathadder v3 pro specifications",
+    "gl": "us", "hl": "en", "num": 15, "type": "search"
+  },
+  "organic": [
+    {
+      "title": "Razer DeathAdder V3 Pro Review",
+      "link": "https://rtings.com/mouse/reviews/razer/deathadder-v3-pro",
+      "snippet": "The Razer DeathAdder V3 Pro is an excellent wireless gaming mouse...",
+      "position": 1
+    },
+    {
+      "title": "DeathAdder V3 Pro - Full Specifications",
+      "link": "https://techpowerup.com/review/razer-deathadder-v3-pro",
+      "snippet": "Sensor: Focus Pro 30K, DPI: 30000, Polling: 4000Hz...",
+      "position": 2
+    },
+    {
+      "title": "DeathAdder V3 Pro | Razer Official",
+      "link": "https://razer.com/gaming-mice/razer-deathadder-v3-pro",
+      "snippet": "63g ultralight wireless gaming mouse...",
+      "position": 3
+    }
+  ],
+  "credits": 1,
+  "searchInformation": {
+    "totalResults": "1240000",
+    "timeTakenDisplayed": "0.42"
+  }
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Attempt 2: p2, done, collapsed ──────────────────────────── -->
+    <div class="attempt-summary">
+      <span class="attempt-no">p2</span>
+      <span class="attempt-query-text">razer deathadder v3 pro sensor dpi polling rate weight</span>
+      <div class="attempt-pills">
+        <span class="provider-pill provider-serper" style="font-size:10px;padding:2px 7px;">Serper</span>
+        <span class="status-chip status-done">Done</span>
+        <span class="attempt-stat">10 res</span>
+        <span class="attempt-stat">0.9s</span>
+      </div>
+      <span class="expand-chevron">&#x25BC;</span>
+    </div>
+
+    <!-- ── Attempt 3: p3, zero results, collapsed ──────────────────── -->
+    <div class="attempt-summary zero-result">
+      <span class="attempt-no">p3</span>
+      <span class="attempt-query-text">deathadder v3 pro connectivity usb-c dongle charging time</span>
+      <div class="attempt-pills">
+        <span class="provider-pill provider-google" style="font-size:10px;padding:2px 7px;">Google</span>
+        <span class="status-chip status-zero">0 results</span>
+        <span class="attempt-stat warn">0 res</span>
+        <span class="attempt-stat">2.1s</span>
+      </div>
+      <span class="expand-chevron">&#x25BC;</span>
+    </div>
+
+    <!-- ── Attempt 4: f1, fallback, done, collapsed ────────────────── -->
+    <div class="attempt-summary">
+      <span class="attempt-no fallback">f1</span>
+      <span class="attempt-query-text">razer deathadder v3 pro wireless connectivity battery life</span>
+      <div class="attempt-pills">
+        <span class="provider-pill provider-serper" style="font-size:10px;padding:2px 7px;">Serper</span>
+        <span class="status-chip status-done">Done</span>
+        <span class="attempt-stat">8 res</span>
+        <span class="attempt-stat">1.1s</span>
+      </div>
+      <span class="expand-chevron">&#x25BC;</span>
+    </div>
+
+    <!-- ── Attempt 5: p4, running ──────────────────────────────────── -->
+    <div class="attempt-summary running">
+      <span class="attempt-no">p4</span>
+      <span class="attempt-query-text" style="color:var(--sf-accent-strong);">
+        <span style="animation:blink-anim 1s step-end infinite;margin-right:2px;">&#x258C;</span>razer deathadder v3 pro full specifications sensor dpi weight
+      </span>
+      <div class="attempt-pills">
+        <span class="provider-pill provider-serper" style="font-size:10px;padding:2px 7px;">Serper</span>
+        <span class="status-chip status-running">Running&hellip;</span>
+        <span class="attempt-stat" style="color:var(--sf-info-fg);animation:pulse 2s infinite;">3.1s</span>
+      </div>
+      <span class="expand-chevron">&#x25BC;</span>
+    </div>
+  </div>
+
+  <!-- Design notes -->
+  <div style="margin-top: 16px; padding: 16px; border: 1px dashed rgba(99,102,241,0.3); border-radius: 8px; background: rgba(99,102,241,0.04);">
+    <div style="font-size: 12px; font-weight: 700; color: var(--sf-accent-strong); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">v3 — Integrated Query/Response Design</div>
+    <div style="font-size: 12px; color: var(--sf-text-muted); line-height: 1.7;">
+      <strong style="color: var(--sf-text-primary);">Single-flow card per attempt</strong> — No more awkward 3-column split. Each expanded attempt flows top-to-bottom: query header &rarr; triage bar &rarr; result list. The query IS the card header, the Serper response IS the body.<br>
+      <strong style="color: var(--sf-text-primary);">Triage visualization bar</strong> — At-a-glance ratio of keep/maybe/drop/hard_drop with colored segments + counts below. Shows immediately how useful the query was.<br>
+      <strong style="color: var(--sf-text-primary);">Clean result rows</strong> — 6-column grid: rank, fetched dot, decision chip, score, domain URL, fetch worker tag. Dropped results are dimmed (opacity 0.5). Fetched results show their exact/host linkage and fetch worker ID.<br>
+      <strong style="color: var(--sf-text-primary);">Collapsed summary is complete</strong> — Each row shows: attempt #, query text, provider pill, status, result count, duration. You can scan all queries without expanding.<br>
+      <strong style="color: var(--sf-text-primary);">State indicators</strong> — Running rows have left accent border. Zero-result rows have left warning border. Fallback attempts show "f1" in warning color. All immediately scannable.<br>
+      <strong style="color: var(--sf-text-primary);">Data source</strong> — All from <code style="background:rgba(255,255,255,0.06);padding:1px 4px;border-radius:3px;">WorkerDetailResponse.search_history[]</code>. Each SearchWorkerAttempt has query, provider, status, result_count, duration_ms, and results[] array with decision/score/fetched/domain/fetch_worker_id.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

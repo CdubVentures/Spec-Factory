@@ -14,7 +14,6 @@ import {
   manualCandidateId,
   extractOverrideValue,
   extractOverrideProvenance,
-  writeJsonStable,
   removeFieldFromList,
   addFieldToList,
   reviewKeys,
@@ -166,7 +165,7 @@ export async function setOverrideFromCandidate({
   }
 
   const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath);
+  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
     version: 1,
@@ -198,9 +197,7 @@ export async function setOverrideFromCandidate({
     [normalizedField]: entry
   };
 
-  await writeJsonStable(overridePath, current);
-
-  // Dual-write to SpecDb
+  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
   if (specDb) {
     try {
       specDb.upsertItemFieldState({
@@ -210,9 +207,15 @@ export async function setOverrideFromCandidate({
         confidence: 1.0,
         source: 'user',
         acceptedCandidateId: candidate.candidate_id || null,
-        overridden: false,
+        overridden: true,
         needsAiReview: false,
-        aiReviewComplete: true
+        aiReviewComplete: true,
+        overrideSource: 'candidate_selection',
+        overrideValue: String(candidate.value || '').trim(),
+        overrideReason: reason || null,
+        overrideProvenance: entry.override_provenance || null,
+        overriddenBy: reviewer || null,
+        overriddenAt: setAt
       });
       specDb.syncItemListLinkForFieldValue({
         productId,
@@ -230,6 +233,11 @@ export async function setOverrideFromCandidate({
         product_id: productId,
         field_key: normalizedField,
         note: reason || 'candidate_selection'
+      });
+      specDb.upsertProductReviewState({
+        productId,
+        reviewStatus: 'in_progress',
+        reviewStartedAt: startedAt,
       });
     } catch { /* best-effort */ }
   }
@@ -264,7 +272,7 @@ export async function setManualOverride({
   }
   const normalizedEvidence = normalizeOverrideEvidence(evidence);
   const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath);
+  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
     version: 1,
@@ -313,9 +321,8 @@ export async function setManualOverride({
       set_at: setAt
     }
   };
-  await writeJsonStable(overridePath, current);
 
-  // Dual-write to SpecDb
+  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
   if (specDb) {
     try {
       specDb.upsertItemFieldState({
@@ -327,7 +334,13 @@ export async function setManualOverride({
         acceptedCandidateId: null,
         overridden: true,
         needsAiReview: false,
-        aiReviewComplete: true
+        aiReviewComplete: true,
+        overrideSource: 'manual_entry',
+        overrideValue: nextValue,
+        overrideReason: reason || null,
+        overrideProvenance: normalizedEvidence || null,
+        overriddenBy: reviewer || null,
+        overriddenAt: setAt
       });
       specDb.syncItemListLinkForFieldValue({
         productId,
@@ -346,6 +359,11 @@ export async function setManualOverride({
         field_key: normalizedField,
         note: reason || 'manual_entry'
       });
+      specDb.upsertProductReviewState({
+        productId,
+        reviewStatus: 'in_progress',
+        reviewStartedAt: startedAt,
+      });
     } catch { /* best-effort */ }
   }
 
@@ -363,7 +381,8 @@ export async function approveGreenOverrides({
   category,
   productId,
   reviewer = '',
-  reason = ''
+  reason = '',
+  specDb = null
 }) {
   const review = await readReviewArtifacts({ storage, category, productId });
   const keys = review.keys;
@@ -377,7 +396,7 @@ export async function approveGreenOverrides({
   const rows = findCandidateRows(review.candidates);
   const candidateMap = buildCandidateMap(rows);
   const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const existing = await readOverrideFile(overridePath);
+  const existing = await readOverrideFile(overridePath, { specDb, category, productId });
   const startedAt = String(existing?.review_started_at || nowIso()).trim();
   const current = isObject(existing) ? existing : {
     version: 1,
@@ -438,8 +457,41 @@ export async function approveGreenOverrides({
   current.updated_at = nowIso();
   current.overrides = overrides;
 
-  if (approvedFields.length > 0) {
-    await writeJsonStable(overridePath, current);
+  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
+  if (approvedFields.length > 0 && specDb) {
+    try {
+      for (const field of approvedFields) {
+        const entry = overrides[field];
+        if (!entry) continue;
+        specDb.upsertItemFieldState({
+          productId,
+          fieldKey: field,
+          value: entry.override_value || entry.value || '',
+          confidence: 1.0,
+          source: 'user',
+          overridden: true,
+          acceptedCandidateId: entry.candidate_id || null,
+          overrideSource: 'bulk_approve_green',
+          overrideValue: entry.override_value || entry.value || '',
+          overrideReason: String(reason || '').trim() || 'bulk_approve_green',
+          overrideProvenance: entry.override_provenance || null,
+          overriddenBy: reviewer || 'bulk_approve',
+          overriddenAt: entry.set_at || nowIso()
+        });
+        specDb.insertAuditLog({
+          entity_type: 'item_field_state',
+          entity_id: `${productId}::${field}`,
+          field_changed: field,
+          new_value: entry.override_value || entry.value || '',
+          change_type: 'bulk_approve_green',
+          actor_type: 'user',
+          actor_id: reviewer || 'bulk_approve',
+          product_id: productId,
+          field_key: field,
+          note: reason || 'bulk_approve_green'
+        });
+      }
+    } catch { /* best-effort SQL write */ }
   }
 
   return {
@@ -454,10 +506,11 @@ export async function approveGreenOverrides({
 export async function buildReviewMetrics({
   config = {},
   category,
-  windowHours = 24
+  windowHours = 24,
+  specDb = null
 }) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  const rows = await listOverrideDocs(helperRoot, category);
+  const rows = await listOverrideDocs(helperRoot, category, { specDb });
   const now = Date.now();
   const cutoff = now - (Math.max(1, toFloat(windowHours, 24)) * 60 * 60 * 1000);
   let reviewedProducts = 0;
@@ -520,7 +573,7 @@ export async function finalizeOverrides({
   specDb = null
 }) {
   const overridePath = resolveOverrideFilePath({ config, category, productId });
-  const overrideDoc = await readOverrideFile(overridePath);
+  const overrideDoc = await readOverrideFile(overridePath, { specDb, category, productId });
   const overrides = isObject(overrideDoc?.overrides) ? overrideDoc.overrides : {};
   const overrideEntries = Object.entries(overrides);
   if (!overrideEntries.length) {
@@ -747,6 +800,12 @@ export async function finalizeOverrides({
         }
       });
       tx();
+      specDb.upsertProductReviewState({
+        productId,
+        reviewStatus: saveAsDraft ? 'draft' : 'approved',
+        reviewedBy: reviewer || null,
+        reviewedAt: nowIso(),
+      });
     } catch { /* best-effort */ }
   }
 
@@ -797,7 +856,7 @@ export async function finalizeOverrides({
     },
     overrides
   };
-  await writeJsonStable(overridePath, nextOverrideDoc);
+  // WHY: Phase E3 — SQL is sole write target, file stays as read-only archive
 
   return {
     applied: true,

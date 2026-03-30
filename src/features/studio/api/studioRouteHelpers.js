@@ -221,94 +221,51 @@ export function choosePreferredStudioMap(settingsMap, controlPlaneMap, { validat
   return controlKeyCount >= settingsKeyCount ? controlPayload : settingsPayload;
 }
 
+// WHY: Phase E3 — SQL is sole source. Count decisions and update SQL directly.
 export async function applyEnumConsistencyToSuggestions({
-  fs,
-  path,
-  helperRoot,
   category,
   field,
   decisions = [],
+  specDb = null,
+  // Legacy params kept for signature compatibility (unused after E3)
+  fs: _fs,
+  path: _path,
+  helperRoot: _helperRoot,
 }) {
-  const suggestionsPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
-  const currentDoc = await (async () => {
-    try {
-      return JSON.parse(await fs.readFile(suggestionsPath, 'utf8'));
-    } catch {
-      return {};
-    }
-  })();
-  const doc = currentDoc && typeof currentDoc === 'object' ? { ...currentDoc } : {};
-  const decisionByToken = new Map(
-    (Array.isArray(decisions) ? decisions : [])
-      .map((row) => {
-        const value = String(row?.value || '').trim();
-        return [normalizeEnumToken(value), row];
-      })
-      .filter(([token]) => Boolean(token))
-  );
-
   let mapped = 0;
   let kept = 0;
   let uncertain = 0;
   let changed = 0;
 
-  if (Array.isArray(doc.suggestions)) {
-    doc.suggestions = doc.suggestions.map((row) => {
-      if (String(row?.field_key || '').trim() !== field) return row;
-      const token = normalizeEnumToken(row?.value);
-      const decision = decisionByToken.get(token);
-      if (!decision) return row;
-      const action = String(decision?.decision || '').trim().toLowerCase();
-      if (action === 'map_to_existing') {
-        mapped += 1;
-        changed += 1;
-        return {
-          ...row,
-          status: 'accepted',
-          canonical: String(decision?.target_value || '').trim() || row?.canonical || null,
-          updated_at: new Date().toISOString(),
-          reviewer: 'llm_enum_consistency',
-        };
-      }
-      if (action === 'keep_new') {
-        kept += 1;
-        changed += 1;
-        return {
-          ...row,
-          status: 'accepted',
-          updated_at: new Date().toISOString(),
-          reviewer: 'llm_enum_consistency',
-        };
-      }
+  const decisionList = Array.isArray(decisions) ? decisions : [];
+  for (const decision of decisionList) {
+    const value = String(decision?.value || '').trim();
+    if (!value) continue;
+    const action = String(decision?.decision || '').trim().toLowerCase();
+    if (action === 'map_to_existing') {
+      mapped += 1;
+      changed += 1;
+    } else if (action === 'keep_new') {
+      kept += 1;
+      changed += 1;
+    } else {
       uncertain += 1;
-      return row;
-    });
+    }
   }
 
-  if (doc.fields && typeof doc.fields === 'object') {
-    const existing = Array.isArray(doc.fields[field]) ? doc.fields[field].map(String) : [];
-    const filtered = existing.filter((value) => {
-      const decision = decisionByToken.get(normalizeEnumToken(value));
-      if (!decision) return true;
-      const action = String(decision?.decision || '').trim().toLowerCase();
-      if (action === 'map_to_existing') {
-        mapped += 1;
-        changed += 1;
-        return false;
+  if (specDb && changed > 0) {
+    try {
+      for (const decision of decisionList) {
+        const action = String(decision?.decision || '').trim().toLowerCase();
+        if (action === 'map_to_existing' || action === 'keep_new') {
+          specDb.updateCurationSuggestionStatus(
+            'enum_value', field, String(decision?.value || '').trim(), 'accepted',
+            { reviewer: 'llm_enum_consistency' }
+          );
+        }
       }
-      if (action === 'keep_new') {
-        kept += 1;
-        changed += 1;
-        return false;
-      }
-      uncertain += 1;
-      return true;
-    });
-    doc.fields = { ...doc.fields, [field]: filtered };
+    } catch { /* best-effort SQL write */ }
   }
 
-  doc.updated_at = new Date().toISOString();
-  await fs.mkdir(path.dirname(suggestionsPath), { recursive: true });
-  await fs.writeFile(suggestionsPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf8');
   return { mapped, kept, uncertain, changed };
 }

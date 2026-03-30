@@ -1,30 +1,16 @@
-// WHY: Reads URL index NDJSON and aggregates per-host health status
+// WHY: Aggregates per-host health status from URL index rows
 // (block rate, avg fields per fetch) to surface problematic hosts.
 
-import fs from 'node:fs';
-
 /**
- * Aggregate host health from URL index NDJSON.
+ * Aggregate host health from URL index rows.
  *
  * Status thresholds: blocked ≥0.8, degraded ≥0.2, cooldown ≥0.1, healthy <0.1
  *
- * @param {{ urlIndexPath: string, category: string }} opts
+ * @param {{ category: string, urlRows: object[] }} opts
  * @returns {HostHealthRow[]}
  */
-export function aggregateHostHealth({ urlIndexPath, category, urlRows: _urlRows }) {
-  // WHY: SQL rows preferred; NDJSON fallback for backward compat
-  let rows;
-  if (_urlRows) {
-    rows = _urlRows;
-  } else {
-    if (!fs.existsSync(urlIndexPath)) return [];
-    const raw = fs.readFileSync(urlIndexPath, 'utf8').trim();
-    if (!raw) return [];
-    rows = [];
-    for (const line of raw.split('\n').filter(Boolean)) {
-      try { rows.push(JSON.parse(line)); } catch { /* skip malformed */ }
-    }
-  }
+export function aggregateHostHealth({ category, urlRows }) {
+  const rows = urlRows || [];
 
   const hostMap = new Map();
 

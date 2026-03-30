@@ -28,6 +28,13 @@ export const MIGRATIONS = [
   `DROP TABLE IF EXISTS brands`,
   `DROP INDEX IF EXISTS idx_art_product`,
   `DROP TABLE IF EXISTS artifacts`,
+  // WHY: Phase E2 — override provenance columns so readers can migrate from JSON files to SQL
+  `ALTER TABLE item_field_state ADD COLUMN override_source TEXT`,
+  `ALTER TABLE item_field_state ADD COLUMN override_value TEXT`,
+  `ALTER TABLE item_field_state ADD COLUMN override_reason TEXT`,
+  `ALTER TABLE item_field_state ADD COLUMN override_provenance TEXT`,
+  `ALTER TABLE item_field_state ADD COLUMN overridden_by TEXT`,
+  `ALTER TABLE item_field_state ADD COLUMN overridden_at TEXT`,
 ];
 
 export const SECONDARY_INDEXES = `

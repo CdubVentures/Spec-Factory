@@ -4,8 +4,6 @@
 // Value normalization, evidence handling, candidate mapping, file I/O,
 // and field list manipulation for the override workflow.
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { nowIso } from '../../../shared/primitives.js';
 import { toRawFieldKey } from '../../../utils/fieldKeys.js';
 import { buildManualOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
@@ -134,27 +132,6 @@ export function extractOverrideProvenance(override = {}, category, productId, fi
   };
 }
 
-// ── Serialization ───────────────────────────────────────────────────
-
-export function sortDeep(value) {
-  if (Array.isArray(value)) {
-    return value.map((row) => sortDeep(row));
-  }
-  if (!isObject(value)) {
-    return value;
-  }
-  const out = {};
-  for (const key of Object.keys(value).sort((a, b) => a.localeCompare(b))) {
-    out[key] = sortDeep(value[key]);
-  }
-  return out;
-}
-
-export async function writeJsonStable(filePath, value) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(sortDeep(value), null, 2)}\n`, 'utf8');
-}
-
 // ── Field List Manipulation ─────────────────────────────────────────
 
 export function removeFieldFromList(list = [], field = '') {
@@ -214,17 +191,42 @@ export function latestKeys(storage, category, productId) {
 
 // ── File I/O ────────────────────────────────────────────────────────
 
-export async function readOverrideFile(filePath) {
-  try {
-    const raw = await fs.readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!isObject(parsed)) return null;
-    return parsed;
-  } catch (error) {
-    if (error?.code === 'ENOENT') return null;
-    if (error instanceof SyntaxError) return null;
-    throw error;
+export async function readOverrideFile(filePath, { specDb = null, category = '', productId = '' } = {}) {
+  // WHY: Phase E2c — read from SQL when available, file fallback for backward compat
+  if (specDb && productId) {
+    try {
+      const reviewState = specDb.getProductReviewState(productId);
+      const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
+      if (reviewState || overriddenRows.length > 0) {
+        const overrides = {};
+        for (const row of overriddenRows) {
+          overrides[row.field_key] = {
+            field: row.field_key,
+            override_source: row.override_source || 'candidate_selection',
+            override_value: row.override_value || row.value || '',
+            override_reason: row.override_reason || null,
+            override_provenance: row.override_provenance ? JSON.parse(row.override_provenance) : null,
+            overridden_by: row.overridden_by || null,
+            overridden_at: row.overridden_at || row.updated_at || null,
+            candidate_id: row.accepted_candidate_id || '',
+            value: row.override_value || row.value || '',
+            set_at: row.overridden_at || row.updated_at || null
+          };
+        }
+        return {
+          version: 1,
+          category: category || reviewState?.category,
+          product_id: productId,
+          review_status: reviewState?.review_status || 'pending',
+          review_started_at: reviewState?.review_started_at || null,
+          reviewed_at: reviewState?.reviewed_at || null,
+          reviewed_by: reviewState?.reviewed_by || null,
+          overrides
+        };
+      }
+    } catch { /* SQL read failed — return null */ }
   }
+  return null;
 }
 
 // ── Candidate Mapping ───────────────────────────────────────────────
@@ -347,36 +349,22 @@ export async function readReviewProductPayload({ storage, config = {}, category,
   return buildProductReviewPayload({ storage, config, category, productId });
 }
 
-export async function listOverrideDocs(helperRoot, category) {
-  const dir = path.join(helperRoot, category, '_overrides');
-  let entries = [];
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
-  }
-  const out = [];
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.overrides.json')) {
-      continue;
-    }
-    const filePath = path.join(dir, entry.name);
+export async function listOverrideDocs(helperRoot, category, { specDb = null } = {}) {
+  // WHY: Phase E3 — SQL is sole source for override docs
+  if (specDb) {
     try {
-      const parsed = JSON.parse(await fs.readFile(filePath, 'utf8'));
-      if (isObject(parsed)) {
-        out.push({
-          path: filePath,
-          payload: parsed
-        });
+      const productIds = specDb.listApprovedProductIds();
+      const out = [];
+      for (const pid of productIds) {
+        const doc = await readOverrideFile(null, { specDb, category, productId: pid });
+        if (doc) {
+          out.push({ path: `sql://overrides/${category}/${pid}`, payload: doc });
+        }
       }
-    } catch {
-      // Ignore malformed override payloads in metrics rollup.
-    }
+      return out;
+    } catch { /* SQL read failed — return empty */ }
   }
-  return out;
+  return [];
 }
 
 // parseDateMs consolidated into reviewNormalization.js — import from there

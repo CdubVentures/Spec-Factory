@@ -596,18 +596,15 @@ export async function renameBrand({ config, slug, newName, storage, upsertQueue,
         });
         cascade_results.push({
           category,
-          old_pid: pid,
-          new_pid: result.productId,
+          productId: pid,
           ok: result.ok,
-          migration: result.migration || null
         });
         if (result.ok) cascaded_products++;
         else cascade_failures++;
       } catch (err) {
         cascade_results.push({
           category,
-          old_pid: pid,
-          new_pid: null,
+          productId: pid,
           ok: false,
           error: err.message || String(err)
         });

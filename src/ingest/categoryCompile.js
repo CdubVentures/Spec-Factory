@@ -50,7 +50,6 @@ import {
   buildStudioFieldRule
 } from './compileFieldRuleBuilder.js';
 import {
-  buildGlobalContractMetadata,
   buildParseTemplateCatalog,
   buildCompileValidation
 } from './compileValidation.js';
@@ -563,7 +562,6 @@ export async function compileCategoryFieldStudio({
   const {
     earlyReturn: assemblyEarlyReturn,
     fieldRulesCanonical,
-    fieldRulesFull,
     uiFieldCatalog,
     knownValuesArtifact,
     compileReport,
@@ -605,7 +603,6 @@ export async function compileCategoryFieldStudio({
     categoryRoot,
     map,
     fieldRulesCanonical,
-    fieldRulesFull,
     uiFieldCatalog,
     knownValuesArtifact,
     compileReport,

@@ -6,7 +6,6 @@
 // Output: writes tools/gui-react/src/types/product.generated.ts
 
 import {
-  RENAME_HISTORY_ENTRY_SHAPE,
   BRAND_RENAME_HISTORY_ENTRY_SHAPE,
   CATALOG_PRODUCT_SHAPE,
   CATALOG_ROW_SHAPE,
@@ -19,7 +18,6 @@ import {
 } from '../../../src/features/catalog/contracts/productShapes.js';
 
 const SHAPE_REGISTRY = [
-  { shape: RENAME_HISTORY_ENTRY_SHAPE, iface: 'RenameHistoryEntryGen' },
   { shape: BRAND_RENAME_HISTORY_ENTRY_SHAPE, iface: 'BrandRenameHistoryEntryGen' },
   { shape: CATALOG_PRODUCT_SHAPE, iface: 'CatalogProductGen' },
   { shape: CATALOG_ROW_SHAPE, iface: 'CatalogRowGen' },

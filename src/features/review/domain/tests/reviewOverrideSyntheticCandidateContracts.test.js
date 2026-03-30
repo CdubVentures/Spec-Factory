@@ -15,7 +15,7 @@ test('setOverrideFromCandidate accepts synthetic candidates when candidateValue 
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-synthetic-candidate',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedLatestArtifacts(harness);
 
@@ -24,6 +24,7 @@ test('setOverrideFromCandidate accepts synthetic candidates when candidateValue 
     config,
     category,
     productId,
+    specDb,
     field: 'weight',
     candidateId: 'pl_weight_synthetic_1',
     candidateValue: '59',
@@ -36,5 +37,5 @@ test('setOverrideFromCandidate accepts synthetic candidates when candidateValue 
   assert.equal(setResult.value, '59');
   assert.equal(overridePayload.overrides.weight.candidate_id, 'pl_weight_synthetic_1');
   assert.equal(overridePayload.overrides.weight.override_value, '59');
-  assert.equal(overridePayload.overrides.weight.source.method, 'product_extraction');
+  assert.equal(overridePayload.overrides.weight.override_source, 'candidate_selection');
 });

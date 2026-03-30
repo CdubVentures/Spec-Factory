@@ -8,7 +8,7 @@ test('readReviewArtifacts returns safe defaults when review files do not exist',
   const harness = await createReviewOverrideHarness(t, {
     productId: 'missing-review',
   });
-  const { storage, category, productId } = harness;
+  const { storage, category, productId, specDb } = harness;
 
   const result = await readReviewArtifacts({
     storage,

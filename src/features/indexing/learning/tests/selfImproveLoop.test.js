@@ -94,8 +94,8 @@ test('persistLearningProfile writes to SQL and is readable back', async () => {
   const specDb = makeSpecDb();
   const storage = makeStorage();
   const learningProfile = {
-    profileId: 'mouse-logitech-g502-x-plus-',
-    profileKey: 'specs/outputs/_learning/mouse/profiles/mouse-logitech-g502-x-plus-.json',
+    profileId: JOB.productId,
+    profileKey: `specs/outputs/_learning/mouse/profiles/${JOB.productId}.json`,
     profile: null,
   };
 
@@ -126,8 +126,8 @@ test('persistLearningProfile writes to SQL and is readable back', async () => {
 test('persistLearningProfile without specDb still writes run log', async () => {
   const storage = makeStorage();
   const learningProfile = {
-    profileId: 'mouse-logitech-g502-x-plus-',
-    profileKey: 'specs/outputs/_learning/mouse/profiles/mouse-logitech-g502-x-plus-.json',
+    profileId: JOB.productId,
+    profileKey: `specs/outputs/_learning/mouse/profiles/${JOB.productId}.json`,
     profile: null,
   };
 

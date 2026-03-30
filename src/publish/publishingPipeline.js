@@ -164,7 +164,7 @@ export function evaluatePublishGate({
 
 async function publishSingleProduct({ storage, config, category, productId, specDb = null }) {
   const latest = await readLatestArtifacts(storage, category, productId, specDb);
-  const override = await readOverrideDoc({ config, category, productId });
+  const override = await readOverrideDoc({ config, category, productId, specDb });
   const reviewStatus = normalizeToken(override.payload?.review_status || '');
   const overrides = reviewStatus === 'approved' && isObject(override.payload?.overrides)
     ? override.payload.overrides
@@ -341,7 +341,7 @@ export async function publishProducts({
 
   const explicitIds = (productIds || []).map((value) => String(value || '').trim()).filter(Boolean);
   const approvedIds = allApproved
-    ? await listApprovedOverrideProductIds({ config, category: normalizedCategory })
+    ? await listApprovedOverrideProductIds({ config, category: normalizedCategory, specDb })
     : [];
   const targets = [...new Set([...explicitIds, ...approvedIds])];
 

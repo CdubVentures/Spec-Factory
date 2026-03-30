@@ -42,6 +42,9 @@ export function useStudioPersistenceAuthority({
     onSuccess: () => {
       onStudioDocsSaved?.();
     },
+    onError: (error: Error) => {
+      console.error('[studio-persist] save failed:', error.message);
+    },
   });
 
   return {

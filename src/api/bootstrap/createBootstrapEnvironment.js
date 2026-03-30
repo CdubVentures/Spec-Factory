@@ -46,10 +46,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     return String(v ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
   }
 
-  function catalogKey(brand, model, variant) {
-    return `${normText(brand)}|${normText(model)}|${normText(cleanVariant(variant))}`;
-  }
-
   // ── Args ──
   const args = process.argv.slice(2);
   function argVal(name, fallback) {
@@ -148,7 +144,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
     storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
     resolveProjectPath,
-    cleanVariant, catalogKey, markEnumSuggestionStatusBound,
+    cleanVariant, markEnumSuggestionStatusBound,
     userSettings,
   };
 }

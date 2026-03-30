@@ -21,26 +21,6 @@ import {
   canonicalParseTemplate
 } from './compileFieldInference.js';
 
-export function buildGlobalContractMetadata() {
-  return {
-    unknown_reasons: [
-      'not_found_after_search',
-      'not_publicly_disclosed',
-      'blocked_by_robots_or_tos',
-      'conflicting_sources_unresolved',
-      'identity_ambiguous',
-      'parse_failure',
-      'budget_exhausted'
-    ],
-    required_levels: ['identity', 'required', 'critical', 'expected', 'optional', 'rare'],
-    availability_levels: ['expected', 'sometimes', 'rare'],
-    difficulty_levels: ['easy', 'medium', 'hard'],
-    enum_policies: ['closed', 'open_prefer_known', 'open', 'closed_with_curation'],
-    conflict_policies: ['resolve_by_tier_else_unknown'],
-    tier_order: ['tier1', 'tier2', 'tier3']
-  };
-}
-
 export function buildParseTemplateCatalog() {
   return {
     boolean_yes_no_unk: {

@@ -15,7 +15,7 @@ import {
 
 test('finalizeOverrides requires applyOverrides before mutating latest artifacts', async (t) => {
   const harness = await createReviewOverrideHarness(t);
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
   await seedLatestArtifacts(harness);
@@ -24,6 +24,7 @@ test('finalizeOverrides requires applyOverrides before mutating latest artifacts
     config,
     category,
     productId,
+    specDb,
     field: 'weight',
     candidateId: 'cand_1',
   });
@@ -33,6 +34,7 @@ test('finalizeOverrides requires applyOverrides before mutating latest artifacts
     config,
     category,
     productId,
+    specDb,
     applyOverrides: false,
   });
   const { normalized } = await readLatestArtifacts(harness);

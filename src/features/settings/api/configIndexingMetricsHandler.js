@@ -17,6 +17,7 @@ export function createIndexingMetricsHandler({
   buildLlmMetrics,
   buildIndexingDomainChecklist,
   buildReviewMetrics,
+  getSpecDb,
 }) {
   return async function handleIndexingMetrics(parts, params, method, _req, res) {
     if (parts[0] !== 'indexing' || method !== 'GET') return false;
@@ -143,10 +144,13 @@ export function createIndexingMetricsHandler({
         const category = String(parts[2] || '').trim();
         const windowHours = Math.max(1, toInt(params.get('windowHours'), 24));
         if (!category) return jsonRes(res, 400, { error: 'category_required' });
+        let specDb = null;
+        try { specDb = typeof getSpecDb === 'function' ? await getSpecDb(category) : null; } catch { /* no specDb */ }
         const result = await buildReviewMetrics({
           config,
           category,
-          windowHours
+          windowHours,
+          specDb
         });
         return jsonRes(res, 200, {
           command: 'review',

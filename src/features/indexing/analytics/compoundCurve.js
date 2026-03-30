@@ -2,23 +2,6 @@
 // search volume decreases and URL reuse increases over time, proving
 // that the indexing system learns from prior runs.
 
-import fs from 'node:fs';
-
-/**
- * Read NDJSON lines from path, returning parsed rows (skipping malformed).
- */
-function readNdjsonLines(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const raw = fs.readFileSync(filePath, 'utf8').trim();
-  if (!raw) return [];
-  const lines = raw.split('\n').filter(Boolean);
-  const rows = [];
-  for (const line of lines) {
-    try { rows.push(JSON.parse(line)); } catch { /* skip malformed */ }
-  }
-  return rows;
-}
-
 /**
  * Simple linear slope of a numeric series.
  * Returns slope per index (per run).
@@ -44,10 +27,10 @@ function linearSlope(values) {
 /**
  * Compute compound learning curve across runs.
  *
- * @param {{ category: string, runSummaries: object[], queryIndexPath: string, urlIndexPath: string }} opts
+ * @param {{ category: string, runSummaries: object[], queryRows: object[], urlRows: object[] }} opts
  * @returns {CompoundCurveResult}
  */
-export function computeCompoundCurve({ category, runSummaries, queryIndexPath, urlIndexPath, queryRows: _queryRows, urlRows: _urlRows }) {
+export function computeCompoundCurve({ category, runSummaries, queryRows, urlRows }) {
   const runs = Array.isArray(runSummaries) ? runSummaries : [];
 
   if (runs.length === 0) {
@@ -60,13 +43,12 @@ export function computeCompoundCurve({ category, runSummaries, queryIndexPath, u
     };
   }
 
-  // WHY: SQL rows preferred; NDJSON fallback for backward compat
-  const queryRows = _queryRows || readNdjsonLines(queryIndexPath);
-  const urlRows = _urlRows || readNdjsonLines(urlIndexPath);
+  const qRows = queryRows || [];
+  const uRows = urlRows || [];
 
   // Group queries by run_id
   const queriesByRun = new Map();
-  for (const row of queryRows) {
+  for (const row of qRows) {
     const rid = String(row.run_id || '');
     if (!queriesByRun.has(rid)) queriesByRun.set(rid, []);
     queriesByRun.get(rid).push(row);
@@ -74,7 +56,7 @@ export function computeCompoundCurve({ category, runSummaries, queryIndexPath, u
 
   // Group URLs by run_id
   const urlsByRun = new Map();
-  for (const row of urlRows) {
+  for (const row of uRows) {
     const rid = String(row.run_id || '');
     if (!urlsByRun.has(rid)) urlsByRun.set(rid, []);
     urlsByRun.get(rid).push(row);

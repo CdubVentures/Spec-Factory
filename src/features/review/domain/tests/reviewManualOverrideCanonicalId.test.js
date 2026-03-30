@@ -12,13 +12,14 @@ test('setManualOverride writes a canonical manual override candidate id', async 
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-manual',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
 
   const manual = await setManualOverride({
     storage,
     config,
     category,
     productId,
+    specDb,
     field: 'weight',
     value: '59',
     reason: 'Official spec table',

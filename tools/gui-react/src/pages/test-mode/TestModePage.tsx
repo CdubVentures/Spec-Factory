@@ -925,7 +925,7 @@ export function TestModePage() {
                 {validationResult.results.map((check, i) => (
                   <tr key={i} className="border-b sf-border-default">
                     <td className="py-1.5 pr-3 font-mono text-[10px] sf-text-muted truncate max-w-[120px]" title={check.productId}>
-                      {check.productId.split('-').slice(-2).join('-')}
+                      {check.productId}
                     </td>
                     <td className="py-1.5 pr-3">{check.testCase}</td>
                     <td className="py-1.5 pr-3 font-mono">{check.check}</td>

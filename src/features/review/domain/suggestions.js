@@ -1,7 +1,4 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { nowIso } from '../../../shared/primitives.js';
-import { isObject, normalizeToken } from '../../../shared/primitives.js';
+import { nowIso, isObject, normalizeToken } from '../../../shared/primitives.js';
 
 function normalizeField(value) {
   return String(value || '')
@@ -90,26 +87,6 @@ function normalizePayload(type, payload = {}) {
   return item;
 }
 
-async function readSuggestionFile(filePath) {
-  try {
-    const raw = await fs.readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (isObject(parsed)) {
-      return parsed;
-    }
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      throw error;
-    }
-  }
-  return null;
-}
-
-async function writeSuggestionFile(filePath, value) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
-
 export function suggestionFilePath({ config = {}, category, type }) {
   const normalizedType = normalizeType(type);
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
@@ -126,47 +103,54 @@ export async function appendReviewSuggestion({
   config = {},
   category,
   type,
-  payload
+  payload,
+  specDb = null
 }) {
   const normalizedType = normalizeType(type);
-  const suggestionPath = suggestionFilePath({ config, category, type: normalizedType });
   const normalizedPayload = normalizePayload(normalizedType, {
     ...payload,
     category
   });
-  const existing = await readSuggestionFile(suggestionPath);
-  const current = isObject(existing) ? existing : {
-    version: 1,
-    category,
-    type: normalizedType,
-    generated_at: nowIso(),
-    updated_at: nowIso(),
-    count: 0,
-    items: []
-  };
-  const items = Array.isArray(current.items) ? [...current.items] : [];
-  const dedupeKey = dedupeKeyForType(normalizedType, normalizedPayload);
-  const found = items.some((row) => dedupeKeyForType(normalizedType, row) === dedupeKey);
-  if (!found) {
-    items.push(normalizedPayload);
-  }
+  const fieldKey = normalizedPayload.field || normalizedPayload.field_key || '';
+  const value = normalizedPayload.value || '';
+  const sqlType = normalizedType === 'enum' ? 'enum_value' : normalizedType;
 
-  const next = {
-    ...current,
-    version: 1,
-    category,
-    type: normalizedType,
-    updated_at: nowIso(),
-    count: items.length,
-    items
-  };
-  await writeSuggestionFile(suggestionPath, next);
+  // WHY: Phase E3 — SQL is sole source. Dedup via SQL query, write to SQL only.
+  let found = false;
+  if (specDb && fieldKey && value) {
+    try {
+      const existing = specDb.getCurationSuggestions(sqlType);
+      const dedupeKey = dedupeKeyForType(normalizedType, normalizedPayload);
+      found = existing.some((row) => {
+        const rowKey = [
+          normalizeField(row.field_key),
+          normalizeToken(row.value)
+        ].join('|');
+        return rowKey === dedupeKey;
+      });
+      if (!found) {
+        specDb.upsertCurationSuggestion({
+          suggestion_id: `${normalizedType}::${fieldKey}::${normalizeToken(value)}`,
+          category,
+          suggestion_type: sqlType,
+          field_key: fieldKey,
+          component_type: normalizedPayload.component_type || null,
+          value,
+          normalized_value: normalizeToken(value),
+          status: 'pending',
+          source: 'review_suggestion',
+          product_id: normalizedPayload.product_id || null,
+          run_id: null,
+          first_seen_at: normalizedPayload.created_at || nowIso(),
+          last_seen_at: nowIso()
+        });
+      }
+    } catch { /* best-effort SQL write */ }
+  }
 
   return {
     category,
     type: normalizedType,
-    path: suggestionPath,
     appended: !found,
-    total_count: items.length
   };
 }

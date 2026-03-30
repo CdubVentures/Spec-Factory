@@ -118,8 +118,12 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
         targetCompleteness: 0.97,
         targetConfidence: 0.93,
       },
+      required_fields: ['fields.brightness'],
+      anchor_fields: { panel_type: ['ips'] },
+      search_templates: [
+        { label: 'authority template', query: '{brand} {model} brightness' },
+      ],
     });
-    await writeJson(path.join(helperRoot, category, 'required_fields.json'), ['fields.brightness']);
     await writeJson(path.join(helperRoot, category, 'sources.json'), {
       approved: {
         manufacturer: ['authority.example.com'],
@@ -130,15 +134,6 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
       denylist: ['authority-deny.example.com'],
       sources: {},
     });
-    await writeJson(path.join(helperRoot, category, 'anchors.json'), {
-      panel_type: ['ips'],
-    });
-    await writeJson(path.join(helperRoot, category, 'search_templates.json'), [
-      {
-        label: 'authority template',
-        query: '{brand} {model} brightness',
-      },
-    ]);
 
     await writeJson(path.join(categoriesRoot, category, 'schema.json'), {
       category,
@@ -152,8 +147,12 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
         targetCompleteness: 0.11,
         targetConfidence: 0.22,
       },
+      required_fields: ['fields.legacy_field'],
+      anchor_fields: { legacy_anchor: ['tn'] },
+      search_templates: [
+        { label: 'legacy template', query: '{brand} {model} legacy' },
+      ],
     });
-    await writeJson(path.join(categoriesRoot, category, 'required_fields.json'), ['fields.legacy_field']);
     await writeJson(path.join(categoriesRoot, category, 'sources.json'), {
       approved: {
         manufacturer: ['legacy.example.com'],
@@ -164,15 +163,6 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
       denylist: ['legacy-deny.example.com'],
       sources: {},
     });
-    await writeJson(path.join(categoriesRoot, category, 'anchors.json'), {
-      legacy_anchor: ['tn'],
-    });
-    await writeJson(path.join(categoriesRoot, category, 'search_templates.json'), [
-      {
-        label: 'legacy template',
-        query: '{brand} {model} legacy',
-      },
-    ]);
 
     const config = await loadCategoryConfig(category, {
       config: {
@@ -203,10 +193,7 @@ test('loadCategoryConfig prefers category_authority category config over legacy 
       config.generated_schema_path,
       path.join(helperRoot, category, 'schema.json'),
     );
-    assert.equal(
-      config.generated_required_fields_path,
-      path.join(helperRoot, category, 'required_fields.json'),
-    );
+    assert.equal(config.generated_required_fields_path, null);
   });
 });
 

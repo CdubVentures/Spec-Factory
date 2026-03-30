@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createStorage } from '../../../../../s3/storage.js';
 import { resolveOverrideFilePath } from '../../overrideWorkflow.js';
+import { SpecDb } from '../../../../../db/specDb.js';
 
 export async function createReviewOverrideHarness(
   t,
@@ -19,14 +20,17 @@ export async function createReviewOverrideHarness(
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
   };
+  // WHY: Phase E3 — SQL is sole runtime source, tests need specDb
+  const specDb = new SpecDb({ dbPath: ':memory:', category });
 
   if (typeof t?.after === 'function') {
     t.after(async () => {
+      try { specDb?.close(); } catch { /* no-op */ }
       await fs.rm(tempRoot, { recursive: true, force: true });
     });
   }
 
-  return { tempRoot, storage, config, category, productId };
+  return { tempRoot, storage, config, category, productId, specDb };
 }
 
 async function writeJson(filePath, value) {
@@ -229,7 +233,38 @@ export async function seedReviewProductPayload(
   );
 }
 
-export async function readOverridePayload({ config, category, productId }) {
+export async function readOverridePayload({ config, category, productId, specDb }) {
+  // WHY: Phase E3 — read from SQL when specDb available, file fallback for legacy tests
+  if (specDb) {
+    const reviewState = specDb.getProductReviewState(productId);
+    const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
+    const overrides = {};
+    for (const row of overriddenRows) {
+      let provenance = null;
+      if (row.override_provenance) {
+        try { provenance = JSON.parse(row.override_provenance); } catch { /* keep null */ }
+      }
+      overrides[row.field_key] = {
+        field: row.field_key,
+        override_source: row.override_source || 'candidate_selection',
+        override_value: row.override_value || row.value || '',
+        override_reason: row.override_reason || null,
+        override_provenance: provenance,
+        overridden_by: row.overridden_by || null,
+        overridden_at: row.overridden_at || row.updated_at || null,
+        candidate_id: row.accepted_candidate_id || '',
+        value: row.override_value || row.value || '',
+        set_at: row.overridden_at || row.updated_at || null,
+      };
+    }
+    return {
+      version: 1,
+      category,
+      product_id: productId,
+      review_status: reviewState?.review_status || 'in_progress',
+      overrides,
+    };
+  }
   const overridePath = resolveOverrideFilePath({ config, category, productId });
   return JSON.parse(await fs.readFile(overridePath, 'utf8'));
 }

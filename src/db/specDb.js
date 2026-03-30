@@ -354,6 +354,12 @@ export class SpecDb {
   getItemFieldStateForProducts(pids, fks) { return this._itemStateStore.getItemFieldStateForProducts(pids, fks); }
   getDistinctItemFieldValues(fk) { return this._itemStateStore.getDistinctItemFieldValues(fk); }
 
+  // WHY: Phase E2 — product review state + override fields for SQL-based override reading
+  upsertProductReviewState(opts) { this._itemStateStore.upsertProductReviewState(opts); }
+  getProductReviewState(pid) { return this._itemStateStore.getProductReviewState(pid); }
+  listApprovedProductIds() { return this._itemStateStore.listApprovedProductIds(); }
+  getOverriddenFieldsForProduct(pid) { return this._itemStateStore.getOverriddenFieldsForProduct(pid); }
+
   getComponentTypeList() { return this._componentStore.getComponentTypeList(); }
   getPropertyColumnsForType(t) { return this._componentStore.getPropertyColumnsForType(t); }
   getAllComponentsForType(t) { return this._componentStore.getAllComponentsForType(t); }

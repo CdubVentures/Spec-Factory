@@ -140,6 +140,7 @@ export async function loadCatalogProducts({ category, config = {} }) {
     const catalog = await readJsonIfExists(productCatalogPath({ category: cat, config }));
     const products = normalizeCatalogProducts(catalog);
     return products.map((row) => ({
+      productId: row.productId,
       brand: row.brand,
       model: row.model,
       variant: row.variant,
@@ -165,6 +166,7 @@ export async function loadCatalogProductsWithFields({ category, config = {} }) {
     }
     const canonicalByProduct = await loadCanonicalFieldsByProduct({ category: cat, config });
     return products.map((row) => ({
+      productId: row.productId,
       brand: row.brand,
       model: row.model,
       variant: row.variant,

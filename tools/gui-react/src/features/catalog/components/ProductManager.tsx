@@ -16,9 +16,9 @@ const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
 const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';
 
 // ── Types ──────────────────────────────────────────────────────────
-import type { CatalogProduct, Brand, RenameHistoryEntry } from '../../../types/product.ts';
+import type { CatalogProduct, Brand } from '../../../types/product.ts';
 import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResultRow, BulkImportResult } from './productManagerTypes.ts';
-import { PRODUCT_STATUS_VALUES, slugToken, cleanVariantToken, isFabricatedVariantToken, isHeaderRow, relativeTime } from './productHelpers.ts';
+import { PRODUCT_STATUS_VALUES, cleanVariantToken, isFabricatedVariantToken, isHeaderRow, relativeTime } from './productHelpers.ts';
 import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 
 // ── Component ──────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ export function ProductManager() {
   function openEdit(product: CatalogProduct) {
     hydratedEditPidRef.current = product.productId;
     setEditPid(product.productId);
-    setSelectedProduct(product.productId, product.brand, product.model);
+    setSelectedProduct(product.productId, product.brand, product.model, product.variant);
     setFormBrand(product.brand);
     setFormModel(product.model);
     setFormVariant(product.variant || '');
@@ -534,7 +534,7 @@ export function ProductManager() {
             <input
               type="text"
               value={formVariant}
-              onChange={(e) => { setFormVariant(e.target.value); setConfirmAction(null); setConfirmInput(''); }}
+              onChange={(e) => setFormVariant(e.target.value)}
               placeholder="e.g. Wireless (leave blank for base model)"
               className={`${inputCls} w-full`}
             />
@@ -546,7 +546,7 @@ export function ProductManager() {
               <label className={labelCls}>Status</label>
               <select
                 value={formStatus}
-                onChange={(e) => { setFormStatus(e.target.value); setConfirmAction(null); setConfirmInput(''); }}
+                onChange={(e) => setFormStatus(e.target.value)}
                 className={`${selectCls} w-full`}
               >
                 <option value="active">Active</option>
@@ -560,7 +560,7 @@ export function ProductManager() {
             <label className={labelCls}>Seed URLs (one per line)</label>
             <textarea
               value={formSeedUrls}
-              onChange={(e) => { setFormSeedUrls(e.target.value); setConfirmAction(null); setConfirmInput(''); }}
+              onChange={(e) => setFormSeedUrls(e.target.value)}
               placeholder={"https://example.com/product-page\nhttps://..."}
               rows={3}
               className={`${inputCls} w-full resize-y`}
@@ -572,24 +572,11 @@ export function ProductManager() {
             <div className="text-[10px] font-medium sf-text-muted uppercase tracking-wide">Identity Preview</div>
             {editPid ? (
               <>
-                {/* Slug — show diff on rename */}
-                {isRename ? (
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="sf-text-subtle w-16">Slug</span>
-                      <span className="font-mono sf-status-text-danger sf-status-text-danger line-through truncate">{editPid}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="w-16" />
-                      <span className="font-mono sf-status-text-success sf-status-text-success truncate">{newSlugPreview}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="sf-text-subtle w-16">Slug</span>
-                    <span className="font-mono sf-text-muted sf-text-subtle truncate">{editPid}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="sf-text-subtle w-16">Product ID</span>
+                  <span className="font-mono sf-text-muted sf-text-subtle truncate">{editPid}</span>
+                  <span className="text-[10px] sf-text-subtle">(immutable)</span>
+                </div>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="sf-text-subtle w-16">ID#</span>
                   <span className="font-mono sf-text-muted sf-text-subtle">
@@ -608,11 +595,9 @@ export function ProductManager() {
             ) : (
               <>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="sf-text-subtle w-16">Slug</span>
+                  <span className="sf-text-subtle w-16">Product ID</span>
                   <span className="font-mono sf-text-muted sf-text-subtle truncate">
-                    {formBrand && formModel
-                      ? [category, formBrand, formModel, formVariant].filter(Boolean).map(s => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '')).join('-')
-                      : '(enter brand + model)'}
+                    (assigned on creation)
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
@@ -632,28 +617,20 @@ export function ProductManager() {
           {/* ── Downstream Dependencies Panel ────────────────────────── */}
           {editPid && (
             <div className={`rounded border text-xs ${
-              isRename
+              hasAnyChange
                 ? 'sf-bg-surface-soft sf-bg-surface-soft sf-border-soft sf-border-default'
-                : hasAnyChange
-                  ? 'sf-bg-surface-soft sf-bg-surface-soft sf-border-soft sf-border-default'
-                  : 'sf-bg-surface-soft sf-bg-surface-soft sf-border-default sf-border-default'
+                : 'sf-bg-surface-soft sf-bg-surface-soft sf-border-default sf-border-default'
             }`}>
               {/* Header bar */}
-              <div className={`px-3 py-2 border-b flex items-center justify-between ${
-                isRename ? 'sf-border-default sf-border-default'
-                  : hasAnyChange ? 'sf-border-default sf-border-default'
-                  : 'sf-border-default sf-border-default'
-              }`}>
+              <div className={`px-3 py-2 border-b flex items-center justify-between sf-border-default sf-border-default`}>
                 <span className={`text-[10px] font-bold uppercase tracking-wide ${
-                  isRename ? 'sf-status-text-danger sf-status-text-danger'
-                    : hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
+                  hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
                     : 'sf-text-muted sf-text-subtle'
                 }`}>
-                  {isRename ? 'Impact — Slug Rename' : hasAnyChange ? 'Downstream Impact' : 'Downstream Dependencies'}
+                  {hasAnyChange ? 'Downstream Impact' : 'Downstream Dependencies'}
                 </span>
                 <span className={`font-semibold tabular-nums ${
-                  isRename ? 'sf-status-text-danger sf-status-text-danger'
-                    : hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
+                  hasAnyChange ? 'sf-status-text-warning sf-status-text-warning'
                     : 'sf-text-muted sf-text-subtle'
                 }`}>
                   5 linked files
@@ -661,18 +638,12 @@ export function ProductManager() {
               </div>
 
               <div className="px-3 py-2 space-y-2">
-                {/* Rename-specific: slug diff */}
-                {isRename && (
-                  <div className="font-mono text-[11px]">
-                    <span className="sf-status-text-danger line-through">{editPid}</span>
-                    {' → '}
-                    <span className="sf-status-text-success sf-status-text-success">{newSlugPreview}</span>
-                  </div>
-                )}
-
-                {/* Non-rename changes: summary */}
-                {!isRename && hasAnyChange && (
+                {/* Change summary */}
+                {hasAnyChange && (
                   <div className="space-y-0.5 sf-status-text-warning sf-status-text-warning text-[11px]">
+                    {hasIdentityChange && (
+                      <p>Identity metadata updated (brand/model/variant). Slug and artifact paths are unchanged.</p>
+                    )}
                     {isStatusChange && (
                       <div>
                         <p>Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span></p>
@@ -686,183 +657,41 @@ export function ProductManager() {
                 )}
 
                 {/* Expandable: affected files */}
-                <details className="group" open={isRename}>
-                  <summary className={`cursor-pointer select-none text-[11px] font-medium hover:opacity-80 ${
-                    isRename ? 'sf-status-text-danger sf-status-text-danger' : 'sf-text-muted sf-text-subtle'
-                  }`}>
+                <details className="group">
+                  <summary className="cursor-pointer select-none text-[11px] font-medium hover:opacity-80 sf-text-muted sf-text-subtle">
                     Affected files
                   </summary>
-                  <div className={`mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto ${
-                    isRename
-                      ? 'sf-bg-surface-soft-strong sf-bg-surface-soft'
-                      : 'bg-white/60 sf-bg-surface-soft/60'
-                  }`}>
-                    {isRename ? (
-                      <>
-                        <div><span className="sf-status-text-danger">-</span> specs/inputs/{category}/products/<span className="sf-status-text-danger font-bold">{editPid}</span>.json</div>
-                        <div><span className="sf-status-text-success">+</span> specs/inputs/{category}/products/<span className="sf-status-text-success font-bold">{newSlugPreview}</span>.json</div>
-                        <div className={`border-t my-0.5 ${isRename ? 'sf-border-default sf-border-default' : 'sf-border-default sf-border-default'}`} />
-                        <div><span className="sf-status-text-danger">-</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{editPid}</span></div>
-                        <div><span className="sf-status-text-success">+</span> */latest/, */runs/, */review/, */published/ under <span className="font-bold">{newSlugPreview}</span></div>
-                        <div className={`border-t my-0.5 sf-border-default sf-border-default`} />
-                        <div><span className="sf-status-text-danger">-</span> _overrides/<span className="font-bold">{editPid}</span>.overrides.json</div>
-                        <div><span className="sf-status-text-success">+</span> _overrides/<span className="font-bold">{newSlugPreview}</span>.overrides.json</div>
-                        <div className={`border-t my-0.5 sf-border-default sf-border-default`} />
-                        <div><span className="sf-status-text-danger">-</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{editPid}</span>]</div>
-                        <div><span className="sf-status-text-success">+</span> _queue/{category}/state.json &rarr; products[<span className="font-bold">{newSlugPreview}</span>]</div>
-                      </>
-                    ) : (
-                      <>
-                        <div>specs/inputs/{category}/products/<span className="font-semibold">{editPid}</span>.json</div>
-                        <div>*/latest/, */runs/, */review/ under <span className="font-semibold">{editPid}</span></div>
-                        <div>*/published/<span className="font-semibold">{editPid}</span>/*</div>
-                        <div>category_authority/{category}/_overrides/<span className="font-semibold">{editPid}</span>.overrides.json</div>
-                        <div>_queue/{category}/state.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
-                      </>
-                    )}
+                  <div className="mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto bg-white/60 sf-bg-surface-soft/60">
+                    <div>specs/inputs/{category}/products/<span className="font-semibold">{editPid}</span>.json</div>
+                    <div>*/latest/, */runs/, */review/ under <span className="font-semibold">{editPid}</span></div>
+                    <div>*/published/<span className="font-semibold">{editPid}</span>/*</div>
+                    <div>category_authority/{category}/_overrides/<span className="font-semibold">{editPid}</span>.overrides.json</div>
+                    <div>_queue/{category}/state.json &rarr; products[<span className="font-semibold">{editPid}</span>]</div>
                   </div>
                 </details>
 
-                {/* Expandable: what happens on rename */}
-                {isRename && (
-                  <details className="group">
-                    <summary className="cursor-pointer select-none text-[11px] font-medium sf-status-text-danger sf-status-text-danger hover:opacity-80">
-                      What will happen
-                    </summary>
-                    <ul className="mt-1 ml-3 list-disc space-y-0.5 sf-status-text-danger sf-status-text-danger text-[11px]">
-                      <li>All output artifacts, run history, and review state <strong>migrated automatically</strong></li>
-                      <li>Override files moved to new slug</li>
-                      <li>Queue entry updated to new slug</li>
-                      <li>Rename logged in product history + category rename log</li>
-                      <li>ID# and Identifier remain <strong>unchanged</strong> (immutable)</li>
-                    </ul>
-                    {isStatusChange && (
-                      <p className="mt-1 text-[11px] sf-status-text-danger sf-status-text-danger">
-                        Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span>
-                      </p>
-                    )}
-                  </details>
-                )}
-
                 {/* Hint when no changes */}
                 {!hasAnyChange && (
-                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>model</strong> or <strong>variant</strong> triggers a full slug rename and artifact migration. Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run.</p>
+                  <p className="text-[10px] sf-text-subtle pt-0.5">Changing <strong>status</strong> or <strong>seed URLs</strong> takes effect on next pipeline run. Identity changes (brand/model/variant) update metadata only — the product ID is immutable.</p>
                 )}
               </div>
             </div>
           )}
 
-          {/* Rename history */}
+          {/* Product identifier */}
           {editPid && (() => {
             const editProduct = products.find(p => p.productId === editPid);
-            const history = editProduct?.rename_history;
-            if (!history || history.length === 0) return null;
+            if (!editProduct?.identifier) return null;
             return (
-              <details className="group text-[10px] sf-text-subtle">
-                <summary className="cursor-pointer select-none font-medium sf-text-muted sf-text-muted">
-                  Rename History ({history.length})
-                </summary>
-                <div className="mt-1 space-y-0.5 ml-1">
-                  {history.map((r, i) => (
-                    <div key={i}>
-                      <span className="font-mono">{r.previous_slug}</span>
-                      <span className="ml-1">&rarr; renamed {relativeTime(r.renamed_at)}</span>
-                      <span className="ml-1">({r.migration_result.migrated_count} files migrated)</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
+              <div className="text-[10px] sf-text-subtle">
+                <span className="font-medium sf-text-muted">ID:</span>{' '}
+                <span className="font-mono">{editPid}</span>
+                {editProduct.identifier && (
+                  <span className="ml-2 font-mono">({editProduct.identifier})</span>
+                )}
+              </div>
             );
           })()}
-
-          {/* Rename type-to-confirm (GitHub-style) */}
-          {confirmAction === 'rename' && (
-            <div className="sf-bg-surface-soft sf-bg-surface-soft border-2 sf-border-soft sf-border-default rounded p-3 space-y-2">
-              <div className="text-sm font-bold sf-status-text-danger sf-status-text-danger">Confirm slug rename</div>
-              <p className="text-xs sf-status-text-danger sf-status-text-danger">
-                This will migrate <strong>all</strong> artifacts from the old slug to the new slug.
-                This action rewrites every file path system-wide.
-              </p>
-              <p className="text-xs sf-status-text-danger sf-status-text-danger">
-                To confirm, type the new slug below:
-              </p>
-              <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-danger sf-status-text-danger select-all">
-                {renameConfirmPhrase}
-              </div>
-              <input
-                type="text"
-                value={confirmInput}
-                onChange={(e) => setConfirmInput(e.target.value)}
-                placeholder="Type the new slug to confirm"
-                className="w-full px-2 py-1.5 text-sm font-mono border-2 sf-border-soft sf-border-default rounded bg-white sf-bg-surface-soft sf-border-default focus:outline-none"
-                autoFocus
-              />
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSave}
-                  disabled={confirmInput !== renameConfirmPhrase || isSaving}
-                  className="px-3 py-1.5 text-xs font-semibold sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? 'Migrating...' : 'I understand, rename this product'}
-                </button>
-                <button
-                  onClick={() => { setConfirmAction(null); setConfirmInput(''); }}
-                  className="px-3 py-1.5 text-xs border sf-border-soft sf-border-soft rounded sf-hover-bg-surface-soft-strong sf-hover-bg-surface-soft-strong"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Save type-to-confirm (GitHub-style) — for non-rename changes */}
-          {confirmAction === 'save' && (
-            <div className="sf-bg-surface-soft sf-bg-surface-soft border-2 sf-border-soft sf-border-default rounded p-3 space-y-2">
-              <div className="text-sm font-bold sf-status-text-warning sf-status-text-warning">Confirm changes</div>
-              <div className="text-xs sf-status-text-warning sf-status-text-warning space-y-1">
-                <p>You are about to save changes to <strong>{editPid}</strong>:</p>
-                <ul className="list-disc ml-3 space-y-0.5">
-                  {isStatusChange && (
-                    <li>Status: <span className="font-mono line-through sf-status-text-danger">{origStatus}</span> &rarr; <span className="font-mono sf-status-text-success">{formStatus}</span>
-                      {formStatus === 'inactive' && <span> — product will be excluded from queue and pipeline</span>}
-                    </li>
-                  )}
-                  {isSeedUrlChange && (
-                    <li>Seed URLs updated — next pipeline run will use new URLs</li>
-                  )}
-                </ul>
-              </div>
-              <p className="text-xs sf-status-text-warning sf-status-text-warning mt-1">
-                To confirm, type the product slug below:
-              </p>
-              <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-warning sf-status-text-warning select-all">
-                {editPid}
-              </div>
-              <input
-                type="text"
-                value={confirmInput}
-                onChange={(e) => setConfirmInput(e.target.value)}
-                placeholder="Type the product slug to confirm"
-                className="w-full sf-input text-sm font-mono"
-                autoFocus
-              />
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleSave}
-                  disabled={confirmInput !== editPid || isSaving}
-                  className="px-3 py-1.5 text-xs font-semibold sf-warning-button-solid disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? 'Saving...' : 'Confirm save'}
-                </button>
-                <button
-                  onClick={() => { setConfirmAction(null); setConfirmInput(''); }}
-                  className="px-3 py-1.5 text-xs border sf-border-soft sf-border-soft rounded sf-hover-bg-surface-soft-strong sf-hover-bg-surface-soft-strong"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Delete type-to-confirm (GitHub-style) */}
           {confirmAction === 'delete' && (
@@ -878,7 +707,7 @@ export function ProductManager() {
                 </ul>
               </div>
               <p className="text-xs sf-status-text-danger sf-status-text-danger mt-1">
-                To confirm, type the product slug below:
+                To confirm, type the product ID below:
               </p>
               <div className="font-mono text-xs sf-bg-surface-soft-strong sf-bg-surface-soft rounded px-2 py-1 sf-status-text-danger sf-status-text-danger select-all">
                 {deleteConfirmPhrase}
@@ -887,7 +716,7 @@ export function ProductManager() {
                 type="text"
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
-                placeholder="Type the product slug to confirm"
+                placeholder="Type the product ID to confirm"
                 className="w-full px-2 py-1.5 text-sm font-mono border-2 sf-border-soft sf-border-default rounded bg-white sf-bg-surface-soft sf-border-default focus:outline-none"
                 autoFocus
               />
@@ -921,10 +750,10 @@ export function ProductManager() {
                 <button
                   onClick={handleSave}
                   disabled={!isFormValid || isSaving || (editPid ? !hasAnyChange : false)}
-                  className={isRename ? btnDanger : btnPrimary}
+                  className={btnPrimary}
                   title={editPid && !hasAnyChange ? 'No changes to save' : undefined}
                 >
-                  {isSaving ? 'Saving...' : editPid ? (isRename ? 'Rename & Migrate' : 'Save Changes') : 'Add Product'}
+                  {isSaving ? 'Saving...' : editPid ? 'Save Changes' : 'Add Product'}
                 </button>
                 {editPid && (
                   <button
@@ -1010,7 +839,7 @@ export function ProductManager() {
                       <th className="text-left px-2 py-1.5 w-12">#</th>
                       <th className="text-left px-2 py-1.5">Model</th>
                       <th className="text-left px-2 py-1.5">Variant</th>
-                      <th className="text-left px-2 py-1.5">Slug Preview</th>
+                      <th className="text-left px-2 py-1.5">Product ID</th>
                       <th className="text-left px-2 py-1.5 w-36">Status</th>
                     </tr>
                   </thead>

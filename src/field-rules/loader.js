@@ -402,15 +402,17 @@ export async function loadFieldRules(category, options = {}) {
     readComponentDbs(path.join(generatedRoot, 'component_db'))
   ]);
 
-  // Merge component overrides into loaded component DBs at runtime
-  try {
-    const overrideEntries = await fs.readdir(overrideDir, { withFileTypes: true });
-    for (const entry of overrideEntries) {
-      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
-      try {
-        const ovr = JSON.parse(await fs.readFile(path.join(overrideDir, entry.name), 'utf8'));
-        if (!ovr?.componentType || !ovr?.name) continue;
-        if (!isObject(ovr?.properties) && !isObject(ovr?.identity)) continue;
+  // WHY: Phase E3 — component overrides loaded from SQL by caller, passed via options
+  const componentOverridesList = options.componentOverrides || [];
+  const overrideSources = [];
+  for (const ovr of (Array.isArray(componentOverridesList) ? componentOverridesList : [])) {
+    if (!isObject(ovr)) continue;
+    overrideSources.push(ovr);
+  }
+  for (const ovr of overrideSources) {
+    try {
+      if (!ovr?.componentType || !ovr?.name) continue;
+      if (!isObject(ovr?.properties) && !isObject(ovr?.identity)) continue;
         const typeKey = normalizeFieldKey(ovr.componentType);
         const db = componentDBs[typeKey];
         if (!db?.entries) continue;
@@ -447,10 +449,7 @@ export async function loadFieldRules(category, options = {}) {
             }
           }
         }
-      } catch { /* skip corrupt override files */ }
-    }
-  } catch (err) {
-    if (err?.code !== 'ENOENT') { /* overrides dir doesn't exist, that's fine */ }
+    } catch { /* skip corrupt override entry */ }
   }
 
   const rules = isObject(rulesRaw) ? rulesRaw : {};

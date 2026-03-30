@@ -64,7 +64,7 @@ flowchart TB
     p8_domain["phase_08_domain_classifier"]
 
     p18_sql[("SQL writes:<br/>bridge_events, run_artifacts,<br/>billing_entries, runs (counters)")]
-    p18_ndjson["NDJSON factories DELETED (2026-03-28)<br/><i>query-index, url-index, prompt-index,<br/>knob-snapshots — all SQL-only via callbacks</i>"]
+    p18_ndjson["NDJSON factories DELETED (2026-03-28)<br/><i>query-index, url-index, prompt-index,<br/>knob-snapshots — all SQL-only via callbacks<br/>Reader fallbacks stripped (2026-03-29)</i>"]
 
     p1_needset --> p2_brand --> p3_profile --> p4_planner
     p4_planner --> p5_query --> p6_results --> p7_serp --> p8_domain
@@ -87,7 +87,7 @@ flowchart TB
   subgraph P09["phase_09_crawl  CRAWL + EXTRACTION"]
     direction LR
     p9_batch["crawlSession.processBatch()<br/><i>concurrent workers via runFetchPlan()</i>"]
-    p9_frontier[("frontierDb.urls<br/><i>recordFetch() per URL</i>")]
+    p9_frontier[("frontierDb.urls (SQLite primary)<br/><i>recordFetch() per URL<br/>JSON fallback still present</i>")]
     p9_events[("bridge_events<br/><i>fetch events</i>")]
     p9_runs[("runs<br/><i>counters++</i>")]
     p9_binaries["Content-addressed binaries<br/><i>screenshot → {runId}/screenshots/<br/>video → {runId}/video/</i>"]
@@ -156,9 +156,25 @@ flowchart TB
   style post_note fill:#da3633,stroke:#f85149,color:#fff
   style post_storage fill:#21262d,stroke:#58a6ff,color:#c9d1d9
 
+  %% ===== RECOVERY (seedFromCheckpoint) =====
+  subgraph RECOVERY["RECOVERY  (DB rebuild from checkpoint files)"]
+    direction LR
+    rec_scan["scanAndSeedCheckpoints<br/><i>Walks {indexLabRoot}/ for run.json + product.json<br/>Products first, runs sorted by created_at</i>"]
+    rec_seed["seedFromCheckpoint<br/><i>Populates: runs, product_runs, run_artifacts,<br/>crawl_sources, products, product_queue</i>"]
+    rec_cli["CLI: spec seed-checkpoint --category mouse"]
+
+    rec_scan --> rec_seed
+    rec_cli --> rec_scan
+  end
+  style RECOVERY fill:#0d1117,stroke:#1f6feb,color:#e0e0e0,stroke-width:2px
+  style rec_scan fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style rec_seed fill:#1f6feb,stroke:#58a6ff,color:#fff
+  style rec_cli fill:#21262d,stroke:#58a6ff,color:#c9d1d9
+
   %% ===== FLOW =====
   P00 --> P18
   P18 --> P09
   P09 --> CHECKPOINT
   CHECKPOINT --> FINALIZE
   FINALIZE --> POSTRUN
+  CHECKPOINT -.->|"disaster recovery"| RECOVERY

@@ -136,7 +136,26 @@ CREATE TABLE IF NOT EXISTS item_field_state (
   needs_ai_review INTEGER DEFAULT 0,
   ai_review_complete INTEGER DEFAULT 0,
   updated_at TEXT DEFAULT (datetime('now')),
+  override_source TEXT,
+  override_value TEXT,
+  override_reason TEXT,
+  override_provenance TEXT,
+  overridden_by TEXT,
+  overridden_at TEXT,
   UNIQUE(category, product_id, field_key)
+);
+
+CREATE TABLE IF NOT EXISTS product_review_state (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  review_status TEXT DEFAULT 'pending',
+  review_started_at TEXT,
+  reviewed_by TEXT,
+  reviewed_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(category, product_id)
 );
 
 CREATE TABLE IF NOT EXISTS item_component_links (

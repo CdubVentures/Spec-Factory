@@ -27,7 +27,8 @@ export async function runAccuracyBenchmarkReport({
   config = {},
   category,
   period = 'weekly',
-  maxCases = 0
+  maxCases = 0,
+  specDb = null
 }) {
   const normalizedCategory = normalizeCategory(category);
   const raw = await buildAccuracyReport({
@@ -88,7 +89,8 @@ export async function runAccuracyBenchmarkReport({
   const reviewMetrics = await buildReviewMetrics({
     config,
     category: normalizedCategory,
-    windowHours: 24
+    windowHours: 24,
+    specDb
   });
   const llmMetrics = await buildLlmMetrics({
     storage,

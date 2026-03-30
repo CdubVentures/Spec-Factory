@@ -210,45 +210,54 @@ All construct paths directly with `path.join(HELPER_ROOT, category, '_generated/
 
 ---
 
-### Phase D: Establish category authority ownership boundaries
+### Phase D: Establish category authority ownership boundaries — COMPLETE (2026-03-29)
 
-**Scope**: Create a lightweight facade that clarifies which feature owns which subdirectory. Not a full abstraction layer — just clear ownership + path helper functions exported from the owning feature's public API.
+**Scope**: Lightweight path-helper facades + barrel exports clarifying which feature owns which subdirectory. No file moves — only source code changes.
 
-**Proposed ownership:**
+**Ownership map (verified via grep audit of all writers + readers):**
 
-| Subdirectory | Owner feature | Public API for cross-feature access |
-|-------------|---------------|-------------------------------------|
-| `_control_plane/field_studio_map.json` | `src/ingest/` (write) + `src/features/studio/` (save) | `loadFieldStudioMap()`, `saveFieldStudioMap()` from ingest barrel |
-| `_control_plane/product_catalog.json` | `src/features/catalog/` | `loadProductCatalog()`, `saveProductCatalog()` from catalog barrel |
-| `_generated/*` | `src/ingest/` (write-only) | `loadGeneratedFieldRules()`, `loadGeneratedComponentDb()` from ingest barrel |
-| `_overrides/` | `src/features/review/` | `loadOverrides()`, `saveOverride()` from review barrel |
-| `_suggestions/` | `src/features/review/` (primary) | `appendSuggestion()`, `readSuggestions()` from review barrel |
-| `sources.json` | `src/features/indexing/` | Already has `sourceFileService.js` — formalize in barrel |
-| Root category files | `src/categories/` (read-only) | Already has `loader.js` |
+| File/Directory | Owner (writer) | Barrel export | Cross-boundary readers |
+|---------------|---------------|---------------|----------------------|
+| `_control_plane/field_studio_map.json` | `src/ingest/` | `loadFieldStudioMap()`, `saveFieldStudioMap()` | studio, field-rules/sessionCache |
+| `_control_plane/product_catalog.json` | `src/features/catalog/` | `loadProductCatalog()`, `saveProductCatalog()` | ingest/catalogSeed, db/seed |
+| `_generated/*` (all compile output) | `src/ingest/` + `src/field-rules/` | `resolveGeneratedRoot()` | categories/loader, field-rules/loader, engine, studio, review, db/seed |
+| `_overrides/*.overrides.json` | `src/features/review/` | `resolveOverrideFilePath()` | field-rules/loader, ingest, db/seed, publish |
+| `_overrides/components/*.json` | `src/features/review/` | (via review barrel) | field-rules/loader |
+| `_suggestions/enums.json` | **4 writers** (ingest, studio, review, engine) | `suggestionFilePath()`, `appendReviewSuggestion()` | ingest/compile, studio, engine, db/seed |
+| `_suggestions/components.json` | **3 writers** (ingest, review, engine) | same as enums | engine, ingest |
+| `_suggestions/component_review.json` | `src/engine/` | (engine-internal) | engine |
+| `_suggestions/component_identity.json` | `src/engine/` | (engine-internal) | engine |
+| `sources.json` | `src/features/indexing/` | `readSourcesFile()`, `writeSourcesFile()` | categories/loader, db, publish |
+| `schema.json` | `src/field-rules/` (init) | (read via categories/loader) | categories, ingest, expansion-hardening |
 
 **Code changes:**
-- Add path helper exports to each owning feature's `index.js`
-- Gradually migrate direct `path.join()` calls to use the helpers
-- Add lint/audit rule to flag cross-boundary path construction
+- Created `src/ingest/compilePaths.js` — centralized path resolution helpers (resolveHelperRoot, resolveCategoryRoot, resolveGeneratedRoot, resolveControlPlaneRoot, resolveSuggestionsRoot, resolveOverridesRoot)
+- Updated `src/ingest/index.js` — exports all path helpers
+- Updated `src/features/indexing/index.js` — exports `readSourcesFile`, `writeSourcesFile`
+- Catalog and review barrels already export their read/write functions
+
+**Cross-boundary violations remaining (to be resolved in Phase E via SQL migration):**
+- `_suggestions/enums.json` — 4 concurrent writers (worst violation)
+- `_suggestions/components.json` — 3 concurrent writers
+- Direct `path.join()` calls in ~15 files could gradually migrate to use path helpers
 
 ---
 
-### Phase E: Move mutable state to SQL (long-term)
+### Phase E: Move mutable state to SQL
 
-**Scope**: CLAUDE.md says "No local file databases for mutable state." The `_suggestions/` and `_overrides/` files are mutable state written at runtime. They should move to SQL.
+**Scope**: CLAUDE.md says "No local file databases for mutable state." The `_suggestions/` and `_overrides/` files are mutable runtime state sitting inside `category_authority/` — which violates feature-first ownership (review data in the compile pipeline's directory).
 
-**Already in SQL (partial):**
-- `curation_suggestions` table exists (9 rows in mouse)
-- `component_review_queue` table exists (7 rows in mouse)
-- `key_review_state` table exists (1,342 rows in mouse)
+**E1 — COMPLETE (2026-03-29)**: All 8+ writers now dual-write to SQL + file. Added SQL dual-write to `appendReviewSuggestion()`, `applyEnumConsistencyToSuggestions()`, `approveGreenOverrides()`. CLI callers pass `specDb`.
 
-**Not yet in SQL:**
-- `_suggestions/enums.json` — pending enum values
-- `_suggestions/components.json` — pending component discoveries
-- `_overrides/*.overrides.json` — per-product field overrides
-- `_overrides/components/*.json` — component property corrections
+**E2 — PLANNED**: Migrate readers from file to SQL. After E2, files become read-only archive.
 
-**Approach**: Dual-write to SQL + file initially (like billing_entries migration). Then migrate readers. Then kill file writes.
+**E3 — REVISED**: Do NOT delete `_overrides/` files. These contain **human-curated review decisions** (field approvals, manual corrections). If the SQL database needs rebuilding, the JSON files are the disaster recovery source. E3 should:
+- Stop writing to files (remove dual-write, SQL becomes sole writer)
+- Keep existing `_overrides/` files as **read-only archive** until SQL has its own export/backup mechanism
+- `_suggestions/` files are lower risk (pending items, not approved decisions) but should also be archived, not deleted
+- Add `export-overrides` CLI command to dump SQL → JSON before any file deletion
+
+**Architectural note**: `_overrides/` and `_suggestions/` are review-feature data that ended up in `category_authority/` for compile-pipeline convenience. The correct long-term home is SQL (via review feature's SpecDb store layer), not a filesystem subdirectory inside the compile domain.
 
 ---
 

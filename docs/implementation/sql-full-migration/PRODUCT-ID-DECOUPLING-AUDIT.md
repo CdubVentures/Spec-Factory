@@ -101,35 +101,31 @@ Changing productId means rebuilding the catalog object.
 
 ## Migration strategy
 
-### Phase 1: New ID generator (small, safe)
-- Create `buildProductId(category)` → `{category}-{8-char-hex}` in `src/shared/primitives.js`
+### Phase 1: New ID generator — COMPLETE
+- `buildProductId(category)` → `{category}-{8-char-hex}` in `src/shared/primitives.js`
 - Uses existing `crypto.randomBytes(4)` pattern from `generateIdentifier()`
-- Tests first (TDD)
 
-### Phase 2: Update 7 generation sites
+### Phase 2: Update generation sites — COMPLETE (9 sites migrated)
 - All sites switch to `buildProductId(category)`
 - Explicit `--product-id` override still respected
-- `explain-unk` requires explicit `--product-id` (no auto-derive from identity)
 
-### Phase 3: Catalog key migration
+### Phase 3: Catalog key migration — COMPLETE
 - `productCatalog.js` uses `{category}-{identifier}` as the catalog key
 - `normalizeProductIdentity` stops generating productId
 - `updateProduct` identity changes do NOT change productId
 
-### Phase 4: Fix driftScheduler
-- `finalPathPartsFromIdentity` → use productId instead of identity slugs
+### Phase 4: Fix driftScheduler — COMPLETE
+- `finalPathPartsFromIdentity` → uses productId instead of identity slugs
 
-### Phase 5: One-time data migration
-- Iterate all products in catalog
-- Generate new key: `{category}-{product.identifier}`
-- Use existing `migrateProductArtifacts()` to move all storage keys
-- UPDATE all 28 SQL tables: `SET product_id = newId WHERE product_id = oldId`
-- Rekey catalog JSON object
-- Log all renames
+### Phase 5: One-time data migration — COMPLETE
+- `idFormatMigration.js` built + CLI wired: `spec migrate-product-ids --category mouse [--dry-run]`
+- Rekeys 26 SQL tables in transaction
+- `artifactMigration.js` moves 7 artifact prefix groups
+- Data verified: mouse=343 products (all hex), monitor=0, keyboard=0
 
-### Phase 6: Test fixture updates
-- 57 test files need hardcoded IDs updated to new format
-- Or: tests use factory helpers that generate IDs (more resilient)
+### Phase 6: Test fixture updates — COSMETIC DEBT
+- Slug-based IDs remain in some test files (tests pass regardless)
+- Phased cleanup only — not blocking
 
 ---
 
@@ -141,13 +137,13 @@ Changing productId means rebuilding the catalog object.
 - `appendRenameLog()` — already logs renames
 - `artifactMigration.js` — tested, handles latest/runs/final/published/review paths
 
-## What does NOT exist yet
+## Delivered artifacts
 
-- `buildProductId(category)` function that generates `{category}-{hex}`
-- SQL batch UPDATE for 28 tables
-- Catalog object rekeying logic
-- `final/` path migration from identity-based to productId-based (driftScheduler data)
-- Test fixture update tooling
+- `buildProductId(category)` in `src/shared/primitives.js`
+- `idFormatMigration.js` in `src/features/catalog/migrations/` — batch UPDATE for 26 tables
+- `artifactMigration.js` — storage key relocation (7 prefix groups)
+- CLI: `spec migrate-product-ids --category <cat> [--dry-run]`
+- `HEX_ID_RE` guard in `productIdentityAuthority.js`
 
 ---
 

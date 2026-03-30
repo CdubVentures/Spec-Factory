@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { SpecDb } from '../../db/specDb.js';
 import {
   makeStorage,
   createCategoryFixture,
   seedLatest,
   seedApprovedOverride,
+  seedApprovedOverrideSql,
   publishProducts,
   readPublishedChangelog,
   readPublishedProvenance,
@@ -19,17 +21,19 @@ test('publishProducts merges approved overrides, writes artifacts, and versions 
   const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-razer-viper-v3-pro-wireless';
+  const specDb = new SpecDb({ dbPath: ':memory:', category });
 
   try {
     await createCategoryFixture(helperRoot, category);
     await seedLatest(storage, category, productId, { weight: '59', dpi: '26000' });
-    await seedApprovedOverride(helperRoot, category, productId, '58');
+    seedApprovedOverrideSql(specDb, category, productId, '58');
 
     const first = await publishProducts({
       storage,
       config: { categoryAuthorityRoot: helperRoot },
       category,
-      productIds: [productId]
+      productIds: [productId],
+      specDb
     });
 
     assert.equal(first.published_count, 1);
@@ -52,12 +56,13 @@ test('publishProducts merges approved overrides, writes artifacts, and versions 
     assert.equal(prov.field, 'weight');
     assert.equal(prov.provenance.evidence[0].snippet_id, 'snp_weight_1');
 
-    await seedApprovedOverride(helperRoot, category, productId, '57');
+    seedApprovedOverrideSql(specDb, category, productId, '57');
     const second = await publishProducts({
       storage,
       config: { categoryAuthorityRoot: helperRoot },
       category,
-      productIds: [productId]
+      productIds: [productId],
+      specDb
     });
 
     assert.equal(second.published_count, 1);
@@ -83,17 +88,19 @@ test('publishProducts resolves approved override targets via allApproved', async
   const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-synthetic-all-approved';
+  const specDb = new SpecDb({ dbPath: ':memory:', category });
 
   try {
     await createCategoryFixture(helperRoot, category);
     await seedLatest(storage, category, productId, { weight: '59', dpi: '26000' });
-    await seedApprovedOverride(helperRoot, category, productId, '58');
+    seedApprovedOverrideSql(specDb, category, productId, '58');
 
     const result = await publishProducts({
       storage,
       config: { categoryAuthorityRoot: helperRoot },
       category,
-      allApproved: true
+      allApproved: true,
+      specDb
     });
 
     assert.equal(result.processed_count, 1);
@@ -110,17 +117,19 @@ test('publishProducts blocks invalid override values via runtime validation', as
   const helperRoot = path.join(tempRoot, 'category_authority');
   const category = 'mouse';
   const productId = 'mouse-invalid-override';
+  const specDb = new SpecDb({ dbPath: ':memory:', category });
 
   try {
     await createCategoryFixture(helperRoot, category);
     await seedLatest(storage, category, productId, { weight: '59', dpi: '26000' });
-    await seedApprovedOverride(helperRoot, category, productId, 'not-a-number');
+    seedApprovedOverrideSql(specDb, category, productId, 'not-a-number');
 
     const result = await publishProducts({
       storage,
       config: { categoryAuthorityRoot: helperRoot },
       category,
-      productIds: [productId]
+      productIds: [productId],
+      specDb
     });
 
     assert.equal(result.published_count, 0);

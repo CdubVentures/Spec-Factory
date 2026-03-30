@@ -111,8 +111,7 @@ export async function loadCompileContext({
   const baselineCandidates = [
     { source: 'authoring', path: path.join(categoryRoot, 'field_rules.json') },
     { source: 'authoring', path: path.join(categoryRoot, 'field_rules_sample.json') },
-    { source: 'generated', path: path.join(generatedRoot, 'field_rules.json') },
-    { source: 'control_plane', path: path.join(controlPlaneRoot, 'field_rules.full.json') }
+    { source: 'generated', path: path.join(generatedRoot, 'field_rules.json') }
   ];
   let baselineFieldRules = null;
   let baselineFieldRulesSource = '';

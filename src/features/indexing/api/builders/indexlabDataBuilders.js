@@ -382,9 +382,24 @@ export async function readIndexLabRunAutomationQueue(runId) {
 }
 
 export async function listIndexLabRuns(opts) {
+  // WHY: Thread catalog brand/model/variant into label builder so hex IDs display real names.
+  if (opts?.category && !opts.catalogProducts && _config) {
+    try {
+      const catalog = await loadProductCatalog(_config, opts.category);
+      const map = new Map();
+      for (const [pid, entry] of Object.entries(catalog.products || {})) {
+        map.set(pid, { brand: entry.brand || '', model: entry.model || '', variant: entry.variant || '' });
+      }
+      return _runListBuilder.listIndexLabRuns({ ...opts, catalogProducts: map });
+    } catch { /* fall through to no-catalog path */ }
+  }
   return _runListBuilder.listIndexLabRuns(opts);
 }
 
 export async function buildIndexingDomainChecklist(opts) {
-  return _domainChecklistBuilder.buildIndexingDomainChecklist(opts);
+  const cat = String(opts.category || '').trim();
+  const specDb = cat && typeof _getSpecDbReady === 'function'
+    ? await _getSpecDbReady(cat).catch(() => null)
+    : null;
+  return _domainChecklistBuilder.buildIndexingDomainChecklist({ ...opts, specDb });
 }

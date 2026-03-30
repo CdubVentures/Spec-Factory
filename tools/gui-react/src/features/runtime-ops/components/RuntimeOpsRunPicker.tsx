@@ -113,13 +113,15 @@ function buildRunTextParts(run: IndexLabRunSummary | null) {
   const runToken = extractRunTokenFromPickerLabel(run?.picker_label || '')
     || toRunDisplayToken(run?.run_id || '');
   const fallbackLabel = toToken(run?.picker_label) || toToken(run?.run_id) || 'Select a run';
-  const identityLabel = humanizeProductId({
-    category: run?.category || '',
-    productId: run?.product_id || '',
-  }) || extractIdentityFromPickerLabel({
+  // WHY: Prefer picker_label (backend-generated with real brand/model) over
+  // humanizeProductId (which parses hex IDs as slugs → garbage labels).
+  const identityLabel = extractIdentityFromPickerLabel({
     pickerLabel: run?.picker_label || '',
     categoryLabel,
     runToken,
+  }) || humanizeProductId({
+    category: run?.category || '',
+    productId: run?.product_id || '',
   }) || fallbackLabel;
   return {
     categoryLabel,

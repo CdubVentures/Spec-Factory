@@ -27,7 +27,7 @@
 
 flowchart TB
 
-  title["<b>SQL MIGRATION STATUS</b><br/><i>54 tables in specDb  |  Code-verified 2026-03-29</i>"]
+  title["<b>SQL MIGRATION STATUS — COMPLETE</b><br/><i>56 tables in specDb (55 regular + 1 FTS)  |  Code-verified 2026-03-29</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
 
   %% ==========================================
@@ -39,9 +39,9 @@ flowchart TB
     subgraph W15["Waves 1-5.5: Core Runtime"]
       w1[("bridge_events — SQL only")]
       w2[("runs — 16 cols, SQL Tier 1")]
-      w3[("run_artifacts — needset + search_profile + run_summary<br/><i>SQL Tier 1 readers wired (2026-03-28)</i>")]
-      w4[("billing_entries — SQL writes only<br/><i>publishAnalytics still reads JSONL</i>")]
-      w5[("metrics — table + writer exist<br/><i>not production-wired yet</i>")]
+      w3[("run_artifacts — needset + search_profile + run_summary")]
+      w4[("billing_entries — SQL writes only")]
+      w5[("metrics — table + writer exist")]
       w6["run-summary = SQL artifact, boundary JSONs KILLED"]
     end
 
@@ -52,11 +52,11 @@ flowchart TB
     end
 
     subgraph WB["Waves B1-B4: Telemetry Indexes"]
-      wb1[("query_index — 10 cols, SQL writes + reads")]
-      wb2[("url_index — 11 cols, SQL writes + reads")]
-      wb3[("prompt_index — 9 cols, SQL writes + reads")]
-      wb4[("knob_snapshots — 8 cols, SQL writes + reads")]
-      wb5["NDJSON factories DELETED (2026-03-28)<br/><i>Pipeline hot path SQL-only. Exporter DELETED (2026-03-29).</i>"]
+      wb1[("query_index — SQL writes + reads")]
+      wb2[("url_index — SQL writes + reads")]
+      wb3[("prompt_index — SQL writes + reads")]
+      wb4[("knob_snapshots — SQL writes + reads")]
+      wb5["NDJSON factories DELETED. Exporter DELETED.<br/>NDJSON reader fallbacks stripped (2026-03-29)."]
     end
 
     subgraph WR["R1: Relocation Stripped"]
@@ -65,12 +65,42 @@ flowchart TB
       wr3["archivedRunLocationHelpers DELETED"]
       wr4["Pipeline writes directly to storage-backed destination"]
     end
+
+    subgraph WC["Wave C: Reader Migration + Exporter Cleanup"]
+      c1["C1-C4: provenance, normalized, summary, traffic_light — SQL Tier 1"]
+      c2["C5+C2: specDb threaded into 5 CLI/benchmark tools"]
+      c3["C6: Billing reads SQL Tier 1"]
+      c4["C3: src/exporter/ DELETED (~1,250 lines)"]
+    end
+
+    subgraph W624["Wave 6.24: Checkpoint Recovery"]
+      s22["run.json (schema v2) + product.json — BUILT"]
+      s24["seedFromCheckpoint — rebuilds SQL from checkpoints (21 tests)"]
+      s25["scanAndSeedCheckpoints — disk scanner + CLI (17 tests)"]
+    end
+
+    subgraph HYG["Schema Hygiene"]
+      h1["H1: Dead tables (brands, artifacts) dropped. 56 tables (55 + FTS)."]
+    end
+
+    subgraph PID["Product ID Decoupling"]
+      pid1["buildProductId(category) — hex-based immutable IDs"]
+      pid2["All 9 generation sites migrated"]
+      pid3["idFormatMigration.js — rekeys 26 SQL tables"]
+      pid4["Data verified: mouse=343 (all hex), monitor=0, keyboard=0"]
+    end
   end
+
   style DONE fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
   style W15 fill:#0d1117,stroke:#238636,color:#e0e0e0
   style W6G fill:#0d1117,stroke:#238636,color:#e0e0e0
   style WB fill:#0d1117,stroke:#238636,color:#e0e0e0
   style WR fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style WC fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style W624 fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style HYG fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style PID fill:#0d1117,stroke:#238636,color:#e0e0e0
+
   style w1 fill:#238636,stroke:#3fb950,color:#fff
   style w2 fill:#238636,stroke:#3fb950,color:#fff
   style w3 fill:#238636,stroke:#3fb950,color:#fff
@@ -89,41 +119,44 @@ flowchart TB
   style wr2 fill:#da3633,stroke:#f85149,color:#fff
   style wr3 fill:#da3633,stroke:#f85149,color:#fff
   style wr4 fill:#238636,stroke:#3fb950,color:#fff
-
-  %% ==========================================
-  %%  REMAINING WORK
-  %% ==========================================
-  subgraph WAVEC["Wave C — Exporter Cleanup + Reader Migration"]
-    direction TB
-    c1["C1: Store provenance + traffic_light as run_artifacts"]
-    c2["C2: Migrate file readers to SQL<br/><i>seed.js, domainChecklist, reviewGrid, catalogRoutes<br/>latest/ writes already dead — readers remain</i>"]
-    c3["C3: Kill exporter file writes — COMPLETE<br/><i>src/exporter/ DELETED (2026-03-29)<br/>HTML persistence via plugin DI callback</i>"]
-    c1 --> c2 --> c3
-  end
-
-  subgraph WAVE6["Wave 6 — Two-JSON Checkpoint System (PRIORITY)"]
-    direction TB
-    s22["22: run.json — COMPLETE<br/><i>Per-run: crawl results + needset + search_profile + run_summary<br/>All GUI panel data. schema_version: 2</i>"]
-    s23["23: product.json — COMPLETE<br/><i>Per-product: identity + accumulated sources (dedup by content_hash)<br/>Read-merge-write across runs</i>"]
-    s24["24: seedFromCheckpoint<br/><i>Rebuild crawl_sources SQL from run.json + product.json</i>"]
-    s22 --> s23 --> s24
-  end
-
-  subgraph HYGIENE["Schema Hygiene"]
-    direction TB
-    h1["H1: Drop dead tables (brands, artifacts)<br/><i>Add missing indexes. evidence_documents/chunks/facts are ACTIVE — do not drop.</i>"]
-  end
-
-  style WAVEC fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
-  style WAVE6 fill:#0d1117,stroke:#d29922,color:#d29922,stroke-width:2px
-  style HYGIENE fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
-  style c1 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style c2 fill:#2d333b,stroke:#d29922,color:#e0e0e0
+  style c1 fill:#238636,stroke:#3fb950,color:#fff
+  style c2 fill:#238636,stroke:#3fb950,color:#fff
   style c3 fill:#238636,stroke:#3fb950,color:#fff
+  style c4 fill:#238636,stroke:#3fb950,color:#fff
   style s22 fill:#238636,stroke:#3fb950,color:#fff
-  style s23 fill:#238636,stroke:#3fb950,color:#fff
-  style s24 fill:#2d333b,stroke:#d29922,color:#e0e0e0
-  style h1 fill:#2d333b,stroke:#8b949e,color:#e0e0e0
+  style s24 fill:#238636,stroke:#3fb950,color:#fff
+  style s25 fill:#238636,stroke:#3fb950,color:#fff
+  style h1 fill:#238636,stroke:#3fb950,color:#fff
+  style pid1 fill:#238636,stroke:#3fb950,color:#fff
+  style pid2 fill:#238636,stroke:#3fb950,color:#fff
+  style pid3 fill:#238636,stroke:#3fb950,color:#fff
+  style pid4 fill:#238636,stroke:#3fb950,color:#fff
+
+  %% ==========================================
+  %%  REMAINING (low priority)
+  %% ==========================================
+  subgraph LOWPRI["REMAINING (9 items verified 2026-03-29)"]
+    direction TB
+    lp1["buildLlmMetrics — reads _billing/ledger.jsonl, not SQL billing_entries"]
+    lp2["frontierDb JSON fallback — ~355 LOC ghost class in frontierDb.js"]
+    lp3["product_catalog.json — mutable JSON state (productCatalog.js)"]
+    lp4["brand_registry.json — mutable JSON state (brandRegistry.js)"]
+    lp5["spec_seeds.json — mutable JSON state (specSeedsFileService.js)"]
+    lp6["user-settings.json — mutable JSON state (userSettingsService.js)"]
+    lp7["Test fixtures — slug-based IDs in test files (cosmetic)"]
+    lp8["Stale dist — tools/dist/launcher.cjs needs rebuild"]
+    lp9["Legacy input refs — specs/inputs/ dir gone, code refs remain"]
+  end
+  style LOWPRI fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
+  style lp1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp6 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp7 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp8 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
+  style lp9 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
   %% ==========================================
   %%  KEEP AS FILES
@@ -135,14 +168,4 @@ flowchart TB
   style KEEP fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
   style keep1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
-  %% ==========================================
-  %%  JSON-ONLY (optional, low priority)
-  %% ==========================================
-  subgraph OPTIONAL["OPTIONAL  (JSON-only, low priority)"]
-    direction TB
-    opt1["user-settings.json  |  brand_registry.json"]
-  end
-  style OPTIONAL fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
-  style opt1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-
-  DONE --> WAVEC --> WAVE6 --> HYGIENE --> KEEP --> OPTIONAL
+  DONE --> LOWPRI --> KEEP

@@ -137,8 +137,8 @@ export function buildPlannerInputSummary(callPayloads: Array<PlannerPromptInput 
       const brand = String(product.brand || '').trim();
       const model = String(product.model || '').trim();
       const variant = String(product.variant || '').trim();
-      const productId = [category, brand, model, variant].filter(Boolean).join(' : ').trim();
-      if (productId) products.push(productId);
+      const identityLabel = [brand, model, variant].filter(Boolean).join(' ').trim();
+      if (identityLabel) products.push(identityLabel);
     }
   }
   out.criticalFields = uniqueSorted(criticalFields);

@@ -1,4 +1,3 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
   nowIso,
@@ -40,64 +39,56 @@ export function stableSpecFieldOrder(fields = {}) {
   return Object.keys(fields || {}).sort((a, b) => a.localeCompare(b));
 }
 
-export async function readOverrideDoc({ config = {}, category, productId }) {
+export async function readOverrideDoc({ config = {}, category, productId, specDb = null }) {
+  // WHY: Phase E3 — SQL is sole source for override docs
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const overridePath = path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
-  try {
-    const raw = await fs.readFile(overridePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (isObject(parsed)) {
-      return {
-        path: overridePath,
-        payload: parsed
-      };
-    }
-  } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      throw error;
-    }
+  if (specDb) {
+    try {
+      const reviewState = specDb.getProductReviewState(productId);
+      const overriddenRows = specDb.getOverriddenFieldsForProduct(productId);
+      if (reviewState || overriddenRows.length > 0) {
+        const overrides = {};
+        for (const row of overriddenRows) {
+          overrides[row.field_key] = {
+            field: row.field_key,
+            override_source: row.override_source || 'candidate_selection',
+            override_value: row.override_value || row.value || '',
+            override_reason: row.override_reason || null,
+            override_provenance: row.override_provenance ? JSON.parse(row.override_provenance) : null,
+            overridden_by: row.overridden_by || null,
+            overridden_at: row.overridden_at || row.updated_at || null,
+            candidate_id: row.accepted_candidate_id || '',
+            value: row.override_value || row.value || '',
+            source: { host: null, source_id: null, method: row.override_source || null, tier: null, evidence_key: null },
+            set_at: row.overridden_at || row.updated_at || null
+          };
+        }
+        return {
+          path: `sql://product_review_state/${category}/${productId}`,
+          payload: {
+            version: 1,
+            category,
+            product_id: productId,
+            review_status: reviewState?.review_status || 'pending',
+            review_started_at: reviewState?.review_started_at || null,
+            overrides
+          }
+        };
+      }
+    } catch { /* SQL read failed — return null payload */ }
   }
-  return {
-    path: overridePath,
-    payload: null
-  };
+  return { path: overridePath, payload: null };
 }
 
-export async function listApprovedOverrideProductIds({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  const dir = path.join(helperRoot, category, '_overrides');
-  let entries = [];
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
-  }
-
-  const out = [];
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.overrides.json')) {
-      continue;
-    }
-    const filePath = path.join(dir, entry.name);
+export async function listApprovedOverrideProductIds({ config = {}, category, specDb = null }) {
+  // WHY: Phase E3 — SQL is sole source for approved product IDs
+  if (specDb) {
     try {
-      const parsed = JSON.parse(await fs.readFile(filePath, 'utf8'));
-      const status = normalizeToken(parsed?.review_status || '');
-      if (status !== 'approved') {
-        continue;
-      }
-      const productId = String(parsed?.product_id || '').trim() || entry.name.replace(/\.overrides\.json$/i, '');
-      if (productId) {
-        out.push(productId);
-      }
-    } catch {
-      // Ignore malformed override docs in product discovery.
-    }
+      return specDb.listApprovedProductIds();
+    } catch { /* SQL read failed — return empty */ }
   }
-
-  return [...new Set(out)].sort();
+  return [];
 }
 export function mergeOverrideValue({ existing, override, field }) {
   const value = String(override?.override_value ?? override?.value ?? '').trim();

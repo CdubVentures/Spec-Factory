@@ -212,9 +212,11 @@ export function useStudioPageDocsController({
   const saveFromStore = useCallback(
     (options?: { force?: boolean }) => {
       const force = options?.force === true;
+      console.log('[studio-save] saveFromStore called, force:', force);
       const snap = getStudioFieldRulesSnapshot();
       const payload = buildStudioPersistMap(snap);
       const nextFingerprint = autoSaveFingerprint(payload);
+      console.log('[studio-save] fingerprint:', nextFingerprint?.slice(0, 40), 'keys:', (payload as Record<string, unknown>)?.selected_keys ? (((payload as Record<string, unknown>).selected_keys) as string[]).length : 0);
       if (
         !shouldPersistStudioDocsAttempt({
           force,
@@ -224,13 +226,16 @@ export function useStudioPageDocsController({
             lastStudioAutoSaveAttemptFingerprintRef.current,
         })
       ) {
+        console.log('[studio-save] SKIPPED by shouldPersistStudioDocsAttempt');
         return;
       }
       if (nextFingerprint) {
         lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
       }
+      console.log('[studio-save] calling saveStudioDocs mutation...');
       saveStudioDocs(payload, {
         onSuccess: () => {
+          console.log('[studio-save] SUCCESS');
           lastStudioAutoSaveFingerprintRef.current = nextFingerprint;
           lastStudioAutoSaveAttemptFingerprintRef.current = nextFingerprint;
           if (effectiveAutoSaveEnabled) {

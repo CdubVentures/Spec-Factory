@@ -10,7 +10,7 @@ test('setManualOverride requires evidence.url and evidence.quote', async (t) => 
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-manual-reject',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
 
   await assert.rejects(
     () => setManualOverride({
@@ -18,6 +18,7 @@ test('setManualOverride requires evidence.url and evidence.quote', async (t) => 
       config,
       category,
       productId,
+      specDb,
       field: 'weight',
       value: '59',
       evidence: {

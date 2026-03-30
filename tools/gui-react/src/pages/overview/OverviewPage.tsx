@@ -147,7 +147,7 @@ export function OverviewPage() {
           searchable
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
-          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model)}
+          onRowClick={(row) => setSelectedProduct(row.productId, row.brand, row.model, row.variant)}
         />
       </div>
     </div>

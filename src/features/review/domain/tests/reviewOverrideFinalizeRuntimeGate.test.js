@@ -18,7 +18,7 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-override-invalid',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness, '10');
   await seedLatestArtifacts(harness);
@@ -27,6 +27,7 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
     config,
     category,
     productId,
+    specDb,
     field: 'weight',
     candidateId: 'cand_1',
   });
@@ -36,6 +37,7 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
     config,
     category,
     productId,
+    specDb,
     applyOverrides: true,
   });
 
@@ -48,6 +50,7 @@ test('finalizeOverrides demotes invalid override values through the runtime engi
     config,
     category,
     productId,
+    specDb,
     applyOverrides: true,
     saveAsDraft: true,
   });

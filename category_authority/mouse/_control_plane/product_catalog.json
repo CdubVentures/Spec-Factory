@@ -2,7 +2,7 @@
   "_doc": "Per-category product catalog. Managed by GUI.",
   "_version": 1,
   "products": {
-    "mouse-alienware-aw610m": {
+    "mouse-121cc826": {
       "brand": "Alienware",
       "model": "AW610M",
       "variant": "",
@@ -14,7 +14,7 @@
       "identifier": "121cc826",
       "base_model": "AW610M"
     },
-    "mouse-alienware-aw620m": {
+    "mouse-34500132": {
       "brand": "Alienware",
       "model": "AW620M",
       "variant": "",
@@ -26,7 +26,7 @@
       "identifier": "34500132",
       "base_model": "AW620M"
     },
-    "mouse-alienware-alienware-pro": {
+    "mouse-b5936172": {
       "brand": "Alienware",
       "model": "Alienware Pro",
       "variant": "",
@@ -38,7 +38,7 @@
       "identifier": "b5936172",
       "base_model": "Alienware Pro"
     },
-    "mouse-alienware-aw720m": {
+    "mouse-f97115ea": {
       "brand": "Alienware",
       "model": "AW720M",
       "variant": "",
@@ -50,7 +50,7 @@
       "identifier": "f97115ea",
       "base_model": "AW720M"
     },
-    "mouse-alienware-aw320m": {
+    "mouse-c7151694": {
       "brand": "Alienware",
       "model": "AW320M",
       "variant": "",
@@ -62,7 +62,7 @@
       "identifier": "c7151694",
       "base_model": "AW320M"
     },
-    "mouse-acer-cestus-310": {
+    "mouse-c730517d": {
       "brand": "Acer",
       "model": "Cestus 310",
       "variant": "310",
@@ -74,7 +74,7 @@
       "identifier": "c730517d",
       "base_model": "Cestus"
     },
-    "mouse-acer-cestus-330": {
+    "mouse-e2edde94": {
       "brand": "Acer",
       "model": "Cestus 330",
       "variant": "330",
@@ -86,7 +86,7 @@
       "identifier": "e2edde94",
       "base_model": "Cestus"
     },
-    "mouse-aorus-m2": {
+    "mouse-08be9e3f": {
       "brand": "Aorus",
       "model": "M2",
       "variant": "",
@@ -98,7 +98,7 @@
       "identifier": "08be9e3f",
       "base_model": "M2"
     },
-    "mouse-aorus-m3": {
+    "mouse-098d418e": {
       "brand": "Aorus",
       "model": "M3",
       "variant": "",
@@ -110,7 +110,7 @@
       "identifier": "098d418e",
       "base_model": "M3"
     },
-    "mouse-aorus-m4": {
+    "mouse-7793814a": {
       "brand": "Aorus",
       "model": "M4",
       "variant": "",
@@ -122,7 +122,7 @@
       "identifier": "7793814a",
       "base_model": "M4"
     },
-    "mouse-aorus-m5": {
+    "mouse-06ac86e8": {
       "brand": "Aorus",
       "model": "M5",
       "variant": "",
@@ -134,7 +134,7 @@
       "identifier": "06ac86e8",
       "base_model": "M5"
     },
-    "mouse-aorus-m6": {
+    "mouse-dc354956": {
       "brand": "Aorus",
       "model": "M6",
       "variant": "",
@@ -146,7 +146,7 @@
       "identifier": "dc354956",
       "base_model": "M6"
     },
-    "mouse-cooler-master-mm310": {
+    "mouse-6edf2199": {
       "brand": "Cooler Master",
       "model": "MM310",
       "variant": "",
@@ -158,7 +158,7 @@
       "identifier": "6edf2199",
       "base_model": "MM310"
     },
-    "mouse-cooler-master-mm311": {
+    "mouse-9dbdf1e7": {
       "brand": "Cooler Master",
       "model": "MM311",
       "variant": "",
@@ -170,7 +170,7 @@
       "identifier": "9dbdf1e7",
       "base_model": "MM311"
     },
-    "mouse-cooler-master-mm711-wired": {
+    "mouse-70ee0843": {
       "brand": "Cooler Master",
       "model": "MM711 Wired",
       "variant": "Wired",
@@ -182,7 +182,7 @@
       "identifier": "70ee0843",
       "base_model": "MM711"
     },
-    "mouse-cooler-master-mm712-wired": {
+    "mouse-aa37e442": {
       "brand": "Cooler Master",
       "model": "MM712 Wired",
       "variant": "Wired",
@@ -194,7 +194,7 @@
       "identifier": "aa37e442",
       "base_model": "MM712"
     },
-    "mouse-cooler-master-mm712": {
+    "mouse-faded1f9": {
       "brand": "Cooler Master",
       "model": "MM712",
       "variant": "",
@@ -206,7 +206,7 @@
       "identifier": "faded1f9",
       "base_model": "MM712"
     },
-    "mouse-cooler-master-mm712-30th-anniversary-edition": {
+    "mouse-df9fd3ce": {
       "brand": "Cooler Master",
       "model": "MM712 30th Anniversary Edition",
       "variant": "30th Anniversary Edition",
@@ -218,7 +218,7 @@
       "identifier": "df9fd3ce",
       "base_model": "MM712"
     },
-    "mouse-corsair-m55-wired": {
+    "mouse-aee1e8e4": {
       "brand": "Corsair",
       "model": "M55 Wired",
       "variant": "Wired",
@@ -230,7 +230,7 @@
       "identifier": "aee1e8e4",
       "base_model": "M55"
     },
-    "mouse-corsair-m55-wireless": {
+    "mouse-763ee931": {
       "brand": "Corsair",
       "model": "M55 Wireless",
       "variant": "Wireless",
@@ -242,7 +242,7 @@
       "identifier": "763ee931",
       "base_model": "M55"
     },
-    "mouse-corsair-m55-rgb-pro": {
+    "mouse-64c69842": {
       "brand": "Corsair",
       "model": "M55 RGB Pro",
       "variant": "RGB Pro",
@@ -254,7 +254,7 @@
       "identifier": "64c69842",
       "base_model": "M55"
     },
-    "mouse-corsair-m75-air-wireless": {
+    "mouse-1d3c6fa6": {
       "brand": "Corsair",
       "model": "M75 Air Wireless",
       "variant": "Air Wireless",
@@ -266,7 +266,7 @@
       "identifier": "1d3c6fa6",
       "base_model": "M75"
     },
-    "mouse-corsair-m75-wireless": {
+    "mouse-b794700f": {
       "brand": "Corsair",
       "model": "M75 Wireless",
       "variant": "Wireless",
@@ -278,7 +278,7 @@
       "identifier": "b794700f",
       "base_model": "M75"
     },
-    "mouse-corsair-m75": {
+    "mouse-d6f32365": {
       "brand": "Corsair",
       "model": "M75",
       "variant": "",
@@ -290,7 +290,7 @@
       "identifier": "d6f32365",
       "base_model": "M75"
     },
-    "mouse-corsair-scimitar-elite-wireless-se": {
+    "mouse-b01900d7": {
       "brand": "Corsair",
       "model": "Scimitar Elite Wireless Se",
       "variant": "Elite Wireless Se",
@@ -302,7 +302,7 @@
       "identifier": "b01900d7",
       "base_model": "Scimitar"
     },
-    "mouse-corsair-scimitar-elite-wireless": {
+    "mouse-92849336": {
       "brand": "Corsair",
       "model": "Scimitar Elite Wireless",
       "variant": "Elite Wireless",
@@ -314,7 +314,7 @@
       "identifier": "92849336",
       "base_model": "Scimitar"
     },
-    "mouse-corsair-scimitar-rgb-elite": {
+    "mouse-372705b4": {
       "brand": "Corsair",
       "model": "Scimitar RGB Elite",
       "variant": "RGB Elite",
@@ -326,7 +326,7 @@
       "identifier": "372705b4",
       "base_model": "Scimitar"
     },
-    "mouse-corsair-scimitar-pro-rgb": {
+    "mouse-0cc7c5c8": {
       "brand": "Corsair",
       "model": "Scimitar Pro RGB",
       "variant": "Pro RGB",
@@ -338,7 +338,7 @@
       "identifier": "0cc7c5c8",
       "base_model": "Scimitar"
     },
-    "mouse-corsair-nightsabre-wireless": {
+    "mouse-184b7bb7": {
       "brand": "Corsair",
       "model": "Nightsabre Wireless",
       "variant": "Wireless",
@@ -350,7 +350,7 @@
       "identifier": "184b7bb7",
       "base_model": "Nightsabre"
     },
-    "mouse-corsair-darkstar-wireless-rgb": {
+    "mouse-b3c4105e": {
       "brand": "Corsair",
       "model": "Darkstar Wireless RGB",
       "variant": "Wireless RGB",
@@ -362,7 +362,7 @@
       "identifier": "b3c4105e",
       "base_model": "Darkstar"
     },
-    "mouse-corsair-m65-rgb-ultra-wireless": {
+    "mouse-68b79bca": {
       "brand": "Corsair",
       "model": "M65 RGB Ultra Wireless",
       "variant": "RGB Ultra Wireless",
@@ -374,7 +374,7 @@
       "identifier": "68b79bca",
       "base_model": "M65"
     },
-    "mouse-corsair-m65-rgb-ultra": {
+    "mouse-7d32758a": {
       "brand": "Corsair",
       "model": "M65 RGB Ultra",
       "variant": "RGB Ultra",
@@ -386,7 +386,7 @@
       "identifier": "7d32758a",
       "base_model": "M65"
     },
-    "mouse-corsair-m65-rgb-laser": {
+    "mouse-7e1fb4e6": {
       "brand": "Corsair",
       "model": "M65 RGB Laser",
       "variant": "RGB Laser",
@@ -398,7 +398,7 @@
       "identifier": "7e1fb4e6",
       "base_model": "M65"
     },
-    "mouse-corsair-m65-rgb-elite": {
+    "mouse-26743cde": {
       "brand": "Corsair",
       "model": "M65 RGB Elite",
       "variant": "RGB Elite",
@@ -410,7 +410,7 @@
       "identifier": "26743cde",
       "base_model": "M65"
     },
-    "mouse-corsair-katar-pro-xt": {
+    "mouse-08c80ef0": {
       "brand": "Corsair",
       "model": "Katar Pro XT",
       "variant": "Pro XT",
@@ -422,7 +422,7 @@
       "identifier": "08c80ef0",
       "base_model": "Katar"
     },
-    "mouse-corsair-katar-elite-wireless": {
+    "mouse-8081869a": {
       "brand": "Corsair",
       "model": "Katar Elite Wireless",
       "variant": "Elite Wireless",
@@ -434,7 +434,7 @@
       "identifier": "8081869a",
       "base_model": "Katar"
     },
-    "mouse-corsair-katar-pro-wireless": {
+    "mouse-4b9b9a1e": {
       "brand": "Corsair",
       "model": "Katar Pro Wireless",
       "variant": "Pro Wireless",
@@ -446,7 +446,7 @@
       "identifier": "4b9b9a1e",
       "base_model": "Katar"
     },
-    "mouse-corsair-dark-core-rgb-pro-se": {
+    "mouse-bd466b80": {
       "brand": "Corsair",
       "model": "Dark Core RGB Pro SE",
       "variant": "RGB Pro SE",
@@ -458,7 +458,7 @@
       "identifier": "bd466b80",
       "base_model": "Dark Core"
     },
-    "mouse-corsair-dark-core-rgb-pro": {
+    "mouse-2d095ed8": {
       "brand": "Corsair",
       "model": "Dark Core RGB Pro",
       "variant": "RGB Pro",
@@ -470,7 +470,7 @@
       "identifier": "2d095ed8",
       "base_model": "Dark Core"
     },
-    "mouse-corsair-dark-core-rgb-se": {
+    "mouse-119c3efc": {
       "brand": "Corsair",
       "model": "Dark Core RGB SE",
       "variant": "RGB SE",
@@ -482,7 +482,7 @@
       "identifier": "119c3efc",
       "base_model": "Dark Core"
     },
-    "mouse-corsair-ironclaw-rgb": {
+    "mouse-01280363": {
       "brand": "Corsair",
       "model": "Ironclaw RGB",
       "variant": "RGB",
@@ -494,7 +494,7 @@
       "identifier": "01280363",
       "base_model": "Ironclaw"
     },
-    "mouse-corsair-ironclaw-rgb-wireless": {
+    "mouse-ec67b773": {
       "brand": "Corsair",
       "model": "Ironclaw RGB Wireless",
       "variant": "RGB Wireless",
@@ -506,7 +506,7 @@
       "identifier": "ec67b773",
       "base_model": "Ironclaw"
     },
-    "mouse-corsair-harpoon-rgb-wireless": {
+    "mouse-b922b435": {
       "brand": "Corsair",
       "model": "Harpoon RGB Wireless",
       "variant": "RGB Wireless",
@@ -518,7 +518,7 @@
       "identifier": "b922b435",
       "base_model": "Harpoon"
     },
-    "mouse-corsair-harpoon-rgb": {
+    "mouse-e1e1d17f": {
       "brand": "Corsair",
       "model": "Harpoon RGB",
       "variant": "RGB",
@@ -530,7 +530,7 @@
       "identifier": "e1e1d17f",
       "base_model": "Harpoon"
     },
-    "mouse-corsair-sabre-rgb-pro": {
+    "mouse-38f6f6da": {
       "brand": "Corsair",
       "model": "Sabre RGB Pro",
       "variant": "RGB Pro",
@@ -542,7 +542,7 @@
       "identifier": "38f6f6da",
       "base_model": "Sabre"
     },
-    "mouse-corsair-sabre-pro-optical": {
+    "mouse-b3e16868": {
       "brand": "Corsair",
       "model": "Sabre Pro Optical",
       "variant": "Pro Optical",
@@ -554,7 +554,7 @@
       "identifier": "b3e16868",
       "base_model": "Sabre"
     },
-    "mouse-corsair-sabre-rgb-pro-wireless": {
+    "mouse-a79e0b95": {
       "brand": "Corsair",
       "model": "Sabre RGB Pro Wireless",
       "variant": "RGB Pro Wireless",
@@ -566,7 +566,7 @@
       "identifier": "a79e0b95",
       "base_model": "Sabre"
     },
-    "mouse-corsair-sabre-v2-pro": {
+    "mouse-bcf659ca": {
       "brand": "Corsair",
       "model": "Sabre v2 Pro",
       "variant": "v2 Pro",
@@ -578,7 +578,7 @@
       "identifier": "bcf659ca",
       "base_model": "Sabre"
     },
-    "mouse-corsair-nightsword-rgb-tunable": {
+    "mouse-430aab0b": {
       "brand": "Corsair",
       "model": "Nightsword RGB Tunable",
       "variant": "RGB Tunable",
@@ -590,7 +590,7 @@
       "identifier": "430aab0b",
       "base_model": "Nightsword"
     },
-    "mouse-corsair-glaive-rgb-pro": {
+    "mouse-a974c9b2": {
       "brand": "Corsair",
       "model": "Glaive RGB Pro",
       "variant": "RGB Pro",
@@ -602,7 +602,7 @@
       "identifier": "a974c9b2",
       "base_model": "Glaive"
     },
-    "mouse-asus-rog-harpe-ii-ace": {
+    "mouse-b3ab70c1": {
       "brand": "Asus",
       "model": "ROG Harpe II Ace",
       "variant": "Ace",
@@ -614,7 +614,7 @@
       "identifier": "b3ab70c1",
       "base_model": "ROG Harpe II"
     },
-    "mouse-asus-rog-harpe-ace-extreme": {
+    "mouse-d33a425f": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Extreme",
       "variant": "Ace Extreme",
@@ -626,7 +626,7 @@
       "identifier": "d33a425f",
       "base_model": "ROG Harpe"
     },
-    "mouse-asus-rog-harpe-ace-mini": {
+    "mouse-f7a7d717": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Mini",
       "variant": "Ace Mini",
@@ -638,7 +638,7 @@
       "identifier": "f7a7d717",
       "base_model": "ROG Harpe"
     },
-    "mouse-asus-rog-harpe-ace-aim-lab": {
+    "mouse-7f69b779": {
       "brand": "Asus",
       "model": "ROG Harpe Ace Aim Lab",
       "variant": "Ace Aim Lab",
@@ -650,7 +650,7 @@
       "identifier": "7f69b779",
       "base_model": "ROG Harpe"
     },
-    "mouse-asus-rog-keris-ii-ace": {
+    "mouse-9cc534a2": {
       "brand": "Asus",
       "model": "ROG Keris II Ace",
       "variant": "Ace",
@@ -662,7 +662,7 @@
       "identifier": "9cc534a2",
       "base_model": "ROG Keris II"
     },
-    "mouse-asus-rog-keris-ii-origin": {
+    "mouse-8cb46ba9": {
       "brand": "Asus",
       "model": "ROG Keris II Origin",
       "variant": "Origin",
@@ -674,7 +674,7 @@
       "identifier": "8cb46ba9",
       "base_model": "ROG Keris II"
     },
-    "mouse-asus-rog-keris": {
+    "mouse-48daf257": {
       "brand": "Asus",
       "model": "ROG Keris",
       "variant": "",
@@ -686,7 +686,7 @@
       "identifier": "48daf257",
       "base_model": "ROG Keris"
     },
-    "mouse-asus-rog-keris-wireless-aimpoint": {
+    "mouse-d22591fa": {
       "brand": "Asus",
       "model": "ROG Keris Wireless AimPoint",
       "variant": "Wireless AimPoint",
@@ -698,7 +698,7 @@
       "identifier": "d22591fa",
       "base_model": "ROG Keris"
     },
-    "mouse-asus-rog-strix-impact-iii": {
+    "mouse-83df3295": {
       "brand": "Asus",
       "model": "ROG Strix Impact III",
       "variant": "Impact III",
@@ -710,7 +710,7 @@
       "identifier": "83df3295",
       "base_model": "ROG Strix"
     },
-    "mouse-asus-rog-strix-impact-iii-wireless": {
+    "mouse-b7965ea6": {
       "brand": "Asus",
       "model": "ROG Strix Impact III Wireless",
       "variant": "Impact III Wireless",
@@ -722,7 +722,7 @@
       "identifier": "b7965ea6",
       "base_model": "ROG Strix"
     },
-    "mouse-asus-rog-gladius-iii-wireless-aimpoint": {
+    "mouse-bd209d9b": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless AimPoint",
       "variant": "Wireless AimPoint",
@@ -734,7 +734,7 @@
       "identifier": "bd209d9b",
       "base_model": "ROG Gladius III"
     },
-    "mouse-asus-rog-gladius-iii-wireless-aimpoint-eva-02": {
+    "mouse-f87e0f0c": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless AimPoint EVA-02",
       "variant": "Wireless AimPoint EVA-02",
@@ -746,7 +746,7 @@
       "identifier": "f87e0f0c",
       "base_model": "ROG Gladius III"
     },
-    "mouse-asus-rog-gladius-iii-core": {
+    "mouse-22ffc286": {
       "brand": "Asus",
       "model": "ROG Gladius III Core",
       "variant": "Core",
@@ -758,7 +758,7 @@
       "identifier": "22ffc286",
       "base_model": "ROG Gladius III"
     },
-    "mouse-asus-rog-gladius-iii-wireless": {
+    "mouse-51a69e6f": {
       "brand": "Asus",
       "model": "ROG Gladius III Wireless",
       "variant": "Wireless",
@@ -770,7 +770,7 @@
       "identifier": "51a69e6f",
       "base_model": "ROG Gladius III"
     },
-    "mouse-asus-rog-gladius-iii": {
+    "mouse-b514e1df": {
       "brand": "Asus",
       "model": "ROG Gladius III",
       "variant": "",
@@ -782,7 +782,7 @@
       "identifier": "b514e1df",
       "base_model": "ROG Gladius III"
     },
-    "mouse-asus-rog-chakram": {
+    "mouse-ae26a21e": {
       "brand": "Asus",
       "model": "ROG Chakram",
       "variant": "",
@@ -794,7 +794,7 @@
       "identifier": "ae26a21e",
       "base_model": "ROG Chakram"
     },
-    "mouse-asus-rog-chakram-x-origin": {
+    "mouse-52f0d374": {
       "brand": "Asus",
       "model": "ROG Chakram X Origin",
       "variant": "X Origin",
@@ -806,7 +806,7 @@
       "identifier": "52f0d374",
       "base_model": "ROG Chakram"
     },
-    "mouse-asus-rog-chakram-x-core": {
+    "mouse-69b6ce63": {
       "brand": "Asus",
       "model": "ROG Chakram X Core",
       "variant": "X Core",
@@ -818,7 +818,7 @@
       "identifier": "69b6ce63",
       "base_model": "ROG Chakram"
     },
-    "mouse-asus-rog-spatha-x": {
+    "mouse-0f81ef57": {
       "brand": "Asus",
       "model": "ROG Spatha X",
       "variant": "X",
@@ -830,7 +830,7 @@
       "identifier": "0f81ef57",
       "base_model": "ROG Spatha"
     },
-    "mouse-asus-gx1000-eagle-eye-mouse": {
+    "mouse-eb4e26c9": {
       "brand": "Asus",
       "model": "GX1000 Eagle Eye Mouse",
       "variant": "Eagle Eye Mouse",
@@ -842,7 +842,7 @@
       "identifier": "eb4e26c9",
       "base_model": "GX1000"
     },
-    "mouse-glorious-model-o-2-wireless": {
+    "mouse-fe151452": {
       "brand": "Glorious",
       "model": "Model O 2 Wireless",
       "variant": "Wireless",
@@ -854,7 +854,7 @@
       "identifier": "fe151452",
       "base_model": "Model O 2"
     },
-    "mouse-glorious-model-o-2-wired": {
+    "mouse-f8078e74": {
       "brand": "Glorious",
       "model": "Model O 2 Wired",
       "variant": "Wired",
@@ -866,7 +866,7 @@
       "identifier": "f8078e74",
       "base_model": "Model O 2"
     },
-    "mouse-glorious-model-o-2-mini-wireless": {
+    "mouse-809d5a63": {
       "brand": "Glorious",
       "model": "Model O 2 Mini Wireless",
       "variant": "Wireless",
@@ -878,7 +878,7 @@
       "identifier": "809d5a63",
       "base_model": "Model O 2 Mini"
     },
-    "mouse-glorious-model-o-2-mini-wired": {
+    "mouse-07680515": {
       "brand": "Glorious",
       "model": "Model O 2 Mini Wired",
       "variant": "Wired",
@@ -890,7 +890,7 @@
       "identifier": "07680515",
       "base_model": "Model O 2 Mini"
     },
-    "mouse-glorious-model-o-2-pro-series-wireless-8khz-edition": {
+    "mouse-46d9f51f": {
       "brand": "Glorious",
       "model": "Model O 2 PRO Series Wireless 8KHz Edition",
       "variant": "Series Wireless 8KHz Edition",
@@ -902,7 +902,7 @@
       "identifier": "46d9f51f",
       "base_model": "Model O 2 PRO"
     },
-    "mouse-glorious-model-o-2-pro-series": {
+    "mouse-981f0219": {
       "brand": "Glorious",
       "model": "Model O 2 PRO Series",
       "variant": "Series",
@@ -914,7 +914,7 @@
       "identifier": "981f0219",
       "base_model": "Model O 2 PRO"
     },
-    "mouse-glorious-model-d-wired": {
+    "mouse-f821cfe9": {
       "brand": "Glorious",
       "model": "Model D Wired",
       "variant": "Wired",
@@ -926,7 +926,7 @@
       "identifier": "f821cfe9",
       "base_model": "Model D"
     },
-    "mouse-glorious-model-d-minus-wired": {
+    "mouse-66aadffb": {
       "brand": "Glorious",
       "model": "Model D Minus Wired",
       "variant": "Wired",
@@ -938,7 +938,7 @@
       "identifier": "66aadffb",
       "base_model": "Model D Minus"
     },
-    "mouse-glorious-model-d-minus-wireless": {
+    "mouse-9a2ebed6": {
       "brand": "Glorious",
       "model": "Model D Minus Wireless",
       "variant": "Wireless",
@@ -950,7 +950,7 @@
       "identifier": "9a2ebed6",
       "base_model": "Model D Minus"
     },
-    "mouse-glorious-model-d-2-pro-series-wireless": {
+    "mouse-9c60af25": {
       "brand": "Glorious",
       "model": "Model D 2 PRO Series Wireless",
       "variant": "Series Wireless",
@@ -962,7 +962,7 @@
       "identifier": "9c60af25",
       "base_model": "Model D 2 PRO"
     },
-    "mouse-glorious-model-d-2-pro-series-wireless-8khz-edition": {
+    "mouse-7fed4e87": {
       "brand": "Glorious",
       "model": "Model D 2 PRO Series Wireless 8Khz Edition",
       "variant": "Series Wireless 8Khz Edition",
@@ -974,7 +974,7 @@
       "identifier": "7fed4e87",
       "base_model": "Model D 2 PRO"
     },
-    "mouse-glorious-model-d-2-wireless": {
+    "mouse-489a7906": {
       "brand": "Glorious",
       "model": "Model D 2 Wireless",
       "variant": "Wireless",
@@ -986,7 +986,7 @@
       "identifier": "489a7906",
       "base_model": "Model D 2"
     },
-    "mouse-glorious-model-d-2-wired": {
+    "mouse-f07cb6ba": {
       "brand": "Glorious",
       "model": "Model D 2 Wired",
       "variant": "Wired",
@@ -998,7 +998,7 @@
       "identifier": "f07cb6ba",
       "base_model": "Model D 2"
     },
-    "mouse-glorious-model-i-2-wireless": {
+    "mouse-c5a81d79": {
       "brand": "Glorious",
       "model": "Model I 2 Wireless",
       "variant": "Wireless",
@@ -1010,7 +1010,7 @@
       "identifier": "c5a81d79",
       "base_model": "Model I 2"
     },
-    "mouse-glorious-model-i-2-wired": {
+    "mouse-7a6deb42": {
       "brand": "Glorious",
       "model": "Model I 2 Wired",
       "variant": "Wired",
@@ -1022,7 +1022,7 @@
       "identifier": "7a6deb42",
       "base_model": "Model I 2"
     },
-    "mouse-glorious-series-2-pro-wireless": {
+    "mouse-7444cd0b": {
       "brand": "Glorious",
       "model": "Series 2 PRO Wireless",
       "variant": "PRO Wireless",
@@ -1034,7 +1034,7 @@
       "identifier": "7444cd0b",
       "base_model": "Series 2"
     },
-    "mouse-hyperx-pulsefire-haste-2-pro-wireless": {
+    "mouse-4a8c34c6": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Pro Wireless",
       "variant": "Pro Wireless",
@@ -1046,7 +1046,7 @@
       "identifier": "4a8c34c6",
       "base_model": "Pulsefire Haste 2"
     },
-    "mouse-hyperx-pulsefire-haste-2-wireless": {
+    "mouse-0aaa6298": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Wireless",
       "variant": "Wireless",
@@ -1058,7 +1058,7 @@
       "identifier": "0aaa6298",
       "base_model": "Pulsefire Haste 2"
     },
-    "mouse-hyperx-pulsefire-haste-2-core-wireless": {
+    "mouse-8966deeb": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2 Core Wireless",
       "variant": "2 Core Wireless",
@@ -1070,7 +1070,7 @@
       "identifier": "8966deeb",
       "base_model": "Pulsefire Haste"
     },
-    "mouse-hyperx-pulsefire-haste-2": {
+    "mouse-3c8dd1f0": {
       "brand": "HyperX",
       "model": "Pulsefire Haste 2",
       "variant": "2",
@@ -1082,7 +1082,7 @@
       "identifier": "3c8dd1f0",
       "base_model": "Pulsefire Haste"
     },
-    "mouse-hyperx-pulsefire-wireless-haste-2-mini-wireless": {
+    "mouse-c5a85a6c": {
       "brand": "HyperX",
       "model": "Pulsefire Wireless Haste 2 Mini Wireless",
       "variant": "2 Mini Wireless",
@@ -1094,7 +1094,7 @@
       "identifier": "c5a85a6c",
       "base_model": "Pulsefire Wireless Haste"
     },
-    "mouse-hyperx-pulsefire-haste-wireless": {
+    "mouse-8fbbccff": {
       "brand": "HyperX",
       "model": "Pulsefire Haste Wireless",
       "variant": "Wireless",
@@ -1106,7 +1106,7 @@
       "identifier": "8fbbccff",
       "base_model": "Pulsefire Haste"
     },
-    "mouse-hyperx-pulsefire-haste": {
+    "mouse-b84c3bba": {
       "brand": "HyperX",
       "model": "Pulsefire Haste",
       "variant": "",
@@ -1118,7 +1118,7 @@
       "identifier": "b84c3bba",
       "base_model": "Pulsefire Haste"
     },
-    "mouse-hyperx-pulsefire-surge": {
+    "mouse-bf2aa496": {
       "brand": "HyperX",
       "model": "Pulsefire Surge",
       "variant": "",
@@ -1130,7 +1130,7 @@
       "identifier": "bf2aa496",
       "base_model": "Pulsefire Surge"
     },
-    "mouse-hyperx-pulsefire-core": {
+    "mouse-a514e783": {
       "brand": "HyperX",
       "model": "Pulsefire Core",
       "variant": "",
@@ -1142,7 +1142,7 @@
       "identifier": "a514e783",
       "base_model": "Pulsefire Core"
     },
-    "mouse-logitech-g-pro-x-superlight-2-dex": {
+    "mouse-42331300": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2 Dex",
       "variant": "Dex",
@@ -1154,7 +1154,7 @@
       "identifier": "42331300",
       "base_model": "Pro X Superlight 2"
     },
-    "mouse-logitech-g-pro-2-lightspeed": {
+    "mouse-64110d84": {
       "brand": "Logitech G",
       "model": "Pro 2 Lightspeed",
       "variant": "Lightspeed",
@@ -1166,7 +1166,7 @@
       "identifier": "64110d84",
       "base_model": "Pro 2"
     },
-    "mouse-logitech-g-g309-lightspeed": {
+    "mouse-5659e87a": {
       "brand": "Logitech G",
       "model": "G309 Lightspeed",
       "variant": "Lightspeed",
@@ -1178,7 +1178,7 @@
       "identifier": "5659e87a",
       "base_model": "G309"
     },
-    "mouse-logitech-g-pro-x-superlight-2": {
+    "mouse-e3e0576c": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2",
       "variant": "Superlight 2",
@@ -1190,7 +1190,7 @@
       "identifier": "e3e0576c",
       "base_model": "Pro X"
     },
-    "mouse-logitech-g-g502-x-plus": {
+    "mouse-bdcfb5df": {
       "brand": "Logitech G",
       "model": "G502 X Plus",
       "variant": "Plus",
@@ -1202,7 +1202,7 @@
       "identifier": "bdcfb5df",
       "base_model": "G502 X"
     },
-    "mouse-logitech-g-pro-x-superlight": {
+    "mouse-bfa8d0a1": {
       "brand": "Logitech G",
       "model": "Pro X Superlight",
       "variant": "Superlight",
@@ -1214,7 +1214,7 @@
       "identifier": "bfa8d0a1",
       "base_model": "Pro X"
     },
-    "mouse-logitech-g-pro-x-superlight-2c": {
+    "mouse-143cf827": {
       "brand": "Logitech G",
       "model": "Pro X Superlight 2c",
       "variant": "Superlight 2c",
@@ -1226,7 +1226,7 @@
       "identifier": "143cf827",
       "base_model": "Pro X"
     },
-    "mouse-logitech-g-pro-x-2-superstrike": {
+    "mouse-83165eba": {
       "brand": "Logitech G",
       "model": "Pro X 2 Superstrike",
       "variant": "2 Superstrike",
@@ -1238,7 +1238,7 @@
       "identifier": "83165eba",
       "base_model": "Pro X"
     },
-    "mouse-logitech-g-g502-x-lightspeed-wireless": {
+    "mouse-93969710": {
       "brand": "Logitech G",
       "model": "G502 X Lightspeed Wireless",
       "variant": "Lightspeed Wireless",
@@ -1250,7 +1250,7 @@
       "identifier": "93969710",
       "base_model": "G502 X"
     },
-    "mouse-logitech-g-pro-wireless": {
+    "mouse-d05bc0c5": {
       "brand": "Logitech G",
       "model": "Pro Wireless",
       "variant": "Wireless",
@@ -1262,7 +1262,7 @@
       "identifier": "d05bc0c5",
       "base_model": "Pro"
     },
-    "mouse-logitech-g-g502-x": {
+    "mouse-2844f036": {
       "brand": "Logitech G",
       "model": "G502 X",
       "variant": "",
@@ -1274,7 +1274,7 @@
       "identifier": "2844f036",
       "base_model": "G502 X"
     },
-    "mouse-logitech-g-g705-wireless": {
+    "mouse-08e5f27a": {
       "brand": "Logitech G",
       "model": "G705 Wireless",
       "variant": "Wireless",
@@ -1286,7 +1286,7 @@
       "identifier": "08e5f27a",
       "base_model": "G705"
     },
-    "mouse-logitech-g-g502-lightspeed": {
+    "mouse-532b11c0": {
       "brand": "Logitech G",
       "model": "G502 Lightspeed",
       "variant": "Lightspeed",
@@ -1298,7 +1298,7 @@
       "identifier": "532b11c0",
       "base_model": "G502"
     },
-    "mouse-logitech-g-g305-lightspeed": {
+    "mouse-c2e832ba": {
       "brand": "Logitech G",
       "model": "G305 Lightspeed",
       "variant": "Lightspeed",
@@ -1310,7 +1310,7 @@
       "identifier": "c2e832ba",
       "base_model": "G305"
     },
-    "mouse-logitech-g-g502-hero": {
+    "mouse-7101f1a5": {
       "brand": "Logitech G",
       "model": "G502 Hero",
       "variant": "Hero",
@@ -1322,7 +1322,7 @@
       "identifier": "7101f1a5",
       "base_model": "G502"
     },
-    "mouse-logitech-g-g903-lightspeed": {
+    "mouse-dbe9d673": {
       "brand": "Logitech G",
       "model": "G903 Lightspeed",
       "variant": "Lightspeed",
@@ -1334,7 +1334,7 @@
       "identifier": "dbe9d673",
       "base_model": "G903"
     },
-    "mouse-logitech-g-g703-hero-lightspeed": {
+    "mouse-fca02f8c": {
       "brand": "Logitech G",
       "model": "G703 Hero Lightspeed",
       "variant": "Hero Lightspeed",
@@ -1346,7 +1346,7 @@
       "identifier": "fca02f8c",
       "base_model": "G703"
     },
-    "mouse-logitech-g-g203-lightsync": {
+    "mouse-487e89fc": {
       "brand": "Logitech G",
       "model": "G203 Lightsync",
       "variant": "Lightsync",
@@ -1358,7 +1358,7 @@
       "identifier": "487e89fc",
       "base_model": "G203"
     },
-    "mouse-logitech-g-g403-hero": {
+    "mouse-e3745dd1": {
       "brand": "Logitech G",
       "model": "G403 Hero",
       "variant": "Hero",
@@ -1370,7 +1370,7 @@
       "identifier": "e3745dd1",
       "base_model": "G403"
     },
-    "mouse-msi-clutch-gm41-lw-wireless": {
+    "mouse-50e18c34": {
       "brand": "MSI",
       "model": "Clutch GM41 LW Wireless",
       "variant": "LW Wireless",
@@ -1382,7 +1382,7 @@
       "identifier": "50e18c34",
       "base_model": "Clutch GM41"
     },
-    "mouse-msi-clutch-gm41-lw-v2": {
+    "mouse-66057ed8": {
       "brand": "MSI",
       "model": "Clutch GM41 LW V2",
       "variant": "LW V2",
@@ -1394,7 +1394,7 @@
       "identifier": "66057ed8",
       "base_model": "Clutch GM41"
     },
-    "mouse-msi-clutch-gm20-elite": {
+    "mouse-8c2598aa": {
       "brand": "MSI",
       "model": "Clutch GM20 Elite",
       "variant": "Elite",
@@ -1406,7 +1406,7 @@
       "identifier": "8c2598aa",
       "base_model": "Clutch GM20"
     },
-    "mouse-msi-versa-300-wireless": {
+    "mouse-5c8b7c3a": {
       "brand": "MSI",
       "model": "Versa 300 Wireless",
       "variant": "Wireless",
@@ -1418,7 +1418,7 @@
       "identifier": "5c8b7c3a",
       "base_model": "Versa 300"
     },
-    "mouse-msi-versa-300-elite-wireless": {
+    "mouse-cb856d84": {
       "brand": "MSI",
       "model": "Versa 300 Elite Wireless",
       "variant": "Elite Wireless",
@@ -1430,7 +1430,7 @@
       "identifier": "cb856d84",
       "base_model": "Versa 300"
     },
-    "mouse-msi-clutch-gm31-lw": {
+    "mouse-535284bd": {
       "brand": "MSI",
       "model": "Clutch GM31 LW",
       "variant": "LW",
@@ -1442,7 +1442,7 @@
       "identifier": "535284bd",
       "base_model": "Clutch GM31"
     },
-    "mouse-msi-clutch-gm51-lw-wireless": {
+    "mouse-40ae24b8": {
       "brand": "MSI",
       "model": "Clutch GM51 LW Wireless",
       "variant": "LW Wireless",
@@ -1454,7 +1454,7 @@
       "identifier": "40ae24b8",
       "base_model": "Clutch GM51"
     },
-    "mouse-msi-clutch-gm51-lw": {
+    "mouse-4b4b9a56": {
       "brand": "MSI",
       "model": "Clutch GM51 LW",
       "variant": "LW",
@@ -1466,7 +1466,7 @@
       "identifier": "4b4b9a56",
       "base_model": "Clutch GM51"
     },
-    "mouse-msi-clutch-gm31-lw-wireless": {
+    "mouse-aa3a36c5": {
       "brand": "MSI",
       "model": "Clutch GM31 LW Wireless",
       "variant": "LW Wireless",
@@ -1478,7 +1478,7 @@
       "identifier": "aa3a36c5",
       "base_model": "Clutch GM31"
     },
-    "mouse-msi-forge-gm300": {
+    "mouse-a6c8d5fe": {
       "brand": "MSI",
       "model": "Forge GM300",
       "variant": "",
@@ -1490,7 +1490,7 @@
       "identifier": "a6c8d5fe",
       "base_model": "Forge GM300"
     },
-    "mouse-msi-forge-gm100": {
+    "mouse-efba2dc1": {
       "brand": "MSI",
       "model": "Forge GM100",
       "variant": "",
@@ -1502,7 +1502,7 @@
       "identifier": "efba2dc1",
       "base_model": "Forge GM100"
     },
-    "mouse-msi-forge-gm310": {
+    "mouse-36aa6f10": {
       "brand": "MSI",
       "model": "Forge GM310",
       "variant": "",
@@ -1514,7 +1514,7 @@
       "identifier": "36aa6f10",
       "base_model": "Forge GM310"
     },
-    "mouse-msi-clutch-gm30": {
+    "mouse-a4c20298": {
       "brand": "MSI",
       "model": "Clutch GM30",
       "variant": "",
@@ -1526,7 +1526,7 @@
       "identifier": "a4c20298",
       "base_model": "Clutch GM30"
     },
-    "mouse-msi-clutch-gm08": {
+    "mouse-2918f1ca": {
       "brand": "MSI",
       "model": "Clutch GM08",
       "variant": "",
@@ -1538,7 +1538,7 @@
       "identifier": "2918f1ca",
       "base_model": "Clutch GM08"
     },
-    "mouse-msi-clutch-dm07": {
+    "mouse-8c9175e2": {
       "brand": "MSI",
       "model": "Clutch DM07",
       "variant": "",
@@ -1550,7 +1550,7 @@
       "identifier": "8c9175e2",
       "base_model": "Clutch DM07"
     },
-    "mouse-msi-clutch-gm11": {
+    "mouse-160b8c6d": {
       "brand": "MSI",
       "model": "Clutch GM11",
       "variant": "",
@@ -1562,7 +1562,7 @@
       "identifier": "160b8c6d",
       "base_model": "Clutch GM11"
     },
-    "mouse-msi-clutch-gm41-lw": {
+    "mouse-3995e482": {
       "brand": "MSI",
       "model": "Clutch GM41 LW",
       "variant": "LW",
@@ -1574,7 +1574,7 @@
       "identifier": "3995e482",
       "base_model": "Clutch GM41"
     },
-    "mouse-razer-cobra": {
+    "mouse-5ae596e2": {
       "brand": "Razer",
       "model": "Cobra",
       "variant": "",
@@ -1586,7 +1586,7 @@
       "identifier": "5ae596e2",
       "base_model": "Cobra"
     },
-    "mouse-razer-cobra-pro": {
+    "mouse-e49216f1": {
       "brand": "Razer",
       "model": "Cobra Pro",
       "variant": "Pro",
@@ -1598,7 +1598,7 @@
       "identifier": "e49216f1",
       "base_model": "Cobra"
     },
-    "mouse-razer-viper-mini-signature-edition": {
+    "mouse-d8d1e1f5": {
       "brand": "Razer",
       "model": "Viper Mini Signature Edition",
       "variant": "Signature Edition",
@@ -1610,7 +1610,7 @@
       "identifier": "d8d1e1f5",
       "base_model": "Viper Mini"
     },
-    "mouse-razer-deathadder-v3-pro": {
+    "mouse-307a7df0": {
       "brand": "Razer",
       "model": "Deathadder V3 Pro",
       "variant": "V3 Pro",
@@ -1622,7 +1622,7 @@
       "identifier": "307a7df0",
       "base_model": "Deathadder"
     },
-    "mouse-razer-deathadder-v3-hyperspeed": {
+    "mouse-d4a6fce6": {
       "brand": "Razer",
       "model": "Deathadder V3 Hyperspeed",
       "variant": "V3 Hyperspeed",
@@ -1634,7 +1634,7 @@
       "identifier": "d4a6fce6",
       "base_model": "Deathadder"
     },
-    "mouse-razer-deathadder-v3": {
+    "mouse-e6a3960e": {
       "brand": "Razer",
       "model": "Deathadder V3",
       "variant": "V3",
@@ -1646,7 +1646,7 @@
       "identifier": "e6a3960e",
       "base_model": "Deathadder"
     },
-    "mouse-razer-viper-v3-pro": {
+    "mouse-4b80eddc": {
       "brand": "Razer",
       "model": "Viper V3 Pro",
       "variant": "V3 Pro",
@@ -1658,7 +1658,7 @@
       "identifier": "4b80eddc",
       "base_model": "Viper"
     },
-    "mouse-razer-viper-v3-hyperspeed": {
+    "mouse-113c2fa1": {
       "brand": "Razer",
       "model": "Viper V3 Hyperspeed",
       "variant": "V3 Hyperspeed",
@@ -1670,7 +1670,7 @@
       "identifier": "113c2fa1",
       "base_model": "Viper"
     },
-    "mouse-razer-naga-v2-pro": {
+    "mouse-cf44792e": {
       "brand": "Razer",
       "model": "Naga V2 Pro",
       "variant": "Pro",
@@ -1682,7 +1682,7 @@
       "identifier": "cf44792e",
       "base_model": "Naga V2"
     },
-    "mouse-razer-naga-v2-hyperspeed": {
+    "mouse-9f2a6c42": {
       "brand": "Razer",
       "model": "Naga V2 Hyperspeed",
       "variant": "Hyperspeed",
@@ -1694,7 +1694,7 @@
       "identifier": "9f2a6c42",
       "base_model": "Naga V2"
     },
-    "mouse-razer-naga-x": {
+    "mouse-71d18839": {
       "brand": "Razer",
       "model": "Naga X",
       "variant": "",
@@ -1706,7 +1706,7 @@
       "identifier": "71d18839",
       "base_model": "Naga X"
     },
-    "mouse-razer-naga-left-handed-edition": {
+    "mouse-6de02a10": {
       "brand": "Razer",
       "model": "Naga Left-Handed Edition",
       "variant": "",
@@ -1718,7 +1718,7 @@
       "identifier": "6de02a10",
       "base_model": "Naga Left-Handed Edition"
     },
-    "mouse-razer-basilisk-v3-pro-35k": {
+    "mouse-fe3834e3": {
       "brand": "Razer",
       "model": "Basilisk V3 Pro 35k",
       "variant": "Pro 35k",
@@ -1730,7 +1730,7 @@
       "identifier": "fe3834e3",
       "base_model": "Basilisk V3"
     },
-    "mouse-razer-basilisk-v3-35k": {
+    "mouse-74b98f20": {
       "brand": "Razer",
       "model": "Basilisk V3 35k",
       "variant": "35k",
@@ -1742,7 +1742,7 @@
       "identifier": "74b98f20",
       "base_model": "Basilisk V3"
     },
-    "mouse-razer-basilisk-v3-x-hyperspeed": {
+    "mouse-0f96e516": {
       "brand": "Razer",
       "model": "Basilisk V3 X Hyperspeed",
       "variant": "X Hyperspeed",
@@ -1754,7 +1754,7 @@
       "identifier": "0f96e516",
       "base_model": "Basilisk V3"
     },
-    "mouse-razer-orochi-v2": {
+    "mouse-8a415ba4": {
       "brand": "Razer",
       "model": "Orochi V2",
       "variant": "",
@@ -1766,7 +1766,7 @@
       "identifier": "8a415ba4",
       "base_model": "Orochi V2"
     },
-    "mouse-razer-pro-click": {
+    "mouse-94fb079d": {
       "brand": "Razer",
       "model": "Pro Click",
       "variant": "",
@@ -1778,7 +1778,7 @@
       "identifier": "94fb079d",
       "base_model": "Pro Click"
     },
-    "mouse-redragon-aatrox-m811-mmo": {
+    "mouse-2e40d794": {
       "brand": "Redragon",
       "model": "Aatrox M811 MMO",
       "variant": "MMO",
@@ -1790,7 +1790,7 @@
       "identifier": "2e40d794",
       "base_model": "Aatrox M811"
     },
-    "mouse-redragon-aatrox-m811-pro": {
+    "mouse-5e2860f5": {
       "brand": "Redragon",
       "model": "Aatrox M811 Pro",
       "variant": "Pro",
@@ -1802,7 +1802,7 @@
       "identifier": "5e2860f5",
       "base_model": "Aatrox M811"
     },
-    "mouse-redragon-bullseye-m806": {
+    "mouse-2c031bf1": {
       "brand": "Redragon",
       "model": "Bullseye M806",
       "variant": "",
@@ -1814,7 +1814,7 @@
       "identifier": "2c031bf1",
       "base_model": "Bullseye M806"
     },
-    "mouse-redragon-bullseye-m806-pro": {
+    "mouse-853cd9bc": {
       "brand": "Redragon",
       "model": "Bullseye M806 Pro",
       "variant": "Pro",
@@ -1826,7 +1826,7 @@
       "identifier": "853cd9bc",
       "base_model": "Bullseye M806"
     },
-    "mouse-redragon-cobra-m711": {
+    "mouse-f33eca09": {
       "brand": "Redragon",
       "model": "Cobra M711",
       "variant": "",
@@ -1838,7 +1838,7 @@
       "identifier": "f33eca09",
       "base_model": "Cobra M711"
     },
-    "mouse-redragon-cobra-m711-fps": {
+    "mouse-3c878435": {
       "brand": "Redragon",
       "model": "Cobra M711 FPS",
       "variant": "FPS",
@@ -1850,7 +1850,7 @@
       "identifier": "3c878435",
       "base_model": "Cobra M711"
     },
-    "mouse-redragon-devourer-m993": {
+    "mouse-3dcf2450": {
       "brand": "Redragon",
       "model": "Devourer M993",
       "variant": "",
@@ -1862,7 +1862,7 @@
       "identifier": "3dcf2450",
       "base_model": "Devourer M993"
     },
-    "mouse-redragon-eisa-k1ng-m916-pro-1khz": {
+    "mouse-dd2b2f2e": {
       "brand": "Redragon",
       "model": "EISA K1NG M916 Pro (1khz)",
       "variant": "Pro (1khz)",
@@ -1874,7 +1874,7 @@
       "identifier": "dd2b2f2e",
       "base_model": "K1NG M916"
     },
-    "mouse-redragon-fyzu-m995": {
+    "mouse-da10dc12": {
       "brand": "Redragon",
       "model": "FYZU M995",
       "variant": "",
@@ -1886,7 +1886,7 @@
       "identifier": "da10dc12",
       "base_model": "FYZU M995"
     },
-    "mouse-redragon-gainer-m656": {
+    "mouse-7c04d043": {
       "brand": "Redragon",
       "model": "Gainer M656",
       "variant": "",
@@ -1898,7 +1898,7 @@
       "identifier": "7c04d043",
       "base_model": "Gainer M656"
     },
-    "mouse-redragon-impact-elite-m913": {
+    "mouse-93d45c3e": {
       "brand": "Redragon",
       "model": "Impact Elite M913",
       "variant": "",
@@ -1910,7 +1910,7 @@
       "identifier": "93d45c3e",
       "base_model": "Impact Elite M913"
     },
-    "mouse-redragon-impact-m908": {
+    "mouse-8aad1217": {
       "brand": "Redragon",
       "model": "Impact M908",
       "variant": "",
@@ -1922,7 +1922,7 @@
       "identifier": "8aad1217",
       "base_model": "Impact M908"
     },
-    "mouse-redragon-invader-m719-pro": {
+    "mouse-56b72df3": {
       "brand": "Redragon",
       "model": "Invader M719 Pro",
       "variant": "Pro",
@@ -1934,7 +1934,7 @@
       "identifier": "56b72df3",
       "base_model": "Invader M719"
     },
-    "mouse-redragon-k1ing-m916-pro-4k-hz": {
+    "mouse-a3d79007": {
       "brand": "Redragon",
       "model": "K1ING M916 Pro (4K Hz)",
       "variant": "Pro (4K Hz)",
@@ -1946,7 +1946,7 @@
       "identifier": "a3d79007",
       "base_model": "K1ING M916"
     },
-    "mouse-redragon-k1ng-m724-1k-hz": {
+    "mouse-853ef2ef": {
       "brand": "Redragon",
       "model": "K1NG M724 (1K Hz)",
       "variant": "(1K Hz)",
@@ -1958,7 +1958,7 @@
       "identifier": "853ef2ef",
       "base_model": "K1NG M724"
     },
-    "mouse-redragon-k1ng-m916-24ghz-wireless": {
+    "mouse-ffb4ccf4": {
       "brand": "Redragon",
       "model": "K1NG M916 (2.4Ghz Wireless)",
       "variant": "(2.4Ghz Wireless)",
@@ -1970,7 +1970,7 @@
       "identifier": "ffb4ccf4",
       "base_model": "K1NG M916"
     },
-    "mouse-redragon-k1ng-m916-pro-1k-hz": {
+    "mouse-7b0de1a2": {
       "brand": "Redragon",
       "model": "K1NG M916 PRO (1K Hz)",
       "variant": "PRO (1K Hz)",
@@ -1982,7 +1982,7 @@
       "identifier": "7b0de1a2",
       "base_model": "K1NG M916"
     },
-    "mouse-redragon-k1ng-m996-8k-hz": {
+    "mouse-19a98602": {
       "brand": "Redragon",
       "model": "K1NG M996 (8K Hz)",
       "variant": "(8K Hz)",
@@ -1994,7 +1994,7 @@
       "identifier": "19a98602",
       "base_model": "K1NG M996"
     },
-    "mouse-redragon-k1ng-max-m918-1k-hz": {
+    "mouse-a714eb25": {
       "brand": "Redragon",
       "model": "K1NG MAX M918 (1K Hz)",
       "variant": "(1K Hz)",
@@ -2006,7 +2006,7 @@
       "identifier": "a714eb25",
       "base_model": "K1NG MAX M918"
     },
-    "mouse-redragon-k1ng-max-m918-pro-1k-hz": {
+    "mouse-be3a7930": {
       "brand": "Redragon",
       "model": "K1NG MAX M918 PRO (1K Hz)",
       "variant": "PRO (1K Hz)",
@@ -2018,7 +2018,7 @@
       "identifier": "be3a7930",
       "base_model": "K1NG MAX M918"
     },
-    "mouse-redragon-legend-chroma-m990": {
+    "mouse-117577e1": {
       "brand": "Redragon",
       "model": "Legend Chroma M990",
       "variant": "",
@@ -2030,7 +2030,7 @@
       "identifier": "117577e1",
       "base_model": "Legend Chroma M990"
     },
-    "mouse-redragon-m991-wireless-fps": {
+    "mouse-6c645ea1": {
       "brand": "Redragon",
       "model": "M991 Wireless FPS",
       "variant": "Wireless FPS",
@@ -2042,7 +2042,7 @@
       "identifier": "6c645ea1",
       "base_model": "M991"
     },
-    "mouse-redragon-mirage-m690-pro": {
+    "mouse-8acb1bcd": {
       "brand": "Redragon",
       "model": "Mirage M690 Pro",
       "variant": "Pro",
@@ -2054,7 +2054,7 @@
       "identifier": "8acb1bcd",
       "base_model": "Mirage M690"
     },
-    "mouse-redragon-mirage-2-m690-1": {
+    "mouse-87dc8f62": {
       "brand": "Redragon",
       "model": "Mirage 2 M690-1",
       "variant": "1",
@@ -2066,7 +2066,7 @@
       "identifier": "87dc8f62",
       "base_model": "Mirage 2 M690"
     },
-    "mouse-redragon-nirvana-m652": {
+    "mouse-53e67328": {
       "brand": "Redragon",
       "model": "Nirvana M652",
       "variant": "",
@@ -2078,7 +2078,7 @@
       "identifier": "53e67328",
       "base_model": "Nirvana M652"
     },
-    "mouse-redragon-predator-m612": {
+    "mouse-d8c6e57a": {
       "brand": "Redragon",
       "model": "Predator M612",
       "variant": "",
@@ -2090,7 +2090,7 @@
       "identifier": "d8c6e57a",
       "base_model": "Predator M612"
     },
-    "mouse-redragon-predator-m612-pro": {
+    "mouse-6a36e4a6": {
       "brand": "Redragon",
       "model": "Predator M612 Pro",
       "variant": "Pro",
@@ -2102,7 +2102,7 @@
       "identifier": "6a36e4a6",
       "base_model": "Predator M612"
     },
-    "mouse-redragon-rind-m813-pro": {
+    "mouse-f81c13f6": {
       "brand": "Redragon",
       "model": "Rind M813 Pro",
       "variant": "Pro",
@@ -2114,7 +2114,7 @@
       "identifier": "f81c13f6",
       "base_model": "Rind M813"
     },
-    "mouse-redragon-storm-m808": {
+    "mouse-b3ed137a": {
       "brand": "Redragon",
       "model": "Storm M808",
       "variant": "",
@@ -2126,7 +2126,7 @@
       "identifier": "b3ed137a",
       "base_model": "Storm M808"
     },
-    "mouse-redragon-storm-m808-n": {
+    "mouse-798a040b": {
       "brand": "Redragon",
       "model": "Storm M808-N",
       "variant": "N",
@@ -2138,7 +2138,7 @@
       "identifier": "798a040b",
       "base_model": "Storm M808"
     },
-    "mouse-redragon-storm-pro-m808": {
+    "mouse-d53ce2a5": {
       "brand": "Redragon",
       "model": "Storm Pro M808",
       "variant": "",
@@ -2150,7 +2150,7 @@
       "identifier": "d53ce2a5",
       "base_model": "Storm Pro M808"
     },
-    "mouse-redragon-taipan-pro-m810-pro": {
+    "mouse-a6343d7c": {
       "brand": "Redragon",
       "model": "Taipan Pro M810 Pro",
       "variant": "Pro",
@@ -2162,7 +2162,7 @@
       "identifier": "a6343d7c",
       "base_model": "Taipan Pro M810"
     },
-    "mouse-redragon-trident-m616": {
+    "mouse-acdeea27": {
       "brand": "Redragon",
       "model": "Trident M616",
       "variant": "",
@@ -2174,7 +2174,7 @@
       "identifier": "acdeea27",
       "base_model": "Trident M616"
     },
-    "mouse-redragon-trident-m693": {
+    "mouse-e94fc932": {
       "brand": "Redragon",
       "model": "Trident M693",
       "variant": "M693",
@@ -2186,7 +2186,7 @@
       "identifier": "e94fc932",
       "base_model": "Trident"
     },
-    "mouse-redragon-vampire-elite-m686": {
+    "mouse-bc04f901": {
       "brand": "Redragon",
       "model": "Vampire Elite M686",
       "variant": "",
@@ -2198,7 +2198,7 @@
       "identifier": "bc04f901",
       "base_model": "Vampire Elite M686"
     },
-    "mouse-redragon-woki-m994": {
+    "mouse-da08a7d3": {
       "brand": "Redragon",
       "model": "Woki M994",
       "variant": "",
@@ -2210,7 +2210,7 @@
       "identifier": "da08a7d3",
       "base_model": "Woki M994"
     },
-    "mouse-cougar-revenger-pro-4k": {
+    "mouse-f5da730c": {
       "brand": "Cougar",
       "model": "Revenger Pro 4k",
       "variant": "",
@@ -2222,7 +2222,7 @@
       "identifier": "f5da730c",
       "base_model": "Revenger Pro 4k"
     },
-    "mouse-cougar-dualblader": {
+    "mouse-92d2afe4": {
       "brand": "Cougar",
       "model": "Dualblader",
       "variant": "",
@@ -2234,7 +2234,7 @@
       "identifier": "92d2afe4",
       "base_model": "Dualblader"
     },
-    "mouse-cougar-700m-evo-esports": {
+    "mouse-0719bafc": {
       "brand": "Cougar",
       "model": "700M EVO eSPORTS",
       "variant": "",
@@ -2246,7 +2246,7 @@
       "identifier": "0719bafc",
       "base_model": "700M EVO eSPORTS"
     },
-    "mouse-cougar-minos-neo": {
+    "mouse-0d596e80": {
       "brand": "Cougar",
       "model": "Minos Neo",
       "variant": "",
@@ -2258,7 +2258,7 @@
       "identifier": "0d596e80",
       "base_model": "Minos Neo"
     },
-    "mouse-cougar-airblader": {
+    "mouse-a4e10836": {
       "brand": "Cougar",
       "model": "Airblader",
       "variant": "",
@@ -2270,7 +2270,7 @@
       "identifier": "a4e10836",
       "base_model": "Airblader"
     },
-    "mouse-cougar-airblader-tournamanet": {
+    "mouse-00897461": {
       "brand": "Cougar",
       "model": "Airblader Tournamanet",
       "variant": "Tournamanet",
@@ -2282,7 +2282,7 @@
       "identifier": "00897461",
       "base_model": "Airblader"
     },
-    "mouse-cougar-minox-xt": {
+    "mouse-fc6013c8": {
       "brand": "Cougar",
       "model": "Minox XT",
       "variant": "",
@@ -2294,7 +2294,7 @@
       "identifier": "fc6013c8",
       "base_model": "Minox XT"
     },
-    "mouse-cougar-minos-x2": {
+    "mouse-f0143da2": {
       "brand": "Cougar",
       "model": "Minos X2",
       "variant": "",
@@ -2306,7 +2306,7 @@
       "identifier": "f0143da2",
       "base_model": "Minos X2"
     },
-    "mouse-cougar-minos-ex": {
+    "mouse-ef76bd53": {
       "brand": "Cougar",
       "model": "Minos EX",
       "variant": "",
@@ -2318,7 +2318,7 @@
       "identifier": "ef76bd53",
       "base_model": "Minos EX"
     },
-    "mouse-cougar-surpassion-ex": {
+    "mouse-2594a5a3": {
       "brand": "Cougar",
       "model": "Surpassion EX",
       "variant": "EX",
@@ -2330,7 +2330,7 @@
       "identifier": "2594a5a3",
       "base_model": "Surpassion"
     },
-    "mouse-cougar-surpassion-rx": {
+    "mouse-6845ddb6": {
       "brand": "Cougar",
       "model": "Surpassion RX",
       "variant": "RX",
@@ -2342,7 +2342,7 @@
       "identifier": "6845ddb6",
       "base_model": "Surpassion"
     },
-    "mouse-endgame-gear-xm2w-4k-wireless": {
+    "mouse-accabfdf": {
       "brand": "Endgame Gear",
       "model": "XM2w 4k Wireless",
       "variant": "4k Wireless",
@@ -2354,7 +2354,7 @@
       "identifier": "accabfdf",
       "base_model": "XM2w"
     },
-    "mouse-endgame-gear-op1": {
+    "mouse-f86e946a": {
       "brand": "Endgame Gear",
       "model": "OP1",
       "variant": "",
@@ -2366,7 +2366,7 @@
       "identifier": "f86e946a",
       "base_model": "OP1"
     },
-    "mouse-endgame-gear-op1-rgb": {
+    "mouse-f1156ded": {
       "brand": "Endgame Gear",
       "model": "OP1 RGB",
       "variant": "RGB",
@@ -2378,7 +2378,7 @@
       "identifier": "f1156ded",
       "base_model": "OP1"
     },
-    "mouse-endgame-gear-op1-8k": {
+    "mouse-6655dc93": {
       "brand": "Endgame Gear",
       "model": "OP1 8k",
       "variant": "8k",
@@ -2390,7 +2390,7 @@
       "identifier": "6655dc93",
       "base_model": "OP1"
     },
-    "mouse-endgame-gear-op1w-4k-wireless": {
+    "mouse-4e77b421": {
       "brand": "Endgame Gear",
       "model": "OP1w 4k Wireless",
       "variant": "4k Wireless",
@@ -2402,7 +2402,7 @@
       "identifier": "4e77b421",
       "base_model": "OP1w"
     },
-    "mouse-endgame-gear-op1we-wireless": {
+    "mouse-2eccfb0a": {
       "brand": "Endgame Gear",
       "model": "OP1we Wireless",
       "variant": "Wireless",
@@ -2414,7 +2414,7 @@
       "identifier": "2eccfb0a",
       "base_model": "OP1we"
     },
-    "mouse-endgame-gear-xm2we-wireless": {
+    "mouse-e95bfe6f": {
       "brand": "Endgame Gear",
       "model": "XM2we Wireless",
       "variant": "Wireless",
@@ -2426,7 +2426,7 @@
       "identifier": "e95bfe6f",
       "base_model": "XM2we"
     },
-    "mouse-endgame-gear-xm2-8k": {
+    "mouse-0cb71efb": {
       "brand": "Endgame Gear",
       "model": "XM2 8k",
       "variant": "8k",
@@ -2438,7 +2438,7 @@
       "identifier": "0cb71efb",
       "base_model": "XM2"
     },
-    "mouse-endgame-gear-xm1r": {
+    "mouse-c8bc0510": {
       "brand": "Endgame Gear",
       "model": "XM1r",
       "variant": "r",
@@ -2450,7 +2450,7 @@
       "identifier": "c8bc0510",
       "base_model": "XM1"
     },
-    "mouse-endgame-gear-xm1-rgb": {
+    "mouse-f74080c4": {
       "brand": "Endgame Gear",
       "model": "XM1 RGB",
       "variant": "RGB",
@@ -2462,7 +2462,7 @@
       "identifier": "f74080c4",
       "base_model": "XM1"
     },
-    "mouse-evga-x12": {
+    "mouse-c640d0bd": {
       "brand": "EVGA",
       "model": "X12",
       "variant": "",
@@ -2474,7 +2474,7 @@
       "identifier": "c640d0bd",
       "base_model": "X12"
     },
-    "mouse-evga-x17": {
+    "mouse-c5513b8d": {
       "brand": "EVGA",
       "model": "X17",
       "variant": "",
@@ -2486,7 +2486,7 @@
       "identifier": "c5513b8d",
       "base_model": "X17"
     },
-    "mouse-evga-x15-mmo": {
+    "mouse-99e662a8": {
       "brand": "EVGA",
       "model": "X15 MMO",
       "variant": "MMO",
@@ -2498,7 +2498,7 @@
       "identifier": "99e662a8",
       "base_model": "X15"
     },
-    "mouse-evga-x20-wireless": {
+    "mouse-2422839d": {
       "brand": "EVGA",
       "model": "X20 Wireless",
       "variant": "Wireless",
@@ -2510,7 +2510,7 @@
       "identifier": "2422839d",
       "base_model": "X20"
     },
-    "mouse-finalmouse-ulx-prophecy-clix": {
+    "mouse-399a46bc": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Clix",
       "variant": "Clix",
@@ -2522,7 +2522,7 @@
       "identifier": "399a46bc",
       "base_model": "ULX Prophecy"
     },
-    "mouse-finalmouse-ulx-prophecy-scream": {
+    "mouse-029f6c14": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Scream",
       "variant": "Scream",
@@ -2534,7 +2534,7 @@
       "identifier": "029f6c14",
       "base_model": "ULX Prophecy"
     },
-    "mouse-finalmouse-ulx-prophecy-tarik": {
+    "mouse-d7369a1a": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Tarik",
       "variant": "Tarik",
@@ -2546,7 +2546,7 @@
       "identifier": "d7369a1a",
       "base_model": "ULX Prophecy"
     },
-    "mouse-finalmouse-ulx-prophecy-tfue": {
+    "mouse-780c8397": {
       "brand": "Finalmouse",
       "model": "ULX Prophecy - Tfue",
       "variant": "Tfue",
@@ -2558,7 +2558,7 @@
       "identifier": "780c8397",
       "base_model": "ULX Prophecy"
     },
-    "mouse-fnatic-x-lamzu-maya-x-8k": {
+    "mouse-4e7df0d7": {
       "brand": "Fnatic",
       "model": "x Lamzu MAYA X 8K",
       "variant": "X 8K",
@@ -2570,7 +2570,7 @@
       "identifier": "4e7df0d7",
       "base_model": "x Lamzu MAYA"
     },
-    "mouse-fnatic-x-lamzu-maya-8k": {
+    "mouse-6e0bd352": {
       "brand": "Fnatic",
       "model": "x Lamzu MAYA 8K",
       "variant": "8K",
@@ -2582,7 +2582,7 @@
       "identifier": "6e0bd352",
       "base_model": "x Lamzu MAYA"
     },
-    "mouse-fnatic-x-lamzu-thorn": {
+    "mouse-a164bdca": {
       "brand": "Fnatic",
       "model": "x Lamzu THORN",
       "variant": "",
@@ -2594,7 +2594,7 @@
       "identifier": "a164bdca",
       "base_model": "x Lamzu THORN"
     },
-    "mouse-fnatic-bolt": {
+    "mouse-062b81e9": {
       "brand": "Fnatic",
       "model": "Bolt",
       "variant": "",
@@ -2606,7 +2606,7 @@
       "identifier": "062b81e9",
       "base_model": "Bolt"
     },
-    "mouse-g-wolves-htr-pro-8k-wireless": {
+    "mouse-0258a321": {
       "brand": "G-Wolves",
       "model": "HTR PRO 8k Wireless",
       "variant": "PRO 8k Wireless",
@@ -2618,7 +2618,7 @@
       "identifier": "0258a321",
       "base_model": "HTR"
     },
-    "mouse-g-wolves-htr-8k-wireless": {
+    "mouse-a520c5af": {
       "brand": "G-Wolves",
       "model": "HTR 8k Wireless",
       "variant": "8k Wireless",
@@ -2630,7 +2630,7 @@
       "identifier": "a520c5af",
       "base_model": "HTR"
     },
-    "mouse-g-wolves-ht-s2-8k-wireless": {
+    "mouse-a7efbfe1": {
       "brand": "G-Wolves",
       "model": "HT-S2 8k Wireless",
       "variant": "8k Wireless",
@@ -2642,7 +2642,7 @@
       "identifier": "a7efbfe1",
       "base_model": "HT-S2"
     },
-    "mouse-g-wolves-hts-ultra-8k-wireless": {
+    "mouse-472b0564": {
       "brand": "G-Wolves",
       "model": "HTS Ultra 8K Wireless",
       "variant": "Ultra 8K Wireless",
@@ -2654,7 +2654,7 @@
       "identifier": "472b0564",
       "base_model": "HTS"
     },
-    "mouse-g-wolves-hati-s-ace-wireless": {
+    "mouse-58394e24": {
       "brand": "G-Wolves",
       "model": "Hati-S ACE Wireless",
       "variant": "ACE Wireless",
@@ -2666,7 +2666,7 @@
       "identifier": "58394e24",
       "base_model": "Hati-S"
     },
-    "mouse-g-wolves-hati-s-open-source-wireless": {
+    "mouse-af971c4c": {
       "brand": "G-Wolves",
       "model": "Hati-S OPEN Source Wireless",
       "variant": "OPEN Source Wireless",
@@ -2678,7 +2678,7 @@
       "identifier": "af971c4c",
       "base_model": "Hati-S"
     },
-    "mouse-g-wolves-hts-plus-8k-wireless": {
+    "mouse-8c7fcee6": {
       "brand": "G-Wolves",
       "model": "HTS Plus 8K Wireless",
       "variant": "8K Wireless",
@@ -2690,7 +2690,7 @@
       "identifier": "8c7fcee6",
       "base_model": "HTS Plus"
     },
-    "mouse-g-wolves-hts-plus-4k-wireless": {
+    "mouse-6f1799a2": {
       "brand": "G-Wolves",
       "model": "HTS Plus 4K Wireless",
       "variant": "4K Wireless",
@@ -2702,7 +2702,7 @@
       "identifier": "6f1799a2",
       "base_model": "HTS Plus"
     },
-    "mouse-g-wolves-hts-plus-ace-wireless": {
+    "mouse-3fce1580": {
       "brand": "G-Wolves",
       "model": "HTS Plus Ace Wireless",
       "variant": "Ace Wireless",
@@ -2714,7 +2714,7 @@
       "identifier": "3fce1580",
       "base_model": "HTS Plus"
     },
-    "mouse-g-wolves-hts-plus-classic-wireless": {
+    "mouse-e262efd5": {
       "brand": "G-Wolves",
       "model": "HTS Plus Classic Wireless",
       "variant": "Classic Wireless",
@@ -2726,7 +2726,7 @@
       "identifier": "e262efd5",
       "base_model": "HTS Plus"
     },
-    "mouse-g-wolves-htx-mini-8k-wireless": {
+    "mouse-ce22f43d": {
       "brand": "G-Wolves",
       "model": "HTX Mini 8K Wireless",
       "variant": "Mini 8K Wireless",
@@ -2738,7 +2738,7 @@
       "identifier": "ce22f43d",
       "base_model": "HTX"
     },
-    "mouse-g-wolves-htx-4k-wireless": {
+    "mouse-cf7164ed": {
       "brand": "G-Wolves",
       "model": "HTX 4K Wireless",
       "variant": "4K Wireless",
@@ -2750,7 +2750,7 @@
       "identifier": "cf7164ed",
       "base_model": "HTX"
     },
-    "mouse-g-wolves-htx-ace-wireless": {
+    "mouse-a5c42140": {
       "brand": "G-Wolves",
       "model": "HTX ACE Wireless",
       "variant": "ACE Wireless",
@@ -2762,7 +2762,7 @@
       "identifier": "a5c42140",
       "base_model": "HTX"
     },
-    "mouse-g-wolves-hsk-pro-4k-wireless": {
+    "mouse-bce4060c": {
       "brand": "G-Wolves",
       "model": "HSK Pro 4K Wireless",
       "variant": "4K Wireless",
@@ -2774,7 +2774,7 @@
       "identifier": "bce4060c",
       "base_model": "HSK Pro"
     },
-    "mouse-g-wolves-hsk-pro-ace-wireless": {
+    "mouse-86673285": {
       "brand": "G-Wolves",
       "model": "HSK Pro ACE Wireless",
       "variant": "ACE Wireless",
@@ -2786,7 +2786,7 @@
       "identifier": "86673285",
       "base_model": "HSK Pro"
     },
-    "mouse-g-wolves-hsk-plus-4k-wireless": {
+    "mouse-f959894f": {
       "brand": "G-Wolves",
       "model": "HSK Plus 4k Wireless",
       "variant": "4k Wireless",
@@ -2798,7 +2798,7 @@
       "identifier": "f959894f",
       "base_model": "HSK Plus"
     },
-    "mouse-g-wolves-hsk-plus-lite-wireless": {
+    "mouse-f09ff7b3": {
       "brand": "G-Wolves",
       "model": "HSK Plus Lite Wireless",
       "variant": "Lite Wireless",
@@ -2810,7 +2810,7 @@
       "identifier": "f09ff7b3",
       "base_model": "HSK Plus"
     },
-    "mouse-g-wolves-hsk-plus-ace-2-wireless": {
+    "mouse-074d5e38": {
       "brand": "G-Wolves",
       "model": "HSK Plus Ace-2 Wireless",
       "variant": "Ace-2 Wireless",
@@ -2822,7 +2822,7 @@
       "identifier": "074d5e38",
       "base_model": "HSK Plus"
     },
-    "mouse-g-wolves-hati-m-htm-ace-wireless": {
+    "mouse-de5ffd7a": {
       "brand": "G-Wolves",
       "model": "Hati-M HTM ACE Wireless",
       "variant": "HTM ACE Wireless",
@@ -2834,7 +2834,7 @@
       "identifier": "de5ffd7a",
       "base_model": "Hati-M"
     },
-    "mouse-g-wolves-hati-htm-ace-wired": {
+    "mouse-5633b101": {
       "brand": "G-Wolves",
       "model": "Hati HTM ACE Wired",
       "variant": "ACE Wired",
@@ -2846,7 +2846,7 @@
       "identifier": "5633b101",
       "base_model": "Hati HTM"
     },
-    "mouse-g-wolves-hati-htm-classic-wired": {
+    "mouse-7e26cc5e": {
       "brand": "G-Wolves",
       "model": "Hati HTM Classic Wired",
       "variant": "Classic Wired",
@@ -2858,7 +2858,7 @@
       "identifier": "7e26cc5e",
       "base_model": "Hati HTM"
     },
-    "mouse-g-wolves-hati-s-hts-ace-wired": {
+    "mouse-e7d826ac": {
       "brand": "G-Wolves",
       "model": "Hati-S HTS ACE Wired",
       "variant": "ACE Wired",
@@ -2870,7 +2870,7 @@
       "identifier": "e7d826ac",
       "base_model": "Hati-S HTS"
     },
-    "mouse-g-wolves-hsk-wired": {
+    "mouse-6195b80f": {
       "brand": "G-Wolves",
       "model": "HSK Wired",
       "variant": "Wired",
@@ -2882,7 +2882,7 @@
       "identifier": "6195b80f",
       "base_model": "HSK"
     },
-    "mouse-g-wolves-skoll-mini-sk-s-wired": {
+    "mouse-7c7efd31": {
       "brand": "G-Wolves",
       "model": "Skoll Mini SK-S Wired",
       "variant": "SK-S Wired",
@@ -2894,7 +2894,7 @@
       "identifier": "7c7efd31",
       "base_model": "Skoll Mini"
     },
-    "mouse-lamzu-tachi": {
+    "mouse-d0035553": {
       "brand": "Lamzu",
       "model": "Tachi",
       "variant": "",
@@ -2906,7 +2906,7 @@
       "identifier": "d0035553",
       "base_model": "Tachi"
     },
-    "mouse-lamzu-maya-4k": {
+    "mouse-5f87e147": {
       "brand": "Lamzu",
       "model": "Maya 4k",
       "variant": "4k",
@@ -2918,7 +2918,7 @@
       "identifier": "5f87e147",
       "base_model": "Maya"
     },
-    "mouse-lamzu-maya-x": {
+    "mouse-30465f5c": {
       "brand": "Lamzu",
       "model": "Maya X",
       "variant": "X",
@@ -2930,7 +2930,7 @@
       "identifier": "30465f5c",
       "base_model": "Maya"
     },
-    "mouse-lamzu-maya-4k-compatible": {
+    "mouse-ec1dd907": {
       "brand": "Lamzu",
       "model": "Maya (4k Compatible)",
       "variant": "(4k Compatible)",
@@ -2942,7 +2942,7 @@
       "identifier": "ec1dd907",
       "base_model": "Maya"
     },
-    "mouse-lamzu-maya-doodle": {
+    "mouse-b9baec2d": {
       "brand": "Lamzu",
       "model": "Maya Doodle",
       "variant": "Doodle",
@@ -2954,7 +2954,7 @@
       "identifier": "b9baec2d",
       "base_model": "Maya"
     },
-    "mouse-lamzu-paro": {
+    "mouse-f1bd6f3a": {
       "brand": "Lamzu",
       "model": "Paro",
       "variant": "",
@@ -2966,7 +2966,7 @@
       "identifier": "f1bd6f3a",
       "base_model": "Paro"
     },
-    "mouse-lamzu-thorn-4k": {
+    "mouse-8bb1c93f": {
       "brand": "Lamzu",
       "model": "Thorn 4k",
       "variant": "4k",
@@ -2978,7 +2978,7 @@
       "identifier": "8bb1c93f",
       "base_model": "Thorn"
     },
-    "mouse-lamzu-thorn-4k-4k-compatible": {
+    "mouse-8e24cd3e": {
       "brand": "Lamzu",
       "model": "Thorn 4k (4K Compatible)",
       "variant": "4k (4K Compatible)",
@@ -2990,7 +2990,7 @@
       "identifier": "8e24cd3e",
       "base_model": "Thorn"
     },
-    "mouse-lamzu-atlantis-mini-4k": {
+    "mouse-21aca032": {
       "brand": "Lamzu",
       "model": "Atlantis Mini 4k",
       "variant": "Mini 4k",
@@ -3002,7 +3002,7 @@
       "identifier": "21aca032",
       "base_model": "Atlantis"
     },
-    "mouse-lamzu-atlantis-mini-pro-4k-compatible": {
+    "mouse-6e24b6b0": {
       "brand": "Lamzu",
       "model": "Atlantis Mini Pro (4k Compatible)",
       "variant": "Mini Pro (4k Compatible)",
@@ -3014,7 +3014,7 @@
       "identifier": "6e24b6b0",
       "base_model": "Atlantis"
     },
-    "mouse-lamzu-atlantis-mini-champion-edition": {
+    "mouse-323211ab": {
       "brand": "Lamzu",
       "model": "Atlantis Mini [Champion Edition]",
       "variant": "Mini [Champion Edition]",
@@ -3026,7 +3026,7 @@
       "identifier": "323211ab",
       "base_model": "Atlantis"
     },
-    "mouse-lamzu-atlantis-og-v2-4k": {
+    "mouse-e716588d": {
       "brand": "Lamzu",
       "model": "Atlantis OG V2 4k",
       "variant": "OG V2 4k",
@@ -3038,7 +3038,7 @@
       "identifier": "e716588d",
       "base_model": "Atlantis"
     },
-    "mouse-lamzu-atlantis-og-v2-pro-4k-compatible": {
+    "mouse-4189c1f1": {
       "brand": "Lamzu",
       "model": "Atlantis OG V2 Pro (4k Compatible)",
       "variant": "OG V2 Pro (4k Compatible)",
@@ -3050,7 +3050,7 @@
       "identifier": "4189c1f1",
       "base_model": "Atlantis"
     },
-    "mouse-lenovo-legion-m300s-rgb": {
+    "mouse-802ca291": {
       "brand": "Lenovo Legion",
       "model": "M300s RGB",
       "variant": "RGB",
@@ -3062,7 +3062,7 @@
       "identifier": "802ca291",
       "base_model": "M300s"
     },
-    "mouse-lenovo-legion-m210-rgb": {
+    "mouse-15167d3f": {
       "brand": "Lenovo Legion",
       "model": "M210 RGB",
       "variant": "RGB",
@@ -3074,7 +3074,7 @@
       "identifier": "15167d3f",
       "base_model": "M210"
     },
-    "mouse-lenovo-legion-m410-wireless-rgb": {
+    "mouse-f6727c7b": {
       "brand": "Lenovo Legion",
       "model": "M410 Wireless RGB",
       "variant": "Wireless RGB",
@@ -3086,7 +3086,7 @@
       "identifier": "f6727c7b",
       "base_model": "M410"
     },
-    "mouse-lenovo-legion-m600s-wireless": {
+    "mouse-6b48c3f7": {
       "brand": "Lenovo Legion",
       "model": "M600s Wireless",
       "variant": "Wireless",
@@ -3098,7 +3098,7 @@
       "identifier": "6b48c3f7",
       "base_model": "M600s"
     },
-    "mouse-lenovo-legion-m600-wireless": {
+    "mouse-f7dc9399": {
       "brand": "Lenovo Legion",
       "model": "M600 Wireless",
       "variant": "Wireless",
@@ -3110,7 +3110,7 @@
       "identifier": "f7dc9399",
       "base_model": "M600"
     },
-    "mouse-mad-catz-bat-6": {
+    "mouse-d271c914": {
       "brand": "Mad Catz",
       "model": "B.A.T. 6+",
       "variant": "",
@@ -3122,7 +3122,7 @@
       "identifier": "d271c914",
       "base_model": "B.A.T. 6+"
     },
-    "mouse-mad-catz-mojo-m1": {
+    "mouse-2d538583": {
       "brand": "Mad Catz",
       "model": "M.O.J.O. M1",
       "variant": "M1",
@@ -3134,7 +3134,7 @@
       "identifier": "2d538583",
       "base_model": "M.O.J.O."
     },
-    "mouse-mad-catz-rat-8-adv": {
+    "mouse-91a405e1": {
       "brand": "Mad Catz",
       "model": "R.A.T. 8+ ADV",
       "variant": "",
@@ -3146,7 +3146,7 @@
       "identifier": "91a405e1",
       "base_model": "R.A.T. 8+ ADV"
     },
-    "mouse-mad-catz-rat-pro-x3-supreme": {
+    "mouse-7454a2ea": {
       "brand": "Mad Catz",
       "model": "R.A.T. PRO X3 Supreme",
       "variant": "",
@@ -3158,7 +3158,7 @@
       "identifier": "7454a2ea",
       "base_model": "R.A.T. PRO X3 Supreme"
     },
-    "mouse-mad-catz-rat-pro-x3": {
+    "mouse-de25c40d": {
       "brand": "Mad Catz",
       "model": "R.A.T. PRO X3",
       "variant": "X3",
@@ -3170,7 +3170,7 @@
       "identifier": "de25c40d",
       "base_model": "R.A.T. PRO"
     },
-    "mouse-mad-catz-rat-8": {
+    "mouse-89e9d8ec": {
       "brand": "Mad Catz",
       "model": "R.A.T. 8+",
       "variant": "",
@@ -3182,7 +3182,7 @@
       "identifier": "89e9d8ec",
       "base_model": "R.A.T. 8+"
     },
-    "mouse-mad-catz-rat-6": {
+    "mouse-9b985e9a": {
       "brand": "Mad Catz",
       "model": "R.A.T. 6+",
       "variant": "",
@@ -3194,7 +3194,7 @@
       "identifier": "9b985e9a",
       "base_model": "R.A.T. 6+"
     },
-    "mouse-mad-catz-rat-pro-s3": {
+    "mouse-d4a15dde": {
       "brand": "Mad Catz",
       "model": "R.A.T. PRO S3",
       "variant": "S3",
@@ -3206,7 +3206,7 @@
       "identifier": "d4a15dde",
       "base_model": "R.A.T. PRO"
     },
-    "mouse-mad-catz-rat-4": {
+    "mouse-e0ee8894": {
       "brand": "Mad Catz",
       "model": "R.A.T. 4+",
       "variant": "",
@@ -3218,7 +3218,7 @@
       "identifier": "e0ee8894",
       "base_model": "R.A.T. 4+"
     },
-    "mouse-mad-catz-rat-2": {
+    "mouse-9a32f359": {
       "brand": "Mad Catz",
       "model": "R.A.T. 2+",
       "variant": "",
@@ -3230,7 +3230,7 @@
       "identifier": "9a32f359",
       "base_model": "R.A.T. 2+"
     },
-    "mouse-mad-catz-rat-1": {
+    "mouse-f0ba4861": {
       "brand": "Mad Catz",
       "model": "R.A.T. 1+",
       "variant": "",
@@ -3242,7 +3242,7 @@
       "identifier": "f0ba4861",
       "base_model": "R.A.T. 1+"
     },
-    "mouse-mad-catz-mojo-m2": {
+    "mouse-1b2066ca": {
       "brand": "Mad Catz",
       "model": "M.O.J.O. M2",
       "variant": "M2",
@@ -3254,7 +3254,7 @@
       "identifier": "1b2066ca",
       "base_model": "M.O.J.O."
     },
-    "mouse-mad-catz-rat-dws": {
+    "mouse-02cd263f": {
       "brand": "Mad Catz",
       "model": "R.A.T. DWS",
       "variant": "",
@@ -3266,7 +3266,7 @@
       "identifier": "02cd263f",
       "base_model": "R.A.T. DWS"
     },
-    "mouse-mad-catz-rat-air": {
+    "mouse-401fda81": {
       "brand": "Mad Catz",
       "model": "R.A.T. AIR",
       "variant": "",
@@ -3278,7 +3278,7 @@
       "identifier": "401fda81",
       "base_model": "R.A.T. AIR"
     },
-    "mouse-nzxt-lift-elite-wireless": {
+    "mouse-d952a904": {
       "brand": "NZXT",
       "model": "Lift Elite Wireless",
       "variant": "",
@@ -3290,7 +3290,7 @@
       "identifier": "d952a904",
       "base_model": "Lift Elite Wireless"
     },
-    "mouse-nzxt-lift-2-symm": {
+    "mouse-f635660a": {
       "brand": "NZXT",
       "model": "Lift 2 Symm",
       "variant": "",
@@ -3302,7 +3302,7 @@
       "identifier": "f635660a",
       "base_model": "Lift 2 Symm"
     },
-    "mouse-nzxt-lift-2-ergo": {
+    "mouse-d6d8a4da": {
       "brand": "NZXT",
       "model": "Lift 2 Ergo",
       "variant": "",
@@ -3314,7 +3314,7 @@
       "identifier": "d6d8a4da",
       "base_model": "Lift 2 Ergo"
     },
-    "mouse-turtle-beach-kone-ii-air": {
+    "mouse-6bf3d159": {
       "brand": "Turtle Beach",
       "model": "Kone II Air",
       "variant": "Air",
@@ -3326,7 +3326,7 @@
       "identifier": "6bf3d159",
       "base_model": "Kone II"
     },
-    "mouse-turtle-beach-kone-ii": {
+    "mouse-7000e6fc": {
       "brand": "Turtle Beach",
       "model": "Kone II",
       "variant": "",
@@ -3338,7 +3338,7 @@
       "identifier": "7000e6fc",
       "base_model": "Kone II"
     },
-    "mouse-turtle-beach-burst-ii-air": {
+    "mouse-bfcd2d6d": {
       "brand": "Turtle Beach",
       "model": "Burst II Air",
       "variant": "Air",
@@ -3350,7 +3350,7 @@
       "identifier": "bfcd2d6d",
       "base_model": "Burst II"
     },
-    "mouse-turtle-beach-pure-air": {
+    "mouse-305f2278": {
       "brand": "Turtle Beach",
       "model": "Pure Air",
       "variant": "Air",
@@ -3362,7 +3362,7 @@
       "identifier": "305f2278",
       "base_model": "Pure"
     },
-    "mouse-turtle-beach-pure-sel": {
+    "mouse-e2fc401f": {
       "brand": "Turtle Beach",
       "model": "Pure Sel",
       "variant": "Sel",
@@ -3374,7 +3374,7 @@
       "identifier": "e2fc401f",
       "base_model": "Pure"
     },
-    "mouse-turtle-beach-kone-xp-air": {
+    "mouse-47c86be0": {
       "brand": "Turtle Beach",
       "model": "Kone XP Air",
       "variant": "Air",
@@ -3386,7 +3386,7 @@
       "identifier": "47c86be0",
       "base_model": "Kone XP"
     },
-    "mouse-pulsar-x3": {
+    "mouse-77865bf6": {
       "brand": "Pulsar",
       "model": "X3",
       "variant": "",
@@ -3398,7 +3398,7 @@
       "identifier": "77865bf6",
       "base_model": "X3"
     },
-    "mouse-pulsar-x3-mini": {
+    "mouse-7d047f46": {
       "brand": "Pulsar",
       "model": "X3 Mini",
       "variant": "",
@@ -3410,7 +3410,7 @@
       "identifier": "7d047f46",
       "base_model": "X3 Mini"
     },
-    "mouse-pulsar-x3-lhd": {
+    "mouse-913fc6af": {
       "brand": "Pulsar",
       "model": "X3 LHD",
       "variant": "",
@@ -3422,7 +3422,7 @@
       "identifier": "913fc6af",
       "base_model": "X3 LHD"
     },
-    "mouse-pulsar-x3-lhd-mini": {
+    "mouse-e552cc6e": {
       "brand": "Pulsar",
       "model": "X3 LHD Mini",
       "variant": "",
@@ -3434,7 +3434,7 @@
       "identifier": "e552cc6e",
       "base_model": "X3 LHD Mini"
     },
-    "mouse-pulsar-x2-crazylight": {
+    "mouse-a58940cf": {
       "brand": "Pulsar",
       "model": "X2 Crazylight",
       "variant": "",
@@ -3446,7 +3446,7 @@
       "identifier": "a58940cf",
       "base_model": "X2 Crazylight"
     },
-    "mouse-pulsar-x2-v3-mini": {
+    "mouse-6bb997f4": {
       "brand": "Pulsar",
       "model": "X2 v3 Mini",
       "variant": "",
@@ -3458,7 +3458,7 @@
       "identifier": "6bb997f4",
       "base_model": "X2 v3 Mini"
     },
-    "mouse-pulsar-x2-v3": {
+    "mouse-0e7a2d62": {
       "brand": "Pulsar",
       "model": "X2 v3",
       "variant": "",
@@ -3470,7 +3470,7 @@
       "identifier": "0e7a2d62",
       "base_model": "X2 v3"
     },
-    "mouse-pulsar-x2-wired": {
+    "mouse-c922210b": {
       "brand": "Pulsar",
       "model": "X2 Wired",
       "variant": "",
@@ -3482,7 +3482,7 @@
       "identifier": "c922210b",
       "base_model": "X2 Wired"
     },
-    "mouse-pulsar-x2-v2-mini": {
+    "mouse-348fa48a": {
       "brand": "Pulsar",
       "model": "X2 v2 Mini",
       "variant": "",
@@ -3494,7 +3494,7 @@
       "identifier": "348fa48a",
       "base_model": "X2 v2 Mini"
     },
-    "mouse-pulsar-x2-v2": {
+    "mouse-e1d50742": {
       "brand": "Pulsar",
       "model": "X2 v2",
       "variant": "",
@@ -3506,7 +3506,7 @@
       "identifier": "e1d50742",
       "base_model": "X2 v2"
     },
-    "mouse-pulsar-x2-v1-mini": {
+    "mouse-aa242665": {
       "brand": "Pulsar",
       "model": "X2 v1 Mini",
       "variant": "",
@@ -3518,7 +3518,7 @@
       "identifier": "aa242665",
       "base_model": "X2 v1 Mini"
     },
-    "mouse-pulsar-x2-v1": {
+    "mouse-05aa322f": {
       "brand": "Pulsar",
       "model": "X2 v1",
       "variant": "v1",
@@ -3530,7 +3530,7 @@
       "identifier": "05aa322f",
       "base_model": "X2"
     },
-    "mouse-pulsar-founders-edition-x2-v2": {
+    "mouse-b43fcb57": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2 v2",
       "variant": "[Founders Edition] v2",
@@ -3542,7 +3542,7 @@
       "identifier": "b43fcb57",
       "base_model": "X2"
     },
-    "mouse-pulsar-founders-edition-x2-v2-mini": {
+    "mouse-dfc6c326": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2 v2 Mini",
       "variant": "Mini",
@@ -3554,7 +3554,7 @@
       "identifier": "dfc6c326",
       "base_model": "[Founders Edition] X2 v2"
     },
-    "mouse-pulsar-x2h-v3": {
+    "mouse-4d67f537": {
       "brand": "Pulsar",
       "model": "X2H v3",
       "variant": "",
@@ -3566,7 +3566,7 @@
       "identifier": "4d67f537",
       "base_model": "X2H v3"
     },
-    "mouse-pulsar-x2h-v3-mini": {
+    "mouse-02428298": {
       "brand": "Pulsar",
       "model": "X2H v3 Mini",
       "variant": "",
@@ -3578,7 +3578,7 @@
       "identifier": "02428298",
       "base_model": "X2H v3 Mini"
     },
-    "mouse-pulsar-x2h": {
+    "mouse-8b8e1987": {
       "brand": "Pulsar",
       "model": "X2H",
       "variant": "",
@@ -3590,7 +3590,7 @@
       "identifier": "8b8e1987",
       "base_model": "X2H"
     },
-    "mouse-pulsar-x2h-medium": {
+    "mouse-e3aa14d4": {
       "brand": "Pulsar",
       "model": "X2H Medium",
       "variant": "",
@@ -3602,7 +3602,7 @@
       "identifier": "e3aa14d4",
       "base_model": "X2H Medium"
     },
-    "mouse-pulsar-x2h-wired": {
+    "mouse-eb51d393": {
       "brand": "Pulsar",
       "model": "X2H Wired",
       "variant": "",
@@ -3614,7 +3614,7 @@
       "identifier": "eb51d393",
       "base_model": "X2H Wired"
     },
-    "mouse-pulsar-x2h-mini": {
+    "mouse-e4d8d7b3": {
       "brand": "Pulsar",
       "model": "X2H Mini",
       "variant": "",
@@ -3626,7 +3626,7 @@
       "identifier": "e4d8d7b3",
       "base_model": "X2H Mini"
     },
-    "mouse-pulsar-x2h-es": {
+    "mouse-48a74f60": {
       "brand": "Pulsar",
       "model": "X2H eS",
       "variant": "",
@@ -3638,7 +3638,7 @@
       "identifier": "48a74f60",
       "base_model": "X2H eS"
     },
-    "mouse-pulsar-founders-edition-x2h": {
+    "mouse-d5a99d9e": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2H",
       "variant": "",
@@ -3650,7 +3650,7 @@
       "identifier": "d5a99d9e",
       "base_model": "[Founders Edition] X2H"
     },
-    "mouse-pulsar-founders-edition-x2h-mini": {
+    "mouse-142b19ff": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2H Mini",
       "variant": "",
@@ -3662,7 +3662,7 @@
       "identifier": "142b19ff",
       "base_model": "[Founders Edition] X2H Mini"
     },
-    "mouse-pulsar-founders-edition-x2h-es": {
+    "mouse-b57f27c4": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2H eS",
       "variant": "",
@@ -3674,7 +3674,7 @@
       "identifier": "b57f27c4",
       "base_model": "[Founders Edition] X2H eS"
     },
-    "mouse-pulsar-x2a-v3": {
+    "mouse-ed950e65": {
       "brand": "Pulsar",
       "model": "X2A v3",
       "variant": "",
@@ -3686,7 +3686,7 @@
       "identifier": "ed950e65",
       "base_model": "X2A v3"
     },
-    "mouse-pulsar-x2a-wired": {
+    "mouse-c0623650": {
       "brand": "Pulsar",
       "model": "X2A Wired",
       "variant": "",
@@ -3698,7 +3698,7 @@
       "identifier": "c0623650",
       "base_model": "X2A Wired"
     },
-    "mouse-pulsar-founders-edition-x2a-es": {
+    "mouse-93b4d312": {
       "brand": "Pulsar",
       "model": "[Founders Edition] X2A eS",
       "variant": "[Founders Edition] eS",
@@ -3710,7 +3710,7 @@
       "identifier": "93b4d312",
       "base_model": "X2A"
     },
-    "mouse-pulsar-x2a-es": {
+    "mouse-14751a57": {
       "brand": "Pulsar",
       "model": "X2A eS",
       "variant": "eS",
@@ -3722,7 +3722,7 @@
       "identifier": "14751a57",
       "base_model": "X2A"
     },
-    "mouse-pulsar-x2a-mini": {
+    "mouse-f0a37ee8": {
       "brand": "Pulsar",
       "model": "X2A Mini",
       "variant": "",
@@ -3734,7 +3734,7 @@
       "identifier": "f0a37ee8",
       "base_model": "X2A Mini"
     },
-    "mouse-pulsar-x2a": {
+    "mouse-a7ca85e8": {
       "brand": "Pulsar",
       "model": "X2A",
       "variant": "",
@@ -3746,7 +3746,7 @@
       "identifier": "a7ca85e8",
       "base_model": "X2A"
     },
-    "mouse-pulsar-xlite-v4": {
+    "mouse-03db7b1e": {
       "brand": "Pulsar",
       "model": "Xlite v4",
       "variant": "",
@@ -3758,7 +3758,7 @@
       "identifier": "03db7b1e",
       "base_model": "Xlite v4"
     },
-    "mouse-pulsar-xlite-v4-large": {
+    "mouse-7d593cd9": {
       "brand": "Pulsar",
       "model": "Xlite v4 Large",
       "variant": "",
@@ -3770,7 +3770,7 @@
       "identifier": "7d593cd9",
       "base_model": "Xlite v4 Large"
     },
-    "mouse-pulsar-xlite-v4-mini": {
+    "mouse-c2c1f00b": {
       "brand": "Pulsar",
       "model": "Xlite v4 Mini",
       "variant": "",
@@ -3782,7 +3782,7 @@
       "identifier": "c2c1f00b",
       "base_model": "Xlite v4 Mini"
     },
-    "mouse-pulsar-xlite-v4-es": {
+    "mouse-ec9669d4": {
       "brand": "Pulsar",
       "model": "Xlite v4 eS",
       "variant": "",
@@ -3794,7 +3794,7 @@
       "identifier": "ec9669d4",
       "base_model": "Xlite v4 eS"
     },
-    "mouse-pulsar-xlite-wired": {
+    "mouse-ca28de65": {
       "brand": "Pulsar",
       "model": "Xlite Wired",
       "variant": "",
@@ -3806,7 +3806,7 @@
       "identifier": "ca28de65",
       "base_model": "Xlite Wired"
     },
-    "mouse-pulsar-founders-edition-xlite-v3-es": {
+    "mouse-79710aca": {
       "brand": "Pulsar",
       "model": "[Founders Edition] Xlite v3 eS",
       "variant": "",
@@ -3818,7 +3818,7 @@
       "identifier": "79710aca",
       "base_model": "[Founders Edition] Xlite v3 eS"
     },
-    "mouse-pulsar-xlite-v3-large": {
+    "mouse-4f6ef937": {
       "brand": "Pulsar",
       "model": "Xlite v3 Large",
       "variant": "",
@@ -3830,7 +3830,7 @@
       "identifier": "4f6ef937",
       "base_model": "Xlite v3 Large"
     },
-    "mouse-pulsar-xlite-v3-medium": {
+    "mouse-af049bc3": {
       "brand": "Pulsar",
       "model": "Xlite v3 Medium",
       "variant": "",
@@ -3842,7 +3842,7 @@
       "identifier": "af049bc3",
       "base_model": "Xlite v3 Medium"
     },
-    "mouse-pulsar-xlite-v3-mini": {
+    "mouse-a539b9da": {
       "brand": "Pulsar",
       "model": "Xlite v3 Mini",
       "variant": "",
@@ -3854,7 +3854,7 @@
       "identifier": "a539b9da",
       "base_model": "Xlite v3 Mini"
     },
-    "mouse-pulsar-xlite-v3-es": {
+    "mouse-81c621ba": {
       "brand": "Pulsar",
       "model": "Xlite v3 eS",
       "variant": "",
@@ -3866,7 +3866,7 @@
       "identifier": "81c621ba",
       "base_model": "Xlite v3 eS"
     },
-    "mouse-pulsar-xlite-v2": {
+    "mouse-65b04193": {
       "brand": "Pulsar",
       "model": "Xlite v2",
       "variant": "",
@@ -3878,7 +3878,7 @@
       "identifier": "65b04193",
       "base_model": "Xlite v2"
     },
-    "mouse-pulsar-xlite-v2-mini": {
+    "mouse-69afb17a": {
       "brand": "Pulsar",
       "model": "Xlite v2 Mini",
       "variant": "",
@@ -3890,7 +3890,7 @@
       "identifier": "69afb17a",
       "base_model": "Xlite v2 Mini"
     },
-    "mouse-pulsar-first-edition-feinmann-f01": {
+    "mouse-e01b1b6d": {
       "brand": "Pulsar",
       "model": "[First Edition] Feinmann F01",
       "variant": "",
@@ -3902,7 +3902,7 @@
       "identifier": "e01b1b6d",
       "base_model": "[First Edition] Feinmann F01"
     },
-    "mouse-pwnage-trinity-cf": {
+    "mouse-532bf4ac": {
       "brand": "Pwnage",
       "model": "Trinity CF",
       "variant": "",
@@ -3914,7 +3914,7 @@
       "identifier": "532bf4ac",
       "base_model": "Trinity CF"
     },
-    "mouse-pwnage-stormbreaker-max-cf": {
+    "mouse-b7396841": {
       "brand": "Pwnage",
       "model": "StormBreaker MAX CF",
       "variant": "MAX CF",
@@ -3926,7 +3926,7 @@
       "identifier": "b7396841",
       "base_model": "StormBreaker"
     },
-    "mouse-pwnage-stormbreaker-8k": {
+    "mouse-878cdf4a": {
       "brand": "Pwnage",
       "model": "StormBreaker 8k",
       "variant": "8k",
@@ -3938,7 +3938,7 @@
       "identifier": "878cdf4a",
       "base_model": "StormBreaker"
     },
-    "mouse-pwnage-stormbreaker-x-whzy-max-cf": {
+    "mouse-546fcf6f": {
       "brand": "Pwnage",
       "model": "StormBreaker x Whzy MAX CF",
       "variant": "x Whzy MAX CF",
@@ -3950,7 +3950,7 @@
       "identifier": "546fcf6f",
       "base_model": "StormBreaker"
     },
-    "mouse-pwnage-stormbreaker-x-blg-valorant": {
+    "mouse-fbdc9a44": {
       "brand": "Pwnage",
       "model": "StormBreaker X BLG Valorant",
       "variant": "X BLG Valorant",
@@ -3962,7 +3962,7 @@
       "identifier": "fbdc9a44",
       "base_model": "StormBreaker"
     },
-    "mouse-pwnage-ultra-custom-wireless-ambi": {
+    "mouse-81767df7": {
       "brand": "Pwnage",
       "model": "Ultra Custom Wireless Ambi",
       "variant": "",
@@ -3974,7 +3974,7 @@
       "identifier": "81767df7",
       "base_model": "Ultra Custom Wireless Ambi"
     },
-    "mouse-pwnage-ultra-custom-ergo": {
+    "mouse-43b6613f": {
       "brand": "Pwnage",
       "model": "Ultra Custom Ergo",
       "variant": "",
@@ -3986,7 +3986,7 @@
       "identifier": "43b6613f",
       "base_model": "Ultra Custom Ergo"
     },
-    "mouse-pwnage-ultra-custom-wireless-ergo-gen-2": {
+    "mouse-50e49039": {
       "brand": "Pwnage",
       "model": "Ultra Custom Wireless Ergo Gen 2",
       "variant": "",
@@ -3998,7 +3998,7 @@
       "identifier": "50e49039",
       "base_model": "Ultra Custom Wireless Ergo Gen 2"
     },
-    "mouse-pwnage-ultra-custom-wireless-symm-1-gen-2": {
+    "mouse-847ccad2": {
       "brand": "Pwnage",
       "model": "Ultra Custom Wireless Symm 1 Gen 2",
       "variant": "",
@@ -4010,7 +4010,7 @@
       "identifier": "847ccad2",
       "base_model": "Ultra Custom Wireless Symm 1 Gen 2"
     },
-    "mouse-pwnage-ultra-custom-wireless-symm-2": {
+    "mouse-5e1092cf": {
       "brand": "Pwnage",
       "model": "Ultra Custom Wireless Symm 2",
       "variant": "",
@@ -4022,7 +4022,7 @@
       "identifier": "5e1092cf",
       "base_model": "Ultra Custom Wireless Symm 2"
     },
-    "mouse-pwnage-ultra-custom-symm-2": {
+    "mouse-ee655502": {
       "brand": "Pwnage",
       "model": "Ultra Custom Symm 2",
       "variant": "",
@@ -4034,7 +4034,7 @@
       "identifier": "ee655502",
       "base_model": "Ultra Custom Symm 2"
     },
-    "mouse-pwnage-ultra-custom-symm": {
+    "mouse-83cc269f": {
       "brand": "Pwnage",
       "model": "Ultra Custom Symm",
       "variant": "",
@@ -4046,7 +4046,7 @@
       "identifier": "83cc269f",
       "base_model": "Ultra Custom Symm"
     },
-    "mouse-cooler-master-mm730": {
+    "mouse-4a756528": {
       "brand": "Cooler Master",
       "model": "MM730",
       "variant": "",
@@ -4058,7 +4058,7 @@
       "identifier": "4a756528",
       "base_model": "MM730"
     },
-    "mouse-cooler-master-mm731": {
+    "mouse-8048f950": {
       "brand": "Cooler Master",
       "model": "MM731",
       "variant": "",
@@ -4070,7 +4070,7 @@
       "identifier": "8048f950",
       "base_model": "MM731"
     },
-    "mouse-razer-deathadder-v4-pro": {
+    "mouse-343eb2f8": {
       "brand": "Razer",
       "model": "Deathadder V4 Pro",
       "variant": "V4 Pro",
@@ -4082,7 +4082,7 @@
       "identifier": "343eb2f8",
       "base_model": "Deathadder"
     },
-    "mouse-acer-cestus-335": {
+    "mouse-5b2844dc": {
       "brand": "Acer",
       "model": "Cestus 335",
       "variant": "335",
@@ -4095,7 +4095,7 @@
       "updated_at": "2026-02-15T22:13:32.008Z",
       "base_model": "Cestus"
     },
-    "mouse-acer-cestus-350": {
+    "mouse-3186be5c": {
       "brand": "Acer",
       "model": "Cestus 350",
       "variant": "350",
@@ -4108,7 +4108,7 @@
       "updated_at": "2026-02-15T22:28:52.248Z",
       "base_model": "Cestus"
     },
-    "mouse-steelseries-aerox-9": {
+    "mouse-4bff34cf": {
       "brand": "SteelSeries",
       "model": "Aerox 9",
       "variant": "",

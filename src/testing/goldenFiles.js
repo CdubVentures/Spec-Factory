@@ -173,13 +173,6 @@ function normalizeIdentity({
     model: normalizeText(identity.model || ''),
     variant: normalizeText(identity.variant || '')
   };
-  if (!normalized.brand || !normalized.model) {
-    const pieces = String(productId || '').split('-').filter(Boolean);
-    if (pieces.length >= 3 && normalizeCategory(category) === pieces[0]) {
-      normalized.brand = normalized.brand || pieces[1];
-      normalized.model = normalized.model || pieces.slice(2).join(' ');
-    }
-  }
   return normalized;
 }
 

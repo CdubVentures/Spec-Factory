@@ -47,24 +47,19 @@ export function registerBrandRoutes(ctx) {
     return 0;
   }
 
+  // WHY: After brand rename, upsert updated product rows in specDb (productId is immutable)
   async function syncRenameCascadeProducts(cascadeResults = []) {
     const rows = Array.isArray(cascadeResults) ? cascadeResults : [];
     for (const row of rows) {
       if (!row?.ok) continue;
       const category = String(row?.category || '').trim().toLowerCase();
-      const oldPid = String(row?.old_pid || '').trim();
-      const newPid = String(row?.new_pid || '').trim();
-      if (!category || !newPid) continue;
+      const pid = String(row?.productId || '').trim();
+      if (!category || !pid) continue;
       const specDb = resolveSpecDb(category);
       if (!specDb) continue;
-      if (oldPid && oldPid !== newPid) {
-        deleteCatalogProductRow(specDb, category, oldPid);
-      }
-      if (loadProductCatalog) {
-        const catalog = await loadProductCatalog(config, category);
-        const product = catalog.products?.[newPid] || null;
-        upsertCatalogProductRow(specDb, category, newPid, product);
-      }
+      const catalog = await loadProductCatalog(config, category);
+      const product = catalog.products?.[pid] || null;
+      upsertCatalogProductRow(specDb, category, pid, product);
     }
   }
 

@@ -58,9 +58,9 @@ describe('buildStageTabState', () => {
 });
 
 describe('resolveNextStageTabSelection', () => {
-  it('clicking selected deselects (returns null)', async () => {
+  it('clicking selected tab is a no-op (returns same tab)', async () => {
     const { resolveNextStageTabSelection } = await getModule();
-    assert.equal(resolveNextStageTabSelection({ activeTab: 'a', tabKey: 'a' }), null);
+    assert.equal(resolveNextStageTabSelection({ activeTab: 'a', tabKey: 'a' }), 'a');
   });
 
   it('clicking unselected selects (returns key)', async () => {

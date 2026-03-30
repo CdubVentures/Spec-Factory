@@ -200,6 +200,37 @@ export async function seedApprovedOverride(helperRoot, category, productId, valu
   });
 }
 
+export function seedApprovedOverrideSql(specDb, category, productId, value) {
+  specDb.upsertProductReviewState({
+    productId,
+    reviewStatus: 'approved',
+    reviewedBy: 'reviewer_1',
+    reviewedAt: '2026-02-13T01:00:00.000Z'
+  });
+  specDb.upsertItemFieldState({
+    productId,
+    fieldKey: 'weight',
+    value: String(value),
+    confidence: 0.95,
+    source: 'pipeline',
+    overridden: true,
+    overrideSource: 'candidate_selection',
+    overrideValue: String(value),
+    overrideReason: 'human verified',
+    overrideProvenance: {
+      url: 'https://manufacturer.example/spec',
+      source_id: 'manufacturer_example',
+      retrieved_at: '2026-02-13T00:00:00.000Z',
+      snippet_id: 'snp_weight_1',
+      snippet_hash: 'sha256:aaa',
+      quote: `Weight: ${value} g`,
+      quote_span: [0, 12]
+    },
+    overriddenBy: 'reviewer_1',
+    overriddenAt: '2026-02-13T01:00:00.000Z'
+  });
+}
+
 export async function createBlockerFixtureRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'publish-blocker-'));
   const helperRoot = path.join(root, 'category_authority');

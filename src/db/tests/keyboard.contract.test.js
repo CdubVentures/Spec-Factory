@@ -296,7 +296,7 @@ function sorted(values) {
 
 test('keyboard control-plane contract matches the curated field map', async () => {
   const [full, seed] = await Promise.all([
-    harness.readCategoryJson('_control_plane', 'field_rules.full.json'),
+    harness.readCategoryJson('_generated', 'field_rules.json'),
     harness.readCategoryJson('_source', 'field_catalog.seed.json'),
   ]);
 
@@ -374,7 +374,7 @@ test('keyboard field studio map passes Studio validation for scratch-backed comp
 
 test('keyboard search hints use approved real hostnames instead of tier tokens', async () => {
   const [full, map, sources] = await Promise.all([
-    harness.readCategoryJson('_control_plane', 'field_rules.full.json'),
+    harness.readCategoryJson('_generated', 'field_rules.json'),
     harness.readCategoryJson('_control_plane', 'field_studio_map.json'),
     harness.readCategoryJson('sources.json'),
   ]);

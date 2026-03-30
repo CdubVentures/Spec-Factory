@@ -8,7 +8,12 @@ import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object, expandListLinkValues: Function, getListValueByFieldAndValue: Function }} deps
  */
 export function createItemStateStore({ db, category, stmts, expandListLinkValues, getListValueByFieldAndValue }) {
-  function upsertItemFieldState({ productId, fieldKey, value, confidence, source, acceptedCandidateId, overridden, needsAiReview, aiReviewComplete }) {
+  function upsertItemFieldState({
+    productId, fieldKey, value, confidence, source, acceptedCandidateId,
+    overridden, needsAiReview, aiReviewComplete,
+    overrideSource, overrideValue, overrideReason, overrideProvenance,
+    overriddenBy, overriddenAt
+  }) {
     stmts._upsertItemFieldState.run({
       category,
       product_id: productId,
@@ -19,7 +24,13 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
       accepted_candidate_id: acceptedCandidateId ?? null,
       overridden: overridden ? 1 : 0,
       needs_ai_review: needsAiReview ? 1 : 0,
-      ai_review_complete: aiReviewComplete ? 1 : 0
+      ai_review_complete: aiReviewComplete ? 1 : 0,
+      override_source: overrideSource ?? null,
+      override_value: overrideValue ?? null,
+      override_reason: overrideReason ?? null,
+      override_provenance: overrideProvenance ? JSON.stringify(overrideProvenance) : null,
+      overridden_by: overriddenBy ?? null,
+      overridden_at: overriddenAt ?? null
     });
   }
 
@@ -280,6 +291,34 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     `).run(category, itemFieldStateId);
   }
 
+  function upsertProductReviewState({ productId, reviewStatus, reviewStartedAt, reviewedBy, reviewedAt }) {
+    db.prepare(`
+      INSERT INTO product_review_state (category, product_id, review_status, review_started_at, reviewed_by, reviewed_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(category, product_id) DO UPDATE SET
+        review_status = excluded.review_status,
+        review_started_at = COALESCE(excluded.review_started_at, review_started_at),
+        reviewed_by = COALESCE(excluded.reviewed_by, reviewed_by),
+        reviewed_at = COALESCE(excluded.reviewed_at, reviewed_at),
+        updated_at = datetime('now')
+    `).run(category, productId, reviewStatus || 'pending', reviewStartedAt || null, reviewedBy || null, reviewedAt || null);
+  }
+
+  function getProductReviewState(productId) {
+    return db.prepare('SELECT * FROM product_review_state WHERE category = ? AND product_id = ?').get(category, productId) || null;
+  }
+
+  function listApprovedProductIds() {
+    return db.prepare("SELECT product_id FROM product_review_state WHERE category = ? AND review_status = 'approved' ORDER BY product_id")
+      .all(category)
+      .map(r => r.product_id);
+  }
+
+  function getOverriddenFieldsForProduct(productId) {
+    return db.prepare('SELECT * FROM item_field_state WHERE category = ? AND product_id = ? AND overridden = 1')
+      .all(category, productId);
+  }
+
   return {
     upsertItemFieldState,
     getItemFieldState,
@@ -305,5 +344,9 @@ export function createItemStateStore({ db, category, stmts, expandListLinkValues
     updateItemComponentLinksByIdentity,
     getItemFieldStateIdByProductAndField,
     setItemFieldNeedsAiReview,
+    upsertProductReviewState,
+    getProductReviewState,
+    listApprovedProductIds,
+    getOverriddenFieldsForProduct,
   };
 }

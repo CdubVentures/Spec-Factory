@@ -777,6 +777,13 @@
   },
   "field_overrides": {
     "acceleration": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "acceleration",
         "max acceleration",
@@ -786,6 +793,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "acceleration",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -798,7 +806,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "integer",
       "difficulty": "easy",
+      "display_name": "Max Acceleration",
       "effort": 3,
       "enum": {
         "match": {
@@ -820,6 +830,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "acceleration",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B57",
@@ -834,8 +845,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Sensor & Performance",
       "key": "acceleration",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -914,15 +927,25 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "upper_bound"
     },
     "adjustable_scroll_wheel": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_scroll_wheel",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -931,7 +954,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Adjustable Scroll Wheel",
       "effort": 2,
       "enum": {
         "match": {
@@ -957,6 +982,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_scroll_wheel",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B80",
@@ -970,8 +996,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "adjustable_scroll_wheel",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -1074,15 +1102,24 @@
         "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "adjustable_weight": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "adjustable_weight",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -1091,7 +1128,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Adjustable Weight",
       "effort": 2,
       "enum": {
         "match": {
@@ -1117,6 +1156,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "adjustable_weight",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B26",
@@ -1131,8 +1171,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "construction",
       "key": "adjustable_weight",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -1238,10 +1280,18 @@
         "tooltip_md": "Define 'Adjustable Weight' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "battery_hours": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "battery_hours",
         "battery life",
@@ -1252,6 +1302,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "battery_hours",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -1264,7 +1315,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Battery Life (Hours)",
       "effort": 5,
       "enum": {
         "match": {
@@ -1286,6 +1339,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "battery_hours",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B25",
@@ -1300,8 +1354,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "battery_hours",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -1387,15 +1443,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "h",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "bluetooth": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "bluetooth",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -1404,7 +1469,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Bluetooth",
       "effort": 2,
       "enum": {
         "match": {
@@ -1430,6 +1497,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "bluetooth",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B21",
@@ -1443,8 +1511,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "bluetooth",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -1551,15 +1621,24 @@
         "tooltip_md": "Define 'Bluetooth' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "cable_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "cable_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -1568,7 +1647,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Cable Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -1590,6 +1671,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "cable_type",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B22",
@@ -1603,8 +1685,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "cable_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -1678,15 +1762,24 @@
         "tooltip_md": "Define 'Cable Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "click_force": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "click_force",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -1699,7 +1792,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Click Force",
       "effort": 7,
       "enum": {
         "match": {
@@ -1721,6 +1816,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "click_force",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B72",
@@ -1735,8 +1831,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "switches",
       "key": "click_force",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -1824,15 +1922,25 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "gf",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "override_allowed"
     },
     "click_latency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "click_latency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -1845,7 +1953,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Click Latency",
       "effort": 8,
       "enum": {
         "match": {
@@ -1867,6 +1977,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "click_latency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B70",
@@ -1881,8 +1992,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "switches",
       "key": "click_latency",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -1971,15 +2084,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "click_latency_list": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "click_latency_list",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -2022,7 +2144,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "object",
       "difficulty": "hard",
+      "display_name": "Click Latency (By Mode)",
       "effort": 9,
       "enum": {
         "match": {
@@ -2044,6 +2168,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "click_latency_list",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B71",
@@ -2057,6 +2182,7 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "switches",
       "key": "click_latency_list",
       "list_rules": {
         "dedupe": true,
@@ -2094,6 +2220,7 @@
           "type": "string"
         }
       },
+      "output_shape": "list",
       "parse": {
         "accept_bare_numbers_as_mode": "unknown",
         "delimiters": [
@@ -2215,15 +2342,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "coating": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "coating",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -2232,7 +2368,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Coating",
       "effort": 3,
       "enum": {
         "match": {
@@ -2254,6 +2392,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "coating",
       "field_studio_hints": {
         "data_lists": {
           "column": "W",
@@ -2277,8 +2416,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "construction",
       "key": "coating",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -2363,15 +2504,24 @@
         "tooltip_md": "Define 'Coating' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "colors": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "colors",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -2380,7 +2530,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Colors",
       "effort": 3,
       "enum": {
         "match": {
@@ -2402,6 +2554,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "colors",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B13",
@@ -2416,8 +2569,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "colors",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -2505,15 +2660,24 @@
         "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "computer_side_connector": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "computer_side_connector",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -2522,7 +2686,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Computer-side Connector",
       "effort": 3,
       "enum": {
         "match": {
@@ -2544,6 +2710,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "computer_side_connector",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B19",
@@ -2557,8 +2724,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "computer_side_connector",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -2630,15 +2799,24 @@
         "tooltip_md": "Define 'Computer-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "connection": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "connection",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -2647,7 +2825,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Connection",
       "effort": 6,
       "enum": {
         "match": {
@@ -2673,6 +2853,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "connection",
       "field_studio_hints": {
         "data_lists": {
           "column": "P",
@@ -2698,8 +2879,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "connectivity",
       "key": "connection",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "notes": "Prefer normalized connection mode.",
@@ -2779,15 +2962,24 @@
         "tooltip_md": "Primary connection mode (wired/wireless/hybrid/bluetooth). Prefer manufacturer docs.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "connectivity": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "connectivity",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -2796,7 +2988,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Connectivity",
       "effort": 6,
       "enum": {
         "match": {
@@ -2818,6 +3012,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "connectivity",
       "field_studio_hints": {
         "data_lists": {
           "column": "Q",
@@ -2841,8 +3036,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "connectivity",
       "key": "connectivity",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -2928,15 +3125,24 @@
         "tooltip_md": "Connectivity options (e.g., 2.4GHz, Bluetooth, USB). Use list if multiple.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "debounce": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "debounce",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -2949,7 +3155,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Debounce",
       "effort": 7,
       "enum": {
         "match": {
@@ -2971,6 +3179,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "debounce",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B69",
@@ -2984,8 +3193,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "switches",
       "key": "debounce",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3063,15 +3274,24 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "design": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "design",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -3080,7 +3300,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Design",
       "effort": 3,
       "enum": {
         "match": {
@@ -3102,6 +3324,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "design",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B14",
@@ -3115,8 +3338,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "design",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -3197,15 +3422,24 @@
         "tooltip_md": "Define 'Design' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "discontinued": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "discontinued",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -3214,7 +3448,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Discontinued",
       "effort": 2,
       "enum": {
         "match": {
@@ -3240,6 +3476,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "discontinued",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B10",
@@ -3247,8 +3484,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "discontinued",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -3350,10 +3589,18 @@
         "tooltip_md": "Define 'Discontinued' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "dpi": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "dpi",
         "max dpi",
@@ -3364,6 +3611,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "dpi",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -3376,7 +3624,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Max DPI",
       "effort": 6,
       "enum": {
         "match": {
@@ -3398,6 +3648,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "dpi",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B55",
@@ -3412,8 +3663,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "sensor_performance",
       "key": "dpi",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3497,15 +3750,25 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "dpi",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "upper_bound"
     },
     "encoder": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "encoder",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -3514,7 +3777,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Encoder",
       "effort": 5,
       "enum": {
         "match": {
@@ -3536,6 +3801,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "encoder",
       "field_studio_hints": {
         "component_db": "encoder",
         "component_sheet": "encoder",
@@ -3545,8 +3811,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "encoder",
       "key": "encoder",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "component_type": "encoder",
         "delimiters": [],
@@ -3620,15 +3888,24 @@
         "tooltip_md": "Define 'Encoder' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "encoder_brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "encoder_brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -3637,7 +3914,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Encoder Brand",
       "effort": 5,
       "enum": {
         "match": {
@@ -3659,6 +3938,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "encoder_brand",
       "field_studio_hints": {
         "component_db": "encoder",
         "component_field": "brand",
@@ -3669,8 +3949,10 @@
         },
         "related_to": "encoder"
       },
+      "group": "encoder",
       "key": "encoder_brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3741,15 +4023,145 @@
         "tooltip_md": "Define 'Encoder Brand' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
+    "encoder_life_span": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Life Span",
+        "encoder_life_span"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Encoder Life Span",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_life_span",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_life_span",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "integer_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "spec_sheet"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "mousespecs.org"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} encoder lifespan durability"
+        ],
+        "query_terms": [
+          "encoder lifespan",
+          "scroll wheel lifespan",
+          "encoder durability"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Life Span",
+        "order": 76,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "encoder_link": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "encoder_link",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -3758,7 +4170,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Encoder Link",
       "effort": 5,
       "enum": {
         "match": {
@@ -3780,6 +4194,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "encoder_link",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B75",
@@ -3788,8 +4203,10 @@
         },
         "related_to": "encoder"
       },
+      "group": "encoder",
       "key": "encoder_link",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3855,15 +4272,268 @@
         "tooltip_md": "Define 'Encoder Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
+    "encoder_steps": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Steps",
+        "encoder_steps"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Encoder Steps",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "policy": "closed",
+        "source": "data_lists.encoder_steps"
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_steps",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_steps",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "integer_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "spec_sheet",
+          "review"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "mousespecs.org",
+          "techpowerup.com"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} encoder steps notches per revolution"
+        ],
+        "query_terms": [
+          "encoder steps",
+          "notches",
+          "scroll steps",
+          "detents",
+          "encoder resolution"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Steps",
+        "order": 77,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
+    "encoder_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Encoder Type",
+        "encoder_type"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Encoder Type",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "encoder_type",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "encoder_type",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "text_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "spec_sheet",
+          "review"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "mousespecs.org",
+          "techpowerup.com"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} encoder type mechanical optical"
+        ],
+        "query_terms": [
+          "encoder type",
+          "mechanical encoder",
+          "optical encoder",
+          "encoder technology"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Encoder Type",
+        "order": 78,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "feet_material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "feet_material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -3872,7 +4542,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Feet Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -3898,6 +4570,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "feet_material",
       "field_studio_hints": {
         "data_lists": {
           "column": "U",
@@ -3922,8 +4595,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "construction",
       "key": "feet_material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -3997,15 +4672,24 @@
         "tooltip_md": "Define 'Feet Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "flawless_sensor": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "flawless_sensor",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -4014,7 +4698,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Flawless Sensor",
       "effort": 2,
       "enum": {
         "match": {
@@ -4040,6 +4726,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "flawless_sensor",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B50",
@@ -4053,8 +4740,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "flawless_sensor",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -4148,7 +4837,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Flawless Sensor",
@@ -4161,15 +4850,25 @@
         "tooltip_md": "Define 'Flawless Sensor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "form_factor": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "form_factor",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -4178,7 +4877,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Form Factor",
       "effort": 3,
       "enum": {
         "match": {
@@ -4204,6 +4905,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "form_factor",
       "field_studio_hints": {
         "data_lists": {
           "column": "D",
@@ -4229,8 +4931,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "ergonomics",
       "key": "form_factor",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4306,15 +5010,24 @@
         "tooltip_md": "Define 'Form Factor' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "front_flare": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "front_flare",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -4323,7 +5036,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Front Flare",
       "effort": 3,
       "enum": {
         "match": {
@@ -4349,6 +5064,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "front_flare",
       "field_studio_hints": {
         "data_lists": {
           "column": "G",
@@ -4373,8 +5089,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "ergonomics",
       "key": "front_flare",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -4444,15 +5162,24 @@
         "tooltip_md": "Define 'Front Flare' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "grip": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "grip",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -4461,7 +5188,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Grip",
       "effort": 3,
       "enum": {
         "match": {
@@ -4483,6 +5212,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "grip",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B41",
@@ -4496,8 +5226,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "ergonomics",
       "key": "grip",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -4580,15 +5312,24 @@
         "tooltip_md": "Define 'Grip' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "hand_size": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "hand_size",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -4597,7 +5338,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Hand Size",
       "effort": 3,
       "enum": {
         "match": {
@@ -4619,6 +5362,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hand_size",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B42",
@@ -4632,8 +5376,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "ergonomics",
       "key": "hand_size",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -4713,15 +5459,24 @@
         "tooltip_md": "Define 'Hand Size' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "hardware_acceleration": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "hardware_acceleration",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -4730,7 +5485,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Hardware Acceleration",
       "effort": 2,
       "enum": {
         "match": {
@@ -4756,6 +5513,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hardware_acceleration",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B61",
@@ -4769,8 +5527,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "hardware_acceleration",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -4861,7 +5621,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Hardware Acceleration",
@@ -4874,10 +5634,18 @@
         "tooltip_md": "Define 'Hardware Acceleration' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "height": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "height",
         "height_mm",
@@ -4887,6 +5655,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "height",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -4899,7 +5668,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Height",
       "effort": 6,
       "enum": {
         "match": {
@@ -4921,6 +5692,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "height",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B35",
@@ -4935,8 +5707,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "dimensions",
       "key": "height",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5028,15 +5802,24 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "honeycomb_frame": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "honeycomb_frame",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -5045,7 +5828,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Honeycomb Frame",
       "effort": 2,
       "enum": {
         "match": {
@@ -5071,6 +5856,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "honeycomb_frame",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B29",
@@ -5084,8 +5870,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "construction",
       "key": "honeycomb_frame",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -5191,15 +5979,24 @@
         "tooltip_md": "Define 'Honeycomb Frame' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "hot_swappable": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "hot_swappable",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -5208,7 +6005,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Hot Swappable",
       "effort": 2,
       "enum": {
         "match": {
@@ -5234,6 +6033,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hot_swappable",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B68",
@@ -5247,8 +6047,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "switches",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -5354,15 +6156,24 @@
         "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "hump": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "hump",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -5371,7 +6182,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Hump",
       "effort": 3,
       "enum": {
         "match": {
@@ -5397,6 +6210,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "hump",
       "field_studio_hints": {
         "data_lists": {
           "column": "F",
@@ -5421,8 +6235,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "ergonomics",
       "key": "hump",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5494,10 +6310,18 @@
         "tooltip_md": "Define 'Hump' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "ips": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "ips",
         "max ips",
@@ -5507,6 +6331,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "ips",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -5519,7 +6344,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Max IPS",
       "effort": 3,
       "enum": {
         "match": {
@@ -5541,6 +6368,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "ips",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B56",
@@ -5554,8 +6382,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "ips",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -5619,7 +6449,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Max IPS",
@@ -5633,10 +6463,19 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ips",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "upper_bound"
     },
     "lift": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "lift",
         "lod",
@@ -5647,6 +6486,7 @@
       "block_publish_when_unk": false,
       "canonical_key": "lift",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -5655,7 +6495,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Lift-off Distance (LOD)",
       "effort": 3,
       "enum": {
         "match": {
@@ -5677,6 +6519,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "lift",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B58",
@@ -5691,8 +6534,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "lift",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -5786,7 +6631,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "list_editor",
         "label": "Lift-off Distance (LOD)",
@@ -5800,15 +6645,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "mixed",
       "value_form_sample": "mixed_values_and_ranges"
     },
     "lift_settings": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "lift_settings",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -5817,7 +6671,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Lift Settings",
       "effort": 3,
       "enum": {
         "match": {
@@ -5839,6 +6695,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "lift_settings",
       "field_studio_hints": {
         "data_lists": {
           "column": "V",
@@ -5858,8 +6715,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "lift_settings",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -5927,7 +6786,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Lift Settings",
@@ -5940,15 +6799,24 @@
         "tooltip_md": "Define 'Lift Settings' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "lighting": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "lighting",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -5957,7 +6825,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Lighting",
       "effort": 3,
       "enum": {
         "match": {
@@ -5979,6 +6849,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "lighting",
       "field_studio_hints": {
         "data_lists": {
           "column": "T",
@@ -6002,8 +6873,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "general",
       "key": "lighting",
       "min_evidence_refs": 1,
+      "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
@@ -6086,10 +6959,18 @@
         "tooltip_md": "Define 'Lighting' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "lngth": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "length",
         "length_mm",
@@ -6100,6 +6981,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "length",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -6112,7 +6994,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Length",
       "effort": 6,
       "enum": {
         "match": {
@@ -6134,6 +7018,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "lngth",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B33",
@@ -6148,8 +7033,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "dimensions",
       "key": "lngth",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6240,15 +7127,24 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "material": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "material",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -6257,7 +7153,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Material",
       "effort": 3,
       "enum": {
         "match": {
@@ -6279,6 +7177,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "material",
       "field_studio_hints": {
         "component_db": "material",
         "component_sheet": "material",
@@ -6294,8 +7193,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "construction",
       "key": "material",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "component_type": "material",
         "delimiters": [],
@@ -6370,15 +7271,24 @@
         "tooltip_md": "Define 'Material' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "mcu": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "mcu",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -6387,7 +7297,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "MCU",
       "effort": 5,
       "enum": {
         "match": {
@@ -6409,6 +7321,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mcu",
       "field_studio_hints": {
         "data_lists": {
           "column": "L",
@@ -6433,8 +7346,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "electronics",
       "key": "mcu",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6506,15 +7421,24 @@
         "tooltip_md": "Define 'MCU' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "mcu_link": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "mcu_link",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -6523,7 +7447,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "MCU Link",
       "effort": 5,
       "enum": {
         "match": {
@@ -6545,6 +7471,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mcu_link",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B44",
@@ -6556,8 +7483,10 @@
         },
         "related_to": "mcu"
       },
+      "group": "electronics",
       "key": "mcu_link",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6622,15 +7551,24 @@
         "tooltip_md": "Define 'MCU Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "middle_buttons": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "middle_buttons",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -6643,7 +7581,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "integer",
       "difficulty": "easy",
+      "display_name": "Middle Buttons",
       "effort": 6,
       "enum": {
         "match": {
@@ -6665,6 +7605,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "middle_buttons",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B77",
@@ -6678,8 +7619,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "middle_buttons",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -6752,15 +7695,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "none",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "motion_sync": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "motion_sync",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -6769,7 +7721,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Motion Sync",
       "effort": 2,
       "enum": {
         "match": {
@@ -6795,6 +7749,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "motion_sync",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B60",
@@ -6808,8 +7763,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "motion_sync",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -6901,7 +7858,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Motion Sync",
@@ -6914,15 +7871,24 @@
         "tooltip_md": "Define 'Motion Sync' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "mouse_side_connector",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -6931,7 +7897,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Mouse-side Connector",
       "effort": 3,
       "enum": {
         "match": {
@@ -6953,6 +7921,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "mouse_side_connector",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B20",
@@ -6966,8 +7935,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "mouse_side_connector",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7037,15 +8008,24 @@
         "tooltip_md": "Define 'Mouse-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "nvidia_reflex": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "rare",
       "block_publish_when_unk": false,
       "canonical_key": "nvidia_reflex",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7054,7 +8034,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "NVIDIA Reflex",
       "effort": 7,
       "enum": {
         "match": {
@@ -7080,6 +8062,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "nvidia_reflex",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B63",
@@ -7093,8 +8076,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "nvidia_reflex",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -7186,7 +8171,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "NVIDIA Reflex",
@@ -7199,15 +8184,24 @@
         "tooltip_md": "Define 'NVIDIA Reflex' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "onboard_memory": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "onboard_memory",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7216,7 +8210,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Onboard Memory",
       "effort": 2,
       "enum": {
         "match": {
@@ -7242,6 +8238,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "onboard_memory",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B81",
@@ -7255,8 +8252,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "onboard_memory",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -7362,15 +8361,24 @@
         "tooltip_md": "Define 'Onboard Memory' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "onboard_memory_value": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "onboard_memory_value",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -7383,7 +8391,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "integer",
       "difficulty": "easy",
+      "display_name": "Onboard Memory (Value)",
       "effort": 3,
       "enum": {
         "match": {
@@ -7405,6 +8415,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "onboard_memory_value",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B82",
@@ -7418,8 +8429,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "onboard_memory_value",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -7491,15 +8504,24 @@
         "tooltip_source": null
       },
       "unit": "none",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "paracord": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "paracord",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7508,7 +8530,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Paracord",
       "effort": 2,
       "enum": {
         "match": {
@@ -7534,6 +8558,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "paracord",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B23",
@@ -7547,8 +8572,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "paracord",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -7653,10 +8680,18 @@
         "tooltip_md": "Define 'Paracord' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "polling_rate": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "polling_rate",
         "polling",
@@ -7668,6 +8703,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "polling_rate",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "list",
@@ -7676,7 +8712,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "medium",
+      "display_name": "Polling Rate",
       "effort": 6,
       "enum": {
         "match": {
@@ -7698,6 +8736,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "polling_rate",
       "field_studio_hints": {
         "data_lists": {
           "column": "R",
@@ -7723,8 +8762,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "Buttons & Features",
       "key": "polling_rate",
       "min_evidence_refs": 2,
+      "output_shape": "list",
       "parse": {
         "allow_ranges": false,
         "delimiters": [
@@ -7807,7 +8848,7 @@
         "display_decimals": 0,
         "display_mode": "high",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "list_editor",
         "label": "Polling Rate",
@@ -7821,15 +8862,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "Hz",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "price_range": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "price_range",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7838,7 +8888,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Price (MSRP)",
       "effort": 4,
       "enum": {
         "match": {
@@ -7860,6 +8912,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "price_range",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B12",
@@ -7874,8 +8927,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "price_range",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "notes": "Prefer MSRP bracket tokens like '0-50', '50-100', or '$99'. Keep as string; numeric parsing is category-specific.",
@@ -7947,15 +9002,24 @@
         "tooltip_md": "MSRP price bracket or stated MSRP. Keep as a string token; do not guess if not public.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "profile_switching": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "profile_switching",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -7964,7 +9028,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Profile Switching",
       "effort": 2,
       "enum": {
         "match": {
@@ -7990,6 +9056,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "profile_switching",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B83",
@@ -8003,8 +9070,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "profile_switching",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -8108,15 +9177,24 @@
         "tooltip_md": "Define 'Profile Switching' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "programmable_buttons": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "programmable_buttons",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -8129,7 +9207,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "integer",
       "difficulty": "easy",
+      "display_name": "Programmable Buttons",
       "effort": 3,
       "enum": {
         "match": {
@@ -8151,6 +9231,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "programmable_buttons",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B78",
@@ -8164,8 +9245,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "programmable_buttons",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8240,15 +9323,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "none",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "release_date": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "release_date",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -8257,7 +9349,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Release Date",
       "effort": 4,
       "enum": {
         "match": {
@@ -8279,6 +9373,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "release_date",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B9",
@@ -8293,8 +9388,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "release_date",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "accepted_formats": [
           "YYYY-MM-DD",
@@ -8377,15 +9474,150 @@
         "tooltip_md": "Define 'Release Date' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
+    "releasing_force": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Releasing Force",
+        "releasing_force"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "number",
+        "unit": "g",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "number",
+      "difficulty": "easy",
+      "display_name": "Releasing Force",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "releasing_force",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "general",
+      "key": "releasing_force",
+      "output_shape": "scalar",
+      "parse": {
+        "strict_unit_required": false,
+        "template": "integer_with_unit",
+        "unit": "g"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "review",
+          "benchmark"
+        ],
+        "domain_hints": [
+          "mousespecs.org",
+          "techpowerup.com"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} click releasing force grams"
+        ],
+        "query_terms": [
+          "releasing force",
+          "click release force",
+          "reset force",
+          "tactile force"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "general",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Releasing Force",
+        "order": 79,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
+    },
     "rgb": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "rgb",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -8394,7 +9626,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "RGB",
       "effort": 2,
       "enum": {
         "match": {
@@ -8420,6 +9654,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "rgb",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B16",
@@ -8433,8 +9668,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "rgb",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -8540,15 +9777,24 @@
         "tooltip_md": "Define 'RGB' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sensor": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "sensor",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -8557,7 +9803,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Sensor",
       "effort": 8,
       "enum": {
         "match": {
@@ -8579,6 +9827,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor",
       "field_studio_hints": {
         "component_db": "sensor",
         "component_sheet": "sensors",
@@ -8599,8 +9848,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "Buttons & Features",
       "key": "sensor",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "component_type": "sensor",
         "delimiters": [],
@@ -8665,7 +9916,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "component_picker",
         "label": "Sensor",
@@ -8678,15 +9929,24 @@
         "tooltip_md": "Sensor model (component DB-backed). Must be evidence-backed; avoid wrong-variant merges.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sensor_brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "sensor_brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -8695,7 +9955,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Sensor Brand",
       "effort": 6,
       "enum": {
         "match": {
@@ -8717,6 +9979,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_brand",
       "field_studio_hints": {
         "component_db": "sensor",
         "component_field": "Brand",
@@ -8733,8 +9996,10 @@
         },
         "related_to": "sensor"
       },
+      "group": "Buttons & Features",
       "key": "sensor_brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -8795,7 +10060,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Brand",
@@ -8808,15 +10073,26 @@
         "tooltip_md": "Sensor manufacturer brand (e.g., PixArt). Prefer component DB if sensor identified.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sensor_date": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "sensor_date",
       "component": null,
+      "constraints": [
+        "sensor_date <= release_date"
+      ],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -8829,7 +10105,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Sensor Date",
       "effort": 3,
       "enum": {
         "match": {
@@ -8851,6 +10129,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_date",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B47",
@@ -8865,8 +10144,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "sensor_date",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "accepted_formats": [
           "YYYY",
@@ -8933,7 +10214,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Date",
@@ -8947,15 +10228,25 @@
         "tooltip_source": null
       },
       "unit": "year",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "sensor_latency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "sensor_latency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -8968,7 +10259,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "Sensor Latency",
       "effort": 8,
       "enum": {
         "match": {
@@ -8990,6 +10283,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_latency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B51",
@@ -9004,8 +10298,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "sensor_latency",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9079,7 +10375,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Latency",
@@ -9093,15 +10389,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sensor_latency_list": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "sensor_latency_list",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
@@ -9144,7 +10449,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "object",
       "difficulty": "hard",
+      "display_name": "Sensor Latency (By Mode)",
       "effort": 9,
       "enum": {
         "match": {
@@ -9166,6 +10473,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_latency_list",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B52",
@@ -9179,6 +10487,7 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "sensor_latency_list",
       "list_rules": {
         "dedupe": true,
@@ -9216,6 +10525,7 @@
           "type": "string"
         }
       },
+      "output_shape": "list",
       "parse": {
         "accept_bare_numbers_as_mode": "unknown",
         "delimiters": [
@@ -9322,7 +10632,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "structured_list_editor",
         "label": "Sensor Latency (By Mode)",
@@ -9336,15 +10646,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "set",
       "value_form_sample": "list"
     },
     "sensor_link": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "sensor_link",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -9353,7 +10672,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Sensor Link",
       "effort": 3,
       "enum": {
         "match": {
@@ -9375,6 +10696,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_link",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B48",
@@ -9389,8 +10711,10 @@
         },
         "related_to": "sensor"
       },
+      "group": "Buttons & Features",
       "key": "sensor_link",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9445,7 +10769,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Link",
@@ -9458,15 +10782,24 @@
         "tooltip_md": "Define 'Sensor Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sensor_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "sensor_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -9475,7 +10808,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Sensor Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -9501,6 +10836,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sensor_type",
       "field_studio_hints": {
         "data_lists": {
           "column": "H",
@@ -9525,8 +10861,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "Buttons & Features",
       "key": "sensor_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9583,7 +10921,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Type",
@@ -9596,15 +10934,25 @@
         "tooltip_md": "Define 'Sensor Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "shape": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "shape",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -9613,7 +10961,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Shape",
       "effort": 3,
       "enum": {
         "match": {
@@ -9639,6 +10989,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "shape",
       "field_studio_hints": {
         "data_lists": {
           "column": "E",
@@ -9663,8 +11014,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "ergonomics",
       "key": "shape",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9738,15 +11091,24 @@
         "tooltip_md": "Define 'Shape' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "shift_latency": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "shift_latency",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -9759,7 +11121,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "hard",
+      "display_name": "DPI Shift Latency",
       "effort": 8,
       "enum": {
         "match": {
@@ -9781,6 +11145,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "shift_latency",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B53",
@@ -9795,8 +11160,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "shift_latency",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -9857,7 +11224,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "DPI Shift Latency",
@@ -9871,15 +11238,24 @@
         "tooltip_source": null
       },
       "unit": "ms",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "side_buttons": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "side_buttons",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -9892,7 +11268,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "integer",
       "difficulty": "easy",
+      "display_name": "Side Buttons",
       "effort": 6,
       "enum": {
         "match": {
@@ -9914,6 +11292,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "side_buttons",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B76",
@@ -9927,8 +11306,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "side_buttons",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10003,15 +11384,24 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "none",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "silent_clicks": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "silent_clicks",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10020,7 +11410,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Silent Clicks",
       "effort": 2,
       "enum": {
         "match": {
@@ -10046,6 +11438,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "silent_clicks",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B30",
@@ -10059,8 +11452,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "construction",
       "key": "silent_clicks",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -10166,15 +11561,24 @@
         "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "sku": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "sku",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10183,7 +11587,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "SKU / Part #",
       "effort": 4,
       "enum": {
         "match": {
@@ -10205,6 +11611,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "sku",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B11",
@@ -10218,8 +11625,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "general",
       "key": "sku",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10290,15 +11699,24 @@
         "tooltip_md": "Define 'SKU / Part #' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "smoothing": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "smoothing",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10307,7 +11725,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Smoothing",
       "effort": 2,
       "enum": {
         "match": {
@@ -10333,6 +11753,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "smoothing",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B62",
@@ -10346,8 +11767,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "Buttons & Features",
       "key": "smoothing",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -10439,7 +11862,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Smoothing",
@@ -10452,15 +11875,24 @@
         "tooltip_md": "Define 'Smoothing' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "switch",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10469,7 +11901,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Switch",
       "effort": 8,
       "enum": {
         "match": {
@@ -10491,6 +11925,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch",
       "field_studio_hints": {
         "component_db": "switch",
         "component_sheet": "switches",
@@ -10511,8 +11946,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "switches",
       "key": "switch",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "component_type": "switch",
         "delimiters": [],
@@ -10589,15 +12026,24 @@
         "tooltip_md": "Main click switch model (component DB-backed). Evidence required.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_brand": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": true,
       "canonical_key": "switch_brand",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10606,7 +12052,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Switch Brand",
       "effort": 6,
       "enum": {
         "match": {
@@ -10628,6 +12076,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_brand",
       "field_studio_hints": {
         "component_db": "switch",
         "component_field": "switch_brand",
@@ -10644,8 +12093,10 @@
         },
         "related_to": "switch"
       },
+      "group": "switches",
       "key": "switch_brand",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -10720,8 +12171,135 @@
         "tooltip_md": "Switch manufacturer brand. Prefer component DB when switch identified.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
+    },
+    "switch_life_span": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Switch Life Span",
+        "switch_life_span"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "string",
+        "unknown_reason_required": true,
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Switch Life Span",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true,
+          "suggestion_target": "_suggestions/enums.json"
+        },
+        "policy": "open",
+        "source": null
+      },
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "switch_life_span",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "controls",
+      "key": "switch_life_span",
+      "output_shape": "scalar",
+      "parse": {
+        "template": "text_field"
+      },
+      "priority": {
+        "availability": "sometimes",
+        "block_publish_when_unk": false,
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "expected"
+      },
+      "required_level": "expected",
+      "search_hints": {
+        "content_types": [
+          "spec_sheet",
+          "review"
+        ],
+        "domain_hints": [
+          "eloshapes.com",
+          "mousespecs.org",
+          "techpowerup.com"
+        ],
+        "preferred_content_types": [
+          "support",
+          "manual",
+          "spec",
+          "pdf",
+          "product_page"
+        ],
+        "preferred_tiers": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ],
+        "query_templates": [
+          "{brand} {model} switch lifespan million clicks",
+          "{brand} {model} switch durability rated"
+        ],
+        "query_terms": [
+          "switch lifespan",
+          "switch durability",
+          "click lifespan",
+          "million clicks",
+          "rated clicks"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "controls",
+        "guidance_md": null,
+        "input_control": "text",
+        "label": "Switch Life Span",
+        "order": 80,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search",
+      "variance_policy": "authoritative"
     },
     "switch_link": {
       "aliases": [
@@ -10874,11 +12452,19 @@
       }
     },
     "switch_type": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "switch_type",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -10887,7 +12473,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Switch Type",
       "effort": 3,
       "enum": {
         "match": {
@@ -10913,6 +12501,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "switch_type",
       "field_studio_hints": {
         "data_lists": {
           "column": "S",
@@ -10938,8 +12527,10 @@
           "sheet": "data_lists"
         }
       },
+      "group": "switches",
       "key": "switch_type",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11009,14 +12600,29 @@
         "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative"
     },
     "switches_link": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "Switch Link",
+        "switch_link",
+        "switches_link"
+      ],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "switches_link",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -11025,7 +12631,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "switch_link",
       "effort": 5,
       "enum": {
         "match": {
@@ -11046,7 +12654,25 @@
           "tier3"
         ]
       },
+      "evidence_required": true,
+      "field_key": "switches_link",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        },
+        "key_column": "B",
+        "key_row": 67,
+        "key_sheet": "dataEntry",
+        "sample_values": [
+          "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
+        ]
+      },
+      "group": "controls",
       "key": "switches_link",
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11112,15 +12738,24 @@
         "tooltip_md": "",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "thumb_rest": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "expected",
       "block_publish_when_unk": false,
       "canonical_key": "thumb_rest",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -11129,7 +12764,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Thumb Rest",
       "effort": 3,
       "enum": {
         "match": {
@@ -11151,6 +12788,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "thumb_rest",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B40",
@@ -11164,8 +12802,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "ergonomics",
       "key": "thumb_rest",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11236,15 +12876,24 @@
         "tooltip_md": "Define 'Thumb Rest' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "tilt_scroll_wheel": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "tilt_scroll_wheel",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -11253,7 +12902,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "easy",
+      "display_name": "Tilt Scroll Wheel",
       "effort": 2,
       "enum": {
         "match": {
@@ -11279,6 +12930,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "tilt_scroll_wheel",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B79",
@@ -11292,8 +12944,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "buttons_features",
       "key": "tilt_scroll_wheel",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -11398,10 +13052,18 @@
         "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "weight": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "weight",
         "weight_g",
@@ -11412,6 +13074,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "weight",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -11424,7 +13087,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Weight",
       "effort": 6,
       "enum": {
         "match": {
@@ -11446,6 +13111,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "weight",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B31",
@@ -11460,8 +13126,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "construction",
       "key": "weight",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11547,10 +13215,18 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "g",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "width": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [
         "width",
         "width_mm",
@@ -11560,6 +13236,7 @@
       "block_publish_when_unk": true,
       "canonical_key": "width",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "rounding": {
@@ -11572,7 +13249,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "number",
       "difficulty": "easy",
+      "display_name": "Width",
       "effort": 6,
       "enum": {
         "match": {
@@ -11594,6 +13273,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "width",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B34",
@@ -11608,8 +13288,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "dimensions",
       "key": "width",
       "min_evidence_refs": 2,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "range_separators": [],
@@ -11700,15 +13382,24 @@
         "tooltip_source": null
       },
       "unit": "mm",
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "wireless_charging": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
       "aliases": [],
       "availability": "sometimes",
       "block_publish_when_unk": false,
       "canonical_key": "wireless_charging",
       "component": null,
+      "constraints": [],
       "contract": {
         "list_rules": {},
         "shape": "scalar",
@@ -11717,7 +13408,9 @@
         "unknown_reason_required": true,
         "unknown_token": "unk"
       },
+      "data_type": "string",
       "difficulty": "medium",
+      "display_name": "Wireless Charging",
       "effort": 5,
       "enum": {
         "match": {
@@ -11743,6 +13436,7 @@
         ]
       },
       "evidence_required": true,
+      "field_key": "wireless_charging",
       "field_studio_hints": {
         "dataEntry": {
           "key_cell": "B24",
@@ -11756,8 +13450,10 @@
           "sheet": "dataEntry"
         }
       },
+      "group": "connectivity",
       "key": "wireless_charging",
       "min_evidence_refs": 1,
+      "output_shape": "scalar",
       "parse": {
         "delimiters": [],
         "false_tokens": [
@@ -11864,6 +13560,7 @@
         "tooltip_md": "Define 'Wireless Charging' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
+      "unknown_reason_default": "not_found_after_search",
       "value_form": "single",
       "value_form_sample": "scalar"
     }
@@ -12057,58 +13754,16 @@
   },
   "selected_keys": [
     "acceleration",
-    "adjustable_scroll_wheel",
-    "adjustable_weight",
-    "battery_hours",
-    "bluetooth",
-    "cable_type",
-    "click_force",
-    "click_latency",
-    "click_latency_list",
-    "coating",
-    "colors",
-    "computer_side_connector",
-    "connection",
-    "connectivity",
-    "debounce",
-    "design",
-    "discontinued",
     "dpi",
-    "encoder",
-    "encoder_brand",
-    "encoder_link",
-    "feet_material",
+    "smoothing",
     "flawless_sensor",
-    "form_factor",
-    "front_flare",
-    "grip",
-    "hand_size",
     "hardware_acceleration",
-    "height",
-    "honeycomb_frame",
-    "hot_swappable",
-    "hump",
     "ips",
     "lift",
     "lift_settings",
-    "lighting",
-    "lngth",
-    "material",
-    "mcu",
-    "mcu_link",
-    "middle_buttons",
     "motion_sync",
-    "mouse_side_connector",
     "nvidia_reflex",
-    "onboard_memory",
-    "onboard_memory_value",
-    "paracord",
     "polling_rate",
-    "price_range",
-    "profile_switching",
-    "programmable_buttons",
-    "release_date",
-    "rgb",
     "sensor",
     "sensor_brand",
     "sensor_date",
@@ -12116,21 +13771,63 @@
     "sensor_latency_list",
     "sensor_link",
     "sensor_type",
-    "shape",
     "shift_latency",
+    "adjustable_scroll_wheel",
+    "middle_buttons",
+    "onboard_memory",
+    "onboard_memory_value",
+    "profile_switching",
+    "programmable_buttons",
     "side_buttons",
+    "tilt_scroll_wheel",
+    "adjustable_weight",
+    "coating",
+    "feet_material",
+    "honeycomb_frame",
+    "material",
     "silent_clicks",
-    "sku",
-    "smoothing",
+    "weight",
+    "battery_hours",
+    "bluetooth",
+    "cable_type",
+    "computer_side_connector",
+    "connection",
+    "connectivity",
+    "mouse_side_connector",
+    "paracord",
+    "wireless_charging",
+    "click_force",
+    "click_latency",
+    "click_latency_list",
+    "debounce",
+    "hot_swappable",
     "switch",
     "switch_brand",
-    "switch_link",
     "switch_type",
+    "colors",
+    "design",
+    "discontinued",
+    "lighting",
+    "price_range",
+    "release_date",
+    "rgb",
+    "sku",
+    "encoder",
+    "encoder_brand",
+    "encoder_link",
+    "form_factor",
+    "front_flare",
+    "grip",
+    "hand_size",
+    "hump",
+    "shape",
     "thumb_rest",
-    "tilt_scroll_wheel",
-    "weight",
+    "height",
+    "lngth",
     "width",
-    "wireless_charging"
+    "mcu",
+    "mcu_link",
+    "switches_link"
   ],
   "sheet_roles": [],
   "tooltip_source": {

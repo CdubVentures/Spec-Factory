@@ -369,28 +369,33 @@ export function registerIndexlabRoutes(ctx) {
       const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
       if (!specDb) return jsonRes(res, 500, { error: 'db_unavailable' });
 
-      const productRuns = specDb.getProductRuns(productId);
-      const runIdSet = new Set(productRuns.map((r) => r.run_id));
-
-      // WHY: Enrich with started_at/ended_at from the runs table for duration.
-      const runsMetaMap = new Map();
+      // WHY: Primary source is the `runs` table (always populated).
+      // `product_runs` may be empty if the pipeline didn't write there.
       const allRunsMeta = specDb.getRunsByCategory(category, 500);
-      for (const rm of allRunsMeta) {
-        if (runIdSet.has(rm.run_id)) runsMetaMap.set(rm.run_id, rm);
+      const productRunsMeta = allRunsMeta.filter(
+        (r) => String(r.product_id || '').trim() === productId
+      );
+      const runIdSet = new Set(productRunsMeta.map((r) => r.run_id));
+
+      // WHY: Enrich with cost/sources from product_runs if available.
+      const productRunsLookup = new Map();
+      const productRunsRows = specDb.getProductRuns(productId);
+      for (const pr of productRunsRows) {
+        productRunsLookup.set(pr.run_id, pr);
       }
 
-      const runs = productRuns.map((pr) => {
-        const rm = runsMetaMap.get(pr.run_id);
+      const runs = productRunsMeta.map((rm) => {
+        const pr = productRunsLookup.get(rm.run_id);
         return {
-          run_id: pr.run_id,
-          status: pr.status || rm?.status || '',
-          cost_usd_run: pr.cost_usd_run,
-          sources_attempted: pr.sources_attempted,
-          run_at: pr.run_at,
-          started_at: rm?.started_at || pr.run_at || '',
-          ended_at: rm?.ended_at || '',
-          is_latest: pr.is_latest,
-          storage_state: pr.storage_state || '',
+          run_id: rm.run_id,
+          status: rm.status || pr?.status || '',
+          cost_usd_run: pr?.cost_usd_run ?? null,
+          sources_attempted: pr?.sources_attempted ?? 0,
+          run_at: pr?.run_at || rm.started_at || '',
+          started_at: rm.started_at || '',
+          ended_at: rm.ended_at || '',
+          is_latest: pr?.is_latest ?? false,
+          storage_state: pr?.storage_state || '',
         };
       });
 
@@ -490,10 +495,8 @@ export function registerIndexlabRoutes(ctx) {
       const result = computeCompoundCurve({
         category: effectiveCategory,
         runSummaries: runs,
-        queryIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'query-index.ndjson'),
-        urlIndexPath: path.join(currentIndexLabRoot(), effectiveCategory, 'url-index.ndjson'),
-        queryRows: _ccSpecDb ? _ccSpecDb.getQueryIndexByCategory(effectiveCategory) : undefined,
-        urlRows: _ccSpecDb ? _ccSpecDb.getUrlIndexByCategory(effectiveCategory) : undefined,
+        queryRows: _ccSpecDb ? _ccSpecDb.getQueryIndexByCategory(effectiveCategory) : [],
+        urlRows: _ccSpecDb ? _ccSpecDb.getUrlIndexByCategory(effectiveCategory) : [],
       });
       return jsonRes(res, 200, result);
     }
@@ -545,11 +548,9 @@ export function registerIndexlabRoutes(ctx) {
         effectiveCat = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || category;
       }
       const _hhSpecDb = typeof getSpecDb === 'function' ? getSpecDb() : null;
-      const urlIndexPath = path.join(currentIndexLabRoot(), effectiveCat, 'url-index.ndjson');
       const hosts = aggregateHostHealth({
-        urlIndexPath,
         category: effectiveCat,
-        urlRows: _hhSpecDb ? _hhSpecDb.getUrlIndexByCategory(effectiveCat) : undefined,
+        urlRows: _hhSpecDb ? _hhSpecDb.getUrlIndexByCategory(effectiveCat) : [],
       });
       return jsonRes(res, 200, { category: effectiveCat, hosts });
     }

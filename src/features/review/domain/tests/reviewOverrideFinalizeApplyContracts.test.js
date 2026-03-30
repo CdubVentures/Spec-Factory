@@ -17,7 +17,7 @@ test('finalizeOverrides applies candidate overrides to latest artifacts', async 
   const harness = await createReviewOverrideHarness(t, {
     productId: 'mouse-review-finalize-apply',
   });
-  const { storage, config, category, productId } = harness;
+  const { storage, config, category, productId, specDb } = harness;
   await seedFieldRulesArtifacts(harness);
   await seedReviewCandidates(harness);
   await seedLatestArtifacts(harness);
@@ -26,6 +26,7 @@ test('finalizeOverrides applies candidate overrides to latest artifacts', async 
     config,
     category,
     productId,
+    specDb,
     field: 'weight',
     candidateId: 'cand_1',
   });
@@ -35,6 +36,7 @@ test('finalizeOverrides applies candidate overrides to latest artifacts', async 
     config,
     category,
     productId,
+    specDb,
     applyOverrides: true,
   });
   const { normalized, provenance, summary } = await readLatestArtifacts(harness);

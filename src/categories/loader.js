@@ -392,7 +392,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
   const helperCategoryRoot = path.join(helperRoot, category);
   const generatedRoot = path.join(helperRoot, category, '_generated');
 
-  const [schemaRaw, requiredRaw, fieldRulesRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, fieldGroupsRaw, helperSchemaRaw, helperRequiredRaw, helperSourcesRaw, helperAnchorsRaw, helperSearchTemplatesRaw, helperSpecSeedsRaw] = await Promise.all([
+  const [schemaRaw, requiredRaw, fieldRulesRaw, uiFieldCatalogRaw, generatedSourcesRaw, generatedAnchorsRaw, generatedSearchTemplatesRaw, fieldGroupsRaw, helperSchemaRaw, helperSourcesRaw, helperSpecSeedsRaw] = await Promise.all([
     readJsonIfExists(path.join(generatedRoot, 'schema.json')),
     readJsonIfExists(path.join(generatedRoot, 'required_fields.json')),
     readJsonIfExists(path.join(generatedRoot, 'field_rules.json')),
@@ -402,10 +402,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     readJsonIfExists(path.join(generatedRoot, 'search_templates.json')),
     readJsonIfExists(path.join(generatedRoot, 'field_groups.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'schema.json')),
-    readJsonIfExists(path.join(helperCategoryRoot, 'required_fields.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'sources.json')),
-    readJsonIfExists(path.join(helperCategoryRoot, 'anchors.json')),
-    readJsonIfExists(path.join(helperCategoryRoot, 'search_templates.json')),
     readJsonIfExists(path.join(helperCategoryRoot, 'spec_seeds.json'))
   ]);
 
@@ -421,8 +418,8 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     ? requiredRaw
       .map((field) => String(field || '').trim())
       .filter(Boolean)
-    : (Array.isArray(helperRequiredRaw)
-      ? helperRequiredRaw
+    : (Array.isArray(helperSchemaRaw?.required_fields)
+      ? helperSchemaRaw.required_fields
         .map((field) => String(field || '').trim())
         .filter(Boolean)
       : deriveRequiredFieldsFromFieldRules(fieldRulesPayload));
@@ -446,10 +443,10 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     : (isObject(helperSourcesRaw) ? helperSourcesRaw : null);
   const anchors = isObject(generatedAnchorsRaw)
     ? generatedAnchorsRaw
-    : (isObject(helperAnchorsRaw) ? helperAnchorsRaw : null);
+    : (isObject(helperSchemaRaw?.anchor_fields) ? helperSchemaRaw.anchor_fields : null);
   const searchTemplates = Array.isArray(generatedSearchTemplatesRaw)
     ? generatedSearchTemplatesRaw
-    : (Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : null);
+    : (Array.isArray(helperSchemaRaw?.search_templates) ? helperSchemaRaw.search_templates : null);
   const specSeeds = Array.isArray(helperSpecSeedsRaw) ? helperSpecSeedsRaw : null;
 
   const schemaPath = isObject(schemaRaw)
@@ -457,7 +454,7 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     : (isObject(helperSchemaRaw) ? path.join(helperCategoryRoot, 'schema.json') : null);
   const requiredPath = Array.isArray(requiredRaw)
     ? path.join(generatedRoot, 'required_fields.json')
-    : (Array.isArray(helperRequiredRaw) ? path.join(helperCategoryRoot, 'required_fields.json') : null);
+    : null;
 
   return {
     helperCategoryRoot,
@@ -522,38 +519,23 @@ async function loadCategoryBaseConfig(category, runtimeConfig = {}) {
   const [
     helperSchemaRaw,
     helperSourcesRaw,
-    helperRequiredRaw,
-    helperAnchorsRaw,
-    helperSearchTemplatesRaw,
     legacySchemaRaw,
-    legacySourcesRaw,
-    legacyRequiredRaw,
-    legacyAnchorsRaw,
-    legacySearchTemplatesRaw
+    legacySourcesRaw
   ] = await Promise.all([
     readJsonIfExists(path.join(helperCategoryDir, 'schema.json')),
     readJsonIfExists(path.join(helperCategoryDir, 'sources.json')),
-    readJsonIfExists(path.join(helperCategoryDir, 'required_fields.json')),
-    readJsonIfExists(path.join(helperCategoryDir, 'anchors.json')),
-    readJsonIfExists(path.join(helperCategoryDir, 'search_templates.json')),
     readJsonIfExists(path.join(legacyCategoryDir, 'schema.json')),
-    readJsonIfExists(path.join(legacyCategoryDir, 'sources.json')),
-    readJsonIfExists(path.join(legacyCategoryDir, 'required_fields.json')),
-    readJsonIfExists(path.join(legacyCategoryDir, 'anchors.json')),
-    readJsonIfExists(path.join(legacyCategoryDir, 'search_templates.json'))
+    readJsonIfExists(path.join(legacyCategoryDir, 'sources.json'))
   ]);
 
   const schemaRaw = isObject(helperSchemaRaw) ? helperSchemaRaw : legacySchemaRaw;
   const sourcesRaw = isObject(helperSourcesRaw) ? helperSourcesRaw : legacySourcesRaw;
-  const requiredRaw = Array.isArray(helperRequiredRaw) ? helperRequiredRaw : legacyRequiredRaw;
-  const anchorsRaw = isObject(helperAnchorsRaw) ? helperAnchorsRaw : legacyAnchorsRaw;
-  const searchTemplatesRaw = Array.isArray(helperSearchTemplatesRaw) ? helperSearchTemplatesRaw : legacySearchTemplatesRaw;
 
   const schema = isObject(schemaRaw) ? schemaRaw : defaultSchema(category);
   const sources = isObject(sourcesRaw) ? sourcesRaw : defaultSources();
-  const requiredFields = Array.isArray(requiredRaw) ? requiredRaw : [];
-  const anchors = isObject(anchorsRaw) ? anchorsRaw : {};
-  const searchTemplates = Array.isArray(searchTemplatesRaw) ? searchTemplatesRaw : [];
+  const requiredFields = Array.isArray(schemaRaw?.required_fields) ? schemaRaw.required_fields : [];
+  const anchors = isObject(schemaRaw?.anchor_fields) ? schemaRaw.anchor_fields : {};
+  const searchTemplates = Array.isArray(schemaRaw?.search_templates) ? schemaRaw.search_templates : [];
 
   const config = buildCategoryConfig({
     category,

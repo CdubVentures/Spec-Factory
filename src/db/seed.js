@@ -904,7 +904,15 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
             acceptedCandidateId: candidateId,
             overridden: isOverridden,
             needsAiReview: !isOverridden && knownValue && confidence < 0.8,
-            aiReviewComplete: false
+            aiReviewComplete: false,
+            ...(isOverridden ? {
+              overrideSource: ovr.override_source || 'candidate_selection',
+              overrideValue: ovr.override_value || ovr.value || valueText,
+              overrideReason: ovr.override_reason || null,
+              overrideProvenance: ovr.override_provenance ? JSON.stringify(ovr.override_provenance) : null,
+              overriddenBy: ovr.overridden_by || null,
+              overriddenAt: ovr.overridden_at || ovr.set_at || null,
+            } : {}),
           });
         }
 
@@ -1050,6 +1058,21 @@ async function seedProducts(db, config, category, fieldRules, fieldMeta) {
         }
       });
       tx();
+
+      // Step 8: Populate product_review_state from override file envelope
+      if (isObject(overrides)) {
+        const reviewStatus = normalizeToken(overrides.review_status || '');
+        if (reviewStatus) {
+          db.upsertProductReviewState({
+            productId,
+            reviewStatus,
+            reviewStartedAt: overrides.review_started_at || null,
+            reviewedBy: overrides.reviewed_by || null,
+            reviewedAt: overrides.reviewed_at || null,
+          });
+        }
+      }
+
       productCount++;
     } catch (error) {
       errors.push({ productId, error: error.message });

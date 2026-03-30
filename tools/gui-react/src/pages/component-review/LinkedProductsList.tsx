@@ -1,30 +1,10 @@
 import { useState } from 'react';
 import type { LinkedProduct } from '../../types/componentReview.ts';
 
-/**
- * Parse a product_id like "mouse-corsair-m75-air-wireless" into display parts.
- * Format: {category}-{brand}-{model...}
- * Returns { brand, model } with best-effort title casing.
- */
-function parseProductId(productId: string): { brand: string; model: string } {
-  const parts = productId.split('-');
-  if (parts.length < 3) {
-    return { brand: '', model: productId };
-  }
-  // First segment is category (skip), second is brand, rest is model
-  const brand = parts[1];
-  const model = parts.slice(2).join(' ');
-  return {
-    brand: brand.charAt(0).toUpperCase() + brand.slice(1),
-    model: model
-      .split(' ')
-      .map(w => {
-        // Preserve all-caps short segments (likely model numbers: v3, x2, g502)
-        if (w.length <= 4 && /^[a-z0-9]+$/i.test(w)) return w.toUpperCase();
-        return w.charAt(0).toUpperCase() + w.slice(1);
-      })
-      .join(' '),
-  };
+interface CatalogEntry {
+  productId: string;
+  brand: string;
+  model: string;
 }
 
 interface LinkedProductsListProps {
@@ -32,16 +12,32 @@ interface LinkedProductsListProps {
   products: LinkedProduct[];
   /** Header label context — displayed in the section header */
   headerLabel: string;
+  /** Optional catalog for resolving brand/model from productId */
+  catalog?: CatalogEntry[];
   /** Max height of the scrollable list in px (default: 200) */
   maxHeight?: number;
   /** Start in expanded state (default: false) */
   defaultExpanded?: boolean;
 }
 
-export function LinkedProductsList({ products, headerLabel, maxHeight = 200, defaultExpanded = false }: LinkedProductsListProps) {
+function resolveDisplay(
+  productId: string,
+  catalogMap: Map<string, CatalogEntry>,
+): { brand: string; model: string } {
+  const entry = catalogMap.get(productId);
+  if (entry) return { brand: entry.brand, model: entry.model };
+  return { brand: '', model: productId };
+}
+
+export function LinkedProductsList({ products, headerLabel, catalog, maxHeight = 200, defaultExpanded = false }: LinkedProductsListProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!products || products.length === 0) return null;
+
+  const catalogMap = new Map<string, CatalogEntry>();
+  if (catalog) {
+    for (const c of catalog) catalogMap.set(c.productId, c);
+  }
 
   return (
     <div className="mt-2">
@@ -75,14 +71,14 @@ export function LinkedProductsList({ products, headerLabel, maxHeight = 200, def
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {products.map((p, i) => {
-                const { brand, model } = parseProductId(p.product_id);
+                const { brand, model } = resolveDisplay(p.product_id, catalogMap);
                 return (
                   <tr
                     key={`${p.product_id}-${i}`}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <td className="px-2 py-1 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                      {brand}
+                      {brand || <span className="text-gray-400 italic">—</span>}
                     </td>
                     <td className="px-2 py-1 text-gray-600 dark:text-gray-400 truncate max-w-[160px]" title={model}>
                       {model}

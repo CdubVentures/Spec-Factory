@@ -1,21 +1,6 @@
 import { toPosixKey } from '../../../s3/storage.js';
 import { OUTPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 
-function slug(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function profileIdFromJob(job) {
-  const category = job.category || 'mouse';
-  const brand = slug(job.identityLock?.brand || 'unknown-brand');
-  const model = slug(job.identityLock?.model || 'unknown-model');
-  const variant = slug(job.identityLock?.variant || 'unknown-variant');
-  return `${category}-${brand}-${model}-${variant}`;
-}
-
 function hasMajorAnchorConflict(source) {
   return (source.anchorCheck?.majorConflicts || []).length > 0;
 }
@@ -187,7 +172,7 @@ function mergeProfiles(previous, next) {
 }
 
 export async function loadLearningProfile({ storage, config, category, job, specDb = null }) {
-  const profileId = profileIdFromJob(job);
+  const profileId = job.productId || '';
   const profileKey = toPosixKey(OUTPUT_KEY_PREFIX, '_learning', category, 'profiles', `${profileId}.json`);
   const productId = job.productId;
 

@@ -174,6 +174,9 @@ export function registerStudioRoutes(ctx) {
       if (String(category || '').trim().toLowerCase() === 'all') {
         return jsonRes(res, 400, { error: 'category_required', message: 'Select a concrete category before running enum consistency.' });
       }
+      const runtimeSpecDb = typeof getSpecDbReady === 'function'
+        ? await getSpecDbReady(category)
+        : null;
       const body = await readJsonBody(req);
       const field = String(body?.field || '').trim();
       if (!field) {
@@ -184,16 +187,21 @@ export function registerStudioRoutes(ctx) {
       const maxPending = Number.isFinite(maxPendingInput) ? Math.max(1, Math.min(200, maxPendingInput)) : 120;
 
       const kvPath = path.join(HELPER_ROOT, category, '_generated', 'known_values.json');
-      const suggestPath = path.join(HELPER_ROOT, category, '_suggestions', 'enums.json');
-      const [knownValuesDoc, suggestionsDoc, session] = await Promise.all([
+      const [knownValuesDoc, session] = await Promise.all([
         safeReadJson(kvPath),
-        safeReadJson(suggestPath),
         sessionCache.getSessionRules(category),
       ]);
       const knownValues = dedupeEnumValues(
         Array.isArray(knownValuesDoc?.fields?.[field]) ? knownValuesDoc.fields[field] : []
       );
-      const pendingValues = buildPendingEnumValuesFromSuggestions(suggestionsDoc, field).slice(0, maxPending);
+      // WHY: Phase E3 — SQL is sole source for pending enum values
+      const pendingValues = runtimeSpecDb
+        ? runtimeSpecDb.getCurationSuggestions('enum_value', 'pending')
+            .filter(r => String(r.field_key || '').trim() === field)
+            .map(r => String(r.value || '').trim())
+            .filter(Boolean)
+            .slice(0, maxPending)
+        : [];
       const enumPolicy = String(
         session?.mergedFields?.[field]?.enum?.policy
         || session?.mergedFields?.[field]?.enum_policy
@@ -261,6 +269,7 @@ export function registerStudioRoutes(ctx) {
           category,
           field,
           decisions,
+          specDb: runtimeSpecDb || null,
         });
         sessionCache.invalidateSessionCache(category);
         reviewLayoutByCategory.delete(category);

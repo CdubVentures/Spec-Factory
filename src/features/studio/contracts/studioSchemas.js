@@ -34,7 +34,7 @@ export const FieldRuleSchema = z.object({
   required_level: z.string().optional(),
   contract: z.object({
     type: z.string().optional(),
-    unit: z.string().optional(),
+    unit: z.string().nullable().optional(),
     shape: z.string().optional(),
   }).passthrough().optional(),
   parse: z.object({

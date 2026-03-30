@@ -258,21 +258,17 @@ test('readOverrideDoc returns null payload for ENOENT', async () => {
   }
 });
 
-test('listApprovedOverrideProductIds filters by approved status', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pub-test-'));
-  const dir = path.join(tmpDir, 'mouse', '_overrides');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, 'p1.overrides.json'), JSON.stringify({ review_status: 'approved', product_id: 'p1' }));
-  await fs.writeFile(path.join(dir, 'p2.overrides.json'), JSON.stringify({ review_status: 'pending', product_id: 'p2' }));
-  try {
-    const ids = await listApprovedOverrideProductIds({
-      config: { categoryAuthorityRoot: tmpDir },
-      category: 'mouse'
-    });
-    assert.deepEqual(ids, ['p1']);
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  }
+test('listApprovedOverrideProductIds filters by approved status via specDb', async () => {
+  const { SpecDb } = await import('../../db/specDb.js');
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.upsertProductReviewState({ productId: 'p1', category: 'mouse', reviewStatus: 'approved', reviewedBy: 'test', reviewedAt: new Date().toISOString() });
+  specDb.upsertProductReviewState({ productId: 'p2', category: 'mouse', reviewStatus: 'pending', reviewedBy: 'test', reviewedAt: new Date().toISOString() });
+  const ids = await listApprovedOverrideProductIds({
+    config: {},
+    category: 'mouse',
+    specDb
+  });
+  assert.deepEqual(ids, ['p1']);
 });
 
 test('listApprovedOverrideProductIds returns empty for missing dir', async () => {
