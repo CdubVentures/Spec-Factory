@@ -3,14 +3,12 @@ import { create } from 'zustand';
 export interface SettingsAuthorityStoreSnapshot {
   category: string;
   runtimeReady: boolean;
-  storageReady: boolean;
   sourceStrategyReady: boolean;
   llmSettingsReady: boolean;
   uiSettingsReady: boolean;
   uiSettingsPersistState: 'idle' | 'saving' | 'error';
   uiSettingsPersistMessage: string;
   autoSaveAllEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
 }
 
@@ -25,14 +23,12 @@ interface SettingsAuthorityStoreState {
 const DEFAULT_SNAPSHOT: SettingsAuthorityStoreSnapshot = {
   category: 'all',
   runtimeReady: false,
-  storageReady: false,
   sourceStrategyReady: false,
   llmSettingsReady: false,
   uiSettingsReady: false,
   uiSettingsPersistState: 'idle',
   uiSettingsPersistMessage: '',
   autoSaveAllEnabled: false,
-  storageAutoSaveEnabled: false,
   runtimeAutoSaveEnabled: false,
 };
 

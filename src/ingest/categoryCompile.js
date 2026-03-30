@@ -57,7 +57,6 @@ import {
   writeJsonStable,
   writeCanonicalFieldRulesPair,
   diffFieldRuleSets,
-  writeControlPlaneSnapshot,
   readJsonIfExists,
   resolveControlPlaneMapPaths,
   loadFieldStudioMap,

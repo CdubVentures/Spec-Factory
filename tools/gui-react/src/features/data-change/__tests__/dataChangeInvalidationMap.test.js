@@ -82,29 +82,6 @@ test('invalidateDataChangeQueries deduplicates repeated domains and categories',
   assert.equal(componentImpactCount, 1);
 });
 
-test('storage settings event invalidates storage settings query key', () => {
-  const keys = resolveDataChangeInvalidationQueryKeys({
-    message: {
-      type: 'data-change',
-      event: 'storage-settings-updated',
-    },
-  });
-
-  assert.equal(hasQueryKey(keys, ['storage-settings']), true);
-});
-
-// WHY: When storage destination changes, the run list must refetch from the new source.
-test('storage settings event invalidates indexlab runs query key', () => {
-  const keys = resolveDataChangeInvalidationQueryKeys({
-    message: {
-      type: 'data-change',
-      event: 'storage-settings-updated',
-    },
-  });
-
-  assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true);
-});
-
 test('runtime settings event invalidates runtime settings query key', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

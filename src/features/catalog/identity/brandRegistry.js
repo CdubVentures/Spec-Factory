@@ -1,146 +1,114 @@
 /**
  * Brand Registry — global brand management across all categories.
  *
- * Stored at: category_authority/_global/brand_registry.json
+ * Stored in: app.sqlite (brands + brand_categories + brand_renames tables)
  * Managed by: GUI Brand Manager tab + API
  *
  * A brand is global — it can belong to multiple categories (e.g. Razer → mouse, keyboard, headset).
  * The registry is the single source for brand names, aliases, and category assignments.
+ *
+ * All brand state is persisted via appDb (SQL). JSON files are seed-only archives.
  */
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { slugify } from './slugify.js';
 import { loadCatalogProducts, discoverCategoriesLocal } from '../products/catalogProductLoader.js';
 import { generateIdentifier } from './productIdentity.js';
 import { loadProductCatalog, updateProduct as catalogUpdateProduct } from '../products/productCatalog.js';
-function registryPath(config) {
-  const root = config?.categoryAuthorityRoot || 'category_authority';
-  return path.resolve(root, '_global', 'brand_registry.json');
-}
 
 function nowIso() {
   return new Date().toISOString();
 }
 
-function emptyRegistry() {
+// WHY: Maps an SQL brands row + categories array into the shape the HTTP API returns.
+function sqlBrandToApiShape(row, categories) {
   return {
-    _doc: 'Global brand registry. Managed by GUI.',
-    _version: 1,
-    brands: {}
+    slug: row.slug,
+    canonical_name: row.canonical_name,
+    identifier: row.identifier,
+    aliases: JSON.parse(row.aliases || '[]'),
+    categories,
+    website: row.website || '',
+    added_at: row.created_at,
+    added_by: row.added_by,
+    ...(row.updated_at && row.updated_at !== row.created_at ? { updated_at: row.updated_at } : {}),
   };
 }
 
 /**
- * Load the brand registry. Returns empty registry if file doesn't exist.
+ * Load the brand registry. Reconstructs the legacy shape from SQL.
+ * Returns { _doc, _version, brands: { slug: brandObj } }.
  */
-export async function loadBrandRegistry(config) {
-  const filePath = registryPath(config);
-  try {
-    const text = await fs.readFile(filePath, 'utf8');
-    const data = JSON.parse(text);
-    if (!data || typeof data !== 'object' || !data.brands) {
-      return emptyRegistry();
-    }
-
-    // Backfill identifiers for brands that predate the identifier feature
-    let needsSave = false;
-    for (const brand of Object.values(data.brands)) {
-      if (!brand.identifier) {
-        brand.identifier = generateIdentifier();
-        needsSave = true;
-      }
-    }
-    if (needsSave) {
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-    }
-
-    return data;
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      return emptyRegistry();
-    }
-    throw err;
+export async function loadBrandRegistry(config, { appDb } = {}) {
+  if (!appDb) throw new Error('appDb is required for loadBrandRegistry');
+  const rows = appDb.listBrands();
+  const brands = {};
+  for (const row of rows) {
+    const categories = appDb.getCategoriesForBrand(row.identifier);
+    brands[row.slug] = sqlBrandToApiShape(row, categories);
   }
-}
-
-/**
- * Save the brand registry atomically.
- */
-export async function saveBrandRegistry(config, registry) {
-  const filePath = registryPath(config);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(registry, null, 2), 'utf8');
-  return registry;
+  return { _doc: 'Global brand registry. Managed by GUI.', _version: 1, brands };
 }
 
 /**
  * Add a new brand. Returns { ok, slug, brand } or { ok: false, error }.
  */
-export async function addBrand({ config, name, aliases = [], categories = [], website = '' }) {
+export async function addBrand({ config, appDb, name, aliases = [], categories = [], website = '' }) {
   const trimmedName = String(name ?? '').trim();
-  if (!trimmedName) {
-    return { ok: false, error: 'brand_name_required' };
-  }
+  if (!trimmedName) return { ok: false, error: 'brand_name_required' };
 
   const brandSlug = slugify(trimmedName);
-  if (!brandSlug) {
-    return { ok: false, error: 'brand_name_invalid' };
-  }
+  if (!brandSlug) return { ok: false, error: 'brand_name_invalid' };
 
-  const registry = await loadBrandRegistry(config);
-
-  if (registry.brands[brandSlug]) {
-    return { ok: false, error: 'brand_already_exists', slug: brandSlug };
-  }
+  const existing = appDb.getBrandBySlug(brandSlug);
+  if (existing) return { ok: false, error: 'brand_already_exists', slug: brandSlug };
 
   const cleanAliases = (Array.isArray(aliases) ? aliases : [])
-    .map(a => String(a).trim())
+    .map((a) => String(a).trim())
+    .filter(Boolean);
+  const cleanCategories = (Array.isArray(categories) ? categories : [])
+    .map((c) => String(c).trim().toLowerCase())
     .filter(Boolean);
 
-  const cleanCategories = (Array.isArray(categories) ? categories : [])
-    .map(c => String(c).trim().toLowerCase())
-    .filter(Boolean);
+  const identifier = generateIdentifier();
+  appDb.upsertBrand({
+    identifier,
+    canonical_name: trimmedName,
+    slug: brandSlug,
+    aliases: JSON.stringify(cleanAliases),
+    website: String(website ?? '').trim(),
+    added_by: 'gui',
+  });
+  if (cleanCategories.length > 0) {
+    appDb.setBrandCategories(identifier, cleanCategories);
+  }
 
   const brand = {
     canonical_name: trimmedName,
-    identifier: generateIdentifier(),
+    identifier,
     aliases: cleanAliases,
     categories: cleanCategories,
     website: String(website ?? '').trim(),
     added_at: nowIso(),
-    added_by: 'gui'
+    added_by: 'gui',
   };
-
-  registry.brands[brandSlug] = brand;
-  await saveBrandRegistry(config, registry);
 
   return { ok: true, slug: brandSlug, brand };
 }
 
 /**
  * Bulk add brands from a single-column list.
- * Rows are treated as brand names. Existing brands are kept and can be
- * assigned to the provided category if missing.
  */
-export async function addBrandsBulk({ config, names = [], category = '' }) {
+export async function addBrandsBulk({ config, appDb, names = [], category = '' }) {
   const cat = String(category ?? '').trim().toLowerCase();
-  if (!cat || cat === 'all') {
-    return { ok: false, error: 'category_required' };
-  }
+  if (!cat || cat === 'all') return { ok: false, error: 'category_required' };
 
   const rows = Array.isArray(names) ? names : [];
-  const registry = await loadBrandRegistry(config);
   const seenInRequest = new Set();
   const results = [];
-
   let created = 0;
   let skippedExisting = 0;
   let skippedDuplicate = 0;
   let invalid = 0;
-  let failed = 0;
-  let touchedExisting = false;
 
   for (let i = 0; i < rows.length; i += 1) {
     const rawName = String(rows[i] ?? '').trim();
@@ -167,60 +135,34 @@ export async function addBrandsBulk({ config, names = [], category = '' }) {
     }
     seenInRequest.add(brandSlug);
 
-    const existing = registry.brands[brandSlug];
+    const existing = appDb.getBrandBySlug(brandSlug);
     if (existing) {
-      const mergedCategories = new Set([...(existing.categories || [])]);
-      const hadCategory = mergedCategories.has(cat);
-      mergedCategories.add(cat);
-      existing.categories = [...mergedCategories].sort();
-      existing.updated_at = nowIso();
-      touchedExisting = true;
+      const currentCats = appDb.getCategoriesForBrand(existing.identifier);
+      const hadCategory = currentCats.includes(cat);
+      if (!hadCategory) {
+        appDb.setBrandCategories(existing.identifier, [...new Set([...currentCats, cat])].sort());
+      }
       skippedExisting += 1;
       results.push({
         ...normalizedResult,
         status: 'skipped_existing',
-        reason: hadCategory ? 'already_exists' : 'category_added'
+        reason: hadCategory ? 'already_exists' : 'category_added',
       });
       continue;
     }
 
-    registry.brands[brandSlug] = {
+    const identifier = generateIdentifier();
+    appDb.upsertBrand({
+      identifier,
       canonical_name: rawName,
-      identifier: generateIdentifier(),
-      aliases: [],
-      categories: [cat],
+      slug: brandSlug,
+      aliases: '[]',
       website: '',
-      added_at: nowIso(),
-      added_by: 'gui_bulk'
-    };
+      added_by: 'gui_bulk',
+    });
+    appDb.setBrandCategories(identifier, [cat]);
     created += 1;
     results.push({ ...normalizedResult, status: 'created' });
-  }
-
-  if (created > 0 || touchedExisting) {
-    try {
-      await saveBrandRegistry(config, registry);
-    } catch (error) {
-      failed = rows.length;
-      return {
-        ok: false,
-        error: String(error?.message || error || 'brand_bulk_save_failed'),
-        total: rows.length,
-        created: 0,
-        skipped_existing: 0,
-        skipped_duplicate: 0,
-        invalid: 0,
-        failed,
-        total_brands: Object.keys(registry.brands || {}).length,
-        results: rows.map((name, index) => ({
-          index,
-          name: String(name ?? '').trim(),
-          slug: '',
-          status: 'failed',
-          reason: 'brand_bulk_save_failed'
-        }))
-      };
-    }
   }
 
   return {
@@ -230,69 +172,66 @@ export async function addBrandsBulk({ config, names = [], category = '' }) {
     skipped_existing: skippedExisting,
     skipped_duplicate: skippedDuplicate,
     invalid,
-    failed,
-    total_brands: Object.keys(registry.brands || {}).length,
-    results
+    failed: 0,
+    total_brands: appDb.listBrands().length,
+    results,
   };
 }
 
 /**
  * Update an existing brand. Only patches provided fields.
  */
-export async function updateBrand({ config, slug, patch = {} }) {
+export async function updateBrand({ config, appDb, slug, patch = {} }) {
   const brandSlug = String(slug ?? '').trim();
-  if (!brandSlug) {
-    return { ok: false, error: 'slug_required' };
-  }
+  if (!brandSlug) return { ok: false, error: 'slug_required' };
 
-  const registry = await loadBrandRegistry(config);
-  const existing = registry.brands[brandSlug];
-  if (!existing) {
-    return { ok: false, error: 'brand_not_found', slug: brandSlug };
-  }
+  const existing = appDb.getBrandBySlug(brandSlug);
+  if (!existing) return { ok: false, error: 'brand_not_found', slug: brandSlug };
 
+  const updates = {};
   if (patch.name !== undefined) {
-    existing.canonical_name = String(patch.name).trim();
+    updates.canonical_name = String(patch.name).trim();
   }
   if (patch.aliases !== undefined) {
-    existing.aliases = (Array.isArray(patch.aliases) ? patch.aliases : [])
-      .map(a => String(a).trim())
+    const cleanAliases = (Array.isArray(patch.aliases) ? patch.aliases : [])
+      .map((a) => String(a).trim())
       .filter(Boolean);
-  }
-  if (patch.categories !== undefined) {
-    existing.categories = (Array.isArray(patch.categories) ? patch.categories : [])
-      .map(c => String(c).trim().toLowerCase())
-      .filter(Boolean);
+    updates.aliases = JSON.stringify(cleanAliases);
   }
   if (patch.website !== undefined) {
-    existing.website = String(patch.website).trim();
+    updates.website = String(patch.website).trim();
   }
 
-  existing.updated_at = nowIso();
-  registry.brands[brandSlug] = existing;
-  await saveBrandRegistry(config, registry);
+  if (Object.keys(updates).length > 0) {
+    appDb.updateBrandFields(existing.identifier, updates);
+  }
 
-  return { ok: true, slug: brandSlug, brand: existing };
+  if (patch.categories !== undefined) {
+    const cleanCategories = (Array.isArray(patch.categories) ? patch.categories : [])
+      .map((c) => String(c).trim().toLowerCase())
+      .filter(Boolean);
+    appDb.setBrandCategories(existing.identifier, cleanCategories);
+  }
+
+  const updated = appDb.getBrand(existing.identifier);
+  const categories = appDb.getCategoriesForBrand(existing.identifier);
+  return { ok: true, slug: brandSlug, brand: sqlBrandToApiShape(updated, categories) };
 }
 
 /**
  * Remove a brand from the registry.
  */
-export async function removeBrand({ config, slug, force = false }) {
+export async function removeBrand({ config, appDb, slug, force = false }) {
   const brandSlug = String(slug ?? '').trim();
-  if (!brandSlug) {
-    return { ok: false, error: 'slug_required' };
-  }
+  if (!brandSlug) return { ok: false, error: 'slug_required' };
 
-  const registry = await loadBrandRegistry(config);
-  const brand = registry.brands[brandSlug];
-  if (!brand) {
-    return { ok: false, error: 'brand_not_found', slug: brandSlug };
-  }
+  const brand = appDb.getBrandBySlug(brandSlug);
+  if (!brand) return { ok: false, error: 'brand_not_found', slug: brandSlug };
 
+  const categories = appDb.getCategoriesForBrand(brand.identifier);
   const productsByCategory = {};
   let totalProducts = 0;
-  for (const category of brand.categories || []) {
+  for (const category of categories) {
     const catalog = await loadProductCatalog(config, category);
     const count = Object.values(catalog.products || {})
       .filter((row) => row.brand === brand.canonical_name).length;
@@ -307,58 +246,50 @@ export async function removeBrand({ config, slug, force = false }) {
       slug: brandSlug,
       warning: `${totalProducts} products reference this brand`,
       total_products: totalProducts,
-      products_by_category: productsByCategory
+      products_by_category: productsByCategory,
     };
   }
 
-  delete registry.brands[brandSlug];
-  await saveBrandRegistry(config, registry);
+  appDb.deleteBrand(brand.identifier);
 
   return {
     ok: true,
     slug: brandSlug,
     removed: true,
     total_products: totalProducts,
-    products_by_category: productsByCategory
+    products_by_category: productsByCategory,
   };
 }
 
 /**
  * Get all brands for a specific category.
  */
-export function getBrandsForCategory(registry, category) {
+export function getBrandsForCategory(appDb, category) {
   const cat = String(category ?? '').trim().toLowerCase();
   if (!cat) return [];
-
-  return Object.entries(registry.brands || {})
-    .filter(([, brand]) => brand.categories.includes(cat))
-    .map(([slug, brand]) => ({ slug, ...brand }))
-    .sort((a, b) => a.canonical_name.localeCompare(b.canonical_name));
+  const rows = appDb.listBrandsForCategory(cat);
+  return rows.map((row) => {
+    const categories = appDb.getCategoriesForBrand(row.identifier);
+    return sqlBrandToApiShape(row, categories);
+  });
 }
 
 /**
- * Find a brand by name or alias. Returns { slug, brand } or null.
+ * Find a brand by name or alias. Returns brand shape or null.
  */
-export function findBrandByAlias(registry, query) {
-  const q = String(query ?? '').trim().toLowerCase();
+export function findBrandByAlias(appDb, query) {
+  const q = String(query ?? '').trim();
   if (!q) return null;
-
-  for (const [slug, brand] of Object.entries(registry.brands || {})) {
-    if (brand.canonical_name.toLowerCase() === q) {
-      return { slug, ...brand };
-    }
-    if (brand.aliases?.some(a => a.toLowerCase() === q)) {
-      return { slug, ...brand };
-    }
-  }
-  return null;
+  const row = appDb.findBrandByAlias(q);
+  if (!row) return null;
+  const categories = appDb.getCategoriesForBrand(row.identifier);
+  return sqlBrandToApiShape(row, categories);
 }
 
 /**
  * Seed brands from activeFiltering data.
- * Uses product catalog categories first; falls back to activeFiltering source when catalog is absent.
  */
-export async function seedBrandsFromActiveFiltering({ config, category = 'all', extraCategories = [] }) {
+export async function seedBrandsFromActiveFiltering({ config, appDb, category = 'all', extraCategories = [] }) {
   const root = config?.categoryAuthorityRoot || 'category_authority';
   const cat = String(category ?? '').trim().toLowerCase();
   const categories = cat && cat !== 'all'
@@ -369,22 +300,15 @@ export async function seedBrandsFromActiveFiltering({ config, category = 'all', 
     return { ok: true, seeded: 0, skipped: 0, categories_scanned: 0, total_brands: 0 };
   }
 
-  const registry = await loadBrandRegistry(config);
-  const brandMap = new Map(); // slug -> { canonical, cats:Set }
-
+  const brandMap = new Map();
   for (const categoryName of categories) {
     const catalog = await loadProductCatalog(config, categoryName);
-    const entries = Object.values(catalog.products || {});
-    if (entries.length === 0) continue;
-
-    for (const row of entries) {
+    for (const row of Object.values(catalog.products || {})) {
       const brandName = String(row?.brand ?? '').trim();
       if (!brandName) continue;
       const brandSlug = slugify(brandName);
       if (!brandSlug) continue;
-      if (!brandMap.has(brandSlug)) {
-        brandMap.set(brandSlug, { canonical: brandName, cats: new Set() });
-      }
+      if (!brandMap.has(brandSlug)) brandMap.set(brandSlug, { canonical: brandName, cats: new Set() });
       brandMap.get(brandSlug).cats.add(categoryName);
     }
   }
@@ -392,138 +316,114 @@ export async function seedBrandsFromActiveFiltering({ config, category = 'all', 
   let seeded = 0;
   let skipped = 0;
   for (const [brandSlug, { canonical, cats: brandCats }] of brandMap.entries()) {
-    if (registry.brands[brandSlug]) {
-      const existing = registry.brands[brandSlug];
-      const merged = new Set([...(existing.categories || []), ...brandCats]);
-      existing.categories = [...merged].sort();
+    const existing = appDb.getBrandBySlug(brandSlug);
+    if (existing) {
+      const currentCats = appDb.getCategoriesForBrand(existing.identifier);
+      const merged = [...new Set([...currentCats, ...brandCats])].sort();
+      appDb.setBrandCategories(existing.identifier, merged);
       skipped += 1;
       continue;
     }
-    registry.brands[brandSlug] = {
+    const identifier = generateIdentifier();
+    appDb.upsertBrand({
+      identifier,
       canonical_name: canonical,
-      identifier: generateIdentifier(),
-      aliases: [],
-      categories: [...brandCats].sort(),
+      slug: brandSlug,
+      aliases: '[]',
       website: '',
-      added_at: nowIso(),
-      added_by: 'seed'
-    };
+      added_by: 'seed',
+    });
+    appDb.setBrandCategories(identifier, [...brandCats].sort());
     seeded += 1;
   }
 
-  await saveBrandRegistry(config, registry);
   return {
     ok: true,
     seeded,
     skipped,
     categories_scanned: categories.length,
-    total_brands: Object.keys(registry.brands || {}).length
+    total_brands: appDb.listBrands().length,
   };
 }
 
 /**
  * Seed brands from app-owned catalog data.
- * If `category` is provided (and not 'all'), only scan that category.
- * If `category` is 'all' or omitted, scan all category directories.
- * Extracts unique brands, infers category membership, writes registry.
- * Skips brands that already exist (merges categories).
  */
-export async function seedBrandsFromCatalog({ config, category = 'all', extraCategories = [] }) {
+export async function seedBrandsFromCatalog({ config, appDb, category = 'all', extraCategories = [] }) {
   const root = config?.categoryAuthorityRoot || 'category_authority';
-
-  let categories;
+  let targetCategories;
   const cat = String(category ?? '').trim().toLowerCase();
   if (cat && cat !== 'all') {
-    // Single category mode — only scan the selected category
-    categories = [cat];
+    targetCategories = [cat];
   } else {
-    // All mode — discover from local dirs + any explicit extras
     const localCats = await discoverCategoriesLocal({ categoryAuthorityRoot: root });
-    const cats = new Set([...localCats, ...extraCategories]);
-    categories = [...cats].sort();
+    targetCategories = [...new Set([...localCats, ...extraCategories])].sort();
   }
 
-  if (categories.length === 0) {
+  if (targetCategories.length === 0) {
     return { ok: true, seeded: 0, skipped: 0, categories_scanned: 0, total_brands: 0 };
   }
 
-  const registry = await loadBrandRegistry(config);
-  const brandMap = new Map(); // slug -> { canonical, cats }
-
-  for (const category of categories) {
-    const products = await loadCatalogProducts({ category, config });
+  const brandMap = new Map();
+  for (const categoryName of targetCategories) {
+    const products = await loadCatalogProducts({ category: categoryName, config });
     if (!products || products.length === 0) continue;
-
     for (const row of products) {
-      const brand = String(row.brand ?? '').trim();
-      if (!brand) continue;
-
-      const brandSlug = slugify(brand);
+      const brandName = String(row.brand ?? '').trim();
+      if (!brandName) continue;
+      const brandSlug = slugify(brandName);
       if (!brandSlug) continue;
-
-      if (!brandMap.has(brandSlug)) {
-        brandMap.set(brandSlug, { canonical: brand, cats: new Set() });
-      }
-      brandMap.get(brandSlug).cats.add(category);
+      if (!brandMap.has(brandSlug)) brandMap.set(brandSlug, { canonical: brandName, cats: new Set() });
+      brandMap.get(brandSlug).cats.add(categoryName);
     }
   }
 
   let seeded = 0;
   let skipped = 0;
-
   for (const [brandSlug, { canonical, cats: brandCats }] of brandMap) {
-    if (registry.brands[brandSlug]) {
-      // Brand exists — merge categories
-      const existing = registry.brands[brandSlug];
-      const merged = new Set([...existing.categories, ...brandCats]);
-      existing.categories = [...merged].sort();
+    const existing = appDb.getBrandBySlug(brandSlug);
+    if (existing) {
+      const currentCats = appDb.getCategoriesForBrand(existing.identifier);
+      const merged = [...new Set([...currentCats, ...brandCats])].sort();
+      appDb.setBrandCategories(existing.identifier, merged);
       skipped += 1;
       continue;
     }
-
-    registry.brands[brandSlug] = {
+    const identifier = generateIdentifier();
+    appDb.upsertBrand({
+      identifier,
       canonical_name: canonical,
-      identifier: generateIdentifier(),
-      aliases: [],
-      categories: [...brandCats].sort(),
+      slug: brandSlug,
+      aliases: '[]',
       website: '',
-      added_at: nowIso(),
-      added_by: 'seed'
-    };
+      added_by: 'seed',
+    });
+    appDb.setBrandCategories(identifier, [...brandCats].sort());
     seeded += 1;
   }
-
-  await saveBrandRegistry(config, registry);
 
   return {
     ok: true,
     seeded,
     skipped,
-    categories_scanned: categories.length,
-    total_brands: Object.keys(registry.brands).length
+    categories_scanned: targetCategories.length,
+    total_brands: appDb.listBrands().length,
   };
 }
 
 /**
  * Rename a brand. Cascades slug/name changes to all product catalogs.
  *
- * When the brand name changes:
- * 1. Registry entry moves from old slug → new slug (identifier preserved)
- * 2. Old canonical name added to aliases
- * 3. Every product with brand === oldCanonicalName is updated via updateProduct()
- *    (which handles slug rebuild + artifact migration automatically)
- *
- * @returns {{ ok, oldSlug, newSlug, identifier, cascaded_products, cascade_failures, cascade_results[] }}
+ * @returns {{ ok, oldSlug, newSlug, identifier, oldName, newName, cascaded_products, cascade_failures, cascade_results[] }}
  */
-export async function renameBrand({ config, slug, newName, storage, upsertQueue, getSpecDb = null }) {
+export async function renameBrand({ config, appDb, slug, newName, storage, upsertQueue, getSpecDb = null }) {
   const oldSlug = String(slug ?? '').trim();
   if (!oldSlug) return { ok: false, error: 'slug_required' };
 
   const trimmedNew = String(newName ?? '').trim();
   if (!trimmedNew) return { ok: false, error: 'new_name_required' };
 
-  const registry = await loadBrandRegistry(config);
-  const existing = registry.brands[oldSlug];
+  const existing = appDb.getBrandBySlug(oldSlug);
   if (!existing) return { ok: false, error: 'brand_not_found', slug: oldSlug };
 
   const newSlug = slugify(trimmedNew);
@@ -531,59 +431,48 @@ export async function renameBrand({ config, slug, newName, storage, upsertQueue,
 
   const oldCanonicalName = existing.canonical_name;
 
-  // If slug collides with a different brand, reject
-  if (newSlug !== oldSlug && registry.brands[newSlug]) {
+  if (newSlug !== oldSlug && appDb.getBrandBySlug(newSlug)) {
     return { ok: false, error: 'brand_already_exists', slug: newSlug };
   }
 
-  // Move registry entry if slug changed
-  if (newSlug !== oldSlug) {
-    registry.brands[newSlug] = existing;
-    delete registry.brands[oldSlug];
-  }
-
   // Update canonical name
-  existing.canonical_name = trimmedNew;
+  appDb.updateBrandFields(existing.identifier, { canonical_name: trimmedNew });
 
-  // Add old canonical name to aliases (backward compatibility) if not already present
-  if (!existing.aliases.some(a => a.toLowerCase() === oldCanonicalName.toLowerCase())) {
-    existing.aliases = [...existing.aliases, oldCanonicalName];
+  // Move slug if changed
+  if (newSlug !== oldSlug) {
+    appDb.updateBrandSlug(existing.identifier, newSlug);
   }
 
-  // Record rename history on the brand
-  existing.rename_history = [
-    ...(existing.rename_history || []),
-    {
-      previous_slug: oldSlug,
-      previous_name: oldCanonicalName,
-      renamed_at: nowIso()
-    }
-  ];
+  // Add old canonical name to aliases
+  const currentAliases = JSON.parse(existing.aliases || '[]');
+  if (!currentAliases.some((a) => a.toLowerCase() === oldCanonicalName.toLowerCase())) {
+    appDb.updateBrandFields(existing.identifier, {
+      aliases: JSON.stringify([...currentAliases, oldCanonicalName]),
+    });
+  }
 
-  existing.updated_at = nowIso();
-  await saveBrandRegistry(config, registry);
-
-  // Append to global brand rename log
-  await appendBrandRenameLog(config, {
+  // Record rename in audit log
+  appDb.insertBrandRename({
     identifier: existing.identifier,
     old_slug: oldSlug,
     new_slug: newSlug,
     old_name: oldCanonicalName,
-    new_name: trimmedNew
+    new_name: trimmedNew,
   });
 
-  // Cascade to all product catalogs in every category the brand belongs to
+  // Cascade to all product catalogs
+  const categories = appDb.getCategoriesForBrand(existing.identifier);
   const cascade_results = [];
   let cascaded_products = 0;
   let cascade_failures = 0;
 
-  for (const category of existing.categories) {
+  for (const category of categories) {
     const catalog = await loadProductCatalog(config, category);
     const productsToUpdate = Object.entries(catalog.products || {})
       .filter(([, p]) => p.brand === oldCanonicalName);
     const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
 
-    for (const [pid, product] of productsToUpdate) {
+    for (const [pid] of productsToUpdate) {
       try {
         const result = await catalogUpdateProduct({
           config,
@@ -594,20 +483,11 @@ export async function renameBrand({ config, slug, newName, storage, upsertQueue,
           upsertQueue: upsertQueue || null,
           specDb: specDb || null,
         });
-        cascade_results.push({
-          category,
-          productId: pid,
-          ok: result.ok,
-        });
+        cascade_results.push({ category, productId: pid, ok: result.ok });
         if (result.ok) cascaded_products++;
         else cascade_failures++;
       } catch (err) {
-        cascade_results.push({
-          category,
-          productId: pid,
-          ok: false,
-          error: err.message || String(err)
-        });
+        cascade_results.push({ category, productId: pid, ok: false, error: err.message || String(err) });
         cascade_failures++;
       }
     }
@@ -622,27 +502,26 @@ export async function renameBrand({ config, slug, newName, storage, upsertQueue,
     newName: trimmedNew,
     cascaded_products,
     cascade_failures,
-    cascade_results
+    cascade_results,
   };
 }
 
 /**
  * Get impact analysis for a brand rename/delete.
- * Counts products per category that reference this brand.
  */
-export async function getBrandImpactAnalysis({ config, slug }) {
+export async function getBrandImpactAnalysis({ config, appDb, slug }) {
   const brandSlug = String(slug ?? '').trim();
   if (!brandSlug) return { ok: false, error: 'slug_required' };
 
-  const registry = await loadBrandRegistry(config);
-  const existing = registry.brands[brandSlug];
+  const existing = appDb.getBrandBySlug(brandSlug);
   if (!existing) return { ok: false, error: 'brand_not_found', slug: brandSlug };
 
+  const categories = appDb.getCategoriesForBrand(existing.identifier);
   const products_by_category = {};
   const product_details = {};
   let total_products = 0;
 
-  for (const category of existing.categories) {
+  for (const category of categories) {
     const catalog = await loadProductCatalog(config, category);
     const matched = Object.entries(catalog.products || {})
       .filter(([, p]) => p.brand === existing.canonical_name);
@@ -656,38 +535,9 @@ export async function getBrandImpactAnalysis({ config, slug }) {
     slug: brandSlug,
     identifier: existing.identifier,
     canonical_name: existing.canonical_name,
-    categories: existing.categories,
+    categories,
     products_by_category,
     product_details,
-    total_products
+    total_products,
   };
 }
-
-/**
- * Append an entry to the global brand rename log.
- * Stored at: category_authority/_global/brand_rename_log.json
- */
-export async function appendBrandRenameLog(config, entry) {
-  const root = config?.categoryAuthorityRoot || 'category_authority';
-  const logPath = path.resolve(root, '_global', 'brand_rename_log.json');
-
-  let log;
-  try {
-    const text = await fs.readFile(logPath, 'utf8');
-    log = JSON.parse(text);
-    if (!log || !Array.isArray(log.entries)) {
-      log = { _doc: 'Log of all brand renames. Append-only.', entries: [] };
-    }
-  } catch {
-    log = { _doc: 'Log of all brand renames. Append-only.', entries: [] };
-  }
-
-  log.entries.push({
-    ...entry,
-    renamed_at: entry.renamed_at || nowIso()
-  });
-
-  await fs.mkdir(path.dirname(logPath), { recursive: true });
-  await fs.writeFile(logPath, JSON.stringify(log, null, 2), 'utf8');
-}
-

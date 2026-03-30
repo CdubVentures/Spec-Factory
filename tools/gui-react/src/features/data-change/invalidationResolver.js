@@ -19,6 +19,8 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['studio-config', CATEGORY_TOKEN],
     ['studio-artifacts', CATEGORY_TOKEN],
     ['reviewLayout', CATEGORY_TOKEN],
+    ['reviewProductsIndex', CATEGORY_TOKEN],
+    ['product', CATEGORY_TOKEN],
     ['fieldLabels', CATEGORY_TOKEN],
   ]),
   'review-layout': Object.freeze([
@@ -110,12 +112,10 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   settings: Object.freeze([
     ['ui-settings'],
     ['llm-settings-routes', CATEGORY_TOKEN],
-    ['storage-settings'],
     ['runtime-settings'],
     ['indexing', 'llm-config'],
   ]),
   storage: Object.freeze([
-    ['storage-settings'],
     ['indexlab', 'runs'],
   ]),
   'source-strategy': Object.freeze([
@@ -171,7 +171,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
   'test-mode-created': ['test-mode', 'categories'],
   'test-mode-products-generated': ['test-mode'],
   'test-mode-deleted': ['test-mode', 'categories'],
-  'storage-settings-updated': ['storage', 'settings'],
   'source-strategy-created': ['source-strategy'],
   'source-strategy-updated': ['source-strategy'],
   'source-strategy-deleted': ['source-strategy'],

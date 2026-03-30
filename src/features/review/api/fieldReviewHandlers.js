@@ -41,6 +41,15 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
     spawn,
   } = context;
 
+  // WHY: SQL is the primary source for field_studio_map. This helper reads the raw map
+  // for consumers (like buildReviewLayout) that need key_list / product_table metadata.
+  function readRawStudioMap(category) {
+    const specDb = getSpecDb(category);
+    const row = specDb?.getFieldStudioMap?.();
+    if (!row) return null;
+    try { return JSON.parse(row.map_json); } catch { return null; }
+  }
+
   // Review layout
   if (parts[0] === 'review' && parts[1] && parts[2] === 'layout' && method === 'GET') {
     const category = parts[1];
@@ -51,6 +60,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       category,
       fieldOrderOverride: session.mergedFieldOrder,
       fieldsOverride: session.mergedFields,
+      studioMap: readRawStudioMap(category),
     });
     return jsonRes(res, 200, layout);
   }
@@ -71,6 +81,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       category,
       fieldOrderOverride: sessionProd.mergedFieldOrder,
       fieldsOverride: sessionProd.mergedFields,
+      studioMap: readRawStudioMap(category),
     });
     const catEntry = catalog.products?.[productId] || {};
     const payload = await buildProductReviewPayload({
@@ -126,6 +137,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       category,
       fieldOrderOverride: batchSession.mergedFieldOrder,
       fieldsOverride: batchSession.mergedFields,
+      studioMap: readRawStudioMap(category),
     });
     const payloads = [];
     for (const pid of productIds) {
@@ -173,6 +185,13 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       }
     }
 
+    const indexSession = await sessionCache.getSessionRules(category);
+    const indexLayout = await buildReviewLayout({
+      storage, config, category,
+      fieldOrderOverride: indexSession.mergedFieldOrder,
+      fieldsOverride: indexSession.mergedFields,
+      studioMap: readRawStudioMap(category),
+    });
     const payloads = [];
     for (const pid of productIds) {
       try {
@@ -182,6 +201,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
           config,
           category,
           productId: pid,
+          layout: indexLayout,
           includeCandidates: false,
           specDb,
           catalogProduct: ce,
@@ -264,13 +284,21 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
         return jsonRes(res, 404, { error: 'not_in_catalog', message: `Product ${productId} is not in the product catalog` });
       }
     }
+    const candSession = await sessionCache.getSessionRules(category);
+    const candLayout = await buildReviewLayout({
+      storage, config, category,
+      fieldOrderOverride: candSession.mergedFieldOrder,
+      fieldsOverride: candSession.mergedFields,
+      studioMap: readRawStudioMap(category),
+    });
     const payload = await buildProductReviewPayload({
       storage,
       config,
       category,
       productId,
+      layout: candLayout,
       includeCandidates: true,
-      specDb
+      specDb,
     });
     const requestedField = decodeURIComponent(String(field || ''));
     const availableFields = Object.keys(payload.fields || {});

@@ -10,7 +10,6 @@ export interface UiSettingsPayload {
   studioAutoSaveEnabled: boolean;
   studioAutoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
 }
 
 interface UiSettingsAuthorityOptions {
@@ -57,7 +56,6 @@ function sanitizeUiSettings(raw: Record<string, unknown> | null | undefined): Ui
     studioAutoSaveEnabled,
     studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: readUiBool(source, 'runtimeAutoSaveEnabled', UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
-    storageAutoSaveEnabled: readUiBool(source, 'storageAutoSaveEnabled', UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
   };
 }
 
@@ -67,7 +65,6 @@ function normalizeUiSettingsPayload(payload: UiSettingsPayload): UiSettingsPaylo
     studioAutoSaveEnabled: payload.studioAutoSaveEnabled,
     studioAutoSaveMapEnabled: payload.studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: payload.runtimeAutoSaveEnabled,
-    storageAutoSaveEnabled: payload.storageAutoSaveEnabled,
   });
 }
 

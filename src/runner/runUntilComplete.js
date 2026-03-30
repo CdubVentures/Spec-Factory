@@ -35,7 +35,6 @@ export async function runUntilComplete({
   }
   const logger = new EventLogger({
     storage,
-    runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
     context: { category, productId },
   });
   logger.info('queue_transition', { from: 'none', to: 'pending', reason: 'run_until_complete_started' });

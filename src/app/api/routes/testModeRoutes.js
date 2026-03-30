@@ -35,8 +35,7 @@ export function registerTestModeRoutes(ctx) {
     resetTestModeSharedReviewState,
     resetTestModeProductReviewState,
     addBrand,
-    loadBrandRegistry,
-    saveBrandRegistry,
+    appDb,
     invalidateFieldRulesCache,
     sessionCache,
   } = ctx;
@@ -284,13 +283,14 @@ export function registerTestModeRoutes(ctx) {
 
       testBrands.add('NovaForge Labs');
       for (const brandName of testBrands) {
-        const result = await addBrand({ config, name: brandName, aliases: [], categories: [category] });
-        if (result.ok === false && result.error === 'brand_already_exists') {
-          const registry = await loadBrandRegistry(config);
-          const brand = registry.brands[result.slug];
-          if (brand && !brand.categories.includes(category.toLowerCase())) {
-            brand.categories.push(category.toLowerCase());
-            await saveBrandRegistry(config, registry);
+        const result = await addBrand({ config, appDb, name: brandName, aliases: [], categories: [category] });
+        if (result.ok === false && result.error === 'brand_already_exists' && appDb) {
+          const existing = appDb.getBrandBySlug(result.slug);
+          if (existing) {
+            const currentCats = appDb.getCategoriesForBrand(existing.identifier);
+            if (!currentCats.includes(category.toLowerCase())) {
+              appDb.setBrandCategories(existing.identifier, [...new Set([...currentCats, category.toLowerCase()])].sort());
+            }
           }
         }
       }
@@ -518,21 +518,19 @@ export function registerTestModeRoutes(ctx) {
       }
 
       try {
-        const registry = await loadBrandRegistry(config);
-        const catLower = category.toLowerCase();
-        for (const [slug, brand] of Object.entries(registry.brands || {})) {
-          const idx = brand.categories.indexOf(catLower);
-          if (idx >= 0) {
-            brand.categories.splice(idx, 1);
-            if (
-              brand.categories.length === 0
-              && (brand.canonical_name === 'TestCo' || brand.canonical_name === 'TestNewBrand' || brand.canonical_name === 'NovaForge Labs')
-            ) {
-              delete registry.brands[slug];
+        if (appDb) {
+          const catLower = category.toLowerCase();
+          const allBrands = appDb.listBrands();
+          for (const brand of allBrands) {
+            const cats = appDb.getCategoriesForBrand(brand.identifier);
+            const filtered = cats.filter((c) => c !== catLower);
+            if (filtered.length === 0 && ['TestCo', 'TestNewBrand', 'NovaForge Labs'].includes(brand.canonical_name)) {
+              appDb.deleteBrand(brand.identifier);
+            } else if (filtered.length !== cats.length) {
+              appDb.setBrandCategories(brand.identifier, filtered);
             }
           }
         }
-        await saveBrandRegistry(config, registry);
       } catch { /* non-fatal */ }
 
       emitDataChange({

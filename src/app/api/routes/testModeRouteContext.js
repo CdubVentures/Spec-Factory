@@ -10,7 +10,7 @@ import {
 // Stub preserves API shape. Test-mode product runs will error until rebuilt.
 const runTestProduct = async () => { throw new Error('test mode pipeline removed — use crawl pipeline'); };
 import { runComponentReviewBatch } from '../../../pipeline/componentReviewBatch.js';
-import { addBrand, loadBrandRegistry, saveBrandRegistry } from '../../../features/catalog/index.js';
+import { addBrand } from '../../../features/catalog/index.js';
 
 export function createTestModeRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -23,7 +23,7 @@ export function createTestModeRouteContext(options = {}) {
     listFiles, resolveCategoryAlias, broadcastWs,
     purgeTestModeCategoryState, resetTestModeSharedReviewState,
     resetTestModeProductReviewState,
-    invalidateFieldRulesCache, sessionCache,
+    invalidateFieldRulesCache, sessionCache, appDb,
   } = options;
 
   return {
@@ -35,7 +35,7 @@ export function createTestModeRouteContext(options = {}) {
     buildSeedComponentDB, buildValidationChecks, loadComponentIdentityPools,
     runTestProduct, runComponentReviewBatch, purgeTestModeCategoryState,
     resetTestModeSharedReviewState, resetTestModeProductReviewState,
-    addBrand, loadBrandRegistry, saveBrandRegistry, invalidateFieldRulesCache,
-    sessionCache,
+    addBrand, invalidateFieldRulesCache,
+    sessionCache, appDb,
   };
 }

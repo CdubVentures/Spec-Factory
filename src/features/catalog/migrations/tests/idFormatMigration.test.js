@@ -142,6 +142,47 @@ describe('migrateProductIds', () => {
     }
   });
 
+  test('reports failure when artifact migration fails', async () => {
+    const config = await tmpConfig();
+    try {
+      await seedCatalog(config, 'mouse', {
+        'mouse-failing-artifacts': {
+          id: 1, identifier: 'fail0001', brand: 'Test', model: 'FailArtifacts',
+          variant: '', status: 'active', seed_urls: [], added_at: '', added_by: 'seed',
+        },
+      });
+
+      // Storage that lists real keys but fails on write (simulating artifact migration failure)
+      const failStorage = {
+        outputPrefix: 'specs/outputs',
+        async listKeys(prefix) {
+          // Return a fake key under the old product's latest dir so migration attempts the copy
+          if (prefix.includes('mouse-failing-artifacts')) return [`${prefix}/normalized.json`];
+          return [];
+        },
+        async readBuffer(key) { return Buffer.from('{}'); },
+        async readText(key) { return '{}'; },
+        async readJsonOrNull() { return null; },
+        async objectExists() { return false; },
+        async writeObject() { throw new Error('storage_write_failed'); },
+        async deleteObject() { throw new Error('storage_delete_failed'); },
+        resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
+      };
+
+      const result = await migrateProductIds({
+        config,
+        category: 'mouse',
+        storage: failStorage,
+      });
+      // WHY: If artifact migration fails, the overall result must NOT report ok=true.
+      // The catalog rekey + SQL rekey succeed, but artifacts are orphaned.
+      assert.equal(result.ok, false, `expected ok=false when artifacts fail, got ok=${result.ok}`);
+      assert.equal(result.results[0].status, 'failed');
+    } finally {
+      await cleanup(config);
+    }
+  });
+
   test('writes rename log entry', async () => {
     const config = await tmpConfig();
     try {

@@ -20,7 +20,6 @@ describe('UI registry derivations', () => {
           studioAutoSaveEnabled: true,
           studioAutoSaveMapEnabled: true,
           runtimeAutoSaveEnabled: true,
-          storageAutoSaveEnabled: false,
         },
       );
     });
@@ -39,7 +38,6 @@ describe('UI registry derivations', () => {
           studioAutoSaveEnabled: 'boolean',
           studioAutoSaveMapEnabled: 'boolean',
           runtimeAutoSaveEnabled: 'boolean',
-          storageAutoSaveEnabled: 'boolean',
         },
       );
     });
@@ -71,7 +69,6 @@ describe('UI registry derivations', () => {
           'studioAutoSaveEnabled',
           'studioAutoSaveMapEnabled',
           'runtimeAutoSaveEnabled',
-          'storageAutoSaveEnabled',
         ],
       );
     });

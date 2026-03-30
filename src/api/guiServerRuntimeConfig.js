@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { configValue } from '../shared/settingsAccessor.js';
-import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 export function resolveProjectPath({ projectRoot, value, fallback = '' }) {
   const raw = String(value ?? '').trim();
@@ -130,71 +129,3 @@ export function envBool({ env = process.env, name, fallback = false }) {
   return parseBooleanToken(env?.[name], fallback);
 }
 
-export function resolveStorageBackedWorkspaceRoots({
-  settings = {},
-  defaultLocalOutputRoot = () => '',
-}) {
-  if (!settings || settings.enabled !== true) return null;
-  const destinationType = String(settings.destinationType || '')
-    .trim()
-    .toLowerCase();
-  if (destinationType === 's3') {
-    const stagingRoot = path.dirname(defaultLocalOutputRoot());
-    const workspaceRoot = path.join(stagingRoot, '.specfactory_tmp');
-    return {
-      outputRoot: null,
-      indexLabRoot: null,
-      specDbDir: workspaceRoot,
-    };
-  }
-  if (destinationType !== 'local') return null;
-  const localDirectory = String(settings.localDirectory || '').trim();
-  if (!localDirectory) return null;
-  const root = path.resolve(localDirectory);
-  const workspaceRoot = path.join(root, '.specfactory_tmp');
-  return {
-    outputRoot: path.join(root, 'output'),
-    indexLabRoot: path.join(root, 'indexlab'),
-    specDbDir: workspaceRoot,
-  };
-}
-
-// WHY: Dynamic derivation of indexLabRoot from live runDataStorageState.
-// Same logic as createBootstrapEnvironment lines 138-140, but callable at any time.
-export function resolveCurrentIndexLabRoot({ runDataStorageState, defaultIndexLabRoot, defaultLocalOutputRoot }) {
-  const roots = resolveStorageBackedWorkspaceRoots({
-    settings: runDataStorageState,
-    defaultLocalOutputRoot,
-  });
-  if (roots?.indexLabRoot) return roots.indexLabRoot;
-  return defaultIndexLabRoot();
-}
-
-export function createRunDataArchiveStorage({
-  runDataStorageState,
-  config,
-  createStorage,
-}) {
-  if (typeof createStorage !== 'function') return null;
-  if (runDataStorageState?.enabled !== true) return null;
-  if (
-    String(runDataStorageState?.destinationType || '').trim().toLowerCase() !==
-    's3'
-  ) {
-    return null;
-  }
-  if (!String(runDataStorageState?.s3Bucket || '').trim()) {
-    return null;
-  }
-
-  return createStorage({
-    outputMode: 's3',
-    localMode: false,
-    awsRegion: String(runDataStorageState.awsRegion || 'us-east-2').trim(),
-    s3Bucket: String(runDataStorageState.s3Bucket || '').trim(),
-    s3InputPrefix: INPUT_KEY_PREFIX,
-    s3OutputPrefix: OUTPUT_KEY_PREFIX,
-    localInputRoot: configValue(config, 'localInputRoot'),
-    localOutputRoot: configValue(config, 'localOutputRoot'),
-  });
-}

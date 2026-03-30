@@ -64,7 +64,6 @@ test('ui-settings GET returns durable autosave defaults', async (t) => {
   assert.equal(result.body.studioAutoSaveEnabled, true);
   assert.equal(result.body.studioAutoSaveMapEnabled, true);
   assert.equal(result.body.runtimeAutoSaveEnabled, true);
-  assert.equal(result.body.storageAutoSaveEnabled, false);
 });
 
 test('ui-settings PUT persists autosave toggles and emits settings data-change', async (t) => {
@@ -81,7 +80,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
       studioAutoSaveEnabled: false,
       studioAutoSaveMapEnabled: false,
       runtimeAutoSaveEnabled: false,
-      storageAutoSaveEnabled: true,
       unknownKeyShouldBeIgnored: true,
     }),
     broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
@@ -94,7 +92,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(putResult.body.snapshot.studioAutoSaveEnabled, true);
   assert.equal(putResult.body.snapshot.studioAutoSaveMapEnabled, true);
   assert.equal(putResult.body.snapshot.runtimeAutoSaveEnabled, false);
-  assert.equal(putResult.body.snapshot.storageAutoSaveEnabled, true);
   assert.equal(putResult.body.applied.studioAutoSaveEnabled, true);
   assert.equal(putResult.body.applied.studioAutoSaveMapEnabled, true);
   assert.equal(putResult.body.rejected.unknownKeyShouldBeIgnored, 'unknown_key');
@@ -102,7 +99,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   const getResult = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
   assert.equal(getResult.status, 200);
   assert.equal(getResult.body.studioAutoSaveAllEnabled, true);
-  assert.equal(getResult.body.storageAutoSaveEnabled, true);
   assert.equal(getResult.body.runtimeAutoSaveEnabled, false);
 
   assert.equal(emitted.length, 1);
@@ -116,7 +112,6 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(saved.ui.studioAutoSaveAllEnabled, true);
   assert.equal(saved.ui.studioAutoSaveEnabled, true);
   assert.equal(saved.ui.studioAutoSaveMapEnabled, true);
-  assert.equal(saved.ui.storageAutoSaveEnabled, true);
   assert.equal(saved.ui.runtimeAutoSaveEnabled, false);
 });
 
@@ -133,7 +128,6 @@ test('ui-settings PUT keeps field-studio-map autosave independent from key navig
       studioAutoSaveEnabled: false,
       studioAutoSaveMapEnabled: true,
       runtimeAutoSaveEnabled: true,
-      storageAutoSaveEnabled: false,
     }),
   }));
 

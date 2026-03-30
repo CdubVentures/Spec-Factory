@@ -194,10 +194,9 @@ export function createRunListBuilder({
     // With 120 runs that's 120 serial round-trips — parallelizing cuts
     // wall-clock time dramatically.
     async function processRun(dir) {
-      // SQL fast path for runs with complete metadata in the runs table
+      // WHY: SQL is the sole source of run metadata. No file fallback.
       const sqlRow = sqlRunMap.get(dir);
-      if (sqlRow && sqlRow.counters && typeof sqlRow.counters === 'object'
-          && Object.keys(sqlRow.counters).length > 0) {
+      if (sqlRow) {
         const rowCategory = toToken(sqlRow.category);
         if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
         const rowRunId = toToken(sqlRow.run_id || dir);
@@ -229,92 +228,8 @@ export function createRunListBuilder({
         };
       }
 
-      const runDir = String(runLocations.get(dir) || '').trim();
-      if (!runDir) return null;
-      // WHY: Wave 5.5 killed run.json — try run-summary.json first
-      let meta = null;
-      const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
-      if (summary?.telemetry?.meta) {
-        meta = summary.telemetry.meta;
-      }
-      if (!meta) {
-        meta = await safeReadJson(path.join(runDir, 'run.json'));
-      }
-      const rawStatus = String(meta?.status || 'unknown').trim();
-      const resolvedStatus = (
-        rawStatus.toLowerCase() === 'running' && !isRunStillActive(String(meta?.run_id || dir).trim())
-      ) ? 'completed' : rawStatus;
-      const hasMetaCounters = meta?.counters && typeof meta.counters === 'object';
-      const needsEvents = rawStatus.toLowerCase() === 'running' || !hasMetaCounters;
-      const hasNeedSet = Boolean(meta?.artifacts?.has_needset || meta?.needset);
-      const hasSearchProfile = Boolean(meta?.artifacts?.has_search_profile || meta?.search_profile);
-
-      // Skip expensive event reading + stat calls when run.json
-      // already carries counters and the run is not active.
-      if (!needsEvents) {
-        const rowCategory = toToken(meta?.category);
-        if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
-        const rowRunId = toToken(meta?.run_id || dir);
-        const rowProductId = toToken(meta?.product_id);
-        return {
-          run_id: rowRunId,
-          category: rowCategory,
-          product_id: rowProductId,
-          status: String(resolvedStatus || 'unknown').trim(),
-          started_at: String(meta?.started_at || '').trim(),
-          ended_at: String(meta?.ended_at || '').trim(),
-          identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
-          identity_lock_status: String(meta?.identity_lock_status || '').trim(),
-          dedupe_mode: String(meta?.dedupe_mode || '').trim(),
-          phase_cursor: String(meta?.phase_cursor || '').trim(),
-          startup_ms: normalizeStartupMs(meta?.startup_ms),
-          events_path: '',
-          run_dir: runDir,
-          storage_origin: 'local',
-          storage_state: resolveStorageState(resolvedStatus),
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolveBrandModel(rowProductId), runId: rowRunId }),
-          has_needset: hasNeedSet,
-          has_search_profile: hasSearchProfile,
-          counters: meta.counters,
-        };
-      }
-
-      const stat = await safeStat(path.join(runDir, 'run-summary.json'))
-        || await safeStat(path.join(runDir, 'run.json'))
-        || await safeStat(runDir);
-      const rowCategory = toToken(meta?.category);
-      const eventRows = await readEvents(meta?.run_id || dir, 6000, { category: rowCategory });
-      const eventSummary = summarizeEvents(eventRows);
-      if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
-      const rowRunId = toToken(meta?.run_id || dir);
-      const rowProductId = toToken(meta?.product_id || eventSummary.productId);
-      const useEventDerivedCounters = rawStatus.toLowerCase() === 'running' && resolvedStatus !== rawStatus;
-      return {
-        run_id: rowRunId,
-        category: rowCategory,
-        product_id: rowProductId,
-        status: String(resolvedStatus || 'unknown').trim(),
-        started_at: String(meta?.started_at || eventSummary.startedAt || stat?.mtime?.toISOString?.() || '').trim(),
-        ended_at: String(meta?.ended_at || (resolvedStatus !== 'running' ? eventSummary.endedAt : '') || '').trim(),
-        identity_fingerprint: String(meta?.identity_fingerprint || '').trim(),
-        identity_lock_status: String(meta?.identity_lock_status || '').trim(),
-        dedupe_mode: String(meta?.dedupe_mode || '').trim(),
-        phase_cursor: String(meta?.phase_cursor || '').trim(),
-        startup_ms: normalizeStartupMs(meta?.startup_ms),
-        events_path: '',
-        run_dir: runDir,
-        storage_origin: 'local',
-        storage_state: resolveStorageState(resolvedStatus),
-        picker_label: buildPickerLabel({
-          category: rowCategory,
-          productId: rowProductId,
-          ...resolveBrandModel(rowProductId),
-          runId: rowRunId,
-        }),
-        has_needset: hasNeedSet,
-        has_search_profile: hasSearchProfile,
-        counters: (!useEventDerivedCounters && hasMetaCounters) ? meta.counters : eventSummary.counters,
-      };
+      // No SQL row — run not in database, skip
+      return null;
     }
 
     const settled = await Promise.allSettled(dirs.map((dir) => processRun(dir)));

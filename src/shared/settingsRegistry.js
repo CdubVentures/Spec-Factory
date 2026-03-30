@@ -75,7 +75,6 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "openaiApiKey", type: "string", default: "", secret: true, allowEmpty: true, policyGroup: "apiKeys", policyField: "openai", configKey: "openaiApiKey", envKey: "OPENAI_API_KEY", group: "llm", uiCategory: "extraction", uiSection: "provider", uiGroup: "API Keys", uiTip: "API key for OpenAI models" },
   { key: "pipelineSchemaEnforcementMode", type: "enum", default: "warn", allowed: ["off", "warn", "enforce"], configKey: "pipelineSchemaEnforcementMode", envKey: "PIPELINE_SCHEMA_ENFORCEMENT_MODE", group: "misc", uiCategory: "validation", uiSection: "schema", uiHero: true, uiTip: "How pipeline context schema violations are handled: off, warn, or enforce" },
   { key: "runtimeControlFile", type: "string", default: "_runtime/control/runtime_overrides.json", configKey: "runtimeControlFile", envKey: "RUNTIME_CONTROL_FILE", group: "runtime", uiCategory: "global", uiSection: "output", uiGroup: "Runtime Output", uiTip: "Path to the runtime override JSON file used by the planner" },
-  { key: "runtimeEventsKey", type: "string", default: "_runtime/events.jsonl", configKey: "runtimeEventsKey", envKey: "RUNTIME_EVENTS_KEY", group: "runtime", uiCategory: "global", uiSection: "output", uiGroup: "Runtime Output", uiTip: "Output path for the runtime event log (JSONL format)" },
   { key: "runtimeScreencastEnabled", type: "bool", default: true, configKey: "runtimeScreencastEnabled", envKey: "RUNTIME_SCREENCAST_ENABLED", group: "runtime", uiCategory: "fetcher", uiSection: "observability", uiHero: true, uiTip: "Record a screencast of browser activity during crawling" },
   { key: "runtimeTraceEnabled", type: "bool", default: true, configKey: "runtimeTraceEnabled", envKey: "RUNTIME_TRACE_ENABLED", group: "runtime", uiCategory: "fetcher", uiSection: "observability", uiHero: true, uiTip: "Enable runtime trace logging for fetch and LLM operations" },
   { key: "runtimeTraceLlmPayloads", type: "bool", default: true, configKey: "runtimeTraceLlmPayloads", envKey: "RUNTIME_TRACE_LLM_PAYLOADS", group: "runtime", uiCategory: "fetcher", uiSection: "observability", uiGroup: "Trace", uiTip: "Include full LLM request/response payloads in trace logs", disabledBy: "runtimeTraceEnabled" },
@@ -218,21 +217,5 @@ export const UI_SETTINGS_REGISTRY = Object.freeze([
   { key: "studioAutoSaveEnabled", type: "bool", default: true, mutable: true },
   { key: "studioAutoSaveMapEnabled", type: "bool", default: true, mutable: true },
   { key: "runtimeAutoSaveEnabled", type: "bool", default: true, mutable: true },
-  { key: "storageAutoSaveEnabled", type: "bool", default: false, mutable: true },
 ]);
 
-// WHY: Single source of truth for storage settings. Secret fields use
-// `secret: true` and `clearFlag` metadata so derivation functions can
-// exclude secrets from defaults and include clear flags in the mutable key allowlist.
-export const STORAGE_SETTINGS_REGISTRY = Object.freeze([
-  { key: "enabled", type: "bool", default: false, mutable: true },
-  { key: "destinationType", type: "enum", default: "local", allowed: ["local", "s3"], mutable: true },
-  { key: "localDirectory", type: "string", default: "", mutable: true },
-  { key: "awsRegion", type: "string", default: "us-east-2", mutable: true },
-  { key: "s3Bucket", type: "string", default: "", mutable: true },
-  { key: "s3Prefix", type: "string", default: "spec-factory-runs", mutable: true },
-  { key: "s3AccessKeyId", type: "string", default: "", mutable: true },
-  { key: "s3SecretAccessKey", type: "string", default: "", secret: true, mutable: true, clearFlag: "clearS3SecretAccessKey" },
-  { key: "s3SessionToken", type: "string", default: "", secret: true, mutable: true, clearFlag: "clearS3SessionToken" },
-  { key: "updatedAt", type: "string_or_null", default: null, computed: true },
-]);

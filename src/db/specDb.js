@@ -34,6 +34,7 @@ import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createMetricsStore } from './stores/metricsStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
+import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -147,6 +148,9 @@ export class SpecDb {
     this._provenanceStore = createProvenanceStore({
       category: this.category,
       stmts: { _getProvenanceForProduct: this._getProvenanceForProduct },
+    });
+    this._fieldStudioMapStore = createFieldStudioMapStore({
+      stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap },
     });
   }
 
@@ -837,5 +841,10 @@ export class SpecDb {
   upsertFieldHistory(opts) { this._fieldHistoryStore.upsertFieldHistory(opts); }
   getFieldHistories(productId) { return this._fieldHistoryStore.getFieldHistories(productId); }
   deleteFieldHistories(productId) { this._fieldHistoryStore.deleteFieldHistories(productId); }
+
+  // --- Field Studio Map (per-category control-plane config) ---
+
+  getFieldStudioMap() { return this._fieldStudioMapStore.getFieldStudioMap(); }
+  upsertFieldStudioMap(mapJson, mapHash) { return this._fieldStudioMapStore.upsertFieldStudioMap(mapJson, mapHash); }
 
 }

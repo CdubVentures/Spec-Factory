@@ -2,8 +2,8 @@
 // from the registry SSOT. Adding a new setting = add one entry to settingsRegistry.js.
 // No manual key-value pairs to maintain here.
 
-import { RUNTIME_SETTINGS_REGISTRY, STORAGE_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from './settingsRegistry.js';
-import { deriveRuntimeDefaults, deriveOptionValues, deriveStorageDefaults, deriveStorageOptionValues, deriveUiDefaults } from './settingsRegistryDerivations.js';
+import { RUNTIME_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from './settingsRegistry.js';
+import { deriveRuntimeDefaults, deriveOptionValues, deriveUiDefaults } from './settingsRegistryDerivations.js';
 
 export { SEARXNG_AVAILABLE_ENGINES };
 
@@ -13,7 +13,7 @@ const _derivedRuntime = deriveRuntimeDefaults(RUNTIME_SETTINGS_REGISTRY);
 export const SETTINGS_DEFAULTS = Object.freeze({
   runtime: Object.freeze(_derivedRuntime),
   convergence: Object.freeze({}),
-  storage: Object.freeze(deriveStorageDefaults(STORAGE_SETTINGS_REGISTRY)),
+  storage: Object.freeze({}),
   ui: Object.freeze(deriveUiDefaults(UI_SETTINGS_REGISTRY)),
   autosave: Object.freeze({
     debounceMs: Object.freeze({
@@ -36,5 +36,5 @@ const _derivedRuntimeOptions = deriveOptionValues(RUNTIME_SETTINGS_REGISTRY);
 
 export const SETTINGS_OPTION_VALUES = Object.freeze({
   runtime: Object.freeze(_derivedRuntimeOptions),
-  storage: Object.freeze(deriveStorageOptionValues(STORAGE_SETTINGS_REGISTRY)),
+  storage: Object.freeze({}),
 });

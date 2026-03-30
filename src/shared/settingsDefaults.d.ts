@@ -4,21 +4,12 @@
 export declare const SETTINGS_DEFAULTS: {
   readonly convergence: Readonly<Record<string, number | boolean>>;
   readonly runtime: Readonly<Record<string, string | number | boolean>>;
-  readonly storage: Readonly<{
-    enabled: boolean;
-    destinationType: 'local' | 's3';
-    localDirectory: string;
-    awsRegion: string;
-    s3Bucket: string;
-    s3Prefix: string;
-    s3AccessKeyId: string;
-  }>;
+  readonly storage: Readonly<Record<string, never>>;
   readonly ui: Readonly<{
     studioAutoSaveAllEnabled: boolean;
     studioAutoSaveEnabled: boolean;
     studioAutoSaveMapEnabled: boolean;
     runtimeAutoSaveEnabled: boolean;
-    storageAutoSaveEnabled: boolean;
   }>;
   readonly autosave: Readonly<{
     debounceMs: Readonly<{
@@ -42,11 +33,10 @@ export declare const SETTINGS_OPTION_VALUES: {
     pipelineSchemaEnforcementMode: readonly string[];
     searchEngines: readonly string[];
     searchEnginesFallback: readonly string[];
+    crawleeWaitUntil: readonly string[];
     overlayDismissalMode: readonly string[];
   }>;
-  readonly storage: Readonly<{
-    destinationType: readonly ('local' | 's3')[];
-  }>;
+  readonly storage: Readonly<Record<string, never>>;
 };
 
 export declare const SEARXNG_AVAILABLE_ENGINES: readonly string[];

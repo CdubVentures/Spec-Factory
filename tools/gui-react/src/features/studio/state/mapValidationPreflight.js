@@ -64,8 +64,3 @@ export function assertFieldStudioMapValidationOrThrow({ result, actionLabel = 's
   const detail = preview || 'unknown validation error';
   throw new Error(`Field Studio map validation failed before ${actionLabel}: ${detail}${suffix}`);
 }
-
-export function resolveFieldStudioMapPayloadForSave({ result, fallback }) {
-  const outcome = getFieldStudioMapValidationOutcome(result);
-  return toOptionalObject(outcome.normalized) || fallback;
-}

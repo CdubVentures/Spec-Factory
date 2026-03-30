@@ -55,9 +55,6 @@ export const CUSTOM_KEYS = Object.freeze(new Set([
   // Category authority (computed resolution chain)
   'categoryAuthorityRoot',
 
-  // Runtime events key (uses simple pattern but grouped here for safety)
-  'runtimeEventsKey',
-
 ]));
 
 const PARSE_BY_TYPE = {

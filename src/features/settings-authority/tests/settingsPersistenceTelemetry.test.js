@@ -75,7 +75,6 @@ test('persistUserSettingsSections serializes concurrent section writes without d
       categoryAuthorityRoot: root,
       ui: {
         runtimeAutoSaveEnabled: false,
-        storageAutoSaveEnabled: true,
       },
     }),
   ]);
@@ -84,7 +83,6 @@ test('persistUserSettingsSections serializes concurrent section writes without d
   assert.equal(snapshot.runtime.domainClassifierUrlCap, 9);
   assert.deepStrictEqual(snapshot.convergence, {});
   assert.equal(snapshot.ui.runtimeAutoSaveEnabled, false);
-  assert.equal(snapshot.ui.storageAutoSaveEnabled, true);
 });
 
 test('persistUserSettingsSections fails on invalid user-settings JSON instead of normalizing to empty snapshot', async () => {

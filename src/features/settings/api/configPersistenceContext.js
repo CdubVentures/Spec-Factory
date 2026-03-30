@@ -4,7 +4,6 @@ import {
   applyRuntimeSettingsToConfig,
   deriveSettingsArtifactsFromUserSettings,
   persistUserSettingsSections,
-  snapshotStorageSettings,
   snapshotUiSettings,
 } from '../../settings-authority/index.js';
 import {
@@ -16,8 +15,8 @@ export function createConfigPersistenceContext({
   config,
   settingsRoot,
   canonicalOnlySettingsWrites,
-  runDataStorageState,
   initialUserSettings,
+  appDb = null,
 }) {
   let userSettingsState = initialUserSettings;
   const initialSettingsArtifacts = deriveSettingsArtifactsFromUserSettings(initialUserSettings);
@@ -29,7 +28,6 @@ export function createConfigPersistenceContext({
       ? artifacts.sections
       : {};
     applyRuntimeSettingsToConfig(config, sections.runtime || {});
-    Object.assign(runDataStorageState, snapshotStorageSettings(sections.storage || {}));
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
   }
 
@@ -46,14 +44,13 @@ export function createConfigPersistenceContext({
 
   async function persistCanonicalSections({
     runtime = null,
-    storage: storageSection = null,
     ui = null,
     studio = null,
   } = {}) {
     const persisted = await persistUserSettingsSections({
       categoryAuthorityRoot: settingsRoot,
+      appDb,
       runtime,
-      storage: storageSection,
       ui,
       studio,
     });
@@ -82,7 +79,6 @@ export function createConfigPersistenceContext({
   return {
     getUserSettingsState() { return userSettingsState; },
     getUiSettingsState() { return uiSettingsState; },
-    runDataStorageState,
     persistCanonicalSections,
     persistLegacySettingsFile,
     recordRouteWriteAttempt: recordRouteWriteAttemptWrapper,

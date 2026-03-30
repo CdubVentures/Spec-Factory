@@ -154,9 +154,7 @@ export function registerIndexlabRoutes(ctx) {
       const runDir = typeof resolveIndexLabRunDirectory === 'function'
         ? (await resolveIndexLabRunDirectory(runId).catch(() => '')) || directRunDir
         : directRunDir;
-      const meta = typeof readIndexLabRunMeta === 'function'
-        ? await readIndexLabRunMeta(runId).catch(() => null)
-        : await safeReadJson(path.join(runDir, 'run.json'));
+      const meta = await readIndexLabRunMeta(runId).catch(() => null);
       if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
       const events = await readIndexLabRunEvents(runId, 2000, { category: meta?.category });
       return jsonRes(res, 200, resolveInactiveRunMeta(meta, events, runId));

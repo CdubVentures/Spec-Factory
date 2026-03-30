@@ -188,6 +188,7 @@ export function createProcessRuntime({
               invalidateFieldRulesCache,
               reviewLayoutByCategory,
               syncSpecDbForCategory,
+              getSpecDb,
               broadcastWs,
             });
           }

@@ -6,10 +6,10 @@ import {
   resolveProductIdentity,
 } from '../productIdentityAuthority.js';
 
-test('inferIdentityFromProductId parses category-prefixed product ids', () => {
-  const identity = inferIdentityFromProductId('mouse-razer-viper-v3-pro', 'mouse');
-  assert.equal(identity.brand, 'Razer');
-  assert.equal(identity.model, 'Viper V3 Pro');
+test('inferIdentityFromProductId returns empty for hex-based ids', () => {
+  const identity = inferIdentityFromProductId('mouse-a1b2c3d4', 'mouse');
+  assert.equal(identity.brand, '');
+  assert.equal(identity.model, '');
   assert.equal(identity.variant, '');
 });
 
@@ -75,16 +75,16 @@ test('resolveAuthoritativeProductIdentity falls back to db then normalized then 
   assert.equal(resolved.variant, '');
 });
 
-test('resolveAuthoritativeProductIdentity uses inferred identity when no sources exist', () => {
+test('resolveAuthoritativeProductIdentity returns empty when no sources exist', () => {
   const resolved = resolveAuthoritativeProductIdentity({
     category: 'mouse',
-    productId: 'mouse-logitech-g-pro-x-superlight-2',
+    productId: 'mouse-a1b2c3d4',
   });
 
   assert.equal(resolved.id, 0);
   assert.equal(resolved.identifier, '');
-  assert.equal(resolved.brand, 'Logitech');
-  assert.equal(resolved.model, 'G Pro X Superlight 2');
+  assert.equal(resolved.brand, '');
+  assert.equal(resolved.model, '');
   assert.equal(resolved.variant, '');
 });
 

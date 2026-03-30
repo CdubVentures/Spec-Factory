@@ -92,7 +92,7 @@ export function createGuiServerRuntime({
     const {
       env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
       storage: { storage, runDataStorageState, getIndexLabRoot },
-      session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady },
+      session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
       realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
       process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
       http: { jsonRes, corsHeaders, readJsonBody },
@@ -158,16 +158,16 @@ export function createGuiServerRuntime({
       }),
       brandRouteContext: createBrandRouteContext({
         jsonRes, readJsonBody, config, storage,
-        resolveCategoryAlias, broadcastWs, getSpecDb, loadProductCatalog,
+        resolveCategoryAlias, broadcastWs, getSpecDb, loadProductCatalog, appDb,
       }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,
-        getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState,
+        getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState, appDb,
       }),
       studioRouteContext: createStudioRouteContext({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
         listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
-        getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
+        getSpecDb, getSpecDbReady, storage, loadCategoryConfig, startProcess, broadcastWs,
         reviewLayoutByCategory, loadProductCatalog,
       }),
       catalogRouteContext: createCatalogRouteContext({
@@ -180,7 +180,7 @@ export function createGuiServerRuntime({
         OUTPUT_ROOT, getSpecDb, getSpecDbReady, fs, path, safeReadJson, safeStat,
         listFiles, resolveCategoryAlias, broadcastWs,
         purgeTestModeCategoryState, resetTestModeSharedReviewState,
-        resetTestModeProductReviewState, invalidateFieldRulesCache, sessionCache,
+        resetTestModeProductReviewState, invalidateFieldRulesCache, sessionCache, appDb,
       }),
       indexlabRouteContext: createIndexlabRouteContext({
         jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,

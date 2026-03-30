@@ -136,7 +136,6 @@ export function buildRawConfig({ manifestApplicator }) {
     userAgent: process.env.USER_AGENT || SETTINGS_DEFAULTS.runtime.userAgent || DEFAULT_USER_AGENT,
     localInputRoot: process.env.LOCAL_INPUT_ROOT || runtimeSettingDefault('localInputRoot'),
     localOutputRoot: process.env.LOCAL_OUTPUT_ROOT || defaultLocalOutputRoot(),
-    runtimeEventsKey: process.env.RUNTIME_EVENTS_KEY || runtimeSettingDefault('runtimeEventsKey'),
     searchEngines: process.env.SEARCH_ENGINES || runtimeSettingDefault('searchEngines'),
     searchEnginesFallback: process.env.SEARCH_ENGINES_FALLBACK || runtimeSettingDefault('searchEnginesFallback'),
     searxngBaseUrl: process.env.SEARXNG_BASE_URL || runtimeSettingDefault('searxngBaseUrl'),

@@ -14,7 +14,6 @@ import {
 import {
   writeJsonStable,
   writeCanonicalFieldRulesPair,
-  writeControlPlaneSnapshot
 } from './compileFileIo.js';
 import { applyKeyLevelConstraintsToEntities } from './compileComponentHelpers.js';
 
@@ -46,20 +45,12 @@ export async function writeCompileOutput({
   if (resolvedControlMapPath !== controlPlaneFieldStudioMapPath) {
     await writeJsonStable(controlPlaneFieldStudioMapPath, map);
   }
-  const controlPlaneSnapshot = await writeControlPlaneSnapshot({
-    controlPlaneRoot,
-    fieldStudioMap: map,
-    note: 'category-compile'
-  });
-  compileReport.artifacts.control_plane_version = {
-    path: controlPlaneSnapshot.path,
-    version_id: controlPlaneSnapshot.version_id
-  };
+  compileReport.artifacts.control_plane_version = { path: null, version_id: null };
 
   // ── Validation gate — early return if validation errors ──
   if (validation.errors.length > 0) {
     return {
-      controlPlaneSnapshot,
+      controlPlaneSnapshot: null,
       earlyReturn: {
         category,
         compiled: false,
@@ -71,7 +62,7 @@ export async function writeCompileOutput({
         errors: compileReport.errors,
         warnings: compileReport.warnings,
         compile_report: compileReport,
-        control_plane_version: controlPlaneSnapshot
+        control_plane_version: null,
       },
     };
   }
@@ -181,5 +172,5 @@ export async function writeCompileOutput({
 
   await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);
 
-  return { controlPlaneSnapshot, earlyReturn: null };
+  return { controlPlaneSnapshot: null, earlyReturn: null };
 }

@@ -25,9 +25,7 @@ import {
 import { createProcessRuntime } from '../app/api/processRuntime.js';
 import { createRealtimeBridge } from '../app/api/realtimeBridge.js';
 import { createBootstrapEnvironment } from './bootstrap/createBootstrapEnvironment.js';
-import { resolveCurrentIndexLabRoot } from './guiServerRuntimeConfig.js';
 import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
-import { defaultIndexLabRoot, defaultLocalOutputRoot } from '../core/config/runtimeArtifactRoots.js';
 import { createBootstrapSessionLayer } from './bootstrap/createBootstrapSessionLayer.js';
 import { createBootstrapDomainRuntimes } from './bootstrap/createBootstrapDomainRuntimes.js';
 import { assertNativeModulesHealthy } from '../core/nativeModuleGuard.js';
@@ -38,7 +36,7 @@ import { assertNativeModulesHealthy } from '../core/nativeModuleGuard.js';
 export const BOOTSTRAP_RETURN_GROUPS = {
   env: ['config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD'],
   storage: ['storage', 'runDataStorageState', 'getIndexLabRoot'],
-  session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady'],
+  session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady', 'appDb'],
   realtime: ['broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame'],
   process: ['processStatus', 'startProcess', 'stopProcess', 'isProcessRunning', 'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack'],
   http: ['jsonRes', 'corsHeaders', 'readJsonBody'],
@@ -65,7 +63,7 @@ export function bootstrapServer({ projectRoot }) {
   const env = createBootstrapEnvironment({ projectRoot });
   const {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
+    storage, runDataStorageState,
     resolveProjectPath, cleanVariant, markEnumSuggestionStatusBound,
   } = env;
 
@@ -81,6 +79,7 @@ export function bootstrapServer({ projectRoot }) {
   const {
     sessionCache, resolveCategoryAlias,
     specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
+    appDb,
   } = createBootstrapSessionLayer({ config, HELPER_ROOT, storage });
 
   // ── Realtime bridge (stays inline — circular closure binding) ──
@@ -117,19 +116,14 @@ export function bootstrapServer({ projectRoot }) {
   processStatusProvider = processStatus;
   forwardScreencastControlProvider = forwardScreencastControl;
 
-  // WHY: Dynamic getter so run discovery tracks live storage settings, not boot-time snapshot.
-  // Falls back to boot-time INDEXLAB_ROOT (which honours --indexlab-root) instead of the
-  // global default, so tests and CLI overrides are respected.
-  const getIndexLabRoot = () => resolveCurrentIndexLabRoot({
-    runDataStorageState, defaultIndexLabRoot: () => INDEXLAB_ROOT, defaultLocalOutputRoot,
-  });
+  const getIndexLabRoot = () => INDEXLAB_ROOT;
 
   // ── IndexLab init (side effect, no return value) ──
   initIndexLabDataBuilders({
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
-    storage, runDataArchiveStorage, config,
-    getSpecDbReady, isProcessRunning, processStatus, runDataStorageState,
-    getIndexLabRoot, getRunDataArchiveStorage,
+    storage, config,
+    getSpecDbReady, isProcessRunning, processStatus,
+    getIndexLabRoot,
   });
 
   // ── Phase 3: Domain runtimes (review + catalog) ──
@@ -150,7 +144,7 @@ export function bootstrapServer({ projectRoot }) {
   return {
     env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
     storage: { storage, runDataStorageState, getIndexLabRoot },
-    session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady },
+    session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
     realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
     process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
     http: { jsonRes, corsHeaders, readJsonBody },

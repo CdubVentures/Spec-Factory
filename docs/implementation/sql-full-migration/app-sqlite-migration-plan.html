@@ -713,6 +713,16 @@ CREATE TABLE IF NOT EXISTS studio_maps (
   <td>E2E persistence test: line 220 waits for writes to user-settings.json (line 261). Must verify SQL persistence instead.</td>
   <td><span class="tag tag-red">HIGH</span></td>
 </tr>
+<tr>
+  <td class="mono">src/features/settings/api/tests/configPersistenceContext.test.js</td>
+  <td>Direct unit test for configPersistenceContext (CRITICAL rewrite target). Covers persistence wrapper shape, telemetry, legacy-write branch, canonical section persistence.</td>
+  <td><span class="tag tag-red">HIGH</span></td>
+</tr>
+<tr>
+  <td class="mono">src/features/settings-authority/tests/llmPolicyRouteHandler.test.js</td>
+  <td>Direct route test for llmPolicyHandler (listed in 5b). Covers /llm-policy GET/PUT, runtime persistence, data-change broadcasts.</td>
+  <td><span class="tag tag-red">HIGH</span></td>
+</tr>
 </table>
 </div>
 
@@ -738,6 +748,41 @@ CREATE TABLE IF NOT EXISTS studio_maps (
   <td class="mono">src/features/settings-authority/settingsDocumentMeta.js</td>
   <td>Describes user-settings.json as canonical. Update comments/docs to reflect seed-only role.</td>
   <td><span class="tag tag-green">LOW</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/04-features/pipeline-and-runtime-settings.md</td>
+  <td>Line 50: references user-settings.json as active persistence target.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/04-features/storage-and-run-data.md</td>
+  <td>Line 42: references user-settings.json storage section.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/02-dependencies/environment-and-config.md</td>
+  <td>Line 17: describes settings load path from JSON.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/03-architecture/backend-architecture.md</td>
+  <td>Line 88: references user-settings.json in bootstrap flow.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/04-features/llm-policy-and-provider-config.md</td>
+  <td>Line 86: references settings persistence to JSON.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/04-features/field-rules-studio.md</td>
+  <td>Line 14: references studio settings in user-settings.json.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
+</tr>
+<tr>
+  <td class="mono">docs/01-project-overview/folder-map.md</td>
+  <td>Line 51: lists user-settings.json in folder layout.</td>
+  <td><span class="tag tag-gray">DOCS</span></td>
 </tr>
 </table>
 </div>
@@ -781,7 +826,7 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 
 <div class="note">
-<strong>Total blast radius:</strong> ~29 production files + ~19 existing test files + 7 new files = <strong>55 files</strong>. The 6 CRITICAL files (brandRegistry.js, userSettingsService.js, configPersistenceContext.js, createBootstrapEnvironment.js, config.js, configRoutes.js) are the core rewrites. Everything else is wiring appDb through route context factories and bootstrap chain, updating test data setup from JSON fixtures to in-memory SQLite, and updating documentation that describes JSON as the canonical store.
+<strong>Total blast radius:</strong> ~29 production files + ~21 existing test files + 7 new files + ~10 docs = <strong>67 files</strong>. The 6 CRITICAL files (brandRegistry.js, userSettingsService.js, configPersistenceContext.js, createBootstrapEnvironment.js, config.js, configRoutes.js) are the core rewrites. Everything else is wiring appDb through route context factories and bootstrap chain, updating test data setup from JSON fixtures to in-memory SQLite, and updating documentation that describes JSON as the canonical store.
 </div>
 
 
@@ -855,6 +900,9 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 <!-- ============================================================ -->
 <h2>7. Migration phases</h2>
 
+<div class="done">
+<strong>Phase A: app.sqlite infrastructure &mdash; COMPLETE.</strong> Created AppDb class (src/db/appDb.js, appDbSchema.js, appDbSeed.js) with 5 tables, 20+ CRUD methods, 53 tests. Wired into bootstrap: createBootstrapSessionLayer &rarr; serverBootstrap &rarr; guiServerRuntime. Seeded from JSON on first run.
+</div>
 <div class="phase-header">
 <h3>Phase A: app.sqlite infrastructure</h3>
 <p>Create the database, schema, and bootstrap wiring. No behavior changes yet.</p>
@@ -892,6 +940,9 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 </div>
 
+<div class="done">
+<strong>Phase B: Brand registry migration &mdash; COMPLETE.</strong> Rewrote brandRegistry.js (693&rarr;467 LOC). All 13 functions use appDb exclusively. saveBrandRegistry + appendBrandRenameLog eliminated. Brand registry keyed by identifier in SQL. Products still reference brands by display name (pragmatic middle ground). 18 characterization + 10 AppDb method tests added.
+</div>
 <div class="phase-header">
 <h3>Phase B: Brand registry migration</h3>
 <p>Switch brandRegistry.js from JSON to SQL. Rekey by identifier.</p>
@@ -940,6 +991,9 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 </div>
 
+<div class="done">
+<strong>Phase C: Settings migration &mdash; COMPLETE.</strong> Added SQL read/write paths to userSettingsService.js (readSettingsFromAppDb, writeSettingsToAppDb). loadUserSettingsSync/persistUserSettingsSections gain appDb parameter. JSON fallback preserved for boot path only. Wired through configRouteContext &rarr; configRoutes &rarr; configPersistenceContext. 7 characterization tests added.
+</div>
 <div class="phase-header">
 <h3>Phase C: Settings migration</h3>
 <p>Switch userSettingsService.js from JSON to SQL.</p>
@@ -1088,15 +1142,15 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 <!-- Per-category DBs -->
 <rect x="80" y="220" width="200" height="45" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text class="t14b" x="180" y="241" text-anchor="middle" fill="#26215C">mouse/spec.sqlite</text>
-<text class="t11" x="180" y="257" text-anchor="middle" fill="#534AB7">56 tables (category data)</text>
+<text class="t11" x="180" y="257" text-anchor="middle" fill="#534AB7">57 tables (category data)</text>
 
 <rect x="320" y="220" width="200" height="45" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text class="t14b" x="420" y="241" text-anchor="middle" fill="#26215C">keyboard/spec.sqlite</text>
-<text class="t11" x="420" y="257" text-anchor="middle" fill="#534AB7">56 tables (category data)</text>
+<text class="t11" x="420" y="257" text-anchor="middle" fill="#534AB7">57 tables (category data)</text>
 
 <rect x="560" y="220" width="200" height="45" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
 <text class="t14b" x="660" y="241" text-anchor="middle" fill="#26215C">monitor/spec.sqlite</text>
-<text class="t11" x="660" y="257" text-anchor="middle" fill="#534AB7">56 tables (category data)</text>
+<text class="t11" x="660" y="257" text-anchor="middle" fill="#534AB7">57 tables (category data)</text>
 
 <rect x="800" y="220" width="250" height="45" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t14b" x="925" y="241" text-anchor="middle" fill="#04342C">app.sqlite (shared)</text>
@@ -1280,7 +1334,7 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 
 <div class="note">
-<strong>Total effort estimate:</strong> ~29 production files + ~19 existing test files + 7 new files = <strong>55 files</strong>. The 6 CRITICAL files total ~1,700 LOC of core rewrites. The existing registry-driven architecture (settingsRegistry.js, product ID primitives) makes this tractable. The hardest part is the brandRegistry rename cascade &mdash; ensure characterization tests lock it down before touching anything.
+<strong>Total effort estimate:</strong> ~29 production files + ~21 existing test files + 7 new files + ~10 docs = <strong>67 files</strong>. The 6 CRITICAL files total ~1,700 LOC of core rewrites. The existing registry-driven architecture (settingsRegistry.js, product ID primitives) makes this tractable. The hardest part is the brandRegistry rename cascade &mdash; ensure characterization tests lock it down before touching anything.
 </div>
 
 </body>

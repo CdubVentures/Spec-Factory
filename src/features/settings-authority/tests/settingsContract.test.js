@@ -20,7 +20,6 @@ test('settings contract exposes version, precedence, and migration metadata', ()
   assert.equal(Number.isInteger(SETTINGS_DOCUMENT_SCHEMA_VERSION), true);
   assert.equal(SETTINGS_DOCUMENT_SCHEMA_VERSION >= 1, true);
   assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.runtime, ['user']);
-  assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.storage, ['user']);
   assert.deepEqual(SETTINGS_AUTHORITY_PRECEDENCE.ui, ['user']);
   assert.equal(Array.isArray(SETTINGS_SCHEMA_MIGRATION_RULES), true);
   assert.equal(SETTINGS_SCHEMA_MIGRATION_RULES.length > 0, true);
@@ -118,25 +117,13 @@ test('validateUserSettingsSnapshot enforces canonical envelope and rejects unkno
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     runtime: { searchEngines: 'bing,brave,duckduckgo' },
     convergence: {},
-    storage: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-      updatedAt: null,
-    },
+    storage: {},
     studio: {},
     ui: {
       studioAutoSaveAllEnabled: false,
       studioAutoSaveEnabled: true,
       studioAutoSaveMapEnabled: true,
       runtimeAutoSaveEnabled: true,
-      storageAutoSaveEnabled: false,
     },
   };
   const valid = validateUserSettingsSnapshot(validPayload);

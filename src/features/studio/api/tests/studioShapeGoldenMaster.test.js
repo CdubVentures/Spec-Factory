@@ -54,7 +54,6 @@ test('studio payload response has exact StudioPayload shape', async () => {
 // Shape 2: FieldStudioMapResponse (GET /studio/:category/field-studio-map)
 test('studio field-studio-map GET response has file_path and map', async () => {
   const result = await invokeStudioRoute({
-    loadStudioMapFromUserSettings: async () => null,
     loadFieldStudioMap: async () => ({
       file_path: 'category_authority/mouse/_control_plane/field_studio_map.json',
       map: { version: 2, component_sources: [{ component_type: 'sensor' }] },

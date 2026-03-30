@@ -13,7 +13,6 @@ export class EventLogger {
     this.events = [];
     this.echoStdout = options.echoStdout ?? parseBool(process.env.LOG_STDOUT, false);
     this.storage = options.storage || null;
-    this.runtimeEventsKey = String(options.runtimeEventsKey || '_runtime/events.jsonl').trim();
     this.baseContext = {
       ...(options.context || {})
     };

@@ -69,7 +69,8 @@ export async function buildReviewLayout({
   config = {},
   category,
   fieldOrderOverride = null,
-  fieldsOverride = null
+  fieldsOverride = null,
+  studioMap: studioMapOverride = null,
 }) {
   const categoryConfig = await loadCategoryConfig(category, { storage, config });
   const compiledFields = categoryConfig.fieldRules?.fields || {};
@@ -84,7 +85,8 @@ export async function buildReviewLayout({
   const fields = isObject(projected?.fields) ? projected.fields : mergedFields;
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   const mapPath = path.join(helperRoot, category, '_control_plane', 'field_studio_map.json');
-  const studioMap = await readJsonIfExists(mapPath);
+  // WHY: SQL is the primary source for studioMap. JSON file fallback for pre-migration.
+  const studioMap = studioMapOverride || await readJsonIfExists(mapPath);
 
   const compiledFieldList = categoryConfig.fieldOrder || Object.keys(fields || {});
   const fieldSource = Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0

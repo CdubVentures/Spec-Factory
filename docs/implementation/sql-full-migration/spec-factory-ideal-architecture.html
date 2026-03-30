@@ -53,6 +53,10 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <h1>Spec Factory — Ideal Data Architecture</h1>
 <p class="subtitle">SQLite as durable working store. JSONs as rebuild safety net. Milestone-only checkpoint writes.</p>
 
+<div class="done">
+<strong>Status (2026-03-29):</strong> SQL migration COMPLETE. 57 tables (56 + FTS). field_studio_map migrated to specDb as primary store (dual-write to user-settings.json eliminated, choosePreferredStudioMap arbitration removed). All legacy file fallback readers DELETED — SQL is the sole runtime data source for run metadata, artifacts, telemetry indexes, and events. FrontierDb JSON class deleted (SQLite sole impl). NDJSON writers + readers fully stripped. Product IDs hex-based and immutable. Remaining: buildLlmMetrics JSONL reader, 3 mutable JSON state files (catalog, brands, settings), cosmetic debt.
+</div>
+
 <div class="legend">
   <div class="legend-item"><div class="legend-dot" style="background:#E1F5EE;border:1px solid #0F6E56"></div> SQLite (primary store)</div>
   <div class="legend-item"><div class="legend-dot" style="background:#FAECE7;border:1px solid #993C1D"></div> JSON files (rebuild source)</div>
@@ -137,7 +141,7 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <rect x="875" y="251" width="160" height="40" rx="6" fill="#fff" stroke="#0F6E56" stroke-width="0.5"/>
 <text class="t14" x="955" y="275" text-anchor="middle" fill="#085041">learning + intel</text>
 
-<text class="t12" x="815" y="310" text-anchor="middle" fill="#085041">56 tables (55 + FTS) — SQLite is the authority (dead tables dropped 2026-03-29)</text>
+<text class="t12" x="815" y="310" text-anchor="middle" fill="#085041">57 tables (56 + FTS) — SQLite is the authority (field_studio_map added 2026-03-29)</text>
 </svg>
 </div>
 
@@ -455,7 +459,7 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 <tr>
   <td style="padding: 8px 12px; font-weight: 600;">Database</td>
   <td style="padding: 8px 12px; color: #791f1f;">better-sqlite3 (was 56 tables, treated as cache)</td>
-  <td style="padding: 8px 12px; color: #085041;">Same better-sqlite3, 56 tables (promoted to authority, dead tables dropped)</td>
+  <td style="padding: 8px 12px; color: #085041;">Same better-sqlite3, 57 tables (promoted to authority, field_studio_map added)</td>
 </tr>
 </table>
 </div>
@@ -564,7 +568,7 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
 </div>
 
 <div class="done">
-<strong>Wave 2 design decisions:</strong> Created a new <code>runs</code> table (not extending <code>product_runs</code>) because the two serve different purposes: <code>product_runs</code> is a post-run summary (validated, confidence, cost), while <code>runs</code> tracks mid-run state (phase_cursor, boot_step, counters, stages, startup_ms). The store uses a single full <code>upsertRun()</code> instead of granular UPDATE methods — <code>writeRunMeta()</code> already rebuilds the full doc on every call, and SQLite WAL-mode makes full upserts negligible overhead. Step 10 uses a <code>{ writeJson }</code> option flag so only <code>ensureRun</code> (start) and <code>finalize</code> (end) write run.json — mid-run callers get SQL-only automatically. <code>resolveIndexLabRunDirectory</code> and <code>readIndexLabRunMeta</code> still depend on run.json for directory discovery, so run.json is written at start + end (not fully eliminated).
+<strong>Wave 2 design decisions:</strong> Created a new <code>runs</code> table (not extending <code>product_runs</code>) because the two serve different purposes: <code>product_runs</code> is a post-run summary (validated, confidence, cost), while <code>runs</code> tracks mid-run state (phase_cursor, boot_step, counters, stages, startup_ms). The store uses a single full <code>upsertRun()</code> instead of granular UPDATE methods — <code>writeRunMeta()</code> already rebuilds the full doc on every call, and SQLite WAL-mode makes full upserts negligible overhead. Step 10 uses a <code>{ writeJson }</code> option flag so only <code>ensureRun</code> (start) and <code>finalize</code> (end) write run.json — mid-run callers get SQL-only automatically. <code>resolveIndexLabRunDirectory</code> uses run directories on disk. <strong>Update (2026-03-29):</strong> <code>readIndexLabRunMeta</code> file fallback tiers (run-summary.json + run.json) fully deleted — SQL is the sole source.
 </div>
 
 <div class="step-grid">
@@ -603,9 +607,9 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#0F6E56">9</div></div>
     <div class="step-body">
       <div class="step-title">Switch runListBuilder to read from SQL (fast path)</div>
-      <div class="step-desc">Added SQL fast path in listIndexLabRuns(): when category filter is provided, batch-queries getRunsByCategory() and builds a Map. In processRun(), checks the SQL map before file I/O. If SQL row has complete counters, returns directly — no safeReadJson() needed. Falls back to file I/O for pre-Step-8 runs and when no category filter. Threaded getSpecDbReady from indexlabDataBuilders. All 10 existing runListBuilder tests unaffected.</div>
+      <div class="step-desc">Added SQL fast path in listIndexLabRuns(): when category filter is provided, batch-queries getRunsByCategory() and builds a Map. In processRun(), checks the SQL map. If SQL row exists, returns directly — no safeReadJson() needed. <strong>Update (2026-03-29):</strong> File fallback path fully deleted. SQL fast path relaxed to accept empty counters (running runs). SQL is the sole source.</div>
       <div class="step-files">runListBuilder.js, indexlabDataBuilders.js</div>
-      <div class="step-test">Test: 5 tests — SQL bypass without run.json, fallback on empty counters, no-category skip, shape contract, stale running resolution.</div>
+      <div class="step-test">Test: 6 tests — all SQL-based (run.json fixtures replaced with SpecDb :memory: mocks).</div>
     </div>
   </div>
 
@@ -669,9 +673,9 @@ svg text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-seri
     <div class="step-num"><div class="step-dot" style="background:#0F6E56">14</div></div>
     <div class="step-body">
       <div class="step-title">Switch prefetch API route to serve artifacts from SQL</div>
-      <div class="step-desc">Threaded <code>getSpecDbReady</code> through runtimeOpsRouteContext → guiServerRuntime → runtimeOpsRoutes. Prefetch endpoint now does one <code>getRunArtifactsByRunId(runId)</code> query for all 3 artifacts. Falls back to <code>safeReadJson()</code> per-artifact for pre-migration runs. Pipeline reader (<code>readIndexLabRunSearchProfile</code>) unchanged — it reads from the storage/output layer, not bridge files.</div>
-      <div class="step-files">runtimeOpsRouteContext.js, guiServerRuntime.js, runtimeOpsRoutes.js</div>
-      <div class="step-test">Test: 3 tests — SQL fast path, file fallback on empty SQL, file fallback on null specDb.</div>
+      <div class="step-desc">Threaded <code>getSpecDbReady</code> through runtimeOpsRouteContext → guiServerRuntime → runtimeOpsRoutes. Prefetch endpoint now does one <code>getRunArtifactsByRunId(runId)</code> query for all 3 artifacts. <strong>Update (2026-03-29):</strong> File fallback probes fully deleted from readIndexLabRunNeedSet and readIndexLabRunSearchProfile (~100 LOC of _discovery/, needset.json, search_profile.json probes removed). SQL is sole source; returns null on miss.</div>
+      <div class="step-files">runtimeOpsRouteContext.js, guiServerRuntime.js, runtimeOpsRoutes.js, runArtifactReaders.js</div>
+      <div class="step-test">Test: SQL path tests retained. File fallback tests deleted.</div>
     </div>
   </div>
 
@@ -1182,15 +1186,23 @@ cost: { total_usd, llm_calls, search_calls }
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">ID5</td><td style="padding: 6px 8px;">Data migration COMPLETE: <code>spec migrate-product-ids --category mouse</code> CLI wired. Verified: mouse=343 (all hex), monitor=0, keyboard=0. idFormatMigration.js rekeys catalog + 26 SQL tables + storage artifacts. P0 slug code deleted (selfImproveLoop profileIdFromJob, goldenFiles fallback).</td><td style="text-align:center; padding: 6px 8px; color: #534AB7;">ID</td><td style="text-align:center; padding: 6px 8px;">Migration</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 <tr style="border-bottom: 2px solid #e8e6df;"><td colspan="6" style="padding: 10px 8px; font-weight: 600; color: #444441; background: #f8f7f2;">Relocation + Schema Hygiene</td></tr>
 <tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">R1</td><td style="padding: 6px 8px;">Kill relocation service — stripped staging/copy/delete cycle, state machine, events, directory scanner, S3 sync. 9 files deleted, ~1500 lines removed, ~50 files touched. SQL is the index, files stay where written.</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">R</td><td style="text-align:center; padding: 6px 8px;">Architecture</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
-<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">H1</td><td style="padding: 6px 8px;">Dead tables dropped (brands, artifacts). Schema: 56 tables (55 + FTS).</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">H</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">H1</td><td style="padding: 6px 8px;">Dead tables dropped, field_studio_map added. Schema: 57 tables (56 + FTS).</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">H</td><td style="text-align:center; padding: 6px 8px;">Schema</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 2px solid #e8e6df;"><td colspan="6" style="padding: 10px 8px; font-weight: 600; color: #444441; background: #f8f7f2;">Legacy Cleanup (2026-03-29)</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L1</td><td style="padding: 6px 8px;">NDJSON reader fallbacks stripped from hostHealthAggregator + compoundCurve. SQL sole source for telemetry indexes.</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Dead code</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L2</td><td style="padding: 6px 8px;">frontierDb JSON class DELETED (~370 LOC). FrontierDbSqlite sole implementation. createFrontier factory simplified.</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Dead code</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L3</td><td style="padding: 6px 8px;">File fallback readers DELETED from readIndexLabRunMeta (tiers 2-3), runListBuilder (file fallback block), runArtifactReaders (needset + search_profile file probes ~100 LOC).</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Dead code</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L4</td><td style="padding: 6px 8px;">inferIdentityFromProductId slug parser removed — always returns empty. resolveAuthoritativeProductIdentity inferred tier deleted.</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Dead code</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L5</td><td style="padding: 6px 8px;">runtimeEventsKey dead setting removed from 7 files (settingsRegistry, logger, bootstrap, config, CLI, tests).</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Dead code</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L6</td><td style="padding: 6px 8px;">migrateProductIds now checks artifact migration return value. Rolls back catalog on artifact failure. Rename log records real counts.</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Bug fix</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
+<tr style="border-bottom: 1px solid #f0efe8; background: #e6f6ee;"><td style="text-align:center; padding: 6px 8px;">L7</td><td style="padding: 6px 8px;">PID contract: variant added to productStore + Sidebar sync + OverviewPage + ProductManager. buildPickerLabel + resolveBrandModel include variant. seedFromCatalog existingPid bug fixed. catalogSeed canonical pid reuse fixed. UI copy: "slug" → "product ID".</td><td style="text-align:center; padding: 6px 8px; color: #da3633;">L</td><td style="text-align:center; padding: 6px 8px;">Bug fix + UI</td><td style="text-align:center; padding: 6px 8px; color: #a32d2d;">Yes</td><td style="text-align:center; padding: 6px 8px;">&#x2705;</td></tr>
 </table>
 </div>
 
 <div class="done">
-<strong>End state after all steps:</strong> SQLite is the single source of truth for all mutable state. Two checkpoint JSONs per run (run.json + product.json) capture everything needed to rebuild SQL. Product IDs are immutable hex-based ({category}-{8-hex}) — identity changes (brand/model/variant) never change the productId or break storage paths. There is no relocation — the pipeline writes directly to the storage-backed destination and SQL indexes the run location. Binary artifacts (HTML, screenshots, video) live at indexLabRoot/{runId}/. Chokidar is gone. IPC is the sole real-time channel. Studio API shapes are governed by Zod schemas (SSOT) with codegen-derived frontend types. The exporter is deleted (~1,250 lines). Each extraction plugin owns its persistence via DI callbacks (onHtmlPersist, onScreenshotsPersist, onVideoPersist). The app went from 5 write paths to 2 (SQLite + IPC) without ever breaking between steps.
+<strong>End state after all steps:</strong> SQLite is the single source of truth for all mutable runtime state. Two checkpoint JSONs per run (run.json + product.json) capture everything needed to rebuild SQL. Product IDs are immutable hex-based ({category}-{8-hex}) — identity changes (brand/model/variant) never change the productId or break storage paths. There is no relocation — the pipeline writes directly to the storage-backed destination and SQL indexes the run location. Binary artifacts (HTML, screenshots, video) live at indexLabRoot/{runId}/. Chokidar is gone. IPC is the sole real-time channel. Studio API shapes are governed by Zod schemas (SSOT) with codegen-derived frontend types. The exporter is deleted (~1,250 lines). Each extraction plugin owns its persistence via DI callbacks (onHtmlPersist, onScreenshotsPersist, onVideoPersist). The app went from 5 write paths to 2 (SQLite + IPC). <strong>Update (2026-03-29):</strong> All legacy file fallback readers deleted — readIndexLabRunMeta, runListBuilder, runArtifactReaders are SQL-only. frontierDb JSON class deleted (SQLite sole impl). inferIdentityFromProductId slug parser removed. runtimeEventsKey dead setting removed. migrateProductIds now checks artifact migration result. Variant propagated through productStore + run labels.
 </div>
 
-<p style="margin-top: 32px; font-size: 13px; color: #888780; text-align: center;">Spec Factory Data Architecture & Migration Plan — Updated 2026-03-29 — ALL STEPS COMPLETE. seedFromCheckpoint + scanner + CLI. Product ID hex migration verified (all categories clean). Only cosmetic test fixture debt remains (201 files).</p>
+<p style="margin-top: 32px; font-size: 13px; color: #888780; text-align: center;">Spec Factory Data Architecture & Migration Plan — Updated 2026-03-29 — ALL STEPS COMPLETE. Legacy file fallbacks fully deleted. SQL sole runtime source. Remaining: buildLlmMetrics JSONL reader, 4 mutable JSON state files (catalog, brands, seeds, settings), cosmetic debt.</p>
 
 </body>
 </html>

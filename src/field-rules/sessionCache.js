@@ -87,9 +87,8 @@ function buildLabelsFromFields(mergedFields, fieldOrder) {
 
 export function createSessionCache({
   loadCategoryConfig,
+  getSpecDb,
   readJsonIfExists,
-  writeFile,
-  mkdir,
   statFile,
   helperRoot
 }) {
@@ -107,6 +106,7 @@ export function createSessionCache({
     return path.join(helperRoot, category, '_generated', 'key_migrations.json');
   }
 
+  // WHY: JSON fallback for seed migration — reads from file when SQL is empty.
   async function readStudioMapSnapshot(category) {
     const candidate = fieldStudioMapPath(category);
     const map = await readJsonIfExists(candidate);
@@ -132,8 +132,30 @@ export function createSessionCache({
     const manifest = await readJsonIfExists(manifestPath(category));
     const compiledAt = manifest?.generated_at || null;
 
-    const studioMapSnapshot = await readStudioMapSnapshot(category);
-    const savedMap = isObject(studioMapSnapshot.map) ? studioMapSnapshot.map : {};
+    // WHY: SQL is the primary source for field_studio_map.
+    // Falls back to JSON file for seed migration (one-time per category).
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+    const sqlRow = specDb?.getFieldStudioMap?.() ?? null;
+    let savedMap = {};
+    let mapSavedAt = null;
+
+    if (sqlRow) {
+      try { savedMap = JSON.parse(sqlRow.map_json); } catch { savedMap = {}; }
+      mapSavedAt = sqlRow.updated_at || null;
+    } else {
+      // Seed from JSON file (one-time migration)
+      const studioMapSnapshot = await readStudioMapSnapshot(category);
+      savedMap = isObject(studioMapSnapshot.map) ? studioMapSnapshot.map : {};
+      mapSavedAt = studioMapSnapshot.savedAt;
+      // Persist to SQL for future reads
+      if (specDb && Object.keys(savedMap).length > 0) {
+        try {
+          const { hashJson } = await import('../ingest/compileUtils.js');
+          specDb.upsertFieldStudioMap(JSON.stringify(savedMap), hashJson(savedMap));
+        } catch { /* seed best-effort */ }
+      }
+    }
+
     const keyMigrations = await readJsonIfExists(keyMigrationsPath(category));
     const keyMap = normalizeKeyMap(keyMigrations?.key_map);
     const mapFieldOverrides = isObject(savedMap.field_overrides) ? savedMap.field_overrides : {};
@@ -157,7 +179,6 @@ export function createSessionCache({
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 
-    const mapSavedAt = studioMapSnapshot.savedAt;
     const compileStale = Boolean(mapSavedAt && (!compiledAt || new Date(mapSavedAt) > new Date(compiledAt)));
 
     return {
@@ -178,40 +199,6 @@ export function createSessionCache({
     return entry;
   }
 
-  async function updateSessionRules(category, { fields, fieldOrder }) {
-    const snapshot = await readStudioMapSnapshot(category);
-    const existingMap = isObject(snapshot.map) ? snapshot.map : {};
-    const selectedKeys = Array.isArray(fieldOrder)
-      ? fieldOrder
-        .map((key) => String(key || '').trim())
-        .filter((key) => key && !key.startsWith('__grp::'))
-      : Array.isArray(existingMap.selected_keys)
-        ? existingMap.selected_keys
-        : [];
-    const nextMap = {
-      ...existingMap,
-      ...(isObject(fields)
-        ? {
-          field_overrides: {
-            ...(isObject(existingMap.field_overrides) ? existingMap.field_overrides : {}),
-            ...fields,
-          },
-        }
-        : {}),
-      selected_keys: selectedKeys,
-    };
-
-    const controlPlane = path.join(helperRoot, category, '_control_plane');
-    const nextFieldStudioPath = fieldStudioMapPath(category);
-    await mkdir(controlPlane, { recursive: true });
-    await writeFile(nextFieldStudioPath, JSON.stringify(nextMap, null, 2));
-
-    cache.delete(category);
-    const entry = await loadAndMerge(category);
-    cache.set(category, entry);
-    return entry;
-  }
-
   function invalidateSessionCache(category) {
     if (category) {
       cache.delete(category);
@@ -220,5 +207,5 @@ export function createSessionCache({
     }
   }
 
-  return { getSessionRules, updateSessionRules, invalidateSessionCache };
+  return { getSessionRules, invalidateSessionCache };
 }

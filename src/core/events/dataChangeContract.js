@@ -22,7 +22,6 @@ export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
   'test-mode-created': ['test-mode', 'categories'],
   'test-mode-products-generated': ['test-mode'],
   'test-mode-deleted': ['test-mode', 'categories'],
-  'storage-settings-updated': ['storage', 'settings'],
   'source-strategy-created': ['source-strategy'],
   'source-strategy-updated': ['source-strategy'],
   'source-strategy-deleted': ['source-strategy'],

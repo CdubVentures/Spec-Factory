@@ -1,5 +1,5 @@
 import {
-  loadBrandRegistry, saveBrandRegistry, addBrand, addBrandsBulk,
+  loadBrandRegistry, addBrand, addBrandsBulk,
   updateBrand, removeBrand, getBrandsForCategory, seedBrandsFromActiveFiltering,
   renameBrand, getBrandImpactAnalysis,
 } from '../index.js';
@@ -13,11 +13,11 @@ export function createBrandRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, config, storage,
     resolveCategoryAlias, broadcastWs, getSpecDb,
-    loadProductCatalog,
+    loadProductCatalog, appDb,
   } = options;
 
   return {
-    jsonRes, readJsonBody, config, storage, loadBrandRegistry, saveBrandRegistry,
+    jsonRes, readJsonBody, config, storage, appDb, loadBrandRegistry,
     addBrand, addBrandsBulk, updateBrand, removeBrand, getBrandsForCategory,
     seedBrandsFromActiveFiltering, renameBrand, getBrandImpactAnalysis,
     resolveCategoryAlias, upsertQueueProduct, broadcastWs, getSpecDb,

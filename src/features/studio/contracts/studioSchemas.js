@@ -111,7 +111,7 @@ export const StudioPayloadSchema = z.object({
   compileStale: z.boolean(),
 });
 
-// WHY: .passthrough() — choosePreferredStudioMap returns raw objects with pass-through keys
+// WHY: .passthrough() — GET handler returns raw objects with pass-through keys
 export const FieldStudioMapResponseSchema = z.object({
   file_path: z.string(),
   map: StudioConfigSchema,

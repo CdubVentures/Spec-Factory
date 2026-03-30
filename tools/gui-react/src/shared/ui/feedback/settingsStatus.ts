@@ -1,5 +1,4 @@
 export type SaveStateKind = 'idle' | 'ok' | 'partial' | 'error';
-export type StorageStatusKind = 'ok' | 'error' | '';
 export type SourceStrategySaveKind = 'idle' | 'ok' | 'error';
 export type StudioAutoSaveStatus = 'idle' | 'saved';
 
@@ -49,31 +48,6 @@ export function resolveIndexedSettingsStatusText({
   if (dirty) return autoSaveEnabled ? dirtyAutoSaveLabel : dirtyLabel;
   if (saveState === 'ok') return saveMessage || successLabel;
   return successLabel;
-}
-
-export function resolveStorageSettingsStatusText({
-  isSaving,
-  statusKind,
-  statusText,
-  storageSettingsReady,
-  dirty,
-  autoSaveEnabled,
-}: {
-  isSaving: boolean;
-  statusKind: StorageStatusKind;
-  statusText: string;
-  storageSettingsReady: boolean;
-  dirty: boolean;
-  autoSaveEnabled: boolean;
-}): string {
-  if (isSaving) return 'Saving storage settings...';
-  if (statusKind === 'error') return statusText || 'Failed to save storage settings.';
-  if (!storageSettingsReady) return 'Loading persisted storage settings...';
-  if (dirty) {
-    return autoSaveEnabled ? 'Unsaved changes queued for auto save.' : 'Unsaved changes.';
-  }
-  if (statusKind === 'ok') return statusText || 'Storage settings saved.';
-  return 'All changes saved.';
 }
 
 export function resolveLlmSettingsStatusText({

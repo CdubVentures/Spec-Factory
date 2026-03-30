@@ -36,6 +36,7 @@ export function makeCtx(overrides = {}) {
     storage: {},
     loadCategoryConfig: async () => ({}),
     startProcess: () => ({ running: true }),
+    getSpecDb: () => null,
     getSpecDbReady: async () => null,
     broadcastWs: () => {},
     reviewLayoutByCategory: new Map(),

@@ -67,49 +67,9 @@ function loadSpecDbProduct({
   }
 }
 
-// WHY: Hex-format IDs ({category}-{8-hex}) are opaque — no identity can be inferred.
-// Only attempt slug parsing for legacy IDs that embed brand/model tokens.
-const HEX_ID_RE = /^[a-z][a-z0-9-]*-[a-f0-9]{8}$/;
-
-export function inferIdentityFromProductId(productId, category = '') {
-  const pid = normalizeToken(productId);
-  if (!pid || HEX_ID_RE.test(pid)) {
-    return { brand: '', model: '', variant: '' };
-  }
-
-  const tokens = pid
-    .split('-')
-    .map((part) => String(part || '').trim())
-    .filter(Boolean);
-  if (tokens.length === 0) {
-    return { brand: '', model: '', variant: '' };
-  }
-
-  const normalizedCategory = normalizeToken(category);
-  if (normalizedCategory && tokens[0] === normalizedCategory) {
-    tokens.shift();
-  }
-  if (tokens.length === 0) {
-    return { brand: '', model: '', variant: '' };
-  }
-
-  const brandToken = tokens.shift() || '';
-  let modelTokens = [...tokens];
-  let variantToken = '';
-  if (modelTokens.length >= 2) {
-    const tail = modelTokens[modelTokens.length - 1];
-    const prev = modelTokens[modelTokens.length - 2];
-    if (tail && tail === prev) {
-      variantToken = tail;
-      modelTokens = modelTokens.slice(0, -1);
-    }
-  }
-
-  return {
-    brand: humanizeSlugToken(brandToken),
-    model: humanizeSlugToken(modelTokens.join(' ')),
-    variant: humanizeSlugToken(variantToken),
-  };
+// WHY: Product IDs are opaque hex tokens ({category}-{8-hex}). No identity can be inferred.
+export function inferIdentityFromProductId() {
+  return { brand: '', model: '', variant: '' };
 }
 
 export function resolveAuthoritativeProductIdentity({
@@ -122,7 +82,6 @@ export function resolveAuthoritativeProductIdentity({
   const catalog = isObject(catalogProduct) ? catalogProduct : {};
   const db = isObject(dbProduct) ? dbProduct : {};
   const normalized = isObject(normalizedIdentity) ? normalizedIdentity : {};
-  const inferred = inferIdentityFromProductId(productId, category);
 
   const id = parsePositiveInt(catalog.id)
     ?? parsePositiveInt(db.id)
@@ -139,17 +98,15 @@ export function resolveAuthoritativeProductIdentity({
     catalog.brand,
     db.brand,
     normalized.brand,
-    inferred.brand,
   );
 
   const model = pickFirstNonEmpty(
     catalog.model,
     db.model,
     normalized.model,
-    inferred.model,
   );
 
-  const variant = pickVariant(catalog, db, normalized, inferred);
+  const variant = pickVariant(catalog, db, normalized);
 
   return {
     id,

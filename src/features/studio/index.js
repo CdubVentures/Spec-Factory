@@ -17,8 +17,6 @@ export {
   buildStudioKnownValuesFromSpecDb,
   buildStudioComponentDbFromSpecDb,
   summarizeStudioMapPayload,
-  summarizeStudioMapValidation,
-  choosePreferredStudioMap,
   applyEnumConsistencyToSuggestions,
 } from './api/studioRouteHelpers.js';
 

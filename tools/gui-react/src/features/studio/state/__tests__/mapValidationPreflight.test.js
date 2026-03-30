@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import {
   getFieldStudioMapValidationOutcome,
   assertFieldStudioMapValidationOrThrow,
-  resolveFieldStudioMapPayloadForSave,
 } from '../mapValidationPreflight.js';
 
 test('getFieldStudioMapValidationOutcome prefers explicit valid flag', () => {
@@ -111,15 +110,3 @@ test('assertFieldStudioMapValidationOrThrow does not bypass when non-legacy erro
   );
 });
 
-test('resolveFieldStudioMapPayloadForSave prefers normalized payload when available', () => {
-  const fallback = { tooltip_source: { path: 'raw.json' } };
-  const payload = resolveFieldStudioMapPayloadForSave({
-    result: {
-      valid: true,
-      normalized: { tooltip_source: { path: 'normalized.json' } },
-    },
-    fallback,
-  });
-
-  assert.deepEqual(payload, { tooltip_source: { path: 'normalized.json' } });
-});

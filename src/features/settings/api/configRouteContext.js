@@ -14,7 +14,7 @@ export function createConfigRouteContext(options = {}) {
 
   const {
     jsonRes, readJsonBody, config, configGate, toInt,
-    getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState,
+    getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState, appDb,
   } = options;
 
   return {
@@ -22,6 +22,6 @@ export function createConfigRouteContext(options = {}) {
     resolvePricingForModel, resolveTokenProfileForModel, resolveLlmRoleDefaults,
     resolveLlmKnobDefaults, llmRoutingSnapshot, buildLlmMetrics,
     buildIndexingDomainChecklist, buildReviewMetrics, getSpecDb, storage,
-    OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState,
+    OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState, appDb,
   };
 }

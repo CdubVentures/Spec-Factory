@@ -1,4 +1,6 @@
 import { emitDataChange } from '../../core/events/dataChangeContract.js';
+import { loadFieldStudioMap } from '../../ingest/categoryCompile.js';
+import { hashJson } from '../../ingest/compileUtils.js';
 
 function categoryFromCliArgs(cliArgs) {
   if (!Array.isArray(cliArgs)) return '';
@@ -19,6 +21,7 @@ export async function handleCompileProcessCompletion({
   invalidateFieldRulesCache,
   reviewLayoutByCategory,
   syncSpecDbForCategory,
+  getSpecDb,
   broadcastWs,
   logError = console.error,
 }) {
@@ -30,6 +33,23 @@ export async function handleCompileProcessCompletion({
   sessionCache?.invalidateSessionCache?.(category);
   invalidateFieldRulesCache?.(category);
   reviewLayoutByCategory?.delete?.(category);
+
+  // WHY: Compile normalizes the map and writes it back to JSON.
+  // Re-sync SQL so runtime reads get the compile-normalized version.
+  if (isCompileCommand(cliArgs) && typeof getSpecDb === 'function') {
+    try {
+      const specDb = getSpecDb(category);
+      if (specDb) {
+        const loaded = await loadFieldStudioMap({ category }).catch(() => null);
+        if (loaded?.map && typeof loaded.map === 'object') {
+          const json = JSON.stringify(loaded.map);
+          specDb.upsertFieldStudioMap(json, hashJson(loaded.map));
+        }
+      }
+    } catch (err) {
+      logError?.(`[compile-sync] field_studio_map SQL re-sync failed for ${category}:`, err?.message || err);
+    }
+  }
 
   let specDbSync = null;
   if (isCompileCommand(cliArgs) && typeof syncSpecDbForCategory === 'function') {

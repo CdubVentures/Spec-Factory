@@ -7,8 +7,7 @@ export function registerBrandRoutes(ctx) {
     readJsonBody,
     config,
     storage,
-    loadBrandRegistry,
-    saveBrandRegistry,
+    appDb,
     addBrand,
     addBrandsBulk,
     updateBrand,
@@ -31,22 +30,6 @@ export function registerBrandRoutes(ctx) {
     return getSpecDb(cat);
   }
 
-
-  function deleteCatalogProductRow(specDb, category, productId) {
-    if (!specDb || !productId) return 0;
-    if (typeof specDb.deleteProduct === 'function') {
-      const result = specDb.deleteProduct(productId);
-      return Number(result?.changes || 0);
-    }
-    if (specDb.db?.prepare) {
-      const result = specDb.db
-        .prepare('DELETE FROM products WHERE category = ? AND product_id = ?')
-        .run(specDb.category || category, productId);
-      return Number(result?.changes || 0);
-    }
-    return 0;
-  }
-
   // WHY: After brand rename, upsert updated product rows in specDb (productId is immutable)
   async function syncRenameCascadeProducts(cascadeResults = []) {
     const rows = Array.isArray(cascadeResults) ? cascadeResults : [];
@@ -66,30 +49,38 @@ export function registerBrandRoutes(ctx) {
   return async function handleBrandRoutes(parts, params, method, req, res) {
     // GET /api/v1/brands?category=mouse  (optional filter)
     if (parts[0] === 'brands' && method === 'GET' && !parts[1]) {
-      const registry = await loadBrandRegistry(config);
       const category = resolveCategoryAlias(params.get('category'));
       if (category) {
-        return jsonRes(res, 200, getBrandsForCategory(registry, category));
+        return jsonRes(res, 200, getBrandsForCategory(appDb, category));
       }
-      const all = Object.entries(registry.brands || {})
-        .map(([slug, brand]) => ({ slug, ...brand }))
-        .sort((a, b) => a.canonical_name.localeCompare(b.canonical_name));
+      const all = appDb.listBrands().map((row) => {
+        const categories = appDb.getCategoriesForBrand(row.identifier);
+        return {
+          slug: row.slug,
+          canonical_name: row.canonical_name,
+          identifier: row.identifier,
+          aliases: JSON.parse(row.aliases || '[]'),
+          categories,
+          website: row.website || '',
+          added_at: row.created_at,
+          added_by: row.added_by,
+          ...(row.updated_at && row.updated_at !== row.created_at ? { updated_at: row.updated_at } : {}),
+        };
+      });
       return jsonRes(res, 200, all);
     }
 
     // POST /api/v1/brands/seed - auto-seed from activeFiltering
     if (parts[0] === 'brands' && parts[1] === 'seed' && method === 'POST') {
       const body = await readJsonBody(req).catch(() => ({}));
-      const result = await seedBrandsFromActiveFiltering({ config, category: body.category || 'all' });
+      const result = await seedBrandsFromActiveFiltering({ config, appDb, category: body.category || 'all' });
       if (result?.ok) {
         const eventCategory = String(body.category || 'all').trim() || 'all';
         emitDataChange({
           broadcastWs,
           event: 'brand-seed',
           category: eventCategory,
-          meta: {
-            seeded: Number(result?.seeded || 0),
-          },
+          meta: { seeded: Number(result?.seeded || 0) },
         });
       }
       return jsonRes(res, 200, result);
@@ -102,11 +93,7 @@ export function registerBrandRoutes(ctx) {
       if (names.length > 5000) {
         return jsonRes(res, 400, { ok: false, error: 'too_many_rows', max_rows: 5000 });
       }
-      const result = await addBrandsBulk({
-        config,
-        category: body.category || '',
-        names
-      });
+      const result = await addBrandsBulk({ config, appDb, category: body.category || '', names });
       if (result?.ok) {
         const targetCategory = String(body.category || '').trim() || 'all';
         emitDataChange({
@@ -114,9 +101,7 @@ export function registerBrandRoutes(ctx) {
           event: 'brand-bulk-add',
           category: targetCategory,
           categories: targetCategory === 'all' ? [] : [targetCategory],
-          meta: {
-            count: Number(result?.created || 0),
-          },
+          meta: { count: Number(result?.created || 0) },
         });
       }
       return jsonRes(res, result.ok ? 200 : 400, result);
@@ -124,7 +109,7 @@ export function registerBrandRoutes(ctx) {
 
     // GET /api/v1/brands/{slug}/impact - impact analysis for rename/delete
     if (parts[0] === 'brands' && parts[1] && parts[2] === 'impact' && method === 'GET') {
-      const result = await getBrandImpactAnalysis({ config, slug: parts[1] });
+      const result = await getBrandImpactAnalysis({ config, appDb, slug: parts[1] });
       return jsonRes(res, result.ok ? 200 : 404, result);
     }
 
@@ -132,11 +117,11 @@ export function registerBrandRoutes(ctx) {
     if (parts[0] === 'brands' && method === 'POST' && !parts[1]) {
       const body = await readJsonBody(req);
       const result = await addBrand({
-        config,
+        config, appDb,
         name: body.name,
         aliases: body.aliases,
         categories: body.categories,
-        website: body.website
+        website: body.website,
       });
       if (result?.ok) {
         const categories = Array.isArray(result?.brand?.categories)
@@ -147,9 +132,7 @@ export function registerBrandRoutes(ctx) {
           event: 'brand-add',
           category: categories.length > 0 ? 'all' : '',
           categories,
-          meta: {
-            slug: result.slug || '',
-          },
+          meta: { slug: result.slug || '' },
         });
       }
       return jsonRes(res, result.ok ? 201 : 400, result);
@@ -162,14 +145,12 @@ export function registerBrandRoutes(ctx) {
 
       // Detect rename: if body.name is provided and differs from current canonical_name
       if (body.name !== undefined) {
-        const registry = await loadBrandRegistry(config);
-        const existing = registry.brands[brandSlug];
+        const existing = appDb.getBrandBySlug(brandSlug);
         if (!existing) return jsonRes(res, 404, { ok: false, error: 'brand_not_found', slug: brandSlug });
 
         if (String(body.name).trim() !== existing.canonical_name) {
-          // Name changed - cascade rename first
           const renameResult = await renameBrand({
-            config,
+            config, appDb,
             slug: brandSlug,
             newName: body.name,
             storage,
@@ -187,14 +168,13 @@ export function registerBrandRoutes(ctx) {
             return jsonRes(res, 400, renameResult);
           }
 
-          // Apply remaining non-name patches (aliases, categories, website) to the new slug
           const remainingPatch = {};
           if (body.aliases !== undefined) remainingPatch.aliases = body.aliases;
           if (body.categories !== undefined) remainingPatch.categories = body.categories;
           if (body.website !== undefined) remainingPatch.website = body.website;
 
           if (Object.keys(remainingPatch).length > 0) {
-            await updateBrand({ config, slug: renameResult.newSlug, patch: remainingPatch });
+            await updateBrand({ config, appDb, slug: renameResult.newSlug, patch: remainingPatch });
           }
           await syncRenameCascadeProducts(renameResult.cascade_results);
 
@@ -222,7 +202,7 @@ export function registerBrandRoutes(ctx) {
       }
 
       // No rename - standard update
-      const result = await updateBrand({ config, slug: brandSlug, patch: body });
+      const result = await updateBrand({ config, appDb, slug: brandSlug, patch: body });
       if (result?.ok) {
         const categories = Array.isArray(result?.brand?.categories)
           ? result.brand.categories.filter(Boolean)
@@ -232,9 +212,7 @@ export function registerBrandRoutes(ctx) {
           event: 'brand-update',
           category: categories.length > 0 ? 'all' : '',
           categories,
-          meta: {
-            slug: result.slug || brandSlug,
-          },
+          meta: { slug: result.slug || brandSlug },
         });
       }
       return jsonRes(res, result.ok ? 200 : 404, result);
@@ -243,7 +221,7 @@ export function registerBrandRoutes(ctx) {
     // DELETE /api/v1/brands/{slug}
     if (parts[0] === 'brands' && parts[1] && method === 'DELETE') {
       const force = params.get('force') === 'true';
-      const result = await removeBrand({ config, slug: parts[1], force });
+      const result = await removeBrand({ config, appDb, slug: parts[1], force });
       if (result?.ok) {
         const categories = Object.keys(result?.products_by_category || {}).filter(Boolean);
         emitDataChange({
@@ -251,9 +229,7 @@ export function registerBrandRoutes(ctx) {
           event: 'brand-delete',
           category: categories.length > 0 ? 'all' : '',
           categories,
-          meta: {
-            slug: parts[1],
-          },
+          meta: { slug: parts[1] },
         });
       }
       let status = 404;

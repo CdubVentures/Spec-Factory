@@ -1024,6 +1024,14 @@ CREATE TABLE IF NOT EXISTS prompt_index (
 );
 CREATE INDEX IF NOT EXISTS idx_pi_cat ON prompt_index(category);
 CREATE INDEX IF NOT EXISTS idx_pi_run ON prompt_index(run_id);
+
+-- Field studio map (per-category control-plane config persisted in SQL)
+CREATE TABLE IF NOT EXISTS field_studio_map (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  map_json TEXT NOT NULL DEFAULT '{}',
+  map_hash TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `;
 
 // WHY: Single source of truth for llm_route_matrix columns (excluding structural

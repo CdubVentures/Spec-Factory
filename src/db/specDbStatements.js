@@ -739,5 +739,18 @@ export function prepareStatements(db) {
       WHERE ifs.category = ? AND ifs.product_id = ?
       ORDER BY ifs.field_key
     `),
+
+    // Field studio map (per-category control-plane config)
+    _getFieldStudioMap: db.prepare(
+      'SELECT map_json, map_hash, updated_at FROM field_studio_map WHERE id = 1'
+    ),
+    _upsertFieldStudioMap: db.prepare(`
+      INSERT INTO field_studio_map (id, map_json, map_hash, updated_at)
+      VALUES (1, @map_json, @map_hash, datetime('now'))
+      ON CONFLICT(id) DO UPDATE SET
+        map_json = excluded.map_json,
+        map_hash = excluded.map_hash,
+        updated_at = datetime('now')
+    `),
   };
 }

@@ -21,10 +21,9 @@ function makeDeps({
   compiledOrder = COMPILED_ORDER,
   manifest = null,
   mapMtimeIso = '2026-02-20T12:00:00.000Z',
-  fsWriteCalls = [],
   keyMigrations = null,
+  sqlRow = null,
 } = {}) {
-  let diskMap = mapDoc ? JSON.parse(JSON.stringify(mapDoc)) : null;
   let readCount = 0;
 
   const readJsonIfExists = async (filePath) => {
@@ -36,18 +35,10 @@ function makeDeps({
       return keyMigrations ? JSON.parse(JSON.stringify(keyMigrations)) : null;
     }
     if (String(filePath).includes('field_studio_map.json')) {
-      return diskMap ? JSON.parse(JSON.stringify(diskMap)) : null;
+      return mapDoc ? JSON.parse(JSON.stringify(mapDoc)) : null;
     }
     return null;
   };
-
-  const writeFile = async (filePath, data) => {
-    const parsed = JSON.parse(data);
-    diskMap = parsed;
-    fsWriteCalls.push({ path: filePath, data: parsed });
-  };
-
-  const mkdir = async () => {};
 
   const loadCategoryConfig = async () => ({
     fieldRules: { fields: JSON.parse(JSON.stringify(compiledFields)) },
@@ -58,14 +49,21 @@ function makeDeps({
     mtime: new Date(mapMtimeIso),
   });
 
+  // WHY: getSpecDb stub returns a minimal specDb mock with field studio map methods.
+  const getSpecDb = () => {
+    if (sqlRow === null) return null;
+    return {
+      getFieldStudioMap: () => sqlRow,
+      upsertFieldStudioMap: () => {},
+    };
+  };
+
   return {
     readJsonIfExists,
-    writeFile,
-    mkdir,
     statFile,
     loadCategoryConfig,
+    getSpecDb,
     getReadCount: () => readCount,
-    fsWriteCalls,
   };
 }
 
@@ -73,9 +71,8 @@ async function createCache(deps) {
   const { createSessionCache } = await import('../sessionCache.js');
   return createSessionCache({
     loadCategoryConfig: deps.loadCategoryConfig,
+    getSpecDb: deps.getSpecDb,
     readJsonIfExists: deps.readJsonIfExists,
-    writeFile: deps.writeFile,
-    mkdir: deps.mkdir,
     statFile: deps.statFile,
     helperRoot: 'category_authority',
   });
@@ -171,20 +168,31 @@ describe('sessionCache', () => {
     assert.ok(deps.getReadCount() > readsBefore);
   });
 
-  it('updateSessionRules writes map docs and updates cache', async () => {
-    const fsWriteCalls = [];
-    const deps = makeDeps({ fsWriteCalls });
-    const cache = await createCache(deps);
-
-    await cache.updateSessionRules('mouse', {
-      fields: { dpi_max: { ui: { label: 'Updated DPI Label' } } },
-      fieldOrder: ['__grp::sensor', 'dpi_max', 'weight'],
+  it('reads from SQL when specDb has data', async () => {
+    const deps = makeDeps({
+      mapDoc: null,
+      sqlRow: {
+        map_json: JSON.stringify(MAP_DOC),
+        map_hash: 'sqlhash',
+        updated_at: '2026-02-20T12:00:00',
+      },
     });
-
-    assert.ok(fsWriteCalls.length >= 1);
+    const cache = await createCache(deps);
     const result = await cache.getSessionRules('mouse');
-    assert.equal(result.mergedFields.dpi_max.ui.label, 'Updated DPI Label');
-    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'weight']);
+
+    assert.equal(result.mergedFields.dpi_max.ui.label, 'Maximum DPI');
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
+  });
+
+  it('falls back to JSON file when SQL is empty (seed migration)', async () => {
+    const deps = makeDeps({
+      sqlRow: null,
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+
+    assert.equal(result.mergedFields.dpi_max.ui.label, 'Maximum DPI');
+    assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
   });
 
   it('compileStale is true when map docs are newer than compiled manifest', async () => {

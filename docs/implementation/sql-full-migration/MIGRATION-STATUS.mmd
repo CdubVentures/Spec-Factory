@@ -27,7 +27,7 @@
 
 flowchart TB
 
-  title["<b>SQL MIGRATION STATUS — COMPLETE</b><br/><i>56 tables in specDb (55 regular + 1 FTS)  |  Code-verified 2026-03-29</i>"]
+  title["<b>SQL MIGRATION STATUS — COMPLETE</b><br/><i>57 tables in specDb (56 regular + 1 FTS)  |  field_studio_map added 2026-03-29</i>"]
   style title fill:#0d1117,stroke:none,color:#58a6ff,font-size:20px
 
   %% ==========================================
@@ -80,14 +80,23 @@ flowchart TB
     end
 
     subgraph HYG["Schema Hygiene"]
-      h1["H1: Dead tables (brands, artifacts) dropped. 56 tables (55 + FTS)."]
+      h1["H1: Dead tables dropped. field_studio_map added. 57 tables (56 + FTS)."]
     end
 
     subgraph PID["Product ID Decoupling"]
       pid1["buildProductId(category) — hex-based immutable IDs"]
       pid2["All 9 generation sites migrated"]
-      pid3["idFormatMigration.js — rekeys 26 SQL tables"]
+      pid3["idFormatMigration.js — rekeys 26 SQL tables (artifact failure now checked)"]
       pid4["Data verified: mouse=343 (all hex), monitor=0, keyboard=0"]
+      pid5["PID contract: variant in productStore + run labels + seed bugs fixed"]
+    end
+
+    subgraph LEGACY["Legacy Cleanup (2026-03-29)"]
+      leg1["frontierDb JSON class DELETED (~370 LOC) — SQLite sole impl"]
+      leg2["File fallback readers DELETED from indexlabDataBuilders,<br/>runListBuilder, runArtifactReaders (~200 LOC)"]
+      leg3["inferIdentityFromProductId slug parser DELETED — always returns empty"]
+      leg4["runtimeEventsKey dead setting REMOVED from 7 files"]
+      leg5["Catalog UI: 'slug' references → 'product ID'"]
     end
   end
 
@@ -131,32 +140,33 @@ flowchart TB
   style pid2 fill:#238636,stroke:#3fb950,color:#fff
   style pid3 fill:#238636,stroke:#3fb950,color:#fff
   style pid4 fill:#238636,stroke:#3fb950,color:#fff
+  style pid5 fill:#238636,stroke:#3fb950,color:#fff
+  style LEGACY fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style leg1 fill:#da3633,stroke:#f85149,color:#fff
+  style leg2 fill:#da3633,stroke:#f85149,color:#fff
+  style leg3 fill:#da3633,stroke:#f85149,color:#fff
+  style leg4 fill:#da3633,stroke:#f85149,color:#fff
+  style leg5 fill:#238636,stroke:#3fb950,color:#fff
 
   %% ==========================================
   %%  REMAINING (low priority)
   %% ==========================================
-  subgraph LOWPRI["REMAINING (9 items verified 2026-03-29)"]
+  subgraph LOWPRI["REMAINING (6 items)"]
     direction TB
     lp1["buildLlmMetrics — reads _billing/ledger.jsonl, not SQL billing_entries"]
-    lp2["frontierDb JSON fallback — ~355 LOC ghost class in frontierDb.js"]
     lp3["product_catalog.json — mutable JSON state (productCatalog.js)"]
     lp4["brand_registry.json — mutable JSON state (brandRegistry.js)"]
     lp5["spec_seeds.json — mutable JSON state (specSeedsFileService.js)"]
     lp6["user-settings.json — mutable JSON state (userSettingsService.js)"]
-    lp7["Test fixtures — slug-based IDs in test files (cosmetic)"]
-    lp8["Stale dist — tools/dist/launcher.cjs needs rebuild"]
-    lp9["Legacy input refs — specs/inputs/ dir gone, code refs remain"]
+    lp7["Cosmetic: test fixture slug IDs + stale dist + legacy input refs"]
   end
   style LOWPRI fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
   style lp1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style lp2 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp6 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp7 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style lp8 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style lp9 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
   %% ==========================================
   %%  KEEP AS FILES

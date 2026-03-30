@@ -90,7 +90,6 @@ test.describe('UI settings API round-trip', () => {
     expect(snapshot).toHaveProperty('studioAutoSaveEnabled');
     expect(snapshot).toHaveProperty('studioAutoSaveMapEnabled');
     expect(snapshot).toHaveProperty('runtimeAutoSaveEnabled');
-    expect(snapshot).toHaveProperty('storageAutoSaveEnabled');
   });
 
   test('PUT valid bool -> GET returns updated value', async ({ settingsApi }) => {
@@ -117,32 +116,4 @@ test.describe('UI settings API round-trip', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Storage settings
-// ---------------------------------------------------------------------------
-
-test.describe('Storage settings API round-trip', () => {
-  test('GET /storage-settings returns storage fields', async ({ settingsApi }) => {
-    const snapshot = await settingsApi.get('storage');
-    expect(snapshot).toHaveProperty('enabled');
-    expect(snapshot).toHaveProperty('destinationType');
-    expect(snapshot).toHaveProperty('localDirectory');
-  });
-
-  test('PUT valid fields -> GET returns updated values', async ({ settingsApi }) => {
-    const baseline = await settingsApi.get('storage');
-    const originalEnabled = baseline.enabled;
-
-    const newEnabled = !originalEnabled;
-    const putResult = await settingsApi.put('storage', { enabled: newEnabled });
-    expect(putResult.ok).toBe(true);
-    expect(putResult.applied).toHaveProperty('enabled', newEnabled);
-
-    const afterPut = await settingsApi.get('storage');
-    expect(afterPut.enabled).toBe(newEnabled);
-
-    // Restore
-    await settingsApi.put('storage', { enabled: originalEnabled });
-  });
-});
 

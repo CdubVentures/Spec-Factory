@@ -131,8 +131,9 @@ export async function migrateProductIds({
       }
 
       // 3. Migrate storage artifacts
+      let artifactResult = { ok: true, migrated_count: 0, failed_count: 0 };
       if (storage) {
-        await migrateProductArtifacts({
+        artifactResult = await migrateProductArtifacts({
           storage,
           config,
           category: cat,
@@ -141,6 +142,15 @@ export async function migrateProductIds({
           identifier,
           specDb,
         });
+        if (!artifactResult.ok) {
+          // WHY: Catalog + SQL rekey succeeded but artifacts are orphaned.
+          // Roll back catalog change so the system stays consistent.
+          catalog.products[oldPid] = product;
+          delete catalog.products[newPid];
+          failed += 1;
+          results.push({ oldPid, newPid, status: 'failed', error: `artifact_migration_failed: ${artifactResult.failed_count} keys failed` });
+          continue;
+        }
       }
 
       // 4. Log rename
@@ -149,8 +159,8 @@ export async function migrateProductIds({
         id: product.id,
         old_slug: oldPid,
         new_slug: newPid,
-        migrated_count: 0,
-        failed_count: 0,
+        migrated_count: artifactResult.migrated_count,
+        failed_count: artifactResult.failed_count,
         migration_type: 'id_format_migration',
       });
 

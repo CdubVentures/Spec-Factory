@@ -4740,7 +4740,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "flawless_sensor",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -4837,7 +4837,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Flawless Sensor",
@@ -5527,7 +5527,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "hardware_acceleration",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -5621,7 +5621,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "text",
         "label": "Hardware Acceleration",
@@ -8762,7 +8762,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "polling_rate",
       "min_evidence_refs": 2,
       "output_shape": "list",
@@ -8848,7 +8848,7 @@
         "display_decimals": 0,
         "display_mode": "high",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "list_editor",
         "label": "Polling Rate",
@@ -9848,7 +9848,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "Buttons & Features",
+      "group": "Sensor & Performance",
       "key": "sensor",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -9916,7 +9916,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Buttons & Features",
+        "group": "Sensor & Performance",
         "guidance_md": null,
         "input_control": "component_picker",
         "label": "Sensor",
@@ -13753,18 +13753,18 @@
     "variant_row": 5
   },
   "selected_keys": [
+    "sensor",
+    "polling_rate",
     "acceleration",
     "dpi",
-    "smoothing",
     "flawless_sensor",
     "hardware_acceleration",
     "ips",
+    "smoothing",
     "lift",
     "lift_settings",
     "motion_sync",
     "nvidia_reflex",
-    "polling_rate",
-    "sensor",
     "sensor_brand",
     "sensor_date",
     "sensor_latency",

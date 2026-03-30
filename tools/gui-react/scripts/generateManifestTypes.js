@@ -6,7 +6,7 @@
 // Output: writes tools/gui-react/src/stores/runtimeSettingsManifestTypes.ts
 //         writes src/shared/settingsDefaults.d.ts
 
-import { RUNTIME_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, STORAGE_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from '../../../src/shared/settingsRegistry.js';
+import { RUNTIME_SETTINGS_REGISTRY, UI_SETTINGS_REGISTRY, SEARXNG_AVAILABLE_ENGINES } from '../../../src/shared/settingsRegistry.js';
 
 const REGISTRY_TYPE_TO_TS = {
   int: 'number',
@@ -96,7 +96,7 @@ export function generateManifestTypes(registry) {
  * @returns {string} TypeScript declaration source
  */
 export function generateSettingsDefaultsDeclaration(registry, opts = {}) {
-  const { storageRegistry = [], uiRegistry = [] } = opts;
+  const { uiRegistry = [] } = opts;
   const lines = [];
 
   lines.push('// AUTO-GENERATED from RUNTIME_SETTINGS_REGISTRY — do not edit manually.');
@@ -107,22 +107,7 @@ export function generateSettingsDefaultsDeclaration(registry, opts = {}) {
   lines.push('export declare const SETTINGS_DEFAULTS: {');
   lines.push('  readonly convergence: Readonly<Record<string, number | boolean>>;');
   lines.push('  readonly runtime: Readonly<Record<string, string | number | boolean>>;');
-  // WHY: Derive storage defaults shape from STORAGE_SETTINGS_REGISTRY.
-  // Matches deriveStorageDefaults: excludes secret and computed entries.
-  lines.push('  readonly storage: Readonly<{');
-  for (const entry of storageRegistry) {
-    if (entry.secret || entry.computed) continue;
-    let tsType;
-    if (entry.type === 'enum' && entry.allowed) {
-      tsType = entry.allowed.map(v => `'${v}'`).join(' | ');
-    } else if (entry.type === 'bool') {
-      tsType = 'boolean';
-    } else {
-      tsType = 'string';
-    }
-    lines.push(`    ${entry.key}: ${tsType};`);
-  }
-  lines.push('  }>;');
+  lines.push('  readonly storage: Readonly<Record<string, never>>;');
 
   // WHY: Derive ui defaults shape from UI_SETTINGS_REGISTRY.
   lines.push('  readonly ui: Readonly<{');
@@ -159,18 +144,7 @@ export function generateSettingsDefaultsDeclaration(registry, opts = {}) {
     lines.push(`    ${key}: readonly string[];`);
   }
   lines.push('  }>;');
-  // WHY: Derive storage option values from STORAGE_SETTINGS_REGISTRY.
-  const storageEnumKeys = storageRegistry
-    .filter(e => (e.type === 'enum' || e.type === 'csv_enum') && e.allowed)
-    .map(e => e.key);
-
-  lines.push('  readonly storage: Readonly<{');
-  for (const key of storageEnumKeys) {
-    const entry = storageRegistry.find(e => e.key === key);
-    const union = entry.allowed.map(v => `'${v}'`).join(' | ');
-    lines.push(`    ${key}: readonly (${union})[];`);
-  }
-  lines.push('  }>;');
+  lines.push('  readonly storage: Readonly<Record<string, never>>;');
   lines.push('};');
   lines.push('');
 
@@ -202,7 +176,6 @@ if (isMain) {
     '../../../src/shared/settingsDefaults.d.ts'
   );
   const dtsContent = generateSettingsDefaultsDeclaration(RUNTIME_SETTINGS_REGISTRY, {
-    storageRegistry: STORAGE_SETTINGS_REGISTRY,
     uiRegistry: UI_SETTINGS_REGISTRY,
   });
   fs.writeFileSync(dtsPath, dtsContent, 'utf8');

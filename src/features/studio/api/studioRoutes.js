@@ -1,12 +1,11 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { runEnumConsistencyReview as runEnumConsistencyReviewDefault } from '../../indexing/index.js';
-import { loadUserSettings, persistUserSettingsSections, readStudioMapFromUserSettings } from '../../settings-authority/index.js';
+import { hashJson } from '../../../ingest/compileUtils.js';
 import {
   applyEnumConsistencyToSuggestions,
   buildPendingEnumValuesFromSuggestions,
   buildStudioComponentDbFromSpecDb,
   buildStudioKnownValuesFromSpecDb,
-  choosePreferredStudioMap,
   dedupeEnumValues,
   isEnumConsistencyReviewEnabled,
   readEnumConsistencyFormatHint,
@@ -38,6 +37,7 @@ export function registerStudioRoutes(ctx) {
     validateFieldStudioMap,
     invalidateFieldRulesCache,
     buildFieldLabelsMap,
+    getSpecDb,
     getSpecDbReady,
     storage,
     loadCategoryConfig,
@@ -53,21 +53,6 @@ export function registerStudioRoutes(ctx) {
     && typeof saveFieldStudioMap === 'function'
     && typeof validateFieldStudioMap === 'function'
   );
-
-  const settingsRoot =
-    config?.categoryAuthorityRoot
-    || HELPER_ROOT
-    || 'category_authority';
-
-  async function getStudioMapFromUserSettings(category) {
-    if (typeof ctx.loadStudioMapFromUserSettings === 'function') {
-      return ctx.loadStudioMapFromUserSettings(category);
-    }
-    const userSettings = await loadUserSettings({
-      categoryAuthorityRoot: settingsRoot,
-    });
-    return readStudioMapFromUserSettings(userSettings, category);
-  }
 
   return async function handleStudioRoutes(parts, params, method, req, res) {
     if (parts[0] === 'field-labels' && parts[1] && !parts[2] && method === 'GET') {
@@ -327,30 +312,28 @@ export function registerStudioRoutes(ctx) {
       });
     }
 
-    // Studio map GET
+    // Studio map GET — reads from SQL (primary), falls back to JSON file (pre-migration)
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-map' && method === 'GET') {
       if (!hasStudioMapHandlers) {
         return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
       }
       const category = parts[1];
-      let settingsMap = null;
-      try {
-        settingsMap = await getStudioMapFromUserSettings(category);
-      } catch {
-        settingsMap = null;
+      const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      const sqlRow = specDb?.getFieldStudioMap?.() ?? null;
+      if (sqlRow) {
+        try {
+          const map = JSON.parse(sqlRow.map_json);
+          return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: `specDb:${category}`, map }));
+        } catch { /* fall through to JSON */ }
       }
-
+      // Fallback: control-plane JSON file (pre-migration)
       let controlPlaneMap = null;
       try {
         controlPlaneMap = await loadFieldStudioMap({ category, config });
-      } catch (err) {
-        const preferred = choosePreferredStudioMap(settingsMap, null, { validateMap: validateFieldStudioMap });
-        if (preferred) return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(preferred));
-        return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: '', map: {}, error: err.message }));
+      } catch {
+        return jsonRes(res, 200, FieldStudioMapResponseSchema.parse({ file_path: '', map: {} }));
       }
-
-      const preferred = choosePreferredStudioMap(settingsMap, controlPlaneMap, { validateMap: validateFieldStudioMap });
-      return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(preferred || { file_path: '', map: {} }));
+      return jsonRes(res, 200, FieldStudioMapResponseSchema.parse(controlPlaneMap || { file_path: '', map: {} }));
     }
 
     // Studio map PUT (save)
@@ -375,8 +358,12 @@ export function registerStudioRoutes(ctx) {
       try {
         const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
         if (params.get('allowEmptyOverwrite') !== 'true') {
-          const existingMap = await loadFieldStudioMap({ category, config }).catch(() => null);
-          const existingSummary = summarizeStudioMapPayload(existingMap?.map);
+          // WHY: Read existing map from SQL (primary), fall back to JSON file for pre-migration.
+          const specDbForGuard = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+          const guardRow = specDbForGuard?.getFieldStudioMap?.() ?? null;
+          const existingMapData = guardRow ? (() => { try { return JSON.parse(guardRow.map_json); } catch { return null; } })() : null;
+          const existingMap = existingMapData || (await loadFieldStudioMap({ category, config }).catch(() => null))?.map || null;
+          const existingSummary = summarizeStudioMapPayload(existingMap);
           if (!incomingSummary.has_mapping_payload && existingSummary.has_mapping_payload) {
             return jsonRes(res, 409, {
               error: 'empty_map_overwrite_rejected',
@@ -395,21 +382,23 @@ export function registerStudioRoutes(ctx) {
             });
           }
         }
-        const result = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config });
-        await persistUserSettingsSections({
-          categoryAuthorityRoot: settingsRoot,
-          studioPatch: {
-            [category]: {
-              file_path: typeof result.file_path === 'string' ? result.file_path : '',
-              map: result.field_studio_map && typeof result.field_studio_map === 'object'
-                ? result.field_studio_map
-                : normalizedFieldStudioMap,
-              map_hash: result.map_hash,
-              version_snapshot: result.version_snapshot,
-              updated_at: new Date().toISOString(),
-            },
-          },
+        const mapHash = hashJson(normalizedFieldStudioMap);
+
+        // PRIMARY: write to SQL
+        const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+        if (specDb) {
+          specDb.upsertFieldStudioMap(JSON.stringify(normalizedFieldStudioMap), mapHash);
+        }
+
+        // SECONDARY: export to JSON file (fire-and-forget, for compile/git)
+        const fileResult = await saveFieldStudioMap({ category, fieldStudioMap: normalizedFieldStudioMap, config }).catch((err) => {
+          console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
+          return { file_path: '', map_hash: mapHash, field_studio_map: normalizedFieldStudioMap };
         });
+
+        sessionCache.invalidateSessionCache(category);
+        reviewLayoutByCategory.delete(category);
+
         emitDataChange({
           broadcastWs,
           event: 'field-studio-map-saved',
@@ -420,7 +409,11 @@ export function registerStudioRoutes(ctx) {
             map_sections: Array.isArray(normalizedFieldStudioMap?.field_mapping) ? normalizedFieldStudioMap.field_mapping.length : 0,
           },
         });
-        return jsonRes(res, 200, result);
+        return jsonRes(res, 200, {
+          file_path: fileResult.file_path || '',
+          map_hash: mapHash,
+          field_studio_map: normalizedFieldStudioMap,
+        });
       } catch (err) {
         return jsonRes(res, 500, { error: 'save_failed', message: err.message });
       }
@@ -441,9 +434,12 @@ export function registerStudioRoutes(ctx) {
     if (parts[0] === 'studio' && parts[1] && parts[2] === 'tooltip-bank' && method === 'GET') {
       const category = parts[1];
       const catRoot = path.join(HELPER_ROOT, category);
-      const mapData = (
-        await safeReadJson(path.join(catRoot, '_control_plane', 'field_studio_map.json'))
-      );
+      // WHY: SQL is primary source for field_studio_map. JSON fallback for pre-migration.
+      const tooltipSpecDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      const tooltipRow = tooltipSpecDb?.getFieldStudioMap?.() ?? null;
+      const mapData = tooltipRow
+        ? (() => { try { return JSON.parse(tooltipRow.map_json); } catch { return null; } })()
+        : await safeReadJson(path.join(catRoot, '_control_plane', 'field_studio_map.json'));
       const tooltipPath = mapData?.tooltip_source?.path || '';
       const tooltipFiles = [];
       const tooltipEntries = {};

@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import {
   applyEnumConsistencyToSuggestions,
   buildStudioComponentDbFromSpecDb,
-  choosePreferredStudioMap,
 } from '../studioRouteHelpers.js';
 
 test('buildStudioComponentDbFromSpecDb normalizes authoritative component identities', () => {
@@ -38,42 +37,6 @@ test('buildStudioComponentDbFromSpecDb normalizes authoritative component identi
     switch: [
       { name: 'Optical', maker: '', aliases: [] },
     ],
-  });
-});
-
-test('choosePreferredStudioMap favors valid control-plane map over richer invalid settings map', () => {
-  const result = choosePreferredStudioMap(
-    {
-      map: {
-        field_studio_source_path: 'mouse.xlsx',
-        component_sources: [{ component_type: 'sensor' }],
-        data_lists: [{ field: 'dpi', values: ['3200'] }],
-      },
-    },
-    {
-      map: {
-        component_sources: [{ component_type: 'sensor' }],
-        data_lists: [],
-        enum_lists: [],
-      },
-    },
-    {
-      validateMap: (map) => {
-        const errors = [];
-        if (map.field_studio_source_path && !map?.key_list?.sheet) {
-          errors.push('key_list: sheet is required');
-        }
-        return { valid: errors.length === 0, errors };
-      },
-    },
-  );
-
-  assert.deepEqual(result, {
-    map: {
-      component_sources: [{ component_type: 'sensor' }],
-      data_lists: [],
-      enum_lists: [],
-    },
   });
 });
 

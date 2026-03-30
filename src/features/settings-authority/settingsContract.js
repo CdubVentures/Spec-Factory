@@ -11,7 +11,6 @@ import {
 } from './settingsKeySets.js';
 import {
   UI_SETTINGS_VALUE_TYPES,
-  STORAGE_SETTINGS_VALUE_TYPES,
 } from './settingsValueTypes.js';
 import { buildUserSettingsSnapshotSchema } from './settingsSchemaBuilders.js';
 import {
@@ -38,12 +37,10 @@ export {
   RUNTIME_SETTINGS_ROUTE_PUT,
   RUNTIME_SETTINGS_VALUE_TYPES,
   UI_SETTINGS_VALUE_TYPES,
-  STORAGE_SETTINGS_VALUE_TYPES,
 };
 
 export const SETTINGS_AUTHORITY_PRECEDENCE = Object.freeze({
   runtime: Object.freeze(['user']),
-  storage: Object.freeze(['user']),
   studio: Object.freeze(['user']),
   ui: Object.freeze(['user']),
 });
@@ -51,7 +48,6 @@ export const SETTINGS_AUTHORITY_PRECEDENCE = Object.freeze({
 const USER_SETTINGS_SNAPSHOT_SCHEMA = buildUserSettingsSnapshotSchema({
   settingsDocumentSchemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
   runtimeSettingsValueTypes: RUNTIME_SETTINGS_VALUE_TYPES,
-  storageSettingsValueTypes: STORAGE_SETTINGS_VALUE_TYPES,
   uiSettingsValueTypes: UI_SETTINGS_VALUE_TYPES,
 });
 

@@ -74,35 +74,10 @@ test('indexed runtime status text keeps error and partial ahead of dirty labels'
   );
 });
 
-test('storage and llm status helpers distinguish autosave-pending dirty state from clean state', async () => {
+test('llm status helper distinguishes autosave-pending dirty state from clean state', async () => {
   const {
-    resolveStorageSettingsStatusText,
     resolveLlmSettingsStatusText,
   } = await loadSettingsStatusModule();
-
-  assert.equal(
-    resolveStorageSettingsStatusText({
-      isSaving: false,
-      statusKind: '',
-      statusText: '',
-      storageSettingsReady: true,
-      dirty: true,
-      autoSaveEnabled: true,
-    }),
-    'Unsaved changes queued for auto save.',
-  );
-
-  assert.equal(
-    resolveStorageSettingsStatusText({
-      isSaving: false,
-      statusKind: 'ok',
-      statusText: '',
-      storageSettingsReady: true,
-      dirty: false,
-      autoSaveEnabled: false,
-    }),
-    'Storage settings saved.',
-  );
 
   assert.equal(
     resolveLlmSettingsStatusText({

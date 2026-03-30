@@ -45,14 +45,30 @@ function makeCatalogCtx(overrides = {}) {
   return { ...ctx, ...overrides };
 }
 
+function makeStubAppDb() {
+  return {
+    listBrands: () => [],
+    getCategoriesForBrand: () => [],
+    getBrandBySlug: () => null,
+    getBrand: () => null,
+    findBrandByAlias: () => null,
+    listBrandsForCategory: () => [],
+    upsertBrand: noop,
+    deleteBrand: () => 0,
+    setBrandCategories: noop,
+    updateBrandFields: () => 0,
+    updateBrandSlug: () => 0,
+    insertBrandRename: noop,
+  };
+}
+
 function makeBrandCtx(overrides = {}) {
   const ctx = {
     jsonRes: (_res, status, body) => ({ status, body }),
     readJsonBody: async () => ({}),
     config: {},
     storage: {},
-    loadBrandRegistry: async () => ({ brands: {} }),
-    saveBrandRegistry: async () => ({ ok: true }),
+    appDb: makeStubAppDb(),
     addBrand: async () => ({ ok: true }),
     addBrandsBulk: async () => ({ ok: true, created: 0 }),
     updateBrand: async () => ({ ok: true, brand: { categories: [] } }),
@@ -65,6 +81,7 @@ function makeBrandCtx(overrides = {}) {
     upsertQueueProduct: async () => ({ ok: true }),
     broadcastWs: noop,
     getSpecDb: () => null,
+    loadProductCatalog: async () => ({ products: {} }),
   };
   return { ...ctx, ...overrides };
 }
@@ -180,16 +197,12 @@ test('brand routes: rename forwards getSpecDb resolver to cascade layer', async 
 
   const handler = registerBrandRoutes(makeBrandCtx({
     readJsonBody: async () => ({ name: 'Razer Pro' }),
-    loadBrandRegistry: async () => ({
-      brands: {
-        razer: {
-          canonical_name: 'Razer',
-          aliases: [],
-          categories: ['mouse'],
-          website: '',
-        },
-      },
-    }),
+    appDb: {
+      ...makeStubAppDb(),
+      getBrandBySlug: (slug) => slug === 'razer'
+        ? { identifier: 'b5a50d8f', canonical_name: 'Razer', slug: 'razer', aliases: '[]', website: '', added_by: 'seed', created_at: '2026-01-01', updated_at: '2026-01-01' }
+        : null,
+    },
     getSpecDb: (category) => (category === 'mouse' ? specDb : null),
     renameBrand: async (args) => {
       renameArgs = args;

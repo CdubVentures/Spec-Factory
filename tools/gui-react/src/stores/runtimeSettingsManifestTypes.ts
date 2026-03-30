@@ -6,6 +6,7 @@ export interface RuntimeSettingDefaults {
   autoScrollDelayMs: number;
   autoScrollEnabled: boolean;
   autoScrollPasses: number;
+  autoScrollMaxPixels: number;
   autoScrollStrategy: string;
   capturePageScreenshotEnabled: boolean;
   capturePageScreenshotFormat: string;
@@ -61,7 +62,6 @@ export interface RuntimeSettingDefaults {
   openaiApiKey: string;
   pipelineSchemaEnforcementMode: string;
   runtimeControlFile: string;
-  runtimeEventsKey: string;
   runtimeScreencastEnabled: boolean;
   runtimeTraceEnabled: boolean;
   runtimeTraceLlmPayloads: boolean;
@@ -99,12 +99,16 @@ export interface RuntimeSettingDefaults {
   searchPacingJitterFactor: number;
   searchLoopMaxNoProgressRounds: number;
   searchLoopMaxLowQualityRounds: number;
+  crawleeWaitUntil: string;
   crawleeMaxRequestRetries: number;
   crawleeBrowserRetirePageCount: number;
   crawleeNavigationTimeoutSecs: number;
   crawlMaxConcurrentSlots: number;
   crawleeSameDomainDelaySecs: number;
   crawleeMaxRequestsPerMinute: number;
+  crawleeMaxSessionRotations: number;
+  crawleeRetryOnBlocked: boolean;
+  crawleeMaxOpenPagesPerBrowser: number;
   crawleeUseSessionPool: boolean;
   crawleePersistCookiesPerSession: boolean;
   crawleeSessionPoolSize: number;

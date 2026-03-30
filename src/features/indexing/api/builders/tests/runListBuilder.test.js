@@ -3,22 +3,51 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { SpecDb } from '../../../../../db/specDb.js';
 
 import { createRunListBuilder } from '../runListBuilder.js';
 
-function makeBuilder(overrides = {}) {
+function makeSpecDb() {
+  return new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+}
+
+function makeBuilder(tmpDir, specDb, overrides = {}) {
   return createRunListBuilder({
-    getIndexLabRoot: () => '/tmp/nonexistent-runlist-test',
+    getIndexLabRoot: () => tmpDir,
     isRunStillActive: () => false,
     readEvents: async () => [],
+    getSpecDbReady: specDb ? async () => specDb : null,
     ...overrides,
   });
+}
+
+function sampleRun(overrides = {}) {
+  return {
+    run_id: 'run-001',
+    category: 'mouse',
+    product_id: 'mouse-a1b2c3d4',
+    status: 'completed',
+    started_at: '2026-01-01T00:00:00Z',
+    ended_at: '2026-01-01T00:05:00Z',
+    phase_cursor: 'completed',
+    identity_fingerprint: '',
+    identity_lock_status: '',
+    dedupe_mode: '',
+    s3key: '',
+    out_root: '',
+    counters: { pages_checked: 5, fetched_ok: 3 },
+    ...overrides,
+  };
 }
 
 // --- Guards ---
 
 test('missing indexlab root returns empty array', async () => {
-  const builder = makeBuilder();
+  const builder = createRunListBuilder({
+    getIndexLabRoot: () => '/tmp/nonexistent-runlist-test',
+    isRunStillActive: () => false,
+    readEvents: async () => [],
+  });
   const result = await builder.listIndexLabRuns();
   assert.ok(Array.isArray(result));
   assert.equal(result.length, 0);
@@ -28,25 +57,12 @@ test('missing indexlab root returns empty array', async () => {
 
 test('returned rows have expected keys', async () => {
   const tmpDir = path.join(os.tmpdir(), `runlist-test-shape-${Date.now()}`);
-  const runDir = path.join(tmpDir, 'run-001');
-  await fs.mkdir(runDir, { recursive: true });
-  await fs.writeFile(
-    path.join(runDir, 'run.json'),
-    JSON.stringify({
-      run_id: 'run-001',
-      category: 'mouse',
-      product_id: 'mouse-test-brand-model',
-      status: 'completed',
-      started_at: '2026-01-01T00:00:00Z',
-      ended_at: '2026-01-01T00:05:00Z',
-    }),
-  );
+  await fs.mkdir(path.join(tmpDir, 'run-001'), { recursive: true });
   try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => [],
-    });
-    const rows = await builder.listIndexLabRuns();
+    const specDb = makeSpecDb();
+    specDb.upsertRun(sampleRun());
+    const builder = makeBuilder(tmpDir, specDb);
+    const rows = await builder.listIndexLabRuns({ category: 'mouse' });
     assert.ok(rows.length >= 1);
     const row = rows[0];
     for (const key of ['run_id', 'category', 'product_id', 'status', 'started_at', 'ended_at', 'run_dir', 'counters', 'storage_origin', 'storage_state', 'picker_label']) {
@@ -62,29 +78,24 @@ test('returned rows have expected keys', async () => {
   }
 });
 
-test('picker labels humanize product identity and use a short trailing run token', async () => {
-  const tmpDir = path.join(os.tmpdir(), `runlist-test-picker-label-${Date.now()}`);
-  const runDir = path.join(tmpDir, '20260318061504-16a0b3');
-  await fs.mkdir(runDir, { recursive: true });
-  await fs.writeFile(
-    path.join(runDir, 'run.json'),
-    JSON.stringify({
-      run_id: '20260318061504-16a0b3',
-      category: 'mouse',
-      product_id: 'mouse-razer-viper-v3-pro-white',
-      status: 'completed',
+test('picker labels use catalog brand+model+variant when provided', async () => {
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-picker-${Date.now()}`);
+  const runId = '20260318061504-16a0b3';
+  await fs.mkdir(path.join(tmpDir, runId), { recursive: true });
+  try {
+    const specDb = makeSpecDb();
+    specDb.upsertRun(sampleRun({
+      run_id: runId,
+      product_id: 'mouse-f1e2d3c4',
       started_at: '2026-03-18T06:15:04Z',
       ended_at: '2026-03-18T06:30:00Z',
-    }),
-  );
-  try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => [],
-    });
-    const rows = await builder.listIndexLabRuns();
+    }));
+    const catalogProducts = new Map([
+      ['mouse-f1e2d3c4', { brand: 'Razer', model: 'Viper V3 Pro', variant: 'White' }],
+    ]);
+    const builder = makeBuilder(tmpDir, specDb);
+    const rows = await builder.listIndexLabRuns({ category: 'mouse', catalogProducts });
     assert.equal(rows[0]?.picker_label, 'Mouse • Razer Viper V3 Pro White - 6a0b3');
-    assert.equal(rows[0]?.storage_state, 'stored');
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
@@ -94,24 +105,14 @@ test('picker labels humanize product identity and use a short trailing run token
 
 test('rows sorted by started_at descending', async () => {
   const tmpDir = path.join(os.tmpdir(), `runlist-test-sort-${Date.now()}`);
-  const runDirA = path.join(tmpDir, 'run-a');
-  const runDirB = path.join(tmpDir, 'run-b');
-  await fs.mkdir(runDirA, { recursive: true });
-  await fs.mkdir(runDirB, { recursive: true });
-  await fs.writeFile(
-    path.join(runDirA, 'run.json'),
-    JSON.stringify({ run_id: 'run-a', category: 'mouse', status: 'completed', started_at: '2026-01-01T00:00:00Z' }),
-  );
-  await fs.writeFile(
-    path.join(runDirB, 'run.json'),
-    JSON.stringify({ run_id: 'run-b', category: 'mouse', status: 'completed', started_at: '2026-01-02T00:00:00Z' }),
-  );
+  await fs.mkdir(path.join(tmpDir, 'run-a'), { recursive: true });
+  await fs.mkdir(path.join(tmpDir, 'run-b'), { recursive: true });
   try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => [],
-    });
-    const rows = await builder.listIndexLabRuns();
+    const specDb = makeSpecDb();
+    specDb.upsertRun(sampleRun({ run_id: 'run-a', started_at: '2026-01-01T00:00:00Z' }));
+    specDb.upsertRun(sampleRun({ run_id: 'run-b', started_at: '2026-01-02T00:00:00Z' }));
+    const builder = makeBuilder(tmpDir, specDb);
+    const rows = await builder.listIndexLabRuns({ category: 'mouse' });
     assert.equal(rows.length, 2);
     assert.equal(rows[0].run_id, 'run-b', 'newer run should come first');
     assert.equal(rows[1].run_id, 'run-a');
@@ -124,20 +125,17 @@ test('rows sorted by started_at descending', async () => {
 
 test('respects limit parameter', async () => {
   const tmpDir = path.join(os.tmpdir(), `runlist-test-limit-${Date.now()}`);
+  const specDb = makeSpecDb();
   for (let i = 0; i < 5; i++) {
-    const runDir = path.join(tmpDir, `run-${String(i).padStart(3, '0')}`);
-    await fs.mkdir(runDir, { recursive: true });
-    await fs.writeFile(
-      path.join(runDir, 'run.json'),
-      JSON.stringify({ run_id: `run-${i}`, category: 'mouse', status: 'completed', started_at: `2026-01-0${i + 1}T00:00:00Z` }),
-    );
+    await fs.mkdir(path.join(tmpDir, `run-${String(i).padStart(3, '0')}`), { recursive: true });
+    specDb.upsertRun(sampleRun({
+      run_id: `run-${String(i).padStart(3, '0')}`,
+      started_at: `2026-01-0${i + 1}T00:00:00Z`,
+    }));
   }
   try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => tmpDir,
-      readEvents: async () => [],
-    });
-    const rows = await builder.listIndexLabRuns({ limit: 2 });
+    const builder = makeBuilder(tmpDir, specDb);
+    const rows = await builder.listIndexLabRuns({ limit: 2, category: 'mouse' });
     assert.equal(rows.length, 2);
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
@@ -145,32 +143,25 @@ test('respects limit parameter', async () => {
 });
 
 test('completed local run with counters exposes stored counters in the row contract', async () => {
-  const tmpDir = path.join(os.tmpdir(), `runlist-test-local-skip-${Date.now()}`);
+  const tmpDir = path.join(os.tmpdir(), `runlist-test-counters-${Date.now()}`);
   const indexLabRoot = path.join(tmpDir, 'indexlab');
-  const runDir = path.join(indexLabRoot, 'run-local-fast');
-  await fs.mkdir(runDir, { recursive: true });
-  const meta = {
-    run_id: 'run-local-fast',
-    category: 'mouse',
-    product_id: 'mouse-test',
-    status: 'completed',
-    started_at: '2026-03-01T00:00:00Z',
-    ended_at: '2026-03-01T00:10:00Z',
-    counters: { pages_checked: 10, fetch_ok: 8, parse_completed: 6, indexed_docs: 4, fields_filled: 20 },
-  };
-  await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify(meta));
-  await fs.writeFile(path.join(runDir, 'run_events.ndjson'), '');
-
+  await fs.mkdir(path.join(indexLabRoot, 'run-local-fast'), { recursive: true });
+  const counters = { pages_checked: 10, fetch_ok: 8, parse_completed: 6, indexed_docs: 4, fields_filled: 20 };
   try {
-    const builder = makeBuilder({
-      getIndexLabRoot: () => indexLabRoot,
-      readEvents: async () => [],
-    });
-    const rows = await builder.listIndexLabRuns();
+    const specDb = makeSpecDb();
+    specDb.upsertRun(sampleRun({
+      run_id: 'run-local-fast',
+      product_id: 'mouse-a1b2c3d4',
+      started_at: '2026-03-01T00:00:00Z',
+      ended_at: '2026-03-01T00:10:00Z',
+      counters,
+    }));
+    const builder = makeBuilder(indexLabRoot, specDb);
+    const rows = await builder.listIndexLabRuns({ category: 'mouse' });
     const row = rows.find((r) => r.run_id === 'run-local-fast');
     assert.ok(row, 'local run should appear');
     assert.equal(row.status, 'completed');
-    assert.deepEqual(row.counters, meta.counters);
+    assert.deepEqual(row.counters, counters);
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

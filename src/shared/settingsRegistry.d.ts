@@ -35,4 +35,4 @@ export interface RegistryEntry {
 export declare const SEARXNG_AVAILABLE_ENGINES: readonly string[];
 export declare const RUNTIME_SETTINGS_REGISTRY: readonly RegistryEntry[];
 export declare const UI_SETTINGS_REGISTRY: readonly RegistryEntry[];
-export declare const STORAGE_SETTINGS_REGISTRY: readonly RegistryEntry[];
+

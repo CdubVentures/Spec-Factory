@@ -79,12 +79,6 @@ export function diffFieldRuleSets(previousRules = {}, currentRules = {}) {
   };
 }
 
-// WHY: _versions/ snapshots removed — no rollback mechanism existed, just unbounded disk growth.
-// Callers still expect { version_id, path } return shape.
-export async function writeControlPlaneSnapshot() {
-  return { version_id: null, path: null };
-}
-
 export async function readJsonIfExists(filePath) {
   try {
     const raw = await fs.readFile(filePath, 'utf8');
@@ -151,16 +145,11 @@ export async function saveFieldStudioMap({
   if (!mapPath && filePath !== fieldStudioPath) {
     await writeJsonStable(fieldStudioPath, normalized);
   }
-  const snapshot = await writeControlPlaneSnapshot({
-    controlPlaneRoot,
-    fieldStudioMap: normalized,
-    note: 'save-field-studio-map'
-  });
   return {
     file_path: filePath,
     map_hash: hashJson(normalized),
     field_studio_map: normalized,
-    version_snapshot: snapshot
+    version_snapshot: { version_id: null, path: null },
   };
 }
 

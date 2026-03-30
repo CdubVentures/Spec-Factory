@@ -87,7 +87,7 @@ flowchart TB
   subgraph P09["phase_09_crawl  CRAWL + EXTRACTION"]
     direction LR
     p9_batch["crawlSession.processBatch()<br/><i>concurrent workers via runFetchPlan()</i>"]
-    p9_frontier[("frontierDb.urls (SQLite primary)<br/><i>recordFetch() per URL<br/>JSON fallback still present</i>")]
+    p9_frontier[("frontierDb.urls (SQLite only)<br/><i>recordFetch() per URL<br/>JSON fallback DELETED (2026-03-29)</i>")]
     p9_events[("bridge_events<br/><i>fetch events</i>")]
     p9_runs[("runs<br/><i>counters++</i>")]
     p9_binaries["Content-addressed binaries<br/><i>screenshot → {runId}/screenshots/<br/>video → {runId}/video/</i>"]

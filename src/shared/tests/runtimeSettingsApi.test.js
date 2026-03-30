@@ -238,43 +238,4 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(legacySettingsExists, false, 'legacy settings.json should not be written');
   });
 
-  await t.test('canonical-only mode persists storage settings into user-settings without legacy snapshots', async () => {
-    const storageDirectory = path.join(os.homedir(), 'Desktop', 'SpecFactoryRuns-test-runtime-settings-api');
-    const storageRes = await fetch(`${_baseUrl}/storage-settings`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        enabled: true,
-        destinationType: 'local',
-        localDirectory: storageDirectory,
-        awsRegion: 'us-east-2',
-        s3Bucket: '',
-        s3Prefix: 'spec-factory-runs',
-        s3AccessKeyId: '',
-        s3SecretAccessKey: '',
-        s3SessionToken: '',
-      }),
-    });
-    assert.equal(storageRes.status, 200);
-
-    const userSettings = await readJsonFileUntil(
-      path.join(_helperRoot, '_runtime', 'user-settings.json'),
-      (json) => (
-        json
-        && json.storage
-        && json.storage.destinationType === 'local'
-        && json.storage.localDirectory === storageDirectory
-      ),
-      8_000,
-    );
-
-    assert.equal(userSettings.storage.destinationType, 'local');
-    assert.equal(userSettings.storage.localDirectory, storageDirectory);
-
-    const legacyStorageExists = await fs.access(path.join(_helperRoot, '_runtime', 'storage-settings.json'))
-      .then(() => true)
-      .catch(() => false);
-    assert.equal(legacyStorageExists, false, 'legacy storage-settings.json should not be written');
-  });
-
 });

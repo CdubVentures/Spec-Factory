@@ -18,7 +18,6 @@ export function createRunLoggerBootstrap({
 
   const logger = createEventLoggerFn({
     storage,
-    runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
     onEvent: config.onRuntimeEvent,
     context: {
       runId,

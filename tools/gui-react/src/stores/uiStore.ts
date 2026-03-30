@@ -23,7 +23,6 @@ const RUNTIME_AUTOSAVE_KEY = 'indexlab-runtime-autosave';
 const STUDIO_AUTOSAVE_ALL_KEY = 'studio:autoSaveAllEnabled';
 const STUDIO_AUTOSAVE_KEY = 'autoSaveEnabled';
 const STUDIO_MAP_AUTOSAVE_KEY = 'autoSaveMapEnabled';
-const STORAGE_AUTOSAVE_KEY = 'storage:autoSaveEnabled';
 const LAST_LIGHT_THEME_KEY = 'ui:lastLightTheme';
 const LAST_DARK_THEME_KEY = 'ui:lastDarkTheme';
 
@@ -196,7 +195,6 @@ interface UiState {
   autoSaveEnabled: boolean;
   autoSaveMapEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
   setCategory: (cat: string) => void;
   setCategories: (cats: string[]) => void;
   setThemeProfile: (themeProfile: SfThemeProfile) => void;
@@ -208,7 +206,6 @@ interface UiState {
   setAutoSaveEnabled: (v: boolean) => void;
   setAutoSaveMapEnabled: (v: boolean) => void;
   setRuntimeAutoSaveEnabled: (v: boolean) => void;
-  setStorageAutoSaveEnabled: (v: boolean) => void;
 }
 
 const initialCategory = readPersistedValue(UI_CATEGORY_KEY) || DEFAULT_CATEGORY;
@@ -228,7 +225,6 @@ export const useUiStore = create<UiState>((set) => ({
   autoSaveEnabled: initialStudioAutoSaveState.autoSaveEnabled,
   autoSaveMapEnabled: initialStudioAutoSaveState.autoSaveMapEnabled,
   runtimeAutoSaveEnabled: readPersistedBool(RUNTIME_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.runtimeAutoSaveEnabled),
-  storageAutoSaveEnabled: readPersistedBool(STORAGE_AUTOSAVE_KEY, UI_SETTING_DEFAULTS.storageAutoSaveEnabled),
   setCategory: (category) => {
     writePersistedValue(UI_CATEGORY_KEY, category);
     set({ category });
@@ -324,9 +320,5 @@ export const useUiStore = create<UiState>((set) => ({
   setRuntimeAutoSaveEnabled: (v) => {
     writePersistedValue(RUNTIME_AUTOSAVE_KEY, String(v));
     set({ runtimeAutoSaveEnabled: v });
-  },
-  setStorageAutoSaveEnabled: (v) => {
-    writePersistedValue(STORAGE_AUTOSAVE_KEY, String(v));
-    set({ storageAutoSaveEnabled: v });
   },
 }));

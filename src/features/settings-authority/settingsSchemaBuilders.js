@@ -23,7 +23,6 @@ export function sectionSchemaFromTypeMap(typeMap) {
 export function buildUserSettingsSnapshotSchema({
   settingsDocumentSchemaVersion,
   runtimeSettingsValueTypes,
-  storageSettingsValueTypes,
   uiSettingsValueTypes,
 }) {
   return {
@@ -32,7 +31,7 @@ export function buildUserSettingsSnapshotSchema({
       schemaVersion: { type: 'integer', const: settingsDocumentSchemaVersion },
       runtime: sectionSchemaFromTypeMap(runtimeSettingsValueTypes),
       convergence: { type: 'object', properties: {}, additionalProperties: false },
-      storage: sectionSchemaFromTypeMap(storageSettingsValueTypes),
+      storage: { type: 'object', properties: {}, additionalProperties: false },
       studio: {
         type: 'object',
         additionalProperties: {

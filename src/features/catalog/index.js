@@ -10,7 +10,6 @@ export {
 } from './products/productCatalog.js';
 export {
   loadBrandRegistry,
-  saveBrandRegistry,
   addBrand,
   addBrandsBulk,
   updateBrand,
@@ -21,7 +20,6 @@ export {
   seedBrandsFromCatalog,
   renameBrand,
   getBrandImpactAnalysis,
-  appendBrandRenameLog,
 } from './identity/brandRegistry.js';
 export {
   buildCanonicalIdentityIndex,

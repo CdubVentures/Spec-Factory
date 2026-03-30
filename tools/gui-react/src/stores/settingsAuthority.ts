@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings/index.ts';
-import { readStorageSettingsSnapshot, useStorageSettingsReader } from './storageSettingsAuthority.ts';
 import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings/index.ts';
 import { llmSettingsRoutesQueryKey, readLlmSettingsSnapshot, useLlmSettingsReader } from './llmSettingsAuthority.ts';
 import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority.ts';
@@ -17,14 +16,12 @@ import {
 export interface SettingsAuthoritySnapshot {
   category: string;
   runtimeReady: boolean;
-  storageReady: boolean;
   sourceStrategyReady: boolean;
   llmSettingsReady: boolean;
   uiSettingsReady: boolean;
   uiSettingsPersistState: 'idle' | 'saving' | 'error';
   uiSettingsPersistMessage: string;
   autoSaveAllEnabled: boolean;
-  storageAutoSaveEnabled: boolean;
   runtimeAutoSaveEnabled: boolean;
 }
 
@@ -34,7 +31,6 @@ export function isSettingsAuthoritySnapshotReady(
   if (!snapshot) return false;
   const baseReady = (
     snapshot.runtimeReady
-    && snapshot.storageReady
     && snapshot.uiSettingsReady
   );
   if (!baseReady) return false;
@@ -48,7 +44,6 @@ export function isSettingsAuthoritySnapshotReady(
 interface SettingsHydrationPipelineOptions {
   category: string;
   runtimeReload: () => Promise<unknown>;
-  storageReload: () => Promise<unknown>;
   sourceStrategyReload: () => Promise<unknown>;
   llmReload: () => Promise<void>;
   uiReload: () => Promise<unknown>;
@@ -57,14 +52,12 @@ interface SettingsHydrationPipelineOptions {
 async function runSettingsStartupHydrationPipeline({
   category,
   runtimeReload,
-  storageReload,
   sourceStrategyReload,
   llmReload,
   uiReload,
 }: SettingsHydrationPipelineOptions) {
   const reloadTasks: Promise<unknown>[] = [
     runtimeReload(),
-    storageReload(),
     uiReload(),
   ];
   if (category !== 'all') {
@@ -92,20 +85,15 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
   const autoSaveEnabled = useUiStore((s) => s.autoSaveEnabled);
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
-  const storageAutoSaveEnabled = useUiStore((s) => s.storageAutoSaveEnabled);
   const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
   const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
   const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
-  const setStorageAutoSaveEnabled = useUiStore((s) => s.setStorageAutoSaveEnabled);
   const [uiSettingsPersistState, setUiSettingsPersistState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 
   const runtime = useRuntimeSettingsReader({
-    enabled: false,
-  });
-  const storage = useStorageSettingsReader({
     enabled: false,
   });
   const sourceStrategy = useSourceStrategyReader({
@@ -146,7 +134,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const lastUiAutosaveFingerprintRef = useRef('');
   const lastAppliedServerUiFingerprintRef = useRef('');
   const runtimeReloadRef = useRef(runtime.reload);
-  const storageReloadRef = useRef(storage.reload);
   const sourceStrategyReloadRef = useRef(sourceStrategy.reload);
   const llmReloadRef = useRef(llm.reload);
   const uiReloadRef = useRef(reloadUiSettings);
@@ -154,7 +141,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const patchAuthoritySnapshot = useSettingsAuthorityStore((s) => s.patchSnapshot);
 
   runtimeReloadRef.current = runtime.reload;
-  storageReloadRef.current = storage.reload;
   sourceStrategyReloadRef.current = sourceStrategy.reload;
   llmReloadRef.current = llm.reload;
   uiReloadRef.current = reloadUiSettings;
@@ -164,13 +150,11 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     studioAutoSaveEnabled: autoSaveEnabled,
     studioAutoSaveMapEnabled: autoSaveMapEnabled,
     runtimeAutoSaveEnabled,
-    storageAutoSaveEnabled,
   };
   const uiAutoSavePayloadRef = useRef(uiAutoSavePayload);
   uiAutoSavePayloadRef.current = uiAutoSavePayload;
 
   const hasRuntimeSnapshot = readRuntimeSettingsSnapshot(queryClient) !== undefined;
-  const hasStorageSnapshot = readStorageSettingsSnapshot(queryClient) !== undefined;
   const hasUiSettingsSnapshot = readUiSettingsSnapshot(queryClient) !== undefined;
   const hasSourceStrategySnapshot = category === 'all'
     ? true
@@ -182,26 +166,22 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const authoritySnapshot = useMemo<SettingsAuthoritySnapshot>(() => ({
     category,
     runtimeReady: hasRuntimeSnapshot,
-    storageReady: hasStorageSnapshot,
     sourceStrategyReady: hasSourceStrategySnapshot,
     llmSettingsReady: hasLlmSettingsSnapshot,
     uiSettingsReady: hasUiSettingsSnapshot,
     uiSettingsPersistState,
     uiSettingsPersistMessage,
     autoSaveAllEnabled,
-    storageAutoSaveEnabled,
     runtimeAutoSaveEnabled,
   }), [
     category,
     hasRuntimeSnapshot,
-    hasStorageSnapshot,
     hasSourceStrategySnapshot,
     hasLlmSettingsSnapshot,
     hasUiSettingsSnapshot,
     uiSettingsPersistState,
     uiSettingsPersistMessage,
     autoSaveAllEnabled,
-    storageAutoSaveEnabled,
     runtimeAutoSaveEnabled,
   ]);
 
@@ -214,7 +194,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
         await runSettingsStartupHydrationPipeline({
           category,
           runtimeReload: runtimeReloadRef.current,
-          storageReload: storageReloadRef.current,
           sourceStrategyReload: sourceStrategyReloadRef.current,
           llmReload: llmReloadRef.current,
           uiReload: uiReloadRef.current,
@@ -279,7 +258,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
       setAutoSaveMapEnabled(serverSettings.studioAutoSaveMapEnabled);
     }
     setRuntimeAutoSaveEnabled(serverSettings.runtimeAutoSaveEnabled);
-    setStorageAutoSaveEnabled(serverSettings.storageAutoSaveEnabled);
     setAutoSaveAllEnabled(serverSettings.studioAutoSaveAllEnabled);
     uiSettingsHydratedRef.current = true;
     lastAppliedServerUiFingerprintRef.current = serverFingerprint;
@@ -291,7 +269,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
     setAutoSaveEnabled,
     setAutoSaveMapEnabled,
     setRuntimeAutoSaveEnabled,
-    setStorageAutoSaveEnabled,
     setAutoSaveAllEnabled,
   ]);
 
@@ -300,10 +277,6 @@ export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
       switch (event.domain) {
         case 'runtime': {
           void runtimeReloadRef.current();
-          return;
-        }
-        case 'storage': {
-          void storageReloadRef.current();
           return;
         }
         case 'ui': {

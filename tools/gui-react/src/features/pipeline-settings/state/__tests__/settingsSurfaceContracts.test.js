@@ -171,8 +171,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
     SEARXNG_ENGINE_LABELS,
     SETTINGS_AUTOSAVE_DEBOUNCE_MS,
     SETTINGS_AUTOSAVE_STATUS_MS,
-    STORAGE_DESTINATION_OPTIONS,
-    STORAGE_SETTING_DEFAULTS,
   } = settingsManifest;
   const {
     SEARXNG_ENGINE_OPTIONS,
@@ -207,10 +205,6 @@ test('settings manifest surface keeps concrete option defaults and labels aligne
 
   assert.equal(LLM_SETTING_LIMITS.maxTokens.max > LLM_SETTING_LIMITS.maxTokens.min, true);
   assert.equal(LLM_ROUTE_PRESET_LIMITS.deep.enableWebsearch, true);
-  assert.equal(
-    STORAGE_DESTINATION_OPTIONS.includes(STORAGE_SETTING_DEFAULTS.destinationType),
-    true,
-  );
   assert.equal(
     Object.values(SETTINGS_AUTOSAVE_DEBOUNCE_MS).every((value) => typeof value === 'number' && value > 0),
     true,

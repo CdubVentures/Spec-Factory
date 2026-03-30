@@ -68,33 +68,21 @@ test('SQL row with counters bypasses file I/O — no run.json needed', async () 
   }
 });
 
-test('SQL row without counters falls back to file I/O', async () => {
+test('SQL row with empty counters still appears in results', async () => {
   const tmpDir = await makeTmpDir();
   try {
     const specDb = makeSpecDb();
-    // Insert SQL row with empty counters
     specDb.upsertRun(sampleSqlRun({ counters: {} }));
 
-    // Create run.json as fallback
     const runDir = path.join(tmpDir, 'run-sql-001');
     await fs.mkdir(runDir, { recursive: true });
-    await fs.writeFile(path.join(runDir, 'run.json'), JSON.stringify({
-      run_id: 'run-sql-001',
-      category: 'mouse',
-      product_id: 'mouse-razer-viper',
-      status: 'completed',
-      started_at: '2026-03-26T10:00:00.000Z',
-      ended_at: '2026-03-26T10:30:00.000Z',
-      counters: { pages_checked: 99 },
-    }));
 
     const builder = makeBuilder(tmpDir, specDb);
     const rows = await builder.listIndexLabRuns({ category: 'mouse' });
 
     const row = rows.find((r) => r.run_id === 'run-sql-001');
-    assert.ok(row, 'run should appear from file fallback');
-    // Should get counters from run.json, not from the empty SQL counters
-    assert.equal(row.counters.pages_checked, 99);
+    assert.ok(row, 'run with empty counters should still appear');
+    assert.deepEqual(row.counters, {});
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

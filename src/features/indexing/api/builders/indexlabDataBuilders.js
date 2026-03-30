@@ -105,23 +105,6 @@ export async function readIndexLabRunMeta(runId) {
     }
   }
 
-  // Tier 2: run-summary.json (file fallback for pre-migration runs)
-  const runDir = await resolveIndexLabRunDirectory(token);
-  if (runDir) {
-    const { extractMetaFromRunSummary } = await import('../../../../indexlab/runSummarySerializer.js');
-    const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
-    if (summary) {
-      const meta = extractMetaFromRunSummary(summary);
-      if (meta) return meta;
-    }
-  }
-
-  // Tier 3: run.json (legacy pre-migration runs)
-  if (runDir) {
-    const meta = await safeReadJson(path.join(runDir, 'run.json'));
-    if (meta && typeof meta === 'object') return meta;
-  }
-
   return null;
 }
 
@@ -155,14 +138,11 @@ export function initIndexLabDataBuilders({
   indexLabRoot,
   outputRoot,
   storage,
-  runDataArchiveStorage = null,
   config,
   getSpecDbReady,
   isProcessRunning,
   processStatus = null,
-  runDataStorageState = null,
   getIndexLabRoot = null,
-  getRunDataArchiveStorage = null,
 }) {
   _resolveIndexLabRoot = typeof getIndexLabRoot === 'function'
     ? getIndexLabRoot
@@ -255,19 +235,7 @@ export async function readRunSummaryEvents(runId, limit = 2000, { category } = {
     } catch { /* fall through */ }
   }
 
-  // Tier 2: run-summary.json file on disk
-  try {
-    const runDir = await resolveIndexLabRunDirectory(token);
-    if (runDir) {
-      const summary = await safeReadJson(path.join(runDir, 'run-summary.json'));
-      if (summary) {
-        const events = extractEventsFromRunSummary(summary);
-        if (events.length > 0) return events.slice(0, limit);
-      }
-    }
-  } catch { /* fall through */ }
-
-  // Tier 3: bridge_events SQL (existing path — for pre-migration runs)
+  // Tier 2: bridge_events SQL
   return readIndexLabRunEvents(runId, limit, { category });
 }
 

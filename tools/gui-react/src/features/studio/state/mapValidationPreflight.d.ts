@@ -22,8 +22,3 @@ export declare function assertFieldStudioMapValidationOrThrow(args: {
   actionLabel?: string;
   allowLegacyCompileBypass?: boolean;
 }): FieldStudioMapValidationOutcome;
-
-export declare function resolveFieldStudioMapPayloadForSave(args: {
-  result: unknown;
-  fallback: Record<string, unknown>;
-}): Record<string, unknown>;

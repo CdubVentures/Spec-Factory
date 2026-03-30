@@ -12,14 +12,11 @@ import {
   assertNoShadowHelperRuntime,
   envToken as envTokenFromProcess,
   envBool as envBoolFromProcess,
-  resolveStorageBackedWorkspaceRoots as resolveStorageBackedWorkspaceRootsFromSettings,
-  createRunDataArchiveStorage,
 } from '../guiServerRuntimeConfig.js';
 import {
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
 } from '../../features/settings-authority/index.js';
-import { normalizeRunDataStorageSettings } from '../services/runDataRelocationService.js';
 import { markEnumSuggestionStatus } from '../helpers/fileHelpers.js';
 import { toInt } from '../helpers/valueNormalizers.js';
 import { createConfigMutationGate } from '../../core/config/configMutationGate.js';
@@ -32,12 +29,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     envTokenFromProcess({ env: process.env, name, fallback });
   const envBool = (name, fallback = false) =>
     envBoolFromProcess({ env: process.env, name, fallback });
-  const resolveStorageBackedWorkspaceRoots = (settings = {}) =>
-    resolveStorageBackedWorkspaceRootsFromSettings({
-      settings,
-      defaultLocalOutputRoot,
-    });
-
   function cleanVariant(v) {
     return canonicalCleanVariant(v);
   }
@@ -92,57 +83,22 @@ export function createBootstrapEnvironment({ projectRoot }) {
     repoDefaultOutputRoot: SETTINGS_DEFAULTS.runtime?.localOutputRoot,
   });
 
-  const runDataStorageState = normalizeRunDataStorageSettings({
-    enabled: envBool('RUN_DATA_STORAGE_ENABLED', false),
-    destinationType: 'local',
-    localDirectory: envToken('RUN_DATA_STORAGE_LOCAL_DIRECTORY', ''),
-    awsRegion: envToken('RUN_DATA_STORAGE_S3_REGION', 'us-east-2'),
-    s3Bucket: envToken('RUN_DATA_STORAGE_S3_BUCKET', ''),
-    s3Prefix: envToken('RUN_DATA_STORAGE_S3_PREFIX', 'spec-factory-runs'),
-    s3AccessKeyId: envToken('RUN_DATA_STORAGE_S3_ACCESS_KEY_ID', ''),
-    s3SecretAccessKey: envToken('RUN_DATA_STORAGE_S3_SECRET_ACCESS_KEY', ''),
-    s3SessionToken: envToken('RUN_DATA_STORAGE_S3_SESSION_TOKEN', ''),
-    updatedAt: null,
-    ...userSettings.storage,
-  });
-  const storageBackedWorkspaceRoots = resolveStorageBackedWorkspaceRoots(runDataStorageState);
-  if (storageBackedWorkspaceRoots) {
-    if (storageBackedWorkspaceRoots.outputRoot) {
-      config.localOutputRoot = storageBackedWorkspaceRoots.outputRoot;
-    }
-    if (storageBackedWorkspaceRoots.specDbDir) {
-      config.specDbDir = storageBackedWorkspaceRoots.specDbDir;
-    }
-  }
+  // WHY: Static stub — relocation feature was removed. Downstream consumers
+  // (storage manager, process lifecycle) still read enabled=false and degrade gracefully.
+  const runDataStorageState = Object.freeze({ enabled: false });
   // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
   const configGate = createConfigMutationGate(config);
 
   const OUTPUT_ROOT = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
-  const INDEXLAB_ROOT = storageBackedWorkspaceRoots?.indexLabRoot
-    ? storageBackedWorkspaceRoots.indexLabRoot
-    : resolveProjectPath(argVal('indexlab-root', ''), defaultIndexLabRoot());
+  const INDEXLAB_ROOT = resolveProjectPath(argVal('indexlab-root', ''), defaultIndexLabRoot());
   const storage = createStorage(config);
-  const runDataArchiveStorage = createRunDataArchiveStorage({
-    runDataStorageState,
-    config,
-    createStorage,
-  });
-
-  // WHY: Lazily creates an S3 client from LIVE runDataStorageState.
-  // At boot, S3 may not be configured yet. When the user switches to S3 at runtime,
-  // this getter creates a fresh client from the mutated settings.
-  const getRunDataArchiveStorage = () => createRunDataArchiveStorage({
-    runDataStorageState,
-    config,
-    createStorage,
-  });
 
   const markEnumSuggestionStatusBound = (category, field, value, status = 'accepted') =>
     markEnumSuggestionStatus(category, field, value, status, HELPER_ROOT);
 
   return {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState, runDataArchiveStorage, getRunDataArchiveStorage,
+    storage, runDataStorageState,
     resolveProjectPath,
     cleanVariant, markEnumSuggestionStatusBound,
     userSettings,

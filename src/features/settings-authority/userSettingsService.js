@@ -2,14 +2,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
-  normalizeRunDataStorageSettings,
-  sanitizeRunDataStorageSettingsForResponse,
-} from '../../api/services/runDataRelocationService.js';
-import { STORAGE_SETTINGS_REGISTRY } from '../../shared/settingsRegistry.js';
-import { deriveStorageCanonicalKeys } from '../../shared/settingsRegistryDerivations.js';
-
-const STORAGE_CANONICAL_KEYS = deriveStorageCanonicalKeys(STORAGE_SETTINGS_REGISTRY);
-import {
   migrateUserSettingsDocument,
   readUserSettingsDocumentMeta,
   RUNTIME_SETTINGS_KEYS,
@@ -196,15 +188,6 @@ function sanitizeStudioSettings(raw) {
   return normalized;
 }
 
-function sanitizeStorageSettings(raw) {
-  const normalized = normalizeRunDataStorageSettings(raw, raw);
-  const result = {};
-  for (const key of STORAGE_CANONICAL_KEYS) {
-    result[key] = normalized[key] ?? null;
-  }
-  return result;
-}
-
 function resolveBooleanSetting(source, key, fallback) {
   if (!source || typeof source !== 'object') return Boolean(fallback);
   if (!Object.hasOwn(source, key)) return Boolean(fallback);
@@ -226,7 +209,6 @@ function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
     studioAutoSaveEnabled,
     studioAutoSaveMapEnabled,
     runtimeAutoSaveEnabled: resolveBooleanSetting(source, 'runtimeAutoSaveEnabled', fallback.runtimeAutoSaveEnabled),
-    storageAutoSaveEnabled: resolveBooleanSetting(source, 'storageAutoSaveEnabled', fallback.storageAutoSaveEnabled),
   };
 }
 
@@ -244,12 +226,12 @@ function resolveSettingsAuthorityRoot(options = {}) {
   return 'category_authority';
 }
 
-function buildUserSettingsSnapshot(runtime, storage, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
+function buildUserSettingsSnapshot(runtime, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
   return {
     schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION,
     runtime: sanitizeRuntimeSettings(runtime),
     convergence: {},
-    storage: sanitizeStorageSettings(storage),
+    storage: {},
     studio: sanitizeStudioSettings(studio),
     ui: sanitizeUiSettings(ui),
   };
@@ -283,6 +265,79 @@ function recordSnapshotValidationTelemetry(snapshot, reasonPrefix = 'snapshot_va
   });
 }
 
+// ── SQL read/write helpers ──
+
+function deserializeSettingValue(value, type) {
+  if (value === null || value === undefined) return null;
+  if (type === 'bool') return value === 'true';
+  if (type === 'number') return Number.parseFloat(value);
+  if (type === 'json') {
+    try { return JSON.parse(value); } catch { return value; }
+  }
+  return value;
+}
+
+function detectSettingType(value) {
+  if (typeof value === 'boolean') return 'bool';
+  if (typeof value === 'number') return 'number';
+  if (value !== null && typeof value === 'object') return 'json';
+  return 'string';
+}
+
+function serializeSettingValue(value) {
+  if (value == null) return null;
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function readSettingsFromAppDb(appDb) {
+  const result = { schemaVersion: SETTINGS_DOCUMENT_SCHEMA_VERSION };
+  for (const section of ['runtime', 'convergence', 'storage', 'ui']) {
+    const rows = appDb.getSection(section);
+    const obj = {};
+    for (const row of rows) {
+      obj[row.key] = deserializeSettingValue(row.value, row.type);
+    }
+    result[section] = obj;
+  }
+  const studioRows = appDb.listStudioMaps();
+  const studio = {};
+  for (const row of studioRows) {
+    try { studio[row.category] = JSON.parse(row.map_json); } catch { /* skip */ }
+    if (studio[row.category]) studio[row.category].file_path = row.file_path;
+  }
+  result.studio = studio;
+  return result;
+}
+
+function writeSettingsToAppDb(appDb, snapshot) {
+  const tx = appDb.db.transaction(() => {
+    for (const section of ['runtime', 'convergence', 'storage', 'ui']) {
+      appDb.deleteSection(section);
+      const data = snapshot[section] || {};
+      for (const [key, value] of Object.entries(data)) {
+        appDb.upsertSetting({
+          section,
+          key,
+          value: serializeSettingValue(value),
+          type: detectSettingType(value),
+        });
+      }
+    }
+    if (snapshot.studio && typeof snapshot.studio === 'object') {
+      for (const [category, entry] of Object.entries(snapshot.studio)) {
+        if (!entry || typeof entry !== 'object') continue;
+        appDb.upsertStudioMap({
+          category,
+          map_json: JSON.stringify(entry),
+          file_path: entry.file_path || '',
+        });
+      }
+    }
+  });
+  tx();
+}
+
 function assertValidSnapshot(snapshot) {
   const validation = validateUserSettingsSnapshot(snapshot);
   if (validation.valid) return;
@@ -292,22 +347,16 @@ function assertValidSnapshot(snapshot) {
   throw error;
 }
 
-export function readStudioMapFromUserSettings(payload, category = '') {
-  const section = sanitizeStudioSettings(asRecord(payload).studio);
-  const key = normalizeCategoryToken(category);
-  if (!key) return null;
-  if (!Object.hasOwn(section, key)) return null;
-  const entry = asRecord(section[key]);
-  const map = asRecord(entry.map);
-  if (Object.keys(map).length === 0) return null;
-  return {
-    file_path: typeof entry.file_path === 'string' ? entry.file_path : '',
-    map,
-  };
-}
-
 export function loadUserSettingsSync(options = {}) {
-  const { categoryAuthorityRoot = null, strictRead = false } = options;
+  const { categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
+  if (appDb) {
+    const raw = readSettingsFromAppDb(appDb);
+    const snapshot = deriveSettingsArtifactsFromUserSettings(raw).snapshot;
+    recordSnapshotValidationTelemetry(snapshot);
+    return snapshot;
+  }
+  // WHY: JSON fallback for boot path — config.js + createBootstrapEnvironment.js
+  // run before appDb is created. This path is used only during initial startup.
   const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
     categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
   });
@@ -322,7 +371,8 @@ export function loadUserSettingsSync(options = {}) {
 }
 
 export async function loadUserSettings(options = {}) {
-  const { categoryAuthorityRoot = null, strictRead = false } = options;
+  const { categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
+  if (appDb) return loadUserSettingsSync({ appDb });
   const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
     categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
   });
@@ -354,7 +404,19 @@ async function writeUserSettingsFile(filePath, payload) {
   const body = `${JSON.stringify(payload, null, 2)}\n`;
   try {
     await fs.writeFile(tempPath, body, 'utf8');
-    await fs.rename(tempPath, filePath);
+    // WHY: Windows EPERM on rename when file watchers/antivirus briefly lock the target
+    let lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await fs.rename(tempPath, filePath);
+        return;
+      } catch (err) {
+        lastErr = err;
+        if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err;
+        await new Promise((r) => setTimeout(r, 50 * (attempt + 1)));
+      }
+    }
+    throw lastErr;
   } catch (error) {
     await fs.rm(tempPath, { force: true }).catch(() => {});
     throw error;
@@ -369,24 +431,22 @@ function enqueueUserSettingsPersist(task) {
 
 function resolveRequestedSections({
   runtime = null,
-  storage = null,
   studio = null,
   studioPatch = null,
   ui = null,
 } = {}) {
   const sections = [];
   if (runtime !== null) sections.push('runtime');
-  if (storage !== null) sections.push('storage');
   if (studio !== null || studioPatch !== null) sections.push('studio');
   if (ui !== null) sections.push('ui');
-  return sections.length > 0 ? sections : ['runtime', 'storage', 'studio', 'ui'];
+  return sections.length > 0 ? sections : ['runtime', 'studio', 'ui'];
 }
 
 export async function persistUserSettingsSections(options = {}) {
   const {
     categoryAuthorityRoot = null,
+    appDb = null,
     runtime = null,
-    storage = null,
     studio = null,
     studioPatch = null,
     ui = null,
@@ -398,16 +458,54 @@ export async function persistUserSettingsSections(options = {}) {
   }
   const requestedSections = resolveRequestedSections({
     runtime,
-    storage,
     studio,
     studioPatch,
     ui,
   });
   recordSettingsWriteAttempt({
     sections: requestedSections,
-    target: USER_SETTINGS_FILE,
+    target: appDb ? 'app.sqlite' : USER_SETTINGS_FILE,
   });
 
+  if (appDb) {
+    try {
+      const existing = readSettingsFromAppDb(appDb);
+      const existingStudio = sanitizeStudioSettings(existing.studio);
+      let nextStudio = existingStudio;
+      if (studio !== null) {
+        nextStudio = sanitizeStudioSettings(studio);
+      } else if (studioPatch !== null) {
+        nextStudio = sanitizeStudioSettings({
+          ...existingStudio,
+          ...sanitizeStudioSettings(studioPatch),
+        });
+      }
+      const merged = {
+        runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
+        studio: nextStudio,
+        ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
+      };
+      const payload = deriveSettingsArtifactsFromUserSettings(merged).snapshot;
+      assertValidSnapshot(payload);
+      writeSettingsToAppDb(appDb, payload);
+      recordSettingsWriteOutcome({
+        sections: requestedSections,
+        target: 'app.sqlite',
+        success: true,
+      });
+      return payload;
+    } catch (error) {
+      recordSettingsWriteOutcome({
+        sections: requestedSections,
+        target: 'app.sqlite',
+        success: false,
+        reason: error?.code || error?.message || 'user_settings_persist_failed',
+      });
+      throw error;
+    }
+  }
+
+  // WHY: JSON fallback path — only used when appDb is not available
   return enqueueUserSettingsPersist(async () => {
     const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
       categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
@@ -430,7 +528,6 @@ export async function persistUserSettingsSections(options = {}) {
       }
       const sections = {
         runtime: runtime === null ? existing.runtime : sanitizeRuntimeSettings(runtime),
-        storage: storage === null ? existing.storage : sanitizeStorageSettings(storage),
         studio: nextStudio,
         ui: ui === null ? existing.ui : sanitizeUiSettings(ui),
       };
@@ -464,10 +561,6 @@ export function drainPersistQueue() {
 
 export function snapshotRuntimeSettings(config = {}) {
   return pickRuntimeSnapshotFromConfig(config);
-}
-
-export function snapshotStorageSettings(state = {}) {
-  return sanitizeStorageSettings(state);
 }
 
 export function snapshotUiSettings(state = {}) {
@@ -505,7 +598,6 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
   const user = asRecord(payload || {});
   const snapshot = buildUserSettingsSnapshot(
     user.runtime,
-    user.storage,
     user.studio,
     user.ui,
   );
@@ -520,7 +612,7 @@ export function deriveSettingsArtifactsFromUserSettings(payload = {}) {
     },
     legacy: {
       runtime: snapshot.runtime,
-      storage: sanitizeRunDataStorageSettingsForResponse(snapshot.storage),
+      storage: {},
     },
   };
 }

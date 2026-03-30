@@ -14,7 +14,6 @@ export function createDiscoverCommand({
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
     const logger = new EventLogger({
       storage,
-      runtimeEventsKey: configValue(config, 'runtimeEventsKey'),
       context: {
         category,
       },

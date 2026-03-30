@@ -66,9 +66,7 @@ test('discover command applies brand filter and returns selected run summaries',
     buildRunId: () => 'run-001',
   }));
 
-  const result = await commandDiscover({
-    runtimeEventsKey: '_runtime/events.jsonl',
-  }, storage, {
+  const result = await commandDiscover({}, storage, {
     category: 'mouse',
     brand: 'Logitech',
   });
@@ -147,7 +145,7 @@ test('discover command flushes buffered events before rethrowing discovery failu
   }));
 
   await assert.rejects(
-    commandDiscover({ runtimeEventsKey: '_runtime/events.jsonl' }, storage, {
+    commandDiscover({}, storage, {
       category: 'mouse',
     }),
     expectedError,
