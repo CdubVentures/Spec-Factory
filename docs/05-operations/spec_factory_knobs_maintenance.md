@@ -1,38 +1,37 @@
 # Spec Factory Knobs Maintenance
 
-> **Purpose:** Track the live knob authority surfaces and current inventory snapshots without treating this file as the canonical source of runtime behavior.
+> **Purpose:** Record the live knob authority surfaces, inventory counts, and maintenance rules without treating this file as the canonical runtime source.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
-This log is supplemental. The canonical live definitions remain the source files that own defaults, manifests, contracts, and persistence behavior.
+This file is supplemental. Canonical behavior still lives in the source files that define registries, defaults, manifest derivation, persistence, and route mounting.
 
 ## Current Authority Surfaces
 
 | Surface | Path | Current role |
 |---------|------|--------------|
-| settings registry SSOT | `src/shared/settingsRegistry.js` | canonical registry entries for runtime, bootstrap env, UI, and storage settings |
-| shared defaults | `src/shared/settingsDefaults.js` | derived defaults for runtime, storage, UI, autosave, and compatibility-only convergence surfaces |
-| settings accessor | `src/shared/settingsAccessor.js` | null-safe reads plus registry-derived clamping |
-| clamping ranges | `src/shared/settingsClampingRanges.js` | derived int/float/enum clamp maps |
-| env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | canonical env-backed config key registry |
-| config assembly | `src/config.js` | merges manifest defaults, shared defaults, runtime snapshots, and persisted settings |
-| settings authority | `src/features/settings-authority/` | runtime, UI, storage, and compatibility-document validation/persistence; `convergence` is retained as `{}` only |
-| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/ui-settings`, `/storage-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config` |
-| source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source strategy ownership and mutation |
-| GUI pipeline settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx`, `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx` | runtime/storage/source-strategy editor surfaces |
-| GUI LLM surfaces | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | route-matrix editing and composite policy editing are separate surfaces |
-| GUI storage and studio | `tools/gui-react/src/pages/storage/StoragePage.tsx`, `tools/gui-react/src/features/studio/components/StudioPage.tsx` | non-pipeline settings/editing surfaces |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | canonical runtime, bootstrap-env, and UI setting entries; no separate exported storage registry exists in the current worktree |
+| shared defaults | `src/shared/settingsDefaults.js` | derived defaults for runtime and UI; `convergence` and `storage` are compatibility-only empty objects |
+| settings accessor | `src/shared/settingsAccessor.js` | registry-backed reads from the resolved config object |
+| clamping ranges | `src/shared/settingsClampingRanges.js` | derived int/float/enum clamp maps from `RUNTIME_SETTINGS_REGISTRY` |
+| env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | derives the emitted config manifest from runtime + bootstrap registries |
+| config assembly | `src/config.js`, `src/core/config/configBuilder.js` | merges manifest defaults, env values, runtime defaults, and persisted settings |
+| settings persistence | `src/features/settings-authority/userSettingsService.js`, `src/features/settings/api/configPersistenceContext.js` | persists settings to AppDb when available, with JSON fallback only when AppDb is unavailable |
+| mounted settings API | `src/features/settings/api/configRoutes.js` | mounts `ui-settings`, `indexing/*`, `llm-settings/*`, `runtime-settings`, and `llm-policy`; no live `storage-settings` or `convergence-settings` route is mounted |
+| bootstrap storage state | `src/api/bootstrap/createBootstrapEnvironment.js` | exposes `runDataStorageState = Object.freeze({ enabled: false })` as a compatibility stub after relocation/storage-settings removal |
+| source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source registry; `sources` is an object keyed by `sourceId`, not an array |
+| spec seed SSOT | `src/features/indexing/sources/specSeedsFileService.js`, `src/features/indexing/api/specSeedsRoutes.js` | file-backed deterministic query templates per category |
+| GUI pipeline settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | edits runtime settings, source strategy, and spec seeds; no storage-settings editor exists here |
+| GUI LLM surfaces | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx`, `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | category route-matrix editing is separate from composite `llm-policy` editing |
+| GUI storage surface | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage inventory/maintenance surface only; not a knob-editing screen |
 
 ## Audit Corrections From This Pass
 
-- The older maintenance log overstated the current inventory counts. The live registry exports `122` entries, not the older `233` or `430+` claims.
-- There is no exported `CONVERGENCE_SETTINGS_REGISTRY` in `src/shared/settingsRegistry.js`; convergence survives only as a compatibility-only section in `SETTINGS_DEFAULTS` and `user-settings.json`.
-- `SETTINGS_DEFAULTS` currently flattens to `118` leaves, not the older `140` count.
-- `src/core/config/manifest/index.js` defines 10 possible group IDs, but the current exported `CONFIG_MANIFEST` materializes only 7 populated sections with 103 entries.
-- The current pipeline-settings GUI no longer has `RuntimeSettingsFlowCard.tsx`; current ownership lives in `PipelineSettingsPage.tsx`, `PipelineSettingsPageShell.tsx`, `RuntimeFlowHeaderControls.tsx`, `RuntimeFlowPrimitives.tsx`, and `sections/PipelineSourceStrategySection.tsx`.
-- No live `/api/v1/convergence-settings` route is mounted. The `convergence` document section remains only as a backwards-compatibility placeholder in `user-settings.json`.
-- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` is not an alternate category route-matrix screen; it is the composite LLM policy editor backed by `/api/v1/llm-policy`.
-- `category_authority/tests/` exists in the live category inventory, but it does not include `sources.json` like the authored product categories.
+- Older maintenance content described a live `storage-settings` settings surface. The current server does not mount that route family, and `src/features/settings/api/configStorageSettingsHandler.js` does not exist.
+- Older maintenance content described a live storage registry/defaults surface. The current source exports only runtime (`138`), bootstrap (`3`), and UI (`4`) registry entries, while `SETTINGS_DEFAULTS.storage` remains `{}`.
+- Older maintenance content treated the emitted manifest as a 7-section or 10-section current-state object. The current exported `CONFIG_MANIFEST` emits 5 populated sections with 138 entries.
+- Older maintenance content described source inventories as arrays. The current `sources.json` files store entries under a keyed `sources` object, and enabled state lives under `discovery.enabled`.
+- Older maintenance content implied active run-data relocation. The current bootstrap layer hard-codes `runDataStorageState.enabled = false`, and the live storage manager is inventory/maintenance only.
 
 ## Live Snapshot
 
@@ -40,93 +39,94 @@ This log is supplemental. The canonical live definitions remain the source files
 
 | Registry | Count | Evidence |
 |----------|-------|----------|
-| `RUNTIME_SETTINGS_REGISTRY` | `99` | `src/shared/settingsRegistry.js` |
-| `BOOTSTRAP_ENV_REGISTRY` | `8` | `src/shared/settingsRegistry.js` |
-| `UI_SETTINGS_REGISTRY` | `5` | `src/shared/settingsRegistry.js` |
-| `STORAGE_SETTINGS_REGISTRY` | `10` | `src/shared/settingsRegistry.js` |
-| **Total** | **122** | summed from the exported live registries in `src/shared/settingsRegistry.js` |
+| `RUNTIME_SETTINGS_REGISTRY` | `138` | `src/shared/settingsRegistry.js` |
+| `BOOTSTRAP_ENV_REGISTRY` | `3` | `src/shared/settingsRegistry.js` |
+| `UI_SETTINGS_REGISTRY` | `4` | `src/shared/settingsRegistry.js` |
+| **Total exported registry entries** | **145** | summed from the three live exported registries |
 
 ### Shared Defaults (`SETTINGS_DEFAULTS`)
 
 | Section | Leaf count | Evidence |
 |---------|------------|----------|
-| `runtime` | `99` | `src/shared/settingsDefaults.js` |
+| `runtime` | `138` | `src/shared/settingsDefaults.js` |
 | `convergence` | `0` | `src/shared/settingsDefaults.js` |
-| `storage` | `7` | `src/shared/settingsDefaults.js` |
-| `ui` | `5` | `src/shared/settingsDefaults.js` |
+| `storage` | `0` | `src/shared/settingsDefaults.js` |
+| `ui` | `4` | `src/shared/settingsDefaults.js` |
 | `autosave` | `7` | `src/shared/settingsDefaults.js` |
-| **Total** | **118** | flattened from `src/shared/settingsDefaults.js` |
-
-### Settings-Authority Key Ownership
-
-| Surface | Writable keys | Evidence |
-|---------|---------------|----------|
-| runtime | `99` | `src/features/settings-authority/settingsKeySets.js` |
-| convergence compatibility section | `0` | `src/features/settings-authority/README.md`, `src/core/config/settingsKeyMap.js` |
-| ui | `5` | `src/features/settings-authority/settingsKeySets.js` |
-| storage | `10` | `src/features/settings-authority/settingsValueTypes.js` |
 
 ### Config Manifest
 
 | Metric | Count | Evidence |
 |--------|-------|----------|
-| declared group IDs | `10` | `src/core/config/manifest/index.js` |
-| populated emitted sections | `7` | `src/core/config/manifest/index.js` |
-| manifest entries | `103` | `src/core/config/manifest/index.js` |
+| populated emitted sections | `5` | `src/core/config/manifest/index.js` |
+| total manifest entries | `138` | `src/core/config/manifest/index.js` |
+| section: `llm` | `23` | `src/core/config/manifest/index.js` |
+| section: `discovery` | `1` | `src/core/config/manifest/index.js` |
+| section: `runtime` | `57` | `src/core/config/manifest/index.js` |
+| section: `paths` | `4` | `src/core/config/manifest/index.js` |
+| section: `misc` | `53` | `src/core/config/manifest/index.js` |
+
+Declared but currently unpopulated manifest groups remain `core`, `caching`, `storage`, `security`, and `observability`.
 
 ### Source Strategy Inventory
 
-| Category | Source rows | Enabled rows | Evidence |
-|----------|-------------|--------------|----------|
+| Category | Source entries | Enabled entries | Evidence |
+|----------|----------------|-----------------|----------|
 | `keyboard` | `23` | `23` | `category_authority/keyboard/sources.json` |
 | `monitor` | `23` | `23` | `category_authority/monitor/sources.json` |
 | `mouse` | `22` | `22` | `category_authority/mouse/sources.json` |
-| `tests` | n/a | n/a | `category_authority/tests/` exists, but no `sources.json` is present in the current checkout |
+| `tests` | n/a | n/a | `category_authority/tests/` exists, but no `sources.json` is present and the live categories API filters this directory out by default |
 
 ## Current GUI Ownership Notes
 
-- Pipeline runtime/storage/source-strategy editing flows through `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` and `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx`.
-- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` edits category-scoped `llm_route_matrix` rows in SQLite.
-- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` edits the composite runtime-backed LLM policy and provider registry through `/api/v1/llm-policy`.
-- Storage credentials and destination settings are owned by `tools/gui-react/src/pages/storage/StoragePage.tsx`.
-- Studio autosave and authoring-state UX live under `tools/gui-react/src/features/studio/components/StudioPage.tsx`.
+- `tools/gui-react/src/pages/layout/AppShell.tsx` and `tools/gui-react/src/pages/layout/hooks/useSettingsHydration.ts` hydrate runtime/UI settings before most pages render.
+- `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` reads `/indexing/llm-config` for model metadata and edits runtime/source-strategy/spec-seed state.
+- `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` edits category-scoped `llm_route_matrix` rows in SQLite through `/llm-settings/:category/routes`.
+- `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` edits the composite runtime-backed policy through `/llm-policy`.
+- `tools/gui-react/src/pages/storage/StoragePage.tsx` only wraps `StorageManagerPanel`; it does not expose a writable storage-settings form.
 
 ## Maintenance Rules
 
-1. Update `src/shared/settingsRegistry.js` first when adding, removing, or regrouping a knob.
-2. Update `src/shared/settingsDefaults.js` when changing a derived default.
-3. Update `src/core/config/manifest/index.js` when manifest grouping or computed defaults change.
-4. Update `src/features/settings-authority/` contracts when a runtime/UI/storage key becomes writable or changes type/range; keep `convergence` as a compatibility-only empty section unless a real writable surface is reintroduced.
-5. Update `category_authority/<category>/sources.json` and this file together when source rows or discovery semantics change.
-6. Do not use this file as the source of truth for exact runtime behavior when the source files disagree.
+1. Add, remove, or regroup a runtime knob in `src/shared/settingsRegistry.js` first.
+2. Let `src/shared/settingsDefaults.js`, `src/shared/settingsClampingRanges.js`, `src/core/config/manifest/index.js`, and generated GUI typings derive from that registry change instead of hardcoding parallel maps.
+3. When persistence semantics change, update both `src/features/settings-authority/userSettingsService.js` and `src/features/settings/api/configPersistenceContext.js`.
+4. Do not document or generate new code against `storage-settings` or `convergence-settings` routes unless those handlers are reintroduced and mounted in `src/features/settings/api/configRoutes.js`.
+5. Treat `runDataStorageState` as a degraded compatibility stub until a real writable storage-state feature is reintroduced.
+6. Update `category_authority/<category>/sources.json` and `src/features/indexing/sources/sourceFileService.js` together when source entry shape, approved-host derivation, or mutable-key rules change.
+7. Update `src/features/indexing/sources/specSeedsFileService.js` and `src/features/indexing/api/specSeedsRoutes.js` together when deterministic query templates change shape.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/shared/settingsRegistry.js` | live registry counts, group ids, and env-key ownership |
-| source | `src/shared/settingsDefaults.js` | live default sections and leaf counts |
+| source | `src/shared/settingsRegistry.js` | live runtime/bootstrap/UI registry counts and the absence of an exported storage registry |
+| source | `src/shared/settingsDefaults.js` | current default sections and leaf counts |
+| source | `src/shared/settingsAccessor.js` | registry-backed config reads |
 | source | `src/shared/settingsClampingRanges.js` | derived clamp-map ownership |
-| source | `src/core/config/manifest/index.js` | declared versus populated manifest groups and total emitted entries |
-| source | `src/core/config/manifest.js` | live manifest barrel |
+| source | `src/core/config/manifest/index.js` | emitted manifest sections and entry counts |
+| source | `src/core/config/manifest.js` | manifest barrel export |
 | source | `src/config.js` | config assembly still consumes the current settings surfaces |
-| source | `src/features/settings-authority/settingsKeySets.js` | runtime/UI writable key inventories |
-| source | `src/features/settings-authority/README.md` | compatibility-only convergence section invariant |
-| source | `src/features/settings-authority/settingsValueTypes.js` | storage writable key inventory |
-| source | `src/features/settings/api/configRoutes.js` | current settings route ownership |
-| source | `src/features/indexing/sources/sourceFileService.js` | source-strategy file ownership and live shape |
-| source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy write surface |
-| source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | current pipeline settings composition |
-| source | `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx` | source-strategy editor ownership |
+| source | `src/core/config/configBuilder.js` | runtime/bootstrap registry consumption during config assembly |
+| source | `src/features/settings-authority/userSettingsService.js` | AppDb-first settings persistence |
+| source | `src/features/settings/api/configPersistenceContext.js` | JSON fallback and persistence counters |
+| source | `src/features/settings/api/configRoutes.js` | mounted settings routes exclude `storage-settings` and `convergence-settings` |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | `runDataStorageState` degraded stub |
+| source | `src/features/indexing/sources/sourceFileService.js` | `sources.json` keyed-object contract and approved-host derivation |
+| source | `src/features/indexing/sources/specSeedsFileService.js` | per-category spec-seed file ownership |
+| source | `src/features/indexing/api/specSeedsRoutes.js` | mounted spec-seed GET/PUT contract |
+| source | `tools/gui-react/src/pages/layout/AppShell.tsx` | app-shell settings hydration boundary |
+| source | `tools/gui-react/src/pages/layout/hooks/useSettingsHydration.ts` | settings hydration hook |
+| source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | current pipeline settings GUI ownership |
 | source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category LLM route surface |
-| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite global LLM policy surface |
-| source | `category_authority/keyboard/sources.json` | live source-strategy row counts |
-| source | `category_authority/monitor/sources.json` | live source-strategy row counts |
-| source | `category_authority/mouse/sources.json` | live source-strategy row counts |
+| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | composite LLM policy surface |
+| source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | storage GUI is inventory-only |
+| source | `category_authority/keyboard/sources.json` | keyboard source inventory count |
+| source | `category_authority/monitor/sources.json` | monitor source inventory count |
+| source | `category_authority/mouse/sources.json` | mouse source inventory count |
 
 ## Related Documents
 
-- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - current verified settings persistence flow.
-- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - composite LLM policy and provider-registry flow.
-- [Category Authority](../04-features/category-authority.md) - current authority snapshot flow and category artifact roots.
-- [Environment and Config](../02-dependencies/environment-and-config.md) - maps config surfaces to manifest groups and user-editable settings.
+- [Environment and Config](../02-dependencies/environment-and-config.md) - maps these knobs to env vars, config consumers, and secret scopes.
+- [Pipeline and Runtime Settings](../04-features/pipeline-and-runtime-settings.md) - documents the live runtime/source-strategy/spec-seed editing flow.
+- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - explains the composite LLM policy surface and its sensitive reads.
+- [Storage and Run Data](../04-features/storage-and-run-data.md) - documents the current inventory/maintenance-only storage feature.

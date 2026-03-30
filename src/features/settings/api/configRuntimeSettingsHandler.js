@@ -138,7 +138,6 @@ export function createRuntimeSettingsHandler({
         persistedArtifacts = await persistenceCtx.persistCanonicalSections({
           runtime: nextRuntimeSnapshot,
         });
-        await persistenceCtx.persistLegacySettingsFile('settings.json', persistedArtifacts.legacy.runtime);
         persistenceCtx.recordRouteWriteOutcome('runtime', 'runtime-settings-route', true);
       } catch {
         persistenceCtx.recordRouteWriteOutcome('runtime', 'runtime-settings-route', false, 'runtime_settings_persist_failed');

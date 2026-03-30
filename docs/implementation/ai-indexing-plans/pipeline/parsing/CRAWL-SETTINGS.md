@@ -141,7 +141,7 @@ Also: `requestHandler timed out` with `__capturedPage` already stashed → `noRe
 
 ## Testing
 
-`tools/crawl-probe.mjs` — standalone test harness. Runs baseline (raw Crawlee, no plugins) vs full suite on same URLs. Generates HTML comparison reports in `.specfactory_tmp/crawl-probe-reports/`.
+`tools/crawl-probe.mjs` — standalone test harness. Runs baseline (raw Crawlee, no plugins) vs full suite on same URLs. Generates HTML comparison reports in `.workspace/crawl-probe-reports/`.
 
 ```bash
 # Direct URLs

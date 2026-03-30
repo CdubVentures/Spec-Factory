@@ -236,17 +236,262 @@ th {
     <div>
       <h1>Storage Audit and Consolidation Plan</h1>
       <p>
-        Static repo audit generated from <code>git ls-files -co --exclude-standard</code> on 2026-03-30T06:42:38.580Z.
-        This version turns the earlier storage plan into a file-level implementation map: every matched phase and root concern now shows the files that own the change, the files that load/read from it, the files that write/emit to it, the files that propagate it through routes, UI, tests, and docs, plus a full touched-file ledger.
+        <strong>Start here &rarr; <a href="#the-play" style="color:var(--accent);">The Play</a></strong> for the architectural overview, target directory layout, and 7-phase summary.
+        The file-level audit below maps every phase to exact source files with owner/loader/writer/propagation roles.
       </p>
       <p>
-        Working decision kept from the earlier plan: <code>.workspace/</code> is the intended unified runtime root. This audit is static source analysis, not live disk tracing.
+        Static repo audit generated from <code>git ls-files -co --exclude-standard</code> on 2026-03-30.
+        Disk inventory verified 2026-03-29. Decision: <code>.workspace/</code> is the unified runtime root. 11 write locations &rarr; 2.
       </p>
     </div>
     <div class="filter-bar">
       <input id="storageFilter" type="search" placeholder="Filter by phase, concern, signal, or file path">
     </div>
   </section>
+
+  <!-- ═══════════ THE PLAY: Executive Summary for New Dev Teams ═══════════ -->
+  <section class="panel" id="the-play" style="border-left:3px solid var(--accent);margin-top:22px;">
+    <h2 style="margin-top:0;">The Play: Storage Consolidation at a Glance</h2>
+    <p class="muted" style="max-width:1000px;margin-bottom:18px;">
+      This section is the architectural context for the file-level audit below. Read this first to understand
+      <strong>what is broken</strong>, <strong>what the target looks like</strong>, and <strong>how to get there</strong>.
+      The phase audit that follows maps every claim here to exact source files.
+    </p>
+
+    <!-- Problem statement -->
+    <div style="background:rgba(252,165,165,0.06);border:1px solid rgba(252,165,165,0.22);border-radius:16px;padding:20px;margin-bottom:18px;">
+      <h3 style="color:var(--red);margin-bottom:10px;">Honest Assessment</h3>
+      <p>The storage organization does not match CLAUDE.md, does not match how the rest of the app is organized, and has active bugs.</p>
+      <ul style="margin:10px 0 0 18px;line-height:1.8;">
+        <li><strong>11 separate write locations</strong> for data that should live in 2.</li>
+        <li><code>%LOCALAPPDATA%\spec-factory\</code> hides ~1 GB of runtime data in a system folder. Designed for a relocation feature that was never built.</li>
+        <li>The <code>output/specs/outputs/specs/outputs/</code> double-nesting proves the path layer was never designed &mdash; S3 key prefixes are blindly concatenated with local paths.</li>
+        <li>Billing data writes to <strong>two different directories</strong> simultaneously.</li>
+        <li>Run artifacts for a single run are scattered across <strong>3 separate root directories</strong>.</li>
+        <li>CLAUDE.md says <em>"one temp directory: .specfactory_tmp"</em>. Reality: 11 write targets.</li>
+        <li>Crawlee dumps 17 MB of crawler state into <code>storage/</code> at project root via implicit default (no explicit config).</li>
+        <li><code>specs/</code> at project root is not gitignored.</li>
+        <li>The app's code follows feature-first vertical slicing. The file storage is the opposite.</li>
+      </ul>
+    </div>
+
+    <!-- Verified current state: 11 write locations -->
+    <h3 style="margin-bottom:12px;">Current State: 11 Write Locations (Verified from Disk 2026-03-29)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
+      <div class="stat-card"><div class="value" style="color:var(--red)">11</div><div class="label">Write Locations</div></div>
+      <div class="stat-card"><div class="value" style="color:var(--accent)">~1.03 GB</div><div class="label">Total Runtime Data</div></div>
+      <div class="stat-card"><div class="value" style="color:var(--red)">2</div><div class="label">Active Bugs</div></div>
+      <div class="stat-card"><div class="value" style="color:var(--red)">6</div><div class="label">CLAUDE.md Violations</div></div>
+      <div class="stat-card"><div class="value" style="color:var(--amber)">2</div><div class="label">No Cleanup Policy</div></div>
+    </div>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>#</th><th>Location</th><th>Size</th><th>What</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>%LOCALAPPDATA%\spec-factory\indexlab\</code></td><td>948 MB</td><td>40 timestamped run dirs + mouse/ category dir: screenshots (JPG), video (WebM), legacy NDJSON</td><td><span class="badge legacy">HIDDEN</span></td></tr>
+        <tr><td>2</td><td><code>%LOCALAPPDATA%\spec-factory\output\</code></td><td>5.9 MB</td><td>Billing ledgers: dual-write to <code>_billing/</code> AND <code>specs/outputs/_billing/</code></td><td><span class="badge warn">BUG: dup billing</span></td></tr>
+        <tr><td>3</td><td><code>%LOCALAPPDATA%\spec-factory\.specfactory_tmp\</code></td><td>~62 MB</td><td>1 SpecDb copy (mouse/spec.sqlite) + llm_cache/ JSON dir</td><td><span class="badge warn">REDUNDANT</span></td></tr>
+        <tr><td>4</td><td><code>PROJECT\.specfactory_tmp\</code></td><td>60 MB</td><td>3 category SQLite DBs + app.sqlite + crawl probe DB (2 dirs) + orphan export + junk images</td><td><span class="badge legacy">JUNK IN SCRATCH</span></td></tr>
+        <tr><td>5</td><td><code>PROJECT\specs\outputs\</code></td><td>245 KB</td><td>Run analysis JSON from double-nesting path bug</td><td><span class="badge warn">BUG + NOT GITIGNORED</span></td></tr>
+        <tr><td>6</td><td><code>PROJECT\storage\</code></td><td>17 MB</td><td>Crawlee crawler runtime (key_value_stores, request_queues) &mdash; implicit default, no explicit config</td><td><span class="badge legacy">UNDOCUMENTED</span></td></tr>
+        <tr><td>7</td><td><code>PROJECT\debug\</code></td><td>664 KB</td><td>4 ad-hoc screenshot PNGs</td><td><span class="badge legacy">JUNK DRAWER</span></td></tr>
+        <tr><td>8</td><td><code>PROJECT\category_authority\_runtime\</code></td><td>small</td><td>user-settings.json + 25 run snapshot JSON files</td><td><span class="badge warn">ACCUMULATING</span></td></tr>
+        <tr><td>9</td><td><code>PROJECT\_intel\frontier\</code></td><td>0</td><td>FrontierDb path hardcoded in <code>frontierDb.js:10</code> (dir created on first research run)</td><td><span class="badge warn">MISPLACED</span></td></tr>
+        <tr><td>10</td><td><code>PROJECT\data\learning\</code></td><td>770 KB</td><td>4 ML snapshot JSON files (mouse only)</td><td><span class="badge warn">UNDOCUMENTED</span></td></tr>
+        <tr><td>11</td><td><code>PROJECT\.server-state\</code></td><td>354 KB</td><td>PID + server log</td><td><span class="badge neutral">OK but undocumented</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- The two bugs -->
+    <h3 style="margin:24px 0 10px;">Active Bugs</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;">
+      <div style="background:rgba(252,165,165,0.06);border:1px solid rgba(252,165,165,0.22);border-radius:14px;padding:16px;">
+        <h4 style="color:var(--red);text-transform:none;letter-spacing:normal;">Bug 1: Double-Nesting Path (Phase A)</h4>
+        <p class="small muted" style="margin:6px 0;"><code>src/s3/storage.js:206-214</code> &mdash; <code>resolveLocalPath()</code></p>
+        <p class="small">S3 keys like <code>specs/outputs/mouse/...</code> include the prefix. <code>resolveLocalPath()</code> joins the <strong>full key</strong> (with prefix) onto <code>outputRoot</code>, producing <code>output/specs/outputs/mouse/...</code>. For traces, the prefix appears twice: <code>output/specs/outputs/specs/outputs/_runtime/traces/...</code>.</p>
+        <p class="small" style="margin-top:6px;"><strong>Fix:</strong> Strip the prefix from the key before path.join.</p>
+      </div>
+      <div style="background:rgba(252,165,165,0.06);border:1px solid rgba(252,165,165,0.22);border-radius:14px;padding:16px;">
+        <h4 style="color:var(--red);text-transform:none;letter-spacing:normal;">Bug 2: Duplicate Billing (Phase A)</h4>
+        <p class="small muted" style="margin:6px 0;"><code>src/billing/costLedger.js</code> &mdash; <code>writeBillingDigest()</code></p>
+        <p class="small"><code>costLedger.js</code> maintains two parallel key sets: "legacy" keys (via <code>resolveOutputKey()</code> which prepends <code>specs/outputs/</code>) and "current" keys (bare paths). <code>writeBillingDigest()</code> writes to <strong>both</strong> simultaneously, creating <code>output/_billing/</code> AND <code>output/specs/outputs/_billing/</code>.</p>
+        <p class="small" style="margin-top:6px;"><strong>Fix:</strong> Delete legacy key functions, use bare paths only.</p>
+      </div>
+    </div>
+
+    <!-- SQLite inventory -->
+    <h3 style="margin:24px 0 10px;">SQLite Database Inventory</h3>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>Database</th><th>Tables</th><th>Current Path</th><th>Target Path</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><strong>SpecDb</strong> (per-category)</td><td>56 + FTS</td><td><code>.specfactory_tmp/{cat}/spec.sqlite</code></td><td><code>.workspace/db/{cat}/spec.sqlite</code></td><td><span class="badge owner">MOVE</span></td></tr>
+        <tr><td><strong>AppDb</strong> (global)</td><td>new</td><td><code>.specfactory_tmp/app.sqlite</code></td><td><code>.workspace/db/app.sqlite</code></td><td><span class="badge owner">MOVE</span></td></tr>
+        <tr><td><strong>FrontierDb</strong></td><td>3</td><td><code>_intel/frontier/frontier.db</code> (hardcoded)</td><td><code>.workspace/db/{cat}/frontier.sqlite</code></td><td><span class="badge warn">MOVE + FIX</span></td></tr>
+        <tr><td><strong>Crawl Probe</strong> (2 dirs)</td><td>?</td><td><code>.specfactory_tmp/crawl_probe_reports/</code> + <code>crawl-probe-reports/</code></td><td>OS tmpdir</td><td><span class="badge legacy">RELOCATE</span></td></tr>
+        <tr><td><strong>Orphan Export</strong></td><td>&mdash;</td><td><code>.specfactory_tmp/phase9/mouse_all_products.sqlite</code></td><td>Delete (staging file from <code>publishProductWriter.js</code>)</td><td><span class="badge legacy">DELETE</span></td></tr>
+      </tbody>
+    </table>
+
+    <!-- Target architecture -->
+    <h3 style="margin:24px 0 10px;">Target Architecture: <code>.workspace/</code></h3>
+    <div style="background:rgba(134,239,172,0.06);border:1px solid rgba(134,239,172,0.22);border-radius:16px;padding:20px;margin-bottom:14px;">
+      <p><strong>Principle:</strong> Everything in the project root. <code>category_authority/</code> owns canonical data + global settings. <code>.workspace/</code> owns ALL runtime output. One run = one directory. SQLite DBs co-locate with the category they serve. Storage settings configure ONE root, not three.</p>
+    </div>
+<pre style="background:rgba(15,23,42,0.92);border:1px solid var(--line);border-radius:14px;padding:18px;font-size:0.82rem;line-height:1.85;overflow-x:auto;">
+<span style="color:var(--accent);font-weight:700;">Spec Factory/</span>
+
+<span style="color:var(--accent);font-weight:700;">  category_authority/</span>                        <span style="color:var(--muted);">HELPER_ROOT &mdash; canonical data + global config</span>
+<span style="color:var(--accent);font-weight:700;">    _global/_shared/</span>                         <span style="color:var(--muted);">8 schema templates</span>
+    <span style="color:var(--text);">_global/brand_registry.json</span>
+<span style="color:var(--accent);font-weight:700;">    _runtime/</span>
+      <span style="color:var(--text);">user-settings.json</span>                    <span style="color:var(--muted);">Persisted GUI settings</span>
+<span style="color:var(--accent);font-weight:700;">      snapshots/</span>                              <span style="color:var(--muted);">Per-run settings transport (capped at 10)</span>
+<span style="color:var(--accent);font-weight:700;">    {category}/</span>
+      <span style="color:var(--text);">schema.json  sources.json</span>
+<span style="color:var(--accent);font-weight:700;">      _control_plane/</span>                        <span style="color:var(--muted);">field_studio_map, product_catalog</span>
+<span style="color:var(--accent);font-weight:700;">      _generated/</span>                            <span style="color:var(--muted);">Compiled field rules + component DBs</span>
+<span style="color:var(--accent);font-weight:700;">      _learning/</span>                             <span style="color:var(--muted);">ML snapshots (moved from data/learning/)</span>
+<span style="color:var(--accent);font-weight:700;">      _overrides/</span>                            <span style="color:var(--muted);">Manual product + component overrides</span>
+<span style="color:var(--accent);font-weight:700;">      _source/</span>                               <span style="color:var(--muted);">Seed data</span>
+<span style="color:var(--accent);font-weight:700;">      _suggestions/</span>                          <span style="color:var(--muted);">Curation suggestions</span>
+
+<span style="color:var(--accent);font-weight:700;">  .workspace/</span>                                 <span style="color:var(--muted);">ALL runtime output (git-ignored)</span>
+<span style="color:var(--accent);font-weight:700;">    db/</span>
+      <span style="color:var(--text);">app.sqlite</span>                             <span style="color:var(--muted);">Global app DB</span>
+<span style="color:var(--accent);font-weight:700;">      {category}/</span>                            <span style="color:var(--muted);">SQLite databases per category</span>
+        <span style="color:var(--text);">spec.sqlite</span>                            <span style="color:var(--muted);">Main SpecDb (56 tables + FTS)</span>
+        <span style="color:var(--text);">frontier.sqlite</span>                        <span style="color:var(--muted);">Research DB (moved from _intel/)</span>
+<span style="color:var(--accent);font-weight:700;">    runs/{runId}/</span>                             <span style="color:var(--muted);">ONE run = ONE directory (everything together)</span>
+<span style="color:var(--accent);font-weight:700;">      analysis/</span>                               <span style="color:var(--muted);">search_profile, extraction packets, phase summaries</span>
+<span style="color:var(--accent);font-weight:700;">      screenshots/</span>                            <span style="color:var(--muted);">Crawl page screenshots (JPG)</span>
+<span style="color:var(--accent);font-weight:700;">      video/</span>                                 <span style="color:var(--muted);">Crawl recordings (WebM)</span>
+<span style="color:var(--accent);font-weight:700;">      traces/</span>
+<span style="color:var(--accent);font-weight:700;">        llm/</span>                                 <span style="color:var(--muted);">LLM call traces</span>
+<span style="color:var(--accent);font-weight:700;">        search/</span>                              <span style="color:var(--muted);">Search query traces</span>
+<span style="color:var(--accent);font-weight:700;">        planner/</span>                             <span style="color:var(--muted);">Fetch plan snapshots</span>
+      <span style="color:var(--text);">run.json</span>                               <span style="color:var(--muted);">Checkpoint for run resumption</span>
+      <span style="color:var(--text);">summary.json</span>                           <span style="color:var(--muted);">Run summary</span>
+<span style="color:var(--accent);font-weight:700;">    products/{category}/{productId}/</span>          <span style="color:var(--muted);">Per-product output</span>
+<span style="color:var(--accent);font-weight:700;">      latest/</span>                                <span style="color:var(--muted);">normalized, provenance, search_profile, summary</span>
+<span style="color:var(--accent);font-weight:700;">      published/</span>                             <span style="color:var(--muted);">current, compact, changelog, provenance, versions/</span>
+      <span style="color:var(--text);">product.json</span>                           <span style="color:var(--muted);">Aggregated checkpoint</span>
+<span style="color:var(--accent);font-weight:700;">    billing/</span>                                  <span style="color:var(--muted);">ONE billing dir (not two)</span>
+      <span style="color:var(--text);">ledger.jsonl</span>
+<span style="color:var(--accent);font-weight:700;">      ledger/</span>  <span style="color:var(--accent);font-weight:700;">monthly/</span>
+
+<span style="color:var(--accent);font-weight:700;">  .server-state/</span>                              <span style="color:var(--muted);">PID + log (formalized in CLAUDE.md)</span>
+</pre>
+
+    <!-- Before → After -->
+    <h3 style="margin:24px 0 10px;">Before &rarr; After</h3>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>Current</th><th>Target</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><code>%LOCALAPPDATA%\spec-factory\</code></td><td>Eliminated</td><td>All data moves to project root &mdash; visible and manageable</td></tr>
+        <tr><td><code>.specfactory_tmp/{cat}/spec.sqlite</code></td><td><code>.workspace/db/{cat}/spec.sqlite</code></td><td>Clearer name, under unified dir</td></tr>
+        <tr><td><code>.specfactory_tmp/app.sqlite</code></td><td><code>.workspace/db/app.sqlite</code></td><td>Global DB alongside category DBs</td></tr>
+        <tr><td><code>_intel/frontier/frontier.db</code></td><td><code>.workspace/db/{cat}/frontier.sqlite</code></td><td>Co-located with SpecDb, per-category</td></tr>
+        <tr><td><code>indexlab/{runId}/screenshots/</code></td><td><code>.workspace/runs/{runId}/screenshots/</code></td><td>All run files in one place</td></tr>
+        <tr><td><code>output/specs/outputs/{cat}/{id}/runs/</code></td><td><code>.workspace/runs/{runId}/analysis/</code></td><td>No double-nesting, flat run dir</td></tr>
+        <tr><td><code>output/.../specs/outputs/_runtime/traces/</code></td><td><code>.workspace/runs/{runId}/traces/</code></td><td>Fixes double-nesting bug</td></tr>
+        <tr><td><code>output/.../published/{id}/</code></td><td><code>.workspace/products/{cat}/{id}/published/</code></td><td>Under .workspace, not buried in output/specs/outputs</td></tr>
+        <tr><td><code>output/_billing/</code> + <code>output/.../billing/</code></td><td><code>.workspace/billing/</code></td><td>One location, not two</td></tr>
+        <tr><td><code>data/learning/mouse.*</code></td><td><code>category_authority/mouse/_learning/</code></td><td>Per-category, with other category data</td></tr>
+        <tr><td><code>.specfactory_tmp/</code></td><td>Eliminated</td><td>DBs move to .workspace/db/, junk deleted</td></tr>
+        <tr><td><code>storage/</code> (Crawlee)</td><td>OS tmpdir or <code>.workspace/crawlee/</code></td><td>Ephemeral crawler state off project root</td></tr>
+        <tr><td><code>debug/</code> + <code>specs/</code></td><td>Deleted</td><td>Junk drawer + bug artifact</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 7-phase summary -->
+    <h3 style="margin:24px 0 10px;">The 7 Phases</h3>
+    <p class="muted small" style="margin-bottom:12px;">Strategy: <strong>Config-first, then consumers.</strong> Change 3 config sources and most consumers follow automatically. Each phase is independently testable.</p>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>Phase</th><th>What</th><th>Key Files</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><a href="#phase-a" style="color:var(--accent);font-weight:700;">A</a></td>
+          <td><strong>Fix double-nesting path bug</strong> &mdash; strip S3 key prefixes before path.join</td>
+          <td><code>src/s3/storage.js</code> resolveLocalPath + listKeys</td>
+          <td><span class="badge warn">Bug fix</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-b" style="color:var(--accent);font-weight:700;">B</a></td>
+          <td><strong>Redirect defaults to <code>.workspace/</code></strong> &mdash; change 3 config sources</td>
+          <td><code>runtimeArtifactRoots.js</code>, <code>settingsRegistry.js</code>, contract test</td>
+          <td><span class="badge warn">High impact</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-c" style="color:var(--accent);font-weight:700;">C</a></td>
+          <td><strong>Fix hardcoded <code>.specfactory_tmp</code></strong> &mdash; 34 files with legacy root strings</td>
+          <td>14 source + 8 test + 4 script + 4 docs + extras</td>
+          <td><span class="badge neutral">Mechanical</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-d" style="color:var(--accent);font-weight:700;">D</a></td>
+          <td><strong>Merge run roots</strong> &mdash; screenshots + video + analysis + traces into <code>.workspace/runs/{runId}/</code></td>
+          <td><code>runtimeBridgeArtifacts.js</code>, <code>indexlabDataBuilders.js</code>, checkpoint writers</td>
+          <td><span class="badge legacy">Complex</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-e" style="color:var(--accent);font-weight:700;">E</a></td>
+          <td><strong>FrontierDb + learning + junk cleanup</strong> &mdash; move misplaced DBs, delete orphans</td>
+          <td><code>frontierDb.js</code>, crawl-probe.mjs, disk cleanup</td>
+          <td><span class="badge neutral">Low</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-f" style="color:var(--accent);font-weight:700;">F</a></td>
+          <td><strong>.gitignore + CLAUDE.md</strong> &mdash; formalize new structure in project config</td>
+          <td><code>.gitignore</code>, <code>CLAUDE.md</code>, folder-map.md</td>
+          <td><span class="badge neutral">Low</span></td>
+        </tr>
+        <tr>
+          <td><a href="#phase-g" style="color:var(--accent);font-weight:700;">G</a></td>
+          <td><strong>Cleanup policies</strong> &mdash; bounded retention for runs (7-day TTL) + snapshots (cap 10)</td>
+          <td><code>videoCleanup.js</code> pattern, bootstrap</td>
+          <td><span class="badge neutral">Low</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Key benefits -->
+    <h3 style="margin:24px 0 10px;">Why This Matters</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">One run, one directory</h4>
+        <p class="muted small"><code>.workspace/runs/{runId}/</code> has screenshots, video, analysis, traces, checkpoint &mdash; everything in one place instead of 3 roots.</p>
+      </div>
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">Visible</h4>
+        <p class="muted small">Everything in the project folder where you can see it. No more hidden data in <code>%LOCALAPPDATA%</code>.</p>
+      </div>
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">Matches CLAUDE.md</h4>
+        <p class="muted small"><code>category_authority/</code> owns canonical data. <code>.workspace/</code> owns runtime output. Clean 2-directory boundary.</p>
+      </div>
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">Trivial cleanup</h4>
+        <p class="muted small"><code>rm -rf .workspace/runs/{old-runId}</code> cleans everything. Currently you'd delete from 3 separate trees.</p>
+      </div>
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">No path bugs</h4>
+        <p class="muted small">Storage keys map directly to <code>.workspace/</code> subdirs without prefix duplication.</p>
+      </div>
+      <div class="overview-card">
+        <h4 style="text-transform:none;letter-spacing:normal;">Single config root</h4>
+        <p class="muted small">If storage settings are rebuilt, they configure <code>.workspace/</code> as ONE root to relocate &mdash; not three.</p>
+      </div>
+    </div>
+
+    <!-- Verification protocol -->
+    <h3 style="margin:24px 0 10px;">Verification Protocol (After Each Phase)</h3>
+    <ol style="margin-left:18px;line-height:1.8;">
+      <li><code>node --test</code> &mdash; full test suite green</li>
+      <li><code>npx tsc --noEmit</code> in <code>tools/gui-react/</code> &mdash; TypeScript check</li>
+      <li>Start server, run a product, verify run artifacts appear in <code>.workspace/</code></li>
+      <li>Verify no files written to old locations (<code>%LOCALAPPDATA%</code>, <code>.specfactory_tmp</code>, <code>specs/</code>, etc.)</li>
+    </ol>
+  </section>
+  <!-- ═══════════ END: The Play ═══════════ -->
 
   <section class="stat-grid">
     <div class="stat-card"><div class="value">2884</div><div class="label">Tracked Files Scanned</div></div>

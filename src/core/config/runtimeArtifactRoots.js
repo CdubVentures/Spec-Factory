@@ -1,32 +1,11 @@
-import os from 'node:os';
 import path from 'node:path';
 
-const DEFAULT_RUNTIME_ARTIFACT_DIR = 'spec-factory';
-
-// WHY: Runs must survive reboots. os.tmpdir() is volatile on most OSes.
-// Use the platform-standard persistent app-data directory instead.
-function persistentAppDataRoot() {
-  if (process.platform === 'win32') {
-    const localAppData = String(process.env.LOCALAPPDATA || '').trim();
-    if (localAppData) return localAppData;
-    return path.join(os.homedir(), 'AppData', 'Local');
-  }
-  if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library', 'Application Support');
-  }
-  const xdg = String(process.env.XDG_DATA_HOME || '').trim();
-  if (xdg) return xdg;
-  return path.join(os.homedir(), '.local', 'share');
-}
-
-function defaultRuntimeArtifactRoot() {
-  return path.resolve(persistentAppDataRoot(), DEFAULT_RUNTIME_ARTIFACT_DIR);
-}
-
+// WHY: Runtime artifacts live under .workspace/ in the project root.
+// This is project-relative, visible, and git-ignored.
 export function defaultLocalOutputRoot() {
-  return path.resolve(defaultRuntimeArtifactRoot(), 'output');
+  return path.resolve('.workspace', 'output');
 }
 
 export function defaultIndexLabRoot() {
-  return path.resolve(defaultRuntimeArtifactRoot(), 'indexlab');
+  return path.resolve('.workspace', 'runs');
 }

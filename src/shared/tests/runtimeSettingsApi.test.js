@@ -204,7 +204,7 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.deepEqual(body.applied, {});
   });
 
-  await t.test('PUT persists runtime settings to canonical user-settings snapshot', async () => {
+  await t.test('PUT persists runtime settings to SQL and subsequent GET reflects changes', async () => {
     const payload = { llmModelPlan: 'test-persist-model-xyz', domainClassifierUrlCap: 9 };
     const putRes = await fetch(`${_baseUrl}/runtime-settings`, {
       method: 'PUT',
@@ -216,21 +216,12 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     assert.equal(putBody.applied.llmModelPlan, 'test-persist-model-xyz');
     assert.equal(putBody.applied.domainClassifierUrlCap, 9);
 
-    const userSettingsPaths = [
-      path.join(_helperRoot, '_runtime', 'user-settings.json'),
-    ];
-    const userSettings = await readJsonFileUntil(
-      userSettingsPaths,
-      (json) => (
-        json
-        && json.runtime
-        && json.runtime.llmModelPlan === 'test-persist-model-xyz'
-        && json.runtime.domainClassifierUrlCap === 9
-      ),
-      8_000,
-    );
-    assert.equal(userSettings.runtime.llmModelPlan, 'test-persist-model-xyz');
-    assert.equal(userSettings.runtime.domainClassifierUrlCap, 9);
+    // WHY: Verify persistence via GET — SQL writes are synchronous, no polling needed.
+    const getRes = await fetch(`${_baseUrl}/runtime-settings`);
+    assert.equal(getRes.status, 200);
+    const getBody = await getRes.json();
+    assert.equal(getBody.llmModelPlan, 'test-persist-model-xyz');
+    assert.equal(getBody.domainClassifierUrlCap, 9);
 
     const legacySettingsExists = await Promise.all([
       fs.access(path.join(_helperRoot, '_runtime', 'settings.json')).then(() => true).catch(() => false),

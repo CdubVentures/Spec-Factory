@@ -518,7 +518,7 @@ async function main() {
 
   // ── Generate comparison reports ──
   const runTs = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const reportDir = path.join(process.cwd(), '.specfactory_tmp', 'crawl-probe-reports');
+  const reportDir = path.join(process.cwd(), '.workspace', 'crawl-probe-reports');
   const { dir, files } = writeReports({
     baselineEvents: baselineResult.events,
     baselineResults: baselineResult.crawlResults,

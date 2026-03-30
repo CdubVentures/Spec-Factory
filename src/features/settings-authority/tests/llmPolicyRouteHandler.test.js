@@ -49,7 +49,6 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
         persistedRuntime = sections.runtime;
         return { legacy: { runtime: sections.runtime } };
       },
-      persistLegacySettingsFile: async () => {},
       recordRouteWriteAttempt: () => {},
       recordRouteWriteOutcome: () => {},
       ...persistenceOverrides,

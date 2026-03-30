@@ -108,6 +108,16 @@ export function applyStudioMapRenames(
     });
   }
 
+  if (nextMap.expectations && typeof nextMap.expectations === 'object') {
+    const renamedExpectations: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(nextMap.expectations)) {
+      renamedExpectations[key] = Array.isArray(value)
+        ? value.map((v: unknown) => renameKey(String(v || '')))
+        : value;
+    }
+    nextMap.expectations = renamedExpectations;
+  }
+
   return nextMap;
 }
 
@@ -119,10 +129,17 @@ export function buildStudioPersistMap({
     .map((key) => String(key || '').trim())
     .filter((key) => key && !key.startsWith('__grp::'));
 
+  const selectedKeySet = new Set(selectedKeys);
+  const allOverrides = stripEditedFlagFromRules(snapshot.rules);
+  const prunedOverrides: Record<string, Record<string, unknown>> = {};
+  for (const [key, rule] of Object.entries(allOverrides)) {
+    if (selectedKeySet.has(key)) prunedOverrides[key] = rule;
+  }
+
   const withStudioDocs: StudioConfig = {
     ...baseMap,
     selected_keys: selectedKeys,
-    field_overrides: stripEditedFlagFromRules(snapshot.rules),
+    field_overrides: prunedOverrides,
   };
 
   return applyStudioMapRenames(withStudioDocs, snapshot.renames);

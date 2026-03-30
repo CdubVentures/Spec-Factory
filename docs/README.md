@@ -2,9 +2,9 @@
 
 > **Purpose:** Master entrypoint for the LLM-oriented current-state documentation set for this repository.
 > **Prerequisites:** None.
-> **Last validated:** 2026-03-25
+> **Last validated:** 2026-03-30
 
-Spec Factory is a local-first product-spec indexing and review workbench. The live runtime is a Node.js HTTP/WebSocket server in `src/api/guiServer.js` that serves a Vite-built React GUI from `tools/gui-react/`, persists canonical operational data in SQLite through `src/db/specDb.js`, stores authored category and settings content under `category_authority/`, and orchestrates discovery, crawl, review, billing, and runtime-operations workflows for categories such as `keyboard`, `monitor`, `mouse`, and the harness-oriented `tests` category. The pipeline uses a crawl-first architecture centered on `src/features/crawl/` and `src/pipeline/runProduct.js`.
+Spec Factory is a local-first Node.js plus React workbench for crawl-first product-spec indexing, review, category-authority maintenance, and runtime diagnostics. The live server is assembled in `src/api/guiServerRuntime.js`, served through `src/api/guiServer.js`, mounts `/api/v1/*` plus `/ws`, serves the built GUI from `tools/gui-react/dist/`, persists global state in `.workspace/db/app.sqlite`, persists per-category state in `.workspace/db/<category>/spec.sqlite`, and reads authored control-plane files from `category_authority/`.
 
 ## LLM Reading Order
 
@@ -51,9 +51,9 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 - [System Map](./03-architecture/system-map.md)
 - [Backend Architecture](./03-architecture/backend-architecture.md)
 - [Frontend Architecture](./03-architecture/frontend-architecture.md)
+- [Routing and GUI](./03-architecture/routing-and-gui.md)
 - [Data Model](./03-architecture/data-model.md)
 - [Auth and Sessions](./03-architecture/auth-and-sessions.md)
-- [Routing and GUI](./03-architecture/routing-and-gui.md)
 
 ### 04. Features
 
@@ -76,6 +76,7 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 - [Monitoring and Logging](./05-operations/monitoring-and-logging.md)
 - [Known Issues](./05-operations/known-issues.md)
 - [Documentation Audit Ledger](./05-operations/documentation-audit-ledger.md)
+- [Spec Factory Knobs Maintenance](./05-operations/spec_factory_knobs_maintenance.md)
 
 ### 06. References
 
@@ -90,34 +91,43 @@ Spec Factory is a local-first product-spec indexing and review workbench. The li
 
 ### Supplemental
 
-- Supplemental files below are preserved as historical records or maintenance ledgers. Use the numbered current-state docs above as the authority set.
-- [Spec Factory Knobs Maintenance Log](./05-operations/spec_factory_knobs_maintenance.md)
+- [Pipeline Audit 2026-03-25](./03-architecture/PIPELINE-AUDIT-2026-03-25.md)
 - [Structural Audit 2026-03-23](./03-architecture/STRUCTURAL-AUDIT-2026-03-23.md)
 - [Structural Audit 2026-03-24](./03-architecture/STRUCTURAL-AUDIT-2026-03-24.md)
-- [App/API Wiring Test Audit](./test-audit/app-api-wiring-audit.md)
+- [App API Wiring Audit](./test-audit/app-api-wiring-audit.md)
+- [App UI Component Audit](./test-audit/app-ui-component-audit.md)
 
 ## Excluded Subtree
 
-- `docs/implementation/` exists on disk but is explicitly excluded from this current-state documentation pass and from the LLM reading order. Do not treat it as current-state authority.
+- `docs/implementation/` exists on disk but is explicitly excluded from this pass and from the current-state reading order. Do not use it as live authority unless a separate task re-audits it.
+
+## Current Validation Snapshot
+
+- `npm run gui:build` succeeded on 2026-03-30.
+- `npm run env:check` failed on 2026-03-30 with `Missing keys in config manifest: PORT`.
+- `npm test` failed on 2026-03-30; see [05-operations/known-issues.md](./05-operations/known-issues.md) for the currently observed failing areas.
+- `GET http://127.0.0.1:8788/api/v1/categories` returned `["keyboard","monitor","mouse"]` on 2026-03-30. `category_authority/tests/` exists on disk but is intentionally filtered from the default categories API.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | Main HTTP/WebSocket runtime and route composition entrypoint |
-| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route and tab inventory single source of truth |
-| source | `tools/gui-react/src/App.tsx` | GUI HashRouter shell and lazy route assembly |
-| source | `src/db/specDbSchema.js` | Canonical SQLite table inventory for the data-model docs |
-| config | `package.json` | Root scripts, Node engine, and backend dependency declarations |
-| config | `tools/gui-react/package.json` | GUI package scripts and frontend dependency declarations |
-| source | `src/shared/settingsRegistry.js` | SSOT settings registry verified for environment-and-config and knobs docs |
-| command | `npm run env:check` | currently fails because `.env.example` is missing `PORT`; the checker also remains a narrow fixed-list scan |
-| command | `npm run gui:build` | succeeded on 2026-03-25 and wrote the current `tools/gui-react/dist/` bundle |
-| command | `npm test` | full suite passed on the audited worktree (`5827` passing tests) |
+| source | `src/api/guiServerRuntime.js` | live server assembly, route order SSOT, runtime metadata roots |
+| source | `src/api/guiServer.js` | thin process entrypoint that serves the GUI runtime |
+| source | `tools/gui-react/src/App.tsx` | HashRouter shell and standalone `/test-mode` mount |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route and tab inventory SSOT |
+| source | `src/app/api/routes/infra/categoryRoutes.js` | categories endpoint filters `tests` by default |
+| source | `src/db/appDbSchema.js` | global `app.sqlite` persistence boundary |
+| config | `package.json` | root scripts and backend dependency surface |
+| config | `tools/gui-react/package.json` | GUI scripts and frontend dependency surface |
+| command | `npm run env:check` | failing March 30 baseline caused by missing `PORT` in `.env.example` |
+| command | `npm run gui:build` | successful March 30 GUI build baseline |
+| command | `npm test` | failing March 30 suite baseline |
+| runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory excludes the `tests` harness directory by default |
 
 ## Related Documents
 
 - [Scope](./01-project-overview/scope.md) - Defines what this repo is and what it explicitly is not.
-- [System Map](./03-architecture/system-map.md) - Fastest architecture-level view after this entrypoint.
-- [Spec Factory Knobs Maintenance](./05-operations/spec_factory_knobs_maintenance.md) - Setting/knob retirement and maintenance log.
-- [Documentation Audit Ledger](./05-operations/documentation-audit-ledger.md) - Phase-0 disposition record for this documentation refresh.
+- [Folder Map](./01-project-overview/folder-map.md) - Fast path to the live directory layout and ownership boundaries.
+- [System Map](./03-architecture/system-map.md) - Topology view after orientation.
+- [Documentation Audit Ledger](./05-operations/documentation-audit-ledger.md) - File-by-file disposition record for this refresh.

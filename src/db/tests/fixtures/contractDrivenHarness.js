@@ -370,7 +370,7 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+    specDbDir: path.join(tempRoot, '.workspace', 'db'),
   };
 
   await Promise.all([

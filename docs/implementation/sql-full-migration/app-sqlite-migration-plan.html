@@ -1040,28 +1040,160 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 </div>
 
+<div class="done">
+<strong>Phase D: Cleanup &mdash; COMPLETE.</strong> Removed <code>persistLegacySettingsFile</code> + <code>canonicalOnlySettingsWrites</code> dead parameter chain. Deleted broken brandRegistry.test.js (402 LOC). Updated 8 test files to use in-memory AppDb (settingsPersistenceTelemetry, configPersistenceContext, uiSettingsRoutes, settingsEnvelopeContract, configRoutesPersistenceFailure, categoryAuthoritySettingsBoundaryAlias, settingsService.characterization, runtimeSettingsApi E2E). Removed stale mocks from 3 test files. Updated MIGRATION-STATUS.mmd (4 items remaining). READMEs updated: SQL is canonical for settings + brands. JSON write fallback preserved in userSettingsService.js for boot/test path.
+</div>
 <div class="phase-header">
 <h3>Phase D: Cleanup</h3>
-<p>Remove JSON fallbacks and dead code.</p>
+<p>Remove dead code and update documentation.</p>
 </div>
 
 <div class="step-grid">
 <div class="step">
   <div class="step-num"><div class="step-dot" style="background:#a32d2d">D1</div></div>
   <div class="step-body">
-    <div class="step-title">Remove JSON read/write from brand + settings services</div>
-    <div class="step-desc">Delete all <code>fs.readFile</code>/<code>fs.writeFile</code> calls from brandRegistry.js and userSettingsService.js. Remove the persist queue. Remove <code>saveBrandRegistry</code> (replaced by SQL UPSERT). Update <code>catalog/index.js</code> re-export surface.</div>
-    <div class="step-files">src/features/catalog/identity/brandRegistry.js, src/features/settings-authority/userSettingsService.js, src/features/catalog/index.js, src/features/settings-authority/README.md (update narrative: SQL is authority, JSON is seed-only)</div>
-    <div class="step-kill">~200 LOC of JSON I/O code deleted.</div>
+    <div class="step-title">Remove dead persistence artifacts</div>
+    <div class="step-desc">Removed <code>persistLegacySettingsFile</code> from configPersistenceContext.js + its call from configRuntimeSettingsHandler.js. Removed <code>canonicalOnlySettingsWrites</code> dead parameter from configRoutes.js &rarr; configPersistenceContext.js. Removed stale <code>saveBrandRegistry</code> mock from testModeRoutesContract.test.js. Removed stale <code>persistLegacySettingsFile</code> mocks from llmPolicyRouteHandler.test.js + runtimeSettingsPutSnapshot.test.js. Deleted broken brandRegistry.test.js (402 LOC &mdash; replaced by characterization tests).</div>
+    <div class="step-files">src/features/settings/api/configPersistenceContext.js, src/features/settings/api/configRuntimeSettingsHandler.js, src/features/settings/api/configRoutes.js, src/features/catalog/identity/tests/brandRegistry.test.js (deleted)</div>
+    <div class="step-kill">~450 LOC deleted + 3 stale mocks removed.</div>
   </div>
 </div>
 
 <div class="step">
   <div class="step-num"><div class="step-dot" style="background:#a32d2d">D2</div></div>
   <div class="step-body">
-    <div class="step-title">Update MIGRATION-STATUS.mmd</div>
-    <div class="step-desc">Move lp4 (brand_registry.json), lp6 (user-settings.json) from REMAINING to COMPLETED. Update table counts in spec-factory-ideal-architecture.html. Update startup/rebuild diagrams to show app.sqlite.</div>
-    <div class="step-files">docs/implementation/sql-full-migration/MIGRATION-STATUS.mmd, docs/implementation/sql-full-migration/spec-factory-ideal-architecture.html</div>
+    <div class="step-title">Rewire tests to use in-memory AppDb</div>
+    <div class="step-desc">8 test files updated: settingsPersistenceTelemetry, configPersistenceContext, uiSettingsRoutes, settingsEnvelopeContract, configRoutesPersistenceFailure, categoryAuthoritySettingsBoundaryAlias, settingsService.characterization, runtimeSettingsApi E2E. All now create in-memory AppDb for SQL persistence round-trips. 2 pre-existing failures (runDataStorageState) fixed. E2E test verifies persistence via GET instead of JSON file polling.</div>
+    <div class="step-files">8 test files across settings-authority/ and settings/api/</div>
+    <div class="step-test">204/204 db, 52/52 settings-authority, 7/7 configPersistenceContext, 9/9 runtimeSettingsApi E2E. Zero new regressions.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#a32d2d">D3</div></div>
+  <div class="step-body">
+    <div class="step-title">Update documentation</div>
+    <div class="step-desc">MIGRATION-STATUS.mmd: moved brand_registry.json + user-settings.json to COMPLETED (4 items remaining). Updated settings-authority/README.md, catalog/README.md, db/README.md, pipeline-and-runtime-settings.md. Added Phase D completion banner. Filtered <code>tests</code> directory from category API (categoryRoutes.js).</div>
+    <div class="step-files">MIGRATION-STATUS.mmd, 3 README.md files, pipeline-and-runtime-settings.md, categoryRoutes.js</div>
+  </div>
+</div>
+</div>
+
+<div class="done">
+<strong>Phase E: Global brand management &mdash; COMPLETE.</strong> BrandManager.tsx decoupled from sidebar category &mdash; always shows all brands globally. Inline category filter pills (sf-tab-item pattern). Interactive category cell: click chip to remove, "+" popover to add. Drawer category toggles fire API instantly in edit mode (no save step for category changes). Test category directories filtered from API + frontend. Single file change (BrandManager.tsx) + categoryRoutes.js fix.
+</div>
+<div class="phase-header">
+<h3>Phase E: Global brand management</h3>
+<p>Decouple BrandManager from sidebar category. Instant inline category assignment.</p>
+</div>
+
+<div class="step-grid">
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#2a5ea8">E1</div></div>
+  <div class="step-body">
+    <div class="step-title">BrandManager always shows all brands</div>
+    <div class="step-desc">Brand query changed from <code>/brands?category=X</code> to <code>/brands</code> (unfiltered). Removed redundant <code>allBrands</code> query. Added <code>filterCategory</code> state with inline <code>sf-tab-item</code> pills above the table. Removed <code>${selectedCategory}</code> from 10 persisted tab keys (drafts survive sidebar changes).</div>
+    <div class="step-files">tools/gui-react/src/features/studio/components/BrandManager.tsx</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#2a5ea8">E2</div></div>
+  <div class="step-body">
+    <div class="step-title">Interactive inline category assignment</div>
+    <div class="step-desc">Category column: chips are clickable to remove (strikethrough on hover, disabled if last). "+" button opens fixed-position popover with available categories. Fires <code>PUT /brands/{slug}</code> with updated categories array. Drawer toggles fire API instantly in edit mode (no save step). Click-outside closes popover.</div>
+    <div class="step-files">tools/gui-react/src/features/studio/components/BrandManager.tsx</div>
+    <div class="step-test">Visual: add/remove categories in table + drawer. TypeScript: zero errors.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#2a5ea8">E3</div></div>
+  <div class="step-body">
+    <div class="step-title">Filter test categories from API</div>
+    <div class="step-desc"><code>category_authority/tests/</code> is a test harness directory (contains only <code>categoryAuthorityContractHarness.js</code>). Added <code>category === 'tests'</code> exclusion to <code>filterCategoryDirs()</code> in categoryRoutes.js. Frontend also filters <code>_test_*</code> and <code>tests</code> from allCategories.</div>
+    <div class="step-files">src/app/api/routes/infra/categoryRoutes.js, BrandManager.tsx</div>
+  </div>
+</div>
+</div>
+
+
+<div class="phase-header">
+<h3>Phase F: Product brand_identifier column</h3>
+<p>Add stable brand identifier to products. Eliminate rename cascade.</p>
+</div>
+
+<div class="step-grid">
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#712B13">F1</div></div>
+  <div class="step-body">
+    <div class="step-title">Add <code>brand_identifier</code> column to specDb products table</div>
+    <div class="step-desc">
+      New column: <code>brand_identifier TEXT DEFAULT ''</code> on the <code>products</code> table.<br/>
+      Migration in specDbMigrations.js: <code>ALTER TABLE products ADD COLUMN brand_identifier TEXT DEFAULT ''</code>.<br/>
+      Index: <code>CREATE INDEX IF NOT EXISTS idx_products_brand_identifier ON products(brand_identifier)</code>.<br/>
+      Update <code>specDbStatements.js</code>: upsert includes <code>brand_identifier</code>.
+    </div>
+    <div class="step-files">src/db/specDbSchema.js, src/db/specDbMigrations.js, src/db/specDbStatements.js</div>
+    <div class="step-test">Schema migration runs on existing DBs. New column present with empty default.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#712B13">F2</div></div>
+  <div class="step-body">
+    <div class="step-title">Add <code>brand_identifier</code> to product_catalog.json</div>
+    <div class="step-desc">
+      Each product entry gains optional <code>"brand_identifier": "84a009b9"</code>.<br/>
+      <code>productCatalog.js</code>: <code>addProduct()</code> and <code>updateProduct()</code> resolve brand_identifier from appDb on write: <code>appDb.getBrandBySlug(slugify(brand))?.identifier</code>.<br/>
+      <code>catalogProductLoader.js</code>: parse + expose <code>brand_identifier</code> from catalog entries.<br/>
+      <code>seed.js</code>: populate <code>brand_identifier</code> during specDb seeding.
+    </div>
+    <div class="step-files">src/features/catalog/products/productCatalog.js, src/features/catalog/products/catalogProductLoader.js, src/db/seed.js, category_authority/*/product_catalog.json (data migration)</div>
+    <div class="step-test">Add a product &rarr; verify brand_identifier is set. Seed specDb &rarr; verify column populated.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#712B13">F3</div></div>
+  <div class="step-body">
+    <div class="step-title">Data migration: backfill existing products</div>
+    <div class="step-desc">
+      CLI command or migration script: for each product with <code>brand_identifier = ''</code>, look up <code>appDb.getBrandBySlug(slugify(product.brand))</code> and set the identifier.<br/>
+      Runs once per category. Idempotent (skip if already set).
+    </div>
+    <div class="step-files">src/features/catalog/migrations/brandIdentifierBackfill.js (new), CLI wiring</div>
+    <div class="step-test">Run on mouse (343 products) &rarr; all get brand_identifier. Re-run &rarr; no changes.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#712B13">F4</div></div>
+  <div class="step-body">
+    <div class="step-title">Rewrite <code>renameBrand()</code> &mdash; eliminate product cascade</div>
+    <div class="step-desc">
+      Current: iterates every product in every category, patches <code>brand</code> display name string. ~30 lines of cascade code.<br/>
+      New: <code>renameBrand()</code> updates <code>brands.canonical_name</code> + <code>brands.slug</code> in appDb only. Products are unaffected &mdash; they reference the brand by <code>brand_identifier</code> which never changes.<br/>
+      Display name resolution: <code>SELECT canonical_name FROM brands WHERE identifier = product.brand_identifier</code>.<br/>
+      The <code>product.brand</code> string becomes a cached display name (denormalized for convenience) that can be lazily refreshed.
+    </div>
+    <div class="step-files">src/features/catalog/identity/brandRegistry.js (simplify renameBrand), src/features/catalog/products/productCatalog.js (resolve display name from identifier)</div>
+    <div class="step-kill">~30 LOC cascade code removed. Rename becomes O(1) instead of O(products).</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num"><div class="step-dot" style="background:#712B13">F5</div></div>
+  <div class="step-body">
+    <div class="step-title">Update API + GUI display name resolution</div>
+    <div class="step-desc">
+      API responses: include both <code>brand</code> (display name) and <code>brand_identifier</code>.<br/>
+      GUI: no breaking changes &mdash; continues showing <code>brand</code> display name. ProductManager brand dropdown can optionally resolve from identifier.<br/>
+      Publishing: <code>publishSpecBuilders.js</code> resolves display name from identifier for JSON-LD output.<br/>
+      Sidebar: brand filter resolves from identifier.
+    </div>
+    <div class="step-files">src/features/catalog/api/catalogRoutes.js, tools/gui-react/src/features/catalog/components/ProductManager.tsx, src/publish/publishSpecBuilders.js</div>
+    <div class="step-test">Rename a brand &rarr; products unchanged &rarr; display names resolve correctly via identifier lookup.</div>
   </div>
 </div>
 </div>
@@ -1221,40 +1353,54 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 <h2>11. Dependencies &amp; ordering</h2>
 
 <div class="diagram-wrap">
-<svg width="100%" viewBox="0 0 1100 240">
+<svg width="100%" viewBox="0 0 1100 340">
 <defs><marker id="d" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
-<text class="t16b" x="550" y="28" text-anchor="middle" fill="#2c2c2a">Phase dependencies: A must complete before B or C</text>
+<text class="t16b" x="550" y="28" text-anchor="middle" fill="#2c2c2a">Phase dependencies (A&ndash;F)</text>
 
 <!-- Phase A -->
-<rect x="400" y="50" width="300" height="45" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
-<text class="t14b" x="550" y="72" text-anchor="middle" fill="#26215C">Phase A: app.sqlite infrastructure</text>
-<text class="t11" x="550" y="88" text-anchor="middle" fill="#534AB7">appDb module + bootstrap + seed</text>
+<rect x="400" y="50" width="300" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="550" y="75" text-anchor="middle" fill="#04342C">A: app.sqlite infrastructure &check;</text>
 
 <!-- Arrows to B and C -->
-<line x1="450" y1="95" x2="250" y2="140" stroke="#534AB7" stroke-width="1.5" marker-end="url(#d)"/>
-<line x1="650" y1="95" x2="850" y2="140" stroke="#534AB7" stroke-width="1.5" marker-end="url(#d)"/>
+<line x1="450" y1="90" x2="250" y2="120" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
+<line x1="650" y1="90" x2="850" y2="120" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
 
 <!-- Phase B -->
-<rect x="80" y="140" width="340" height="45" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
-<text class="t14b" x="250" y="161" text-anchor="middle" fill="#04342C">Phase B: Brand migration</text>
-<text class="t11" x="250" y="177" text-anchor="middle" fill="#085041">brandRegistry.js JSON &rarr; SQL</text>
+<rect x="80" y="120" width="340" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="250" y="145" text-anchor="middle" fill="#04342C">B: Brand registry &rarr; SQL &check;</text>
 
 <!-- Phase C -->
-<rect x="680" y="140" width="340" height="45" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
-<text class="t14b" x="850" y="161" text-anchor="middle" fill="#04342C">Phase C: Settings migration</text>
-<text class="t11" x="850" y="177" text-anchor="middle" fill="#085041">userSettingsService.js JSON &rarr; SQL</text>
+<rect x="680" y="120" width="340" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="850" y="145" text-anchor="middle" fill="#04342C">C: Settings &rarr; SQL &check;</text>
 
-<!-- B and C are independent -->
-<text class="t12" x="550" y="170" text-anchor="middle" fill="#888780">B and C are independent (can run in parallel)</text>
+<text class="t12" x="550" y="148" text-anchor="middle" fill="#888780">B and C independent</text>
 
 <!-- Arrows to D -->
-<line x1="250" y1="185" x2="450" y2="210" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
-<line x1="850" y1="185" x2="650" y2="210" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
+<line x1="250" y1="160" x2="450" y2="185" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
+<line x1="850" y1="160" x2="650" y2="185" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
 
 <!-- Phase D -->
-<rect x="400" y="205" width="300" height="30" rx="8" fill="#fcebeb" stroke="#e24b4a" stroke-width="0.5"/>
-<text class="t14b" x="550" y="225" text-anchor="middle" fill="#a32d2d">Phase D: Cleanup (remove JSON I/O)</text>
+<rect x="400" y="180" width="300" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="550" y="205" text-anchor="middle" fill="#04342C">D: Cleanup &check;</text>
+
+<!-- Arrow to E -->
+<line x1="550" y1="220" x2="300" y2="250" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#d)"/>
+
+<!-- Phase E -->
+<rect x="80" y="245" width="440" height="40" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text class="t14b" x="300" y="270" text-anchor="middle" fill="#04342C">E: Global brand management (GUI) &check;</text>
+
+<!-- Arrow from E to F -->
+<line x1="520" y1="265" x2="620" y2="265" stroke="#534AB7" stroke-width="1.5" marker-end="url(#d)"/>
+
+<!-- Phase F -->
+<rect x="620" y="245" width="420" height="40" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text class="t14b" x="830" y="265" text-anchor="middle" fill="#26215C">F: brand_identifier on products</text>
+<text class="t11" x="830" y="280" text-anchor="middle" fill="#534AB7">Eliminate rename cascade</text>
+
+<!-- Timeline -->
+<text class="t12" x="550" y="320" text-anchor="middle" fill="#888780">A&ndash;E COMPLETE (2026-03-30) &bull; F: PLANNED</text>
 </svg>
 </div>
 
@@ -1298,20 +1444,20 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 <div class="grid-2">
 <div class="card">
   <h4>Brands</h4>
-  <div class="stat" style="color: #a32d2d;">JSON &rarr; SQL</div>
-  <p>34 brands, keyed by slug (fragile) &rarr; keyed by identifier (stable)</p>
-  <p>Categories: all "mouse" &rarr; true cross-category assignments</p>
-  <p>Rename log: append-only JSON &rarr; SQL audit table</p>
-  <p><span class="tag tag-red">HIGH</span> brandRegistry.js (693 LOC) full rewrite</p>
+  <div class="stat" style="color: #0f6e56;">COMPLETE (A&ndash;E)</div>
+  <p>34 brands, keyed by identifier (8-hex stable PK) in app.sqlite</p>
+  <p>Cross-category: GUI manages brands globally with inline category toggles</p>
+  <p>Rename cascade still patches <code>product.brand</code> display name string</p>
+  <p><span class="tag tag-green">DONE</span> Phase F will add <code>brand_identifier</code> to products</p>
 </div>
 
 <div class="card">
   <h4>Settings</h4>
-  <div class="stat" style="color: #a32d2d;">JSON &rarr; SQL</div>
-  <p>~170 keys, full-document rewrite on every change &rarr; per-key UPSERT</p>
-  <p>Studio maps: nested JSON objects &rarr; dedicated table</p>
-  <p>Registry-driven SSOT already exists (settingsRegistry.js)</p>
-  <p><span class="tag tag-red">HIGH</span> userSettingsService.js (530 LOC) full rewrite</p>
+  <div class="stat" style="color: #0f6e56;">COMPLETE (A&ndash;D)</div>
+  <p>~170 keys in SQL, per-key UPSERT. Studio maps in dedicated table.</p>
+  <p>JSON fallback preserved for boot path (before appDb exists)</p>
+  <p>Registry-driven SSOT (settingsRegistry.js) unchanged</p>
+  <p><span class="tag tag-green">DONE</span> No further work needed</p>
 </div>
 
 <div class="card">
@@ -1324,17 +1470,17 @@ CREATE TABLE IF NOT EXISTS studio_maps (
 </div>
 
 <div class="card">
-  <h4>app.sqlite</h4>
-  <div class="stat" style="color: #534AB7;">NEW</div>
-  <p>Location: <code>.specfactory_tmp/app.sqlite</code></p>
-  <p>5 tables: brands, brand_categories, brand_renames, settings, studio_maps</p>
-  <p>Opened once at bootstrap, shared by all category domain runtimes</p>
-  <p><span class="tag tag-blue">PLANNED</span> Infrastructure first, then B+C in parallel</p>
+  <h4>brand_identifier</h4>
+  <div class="stat" style="color: #534AB7;">PLANNED (F)</div>
+  <p>Add <code>brand_identifier</code> column to products table + product_catalog.json</p>
+  <p>Products reference brands by stable 8-hex identifier, not display name</p>
+  <p>Rename becomes O(1): update brands table only, no product cascade</p>
+  <p><span class="tag tag-blue">NEXT</span> 5 steps: schema &rarr; catalog &rarr; backfill &rarr; simplify rename &rarr; API</p>
 </div>
 </div>
 
 <div class="note">
-<strong>Total effort estimate:</strong> ~29 production files + ~21 existing test files + 7 new files + ~10 docs = <strong>67 files</strong>. The 6 CRITICAL files total ~1,700 LOC of core rewrites. The existing registry-driven architecture (settingsRegistry.js, product ID primitives) makes this tractable. The hardest part is the brandRegistry rename cascade &mdash; ensure characterization tests lock it down before touching anything.
+<strong>Status (2026-03-30):</strong> Phases A&ndash;E COMPLETE. app.sqlite operational (5 tables). Brand registry + settings fully SQL-backed. BrandManager global with instant category toggles. <strong>Next:</strong> Phase F adds <code>brand_identifier</code> to products, eliminating the rename cascade (~50 files in blast radius, 8 core files).
 </div>
 
 </body>

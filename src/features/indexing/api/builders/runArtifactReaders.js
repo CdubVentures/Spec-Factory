@@ -352,8 +352,13 @@ export function createRunArtifactReaders({
   async function readIndexLabRunLlmTraces(runId, limit = 80) {
     const context = await resolveContext(runId);
     if (!context) return null;
+
+    // WHY: Phase D convergence — try {runDir}/traces/llm/ first (new layout),
+    // fall back to legacy {outputRoot}/_runtime/traces/runs/{runId}/{productId}/llm/
+    const runDir = await resolveRunDir(context.resolvedRunId);
+    const primaryTraceRoot = runDir ? path.join(runDir, 'traces', 'llm') : '';
     const outputRoot = getOutputRoot();
-    const traceRoot = path.join(
+    const legacyTraceRoot = path.join(
       outputRoot,
       '_runtime',
       'traces',
@@ -362,6 +367,15 @@ export function createRunArtifactReaders({
       normalizePathToken(context.productId, 'product'),
       'llm'
     );
+
+    let traceRoot = legacyTraceRoot;
+    if (primaryTraceRoot) {
+      try {
+        await fs.access(primaryTraceRoot);
+        traceRoot = primaryTraceRoot;
+      } catch { /* primary doesn't exist, use legacy */ }
+    }
+
     let entries = [];
     try {
       entries = await fs.readdir(traceRoot, { withFileTypes: true });

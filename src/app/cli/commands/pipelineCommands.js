@@ -54,7 +54,20 @@ export function createPipelineCommands({
 
     let s3Key = String(args.s3key || '').trim();
     if (!s3Key && productIdArg) {
-      s3Key = buildInputKey(productIdArg);
+      const candidateKey = buildInputKey(productIdArg);
+      // WHY: After the id-format migration (hash-based product IDs), the input
+      // JSON files may still use the old brand-model slug names. Verify the file
+      // actually exists before committing to this key; if it doesn't, fall
+      // through to the creation path which builds a fresh input JSON from the
+      // CLI identity args (brand, model, variant, etc.).
+      let candidateExists = false;
+      try {
+        await storage.readJson(candidateKey);
+        candidateExists = true;
+      } catch { /* file missing — expected after id-format migration */ }
+      if (candidateExists) {
+        s3Key = candidateKey;
+      }
     }
 
     if (!s3Key && seed) {
@@ -108,7 +121,7 @@ export function createPipelineCommands({
     try {
       const { SpecDb } = await import('../../../db/specDb.js');
       const projectRoot = pathNode.resolve(decodeURIComponent(new URL('../../../../', import.meta.url).pathname).replace(/^\/([A-Z]:)/i, '$1'));
-      const specDbDir = pathNode.join(projectRoot, '.specfactory_tmp', category);
+      const specDbDir = pathNode.join(projectRoot, '.workspace', 'db', category);
       await fsNode.mkdir(specDbDir, { recursive: true });
       specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
@@ -154,18 +167,15 @@ export function createPipelineCommands({
     if (Number.isFinite(maxRunSecondsArg) && maxRunSecondsArg > 0) {
       runConfig.maxRunSeconds = maxRunSecondsArg;
       const runBudgetMs = maxRunSecondsArg * 1000;
-      const boundedFetchTimeoutMs = Math.max(
-        1_000,
-        Math.min(
-          configInt(runConfig, 'pageGotoTimeoutMs'),
-          Math.floor(runBudgetMs / 3)
-        )
+      // WHY: Cap per-page navigation timeout to runBudget/3 so a single slow
+      // page doesn't eat the entire time budget. Uses the Crawlee navigation
+      // timeout (seconds) as the baseline.
+      const currentNavTimeoutMs = configInt(runConfig, 'crawleeNavigationTimeoutSecs') * 1000;
+      const boundedNavTimeoutSecs = Math.max(
+        1,
+        Math.floor(Math.min(currentNavTimeoutMs, Math.floor(runBudgetMs / 3)) / 1000)
       );
-      runConfig.pageGotoTimeoutMs = boundedFetchTimeoutMs;
-      runConfig.dynamicFetchRetryBudget = 0;
-      runConfig.dynamicFetchRetryBackoffMs = 0;
-      runConfig.sourceFetchWrapperAttempts = 1;
-      runConfig.sourceFetchWrapperBackoffMs = 0;
+      runConfig.crawleeNavigationTimeoutSecs = boundedNavTimeoutSecs;
     }
     const discoveryEnabledArg = asBool(args['discovery-enabled'], undefined);
     const searchEnginesArg = String(args['search-engines'] || args['search-provider'] || '').trim().toLowerCase();

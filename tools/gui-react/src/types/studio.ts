@@ -77,6 +77,22 @@ export interface EnumEntry {
   [k: string]: unknown;
 }
 
+export interface DataListEntry {
+  field: string;
+  normalize?: string;
+  delimiter?: string;
+  manual_values?: string[];
+  priority?: PriorityProfile;
+  ai_assist?: AiAssistConfig;
+  mode?: string;
+  sheet?: string;
+  value_column?: string;
+  header_row?: number;
+  row_start?: number;
+  row_end?: number;
+  [k: string]: unknown;
+}
+
 export interface StudioConfig {
   version?: number;
   tooltip_source?: {
@@ -85,6 +101,7 @@ export interface StudioConfig {
   };
   component_sources?: ComponentSource[];
   enum_lists?: EnumEntry[];
+  data_lists?: DataListEntry[];
   selected_keys?: string[];
   field_overrides?: Record<string, unknown>;
   manual_enum_values?: Record<string, string[]>;

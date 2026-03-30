@@ -337,7 +337,7 @@ goto :done
 set "OUT_DIR=%ROOT%\out"
 set "BILLING_DIR=%OUT_DIR%\_billing"
 set "ARTIFACTS_DIR=%ROOT%\artifacts"
-set "SPEC_DB_DIR=%ROOT%\.specfactory_tmp"
+set "SPEC_DB_DIR=%ROOT%\.workspace\db"
 
 set "DRY_RUN=0"
 set "DELETE_REMOTE=0"
@@ -418,7 +418,7 @@ echo     out\specs, out\runs, out\_runtime, out\final, out\logs
 echo     out\normalized, out\output, out\_queue, out\_reports, out\_review
 if "%KEEP_BILLING%"=="0" echo     out\_billing
 echo     artifacts
-if "%DELETE_SPEC_DB%"=="1" echo     .specfactory_tmp
+if "%DELETE_SPEC_DB%"=="1" echo     .workspace\db
 if "%DRY_RUN%"=="1" echo   --dry-run: no files will be deleted.
 echo.
 
@@ -441,7 +441,7 @@ call :delete_path "%OUT_DIR%\_queue" "_queue"
 call :delete_path "%OUT_DIR%\_reports" "_reports"
 call :delete_path "%OUT_DIR%\_review" "_review"
 if "%KEEP_BILLING%"=="0" call :delete_path "%BILLING_DIR%" "_billing"
-if "%DELETE_SPEC_DB%"=="1" call :delete_path "%SPEC_DB_DIR%" ".specfactory_tmp"
+if "%DELETE_SPEC_DB%"=="1" call :delete_path "%SPEC_DB_DIR%" ".workspace\db"
 call :delete_path "%ARTIFACTS_DIR%" "artifacts"
 
 if "%DELETE_REMOTE%"=="1" call :delete_remote
@@ -464,7 +464,7 @@ echo   --dry-run         Show what would be removed.
 echo   --yes / -y        Skip confirmation prompt.
 echo   --remote          Also remove from S3 (requires S3_BUCKET).
 echo   --clear-billing   Also remove out\_billing.
-echo   --clear-db        Also remove .specfactory_tmp.
+echo   --clear-db        Also remove .workspace\db.
 echo   --all             Same as --clear-billing --clear-db.
 goto :done
 

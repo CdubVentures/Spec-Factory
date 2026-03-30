@@ -12,6 +12,7 @@ import {
   persistUserSettingsSections,
   deriveSettingsArtifactsFromUserSettings,
 } from '../userSettingsService.js';
+import { AppDb } from '../../../db/appDb.js';
 
 const FIXTURE_SETTINGS = {
   schemaVersion: 2,
@@ -102,41 +103,38 @@ describe('characterization: loadUserSettingsSync', () => {
 
 describe('characterization: persistUserSettingsSections', () => {
   it('runtime round-trip preserves values', async () => {
-    const config = await tmpConfig();
+    const appDb = new AppDb({ dbPath: ':memory:' });
     try {
-      await writeFixture(config);
       const persisted = await persistUserSettingsSections({
-        categoryAuthorityRoot: config.categoryAuthorityRoot,
+        appDb,
         runtime: { autoScrollEnabled: false, llmTimeoutMs: 60000 },
       });
       assert.equal(persisted.schemaVersion, 2);
       assert.equal(persisted.runtime.autoScrollEnabled, false);
       assert.equal(persisted.runtime.llmTimeoutMs, 60000);
     } finally {
-      await cleanup(config);
+      appDb.close();
     }
   });
 
   it('ui round-trip preserves values', async () => {
-    const config = await tmpConfig();
+    const appDb = new AppDb({ dbPath: ':memory:' });
     try {
-      await writeFixture(config);
       const persisted = await persistUserSettingsSections({
-        categoryAuthorityRoot: config.categoryAuthorityRoot,
+        appDb,
         ui: { runtimeAutoSaveEnabled: true },
       });
       assert.equal(persisted.ui.runtimeAutoSaveEnabled, true);
     } finally {
-      await cleanup(config);
+      appDb.close();
     }
   });
 
   it('returns full snapshot shape', async () => {
-    const config = await tmpConfig();
+    const appDb = new AppDb({ dbPath: ':memory:' });
     try {
-      await writeFixture(config);
       const persisted = await persistUserSettingsSections({
-        categoryAuthorityRoot: config.categoryAuthorityRoot,
+        appDb,
         runtime: { autoScrollEnabled: false },
       });
       assert.equal(typeof persisted.schemaVersion, 'number');
@@ -146,7 +144,7 @@ describe('characterization: persistUserSettingsSections', () => {
       assert.equal(typeof persisted.studio, 'object');
       assert.equal(typeof persisted.ui, 'object');
     } finally {
-      await cleanup(config);
+      appDb.close();
     }
   });
 });

@@ -167,7 +167,7 @@ test('insertPdf inserts and is queryable', () => {
   db.close();
 });
 
-// --- specDb public delegation (Step 0: fix broken public API) ---
+// --- specDb public delegation ---
 
 test('specDb.insertScreenshot delegates to artifactStore', () => {
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });

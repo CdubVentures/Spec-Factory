@@ -16,3 +16,4 @@ This feature is the stable source for catalog-backed product identity and catalo
 - Catalog identity and product-id generation stay canonical inside this feature.
 - Queue reconciliation crosses the boundary only through the catalog contract or the explicit queue seam.
 - New catalog work lands under `src/features/catalog/**`, not resurrected top-level catalog roots.
+- Brand registry is SQL-only (app.sqlite: brands, brand_categories, brand_renames tables). brand_registry.json is a read-only seed archive — no runtime writes.

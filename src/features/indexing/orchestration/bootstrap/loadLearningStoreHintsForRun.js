@@ -17,7 +17,7 @@ export async function loadLearningStoreHintsForRun({
   try {
     const { SpecDb } = await importSpecDbFn();
     const categoryToken = String(category || '').trim().toLowerCase();
-    const dbPath = `${String(config.specDbDir || '.specfactory_tmp').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
+    const dbPath = `${String(config.specDbDir || '.workspace/db').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
     learningReadDb = new SpecDb({ dbPath, category: categoryToken });
 
     const stores = {

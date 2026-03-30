@@ -5,7 +5,7 @@ function validateFunctionArg(name, value) {
 }
 
 export function createRunTraceWriter({
-  storage,
+  runDir = '',
   config = {},
   runId = '',
   productId = '',
@@ -21,7 +21,7 @@ export function createRunTraceWriter({
   }
 
   return createRuntimeTraceWriterFn({
-    storage,
+    runDir,
     runId,
     productId,
   });

@@ -39,7 +39,7 @@ export function createSpecDbRuntime({
     if (!resolvedCategory) return null;
     if (specDbCache.has(resolvedCategory)) return specDbCache.get(resolvedCategory);
 
-    const primaryPath = path.join('.specfactory_tmp', resolvedCategory, 'spec.sqlite');
+    const primaryPath = path.join(config.specDbDir || '.workspace/db', resolvedCategory, 'spec.sqlite');
 
     try {
       fsSync.accessSync(primaryPath);

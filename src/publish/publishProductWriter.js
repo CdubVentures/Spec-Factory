@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import semver from 'semver';
@@ -301,7 +302,7 @@ export async function writeSqliteExport(storage, category, records) {
     'conn.close()'
   ].join('\n');
 
-  const tmpDir = path.resolve('.specfactory_tmp', 'phase9');
+  const tmpDir = path.resolve(os.tmpdir(), 'specfactory-phase9');
   await fs.mkdir(tmpDir, { recursive: true });
   const dbPath = path.join(tmpDir, `${category}_all_products.sqlite`);
 

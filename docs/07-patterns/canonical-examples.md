@@ -2,11 +2,11 @@
 
 > **Purpose:** Show the verified repository patterns for adding common work items without inventing new structure.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
 ## Adding A New API Endpoint
 
-Based on `src/features/settings/api/configRoutes.js` and `src/app/api/routes/infra/categoryRoutes.js`.
+Based on `src/features/settings/api/configRoutes.js`, `src/app/api/routes/infra/categoryRoutes.js`, and `src/api/guiServerRuntime.js`.
 
 Use the existing route-family registrar pattern: dependency injection at the top, `parts` matching inside the returned handler, `jsonRes()` for responses, and `return false` when the route does not match.
 
@@ -55,18 +55,24 @@ export function registerExampleRoutes(ctx) {
 }
 ```
 
-If you are creating a brand-new route family instead of extending an existing one, also wire it through `src/app/api/routeRegistry.js`, `src/app/api/guiRouteRegistration.js`, and the server context assembly in `src/api/guiServer.js`.
+If you are extending an existing route family, add the branch inside that family's registrar.
+
+If you are creating a brand-new route family, wire it through the live runtime assembly:
+
+1. Add `<key>RouteContext` creation to `src/api/guiServerRuntime.js`.
+2. Add `{ key, registrar }` to the `routeDefinitions` array in `src/api/guiServerRuntime.js`.
+3. Let `src/app/api/guiRouteRegistration.js` and `src/app/api/routeRegistry.js` consume that `routeDefinitions` array; do not treat `GUI_API_ROUTE_ORDER` as the mounted SSOT.
 
 ## Adding A New Page Or View
 
-Based on `tools/gui-react/src/registries/pageRegistry.ts` and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
+Based on `tools/gui-react/src/registries/pageRegistry.ts`, `tools/gui-react/src/App.tsx`, and `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
 
 The live pattern is:
 
 1. Put real UI ownership in `tools/gui-react/src/features/<feature>/components/`.
-2. Add a single `PAGE_REGISTRY` entry in `tools/gui-react/src/registries/pageRegistry.ts`.
-3. Let `ROUTE_ENTRIES`, `CATALOG_TABS`, and `OPS_TABS` derive automatically from that entry; `tools/gui-react/src/App.tsx` and `tools/gui-react/src/pages/layout/TabNav.tsx` consume those derived exports.
-4. Only add a `tools/gui-react/src/pages/<route>/` wrapper if the page needs a page-local shell or must preserve a legacy page-local implementation. `test-mode` is the current exception route mounted outside the registry.
+2. Add one `PAGE_REGISTRY` entry in `tools/gui-react/src/registries/pageRegistry.ts`.
+3. Let `ROUTE_ENTRIES`, `CATALOG_TABS`, `OPS_TABS`, and `SETTINGS_TABS` derive automatically from that entry; `App.tsx` and `TabNav.tsx` consume those derived exports.
+4. Only add a `tools/gui-react/src/pages/<route>/` wrapper when the page needs a page-local shell or must preserve a legacy wrapper. `/test-mode` is the current explicit exception mounted outside the registry.
 
 ```tsx
 // tools/gui-react/src/features/example/components/ExamplePage.tsx
@@ -118,7 +124,7 @@ export function ExamplePage() {
 
 Based on `src/db/specDbMigrations.js`.
 
-SpecDb migrations are append-only SQL strings plus optional secondary indexes. Edit the existing literal array/string in place by appending new entries at the end; do not rebuild them with self-referential spreads. Keep them idempotent; `applyMigrations()` already swallows duplicate-column errors.
+SpecDb migrations are append-only SQL strings plus optional secondary indexes. Append new entries at the end; do not rebuild the array through self-referential spreads. Keep migrations idempotent; `applyMigrations()` already tolerates duplicate-column errors for compatibility.
 
 ```js
 // src/db/specDbMigrations.js
@@ -134,13 +140,13 @@ export const SECONDARY_INDEXES = `
 `;
 ```
 
-If a migration changes the canonical schema contract, update `docs/03-architecture/data-model.md` and the nearest `DOMAIN.md` for that boundary.
+If a migration changes the canonical schema contract, update [data-model.md](../03-architecture/data-model.md) and the nearest domain-specific documentation for that boundary.
 
 ## Adding A New Test
 
 Based on `src/publish/tests/publishingPipeline.publish.test.js`.
 
-Use Node's built-in runner, keep setup local to the test file, and assert through public APIs or returned artifacts rather than internal implementation details.
+Use Node's built-in runner, keep setup local to the test file, and assert through public APIs or written artifacts rather than internal implementation details.
 
 ```js
 import test from 'node:test';
@@ -269,8 +275,11 @@ export async function addExampleItem({ config, name, tags = [] }) {
 |--------|------|-------------------|
 | source | `src/app/api/routes/infra/categoryRoutes.js` | injected route-factory shape and `return false` non-match contract |
 | source | `src/features/settings/api/configRoutes.js` | live route-family registrar pattern |
+| source | `src/api/guiServerRuntime.js` | route-context assembly and `routeDefinitions` mounting pattern |
+| source | `src/app/api/guiRouteRegistration.js` | routeDefinitions consumption path |
+| source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` is not the live mounted SSOT |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | page registry, tab metadata, and derived route pattern |
-| source | `tools/gui-react/src/App.tsx` | HashRouter shell and registry-driven `wrap()` pattern |
+| source | `tools/gui-react/src/App.tsx` | HashRouter shell and registry-driven route mounting |
 | source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tab derivation from the page registry |
 | source | `tools/gui-react/src/features/catalog/components/CatalogPage.tsx` | feature-owned page implementation pattern |
 | source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
@@ -285,6 +294,6 @@ export async function addExampleItem({ config, name, tags = [] }) {
 
 ## Related Documents
 
-- [Conventions](../01-project-overview/conventions.md) - Defines the repo rules these examples follow.
-- [API Surface](../06-references/api-surface.md) - Shows the live endpoints that follow the route pattern above.
-- [Background Jobs](../06-references/background-jobs.md) - Maps the real long-running commands and workers.
+- [Conventions](../01-project-overview/conventions.md) - defines the repo rules these examples follow.
+- [API Surface](../06-references/api-surface.md) - shows the live endpoints that follow the route pattern above.
+- [Background Jobs](../06-references/background-jobs.md) - maps the real long-running commands and workers.

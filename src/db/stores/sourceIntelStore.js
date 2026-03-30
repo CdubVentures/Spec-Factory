@@ -3,8 +3,8 @@ import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
 
 /**
  * Source Intelligence store — extracted from SpecDb.
- * Owns: source_intel_domains, source_intel_field_rewards,
- *       source_intel_brands, source_intel_paths tables.
+ * Owns: source_intel_domains (unified with scope/scope_key for domain/brand/path),
+ *       source_intel_field_rewards tables.
  * Also: source_corpus, runtime_events, learning_profiles, category_brain, llm_cache tables.
  *
  * @param {{ db: import('better-sqlite3').Database, category: string, stmts: object }} deps
@@ -200,7 +200,8 @@ export function createSourceIntelStore({ db, category, stmts }) {
   function upsertSourceIntelDomain(entry) {
     db.prepare(`
       INSERT OR REPLACE INTO source_intel_domains (
-        root_domain, category, attempts, http_ok_count, identity_match_count,
+        root_domain, category, scope, scope_key, brand,
+        attempts, http_ok_count, identity_match_count,
         major_anchor_conflict_count, fields_contributed_count, fields_accepted_count,
         accepted_critical_fields_count, products_seen, approved_attempts, candidate_attempts,
         parser_runs, parser_success_count, parser_health_score_total,
@@ -208,7 +209,8 @@ export function createSourceIntelStore({ db, category, stmts }) {
         recent_products, per_field_helpfulness, fingerprint_counts, extra_stats,
         last_seen_at, updated_at
       ) VALUES (
-        @root_domain, @category, @attempts, @http_ok_count, @identity_match_count,
+        @root_domain, @category, @scope, @scope_key, @brand,
+        @attempts, @http_ok_count, @identity_match_count,
         @major_anchor_conflict_count, @fields_contributed_count, @fields_accepted_count,
         @accepted_critical_fields_count, @products_seen, @approved_attempts, @candidate_attempts,
         @parser_runs, @parser_success_count, @parser_health_score_total,
@@ -219,6 +221,9 @@ export function createSourceIntelStore({ db, category, stmts }) {
     `).run({
       root_domain: entry.root_domain || entry.rootDomain || '',
       category: entry.category || category || '',
+      scope: entry.scope || 'domain',
+      scope_key: entry.scope_key || '',
+      brand: entry.brand || '',
       attempts: entry.attempts || 0,
       http_ok_count: entry.http_ok_count || 0,
       identity_match_count: entry.identity_match_count || 0,
@@ -277,65 +282,18 @@ export function createSourceIntelStore({ db, category, stmts }) {
   }
 
   function upsertSourceIntelBrand(entry) {
-    db.prepare(`
-      INSERT OR REPLACE INTO source_intel_brands (
-        root_domain, brand_key, brand, attempts, http_ok_count,
-        identity_match_count, major_anchor_conflict_count,
-        fields_contributed_count, fields_accepted_count, accepted_critical_fields_count,
-        products_seen, recent_products, per_field_helpfulness, extra_stats, last_seen_at
-      ) VALUES (
-        @root_domain, @brand_key, @brand, @attempts, @http_ok_count,
-        @identity_match_count, @major_anchor_conflict_count,
-        @fields_contributed_count, @fields_accepted_count, @accepted_critical_fields_count,
-        @products_seen, @recent_products, @per_field_helpfulness, @extra_stats, @last_seen_at
-      )
-    `).run({
-      root_domain: entry.root_domain || '',
-      brand_key: entry.brand_key || '',
-      brand: entry.brand || '',
-      attempts: entry.attempts || 0,
-      http_ok_count: entry.http_ok_count || 0,
-      identity_match_count: entry.identity_match_count || 0,
-      major_anchor_conflict_count: entry.major_anchor_conflict_count || 0,
-      fields_contributed_count: entry.fields_contributed_count || 0,
-      fields_accepted_count: entry.fields_accepted_count || 0,
-      accepted_critical_fields_count: entry.accepted_critical_fields_count || 0,
-      products_seen: entry.products_seen || 0,
-      recent_products: JSON.stringify(entry.recent_products || []),
-      per_field_helpfulness: JSON.stringify(entry.per_field_helpfulness || {}),
-      extra_stats: JSON.stringify(entry.extra_stats || {}),
-      last_seen_at: entry.last_seen_at || null
+    upsertSourceIntelDomain({
+      ...entry,
+      scope: 'brand',
+      scope_key: entry.brand_key || '',
     });
   }
 
   function upsertSourceIntelPath(entry) {
-    db.prepare(`
-      INSERT OR REPLACE INTO source_intel_paths (
-        root_domain, path, attempts, http_ok_count,
-        identity_match_count, major_anchor_conflict_count,
-        fields_contributed_count, fields_accepted_count, accepted_critical_fields_count,
-        products_seen, recent_products, per_field_helpfulness, extra_stats, last_seen_at
-      ) VALUES (
-        @root_domain, @path, @attempts, @http_ok_count,
-        @identity_match_count, @major_anchor_conflict_count,
-        @fields_contributed_count, @fields_accepted_count, @accepted_critical_fields_count,
-        @products_seen, @recent_products, @per_field_helpfulness, @extra_stats, @last_seen_at
-      )
-    `).run({
-      root_domain: entry.root_domain || '',
-      path: entry.path || '/',
-      attempts: entry.attempts || 0,
-      http_ok_count: entry.http_ok_count || 0,
-      identity_match_count: entry.identity_match_count || 0,
-      major_anchor_conflict_count: entry.major_anchor_conflict_count || 0,
-      fields_contributed_count: entry.fields_contributed_count || 0,
-      fields_accepted_count: entry.fields_accepted_count || 0,
-      accepted_critical_fields_count: entry.accepted_critical_fields_count || 0,
-      products_seen: entry.products_seen || 0,
-      recent_products: JSON.stringify(entry.recent_products || []),
-      per_field_helpfulness: JSON.stringify(entry.per_field_helpfulness || {}),
-      extra_stats: JSON.stringify(entry.extra_stats || {}),
-      last_seen_at: entry.last_seen_at || null
+    upsertSourceIntelDomain({
+      ...entry,
+      scope: 'path',
+      scope_key: entry.path || '/',
     });
   }
 
@@ -361,7 +319,8 @@ export function createSourceIntelStore({ db, category, stmts }) {
           upsertSourceIntelBrand({
             ...brandStats,
             root_domain: rootDomain,
-            brand_key: brandKey
+            brand_key: brandKey,
+            category: cat
           });
           for (const [key, reward] of Object.entries(brandStats.field_method_reward || {})) {
             upsertSourceIntelFieldReward({
@@ -377,7 +336,8 @@ export function createSourceIntelStore({ db, category, stmts }) {
           upsertSourceIntelPath({
             ...pathStats,
             root_domain: rootDomain,
-            path: pathKey
+            path: pathKey,
+            category: cat
           });
           for (const [key, reward] of Object.entries(pathStats.field_method_reward || {})) {
             upsertSourceIntelFieldReward({
@@ -394,7 +354,10 @@ export function createSourceIntelStore({ db, category, stmts }) {
   }
 
   function loadSourceIntelDomains(cat) {
-    const domainRows = db.prepare('SELECT * FROM source_intel_domains WHERE category = ?').all(cat);
+    // Query 1: Load domain-scope rows
+    const domainRows = db.prepare(
+      "SELECT * FROM source_intel_domains WHERE category = ? AND scope = 'domain'"
+    ).all(cat);
     if (!domainRows.length) return null;
 
     const domains = {};
@@ -415,6 +378,41 @@ export function createSourceIntelStore({ db, category, stmts }) {
       };
     }
 
+    // Query 2: Load brand + path scope rows (unified table, single query)
+    const domainKeys = Object.keys(domains);
+    if (domainKeys.length) {
+      const scopedRows = db.prepare(
+        "SELECT * FROM source_intel_domains WHERE category = ? AND scope IN ('brand', 'path') AND root_domain IN (" +
+        domainKeys.map(() => '?').join(',') + ')'
+      ).all(cat, ...domainKeys);
+
+      for (const row of scopedRows) {
+        const rootDomain = row.root_domain;
+        if (!domains[rootDomain]) continue;
+        try { row.recent_products = JSON.parse(row.recent_products); } catch { row.recent_products = []; }
+        try { row.per_field_helpfulness = JSON.parse(row.per_field_helpfulness); } catch { row.per_field_helpfulness = {}; }
+        try { row.extra_stats = JSON.parse(row.extra_stats); } catch { row.extra_stats = {}; }
+
+        if (row.scope === 'brand') {
+          domains[rootDomain].per_brand[row.scope_key] = {
+            ...row,
+            brand_key: row.scope_key,
+            field_method_reward: {},
+            per_field_reward: {}
+          };
+        } else if (row.scope === 'path') {
+          domains[rootDomain].per_path[row.scope_key] = {
+            ...row,
+            path: row.scope_key,
+            field_method_reward: {},
+            per_field_reward: {}
+          };
+        }
+      }
+    }
+
+    // Query 3: Load field_method_rewards for all scopes
+    // WHY: Loaded AFTER brands/paths so scope assignment always finds the target object.
     for (const rootDomain of Object.keys(domains)) {
       const rewards = db.prepare(
         'SELECT * FROM source_intel_field_rewards WHERE root_domain = ?'
@@ -441,42 +439,6 @@ export function createSourceIntelStore({ db, category, stmts }) {
       }
     }
 
-    const brandRows = db.prepare(
-      'SELECT * FROM source_intel_brands WHERE root_domain IN (' +
-      Object.keys(domains).map(() => '?').join(',') + ')'
-    ).all(...Object.keys(domains));
-
-    for (const row of brandRows) {
-      const rootDomain = row.root_domain;
-      if (!domains[rootDomain]) continue;
-      try { row.recent_products = JSON.parse(row.recent_products); } catch { row.recent_products = []; }
-      try { row.per_field_helpfulness = JSON.parse(row.per_field_helpfulness); } catch { row.per_field_helpfulness = {}; }
-      try { row.extra_stats = JSON.parse(row.extra_stats); } catch { row.extra_stats = {}; }
-      domains[rootDomain].per_brand[row.brand_key] = {
-        ...row,
-        field_method_reward: domains[rootDomain].per_brand[row.brand_key]?.field_method_reward || {},
-        per_field_reward: {}
-      };
-    }
-
-    const pathRows = db.prepare(
-      'SELECT * FROM source_intel_paths WHERE root_domain IN (' +
-      Object.keys(domains).map(() => '?').join(',') + ')'
-    ).all(...Object.keys(domains));
-
-    for (const row of pathRows) {
-      const rootDomain = row.root_domain;
-      if (!domains[rootDomain]) continue;
-      try { row.recent_products = JSON.parse(row.recent_products); } catch { row.recent_products = []; }
-      try { row.per_field_helpfulness = JSON.parse(row.per_field_helpfulness); } catch { row.per_field_helpfulness = {}; }
-      try { row.extra_stats = JSON.parse(row.extra_stats); } catch { row.extra_stats = {}; }
-      domains[rootDomain].per_path[row.path] = {
-        ...row,
-        field_method_reward: domains[rootDomain].per_path[row.path]?.field_method_reward || {},
-        per_field_reward: {}
-      };
-    }
-
     return { category: cat, domains };
   }
 
@@ -500,8 +462,6 @@ export function createSourceIntelStore({ db, category, stmts }) {
     purgeBridgeEventsForRun,
     upsertSourceIntelDomain,
     upsertSourceIntelFieldReward,
-    upsertSourceIntelBrand,
-    upsertSourceIntelPath,
     persistSourceIntelFull,
     loadSourceIntelDomains,
   };

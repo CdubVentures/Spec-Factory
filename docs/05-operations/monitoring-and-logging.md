@@ -2,14 +2,14 @@
 
 > **Purpose:** Document the verified health checks, log sinks, WebSocket telemetry channels, and observability counters used by the live runtime.
 > **Prerequisites:** [deployment.md](./deployment.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
 ## Health And Status Endpoints
 
 | Surface | Path | What it reports | Source |
 |---------|------|-----------------|--------|
 | GUI/API health | `/health`, `/api/v1/health` | API process identity, dist root, cwd, pkg mode | `src/app/api/routes/infra/healthRoutes.js` |
-| Process status | `/api/v1/process/status` | active child-process status, last run id, pid, exit code, relocation state | `src/app/api/routes/infra/processRoutes.js`, `src/app/api/processRuntime.js` |
+| Process status | `/api/v1/process/status` | active child-process status, last run id, pid, exit code, and derived `storage_destination` | `src/app/api/routes/infra/processRoutes.js`, `src/app/api/processRuntime.js` |
 | SearXNG status | `/api/v1/searxng/status` | Docker/process/http probe status for SearXNG | `src/app/api/routes/infra/searxngRoutes.js`, `src/app/api/processRuntime.js` |
 | Authority snapshot | `/api/v1/data-authority/:category/snapshot` | compile/map/sync freshness plus observability counters | `src/features/category-authority/api/dataAuthorityRoutes.js` |
 
@@ -65,7 +65,7 @@ The domain map in that file is the live source of truth for event-to-domain fan-
   - inspect Runtime Ops,
   - inspect `_runtime/events.jsonl`,
   - inspect `runtime_events` and other SpecDb telemetry tables.
-- Observed during live validation on 2026-03-24 local time: `/api/v1/process/status` returned `running: false` while still retaining the last completed `run_id`, `category`, `product_id`, `storage_destination`, `pid`, `exitCode`, `startedAt`, and `endedAt`. Do not assume the idle shape clears those fields.
+- Observed during live validation on 2026-03-30 local time: `/api/v1/process/status` returned `running: false` while still retaining the last completed `run_id`, `category`, `product_id`, `storage_destination`, `pid`, `exitCode`, `startedAt`, and `endedAt`. Do not assume the idle shape clears those fields.
 
 ## Validated Against
 

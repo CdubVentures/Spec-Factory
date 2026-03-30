@@ -35,7 +35,6 @@ test('PUT runtime-settings response includes full snapshot after persist', async
       }
       return { legacy: { runtime: sections.runtime } };
     },
-    persistLegacySettingsFile: async () => {},
   };
 
   let responseStatus = null;

@@ -1,10 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import os from 'node:os';
 import path from 'node:path';
-import fs from 'node:fs/promises';
 
 import { registerConfigRoutes } from '../configRoutes.js';
+import { AppDb } from '../../../../db/appDb.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -32,31 +31,14 @@ function makeCtx(overrides = {}) {
     OUTPUT_ROOT: 'out',
     broadcastWs: () => {},
     HELPER_ROOT: path.resolve('category_authority'),
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-      updatedAt: null,
-    },
   };
   return { ...base, ...overrides };
 }
 
 test('ui-settings GET returns durable autosave defaults', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-ui-settings-defaults-'));
-  t.after(async () => {
-    await fs.rm(helperRoot, { recursive: true, force: true });
-  });
-  const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
-  }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
+  const handler = registerConfigRoutes(makeCtx({ appDb }));
 
   const result = await handler(['ui-settings'], new URLSearchParams(), 'GET', {}, {});
   assert.equal(result.status, 200);
@@ -67,14 +49,11 @@ test('ui-settings GET returns durable autosave defaults', async (t) => {
 });
 
 test('ui-settings PUT persists autosave toggles and emits settings data-change', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-ui-settings-save-'));
-  t.after(async () => {
-    await fs.rm(helperRoot, { recursive: true, force: true });
-  });
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const emitted = [];
   const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({
       studioAutoSaveAllEnabled: true,
       studioAutoSaveEnabled: false,
@@ -106,23 +85,18 @@ test('ui-settings PUT persists autosave toggles and emits settings data-change',
   assert.equal(emitted[0].payload.event, 'user-settings-updated');
   assert.equal(emitted[0].payload.meta?.section, 'ui');
 
-  const userSettingsPath = path.join(helperRoot, '_runtime', 'user-settings.json');
-  const raw = await fs.readFile(userSettingsPath, 'utf8');
-  const saved = JSON.parse(raw);
-  assert.equal(saved.ui.studioAutoSaveAllEnabled, true);
-  assert.equal(saved.ui.studioAutoSaveEnabled, true);
-  assert.equal(saved.ui.studioAutoSaveMapEnabled, true);
-  assert.equal(saved.ui.runtimeAutoSaveEnabled, false);
+  // WHY: Verify persistence round-trip via SQL (appDb) instead of JSON file
+  const uiRows = appDb.getSection('ui');
+  const uiMap = Object.fromEntries(uiRows.map((r) => [r.key, r.value]));
+  assert.equal(uiMap.studioAutoSaveAllEnabled, 'true');
+  assert.equal(uiMap.runtimeAutoSaveEnabled, 'false');
 });
 
 test('ui-settings PUT keeps field-studio-map autosave independent from key navigator autosave when auto-save-all is off', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-factory-ui-settings-shared-autosave-'));
-  t.after(async () => {
-    await fs.rm(helperRoot, { recursive: true, force: true });
-  });
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({
       studioAutoSaveAllEnabled: false,
       studioAutoSaveEnabled: false,

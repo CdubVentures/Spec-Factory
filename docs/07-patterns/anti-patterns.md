@@ -2,9 +2,9 @@
 
 > **Purpose:** Identify the repository patterns that new work must not introduce, even if legacy code still contains examples of them.
 > **Prerequisites:** [../01-project-overview/conventions.md](../01-project-overview/conventions.md), [./canonical-examples.md](./canonical-examples.md), [../03-architecture/auth-and-sessions.md](../03-architecture/auth-and-sessions.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
-## Route Logic In `src/api/guiServer.js`
+## Route Logic Or New Route Families Wired Outside `src/api/guiServerRuntime.js`
 
 Wrong:
 
@@ -17,13 +17,32 @@ if (req.url === '/api/v1/example-items') {
 
 Why it is wrong:
 
-- `src/api/guiServer.js` is the composition root, not the place for feature-specific endpoint logic.
+- `src/api/guiServer.js` is only a launcher entrypoint; the live runtime assembly happens in `src/api/guiServerRuntime.js`.
 - Bypassing the registered route families skips the audited dispatch order and makes endpoint ownership hard to trace.
+- Adding a new family to `GUI_API_ROUTE_ORDER` alone does not mount it; the live mounted SSOT is `routeDefinitions` in `src/api/guiServerRuntime.js`.
 
 Do instead:
 
 - Add or extend a family registrar such as `src/features/settings/api/configRoutes.js` or `src/app/api/routes/infra/categoryRoutes.js`.
-- If a new family is required, wire it through `src/app/api/routeRegistry.js`, `src/app/api/guiRouteRegistration.js`, and `src/api/guiServer.js`.
+- If a new family is required, add its route context and `{ key, registrar }` entry in `src/api/guiServerRuntime.js`.
+
+## Adding GUI Routes Directly In `tools/gui-react/src/App.tsx`
+
+Wrong:
+
+```tsx
+<Route path="/example" element={<ExamplePage />} />
+```
+
+Why it is wrong:
+
+- The routed page inventory and tab metadata are owned by `tools/gui-react/src/registries/pageRegistry.ts`.
+- Direct `App.tsx` route additions drift from `CATALOG_TABS`, `OPS_TABS`, and `SETTINGS_TABS`.
+
+Do instead:
+
+- Add a single `PAGE_REGISTRY` entry in `tools/gui-react/src/registries/pageRegistry.ts`.
+- Let `App.tsx` and `TabNav.tsx` consume the derived route/tab exports.
 
 ## Raw `fetch()` Calls From GUI Components
 
@@ -55,16 +74,17 @@ localStorage.setItem('runtime-settings', JSON.stringify(nextSettings));
 Why it is wrong:
 
 - Browser storage is only a convenience layer for session continuity.
-- Canonical settings already persist through `src/features/settings-authority/index.js` and the `configRoutes` API surface.
+- Canonical settings already persist through `src/features/settings-authority/userSettingsService.js` and the mounted settings routes.
+- There is no live `/storage-settings` route in the current server, so inventing one creates dead integrations immediately.
 
 Do instead:
 
-- Persist canonical settings through the verified domain route:
+- Persist canonical settings through the verified routes:
   - `PUT /api/v1/ui-settings`
   - `PUT /api/v1/runtime-settings`
-  - `PUT /api/v1/storage-settings`
-  - `PUT /api/v1/llm-policy` for the composite global LLM policy
-  - `PUT /api/v1/llm-settings/:category/routes` for category-scoped LLM matrices
+  - `PUT /api/v1/llm-policy`
+  - `PUT /api/v1/llm-settings/:category/routes`
+  - `PUT /api/v1/spec-seeds?category=:category` when editing deterministic query templates
 - Reserve browser storage for derived continuity like `tools/gui-react/src/stores/tabStore.ts`, `tools/gui-react/src/stores/collapseStore.ts`, and `tools/gui-react/src/features/indexing/state/indexlabStore.ts`.
 
 ## Writing New Mutable JSON Or CSV "Databases"
@@ -77,13 +97,13 @@ await fs.writeFile('data/example-items.json', JSON.stringify(rows));
 
 Why it is wrong:
 
-- The repo already has canonical mutable stores: SQLite via `src/db/specDb.js` and authored config under `category_authority/`.
+- The repo already has canonical mutable stores: SQLite via `src/db/specDb.js`/AppDb and authored control-plane JSON under `category_authority/`.
 - New ad hoc state files create a second source of truth that the GUI, CLI, and tests will drift from.
 
 Do instead:
 
-- Put operational mutable data in SpecDb through `src/db/specDb.js`.
-- Put authored category or global control-plane data under the existing `category_authority/` contracts such as `category_authority/_runtime/user-settings.json` and `category_authority/*/sources.json`.
+- Put operational mutable data in AppDb or SpecDb through the existing DB layers.
+- Put authored category or global control-plane data under the existing `category_authority/` contracts such as `category_authority/_runtime/user-settings.json`, `category_authority/*/sources.json`, and spec-seed files.
 
 ## Deep-Importing Another Feature's Internals
 
@@ -144,7 +164,7 @@ Why it is wrong:
 Do instead:
 
 - Treat workstation access as the current operator boundary.
-- If auth work is ever explicitly commissioned, document it as a new boundary change and re-audit `src/api/guiServer.js`, `src/app/api/routeRegistry.js`, and `src/db/specDbSchema.js`.
+- If auth work is ever explicitly commissioned, re-audit `src/api/guiServerRuntime.js`, `src/features/settings/api/configRoutes.js`, and the DB schema files as part of that boundary change.
 
 ## Implementation-Coupled Tests
 
@@ -171,25 +191,29 @@ Do instead:
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `AGENTS.md` | repo-level bans on new mutable JSON databases, GUI `any`/`@ts-ignore`, and auth assumptions |
-| source | `src/api/guiServer.js` | server is a composition root, not a feature-route implementation surface |
-| source | `src/app/api/routeRegistry.js` | endpoint ownership is organized by registered route families |
+| source | `AGENTS.md` | repo-level bans on new mutable JSON databases, GUI `any`/`@ts-ignore`, and implementation-coupled test patterns |
+| source | `src/api/guiServerRuntime.js` | runtime assembly and routeDefinitions mounting pattern |
+| source | `src/api/guiServer.js` | thin launcher role only |
+| source | `src/app/api/routeRegistry.js` | `GUI_API_ROUTE_ORDER` exists but is not the mounted route SSOT |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route/tab SSOT |
+| source | `tools/gui-react/src/App.tsx` | registry-driven route mounting |
 | source | `tools/gui-react/src/api/client.ts` | shared GUI REST client wrapper |
 | source | `tools/gui-react/src/features/studio/state/useStudioPageMutations.ts` | canonical mutation pattern through `api.post()` |
 | source | `tools/gui-react/src/hooks/useAuthoritySnapshot.js` | canonical React Query + API client fetch pattern |
 | source | `tools/gui-react/src/stores/tabStore.ts` | browser storage as derived session continuity |
 | source | `tools/gui-react/src/stores/collapseStore.ts` | browser storage as derived session continuity |
 | source | `tools/gui-react/src/features/indexing/state/indexlabStore.ts` | browser storage as derived session continuity |
-| source | `src/features/settings-authority/index.js` | canonical settings persistence boundary |
+| source | `src/features/settings-authority/userSettingsService.js` | canonical settings persistence boundary |
+| source | `src/features/settings/api/configRoutes.js` | mounted settings routes and absence of `storage-settings` |
 | source | `src/db/specDb.js` | canonical operational mutable data boundary |
 | source | `src/features/catalog/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `src/features/indexing/index.js` | public feature entrypoint available for cross-boundary imports |
 | source | `src/features/review/index.js` | public feature entrypoint available for cross-boundary imports |
-| source | `docs/03-architecture/auth-and-sessions.md` | verified absence of current auth/session subsystem |
+| source | `docs/03-architecture/auth-and-sessions.md` | verified absence of a current auth/session subsystem |
 | test | `src/publish/tests/publishingPipeline.publish.test.js` | public-behavior test structure |
 
 ## Related Documents
 
-- [Canonical Examples](./canonical-examples.md) - Shows the approved patterns that replace each anti-pattern here.
-- [Conventions](../01-project-overview/conventions.md) - Captures the repo rules that make these anti-patterns invalid.
-- [Auth and Sessions](../03-architecture/auth-and-sessions.md) - Documents the current no-auth runtime boundary.
+- [Canonical Examples](./canonical-examples.md) - shows the approved patterns that replace each anti-pattern here.
+- [Conventions](../01-project-overview/conventions.md) - captures the repo rules that make these anti-patterns invalid.
+- [Auth and Sessions](../03-architecture/auth-and-sessions.md) - documents the current no-auth runtime boundary.

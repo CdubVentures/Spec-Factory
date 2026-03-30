@@ -36,7 +36,7 @@ test('normalizeRuntimeArtifactWorkspaceDefaults migrates known-default workspace
   const previousOutputRoot = path.join(projectRoot, 'workspace-old', 'output');
   const nextOutputRoot = path.join(projectRoot, 'workspace-new', 'output');
   const previousSpecDbDir = path.join(projectRoot, 'workspace-old', '.specfactory_tmp');
-  const nextSpecDbDir = path.join(projectRoot, 'workspace-new', '.specfactory_tmp');
+  const nextSpecDbDir = path.join(projectRoot, 'workspace-new', 'db');
   const config = {
     localOutputRoot: previousOutputRoot,
     specDbDir: previousSpecDbDir,

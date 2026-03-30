@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-25
+> **Last validated:** 2026-03-30
 
 ## Global Notes
 
@@ -10,7 +10,9 @@
 - Health alias without prefix: `/health`
 - Auth: no verified auth middleware protects these endpoints in the current runtime
 - Route parsing and category alias normalization live in `src/app/api/requestDispatch.js`
-- `/storage-settings/*` is the settings-authority/config surface for choosing destinations; `/storage/*` is a separate run-inventory and maintenance surface delegated from `src/features/indexing/api/indexlabRoutes.js` into `src/features/indexing/api/storageManagerRoutes.js`
+- Mounted route-family order lives in `src/api/guiServerRuntime.js`
+- There is no live `/api/v1/storage-settings` or `/api/v1/convergence-settings` endpoint in the current server
+- `GET /api/v1/llm-policy` and `GET /api/v1/indexing/llm-config` can return secret-bearing key material when configured
 
 ## Infra And Process Endpoints
 
@@ -18,7 +20,7 @@
 |--------|------|---------|------|--------------|----------------|
 | GET | `/health` | root health alias | none | none | `{ ok, service, dist_root, cwd, isPkg }` |
 | GET | `/api/v1/health` | GUI/API health | none | none | `{ ok, service, dist_root, cwd, isPkg }` |
-| GET | `/api/v1/categories` | list categories | none | none | `string[]` |
+| GET | `/api/v1/categories` | list authored categories | none | none | `string[]` |
 | POST | `/api/v1/categories` | create category skeleton | none | `{ name }` | `{ ok, slug, categories }` |
 | GET | `/api/v1/searxng/status` | SearXNG local status | none | none | status object |
 | POST | `/api/v1/searxng/start` | start local SearXNG stack | none | none | start result or error |
@@ -32,12 +34,7 @@
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
 | GET | `/api/v1/ui-settings` | read persisted UI toggles | none | none | UI settings object |
-| PUT | `/api/v1/ui-settings` | persist UI toggles | none | subset of UI toggle keys | `{ ok, applied, snapshot, rejected }` |
-| GET | `/api/v1/storage-settings/local` | browse local run-data directories | none | none | directory listing |
-| GET | `/api/v1/storage-settings/local/browse` | browse local run-data directories | none | none | directory listing |
-| GET | `/api/v1/storage-settings` | read run-data storage settings | none | none | sanitized storage settings |
-| PUT | `/api/v1/storage-settings` | persist run-data storage settings | none | storage settings patch | `{ ok, applied, snapshot, rejected }` |
-| POST | `/api/v1/storage-settings` | compatibility write alias for storage-settings autosave | none | storage settings patch | `{ ok, applied, snapshot, rejected }` |
+| PUT | `/api/v1/ui-settings` | persist UI toggles | none | subset of UI keys | `{ ok, applied, snapshot, rejected }` |
 | GET | `/api/v1/indexing/llm-config` | read model catalog, pricing metadata, resolved API keys, routing defaults, and token defaults used by settings UIs | none | none | config snapshot |
 | GET | `/api/v1/indexing/llm-metrics` | aggregated LLM usage metrics | none | none | metrics payload |
 | GET | `/api/v1/indexing/domain-checklist/:category` | domain/source checklist for a category | none | none | checklist payload |
@@ -52,8 +49,6 @@
 | PUT | `/api/v1/runtime-settings` | persist runtime settings | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 | POST | `/api/v1/runtime-settings` | compatibility write alias for runtime-settings autosave | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 
-No live `/api/v1/convergence-settings` route is registered in `src/features/settings/api/configRoutes.js`. The persisted `convergence` object in `user-settings.json` is compatibility-only.
-
 ## Storage Manager Endpoints
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
@@ -66,10 +61,6 @@ No live `/api/v1/convergence-settings` route is registered in `src/features/sett
 | POST | `/api/v1/storage/prune` | prune old archived runs, optionally failed-only | none | `{ olderThanDays?, failedOnly? }` | `{ ok, pruned, errors }` |
 | POST | `/api/v1/storage/purge` | purge all archived runs after explicit confirmation token | none | `{ confirmToken }` | `{ ok, purged }` or `400 { ok: false, error: 'confirm_token_required' }` |
 | GET | `/api/v1/storage/export` | download run inventory export JSON | none | none | `{ exported_at, storage_backend, runs }` with `Content-Disposition: attachment` |
-| POST | `/api/v1/storage/recalculate` | recompute storage metrics across the run tree | none | none | `{ ok, runs_scanned, runs_updated, total_size_bytes, errors, warning? }` |
-| GET | `/api/v1/storage/sync/status` | read cross-backend sync status if sync service is available | none | none | sync-status payload or `501 { error: 'sync_service_not_configured' }` |
-| POST | `/api/v1/storage/sync/push` | push archived runs to S3 through the storage sync service | none | none | push result or `501 { error: 'sync_service_not_configured' }` |
-| POST | `/api/v1/storage/sync/pull` | pull archived runs from S3 through the storage sync service | none | none | pull result or `501 { error: 'sync_service_not_configured' }` |
 
 ## IndexLab Endpoints
 
@@ -232,17 +223,16 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | source | `src/api/guiServerRuntime.js` | mounted route families include `specSeeds` in the live runtime |
-| source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, route parsing |
+| source | `src/app/api/requestDispatch.js` | base prefix, alias normalization, and route parsing |
 | source | `src/app/api/routes/infraRoutes.js` | infra route family composition |
-| source | `src/features/settings/api/configRoutes.js` | settings/config endpoints |
+| source | `src/features/settings/api/configRoutes.js` | current settings/config endpoints |
 | source | `src/features/settings/api/configUiSettingsHandler.js` | `ui-settings` GET/PUT contract |
-| source | `src/features/settings/api/configStorageSettingsHandler.js` | `storage-settings` browse alias plus GET/PUT/POST contract |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | `runtime-settings` GET/PUT/POST contract |
 | source | `src/features/settings/api/configLlmSettingsHandler.js` | category LLM route-matrix GET/PUT/reset contract |
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | `indexing/llm-config`, `llm-metrics`, checklist, and review-metrics payloads |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy endpoint behavior |
 | source | `src/features/indexing/api/indexlabRoutes.js` | IndexLab endpoints |
-| source | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory and maintenance endpoints |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | live `/storage/*` inventory and maintenance endpoints |
 | source | `src/features/indexing/api/runtimeOpsRoutes.js` | Runtime Ops endpoints |
 | source | `src/features/catalog/api/catalogRoutes.js` | catalog/product/event endpoints |
 | source | `src/features/catalog/api/brandRoutes.js` | brand endpoints |
@@ -261,6 +251,6 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 
 ## Related Documents
 
-- [Routing and GUI](../03-architecture/routing-and-gui.md) - Maps GUI routes to the endpoint families listed here.
-- [Feature Index](../04-features/feature-index.md) - Maps endpoint families to features.
-- [Background Jobs](./background-jobs.md) - Identifies which of these endpoints start long-running work.
+- [Routing and GUI](../03-architecture/routing-and-gui.md) - maps GUI routes to the endpoint families listed here.
+- [Feature Index](../04-features/feature-index.md) - maps endpoint families to features.
+- [Background Jobs](./background-jobs.md) - identifies which of these endpoints start long-running work.

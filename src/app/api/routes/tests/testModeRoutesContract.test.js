@@ -58,7 +58,6 @@ function makeCtx(overrides = {}) {
     resetTestModeProductReviewState: () => {},
     addBrand: async () => ({ ok: true }),
     loadBrandRegistry: async () => ({ brands: {} }),
-    saveBrandRegistry: async () => ({ ok: true }),
     invalidateFieldRulesCache: () => {},
     sessionCache: {},
     ...overrides,

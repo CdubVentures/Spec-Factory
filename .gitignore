@@ -21,9 +21,12 @@ __pycache__/
 
 # Local runtime/cache data
 .specfactory_tmp/
+.workspace/
 .server-state/
 artifacts/
 debug/
+_intel/
+/specs/
 /storage/
 /tmp/
 /data/

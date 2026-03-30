@@ -22,7 +22,7 @@ function resolveStorageBackedRunRoots({
   const destinationType = String(state.destinationType || '').trim().toLowerCase();
   if (destinationType === 's3') {
     const stagingRoot = pathApi.dirname(pathApi.resolve(String(outputRoot || defaultLocalOutputRootFn())));
-    const workspaceRoot = pathApi.join(stagingRoot, '.specfactory_tmp');
+    const workspaceRoot = pathApi.join(stagingRoot, 'db');
     return {
       specDbDir: workspaceRoot,
     };
@@ -33,10 +33,10 @@ function resolveStorageBackedRunRoots({
   if (!localDirectory) return null;
 
   const root = pathApi.resolve(localDirectory);
-  const workspaceRoot = pathApi.join(root, '.specfactory_tmp');
+  const workspaceRoot = pathApi.join(root, 'db');
   return {
     outputRoot: pathApi.join(root, 'output'),
-    indexLabRoot: pathApi.join(root, 'indexlab'),
+    indexLabRoot: pathApi.join(root, 'runs'),
     specDbDir: workspaceRoot,
   };
 }

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { invokeStudioRoute } from './helpers/studioRoutesHarness.js';
 import {
   StudioPayloadSchema,
+  StudioConfigSchema,
   FieldStudioMapResponseSchema,
   TooltipBankResponseSchema,
   ArtifactEntrySchema,
@@ -164,6 +165,12 @@ test('studio component-db response has ComponentDbResponse shape', async () => {
   assert.equal(typeof entry.maker, 'string');
   assert.ok(Array.isArray(entry.aliases));
   ComponentDbResponseSchema.parse(result.body);
+});
+
+// Shape 7: StudioConfigSchema explicitly declares data_lists as a schema key
+test('StudioConfigSchema declares data_lists as an explicit schema field', () => {
+  const shapeKeys = Object.keys(StudioConfigSchema.shape);
+  assert.ok(shapeKeys.includes('data_lists'), 'data_lists must be an explicit key in StudioConfigSchema.shape, not just passthrough');
 });
 
 test('derived key arrays match expected shape keys', () => {

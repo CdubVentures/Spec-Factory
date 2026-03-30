@@ -98,6 +98,12 @@ flowchart TB
       leg4["runtimeEventsKey dead setting REMOVED from 7 files"]
       leg5["Catalog UI: 'slug' references → 'product ID'"]
     end
+
+    subgraph APPDB["App.sqlite: Cross-Category State (2026-03-29)"]
+      app1["brand_registry.json → brands + brand_categories + brand_renames (SQL-only)"]
+      app2["user-settings.json → settings + studio_maps (SQL-primary, JSON boot fallback)"]
+      app3["Phase D cleanup: ~500 LOC dead JSON write code removed"]
+    end
   end
 
   style DONE fill:#0d1117,stroke:#238636,color:#3fb950,stroke-width:3px
@@ -147,25 +153,25 @@ flowchart TB
   style leg3 fill:#da3633,stroke:#f85149,color:#fff
   style leg4 fill:#da3633,stroke:#f85149,color:#fff
   style leg5 fill:#238636,stroke:#3fb950,color:#fff
+  style APPDB fill:#0d1117,stroke:#238636,color:#e0e0e0
+  style app1 fill:#238636,stroke:#3fb950,color:#fff
+  style app2 fill:#238636,stroke:#3fb950,color:#fff
+  style app3 fill:#da3633,stroke:#f85149,color:#fff
 
   %% ==========================================
   %%  REMAINING (low priority)
   %% ==========================================
-  subgraph LOWPRI["REMAINING (6 items)"]
+  subgraph LOWPRI["REMAINING (4 items)"]
     direction TB
     lp1["buildLlmMetrics — reads _billing/ledger.jsonl, not SQL billing_entries"]
     lp3["product_catalog.json — mutable JSON state (productCatalog.js)"]
-    lp4["brand_registry.json — mutable JSON state (brandRegistry.js)"]
     lp5["spec_seeds.json — mutable JSON state (specSeedsFileService.js)"]
-    lp6["user-settings.json — mutable JSON state (userSettingsService.js)"]
     lp7["Cosmetic: test fixture slug IDs + stale dist + legacy input refs"]
   end
   style LOWPRI fill:#0d1117,stroke:#8b949e,color:#8b949e,stroke-width:2px
   style lp1 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp3 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style lp4 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp5 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
-  style lp6 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
   style lp7 fill:#2d333b,stroke:#8b949e,color:#c9d1d9
 
   %% ==========================================

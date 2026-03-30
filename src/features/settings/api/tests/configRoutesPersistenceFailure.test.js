@@ -9,6 +9,7 @@ import {
   getSettingsPersistenceCountersSnapshot,
   resetSettingsPersistenceCounters,
 } from '../../../../observability/settingsPersistenceCounters.js';
+import { AppDb } from '../../../../db/appDb.js';
 
 function toInt(value, fallback = 0) {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -124,13 +125,14 @@ test('storage-settings PUT returns error when persistence writes fail', async ()
 
 test('runtime-settings PUT records success telemetry when persistence succeeds', async () => {
   resetSettingsPersistenceCounters();
-  const helperRoot = await makeHelperRoot();
+  const appDb = new AppDb({ dbPath: ':memory:' });
   const config = {
     domainClassifierUrlCap: 50,
   };
   const handler = registerConfigRoutes(makeCtx({
-    HELPER_ROOT: helperRoot,
+    HELPER_ROOT: 'category_authority',
     config,
+    appDb,
     readJsonBody: async () => ({
       domainClassifierUrlCap: 25,
     }),
@@ -142,4 +144,5 @@ test('runtime-settings PUT records success telemetry when persistence succeeds',
   assert.equal(config.domainClassifierUrlCap, 25);
   const counters = getSettingsPersistenceCountersSnapshot();
   assert.equal(counters.writes.by_target['runtime-settings-route']?.success_total, 1);
+  appDb.close();
 });

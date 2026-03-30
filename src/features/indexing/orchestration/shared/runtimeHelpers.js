@@ -248,7 +248,7 @@ export async function loadRouteMatrixPolicyForRun({
     let specDb = null;
     try {
       const { SpecDb } = await import('../../../../db/specDb.js');
-      const dbPath = `${String(config.specDbDir || '.specfactory_tmp').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
+      const dbPath = `${String(config.specDbDir || '.workspace/db').replace(/[\\\/]+$/, '')}/${categoryToken}/spec.sqlite`;
       specDb = new SpecDb({
         dbPath,
         category: categoryToken

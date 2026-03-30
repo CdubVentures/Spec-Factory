@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spec Factory — Code-Verified Legacy Audit (2026-03-30)</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --text-muted: #8b949e; --text-bright: #e6edf3;
+    --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+    --yellow: #d29922; --orange: #db6d28; --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1500px; margin: 0 auto; }
+  h1 { color: var(--accent); font-size: 1.8rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+  h2 { color: var(--text-bright); font-size: 1.35rem; margin: 2.5rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+  h3 { color: var(--accent); font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  h4 { color: var(--text-muted); font-size: 0.85rem; margin: 0.75rem 0 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .badge.bug { background: #3d1418; color: var(--red); border: 1px solid #6e2b2b; }
+  .badge.structural { background: #3b2108; color: var(--orange); border: 1px solid #6e3f14; }
+  .badge.dead { background: #1c2333; color: var(--purple); border: 1px solid #3d2d5c; }
+  .badge.cosmetic { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+  .badge.wrong { background: #3d1418; color: var(--red); border: 1px solid #6e2b2b; }
+  .badge.confirmed { background: #0e2a1b; color: var(--green); border: 1px solid #1a4731; }
+  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin: 1.5rem 0 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .stat-card .number { font-size: 2rem; font-weight: 700; }
+  .stat-card .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card.red .number { color: var(--red); }
+  .stat-card.orange .number { color: var(--orange); }
+  .stat-card.yellow .number { color: var(--yellow); }
+  .stat-card.purple .number { color: var(--purple); }
+  .stat-card.green .number { color: var(--green); }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.85rem; }
+  th { background: var(--surface); color: var(--text-muted); text-align: left; padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(88,166,255,0.04); }
+  code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.82rem; color: var(--accent); }
+  .note { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.85rem; border-radius: 0 4px 4px 0; }
+  .note.danger { background: rgba(248,81,73,0.08); border-left-color: var(--red); }
+  .note.warn { background: rgba(210,153,34,0.08); border-left-color: var(--yellow); }
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin: 0.75rem 0; }
+  details > summary { padding: 0.75rem 1rem; cursor: pointer; font-weight: 600; color: var(--text-bright); }
+  details > summary:hover { color: var(--accent); }
+  details > .content { padding: 0 1rem 1rem; }
+  details[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 0.5rem; }
+  .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.72rem; font-weight: 600; margin-right: 0.25rem; }
+  .tag.fix { background: #3d1418; color: var(--red); }
+  .tag.delete { background: #2d1b3d; color: var(--purple); }
+  .tag.consolidate { background: #1c2333; color: var(--accent); }
+  .tag.update { background: #0e2a1b; color: var(--green); }
+  .tag.defer { background: var(--surface); color: var(--text-muted); }
+  pre.code { background: rgba(15,23,42,0.92); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.82rem; overflow-x: auto; line-height: 1.5; color: var(--text); }
+  .strikethrough { text-decoration: line-through; color: var(--red); opacity: 0.7; }
+  .section-intro { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+
+<h1>Code-Verified Legacy &amp; Cleanup Audit</h1>
+<p class="subtitle">Every finding verified against actual source code &mdash; ~1,345 files audited &mdash; 2026-03-30</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SUMMARY                                    -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="summary-strip">
+  <div class="stat-card red"><div class="number">2</div><div class="label">Active Bugs</div></div>
+  <div class="stat-card orange"><div class="number">4</div><div class="label">Storage Roots</div></div>
+  <div class="stat-card orange"><div class="number">24</div><div class="label">.specfactory_tmp Refs</div></div>
+  <div class="stat-card purple"><div class="number">29</div><div class="label">Dead Files</div></div>
+  <div class="stat-card yellow"><div class="number">8</div><div class="label">Dead Settings</div></div>
+  <div class="stat-card yellow"><div class="number">3</div><div class="label">Schema Plan Errors</div></div>
+  <div class="stat-card green"><div class="number">0</div><div class="label">TODOs / Hacks</div></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 1: ACTIVE BUGS                        -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 1: Active Bugs <span class="badge bug">fix first</span></h2>
+<p class="section-intro">Code-verified bugs actively creating bad data on disk right now.</p>
+
+<h3>Bug 1: Double-Nesting Path in LocalStorage</h3>
+<div class="note danger">
+  <strong>File:</strong> <code>src/s3/storage.js:206-214</code> &mdash; <code>resolveLocalPath()</code><br/>
+  <strong>Evidence:</strong> <code>%LOCALAPPDATA%\spec-factory\output\specs\outputs\_billing\</code> exists on disk (prefix duplicated)
+</div>
+<p><code>resolveOutputKey()</code> returns keys like <code>specs/outputs/_billing/monthly/2026-03.txt</code> (with S3 prefix baked in). <code>resolveLocalPath()</code> then joins the full key onto <code>outputRoot</code>, producing <code>output/specs/outputs/_billing/...</code>. The prefix <code>specs/outputs</code> appears twice.</p>
+<pre class="code">// storage.js:206-214 — the bug
+resolveLocalPath(key) {
+  if (key.startsWith(`${this.outputPrefix}/`)) {
+    return path.join(this.outputRoot, ...key.split('/'));  // &lt;— full key includes prefix
+  }
+  return path.join(this.outputRoot, ...key.split('/'));
+}
+// Fix: strip prefix before join
+// return path.join(this.outputRoot, ...key.slice(this.outputPrefix.length + 1).split('/'));</pre>
+<p><strong>Root cause:</strong> <code>src/shared/storageKeyPrefixes.js</code> defines <code>OUTPUT_KEY_PREFIX = 'specs/outputs'</code>. This is correct for S3 but should be stripped for local filesystem paths.</p>
+
+<h3>Bug 2: Duplicate Billing Writes</h3>
+<div class="note danger">
+  <strong>File:</strong> <code>src/billing/costLedger.js:303-345</code> &mdash; <code>writeBillingDigest()</code><br/>
+  <strong>Evidence:</strong> Both <code>output/_billing/</code> AND <code>output/specs/outputs/_billing/</code> exist with identical content
+</div>
+<p><code>writeBillingDigest()</code> writes to <strong>4 keys</strong> instead of 2:</p>
+<table>
+  <thead><tr><th>Key Function</th><th>Result</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><code>monthlyDigestKey()</code></td><td><code>_billing/monthly/2026-03.txt</code></td><td>Correct (bare path)</td></tr>
+    <tr><td><code>latestDigestKey()</code></td><td><code>_billing/latest.txt</code></td><td>Correct (bare path)</td></tr>
+    <tr><td><code>legacyMonthlyDigestKey()</code></td><td><code>specs/outputs/_billing/monthly/2026-03.txt</code></td><td>Legacy duplicate &mdash; <span class="tag fix">DELETE</span></td></tr>
+    <tr><td><code>legacyLatestDigestKey()</code></td><td><code>specs/outputs/_billing/latest.txt</code></td><td>Legacy duplicate &mdash; <span class="tag fix">DELETE</span></td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 2: STORAGE ARCHITECTURE               -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 2: Storage Architecture <span class="badge structural">consolidate</span></h2>
+<p class="section-intro">4 runtime roots defaulting to hidden system dirs. Target: <code>category_authority/</code> + <code>.workspace/</code>.</p>
+
+<h3>Current Multi-Root Architecture (verified)</h3>
+<table>
+  <thead><tr><th>Root</th><th>Config Key</th><th>Env Var</th><th>Default</th><th>What&rsquo;s Stored</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>SPEC_DB_DIR</strong></td>
+      <td><code>specDbDir</code></td>
+      <td><code>SPEC_DB_DIR</code></td>
+      <td><code>.specfactory_tmp</code> (project-relative)</td>
+      <td>Per-category SQLite DBs + app.sqlite</td>
+    </tr>
+    <tr>
+      <td><strong>CATEGORY_AUTHORITY</strong></td>
+      <td><code>categoryAuthorityRoot</code></td>
+      <td><code>CATEGORY_AUTHORITY_ROOT</code><br/><span class="strikethrough">HELPER_FILES_ROOT</span> (legacy alias)</td>
+      <td><code>category_authority</code> (project-relative)</td>
+      <td>Field rules, schemas, product catalogs, settings</td>
+    </tr>
+    <tr>
+      <td><strong>LOCAL_OUTPUT_ROOT</strong></td>
+      <td><code>localOutputRoot</code></td>
+      <td><code>LOCAL_OUTPUT_ROOT</code></td>
+      <td><code>%LOCALAPPDATA%\spec-factory\output</code></td>
+      <td>run.json, product.json, traces, billing</td>
+    </tr>
+    <tr>
+      <td><strong>INDEXLAB_ROOT</strong></td>
+      <td><code>indexLabRoot</code></td>
+      <td>(computed from runtimeArtifactRoot)</td>
+      <td><code>%LOCALAPPDATA%\spec-factory\indexlab</code></td>
+      <td>Screenshots, video, crawled HTML</td>
+    </tr>
+  </tbody>
+</table>
+<div class="note warn">
+  <strong>Violation:</strong> <code>runtimeArtifactRoots.js</code> defaults <code>outputRoot</code> and <code>indexLabRoot</code> to <code>%LOCALAPPDATA%</code> (hidden system dir).
+  User preference: all runtime data in project root under <code>category_authority/</code> + <code>.workspace/</code>.
+</div>
+
+<h3>Hardcoded <code>.specfactory_tmp</code> References (24 files)</h3>
+<details>
+  <summary>10 runtime files + 8 test files + 6 scripts</summary>
+  <div class="content">
+    <h4>Active Runtime (10 files)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Lines</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/shared/settingsRegistry.js</code></td><td>87</td><td>SSOT default: <code>specDbDir = ".specfactory_tmp"</code></td></tr>
+        <tr><td><code>src/api/bootstrap/createBootstrapSessionLayer.js</code></td><td>47</td><td>Fallback: <code>config.specDbDir || '.specfactory_tmp'</code></td></tr>
+        <tr><td><code>src/api/guiServerRuntimeConfig.js</code></td><td>74-75</td><td>Workspace migration path construction</td></tr>
+        <tr><td><code>src/app/api/specDbRuntime.js</code></td><td>42</td><td>Primary DB path fallback</td></tr>
+        <tr><td><code>src/app/cli/cliHelpers.js</code></td><td>86</td><td>CLI DB dir fallback</td></tr>
+        <tr><td><code>src/app/cli/commands/dataUtilityCommands.js</code></td><td>44, 72, 95, 116</td><td>Data commands + LLM cache hardcoded</td></tr>
+        <tr><td><code>src/app/cli/commands/migrateToSqliteCommand.js</code></td><td>111</td><td>Migration command</td></tr>
+        <tr><td><code>src/features/indexing/api/builders/processStartLaunchPlan.js</code></td><td>25, 36</td><td>Launch plan workspace root</td></tr>
+        <tr><td><code>src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js</code></td><td>20</td><td>Learning store bootstrap</td></tr>
+        <tr><td><code>src/features/indexing/orchestration/shared/runtimeHelpers.js</code></td><td>251</td><td>Runtime DB path</td></tr>
+      </tbody>
+    </table>
+    <h4>Test Fixtures (8 files)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Lines</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/api/tests/guiServerRuntimeConfig.test.js</code></td><td>38-39</td></tr>
+        <tr><td><code>src/db/tests/fieldHistoryStore.test.js</code></td><td>7</td></tr>
+        <tr><td><code>src/db/tests/fixtures/contractDrivenHarness.js</code></td><td>373</td></tr>
+        <tr><td><code>src/db/tests/runStorageIndex.test.js</code></td><td>7</td></tr>
+        <tr><td><code>src/features/indexing/api/tests/processStartLaunchPlan.test.js</code></td><td>100</td></tr>
+        <tr><td><code>src/features/review/api/tests/fixtures/reviewLaneApiHarness.js</code></td><td>345, 386</td></tr>
+        <tr><td><code>src/features/review/tests/helpers/reviewEcosystemHarness.js</code></td><td>529, 598</td></tr>
+        <tr><td><code>tools/gui-react/src/features/review/__tests__/helpers/reviewLaneGuiHarness.js</code></td><td>447, 568</td></tr>
+      </tbody>
+    </table>
+    <h4>Scripts (6 occurrences in 3 files)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td><code>scripts/verify-wave4.js</code></td><td>DB path construction</td></tr>
+        <tr><td><code>scripts/testGoogleCrawlee.js</code></td><td>Crawlee test output dir</td></tr>
+        <tr><td><code>scripts/generateStorageChangeAudit.js</code></td><td>Audit/detection patterns</td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<h3>Other Hardcoded Storage Locations</h3>
+<table>
+  <thead><tr><th>Location</th><th>Owner File</th><th>Issue</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>_intel/frontier/frontier.db</code></td>
+      <td><code>src/research/frontierDb.js:10</code></td>
+      <td>Hardcoded global path, not per-category, not configurable</td>
+    </tr>
+    <tr>
+      <td><code>storage/</code> (Crawlee default)</td>
+      <td><code>src/features/crawl/crawlSession.js:731</code></td>
+      <td>No <code>CRAWLEE_STORAGE_DIR</code> set &mdash; Crawlee uses implicit project-root default</td>
+    </tr>
+    <tr>
+      <td><code>.specfactory_tmp/phase9/</code></td>
+      <td><code>src/publish/publishProductWriter.js:304</code></td>
+      <td>Temporary SQLite export staging &mdash; files left behind (not cleaned up)</td>
+    </tr>
+    <tr>
+      <td><code>.specfactory_tmp/llm_cache/</code></td>
+      <td><code>src/app/cli/commands/dataUtilityCommands.js:72</code></td>
+      <td>Hardcoded LLM cache dir (not derived from specDbDir config)</td>
+    </tr>
+    <tr>
+      <td><code>.specfactory_tmp/crawl-probe-reports/</code></td>
+      <td><code>tools/crawl-probe-report.mjs:521</code></td>
+      <td>Crawl-probe output hardcoded</td>
+    </tr>
+    <tr>
+      <td><code>.server-state/</code></td>
+      <td><code>tools/dev-stack-control.js:10</code></td>
+      <td>PID + log files &mdash; hardcoded, no env var</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Legacy Env Var Alias</h3>
+<div class="note warn">
+  <code>src/core/config/configBuilder.js:91-121</code> &mdash; <code>HELPER_FILES_ROOT</code> is a legacy alias for <code>CATEGORY_AUTHORITY_ROOT</code>.
+  Both are checked in the resolution chain. The alias should be retired.
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 3: SCHEMA PLAN CORRECTIONS            -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 3: Schema Consolidation Plan Corrections <span class="badge wrong">plan errors</span></h2>
+<p class="section-intro">The <code>schema-consolidation-plan.html</code> recommendations verified against actual callers.</p>
+
+<table>
+  <thead><tr><th>Table</th><th>Plan Says</th><th>Actual Status</th><th>Active Callers</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>learning_sync</code></td>
+      <td><span class="tag delete">MERGE</span> into category_brain</td>
+      <td><span class="badge confirmed">Already gone</span> &mdash; not in schema or statements</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td><code>metrics</code></td>
+      <td><span class="tag delete">DELETE</span> (orphaned)</td>
+      <td><span class="badge wrong">WRONG</span> &mdash; actively used telemetry sink</td>
+      <td>6 files: metricsWriter.js, metricsStore.js, + tests</td>
+    </tr>
+    <tr>
+      <td><code>product_review_state</code></td>
+      <td><span class="tag delete">DELETE</span> (orphaned)</td>
+      <td><span class="badge wrong">WRONG</span> &mdash; critical override workflow feature</td>
+      <td>9 files: overrideWorkflow.js, overrideHelpers.js, publishSpecBuilders.js, seed.js, + tests</td>
+    </tr>
+    <tr>
+      <td><code>bridge_events</code></td>
+      <td><span class="tag consolidate">MERGE</span> into runtime_events</td>
+      <td>18 active callers &mdash; merge is non-trivial (different schema + purpose)</td>
+      <td>12 write + 9 read paths</td>
+    </tr>
+    <tr>
+      <td><code>source_screenshots</code></td>
+      <td><span class="tag consolidate">MERGE</span> into crawl_media</td>
+      <td>Active writes &mdash; <code>crawl_media</code> doesn&rsquo;t exist yet</td>
+      <td>6 files</td>
+    </tr>
+    <tr>
+      <td><code>source_videos</code></td>
+      <td><span class="tag consolidate">MERGE</span> into crawl_media</td>
+      <td>Active writes &mdash; <code>crawl_media</code> doesn&rsquo;t exist yet</td>
+      <td>5 files</td>
+    </tr>
+    <tr>
+      <td><code>source_pdfs</code></td>
+      <td><span class="tag consolidate">MERGE</span> into crawl_media</td>
+      <td>Write-only (index) &mdash; merge is safe if <code>crawl_media</code> is created</td>
+      <td>3 files</td>
+    </tr>
+  </tbody>
+</table>
+<div class="note danger">
+  <strong>Action:</strong> Do NOT delete <code>metrics</code> or <code>product_review_state</code>. Update the schema consolidation plan to mark these as KEEP.
+  The <code>crawl_media</code> merge is a future design task, not a cleanup.
+</div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 4: DEAD CODE                          -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 4: Dead Files &amp; Orphaned Code <span class="badge dead">delete</span></h2>
+<p class="section-intro">Files verified to have zero imports across the entire codebase.</p>
+
+<h3>Backend Dead Files (3)</h3>
+<table>
+  <thead><tr><th>File</th><th>Exports</th></tr></thead>
+  <tbody>
+    <tr><td><code>src/api/helpers/requestHelpers.js</code></td><td>Barrel re-export (all consumers import directly)</td></tr>
+    <tr><td><code>src/app/api/contracts/processStatusShape.js</code></td><td><code>PROCESS_STATUS_KEYS</code> &mdash; never consumed</td></tr>
+    <tr><td><code>src/app/api/contracts/runtimeTypeShapes.js</code></td><td><code>TRACE_ENTRY_KEYS</code>, <code>FRONTIER_ENTRY_KEYS</code>, <code>LLM_TRACE_ENTRY_KEYS</code></td></tr>
+  </tbody>
+</table>
+
+<details>
+  <summary>Frontend Dead Files (20) + Empty Shell (1)</summary>
+  <div class="content">
+    <h4>Runtime-Ops Components (10)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Component</th></tr></thead>
+      <tbody>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/BootProgressBar.tsx</code></td><td>BootProgressBar</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/ConfidenceBar.tsx</code></td><td>ConfidenceBar</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/KpiStrip.tsx</code></td><td>KpiStrip</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/Sparkline.tsx</code></td><td>Sparkline</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/StageCard.tsx</code></td><td>StageCard</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/StatCard.tsx</code></td><td>StatCard</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/components/VerticalStepper.tsx</code></td><td>VerticalStepper</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/panels/fetch/FetchPlaceholderPanel.tsx</code></td><td>FetchPlaceholderPanel</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/panels/overview/ScreenshotPreview.tsx</code></td><td>ScreenshotPreview</td></tr>
+        <tr><td><code>tools/gui-react/src/features/runtime-ops/panels/prefetch/PrefetchLlmCallPanel.tsx</code></td><td>PrefetchLlmCallPanel</td></tr>
+      </tbody>
+    </table>
+    <h4>Config / Settings / Studio (3)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Component</th></tr></thead>
+      <tbody>
+        <tr><td><code>tools/gui-react/src/features/llm-config/sections/LlmModelCatalogSection.tsx</code></td><td>LlmModelCatalogSection</td></tr>
+        <tr><td><code>tools/gui-react/src/features/llm-config/state/llmProviderOptions.ts</code></td><td>LLM provider options</td></tr>
+        <tr><td><code>tools/gui-react/src/features/studio/components/MappingConstraintEditor.tsx</code></td><td>MappingConstraintEditor</td></tr>
+      </tbody>
+    </table>
+    <h4>Page Components (7)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Component</th></tr></thead>
+      <tbody>
+        <tr><td><code>tools/gui-react/src/features/pipeline-settings/components/LlmConfigWarningBanner.tsx</code></td><td>LlmConfigWarningBanner</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/product/AvailabilityGuidance.tsx</code></td><td>AvailabilityGuidance</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/product/HelperLlmStatus.tsx</code></td><td>HelperLlmStatus</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/product/PipelineProgress.tsx</code></td><td>PipelineProgress</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/runtime/EventLog.tsx</code></td><td>EventLog</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/runtime/ProcessOutput.tsx</code></td><td>ProcessOutput</td></tr>
+        <tr><td><code>tools/gui-react/src/pages/runtime/QueueSnapshot.tsx</code></td><td>QueueSnapshot</td></tr>
+      </tbody>
+    </table>
+    <h4>Empty Shell Module (1)</h4>
+    <table>
+      <thead><tr><th>File</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>tools/gui-react/src/features/indexing/selectors/indexingRunControlSelectors.ts</code></td><td>Returns empty object &mdash; resume settings retired</td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<h3>Orphaned Test Files (6) + Dead Test Section (1)</h3>
+<table>
+  <thead><tr><th>Test File</th><th>Deleted Implementation</th></tr></thead>
+  <tbody>
+    <tr><td><code>src/api/services/tests/storageToRuntimePropagation.test.js</code></td><td><span class="strikethrough">runDataRelocationService.js</span></td></tr>
+    <tr><td><code>src/shared/tests/storageRegistryDerivations.test.js</code></td><td>Storage feature removed</td></tr>
+    <tr><td><code>src/shared/tests/storageSettingsDefaultsContract.test.js</code></td><td>Storage settings removed</td></tr>
+    <tr><td><code>src/features/settings/api/tests/storageSettingsRoutes.test.js</code></td><td><span class="strikethrough">configStorageSettingsHandler.js</span></td></tr>
+    <tr><td><code>tools/gui-react/.../settingsAutosaveFlushOnUnmountContracts.test.js</code></td><td><span class="strikethrough">storageSettingsAuthority.ts</span></td></tr>
+    <tr><td><code>tools/gui-react/.../storageSettingsPageContract.test.js</code></td><td>Storage page removed</td></tr>
+  </tbody>
+</table>
+<p><strong>Dead test section:</strong> <code>src/features/settings/api/tests/settingsEnvelopeContract.test.js</code> lines 142-168 &mdash; tests <code>storage-settings</code> endpoints that no longer exist.</p>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 5: DEAD SETTINGS & CONFIG             -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 5: Dead Settings &amp; Config <span class="badge cosmetic">remove</span></h2>
+
+<h3>Dead Config Keys (never consumed)</h3>
+<table>
+  <thead><tr><th>Key</th><th>File:Line</th></tr></thead>
+  <tbody>
+    <tr><td><code>retrievalIdentityFilterEnabled</code></td><td><code>configBuilder.js:203</code></td></tr>
+    <tr><td><code>runtimeControlFile</code></td><td><code>configBuilder.js:198</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Unused Registry Settings</h3>
+<table>
+  <thead><tr><th>Key</th><th>File:Line</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>cookieConsentSettleMs</code></td><td><code>settingsRegistry.js:167</code></td><td>Defined, never read</td></tr>
+    <tr><td><code>overlayDismissalSettleMs</code></td><td><code>settingsRegistry.js:173</code></td><td>Defined, never read</td></tr>
+    <tr><td><code>domExpansionSettleMs</code></td><td><code>settingsRegistry.js:180</code></td><td>Defined, never read</td></tr>
+    <tr><td><code>autoScrollPostLoadWaitMs</code></td><td><code>settingsRegistry.js:161</code></td><td>Deprecated but still read by autoScrollPlugin.js</td></tr>
+  </tbody>
+</table>
+
+<h3>Empty Settings Categories</h3>
+<table>
+  <thead><tr><th>Property</th><th>File:Line</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>SETTINGS_DEFAULTS.storage</code></td><td><code>settingsDefaults.js:16</code></td><td><code>Object.freeze({})</code> &mdash; all handlers deleted</td></tr>
+    <tr><td><code>SETTINGS_DEFAULTS.convergence</code></td><td><code>settingsDefaults.js:15</code></td><td><code>Object.freeze({})</code> &mdash; never populated</td></tr>
+  </tbody>
+</table>
+
+<h3>Ghost References in Test Mocks</h3>
+<table>
+  <thead><tr><th>Key</th><th>File</th></tr></thead>
+  <tbody>
+    <tr><td><code>runtimeEventsKey</code></td><td><code>runtimeSettingsPayloadClamping.test.ts:52</code></td></tr>
+    <tr><td><code>runtimeEventsKey</code></td><td><code>runtimePayloadIntegrity.test.js:62</code></td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 6: UNUSED DEPS & DUPLICATES           -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 6: Unused Dependencies &amp; Duplicate Code <span class="badge cosmetic">cleanup</span></h2>
+
+<h3>Unused npm Dependencies (4)</h3>
+<div class="note warn">Requires human approval per CLAUDE.md. crawlee/chokidar/sharp confirmed USED (dynamic imports).</div>
+<table>
+  <thead><tr><th>Package</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td><code>@duckduckgo/autoconsent</code></td><td>Zero imports (playwright-autoconsent used instead)</td></tr>
+    <tr><td><code>@mozilla/readability</code></td><td>Zero imports</td></tr>
+    <tr><td><code>jsdom</code></td><td>Zero imports</td></tr>
+    <tr><td><code>pdf-parse</code></td><td>Zero imports</td></tr>
+  </tbody>
+</table>
+
+<h3>Duplicate Function Implementations (9 total)</h3>
+<table>
+  <thead><tr><th>Function</th><th>Count</th><th>Canonical</th><th>Duplicates</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>slugify()</code></td>
+      <td>4</td>
+      <td><code>src/features/catalog/identity/slugify.js</code></td>
+      <td>reviewNormalization.js, testDataProvider.js, urlQualityGate.js</td>
+    </tr>
+    <tr>
+      <td><code>capitalize()</code></td>
+      <td>2</td>
+      <td>(no canonical)</td>
+      <td>routing.js, testDataProvider.js</td>
+    </tr>
+    <tr>
+      <td><code>normalizePath()</code></td>
+      <td>3</td>
+      <td>(no canonical)</td>
+      <td>fieldYield.js, hypothesisQueue.js, sourceCorpus.js</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 7: STALE DOCS                         -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 7: Stale Documentation (12 files) <span class="badge cosmetic">update</span></h2>
+<p class="section-intro">11 docs + 2 READMEs reference deleted <code>runDataRelocationService</code>, <code>configStorageSettingsHandler</code>, and dead storage-settings endpoints. No code impact &mdash; documentation only.</p>
+
+<h3>Storage Audit Plan Items Now Outdated</h3>
+<table>
+  <thead><tr><th>Claim</th><th>Reality (code-verified)</th></tr></thead>
+  <tbody>
+    <tr><td><code>debug/</code> directory (junk drawer)</td><td>No production code writes to <code>debug/</code> &mdash; historical artifact only</td></tr>
+    <tr><td><code>data/learning/</code> (ML snapshots)</td><td>Learning is SQL-backed only &mdash; no file writes</td></tr>
+    <tr><td><code>specs/outputs/</code> as write location</td><td>Logical S3 prefix only &mdash; filesystem artifact is from Bug 1</td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TIER 8: KNOWN REMAINING                    -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Tier 8: Known Remaining (tracked in MIGRATION-STATUS.mmd) <span class="badge cosmetic">deferred</span></h2>
+<table>
+  <thead><tr><th>Item</th><th>Owner</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><code>_billing/ledger.jsonl</code></td><td><code>publishAnalytics.js:334</code></td><td>Should read SQL billing_entries</td></tr>
+    <tr><td><code>product_catalog.json</code></td><td><code>productCatalog.js</code></td><td>Active JSON read/write</td></tr>
+    <tr><td><code>spec_seeds.json</code></td><td><code>specSeedsFileService.js</code></td><td>Active JSON read/write</td></tr>
+    <tr><td><code>user-settings.json</code></td><td><code>userSettingsService.js</code></td><td>Hybrid (file canonical, SQL seed)</td></tr>
+    <tr><td><code>brand_registry.json</code></td><td><code>brandRegistry.js</code></td><td>SQL primary, JSON seed-only</td></tr>
+    <tr><td>54 test fixtures with slug-format IDs</td><td>Various test files</td><td>Cosmetic (Phase 6)</td></tr>
+    <tr><td>Products reference brands by display name</td><td><code>brandRegistry.js:237,472,527</code></td><td>Works with cascade, needs brand_identifier column</td></tr>
+    <tr><td>29 oversized files (&gt;500 LOC)</td><td>Various</td><td>Future decomposition candidates</td></tr>
+  </tbody>
+</table>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RECOMMENDED ORDER                          -->
+<!-- ═══════════════════════════════════════════ -->
+<h2>Recommended Execution Order</h2>
+<table>
+  <thead><tr><th>#</th><th>Tier</th><th>Action</th><th>Risk</th><th>Scope</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><span class="tag fix">BUG</span></td>
+      <td>Fix <code>resolveLocalPath()</code> double-nesting &mdash; strip prefix before path.join</td>
+      <td>Medium (all local storage paths affected)</td>
+      <td><code>storage.js</code> + <code>storageKeyPrefixes.js</code></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><span class="tag fix">BUG</span></td>
+      <td>Delete legacy billing key functions &mdash; remove <code>legacyMonthlyDigestKey</code> + <code>legacyLatestDigestKey</code></td>
+      <td>Low (only removes duplicate writes)</td>
+      <td><code>costLedger.js</code></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><span class="tag delete">DEAD</span></td>
+      <td>Delete 29 dead files + 6 orphaned tests + dead test section</td>
+      <td>None (verified zero consumers)</td>
+      <td>36 files</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><span class="tag delete">DEAD</span></td>
+      <td>Remove dead settings, empty categories, ghost test mocks</td>
+      <td>Low</td>
+      <td>configBuilder, settingsRegistry, settingsDefaults, 2 test mocks</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><span class="tag consolidate">ARCH</span></td>
+      <td>Consolidate 4 roots &rarr; <code>category_authority/</code> + <code>.workspace/</code></td>
+      <td>High (change runtimeArtifactRoots defaults, update 24 .specfactory_tmp refs, retire HELPER_FILES_ROOT)</td>
+      <td>runtimeArtifactRoots.js, settingsRegistry.js, configBuilder.js, 24 files + tests</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><span class="tag consolidate">ARCH</span></td>
+      <td>Make FrontierDb per-category + configurable (move from <code>_intel/</code> to <code>.workspace/db/</code>)</td>
+      <td>Medium</td>
+      <td><code>frontierDb.js</code></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><span class="tag update">DOCS</span></td>
+      <td>Update schema-consolidation-plan (keep metrics + product_review_state)</td>
+      <td>None</td>
+      <td>schema-consolidation-plan.html</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><span class="tag update">DOCS</span></td>
+      <td>Update 12 stale doc files + 2 READMEs</td>
+      <td>None</td>
+      <td>docs/, feature READMEs</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

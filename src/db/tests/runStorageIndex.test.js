@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SpecDb } from '../specDb.js';
 
-const TEST_DIR = path.join('.specfactory_tmp', '_test_run_storage_index');
+const TEST_DIR = path.join('.workspace', 'db', '_test_run_storage_index');
 const DB_PATH = path.join(TEST_DIR, 'spec.sqlite');
 
 describe('runStorageIndex', () => {

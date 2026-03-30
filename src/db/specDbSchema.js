@@ -321,7 +321,7 @@ CREATE INDEX IF NOT EXISTS idx_pr_product ON product_runs(category, product_id);
 CREATE INDEX IF NOT EXISTS idx_pr_latest ON product_runs(category, product_id, is_latest) WHERE is_latest = 1;
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
-CREATE INDEX IF NOT EXISTS idx_lrm_cat_scope ON llm_route_matrix(category, scope);
+-- WHY: idx_lrm_cat_scope moved to SECONDARY_INDEXES (runs after migrations that add the scope column)
 
 -- Source capture tables (evidence lineage, model-agnostic)
 
@@ -591,8 +591,11 @@ CREATE TABLE IF NOT EXISTS category_brain (
 
 -- Migration Phase 6: Source intelligence
 CREATE TABLE IF NOT EXISTS source_intel_domains (
-  root_domain TEXT PRIMARY KEY,
+  root_domain TEXT NOT NULL,
   category TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'domain',
+  scope_key TEXT NOT NULL DEFAULT '',
+  brand TEXT DEFAULT '',
   attempts INTEGER DEFAULT 0,
   http_ok_count INTEGER DEFAULT 0,
   identity_match_count INTEGER DEFAULT 0,
@@ -615,9 +618,11 @@ CREATE TABLE IF NOT EXISTS source_intel_domains (
   fingerprint_counts TEXT DEFAULT '{}',
   extra_stats TEXT DEFAULT '{}',
   last_seen_at TEXT,
-  updated_at TEXT
+  updated_at TEXT,
+  PRIMARY KEY (root_domain, category, scope, scope_key)
 );
 CREATE INDEX IF NOT EXISTS idx_sid_category ON source_intel_domains(category);
+-- WHY: idx_sid_scope moved to SECONDARY_INDEXES (runs after migration that recreates source_intel_domains with scope column)
 
 CREATE TABLE IF NOT EXISTS source_intel_field_rewards (
   root_domain TEXT NOT NULL,
@@ -637,43 +642,6 @@ CREATE TABLE IF NOT EXISTS source_intel_field_rewards (
   PRIMARY KEY (root_domain, scope, scope_key, field, method)
 );
 CREATE INDEX IF NOT EXISTS idx_sifr_domain ON source_intel_field_rewards(root_domain);
-
-CREATE TABLE IF NOT EXISTS source_intel_brands (
-  root_domain TEXT NOT NULL,
-  brand_key TEXT NOT NULL,
-  brand TEXT DEFAULT '',
-  attempts INTEGER DEFAULT 0,
-  http_ok_count INTEGER DEFAULT 0,
-  identity_match_count INTEGER DEFAULT 0,
-  major_anchor_conflict_count INTEGER DEFAULT 0,
-  fields_contributed_count INTEGER DEFAULT 0,
-  fields_accepted_count INTEGER DEFAULT 0,
-  accepted_critical_fields_count INTEGER DEFAULT 0,
-  products_seen INTEGER DEFAULT 0,
-  recent_products TEXT DEFAULT '[]',
-  per_field_helpfulness TEXT DEFAULT '{}',
-  extra_stats TEXT DEFAULT '{}',
-  last_seen_at TEXT,
-  PRIMARY KEY (root_domain, brand_key)
-);
-
-CREATE TABLE IF NOT EXISTS source_intel_paths (
-  root_domain TEXT NOT NULL,
-  path TEXT NOT NULL,
-  attempts INTEGER DEFAULT 0,
-  http_ok_count INTEGER DEFAULT 0,
-  identity_match_count INTEGER DEFAULT 0,
-  major_anchor_conflict_count INTEGER DEFAULT 0,
-  fields_contributed_count INTEGER DEFAULT 0,
-  fields_accepted_count INTEGER DEFAULT 0,
-  accepted_critical_fields_count INTEGER DEFAULT 0,
-  products_seen INTEGER DEFAULT 0,
-  recent_products TEXT DEFAULT '[]',
-  per_field_helpfulness TEXT DEFAULT '{}',
-  extra_stats TEXT DEFAULT '{}',
-  last_seen_at TEXT,
-  PRIMARY KEY (root_domain, path)
-);
 
 -- Migration Phase 7: Source corpus
 CREATE TABLE IF NOT EXISTS source_corpus (
@@ -841,14 +809,6 @@ CREATE TABLE IF NOT EXISTS brand_domains (
   PRIMARY KEY (brand, category)
 );
 
-CREATE TABLE IF NOT EXISTS domain_classifications (
-  domain TEXT PRIMARY KEY,
-  classification TEXT NOT NULL,
-  safe INTEGER NOT NULL DEFAULT 1,
-  reason TEXT,
-  classified_at TEXT DEFAULT (datetime('now'))
-);
-
 -- source_strategy table removed: sources.json is now the SSOT (see sourceFileService.js)
 
 CREATE TABLE IF NOT EXISTS field_history (
@@ -952,18 +912,6 @@ CREATE TABLE IF NOT EXISTS source_pdfs (
 );
 CREATE INDEX IF NOT EXISTS idx_sp_product ON source_pdfs(product_id);
 CREATE INDEX IF NOT EXISTS idx_sp_content ON source_pdfs(content_hash);
-
--- Wave 4: Runtime metrics (replaces _runtime/metrics.jsonl)
-CREATE TABLE IF NOT EXISTS metrics (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  ts TEXT NOT NULL,
-  metric_type TEXT NOT NULL DEFAULT 'gauge',
-  name TEXT NOT NULL DEFAULT 'unknown',
-  value REAL NOT NULL DEFAULT 0,
-  labels TEXT NOT NULL DEFAULT '{}'
-);
-CREATE INDEX IF NOT EXISTS idx_metrics_name ON metrics(name);
-CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics(ts);
 
 -- Telemetry indexes (replaces NDJSON files in INDEXLAB_ROOT/{category}/)
 

@@ -72,7 +72,7 @@ export function normalizeRuntimeArtifactWorkspaceDefaults({
   const previousWorkspaceRoot = path.dirname(path.resolve(persistedOutputRoot));
   const currentWorkspaceRoot = path.dirname(path.resolve(currentDefaultOutputRoot));
   const previousSpecDbDir = path.join(previousWorkspaceRoot, '.specfactory_tmp');
-  const currentSpecDbDir = path.join(currentWorkspaceRoot, '.specfactory_tmp');
+  const currentSpecDbDir = path.join(currentWorkspaceRoot, 'db');
 
   config.localOutputRoot = currentDefaultOutputRoot;
   if (sameResolvedPath(config.specDbDir, previousSpecDbDir)) {

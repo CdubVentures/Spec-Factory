@@ -11,7 +11,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const category = process.argv[2] || 'mouse';
-const dbPath = path.resolve(`.specfactory_tmp/${category}/spec.sqlite`);
+const dbPath = path.resolve(`.workspace/db/${category}/spec.sqlite`);
 
 console.log(`\n=== Wave 4 Verification (${category}) ===\n`);
 console.log(`DB: ${dbPath}`);
@@ -54,24 +54,7 @@ try {
   console.log(`  Table missing or error: ${err.message}`);
 }
 
-// --- 2. metrics table ---
-console.log('\n--- metrics ---');
-try {
-  const count = db.prepare('SELECT COUNT(*) as c FROM metrics').get();
-  console.log(`  Total rows: ${count.c}`);
-  if (count.c > 0) {
-    const byType = db.prepare('SELECT metric_type, COUNT(*) as c FROM metrics GROUP BY metric_type').all();
-    for (const row of byType) {
-      console.log(`    ${row.metric_type}: ${row.c}`);
-    }
-  } else {
-    console.log('  (Expected 0 — MetricsWriter not wired to production yet)');
-  }
-} catch (err) {
-  console.log(`  Table missing or error: ${err.message}`);
-}
-
-// --- 3. Check for stale NDJSON billing files ---
+// --- 2. Check for stale NDJSON billing files ---
 console.log('\n--- NDJSON file check ---');
 const outputRoot = path.resolve('specs/outputs');
 const billingLedgerDir = path.join(outputRoot, '_billing', 'ledger');

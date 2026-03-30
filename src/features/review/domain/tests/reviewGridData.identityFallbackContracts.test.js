@@ -13,30 +13,47 @@ import {
   seedQueueState,
 } from './helpers/reviewGridDataHarness.js';
 
-test('review payload and queue infer readable identity from product_id when normalized identity is missing', async () => {
+// WHY: Product IDs are opaque hex tokens. inferIdentityFromProductId was gutted
+// (always returns empty). Identity comes from catalog/specDb, not from the ID string.
+test('review payload returns empty identity when catalog and db have no identity data', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-identity-fallback-'));
   const storage = makeStorage(tempRoot);
   const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
   const category = 'mouse';
-  const productId = 'mouse-acer-cestus-310-310';
+  const productId = 'mouse-a1b2c3d4';
 
   try {
     await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
     await seedLatestArtifacts(storage, category, productId, {
       identity: {},
     });
-    await seedQueueState(storage, category, [productId]);
-    await storage.writeObject(
-      `final/${category}/${productId}/review/review_queue.json`,
-      Buffer.from(JSON.stringify({
-        version: 1,
-        category,
-        product_id: productId,
-        count: 2,
-        items: [{ field: 'dpi', reason_codes: ['missing_required_field'] }],
-      }, null, 2), 'utf8'),
-      { contentType: 'application/json' },
-    );
+
+    const payload = await buildProductReviewPayload({
+      storage,
+      config,
+      category,
+      productId,
+      includeCandidates: false,
+    });
+    assert.equal(payload.identity.brand, '');
+    assert.equal(payload.identity.model, '');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('review payload uses catalog identity when available', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-review-identity-catalog-'));
+  const storage = makeStorage(tempRoot);
+  const config = { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
+  const category = 'mouse';
+  const productId = 'mouse-a1b2c3d4';
+
+  try {
+    await seedCategoryArtifacts(config.categoryAuthorityRoot, category);
+    await seedLatestArtifacts(storage, category, productId, {
+      identity: { brand: 'Acer', model: 'Cestus 310' },
+    });
 
     const payload = await buildProductReviewPayload({
       storage,
@@ -47,17 +64,6 @@ test('review payload and queue infer readable identity from product_id when norm
     });
     assert.equal(payload.identity.brand, 'Acer');
     assert.equal(payload.identity.model, 'Cestus 310');
-
-    const queue = await buildReviewQueue({
-      storage,
-      config,
-      category,
-      status: 'needs_review',
-      limit: 10,
-    });
-    assert.equal(queue.length, 1);
-    assert.equal(queue[0].brand, 'Acer');
-    assert.equal(queue[0].model, 'Cestus 310');
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

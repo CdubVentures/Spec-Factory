@@ -40,7 +40,6 @@ test('buildUserSettingsSnapshotSchema composes section schemas and required enve
   const schema = buildUserSettingsSnapshotSchema({
     settingsDocumentSchemaVersion: 7,
     runtimeSettingsValueTypes: { r: 'integer' },
-    storageSettingsValueTypes: { s: 'string' },
     uiSettingsValueTypes: { u: 'boolean' },
   });
 
@@ -67,9 +66,10 @@ test('buildUserSettingsSnapshotSchema composes section schemas and required enve
     properties: {},
     additionalProperties: false,
   });
+  // WHY: storage section retired — no dynamic properties, hardcoded empty.
   assert.deepEqual(schema.properties.storage, {
     type: 'object',
-    properties: { s: { type: 'string' } },
+    properties: {},
     additionalProperties: false,
   });
   assert.deepEqual(schema.properties.ui, {

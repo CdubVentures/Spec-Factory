@@ -85,17 +85,9 @@ const CONSOLIDATION_NOTES = new Map([
     recommendation: 'Delete',
     note: 'Previous consolidation plan marked this as orphaned.',
   }],
-  ['specdb:metrics', {
-    recommendation: 'Delete',
-    note: 'Previous consolidation plan marked this as write-only/orphaned.',
-  }],
   ['specdb:data_authority_sync', {
     recommendation: 'Merge',
     note: 'Previous consolidation plan folds this into category_brain.',
-  }],
-  ['specdb:domain_classifications', {
-    recommendation: 'Delete',
-    note: 'Previous consolidation plan marked this as orphaned.',
   }],
   ['specdb:source_artifacts', {
     recommendation: 'Merge',
@@ -117,29 +109,21 @@ const CONSOLIDATION_NOTES = new Map([
     recommendation: 'Merge',
     note: 'Previous consolidation plan folds this into key_review_state JSON payloads.',
   }],
-  ['specdb:source_intel_brands', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into a scoped source_intel table.',
+  ['specdb:source_screenshots', {
+    recommendation: 'Keep',
+    note: 'Focused vertical table — separate from videos/PDFs by design.',
   }],
-  ['specdb:source_intel_paths', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into a scoped source_intel table.',
+  ['specdb:source_videos', {
+    recommendation: 'Keep',
+    note: 'Focused vertical table — separate from screenshots/PDFs by design.',
+  }],
+  ['specdb:source_pdfs', {
+    recommendation: 'Keep',
+    note: 'Focused vertical table — separate from screenshots/videos by design.',
   }],
   ['specdb:bridge_events', {
     recommendation: 'Merge',
     note: 'Previous consolidation plan folds this into runtime_events/events.',
-  }],
-  ['specdb:source_screenshots', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into crawl_media.',
-  }],
-  ['specdb:source_videos', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into crawl_media.',
-  }],
-  ['specdb:source_pdfs', {
-    recommendation: 'Merge',
-    note: 'Previous consolidation plan folds this into crawl_media.',
   }],
 ]);
 

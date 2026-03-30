@@ -2,7 +2,7 @@
 
 > **Purpose:** Trace the verified end-to-end indexing run flow from GUI launch through process orchestration, artifact generation, and run replay APIs.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
 ## Entry Points
 
@@ -47,7 +47,7 @@ Added: `src/features/crawl/` (plugin-based browser automation), frontier DB inte
 5. `src/pipeline/runProduct.js` bootstraps identity/planner, creates a crawl session with `createCrawlSession({ plugins: [stealthPlugin, autoScrollPlugin] })`, starts the session, and runs `runCrawlProcessingLifecycle()` against the frontier DB.
 6. The crawl session opens URLs in a persistent browser, captures screenshots, classifies block status, and records results to the frontier DB.
 7. The GUI replays run artifacts through `/api/v1/indexlab/run/:runId/*` endpoints in `src/features/indexing/api/indexlabRoutes.js`.
-8. On process exit, `src/api/services/indexLabProcessCompletion.js` finalizes run-data relocation/archive behavior.
+8. On process exit, `src/api/services/indexLabProcessCompletion.js` reconciles interrupted runs and records the run storage location in SpecDb.
 
 ## Side Effects
 
@@ -70,7 +70,7 @@ Added: `src/features/crawl/` (plugin-based browser automation), frontier DB inte
 | no active run | initial idle state | `/process/status` reports `running=false` |
 | launching | `/process/start` accepted | process runtime holds pid + run_id |
 | running | child CLI active | websocket channels stream logs and events |
-| completed/failed | child exits | run meta and relocation handlers finalize artifacts |
+| completed/failed | child exits | run meta is reconciled and storage location is recorded for the finished run |
 
 ## Diagram
 
@@ -111,4 +111,4 @@ sequenceDiagram
 ## Related Documents
 
 - [Runtime Ops](./runtime-ops.md) - Runtime Ops reads the same run event/artifact surfaces with a worker-centric lens.
-- [Storage and Run Data](./storage-and-run-data.md) - Completed run output may be relocated or mirrored after exit.
+- [Storage and Run Data](./storage-and-run-data.md) - documents the current run inventory and storage-manager maintenance surface.

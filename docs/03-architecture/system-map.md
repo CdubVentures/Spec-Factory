@@ -2,95 +2,110 @@
 
 > **Purpose:** Show the verified runtime topology and file-backed relationships between the GUI, API server, workers, storage, and optional external services.
 > **Prerequisites:** [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md), [../02-dependencies/external-services.md](../02-dependencies/external-services.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
 ```mermaid
 graph TD
-  Browser["Operator Browser (tools/gui-react/src/App.tsx + tools/gui-react/src/registries/pageRegistry.ts)"]
+  Browser["Operator Browser (tools/gui-react/src/App.tsx)"]
+  Registry["GUI Route Registry (tools/gui-react/src/registries/pageRegistry.ts)"]
   GuiBuild["Built GUI Assets (tools/gui-react/dist)"]
-  GuiServer["GUI/API Server (src/api/guiServer.js)"]
-  Pipeline["API Pipeline (src/app/api/guiApiPipeline.js)"]
-  Routes["Route Registry (src/app/api/routeRegistry.js)"]
+  Entry["Server Entrypoint (src/api/guiServer.js)"]
+  Runtime["Runtime Assembly (src/api/guiServerRuntime.js)"]
+  Http["HTTP Assembly (src/api/guiServerHttpAssembly.js)"]
+  Dispatch["API Dispatch (src/app/api/requestDispatch.js)"]
+  Routes["Registered Route Families (src/api/guiServerRuntime.js routeDefinitions)"]
   Realtime["Realtime Bridge /ws (src/app/api/realtimeBridge.js)"]
   Proc["Process Runtime (src/app/api/processRuntime.js)"]
   Cli["CLI Commands (src/cli/spec.js)"]
   Crawl["Crawl Module (src/features/crawl/index.js)"]
-  SpecDb["SQLite Boundary (src/db/specDb.js)"]
+  AppDb["Global AppDb (.workspace/db/app.sqlite)"]
+  SpecDb["Per-category SpecDb (.workspace/db/<category>/spec.sqlite)"]
   Authority["Category Authority Files (category_authority/)"]
-  Output["Runtime Artifact Roots (src/core/config/runtimeArtifactRoots.js)"]
-  S3["Optional S3 Storage (src/s3/storage.js)"]
-  Searxng["Optional SearXNG Stack (tools/searxng/docker-compose.yml)"]
-  Graphql["Local GraphQL Upstream :8787 (src/app/api/routes/infra/graphqlRoutes.js)"]
-  Llm["Provider-Routed LLM Clients (src/core/llm/*)"]
+  Workspace["Runtime Roots (.workspace/output + .workspace/runs)"]
+  Storage["Storage Adapter (src/s3/storage.js)"]
+  Searxng["Optional SearXNG (tools/searxng/docker-compose.yml)"]
+  Graphql["Optional GraphQL Helper (src/api/intelGraphApi.js)"]
+  Llm["Provider-routed LLM Clients (src/core/llm/*)"]
 
-  Browser --> GuiServer
-  GuiBuild --> GuiServer
-  GuiServer --> Pipeline
-  Pipeline --> Routes
-  GuiServer --> Realtime
+  Browser --> Entry
+  Registry --> Browser
+  GuiBuild --> Entry
+  Entry --> Runtime
+  Runtime --> Http
+  Http --> Dispatch
+  Runtime --> Routes
+  Runtime --> Realtime
+  Routes --> AppDb
   Routes --> SpecDb
   Routes --> Authority
-  Routes --> Output
+  Routes --> Workspace
   Routes --> Proc
-  Proc --> Cli
-  Cli --> Crawl
-  Crawl --> SpecDb
-  Cli --> SpecDb
-  Cli --> Authority
-  Cli --> Output
-  Cli --> Llm
-  Proc --> Searxng
+  Routes --> Storage
   Routes --> Searxng
   Routes --> Graphql
-  Output --> S3
+  Proc --> Cli
+  Cli --> Crawl
+  Cli --> SpecDb
+  Cli --> Authority
+  Cli --> Workspace
+  Cli --> Llm
+  Workspace --> Storage
 ```
 
 ## Path Reference List
 
 | Node | Path |
 |------|------|
-| Operator browser entry | `tools/gui-react/src/App.tsx` |
-| GUI page registry | `tools/gui-react/src/registries/pageRegistry.ts` |
-| Built GUI assets | `tools/gui-react/dist` |
-| HTTP/WebSocket server | `src/api/guiServer.js` |
-| API pipeline | `src/app/api/guiApiPipeline.js` |
-| Route registry | `src/app/api/routeRegistry.js` |
-| WebSocket bridge | `src/app/api/realtimeBridge.js` |
+| Browser entry shell | `tools/gui-react/src/App.tsx` |
+| GUI route registry | `tools/gui-react/src/registries/pageRegistry.ts` |
+| Built GUI assets | `tools/gui-react/dist/` |
+| Thin server entrypoint | `src/api/guiServer.js` |
+| Runtime assembly SSOT | `src/api/guiServerRuntime.js` |
+| HTTP assembly | `src/api/guiServerHttpAssembly.js` |
+| API dispatch | `src/app/api/requestDispatch.js` |
+| Realtime bridge | `src/app/api/realtimeBridge.js` |
 | Process runtime | `src/app/api/processRuntime.js` |
 | CLI entrypoint | `src/cli/spec.js` |
 | Crawl module | `src/features/crawl/index.js` |
-| SQLite boundary | `src/db/specDb.js` |
+| Global AppDb | `src/db/appDb.js` |
+| Per-category SpecDb | `src/db/specDb.js` |
 | Authority content root | `category_authority/` |
-| S3 abstraction | `src/s3/storage.js` |
+| Runtime artifact roots | `src/core/config/runtimeArtifactRoots.js` |
+| Storage adapter | `src/s3/storage.js` |
 | SearXNG stack | `tools/searxng/docker-compose.yml` |
+| GraphQL helper API | `src/api/intelGraphApi.js` |
 | GraphQL proxy | `src/app/api/routes/infra/graphqlRoutes.js` |
 | LLM routing boundary | `src/core/llm/client/routing.js` |
 
 ## Topology Notes
 
-- The browser only talks to the local Node runtime; the GUI is not a separately deployed frontend service in the checked-in repo.
-- Tabbed GUI route and tab metadata live in `tools/gui-react/src/registries/pageRegistry.ts`; `tools/gui-react/src/App.tsx` mounts those routes plus the standalone `/test-mode` page.
-- `src/api/guiServer.js` is both the API host and static-file host for the built GUI assets.
-- WebSocket traffic goes through `/ws` and is backed by `src/app/api/realtimeBridge.js`.
-- Background/indexing work is launched through `src/app/api/processRuntime.js`, which shells into the CLI entrypoint in `src/cli/spec.js`. The pipeline uses a crawl-first architecture via `src/features/crawl/` with plugin-based browser automation.
-- Canonical persistent state is split between SQLite (`src/db/`) and the category authority content root.
-- The default local artifact roots are under the OS temp directory (`.../spec-factory/output` and `.../spec-factory/indexlab`), not a checked-in top-level `storage/` folder.
-- Removed integrations such as the structured-metadata extractor and Elo adapter are intentionally omitted from this active topology because no live consumer path was verified.
+- The browser talks only to the local Node runtime in the current architecture; the GUI is not deployed as a separate service in this repo.
+- `tools/gui-react/src/registries/pageRegistry.ts` is the GUI route SSOT; `tools/gui-react/src/App.tsx` mounts registry-derived routes plus standalone `/test-mode`.
+- `src/api/guiServerRuntime.js` is the server-route SSOT. The mounted route order comes from its `routeDefinitions` array.
+- Persistent state is split between:
+  - global AppDb tables in `.workspace/db/app.sqlite`
+  - per-category SpecDb files in `.workspace/db/<category>/spec.sqlite`
+  - file-backed control-plane content in `category_authority/`
+- `src/api/bootstrap/createBootstrapEnvironment.js` initializes `runDataStorageState` as `{ enabled: false }`, so the removed storage-settings/relocation subsystem is not part of the live topology even though the storage inventory APIs are still mounted.
+- Default runtime roots are `.workspace/output` and `.workspace/runs`, not the checked-in `storage/` folder.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | main runtime wiring between server, routes, storage, and process runtime |
-| source | `tools/gui-react/src/App.tsx` | browser entry shell and route mounting |
-| source | `tools/gui-react/src/registries/pageRegistry.ts` | browser route and tab registry |
-| source | `src/app/api/guiApiPipeline.js` | API pipeline composition |
-| source | `src/app/api/routeRegistry.js` | route registrar inventory and order |
-| source | `src/app/api/realtimeBridge.js` | WebSocket upgrade and watcher-backed broadcasts |
-| source | `src/app/api/processRuntime.js` | child-process runtime, SearXNG control, and CLI launch boundary |
+| source | `src/api/guiServerRuntime.js` | routeDefinitions, runtime assembly, and metadata roots |
+| source | `src/api/guiServer.js` | thin runtime entrypoint |
+| source | `src/api/guiServerHttpAssembly.js` | route context handoff into HTTP assembly |
+| source | `src/app/api/requestDispatch.js` | API dispatch pipeline |
+| source | `src/app/api/realtimeBridge.js` | WebSocket handling and file watchers |
+| source | `src/app/api/processRuntime.js` | child-process runtime and SearXNG control |
+| source | `src/api/bootstrap/createBootstrapSessionLayer.js` | AppDb bootstrap location |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | workspace roots and disabled storage-state stub |
+| source | `tools/gui-react/src/App.tsx` | browser entry shell |
+| source | `tools/gui-react/src/registries/pageRegistry.ts` | browser route registry |
 
 ## Related Documents
 
-- [Backend Architecture](./backend-architecture.md) - Details the request and process pipeline.
-- [Frontend Architecture](./frontend-architecture.md) - Explains the browser-side portion of this map.
-- [Integration Boundaries](../06-references/integration-boundaries.md) - Explains the optional external edges in this topology.
+- [Backend Architecture](./backend-architecture.md) - Request pipeline and route-family details.
+- [Frontend Architecture](./frontend-architecture.md) - Browser-side composition details.
+- [Integration Boundaries](../06-references/integration-boundaries.md) - External and sidecar edges in this topology.

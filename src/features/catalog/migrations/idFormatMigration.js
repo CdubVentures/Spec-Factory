@@ -46,7 +46,6 @@ const TABLES_WITH_PRODUCT_ID = [
   'query_index',
   'knob_snapshots',
   'audit_log',
-  'domain_classifications',
 ];
 
 /**

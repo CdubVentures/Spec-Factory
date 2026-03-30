@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../api/client.ts";
 import { useUiStore } from "../../../stores/uiStore.ts";
@@ -111,109 +111,41 @@ function isBrandHeaderRow(name: string): boolean {
   );
 }
 
-const columns: ColumnDef<Brand, unknown>[] = [
-  {
-    accessorKey: "canonical_name",
-    header: "Brand Name",
-    cell: ({ getValue }) => (
-      <span className="font-medium">{getValue() as string}</span>
-    ),
-  },
-  {
-    accessorKey: "identifier",
-    header: "ID",
-    cell: ({ getValue }) => {
-      const id = getValue() as string | undefined;
-      if (!id)
-        return <span className={`italic text-xs ${textMutedCls}`}>-</span>;
-      return <span className={`font-mono text-xs ${textSubtleCls}`}>{id}</span>;
-    },
-  },
-  {
-    accessorKey: "aliases",
-    header: "Aliases",
-    cell: ({ getValue }) => {
-      const aliases = getValue() as string[];
-      if (!aliases?.length)
-        return <span className={`italic text-xs ${textMutedCls}`}>none</span>;
-      return (
-        <div className="flex flex-wrap">
-          {aliases.map((a) => (
-            <span key={a} className={chipCls}>
-              {a}
-            </span>
-          ))}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "categories",
-    header: "Categories",
-    cell: ({ getValue }) => {
-      const cats = getValue() as string[];
-      return (
-        <div className="flex flex-wrap">
-          {cats.map((c) => (
-            <span key={c} className={chipCls}>
-              {c}
-            </span>
-          ))}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "website",
-    header: "Website",
-    cell: ({ getValue }) => {
-      const url = getValue() as string;
-      if (!url)
-        return <span className={`italic text-xs ${textMutedCls}`}>-</span>;
-      return (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline text-xs truncate max-w-[200px] block"
-        >
-          {url}
-        </a>
-      );
-    },
-  },
-];
 export function BrandManager() {
   const categories = useUiStore((s) => s.categories);
   const selectedCategory = useUiStore((s) => s.category);
   const queryClient = useQueryClient();
+  const [filterCategory, setFilterCategory] = usePersistedTab<string>(
+    "catalog:brands:filterCategory",
+    "all",
+  );
   const [drawerOpen, , setDrawerOpen] = usePersistedToggle(
-    `catalog:brands:drawerOpen:${selectedCategory}`,
+    "catalog:brands:drawerOpen",
     false,
   );
   const [persistedSelectedBrand, setPersistedSelectedBrand] =
     usePersistedTab<string>(
-      `catalog:brands:selectedBrand:${selectedCategory}`,
+      "catalog:brands:selectedBrand",
       "",
     );
   const [editSlug, setEditSlug] = useState<string | null>(
     () => persistedSelectedBrand || null,
   );
   const [addDraftName, setAddDraftName] = usePersistedTab<string>(
-    `catalog:brands:addDraft:name:${selectedCategory}`,
+    "catalog:brands:addDraft:name",
     "",
   );
   const [addDraftAliases, setAddDraftAliases] = usePersistedTab<string>(
-    `catalog:brands:addDraft:aliases:${selectedCategory}`,
+    "catalog:brands:addDraft:aliases",
     "",
   );
   const [addDraftCategoriesCsv, setAddDraftCategoriesCsv] =
     usePersistedTab<string>(
-      `catalog:brands:addDraft:categories:${selectedCategory}`,
+      "catalog:brands:addDraft:categories",
       "",
     );
   const [addDraftWebsite, setAddDraftWebsite] = usePersistedTab<string>(
-    `catalog:brands:addDraft:website:${selectedCategory}`,
+    "catalog:brands:addDraft:website",
     "",
   );
   const [editIdentifier, setEditIdentifier] = useState<string>("");
@@ -236,29 +168,20 @@ export function BrandManager() {
     null,
   );
   const [bulkOpen, , setBulkOpen] = usePersistedToggle(
-    `catalog:brands:bulkOpen:${selectedCategory}`,
+    "catalog:brands:bulkOpen",
     false,
   );
   const [bulkCategory, setBulkCategory] = usePersistedTab<string>(
-    `catalog:brands:bulkCategory:${selectedCategory}`,
+    "catalog:brands:bulkCategory",
     "",
   );
   const [bulkText, setBulkText] = usePersistedTab<string>(
-    `catalog:brands:bulkText:${selectedCategory}`,
+    "catalog:brands:bulkText",
     "",
   );
   const hydratedEditSlugRef = useRef("");
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
-    queryKey: ["brands", selectedCategory],
-    queryFn: () =>
-      api.get<Brand[]>(
-        selectedCategory && selectedCategory !== "all"
-          ? `/brands?category=${selectedCategory}`
-          : "/brands",
-      ),
-  });
-  const { data: allBrands = [] } = useQuery<Brand[]>({
-    queryKey: ["brands", "_all_bulk"],
+    queryKey: ["brands", "_all"],
     queryFn: () => api.get<Brand[]>("/brands"),
   });
   const { data: impactData } = useQuery<BrandImpactAnalysis>({
@@ -279,6 +202,7 @@ export function BrandManager() {
   const hasAnyChange =
     isRename || isAliasChange || isCategoryChange || isWebsiteChange;
   function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ["brands"] });
     invalidateFieldRulesQueries(queryClient, selectedCategory);
   }
   const addMut = useMutation({
@@ -382,7 +306,7 @@ export function BrandManager() {
   useEffect(() => {
     hydratedEditSlugRef.current = "";
     setEditSlug(persistedSelectedBrand || null);
-  }, [selectedCategory, persistedSelectedBrand]);
+  }, [persistedSelectedBrand]);
   useEffect(() => {
     if (!drawerOpen || !editSlug) return;
     if (hydratedEditSlugRef.current === editSlug) return;
@@ -484,13 +408,142 @@ export function BrandManager() {
   const allCategories = useMemo(() => {
     const set = new Set<string>(categories);
     brands.forEach((b) => b.categories.forEach((c) => set.add(c)));
-    return [...set].filter((cat) => cat && cat !== "all").sort();
+    // WHY: Exclude test harness categories — they start with _test_ or are the "tests" directory
+    return [...set].filter((cat) => cat && cat !== "all" && cat !== "tests" && !cat.startsWith("_test_")).sort();
   }, [categories, brands]);
+  const displayBrands = useMemo(() => {
+    if (!filterCategory || filterCategory === "all") return brands;
+    return brands.filter((b) => b.categories.includes(filterCategory));
+  }, [brands, filterCategory]);
+  const [categoryPopoverSlug, setCategoryPopoverSlug] = useState<string | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  useEffect(() => {
+    if (!categoryPopoverSlug) return;
+    const close = () => setCategoryPopoverSlug(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [categoryPopoverSlug]);
+  const inlineCategoryMut = useMutation({
+    mutationFn: ({ slug, categories: cats }: { slug: string; categories: string[] }) =>
+      api.put<BrandMutationResult>(`/brands/${slug}`, { categories: cats }),
+    onSuccess: () => invalidate(),
+  });
+  const handleInlineCategoryAdd = useCallback((brand: Brand, cat: string) => {
+    if (brand.categories.includes(cat)) return;
+    inlineCategoryMut.mutate({ slug: brand.slug, categories: [...brand.categories, cat].sort() });
+    setCategoryPopoverSlug(null);
+  }, [inlineCategoryMut]);
+  const handleInlineCategoryRemove = useCallback((brand: Brand, cat: string) => {
+    if (brand.categories.length <= 1) return;
+    inlineCategoryMut.mutate({ slug: brand.slug, categories: brand.categories.filter((c) => c !== cat) });
+  }, [inlineCategoryMut]);
+  const dynamicColumns = useMemo<ColumnDef<Brand, unknown>[]>(() => [
+    {
+      accessorKey: "canonical_name",
+      header: "Brand Name",
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue() as string}</span>
+      ),
+    },
+    {
+      accessorKey: "identifier",
+      header: "ID",
+      cell: ({ getValue }) => {
+        const id = getValue() as string | undefined;
+        if (!id) return <span className={`italic text-xs ${textMutedCls}`}>-</span>;
+        return <span className={`font-mono text-xs ${textSubtleCls}`}>{id}</span>;
+      },
+    },
+    {
+      accessorKey: "aliases",
+      header: "Aliases",
+      cell: ({ getValue }) => {
+        const aliases = getValue() as string[];
+        if (!aliases?.length) return <span className={`italic text-xs ${textMutedCls}`}>none</span>;
+        return (
+          <div className="flex flex-wrap">
+            {aliases.map((a) => (<span key={a} className={chipCls}>{a}</span>))}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "categories",
+      header: "Categories",
+      cell: ({ row }) => {
+        const brand = row.original;
+        const cats = brand.categories;
+        const isOpen = categoryPopoverSlug === brand.slug;
+        const missing = allCategories.filter((c) => !cats.includes(c));
+        return (
+          <div className="flex flex-wrap items-center relative" onClick={(e) => e.stopPropagation()}>
+            {cats.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleInlineCategoryRemove(brand, c); }}
+                disabled={cats.length <= 1}
+                className={`${chipCls} cursor-pointer hover:line-through hover:opacity-70 transition-opacity disabled:cursor-default disabled:hover:no-underline disabled:hover:opacity-100`}
+                title={cats.length > 1 ? `Remove ${c}` : "Cannot remove last category"}
+              >
+                {c}
+              </button>
+            ))}
+            {missing.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isOpen) { setCategoryPopoverSlug(null); return; }
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setPopoverPos({ x: rect.left, y: rect.bottom + 4 });
+                  setCategoryPopoverSlug(brand.slug);
+                }}
+                className="inline-flex items-center justify-center w-5 h-5 text-xs rounded-full sf-border-soft border sf-text-subtle hover:text-accent hover:border-accent transition-colors"
+                title="Add category"
+              >
+                +
+              </button>
+            )}
+            {isOpen && missing.length > 0 && (
+              <div
+                className="fixed z-50 sf-surface-panel border sf-border-default rounded shadow-lg py-1 min-w-[120px]"
+                style={{ left: popoverPos.x, top: popoverPos.y }}
+              >
+                {missing.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleInlineCategoryAdd(brand, cat)}
+                    className="block w-full text-left px-3 py-1.5 text-xs sf-text-primary hover:sf-surface-card transition-colors"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "website",
+      header: "Website",
+      cell: ({ getValue }) => {
+        const url = getValue() as string;
+        if (!url) return <span className={`italic text-xs ${textMutedCls}`}>-</span>;
+        return (
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="text-accent hover:underline text-xs truncate max-w-[200px] block">{url}</a>
+        );
+      },
+    },
+  ], [allCategories, categoryPopoverSlug, handleInlineCategoryAdd, handleInlineCategoryRemove]);
   const existingBrandSlugs = useMemo(() => {
     return new Set(
-      allBrands.map((brand) => String(brand.slug || "").trim()).filter(Boolean),
+      brands.map((brand) => String(brand.slug || "").trim()).filter(Boolean),
     );
-  }, [allBrands]);
+  }, [brands]);
   const bulkPreviewRows = useMemo<BrandBulkPreviewRow[]>(() => {
     const rows: BrandBulkPreviewRow[] = [];
     const seenInPaste = new Set<string>();
@@ -670,18 +723,42 @@ export function BrandManager() {
               <strong>{bulkResult.skipped_duplicate ?? 0}</strong> {", "}invalid{" "}
               <strong>{bulkResult.invalid ?? 0}</strong> {", "}failed{" "}
               <strong>{bulkResult.failed ?? 0}</strong>. Total brands:{" "}
-              <strong>{bulkResult.total_brands ?? allBrands.length}</strong>
+              <strong>{bulkResult.total_brands ?? brands.length}</strong>
               .{" "}
             </div>
           )}{" "}
+          {/* Category filter strip */}{" "}
+          <nav className="flex flex-wrap gap-1 px-1 py-1 sf-tab-strip rounded">
+            {" "}
+            <button
+              type="button"
+              onClick={() => setFilterCategory("all")}
+              className={`px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item${filterCategory === "all" ? " sf-tab-item-active" : ""}`}
+            >
+              All ({brands.length})
+            </button>{" "}
+            {allCategories.map((cat) => {
+              const count = brands.filter((b) => b.categories.includes(cat)).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item${filterCategory === cat ? " sf-tab-item-active" : ""}`}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}{" "}
+          </nav>{" "}
           {/* Brand table */}{" "}
           <div className={sectionCls}>
             {" "}
             <DataTable
-              data={brands}
-              columns={columns}
+              data={displayBrands}
+              columns={dynamicColumns}
               searchable
-              persistKey={`catalog:brands:table:${selectedCategory}`}
+              persistKey="catalog:brands:table"
               onRowClick={openEdit}
               maxHeight="max-h-[550px]"
             />{" "}
@@ -764,19 +841,38 @@ export function BrandManager() {
             <div>
               {" "}
               <label className={labelCls}>Categories *</label>{" "}
-              <div className="flex flex-wrap gap-2 mt-1">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {" "}
-                {allCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => toggleCategory(cat)}
-                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${formCategories.includes(cat) ? "bg-accent text-white border-accent" : "sf-surface-card sf-text-muted sf-border-soft dark:sf-border-soft hover:border-accent"}`}
-                  >
-                    {" "}
-                    {cat}{" "}
-                  </button>
-                ))}{" "}
+                {allCategories.map((cat) => {
+                  const isActive = formCategories.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        if (editSlug) {
+                          const brand = brands.find((b) => b.slug === editSlug);
+                          if (!brand) return;
+                          if (isActive) {
+                            if (formCategories.length <= 1) return;
+                            handleInlineCategoryRemove(brand, cat);
+                            setFormCategories((prev) => prev.filter((c) => c !== cat));
+                            setOrigCategories((prev) => prev.filter((c) => c !== cat));
+                          } else {
+                            handleInlineCategoryAdd(brand, cat);
+                            setFormCategories((prev) => [...prev, cat].sort());
+                            setOrigCategories((prev) => [...prev, cat].sort());
+                          }
+                        } else {
+                          toggleCategory(cat);
+                        }
+                      }}
+                      className={`px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item${isActive ? " sf-tab-item-active" : ""}`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}{" "}
               </div>{" "}
             </div>{" "}
             {/* Website */}{" "}

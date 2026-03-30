@@ -4,7 +4,7 @@
 //   node scripts/testGoogleCrawlee.js --screenshots      (browser + screenshots)
 //   node scripts/testGoogleCrawlee.js --count 5          (5 queries)
 //
-// Saves screenshots to .specfactory_tmp/crawlee_test/{fetch,browser}/
+// Saves screenshots to .workspace/crawlee_test/{fetch,browser}/
 // Serves gallery on http://localhost:9000.
 
 import { createServer } from 'node:http';
@@ -25,7 +25,7 @@ const screenshots = args.includes('--screenshots');
 const modes = screenshots ? ['screenshot'] : args.includes('--both') ? ['no-screenshot', 'screenshot'] : ['no-screenshot'];
 
 const PORT = 9000;
-const OUT_ROOT = join(process.cwd(), '.specfactory_tmp', 'crawlee_test');
+const OUT_ROOT = join(process.cwd(), '.workspace', 'crawlee_test');
 
 const QUERIES = [
   'Razer Viper V3 Pro specifications',

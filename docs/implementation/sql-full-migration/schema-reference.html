@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Schema Reference</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --cyan: #06b6d4;
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.surface{margin-bottom:56px}
+.surface-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.surface-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.surface-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
+.domain-group{margin-bottom:32px}
+.domain-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding-left:2px}
+.table-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden;transition:border-color 0.15s}
+.table-card:hover{border-color:var(--border-f)}
+.table-card summary{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;list-style:none;font-size:0.9rem}
+.table-card summary::-webkit-details-marker{display:none}
+.table-card summary::after{content:"+";font-size:1.1rem;font-weight:300;color:var(--t3);transition:transform 0.15s;margin-left:8px}
+.table-card[open] summary::after{content:"\2212"}
+.tname{font-family:var(--mono);font-weight:600;font-size:0.88rem;letter-spacing:-0.01em}
+.tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-store{background:var(--accent-s);color:var(--accent)}
+.tag-pk{background:var(--green-s);color:var(--green)}
+.tag-fk{background:var(--violet-s);color:var(--violet)}
+.tag-virtual{background:var(--amber-s);color:var(--amber)}
+.tag-cols{background:var(--s2);color:var(--t2)}
+.card-body{border-top:1px solid var(--border);padding:16px}
+.col-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.col-table th{text-align:left;padding:6px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)}
+.col-table td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.col-table tr:last-child td{border-bottom:none}
+.col-table .cn{font-family:var(--mono);font-weight:500;color:var(--text);font-size:0.82rem}
+.col-table .ct{font-family:var(--mono);color:var(--t3);font-size:0.78rem}
+.col-table .cc{color:var(--t2);font-size:0.78rem}
+.pk-row .cn{color:var(--green)}
+.fk-indicator{color:var(--violet);font-size:0.72rem}
+.migr-indicator{color:var(--amber);font-size:0.68rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.idx-section{margin-top:12px}
+.idx-label{font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.idx-item{font-family:var(--mono);font-size:0.78rem;color:var(--t2);padding:2px 0}
+.filter-wrap{margin-bottom:32px}
+.filter-input{width:min(480px,100%);background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font:inherit;font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.15s}
+.filter-input:focus{border-color:var(--accent)}
+.filter-input::placeholder{color:var(--t3)}
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}.tags{gap:4px}.table-card summary{flex-wrap:wrap;gap:8px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>Schema Reference</h1>
+  <p>Complete inventory of all SQL tables across Spec Factory's three database surfaces. Each table shows its columns, primary key, foreign keys, indexes, and owning store module.</p>
+  <div class="meta">
+    <span>Generated 2026-03-30</span>
+    <span>Post-consolidation</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">52</div><div class="l">SpecDb Tables</div></div>
+  <div class="stat"><div class="n">1</div><div class="l">Virtual (FTS)</div></div>
+  <div class="stat"><div class="n">5</div><div class="l">AppDb Tables</div></div>
+  <div class="stat"><div class="n">3</div><div class="l">Frontier Tables</div></div>
+  <div class="stat"><div class="n">17</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n">61</div><div class="l">Total Tables</div></div>
+</div>
+
+<div class="filter-wrap">
+  <input class="filter-input" id="filter" type="search" placeholder="Filter tables or columns…">
+</div>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>SpecDb</h2>
+    <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
+    <span class="tag tag-cols">53 tables</span>
+  </div>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, and source intelligence.</p>
+  <div class="domain-group">
+  <div class="domain-label">Candidate Pipeline</div>
+  <details class="table-card" data-table="candidates">
+  <summary><span class="tname">candidates</span><span class="tags"><span class="tag tag-pk">PK: candidate_id</span><span class="tag tag-cols">28 cols</span><span class="tag tag-store">candidateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">candidate_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">normalized_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">rank</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_host</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_root_domain</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_tier</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">source_method</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">approved_domain</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">snippet_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">snippet_hash</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">snippet_text</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">quote</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">quote_span_start</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">quote_span_end</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">evidence_url</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">evidence_retrieved_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">is_component_field</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">component_type</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">is_list_field</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">llm_extract_model</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">extracted_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_cand_product_field (product_id, field_key)</div><div class="idx-item">idx_cand_field_value (field_key, normalized_value)</div><div class="idx-item">idx_cand_component (component_type) WHERE component_type IS NOT NULL</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="candidate_reviews">
+  <summary><span class="tname">candidate_reviews</span><span class="tags"><span class="tag tag-pk">PK: review_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">candidateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">review_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">candidate_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; candidates(candidate_id)</span></td></tr>
+<tr><td class="cn">context_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL CHECK(context_type IN ('item', 'component', 'list'))</td></tr>
+<tr><td class="cn">context_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">human_accepted</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">human_accepted_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_review_status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'not_run'</td></tr>
+<tr><td class="cn">ai_confidence</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_reason</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_reviewed_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_review_model</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">human_override_ai</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">human_override_ai_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(candidate_id, context_type, context_id)</div><div class="idx-item">idx_rev_context (context_type, context_id)</div><div class="idx-item">idx_rev_candidate (candidate_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Component Identity</div>
+  <details class="table-card" data-table="component_identity">
+  <summary><span class="tname">component_identity</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">componentStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">canonical_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">maker</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">links</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'component_db'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">review_status</td><td class="ct">TEXT</td><td class="cc">DEFAULT <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">aliases_overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0 <span class="migr-indicator">via migration</span></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, component_type, canonical_name, maker)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="component_aliases">
+  <summary><span class="tname">component_aliases</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">componentStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">component_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; component_identity(id)</span></td></tr>
+<tr><td class="cn">alias</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'component_db'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(component_id, alias)</div><div class="idx-item">idx_ca_alias (alias)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="component_values">
+  <summary><span class="tname">component_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">componentStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_maker</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">component_identity_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; component_identity(id)</span></td></tr>
+<tr><td class="cn">property_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 1.0</td></tr>
+<tr><td class="cn">variance_policy</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'component_db'</td></tr>
+<tr><td class="cn">accepted_candidate_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">needs_review</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">constraints</td><td class="ct">TEXT</td><td class="cc"> <span class="migr-indicator">via migration</span></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, component_type, component_name, component_maker, property_key)</div><div class="idx-item">idx_cv_identity_id (component_identity_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Enum / List Management</div>
+  <details class="table-card" data-table="enum_lists">
+  <summary><span class="tname">enum_lists</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">enumListStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'field_rules'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, field_key)</div><div class="idx-item">idx_el_field (category, field_key)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="list_values">
+  <summary><span class="tname">list_values</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">enumListStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">list_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; enum_lists(id)</span></td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">normalized_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'known_values'</td></tr>
+<tr><td class="cn">accepted_candidate_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">enum_policy</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">needs_review</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">source_timestamp</td><td class="ct">TEXT</td><td class="cc"> <span class="migr-indicator">via migration</span></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, field_key, value)</div><div class="idx-item">idx_lv_list_id (list_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Item State</div>
+  <details class="table-card" data-table="item_field_state">
+  <summary><span class="tname">item_field_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">itemStateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'pipeline'</td></tr>
+<tr><td class="cn">accepted_candidate_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">overridden</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">needs_ai_review</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">ai_review_complete</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">override_source</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">override_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">override_reason</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">override_provenance</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">overridden_by</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">overridden_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key)</div><div class="idx-item">idx_ifs_product (product_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="item_component_links">
+  <summary><span class="tname">item_component_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">itemStateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">component_maker</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">match_type</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">match_score</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key)</div><div class="idx-item">idx_icl_product (product_id)</div><div class="idx-item">idx_icl_component (category, component_type, component_name, component_maker)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="item_list_links">
+  <summary><span class="tname">item_list_links</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">itemStateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">list_value_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; list_values(id)</span></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key, list_value_id)</div><div class="idx-item">idx_ill_product (product_id)</div><div class="idx-item">idx_ill_list_value (list_value_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="product_review_state">
+  <summary><span class="tname">product_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">itemStateStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">review_status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'pending'</td></tr>
+<tr><td class="cn">review_started_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">reviewed_by</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">reviewed_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Catalog &amp; Queue</div>
+  <details class="table-card" data-table="products">
+  <summary><span class="tname">products</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, product_id TEXT NOT NULL</td></tr>
+<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT '', model TEXT DEFAULT '', variant TEXT DEFAULT ''</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'active', seed_urls TEXT, identifier TEXT</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id)</div><div class="idx-item">idx_products_cat (category)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="product_queue">
+  <summary><span class="tname">product_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, product_id TEXT NOT NULL</td></tr>
+<tr><td class="cn">s3key</td><td class="ct">TEXT</td><td class="cc">DEFAULT '', status TEXT DEFAULT 'pending'</td></tr>
+<tr><td class="cn">priority</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 3, attempts_total INTEGER DEFAULT 0</td></tr>
+<tr><td class="cn">retry_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0, max_attempts INTEGER DEFAULT 3</td></tr>
+<tr><td class="cn">next_retry_at</td><td class="ct">TEXT</td><td class="cc">, last_run_id TEXT</td></tr>
+<tr><td class="cn">cost_usd_total</td><td class="ct">REAL</td><td class="cc">DEFAULT 0, rounds_completed INTEGER DEFAULT 0</td></tr>
+<tr><td class="cn">next_action_hint</td><td class="ct">TEXT</td><td class="cc">, last_urls_attempted TEXT</td></tr>
+<tr><td class="cn">last_error</td><td class="ct">TEXT</td><td class="cc">, last_started_at TEXT, last_completed_at TEXT</td></tr>
+<tr><td class="cn">dirty_flags</td><td class="ct">TEXT</td><td class="cc">, last_summary TEXT</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id)</div><div class="idx-item">idx_pq_category (category, status)</div><div class="idx-item">idx_pq_product (category, product_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="product_runs">
+  <summary><span class="tname">product_runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, product_id TEXT NOT NULL, run_id TEXT NOT NULL</td></tr>
+<tr><td class="cn">is_latest</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 1</td></tr>
+<tr><td class="cn">summary_json</td><td class="ct">TEXT</td><td class="cc">, validated INTEGER DEFAULT 0, confidence REAL DEFAULT 0</td></tr>
+<tr><td class="cn">cost_usd_run</td><td class="ct">REAL</td><td class="cc">DEFAULT 0, sources_attempted INTEGER DEFAULT 0</td></tr>
+<tr><td class="cn">run_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">storage_state</td><td class="ct">TEXT</td><td class="cc">DEFAULT <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">local_path</td><td class="ct">TEXT</td><td class="cc">DEFAULT <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">s3_key</td><td class="ct">TEXT</td><td class="cc">DEFAULT <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0 <span class="migr-indicator">via migration</span></td></tr>
+<tr><td class="cn">relocated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT <span class="migr-indicator">via migration</span></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, run_id)</div><div class="idx-item">idx_pr_storage_state (storage_state)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="curation_suggestions">
+  <summary><span class="tname">curation_suggestions</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">suggestion_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, suggestion_type TEXT NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">, component_type TEXT</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc">NOT NULL, normalized_value TEXT</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'pending'</td></tr>
+<tr><td class="cn">source</td><td class="ct">TEXT</td><td class="cc">, product_id TEXT, run_id TEXT</td></tr>
+<tr><td class="cn">first_seen_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), last_seen_at TEXT</td></tr>
+<tr><td class="cn">reviewed_by</td><td class="ct">TEXT</td><td class="cc">, reviewed_at TEXT, review_note TEXT</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, suggestion_type, field_key, value)</div><div class="idx-item">idx_cs_category (category, suggestion_type, status)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="component_review_queue">
+  <summary><span class="tname">component_review_queue</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">review_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL, component_type TEXT NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">, raw_query TEXT, matched_component TEXT</td></tr>
+<tr><td class="cn">match_type</td><td class="ct">TEXT</td><td class="cc">, name_score REAL, property_score REAL, combined_score REAL</td></tr>
+<tr><td class="cn">alternatives</td><td class="ct">TEXT</td><td class="cc">, product_id TEXT, run_id TEXT</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'pending_ai'</td></tr>
+<tr><td class="cn">ai_decision</td><td class="ct">TEXT</td><td class="cc">, ai_suggested_name TEXT, ai_suggested_maker TEXT, ai_reviewed_at TEXT</td></tr>
+<tr><td class="cn">product_attributes</td><td class="ct">TEXT</td><td class="cc">, reasoning_note TEXT</td></tr>
+<tr><td class="cn">human_reviewed_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(review_id)</div><div class="idx-item">idx_crq_category (category, component_type, status)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="audit_log">
+  <summary><span class="tname">audit_log</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">queueProductStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">event_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL</td></tr>
+<tr><td class="cn">field_changed</td><td class="ct">TEXT</td><td class="cc">, old_value TEXT, new_value TEXT</td></tr>
+<tr><td class="cn">change_type</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'update'</td></tr>
+<tr><td class="cn">actor_type</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'system', actor_id TEXT, run_id TEXT, note TEXT</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">, component_type TEXT, component_name TEXT, field_key TEXT</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_audit_entity (entity_type, entity_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">LLM Route Configuration</div>
+  <details class="table-card" data-table="llm_route_matrix">
+  <summary><span class="tname">llm_route_matrix</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">36 cols</span><span class="tag tag-store">llmRouteSourceStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">scope</td><td class="ct">TEXT</td><td class="cc">NOT NULL CHECK(scope IN ('field', 'component', 'list'))</td></tr>
+<tr><td class="cn">route_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">required_level</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">difficulty</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">availability</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">effort</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 3</td></tr>
+<tr><td class="cn">effort_band</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '1-3'</td></tr>
+<tr><td class="cn">single_source_data</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">all_source_data</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">enable_websearch</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">model_ladder_today</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">all_sources_confidence_repatch</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">max_tokens</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 4096</td></tr>
+<tr><td class="cn">studio_key_navigation_sent_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_contract_rules_sent_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_extraction_guidance_sent_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_tooltip_or_description_sent_when_present</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_enum_options_sent_when_present</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_component_variance_constraints_sent_in_component_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_parse_template_sent_direct_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_ai_mode_difficulty_effort_sent_direct_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_required_level_sent_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_component_entity_set_sent_when_component_field</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_evidence_policy_sent_direct_in_extract_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_variance_policy_sent_in_component_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_constraints_sent_in_component_review</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">studio_send_booleans_prompted_to_model</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">scalar_linked_send</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'scalar value + prime sources'</td></tr>
+<tr><td class="cn">component_values_send</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'component values + prime sources'</td></tr>
+<tr><td class="cn">list_values_send</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'list values prime sources'</td></tr>
+<tr><td class="cn">llm_output_min_evidence_refs_required</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">insufficient_evidence_action</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'threshold_unmet'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, route_key)</div><div class="idx-item">idx_lrm_cat_scope (category, scope)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Source Capture</div>
+  <details class="table-card" data-table="source_registry">
+  <summary><span class="tname">source_registry</span><span class="tags"><span class="tag tag-pk">PK: source_id</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">llmRouteSourceStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">source_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">item_identifier</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source_host</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_root_domain</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">source_tier</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">source_method</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">crawl_status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'fetched'</td></tr>
+<tr><td class="cn">http_status</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">fetched_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sr_item (category, item_identifier)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_artifacts">
+  <summary><span class="tname">source_artifacts</span><span class="tags"><span class="tag tag-pk">PK: artifact_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">llmRouteSourceStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">artifact_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">source_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; source_registry(source_id)</span></td></tr>
+<tr><td class="cn">artifact_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">local_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">mime_type</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">captured_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+<details class="table-card" data-table="source_assertions">
+  <summary><span class="tname">source_assertions</span><span class="tags"><span class="tag tag-pk">PK: assertion_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">llmRouteSourceStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">assertion_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">source_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; source_registry(source_id)</span></td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">context_kind</td><td class="ct">TEXT</td><td class="cc">NOT NULL CHECK(context_kind IN ('scalar','component','list'))</td></tr>
+<tr><td class="cn">context_ref</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">item_field_state_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; item_field_state(id)</span></td></tr>
+<tr><td class="cn">component_value_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; component_values(id)</span></td></tr>
+<tr><td class="cn">list_value_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; list_values(id)</span></td></tr>
+<tr><td class="cn">enum_list_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; enum_lists(id)</span></td></tr>
+<tr><td class="cn">value_raw</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">value_normalized</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">unit</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">candidate_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">extraction_method</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sa_item_slot (item_field_state_id)</div><div class="idx-item">idx_sa_component_slot (component_value_id)</div><div class="idx-item">idx_sa_list_slot (list_value_id, enum_list_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_evidence_refs">
+  <summary><span class="tname">source_evidence_refs</span><span class="tags"><span class="tag tag-pk">PK: evidence_ref_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">llmRouteSourceStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">evidence_ref_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">assertion_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; source_assertions(assertion_id)</span></td></tr>
+<tr><td class="cn">evidence_url</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">snippet_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">quote</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">method</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">tier</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">retrieved_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Key Review</div>
+  <details class="table-card" data-table="key_review_state">
+  <summary><span class="tname">key_review_state</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">55 cols</span><span class="tag tag-store">keyReviewStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">target_kind</td><td class="ct">TEXT</td><td class="cc">NOT NULL CHECK(target_kind IN ('grid_key','enum_key','component_key'))</td></tr>
+<tr><td class="cn">item_identifier</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">enum_value_norm</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">component_identifier</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">property_key</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">item_field_state_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; item_field_state(id)</span></td></tr>
+<tr><td class="cn">component_value_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; component_values(id)</span></td></tr>
+<tr><td class="cn">component_identity_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; component_identity(id)</span></td></tr>
+<tr><td class="cn">list_value_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; list_values(id)</span></td></tr>
+<tr><td class="cn">enum_list_id</td><td class="ct">INTEGER</td><td class="cc"> <span class="fk-indicator">FK &rarr; enum_lists(id)</span></td></tr>
+<tr><td class="cn">required_level</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">availability</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">difficulty</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">effort</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_mode</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">parse_template</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">evidence_policy</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">min_evidence_refs_effective</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 1</td></tr>
+<tr><td class="cn">min_distinct_sources_required</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 1</td></tr>
+<tr><td class="cn">send_mode</td><td class="ct">TEXT</td><td class="cc">CHECK(send_mode IN ('single_source_data','all_source_data'))</td></tr>
+<tr><td class="cn">component_send_mode</td><td class="ct">TEXT</td><td class="cc">CHECK(component_send_mode IN ('component_values','component_values_prime_sources'))</td></tr>
+<tr><td class="cn">list_send_mode</td><td class="ct">TEXT</td><td class="cc">CHECK(list_send_mode IN ('list_values','list_values_prime_sources'))</td></tr>
+<tr><td class="cn">selected_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">selected_candidate_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">confidence_score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">confidence_level</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">flagged_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">resolved_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_primary_status</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_primary_confidence</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_primary_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_primary_interrupted</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">ai_confirm_primary_error</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_shared_status</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_shared_confidence</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_shared_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ai_confirm_shared_interrupted</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">ai_confirm_shared_error</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_primary_status</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_primary_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_primary_by</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_shared_status</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_shared_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_accept_shared_by</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_override_ai_primary</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">user_override_ai_primary_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_override_ai_primary_reason</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_override_ai_shared</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">user_override_ai_shared_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">user_override_ai_shared_reason</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE ux_krs_grid_slot (category, item_field_state_id) WHERE target_kind = 'grid_key' AND item_field_state_id IS NOT NULL</div><div class="idx-item">UNIQUE ux_krs_enum_slot (category, list_value_id) WHERE target_kind = 'enum_key' AND list_value_id IS NOT NULL</div><div class="idx-item">UNIQUE ux_krs_component_slot (category, component_value_id) WHERE target_kind = 'component_key' AND component_value_id IS NOT NULL</div><div class="idx-item">UNIQUE ux_krs_component_identity_slot (category, component_identity_id, property_key) WHERE target_kind = 'component_key' AND component_identity_id IS NOT NULL</div><div class="idx-item">idx_krs_item_slot (item_field_state_id)</div><div class="idx-item">idx_krs_component_slot (component_value_id)</div><div class="idx-item">idx_krs_component_identity_slot (component_identity_id, property_key)</div><div class="idx-item">idx_krs_list_slot (list_value_id, enum_list_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="key_review_runs">
+  <summary><span class="tname">key_review_runs</span><span class="tags"><span class="tag tag-pk">PK: run_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">keyReviewStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">run_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">key_review_state_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; key_review_state(id)</span></td></tr>
+<tr><td class="cn">stage</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">provider</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">model_used</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">prompt_hash</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">response_schema_version</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">input_tokens</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">output_tokens</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">latency_ms</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">cost_usd</td><td class="ct">REAL</td><td class="cc"></td></tr>
+<tr><td class="cn">error</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">started_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">finished_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_krr_state (key_review_state_id, stage, status)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="key_review_run_sources">
+  <summary><span class="tname">key_review_run_sources</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">6 cols</span><span class="tag tag-store">keyReviewStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">key_review_run_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; key_review_runs(run_id)</span></td></tr>
+<tr><td class="cn">assertion_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; source_assertions(assertion_id)</span></td></tr>
+<tr><td class="cn">packet_role</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">position</td><td class="ct">INTEGER</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+<details class="table-card" data-table="key_review_audit">
+  <summary><span class="tname">key_review_audit</span><span class="tags"><span class="tag tag-pk">PK: event_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">keyReviewStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">event_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">key_review_state_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; key_review_state(id)</span></td></tr>
+<tr><td class="cn">event_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">actor_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">actor_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">old_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">new_value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">reason</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Billing</div>
+  <details class="table-card" data-table="billing_entries">
+  <summary><span class="tname">billing_entries</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">21 cols</span><span class="tag tag-store">billingStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">month</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">day</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">provider</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'unknown'</td></tr>
+<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'unknown'</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">round</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">prompt_tokens</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">completion_tokens</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">cached_prompt_tokens</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">total_tokens</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">cost_usd</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">reason</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'extract'</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">url_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">evidence_chars</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">estimated_usage</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">meta</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_be_month (month)</div><div class="idx-item">idx_be_product (product_id)</div><div class="idx-item">idx_be_day (day)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Source Intelligence</div>
+  <details class="table-card" data-table="source_intel_domains">
+  <summary><span class="tname">source_intel_domains</span><span class="tags"><span class="tag tag-pk">PK: root_domain, category, scope, scope_key</span><span class="tag tag-cols">28 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">root_domain</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">scope</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'domain'</td></tr>
+<tr><td class="cn">scope_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">http_ok_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">identity_match_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">major_anchor_conflict_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">fields_contributed_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">fields_accepted_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">accepted_critical_fields_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">products_seen</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">approved_attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">candidate_attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">parser_runs</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">parser_success_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">parser_health_score_total</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">endpoint_signal_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">endpoint_signal_score_total</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">planner_score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">field_reward_strength</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">recent_products</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">per_field_helpfulness</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">fingerprint_counts</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">extra_stats</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">last_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sid_scope (root_domain, scope)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_intel_field_rewards">
+  <summary><span class="tname">source_intel_field_rewards</span><span class="tags"><span class="tag tag-pk">PK: root_domain, scope, scope_key, field, method</span><span class="tag tag-cols">14 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">root_domain</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">scope</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'domain'</td></tr>
+<tr><td class="cn">scope_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">field</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">method</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'unknown'</td></tr>
+<tr><td class="cn">seen_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">success_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">fail_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">contradiction_count</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">success_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">contradiction_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">reward_score</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">last_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">last_decay_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sifr_domain (root_domain)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Learning &amp; Cache</div>
+  <details class="table-card" data-table="llm_cache">
+  <summary><span class="tname">llm_cache</span><span class="tags"><span class="tag tag-pk">PK: cache_key</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">cache_key</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">response</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">timestamp</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">ttl</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_llmc_expiry (timestamp)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="learning_profiles">
+  <summary><span class="tname">learning_profiles</span><span class="tags"><span class="tag tag-pk">PK: profile_id</span><span class="tag tag-cols">19 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">profile_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">variant</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">runs_total</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">validated_runs</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">validated</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">unknown_field_rate</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">unknown_field_rate_avg</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">parser_health_avg</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">preferred_urls</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">feedback_urls</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">uncertain_fields</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">host_stats</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">critical_fields_below</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">last_run</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">parser_health</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_lp_category (category)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="category_brain">
+  <summary><span class="tname">category_brain</span><span class="tags"><span class="tag tag-pk">PK: category, artifact_name</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">artifact_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">payload</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+<details class="table-card" data-table="source_corpus">
+  <summary><span class="tname">source_corpus</span><span class="tags"><span class="tag tag-pk">PK: url</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">url</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">root_domain</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">path</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">title</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">snippet</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">tier</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 99</td></tr>
+<tr><td class="cn">role</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">fields</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">methods</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">identity_match</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">approved_domain</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">model_name</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">variant</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">first_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">last_seen_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sc_category (category)</div><div class="idx-item">idx_sc_domain (root_domain)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Runtime Events</div>
+  <details class="table-card" data-table="runtime_events">
+  <summary><span class="tname">runtime_events</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">level</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'info'</td></tr>
+<tr><td class="cn">event</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">data</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_re_ts (ts)</div><div class="idx-item">idx_re_product (product_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="bridge_events">
+  <summary><span class="tname">bridge_events</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">sourceIntelStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">stage</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">event</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">payload</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_be_run_id (run_id)</div><div class="idx-item">idx_be_run_stage (run_id, stage)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Runs &amp; Artifacts</div>
+  <details class="table-card" data-table="runs">
+  <summary><span class="tname">runs</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">runMetaStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">status</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'running'</td></tr>
+<tr><td class="cn">started_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">ended_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">phase_cursor</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">identity_fingerprint</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">identity_lock_status</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">dedupe_mode</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">s3key</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">out_root</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">counters</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(run_id)</div><div class="idx-item">idx_runs_category (category)</div><div class="idx-item">idx_runs_status (category, status)</div><div class="idx-item">idx_runs_product (category, product_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="run_artifacts">
+  <summary><span class="tname">run_artifacts</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">runArtifactStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">artifact_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">payload</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(run_id, artifact_type)</div><div class="idx-item">idx_rart_run_id (run_id)</div><div class="idx-item">idx_rart_category (category)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Evidence Index</div>
+  <details class="table-card" data-table="evidence_documents">
+  <summary><span class="tname">evidence_documents</span><span class="tags"><span class="tag tag-pk">PK: doc_id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">evidenceIndex</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">doc_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">parser_version</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">tier</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 99</td></tr>
+<tr><td class="cn">role</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">dedupe_outcome</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'new'</td></tr>
+<tr><td class="cn">indexed_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(content_hash, parser_version)</div><div class="idx-item">idx_ed_category_product (category, product_id)</div><div class="idx-item">idx_ed_content_hash (content_hash)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="evidence_chunks">
+  <summary><span class="tname">evidence_chunks</span><span class="tags"><span class="tag tag-pk">PK: chunk_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">evidenceIndex</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">chunk_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">doc_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; evidence_documents(doc_id)</span></td></tr>
+<tr><td class="cn">snippet_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">chunk_index</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">chunk_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">text</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">normalized_text</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">snippet_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">extraction_method</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">field_hints</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '[]'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(doc_id, snippet_id)</div><div class="idx-item">idx_ec_doc (doc_id)</div><div class="idx-item">idx_ec_snippet (snippet_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="evidence_facts">
+  <summary><span class="tname">evidence_facts</span><span class="tags"><span class="tag tag-pk">PK: fact_id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">evidenceIndex</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">fact_id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">chunk_id</td><td class="ct">INTEGER</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; evidence_chunks(chunk_id)</span></td></tr>
+<tr><td class="cn">doc_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; evidence_documents(doc_id)</span></td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value_raw</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">value_normalized</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">unit</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">extraction_method</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_ef_doc (doc_id)</div><div class="idx-item">idx_ef_field (field_key)</div><div class="idx-item">idx_ef_chunk (chunk_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="evidence_chunks_fts">
+  <summary><span class="tname">evidence_chunks_fts</span><span class="tags"><span class="tag tag-pk">PK: —</span><span class="tag tag-virtual">fts5</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">evidenceIndex</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">text</td><td class="ct">TEXT</td><td class="cc">FTS5</td></tr>
+<tr><td class="cn">normalized_text</td><td class="ct">TEXT</td><td class="cc">FTS5</td></tr>
+<tr><td class="cn">field_hints</td><td class="ct">TEXT</td><td class="cc">FTS5</td></tr>
+<tr><td class="cn">content_rowid='chunk_id'</td><td class="ct">TEXT</td><td class="cc">FTS5</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Brand / Domain</div>
+  <details class="table-card" data-table="brand_domains">
+  <summary><span class="tname">brand_domains</span><span class="tags"><span class="tag tag-pk">PK: brand, category</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">specDb (direct)</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">brand</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">official_domain</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">aliases</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">support_domain</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 0.8</td></tr>
+<tr><td class="cn">resolved_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Data Sync</div>
+  <details class="table-card" data-table="data_authority_sync">
+  <summary><span class="tname">data_authority_sync</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">specDb (direct)</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">specdb_sync_version</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">last_sync_status</td><td class="ct">TEXT</td><td class="cc">DEFAULT 'unknown'</td></tr>
+<tr><td class="cn">last_sync_at</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">last_sync_meta</td><td class="ct">TEXT</td><td class="cc">DEFAULT '{}'</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Field History</div>
+  <details class="table-card" data-table="field_history">
+  <summary><span class="tname">field_history</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">fieldHistoryStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">round</td><td class="ct">INTEGER</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">history_json</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT CURRENT_TIMESTAMP</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT CURRENT_TIMESTAMP</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE(category, product_id, field_key)</div><div class="idx-item">idx_fh_product (category, product_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Crawl Artifacts</div>
+  <details class="table-card" data-table="crawl_sources">
+  <summary><span class="tname">crawl_sources</span><span class="tags"><span class="tag tag-pk">PK: content_hash, product_id</span><span class="tag tag-cols">18 cols</span><span class="tag tag-store">artifactStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">final_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">http_status</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">doc_kind</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'other'</td></tr>
+<tr><td class="cn">source_tier</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 5</td></tr>
+<tr><td class="cn">content_type</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">file_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">has_screenshot</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">has_pdf</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">has_ldjson</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">has_dom_snippet</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">crawled_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_cs_product (product_id)</div><div class="idx-item">idx_cs_run (run_id)</div><div class="idx-item">idx_cs_host (host)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_screenshots">
+  <summary><span class="tname">source_screenshots</span><span class="tags"><span class="tag tag-pk">PK: screenshot_id</span><span class="tag tag-cols">16 cols</span><span class="tag tag-store">artifactStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">screenshot_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">selector</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'fullpage'</td></tr>
+<tr><td class="cn">format</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'jpg'</td></tr>
+<tr><td class="cn">width</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">height</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">file_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">captured_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">doc_kind</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'other'</td></tr>
+<tr><td class="cn">source_tier</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 5</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_ss_product (product_id)</div><div class="idx-item">idx_ss_content (content_hash)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_videos">
+  <summary><span class="tname">source_videos</span><span class="tags"><span class="tag tag-pk">PK: video_id</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">artifactStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">video_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">worker_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">format</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'webm'</td></tr>
+<tr><td class="cn">width</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">height</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">duration_ms</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">file_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">captured_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sv_product (product_id)</div><div class="idx-item">idx_sv_run (run_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="source_pdfs">
+  <summary><span class="tname">source_pdfs</span><span class="tags"><span class="tag tag-pk">PK: pdf_id</span><span class="tag tag-cols">15 cols</span><span class="tag tag-store">artifactStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">pdf_id</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">parent_content_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">source_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">filename</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">size_bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">file_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">pages_scanned</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">tables_found</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">pair_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">crawled_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_sp_product (product_id)</div><div class="idx-item">idx_sp_content (content_hash)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Telemetry Indexes</div>
+  <details class="table-card" data-table="knob_snapshots">
+  <summary><span class="tname">knob_snapshots</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">telemetryIndexStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">mismatch_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">total_knobs</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">entries</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '[]'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+<details class="table-card" data-table="query_index">
+  <summary><span class="tname">query_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">10 cols</span><span class="tag tag-store">telemetryIndexStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">query</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">provider</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">result_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">field_yield</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_qi_cat (category)</div><div class="idx-item">idx_qi_run (run_id)</div><div class="idx-item">idx_qi_query (query, provider)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="url_index">
+  <summary><span class="tname">url_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">11 cols</span><span class="tag tag-store">telemetryIndexStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">url</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">host</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">tier</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">doc_kind</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">fields_filled</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">fetch_success</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_ui_cat (category)</div><div class="idx-item">idx_ui_run (run_id)</div><div class="idx-item">idx_ui_host (host)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="prompt_index">
+  <summary><span class="tname">prompt_index</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">telemetryIndexStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">run_id</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">prompt_version</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">model</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">token_count</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 0</td></tr>
+<tr><td class="cn">success</td><td class="ct">INTEGER</td><td class="cc">NOT NULL DEFAULT 1</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_pi_cat (category)</div><div class="idx-item">idx_pi_run (run_id)</div></div>
+  </div>
+</details>
+</div>
+<div class="domain-group">
+  <div class="domain-label">Field Studio</div>
+  <details class="table-card" data-table="field_studio_map">
+  <summary><span class="tname">field_studio_map</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">fieldStudioMapStore</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY CHECK (id = 1)</td></tr>
+<tr><td class="cn">map_json</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+<tr><td class="cn">map_hash</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>AppDb</h2>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">Global</span>
+    <span class="tag tag-cols">5 tables</span>
+  </div>
+  <p class="surface-desc">Single global database at <code>.workspace/db/app.sqlite</code>. Cross-category state: brands, user settings, and field studio maps.</p>
+  <div class="domain-group">
+  <div class="domain-label">Global State</div>
+  <details class="table-card" data-table="brands">
+  <summary><span class="tname">brands</span><span class="tags"><span class="tag tag-pk">PK: identifier</span><span class="tag tag-cols">8 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">identifier</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">canonical_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">slug</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">aliases</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '[]'</td></tr>
+<tr><td class="cn">website</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">added_by</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'seed'</td></tr>
+<tr><td class="cn">created_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">UNIQUE idx_brands_slug (slug)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="brand_categories">
+  <summary><span class="tname">brand_categories</span><span class="tags"><span class="tag tag-pk">PK: identifier, category</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">2 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">identifier</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; brands(identifier)</span></td></tr>
+<tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_bc_category (category)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="brand_renames">
+  <summary><span class="tname">brand_renames</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-fk">FK</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">identifier</td><td class="ct">TEXT</td><td class="cc">NOT NULL <span class="fk-indicator">FK &rarr; brands(identifier)</span></td></tr>
+<tr><td class="cn">old_slug</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">new_slug</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">old_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">new_name</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">renamed_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_br_identifier (identifier)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="settings">
+  <summary><span class="tname">settings</span><span class="tags"><span class="tag tag-pk">PK: section, key</span><span class="tag tag-cols">5 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">section</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value</td><td class="ct">TEXT</td><td class="cc"></td></tr>
+<tr><td class="cn">type</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT 'string'</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+<details class="table-card" data-table="studio_maps">
+  <summary><span class="tname">studio_maps</span><span class="tags"><span class="tag tag-pk">PK: category</span><span class="tag tag-cols">4 cols</span><span class="tag tag-store">appDb</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr><td class="cn">category</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">map_json</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT '{}'</td></tr>
+<tr><td class="cn">file_path</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT ''</td></tr>
+<tr><td class="cn">updated_at</td><td class="ct">TEXT</td><td class="cc">NOT NULL DEFAULT (datetime('now'))</td></tr>
+</tbody></table>
+    
+  </div>
+</details>
+</div>
+
+</section>
+
+<section class="surface">
+  <div class="surface-head">
+    <h2>FrontierDb</h2>
+    <span class="tag" style="background:var(--amber-s);color:var(--amber)">Per-Category</span>
+    <span class="tag tag-cols">3 tables</span>
+  </div>
+  <p class="surface-desc">Discovery frontier cache at <code>.workspace/runs/{category}/_intel/frontier/frontier.db</code>. Tracks search queries, URL fetch history, and per-field yield statistics.</p>
+  <div class="domain-group">
+  <div class="domain-label">Discovery Frontier</div>
+  <details class="table-card" data-table="queries">
+  <summary><span class="tname">queries</span><span class="tags"><span class="tag tag-pk">PK: query_hash</span><span class="tag tag-cols">9 cols</span><span class="tag tag-store">frontierSqlite</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">query_hash</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">query_text</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">provider</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">fields</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">attempts</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 1</td></tr>
+<tr><td class="cn">first_ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">last_ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">results</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_queries_product (product_id)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="urls">
+  <summary><span class="tname">urls</span><span class="tags"><span class="tag tag-pk">PK: canonical_url</span><span class="tag tag-cols">27 cols</span><span class="tag tag-store">frontierSqlite</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">canonical_url</td><td class="ct">TEXT</td><td class="cc">PRIMARY KEY</td></tr>
+<tr><td class="cn">original_url</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">domain</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">path_sig</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">product_id</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">first_seen_ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">last_seen_ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">last_status</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">last_final_url</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">content_type</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">content_hash</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">bytes</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">elapsed_ms</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">fetch_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">ok_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">redirect_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">notfound_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">gone_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">blocked_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">server_error_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">timeout_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">fields_found</td><td class="ct">TEXT</td><td class="cc">DEFAULT '[]'</td></tr>
+<tr><td class="cn">avg_confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">conflict_count</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">cooldown_next_retry_ts</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">cooldown_reason</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">cooldown_seconds</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_urls_domain (domain)</div><div class="idx-item">idx_urls_product (product_id)</div><div class="idx-item">idx_urls_last_seen (last_seen_ts)</div></div>
+  </div>
+</details>
+<details class="table-card" data-table="yields">
+  <summary><span class="tname">yields</span><span class="tags"><span class="tag tag-pk">PK: id</span><span class="tag tag-cols">7 cols</span><span class="tag tag-store">frontierSqlite</span></span></summary>
+  <div class="card-body">
+    <table class="col-table"><thead><tr><th>Column</th><th>Type</th><th>Constraints</th></tr></thead>
+    <tbody><tr class="pk-row"><td class="cn">id</td><td class="ct">INTEGER</td><td class="cc">PRIMARY KEY AUTOINCREMENT</td></tr>
+<tr><td class="cn">canonical_url</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">field_key</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+<tr><td class="cn">value_hash</td><td class="ct">TEXT</td><td class="cc">DEFAULT ''</td></tr>
+<tr><td class="cn">confidence</td><td class="ct">REAL</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">conflict_flag</td><td class="ct">INTEGER</td><td class="cc">DEFAULT 0</td></tr>
+<tr><td class="cn">ts</td><td class="ct">TEXT</td><td class="cc">NOT NULL</td></tr>
+</tbody></table>
+    <div class="idx-section"><div class="idx-label">Indexes</div><div class="idx-item">idx_yields_url (canonical_url)</div></div>
+  </div>
+</details>
+</div>
+
+</section>
+
+</div>
+
+<script>
+const filter = document.getElementById('filter');
+filter?.addEventListener('input', () => {
+  const q = filter.value.toLowerCase();
+  document.querySelectorAll('.table-card').forEach(card => {
+    const name = card.dataset.table || '';
+    const body = card.querySelector('.card-body')?.textContent?.toLowerCase() || '';
+    card.style.display = (name.includes(q) || body.includes(q)) ? '' : 'none';
+  });
+  document.querySelectorAll('.domain-group').forEach(group => {
+    const visible = [...group.querySelectorAll('.table-card')].filter(c => c.style.display !== 'none');
+    group.style.display = visible.length ? '' : 'none';
+  });
+});
+</script>
+</body>
+</html>

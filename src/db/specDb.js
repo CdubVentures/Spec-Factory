@@ -31,7 +31,6 @@ import { createPurgeStore } from './stores/purgeStore.js';
 import { createRunMetaStore } from './stores/runMetaStore.js';
 import { createArtifactStore } from './stores/artifactStore.js';
 import { createRunArtifactStore } from './stores/runArtifactStore.js';
-import { createMetricsStore } from './stores/metricsStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
@@ -126,10 +125,6 @@ export class SpecDb {
     });
     this._runArtifactStore = createRunArtifactStore({
       stmts: { _upsertRunArtifact: this._upsertRunArtifact, _getRunArtifact: this._getRunArtifact, _getRunArtifactsByRunId: this._getRunArtifactsByRunId }
-    });
-    this._metricsStore = createMetricsStore({
-      db: this.db,
-      stmts: { _insertMetric: this._insertMetric }
     });
     this._telemetryIndexStore = createTelemetryIndexStore({
       db: this.db,
@@ -254,26 +249,6 @@ export class SpecDb {
       aliases: row.aliases || '[]',
       support_domain: row.support_domain || null,
       confidence: row.confidence ?? 0.8
-    });
-  }
-
-  // --- Domain Classifications ---
-
-  getDomainClassification(domain) {
-    return this.db.prepare(
-      'SELECT * FROM domain_classifications WHERE domain = ?'
-    ).get(domain) || null;
-  }
-
-  upsertDomainClassification(row) {
-    this.db.prepare(`
-      INSERT OR REPLACE INTO domain_classifications (domain, classification, safe, reason)
-      VALUES (@domain, @classification, @safe, @reason)
-    `).run({
-      domain: row.domain,
-      classification: row.classification,
-      safe: row.safe ?? 1,
-      reason: row.reason || null
     });
   }
 
@@ -718,8 +693,8 @@ export class SpecDb {
       'source_registry', 'source_artifacts', 'source_assertions', 'source_evidence_refs',
       'key_review_state', 'key_review_runs', 'key_review_run_sources', 'key_review_audit',
       'billing_entries', 'llm_cache', 'learning_profiles', 'category_brain',
-      'source_intel_domains', 'source_intel_field_rewards', 'source_intel_brands',
-      'source_intel_paths', 'source_corpus', 'runtime_events'
+      'source_intel_domains', 'source_intel_field_rewards',
+      'source_corpus', 'runtime_events'
     ];
     const result = {};
     for (const table of tables) {
@@ -753,11 +728,6 @@ export class SpecDb {
   getBillingRollup(m, cat) { return this._billingStore.getBillingRollup(m, cat); }
   getBillingEntriesForMonth(m) { return this._billingStore.getBillingEntriesForMonth(m); }
   getBillingSnapshot(m, pid) { return this._billingStore.getBillingSnapshot(m, pid); }
-
-  // --- Metrics ---
-
-  insertMetric(e) { this._metricsStore.insertMetric(e); }
-  insertMetricsBatch(es) { this._metricsStore.insertMetricsBatch(es); }
 
   // --- Telemetry Indexes ---
   insertKnobSnapshot(row) { this._telemetryIndexStore.insertKnobSnapshot(row); }
@@ -831,8 +801,6 @@ export class SpecDb {
 
   upsertSourceIntelDomain(e) { this._sourceIntelStore.upsertSourceIntelDomain(e); }
   upsertSourceIntelFieldReward(e) { this._sourceIntelStore.upsertSourceIntelFieldReward(e); }
-  upsertSourceIntelBrand(e) { this._sourceIntelStore.upsertSourceIntelBrand(e); }
-  upsertSourceIntelPath(e) { this._sourceIntelStore.upsertSourceIntelPath(e); }
   persistSourceIntelFull(c, d) { this._sourceIntelStore.persistSourceIntelFull(c, d); }
   loadSourceIntelDomains(c) { return this._sourceIntelStore.loadSourceIntelDomains(c); }
 

@@ -526,7 +526,7 @@ export async function createFullFixture(tempRoot) {
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+    specDbDir: path.join(tempRoot, '.workspace', 'db'),
   };
 
   await seedFieldRules(config.categoryAuthorityRoot, CATEGORY);
@@ -595,7 +595,7 @@ async function cloneFullFixture(tempRoot) {
     config: {
       categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
       localOutputRoot: path.join(tempRoot, 'out'),
-      specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+      specDbDir: path.join(tempRoot, '.workspace', 'db'),
     },
   };
 }

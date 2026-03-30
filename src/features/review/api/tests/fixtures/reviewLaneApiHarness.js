@@ -342,7 +342,7 @@ async function seedReviewLaneApiWorkspace(workspaceRoot) {
   const config = {
     categoryAuthorityRoot: path.join(workspaceRoot, 'category_authority'),
     localOutputRoot: path.join(workspaceRoot, 'out'),
-    specDbDir: path.join(workspaceRoot, '.specfactory_tmp'),
+    specDbDir: path.join(workspaceRoot, '.workspace', 'db'),
   };
   const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');
   const dbPath = path.join(config.specDbDir, CATEGORY, 'spec.sqlite');
@@ -383,7 +383,7 @@ export async function createReviewLaneApiHarness(t) {
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+    specDbDir: path.join(tempRoot, '.workspace', 'db'),
   };
   const reviewDocPath = path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json');
   const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');

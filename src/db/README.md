@@ -2,6 +2,8 @@
 
 SQLite-backed persistence layer for candidate data, review state, component identity, learning, billing, and queue management. Single `SpecDb` class provides a unified facade over 14 domain-specific store modules. Schema: 56 tables (55 regular + 1 FTS virtual table).
 
+Additionally, `AppDb` (`appDb.js`) provides a shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), and studio maps. Opened once at bootstrap, shared across all categories.
+
 ## Public API (The Contract)
 
 - `specDb.js` → `class SpecDb({ dbPath, category })` — main facade; instantiated via `serverBootstrap.js` DI
@@ -35,8 +37,8 @@ SQLite-backed persistence layer for candidate data, review state, component iden
 ## Mutation Boundaries
 
 - SQLite database files (one per category, located under INDEXLAB_ROOT)
-- 56 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, source_intel, queue/product, llm_route/source, telemetry indexes, crawl artifacts, evidence (FTS), brand/domain, metrics, runs, field_history
-- 14 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, metricsStore, fieldHistoryStore, telemetryIndexStore, purgeStore, provenanceStore
+- 54 tables across domains: candidates, component_identity, enum/list, item_field_state, key_review, billing, source_intel, queue/product, llm_route/source, telemetry indexes, crawl artifacts, evidence (FTS), brand/domain, runs, field_history
+- 13 store modules: candidateStore, componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, llmRouteSourceStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, billingStore, fieldHistoryStore, telemetryIndexStore, purgeStore, provenanceStore
 - Write access is through `SpecDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

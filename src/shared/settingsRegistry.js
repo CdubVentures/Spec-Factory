@@ -84,7 +84,7 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
   { key: "serpSelectorMaxKeep", type: "int", default: 50, min: 1, max: 500, configKey: "serpSelectorMaxKeep", envKey: "SERP_SELECTOR_MAX_KEEP", group: "misc", uiCategory: "planner", uiSection: "serp-selector", uiTip: "Maximum URLs the SERP selector can keep per run" },
   { key: "searxngBaseUrl", type: "string", default: "http://127.0.0.1:8080", allowEmpty: true, configKey: "searxngBaseUrl", envKey: "SEARXNG_BASE_URL", group: "discovery", uiCategory: "planner", uiSection: "search-execution", uiGroup: "SearXNG", uiTip: "Base URL of the local SearXNG instance" },
   { key: "searxngMinQueryIntervalMs", type: "int", default: 3000, min: 0, max: 30000, configKey: "searxngMinQueryIntervalMs", envKey: "SEARXNG_MIN_QUERY_INTERVAL_MS", group: "misc", uiCategory: "planner", uiSection: "search-execution", uiGroup: "SearXNG", uiTip: "Minimum delay between consecutive SearXNG queries" },
-  { key: "specDbDir", type: "string", default: ".specfactory_tmp", allowEmpty: true, configKey: "specDbDir", envKey: "SPEC_DB_DIR", group: "paths", uiCategory: "global", uiSection: "output", uiGroup: "Paths", uiTip: "Directory for per-category SQLite runtime databases" },
+  { key: "specDbDir", type: "string", default: ".workspace/db", allowEmpty: true, configKey: "specDbDir", envKey: "SPEC_DB_DIR", group: "paths", uiCategory: "global", uiSection: "output", uiGroup: "Paths", uiTip: "Directory for per-category SQLite runtime databases" },
 
 
 

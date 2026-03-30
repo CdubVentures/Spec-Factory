@@ -1,88 +1,79 @@
 # Pipeline And Runtime Settings
 
-> **Purpose:** Document the verified persistence flow for runtime, UI, storage, deterministic spec-seed, source-strategy, and category-scoped LLM route-matrix controls.
+> **Purpose:** Document the verified runtime-settings, source-strategy, deterministic spec-seed, and category-scoped LLM route-matrix surfaces.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md)
-> **Last validated:** 2026-03-25
+> **Last validated:** 2026-03-30
 
-This document covers the pipeline/settings surfaces owned by `PipelineSettingsPage` and `LlmSettingsPage`, including the deterministic spec-seed editor mounted inside the pipeline settings UI. The separate `/llm-config` composite policy editor is documented in [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md).
+This document covers the settings surfaces owned by `PipelineSettingsPage` and `LlmSettingsPage`, including the deterministic spec-seed editor mounted inside pipeline settings. The separate `/llm-config` composite policy editor is documented in [llm-policy-and-provider-config.md](./llm-policy-and-provider-config.md).
 
 ## Entry Points
 
 | Surface | Path | Role |
 |--------|------|------|
-| Pipeline settings page | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | runtime settings, storage settings, and source-strategy editor |
-| Deterministic strategy section | `tools/gui-react/src/features/pipeline-settings/sections/PipelineDeterministicStrategySection.tsx` | per-category spec-seed editor for deterministic Tier 1 query templates |
+| Pipeline settings page | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | runtime settings, source strategy, and deterministic spec-seed editor |
+| deterministic strategy section | `tools/gui-react/src/features/pipeline-settings/sections/PipelineDeterministicStrategySection.tsx` | per-category spec-seed editor |
 | LLM settings page | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category-scoped LLM route-matrix editor |
-| Settings API | `src/features/settings/api/configRoutes.js` | `/ui-settings`, `/runtime-settings`, `/storage-settings`, `/llm-settings/*`, `/indexing/llm-config` |
-| Source strategy API | `src/features/indexing/api/sourceStrategyRoutes.js` | `/source-strategy/*` per-category discovery policy |
-| Spec seeds API | `src/features/indexing/api/specSeedsRoutes.js` | `/spec-seeds?category=:category` deterministic query-template persistence |
-| Settings authority | `src/features/settings-authority/index.js` | canonical settings schema, migration, validation, persistence |
+| settings API | `src/features/settings/api/configRoutes.js` | `/runtime-settings`, `/llm-settings/*`, `/indexing/llm-config` |
+| source strategy API | `src/features/indexing/api/sourceStrategyRoutes.js` | `/source-strategy/*` per-category source policy |
+| spec seeds API | `src/features/indexing/api/specSeedsRoutes.js` | `/spec-seeds?category=:category` deterministic query-template persistence |
 
 ## Dependencies
 
-- `src/features/settings-authority/settingsContract.js`
-- `src/features/settings-authority/userSettingsService.js`
 - `src/features/settings/api/configRuntimeSettingsHandler.js`
-- `src/features/settings/api/configStorageSettingsHandler.js`
-- `src/features/settings/api/configUiSettingsHandler.js`
 - `src/features/settings/api/configLlmSettingsHandler.js`
+- `src/features/settings/api/configPersistenceContext.js`
+- `src/features/settings-authority/userSettingsService.js`
 - `src/features/indexing/api/sourceStrategyRoutes.js`
 - `src/features/indexing/api/specSeedsRoutes.js`
 - `src/features/indexing/sources/sourceFileService.js`
 - `src/features/indexing/sources/specSeedsFileService.js`
-- `src/shared/settingsRegistry.js` - SSOT registry defining `122` live entries across runtime (`99`), bootstrap-env (`8`), UI (`5`), and storage (`10`) domains; no exported convergence registry exists in the live file
-- `src/shared/settingsDefaults.js` - derived defaults from the registry
-- `src/shared/settingsAccessor.js` - null-safe accessor with registry clamping
-- `src/api/services/runDataRelocationService.js`
+- `src/shared/settingsRegistry.js`
+- `src/shared/settingsDefaults.js`
 - `src/db/specDb.js`
+- `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts`
 - `tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts`
-- `tools/gui-react/src/features/pipeline-settings/sections/PipelineDeterministicStrategySection.tsx`
-- `category_authority/_runtime/user-settings.json`
+- `tools/gui-react/src/stores/runtimeSettingsValueStore.ts`
+- `tools/gui-react/src/stores/llmSettingsAuthority.ts`
 
 ## Flow
 
-1. `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` hydrates runtime settings from `GET /api/v1/runtime-settings`; storage and UI-specific saves go to `/api/v1/storage-settings` and `/api/v1/ui-settings`.
-2. The same page loads `GET /api/v1/indexing/llm-config` only to derive token defaults and model metadata for runtime-setting helpers; it does not persist through `/llm-policy`.
-3. `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts` calls `/api/v1/source-strategy` for per-category source rows stored in `category_authority/<category>/sources.json`.
+1. `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` hydrates runtime settings from `GET /api/v1/runtime-settings`.
+2. The same page reads `GET /api/v1/indexing/llm-config` for model and token metadata used by runtime settings helpers.
+3. `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts` calls `/api/v1/source-strategy` for per-category source entries stored in `category_authority/<category>/sources.json`.
 4. `tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts` calls `GET/PUT /api/v1/spec-seeds?category=:category` for ordered deterministic query templates stored in `category_authority/<category>/spec_seeds.json`.
 5. `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` reads and writes category route matrices through `GET/PUT /api/v1/llm-settings/:category/routes`.
-6. `src/features/settings/api/configRoutes.js` dispatches runtime, storage, and UI writes into their dedicated handlers, which normalize request payloads against contracts exported from `src/features/settings-authority/index.js`.
-7. `src/features/settings/api/configRoutes.js` hard-codes `canonicalOnlySettingsWrites = true`, so `src/features/settings/api/configPersistenceContext.js` only persists canonical sections into `category_authority/_runtime/user-settings.json` during the current runtime.
-8. `src/features/settings-authority/userSettingsService.js` projects accepted runtime/storage values back into the live in-memory config object so subsequent runs use the new settings immediately.
-9. `src/features/settings/api/configLlmSettingsHandler.js` persists LLM route matrices directly into SQLite through `src/db/specDb.js`.
+6. `src/features/settings/api/configRuntimeSettingsHandler.js` validates and persists runtime patches through `configPersistenceContext`.
+7. `configPersistenceContext` writes canonical runtime sections into AppDb when available and applies accepted values back into the live config object.
+8. `src/features/settings/api/configLlmSettingsHandler.js` persists route matrices directly into per-category SpecDb rows.
 
-The `convergence` section still exists in the persisted settings document as `{}` for backward compatibility, but no live `/api/v1/convergence-settings` route is mounted in `src/features/settings/api/configRoutes.js`.
+There is no live `/api/v1/storage-settings` route in this flow.
+There is no live `/api/v1/convergence-settings` route in this flow.
 
 ## Side Effects
 
-- Writes canonical settings to `category_authority/_runtime/user-settings.json`.
-- Mutates the live server config object so subsequent runs use updated runtime/storage settings immediately.
-- Writes category source-strategy records into `category_authority/<category>/sources.json`.
-- Writes category deterministic query templates into `category_authority/<category>/spec_seeds.json`.
-- Updates `llm_route_matrix` rows in SQLite for category route-matrix changes.
-- Emits `data-change` events such as `runtime-settings-updated`, `user-settings-updated`, and route-matrix update broadcasts.
-- Broadcasts `spec-seeds-updated` after successful deterministic template writes.
+- Updates live runtime config values through `applyRuntimeSettingsToConfig()`.
+- Persists canonical runtime settings into AppDb `settings` rows, with JSON fallback only when AppDb is unavailable.
+- Writes per-category source strategy into `category_authority/<category>/sources.json`.
+- Writes per-category deterministic query templates into `category_authority/<category>/spec_seeds.json`.
+- Updates `llm_route_matrix` rows in per-category SpecDb state.
+- Emits `data-change` broadcasts such as `runtime-settings-updated`, `user-settings-updated`, and source/spec-seed update events.
 
 ## Error Paths
 
-- Invalid storage payload: `400` with a specific validation message.
-- Invalid integer/float/enum runtime setting: key is rejected and reported in the response.
-- Missing SpecDb for LLM settings: `500 specdb_unavailable`.
-- Missing or unresolved `category` query param for `/spec-seeds`: `400 category_required`.
-- Invalid deterministic templates for `/spec-seeds`: `400 invalid_spec_seeds` with a reason such as `not_an_array` or `entry_0_not_a_nonempty_string`.
-- Source-strategy validation errors are returned from `src/features/indexing/api/sourceStrategyRoutes.js` rather than through settings-authority.
+- Invalid runtime key or type: key is rejected in the response envelope.
+- Missing or unresolved `category` query param for `/source-strategy` or `/spec-seeds`: `400 category_required`.
+- Invalid deterministic spec seeds: `400 invalid_spec_seeds` with a concrete reason.
+- Missing SpecDb for LLM settings: route-specific `500` from `configLlmSettingsHandler`.
 - Persistence failures return route-specific `500 *_persist_failed` errors.
 
 ## State Transitions
 
 | Surface | Transition |
 |---------|------------|
-| UI settings | in-memory toggle -> persisted UI snapshot |
-| Runtime settings | request payload -> normalized snapshot -> live config mutation |
-| Storage settings | request payload -> normalized storage snapshot -> relocation/archive config mutation |
-| Source strategy | form entry -> `sources.json` row -> reloaded authority list |
-| Spec seeds | ordered template edits -> `spec_seeds.json` -> deterministic query seed list for future runs |
-| LLM route matrix | fetched rows -> edited rows -> persisted SQLite rows |
+| runtime settings | request payload -> normalized snapshot -> persisted AppDb row set -> live config mutation |
+| source strategy | form entry -> `sources.json` update -> reloaded source entry list |
+| spec seeds | ordered template edits -> `spec_seeds.json` update -> future deterministic query list |
+| LLM route matrix | fetched rows -> edited rows -> persisted SpecDb rows |
 
 ## Diagram
 
@@ -92,55 +83,50 @@ sequenceDiagram
   autonumber
   box Client
     participant PipelinePage as PipelineSettingsPage<br/>(tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx)
-    participant SpecSeedsHook as specSeedsAuthority<br/>(tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts)
+    participant SourceHook as sourceStrategyAuthority<br/>(tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts)
+    participant SeedsHook as specSeedsAuthority<br/>(tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts)
     participant LlmSettingsPage as LlmSettingsPage<br/>(tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx)
   end
   box Server
-    participant ConfigRoutes as configRoutes<br/>(src/features/settings/api/configRoutes.js)
+    participant RuntimeRoutes as runtimeSettingsHandler<br/>(src/features/settings/api/configRuntimeSettingsHandler.js)
     participant SourceRoutes as sourceStrategyRoutes<br/>(src/features/indexing/api/sourceStrategyRoutes.js)
-    participant SpecSeedRoutes as specSeedsRoutes<br/>(src/features/indexing/api/specSeedsRoutes.js)
-    participant Authority as settings-authority<br/>(src/features/settings-authority/index.js)
+    participant SeedRoutes as specSeedsRoutes<br/>(src/features/indexing/api/specSeedsRoutes.js)
+    participant LlmRoutes as configLlmSettingsHandler<br/>(src/features/settings/api/configLlmSettingsHandler.js)
   end
   box Persistence
-    participant SettingsFile as user-settings.json<br/>(category_authority/_runtime/user-settings.json)
+    participant AppDb as app.sqlite<br/>(.workspace/db/app.sqlite)
     participant SourcesFile as sources.json<br/>(category_authority/<category>/sources.json)
     participant SeedsFile as spec_seeds.json<br/>(category_authority/<category>/spec_seeds.json)
-    participant SpecDb as SpecDb<br/>(src/db/specDb.js)
+    participant SpecDb as spec.sqlite<br/>(.workspace/db/<category>/spec.sqlite)
   end
-  PipelinePage->>ConfigRoutes: PUT /api/v1/runtime-settings
-  ConfigRoutes->>Authority: persist canonical runtime section
-  Authority->>SettingsFile: write runtime snapshot
-  PipelinePage->>SourceRoutes: POST/PUT/DELETE /api/v1/source-strategy
-  SourceRoutes->>SourcesFile: write source row changes
-  SpecSeedsHook->>SpecSeedRoutes: PUT /api/v1/spec-seeds?category=:category
-  SpecSeedRoutes->>SeedsFile: write ordered template list
-  LlmSettingsPage->>ConfigRoutes: PUT /api/v1/llm-settings/:category/routes
-  ConfigRoutes->>SpecDb: saveLlmRouteMatrix(rows)
-  ConfigRoutes-->>LlmSettingsPage: persisted route matrix
+  PipelinePage->>RuntimeRoutes: PUT /api/v1/runtime-settings
+  RuntimeRoutes->>AppDb: persist runtime section
+  PipelinePage->>SourceHook: edit source strategy
+  SourceHook->>SourceRoutes: POST/PUT/DELETE /api/v1/source-strategy
+  SourceRoutes->>SourcesFile: write source entries
+  SeedsHook->>SeedRoutes: PUT /api/v1/spec-seeds?category=:category
+  SeedRoutes->>SeedsFile: write deterministic seeds
+  LlmSettingsPage->>LlmRoutes: PUT /api/v1/llm-settings/:category/routes
+  LlmRoutes->>SpecDb: save route matrix rows
 ```
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/features/settings/api/configRoutes.js` | live settings endpoints and dispatch split |
+| source | `src/features/settings/api/configRoutes.js` | live settings endpoint split |
 | source | `src/features/settings/api/configRuntimeSettingsHandler.js` | runtime settings read/write behavior |
-| source | `src/features/settings/api/configStorageSettingsHandler.js` | storage settings read/write behavior |
-| source | `src/features/settings/api/configUiSettingsHandler.js` | UI settings read/write behavior |
 | source | `src/features/settings/api/configLlmSettingsHandler.js` | category route-matrix persistence |
-| source | `src/features/settings/api/configPersistenceContext.js` | canonical-only write behavior and in-memory projection boundary |
-| source | `src/features/settings-authority/README.md` | compatibility-only convergence section invariant |
-| source | `src/features/settings-authority/index.js` | exported contracts and helpers |
+| source | `src/features/settings/api/configPersistenceContext.js` | AppDb-first runtime persistence |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy read/write surface |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed read/write surface |
-| source | `src/features/indexing/sources/specSeedsFileService.js` | default seed list, validation, and file-write behavior |
+| source | `src/features/indexing/sources/sourceFileService.js` | file-backed source strategy behavior |
+| source | `src/features/indexing/sources/specSeedsFileService.js` | file-backed spec seeds behavior |
 | source | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | primary GUI settings surface |
-| source | `tools/gui-react/src/features/pipeline-settings/sections/PipelineDeterministicStrategySection.tsx` | deterministic strategy editor UI |
-| source | `tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts` | GUI fetch/save calls for deterministic templates |
 | source | `tools/gui-react/src/pages/llm-settings/LlmSettingsPage.tsx` | category LLM route-matrix GUI surface |
 
 ## Related Documents
 
-- [LLM Policy and Provider Config](./llm-policy-and-provider-config.md) - Covers the separate composite `/llm-policy` editor.
-- [Storage and Run Data](./storage-and-run-data.md) - Storage settings are a subset of this flow but affect run artifact destinations.
-- [Category Authority](./category-authority.md) - Persisted settings and source-strategy changes influence authority snapshots and cache invalidation.
+- [LLM Policy and Provider Config](./llm-policy-and-provider-config.md) - Separate composite `/llm-policy` feature.
+- [Storage and Run Data](./storage-and-run-data.md) - Separate storage-manager inventory surface.
+- [Category Authority](./category-authority.md) - Source strategy and spec seeds live under the same control-plane root.

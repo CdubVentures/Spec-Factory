@@ -471,11 +471,6 @@ export function prepareStatements(db) {
       )
     `),
 
-    _insertMetric: db.prepare(`
-      INSERT INTO metrics (ts, metric_type, name, value, labels)
-      VALUES (@ts, @metric_type, @name, @value, @labels)
-    `),
-
     _upsertLlmCache: db.prepare(`
       INSERT OR REPLACE INTO llm_cache (cache_key, response, timestamp, ttl)
       VALUES (@cache_key, @response, @timestamp, @ttl)

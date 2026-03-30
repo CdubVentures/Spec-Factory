@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { toInt } from '../shared/valueNormalizers.js';
 
 function sanitizePathToken(value, fallback = 'trace') {
@@ -20,20 +22,14 @@ function sanitizeFilename(value, fallback = 'events.jsonl') {
 
 export class RuntimeTraceWriter {
   constructor({
-    storage,
+    runDir,
     runId,
     productId,
-    rootKey = '_runtime/traces'
   } = {}) {
-    this.storage = storage;
+    this.runDir = String(runDir || '');
     this.runId = sanitizePathToken(runId, 'run');
     this.productId = sanitizePathToken(productId, 'product');
-    this.rootKey = String(rootKey || '_runtime/traces').trim().replace(/\/+$/, '');
     this.counters = new Map();
-  }
-
-  baseRunKey() {
-    return this.storage.resolveOutputKey(this.rootKey, 'runs', this.runId, this.productId);
   }
 
   nextRingSlot(counterKey, ringSize) {
@@ -57,15 +53,10 @@ export class RuntimeTraceWriter {
       : this.nextRingSlot(`${sectionToken}:${prefixToken}`, Number.MAX_SAFE_INTEGER);
     const suffix = String(slot).padStart(3, '0');
     const filename = `${prefixToken}_${suffix}.json`;
-    const key = this.storage.resolveOutputKey(this.baseRunKey(), sectionToken, filename);
-    await this.storage.writeObject(
-      key,
-      Buffer.from(`${JSON.stringify(payload ?? {}, null, 2)}\n`, 'utf8'),
-      { contentType: 'application/json' }
-    );
-    return {
-      trace_path: key
-    };
+    const tracePath = path.join(this.runDir, 'traces', sectionToken, filename);
+    await fs.mkdir(path.dirname(tracePath), { recursive: true });
+    await fs.writeFile(tracePath, `${JSON.stringify(payload ?? {}, null, 2)}\n`, 'utf8');
+    return { trace_path: tracePath };
   }
 
   async appendJsonl({
@@ -76,13 +67,10 @@ export class RuntimeTraceWriter {
     const sectionToken = sanitizePathToken(section, 'misc');
     const fileToken = sanitizeFilename(filename, 'events.jsonl');
     const finalName = fileToken.endsWith('.jsonl') ? fileToken : `${fileToken}.jsonl`;
-    const key = this.storage.resolveOutputKey(this.baseRunKey(), sectionToken, finalName);
-    await this.storage.appendText(key, `${JSON.stringify(row ?? {})}\n`, {
-      contentType: 'application/x-ndjson'
-    });
-    return {
-      trace_path: key
-    };
+    const tracePath = path.join(this.runDir, 'traces', sectionToken, finalName);
+    await fs.mkdir(path.dirname(tracePath), { recursive: true });
+    await fs.appendFile(tracePath, `${JSON.stringify(row ?? {})}\n`, 'utf8');
+    return { trace_path: tracePath };
   }
 
   async writeText({
@@ -91,7 +79,6 @@ export class RuntimeTraceWriter {
     text = '',
     extension = 'txt',
     ringSize = 0,
-    contentType = 'text/plain; charset=utf-8'
   } = {}) {
     const sectionToken = sanitizePathToken(section, 'misc');
     const prefixToken = sanitizePathToken(prefix, 'trace');
@@ -101,14 +88,9 @@ export class RuntimeTraceWriter {
       : this.nextRingSlot(`${sectionToken}:${prefixToken}:${ext}`, Number.MAX_SAFE_INTEGER);
     const suffix = String(slot).padStart(3, '0');
     const filename = `${prefixToken}_${suffix}.${ext}`;
-    const key = this.storage.resolveOutputKey(this.baseRunKey(), sectionToken, filename);
-    await this.storage.writeObject(
-      key,
-      Buffer.from(String(text || ''), 'utf8'),
-      { contentType }
-    );
-    return {
-      trace_path: key
-    };
+    const tracePath = path.join(this.runDir, 'traces', sectionToken, filename);
+    await fs.mkdir(path.dirname(tracePath), { recursive: true });
+    await fs.writeFile(tracePath, String(text || ''), 'utf8');
+    return { trace_path: tracePath };
   }
 }

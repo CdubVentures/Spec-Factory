@@ -34,8 +34,6 @@ export function registerConfigRoutes(ctx) {
     HELPER_ROOT
     || config?.categoryAuthorityRoot
     || 'category_authority';
-  // WHY: Canonical-only writes are always enforced — no toggle needed.
-  const canonicalOnlySettingsWrites = true;
   const initialUserSettings = loadUserSettingsSync({
     categoryAuthorityRoot: settingsRoot,
     appDb,
@@ -44,7 +42,6 @@ export function registerConfigRoutes(ctx) {
   const persistenceCtx = createConfigPersistenceContext({
     config,
     settingsRoot,
-    canonicalOnlySettingsWrites,
     initialUserSettings,
     appDb,
   });

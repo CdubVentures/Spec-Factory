@@ -187,11 +187,21 @@ class S3Storage {
   }
 
   resolveOutputKey(...parts) {
-    return toPosixKey(this.outputPrefix, ...parts);
+    const pfx = this.outputPrefix;
+    const cleaned = parts.map(p => {
+      const s = String(p || '');
+      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
+    });
+    return toPosixKey(pfx, ...cleaned);
   }
 
   resolveInputKey(...parts) {
-    return toPosixKey(this.inputPrefix, ...parts);
+    const pfx = this.inputPrefix;
+    const cleaned = parts.map(p => {
+      const s = String(p || '');
+      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
+    });
+    return toPosixKey(pfx, ...cleaned);
   }
 }
 
@@ -344,11 +354,21 @@ class LocalStorage {
   }
 
   resolveOutputKey(...parts) {
-    return toPosixKey(this.outputPrefix, ...parts);
+    const pfx = this.outputPrefix;
+    const cleaned = parts.map(p => {
+      const s = String(p || '');
+      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
+    });
+    return toPosixKey(pfx, ...cleaned);
   }
 
   resolveInputKey(...parts) {
-    return toPosixKey(this.inputPrefix, ...parts);
+    const pfx = this.inputPrefix;
+    const cleaned = parts.map(p => {
+      const s = String(p || '');
+      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
+    });
+    return toPosixKey(pfx, ...cleaned);
   }
 }
 

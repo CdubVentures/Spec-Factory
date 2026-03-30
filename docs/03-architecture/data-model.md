@@ -681,10 +681,15 @@
 
 ### `source_intel_domains`
 
+Unified table for domain, brand, and path scope intelligence. Uses `scope` + `scope_key` discriminator.
+
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
-| `root_domain` | `TEXT` | `PRIMARY KEY` |  |
-| `category` | `TEXT` | `NOT NULL` | Category slug. |
+| `root_domain` | `TEXT` | `NOT NULL` | Part of composite PK. |
+| `category` | `TEXT` | `NOT NULL` | Category slug. Part of composite PK. |
+| `scope` | `TEXT` | `NOT NULL DEFAULT 'domain'` | `'domain'`, `'brand'`, or `'path'`. Part of composite PK. |
+| `scope_key` | `TEXT` | `NOT NULL DEFAULT ''` | Empty for domain scope; brand_key or path for brand/path. Part of composite PK. |
+| `brand` | `TEXT` | `DEFAULT ''` | Brand display name (brand scope only). |
 | `attempts` | `INTEGER` | `DEFAULT 0` |  |
 | `http_ok_count` | `INTEGER` | `DEFAULT 0` |  |
 | `identity_match_count` | `INTEGER` | `DEFAULT 0` |  |
@@ -727,45 +732,6 @@
 | `reward_score` | `REAL` | `DEFAULT 0` |  |
 | `last_seen_at` | `TEXT` |  |  |
 | `last_decay_at` | `TEXT` |  |  |
-
-### `source_intel_brands`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `root_domain` | `TEXT` | `NOT NULL` |  |
-| `brand_key` | `TEXT` | `NOT NULL` |  |
-| `brand` | `TEXT` | `DEFAULT ''` |  |
-| `attempts` | `INTEGER` | `DEFAULT 0` |  |
-| `http_ok_count` | `INTEGER` | `DEFAULT 0` |  |
-| `identity_match_count` | `INTEGER` | `DEFAULT 0` |  |
-| `major_anchor_conflict_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_contributed_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_accepted_count` | `INTEGER` | `DEFAULT 0` |  |
-| `accepted_critical_fields_count` | `INTEGER` | `DEFAULT 0` |  |
-| `products_seen` | `INTEGER` | `DEFAULT 0` |  |
-| `recent_products` | `TEXT` | `DEFAULT '[]'` |  |
-| `per_field_helpfulness` | `TEXT` | `DEFAULT '{}'` |  |
-| `extra_stats` | `TEXT` | `DEFAULT '{}'` |  |
-| `last_seen_at` | `TEXT` |  |  |
-
-### `source_intel_paths`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `root_domain` | `TEXT` | `NOT NULL` |  |
-| `path` | `TEXT` | `NOT NULL` |  |
-| `attempts` | `INTEGER` | `DEFAULT 0` |  |
-| `http_ok_count` | `INTEGER` | `DEFAULT 0` |  |
-| `identity_match_count` | `INTEGER` | `DEFAULT 0` |  |
-| `major_anchor_conflict_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_contributed_count` | `INTEGER` | `DEFAULT 0` |  |
-| `fields_accepted_count` | `INTEGER` | `DEFAULT 0` |  |
-| `accepted_critical_fields_count` | `INTEGER` | `DEFAULT 0` |  |
-| `products_seen` | `INTEGER` | `DEFAULT 0` |  |
-| `recent_products` | `TEXT` | `DEFAULT '[]'` |  |
-| `per_field_helpfulness` | `TEXT` | `DEFAULT '{}'` |  |
-| `extra_stats` | `TEXT` | `DEFAULT '{}'` |  |
-| `last_seen_at` | `TEXT` |  |  |
 
 ### `source_corpus`
 
@@ -861,16 +827,6 @@
 | `support_domain` | `TEXT` |  |  |
 | `confidence` | `REAL` | `DEFAULT 0.8` |  |
 | `resolved_at` | `TEXT` | `DEFAULT (datetime('now'))` | Timestamp. |
-
-### `domain_classifications`
-
-| Field | Type | Constraints | Notes |
-|-------|------|-------------|-------|
-| `domain` | `TEXT` | `PRIMARY KEY` |  |
-| `classification` | `TEXT` | `NOT NULL` |  |
-| `safe` | `INTEGER` | `NOT NULL DEFAULT 1` |  |
-| `reason` | `TEXT` |  |  |
-| `classified_at` | `TEXT` | `DEFAULT (datetime('now'))` |  |
 
 ## Field history (learning persistence)
 

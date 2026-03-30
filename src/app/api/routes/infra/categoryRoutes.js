@@ -3,6 +3,8 @@ import { emitDataChange } from '../../../../core/events/dataChangeContract.js';
 function filterCategoryDirs(categoryDirs = [], includeTest = false) {
   return categoryDirs.filter((category) => {
     if (category === '_global') return false;
+    // WHY: category_authority/tests/ is a test harness directory, not a real category.
+    if (category === 'tests') return false;
     if (category.startsWith('_test_')) return includeTest;
     return !category.startsWith('_');
   });

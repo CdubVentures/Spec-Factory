@@ -126,6 +126,62 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
   ]);
 });
 
+test('studio page persistence propagates renames into expectations field-key arrays', async () => {
+  const { buildStudioPersistMap } = await loadStudioPagePersistence();
+
+  const payload = buildStudioPersistMap({
+    baseMap: {
+      version: 2,
+      selected_keys: ['old_field'],
+      field_overrides: {},
+      expectations: {
+        required_fields: ['old_field', 'other_field'],
+        critical_fields: ['old_field'],
+        expected_easy_fields: ['other_field'],
+        expected_sometimes_fields: [],
+        deep_fields: ['old_field', 'deep_only'],
+      },
+    },
+    snapshot: {
+      fieldOrder: ['old_field'],
+      rules: {
+        old_field: { required_level: 'required' },
+      },
+      renames: { old_field: 'new_field' },
+    },
+  });
+
+  assert.deepEqual(payload.expectations.required_fields, ['new_field', 'other_field']);
+  assert.deepEqual(payload.expectations.critical_fields, ['new_field']);
+  assert.deepEqual(payload.expectations.expected_easy_fields, ['other_field']);
+  assert.deepEqual(payload.expectations.expected_sometimes_fields, []);
+  assert.deepEqual(payload.expectations.deep_fields, ['new_field', 'deep_only']);
+});
+
+test('studio page persistence prunes orphaned field_overrides keys not in fieldOrder', async () => {
+  const { buildStudioPersistMap } = await loadStudioPagePersistence();
+
+  const payload = buildStudioPersistMap({
+    baseMap: {
+      version: 2,
+      selected_keys: [],
+      field_overrides: {},
+    },
+    snapshot: {
+      fieldOrder: ['__grp::main', 'active_key'],
+      rules: {
+        active_key: { required_level: 'required' },
+        orphaned_key: { required_level: 'optional' },
+      },
+      renames: {},
+    },
+  });
+
+  assert.deepEqual(payload.selected_keys, ['active_key']);
+  assert.ok('active_key' in payload.field_overrides, 'active_key should be in field_overrides');
+  assert.ok(!('orphaned_key' in payload.field_overrides), 'orphaned_key should be pruned from field_overrides');
+});
+
 test('studio page persistence keeps autosave attempt gating stable for force and duplicate fingerprints', async () => {
   const { shouldPersistStudioDocsAttempt } = await loadStudioPagePersistence();
 

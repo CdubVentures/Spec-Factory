@@ -5,6 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 
 import { registerConfigRoutes } from '../configRoutes.js';
+import { AppDb } from '../../../../db/appDb.js';
 
 /**
  * Contract: Every settings PUT handler must return the standard envelope:
@@ -78,9 +79,12 @@ function assertEnvelope(body, label) {
 test('runtime-settings PUT returns standard envelope with ok, applied, snapshot, rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-runtime-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ domainClassifierUrlCap: 25 }),
   }));
 
@@ -93,9 +97,12 @@ test('runtime-settings PUT returns standard envelope with ok, applied, snapshot,
 test('runtime-settings PUT with unknown keys includes them in rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-runtime-unk-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ domainClassifierUrlCap: 25, __bogusKey__: 'test' }),
   }));
 
@@ -110,9 +117,12 @@ test('runtime-settings PUT with unknown keys includes them in rejected', async (
 test('ui-settings PUT returns standard envelope with ok, applied, snapshot, rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-ui-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ runtimeAutoSaveEnabled: false }),
   }));
 
@@ -125,9 +135,12 @@ test('ui-settings PUT returns standard envelope with ok, applied, snapshot, reje
 test('ui-settings PUT with unknown keys includes them in rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-ui-unk-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ runtimeAutoSaveEnabled: true, hackerField: 'pwned' }),
   }));
 
@@ -142,9 +155,12 @@ test('ui-settings PUT with unknown keys includes them in rejected', async (t) =>
 test('storage-settings PUT returns standard envelope with ok, applied, snapshot, rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-storage-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ enabled: true, destinationType: 'local' }),
   }));
 
@@ -156,9 +172,12 @@ test('storage-settings PUT returns standard envelope with ok, applied, snapshot,
 test('storage-settings PUT with unknown keys includes them in rejected', async (t) => {
   const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-storage-unk-'));
   t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  t.after(() => appDb.close());
   const handler = registerConfigRoutes(makeCtx({
     config: { categoryAuthorityRoot: helperRoot },
     HELPER_ROOT: helperRoot,
+    appDb,
     readJsonBody: async () => ({ enabled: true, __injectedField__: 'bad' }),
   }));
 

@@ -8,6 +8,7 @@ import {
   loadUserSettingsSync,
   persistUserSettingsSections,
 } from '../userSettingsService.js';
+import { AppDb } from '../../../db/appDb.js';
 
 const USER_SETTINGS_RELATIVE_PATH = path.join('_runtime', 'user-settings.json');
 const LEGACY_HELPER_DIR = `helper${'_files'}`;
@@ -71,26 +72,23 @@ test('loadUserSettingsSync reads settings from categoryAuthorityRoot alias', asy
   });
 });
 
-test('persistUserSettingsSections writes settings to categoryAuthorityRoot alias', async () => {
-  await withTempWorkspace(async ({ workspace }) => {
-    const categoryAuthorityRoot = path.join(workspace, 'category-root');
+test('persistUserSettingsSections round-trips settings via SQL', async () => {
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  try {
     await persistUserSettingsSections({
-      categoryAuthorityRoot,
+      appDb,
       ui: {
         studioAutoSaveAllEnabled: true,
         runtimeAutoSaveEnabled: false,
       },
     });
 
-    const categoryAuthoritySettingsPath = path.join(categoryAuthorityRoot, USER_SETTINGS_RELATIVE_PATH);
-    const helperFilesSettingsPath = path.join(workspace, LEGACY_HELPER_DIR, USER_SETTINGS_RELATIVE_PATH);
-    await assert.doesNotReject(fs.access(categoryAuthoritySettingsPath));
-    await assert.rejects(fs.access(helperFilesSettingsPath));
-
-    const persisted = JSON.parse(await fs.readFile(categoryAuthoritySettingsPath, 'utf8'));
-    assert.equal(persisted.ui.studioAutoSaveAllEnabled, true);
-    assert.equal(persisted.ui.runtimeAutoSaveEnabled, false);
-  });
+    const loaded = loadUserSettingsSync({ appDb });
+    assert.equal(loaded.ui.studioAutoSaveAllEnabled, true);
+    assert.equal(loaded.ui.runtimeAutoSaveEnabled, false);
+  } finally {
+    appDb.close();
+  }
 });
 
 test('loadUserSettingsSync defaults to canonical category_authority root when no root options are provided', async () => {
@@ -154,23 +152,21 @@ test('loadUserSettingsSync defaults to canonical category_authority root when no
   });
 });
 
-test('persistUserSettingsSections defaults to canonical category_authority root when no root options are provided', async () => {
-  await withTempWorkspace(async ({ workspace }) => {
+test('persistUserSettingsSections persists and reads back via appDb', async () => {
+  const appDb = new AppDb({ dbPath: ':memory:' });
+  try {
     await persistUserSettingsSections({
+      appDb,
       ui: {
         studioAutoSaveAllEnabled: true,
         runtimeAutoSaveEnabled: false,
       },
     });
 
-    const canonicalPath = path.join(workspace, 'category_authority', USER_SETTINGS_RELATIVE_PATH);
-    const legacyPath = path.join(workspace, LEGACY_HELPER_DIR, USER_SETTINGS_RELATIVE_PATH);
-
-    await assert.doesNotReject(fs.access(canonicalPath));
-    await assert.rejects(fs.access(legacyPath));
-
-    const persisted = JSON.parse(await fs.readFile(canonicalPath, 'utf8'));
-    assert.equal(persisted.ui.studioAutoSaveAllEnabled, true);
-    assert.equal(persisted.ui.runtimeAutoSaveEnabled, false);
-  });
+    const loaded = loadUserSettingsSync({ appDb });
+    assert.equal(loaded.ui.studioAutoSaveAllEnabled, true);
+    assert.equal(loaded.ui.runtimeAutoSaveEnabled, false);
+  } finally {
+    appDb.close();
+  }
 });

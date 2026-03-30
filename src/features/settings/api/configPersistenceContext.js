@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import {
   applyRuntimeSettingsToConfig,
   deriveSettingsArtifactsFromUserSettings,
@@ -14,7 +12,6 @@ import {
 export function createConfigPersistenceContext({
   config,
   settingsRoot,
-  canonicalOnlySettingsWrites,
   initialUserSettings,
   appDb = null,
 }) {
@@ -29,17 +26,6 @@ export function createConfigPersistenceContext({
       : {};
     applyRuntimeSettingsToConfig(config, sections.runtime || {});
     Object.assign(uiSettingsState, snapshotUiSettings(sections.ui || {}));
-  }
-
-  async function persistLegacySettingsFile(filename, snapshot) {
-    if (canonicalOnlySettingsWrites) return;
-    const dir = path.join(settingsRoot, '_runtime');
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(
-      path.join(dir, filename),
-      JSON.stringify(snapshot, null, 2) + '\n',
-      'utf8',
-    );
   }
 
   async function persistCanonicalSections({
@@ -80,7 +66,6 @@ export function createConfigPersistenceContext({
     getUserSettingsState() { return userSettingsState; },
     getUiSettingsState() { return uiSettingsState; },
     persistCanonicalSections,
-    persistLegacySettingsFile,
     recordRouteWriteAttempt: recordRouteWriteAttemptWrapper,
     recordRouteWriteOutcome: recordRouteWriteOutcomeWrapper,
   };

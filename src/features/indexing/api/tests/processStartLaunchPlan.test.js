@@ -90,14 +90,14 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       '--search-engines',
       'bing,brave,duckduckgo',
       '--out',
-      path.join(localStorageRoot, 'indexlab'),
+      path.join(localStorageRoot, 'runs'),
       '--profile',
       'thorough',
       '--dry-run',
     ]);
 
     assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.join(localStorageRoot, 'output'));
-    assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, '.specfactory_tmp'));
+    assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, 'db'));
     assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
     // WHY: Plan 05 Step 6 — runtime settings are snapshot-only, not individual env vars.

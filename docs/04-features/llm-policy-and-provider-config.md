@@ -2,19 +2,19 @@
 
 > **Purpose:** Document the verified `/llm-config` feature, including the composite `LlmPolicy` shape, provider-registry editing flow, and the `/api/v1/llm-policy` persistence contract.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/frontend-architecture.md](../03-architecture/frontend-architecture.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-30
 
 ## Entry Points
 
 | Surface | Path | Role |
 |--------|------|------|
-| GUI page | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | global LLM policy, provider registry, budget, timeout, token, and per-phase override editor |
-| GUI shell | `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | left-nav phase shell for `global`, `needset`, `brand-resolver`, `search-planner`, `serp-selector`, `extraction`, `validate`, and `write` |
+| GUI page | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | global LLM policy, provider registry, budget, timeout, token, and phase override editor |
+| GUI shell | `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | left-nav shell for phase-local editing |
 | GUI authority hook | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` | hydrates the composite policy from the flat runtime store and auto-saves to `/api/v1/llm-policy` |
 | GUI API client | `tools/gui-react/src/features/llm-config/api/llmPolicyApi.ts` | `GET/PUT /api/v1/llm-policy` |
-| Server handler | `src/features/settings-authority/llmPolicyHandler.js` | assemble, validate, persist, and broadcast composite policy changes |
-| Policy schema | `src/core/llm/llmPolicySchema.js` | SSOT for composite group assembly/disassembly and managed flat keys |
-| Read-only metadata endpoint | `src/features/settings/api/configIndexingMetricsHandler.js` | `GET /api/v1/indexing/llm-config` model catalog, pricing, token-default, and resolved-key metadata |
+| server handler | `src/features/settings-authority/llmPolicyHandler.js` | assemble, validate, persist, and broadcast composite policy changes |
+| policy schema | `src/core/llm/llmPolicySchema.js` | SSOT for composite group assembly/disassembly and managed flat keys |
+| metadata endpoint | `src/features/settings/api/configIndexingMetricsHandler.js` | `GET /api/v1/indexing/llm-config` model catalog, pricing, token profiles, and resolved API keys |
 
 ## Dependencies
 
@@ -31,11 +31,11 @@
 
 ## Policy Shape
 
-### Composite `LlmPolicy` Groups
+### Composite `LlmPolicy` groups
 
 | Group | Fields | Evidence |
 |------|--------|----------|
-| `models` | `plan`, `reasoning`, `planFallback`, `reasoningFallback` | `src/core/llm/llmPolicySchema.js`, `tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.generated.ts` |
+| `models` | `plan`, `reasoning`, `planFallback`, `reasoningFallback` | `src/core/llm/llmPolicySchema.js` |
 | `provider` | `id`, `baseUrl`, `planProvider`, `planBaseUrl` | `src/core/llm/llmPolicySchema.js` |
 | `apiKeys` | `gemini`, `deepseek`, `anthropic`, `openai`, `plan` | `src/core/llm/llmPolicySchema.js` |
 | `tokens` | `maxOutput`, `plan`, `planFallback`, `reasoning`, `reasoningFallback`, `maxTokens` | `src/core/llm/llmPolicySchema.js` |
@@ -44,21 +44,19 @@
 | top-level | `timeoutMs` | `src/core/llm/llmPolicySchema.js` |
 | JSON payloads | `phaseOverrides`, `providerRegistry` | `src/core/llm/llmPolicySchema.js` |
 
-### Provider Registry Entry Shape
+### Provider registry entry shape
 
 | Field | Type | Notes |
 |------|------|-------|
 | `id` | `string` | provider identifier such as `default-gemini` |
 | `name` | `string` | operator-facing label |
-| `type` | `openai-compatible / anthropic / ollama` | transport/provider family |
+| `type` | `openai-compatible`, `anthropic`, or `ollama` | transport/provider family |
 | `baseUrl` | `string` | provider API base |
-| `apiKey` | `string` | persisted or injected API key |
+| `apiKey` | `string` | provider credential field returned by `/llm-policy` when configured |
 | `enabled` | `boolean` | disabled providers are excluded from client validation |
-| `expanded` | `boolean` | GUI-only expansion state persisted in the registry JSON |
-| `health` | `'green' | 'gray' | 'red'` | optional operator-facing status badge |
-| `models` | `LlmProviderModel[]` | nested model catalog with `modelId`, costs, token caps, tier, and transport |
+| `models` | `LlmProviderModel[]` | nested model catalog with costs and token caps |
 
-### Phase Override Shape
+### Phase override shape
 
 | Field | Type | Notes |
 |------|------|-------|
@@ -67,42 +65,46 @@
 | `useReasoning` | `boolean` | phase-local toggle over the global reasoning setting |
 | `maxOutputTokens` | `number \| null` | phase-local token cap override |
 
-`tools/gui-react/src/features/llm-config/state/llmPhaseOverridesBridge.ts` maps GUI tab IDs such as `search-planner` and `brand-resolver` onto stored override keys such as `searchPlanner` and `brandResolver`.
-
 ## Flow
 
 1. The operator opens `/llm-config`, which renders `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx`.
-2. The page fetches `GET /api/v1/indexing/llm-config` through `tools/gui-react/src/api/client.ts` to hydrate model options, pricing defaults, routing snapshots, token profiles, and resolved API keys.
-3. `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` fetches `GET /api/v1/llm-policy`, receives `{ ok, policy }`, flattens the composite shape, and hydrates `tools/gui-react/src/stores/runtimeSettingsValueStore.ts`.
-4. GUI edits call `updateGroup()` or `updatePolicy()`, which flatten the edited group back into flat runtime keys in the shared store. No separate local policy store is the source of truth.
-5. Auto-save or "Save Now" calls `PUT /api/v1/llm-policy` through `tools/gui-react/src/features/llm-config/api/llmPolicyApi.ts`.
-6. `src/features/settings-authority/llmPolicyHandler.js` disassembles the composite object into flat keys, validates model IDs against the provider registry, applies accepted values to the live config object, merges only managed policy keys into the runtime section, and persists through `src/features/settings/api/configPersistenceContext.js`.
-7. The handler emits `runtime-settings-updated` and `user-settings-updated` broadcasts, reassembles the now-live policy, and returns `{ ok: true, policy }`.
-8. On success, `useLlmPolicyAuthority()` marks the runtime store clean and publishes runtime settings propagation to downstream GUI consumers.
+2. The page fetches `GET /api/v1/indexing/llm-config` to hydrate model options, pricing defaults, routing snapshots, token profiles, and `resolved_api_keys`.
+3. `useLlmPolicyAuthority()` fetches `GET /api/v1/llm-policy`, receives `{ ok, policy }`, and hydrates managed flat keys into `runtimeSettingsValueStore`.
+4. The page merges default provider definitions, persisted provider-registry rows, and server-resolved API keys so provider cards show active credentials even when the stored registry omits them.
+5. GUI edits update the shared flat runtime store through adapter helpers rather than maintaining a second LLM-only state store.
+6. Auto-save or explicit save calls `PUT /api/v1/llm-policy`.
+7. `src/features/settings-authority/llmPolicyHandler.js` disassembles the composite object into flat keys, validates model IDs against the provider registry, applies accepted values to the live config object, merges only managed keys into the runtime section, and persists through `configPersistenceContext`.
+8. The handler emits settings broadcasts, reassembles the now-live policy, and returns `{ ok: true, policy }`.
 
 ## Side Effects
 
-- Updates managed runtime keys inside the live server config object.
-- Persists the managed policy keys back into `category_authority/_runtime/user-settings.json`.
-- Reuses the shared runtime settings store instead of maintaining a second LLM-only store.
-- Preserves unrelated runtime keys by merging only `LLM_POLICY_FLAT_KEYS`.
-- Broadcasts `data-change` events for runtime/settings consumers.
+- Updates managed runtime keys in the live server config object.
+- Persists managed policy keys into AppDb `settings` rows, with JSON fallback only when AppDb is unavailable.
+- Reuses the shared flat runtime settings store instead of maintaining a second canonical LLM store.
+- Preserves unrelated runtime keys by persisting only `LLM_POLICY_FLAT_KEYS`.
+- Broadcasts `runtime-settings-updated` and `user-settings-updated`.
 
 ## Error Paths
 
-- Client preflight rejects model IDs that are not present in any enabled provider in `providerRegistry` using `tools/gui-react/src/features/llm-config/state/llmModelValidation.ts`.
-- Server validation rejects invalid model IDs with `422 { ok: false, error: 'invalid_model', rejected }` from `src/features/settings-authority/llmPolicyHandler.js`.
+- Client preflight rejects model IDs not present in any enabled provider in the current registry.
+- Server validation rejects invalid model IDs with `422 { ok: false, error: 'invalid_model', rejected }`.
 - Canonical persistence failure returns `500 { ok: false, error: 'llm_policy_persist_failed' }`.
-- Empty strings are accepted for model fallback fields; the server skips validation for blank values.
+- Empty strings are accepted for optional fallback model fields.
+
+## Security Note
+
+- `GET /api/v1/llm-policy` is unauthenticated and returns provider-registry `apiKey` fields when configured.
+- `GET /api/v1/indexing/llm-config` is unauthenticated and returns `resolved_api_keys` when configured.
+- The GUI deliberately consumes those responses to prefill provider credential state. Treat this entire feature as trusted-network-only until an auth-hardening task changes the contract.
 
 ## State Transitions
 
 | Entity | Transition |
 |--------|------------|
-| Composite policy | fetched composite -> flattened shared-store values -> edited composite -> persisted runtime keys -> reassembled server snapshot |
-| Provider registry | registry JSON -> editable `LlmProviderEntry[]` -> saved `llmProviderRegistryJson` |
-| Phase overrides | per-tab edits -> override-key mapping -> serialized `llmPhaseOverridesJson` |
-| API keys | runtime/store values plus resolved server keys -> edited provider credentials -> persisted managed runtime keys |
+| composite policy | fetched composite -> flattened shared-store values -> edited composite -> persisted managed runtime keys -> reassembled server snapshot |
+| provider registry | merged defaults and persisted rows -> editable `LlmProviderEntry[]` -> saved `llmProviderRegistryJson` |
+| phase overrides | per-tab edits -> override-key mapping -> serialized `llmPhaseOverridesJson` |
+| API keys | server-resolved keys plus runtime-store values -> edited provider credentials -> persisted managed runtime keys |
 
 ## Diagram
 
@@ -120,18 +122,17 @@ sequenceDiagram
     participant Policy as llmPolicyHandler<br/>(src/features/settings-authority/llmPolicyHandler.js)
   end
   box Persistence
-    participant SettingsFile as user-settings.json<br/>(category_authority/_runtime/user-settings.json)
+    participant AppDb as app.sqlite<br/>(.workspace/db/app.sqlite)
     participant LiveConfig as config object<br/>(src/config.js)
   end
   Page->>Metrics: GET /api/v1/indexing/llm-config
-  Page->>AuthorityHook: initialize policy editor
   AuthorityHook->>Policy: GET /api/v1/llm-policy
   Policy-->>AuthorityHook: { ok, policy }
-  AuthorityHook->>Store: hydrate flat managed keys
-  Page->>AuthorityHook: edit group or policy field
+  AuthorityHook->>Store: hydrate managed flat keys
+  Page->>AuthorityHook: edit policy
   AuthorityHook->>Policy: PUT /api/v1/llm-policy
   Policy->>LiveConfig: apply managed runtime keys
-  Policy->>SettingsFile: persist runtime section merge
+  Policy->>AppDb: persist runtime section merge
   Policy-->>AuthorityHook: { ok, policy }
 ```
 
@@ -139,21 +140,17 @@ sequenceDiagram
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | page composition, phase tabs, save/reset behavior, and shared-store adapters |
-| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | phase-shell routing and scope badge |
+| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPage.tsx` | page composition, provider-registry merging, and resolved-key consumption |
+| source | `tools/gui-react/src/features/llm-config/components/LlmConfigPageShell.tsx` | phase-shell composition |
 | source | `tools/gui-react/src/features/llm-config/state/useLlmPolicyAuthority.ts` | fetch/hydrate/save flow and shared-store ownership |
 | source | `tools/gui-react/src/features/llm-config/api/llmPolicyApi.ts` | `/llm-policy` client contract |
-| source | `tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.generated.ts` | generated composite type and managed flat-key mapping |
-| source | `tools/gui-react/src/features/llm-config/state/llmPhaseOverridesBridge.ts` | GUI-tab to override-key mapping |
-| source | `tools/gui-react/src/features/llm-config/types/llmProviderRegistryTypes.ts` | provider registry data shape |
-| source | `tools/gui-react/src/features/llm-config/types/llmPhaseOverrideTypes.ts` | phase override data shape |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | server read/write, validation, persistence, and broadcasts |
 | source | `src/core/llm/llmPolicySchema.js` | composite schema and managed flat-key list |
 | source | `src/core/llm/llmModelValidation.js` | server model-registry validation |
-| source | `src/features/settings/api/configIndexingMetricsHandler.js` | read-only LLM metadata endpoint used by the GUI |
+| source | `src/features/settings/api/configIndexingMetricsHandler.js` | `/indexing/llm-config` metadata and resolved-key response shape |
 
 ## Related Documents
 
-- [Pipeline and Runtime Settings](./pipeline-and-runtime-settings.md) - Separate feature for flat runtime settings, source strategy, and category route matrices.
+- [Pipeline and Runtime Settings](./pipeline-and-runtime-settings.md) - Separate feature for flat runtime settings and category route matrices.
 - [Routing and GUI](../03-architecture/routing-and-gui.md) - Maps `/llm-config` and `/llm-settings` to their separate page owners.
-- [API Surface](../06-references/api-surface.md) - Lists the exact `/llm-policy` and `/indexing/llm-config` contracts.
+- [API Surface](../06-references/api-surface.md) - Exact `/llm-policy` and `/indexing/llm-config` contracts.

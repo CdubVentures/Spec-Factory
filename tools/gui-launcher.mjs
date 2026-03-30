@@ -43,7 +43,7 @@ const WATCHED_FILES = [
 const IGNORE_DIR_NAMES = new Set([
   '.git',
   '.claude',
-  '.specfactory_tmp',
+  '.workspace',
   'node_modules',
   'dist',
   'gui-dist',

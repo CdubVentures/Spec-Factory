@@ -13,6 +13,12 @@ import { runFetchSuiteLoop } from './core/suiteOrchestrator.js';
 import { trimVideo } from './videoTrim.js';
 import { classifyBlockStatus } from './bypassStrategies.js';
 
+// WHY: Prevent Crawlee from writing internal state to ./storage/ at project root.
+// Crawlee's key_value_stores and request_queues are internal bookkeeping.
+if (!process.env.CRAWLEE_STORAGE_DIR) {
+  process.env.CRAWLEE_STORAGE_DIR = path.join('.workspace', 'crawlee');
+}
+
 // WHY: Eager import — Crawlee takes ~1.2s to import (heavy deps: playwright,
 // fingerprint-suite, proxy-chain). Starting the import at module load time
 // means it's ready by the time session.start() is called, saving ~1s.

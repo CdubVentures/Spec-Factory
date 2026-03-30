@@ -41,7 +41,7 @@ export function createDataUtilityCommands({
     const { SpecDb } = await import('../../../db/specDb.js');
     const { syncSpecDbForCategory } = await import('../../../api/services/specDbSyncService.js');
 
-    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
     const db = new SpecDb({ dbPath, category });
@@ -92,7 +92,7 @@ export function createDataUtilityCommands({
     const { defaultIndexLabRoot } = await import('../../../core/config/runtimeArtifactRoots.js');
 
     const indexLabRoot = String(args.out || defaultIndexLabRoot()).trim();
-    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
     const db = new SpecDb({ dbPath, category });
@@ -113,7 +113,7 @@ export function createDataUtilityCommands({
     const { migrateProductIds } = await import('../../../features/catalog/migrations/idFormatMigration.js');
 
     const dryRun = asBool(args['dry-run']);
-    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', category);
+    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
     const db = new SpecDb({ dbPath, category });

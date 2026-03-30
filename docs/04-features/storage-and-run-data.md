@@ -1,79 +1,71 @@
 # Storage And Run Data
 
-> **Purpose:** Document the verified run-data storage settings, storage-manager inventory/maintenance surface, and post-run relocation/archive behavior.
-> **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [pipeline-and-runtime-settings.md](./pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-25
+> **Purpose:** Document the verified storage-manager inventory and maintenance surface plus the current storage-backend selection behavior.
+> **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
+> **Last validated:** 2026-03-30
+
+The current live storage feature is the `/storage` inventory and maintenance surface. The older storage-settings and relocation flow is not mounted in the current source tree.
 
 ## Entry Points
 
 | Surface | Path | Role |
 |--------|------|------|
-| Storage page | `tools/gui-react/src/pages/storage/StoragePage.tsx` | update storage settings, browse local destinations, and host the storage-manager panel |
-| Storage manager panel | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | run inventory, overview, delete/prune/purge/export, and sync controls |
-| Storage settings API | `src/features/settings/api/configRoutes.js` | `/storage-settings` and `/storage-settings/local/browse` |
-| Storage manager API | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory, maintenance, export, and sync endpoints |
-| Relocation service | `src/api/services/runDataRelocationService.js` | validates destinations and relocates/archives run outputs |
-| Storage backend adapter | `src/s3/storage.js` | local, S3, and dual mirrored storage implementations |
-| Completion hooks | `src/api/services/indexLabProcessCompletion.js`, `src/api/services/compileProcessCompletion.js` | invoke relocation after process exit |
+| storage page | `tools/gui-react/src/pages/storage/StoragePage.tsx` | thin page wrapper for the storage manager |
+| storage manager panel | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | run overview, run inventory, and destructive maintenance actions |
+| storage manager API | `src/features/indexing/api/storageManagerRoutes.js` | `/storage/*` inventory, delete, prune, purge, and export endpoints |
+| IndexLab route delegation | `src/features/indexing/api/indexlabRoutes.js` | mounts the storage manager under the main indexing route family |
+| storage backend adapter | `src/s3/storage.js` | local or S3 storage implementation selected from config |
+| bootstrap storage state | `src/api/bootstrap/createBootstrapEnvironment.js` | initializes `runDataStorageState` as a disabled stub |
 
 ## Dependencies
 
-- `category_authority/_runtime/user-settings.json`
-- `src/core/config/runtimeArtifactRoots.js`
-- `src/app/api/processRuntime.js`
-- `src/features/indexing/api/indexlabRoutes.js`
 - `src/features/indexing/api/storageManagerRoutes.js`
-- `src/api/services/storageMetricsService.js`
-- `src/api/services/storageSyncService.js`
-- `src/features/indexing/api/builders/archivedRunLocationHelpers.js`
+- `src/features/indexing/api/indexlabRoutes.js`
+- `src/api/bootstrap/createBootstrapEnvironment.js`
+- `src/s3/storage.js`
 - `tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts`
 - `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts`
 - `tools/gui-react/src/features/storage-manager/state/useStorageActions.ts`
 - `tools/gui-react/src/features/storage-manager/components/StorageOperationsBar.tsx`
-- `tools/gui-react/src/features/storage-manager/types.ts`
-- output root and IndexLab root directories
-- optional AWS S3 credentials consumed by `src/s3/storage.js`
+- `tools/gui-react/src/features/storage-manager/components/RunInventoryTable.tsx`
 
 ## Flow
 
-1. The user opens `tools/gui-react/src/pages/storage/StoragePage.tsx`, which drives both the storage-settings form and the embedded `StorageManagerPanel`.
-2. The page loads `/api/v1/storage-settings` and may browse candidate local folders via `/api/v1/storage-settings/local/browse`.
-3. `src/features/settings/api/configRoutes.js` normalizes and validates the submitted storage payload with helpers from `src/api/services/runDataRelocationService.js`.
-4. Persisted storage settings are written into `user-settings.json` and applied to the live `runDataStorageState` object.
-5. `tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts` and `useStorageRuns.ts` call `GET /api/v1/storage/overview` and `GET /api/v1/storage/runs`, which reach `src/features/indexing/api/storageManagerRoutes.js` through the `/storage/*` delegation in `src/features/indexing/api/indexlabRoutes.js`.
-6. `tools/gui-react/src/features/storage-manager/state/useStorageActions.ts` invokes delete, prune, purge, export, recalculate, and sync endpoints under `/api/v1/storage/*`; those operations mutate archived run bundles and then invalidate the React Query storage caches.
-7. When a compile or indexing process exits, completion services evaluate the configured destination and relocate or archive run artifacts accordingly.
-8. `src/s3/storage.js` reads/writes artifacts in local, S3, or dual-mirror mode depending on `outputMode` and storage settings.
+1. The operator opens `/storage`, which renders `tools/gui-react/src/pages/storage/StoragePage.tsx`.
+2. `StoragePage` renders only `StorageManagerPanel`; no storage-settings form is mounted.
+3. `useStorageOverview()` calls `GET /api/v1/storage/overview`.
+4. `useStorageRuns()` calls `GET /api/v1/storage/runs` and optionally filters by category.
+5. `useStorageActions.ts` calls:
+   - `DELETE /api/v1/storage/runs/:runId`
+   - `POST /api/v1/storage/prune`
+   - `POST /api/v1/storage/purge`
+   - `GET /api/v1/storage/export`
+6. `src/features/indexing/api/storageManagerRoutes.js` derives backend metadata from `runDataStorageState`, lists run artifacts from IndexLab storage, and executes delete/prune/purge/export operations.
+7. `src/s3/storage.js` still supports S3 when `config.outputMode === 's3'`, but `createBootstrapEnvironment.js` currently initializes `runDataStorageState` as `enabled: false`, so the live storage-manager surface usually reports backend `disabled` or local defaults unless runtime code changes.
 
 ## Side Effects
 
-- Creates local directories when a new local destination is selected.
-- May copy/move archive data into a configured local folder or S3 bucket/prefix after run completion.
-- In `dual` mode, local writes remain canonical and S3 writes are best-effort mirrors.
-- Deletes single runs or batches of archived runs from local storage.
-- Prunes old or failed run bundles and can purge all archived runs after explicit confirmation.
-- Exports the run inventory as `storage-inventory.json`.
-- Recalculates run-size metrics across the archived run tree.
-- Pushes/pulls archived runs through the optional storage sync service when configured.
+- Deletes archived run bundles one at a time.
+- Prunes old runs or failed runs.
+- Purges all archived runs after explicit confirmation.
+- Exports the current inventory as `storage-inventory.json`.
+- Invalidates React Query storage caches after successful mutations.
 
 ## Error Paths
 
-- Invalid storage payload: `400` with validation message.
-- Invalid browse path or inaccessible directory: `400`.
-- `DELETE /storage/runs/:runId` returns `409 run_in_progress` when the selected run is still active.
-- `POST /storage/purge` returns `400 confirm_token_required` unless the request body includes `confirmToken: "DELETE"`.
-- `/storage/sync/*` returns `501 sync_service_not_configured` when the sync service is unavailable.
-- `GET /storage/runs/:runId` returns `404 run_not_found` when the requested run metadata cannot be resolved.
-- Mirror write/delete failures in `DualMirroredStorage` log to stderr but do not block the local write path.
+- `GET /storage/runs/:runId` returns `404 run_not_found` when metadata cannot be resolved.
+- `DELETE /storage/runs/:runId` returns `409 run_in_progress` when the run is still active.
+- `POST /storage/purge` returns `400 confirm_token_required` unless the request body contains `confirmToken: "DELETE"`.
+- `StorageManagerPanel` shows a warning banner when overview or run-list queries fail.
 
 ## State Transitions
 
-| Setting | Transition |
+| Surface | Transition |
 |---------|------------|
-| destination type | local <-> s3 |
-| local directory | default path -> operator-selected path |
-| run data | active output root -> archived/relocated snapshot after completion |
-| storage inventory | archived run tree -> overview/runs query snapshot -> optional delete/prune/purge/export/sync action |
+| storage overview | run artifacts on disk -> summarized overview payload |
+| run inventory | archived run tree -> filtered table rows |
+| delete/prune/purge | selected or matched runs -> removed run artifacts -> invalidated queries |
+| backend label | bootstrap storage stub plus config -> `storage_backend` and `backend_detail` in `/storage/overview` |
 
 ## Diagram
 
@@ -82,43 +74,46 @@
 sequenceDiagram
   autonumber
   box Client
-    participant StoragePage as StoragePage<br/>(tools/gui-react/src/pages/storage/StoragePage.tsx)
-    participant StorageManager as StorageManagerPanel<br/>(tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx)
+    participant Page as StoragePage<br/>(tools/gui-react/src/pages/storage/StoragePage.tsx)
+    participant Panel as StorageManagerPanel<br/>(tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx)
   end
   box Server
-    participant ConfigRoutes as configRoutes<br/>(src/features/settings/api/configRoutes.js)
+    participant IndexlabRoutes as indexlabRoutes<br/>(src/features/indexing/api/indexlabRoutes.js)
     participant StorageRoutes as storageManagerRoutes<br/>(src/features/indexing/api/storageManagerRoutes.js)
-    participant Relocator as runDataRelocationService<br/>(src/api/services/runDataRelocationService.js)
+    participant Bootstrap as bootstrap env<br/>(src/api/bootstrap/createBootstrapEnvironment.js)
   end
   box Storage
-    participant SettingsFile as user-settings.json<br/>(category_authority/_runtime/user-settings.json)
-    participant Backend as storage.js<br/>(src/s3/storage.js)
+    participant RunsRoot as IndexLab runs<br/>(.workspace/runs)
+    participant Adapter as storage.js<br/>(src/s3/storage.js)
   end
-  StoragePage->>ConfigRoutes: PUT /api/v1/storage-settings
-  ConfigRoutes->>Relocator: normalize + validate payload
-  ConfigRoutes->>SettingsFile: persist storage snapshot
-  ConfigRoutes-->>StoragePage: applied storage settings
-  StorageManager->>StorageRoutes: GET/POST/DELETE /api/v1/storage/*
-  StorageRoutes-->>StorageManager: overview, runs, and maintenance results
-  Relocator->>Backend: relocate/mirror run artifacts on process completion
+  Page->>Panel: render storage manager
+  Panel->>IndexlabRoutes: GET /api/v1/storage/overview
+  IndexlabRoutes->>StorageRoutes: delegate /storage/*
+  StorageRoutes->>Bootstrap: read runDataStorageState
+  StorageRoutes->>RunsRoot: list run inventory
+  StorageRoutes-->>Panel: overview and run rows
+  Panel->>StorageRoutes: DELETE/POST /api/v1/storage/*
+  StorageRoutes->>RunsRoot: delete or prune run artifacts
+  StorageRoutes->>Adapter: report backend type/detail
 ```
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/features/settings/api/configRoutes.js` | browse and storage settings endpoints |
-| source | `src/features/indexing/api/indexlabRoutes.js` | `/storage/*` delegation from the IndexLab route family |
-| source | `src/features/indexing/api/storageManagerRoutes.js` | inventory, delete/prune/purge/export, and sync endpoints |
-| source | `src/api/services/runDataRelocationService.js` | normalization, validation, and relocation behavior |
-| source | `src/api/services/storageMetricsService.js` | recalculation behavior for storage metrics |
-| source | `src/api/services/storageSyncService.js` | optional sync-service contract used by `/storage/sync/*` |
-| source | `src/s3/storage.js` | local/S3/dual storage backends |
-| source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | GUI storage surface |
-| source | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | embedded storage-manager UI surface |
-| source | `tools/gui-react/src/features/storage-manager/state/useStorageActions.ts` | GUI wiring for `/storage/*` maintenance actions |
+| source | `tools/gui-react/src/pages/storage/StoragePage.tsx` | page now renders only `StorageManagerPanel` |
+| source | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx` | live GUI storage surface |
+| source | `tools/gui-react/src/features/storage-manager/state/useStorageActions.ts` | client mutations limited to delete/prune/purge |
+| source | `tools/gui-react/src/features/storage-manager/state/useStorageOverview.ts` | `/storage/overview` client contract |
+| source | `tools/gui-react/src/features/storage-manager/state/useStorageRuns.ts` | `/storage/runs` client contract |
+| source | `src/features/indexing/api/indexlabRoutes.js` | `/storage/*` delegation path |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | actual inventory and maintenance endpoints |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | disabled `runDataStorageState` stub |
+| source | `src/s3/storage.js` | local versus S3 backend selection |
+| runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live backend reported `storage_backend: "disabled"` on 2026-03-30 |
 
 ## Related Documents
 
-- [Pipeline and Runtime Settings](./pipeline-and-runtime-settings.md) - Storage is persisted through the same settings-authority workflow.
-- [Deployment](../05-operations/deployment.md) - Describes the supported local runtime and packaging paths that consume these storage settings.
+- [Backend Architecture](../03-architecture/backend-architecture.md) - How the storage manager is mounted in the server.
+- [API Surface](../06-references/api-surface.md) - Exact `/storage/*` contracts.
+- [Known Issues](../05-operations/known-issues.md) - Tracks current storage-surface and test drift.

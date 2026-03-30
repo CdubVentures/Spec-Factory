@@ -2,22 +2,23 @@
 
 > **Purpose:** Describe the verified server entrypoints, request pipeline, route families, settings boundaries, process runtime, and error behavior with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md)
-> **Last validated:** 2026-03-25
+> **Last validated:** 2026-03-30
 
 ## Server Entrypoints
 
 | Entrypoint | Path | Role |
 |------------|------|------|
-| GUI/API server | `src/api/guiServer.js` | boots config, storage, SpecDb runtime, route context, static serving, and `/ws` |
+| GUI/API server | `src/api/guiServer.js` | thin process entrypoint that boots the assembled runtime and serves the GUI |
+| runtime assembly | `src/api/guiServerRuntime.js` | config/bootstrap SSOT, route context assembly, and mounted route order |
 | CLI entrypoint | `src/cli/spec.js` | operator CLI for indexing, review, queue, reports, migrations, and helper flows |
-| Local GraphQL API | `src/api/intelGraphApi.js` | separate CLI-started graph API surface on port `8787` |
+| local GraphQL helper | `src/api/intelGraphApi.js` | separate helper API on port `8787` |
 
 ## HTTP Request Pipeline
 
-1. `src/api/guiServer.js` is the thin process entrypoint and delegates runtime assembly to `src/api/guiServerRuntime.js`.
-2. `src/api/guiServerRuntime.js` bootstraps config, storage, SpecDb/session caches, realtime bridges, and the large `routeCtx` object before handing everything to `src/api/guiServerHttpAssembly.js`.
-3. `src/app/api/guiRouteRegistration.js` delegates handler instantiation to `src/app/api/routeRegistry.js`, but the mounted order is taken from the `routeDefinitions` array in `src/api/guiServerRuntime.js`.
-4. `src/api/guiServerRuntime.js` mounts handlers in this verified order:
+1. `src/api/guiServer.js` delegates runtime creation to `src/api/guiServerRuntime.js`.
+2. `src/api/guiServerRuntime.js` bootstraps config, storage, AppDb, lazy SpecDb access, realtime bridges, process runtime, and the route context object.
+3. `src/api/guiServerHttpAssembly.js` builds the actual request handler from that route context.
+4. Mounted route order is the `routeDefinitions` array in `src/api/guiServerRuntime.js`, in this live order:
    - `infra`
    - `config`
    - `indexlab`
@@ -31,19 +32,19 @@
    - `testMode`
    - `sourceStrategy`
    - `specSeeds`
-5. `src/app/api/requestDispatch.js` parses `/api/v1/*`, normalizes category segments, and dispatches the first handler that returns non-`false`.
+5. `src/app/api/requestDispatch.js` parses `/api/v1/*`, normalizes category aliases, and dispatches the first handler that claims the request.
 6. `src/app/api/staticFileServer.js` serves `tools/gui-react/dist` for non-API requests.
 
-`src/app/api/routeRegistry.js` still exports `GUI_API_ROUTE_ORDER`, but that constant omits the live `specSeeds` handler and is not the mounted source of truth. Use `routeDefinitions` in `src/api/guiServerRuntime.js` when documenting or extending the server route tree.
+`src/app/api/routeRegistry.js` still exports `GUI_API_ROUTE_ORDER`, but it is not the mounted route-order SSOT and it omits the live `specSeeds` family.
 
 ## Route Families
 
 | Route family | Primary path roots | File |
 |--------------|-------------------|------|
 | infra | `/health`, `/categories`, `/searxng/*`, `/process/*`, `/graphql` | `src/app/api/routes/infraRoutes.js` and `src/app/api/routes/infra/*.js` |
-| config | `/ui-settings`, `/storage-settings`, `/runtime-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config` | `src/features/settings/api/configRoutes.js` |
+| config | `/ui-settings`, `/runtime-settings`, `/llm-policy`, `/llm-settings/*`, `/indexing/llm-config`, `/indexing/llm-metrics`, `/indexing/domain-checklist/*`, `/indexing/review-metrics/*` | `src/features/settings/api/configRoutes.js` |
 | IndexLab | `/indexlab/runs`, `/indexlab/run/*`, `/indexlab/indexes/*`, `/indexlab/analytics/*`, `/indexlab/live-crawl/*` | `src/features/indexing/api/indexlabRoutes.js` |
-| storage manager | `/storage/overview`, `/storage/runs*`, `/storage/prune`, `/storage/purge`, `/storage/export`, `/storage/recalculate`, `/storage/sync/*` | `src/features/indexing/api/indexlabRoutes.js` delegating to `src/features/indexing/api/storageManagerRoutes.js` |
+| storage manager | `/storage/overview`, `/storage/runs*`, `/storage/prune`, `/storage/purge`, `/storage/export` | `src/features/indexing/api/indexlabRoutes.js` delegating to `src/features/indexing/api/storageManagerRoutes.js` |
 | runtime ops | `/indexlab/run/:runId/runtime/*` | `src/features/indexing/api/runtimeOpsRoutes.js` |
 | catalog + brands | `/catalog/*`, `/product/*`, `/events/*`, `/brands/*` | `src/features/catalog/api/catalogRoutes.js`, `src/features/catalog/api/brandRoutes.js` |
 | studio | `/field-labels/*`, `/studio/:category/*` | `src/features/studio/api/studioRoutes.js` |
@@ -52,74 +53,78 @@
 | review | `/review/*`, `/review-components/*` | `src/features/review/api/reviewRoutes.js` |
 | test mode | `/test-mode/*` | `src/app/api/routes/testModeRoutes.js` |
 | source strategy | `/source-strategy/*` | `src/features/indexing/api/sourceStrategyRoutes.js` |
-| deterministic spec seeds | `/spec-seeds?category=:category` | `src/features/indexing/api/specSeedsRoutes.js` |
+| deterministic spec seeds | `/spec-seeds` | `src/features/indexing/api/specSeedsRoutes.js` |
 
 ## Settings and Policy Split
 
-- `src/features/settings/api/configRoutes.js` mounts five live settings families:
-  - runtime settings via `src/features/settings/api/configRuntimeSettingsHandler.js`
-  - storage settings via `src/features/settings/api/configStorageSettingsHandler.js`
+- `src/features/settings/api/configRoutes.js` mounts five live families:
   - UI settings via `src/features/settings/api/configUiSettingsHandler.js`
-  - category-scoped LLM route matrices via `src/features/settings/api/configLlmSettingsHandler.js`
+  - indexing metrics plus LLM metadata via `src/features/settings/api/configIndexingMetricsHandler.js`
+  - category LLM route matrices via `src/features/settings/api/configLlmSettingsHandler.js`
+  - runtime settings via `src/features/settings/api/configRuntimeSettingsHandler.js`
   - composite LLM policy via `src/features/settings-authority/llmPolicyHandler.js`
-- `src/features/settings/api/configIndexingMetricsHandler.js` also serves `GET /api/v1/indexing/llm-config`, which the GUI uses as read-only model, pricing, routing, and token-default metadata.
-- `src/features/settings-authority/llmPolicyHandler.js` assembles/disassembles the composite policy with `src/core/llm/llmPolicySchema.js`, validates model IDs with `src/core/llm/llmModelValidation.js`, applies live config updates, and persists only the runtime section through `src/features/settings/api/configPersistenceContext.js`.
-- No live `/api/v1/convergence-settings` handler is registered. The persisted `convergence` object survives only as `{}` in `category_authority/_runtime/user-settings.json` for backward compatibility, as documented in `src/features/settings-authority/README.md`.
-- Category-scoped route matrices are a separate persistence boundary: `src/features/settings/api/configLlmSettingsHandler.js` writes rows into SQLite through `src/db/specDb.js` rather than through `user-settings.json`.
+- No live storage-settings handler is mounted in the current source tree.
+- No live convergence-settings handler is mounted in the current source tree.
+- `src/features/settings/api/configPersistenceContext.js` persists runtime and UI sections into AppDb when available and falls back to `category_authority/_runtime/user-settings.json` only when AppDb is unavailable.
+- Category LLM route matrices are a separate persistence boundary and go to per-category SpecDb tables, not the user-settings document.
 
-## Process Runtime and Worker Launch
+## Storage and Runtime Roots
 
-- `src/app/api/processRuntime.js` owns the long-running child-process lifecycle for compile/indexing work.
-- It launches CLI commands by spawning the local Node CLI surface rather than embedding pipeline logic directly in the HTTP server.
-- It also probes/starts the local SearXNG Docker Compose stack and publishes process status snapshots.
-- GUI actions like `/api/v1/process/start`, `/api/v1/process/stop`, and `/api/v1/process/status` are routed through infra routes into this runtime boundary.
+- `src/api/bootstrap/createBootstrapEnvironment.js` resolves:
+  - `OUTPUT_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/output`
+  - `INDEXLAB_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/runs`
+- The same bootstrap initializes `runDataStorageState` as `Object.freeze({ enabled: false })`.
+- `src/s3/storage.js` still supports S3 when `config.outputMode === 's3'`, but there is no live operator-facing storage-settings API in the current server source.
+
+## Process Runtime and Long-Running Work
+
+- `src/app/api/processRuntime.js` owns child-process lifecycle for compile and indexing work.
+- It spawns the local Node CLI surface rather than embedding pipeline logic directly in the HTTP server.
+- It also probes and starts the optional local SearXNG stack and broadcasts process status plus child stdout/stderr over WebSocket.
 
 ## Realtime and Watchers
 
 - `src/app/api/realtimeBridge.js` attaches the `/ws` upgrade handler.
-- It watches runtime event files and IndexLab `run_events.ndjson` files using `chokidar`.
-- Broadcast channels include at least `events`, `indexlab-event`, `data-change`, `process-status`, and screencast channels.
-- The normalized `data-change` payload contract lives in `src/core/events/dataChangeContract.js` and is emitted from feature mutation helpers such as `src/features/review/api/routeSharedHelpers.js` and `src/features/settings-authority/llmPolicyHandler.js`.
+- It watches runtime event files and per-run `run_events.ndjson` files using `chokidar`.
+- Broadcast channels include `events`, `indexlab-event`, `data-change`, `process-status`, `process`, `test-import-progress`, and `screencast` channels.
 
 ## Persistence Boundaries
 
-- SQLite: `src/db/specDb.js` composed from store modules in `src/db/stores/`.
-- Category/rule content: `category_authority/` loaded by `src/categories/loader.js`.
-- Canonical user settings: `category_authority/_runtime/user-settings.json` written through `src/features/settings-authority/userSettingsService.js`.
-- Output roots and optional relocation/archive storage are normalized in `src/api/guiServer.js` and `src/api/services/runDataRelocationService.js`.
+| Boundary | Owner | Notes |
+|----------|-------|-------|
+| global runtime/UI settings | `src/db/appDb.js` plus `src/features/settings-authority/userSettingsService.js` | AppDb primary, JSON fallback |
+| per-category review/indexing data | `src/db/specDb.js` | lazy-loaded through `src/app/api/specDbRuntime.js` |
+| authored category control plane | `category_authority/` loaded via `src/categories/loader.js` | rules, sources, spec seeds, generated artifacts |
+| storage adapter | `src/s3/storage.js` | local by default, S3 when `outputMode === 's3'` |
 
 ## Error Handling
 
 - `src/app/api/requestDispatch.js` wraps API dispatch in a top-level `try/catch`.
-- Unhandled route errors are logged and returned as `500 { error: 'internal', message }`.
 - Unknown API routes return `404 { error: 'not_found' }`.
-- Individual route handlers frequently return route-specific `400`, `404`, `422`, or `500` payloads instead of throwing.
-- `src/features/settings-authority/llmPolicyHandler.js` returns `422 { ok: false, error: 'invalid_model', rejected }` when the submitted composite policy references model IDs missing from the provider registry.
+- Unhandled route errors return `500 { error: 'internal', message }`.
+- Many route handlers return route-specific `400`, `404`, `409`, `422`, or `500` payloads instead of throwing.
+- `src/features/settings-authority/llmPolicyHandler.js` returns `422 { ok: false, error: 'invalid_model', rejected }` for model IDs missing from the provider registry.
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/api/guiServer.js` | thin process entrypoint role and runtime startup wrapper |
-| source | `src/api/guiServerRuntime.js` | mounted route order, route-context assembly, and runtime bootstrap SSOT |
-| source | `src/api/guiServerHttpAssembly.js` | `routeCtx` handoff into the HTTP assembly pipeline |
-| source | `src/app/api/guiRouteRegistration.js` | route registration wrapper around the registry |
+| source | `src/api/guiServer.js` | thin process entrypoint role |
+| source | `src/api/guiServerRuntime.js` | mounted route order, route context assembly, and runtime bootstrap SSOT |
+| source | `src/api/guiServerHttpAssembly.js` | HTTP assembly handoff |
 | source | `src/app/api/requestDispatch.js` | parse/dispatch/error/static-serving pipeline |
-| source | `src/app/api/routeRegistry.js` | handler instantiation behavior and stale `GUI_API_ROUTE_ORDER` export |
-| source | `src/features/settings/api/configRoutes.js` | mounted settings route families |
-| source | `src/features/indexing/api/indexlabRoutes.js` | `/indexlab/*` family plus `/storage/*` delegation |
-| source | `src/features/indexing/api/storageManagerRoutes.js` | live storage manager endpoint family under `/storage/*` |
-| source | `src/features/indexing/api/specSeedsRoutes.js` | mounted deterministic spec-seed endpoints |
-| source | `src/features/settings/api/configPersistenceContext.js` | canonical settings persistence boundary |
+| source | `src/app/api/routeRegistry.js` | stale `GUI_API_ROUTE_ORDER` export is not mounted SSOT |
+| source | `src/features/settings/api/configRoutes.js` | live mounted settings families |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | actual `/storage/*` endpoint family |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | runtime roots and disabled storage-state stub |
+| source | `src/features/settings/api/configPersistenceContext.js` | AppDb-first persistence boundary |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy read/write behavior |
-| source | `src/core/llm/llmPolicySchema.js` | composite LLM policy assembly/disassembly contract |
 | source | `src/app/api/processRuntime.js` | child-process lifecycle and SearXNG control |
 | source | `src/app/api/realtimeBridge.js` | `/ws` handling and watcher-backed broadcasts |
-| source | `src/core/events/dataChangeContract.js` | normalized `data-change` payload contract |
 
 ## Related Documents
 
 - [API Surface](../06-references/api-surface.md) - Endpoint-by-endpoint reference built from these route families.
-- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - Documents the `/llm-policy` and `/indexing/llm-config` flow in detail.
-- [Background Jobs](../06-references/background-jobs.md) - Focuses on the process runtime and daemon/worker launch surfaces.
-- [Data Model](./data-model.md) - Documents the SQLite layer these handlers read and write.
+- [LLM Policy and Provider Config](../04-features/llm-policy-and-provider-config.md) - `/llm-policy` and `/indexing/llm-config` flow in detail.
+- [Background Jobs](../06-references/background-jobs.md) - Long-running process and batch entrypoints.
+- [Data Model](./data-model.md) - SQLite layer details.

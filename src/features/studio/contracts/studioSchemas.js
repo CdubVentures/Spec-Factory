@@ -82,6 +82,21 @@ export const ComponentSourceSchema = z.object({
   ai_assist: AiAssistConfigSchema.optional(),
 }).passthrough();
 
+export const DataListEntrySchema = z.object({
+  field: z.string(),
+  normalize: z.string().optional(),
+  delimiter: z.string().optional(),
+  manual_values: z.array(z.string()).optional(),
+  priority: PriorityProfileSchema.optional(),
+  ai_assist: AiAssistConfigSchema.optional(),
+  mode: z.string().optional(),
+  sheet: z.string().optional(),
+  value_column: z.string().optional(),
+  header_row: z.number().optional(),
+  row_start: z.number().optional(),
+  row_end: z.number().optional(),
+}).passthrough();
+
 export const StudioConfigSchema = z.object({
   version: z.number().optional(),
   tooltip_source: z.object({
@@ -89,6 +104,7 @@ export const StudioConfigSchema = z.object({
   }).passthrough().optional(),
   component_sources: z.array(ComponentSourceSchema).optional(),
   enum_lists: z.array(EnumEntrySchema).optional(),
+  data_lists: z.array(DataListEntrySchema).optional(),
   selected_keys: z.array(z.string()).optional(),
   field_overrides: z.record(z.string(), z.unknown()).optional(),
   manual_enum_values: z.record(z.string(), z.array(z.string())).optional(),

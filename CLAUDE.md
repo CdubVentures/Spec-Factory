@@ -300,11 +300,18 @@ UI drift and one-off styling are forbidden.
 
 ---
 
-## Temporary files & scratch data
+## Runtime data directories
 
-- **One temp directory:** `.specfactory_tmp/` is the sole scratch/runtime directory. Do not create `tmp/`, `temp/`, `scratch/`, or any other temp folder.
-- `.specfactory_tmp/` contains **only** per-category SQLite runtime databases (`mouse/`, `keyboard/`, `monitor/`, `gaming_mice/`).
-- Do not dump logs, scripts, audit outputs, reinstall attempts, or debug artifacts into `.specfactory_tmp/`. Use OS temp (`$TMPDIR` / `%TEMP%`) for throwaway work.
+- `.workspace/` is the sole runtime data directory (git-ignored).
+  - `db/{category}/` — per-category SQLite databases (spec.sqlite)
+  - `db/app.sqlite` — global app database
+  - `runs/` — IndexLab run output (screenshots, video, analysis, traces, checkpoints)
+  - `output/` — pipeline output artifacts
+  - `crawlee/` — Crawlee internal bookkeeping (ephemeral)
+- `category_authority/_runtime/` — user settings + per-run settings snapshots (git-ignored)
+  - `snapshots/` is capped at 10 files.
+- `.server-state/` — server PID + log (git-ignored)
+- Do not create other runtime directories. Use OS tmpdir for throwaway work.
 - The root `tmp/` directory is banned and gitignored.
 
 ---

@@ -44,7 +44,7 @@ export function createBootstrapSessionLayer({
   });
 
   // ── Global AppDb ──
-  const appDbDir = path.resolve(config.specDbDir || '.specfactory_tmp');
+  const appDbDir = path.resolve(config.specDbDir || '.workspace/db');
   fsSync.mkdirSync(appDbDir, { recursive: true });
   const appDb = new AppDb({ dbPath: path.join(appDbDir, 'app.sqlite') });
   seedAppDb({

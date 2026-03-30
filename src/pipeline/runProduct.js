@@ -123,6 +123,8 @@ export async function runProduct({
   logger.info('run_context', runContextPayload);
 
   const _telemetrySpecDb = config.specDb || null;
+  const effectiveIndexLabRoot = config.indexLabRoot || defaultIndexLabRoot();
+  const runDir = path.join(effectiveIndexLabRoot, runId);
 
   bootstrapRunEventIndexing({
     logger,
@@ -149,7 +151,7 @@ export async function runProduct({
   const traceWriter = createRunTraceWriter({
     ...buildRunTraceWriterContext({
       ...buildRunTraceWriterPhaseCallsiteContext({
-        storage,
+        runDir,
         config,
         runId,
         productId,
@@ -193,12 +195,9 @@ export async function runProduct({
     logger,
   });
   const adapter = resolveAdapter('crawlee');
-  // WHY: Use config.indexLabRoot (storage-backed) instead of hardcoded default.
-  // The parent process passes --out which resolves to the storage destination.
-  const effectiveIndexLabRoot = config.indexLabRoot || defaultIndexLabRoot();
-  const screenshotDir = path.join(effectiveIndexLabRoot, runId, 'screenshots');
-  const videoDir = path.join(effectiveIndexLabRoot, runId, 'video');
-  const htmlDir = path.join(effectiveIndexLabRoot, runId, 'html');
+  const screenshotDir = path.join(runDir, 'screenshots');
+  const videoDir = path.join(runDir, 'video');
+  const htmlDir = path.join(runDir, 'html');
   const session = adapter.create({
     settings: { ...config, runId },
     plugins,

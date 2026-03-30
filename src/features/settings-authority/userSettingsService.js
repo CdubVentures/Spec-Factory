@@ -467,6 +467,7 @@ export async function persistUserSettingsSections(options = {}) {
     target: appDb ? 'app.sqlite' : USER_SETTINGS_FILE,
   });
 
+  // WHY: SQL is primary when appDb is available. JSON fallback for tests and early boot.
   if (appDb) {
     try {
       const existing = readSettingsFromAppDb(appDb);
@@ -505,17 +506,16 @@ export async function persistUserSettingsSections(options = {}) {
     }
   }
 
-  // WHY: JSON fallback path — only used when appDb is not available
-  return enqueueUserSettingsPersist(async () => {
+  // JSON fallback (no appDb — test environment or early boot)
+  const prev = userSettingsPersistQueue;
+  const next = (async () => {
+    await prev.catch(() => {});
     const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
       categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
     });
     const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
     try {
-      const existing = await loadUserSettings({
-        categoryAuthorityRoot,
-        strictRead: true,
-      });
+      const existing = await loadUserSettings({ categoryAuthorityRoot, strictRead: true });
       const existingStudio = sanitizeStudioSettings(existing.studio);
       let nextStudio = existingStudio;
       if (studio !== null) {
@@ -534,7 +534,8 @@ export async function persistUserSettingsSections(options = {}) {
       const payload = deriveSettingsArtifactsFromUserSettings(sections).snapshot;
       assertValidSnapshot(payload);
       const filePath = path.join(runtimeRoot, USER_SETTINGS_FILE);
-      await writeUserSettingsFile(filePath, payload);
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.writeFile(filePath, JSON.stringify(payload, null, 2));
       recordSettingsWriteOutcome({
         sections: requestedSections,
         target: USER_SETTINGS_FILE,
@@ -550,11 +551,14 @@ export async function persistUserSettingsSections(options = {}) {
       });
       throw error;
     }
-  });
+  })();
+  userSettingsPersistQueue = next;
+  return next;
 }
 
-// WHY: The persist queue is module-level state that serializes concurrent
-// writes. This export makes it observable so callers can await flush.
+// WHY: The persist queue serializes concurrent JSON fallback writes.
+// SQL writes are synchronous (better-sqlite3), but JSON fallback path
+// still uses the queue. This export makes it observable for flush.
 export function drainPersistQueue() {
   return userSettingsPersistQueue;
 }

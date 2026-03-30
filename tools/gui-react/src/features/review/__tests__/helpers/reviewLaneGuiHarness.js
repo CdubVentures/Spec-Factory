@@ -444,7 +444,7 @@ export async function createReviewLaneGuiHarness(t) {
   const config = {
     categoryAuthorityRoot: path.join(tempRoot, 'category_authority'),
     localOutputRoot: path.join(tempRoot, 'out'),
-    specDbDir: path.join(tempRoot, '.specfactory_tmp'),
+    specDbDir: path.join(tempRoot, '.workspace', 'db'),
   };
   const guiDistRoot = path.join(REPO_ROOT, 'tools', 'gui-react', 'dist');
   const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');
@@ -565,7 +565,7 @@ export async function createReviewLaneGuiHarness(t) {
       seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
     ]);
 
-    const dbPath = path.join(tempRoot, '.specfactory_tmp', CATEGORY, 'spec.sqlite');
+    const dbPath = path.join(tempRoot, '.workspace', 'db', CATEGORY, 'spec.sqlite');
     await fs.mkdir(path.dirname(dbPath), { recursive: true });
     db = new SpecDb({ dbPath, category: CATEGORY });
     await seedSpecDb({

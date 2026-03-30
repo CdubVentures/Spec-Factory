@@ -86,7 +86,7 @@
 | `localOutputRoot` | string | "" | — | — |
 | `runtimeControlFile` | string | _runtime/control/runtime_overrides.json | — | `RUNTIME_CONTROL_FILE` |
 | `runtimeEventsKey` | string | _runtime/events.jsonl | — | `RUNTIME_EVENTS_KEY` |
-| `specDbDir` | string | .specfactory_tmp | — | `SPEC_DB_DIR` |
+| `specDbDir` | string | .workspace/db | — | `SPEC_DB_DIR` |
 
 ---
 

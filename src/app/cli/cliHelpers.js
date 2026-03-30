@@ -83,7 +83,7 @@ export async function openSpecDbForCategory(config, category) {
   if (!normalizedCategory) return null;
   try {
     const { SpecDb } = await import('../../db/specDb.js');
-    const dbDir = pathNode.join(config.specDbDir || '.specfactory_tmp', normalizedCategory);
+    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', normalizedCategory);
     await fsNode.mkdir(dbDir, { recursive: true });
     const dbPath = pathNode.join(dbDir, 'spec.sqlite');
     return new SpecDb({ dbPath, category: normalizedCategory });
