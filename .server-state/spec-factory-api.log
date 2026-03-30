@@ -6378,3 +6378,15 @@ Node.js v24.13.1
 [source-registry] monitor: 6 sparsity warning(s)
 [getSpecDb] primary open failed for products: ENOENT: no such file or directory, access 'C:\Users\Chris\Desktop\Spec Factory\.specfactory_tmp\products\spec.sqlite'
 [auto-seed] products failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\products\_generated\field_rules.json
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\Spec Factory\.workspace\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\Spec Factory\.workspace\runs
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-D3SP4GnV.js, BulkPasteGrid-DpMxrQmB.js, buttonClasses-DdWdVcJt.js, CatalogPage-CsruZwBt.js, CategoryManager-DsYUc_My.js, ComponentReviewPage-L4C2cfbO.js, DataTable-C356pbxG.js, DrawerShell-CTk4HQdX.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-BeHVs2d4.js, FlagsSection-DbBPwgx8.js, formatting-B6A_RRxb.js, index-D_V9wcCP.js, index-ZraUh53M.css, IndexingPage-CUrABG9I.js, indexlabRunsQuery-CWwV1me6.js, LlmConfigPage-CLcfX038.js, LlmGlobalSection-B-JiEy7U.js, LlmPhaseSection-Dx2rUEWr.js, llmPolicyDefaults-DgYus0QC.js, LlmProviderRegistrySection-D73gqWi6.js, LlmSettingsPage-H_N1kXWi.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-W8fPbrll.js, PipelineDeterministicStrategySection-BvTNWFf7.js, PipelineSettingsPage-DUm-hUqF.js, PipelineSourceStrategySection-CSL6Uj8q.js, ProductPage-B-i-w2e1.js, ProgressBar-Duqnl09b.js, ReviewPage-BSLfexfn.js, RuntimeFlowDraftPayload-C8T-jTY2.js, RuntimeOpsPage-BKSLnVnK.js, SectionHeader-BNafy80O.js, settingsStatus-ChPFkMto.js, SidebarShell-D3FwdOVd.js, sortable.esm-DHLR6drX.js, StoragePage-Bj4Kp7Ql.js, StudioPage-BA9m8AYN.js, TabStrip-r04xn31b.js, TestModePage-xbIMs6Im.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-DNszlEE3.js, useFieldLabels-vy5C1DRf.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-yxv059Hn.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-B1bvtZmb.js
+[auto-seed] mouse: 265 components, 228 list values, 0 products (72ms, version 1)
