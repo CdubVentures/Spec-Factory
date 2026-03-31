@@ -65,7 +65,7 @@
   - composite LLM policy via `src/features/settings-authority/llmPolicyHandler.js`
 - No live storage-settings handler is mounted in the current source tree.
 - No live convergence-settings handler is mounted in the current source tree.
-- `src/features/settings/api/configPersistenceContext.js` persists runtime and UI sections into AppDb when available and falls back to `category_authority/_runtime/user-settings.json` only when AppDb is unavailable.
+- `src/features/settings/api/configPersistenceContext.js` persists runtime and UI sections into AppDb when available and falls back to `.workspace/global/user-settings.json` only when AppDb is unavailable.
 - Category LLM route matrices are a separate persistence boundary and go to per-category SpecDb tables, not the user-settings document.
 
 ## Storage and Runtime Roots

@@ -1,5 +1,5 @@
 // WHY: Single source of truth for the DJB2 string hash used by
-// searchPlanBuilder, frontierDb, and frontierSqlite. Returns a
+// searchPlanBuilder and crawlLedgerAdapter. Returns a
 // base-36 string for compact storage/lookup keys.
 
 export function stableHashString(value) {

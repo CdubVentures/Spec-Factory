@@ -129,7 +129,7 @@ async function resolveImageUrlForPrompt({
   if (!path.isAbsolute(token) && token.includes('/')) {
     const outputRoot = String(process.env.LOCAL_OUTPUT_ROOT || 'out').trim() || 'out';
     localCandidates.push(path.resolve(outputRoot, ...token.split('/')));
-    const inputRoot = String(process.env.LOCAL_INPUT_ROOT || 'fixtures/s3').trim() || 'fixtures/s3';
+    const inputRoot = String(process.env.LOCAL_INPUT_ROOT || '.workspace').trim() || '.workspace';
     localCandidates.push(path.resolve(inputRoot, ...token.split('/')));
   }
   for (const candidatePath of localCandidates) {
@@ -574,13 +574,6 @@ export async function callLlmProvider({
   const deepSeekMode = inferredProvider === 'deepseek';
   const reason = String(usageContext?.reason || 'extract');
   const routeRole = String(usageContext?.route_role || '').trim();
-  const traceWriter = usageContext?.traceWriter || null;
-  const traceContext = usageContext?.trace_context || {};
-  const traceTargetFields = Array.isArray(traceContext?.target_fields)
-    ? traceContext.target_fields.filter(Boolean)
-    : [];
-  const developerMode = Boolean(usageContext?.developer_mode);
-  const traceRingSize = Math.max(5, Number.parseInt(String(usageContext?.trace_ring_size || 50), 10) || 50);
   const jsonSchemaRequested = Boolean(jsonSchema && !deepSeekMode);
   const forceJsonOutput = Boolean(jsonSchema && deepSeekMode);
   const effectiveSystem = [
@@ -604,18 +597,11 @@ export async function callLlmProvider({
   });
   let promptPreview = '';
   try {
-    const promptPayload = developerMode
-      ? {
+    const promptPayload = {
         system: String(effectiveSystem || '').slice(0, 2000),
         user: String(userMessage.text || '').slice(0, 10_000),
         multimodal_image_count: userMessage.imageCount,
         images: userMessage.imageSources
-      }
-      : {
-        redacted: true,
-        system_chars: String(effectiveSystem || '').length,
-        user_chars: String(userMessage.text || '').length,
-        multimodal_image_count: userMessage.imageCount
       };
     promptPreview = JSON.stringify(promptPayload).slice(0, 8000);
   } catch {
@@ -718,80 +704,6 @@ export async function callLlmProvider({
       ...callContext,
       message: safeMessage
     });
-  };
-
-  const emitTrace = async ({
-    status = 'ok',
-    retryWithoutSchema = false,
-    responseModel = '',
-    usage = {},
-    responseText = '',
-    error = '',
-    requestBody = null
-  } = {}) => {
-    if (!traceWriter || typeof traceWriter.writeJson !== 'function') {
-      return;
-    }
-    try {
-      const trace = await traceWriter.writeJson({
-        section: 'llm',
-        prefix: 'call',
-        payload: {
-          ts: new Date().toISOString(),
-          status,
-          provider: providerLabel,
-          model: responseModel || model,
-          purpose: reason,
-          target_fields: traceTargetFields.slice(0, 80),
-          target_fields_count: traceTargetFields.length,
-          route_role: usageContext?.route_role || null,
-          retry_without_schema: Boolean(retryWithoutSchema),
-          deepseek_mode_detected: Boolean(deepSeekMode),
-          json_schema_requested: Boolean(jsonSchemaRequested),
-          prompt: developerMode
-            ? {
-              system: String(effectiveSystem || '').slice(0, 2000),
-              user: String(userMessage.text || '').slice(0, 10_000),
-              multimodal_image_count: userMessage.imageCount,
-              images: userMessage.imageSources
-            }
-            : {
-              redacted: true,
-              system_chars: String(effectiveSystem || '').length,
-              user_chars: String(userMessage.text || '').length,
-              multimodal_image_count: userMessage.imageCount
-            },
-          request_body: developerMode
-            ? requestBody
-            : {
-              redacted: true,
-              has_request_body: Boolean(requestBody)
-            },
-          response: developerMode
-            ? { text: String(responseText || '').slice(0, 10_000) }
-            : {
-              redacted: true,
-              chars: String(responseText || '').length
-            },
-          usage: usage || {},
-          max_tokens_applied: effectiveMaxTokens,
-          error: String(error || '').slice(0, 1500)
-        },
-        ringSize: traceRingSize
-      });
-      logger?.info?.('llm_trace_written', {
-        ...callContext,
-        model: responseModel || model,
-        purpose: reason,
-        target_fields_count: traceTargetFields.length,
-        trace_path: trace.trace_path,
-      });
-    } catch (traceError) {
-      logger?.warn?.('llm_trace_write_failed', {
-        purpose: reason,
-        message: traceError.message
-      });
-    }
   };
 
   const emitUsage = async ({ usage, content, responseModel, retryWithoutSchema = false }) => {
@@ -907,14 +819,6 @@ export async function callLlmProvider({
       estimated_cost: firstUsage?.estimated_cost ?? null,
       duration_ms: Date.now() - callStartMs,
     });
-    await emitTrace({
-      status: 'ok',
-      retryWithoutSchema: false,
-      responseModel: first.responseModel || model,
-      usage: first.usage,
-      responseText: first.content,
-      requestBody: firstBody
-    });
     return parsed;
   } catch (firstError) {
     if (!jsonSchema || !shouldRetryWithoutJsonSchema(firstError)) {
@@ -923,15 +827,6 @@ export async function callLlmProvider({
       }
       const safeMessage = sanitizeText(firstError.message, [apiKey]);
       emitFailure(safeMessage);
-      await emitTrace({
-        status: 'error',
-        retryWithoutSchema: false,
-        responseModel: model,
-        usage: {},
-        responseText: '',
-        error: safeMessage,
-        requestBody: buildBody({ useJsonSchema: Boolean(jsonSchemaRequested) })
-      });
       throw new Error(safeMessage);
     }
 
@@ -964,14 +859,6 @@ export async function callLlmProvider({
         estimated_cost: retryUsage?.estimated_cost ?? null,
         duration_ms: Date.now() - callStartMs,
       });
-      await emitTrace({
-        status: 'ok',
-        retryWithoutSchema: true,
-        responseModel: retry.responseModel || model,
-        usage: retry.usage,
-        responseText: retry.content,
-        requestBody: retryBody
-      });
       return parsed;
     } catch (retryError) {
       if (shouldCountAsProviderFailure(retryError)) {
@@ -979,15 +866,6 @@ export async function callLlmProvider({
       }
       const safeMessage = sanitizeText(retryError.message, [apiKey]);
       emitFailure(safeMessage);
-      await emitTrace({
-        status: 'error',
-        retryWithoutSchema: true,
-        responseModel: model,
-        usage: {},
-        responseText: '',
-        error: safeMessage,
-        requestBody: buildBody({ useJsonSchema: false })
-      });
       throw new Error(safeMessage);
     }
   } finally {

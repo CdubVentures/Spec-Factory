@@ -177,7 +177,7 @@ test('publishExampleArtifacts writes one current artifact', async () => {
 
 ## Adding A New Background Job
 
-Based on `src/pipeline/componentReviewBatch.js`, `src/app/cli/commands/batchCommand.js`, and `src/cli/spec.js`.
+Based on `src/app/cli/commands/batchCommand.js` and `src/cli/spec.js`.
 
 Long-running work in this repo is usually exposed as an exported worker function plus a thin CLI command factory that returns a `command*` handler object. `src/cli/spec.js` wires that handler into the dispatcher; the worker stays separately testable.
 
@@ -189,7 +189,7 @@ export async function runExampleBatch({
   category,
   logger = null,
 }) {
-  const rows = await storage.listInputKeys(category);
+  const rows = specDb ? specDb.getAllProducts() : [];
   logger?.info?.('example_batch_start', { category, total: rows.length });
 
   return {
@@ -285,7 +285,6 @@ export async function addExampleItem({ config, name, tags = [] }) {
 | source | `tools/gui-react/src/api/client.ts` | canonical GUI API client wrapper |
 | source | `src/db/specDbMigrations.js` | append-only migration and index pattern |
 | source | `src/core/events/dataChangeContract.js` | canonical `emitDataChange` import path for route examples |
-| source | `src/pipeline/componentReviewBatch.js` | exported batch-worker function pattern |
 | source | `src/app/cli/commands/batchCommand.js` | thin CLI command factory pattern |
 | source | `src/cli/spec.js` | CLI command wrapper and dispatcher registration pattern |
 | source | `src/app/cli/commandDispatch.js` | handler-dispatch contract |

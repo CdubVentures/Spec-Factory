@@ -151,9 +151,17 @@ export function buildGroupFingerprintFine(groupKey, unresolvedNormalizedKeys = [
 
 export function computeGroupQueryCount(groupKey, queryExecutionHistory) {
   if (!queryExecutionHistory || !Array.isArray(queryExecutionHistory.queries)) return 0;
-  return queryExecutionHistory.queries.filter(
-    (q) => q.tier === 'group_search' && q.group_key === groupKey
-  ).length;
+  const now = Date.now();
+  return queryExecutionHistory.queries.filter((q) => {
+    if (q.tier !== 'group_search' || q.group_key !== groupKey) return false;
+    // WHY: Only count queries whose cooldown is still active.
+    // Expired cooldowns don't count — those queries are eligible for re-search.
+    if (q.cooldown_until) {
+      const expiresAt = new Date(q.cooldown_until).getTime();
+      if (expiresAt > 0 && expiresAt <= now) return false;
+    }
+    return true;
+  }).length;
 }
 
 export function isGroupSearchWorthy({ coverageRatio, unresolvedCount, groupQueryCount, phase }, thresholds = {}, config = null) {
@@ -221,7 +229,8 @@ export function buildNormalizedKeyQueue(unresolvedFields) {
 
 export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, categorySourceHosts = []) {
   const queries = queryExecutionHistory?.queries || [];
-  const cooldownMs = config.seedCooldownMs ?? (configInt(config, 'needsetSeedCooldownDays') ?? 30) * 86400000;
+  // WHY: queryCooldownDays is the canonical knob; needsetSeedCooldownDays kept for backward compat.
+  const cooldownMs = config.seedCooldownMs ?? (configInt(config, 'queryCooldownDays') ?? configInt(config, 'needsetSeedCooldownDays') ?? 30) * 86400000;
   const now = Date.now();
 
   function seedStatusFor(matchFn) {

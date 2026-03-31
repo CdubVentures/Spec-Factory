@@ -509,41 +509,6 @@ export interface IndexingLlmMetricsResponse {
   };
 }
 
-export interface IndexLabLlmTraceRow {
-  id: string;
-  ts?: string | null;
-  phase?: string | null;
-  role?: string | null;
-  purpose?: string | null;
-  status?: string | null;
-  provider?: string | null;
-  model?: string | null;
-  retry_without_schema?: boolean;
-  json_schema_requested?: boolean;
-  max_tokens_applied?: number;
-  target_fields?: string[];
-  target_fields_count?: number;
-  prompt_preview?: string;
-  response_preview?: string;
-  error?: string | null;
-  usage?: {
-    prompt_tokens?: number;
-    completion_tokens?: number;
-    cached_prompt_tokens?: number;
-    total_tokens?: number;
-  };
-  trace_file?: string;
-}
-
-export interface IndexLabLlmTracesResponse {
-  generated_at?: string;
-  run_id?: string;
-  category?: string;
-  product_id?: string;
-  count?: number;
-  traces?: IndexLabLlmTraceRow[];
-}
-
 export interface IndexingDomainChecklistUrlRow {
   url: string;
   checked_count?: number;
@@ -951,13 +916,17 @@ export interface TimedIndexLabEvent {
 export interface ProductHistoryRunRow {
   run_id: string;
   status: string;
-  cost_usd_run: number | null;
-  sources_attempted: number;
-  run_at: string;
+  cost_usd: number;
   started_at: string;
   ended_at: string;
   is_latest: boolean | number;
   storage_state: string;
+  counters: {
+    fetched_ok?: number;
+    fetched_error?: number;
+    parse_completed?: number;
+    search_workers?: number;
+  };
 }
 
 export interface ProductHistoryQueryRow {
@@ -971,11 +940,13 @@ export interface ProductHistoryQueryRow {
 export interface ProductHistoryUrlRow {
   url: string;
   host: string;
-  tier: string;
+  http_status: number;
+  source_tier: number;
   doc_kind: string;
-  fetch_success: boolean;
+  content_type: string;
+  size_bytes: number;
   run_id: string;
-  ts: string;
+  crawled_at: string;
 }
 
 export interface ProductHistoryMetrics {

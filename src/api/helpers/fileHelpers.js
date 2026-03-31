@@ -8,6 +8,5 @@ export {
   readJsonlEvents,
   readGzipJsonlEvents,
   parseNdjson,
-  markEnumSuggestionStatus,
   safeJoin,
 } from '../../shared/fileHelpers.js';

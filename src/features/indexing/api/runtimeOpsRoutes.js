@@ -347,6 +347,27 @@ export function registerRuntimeOpsRoutes(ctx) {
       return jsonRes(res, 200, { run_id: runId, ...queue });
     }
 
+    // WHY: Crawl ledger returns live URL crawl history + query cooldown state
+    // from spec.sqlite — serves active countdown data for the GUI.
+    if (subPath === 'crawl-ledger' && !parts[5]) {
+      const productId = String(params.get('product_id') || '').trim();
+      if (!productId) return jsonRes(res, 400, { error: 'product_id required' });
+      try {
+        const specDb = typeof getSpecDbReady === 'function' && resolvedMeta?.category
+          ? await getSpecDbReady(resolvedMeta.category)
+          : null;
+        if (!specDb) return jsonRes(res, 200, { run_id: runId, urls: [], query_cooldowns: [] });
+        const urls = specDb.getUrlCrawlEntriesByProduct(productId);
+        const history = specDb.buildQueryExecutionHistory(productId);
+        const now = Date.now();
+        const cooldowns = (history.queries || []).map((q) => ({
+          ...q,
+          cooldown_remaining_ms: Math.max(0, q.cooldown_until ? new Date(q.cooldown_until).getTime() - now : 0),
+        }));
+        return jsonRes(res, 200, { run_id: runId, urls, query_cooldowns: cooldowns });
+      } catch { return jsonRes(res, 200, { run_id: runId, urls: [], query_cooldowns: [] }); }
+    }
+
     if (subPath === 'workers' && parts[5]) {
       const workerIdParam = decodeURIComponent(String(parts[5]));
       const sourceIndexingPacketCollection = typeof readIndexLabRunSourceIndexingPackets === 'function'

@@ -69,9 +69,9 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
   if (parts[0] === 'review' && parts[1] && parts[2] === 'product' && parts[3] && method === 'GET') {
     const [, category, , productId] = parts;
     const specDb = getSpecDb(category);
-    const catalog = await loadProductCatalog(config, category);
-    const catalogPids = new Set(Object.keys(catalog.products || {}));
-    if (catalogPids.size > 0 && !catalogPids.has(productId)) {
+    // WHY: SQL is the source of truth — check product existence via specDb.
+    const dbProduct = specDb?.getProduct(productId) ?? null;
+    if (!dbProduct) {
       return jsonRes(res, 404, { error: 'not_in_catalog', message: `Product ${productId} is not in the product catalog` });
     }
     const sessionProd = await sessionCache.getSessionRules(category);
@@ -83,7 +83,7 @@ export async function handleFieldReviewRoute({ parts, params, method, req, res, 
       fieldsOverride: sessionProd.mergedFields,
       studioMap: readRawStudioMap(category),
     });
-    const catEntry = catalog.products?.[productId] || {};
+    const catEntry = dbProduct || {};
     const payload = await buildProductReviewPayload({
       storage,
       config,

@@ -31,7 +31,7 @@ function sampleProduct(overrides = {}) {
 describe('writeProductCheckpoint — first run', () => {
   test('creates product.json when none exists', () => {
     const outRoot = makeTmpDir();
-    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
     assert.ok(fs.existsSync(result.productPath));
     assert.equal(result.productPath, path.join(outRoot, 'products', 'mouse-test', 'product.json'));
     fs.rmSync(outRoot, { recursive: true });
@@ -39,7 +39,7 @@ describe('writeProductCheckpoint — first run', () => {
 
   test('runs_completed is 1 on first write', () => {
     const outRoot = makeTmpDir();
-    writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
     const written = JSON.parse(fs.readFileSync(path.join(outRoot, 'products', 'mouse-test', 'product.json'), 'utf8'));
     assert.equal(written.runs_completed, 1);
     fs.rmSync(outRoot, { recursive: true });
@@ -49,7 +49,7 @@ describe('writeProductCheckpoint — first run', () => {
 describe('writeProductCheckpoint — merge on second run', () => {
   test('reads existing and merges sources, increments runs_completed', () => {
     const outRoot = makeTmpDir();
-    writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
 
     const secondRun = sampleProduct({
       latest_run_id: 'run-002',
@@ -57,7 +57,7 @@ describe('writeProductCheckpoint — merge on second run', () => {
         { url: 'https://new.com', final_url: 'https://new.com', host: 'new.com', content_hash: 'bbb222', html_file: 'bbb222bbb222.html.gz', screenshot_count: 2, status: 200, first_seen_run_id: 'run-002', last_seen_run_id: 'run-002' },
       ],
     });
-    const result = writeProductCheckpoint({ productCheckpoint: secondRun, outRoot, runId: 'run-002' });
+    const result = writeProductCheckpoint({ productCheckpoint: secondRun, productRoot: path.join(outRoot, 'products'), runId: 'run-002' });
 
     const written = JSON.parse(fs.readFileSync(result.productPath, 'utf8'));
     assert.equal(written.runs_completed, 2);
@@ -69,7 +69,7 @@ describe('writeProductCheckpoint — merge on second run', () => {
 
   test('dedup: same content_hash updates last_seen, keeps first_seen', () => {
     const outRoot = makeTmpDir();
-    writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
 
     const secondRun = sampleProduct({
       latest_run_id: 'run-002',
@@ -77,7 +77,7 @@ describe('writeProductCheckpoint — merge on second run', () => {
         { url: 'https://example.com', final_url: 'https://example.com', host: 'example.com', content_hash: 'aaa111', html_file: 'aaa111aaa111.html.gz', screenshot_count: 1, status: 200, first_seen_run_id: 'run-002', last_seen_run_id: 'run-002' },
       ],
     });
-    writeProductCheckpoint({ productCheckpoint: secondRun, outRoot, runId: 'run-002' });
+    writeProductCheckpoint({ productCheckpoint: secondRun, productRoot: path.join(outRoot, 'products'), runId: 'run-002' });
 
     const written = JSON.parse(fs.readFileSync(path.join(outRoot, 'products', 'mouse-test', 'product.json'), 'utf8'));
     assert.equal(written.sources.length, 1);
@@ -95,7 +95,7 @@ describe('writeProductCheckpoint — edge cases', () => {
     fs.mkdirSync(corruptDir, { recursive: true });
     fs.writeFileSync(path.join(corruptDir, 'product.json'), 'NOT JSON', 'utf8');
 
-    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
     const written = JSON.parse(fs.readFileSync(result.productPath, 'utf8'));
     assert.equal(written.runs_completed, 1);
 
@@ -104,7 +104,7 @@ describe('writeProductCheckpoint — edge cases', () => {
 
   test('returns merge stats', () => {
     const outRoot = makeTmpDir();
-    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    const result = writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
     assert.equal(typeof result.sourcesAdded, 'number');
     assert.equal(typeof result.sourcesUpdated, 'number');
 
@@ -113,7 +113,7 @@ describe('writeProductCheckpoint — edge cases', () => {
 
   test('file is pretty-printed JSON', () => {
     const outRoot = makeTmpDir();
-    writeProductCheckpoint({ productCheckpoint: sampleProduct(), outRoot, runId: 'run-001' });
+    writeProductCheckpoint({ productCheckpoint: sampleProduct(), productRoot: path.join(outRoot, 'products'), runId: 'run-001' });
     const raw = fs.readFileSync(path.join(outRoot, 'products', 'mouse-test', 'product.json'), 'utf8');
     assert.ok(raw.includes('\n'));
 

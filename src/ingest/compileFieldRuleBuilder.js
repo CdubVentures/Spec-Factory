@@ -583,8 +583,7 @@ export function buildFieldRuleDraft({
     array_handling: 'none',
     new_value_policy: {
       accept_if_evidence: true,
-      mark_needs_curation: true,
-      suggestion_target: '_suggestions/enums.json'
+      mark_needs_curation: true
     },
     vocab: {
       mode: enumPolicy,
@@ -775,8 +774,7 @@ export function buildStudioFieldRule({
         ? sortDeep(enumBlock.new_value_policy)
         : {
           accept_if_evidence: true,
-          mark_needs_curation: true,
-          suggestion_target: `category_authority/${normalizeFieldKey(category || map?.category || 'category')}/_suggestions/enums.json`
+          mark_needs_curation: true
         });
   }
 

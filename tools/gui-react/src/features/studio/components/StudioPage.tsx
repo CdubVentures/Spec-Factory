@@ -1,4 +1,5 @@
-﻿import { usePersistedTab } from "../../../stores/tabStore.ts";
+﻿import { useEffect, useRef, useState } from "react";
+import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUiStore } from "../../../stores/uiStore.ts";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore.ts";
@@ -67,6 +68,22 @@ export function StudioPage() {
     processRunning: Boolean(processStatus.running),
   });
 
+  // WHY: client-side compile stale tracking — immediate feedback without
+  // waiting for server round-trip. Server value is initial seed on load;
+  // client overrides based on edits (→ stale) and compile finish (→ fresh).
+  const [clientCompileStale, setClientCompileStale] = useState<boolean | null>(null);
+  const prevRunningRef = useRef(Boolean(processStatus.running));
+  useEffect(() => {
+    const wasRunning = prevRunningRef.current;
+    const isRunning = Boolean(processStatus.running);
+    prevRunningRef.current = isRunning;
+    if (wasRunning && !isRunning) {
+      setClientCompileStale(false);
+      queryClient.invalidateQueries({ queryKey: ['studio', category] });
+      queryClient.invalidateQueries({ queryKey: ['studio-artifacts', category] });
+    }
+  }, [processStatus.running, category, queryClient]);
+
   // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Queries ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 
   const {
@@ -117,6 +134,13 @@ export function StudioPage() {
     queryClient,
   });
 
+  // WHY: mark stale immediately when the user edits (hasUnsavedChanges).
+  // Resolved value: client override wins when set, otherwise server seed.
+  useEffect(() => {
+    if (hasUnsavedChanges) setClientCompileStale(true);
+  }, [hasUnsavedChanges]);
+  const resolvedCompileStale = clientCompileStale ?? studio?.compileStale;
+
   const studioPageShellControllerState = buildStudioPageShellControllerState({
     category,
     isLoading,
@@ -130,7 +154,7 @@ export function StudioPage() {
     tooltipEntries: tooltipBank?.entries,
     tooltipFiles: tooltipBank?.files || [],
     guardrails: studio?.guardrails,
-    compileStale: studio?.compileStale,
+    compileStale: resolvedCompileStale,
     artifacts,
     knownValuesSource: knownValuesRes,
     knownValuesIsError,

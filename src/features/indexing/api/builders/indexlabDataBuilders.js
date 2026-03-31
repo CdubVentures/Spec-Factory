@@ -309,12 +309,8 @@ export async function readIndexLabRunSearchProfile(runId) {
   return _artifactReaders.readIndexLabRunSearchProfile(runId);
 }
 
-export async function readIndexLabRunPhase07Retrieval(runId) {
-  return _phaseReaders.readIndexLabRunPhase07Retrieval(runId);
-}
-
-export async function readIndexLabRunPhase08Extraction(runId) {
-  return _phaseReaders.readIndexLabRunPhase08Extraction(runId);
+export async function readIndexLabRunPhase07PrimeSources(runId) {
+  return _phaseReaders.readIndexLabRunPhase07PrimeSources(runId);
 }
 
 export async function readIndexLabRunDynamicFetchDashboard(runId) {
@@ -335,10 +331,6 @@ export async function readIndexLabRunRunMetaPacket(runId) {
 
 export async function readIndexLabRunSerpExplorer(runId) {
   return _artifactReaders.readIndexLabRunSerpExplorer(runId);
-}
-
-export async function readIndexLabRunLlmTraces(runId, limit = 80) {
-  return _artifactReaders.readIndexLabRunLlmTraces(runId, limit);
 }
 
 export async function readIndexLabRunEvidenceIndex(runId, opts) {

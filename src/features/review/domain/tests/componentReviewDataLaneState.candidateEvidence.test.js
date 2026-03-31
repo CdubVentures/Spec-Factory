@@ -39,7 +39,7 @@ test('component payload keeps candidate evidence visible after shared lane confi
     userAcceptSharedStatus: 'accepted',
   });
 
-  await writeComponentReviewItems(tempRoot, [
+  writeComponentReviewItems(specDb, [
     {
       review_id: 'rv_confirmed_component_candidate',
       category: CATEGORY,

@@ -23,17 +23,6 @@ function normalizeType(value) {
   throw new Error(`Unsupported suggestion type '${value}'`);
 }
 
-function fileNameForType(type) {
-  // Consolidated: use the same files as the runtime curation system
-  if (type === 'enum') {
-    return 'enums.json';
-  }
-  if (type === 'component') {
-    return 'components.json';
-  }
-  return 'aliases.json';
-}
-
 function dedupeKeyForType(type, item = {}) {
   if (type === 'alias') {
     return [
@@ -85,18 +74,6 @@ function normalizePayload(type, payload = {}) {
     created_at: nowIso()
   };
   return item;
-}
-
-export function suggestionFilePath({ config = {}, category, type }) {
-  const normalizedType = normalizeType(type);
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  const normalizedCategory = String(category || '').trim() || 'unknown';
-  return path.join(
-    helperRoot,
-    normalizedCategory,
-    '_suggestions',
-    fileNameForType(normalizedType)
-  );
 }
 
 export async function appendReviewSuggestion({

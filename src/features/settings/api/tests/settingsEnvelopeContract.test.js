@@ -42,18 +42,6 @@ function makeCtx(overrides = {}) {
     OUTPUT_ROOT: 'out',
     broadcastWs: () => {},
     HELPER_ROOT: '',
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-      awsRegion: 'us-east-2',
-      s3Bucket: '',
-      s3Prefix: 'spec-factory-runs',
-      s3AccessKeyId: '',
-      s3SecretAccessKey: '',
-      s3SessionToken: '',
-      updatedAt: null,
-    },
   };
   return { ...base, ...overrides };
 }
@@ -150,39 +138,3 @@ test('ui-settings PUT with unknown keys includes them in rejected', async (t) =>
   assert.equal(result.body.rejected.hackerField, 'unknown_key');
 });
 
-// --- Storage settings envelope ---
-
-test('storage-settings PUT returns standard envelope with ok, applied, snapshot, rejected', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-storage-'));
-  t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
-  const appDb = new AppDb({ dbPath: ':memory:' });
-  t.after(() => appDb.close());
-  const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
-    appDb,
-    readJsonBody: async () => ({ enabled: true, destinationType: 'local' }),
-  }));
-
-  const result = await handler(['storage-settings'], new URLSearchParams(), 'PUT', {}, {});
-  assert.equal(result.status, 200);
-  assertEnvelope(result.body, 'storage');
-});
-
-test('storage-settings PUT with unknown keys includes them in rejected', async (t) => {
-  const helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'envelope-storage-unk-'));
-  t.after(() => fs.rm(helperRoot, { recursive: true, force: true }));
-  const appDb = new AppDb({ dbPath: ':memory:' });
-  t.after(() => appDb.close());
-  const handler = registerConfigRoutes(makeCtx({
-    config: { categoryAuthorityRoot: helperRoot },
-    HELPER_ROOT: helperRoot,
-    appDb,
-    readJsonBody: async () => ({ enabled: true, __injectedField__: 'bad' }),
-  }));
-
-  const result = await handler(['storage-settings'], new URLSearchParams(), 'PUT', {}, {});
-  assert.equal(result.status, 200);
-  assertEnvelope(result.body, 'storage-unknown');
-  assert.equal(result.body.rejected.__injectedField__, 'unknown_key');
-});

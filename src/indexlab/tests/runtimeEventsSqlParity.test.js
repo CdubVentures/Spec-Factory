@@ -119,7 +119,6 @@ test('all common pipeline event types reach SQL via logger', () => {
     'source_fetch_skipped',
     'source_fetch_retrying',
     'source_fetch_failed',
-    'fetch_trace_written',
     'source_processed',
     'fields_filled_from_source',
     'visual_asset_captured',

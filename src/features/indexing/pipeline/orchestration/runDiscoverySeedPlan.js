@@ -33,7 +33,7 @@ function normalizePlanningHints({
 function buildInitialContext(params) {
   const {
     config = {}, storage, category, categoryConfig, job, runId, logger,
-    roundContext, requiredFields, llmContext, frontierDb, traceWriter,
+    roundContext, requiredFields, llmContext, frontierDb,
     learningStoreHints, planner, normalizeFieldListFn,
   } = params;
 
@@ -48,7 +48,7 @@ function buildInitialContext(params) {
 
   return {
     config: discoveryConfig, storage, category, categoryConfig, job, runId, logger,
-    roundContext, requiredFields, llmContext, frontierDb, traceWriter,
+    roundContext, requiredFields, llmContext, frontierDb,
     learningStoreHints, planner, normalizeFieldListFn,
     planningHints, queryExecutionHistory,
     // WHY: Auto-collects all function-valued params as DI overrides.

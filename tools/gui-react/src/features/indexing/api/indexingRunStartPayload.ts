@@ -18,6 +18,9 @@ interface BuildIndexingRunStartPayloadInput {
   requestedRunId: string;
   category: string;
   productId: string;
+  brand?: string;
+  model?: string;
+  variant?: string;
   runtimeSettingsPayload: RuntimeSettings;
   parsedValues: StartIndexingRunPayloadParsedValues;
   runControlPayload: StartIndexingRunPayloadRecord;
@@ -76,6 +79,9 @@ export function buildIndexingRunStartPayload(
     requestedRunId,
     category,
     productId,
+    brand,
+    model,
+    variant,
     runtimeSettingsPayload,
     parsedValues,
     runControlPayload,
@@ -91,6 +97,11 @@ export function buildIndexingRunStartPayload(
     requestedRunId: String(requestedRunId || '').trim(),
     category,
     productId,
+    // WHY: Send identity so the backend CLI gets --brand/--model/--variant args.
+    // Without these, the pipeline falls back to DB lookup or "unknown" defaults.
+    ...(brand ? { brand } : {}),
+    ...(model ? { model } : {}),
+    ...(variant ? { variant } : {}),
     mode: 'indexlab',
     replaceRunning: true,
     profile: 'standard',

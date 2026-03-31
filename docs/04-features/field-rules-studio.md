@@ -34,7 +34,7 @@
 ## Side Effects
 
 - Writes `category_authority/{category}/_control_plane/field_studio_map.json`.
-- Writes the `studio` section inside `category_authority/_runtime/user-settings.json` through settings-authority.
+- Writes the `studio` section inside `.workspace/global/user-settings.json` through settings-authority.
 - Invalidates `sessionCache` and `reviewLayoutByCategory`.
 - Compile actions refresh generated rule files under `category_authority/{category}/_generated/`.
 

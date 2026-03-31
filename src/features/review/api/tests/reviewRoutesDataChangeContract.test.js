@@ -37,8 +37,6 @@ function makeReviewCtx(overrides = {}) {
     broadcastWs: () => {},
     specDbCache: new Map(),
     findProductsReferencingComponent: async () => [],
-    componentReviewPath: () => 'component_review.json',
-    runComponentReviewBatch: async () => ({ accepted_alias: 0 }),
     invalidateFieldRulesCache: () => {},
     safeReadJson: async () => ({ version: 1, items: [], updated_at: null }),
     slugify: (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -76,7 +74,6 @@ function makeReviewCtx(overrides = {}) {
     resolveEnumMutationContext: () => ({ error: 'not_used' }),
     getPendingEnumSharedCandidateIds: () => [],
     cascadeEnumChange: async () => {},
-    markEnumSuggestionStatusBound: async () => {},
     runEnumConsistencyReview: async () => ({ enabled: false, skipped_reason: 'not_stubbed', decisions: [] }),
     annotateCandidatePrimaryReviews: () => {},
     ensureGridKeyReviewState: () => {},
@@ -219,30 +216,6 @@ test('review suggest emits typed data-change contract', async () => {
   assert.equal(emitted[0].payload.category, 'mouse');
   assert.deepEqual(emitted[0].payload.categories, ['mouse']);
   assert.deepEqual(emitted[0].payload.domains, ['review', 'suggestions']);
-});
-
-test('review components batch emits typed data-change contract', async () => {
-  const emitted = [];
-  const handler = registerReviewRoutes(makeReviewCtx({
-    runComponentReviewBatch: async () => ({ accepted_alias: 1, approved_new: 0 }),
-    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
-  }));
-
-  const result = await handler(
-    ['review-components', 'mouse', 'run-component-review-batch'],
-    new URLSearchParams(),
-    'POST',
-    {},
-    {},
-  );
-  assert.equal(result.status, 200);
-  assert.equal(emitted.length, 1);
-  assert.equal(emitted[0].channel, 'data-change');
-  assert.equal(emitted[0].payload.type, 'data-change');
-  assert.equal(emitted[0].payload.event, 'component-review');
-  assert.equal(emitted[0].payload.category, 'mouse');
-  assert.deepEqual(emitted[0].payload.categories, ['mouse']);
-  assert.deepEqual(emitted[0].payload.domains, ['component', 'review']);
 });
 
 test('enum consistency preview returns decisions without emitting data-change', async () => {

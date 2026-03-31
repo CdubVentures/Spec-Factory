@@ -14,7 +14,9 @@ import { loadConfigWithUserSettings } from '../config.js';
 import { parseArgs, asBool } from './args.js';
 import { createStorage, toPosixKey } from '../s3/storage.js';
 import { runProduct } from '../pipeline/runProduct.js';
-import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
+import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
+// WHY: Inline constant after INPUT_KEY_PREFIX removal from storageKeyPrefixes.
+const INPUT_KEY_PREFIX = 'specs/inputs';
 
 async function streamToString(stream) {
   const chunks = [];
@@ -85,7 +87,7 @@ export async function runS3Integration(argv = process.argv.slice(2)) {
   }
 
   const fixturePath = path.resolve(
-    args.fixture || 'fixtures/s3/specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json'
+    args.fixture || '.workspace/products/mouse-razer-viper-v3-pro/product.json'
   );
   const fixtureRaw = await fs.readFile(fixturePath, 'utf8');
   const job = JSON.parse(fixtureRaw);

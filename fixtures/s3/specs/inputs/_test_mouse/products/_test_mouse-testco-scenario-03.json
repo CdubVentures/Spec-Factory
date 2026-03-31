@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-03",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 3",
+    "variant": "similar_encoder",
+    "id": 9003,
+    "identifier": "test003a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 3,
+    "name": "similar_encoder",
+    "description": "Encoder alias match (\"Encoder alpha 01\" â†’ \"Encoder Alpha 01\")",
+    "category": "Components"
+  }
+}

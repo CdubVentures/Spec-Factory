@@ -53,7 +53,6 @@ function createHarness(options = {}) {
     handleIndexLabProcessCompletion: async (payload) => {
       indexCalls.push(payload);
     },
-    runDataStorageState: options.runDataStorageState || {},
     indexLabRoot: path.resolve('artifacts/indexlab'),
     outputRoot: path.resolve('out'),
     outputPrefix: 'specs/outputs',
@@ -80,12 +79,7 @@ async function flushProcessLifecycle() {
 }
 
 test('process runtime start publishes run metadata and preserves the completed status contract', async () => {
-  const h = createHarness({
-    runDataStorageState: {
-      enabled: true,
-      destinationType: 's3',
-    },
-  });
+  const h = createHarness();
 
   const status = h.runtime.startProcess(
     'src/cli/spec.js',
@@ -131,8 +125,8 @@ test('process runtime start publishes run metadata and preserves the completed s
     brand: 'Razer',
     model: 'Viper V3 Pro',
     variant: 'White',
-    storage_destination: 's3',
-    storageDestination: 's3',
+    storage_destination: 'local',
+    storageDestination: 'local',
   });
   assert.match(status.startedAt, /^\d{4}-\d{2}-\d{2}T/);
 
@@ -154,7 +148,7 @@ test('process runtime start publishes run metadata and preserves the completed s
   assert.equal(after.brand, 'Razer');
   assert.equal(after.model, 'Viper V3 Pro');
   assert.equal(after.variant, 'White');
-  assert.equal(after.storage_destination, 's3');
+  assert.equal(after.storage_destination, 'local');
   assert.equal(h.compileCalls.length, 1);
   assert.equal(h.indexCalls.length, 1);
   assert.equal(h.compileCalls[0]?.exitCode, 0);

@@ -22,10 +22,12 @@ interface UseIndexingRunMutationsInput {
   runControlPayload: Record<string, RunControlPayloadValue>;
   category: string;
   singleProductId: string;
+  selectedBrand: string;
+  selectedModel: string;
+  selectedVariant: string;
   selectedIndexLabRunId: string;
   clearProcessOutput: () => void;
   setClearedRunViewId: (value: string) => void;
-  setSelectedLlmTraceId: (value: string) => void;
   clearIndexLabRun: (runId: string) => void;
   removeRunScopedQueries: (runId: string) => void;
   queryClient: QueryClient;
@@ -48,10 +50,12 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
     runControlPayload,
     category,
     singleProductId,
+    selectedBrand,
+    selectedModel,
+    selectedVariant,
     selectedIndexLabRunId,
     clearProcessOutput,
     setClearedRunViewId,
-    setSelectedLlmTraceId,
     clearIndexLabRun,
     removeRunScopedQueries,
     queryClient,
@@ -100,6 +104,9 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
         requestedRunId,
         category,
         productId: singleProductId,
+        brand: selectedBrand,
+        model: selectedModel,
+        variant: selectedVariant,
         runtimeSettingsPayload: currentSettings,
         parsedValues,
         runControlPayload,
@@ -111,7 +118,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
       const optimisticRunId = String(requestedRunId || '').trim();
       clearProcessOutput();
       setClearedRunViewId('');
-      setSelectedLlmTraceId('');
       if (previousRunId) {
         clearIndexLabRun(previousRunId);
         removeRunScopedQueries(previousRunId);

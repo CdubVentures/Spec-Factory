@@ -14,7 +14,17 @@
  * Safe to run multiple times — already-migrated products are skipped.
  */
 
-import { loadProductCatalog, saveProductCatalog } from '../products/productCatalog.js';
+import { loadProductCatalog } from '../products/productCatalog.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+// WHY: saveProductCatalog was removed (catalog JSON is now read-only boot seed).
+// This migration already ran. Keep inline save for safety if ever re-run.
+async function saveProductCatalog(config, category, catalog) {
+  const root = config?.categoryAuthorityRoot || 'category_authority';
+  const filePath = path.resolve(root, category, '_control_plane', 'product_catalog.json');
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
+}
 import { migrateProductArtifacts, appendRenameLog } from './artifactMigration.js';
 
 const HEX_ID_RE = /^[a-z][a-z0-9-]*-[a-f0-9]{8}$/;

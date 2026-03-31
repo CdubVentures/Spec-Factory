@@ -179,7 +179,12 @@ export function createSessionCache({
     const cleanFieldOrder = mergedFieldOrder.filter((key) => !String(key).startsWith('__grp::'));
     const labels = buildLabelsFromFields(mergedFields, cleanFieldOrder);
 
-    const compileStale = Boolean(mapSavedAt && (!compiledAt || new Date(mapSavedAt) > new Date(compiledAt)));
+    // WHY: both timestamps live in DB. map updated_at changes only when
+    // auto-save detects a real content change (fingerprint dedup).
+    // If map was saved after compile → stale. Simple.
+    const compileStale = Boolean(
+      mapSavedAt && (!compiledAt || new Date(mapSavedAt) > new Date(compiledAt))
+    );
 
     return {
       mergedFields,

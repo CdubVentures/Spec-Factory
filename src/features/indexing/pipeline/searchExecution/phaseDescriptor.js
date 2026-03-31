@@ -27,7 +27,7 @@ export const searchExecutionPhase = {
 
     const searchResult = await fn({
       config: ctx.config, storage: ctx.storage, logger: ctx.logger,
-      runtimeTraceWriter: ctx.traceWriter, frontierDb: ctx.frontierDb,
+      frontierDb: ctx.frontierDb,
       categoryConfig: ctx.categoryConfig, job: ctx.job, runId: ctx.runId,
       queries: ctx.queries, executionQueryLimit: ctx.executionQueryLimit,
       queryLimit: ctx.queryLimit,

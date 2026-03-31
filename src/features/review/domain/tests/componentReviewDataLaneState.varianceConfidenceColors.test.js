@@ -45,7 +45,7 @@ test('confidence boundaries are reflected in component payload slot colors', asy
       });
     }
 
-    await writeComponentReviewItems(tempRoot, []);
+    writeComponentReviewItems(specDb, []);
 
     const payload = await buildComponentReviewPayloads({
       config: makeCategoryAuthorityConfig(tempRoot),

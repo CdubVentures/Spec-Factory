@@ -1,20 +1,13 @@
 {
   "bump": "patch",
   "key_map": {
-    "length": "lngth",
-    "switch_link": "switches_link"
+    "length": "lngth"
   },
   "migrations": [
     {
       "from": "length",
       "reason": "auto-generated from key map",
       "to": "lngth",
-      "type": "rename"
-    },
-    {
-      "from": "switch_link",
-      "reason": "auto-generated from key map",
-      "to": "switches_link",
       "type": "rename"
     }
   ],

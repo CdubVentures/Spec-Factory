@@ -4,8 +4,6 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import zlib from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
-import { toPosixKey } from '../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { nowIso, buildProductId } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 import { slugify as canonicalSlugify } from '../features/catalog/identity/slugify.js';
@@ -810,7 +808,8 @@ export async function syncJobsFromCatalogSeed({
   category,
   fieldOrder = [],
   fieldRules = {},
-  limit = 0
+  limit = 0,
+  specDb = null,
 }) {
   const extracted = await extractCatalogSeedData({
     category,
@@ -854,10 +853,9 @@ export async function syncJobsFromCatalogSeed({
     // WHY: Check canonical index for existing product before generating new hex ID.
     // gate.canonicalProductId is the real catalog key when identity exists in the index.
     const checkPid = gate.canonicalProductId;
-    if (checkPid) {
-      const checkKey = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${checkPid}.json`);
-      const exists = await storage.objectExists(checkKey);
-      if (exists) {
+    if (checkPid && specDb) {
+      const existing = specDb.getProduct(checkPid);
+      if (existing) {
         skippedExisting += 1;
         continue;
       }
@@ -872,40 +870,12 @@ export async function syncJobsFromCatalogSeed({
       productId
     });
 
-    const s3key = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`);
-    const job = {
-      productId,
-      category,
-      identityLock: {
-        brand: identity.brand,
-        model: identity.model,
-        variant: identity.variant
-      },
-      seedUrls: [],
-      anchors: {},
-      requirements: {
-        requiredFields: toArray(fieldRules?.required_fields)
-      },
-      seed: {
-        source: 'catalog',
-        catalog_path: extracted.catalog_path || '',
-        field_studio_source_path: extracted.field_studio_source_path,
-        source_column: product.source_column,
-        source_type: 'user_helper_seed',
-        captured_at: nowIso()
-      }
-    };
-
-    await storage.writeObject(
-      s3key,
-      Buffer.from(`${JSON.stringify(job, null, 2)}\n`, 'utf8'),
-      { contentType: 'application/json' }
-    );
     await upsertQueueProduct({
       storage,
       category,
       productId,
-      s3key,
+      s3key: '',
+      specDb,
       patch: {
         status: 'pending',
         next_action_hint: 'fast_pass'

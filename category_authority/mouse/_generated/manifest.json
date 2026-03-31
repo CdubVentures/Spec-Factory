@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "artifact_count": 12,
+  "artifact_count": 11,
   "artifacts": [
     {
       "bytes": 8405,
@@ -28,24 +28,19 @@
       "sha256": "fa3cc0d4c7635cf78d26ee997d0484007c9e7d4cda3d781188e0d69633cdc01b"
     },
     {
-      "bytes": 5433,
+      "bytes": 5582,
       "path": "field_groups.json",
-      "sha256": "ac40e20911d3d7ccfa78f4ca458132bcd8976282fd5336d5934f196932178507"
+      "sha256": "4426e91c9396b58b40523f81cf316b3c47df4e05974f8daa605767707d5e79e3"
     },
     {
-      "bytes": 301886,
+      "bytes": 296964,
       "path": "field_rules.json",
-      "sha256": "e35d2bbeeb81fd2021f0a63003ec44e1fe7c900cdcae41afc03fad1b32d37f8d"
+      "sha256": "e56900f14ac6f8128f0ad0eae4ae218ccf6b0e6774c0305e472bd5bd356f6734"
     },
     {
-      "bytes": 301886,
-      "path": "field_rules.runtime.json",
-      "sha256": "e35d2bbeeb81fd2021f0a63003ec44e1fe7c900cdcae41afc03fad1b32d37f8d"
-    },
-    {
-      "bytes": 533,
+      "bytes": 356,
       "path": "key_migrations.json",
-      "sha256": "c8fd4d2c74ce4a1b329d37fee6a7cfd7fa7ae9b484fc9d9b041c78c00b5f09e4"
+      "sha256": "d6d431096c05147b4d27746d2d01e45e1007902a7d77daa91b735ff9304518ec"
     },
     {
       "bytes": 2719,
@@ -53,17 +48,18 @@
       "sha256": "53a432f6cfcb1f715d22560ae24cef5e113881263c0f731f93f0dcadd8c6bf08"
     },
     {
-      "bytes": 12878,
+      "bytes": 12877,
       "path": "parse_templates.json",
-      "sha256": "a7ebc0b762264836f812e95c4faaac03c6117d9f93d0b7c15618945a6339710f"
+      "sha256": "052d4bf97f3c225d711dd2c48226fc6579d2b22d7e86d0a4ef028fabcdda5119"
     },
     {
-      "bytes": 69706,
+      "bytes": 69499,
       "path": "ui_field_catalog.json",
-      "sha256": "6aeda789dd38f5ad05a7844bcb1ca8f261c815354572156ca402aa28a7b9d2e8"
+      "sha256": "ecf875a9b073b355a3cbd48891166f917df66cc742a4e1b25ab7c56d5fbae401"
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-03-29T22:02:02.191Z",
+  "generated_at": "2026-03-31T06:24:22.630Z",
+  "source_map_hash": "0840e9807a661c90e5a17dd3cfed16402dc1fff35f55afca925984f66a35a026",
   "version": 1
 }

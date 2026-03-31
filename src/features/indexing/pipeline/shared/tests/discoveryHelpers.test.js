@@ -122,20 +122,20 @@ test('loadLearningArtifacts: returns parsed data', async () => {
 // 4. buildSearchProfileKeys
 // ---------------------------------------------------------------------------
 
-test('buildSearchProfileKeys: builds all three keys', () => {
+test('buildSearchProfileKeys: builds runKey from output path', () => {
   const storage = {
     resolveOutputKey: (...parts) => parts.filter(Boolean).join('/'),
   };
   const result = buildSearchProfileKeys({
     storage,
-    config: { s3InputPrefix: 'prefix' },
+    config: {},
     category: 'mouse',
     productId: 'mouse-razer-viper',
     runId: 'run-001',
   });
-  assert.ok(result.inputKey.includes('_discovery'));
-  assert.ok(result.inputKey.includes('run-001'));
+  // WHY: inputKey removed (discovery diagnostic dumps eliminated).
   assert.ok(result.runKey);
+  assert.ok(result.runKey.includes('run-001'));
 });
 
 test('buildSearchProfileKeys: null runKey when missing params', () => {
@@ -144,13 +144,12 @@ test('buildSearchProfileKeys: null runKey when missing params', () => {
   };
   const result = buildSearchProfileKeys({
     storage,
-    config: { s3InputPrefix: 'prefix' },
+    config: {},
     category: '',
     productId: '',
     runId: 'run-001',
   });
   assert.equal(result.runKey, null);
-  assert.ok(result.inputKey);
 });
 
 // ---------------------------------------------------------------------------
@@ -207,12 +206,12 @@ test('buildQueryAttemptStats: aggregates multiple attempts per query', () => {
   assert.deepStrictEqual(razer.providers, ['google', 'bing']);
 });
 
-test('buildQueryAttemptStats: tracks frontier_cache flag', () => {
+test('buildQueryAttemptStats: tracks cooldown_skipped flag', () => {
   const rows = [
-    { query: 'cached query', result_count: 2, provider: 'cache', reason_code: 'frontier_query_cache' },
+    { query: 'cached query', result_count: 2, provider: 'cache', reason_code: 'cooldown_skip' },
   ];
   const stats = buildQueryAttemptStats(rows);
-  assert.equal(stats[0].frontier_cache, true);
+  assert.equal(stats[0].cooldown_skipped, true);
 });
 
 test('buildQueryAttemptStats: sorts by result_count desc', () => {

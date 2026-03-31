@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Pipeline Data Flow</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --cyan: #06b6d4;
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+
+/* Stats grid */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+
+/* Section surfaces */
+.surface{margin-bottom:56px}
+.surface-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.surface-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.surface-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
+
+/* Data-flow color legend */
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:32px;padding:16px 20px;background:var(--s1);border:1px solid var(--border);border-radius:10px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--t2)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-sql{background:var(--green)}
+.dot-file{background:var(--amber)}
+.dot-ipc{background:var(--violet)}
+.dot-read{background:var(--accent)}
+
+/* Phase cards */
+.phase-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;transition:border-color 0.15s}
+.phase-card:hover{border-color:var(--border-f)}
+.phase-card summary{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;list-style:none;font-size:0.92rem;gap:12px}
+.phase-card summary::-webkit-details-marker{display:none}
+.phase-card summary::after{content:"+";font-size:1.1rem;font-weight:300;color:var(--t3);transition:transform 0.15s;margin-left:auto;flex-shrink:0}
+.phase-card[open] summary::after{content:"\2212"}
+.phase-num{font-family:var(--mono);font-weight:700;font-size:0.78rem;color:var(--t3);background:var(--s2);padding:2px 8px;border-radius:4px;margin-right:8px;white-space:nowrap}
+.phase-title{font-weight:600;flex-shrink:0}
+.phase-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-sql{background:var(--green-s);color:var(--green)}
+.tag-file{background:var(--amber-s);color:var(--amber)}
+.tag-ipc{background:var(--violet-s);color:var(--violet)}
+.tag-read{background:var(--accent-s);color:var(--accent)}
+.tag-info{background:var(--s2);color:var(--t2)}
+
+/* Phase body */
+.phase-body{border-top:1px solid var(--border);padding:20px}
+.phase-section{margin-bottom:16px}
+.phase-section:last-child{margin-bottom:0}
+.phase-section-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;padding-left:2px}
+.label-sql{color:var(--green)}
+.label-file{color:var(--amber)}
+.label-ipc{color:var(--violet)}
+.label-read{color:var(--accent)}
+.label-info{color:var(--t3)}
+.op-list{list-style:none;padding:0;margin:0}
+.op-list li{font-size:0.84rem;color:var(--t2);padding:3px 0 3px 16px;position:relative;line-height:1.5}
+.op-list li::before{content:"";position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:50%;background:var(--s3)}
+.op-list.sql li::before{background:var(--green)}
+.op-list.file li::before{background:var(--amber)}
+.op-list.ipc li::before{background:var(--violet)}
+.op-list.read li::before{background:var(--accent)}
+code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5px;border-radius:4px}
+
+/* Overview SVG container */
+.svg-wrap{margin-bottom:48px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.svg-wrap svg{display:block;margin:0 auto}
+
+/* Tables */
+.data-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:8px}
+.data-table th{text-align:left;padding:8px 12px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border);background:var(--s2)}
+.data-table td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--t2)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .mono{font-family:var(--mono);color:var(--text);font-size:0.82rem}
+.data-table .dim{color:var(--t3);font-size:0.78rem}
+
+/* Event table enhancements */
+.event-handler{font-family:var(--mono);font-size:0.78rem;color:var(--violet)}
+.event-writes{font-size:0.78rem;color:var(--green)}
+.event-name{font-family:var(--mono);font-size:0.82rem;color:var(--text)}
+
+/* RuntimeOps panel table */
+.panel-name{font-family:var(--mono);font-weight:600;color:var(--text);font-size:0.84rem}
+.panel-desc{color:var(--t2);font-size:0.8rem}
+
+/* Flow diagram section */
+.flow-section{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:32px}
+.flow-section h3{font-size:1rem;font-weight:700;margin-bottom:16px;letter-spacing:-0.01em}
+
+/* Settings propagation diagram */
+.propagation-chain{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:16px 0;padding:16px 0}
+.prop-node{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:0.82rem;font-weight:600;text-align:center;white-space:nowrap}
+.prop-arrow{color:var(--t3);font-size:1.2rem;padding:0 8px;flex-shrink:0}
+
+@media(max-width:768px){
+  .page{padding:24px 16px 64px}
+  .header h1{font-size:1.5rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .phase-card summary{flex-wrap:wrap}
+  .legend{flex-direction:column;gap:8px}
+  .propagation-chain{flex-direction:column}
+  .prop-arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header class="header">
+  <h1>Pipeline Data Flow</h1>
+  <p>Complete run lifecycle from start to completion. Every phase, every data read/write, every SQL table touched.</p>
+  <div class="meta">
+    <span>Spec Factory</span>
+    <span>Generated 2026-03-30</span>
+    <span>Post-consolidation</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════ STATS ═══════════════════════ -->
+<div class="stats">
+  <div class="stat"><div class="n">10+</div><div class="l">Pipeline Phases</div></div>
+  <div class="stat"><div class="n">61</div><div class="l">SQL Tables</div></div>
+  <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
+  <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
+  <div class="stat"><div class="n">3</div><div class="l">Worker Pools</div></div>
+</div>
+
+<!-- ═══════════════════════ LEGEND ═══════════════════════ -->
+<div class="legend">
+  <div class="legend-item"><span class="legend-dot dot-sql"></span>SQL Writes</div>
+  <div class="legend-item"><span class="legend-dot dot-file"></span>File Writes</div>
+  <div class="legend-item"><span class="legend-dot dot-ipc"></span>IPC / Events / WebSocket</div>
+  <div class="legend-item"><span class="legend-dot dot-read"></span>Reads (SQL + File)</div>
+</div>
+
+<!-- ═══════════════════════ PIPELINE OVERVIEW SVG ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Pipeline Overview</h2>
+  </div>
+  <p class="surface-desc">High-level phase flow from process bootstrap through finalization. Each node represents a discrete pipeline stage with its own data contract.</p>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1200 680" width="1200" height="680" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#71717a"/>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#22c55e"/>
+        </marker>
+        <marker id="arrow-violet" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#8b5cf6"/>
+        </marker>
+        <linearGradient id="phaseBg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#27272a"/>
+          <stop offset="100%" stop-color="#18181b"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Background grid -->
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(161,161,170,0.04)" stroke-width="1"/>
+      </pattern>
+      <rect width="1200" height="680" fill="url(#grid)"/>
+
+      <!-- Title -->
+      <text x="600" y="36" text-anchor="middle" fill="#fafafa" font-size="15" font-weight="700" letter-spacing="-0.02em">Run Lifecycle &mdash; Phase Progression</text>
+
+      <!-- Phase boxes: Row 1 (y=60) -->
+      <!-- Phase 00: Bootstrap -->
+      <rect x="30" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="130" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 00</text>
+      <text x="130" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Bootstrap</text>
+      <text x="130" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">processRuntime.startProcess</text>
+
+      <!-- Arrow 00->01 -->
+      <line x1="230" y1="111" x2="270" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 01: Category Config -->
+      <rect x="280" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="380" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 01</text>
+      <text x="380" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Category Config</text>
+      <text x="380" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">Load authority + components</text>
+
+      <!-- Arrow 01->02 -->
+      <line x1="480" y1="111" x2="520" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 02: NeedSet -->
+      <rect x="530" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="630" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 02</text>
+      <text x="630" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">NeedSet</text>
+      <text x="630" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">computeNeedSet</text>
+
+      <!-- Arrow 02->03 -->
+      <line x1="730" y1="111" x2="770" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 03: Discovery Seed Plan -->
+      <rect x="780" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="880" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 03</text>
+      <text x="880" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Discovery Seed Plan</text>
+      <text x="880" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">buildDiscoverySeedPlanContext</text>
+
+      <!-- Connector row 1 to row 2 -->
+      <path d="M 980 111 L 1040 111 L 1040 220 L 980 220" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase boxes: Row 2 (y=180) — right to left -->
+      <!-- Phase 04: Search Execution -->
+      <rect x="780" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="880" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 04</text>
+      <text x="880" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Search Execution</text>
+      <text x="880" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">executeSearchQueries</text>
+
+      <!-- Arrow 04->05 -->
+      <line x1="780" y1="221" x2="730" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 05: SERP Selection -->
+      <rect x="530" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="630" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 05</text>
+      <text x="630" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">SERP Selection</text>
+      <text x="630" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">Domain classification</text>
+
+      <!-- Arrow 05->06 -->
+      <line x1="530" y1="221" x2="480" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 06: Fetch Plan -->
+      <rect x="280" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
+      <text x="380" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 06</text>
+      <text x="380" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Fetch Plan</text>
+      <text x="380" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">buildOrderedFetchPlan</text>
+
+      <!-- Arrow 06->07 -->
+      <line x1="280" y1="221" x2="230" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 07: Crawl Execution -->
+      <rect x="30" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="130" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 07</text>
+      <text x="130" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Crawl Execution</text>
+      <text x="130" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">session.runFetchPlan</text>
+
+      <!-- Connector row 2 to row 3 -->
+      <path d="M 130 262 L 130 300" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase boxes: Row 3 (y=310) — left to right -->
+      <!-- Phase 08: Result Processing -->
+      <rect x="30" y="310" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="130" y="336" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 08</text>
+      <text x="130" y="356" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Result Processing</text>
+      <text x="130" y="376" text-anchor="middle" fill="#a1a1aa" font-size="10">processDiscoveryResults</text>
+
+      <!-- Arrow 08->09 -->
+      <line x1="230" y1="351" x2="270" y2="351" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <!-- Phase 09: Checkpoint + Finalize -->
+      <rect x="280" y="310" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="380" y="336" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 09</text>
+      <text x="380" y="356" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="600">Checkpoint + Finalize</text>
+      <text x="380" y="376" text-anchor="middle" fill="#a1a1aa" font-size="10">buildCheckpoint + finalize</text>
+
+      <!-- Data stores annotation block -->
+      <rect x="600" y="310" width="560" height="135" rx="10" fill="rgba(24,24,27,0.8)" stroke="rgba(161,161,170,0.12)" stroke-width="1"/>
+      <text x="624" y="336" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">DATA STORES TOUCHED ACROSS ALL PHASES</text>
+
+      <!-- SQL indicator -->
+      <circle cx="624" cy="360" r="5" fill="#22c55e"/>
+      <text x="636" y="364" fill="#a1a1aa" font-size="11">SQL: SpecDb (52 tables), AppDb (5 tables), Frontier (3 tables), FTS (1 virtual)</text>
+
+      <!-- File indicator -->
+      <circle cx="624" cy="384" r="5" fill="#f59e0b"/>
+      <text x="636" y="388" fill="#a1a1aa" font-size="11">Files: run.json, product.json, *.html.gz, screenshots/*.jpeg, video/*.webm</text>
+
+      <!-- IPC indicator -->
+      <circle cx="624" cy="408" r="5" fill="#8b5cf6"/>
+      <text x="636" y="412" fill="#a1a1aa" font-size="11">IPC: ~20 bridge event types, WebSocket broadcasts, process-status signals</text>
+
+      <!-- Read indicator -->
+      <circle cx="624" cy="432" r="5" fill="#3b82f6"/>
+      <text x="636" y="436" fill="#a1a1aa" font-size="11">Reads: category_authority/_generated/, component_db/, learning_profiles, frontier</text>
+
+      <!-- Worker pool annotations -->
+      <rect x="600" y="460" width="170" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
+      <text x="685" y="480" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700" letter-spacing="0.06em">SEARCH WORKERS</text>
+      <text x="685" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 04</text>
+
+      <rect x="790" y="460" width="170" height="48" rx="6" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+      <text x="875" y="480" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700" letter-spacing="0.06em">FETCH WORKERS</text>
+      <text x="875" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 07</text>
+
+      <rect x="980" y="460" width="170" height="48" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+      <text x="1065" y="480" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700" letter-spacing="0.06em">LLM WORKERS</text>
+      <text x="1065" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 08</text>
+
+      <!-- Fetch plugins annotation -->
+      <rect x="30" y="460" width="540" height="48" rx="6" fill="rgba(161,161,170,0.04)" stroke="rgba(161,161,170,0.08)" stroke-width="1"/>
+      <text x="50" y="480" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.08em">6 FETCH PLUGINS</text>
+      <text x="50" y="496" fill="#a1a1aa" font-size="9.5">stealth &bull; cookie_consent &bull; overlay_dismissal &bull; auto_scroll &bull; dom_expansion &bull; css_override</text>
+
+      <!-- Bridge event bus line -->
+      <line x1="30" y1="540" x2="1160" y2="540" stroke="rgba(139,92,246,0.3)" stroke-width="2" stroke-dasharray="6,4"/>
+      <text x="600" y="560" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="600" letter-spacing="0.06em">BRIDGE EVENT BUS &mdash; onRuntimeEvent() &rarr; dispatchRuntimeEvent (table-driven) &rarr; ~20 handlers &rarr; emit() &rarr; SQL artifacts</text>
+
+      <!-- WebSocket broadcast line -->
+      <line x1="30" y1="585" x2="1160" y2="585" stroke="rgba(139,92,246,0.15)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <text x="600" y="605" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="500" letter-spacing="0.04em">WebSocket Broadcast Layer &mdash; process-status, run progress, settings sync</text>
+
+      <!-- RuntimeOps panel annotation -->
+      <rect x="30" y="625" width="1130" height="40" rx="6" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.15)" stroke-width="1"/>
+      <text x="600" y="650" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="600" letter-spacing="0.04em">11 RUNTIME OPS PANELS: summary &bull; pipeline_flow &bull; metrics_rail &bull; documents &bull; prefetch &bull; fetch &bull; extraction_plugins &bull; workers &bull; llm_dashboard &bull; fallbacks &bull; queue</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════════════════ PHASE-BY-PHASE DATA FLOW ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Phase-by-Phase Data Flow</h2>
+  </div>
+  <p class="surface-desc">Every phase's reads, writes, events, and side effects. Expand each phase to see the complete data contract.</p>
+
+  <!-- Phase 00 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">00</span>
+        <span class="phase-title">Bootstrap</span>
+        <span class="tag tag-info">processRuntime.startProcess</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">WebSocket</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Spawns a child Node process for the indexing run via <code>processRuntime.startProcess()</code></li>
+          <li>Initializes run state, allocates run ID, sets up bridge event listeners</li>
+          <li>Creates the runtime environment for the entire pipeline execution</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT runs</code> &mdash; 16 columns (run_id, category, product_id, status, started_at, settings snapshot, etc.)</li>
+          <li><code>INSERT run_artifacts</code> &mdash; baseline artifact record for the run</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">IPC / Events</div>
+        <ul class="op-list ipc">
+          <li>WebSocket broadcast: <code>process-status: running</code></li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-file">File Writes</div>
+        <ul class="op-list file">
+          <li>None &mdash; no JSON files written during bootstrap</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 01 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">01</span>
+        <span class="phase-title">Category Config Load</span>
+        <span class="tag tag-info">Authority + Components</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Read</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-read">File Reads</div>
+        <ul class="op-list read">
+          <li><code>category_authority/_generated/field_rules.json</code> &mdash; field definitions, validation, and constraints</li>
+          <li><code>category_authority/_generated/known_values.json</code> &mdash; canonical known value enums</li>
+          <li><code>category_authority/_generated/cross_validation_rules.json</code> &mdash; inter-field validation</li>
+          <li><code>category_authority/_generated/field_groups.json</code> &mdash; field grouping/ordering</li>
+          <li><code>category_authority/_generated/parse_templates.json</code> &mdash; extraction templates</li>
+          <li><code>category_authority/_generated/key_migrations.json</code> &mdash; field key migration maps</li>
+          <li><code>category_authority/_generated/component_db/*.json</code> &mdash; encoders, materials, sensors, switches</li>
+          <li>Loads route matrix and learning profile configuration</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Reads</div>
+        <ul class="op-list sql">
+          <li><code>SELECT learning_profiles</code> &mdash; domain-specific learning intelligence</li>
+          <li><code>SELECT source_intel_domains</code> &mdash; historical domain quality data</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 02 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">02</span>
+        <span class="phase-title">NeedSet Computation</span>
+        <span class="tag tag-info">computeNeedSet</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">Bridge Event</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Analyzes current product state against category authority to determine what fields are missing, incomplete, or low-confidence</li>
+          <li>Produces a prioritized list of data needs that drive all subsequent pipeline phases</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li><code>field_rules</code> &mdash; what fields exist and their requirements</li>
+          <li><code>item_field_state</code> &mdash; current known values for this product</li>
+          <li><code>component_values</code> &mdash; component-specific field values</li>
+          <li><code>list_values</code> &mdash; list-type field values</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT run_artifacts</code> &mdash; stores computed needset as <code>needset</code> artifact type</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>needset_generated</code> &mdash; signals NeedSet computation complete, carries field gap summary</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 03 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">03</span>
+        <span class="phase-title">Discovery Seed Plan</span>
+        <span class="tag tag-info">buildDiscoverySeedPlanContext &rarr; runDiscoverySeedPlan</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Translates the NeedSet into concrete search queries targeting missing fields</li>
+          <li>Leverages learning profiles and frontier intelligence to build an optimized search plan</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li>NeedSet (from Phase 02 artifact)</li>
+          <li><code>learning_profiles</code> &mdash; domain-aware search strategies</li>
+          <li>Frontier queries and URLs &mdash; previously attempted searches</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT run_artifacts</code> &mdash; stores search profile as <code>search_profile</code> artifact type</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>search_profile_generated</code> &mdash; search profile is ready</li>
+          <li><code>search_plan_ready</code> &mdash; plan fully built, ready for execution</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 04 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">04</span>
+        <span class="phase-title">Search Execution</span>
+        <span class="tag tag-info">executeSearchQueries</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Executes search queries from the seed plan against configured search providers</li>
+          <li>Uses search worker pool for parallel query execution</li>
+          <li>Supported providers: Serper, Brave, SearxNG, Google</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li>Search profile queries (from Phase 03 artifact)</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>INSERT frontier_queries</code> &mdash; records executed queries in frontier DB</li>
+          <li><code>INSERT query_index</code> &mdash; indexes query results for deduplication</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>search_slot_started</code> &mdash; search worker begins processing a query slot</li>
+          <li><code>search_slot_finished</code> &mdash; search worker completes a query slot</li>
+          <li><code>search_results_received</code> &mdash; raw SERP results ingested</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Worker Pool</div>
+        <ul class="op-list">
+          <li>Search workers &mdash; parallel query execution pool</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 05 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">05</span>
+        <span class="phase-title">SERP Selection + Domain Classification</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Scores and filters URLs from search results using domain intelligence and source corpus</li>
+          <li>Classifies domains by quality tier and field yield potential</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li>Search results (from Phase 04)</li>
+          <li><code>source_intel_domains</code> &mdash; historical domain quality scores</li>
+          <li><code>source_corpus</code> &mdash; previously crawled source intelligence</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT source_intel_domains</code> &mdash; updated domain quality intelligence</li>
+          <li><code>UPSERT source_corpus</code> &mdash; new/updated source entries</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>serp_selection_completed</code> &mdash; URL selection pass complete</li>
+          <li><code>domain_classification</code> &mdash; domain tier/quality classification results</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 06 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">06</span>
+        <span class="phase-title">Fetch Plan Building</span>
+        <span class="tag tag-info">buildOrderedFetchPlan</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-ipc">Bridge Event</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Orders selected URLs by priority: domain tier, field yield prediction, domain health</li>
+          <li>Respects cooldown state and rate limits per domain</li>
+          <li>Produces the ordered fetch manifest for crawl execution</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li>Selected URLs (from Phase 05)</li>
+          <li><code>frontier_urls</code> table &mdash; previously attempted URLs and their state</li>
+          <li>Cooldown state &mdash; per-domain rate-limiting timers</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>crawl_fetch_plan_state</code> &mdash; ordered fetch plan ready for execution</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 07 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">07</span>
+        <span class="phase-title">Crawl Execution</span>
+        <span class="tag tag-info">session.runFetchPlan</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-file">File Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Parallel fetch workers using Crawlee/Playwright browser automation</li>
+          <li>6 fetch plugins operate on every page: stealth, cookie_consent, overlay_dismissal, auto_scroll, dom_expansion, css_override</li>
+          <li>Captures page content, screenshots, and video recordings</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-file">File Writes</div>
+        <ul class="op-list file">
+          <li><code>*.html.gz</code> &mdash; content-addressed compressed HTML snapshots</li>
+          <li><code>screenshots/*.jpeg</code> &mdash; page screenshots for visual verification</li>
+          <li><code>video/*.webm</code> &mdash; crawl session video recordings</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes</div>
+        <ul class="op-list sql">
+          <li><code>INSERT crawl_sources</code> &mdash; per-URL crawl results (status, timing, content hash)</li>
+          <li><code>INSERT source_screenshots</code> &mdash; screenshot metadata and file paths</li>
+          <li><code>INSERT source_videos</code> &mdash; video recording metadata</li>
+          <li><code>INSERT source_pdfs</code> &mdash; captured PDF document metadata</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>source_fetch_queued</code> &mdash; URL added to fetch queue</li>
+          <li><code>source_fetch_started</code> &mdash; fetch worker begins URL</li>
+          <li><code>source_fetch_finished</code> &mdash; fetch completed successfully</li>
+          <li><code>source_fetch_failed</code> &mdash; fetch failed (timeout, blocked, error)</li>
+          <li><code>visual_asset_captured</code> &mdash; screenshot or video captured</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Worker Pool</div>
+        <ul class="op-list">
+          <li>Fetch workers &mdash; parallel browser-based crawl pool (Crawlee/Playwright)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 08 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">08</span>
+        <span class="phase-title">Result Processing</span>
+        <span class="tag tag-info">processDiscoveryResults</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-read">Reads</span>
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Processes crawled HTML through parsing, evidence extraction, and candidate generation</li>
+          <li>LLM workers perform extraction review for candidate quality assessment</li>
+          <li>Updates product field state with extracted values</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-read">Reads</div>
+        <ul class="op-list read">
+          <li>Crawled HTML content (from Phase 07 <code>*.html.gz</code> files)</li>
+          <li>Evidence index &mdash; existing evidence for deduplication</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes &mdash; Evidence Pipeline</div>
+        <ul class="op-list sql">
+          <li><code>INSERT evidence_documents</code> &mdash; parsed document metadata</li>
+          <li><code>INSERT evidence_chunks</code> &mdash; document chunks with content hashes</li>
+          <li><code>INSERT evidence_facts</code> &mdash; extracted factual assertions</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes &mdash; Candidate Pipeline</div>
+        <ul class="op-list sql">
+          <li><code>INSERT candidates</code> &mdash; field value candidates with provenance</li>
+          <li><code>INSERT candidate_reviews</code> &mdash; LLM review verdicts for candidates</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes &mdash; Product State</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT item_field_state</code> &mdash; accepted field values</li>
+          <li><code>UPSERT component_values</code> &mdash; component-specific field values</li>
+          <li><code>UPSERT list_values</code> &mdash; list-type field values</li>
+          <li><code>UPSERT item_component_links</code> &mdash; product-to-component associations</li>
+          <li><code>UPSERT item_list_links</code> &mdash; product-to-list associations</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>parse_finished</code> &mdash; document parsing complete</li>
+          <li><code>extraction_completed</code> &mdash; evidence extraction pass complete</li>
+          <li><code>candidates_generated</code> &mdash; candidate values produced and reviewed</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Worker Pool</div>
+        <ul class="op-list">
+          <li>LLM workers &mdash; parallel extraction review pool (for candidate quality assessment)</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Phase 09 -->
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-num">09</span>
+        <span class="phase-title">Checkpoint + Finalize</span>
+        <span class="tag tag-info">buildCheckpoint &rarr; finalize</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-sql">SQL Write</span>
+        <span class="tag tag-file">File Write</span>
+        <span class="tag tag-ipc">Bridge Events</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Description</div>
+        <ul class="op-list">
+          <li>Builds crawl and product checkpoints for recovery and persistence</li>
+          <li>Constructs all 11 RuntimeOps panels and serializes to run_summary artifact</li>
+          <li>Marks run as completed and broadcasts final status</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-file">File Writes</div>
+        <ul class="op-list file">
+          <li><code>buildCrawlCheckpoint</code> &rarr; writes <code>run.json</code> (schema v2/v3) to <code>.workspace/runs/</code></li>
+          <li><code>buildProductCheckpoint</code> &rarr; writes/updates <code>product.json</code> in <code>.workspace/products/</code></li>
+          <li><code>writeProductCheckpoint</code> &rarr; merges accumulated sources into product checkpoint</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes &mdash; Run Finalization</div>
+        <ul class="op-list sql">
+          <li><code>UPDATE runs</code> &mdash; status=completed, ended_at, final counters</li>
+          <li><code>UPSERT run_artifacts</code> &mdash; <code>run_summary</code> artifact (serialized 11 RuntimeOps panels)</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Writes &mdash; Product Lifecycle</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT product_runs</code> &mdash; links run to product for history tracking</li>
+          <li><code>UPDATE product_queue</code> &mdash; status update (queued &rarr; completed)</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-ipc">Bridge Events</div>
+        <ul class="op-list ipc">
+          <li><code>run_completed</code> &mdash; pipeline finalization complete</li>
+          <li>WebSocket broadcast: <code>process-status: idle</code></li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ═══════════════════════ BRIDGE EVENT ARCHITECTURE ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Bridge Event Architecture</h2>
+  </div>
+  <p class="surface-desc">Event dispatch flow from pipeline internals to persistent SQL artifacts. The bridge is table-driven: each event type maps to a handler that knows how to persist the data.</p>
+
+  <div class="flow-section">
+    <h3>Event Dispatch Flow</h3>
+    <div class="svg-wrap">
+      <svg viewBox="0 0 1000 120" width="1000" height="120" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
+        <rect x="10" y="30" width="160" height="56" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+        <text x="90" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">Pipeline Logger</text>
+        <text x="90" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">emits raw events</text>
+
+        <line x1="170" y1="58" x2="210" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <rect x="220" y="30" width="180" height="56" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
+        <text x="310" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">onRuntimeEvent()</text>
+        <text x="310" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">bridge entry point</text>
+
+        <line x1="400" y1="58" x2="440" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <rect x="450" y="30" width="180" height="56" rx="6" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
+        <text x="540" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">dispatchRuntimeEvent</text>
+        <text x="540" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">table-driven dispatch</text>
+
+        <line x1="630" y1="58" x2="670" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <rect x="680" y="30" width="130" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
+        <text x="745" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">~20 Handlers</text>
+        <text x="745" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">emit() &rarr; SQL</text>
+
+        <line x1="810" y1="58" x2="850" y2="58" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+        <rect x="860" y="30" width="120" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
+        <text x="920" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">SQL Artifacts</text>
+        <text x="920" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">run_artifacts table</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-section">
+    <h3>Bridge Event Type Reference</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Event Type</th>
+          <th>Phase</th>
+          <th>Handler Action</th>
+          <th>SQL Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="event-name">needset_generated</td>
+          <td>02</td>
+          <td>Serializes computed needset to artifact</td>
+          <td class="event-writes">run_artifacts (needset)</td>
+        </tr>
+        <tr>
+          <td class="event-name">search_profile_generated</td>
+          <td>03</td>
+          <td>Stores search profile with query plan</td>
+          <td class="event-writes">run_artifacts (search_profile)</td>
+        </tr>
+        <tr>
+          <td class="event-name">search_plan_ready</td>
+          <td>03</td>
+          <td>Signals plan readiness, updates run state</td>
+          <td class="event-writes">runs (status update)</td>
+        </tr>
+        <tr>
+          <td class="event-name">search_slot_started</td>
+          <td>04</td>
+          <td>Tracks worker slot activation</td>
+          <td class="event-writes">run_artifacts (telemetry)</td>
+        </tr>
+        <tr>
+          <td class="event-name">search_slot_finished</td>
+          <td>04</td>
+          <td>Records slot completion metrics</td>
+          <td class="event-writes">run_artifacts (telemetry)</td>
+        </tr>
+        <tr>
+          <td class="event-name">search_results_received</td>
+          <td>04</td>
+          <td>Ingests raw SERP data, updates frontier</td>
+          <td class="event-writes">frontier_queries, query_index</td>
+        </tr>
+        <tr>
+          <td class="event-name">serp_selection_completed</td>
+          <td>05</td>
+          <td>Finalizes URL selection pass</td>
+          <td class="event-writes">run_artifacts (serp_selection)</td>
+        </tr>
+        <tr>
+          <td class="event-name">domain_classification</td>
+          <td>05</td>
+          <td>Persists domain quality scoring</td>
+          <td class="event-writes">source_intel_domains</td>
+        </tr>
+        <tr>
+          <td class="event-name">crawl_fetch_plan_state</td>
+          <td>06</td>
+          <td>Stores ordered fetch manifest</td>
+          <td class="event-writes">run_artifacts (fetch_plan)</td>
+        </tr>
+        <tr>
+          <td class="event-name">source_fetch_queued</td>
+          <td>07</td>
+          <td>Tracks queue entry</td>
+          <td class="event-writes">run_artifacts (telemetry)</td>
+        </tr>
+        <tr>
+          <td class="event-name">source_fetch_started</td>
+          <td>07</td>
+          <td>Records fetch initiation with URL metadata</td>
+          <td class="event-writes">crawl_sources (status=started)</td>
+        </tr>
+        <tr>
+          <td class="event-name">source_fetch_finished</td>
+          <td>07</td>
+          <td>Stores crawl result (content hash, timing)</td>
+          <td class="event-writes">crawl_sources (status=finished)</td>
+        </tr>
+        <tr>
+          <td class="event-name">source_fetch_failed</td>
+          <td>07</td>
+          <td>Records failure reason and retry state</td>
+          <td class="event-writes">crawl_sources (status=failed)</td>
+        </tr>
+        <tr>
+          <td class="event-name">visual_asset_captured</td>
+          <td>07</td>
+          <td>Links screenshots/video to source</td>
+          <td class="event-writes">source_screenshots, source_videos</td>
+        </tr>
+        <tr>
+          <td class="event-name">parse_finished</td>
+          <td>08</td>
+          <td>Stores document parse results</td>
+          <td class="event-writes">evidence_documents</td>
+        </tr>
+        <tr>
+          <td class="event-name">extraction_completed</td>
+          <td>08</td>
+          <td>Persists extracted evidence chain</td>
+          <td class="event-writes">evidence_chunks, evidence_facts</td>
+        </tr>
+        <tr>
+          <td class="event-name">candidates_generated</td>
+          <td>08</td>
+          <td>Stores candidates with review verdicts</td>
+          <td class="event-writes">candidates, candidate_reviews</td>
+        </tr>
+        <tr>
+          <td class="event-name">run_completed</td>
+          <td>09</td>
+          <td>Finalizes run record, persists summary</td>
+          <td class="event-writes">runs, run_artifacts (run_summary)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════ RUNTIMEOPS PANELS ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>RuntimeOps Panels</h2>
+    <span class="tag tag-info">11 Panels</span>
+  </div>
+  <p class="surface-desc">The GUI's RuntimeOps view is built from 11 panels. During a live run, panels are populated via SQL re-aggregation on each poll. After completion, the cached <code>run_summary</code> artifact (serialized from <code>run.json</code>) provides all panel data without re-querying.</p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Panel</th>
+        <th>Purpose</th>
+        <th style="min-width:180px">Live Run Data Source</th>
+        <th style="min-width:180px">Completed Run Data Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="panel-name">summary</td>
+        <td class="panel-desc">Overview KPIs: fields/min, docs/min, error rate, costs</td>
+        <td>SQL re-aggregation from <code>runs</code>, <code>run_artifacts</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">pipeline_flow</td>
+        <td class="panel-desc">Stage progression with phase timing and transitions</td>
+        <td>SQL from <code>run_artifacts</code> (phase telemetry)</td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">metrics_rail</td>
+        <td class="panel-desc">Pool meters showing worker utilization and throughput</td>
+        <td>SQL re-aggregation of pool telemetry</td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">documents</td>
+        <td class="panel-desc">Document lifecycle with timelines and processing state</td>
+        <td>SQL from <code>evidence_documents</code>, <code>crawl_sources</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">prefetch</td>
+        <td class="panel-desc">Search planner, query journey, SERP selector, domain classifier</td>
+        <td>SQL from <code>frontier_queries</code>, <code>source_intel_domains</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">fetch</td>
+        <td class="panel-desc">Fetch plugin results and per-URL crawl outcomes</td>
+        <td>SQL from <code>crawl_sources</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">extraction_plugins</td>
+        <td class="panel-desc">Visual asset capture: screenshots, video, PDFs</td>
+        <td>SQL from <code>source_screenshots</code>, <code>source_videos</code>, <code>source_pdfs</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">workers</td>
+        <td class="panel-desc">Search, fetch, and LLM worker pool states</td>
+        <td>SQL re-aggregation of worker telemetry</td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">llm_dashboard</td>
+        <td class="panel-desc">LLM calls, token usage, cost tracking per model</td>
+        <td>SQL from <code>llm_calls</code>, <code>llm_token_usage</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">fallbacks</td>
+        <td class="panel-desc">Timeout rescue events and fallback strategy activations</td>
+        <td>SQL from <code>run_artifacts</code> (fallback telemetry)</td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+      <tr>
+        <td class="panel-name">queue</td>
+        <td class="panel-desc">Queue state: pending, active, completed, failed items</td>
+        <td>SQL from <code>product_queue</code></td>
+        <td>Cached in <code>run_summary</code> artifact</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════════════ CHECKPOINT / RECOVERY ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Checkpoint / Recovery Flow</h2>
+  </div>
+  <p class="surface-desc">Checkpoint recovery enables resuming from disk-persisted state after restarts. The seeding process is transaction-wrapped and idempotent, using UPSERT semantics to prevent duplication.</p>
+
+  <div class="flow-section">
+    <h3>Recovery Sequence</h3>
+    <div class="svg-wrap">
+      <svg viewBox="0 0 1100 340" width="1100" height="340" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
+        <!-- Scan phase -->
+        <rect x="20" y="20" width="240" height="70" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1.5"/>
+        <text x="140" y="48" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">scanAndSeedCheckpoints</text>
+        <text x="140" y="68" text-anchor="middle" fill="#a1a1aa" font-size="9">Scans .workspace/runs/ and .workspace/products/</text>
+
+        <line x1="260" y1="55" x2="310" y2="55" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Seed detection -->
+        <rect x="320" y="20" width="200" height="70" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1.5"/>
+        <text x="420" y="48" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">seedFromCheckpoint</text>
+        <text x="420" y="68" text-anchor="middle" fill="#a1a1aa" font-size="9">Detects type: crawl or product</text>
+
+        <!-- Branch: Crawl -->
+        <line x1="420" y1="90" x2="420" y2="110" stroke="#71717a" stroke-width="1"/>
+        <line x1="420" y1="110" x2="250" y2="110" stroke="#71717a" stroke-width="1"/>
+        <line x1="250" y1="110" x2="250" y2="140" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <line x1="420" y1="110" x2="700" y2="110" stroke="#71717a" stroke-width="1"/>
+        <line x1="700" y1="110" x2="700" y2="140" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Crawl checkpoint -->
+        <rect x="100" y="150" width="300" height="70" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1.5"/>
+        <text x="250" y="173" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">seedCrawlCheckpoint</text>
+        <text x="250" y="193" text-anchor="middle" fill="#a1a1aa" font-size="9">Source: run.json from .workspace/runs/</text>
+
+        <!-- Product checkpoint -->
+        <rect x="550" y="150" width="300" height="70" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1.5"/>
+        <text x="700" y="173" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">seedProductCheckpoint</text>
+        <text x="700" y="193" text-anchor="middle" fill="#a1a1aa" font-size="9">Source: product.json from .workspace/products/</text>
+
+        <!-- Crawl SQL targets -->
+        <line x1="250" y1="220" x2="250" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+        <rect x="60" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
+        <text x="80" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
+        <text x="80" y="296" fill="#a1a1aa" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources</text>
+        <text x="80" y="312" fill="#71717a" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
+
+        <!-- Product SQL targets -->
+        <line x1="700" y1="220" x2="700" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+        <rect x="510" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
+        <text x="530" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
+        <text x="530" y="296" fill="#a1a1aa" font-size="9.5">products &bull; product_queue</text>
+        <text x="530" y="312" fill="#71717a" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
+
+        <!-- Labels -->
+        <text x="250" y="138" text-anchor="middle" fill="#71717a" font-size="9" font-weight="600">CRAWL TYPE</text>
+        <text x="700" y="138" text-anchor="middle" fill="#71717a" font-size="9" font-weight="600">PRODUCT TYPE</text>
+      </svg>
+    </div>
+  </div>
+
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-title">Crawl Checkpoint Details</span>
+        <span class="tag tag-info">run.json schema v2/v3</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-sql">SQL Upsert</span>
+        <span class="tag tag-file">File Source</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-file">Source File</div>
+        <ul class="op-list file">
+          <li><code>.workspace/runs/{run_id}/run.json</code> &mdash; full crawl checkpoint (schema v2/v3)</li>
+          <li>Written by <code>buildCrawlCheckpoint</code> during Phase 09</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Upserts (seedCrawlCheckpoint)</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT runs</code> &mdash; restores run record (status, timestamps, settings)</li>
+          <li><code>UPSERT product_runs</code> &mdash; restores run-to-product linkage</li>
+          <li><code>UPSERT run_artifacts</code> &mdash; restores all artifact types (needset, search_profile, run_summary, etc.)</li>
+          <li><code>UPSERT crawl_sources</code> &mdash; restores per-URL crawl results</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Guarantees</div>
+        <ul class="op-list">
+          <li>Transaction-wrapped: all-or-nothing seeding</li>
+          <li>Idempotent: <code>ON CONFLICT DO UPDATE</code> prevents duplication on re-seed</li>
+          <li>Deterministic: content-addressed artifacts ensure stable IDs</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <details class="phase-card">
+    <summary>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="phase-title">Product Checkpoint Details</span>
+        <span class="tag tag-info">product.json</span>
+      </div>
+      <div class="phase-tags">
+        <span class="tag tag-sql">SQL Upsert</span>
+        <span class="tag tag-file">File Source</span>
+      </div>
+    </summary>
+    <div class="phase-body">
+      <div class="phase-section">
+        <div class="phase-section-label label-file">Source File</div>
+        <ul class="op-list file">
+          <li><code>.workspace/products/{product_id}/product.json</code> &mdash; product checkpoint</li>
+          <li>Written/updated by <code>writeProductCheckpoint</code> during Phase 09</li>
+          <li>Merges accumulated sources from the run into the existing product record</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-sql">SQL Upserts (seedProductCheckpoint)</div>
+        <ul class="op-list sql">
+          <li><code>UPSERT products</code> &mdash; restores product master record</li>
+          <li><code>UPSERT product_queue</code> &mdash; restores queue position and status</li>
+        </ul>
+      </div>
+      <div class="phase-section">
+        <div class="phase-section-label label-info">Guarantees</div>
+        <ul class="op-list">
+          <li>Transaction-wrapped: atomic product state restoration</li>
+          <li>Idempotent: safe to re-seed on every startup</li>
+          <li>Created at product add time, grown after each run</li>
+        </ul>
+      </div>
+    </div>
+  </details>
+</section>
+
+<!-- ═══════════════════════ SETTINGS PROPAGATION ═══════════════════════ -->
+<section class="surface">
+  <div class="surface-head">
+    <h2>Settings Propagation</h2>
+  </div>
+  <p class="surface-desc">How runtime settings flow from the GUI all the way into the active pipeline execution. The chain is fully observable and snapshot-persisted for reproducibility.</p>
+
+  <div class="flow-section">
+    <h3>Propagation Chain</h3>
+    <div class="propagation-chain">
+      <div class="prop-node" style="border-color:rgba(59,130,246,0.4);color:var(--accent)">GUI PUT Request</div>
+      <div class="prop-arrow">&rarr;</div>
+      <div class="prop-node">Validate (schema)</div>
+      <div class="prop-arrow">&rarr;</div>
+      <div class="prop-node" style="border-color:rgba(245,158,11,0.4);color:var(--amber)">Persist Snapshot</div>
+      <div class="prop-arrow">&rarr;</div>
+      <div class="prop-node" style="border-color:rgba(139,92,246,0.4);color:var(--violet)">broadcastWs</div>
+      <div class="prop-arrow">&rarr;</div>
+      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">syncRuntimeOverrides</div>
+      <div class="prop-arrow">&rarr;</div>
+      <div class="prop-node" style="border-color:rgba(34,197,94,0.4);color:var(--green)">Merged into Execution</div>
+    </div>
+
+    <div class="svg-wrap">
+      <svg viewBox="0 0 1100 260" width="1100" height="260" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
+        <!-- Step 1: GUI -->
+        <rect x="20" y="20" width="160" height="90" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
+        <text x="100" y="45" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700">GUI</text>
+        <text x="100" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">PUT /api/config/</text>
+        <text x="100" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">{category}/runtime</text>
+        <text x="100" y="94" text-anchor="middle" fill="#71717a" font-size="8">User modifies settings</text>
+
+        <line x1="180" y1="65" x2="220" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Step 2: Validate -->
+        <rect x="230" y="20" width="160" height="90" rx="8" fill="rgba(161,161,170,0.06)" stroke="rgba(161,161,170,0.15)" stroke-width="1"/>
+        <text x="310" y="45" text-anchor="middle" fill="#fafafa" font-size="10" font-weight="700">Validate</text>
+        <text x="310" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">Schema validation</text>
+        <text x="310" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">Range clamping</text>
+        <text x="310" y="94" text-anchor="middle" fill="#71717a" font-size="8">Rejects invalid values</text>
+
+        <line x1="390" y1="65" x2="430" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Step 3: Persist -->
+        <rect x="440" y="20" width="160" height="90" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
+        <text x="520" y="45" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">Persist Snapshot</text>
+        <text x="520" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">category_authority/</text>
+        <text x="520" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">_runtime/snapshots/</text>
+        <text x="520" y="94" text-anchor="middle" fill="#71717a" font-size="8">Capped at 10 files</text>
+
+        <line x1="600" y1="65" x2="640" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Step 4: Broadcast -->
+        <rect x="650" y="20" width="160" height="90" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
+        <text x="730" y="45" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">broadcastWs</text>
+        <text x="730" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">WebSocket push to</text>
+        <text x="730" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">all connected clients</text>
+        <text x="730" y="94" text-anchor="middle" fill="#71717a" font-size="8">Real-time GUI update</text>
+
+        <line x1="810" y1="65" x2="850" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+        <!-- Step 5: Sync to process -->
+        <rect x="860" y="20" width="210" height="90" rx="8" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.3)" stroke-width="1.5"/>
+        <text x="965" y="45" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">Active Process</text>
+        <text x="965" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">syncRuntimeOverrides()</text>
+        <text x="965" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">Merged into execution context</text>
+        <text x="965" y="94" text-anchor="middle" fill="#71717a" font-size="8">Takes effect immediately</text>
+
+        <!-- Snapshot persistence detail -->
+        <rect x="20" y="140" width="1050" height="100" rx="8" fill="rgba(161,161,170,0.03)" stroke="rgba(161,161,170,0.08)" stroke-width="1"/>
+        <text x="44" y="165" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.08em">SETTINGS LIFECYCLE DETAIL</text>
+
+        <circle cx="44" cy="188" r="4" fill="#f59e0b"/>
+        <text x="56" y="192" fill="#a1a1aa" font-size="9.5">Snapshot persisted to <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#fafafa">category_authority/_runtime/snapshots/{timestamp}.json</tspan> (max 10, oldest pruned)</text>
+
+        <circle cx="44" cy="210" r="4" fill="#8b5cf6"/>
+        <text x="56" y="214" fill="#a1a1aa" font-size="9.5">WebSocket broadcast ensures all open GUI tabs receive the update in real time</text>
+
+        <circle cx="44" cy="232" r="4" fill="#22c55e"/>
+        <text x="56" y="236" fill="#a1a1aa" font-size="9.5">If a pipeline process is actively running, overrides are merged via IPC; otherwise they take effect on next run start</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
+  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Generated 2026-03-30</p>
+  <p style="color:var(--t3);font-size:0.72rem;margin-top:4px">Post-consolidation. Replaces PIPELINE-DATA-FLOW.mmd and .png.</p>
+</footer>
+
+</div>
+</body>
+</html>

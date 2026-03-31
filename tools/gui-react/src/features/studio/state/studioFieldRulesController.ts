@@ -19,6 +19,7 @@ export function useStudioFieldRulesActions() {
   const rehydrate = useFieldRulesStore((state) => state.rehydrate);
   const reset = useFieldRulesStore((state) => state.reset);
   const clearRenames = useFieldRulesStore((state) => state.clearRenames);
+  const clearEdited = useFieldRulesStore((state) => state.clearEdited);
   const updateField = useFieldRulesStore((state) => state.updateField);
   const addKey = useFieldRulesStore((state) => state.addKey);
   const removeKey = useFieldRulesStore((state) => state.removeKey);
@@ -34,6 +35,7 @@ export function useStudioFieldRulesActions() {
     rehydrate,
     reset,
     clearRenames,
+    clearEdited,
     updateField,
     addKey,
     removeKey,

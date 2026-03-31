@@ -28,7 +28,7 @@ import { isVideoUrl } from '../shared/urlClassifier.js';
  */
 export async function executeSearchQueries({
   // Infrastructure
-  config, storage, logger, runtimeTraceWriter, frontierDb,
+  config, storage, logger, frontierDb,
   // Job context
   categoryConfig, job, runId,
   // Query plan outputs
@@ -56,46 +56,6 @@ export async function executeSearchQueries({
   const rawResults = [];
   const searchAttempts = [];
   const searchJournal = [];
-
-  const getCachedFrontierQueryResults = (query) => {
-    const record = frontierDb?.getQueryRecord?.({
-      productId: job.productId,
-      query
-    });
-    const provider = String(record?.provider || '').trim() || 'frontier_cache';
-    const results = toArray(record?.results)
-      .filter((row) => row && typeof row === 'object' && String(row.url || '').trim())
-      .map((row) => ({
-        ...row,
-        provider: String(row?.provider || '').trim() || provider
-      }));
-    return {
-      provider,
-      results
-    };
-  };
-
-  const emitCachedQueryLifecycle = (query, cached) => {
-    if (!logger?.info || !String(query || '').trim()) {
-      return;
-    }
-    logger.info('discovery_query_started', {
-      query,
-      provider: cached?.provider || 'frontier_cache',
-      cache_hit: true,
-      reason_code: 'frontier_query_cache',
-      is_fallback: false,
-    });
-    logger.info('discovery_query_completed', {
-      query,
-      provider: cached?.provider || 'frontier_cache',
-      result_count: toArray(cached?.results).length,
-      duration_ms: 0,
-      cache_hit: true,
-      reason_code: 'frontier_query_cache',
-      is_fallback: false,
-    });
-  };
 
   const internalFirst = Boolean(config.discoveryInternalFirst);
   const internalMinResults = Math.max(1, Number(config.discoveryInternalMinResults || 1));
@@ -226,20 +186,9 @@ export async function executeSearchQueries({
         let providerResults = Array.isArray(searchProviderResult) ? searchProviderResult : (searchProviderResult?.results ?? []);
         const usedFallback = Array.isArray(searchProviderResult) ? false : Boolean(searchProviderResult?.usedFallback);
         let reasonCode = 'internet_search';
-        // WHY: Search-first — zero results from provider → try learned URLs
-        // from frontier, else accept 0. No synthetic URL fallback.
-        if (providerResults.length === 0) {
-          const cached = getCachedFrontierQueryResults(query);
-          if (cached.results.length > 0) {
-            providerResults = cached.results;
-            reasonCode = 'internet_search_zero_frontier_reuse';
-            logger?.info?.('discovery_query_frontier_reuse', {
-              query,
-              reuse_count: cached.results.length,
-              provider: cached.provider,
-            });
-          }
-        }
+        // WHY: Zero results from provider → accept 0. Cooldown-based query
+        // management replaces the old permanent frontier cache reuse path.
+        // The NeedSet controls when expired queries get re-executed.
         // Record discovery search query to SQL index
         try {
           const _dqSpecDb = config.specDb || null;
@@ -267,24 +216,6 @@ export async function executeSearchQueries({
           normalized_key: externalSelectedRow?.normalized_key || null,
           hint_source: externalSelectedRow?.hint_source || null,
         });
-        if (runtimeTraceWriter && providerResults.length > 0) {
-          const trace = await runtimeTraceWriter.writeJson({
-            section: 'search',
-            prefix: `query_${queryRecord?.query_hash || 'hash'}`,
-            payload: {
-              query,
-              provider: configValue(config, 'searchEngines'),
-              result_count: providerResults.length,
-              results: providerResults
-            },
-            ringSize: 80
-          });
-          logger?.info?.('discovery_serp_written', {
-            query,
-            result_count: providerResults.length,
-            trace_path: trace.trace_path
-          });
-        }
         const durationMs = Math.max(0, Date.now() - startedAt);
         logger?.info?.('discovery_query_completed', {
           query,

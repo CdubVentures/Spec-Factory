@@ -26,8 +26,9 @@ export async function runUntilComplete({
   s3key,
   mode,
   specDb = null,
+  jobOverride = null,
 }) {
-  const job = await storage.readJson(s3key);
+  const job = jobOverride || (await storage.readJson(s3key));
   const category = job.category || 'mouse';
   const productId = job.productId;
   if (!productId) {
@@ -51,7 +52,7 @@ export async function runUntilComplete({
     storage,
     config,
     s3Key: s3key,
-    jobOverride: null,
+    jobOverride: jobOverride || null,
     roundContext: { round: 0 },
   });
 

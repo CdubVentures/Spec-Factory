@@ -35,7 +35,6 @@ function createLaunchPlanHarness() {
         helperRoot: path.resolve('category_authority'),
         outputRoot: path.resolve('test-output'),
         indexLabRoot: path.resolve('test-indexlab'),
-        runDataStorageState: { enabled: false, destinationType: 'local', localDirectory: '' },
         env: {},
         pathApi: path,
         buildRunIdFn: () => 'test-run-id-000',

@@ -156,7 +156,7 @@ export interface PrefetchSearchProfileData {
   variant_guard_terms: string[];
   focus_fields?: string[];
   query_rows: PrefetchSearchProfileQueryRow[];
-  deterministic_query_rows?: PrefetchSearchProfileQueryRow[];
+  deterministic_query_rows?: PrefetchSearchProfileQueryRow[] | null;
   query_guard: Record<string, number>;
   hint_source_counts?: Record<string, number>;
   field_rule_gate_counts?: Record<string, PrefetchFieldRuleGateCount>;
@@ -682,5 +682,45 @@ export interface PreFetchPhasesResponse {
   domain_health: DomainHealthRow[];
   phase_cursor?: string;
   idx_runtime?: Partial<Record<PrefetchTabKey, RuntimeIdxBadge[]>>;
+}
+
+// --- Crawl Ledger Types ---
+
+export interface UrlCrawlLedgerRow {
+  canonical_url: string;
+  product_id: string;
+  category: string;
+  domain: string;
+  http_status: number;
+  fetch_count: number;
+  ok_count: number;
+  blocked_count: number;
+  timeout_count: number;
+  elapsed_ms: number;
+  content_hash: string;
+  first_seen_run_id: string;
+  last_seen_run_id: string;
+  first_seen_ts: string;
+  last_seen_ts: string;
+}
+
+export interface QueryCooldownRow {
+  query_text: string;
+  tier: string | null;
+  group_key: string | null;
+  normalized_key: string | null;
+  hint_source: string | null;
+  source_name: string;
+  status: string;
+  attempt_count: number;
+  completed_at_ms: number;
+  cooldown_until: string;
+  cooldown_remaining_ms: number;
+}
+
+export interface CrawlLedgerResponse {
+  run_id: string;
+  urls: UrlCrawlLedgerRow[];
+  query_cooldowns: QueryCooldownRow[];
 }
 

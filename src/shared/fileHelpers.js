@@ -90,26 +90,6 @@ export function parseNdjson(text = '') {
     .filter(Boolean);
 }
 
-export async function markEnumSuggestionStatus(category, field, value, status = 'accepted', helperRoot = '') {
-  const sugPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
-  const doc = await safeReadJson(sugPath);
-  if (!doc || !Array.isArray(doc.suggestions)) return;
-  const normalized = String(value).trim().toLowerCase();
-  let changed = false;
-  for (const s of doc.suggestions) {
-    if (String(s.field_key || '').trim() === field &&
-        String(s.value || '').trim().toLowerCase() === normalized &&
-        s.status === 'pending') {
-      s.status = status;
-      s.resolved_at = new Date().toISOString();
-      changed = true;
-    }
-  }
-  if (changed) {
-    await fs.writeFile(sugPath, JSON.stringify(doc, null, 2));
-  }
-}
-
 export function safeJoin(basePath, ...parts) {
   const resolved = path.resolve(basePath, ...parts);
   const root = path.resolve(basePath);

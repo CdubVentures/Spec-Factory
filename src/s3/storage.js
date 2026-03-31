@@ -9,7 +9,7 @@ import {
   HeadObjectCommand
 } from '@aws-sdk/client-s3';
 import { configValue } from '../shared/settingsAccessor.js';
-import { INPUT_KEY_PREFIX, OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
+import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
 async function streamToBuffer(stream) {
   const chunks = [];
@@ -30,35 +30,8 @@ function toPosixKey(...parts) {
 class S3Storage {
   constructor(config) {
     this.bucket = config.s3Bucket || '';
-    this.inputPrefix = config.s3InputPrefix || INPUT_KEY_PREFIX;
     this.outputPrefix = config.s3OutputPrefix || OUTPUT_KEY_PREFIX;
     this.client = new S3Client({ region: config.awsRegion || 'us-east-2' });
-  }
-
-  async listInputKeys(category) {
-    const prefix = toPosixKey(this.inputPrefix, category, 'products');
-    const keys = [];
-    let continuationToken;
-
-    do {
-      const result = await this.client.send(
-        new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: prefix,
-          ContinuationToken: continuationToken
-        })
-      );
-
-      for (const item of result.Contents || []) {
-        if (item.Key && item.Key.endsWith('.json')) {
-          keys.push(item.Key);
-        }
-      }
-
-      continuationToken = result.IsTruncated ? result.NextContinuationToken : undefined;
-    } while (continuationToken);
-
-    return keys.sort();
   }
 
   async listKeys(prefix) {
@@ -194,55 +167,18 @@ class S3Storage {
     });
     return toPosixKey(pfx, ...cleaned);
   }
-
-  resolveInputKey(...parts) {
-    const pfx = this.inputPrefix;
-    const cleaned = parts.map(p => {
-      const s = String(p || '');
-      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
-    });
-    return toPosixKey(pfx, ...cleaned);
-  }
 }
 
 class LocalStorage {
   constructor(config) {
-    this.inputRoot = path.resolve(configValue(config, 'localInputRoot'));
     this.outputRoot = path.resolve(configValue(config, 'localOutputRoot'));
-    this.inputPrefix = INPUT_KEY_PREFIX;
     this.outputPrefix = OUTPUT_KEY_PREFIX;
   }
 
   resolveLocalPath(key) {
-    if (key.startsWith(`${this.inputPrefix}/`)) {
-      return path.join(this.inputRoot, ...key.split('/'));
-    }
-    if (key.startsWith(`${this.outputPrefix}/`)) {
-      return path.join(this.outputRoot, ...key.split('/'));
-    }
-    return path.join(this.outputRoot, ...key.split('/'));
-  }
-
-  async listInputKeys(category) {
-    const dir = path.join(this.inputRoot, this.inputPrefix, category, 'products');
-    const keys = [];
-
-    try {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isFile() && entry.name.endsWith('.json')) {
-          keys.push(
-            toPosixKey(this.inputPrefix, category, 'products', entry.name)
-          );
-        }
-      }
-    } catch (err) {
-      if (err.code !== 'ENOENT') {
-        throw err;
-      }
-    }
-
-    return keys.sort();
+    const pfx = `${this.outputPrefix}/`;
+    const stripped = key.startsWith(pfx) ? key.slice(pfx.length) : key;
+    return path.join(this.outputRoot, ...stripped.split('/'));
   }
 
   async listKeys(prefix) {
@@ -355,15 +291,6 @@ class LocalStorage {
 
   resolveOutputKey(...parts) {
     const pfx = this.outputPrefix;
-    const cleaned = parts.map(p => {
-      const s = String(p || '');
-      return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;
-    });
-    return toPosixKey(pfx, ...cleaned);
-  }
-
-  resolveInputKey(...parts) {
-    const pfx = this.inputPrefix;
     const cleaned = parts.map(p => {
       const s = String(p || '');
       return s.startsWith(`${pfx}/`) ? s.slice(pfx.length + 1) : s;

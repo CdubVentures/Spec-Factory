@@ -208,23 +208,11 @@ function normalizeCandidatePrimaryReviewStatus(candidate, reviewRow = null) {
 }
 
 export function createReviewCandidateRuntime({
-  componentReviewPath,
-  safeReadJson,
-  fs,
   getSpecDb,
   config = {},
   normalizePathToken,
   buildComponentReviewSyntheticCandidateId,
 } = {}) {
-  if (typeof componentReviewPath !== 'function') {
-    throw new TypeError('componentReviewPath must be a function');
-  }
-  if (typeof safeReadJson !== 'function') {
-    throw new TypeError('safeReadJson must be a function');
-  }
-  if (!fs || typeof fs.writeFile !== 'function') {
-    throw new TypeError('fs.writeFile must be available');
-  }
   if (typeof getSpecDb !== 'function') {
     throw new TypeError('getSpecDb must be a function');
   }
@@ -247,9 +235,9 @@ export function createReviewCandidateRuntime({
     const normalizedPropertyKey = String(propertyKey || '').trim();
     if (!category || !componentType || !normalizedComponentName || !normalizedPropertyKey) return [];
     if (normalizedPropertyKey.startsWith('__')) return [];
-    const filePath = componentReviewPath({ config, category });
-    const data = await safeReadJson(filePath);
-    const items = Array.isArray(data?.items) ? data.items : [];
+    const specDb = getSpecDb(category);
+    if (!specDb) return [];
+    const items = specDb.getComponentReviewItems(componentType) || [];
     if (!items.length) return [];
 
     const rows = [];
@@ -370,9 +358,23 @@ export function createReviewCandidateRuntime({
 
   async function syncSyntheticCandidatesFromComponentReview({ category, specDb }) {
     if (!specDb) return { upserted: 0 };
-    const filePath = componentReviewPath({ config, category });
-    const data = await safeReadJson(filePath);
-    const items = Array.isArray(data?.items) ? data.items : [];
+    // Collect all component types from the review queue
+    const allItems = [];
+    try {
+      const typeRows = specDb.db.prepare(
+        'SELECT DISTINCT component_type FROM component_review_queue WHERE category = ?'
+      ).all(specDb.category || category || '');
+      for (const typeRow of typeRows) {
+        const ct = String(typeRow?.component_type || '').trim();
+        if (!ct) continue;
+        const rows = specDb.getComponentReviewItems(ct) || [];
+        allItems.push(...rows);
+      }
+    } catch {
+      // best-effort: if query fails, return empty
+      return { upserted: 0 };
+    }
+    const items = allItems;
     if (!items.length) return { upserted: 0 };
 
     let upserted = 0;
@@ -537,43 +539,20 @@ export function createReviewCandidateRuntime({
     const newValue = String(newName || '').trim();
     if (!oldNorm || !newValue || oldNorm === normalizeLower(newValue)) return { changed: 0 };
 
-    const filePath = componentReviewPath({ config, category });
-    const data = await safeReadJson(filePath);
-    let changed = 0;
-    const changedReviewIds = [];
-
-    if (data && Array.isArray(data.items)) {
-      for (const item of data.items) {
-        if (item?.status !== 'pending_ai') continue;
-        if (String(item?.component_type || '').trim() !== String(componentType || '').trim()) continue;
-        const matchedNorm = normalizeLower(item?.matched_component || '');
-        const rawNorm = normalizeLower(item?.raw_query || '');
-        const shouldRebind = matchedNorm === oldNorm || (!matchedNorm && rawNorm === oldNorm);
-        if (!shouldRebind) continue;
-        item.matched_component = newValue;
-        changed += 1;
-        changedReviewIds.push(String(item.review_id || '').trim());
-      }
-      if (changed > 0) {
-        data.updated_at = new Date().toISOString();
-        await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
-      }
-    }
-
     const runtimeSpecDb = specDb || getSpecDb(category);
-    if (runtimeSpecDb) {
-      try {
-        if (changedReviewIds.length > 0) {
-          for (const reviewId of changedReviewIds) {
-            if (!reviewId) continue;
-            runtimeSpecDb.updateComponentReviewQueueMatchedComponent(category, reviewId, newValue);
-          }
-        } else {
-          runtimeSpecDb.updateComponentReviewQueueMatchedComponentByName(category, componentType, oldName, newValue);
-        }
-      } catch {
-        // best-effort sync
-      }
+    if (!runtimeSpecDb) return { changed: 0 };
+
+    let changed = 0;
+    try {
+      runtimeSpecDb.updateComponentReviewQueueMatchedComponentByName(category, componentType, oldName, newValue);
+      // Count affected rows by querying items that now have the new name
+      const updatedItems = runtimeSpecDb.getComponentReviewItems(componentType) || [];
+      changed = updatedItems.filter((item) => {
+        const matched = String(item?.matched_component || '').trim().toLowerCase();
+        return matched === newValue.toLowerCase() && item?.status === 'pending_ai';
+      }).length;
+    } catch {
+      // best-effort
     }
 
     return { changed };

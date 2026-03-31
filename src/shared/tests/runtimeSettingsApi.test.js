@@ -38,7 +38,8 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   _helperRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-helper-'));
   _outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-output-'));
   _inputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-settings-input-'));
-  await fs.mkdir(path.join(_helperRoot, '_runtime'), { recursive: true });
+  // WHY: Server default settings root is .workspace/global (relative to CWD at boot).
+  // The in-process harness sets CWD implicitly; _helperRoot is for category authority only.
   t.after(async () => {
     await fs.rm(_helperRoot, { recursive: true, force: true }).catch(() => {});
     await fs.rm(_outputRoot, { recursive: true, force: true }).catch(() => {});
@@ -87,7 +88,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
     const BOOL_KEYS = [
       'crawleeHeadless', 'runtimeScreencastEnabled',
       'autoScrollEnabled',
-      'runtimeTraceEnabled', 'runtimeTraceLlmPayloads',
     ];
     for (const key of BOOL_KEYS) {
       assert.equal(typeof body[key], 'boolean', `expected boolean for ${key}, got ${typeof body[key]}`);

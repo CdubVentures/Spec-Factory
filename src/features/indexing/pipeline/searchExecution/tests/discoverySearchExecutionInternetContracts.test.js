@@ -30,13 +30,10 @@ test('executeSearchQueries internet search uses the active provider and accumula
   assert.equal(result.searchAttempts[0].reason_code, 'internet_search');
 });
 
-test('executeSearchQueries reuses frontier cache when the provider returns zero results', async () => {
+test('executeSearchQueries accepts zero results when provider returns nothing (cooldown replaces frontier cache)', async () => {
   const logger = makeLogger();
-  const cachedResults = [
-    { url: 'https://example.com/cached', title: 'Cached', provider: 'google' },
-  ];
   const frontierDb = {
-    getQueryRecord: () => ({ provider: 'google', results: cachedResults }),
+    getQueryRecord: () => null,
     recordQuery: () => null,
   };
 
@@ -44,17 +41,12 @@ test('executeSearchQueries reuses frontier cache when the provider returns zero 
     config: makeConfig({ searchEngines: 'google' }),
     logger,
     frontierDb,
-    queries: ['cached query'],
+    queries: ['query with no results'],
     executionQueryLimit: 1,
     providerState: makeProviderState({ provider: 'google', internet_ready: true }),
     _runSearchProvidersFn: async () => [],
   }));
 
-  assert.equal(result.searchResults.length, 1);
-  assert.equal(result.searchResults[0].url, 'https://example.com/cached');
-  assert.equal(result.searchAttempts[0].reason_code, 'internet_search_zero_frontier_reuse');
-  assert.equal(
-    logger.events.some((event) => event.event === 'discovery_query_frontier_reuse'),
-    true
-  );
+  assert.equal(result.searchResults.length, 0, 'zero results accepted — no frontier cache fallback');
+  assert.equal(result.searchAttempts[0].reason_code, 'internet_search');
 });

@@ -303,13 +303,14 @@ UI drift and one-off styling are forbidden.
 ## Runtime data directories
 
 - `.workspace/` is the sole runtime data directory (git-ignored).
+  - `global/` — user-settings.json (JSON fallback for boot/seed path; SQL is primary)
+  - `runtime/snapshots/` — per-run settings snapshots (capped at 10)
   - `db/{category}/` — per-category SQLite databases (spec.sqlite)
   - `db/app.sqlite` — global app database
   - `runs/` — IndexLab run output (screenshots, video, analysis, traces, checkpoints)
+  - `products/` — one product.json per product (rebuild SSOT, created at add time, grown after runs)
   - `output/` — pipeline output artifacts
   - `crawlee/` — Crawlee internal bookkeeping (ephemeral)
-- `category_authority/_runtime/` — user settings + per-run settings snapshots (git-ignored)
-  - `snapshots/` is capped at 10 files.
 - `.server-state/` — server PID + log (git-ignored)
 - Do not create other runtime directories. Use OS tmpdir for throwaway work.
 - The root `tmp/` directory is banned and gitignored.

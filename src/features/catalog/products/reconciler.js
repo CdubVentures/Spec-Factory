@@ -32,22 +32,20 @@ function tupleKey(brand, model, variant) {
  *   orphans[]    — products with fabricated variants whose canonical exists
  *   warnings[]   — products with fabricated variants but NO canonical (needs manual review)
  */
-export async function scanOrphans({ storage, category, config = {} }) {
-  const keys = await storage.listInputKeys(category);
+export async function scanOrphans({ storage, category, config = {}, specDb = null }) {
+  // WHY: SQL is the source of truth for products — no fixture scan needed.
+  const dbRows = specDb ? specDb.getAllProducts() : [];
 
   const products = [];
-  for (const key of keys) {
-    const data = await storage.readJsonOrNull(key);
-    if (!data) continue;
-    const identity = data.identityLock || {};
+  for (const row of dbRows) {
     products.push({
-      key,
-      productId: data.productId,
-      brand: identity.brand || '',
-      model: identity.model || '',
-      variant: identity.variant || '',
-      hasSeed: Boolean(data.seed),
-      seedSource: data.seed?.source || null
+      key: '',
+      productId: String(row.product_id || '').trim(),
+      brand: String(row.brand || '').trim(),
+      model: String(row.model || '').trim(),
+      variant: String(row.variant || '').trim(),
+      hasSeed: false,
+      seedSource: null
     });
   }
 
@@ -185,9 +183,10 @@ export async function reconcileOrphans({
   storage,
   category,
   config = {},
-  dryRun = true
+  dryRun = true,
+  specDb = null,
 }) {
-  const scan = await scanOrphans({ storage, category, config });
+  const scan = await scanOrphans({ storage, category, config, specDb });
 
   if (scan.orphan_count === 0) {
     return {

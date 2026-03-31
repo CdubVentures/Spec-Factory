@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-02",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 2",
+    "variant": "new_encoder",
+    "id": 9002,
+    "identifier": "test002a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 2,
+    "name": "new_encoder",
+    "description": "Unknown encoder â†’ new_component suggestion",
+    "category": "Components"
+  }
+}

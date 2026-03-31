@@ -298,33 +298,11 @@ async function copyRealContractFiles(categoryAuthorityRoot) {
   }));
 }
 
-async function writeSupportFiles(categoryAuthorityRoot, contractAnalysis) {
-  const openPreferKnownCatalogs = (contractAnalysis._raw.knownValuesCatalogs || [])
-    .filter((catalog) => catalog.policy === 'open_prefer_known' && catalog.catalog !== 'yes_no');
-  const enumSuggestions = openPreferKnownCatalogs
-    .filter((catalog) => catalog.usingFields?.[0])
-    .map((catalog) => ({
-      field_key: catalog.usingFields[0],
-      value: `NewTestValue_${catalog.catalog}`,
-      suggestion_type: 'new_enum_value',
-      status: 'pending',
-      source: 'pipeline',
-    }));
-
-  await Promise.all([
-    writeJson(
-      path.join(categoryAuthorityRoot, CATEGORY, '_control_plane', 'field_studio_map.json'),
-      { manual_enum_values: {}, manual_enum_timestamps: {} },
-    ),
-    writeJson(
-      path.join(categoryAuthorityRoot, CATEGORY, '_suggestions', 'enums.json'),
-      { suggestions: enumSuggestions },
-    ),
-    writeJson(
-      path.join(categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json'),
-      { items: [] },
-    ),
-  ]);
+async function writeSupportFiles(categoryAuthorityRoot) {
+  await writeJson(
+    path.join(categoryAuthorityRoot, CATEGORY, '_control_plane', 'field_studio_map.json'),
+    { manual_enum_values: {}, manual_enum_timestamps: {} },
+  );
 }
 
 export async function createContractDrivenSeedReviewHarness(t, options = {}) {
@@ -382,7 +360,7 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
           dbObject,
         )),
     ),
-    writeSupportFiles(config.categoryAuthorityRoot, analysis.contractAnalysis),
+    writeSupportFiles(config.categoryAuthorityRoot),
     Promise.all(
       Object.entries(productArtifacts).map(async ([productId, { artifacts }]) => {
         const latestDir = path.join(

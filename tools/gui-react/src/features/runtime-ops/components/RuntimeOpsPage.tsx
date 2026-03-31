@@ -119,10 +119,8 @@ function buildRunPickerLabel({
   return runToken ? `${lead} - ${runToken}` : lead;
 }
 
-function resolveStorageDestination(status: ProcessStatus | undefined): 'local' | 's3' {
-  return toToken(status?.storageDestination || status?.storage_destination).toLowerCase() === 's3'
-    ? 's3'
-    : 'local';
+function resolveStorageDestination(status: ProcessStatus | undefined): 'local' {
+  return 'local';
 }
 
 function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'stored' {

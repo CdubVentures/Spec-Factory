@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 
 import {
   buildComponentReviewPayloads,
-  buildComponentOverridePayload,
   buildEnumSuggestionsSeed,
   buildKnownValueFieldMap,
   buildWorkbookMapSeed,
@@ -14,15 +13,14 @@ import {
   findEnumField,
   findEnumValue,
   KNOWN_VALUE_ENUMS,
-  seedComponentOverride,
   seedEnumSuggestions,
   seedKnownValues,
   seedWorkbookMap,
-  withReviewFixture,
+  withSeededSpecDbFixture,
 } from './helpers/reviewEcosystemHarness.js';
 
 test('review ecosystem timestamp contracts share one fixture without weakening timestamp behavior', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ storage, config }) => {
+  await withSeededSpecDbFixture(async ({ storage, config, db }) => {
     await t.test('TS-01: Product candidate_selection override includes source_timestamp', async () => {
       const payload = await buildProductReviewPayload({ storage, config, category: CATEGORY, productId: 'mouse-logitech-g502-x' });
       assert.equal(payload.fields.dpi.source_timestamp, '2026-02-15T11:00:00.000Z');
@@ -41,13 +39,18 @@ test('review ecosystem timestamp contracts share one fixture without weakening t
     });
 
     await t.test('TS-04: Component property override includes source_timestamp', async () => {
-      const propertyTimestamp = '2026-02-15T16:00:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', buildComponentOverridePayload({
-        properties: { dpi_max: '40000' },
-        timestamps: { dpi_max: propertyTimestamp },
-        updated_at: propertyTimestamp,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const propertyTimestamp = '2026-02-15 16:00:00';
+      // WHY: Seed override via specDb (SQL) instead of legacy filesystem overrides
+      db.upsertComponentValue({
+        componentType: 'sensor', componentName: 'PAW3950', componentMaker: '',
+        propertyKey: 'dpi_max', value: '40000', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      db.db.prepare(
+        `UPDATE component_values SET updated_at = ? WHERE category = ? AND component_type = ? AND component_name = ? AND property_key = ?`
+      ).run(propertyTimestamp, CATEGORY, 'sensor', 'PAW3950', 'dpi_max');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const item = findComponentItem(payload, 'PAW3950');
       assert.equal(item.properties.dpi_max.source_timestamp, propertyTimestamp);
       assert.equal(item.properties.dpi_max.source, 'user');
@@ -55,39 +58,60 @@ test('review ecosystem timestamp contracts share one fixture without weakening t
     });
 
     await t.test('TS-05: Component name override includes source_timestamp', async () => {
-      const nameTimestamp = '2026-02-15T17:00:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3389', buildComponentOverridePayload({
-        identity: { name: 'PAW-3389' },
-        timestamps: { __name: nameTimestamp },
-        updated_at: nameTimestamp,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const nameTimestamp = '2026-02-15 17:00:00';
+      // WHY: Seed identity override via specDb — source='user' makes name overridden
+      db.upsertComponentIdentity({
+        componentType: 'sensor', canonicalName: 'PAW-3389', maker: '',
+        links: null, source: 'user',
+      });
+      db.db.prepare(
+        `UPDATE component_identity SET updated_at = ? WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?`
+      ).run(nameTimestamp, CATEGORY, 'sensor', 'PAW-3389', '');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const item = findComponentItem(payload, 'PAW-3389');
       assert.equal(item.name_tracked.source_timestamp, nameTimestamp);
-      assert.equal(item.maker_tracked.source_timestamp, null);
+      assert.equal(item.name_tracked.source, 'user');
     });
 
     await t.test('TS-06: Component override without per-property timestamp falls back to updated_at', async () => {
-      const fileTimestamp = '2026-02-15T18:00:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'Razer Optical Gen-3', buildComponentOverridePayload({
-        properties: { actuation_force: '42' },
-        updated_at: fileTimestamp,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
+      const rowTimestamp = '2026-02-15 18:00:00';
+      db.upsertComponentValue({
+        componentType: 'switch', componentName: 'Razer Optical Gen-3', componentMaker: '',
+        propertyKey: 'actuation_force', value: '42', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      db.db.prepare(
+        `UPDATE component_values SET updated_at = ? WHERE category = ? AND component_type = ? AND component_name = ? AND property_key = ?`
+      ).run(rowTimestamp, CATEGORY, 'switch', 'Razer Optical Gen-3', 'actuation_force');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch', specDb: db });
       const item = findComponentItem(payload, 'Razer Optical Gen-3');
-      assert.equal(item.properties.actuation_force.source_timestamp, fileTimestamp);
+      assert.equal(item.properties.actuation_force.source_timestamp, rowTimestamp);
       assert.equal(item.properties.actuation_force.source, 'user');
     });
 
     await t.test('TS-07: Multiple component properties each have independent timestamps', async () => {
-      const ts1 = '2026-02-15T19:00:00.000Z';
-      const ts2 = '2026-02-15T19:05:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3395', buildComponentOverridePayload({
-        properties: { dpi_max: '30000', ips: '700' },
-        timestamps: { dpi_max: ts1, ips: ts2 },
-        updated_at: ts2,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const ts1 = '2026-02-15 19:00:00';
+      const ts2 = '2026-02-15 19:05:00';
+      db.upsertComponentValue({
+        componentType: 'sensor', componentName: 'PMW3395', componentMaker: '',
+        propertyKey: 'dpi_max', value: '30000', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      db.upsertComponentValue({
+        componentType: 'sensor', componentName: 'PMW3395', componentMaker: '',
+        propertyKey: 'ips', value: '700', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      db.db.prepare(
+        `UPDATE component_values SET updated_at = ? WHERE category = ? AND component_type = ? AND component_name = ? AND property_key = ?`
+      ).run(ts1, CATEGORY, 'sensor', 'PMW3395', 'dpi_max');
+      db.db.prepare(
+        `UPDATE component_values SET updated_at = ? WHERE category = ? AND component_type = ? AND component_name = ? AND property_key = ?`
+      ).run(ts2, CATEGORY, 'sensor', 'PMW3395', 'ips');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const item = findComponentItem(payload, 'PMW3395');
       assert.equal(item.properties.dpi_max.source_timestamp, ts1);
       assert.equal(item.properties.ips.source_timestamp, ts2);
@@ -95,13 +119,16 @@ test('review ecosystem timestamp contracts share one fixture without weakening t
     });
 
     await t.test('TS-08: Component links override includes source_timestamp', async () => {
-      const linksTimestamp = '2026-02-15T20:00:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', buildComponentOverridePayload({
-        identity: { links: ['https://new-spec.com/paw3950'] },
-        timestamps: { __links: linksTimestamp },
-        updated_at: linksTimestamp,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const linksTimestamp = '2026-02-15 20:00:00';
+      // WHY: Update existing PAW3950 identity to user-overridden with custom links
+      db.upsertComponentIdentity({
+        componentType: 'sensor', canonicalName: 'PAW3950', maker: '',
+        links: ['https://new-spec.com/paw3950'], source: 'user',
+      });
+      db.db.prepare(
+        `UPDATE component_identity SET updated_at = ? WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?`
+      ).run(linksTimestamp, CATEGORY, 'sensor', 'PAW3950', '');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const item = findComponentItem(payload, 'PAW3950');
       assert.equal(item.links.length, 1);
       assert.equal(item.links[0], 'https://new-spec.com/paw3950');

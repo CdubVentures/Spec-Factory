@@ -115,7 +115,7 @@ export function buildWorkerDetail(events, workerId, options = {}) {
         const trackedQ = String(payload.current_query || payload.query || '').trim().toLowerCase();
         if (trackedQ) queriesTrackedByAnyWorker.add(trackedQ);
       }
-      if (type === 'search_results_collected' && (payload.scope === 'query' || payload.scope === 'frontier_cache')) {
+      if (type === 'search_results_collected' && (payload.scope === 'query' || payload.scope === 'cooldown_skip' || payload.scope === 'frontier_cache')) {
         const rawQ = String(payload.query || '').trim();
         const q = rawQ.toLowerCase();
         if (q) {

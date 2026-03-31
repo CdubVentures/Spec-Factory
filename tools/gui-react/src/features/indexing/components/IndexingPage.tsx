@@ -198,7 +198,6 @@ export function IndexingPage() {
   const processRunning = isProcessRunning;
   useIndexingProcessUnloadStop(processRunning);
 
-  const noop = () => {};
   const {
     publishProcessStatus,
     refreshAll,
@@ -212,7 +211,6 @@ export function IndexingPage() {
     clearProcessOutput,
     clearIndexLabRun,
     setClearedRunViewId,
-    setSelectedLlmTraceId: noop,
     replayPending,
     setReplayPending,
     setRuntimeProcessStatus,
@@ -241,10 +239,12 @@ export function IndexingPage() {
     runControlPayload,
     category,
     singleProductId,
+    selectedBrand: singleBrand,
+    selectedModel: singleModel,
+    selectedVariant: selectedCatalogProduct?.variant ?? '',
     selectedIndexLabRunId,
     clearProcessOutput,
     setClearedRunViewId,
-    setSelectedLlmTraceId: noop,
     clearIndexLabRun,
     removeRunScopedQueries,
     queryClient,

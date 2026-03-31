@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
+import { defaultSnapshotRoot, defaultUserSettingsRoot } from '../core/config/runtimeArtifactRoots.js';
 import { spawn, exec as execCb } from 'node:child_process';
 import { loadCategoryConfig } from '../categories/loader.js';
 import { invalidateFieldRulesCache } from '../field-rules/loader.js';
@@ -35,7 +36,7 @@ import { assertNativeModulesHealthy } from '../core/nativeModuleGuard.js';
 // without calling the side-effectful factory.
 export const BOOTSTRAP_RETURN_GROUPS = {
   env: ['config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD'],
-  storage: ['storage', 'runDataStorageState', 'getIndexLabRoot'],
+  storage: ['storage', 'getIndexLabRoot'],
   session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady', 'appDb'],
   realtime: ['broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame'],
   process: ['processStatus', 'startProcess', 'stopProcess', 'isProcessRunning', 'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack'],
@@ -51,7 +52,7 @@ export const BOOTSTRAP_RETURN_GROUPS = {
     'getPendingComponentSharedCandidateIdsAsync', 'getPendingEnumSharedCandidateIds',
     'syncSyntheticCandidatesFromComponentReview',
     'remapPendingComponentReviewItemsForNameChange', 'propagateSharedLaneDecision',
-    'buildCatalog', 'patchCompiledComponentDb', 'markEnumSuggestionStatusBound',
+    'buildCatalog', 'patchCompiledComponentDb',
   ],
 };
 
@@ -63,8 +64,8 @@ export function bootstrapServer({ projectRoot }) {
   const env = createBootstrapEnvironment({ projectRoot });
   const {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState,
-    resolveProjectPath, cleanVariant, markEnumSuggestionStatusBound,
+    storage,
+    resolveProjectPath, cleanVariant,
   } = env;
 
   // ── Native module guard (fail-loud before Phase 2) ──
@@ -73,6 +74,31 @@ export function bootstrapServer({ projectRoot }) {
     throw new Error(
       `[FATAL] ${nativeHealth.error}\nFix: npm rebuild better-sqlite3\nNode: ${process.version} (${process.execPath})`,
     );
+  }
+
+  // ── Migrate legacy settings from category_authority/_runtime/ to .workspace/ ──
+  try {
+    const legacySettingsPath = path.join(HELPER_ROOT, '_runtime', 'user-settings.json');
+    const newSettingsPath = path.join(defaultUserSettingsRoot(), 'user-settings.json');
+    if (!fsSync.existsSync(newSettingsPath) && fsSync.existsSync(legacySettingsPath)) {
+      fsSync.mkdirSync(path.dirname(newSettingsPath), { recursive: true });
+      fsSync.copyFileSync(legacySettingsPath, newSettingsPath);
+      console.log(`[settings-migration] Copied ${legacySettingsPath} → ${newSettingsPath}`);
+    }
+    const legacySnapshotsDir = path.join(HELPER_ROOT, '_runtime', 'snapshots');
+    const newSnapshotsDir = defaultSnapshotRoot();
+    if (fsSync.existsSync(legacySnapshotsDir)) {
+      const entries = fsSync.readdirSync(legacySnapshotsDir).filter((f) => f.endsWith('.json'));
+      if (entries.length > 0 && !fsSync.existsSync(newSnapshotsDir)) {
+        fsSync.mkdirSync(newSnapshotsDir, { recursive: true });
+        for (const entry of entries) {
+          fsSync.copyFileSync(path.join(legacySnapshotsDir, entry), path.join(newSnapshotsDir, entry));
+        }
+        console.log(`[settings-migration] Copied ${entries.length} snapshot(s) to ${newSnapshotsDir}`);
+      }
+    }
+  } catch (err) {
+    console.warn('[settings-migration] Non-critical migration warning:', err?.message || err);
   }
 
   // ── Phase 2: Session + DB ──
@@ -107,7 +133,6 @@ export function bootstrapServer({ projectRoot }) {
     syncSpecDbForCategory: ({ category }) =>
       syncSpecDbForCategoryService({ category, config, resolveCategoryAlias, getSpecDbReady }),
     handleCompileProcessCompletion, handleIndexLabProcessCompletion,
-    runDataStorageState,
     indexLabRoot: INDEXLAB_ROOT, outputRoot: OUTPUT_ROOT,
     outputPrefix: OUTPUT_KEY_PREFIX,
     getSpecDbReady, getSpecDb, resolveCategoryAlias, logger: console,
@@ -141,9 +166,23 @@ export function bootstrapServer({ projectRoot }) {
     })
     .catch(() => { /* non-critical */ });
 
+  // ── Run directory cleanup (fire-and-forget, 7-day TTL) ──
+  import('../features/crawl/runtimeCleanup.js')
+    .then(({ cleanupStaleRunDirs }) => {
+      cleanupStaleRunDirs({ baseDir: INDEXLAB_ROOT, maxAgeMs: 7 * 24 * 60 * 60 * 1000 });
+    })
+    .catch(() => { /* non-critical */ });
+
+  // ── Snapshot cap (fire-and-forget, keep 10 most recent) ──
+  import('../core/config/snapshotCleanup.js')
+    .then(({ cleanupOldSnapshots }) => {
+      cleanupOldSnapshots({ dir: defaultSnapshotRoot(), maxCount: 10 });
+    })
+    .catch(() => { /* non-critical */ });
+
   return {
     env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
-    storage: { storage, runDataStorageState, getIndexLabRoot },
+    storage: { storage, getIndexLabRoot },
     session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
     realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
     process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
@@ -154,6 +193,6 @@ export function bootstrapServer({ projectRoot }) {
       canonicalSlugify, invalidateFieldRulesCache,
       loadProductCatalog, loadCategoryConfig,
     },
-    domain: { ...domain, markEnumSuggestionStatusBound },
+    domain: { ...domain },
   };
 }

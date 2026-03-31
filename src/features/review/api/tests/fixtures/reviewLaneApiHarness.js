@@ -110,63 +110,64 @@ function buildComponentRowMatcher(item) {
   return item?.name === 'PAW3950' && item?.maker === 'PixArt';
 }
 
-async function seedComponentReviewSuggestions(helperRoot, category) {
-  await writeJson(path.join(helperRoot, category, '_suggestions', 'component_review.json'), {
-    items: [
-      {
-        review_id: 'rv-cmp-35000',
-        category,
-        component_type: 'sensor',
-        field_key: 'sensor',
-        raw_query: 'PAW3950',
-        matched_component: 'PAW3950',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_A,
-        created_at: '2026-02-18T00:00:00.000Z',
-        product_attributes: { dpi_max: '35000', sensor_brand: 'PixArt' },
-      },
-      {
-        review_id: 'rv-cmp-26000',
-        category,
-        component_type: 'sensor',
-        field_key: 'sensor',
-        raw_query: 'PAW3950',
-        matched_component: 'PAW3950',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_B,
-        created_at: '2026-02-18T00:00:01.000Z',
-        product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' },
-      },
-      {
-        review_id: 'rv-enum-24',
-        category,
-        component_type: 'sensor',
-        field_key: 'connection',
-        raw_query: '2.4GHz',
-        matched_component: '',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_A,
-        created_at: '2026-02-18T00:00:02.000Z',
-        product_attributes: { connection: '2.4GHz' },
-      },
-      {
-        review_id: 'rv-enum-wireless',
-        category,
-        component_type: 'sensor',
-        field_key: 'connection',
-        raw_query: 'Wireless',
-        matched_component: '',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_B,
-        created_at: '2026-02-18T00:00:03.000Z',
-        product_attributes: { connection: 'Wireless' },
-      },
-    ],
-  });
+function seedComponentReviewSuggestions(db, category) {
+  const items = [
+    {
+      review_id: 'rv-cmp-35000',
+      category,
+      component_type: 'sensor',
+      field_key: 'sensor',
+      raw_query: 'PAW3950',
+      matched_component: 'PAW3950',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_A,
+      created_at: '2026-02-18T00:00:00.000Z',
+      product_attributes: { dpi_max: '35000', sensor_brand: 'PixArt' },
+    },
+    {
+      review_id: 'rv-cmp-26000',
+      category,
+      component_type: 'sensor',
+      field_key: 'sensor',
+      raw_query: 'PAW3950',
+      matched_component: 'PAW3950',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_B,
+      created_at: '2026-02-18T00:00:01.000Z',
+      product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' },
+    },
+    {
+      review_id: 'rv-enum-24',
+      category,
+      component_type: 'sensor',
+      field_key: 'connection',
+      raw_query: '2.4GHz',
+      matched_component: '',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_A,
+      created_at: '2026-02-18T00:00:02.000Z',
+      product_attributes: { connection: '2.4GHz' },
+    },
+    {
+      review_id: 'rv-enum-wireless',
+      category,
+      component_type: 'sensor',
+      field_key: 'connection',
+      raw_query: 'Wireless',
+      matched_component: '',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_B,
+      created_at: '2026-02-18T00:00:03.000Z',
+      product_attributes: { connection: 'Wireless' },
+    },
+  ];
+  for (const item of items) {
+    db.upsertComponentReviewItem(item);
+  }
 }
 
 function seedStrictLaneCandidates(db, category) {
@@ -351,13 +352,10 @@ async function seedReviewLaneApiWorkspace(workspaceRoot) {
   await seedComponentDb(config.categoryAuthorityRoot, CATEGORY);
   await seedKnownValues(config.categoryAuthorityRoot, CATEGORY);
   await seedWorkbookMap(config.categoryAuthorityRoot, CATEGORY);
-  await Promise.all([
-    Promise.all(
-      Object.entries(PRODUCTS).map(([productId, product]) =>
-        seedLatestArtifacts(storage, CATEGORY, productId, product)),
-    ),
-    seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
-  ]);
+  await Promise.all(
+    Object.entries(PRODUCTS).map(([productId, product]) =>
+      seedLatestArtifacts(storage, CATEGORY, productId, product)),
+  );
 
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
   const db = new SpecDb({ dbPath, category: CATEGORY });
@@ -369,6 +367,7 @@ async function seedReviewLaneApiWorkspace(workspaceRoot) {
       fieldRules: buildFieldRulesForSeed(),
       logger: null,
     });
+    seedComponentReviewSuggestions(db, CATEGORY);
     seedStrictLaneCandidates(db, CATEGORY);
     seedKeyReviewState(db, componentIdentifier);
   } finally {
@@ -385,7 +384,6 @@ export async function createReviewLaneApiHarness(t) {
     localOutputRoot: path.join(tempRoot, 'out'),
     specDbDir: path.join(tempRoot, '.workspace', 'db'),
   };
-  const reviewDocPath = path.join(config.categoryAuthorityRoot, CATEGORY, '_suggestions', 'component_review.json');
   const componentIdentifier = buildComponentIdentifier('sensor', 'PAW3950', 'PixArt');
 
   let child = null;
@@ -446,8 +444,6 @@ export async function createReviewLaneApiHarness(t) {
       componentIdentifier,
       config,
       db,
-      reviewDocPath,
-      readReviewDoc: async () => JSON.parse(await fs.readFile(reviewDocPath, 'utf8')),
       findComponentRow: (payload) => (payload?.items || []).find(buildComponentRowMatcher) || null,
     };
   } catch (error) {

@@ -115,43 +115,30 @@ test('queue clear requires --status', async () => {
   );
 });
 
-test('queue add requires --brand/--model when s3key does not exist', async () => {
-  const storage = {
-    objectExists: async () => false,
-    writeObject: async () => {},
-  };
+test('queue add requires --brand and --model', async () => {
   const commandQueue = createQueueCommand(createDeps());
 
   await assert.rejects(
-    commandQueue({ s3InputPrefix: 'input' }, storage, {
+    commandQueue({}, {}, {
       category: 'mouse',
       _: ['add'],
       'product-id': 'mouse-test',
     }),
-    /queue add requires an existing --s3key job or --brand\/--model to create one/
+    /queue add requires --brand and --model/
   );
 });
 
-test('queue add creates missing job payload and upserts pending queue row', async () => {
-  const writes = [];
+test('queue add upserts pending queue row with brand/model', async () => {
   const upserts = [];
-  const storage = {
-    objectExists: async () => false,
-    writeObject: async (key, body, options) => {
-      writes.push({ key, body: String(body), options });
-    },
-  };
 
   const commandQueue = createQueueCommand(createDeps({
-    parseCsvList: () => ['https://example.com/product'],
-    parseJsonArg: (_name, _value, fallback) => fallback,
     upsertQueueProduct: async (payload) => {
       upserts.push(payload);
       return { product: { product_id: payload.productId, status: payload.patch.status } };
     },
   }));
 
-  const result = await commandQueue({ s3InputPrefix: 'input' }, storage, {
+  const result = await commandQueue({}, {}, {
     category: 'mouse',
     _: ['add'],
     'product-id': 'mouse-test',
@@ -160,9 +147,6 @@ test('queue add creates missing job payload and upserts pending queue row', asyn
     priority: '5',
   });
 
-  assert.equal(writes.length, 1);
-  assert.equal(writes[0].key, 'specs/inputs/mouse/products/mouse-test.json');
-  assert.equal(writes[0].options.contentType, 'application/json');
   assert.equal(upserts.length, 1);
   assert.equal(upserts[0].patch.status, 'pending');
   assert.equal(upserts[0].patch.priority, 5);

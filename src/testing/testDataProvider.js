@@ -947,7 +947,7 @@ function buildComponentMatrix(componentTypes, crossRules, scenarioDefs) {
           expectedBehavior: '', expectedAiBehavior: ''
         },
         testNumbers: [newScenario.id],
-        expectedBehavior: `Creates suggestion in _suggestions/components.json with type=${ct.type}, records product_attributes {${ct.propKeys.join(', ')}}`,
+        expectedBehavior: `Creates curation suggestion in SQL (curation_suggestions table) with type=${ct.type}, records product_attributes {${ct.propKeys.join(', ')}}`,
         validationStatus: 'pending'
       });
     }
@@ -1192,7 +1192,7 @@ function buildListsEnumsMatrix(catalogs, fields, fieldKeys, listFields, componen
           expectedBehavior: '', expectedAiBehavior: ''
         },
         testNumbers: [newEnumScenarioId],
-        expectedBehavior: 'Accepted (open_prefer_known) + enum curation suggestion created in _suggestions/enums.json',
+        expectedBehavior: 'Accepted (open_prefer_known) + enum curation suggestion created in SQL (curation_suggestions table)',
         validationStatus: 'pending'
       });
     }

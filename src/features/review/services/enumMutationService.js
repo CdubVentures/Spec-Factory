@@ -190,22 +190,3 @@ export function resolveEnumRequiredCandidate({
   return null;
 }
 
-export async function applyEnumSuggestionStatusByAction({
-  action,
-  markEnumSuggestionStatus,
-  category,
-  field,
-  value,
-  priorValue,
-}) {
-  if (action === 'accept' || action === 'add') {
-    try { await markEnumSuggestionStatus(category, field, value, 'accepted'); } catch { /* best-effort */ }
-    if (priorValue) {
-      try { await markEnumSuggestionStatus(category, field, priorValue, 'accepted'); } catch { /* best-effort */ }
-    }
-    return;
-  }
-  if (action === 'remove') {
-    try { await markEnumSuggestionStatus(category, field, value, 'dismissed'); } catch { /* best-effort */ }
-  }
-}

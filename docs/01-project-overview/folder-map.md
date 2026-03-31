@@ -12,20 +12,19 @@
 |- .git/                       # git metadata
 |- .server-state/              # local runtime state files
 |- .specfactory_tmp/           # generated scratch/runtime artifacts; not source of truth
-|- .workspace/                 # default runtime workspace root: db, runs, output
-|- category_authority/         # authored category control-plane content plus _runtime user settings
+|- .workspace/                 # default runtime workspace root: db, runs, output, settings, snapshots
+|- category_authority/         # authored category control-plane content (field rules, components, sources)
 |- data/                       # checked-in learning/support data
 |- debug/                      # ad hoc screenshots and manual debug artifacts
 |- docs/                       # LLM-oriented docs tree; docs/implementation is excluded from this pass
 |- e2e/                        # Playwright E2E tests
-|- fixtures/                   # checked-in test fixtures and sample inputs
+|- test/                       # golden test fixtures, benchmarks, and Node test root
 |- gui-dist/                   # copied GUI assets used by packaging flows
 |- node_modules/               # installed dependencies; never edit
 |- scripts/                    # repo helper scripts
 |- specs/                      # checked-in run/spec outputs and related snapshots
 |- src/                        # backend runtime, CLI, persistence, domain logic, and shared infra
 |- storage/                    # checked-in storage/output artifacts; not the default live output root
-|- test/                       # primary Node test root
 |- tools/                      # GUI package, packaging, launcher, sidecars, and utilities
 |- .env.example                # partial env template, not a full manifest mirror
 |- AGENTS.md                   # repo-wide operating rules
@@ -40,13 +39,13 @@
 
 | Path | Purpose | Key files / notes |
 |------|---------|-------------------|
-| `.workspace/` | default runtime workspace root | `src/core/config/runtimeArtifactRoots.js` resolves `.workspace/output`, `.workspace/runs`, and `.workspace/db` as the live defaults |
-| `category_authority/` | canonical control-plane content | authored categories: `keyboard`, `monitor`, `mouse`; meta dirs: `_global`, `_runtime`; harness dir: `tests` is on disk but filtered from `/api/v1/categories` |
+| `.workspace/` | default runtime workspace root | `src/core/config/runtimeArtifactRoots.js` resolves `.workspace/output`, `.workspace/runs`, `.workspace/products`, `.workspace/db`, `.workspace/global`, and `.workspace/runtime/snapshots` as the live defaults |
+| `category_authority/` | canonical control-plane content | authored categories: `keyboard`, `monitor`, `mouse`; meta dirs: `_global`; harness dir: `tests` is on disk but filtered from `/api/v1/categories` |
 | `data/` | checked-in learning/support data | currently includes `learning/` |
 | `debug/` | manual debug captures | current contents are screenshots, not canonical runtime data |
 | `docs/` | maintained documentation tree | `README.md` is the entrypoint; `implementation/` is excluded from the reading order |
 | `e2e/` | Playwright browser tests | governed by `playwright.config.ts` |
-| `fixtures/` | deterministic test fixtures | includes input and artifact fixtures used by tests |
+| `test/` | golden test fixtures + benchmarks | `test/golden/` for spec golden masters, `test/benchmarks/` for scale benchmarks |
 | `gui-dist/` | packaged GUI copy | refreshed by packaging flows, not the source GUI |
 | `scripts/` | repo utility scripts | one-off helpers outside the main runtime entrypoints |
 | `specs/` | checked-in spec/run snapshots | current checkout contains `outputs/` |
@@ -66,7 +65,7 @@
 | `src/core/` | config manifest, runtime roots, LLM routing, event contracts | `config/manifest/index.js`, `config/runtimeArtifactRoots.js`, `events/dataChangeContract.js`, `llm/` |
 | `src/db/` | SQLite boundaries | `appDb.js`, `appDbSchema.js`, `specDb.js`, `specDbSchema.js`, `stores/` |
 | `src/features/` | feature-first backend boundaries | `catalog/`, `crawl/`, `indexing/`, `review/`, `settings/`, `settings-authority/`, `studio/`, `category-authority/` |
-| `src/pipeline/` | crawl-first run orchestration and batch flows | `runProduct.js`, `runCrawlProcessingLifecycle.js`, `componentReviewBatch.js` |
+| `src/pipeline/` | crawl-first run orchestration and batch flows | `runProduct.js`, `runCrawlProcessingLifecycle.js` |
 | `src/indexlab/` | run-artifact readers and runtime bridge helpers | `runtimeBridgeEventHandlers.js`, `runtimeBridgePayloads.js` |
 | `src/shared/` | shared registry/defaults/accessors and generic helpers | `settingsRegistry.js` exports `145` live entries: `138` runtime, `3` bootstrap env, `4` UI; `settingsDefaults.js` contains no populated storage defaults |
 | `src/s3/` | local/S3 storage adapter | `storage.js` selects `S3Storage` only when `config.outputMode === 's3'`; otherwise local storage is used |

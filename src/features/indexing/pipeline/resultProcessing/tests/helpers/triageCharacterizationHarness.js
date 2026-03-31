@@ -183,7 +183,6 @@ export function makeProcessDiscoveryResultsArgs(overrides = {}) {
     job: { productId: 'p1', ...(job || {}) },
     runId: 'r1',
     logger: logger ?? makeStubLogger(),
-    runtimeTraceWriter: null,
     frontierDb: frontierDb ?? makeStubFrontierDb(),
     variables: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Pro', ...(variables || {}) },
     identityLock: identityLock ?? makeIdentityLock(),

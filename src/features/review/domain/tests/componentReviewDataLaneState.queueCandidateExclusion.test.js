@@ -27,7 +27,7 @@ test('component payload does not hydrate queue-only property candidates when lin
     componentMaker: 'PixArt',
   });
 
-  await writeComponentReviewItems(tempRoot, [
+  writeComponentReviewItems(specDb, [
     {
       review_id: 'rv_1',
       category: CATEGORY,

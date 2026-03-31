@@ -221,23 +221,24 @@ export async function migrateQueueEntry({ storage, category, oldProductId, newPr
 
 export async function syncQueueFromInputs({ storage, category, specDb = null, config = {} }) {
   const loaded = await loadQueueState({ storage, category, specDb });
-  const keys = await storage.listInputKeys(category);
   const canonicalIndex = await loadCanonicalIdentityIndex({ config, category });
   let added = 0;
   let rejectedByIdentityGate = 0;
 
-  for (const key of keys) {
-    const productId = String(key).split('/').pop()?.replace(/\.json$/i, '') || '';
+  // WHY: SQL is the source of truth for products — no fixture scan needed.
+  const productRows = specDb ? specDb.getAllProducts() : [];
+
+  for (const row of productRows) {
+    const productId = String(row.product_id || '').trim();
     if (!productId) continue;
 
-    const input = typeof storage.readJsonOrNull === 'function'
-      ? await storage.readJsonOrNull(key)
-      : null;
-    const identity = input?.identityLock || null;
-    if (identity?.brand && identity?.model) {
+    const brand = String(row.brand || '').trim();
+    const model = String(row.model || '').trim();
+    const variant = String(row.variant || '').trim();
+    if (brand && model) {
       const gate = evaluateIdentityGate({
-        category, brand: identity.brand, model: identity.model,
-        variant: identity.variant || '', canonicalIndex
+        category, brand, model,
+        variant, canonicalIndex
       });
       if (!gate.valid) { rejectedByIdentityGate += 1; continue; }
       registerCanonicalIdentity({
@@ -248,14 +249,10 @@ export async function syncQueueFromInputs({ storage, category, specDb = null, co
 
     if (!loaded.state.products[productId]) {
       loaded.state.products[productId] = normalizeProductRow(productId, {
-        s3key: key, status: 'pending', next_action_hint: 'fast_pass'
+        s3key: '', status: 'pending', next_action_hint: 'fast_pass'
       });
       added += 1;
       continue;
-    }
-    if (!loaded.state.products[productId].s3key) {
-      loaded.state.products[productId].s3key = key;
-      loaded.state.products[productId].updated_at = nowIso();
     }
   }
 

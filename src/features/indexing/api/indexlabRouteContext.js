@@ -1,10 +1,10 @@
 import {
   readIndexLabRunEvents, readIndexLabRunMeta, resolveIndexLabRunDirectory,
   readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-  readIndexLabRunPhase07Retrieval, readIndexLabRunPhase08Extraction,
+  readIndexLabRunPhase07PrimeSources,
   readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
   readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
-  readIndexLabRunSerpExplorer, readIndexLabRunLlmTraces,
+  readIndexLabRunSerpExplorer,
   readIndexLabRunAutomationQueue, readIndexLabRunEvidenceIndex,
   listIndexLabRuns,
 } from './index.js';
@@ -27,21 +27,20 @@ export function createIndexlabRouteContext(options = {}) {
   const {
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
     processStatus,
-    // Storage manager deps (optional — only needed for /storage/* routes)
-    readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+    readJsonBody, broadcastWs, storage, OUTPUT_ROOT,
     getIndexLabRoot, getSpecDb,
   } = options;
 
   return {
     jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
-    processStatus, readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+    processStatus, readJsonBody, broadcastWs, storage, OUTPUT_ROOT,
     getIndexLabRoot, getSpecDb,
     readIndexLabRunMeta, resolveIndexLabRunDirectory,
     readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-    readIndexLabRunPhase07Retrieval, readIndexLabRunPhase08Extraction,
+    readIndexLabRunPhase07PrimeSources,
     readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
     readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
-    readIndexLabRunSerpExplorer, readIndexLabRunLlmTraces,
+    readIndexLabRunSerpExplorer,
     readIndexLabRunAutomationQueue, readIndexLabRunEvidenceIndex,
     listIndexLabRuns, buildRoundSummaryFromEvents, buildSearchHints,
     buildAnchorsSuggestions, buildKnownValuesSuggestions,

@@ -8,7 +8,7 @@ import path from 'node:path';
 // Ensures golden reference files are well-formed and can be loaded.
 // ---------------------------------------------------------------------------
 
-const GOLDEN_DIR = path.resolve('fixtures/golden/mouse');
+const GOLDEN_DIR = path.resolve('test/golden/mouse');
 
 async function loadGoldenFiles() {
   const files = await fs.readdir(GOLDEN_DIR);

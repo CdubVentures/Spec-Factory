@@ -23,6 +23,6 @@ Shared API surface (both backends):
 ## Domain Invariants
 
 - Both S3Storage and LocalStorage implement identical public interface.
-- Key prefixes are SSOT: `INPUT_KEY_PREFIX`, `OUTPUT_KEY_PREFIX` from `src/shared/storageKeyPrefixes.js`.
+- Key prefix is SSOT: `OUTPUT_KEY_PREFIX` from `src/shared/storageKeyPrefixes.js`.
 - Missing-key reads (404/ENOENT) return `null`, never throw.
 - Storage backend selection is config-driven via `config.outputMode` (`'s3'` or default local).

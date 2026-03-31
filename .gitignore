@@ -50,21 +50,11 @@ smoke-output.log
 *.stackdump
 
 
-# Generated discovery/candidate dumps (local run artifacts)
-fixtures/s3/specs/inputs/_discovery/
-fixtures/s3/specs/inputs/_sources/candidates/
-fixtures/s3/specs/inputs/_test_*/
-fixtures/s3/specs/inputs/*/products/*e2e*.json
-fixtures/s3/specs/inputs/*/products/*merge*.json
-fixtures/s3/specs/inputs/*/products/*proof*.json
-fixtures/s3/specs/inputs/*/products/*indexlab*.json
-fixtures/s3/specs/inputs/*/products/*-dltest.json
 
 # Local helper staging/test data
 helper_files/_test_*/
 helper_files/_global/
 category_authority/_test_*/
-category_authority/_runtime/
 category_authority_override/
 test-categoryAuthorityRoot/
 

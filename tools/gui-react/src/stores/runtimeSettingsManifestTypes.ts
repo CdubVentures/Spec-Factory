@@ -63,8 +63,6 @@ export interface RuntimeSettingDefaults {
   pipelineSchemaEnforcementMode: string;
   runtimeControlFile: string;
   runtimeScreencastEnabled: boolean;
-  runtimeTraceEnabled: boolean;
-  runtimeTraceLlmPayloads: boolean;
   searchEngines: string;
   searchEnginesFallback: string;
   searchMaxRetries: number;
@@ -78,7 +76,7 @@ export interface RuntimeSettingDefaults {
   needsetGroupSearchCoverageThreshold: number;
   needsetGroupSearchMinUnresolved: number;
   needsetGroupSearchMaxRepeats: number;
-  needsetSeedCooldownDays: number;
+  queryCooldownDays: number;
   queryBuilderMaxAliases: number;
   queryBuilderFieldQueryCap: number;
   queryBuilderDocHintQueryCap: number;

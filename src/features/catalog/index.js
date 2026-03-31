@@ -1,6 +1,5 @@
 export {
   loadProductCatalog,
-  saveProductCatalog,
   addProduct,
   addProductsBulk,
   updateProduct,

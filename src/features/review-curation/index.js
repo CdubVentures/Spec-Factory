@@ -25,7 +25,6 @@ export {
   confidenceColor,
   runQaJudge,
   startReviewQueueWebSocket,
-  suggestionFilePath,
   appendReviewSuggestion,
   evaluateVariance,
   evaluateVarianceBatch,

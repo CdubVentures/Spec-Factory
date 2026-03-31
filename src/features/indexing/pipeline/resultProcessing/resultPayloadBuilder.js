@@ -3,8 +3,6 @@
 // Phase 9: Assemble discovery + candidates storage payloads.
 
 import { resolvePhaseModel } from '../../../../core/llm/client/routing.js';
-import { toPosixKey } from '../../../../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 import { toArray, uniqueTokens } from '../shared/discoveryIdentity.js';
 
 /**
@@ -119,96 +117,11 @@ export function buildSerpExplorer({
 }
 
 /**
- * Assembles discovery + candidates storage payloads and writes them.
+ * No-op stub — discovery/candidates diagnostic dumps are no longer written.
+ * Kept as a function signature for backward compat with callers.
  *
- * @param {object} ctx
- * @returns {{ discoveryKey: string, candidatesKey: string }}
+ * @returns {{}}
  */
-export async function writeDiscoveryPayloads({
-  config,
-  storage,
-  categoryConfig,
-  job,
-  runId,
-  queries,
-  llmQueries,
-  missingFields,
-  internalSatisfied,
-  externalSearchReason,
-  searchAttempts,
-  searchJournal,
-  providerState,
-  searchProfileFinal,
-  serpExplorer,
-  candidateRowsFinal,
-  discovered,
-  selectedUrls,
-  searchProfileKeys,
-}) {
-  const discoveryKey = toPosixKey(
-    INPUT_KEY_PREFIX,
-    '_discovery',
-    categoryConfig.category,
-    `${runId}.json`
-  );
-  const candidatesKey = toPosixKey(
-    INPUT_KEY_PREFIX,
-    '_sources',
-    'candidates',
-    categoryConfig.category,
-    `${runId}.json`
-  );
-
-  const discoveryPayload = {
-    category: categoryConfig.category,
-    productId: job.productId,
-    runId,
-    generated_at: new Date().toISOString(),
-    provider: config.searchEngines,
-    provider_state: providerState,
-    llm_query_planning: true,
-    llm_query_model: resolvePhaseModel(config, 'searchPlanner') || String(config.llmModelPlan || '').trim(),
-    llm_serp_selector: true,
-    llm_serp_selector_model: resolvePhaseModel(config, 'serpSelector') || String(config.llmModelPlan || '').trim(),
-    query_count: queries.length,
-    query_reject_count: toArray(searchProfileFinal?.query_reject_log).length,
-    discovered_count: discovered.length,
-    selected_count: selectedUrls.length,
-    queries,
-    query_guard: searchProfileFinal.query_guard || null,
-    query_reject_log: toArray(searchProfileFinal.query_reject_log),
-    llm_queries: llmQueries,
-    search_profile_key: searchProfileKeys.inputKey,
-    search_profile_run_key: searchProfileKeys.runKey,
-    search_profile_latest_key: searchProfileKeys.latestKey,
-    targeted_missing_fields: missingFields,
-    internal_satisfied: internalSatisfied,
-    external_search_reason: externalSearchReason,
-    search_attempts: searchAttempts,
-    search_journal: searchJournal,
-    serp_explorer: serpExplorer,
-    discovered: candidateRowsFinal,
-  };
-  const candidatePayload = {
-    category: categoryConfig.category,
-    productId: job.productId,
-    runId,
-    generated_at: new Date().toISOString(),
-    candidate_count: candidateRowsFinal.length,
-    approved_count: selectedUrls.length,
-    candidates: candidateRowsFinal,
-  };
-
-  await storage.writeObject(
-    discoveryKey,
-    Buffer.from(JSON.stringify(discoveryPayload, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-  await storage.writeObject(
-    candidatesKey,
-    Buffer.from(JSON.stringify(candidatePayload, null, 2), 'utf8'),
-    { contentType: 'application/json' }
-  );
-
-  return { discoveryKey, candidatesKey };
+export async function writeDiscoveryPayloads() {
+  return {};
 }

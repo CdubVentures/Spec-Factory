@@ -261,8 +261,7 @@
 | `src/features/indexing/api/tests/liveCrawlApiRoute.test.js` | KEEP | Protects live-crawl route responses and evaluation payloads. | No replacement required. | Targeted authority/indexing route proof pending in this audit pass. | Kept unchanged. |
 | `src/features/indexing/api/tests/crossRunAnalyticsApi.test.js` | KEEP | Protects cross-run analytics endpoints. | No replacement required. | Targeted authority/indexing route proof pending in this audit pass. | Kept unchanged. |
 | `src/api/tests/indexlabAutomationQueueApi.test.js` | KEEP | Provides live server validation for the automation-queue endpoint after route-surface consolidation. | No replacement required. | Live proof pending in this audit pass. | Kept unchanged. |
-| `src/api/tests/indexlabPhase07Api.test.js` | KEEP | Provides live server validation for the phase07 retrieval endpoint. | No replacement required. | Live proof pending in this audit pass. | Kept unchanged. |
-| `src/api/tests/indexlabPhase08Api.test.js` | KEEP | Provides live server validation for the phase08 extraction endpoint. | No replacement required. | Live proof pending in this audit pass. | Kept unchanged. |
+| `src/api/tests/indexlabPhase07Api.test.js` | RETIRE | Ghost entry — file does not exist. Phase07 prime sources validation covered by `indexlabRunPayloadApi.test.js`. | N/A | N/A | Removed. |
 | `src/api/tests/indexlabSchemaPacketsApi.test.js` | KEEP | Provides live server validation for schema packet endpoints. | No replacement required. | Live proof pending in this audit pass. | Kept unchanged. |
 
 ### Proof Stack

@@ -1,44 +1,10 @@
 import path from 'node:path';
 
-import { defaultLocalOutputRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 import { buildRunId } from '../../../../shared/primitives.js';
 import { writeRuntimeSettingsSnapshot } from '../../../../core/config/runtimeSettingsSnapshot.js';
 
 function buildError(status, body) {
   return { ok: false, status, body };
-}
-
-function resolveStorageBackedRunRoots({
-  runDataStorageState,
-  outputRoot,
-  pathApi,
-  defaultLocalOutputRootFn,
-}) {
-  const state = runDataStorageState && typeof runDataStorageState === 'object'
-    ? runDataStorageState
-    : {};
-  if (state.enabled !== true) return null;
-
-  const destinationType = String(state.destinationType || '').trim().toLowerCase();
-  if (destinationType === 's3') {
-    const stagingRoot = pathApi.dirname(pathApi.resolve(String(outputRoot || defaultLocalOutputRootFn())));
-    const workspaceRoot = pathApi.join(stagingRoot, 'db');
-    return {
-      specDbDir: workspaceRoot,
-    };
-  }
-
-  if (destinationType !== 'local') return null;
-  const localDirectory = String(state.localDirectory || '').trim();
-  if (!localDirectory) return null;
-
-  const root = pathApi.resolve(localDirectory);
-  const workspaceRoot = pathApi.join(root, 'db');
-  return {
-    outputRoot: pathApi.join(root, 'output'),
-    indexLabRoot: pathApi.join(root, 'runs'),
-    specDbDir: workspaceRoot,
-  };
 }
 
 function normalizeJoinedList(value) {
@@ -54,11 +20,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
     helperRoot = '',
     outputRoot = '',
     indexLabRoot = '',
-    runDataStorageState = {},
     env = process.env,
     pathApi = path,
     buildRunIdFn = buildRunId,
-    defaultLocalOutputRootFn = defaultLocalOutputRoot,
   } = options;
 
   const {
@@ -109,15 +73,9 @@ export function buildProcessStartLaunchPlan(options = {}) {
     ? rawRequestedRunId
     : buildRunIdFn();
 
-  const storageBackedRunRoots = resolveStorageBackedRunRoots({
-    runDataStorageState,
-    outputRoot,
-    pathApi,
-    defaultLocalOutputRootFn,
-  });
-  const effectiveIndexLabOut = storageBackedRunRoots?.indexLabRoot || indexlabOut || indexLabRoot || '';
-  const effectiveLocalOutputRoot = storageBackedRunRoots?.outputRoot || localOutputRoot || outputRoot || '';
-  const effectiveSpecDbDir = storageBackedRunRoots?.specDbDir || specDbDir || '';
+  const effectiveIndexLabOut = indexlabOut || indexLabRoot || '';
+  const effectiveLocalOutputRoot = localOutputRoot || outputRoot || '';
+  const effectiveSpecDbDir = specDbDir || '';
 
   const cliArgs = ['indexlab', '--local', '--run-id', requestedRunId, '--category', cat];
   if (productId) {
@@ -170,7 +128,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
   // WHY: Plan 05 — runtime settings snapshot is the SSOT for child settings.
   // The child reads this via RUNTIME_SETTINGS_SNAPSHOT env var in config.js.
   try {
-    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body, effectiveHelperRoot);
+    const snapshotPath = writeRuntimeSettingsSnapshot(requestedRunId, body);
     envOverrides.RUNTIME_SETTINGS_SNAPSHOT = snapshotPath;
   } catch (err) {
     return buildError(500, {

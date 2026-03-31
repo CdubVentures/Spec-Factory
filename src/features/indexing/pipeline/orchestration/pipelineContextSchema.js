@@ -7,7 +7,7 @@
  * Seed → AfterBootstrap → AfterProfile → AfterPlanner → AfterJourney
  *      → AfterExecution → AfterResults → Final
  *
- * Services (storage, logger, frontierDb, traceWriter, planner, *Fn DI seams)
+ * Services (storage, logger, frontierDb, planner, *Fn DI seams)
  * are NOT in this schema — they are infrastructure, not accumulated pipeline data.
  */
 import { z } from 'zod';

@@ -16,10 +16,6 @@ export interface StorageMetrics {
 
 export interface StorageBackendDetail {
   root_path?: string;
-  bucket?: string;
-  prefix?: string;
-  region?: string;
-  disk_free_bytes?: number;
 }
 
 export interface StorageOverviewResponse {
@@ -125,15 +121,6 @@ export interface PruneResponse {
 export interface PurgeResponse {
   ok: boolean;
   purged: number;
-}
-
-export interface RecalculateResponse {
-  ok: boolean;
-  runs_scanned: number;
-  runs_updated: number;
-  total_size_bytes: number;
-  errors: Array<{ run_id: string; error: string }>;
-  warning?: string;
 }
 
 export interface ExportResponse {

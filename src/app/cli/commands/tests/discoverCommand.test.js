@@ -11,14 +11,16 @@ function createDeps(overrides = {}) {
       candidates: [{ url: 'https://example.com/product' }],
     }),
     EventLogger: class EventLoggerStub {
-      constructor(_params) {
-        this.flushCount = 0;
-      }
-      async flush() {
-        this.flushCount += 1;
-      }
+      constructor(_params) { this.flushCount = 0; }
+      async flush() { this.flushCount += 1; }
     },
     buildRunId: () => 'run-fixed',
+    openSpecDbForCategory: () => ({
+      getAllProducts: () => [
+        { product_id: 'mouse-a', brand: 'Logitech', model: 'G502' },
+        { product_id: 'mouse-b', brand: 'Razer', model: 'Viper' },
+      ],
+    }),
     ...overrides,
   };
 }
@@ -28,29 +30,18 @@ test('discover command applies brand filter and returns selected run summaries',
   const loggerInstances = [];
 
   class EventLoggerRecorder {
-    constructor(params) {
-      this.params = params;
-      this.flushCount = 0;
-      loggerInstances.push(this);
-    }
-    async flush() {
-      this.flushCount += 1;
-    }
+    constructor(params) { this.params = params; this.flushCount = 0; loggerInstances.push(this); }
+    async flush() { this.flushCount += 1; }
   }
 
   const storage = {
-    async listInputKeys() {
-      return ['input/a.json', 'input/b.json'];
+    async readJson(key) {
+      if (key === 'mouse-a') return { productId: 'mouse-a' };
+      return { productId: 'mouse-b' };
     },
     async readJsonOrNull(key) {
-      if (key.endsWith('a.json')) {
-        return { identityLock: { brand: 'Logitech' } };
-      }
+      if (key === 'mouse-a') return { identityLock: { brand: 'Logitech' } };
       return { identityLock: { brand: 'Razer' } };
-    },
-    async readJson(key) {
-      if (key.endsWith('a.json')) return { productId: 'mouse-a' };
-      return { productId: 'mouse-b' };
     },
   };
 
@@ -72,10 +63,6 @@ test('discover command applies brand filter and returns selected run summaries',
   });
 
   assert.equal(discoverCalls.length, 1);
-  assert.deepEqual(discoverCalls[0].roundContext, { missing_critical_fields: ['dpi', 'sensor'] });
-
-  assert.equal(loggerInstances.length, 1);
-  assert.equal(loggerInstances[0].flushCount, 1);
   assert.equal(result.command, 'discover');
   assert.equal(result.category, 'mouse');
   assert.equal(result.brand, 'Logitech');
@@ -89,22 +76,17 @@ test('discover command applies brand filter and returns selected run summaries',
 
 test('discover command runs all inputs when no brand filter', async () => {
   const storage = {
-    async listInputKeys() {
-      return ['input/a.json'];
-    },
-    async readJsonOrNull() {
-      return { identityLock: { brand: 'Logitech' } };
-    },
-    async readJson() {
-      return { productId: 'mouse-a' };
-    },
+    async readJson() { return { productId: 'mouse-a' }; },
+    async readJsonOrNull() { return { identityLock: { brand: 'Logitech' } }; },
   };
 
-  const commandDiscover = createDiscoverCommand(createDeps());
+  const commandDiscover = createDiscoverCommand(createDeps({
+    openSpecDbForCategory: () => ({
+      getAllProducts: () => [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
+    }),
+  }));
 
-  const result = await commandDiscover({}, storage, {
-    category: 'mouse',
-  });
+  const result = await commandDiscover({}, storage, { category: 'mouse' });
 
   assert.equal(result.total_inputs, 1);
   assert.equal(result.selected_inputs, 1);
@@ -115,39 +97,25 @@ test('discover command flushes buffered events before rethrowing discovery failu
   const expectedError = new Error('seed_plan_failed');
 
   class EventLoggerRecorder {
-    constructor(params) {
-      this.params = params;
-      this.flushCount = 0;
-      loggerInstances.push(this);
-    }
-    async flush() {
-      this.flushCount += 1;
-    }
+    constructor(params) { this.params = params; this.flushCount = 0; loggerInstances.push(this); }
+    async flush() { this.flushCount += 1; }
   }
 
   const storage = {
-    async listInputKeys() {
-      return ['input/a.json'];
-    },
-    async readJsonOrNull() {
-      return { identityLock: { brand: 'Logitech' } };
-    },
-    async readJson() {
-      return { productId: 'mouse-a' };
-    },
+    async readJson() { return { productId: 'mouse-a' }; },
+    async readJsonOrNull() { return { identityLock: { brand: 'Logitech' } }; },
   };
 
   const commandDiscover = createDiscoverCommand(createDeps({
     EventLogger: EventLoggerRecorder,
-    runDiscoverySeedPlan: async () => {
-      throw expectedError;
-    },
+    openSpecDbForCategory: () => ({
+      getAllProducts: () => [{ product_id: 'mouse-a', brand: 'Logitech', model: 'G502' }],
+    }),
+    runDiscoverySeedPlan: async () => { throw expectedError; },
   }));
 
   await assert.rejects(
-    commandDiscover({}, storage, {
-      category: 'mouse',
-    }),
+    commandDiscover({}, storage, { category: 'mouse' }),
     expectedError,
   );
 

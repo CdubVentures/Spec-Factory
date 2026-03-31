@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { defaultSnapshotRoot } from './runtimeArtifactRoots.js';
 
 // WHY: These are run-control fields that should NOT be in the settings snapshot.
 // They control what to run (product identity), not how to run (pipeline settings).
@@ -33,12 +34,12 @@ function extractSettingsFromBody(body) {
  * Write a runtime settings snapshot to disk.
  * @param {string} runId — Run identifier
  * @param {Object} body — Full POST body (run control + settings)
- * @param {string} runtimeRoot — Category authority root path
+ * @param {string} [snapshotsDir] — Optional override for snapshot directory (defaults to .workspace/runtime/snapshots)
  * @returns {string} Absolute path to the written snapshot file
  */
-export function writeRuntimeSettingsSnapshot(runId, body, runtimeRoot) {
-  const snapshotsDir = path.join(path.resolve(runtimeRoot), '_runtime', 'snapshots');
-  fs.mkdirSync(snapshotsDir, { recursive: true });
+export function writeRuntimeSettingsSnapshot(runId, body, snapshotsDir) {
+  const resolvedDir = snapshotsDir ? path.resolve(snapshotsDir) : defaultSnapshotRoot();
+  fs.mkdirSync(resolvedDir, { recursive: true });
 
   const snapshot = {
     snapshotId: String(runId || '').trim(),
@@ -49,7 +50,7 @@ export function writeRuntimeSettingsSnapshot(runId, body, runtimeRoot) {
   };
 
   const safeRunId = String(runId || 'unknown').replace(/[^A-Za-z0-9._-]/g, '_');
-  const filePath = path.join(snapshotsDir, `${safeRunId}-settings.json`);
+  const filePath = path.join(resolvedDir, `${safeRunId}-settings.json`);
   fs.writeFileSync(filePath, JSON.stringify(snapshot, null, 2), 'utf8');
   return filePath;
 }

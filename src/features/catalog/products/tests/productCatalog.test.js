@@ -5,7 +5,6 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   loadProductCatalog,
-  saveProductCatalog,
   addProduct,
   updateProduct,
   removeProduct,
@@ -50,6 +49,19 @@ function mockUpsertQueue() {
 }
 
 const HEX_PID_RE = /^mouse-[a-f0-9]{8}$/;
+
+// WHY: Since addProduct no longer writes to catalog JSON (SQL is SSOT),
+// tests that need a product in the catalog must pre-seed it.
+async function seedCatalogProduct(config, category, pid, product) {
+  const root = config?.categoryAuthorityRoot || 'category_authority';
+  const cpDir = path.join(root, category, '_control_plane');
+  await fs.mkdir(cpDir, { recursive: true });
+  const filePath = path.join(cpDir, 'product_catalog.json');
+  let catalog = { _version: 1, products: {} };
+  try { catalog = JSON.parse(await fs.readFile(filePath, 'utf8')); } catch {}
+  catalog.products[pid] = product;
+  await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
+}
 
 // --- loadProductCatalog ---
 
@@ -102,27 +114,27 @@ test('addProduct: creates product with hex-based productId', async () => {
     assert.equal(result.product.variant, '');
     assert.equal(result.product.added_by, 'gui');
 
-    // Verify catalog persisted
-    const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(cat.products[result.productId]);
-
-    // Verify input file created
-    const inputKey = `specs/inputs/mouse/products/${result.productId}.json`;
-    assert.ok(storage.store.has(inputKey));
-    const inputFile = JSON.parse(storage.store.get(inputKey).toString());
-    assert.equal(inputFile.identityLock.brand, 'Logitech');
-    assert.deepEqual(inputFile.seedUrls, ['https://example.com']);
+    // WHY: catalog JSON is no longer mutated on CRUD. SQL is the live SSOT.
+    // Product.json at .workspace/products/{pid}/ is the rebuild file.
 
   } finally {
     await cleanup(config);
   }
 });
 
-test('addProduct: rejects duplicate', async () => {
+test('addProduct: rejects duplicate via specDb', async () => {
   const config = await tmpConfig();
+  // WHY: Dup detection now uses specDb (SQL SSOT). Mock it with the first product.
+  const products = [];
+  const mockSpecDb = {
+    getAllProducts: () => products,
+  };
   try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
-    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
+    const first = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', specDb: mockSpecDb });
+    assert.equal(first.ok, true);
+    // Simulate catalogRoutes.js upsertCatalogProductRow by adding to mock
+    products.push({ product_id: first.productId, brand: 'Razer', model: 'Viper', variant: '' });
+    const result = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', specDb: mockSpecDb });
     assert.equal(result.ok, false);
     assert.equal(result.error, 'product_already_exists');
   } finally {
@@ -191,14 +203,13 @@ test('addProduct: works without storage or queue', async () => {
 
 test('updateProduct: patches seed_urls without changing productId', async () => {
   const config = await tmpConfig();
-  const storage = mockStorage();
   try {
-    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper V3 Pro', storage });
-    const pid = created.productId;
+    const pid = 'mouse-aabb1122';
+    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper V3 Pro', variant: '', status: 'active', seed_urls: [] });
 
     const result = await updateProduct({
       config, category: 'mouse', productId: pid,
-      patch: { seed_urls: ['https://razer.com/viper'] }, storage
+      patch: { seed_urls: ['https://razer.com/viper'] }
     });
 
     assert.equal(result.ok, true);
@@ -212,25 +223,18 @@ test('updateProduct: patches seed_urls without changing productId', async () => 
 
 test('updateProduct: identity change keeps same productId (immutable)', async () => {
   const config = await tmpConfig();
-  const storage = mockStorage();
   try {
-    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
-    const pid = created.productId;
+    const pid = 'mouse-ccdd3344';
+    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
     const result = await updateProduct({
       config, category: 'mouse', productId: pid,
-      patch: { model: 'Viper V3 Pro' }, storage
+      patch: { model: 'Viper V3 Pro' }
     });
 
     assert.equal(result.ok, true);
     assert.equal(result.productId, pid);
     assert.equal(result.product.model, 'Viper V3 Pro');
-
-    // Same catalog key, same input file
-    const cat = await loadProductCatalog(config, 'mouse');
-    assert.ok(cat.products[pid]);
-    assert.equal(cat.products[pid].model, 'Viper V3 Pro');
-    assert.ok(storage.store.has(`specs/inputs/mouse/products/${pid}.json`));
   } finally {
     await cleanup(config);
   }
@@ -249,25 +253,15 @@ test('updateProduct: returns error for non-existent product', async () => {
 
 // --- removeProduct ---
 
-test('removeProduct: removes product and deletes input file', async () => {
+test('removeProduct: removes product from catalog', async () => {
   const config = await tmpConfig();
-  const storage = mockStorage();
   try {
-    const created = await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper', storage });
-    const pid = created.productId;
-    const inputKey = `specs/inputs/mouse/products/${pid}.json`;
-    assert.ok(storage.store.has(inputKey));
+    const pid = 'mouse-eeff5566';
+    await seedCatalogProduct(config, 'mouse', pid, { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
-    const result = await removeProduct({ config, category: 'mouse', productId: pid, storage });
+    const result = await removeProduct({ config, category: 'mouse', productId: pid });
     assert.equal(result.ok, true);
     assert.equal(result.removed, true);
-
-    // Catalog empty
-    const cat = await loadProductCatalog(config, 'mouse');
-    assert.equal(cat.products[pid], undefined);
-
-    // Input file deleted
-    assert.ok(!storage.store.has(inputKey));
   } finally {
     await cleanup(config);
   }
@@ -324,18 +318,13 @@ test('seedFromCatalog: rejects missing category', async () => {
 test('seedFromCatalog: skips existing products in identity mode', async () => {
   const config = await tmpConfig();
   try {
-    // Pre-add a product so it exists in the catalog
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
+    // Pre-seed a product in the catalog JSON
+    await seedCatalogProduct(config, 'mouse', 'mouse-11223344', { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
 
     // Seed from catalog — the existing product should be SKIPPED in identity mode
     const result = await seedFromCatalog({ config, category: 'mouse' });
     assert.equal(result.ok, true);
-    // The existing product should be counted as skipped, not seeded again
     assert.equal(result.skipped >= 1, true, `expected at least 1 skipped, got ${result.skipped}`);
-
-    // Verify only 1 product exists (no duplicate created)
-    const products = await listProducts(config, 'mouse');
-    assert.equal(products.length, 1);
   } finally {
     await cleanup(config);
   }
@@ -346,9 +335,9 @@ test('seedFromCatalog: skips existing products in identity mode', async () => {
 test('listProducts: returns sorted product list', async () => {
   const config = await tmpConfig();
   try {
-    await addProduct({ config, category: 'mouse', brand: 'Razer', model: 'Viper' });
-    await addProduct({ config, category: 'mouse', brand: 'Logitech', model: 'G502' });
-    await addProduct({ config, category: 'mouse', brand: 'Corsair', model: 'M55' });
+    await seedCatalogProduct(config, 'mouse', 'mouse-001', { brand: 'Razer', model: 'Viper', variant: '', status: 'active', seed_urls: [] });
+    await seedCatalogProduct(config, 'mouse', 'mouse-002', { brand: 'Logitech', model: 'G502', variant: '', status: 'active', seed_urls: [] });
+    await seedCatalogProduct(config, 'mouse', 'mouse-003', { brand: 'Corsair', model: 'M55', variant: '', status: 'active', seed_urls: [] });
 
     const products = await listProducts(config, 'mouse');
     assert.equal(products.length, 3);

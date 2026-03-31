@@ -40,5 +40,5 @@ export { applySharedLaneState } from './keyReviewState.js';
 export { confidenceColor } from './confidenceColor.js';
 export { runQaJudge } from './qaJudge.js';
 export { startReviewQueueWebSocket } from './queueWebSocket.js';
-export { suggestionFilePath, appendReviewSuggestion } from './suggestions.js';
+export { appendReviewSuggestion } from './suggestions.js';
 export { evaluateVariance, evaluateVarianceBatch } from './varianceEvaluator.js';

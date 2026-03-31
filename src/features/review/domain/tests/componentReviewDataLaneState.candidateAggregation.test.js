@@ -114,7 +114,7 @@ test('component payload aggregates candidates from all linked products for every
     }
   }
 
-  await writeComponentReviewItems(tempRoot, []);
+  writeComponentReviewItems(specDb, []);
 
   const payload = await buildComponentReviewPayloads({
     config,

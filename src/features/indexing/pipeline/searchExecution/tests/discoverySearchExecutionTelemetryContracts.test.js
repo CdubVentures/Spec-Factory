@@ -28,18 +28,9 @@ test('executeSearchQueries emits provider diagnostics even when no queries run',
   assert.equal(result.externalSearchReason, null);
 });
 
-test('executeSearchQueries records searchJournal rows and runtime traces for internet queries', async () => {
-  const traces = [];
-  const runtimeTraceWriter = {
-    writeJson: async ({ section, prefix, payload }) => {
-      traces.push({ section, prefix, payload });
-      return { trace_path: '/tmp/trace.json' };
-    },
-  };
-
+test('executeSearchQueries records searchJournal rows for internet queries', async () => {
   const result = await executeSearchQueries(makeExecutionArgs({
     config: makeConfig({ searchEngines: 'google' }),
-    runtimeTraceWriter,
     queries: ['q1', 'q2'],
     executionQueryLimit: 2,
     providerState: makeProviderState({ provider: 'google', internet_ready: true }),
@@ -51,6 +42,4 @@ test('executeSearchQueries records searchJournal rows and runtime traces for int
   assert.equal(result.searchJournal.length, 2);
   assert.ok(result.searchJournal[0].ts, 'journal entries should have timestamps');
   assert.equal(result.searchJournal[0].provider, 'google');
-  assert.ok(traces.length > 0, 'should write at least one trace');
-  assert.equal(traces[0].section, 'search');
 });

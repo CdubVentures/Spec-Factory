@@ -84,7 +84,6 @@ export async function bootstrapRunProductExecutionState({
   identityLock,
   identityLockStatus,
   runArtifactsBase,
-  traceWriter,
   syncRuntimeOverrides,
   frontierDb,
   specDb = null,
@@ -162,7 +161,6 @@ export async function bootstrapRunProductExecutionState({
     runId,
     roundContext,
     runtimeMode,
-    traceWriter,
     routeMatrixPolicy,
     runtimeOverrides,
     specDb,
@@ -246,7 +244,6 @@ export async function bootstrapRunProductExecutionState({
       requiredFields,
       llmContext,
       frontierDb,
-      traceWriter,
       learningStoreHints,
       planner: null,
       normalizeFieldList: runtimeDeps.normalizeFieldListFn,
@@ -261,26 +258,6 @@ export async function bootstrapRunProductExecutionState({
     config,
     logger,
   });
-
-  // WHY: Write fetch plan snapshot to trace (replaces runPlannerQueueSnapshotPhase)
-  if (traceWriter) {
-    try {
-      await traceWriter.writeJson({
-        section: 'planner',
-        prefix: 'fetch_plan_snapshot',
-        payload: {
-          ts: new Date().toISOString(),
-          total_queued: stats.total_queued,
-          seed_count: stats.seed_count,
-          learning_seed_count: stats.learning_seed_count,
-          approved_count: stats.approved_count,
-          blocked_count: stats.blocked_count,
-          blocked_hosts: stats.blocked_hosts,
-        },
-        ringSize: 20,
-      });
-    } catch { /* swallow trace errors */ }
-  }
 
   return {
     orderedFetchPlan: orderedSources,

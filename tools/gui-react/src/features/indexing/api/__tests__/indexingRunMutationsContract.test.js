@@ -89,7 +89,6 @@ test('start mutation invalidates the full indexlab run-list family for structure
       selectedIndexLabRunId: '',
       clearProcessOutput() {},
       setClearedRunViewId() {},
-      setSelectedLlmTraceId() {},
       clearIndexLabRun(runId) {
         globalThis.__indexingRunMutationsHarness.clearedRunIds.push(runId);
       },

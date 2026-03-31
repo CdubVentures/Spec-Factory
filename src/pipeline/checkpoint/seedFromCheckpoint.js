@@ -2,6 +2,8 @@
 // when the database is lost or needs recovery. All writes are idempotent upserts wrapped
 // in a single transaction for atomicity.
 
+import { cleanVariant, isFabricatedVariant } from '../../features/catalog/identity/identityDedup.js';
+
 function extractHost(url) {
   try { return new URL(String(url || '')).hostname; } catch { return ''; }
 }
@@ -73,6 +75,29 @@ function seedCrawlCheckpoint(specDb, cp) {
       has_screenshot: (src.screenshot_count || 0) > 0,
       crawled_at: createdAt,
     });
+    // WHY: Rebuild url_crawl_ledger from checkpoint sources.
+    if (typeof specDb.upsertUrlCrawlEntry === 'function') {
+      const host = String(src.domain || '') || extractHost(src.url);
+      specDb.upsertUrlCrawlEntry({
+        canonical_url: src.url || '',
+        product_id: run.product_id || '',
+        category,
+        original_url: src.url || '',
+        domain: host,
+        final_url: src.final_url || '',
+        content_hash: src.content_hash,
+        http_status: src.status || 0,
+        elapsed_ms: src.elapsed_ms || 0,
+        fetch_count: src.fetch_count || 1,
+        ok_count: src.ok_count || 0,
+        blocked_count: src.blocked_count || 0,
+        timeout_count: src.timeout_count || 0,
+        first_seen_ts: createdAt,
+        last_seen_ts: createdAt,
+        first_seen_run_id: runId,
+        last_seen_run_id: runId,
+      });
+    }
     sourcesSeeded += 1;
   }
 
@@ -90,14 +115,22 @@ function seedCrawlCheckpoint(specDb, cp) {
 
 function seedProductCheckpoint(specDb, cp) {
   const identity = cp.identity || {};
+  const model = String(identity.model || '').trim();
+  // WHY: Fabricated variants (tokens already in model) must never reach the DB.
+  let variant = cleanVariant(identity.variant);
+  if (variant && isFabricatedVariant(model, variant)) {
+    variant = '';
+  }
 
   specDb.upsertProduct({
     category: cp.category || '',
     product_id: cp.product_id || '',
     brand: identity.brand || '',
-    model: identity.model || '',
-    variant: identity.variant || '',
-    status: 'active',
+    model,
+    variant,
+    status: identity.status || 'active',
+    seed_urls: Array.isArray(identity.seed_urls) ? JSON.stringify(identity.seed_urls) : (identity.seed_urls || null),
+    identifier: identity.identifier || null,
   });
 
   specDb.upsertQueueProduct({

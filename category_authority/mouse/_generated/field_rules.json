@@ -512,8 +512,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -647,8 +646,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -771,8 +769,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -909,8 +906,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1047,8 +1043,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -1175,8 +1170,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1309,8 +1303,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1454,8 +1447,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1635,8 +1627,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -1795,8 +1786,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.coating"
@@ -1946,8 +1936,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -2082,8 +2071,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2209,8 +2197,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.connection"
@@ -2312,7 +2299,7 @@
         "examples": [],
         "group": "Connectivity",
         "guidance_md": null,
-        "input_control": "text",
+        "input_control": "select",
         "label": "Connection",
         "order": 17,
         "placeholder": "unk",
@@ -2359,8 +2346,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.connectivity"
@@ -2509,8 +2495,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -2647,8 +2632,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -2778,8 +2762,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -2906,8 +2889,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3072,8 +3054,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "component_db.encoder"
@@ -3197,8 +3178,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -3324,8 +3304,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3442,8 +3421,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3682,8 +3660,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -3803,8 +3780,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.feet_material"
@@ -3943,8 +3919,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -4072,8 +4047,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.form_factor"
@@ -4215,8 +4189,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.front_flare"
@@ -4357,8 +4330,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -4497,8 +4469,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -4628,8 +4599,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -4762,8 +4732,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -4903,8 +4872,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -5030,8 +4998,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -5157,8 +5124,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.hump"
@@ -5304,8 +5270,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -5335,7 +5300,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "ips",
       "output_shape": "scalar",
       "parse": {
@@ -5393,7 +5358,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Max IPS",
@@ -5449,8 +5414,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -5481,7 +5445,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "lift",
       "output_shape": "list",
       "parse": {
@@ -5557,7 +5521,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "list_editor",
         "label": "Lift-off Distance (LOD)",
@@ -5606,8 +5570,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -5643,7 +5606,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "lift_settings",
       "output_shape": "list",
       "parse": {
@@ -5700,7 +5663,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Lift Settings",
@@ -5749,8 +5712,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.lighting"
@@ -5902,8 +5864,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6065,8 +6026,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "component_db.material"
@@ -6196,8 +6156,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.mcu"
@@ -6334,8 +6293,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6457,8 +6415,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6584,8 +6541,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -6615,7 +6571,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "motion_sync",
       "output_shape": "scalar",
       "parse": {
@@ -6667,7 +6623,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Motion Sync",
@@ -6710,8 +6666,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -6835,8 +6790,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -6866,7 +6820,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "nvidia_reflex",
       "output_shape": "scalar",
       "parse": {
@@ -6918,7 +6872,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "NVIDIA Reflex",
@@ -6961,8 +6915,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -7093,8 +7046,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7220,8 +7172,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -7359,8 +7310,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -7515,8 +7465,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -7641,8 +7590,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -7771,8 +7719,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -7901,8 +7848,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8038,8 +7984,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8160,8 +8105,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -8317,8 +8261,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "component_db.sensor"
@@ -8455,8 +8398,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -8489,7 +8431,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_brand",
       "output_shape": "scalar",
       "parse": {
@@ -8543,7 +8485,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Brand",
@@ -8593,8 +8535,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -8625,7 +8566,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_date",
       "output_shape": "scalar",
       "parse": {
@@ -8679,7 +8620,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Date",
@@ -8728,8 +8669,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8760,7 +8700,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_latency",
       "output_shape": "scalar",
       "parse": {
@@ -8829,7 +8769,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "Sensor Latency",
@@ -8908,8 +8848,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -8939,7 +8878,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_latency_list",
       "output_shape": "list",
       "parse": {
@@ -9018,7 +8957,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "structured_list_editor",
         "label": "Sensor Latency (By Mode)",
@@ -9061,8 +9000,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9093,7 +9031,7 @@
         },
         "related_to": "sensor"
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_link",
       "output_shape": "scalar",
       "parse": {
@@ -9142,7 +9080,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Link",
@@ -9185,8 +9123,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.sensor_type"
@@ -9227,7 +9164,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "sensor_type",
       "output_shape": "scalar",
       "parse": {
@@ -9278,7 +9215,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Sensor Type",
@@ -9322,8 +9259,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.shape"
@@ -9467,8 +9403,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9499,7 +9434,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "shift_latency",
       "output_shape": "scalar",
       "parse": {
@@ -9554,7 +9489,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "number",
         "label": "DPI Shift Latency",
@@ -9602,8 +9537,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9731,8 +9665,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -9858,8 +9791,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -9984,8 +9916,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -10015,7 +9946,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "sensor_performance",
+      "group": "buttons_features",
       "key": "smoothing",
       "output_shape": "scalar",
       "parse": {
@@ -10067,7 +9998,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Sensor & Performance",
+        "group": "Buttons & Features",
         "guidance_md": null,
         "input_control": "text",
         "label": "Smoothing",
@@ -10138,8 +10069,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "component_db.switch"
@@ -10275,8 +10205,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": null
@@ -10410,8 +10339,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -10533,8 +10461,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "data_lists.switch_type"
@@ -10666,19 +10593,18 @@
         "unknown_token": "unk"
       },
       "data_type": "string",
-      "difficulty": "easy",
-      "display_name": "switch_link",
-      "effort": 3,
+      "difficulty": "medium",
+      "display_name": "switches_link",
+      "effort": 5,
       "enum": {
         "match": {
           "strategy": "alias"
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
-        "policy": "open",
+        "policy": "open_prefer_known",
         "source": null
       },
       "evidence": {
@@ -10707,31 +10633,29 @@
           "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
         ]
       },
-      "group": "controls",
+      "group": "unsorted",
       "key": "switches_link",
       "output_shape": "scalar",
       "parse": {
-        "template": "text_field"
+        "template": "url_field"
       },
       "priority": {
         "availability": "sometimes",
         "block_publish_when_unk": false,
-        "difficulty": "easy",
-        "effort": 3,
+        "difficulty": "medium",
+        "effort": 5,
         "publish_gate": false,
-        "required_level": "expected"
+        "required_level": "optional"
       },
-      "required_level": "expected",
+      "required_level": "optional",
       "search_hints": {
-        "availability_bias": "sometimes",
-        "difficulty_bias": "easy",
-        "domain_hints": [
-          "manufacturer",
-          "support",
-          "manual",
-          "pdf"
+        "content_types": [
+          "spec_sheet"
         ],
-        "parse_template": "list_of_tokens_delimited",
+        "domain_hints": [
+          "eloshapes.com",
+          "techpowerup.com"
+        ],
         "preferred_content_types": [
           "support",
           "manual",
@@ -10744,31 +10668,23 @@
           "tier2",
           "tier3"
         ],
-        "priority_weight": 0.75,
-        "query_bias": [
-          "manual",
-          "datasheet",
-          "spec"
-        ],
         "query_templates": [
-          "{brand} {model} {field}",
-          "{brand} {model} specifications {field}",
-          "{brand} {model} manual pdf {field}",
-          "{brand} {model} datasheet {field}"
+          "{brand} {model} switch datasheet specifications"
         ],
         "query_terms": [
-          "Switches Link"
+          "switch datasheet",
+          "switch specifications"
         ]
       },
       "ui": {
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "controls",
+        "group": "Unsorted",
         "guidance_md": null,
         "input_control": "text",
-        "label": "switch_link",
-        "order": 59,
+        "label": "switches_link",
+        "order": 999,
         "placeholder": "unk",
         "prefix": null,
         "short_label": null,
@@ -10807,8 +10723,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -10933,8 +10848,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -11069,8 +10983,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -11217,8 +11130,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open",
         "source": null
@@ -11357,8 +11269,7 @@
         },
         "new_value_policy": {
           "accept_if_evidence": true,
-          "mark_needs_curation": true,
-          "suggestion_target": "_suggestions/enums.json"
+          "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
         "source": "yes_no"
@@ -11458,7 +11369,7 @@
       "unknown_reason_default": "not_found_after_search"
     }
   },
-  "generated_at": "2026-03-09T19:55:27.491Z",
+  "generated_at": "2026-03-31T06:24:22.543Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

@@ -13,10 +13,6 @@ import {
 } from './componentReviewHelpers.js';
 import { buildEnumReviewPayloadsSpecDb } from './enumReviewData.js';
 import { buildComponentReviewPayloadsSpecDb } from './componentReviewSpecDb.js';
-import {
-  buildComponentReviewLayoutLegacy,
-  buildComponentReviewPayloadsLegacy,
-} from './componentReviewLegacy.js';
 
 
 // Re-export resolvePropertyFieldMeta (public API preserved)
@@ -26,7 +22,7 @@ export { resolvePropertyFieldMeta };
 
 export async function buildComponentReviewLayout({ config = {}, category, specDb = null, fieldRules = null }) {
   if (!specDb) {
-    return buildComponentReviewLayoutLegacy({ config, category, fieldRules });
+    return { category, types: [] };
   }
   const typeRows = specDb.getComponentTypeList();
   const componentTypes = [...new Set(
@@ -59,24 +55,16 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
 
 export async function buildComponentReviewPayloads({ config = {}, category, componentType, specDb = null, fieldRules = null, fieldOrderOverride = null }) {
   const reviewFieldRules = projectFieldRulesForConsumer(fieldRules, 'review');
-  let result;
   if (!specDb) {
-    result = await buildComponentReviewPayloadsLegacy({
-      config,
-      category,
-      componentType,
-      specDb,
-      fieldRules: reviewFieldRules,
-    });
-  } else {
-    result = await buildComponentReviewPayloadsSpecDb({
-      config,
-      category,
-      componentType,
-      specDb,
-      fieldRules: reviewFieldRules,
-    });
+    return { category, componentType, items: [], metrics: { total: 0, avg_confidence: 0, flags: 0 } };
   }
+  let result = await buildComponentReviewPayloadsSpecDb({
+    config,
+    category,
+    componentType,
+    specDb,
+    fieldRules: reviewFieldRules,
+  });
   if (Array.isArray(fieldOrderOverride) && fieldOrderOverride.length > 0 && Array.isArray(result?.property_columns)) {
     const orderIndex = new Map(fieldOrderOverride.map((k, i) => [k, i]));
     result.property_columns = [...result.property_columns].sort((a, b) => {

@@ -1,18 +1,14 @@
-import path from 'node:path';
 import { toPosixKey } from '../s3/storage.js';
 import { OUTPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 
-function productIdFromKey(key) {
-  const name = path.posix.basename(key);
-  return name.replace(/\.json$/i, '');
-}
-
 export async function rebuildCategoryIndex({ storage, config, category, specDb = null }) {
-  const inputKeys = await storage.listInputKeys(category);
+  // WHY: SQL is the source of truth for products — no fixture scan needed.
+  const productRows = specDb ? specDb.getAllProducts() : [];
   const rows = [];
 
-  for (const key of inputKeys) {
-    const productId = productIdFromKey(key.replace(/\\/g, '/'));
+  for (const row of productRows) {
+    const productId = String(row.product_id || '').trim();
+    if (!productId) continue;
     const latestSummaryKey = toPosixKey(
       OUTPUT_KEY_PREFIX,
       category,
@@ -27,7 +23,7 @@ export async function rebuildCategoryIndex({ storage, config, category, specDb =
 
     rows.push({
       productId,
-      inputKey: key,
+      inputKey: '',
       latestSummaryKey,
       validated: latestSummary?.validated ?? null,
       reason: latestSummary?.reason ?? null,

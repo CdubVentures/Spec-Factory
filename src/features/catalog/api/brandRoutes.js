@@ -40,8 +40,8 @@ export function registerBrandRoutes(ctx) {
       if (!category || !pid) continue;
       const specDb = resolveSpecDb(category);
       if (!specDb) continue;
-      const catalog = await loadProductCatalog(config, category);
-      const product = catalog.products?.[pid] || null;
+      // WHY: SQL is the source of truth — read product directly from specDb.
+      const product = specDb.getProduct(pid) || null;
       upsertCatalogProductRow(specDb, category, pid, product);
     }
   }

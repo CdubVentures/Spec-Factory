@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Storage Reference</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --cyan: #06b6d4;
+  --gray: #71717a; --gray-s: rgba(113,113,122,0.12);
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+
+/* Header */
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header .subtitle{color:var(--t2);max-width:780px;font-size:0.92rem;margin-bottom:16px}
+.header .meta{display:flex;gap:24px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+
+/* Stats bar */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.stat.sql .n{color:var(--green)}
+.stat.json .n{color:var(--accent)}
+.stat.bin .n{color:var(--amber)}
+.stat.eph .n{color:var(--gray)}
+
+/* Section */
+.section{margin-bottom:56px}
+.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.section-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
+
+/* Tags */
+.tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-sql{background:var(--green-s);color:var(--green)}
+.tag-json{background:var(--accent-s);color:var(--accent)}
+.tag-bin{background:var(--amber-s);color:var(--amber)}
+.tag-eph{background:var(--gray-s);color:var(--gray)}
+.tag-git{background:var(--violet-s);color:var(--violet)}
+.tag-count{background:var(--s2);color:var(--t2)}
+
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden;transition:border-color 0.15s}
+.card:hover{border-color:var(--border-f)}
+.card summary{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;list-style:none;font-size:0.9rem}
+.card summary::-webkit-details-marker{display:none}
+.card summary::after{content:"+";font-size:1.1rem;font-weight:300;color:var(--t3);transition:transform 0.15s;margin-left:8px;flex-shrink:0}
+.card[open] summary::after{content:"\2212"}
+.card-name{font-family:var(--mono);font-weight:600;font-size:0.88rem;letter-spacing:-0.01em}
+.card-body{border-top:1px solid var(--border);padding:16px}
+
+/* Tree diagrams */
+.tree{font-family:var(--mono);font-size:0.82rem;line-height:1.7;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;overflow-x:auto;margin-bottom:16px}
+.tree .comment{color:var(--t3)}
+.tree .sql{color:var(--green)}
+.tree .json{color:var(--accent)}
+.tree .bin{color:var(--amber)}
+.tree .eph{color:var(--gray)}
+.tree .dir{color:var(--text);font-weight:600}
+
+/* Property table */
+.prop-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:8px}
+.prop-table th{text-align:left;padding:6px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)}
+.prop-table td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.prop-table tr:last-child td{border-bottom:none}
+.prop-table .pk{font-family:var(--mono);font-weight:500;color:var(--text);font-size:0.82rem}
+.prop-table .pv{color:var(--t2);font-size:0.8rem}
+
+/* Domain groups */
+.domain-group{margin-bottom:32px}
+.domain-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding-left:2px}
+
+/* Architecture SVG */
+.arch-container{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:32px 24px;margin-bottom:32px;overflow-x:auto;display:flex;justify-content:center}
+
+/* Lifecycle table */
+.lifecycle-table{width:100%;border-collapse:collapse;font-size:0.82rem;background:var(--s1);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.lifecycle-table thead{background:var(--s2)}
+.lifecycle-table th{text-align:left;padding:10px 12px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)}
+.lifecycle-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--t2)}
+.lifecycle-table tr:last-child td{border-bottom:none}
+.lifecycle-table .fname{font-family:var(--mono);color:var(--text);font-weight:500;font-size:0.8rem;white-space:nowrap}
+.lifecycle-table .yes{color:var(--green);font-weight:600}
+.lifecycle-table .no{color:var(--t3)}
+.lifecycle-table .crit{color:var(--rose);font-weight:600}
+
+/* Safety rules */
+.rule-list{list-style:none;padding:0}
+.rule-list li{position:relative;padding:10px 16px 10px 32px;background:var(--s1);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:0.88rem;color:var(--t2)}
+.rule-list li::before{content:"";position:absolute;left:14px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--green)}
+.rule-list li.warn::before{background:var(--rose)}
+.rule-list li code{font-family:var(--mono);color:var(--text);font-size:0.82rem;background:var(--s2);padding:1px 5px;border-radius:4px}
+
+/* Inline code */
+code{font-family:var(--mono);font-size:0.85em}
+
+/* Schema box */
+.schema-box{font-family:var(--mono);font-size:0.8rem;line-height:1.6;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:16px 20px;color:var(--t2);overflow-x:auto;margin-top:8px}
+.schema-box .key{color:var(--accent)}
+.schema-box .str{color:var(--green)}
+.schema-box .comment{color:var(--t3)}
+
+/* DB summary card */
+.db-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:24px}
+.db-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color 0.15s}
+.db-card:hover{border-color:var(--border-f)}
+.db-card h3{font-size:0.95rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.db-card h3 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.db-card .db-path{font-family:var(--mono);font-size:0.78rem;color:var(--t3);margin-bottom:12px}
+.db-card .db-meta{font-size:0.8rem;color:var(--t2);line-height:1.5}
+.db-card .db-meta strong{color:var(--text);font-weight:600}
+
+/* Responsive */
+@media(max-width:768px){
+  .page{padding:24px 16px 64px}
+  .header h1{font-size:1.5rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .tags{gap:4px}
+  .card summary{flex-wrap:wrap;gap:8px}
+  .db-summary{grid-template-columns:1fr}
+  .arch-container svg{max-width:100%;height:auto}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ─────────────────────── HEADER ─────────────────────── -->
+<header class="header">
+  <h1>Spec Factory &mdash; Storage Reference</h1>
+  <p class="subtitle">Complete inventory of all runtime directories, database files, configuration, and artifacts. This documents the completed post-consolidation storage architecture.</p>
+  <div class="meta">
+    <span>Generated 2026-03-30</span>
+    <span>Post-Consolidation Architecture</span>
+  </div>
+</header>
+
+<!-- ─────────────────────── STATS ─────────────────────── -->
+<div class="stats">
+  <div class="stat sql"><div class="n">3</div><div class="l">SQLite Databases</div></div>
+  <div class="stat json"><div class="n">~51</div><div class="l">Category Authority Files</div></div>
+  <div class="stat bin"><div class="n">6</div><div class="l">Runtime File Types</div></div>
+  <div class="stat eph"><div class="n">3</div><div class="l">Checkpoint Types</div></div>
+</div>
+
+<!-- ─────────────────────── ARCHITECTURE OVERVIEW ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Storage Architecture Overview</h2>
+  </div>
+  <p class="section-desc">All persistent and ephemeral data flows through four top-level storage areas. Git-ignored directories hold runtime state; committed directories hold category configuration and fixture seeds.</p>
+
+  <div class="arch-container">
+    <svg viewBox="0 0 900 420" width="900" xmlns="http://www.w3.org/2000/svg" style="font-family:'SF Mono','Cascadia Code','Fira Code','JetBrains Mono',Consolas,monospace">
+      <!-- Background cards -->
+      <rect x="20" y="60" width="200" height="320" rx="10" fill="#18181b" stroke="rgba(34,197,94,0.35)" stroke-width="1.5"/>
+      <rect x="240" y="60" width="200" height="320" rx="10" fill="#18181b" stroke="rgba(59,130,246,0.35)" stroke-width="1.5"/>
+      <rect x="460" y="60" width="200" height="320" rx="10" fill="#18181b" stroke="rgba(245,158,11,0.35)" stroke-width="1.5"/>
+      <rect x="680" y="60" width="200" height="320" rx="10" fill="#18181b" stroke="rgba(113,113,122,0.35)" stroke-width="1.5"/>
+
+      <!-- Title -->
+      <text x="450" y="35" fill="#fafafa" font-size="14" font-weight="700" text-anchor="middle" letter-spacing="-0.02em">Spec Factory Storage Areas</text>
+
+      <!-- Column 1: .workspace/ -->
+      <text x="120" y="90" fill="#22c55e" font-size="11" font-weight="700" text-anchor="middle">.workspace/</text>
+      <text x="120" y="108" fill="#71717a" font-size="8" text-anchor="middle">GIT-IGNORED</text>
+      <rect x="40" y="122" width="160" height="30" rx="5" fill="rgba(34,197,94,0.12)"/>
+      <text x="120" y="141" fill="#22c55e" font-size="9" text-anchor="middle">db/  (SQLite)</text>
+      <rect x="40" y="160" width="160" height="30" rx="5" fill="rgba(245,158,11,0.12)"/>
+      <text x="120" y="179" fill="#f59e0b" font-size="9" text-anchor="middle">runs/  (crawl output)</text>
+      <rect x="40" y="198" width="160" height="30" rx="5" fill="rgba(59,130,246,0.12)"/>
+      <text x="120" y="217" fill="#3b82f6" font-size="9" text-anchor="middle">products/  (checkpoints)</text>
+      <rect x="40" y="236" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
+      <text x="120" y="255" fill="#71717a" font-size="9" text-anchor="middle">output/  (published)</text>
+      <rect x="40" y="274" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
+      <text x="120" y="293" fill="#71717a" font-size="9" text-anchor="middle">crawlee/  (ephemeral)</text>
+      <text x="120" y="335" fill="#a1a1aa" font-size="8" text-anchor="middle">Runtime data root</text>
+      <text x="120" y="350" fill="#a1a1aa" font-size="8" text-anchor="middle">SQLite + crawl artifacts</text>
+      <text x="120" y="365" fill="#a1a1aa" font-size="8" text-anchor="middle">+ product checkpoints</text>
+
+      <!-- Column 2: category_authority/ -->
+      <text x="340" y="90" fill="#3b82f6" font-size="11" font-weight="700" text-anchor="middle">category_authority/</text>
+      <text x="340" y="108" fill="#71717a" font-size="8" text-anchor="middle">COMMITTED</text>
+      <rect x="260" y="122" width="160" height="30" rx="5" fill="rgba(59,130,246,0.12)"/>
+      <text x="340" y="141" fill="#3b82f6" font-size="9" text-anchor="middle">_generated/  (compiled)</text>
+      <rect x="260" y="160" width="160" height="30" rx="5" fill="rgba(59,130,246,0.12)"/>
+      <text x="340" y="179" fill="#3b82f6" font-size="9" text-anchor="middle">_control_plane/</text>
+      <rect x="260" y="198" width="160" height="30" rx="5" fill="rgba(139,92,246,0.12)"/>
+      <text x="340" y="217" fill="#8b5cf6" font-size="9" text-anchor="middle">_overrides/</text>
+      <rect x="260" y="236" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
+      <text x="340" y="255" fill="#71717a" font-size="9" text-anchor="middle">_runtime/  (git-ignored)</text>
+      <text x="340" y="297" fill="#a1a1aa" font-size="8" text-anchor="middle">Category config + generated</text>
+      <text x="340" y="312" fill="#a1a1aa" font-size="8" text-anchor="middle">field rules, component DB,</text>
+      <text x="340" y="327" fill="#a1a1aa" font-size="8" text-anchor="middle">overrides</text>
+
+      <!-- Column 3: fixtures/ -->
+      <text x="560" y="90" fill="#f59e0b" font-size="11" font-weight="700" text-anchor="middle">fixtures/</text>
+      <text x="560" y="108" fill="#71717a" font-size="8" text-anchor="middle">COMMITTED</text>
+      <rect x="480" y="122" width="160" height="30" rx="5" fill="rgba(245,158,11,0.12)"/>
+      <text x="560" y="141" fill="#f59e0b" font-size="9" text-anchor="middle">s3/specs/inputs/</text>
+      <rect x="480" y="160" width="160" height="30" rx="5" fill="rgba(245,158,11,0.12)"/>
+      <text x="560" y="179" fill="#f59e0b" font-size="9" text-anchor="middle">{category}/products/</text>
+      <rect x="480" y="198" width="160" height="30" rx="5" fill="rgba(245,158,11,0.12)"/>
+      <text x="560" y="217" fill="#f59e0b" font-size="9" text-anchor="middle">{productId}.json</text>
+      <text x="560" y="265" fill="#a1a1aa" font-size="8" text-anchor="middle">Product rebuild SSOT</text>
+      <text x="560" y="280" fill="#a1a1aa" font-size="8" text-anchor="middle">Identity + sources + fields</text>
+      <text x="560" y="295" fill="#a1a1aa" font-size="8" text-anchor="middle">.workspace/products/{pid}/</text>
+
+      <!-- Column 4: .server-state/ -->
+      <text x="780" y="90" fill="#71717a" font-size="11" font-weight="700" text-anchor="middle">.server-state/</text>
+      <text x="780" y="108" fill="#71717a" font-size="8" text-anchor="middle">GIT-IGNORED</text>
+      <rect x="700" y="122" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
+      <text x="780" y="141" fill="#71717a" font-size="9" text-anchor="middle">spec-factory-api.pid</text>
+      <rect x="700" y="160" width="160" height="30" rx="5" fill="rgba(113,113,122,0.12)"/>
+      <text x="780" y="179" fill="#71717a" font-size="9" text-anchor="middle">spec-factory-api.log</text>
+      <text x="780" y="230" fill="#a1a1aa" font-size="8" text-anchor="middle">Server process state</text>
+      <text x="780" y="245" fill="#a1a1aa" font-size="8" text-anchor="middle">PID file + log output</text>
+      <text x="780" y="260" fill="#a1a1aa" font-size="8" text-anchor="middle">Ephemeral, auto-created</text>
+
+      <!-- Legend -->
+      <rect x="40" y="392" width="10" height="10" rx="2" fill="rgba(34,197,94,0.3)"/>
+      <text x="56" y="401" fill="#71717a" font-size="8">SQL</text>
+      <rect x="100" y="392" width="10" height="10" rx="2" fill="rgba(59,130,246,0.3)"/>
+      <text x="116" y="401" fill="#71717a" font-size="8">JSON Config</text>
+      <rect x="200" y="392" width="10" height="10" rx="2" fill="rgba(245,158,11,0.3)"/>
+      <text x="216" y="401" fill="#71717a" font-size="8">Binary / Artifacts</text>
+      <rect x="330" y="392" width="10" height="10" rx="2" fill="rgba(113,113,122,0.3)"/>
+      <text x="346" y="401" fill="#71717a" font-size="8">Ephemeral</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ─────────────────────── RUNTIME DATA (.workspace/) ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Runtime Data Directory</h2>
+    <span class="tag tag-eph">Git-Ignored</span>
+  </div>
+  <p class="section-desc">The <code>.workspace/</code> directory is the sole runtime data root. All SQLite databases, crawl output, product checkpoints, and ephemeral scratch data live here. It is fully git-ignored.</p>
+
+  <div class="tree"><span class="dir">.workspace/</span>                          <span class="comment"># Git-ignored runtime root</span>
+  <span class="dir">db/</span>                                <span class="comment"># SQLite databases</span>
+    <span class="sql">app.sqlite</span>                       <span class="comment"># Global: brands, settings, studio_maps (5 tables)</span>
+    <span class="dir">{category}/</span>                      <span class="comment"># Per-category</span>
+      <span class="sql">spec.sqlite</span>                    <span class="comment"># Domain data (53 tables)</span>
+  <span class="dir">runs/</span>                              <span class="comment"># IndexLab run output</span>
+    <span class="dir">{runId}/</span>                         <span class="comment"># Per-run directory</span>
+      <span class="json">run.json</span>                       <span class="comment"># Crawl checkpoint (schema v2/v3, ~50-200KB)</span>
+      <span class="dir">html/</span>                          <span class="comment"># Content-addressed HTML</span>
+        <span class="bin">{hash12}.html.gz</span>             <span class="comment"># Gzipped crawled pages</span>
+      <span class="dir">screenshots/</span>                   <span class="comment"># Page screenshots</span>
+        <span class="bin">{screenshot_id}.jpeg</span>         <span class="comment"># Per-URL screenshots</span>
+      <span class="dir">video/</span>                         <span class="comment"># Crawl recordings</span>
+        <span class="bin">{video_id}.webm</span>              <span class="comment"># Per-worker recordings</span>
+      <span class="dir">traces/</span>                        <span class="comment"># Diagnostic traces (deletable)</span>
+        <span class="eph">llm/call_*.json</span>              <span class="comment"># LLM call traces</span>
+        <span class="eph">search/query_*.json</span>          <span class="comment"># Search query traces</span>
+        <span class="eph">planner/*.json</span>               <span class="comment"># Fetch plan snapshots</span>
+    <span class="dir">{category}/</span>                      <span class="comment"># Per-category intel</span>
+      <span class="dir">_intel/frontier/</span>
+        <span class="sql">frontier.db</span>                  <span class="comment"># Discovery frontier (3 tables)</span>
+  <span class="dir">products/</span>                          <span class="comment"># Product checkpoints</span>
+    <span class="dir">{productId}/</span>
+      <span class="json">product.json</span>                   <span class="comment"># Cross-run accumulator (~10-50KB)</span>
+  <span class="dir">output/</span>                            <span class="comment"># Pipeline output artifacts</span>
+  <span class="dir">crawlee/</span>                           <span class="comment"># Crawlee internal (ephemeral)</span>
+    <span class="eph">key_value_stores/</span>
+    <span class="eph">request_queues/</span></div>
+
+  <div class="domain-group">
+    <div class="domain-label">Database Files</div>
+
+    <details class="card">
+      <summary><span class="card-name">db/app.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">5 tables</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Global application database. Holds brand definitions, user settings, studio map metadata, and cross-category state.</td></tr>
+          <tr><td class="pk">Size range</td><td class="pv">50 KB &ndash; 2 MB</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv"><code>settingsStore</code>, <code>brandStore</code>, <code>studioMapStore</code></td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-seeded from <code>category_authority/_global/brand_registry.json</code> + user re-enters settings</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; survives across runs</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">db/{category}/spec.sqlite</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">53 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Core domain database per category. Products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, crawl metadata, field overrides, and all pipeline state.</td></tr>
+          <tr><td class="pk">Size range</td><td class="pv">500 KB &ndash; 100 MB+ (scales with products and crawl history)</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">17 store modules across the indexing and pipeline features</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable from product seeds + category authority. Accumulated data requires re-running indexing pipeline.</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; primary data store. Back up before destructive operations.</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{category}/_intel/frontier/frontier.db</span><span class="tags"><span class="tag tag-sql">SQL</span><span class="tag tag-count">3 tables</span><span class="tag tag-json">Per-Category</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Discovery frontier database. Tracks URL frontier for need-driven discovery, visited URLs, and domain intelligence across runs.</td></tr>
+          <tr><td class="pk">Size range</td><td class="pv">10 KB &ndash; 5 MB</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv"><code>frontierStore</code> (discovery pipeline)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Rebuilt automatically on next discovery run. Losing it means re-discovering URLs but no data loss.</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Permanent but deletable &mdash; improves discovery efficiency across runs</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Run Output (per-run)</div>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{runId}/run.json</span><span class="tags"><span class="tag tag-json">JSON</span><span class="tag tag-count">~50-200KB</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Crawl checkpoint file. Contains run configuration, crawl state, URL queue status, and phase completion markers. Schema v2/v3.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv"><code>buildCrawlCheckpoint</code> (pipeline checkpoint system)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Not rebuildable directly &mdash; re-run the crawl to regenerate</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Per-run &mdash; kept for run history and checkpoint resume</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{runId}/html/{hash12}.html.gz</span><span class="tags"><span class="tag tag-bin">Binary</span><span class="tag tag-count">2-500KB each</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Content-addressed gzipped HTML pages collected during crawling. The 12-character hash prefix ensures deduplication.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Crawl engine (Crawlee + content pipeline)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable from source URLs</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Per-run &mdash; used for extraction and evidence linking</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{runId}/screenshots/{screenshot_id}.jpeg</span><span class="tags"><span class="tag tag-bin">Binary</span><span class="tag tag-count">50-300KB each</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Page screenshots captured during crawl for visual evidence and GUI proof of phase completion.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Crawl engine (Playwright page capture)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable from source URLs</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Per-run &mdash; linked from evidence records in spec.sqlite</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{runId}/video/{video_id}.webm</span><span class="tags"><span class="tag tag-bin">Binary</span><span class="tag tag-count">1-20MB each</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Screen recording of crawl worker browser sessions. Used for debugging and demonstrating crawl behavior.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Crawl engine (Playwright video recording)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Re-crawlable &mdash; optional, controlled by crawl settings</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Per-run &mdash; deletable without data loss</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">runs/{runId}/traces/</span><span class="tags"><span class="tag tag-eph">Ephemeral</span><span class="tag tag-count">variable</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Diagnostic traces for debugging. Contains LLM call traces (<code>llm/call_*.json</code>), search query traces (<code>search/query_*.json</code>), and fetch plan snapshots (<code>planner/*.json</code>).</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">LLM client, search execution, planner pipeline phases</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Regenerated on next run &mdash; purely diagnostic</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Ephemeral &mdash; safe to delete at any time without data loss</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Product Checkpoints</div>
+
+    <details class="card">
+      <summary><span class="card-name">products/{productId}/product.json</span><span class="tags"><span class="tag tag-json">JSON</span><span class="tag tag-count">~10-50KB</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Cross-run product accumulator. Grows after each pipeline run with field values, evidence, component bindings, and review state. The checkpoint allows runs to resume and accumulate data incrementally.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv"><code>writeProductCheckpoint</code> (pipeline checkpoint system)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Rebuildable from spec.sqlite by querying all accepted candidates and reviews for the product</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; primary checkpoint for incremental pipeline runs</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Ephemeral / Scratch</div>
+
+    <details class="card">
+      <summary><span class="card-name">crawlee/</span><span class="tags"><span class="tag tag-eph">Ephemeral</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Crawlee library internal bookkeeping. Contains <code>key_value_stores/</code> and <code>request_queues/</code> used by the Crawlee framework during active crawl sessions.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Crawlee framework (automatic)</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Auto-created on next crawl &mdash; fully ephemeral</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv">Ephemeral &mdash; safe to delete between runs</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ─────────────────────── CATEGORY AUTHORITY ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Category Authority Structure</h2>
+    <span class="tag tag-git">Committed</span>
+  </div>
+  <p class="section-desc">The <code>category_authority/</code> directory holds all category-specific configuration, compiled metadata, learning data, and overrides. Most subdirectories are committed to git. The <code>_runtime/</code> subdirectory is git-ignored.</p>
+
+  <div class="tree"><span class="dir">category_authority/</span>
+  <span class="dir">mouse/</span>                             <span class="comment"># Per-category (example: mouse)</span>
+    <span class="dir">_generated/</span>                      <span class="comment"># Recompiled on every category-compile</span>
+      <span class="json">_compile_report.json</span>           <span class="comment"># 3.8 KB  &mdash; compilation metadata</span>
+      <span class="json">manifest.json</span>                  <span class="comment"># 1.9 KB  &mdash; SHA256 integrity hashes</span>
+      <span class="json">field_rules.json</span>               <span class="comment"># 301 KB  &mdash; 80 field definitions</span>
+      <span class="json">field_groups.json</span>              <span class="comment"># 5.6 KB  &mdash; 12 semantic groupings</span>
+      <span class="json">ui_field_catalog.json</span>          <span class="comment"># 69 KB   &mdash; UI rendering metadata</span>
+      <span class="json">known_values.json</span>              <span class="comment"># 2.7 KB  &mdash; enumerated values</span>
+      <span class="json">parse_templates.json</span>           <span class="comment"># 12.9 KB &mdash; parsing rules</span>
+      <span class="json">cross_validation_rules.json</span>    <span class="comment"># 1.3 KB  &mdash; business constraints</span>
+      <span class="json">key_migrations.json</span>            <span class="comment"># 356 B   &mdash; field key renames</span>
+      <span class="dir">component_db/</span>
+        <span class="json">encoders.json</span>                <span class="comment"># 8.4 KB  &mdash; 40 encoder entities</span>
+        <span class="json">sensors.json</span>                 <span class="comment"># 56.8 KB &mdash; 116 sensor entities</span>
+        <span class="json">switches.json</span>                <span class="comment"># 34.8 KB &mdash; 106 switch entities</span>
+        <span class="json">materials.json</span>               <span class="comment"># 373 B   &mdash; 3 material entities</span>
+    <span class="dir">_control_plane/</span>
+      <span class="json">product_catalog.json</span>           <span class="comment"># 109 KB  &mdash; product inventory</span>
+      <span class="json">field_studio_map.json</span>          <span class="comment"># 355 KB  &mdash; sheet-to-field mapping</span>
+      <span class="json">rename_log.json</span>                <span class="comment"># 101 KB  &mdash; name change history</span>
+    <span class="dir">_overrides/</span>                      <span class="comment"># Review/publish overrides (~26 files)</span>
+    <span class="json">sources.json</span>                     <span class="comment"># 22 KB   &mdash; seed specification sources</span>
+    <span class="json">spec_seeds.json</span>                  <span class="comment"># Spec seed definitions</span>
+  <span class="dir">_global/</span>
+    <span class="json">brand_registry.json</span>              <span class="comment"># Brand definitions (seeds app.sqlite)</span>
+  <span class="dir">_runtime/</span>                          <span class="comment"># Git-ignored</span>
+    <span class="json">user-settings.json</span>               <span class="comment"># User settings (dual-write with app.sqlite)</span>
+    <span class="dir">snapshots/</span>                       <span class="comment"># Per-run settings (capped at 10)</span>
+      <span class="eph">{timestamp}-{hash}-settings.json</span></div>
+
+  <div class="domain-group">
+    <div class="domain-label">Generated Files (_generated/)</div>
+
+    <details class="card">
+      <summary><span class="card-name">_generated/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">~13 files</span><span class="tag tag-git">Committed</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">File count</td><td class="pv">9 root files + 4 component_db files = 13 files</td></tr>
+          <tr><td class="pk">Total size</td><td class="pv">~495 KB (for mouse category)</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv"><code>category-compile</code> command &mdash; recompiled from source sheets on every compile</td></tr>
+          <tr><td class="pk">Mutable?</td><td class="pv">No &mdash; output only, never hand-edited. Recompile to regenerate.</td></tr>
+          <tr><td class="pk">In SQL?</td><td class="pv">Seeded into spec.sqlite on database initialization (components, enums, field metadata)</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Control Plane (_control_plane/)</div>
+
+    <details class="card">
+      <summary><span class="card-name">_control_plane/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">3 files</span><span class="tag tag-git">Committed</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">File count</td><td class="pv">3 files</td></tr>
+          <tr><td class="pk">Total size</td><td class="pv">~565 KB (for mouse category)</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Pipeline orchestration, product catalog management, field studio mapping</td></tr>
+          <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; <code>product_catalog.json</code> updated when products are added/removed. <code>rename_log.json</code> appended on field renames.</td></tr>
+          <tr><td class="pk">In SQL?</td><td class="pv">Product catalog data also lives in spec.sqlite products table. Studio map data in app.sqlite.</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Overrides</div>
+
+    <details class="card">
+      <summary><span class="card-name">_overrides/</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-count">~26 files</span><span class="tag tag-git">Committed</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">File count</td><td class="pv">~26 override files</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Human review via GUI publish workflow</td></tr>
+          <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; overrides are applied during review/publish</td></tr>
+          <tr><td class="pk">In SQL?</td><td class="pv">Override effects are written to spec.sqlite on publish. Suggestions live in SQL curation_suggestions + component_review_queue tables.</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Global &amp; Runtime</div>
+
+    <details class="card">
+      <summary><span class="card-name">_global/brand_registry.json</span><span class="tags"><span class="tag tag-json">JSON Config</span><span class="tag tag-git">Committed</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">Canonical brand definitions. Seeds the brands table in app.sqlite on initialization.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Manual curation</td></tr>
+          <tr><td class="pk">Mutable?</td><td class="pv">Yes &mdash; edited when new brands are added to the system</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="card-name">_runtime/</span><span class="tags"><span class="tag tag-eph">Git-Ignored</span><span class="tag tag-count">capped</span></span></summary>
+      <div class="card-body">
+        <table class="prop-table">
+          <tr><td class="pk">Purpose</td><td class="pv">User settings (dual-write with app.sqlite) and per-run settings snapshots for auditability.</td></tr>
+          <tr><td class="pk">Written by</td><td class="pv">Settings persistence layer</td></tr>
+          <tr><td class="pk">Retention</td><td class="pv"><code>user-settings.json</code> is permanent. <code>snapshots/</code> is capped at 10 files (oldest auto-pruned).</td></tr>
+          <tr><td class="pk">Rebuild strategy</td><td class="pv">Settings rebuildable from app.sqlite. Snapshots are informational only.</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ─────────────────────── DATABASE FILE DETAILS ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Database File Details</h2>
+    <span class="tag tag-sql">SQL</span>
+  </div>
+  <p class="section-desc">Three SQLite database surfaces serve distinct purposes. All databases use WAL mode for concurrent reads and are managed by dedicated store modules.</p>
+
+  <div class="db-summary">
+    <div class="db-card">
+      <h3><span class="dot" style="background:var(--green)"></span>app.sqlite</h3>
+      <div class="db-path">.workspace/db/app.sqlite</div>
+      <div class="db-meta">
+        <strong>Tables:</strong> 5<br>
+        <strong>Size:</strong> 50 KB &ndash; 2 MB<br>
+        <strong>Scope:</strong> Global (one per installation)<br>
+        <strong>Purpose:</strong> Cross-category state &mdash; brands, user settings, studio field maps, global preferences, and app-level metadata.<br>
+        <strong>Seeded from:</strong> <code>category_authority/_global/brand_registry.json</code>
+      </div>
+    </div>
+
+    <div class="db-card">
+      <h3><span class="dot" style="background:var(--accent)"></span>spec.sqlite</h3>
+      <div class="db-path">.workspace/db/{category}/spec.sqlite</div>
+      <div class="db-meta">
+        <strong>Tables:</strong> 53 (including 1 FTS virtual table)<br>
+        <strong>Size:</strong> 500 KB &ndash; 100 MB+<br>
+        <strong>Scope:</strong> Per-category (one per active category)<br>
+        <strong>Purpose:</strong> All domain data &mdash; products, candidates, components, reviews, evidence, billing, telemetry, sources, crawl metadata, field overrides, pipeline state, and full-text search indexes.<br>
+        <strong>Store modules:</strong> 17 dedicated stores
+      </div>
+    </div>
+
+    <div class="db-card">
+      <h3><span class="dot" style="background:var(--amber)"></span>frontier.db</h3>
+      <div class="db-path">.workspace/runs/{category}/_intel/frontier/frontier.db</div>
+      <div class="db-meta">
+        <strong>Tables:</strong> 3<br>
+        <strong>Size:</strong> 10 KB &ndash; 5 MB<br>
+        <strong>Scope:</strong> Per-category (one per active category)<br>
+        <strong>Purpose:</strong> Discovery frontier tracking &mdash; URL frontier queue, visited URL history, and domain intelligence for need-driven discovery across runs.<br>
+        <strong>Deletable:</strong> Yes &mdash; rebuilt on next discovery run
+      </div>
+    </div>
+  </div>
+
+  <p class="section-desc" style="margin-top:8px">For the complete table-by-table schema with columns, types, indexes, and foreign keys, see <a href="schema-reference.html" style="color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent)">Schema Reference</a>.</p>
+</section>
+
+<!-- ─────────────────────── PRODUCT INPUT FILES ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Product Identity Files</h2>
+    <span class="tag tag-bin">Runtime</span>
+    <span class="tag tag-sql">SQL SSOT</span>
+  </div>
+  <p class="section-desc">Product identity lives in the SQL <code>products</code> table (live SSOT) and <code>.workspace/products/{pid}/product.json</code> (rebuild file). The <code>product_catalog.json</code> in <code>category_authority/</code> is a read-only boot seed. The <code>fixtures/</code> directory has been eliminated.</p>
+
+  <div class="tree"><span class="dir">.workspace/</span>
+  <span class="dir">products/</span>
+    <span class="dir">{productId}/</span>                     <span class="comment"># e.g., mouse-c730517d</span>
+        <span class="json">product.json</span>                 <span class="comment"># Rebuild SSOT — identity + sources + fields</span></div>
+
+  <details class="card" style="margin-top:16px">
+    <summary><span class="card-name">Product Input Schema</span><span class="tags"><span class="tag tag-json">JSON</span><span class="tag tag-count">~1-5KB each</span></span></summary>
+    <div class="card-body">
+      <div class="schema-box">{
+  <span class="key">"product_id"</span>: <span class="str">"mouse-6655dc93"</span>,       <span class="comment">// Unique product identifier</span>
+  <span class="key">"category"</span>:   <span class="str">"mouse"</span>,                 <span class="comment">// Category slug</span>
+  <span class="key">"brand"</span>:      <span class="str">"Razer"</span>,                 <span class="comment">// Brand name</span>
+  <span class="key">"model"</span>:      <span class="str">"DeathAdder V3"</span>,          <span class="comment">// Model name</span>
+  <span class="key">"seed_urls"</span>:  [                          <span class="comment">// Initial discovery URLs</span>
+    <span class="str">"https://www.razer.com/..."</span>,
+    <span class="str">"https://www.rtings.com/..."</span>
+  ],
+  <span class="key">"added_at"</span>:   <span class="str">"2025-11-15T..."</span>          <span class="comment">// When product was added</span>
+}</div>
+      <table class="prop-table" style="margin-top:16px">
+        <tr><td class="pk">Written by</td><td class="pv"><code>writeProductIdentity</code> when a product is added to the system</td></tr>
+        <tr><td class="pk">Mutable?</td><td class="pv">No &mdash; immutable after creation. Seed URLs may be appended but never modified.</td></tr>
+        <tr><td class="pk">Consumed by</td><td class="pv">Pipeline bootstrap (<code>seedFromCheckpoint</code>), product catalog sync</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────── PUBLISHED OUTPUT FILES ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Published Output Files</h2>
+    <span class="tag tag-json">JSON</span>
+    <span class="tag tag-count">~9 files per product</span>
+  </div>
+  <p class="section-desc">The <code>publish</code> command generates the final deliverables for each product. These files are the end output of the entire pipeline &mdash; from crawl through extraction, review, and publication.</p>
+
+  <div class="tree"><span class="dir">.workspace/output/</span>
+  <span class="dir">{category}/</span>
+    <span class="dir">{productId}/</span>
+      <span class="json">current.json</span>                   <span class="comment"># Current published spec (complete)</span>
+      <span class="json">compact.json</span>                   <span class="comment"># Compact format (values only)</span>
+      <span class="json">provenance.json</span>                <span class="comment"># Full evidence chain per field</span>
+      <span class="json">changelog.json</span>                 <span class="comment"># Field-level change history</span>
+      <span class="json">schema_product.jsonld</span>          <span class="comment"># JSON-LD structured data</span>
+      <span class="dir">versions/</span>
+        <span class="json">v*.json</span>                      <span class="comment"># Versioned snapshots</span>
+      <span class="json">_index.json</span>                    <span class="comment"># Product output index</span>
+      <span class="json">_changelog.json</span>                <span class="comment"># Product changelog index</span>
+    <span class="dir">exports/</span>
+      <span class="json">feed.json</span>                      <span class="comment"># Aggregated export feed</span></div>
+
+  <details class="card" style="margin-top:16px">
+    <summary><span class="card-name">Output File Details</span><span class="tags"><span class="tag tag-json">JSON</span></span></summary>
+    <div class="card-body">
+      <table class="prop-table">
+        <tr><td class="pk">Written by</td><td class="pv"><code>publish</code> CLI command / pipeline publish phase</td></tr>
+        <tr><td class="pk">When written</td><td class="pv">On publish &mdash; only after human review and approval of candidate data</td></tr>
+        <tr><td class="pk">Rebuild strategy</td><td class="pv">Fully rebuildable from spec.sqlite accepted candidates + review state</td></tr>
+        <tr><td class="pk">Retention</td><td class="pv">Permanent &mdash; versioned snapshots kept indefinitely</td></tr>
+        <tr><td class="pk">current.json</td><td class="pv">The canonical published specification. Complete field values with metadata.</td></tr>
+        <tr><td class="pk">compact.json</td><td class="pv">Stripped-down format: field keys and values only, no metadata overhead.</td></tr>
+        <tr><td class="pk">provenance.json</td><td class="pv">Full evidence chain for every field value: source URL, snippet, confidence, extraction model.</td></tr>
+        <tr><td class="pk">changelog.json</td><td class="pv">Per-field change history across publish versions.</td></tr>
+        <tr><td class="pk">schema_product.jsonld</td><td class="pv">JSON-LD structured data for search engine and schema.org compatibility.</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────── SERVER STATE ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Server State</h2>
+    <span class="tag tag-eph">Git-Ignored</span>
+  </div>
+  <p class="section-desc">The <code>.server-state/</code> directory holds the API server process state. These files are ephemeral and auto-created on server start.</p>
+
+  <div class="tree"><span class="dir">.server-state/</span>                       <span class="comment"># Git-ignored</span>
+  <span class="eph">spec-factory-api.pid</span>              <span class="comment"># Server process ID (integer)</span>
+  <span class="eph">spec-factory-api.log</span>              <span class="comment"># Server stdout/stderr log output</span></div>
+
+  <details class="card" style="margin-top:16px">
+    <summary><span class="card-name">Server State Details</span><span class="tags"><span class="tag tag-eph">Ephemeral</span></span></summary>
+    <div class="card-body">
+      <table class="prop-table">
+        <tr><td class="pk">Written by</td><td class="pv"><code>serverBootstrap</code> on API server start</td></tr>
+        <tr><td class="pk">PID file</td><td class="pv">Contains the running server&rsquo;s process ID. Used for health checks and graceful shutdown. Invalid after server stops.</td></tr>
+        <tr><td class="pk">Log file</td><td class="pv">Captures server stdout and stderr. Grows during server lifetime. Not rotated &mdash; reset on each server restart.</td></tr>
+        <tr><td class="pk">Retention</td><td class="pv">Ephemeral &mdash; auto-created on start, stale after shutdown, safe to delete at any time.</td></tr>
+        <tr><td class="pk">Rebuild strategy</td><td class="pv">Auto-created &mdash; just restart the server</td></tr>
+      </table>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────── FILE LIFECYCLE & RETENTION ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>File Lifecycle &amp; Retention</h2>
+  </div>
+  <p class="section-desc">Complete inventory of every file type, when it is written, by what module, its retention policy, rebuild strategy, and whether it is critical for system recovery.</p>
+
+  <table class="lifecycle-table">
+    <thead>
+      <tr>
+        <th>File / Path</th>
+        <th>Written By</th>
+        <th>When Written</th>
+        <th>Retention</th>
+        <th>Rebuild From</th>
+        <th>Critical?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="fname">app.sqlite</td>
+        <td>settingsStore, brandStore</td>
+        <td>At boot + on settings change</td>
+        <td>Permanent</td>
+        <td>brand_registry.json + user re-entry</td>
+        <td class="crit">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">spec.sqlite</td>
+        <td>17 store modules</td>
+        <td>At boot + per-run + on review</td>
+        <td>Permanent</td>
+        <td>Re-crawl + re-index from seeds</td>
+        <td class="crit">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">frontier.db</td>
+        <td>frontierStore</td>
+        <td>Per discovery run</td>
+        <td>Permanent (deletable)</td>
+        <td>Auto-rebuilt on next run</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">run.json</td>
+        <td>buildCrawlCheckpoint</td>
+        <td>Per-run (checkpoint writes)</td>
+        <td>Per-run</td>
+        <td>Re-run crawl</td>
+        <td>For resume only</td>
+      </tr>
+      <tr>
+        <td class="fname">{hash}.html.gz</td>
+        <td>Crawl engine</td>
+        <td>Per-crawl (per URL visited)</td>
+        <td>Per-run</td>
+        <td>Re-crawlable</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">{id}.jpeg</td>
+        <td>Playwright capture</td>
+        <td>Per-crawl (per URL visited)</td>
+        <td>Per-run</td>
+        <td>Re-crawlable</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">{id}.webm</td>
+        <td>Playwright recording</td>
+        <td>Per-crawl (per worker)</td>
+        <td>Per-run (optional)</td>
+        <td>Re-crawlable</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">traces/*</td>
+        <td>LLM client, search, planner</td>
+        <td>Per-run (per operation)</td>
+        <td>Ephemeral</td>
+        <td>Regenerated on next run</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">product.json</td>
+        <td>writeProductCheckpoint</td>
+        <td>Per-run (post-pipeline)</td>
+        <td>Permanent</td>
+        <td>From spec.sqlite</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">_generated/*.json</td>
+        <td>category-compile</td>
+        <td>On compile command</td>
+        <td>Permanent (committed)</td>
+        <td>Re-compile from source sheets</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">_control_plane/*.json</td>
+        <td>Pipeline, catalog mgmt</td>
+        <td>On product add/rename</td>
+        <td>Permanent (committed)</td>
+        <td>Manual reconstruction</td>
+        <td class="crit">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">_overrides/*.json</td>
+        <td>GUI publish workflow</td>
+        <td>On human review</td>
+        <td>Permanent (committed)</td>
+        <td>Re-review from spec.sqlite</td>
+        <td class="yes">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">brand_registry.json</td>
+        <td>Manual curation</td>
+        <td>On brand addition</td>
+        <td>Permanent (committed)</td>
+        <td>Manual reconstruction</td>
+        <td class="crit">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">user-settings.json</td>
+        <td>Settings persistence</td>
+        <td>On settings change</td>
+        <td>Permanent (git-ignored)</td>
+        <td>From app.sqlite</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">snapshots/*-settings.json</td>
+        <td>Settings persistence</td>
+        <td>Per-run start</td>
+        <td>Capped at 10</td>
+        <td>Informational only</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">{productId}.json (fixture)</td>
+        <td>writeProductIdentity</td>
+        <td>On product add</td>
+        <td>Permanent (committed)</td>
+        <td>Manual reconstruction</td>
+        <td class="crit">Yes</td>
+      </tr>
+      <tr>
+        <td class="fname">current.json (output)</td>
+        <td>publish command</td>
+        <td>On publish</td>
+        <td>Permanent</td>
+        <td>From spec.sqlite</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">spec-factory-api.pid</td>
+        <td>serverBootstrap</td>
+        <td>At server start</td>
+        <td>Ephemeral</td>
+        <td>Auto-created on restart</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">spec-factory-api.log</td>
+        <td>serverBootstrap</td>
+        <td>During server lifetime</td>
+        <td>Ephemeral</td>
+        <td>Auto-created on restart</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td class="fname">crawlee/*</td>
+        <td>Crawlee framework</td>
+        <td>During active crawl</td>
+        <td>Ephemeral</td>
+        <td>Auto-created on next crawl</td>
+        <td class="no">No</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ─────────────────────── STORAGE SAFETY RULES ─────────────────────── -->
+<section class="section">
+  <div class="section-head">
+    <h2>Storage Safety Rules</h2>
+  </div>
+  <p class="section-desc">These rules are enforced by architecture and documented in CLAUDE.md. Violations are considered bugs.</p>
+
+  <ul class="rule-list">
+    <li><code>.workspace/</code> is the <strong>sole runtime data directory</strong>. All SQLite databases, run output, product checkpoints, and ephemeral scratch data live here.</li>
+    <li><code>category_authority/_runtime/</code> is <strong>git-ignored</strong>. User settings and per-run snapshots are not committed.</li>
+    <li><code>.server-state/</code> is <strong>git-ignored</strong>. Server PID and log files are ephemeral.</li>
+    <li class="warn">No other runtime directories are permitted. Do not create ad-hoc data directories outside the established paths.</li>
+    <li class="warn">The root <code>tmp/</code> directory is <strong>banned and gitignored</strong>. Use OS tmpdir (<code>os.tmpdir()</code>) for throwaway work.</li>
+    <li>JSON files in <code>category_authority/</code> are <strong>configuration only</strong> (immutable at runtime, unless explicitly documented as mutable).</li>
+    <li>No local file "databases" for mutable state (<code>.json</code>, <code>.csv</code>, <code>.txt</code>). Mutable domain state belongs in SQLite.</li>
+    <li><code>_runtime/snapshots/</code> is <strong>capped at 10 files</strong>. Oldest snapshots are auto-pruned by the settings persistence layer.</li>
+    <li>Database files use <strong>WAL mode</strong> for concurrent read access. Do not copy or move database files while the server is running.</li>
+    <li class="warn">Never hand-edit SQLite files directly. All mutations go through store modules with proper transaction handling.</li>
+  </ul>
+</section>
+
+<!-- ─────────────────────── FOOTER ─────────────────────── -->
+<footer style="border-top:1px solid var(--border);padding-top:24px;margin-top:64px;display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:var(--t3)">
+  <span>Spec Factory &mdash; Storage Reference</span>
+  <span>Post-consolidation &middot; 2026-03-30</span>
+</footer>
+
+</div>
+</body>
+</html>

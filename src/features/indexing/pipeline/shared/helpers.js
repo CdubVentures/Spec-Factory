@@ -5,8 +5,6 @@
  * Contains 10 helper functions: 6 pure, 4 with I/O (storage reads/writes).
  */
 import { extractRootDomain } from '../../../../shared/valueNormalizers.js';
-import { toPosixKey } from '../../../../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../../../../shared/storageKeyPrefixes.js';
 import { normalizeHost } from './hostParser.js';
 
 // ---------------------------------------------------------------------------
@@ -92,17 +90,10 @@ export function buildSearchProfileKeys({
   productId,
   runId
 }) {
-  const inputKey = toPosixKey(
-    INPUT_KEY_PREFIX,
-    '_discovery',
-    category,
-    `${runId}.search_profile.json`
-  );
   const runKey = category && productId && runId
     ? storage.resolveOutputKey(category, productId, 'runs', runId, 'analysis', 'search_profile.json')
     : null;
   return {
-    inputKey,
     runKey,
   };
 }
@@ -142,7 +133,7 @@ export function buildQueryAttemptStats(rows = []) {
         attempts: 0,
         result_count: 0,
         providers: [],
-        frontier_cache: false
+        cooldown_skipped: false
       });
     }
     const bucket = byQuery.get(query);
@@ -153,8 +144,8 @@ export function buildQueryAttemptStats(rows = []) {
       bucket.providers.push(provider);
     }
     const reasonCode = String(row?.reason_code || '').trim();
-    if (reasonCode === 'frontier_query_cache') {
-      bucket.frontier_cache = true;
+    if (reasonCode === 'frontier_query_cache' || reasonCode === 'cooldown_skip') {
+      bucket.cooldown_skipped = true;
     }
   }
   return [...byQuery.values()].sort((a, b) => b.result_count - a.result_count || a.query.localeCompare(b.query));

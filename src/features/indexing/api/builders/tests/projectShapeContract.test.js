@@ -233,6 +233,40 @@ describe('projectShape — object_or_empty coercion', () => {
   });
 });
 
+// ── array_or_null coercion ──
+// WHY: Follows existing object_or_null pattern. Absent arrays must be null (not [])
+// so that `??` fallbacks in the GUI work correctly.
+
+describe('projectShape — array_or_null coercion', () => {
+  const SHAPE = Object.freeze([{ key: 'val', coerce: 'array_or_null' }]);
+
+  it('passes through populated array', () => {
+    deepStrictEqual(projectShape({ val: ['a', 'b'] }, SHAPE), { val: ['a', 'b'] });
+  });
+
+  it('passes through empty array', () => {
+    deepStrictEqual(projectShape({ val: [] }, SHAPE), { val: [] });
+  });
+
+  it('returns null for missing key', () => {
+    deepStrictEqual(projectShape({}, SHAPE), { val: null });
+  });
+
+  it('returns null for undefined', () => {
+    deepStrictEqual(projectShape({ val: undefined }, SHAPE), { val: null });
+  });
+
+  it('returns null for null', () => {
+    deepStrictEqual(projectShape({ val: null }, SHAPE), { val: null });
+  });
+
+  it('returns null for non-array types', () => {
+    deepStrictEqual(projectShape({ val: 'string' }, SHAPE), { val: null });
+    deepStrictEqual(projectShape({ val: 42 }, SHAPE), { val: null });
+    deepStrictEqual(projectShape({ val: { a: 1 } }, SHAPE), { val: null });
+  });
+});
+
 // ── passthrough coercion ──
 
 describe('projectShape — passthrough coercion', () => {

@@ -43,6 +43,7 @@ interface FieldRulesState {
   rehydrate: (rules: RuleMap, fieldOrder: string[]) => void;
   reset: () => void;
   clearRenames: () => void;
+  clearEdited: () => void;
 
   updateField: (key: string, path: string, value: unknown) => void;
   addKey: (key: string, rule: FieldRule, afterKey?: string) => void;
@@ -108,6 +109,17 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
     set({ pendingRenames: {} });
   },
 
+  clearEdited: () => {
+    set((state) => {
+      const cleaned: RuleMap = {};
+      for (const [k, rule] of Object.entries(state.editedRules)) {
+        const { _edited: _, ...rest } = rule;
+        cleaned[k] = rest;
+      }
+      return { editedRules: cleaned };
+    });
+  },
+
   updateField: (key, path, value) => {
     set((state) => {
       const next = { ...state.editedRules };
@@ -117,6 +129,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
         key,
         command: createSetFieldValueCommand(path, value),
       });
+      rule._edited = true;
       next[key] = rule;
       return { editedRules: next };
     });

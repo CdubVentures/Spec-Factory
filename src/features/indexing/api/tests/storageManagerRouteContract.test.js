@@ -36,11 +36,6 @@ function buildMockCtx(overrides = {}) {
       const run = runs.find(r => r.run_id === runId);
       return run ? `/fake/path/${runId}/indexlab` : '';
     },
-    runDataStorageState: {
-      enabled: true,
-      destinationType: 'local',
-      localDirectory: '/fake/storage',
-    },
     indexLabRoot: '/fake/indexlab',
     outputRoot: '/fake/output',
     storage: null,

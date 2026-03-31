@@ -463,9 +463,6 @@ export async function callLlmWithRouting({
       ...usageContext,
       reason,
       route_role: resolvedRole,
-      developer_mode: usageContext?.developer_mode !== undefined
-        ? Boolean(usageContext.developer_mode)
-        : Boolean(config?.runtimeTraceLlmPayloads),
       model_token_profile_map: config?.llmModelOutputTokenMap || {},
       default_output_token_cap: primaryTokenCap,
       deepseek_default_max_output_tokens: 8192

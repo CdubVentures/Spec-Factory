@@ -6,7 +6,6 @@ export {
   resolveCategoryRoot,
   resolveGeneratedRoot,
   resolveControlPlaneRoot,
-  resolveSuggestionsRoot,
   resolveOverridesRoot,
   resolveComponentOverridesRoot
 } from './compilePaths.js';

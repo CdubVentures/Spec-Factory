@@ -21,17 +21,17 @@
 | browser | 12 | Crawlee settings, auto-scroll, robots.txt, concurrency |
 | adapter | 2 | Fetcher adapter selection and plugins |
 | screenshots | 6 | Page capture format, quality, selectors |
-| observability | 4 | Tracing, event logging |
+| observability | 2 | Tracing, event logging |
 | schema | 1 | Pipeline Zod checkpoint validation mode |
 | models | 8 | Model selection, token caps, reasoning config |
 | limits | 5 | Costs, timeout, JSON overrides |
 | provider | 6 | Provider URLs, API keys |
 | (internal) | 6 | LLM token/budget knobs with no GUI section |
-| **RUNTIME subtotal** | **99** | |
+| **RUNTIME subtotal** | **97** | |
 | BOOTSTRAP (env-only) | 3 | Read once at startup — phase overrides, registry, paths |
 | STORAGE | 10 | Persistent storage destination (local / S3) |
 | UI | 5 | Auto-save toggles |
-| **TOTAL** | **117** | |
+| **TOTAL** | **115** | |
 
 ---
 
@@ -39,11 +39,11 @@
 
 | Registry | Count | Scope |
 |---|---|---|
-| `RUNTIME_SETTINGS_REGISTRY` | 99 | Pipeline runtime config (env vars, route API, GUI) |
+| `RUNTIME_SETTINGS_REGISTRY` | 97 | Pipeline runtime config (env vars, route API, GUI) |
 | `BOOTSTRAP_ENV_REGISTRY` | 3 | Environment-only settings read once at startup |
 | `UI_SETTINGS_REGISTRY` | 5 | Auto-save UI toggles |
 | `STORAGE_SETTINGS_REGISTRY` | 10 | Persistent artifact storage |
-| **TOTAL** | **117** | |
+| **TOTAL** | **115** | |
 
 ---
 
@@ -82,7 +82,7 @@
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
 | `categoryAuthorityRoot` | string | category_authority | — | `CATEGORY_AUTHORITY_ROOT` |
-| `localInputRoot` | string | fixtures/s3 | — | `LOCAL_INPUT_ROOT` |
+| `localInputRoot` | string | .workspace | — | `LOCAL_INPUT_ROOT` |
 | `localOutputRoot` | string | "" | — | — |
 | `runtimeControlFile` | string | _runtime/control/runtime_overrides.json | — | `RUNTIME_CONTROL_FILE` |
 | `runtimeEventsKey` | string | _runtime/events.jsonl | — | `RUNTIME_EVENTS_KEY` |
@@ -214,14 +214,12 @@
 
 ---
 
-## Observability (4 knobs)
+## Observability (2 knobs)
 
 | Key | Type | Default | Range | Env Var |
 |---|---|---|---|---|
 | `eventsJsonWrite` | bool | true | — | `EVENTS_JSON_WRITE` |
 | `runtimeScreencastEnabled` | bool | true | — | `RUNTIME_SCREENCAST_ENABLED` |
-| `runtimeTraceEnabled` | bool | true | — | `RUNTIME_TRACE_ENABLED` |
-| `runtimeTraceLlmPayloads` | bool | true | — | `RUNTIME_TRACE_LLM_PAYLOADS` |
 
 ---
 

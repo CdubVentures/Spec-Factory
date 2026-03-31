@@ -91,6 +91,7 @@ export function useStudioPageDocsController({
     category,
     onStudioDocsSaved: () => {
       fieldRulesActions.clearRenames();
+      fieldRulesActions.clearEdited();
       invalidateFieldRulesQueries(queryClient, category);
     },
   });

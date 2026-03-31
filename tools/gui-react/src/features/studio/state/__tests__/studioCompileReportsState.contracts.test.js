@@ -31,8 +31,8 @@ test('studio compile reports state keeps running, failed, and completion badges 
       validateBadgeLabel: 'Validation idle',
       validateBadgeClass:
         'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
-      artifactProgressLabel: 'Artifacts 1 of 10',
-      artifactProgressPercent: 10,
+      artifactProgressLabel: 'Artifacts 1 of 9',
+      artifactProgressPercent: 11,
     },
   );
 
@@ -60,7 +60,7 @@ test('studio compile reports state keeps running, failed, and completion badges 
       validateBadgeLabel: 'Validation idle',
       validateBadgeClass:
         'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
-      artifactProgressLabel: 'Artifacts 0 of 10',
+      artifactProgressLabel: 'Artifacts 0 of 1',
       artifactProgressPercent: 0,
     },
   );
@@ -89,7 +89,7 @@ test('studio compile reports state keeps running, failed, and completion badges 
         'sf-border-default sf-bg-surface-soft sf-text-muted dark:sf-border-default sf-dk-surface-900a30 dark:sf-text-subtle',
       validateBadgeLabel: 'Validation complete',
       validateBadgeClass: 'sf-callout sf-callout-success',
-      artifactProgressLabel: 'Artifacts 0 of 10',
+      artifactProgressLabel: 'Artifacts 0 of 1',
       artifactProgressPercent: 0,
     },
   );

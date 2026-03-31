@@ -34,14 +34,14 @@ function mapSource(result) {
  * @param {{ crawlResults: Array, runId: string, category: string, productId: string, s3Key: string, startMs: number, fetchPlanStats?: object, needset?: object, searchProfile?: object, runSummary?: object, status?: string, identityLock?: object }} opts
  * @returns {object} Run checkpoint manifest (run.json)
  */
-export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, status, identityLock } = {}) {
+export function buildCrawlCheckpoint({ crawlResults, runId, category, productId, s3Key, startMs, fetchPlanStats, needset, searchProfile, runSummary, status, identityLock, runtimeOpsPanels } = {}) {
   const results = Array.isArray(crawlResults) ? crawlResults : [];
   const sources = results.map(mapSource);
   const stats = fetchPlanStats || {};
   const id = identityLock || {};
 
   return {
-    schema_version: 2,
+    schema_version: runtimeOpsPanels ? 3 : 2,
     checkpoint_type: 'crawl',
     created_at: new Date().toISOString(),
     run: {
@@ -82,5 +82,6 @@ export function buildCrawlCheckpoint({ crawlResults, runId, category, productId,
     needset: needset || null,
     search_profile: searchProfile || null,
     run_summary: runSummary || null,
+    ...(runtimeOpsPanels ? { runtime_ops_panels: runtimeOpsPanels } : {}),
   };
 }

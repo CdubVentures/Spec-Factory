@@ -64,6 +64,10 @@ function createHarness(overrides = {}) {
         harness.fieldRulesStore.pendingRenames = {};
         harness.needsRerender = true;
       },
+      clearEdited() {
+        harness.storeCalls.push({ kind: 'clearEdited' });
+        harness.needsRerender = true;
+      },
       getSnapshot() {
         return {
           rules: harness.fieldRulesStore.editedRules,
@@ -307,6 +311,7 @@ test('useStudioPageDocsController opens an authority conflict when the server ve
       rehydrate() {},
       reset() {},
       clearRenames() {},
+      clearEdited() {},
       getSnapshot() {
         return {
           rules: harness.fieldRulesStore.editedRules,
@@ -385,6 +390,9 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
       reset() {},
       clearRenames() {
         harness.storeCalls.push({ kind: 'clearRenames' });
+      },
+      clearEdited() {
+        harness.storeCalls.push({ kind: 'clearEdited' });
       },
       getSnapshot() {
         return {

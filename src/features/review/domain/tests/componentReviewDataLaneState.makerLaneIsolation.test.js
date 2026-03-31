@@ -69,7 +69,7 @@ test('component payload isolates same-name lanes by maker for linked-product can
     linkAndSeedCandidates(productId, makerB, 65);
   }
 
-  await writeComponentReviewItems(tempRoot, [
+  writeComponentReviewItems(specDb, [
     {
       review_id: 'rv_switch_omron',
       category: CATEGORY,

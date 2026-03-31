@@ -2,7 +2,6 @@ export const SETTINGS_PROPAGATION_STORAGE_KEY = 'spec-factory:settings-propagati
 
 export const SETTINGS_PROPAGATION_DOMAINS = Object.freeze([
   'runtime',
-  'storage',
   'ui',
   'llm',
   'source-strategy',

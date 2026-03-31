@@ -1,15 +1,28 @@
 {
   "category": "mouse",
-  "generated_at": "2026-03-09T19:55:27.491Z",
+  "generated_at": "2026-03-31T06:24:22.543Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
+      "ips",
+      "lift",
+      "lift_settings",
       "middle_buttons",
+      "motion_sync",
+      "nvidia_reflex",
       "onboard_memory",
       "onboard_memory_value",
       "profile_switching",
       "programmable_buttons",
+      "sensor_brand",
+      "sensor_date",
+      "sensor_latency",
+      "sensor_latency_list",
+      "sensor_link",
+      "sensor_type",
+      "shift_latency",
       "side_buttons",
+      "smoothing",
       "tilt_scroll_wheel"
     ],
     "connectivity": [
@@ -33,8 +46,7 @@
       "weight"
     ],
     "controls": [
-      "switch_life_span",
-      "switches_link"
+      "switch_life_span"
     ],
     "dimensions": [
       "height",
@@ -78,21 +90,8 @@
       "dpi",
       "flawless_sensor",
       "hardware_acceleration",
-      "ips",
-      "lift",
-      "lift_settings",
-      "motion_sync",
-      "nvidia_reflex",
       "polling_rate",
-      "sensor",
-      "sensor_brand",
-      "sensor_date",
-      "sensor_latency",
-      "sensor_latency_list",
-      "sensor_link",
-      "sensor_type",
-      "shift_latency",
-      "smoothing"
+      "sensor"
     ],
     "switches": [
       "click_force",
@@ -103,20 +102,36 @@
       "switch",
       "switch_brand",
       "switch_type"
+    ],
+    "unsorted": [
+      "switches_link"
     ]
   },
   "groups": [
     {
-      "count": 8,
+      "count": 21,
       "display_name": "Buttons & Features",
       "field_keys": [
         "adjustable_scroll_wheel",
+        "ips",
+        "lift",
+        "lift_settings",
         "middle_buttons",
+        "motion_sync",
+        "nvidia_reflex",
         "onboard_memory",
         "onboard_memory_value",
         "profile_switching",
         "programmable_buttons",
+        "sensor_brand",
+        "sensor_date",
+        "sensor_latency",
+        "sensor_latency_list",
+        "sensor_link",
+        "sensor_type",
+        "shift_latency",
         "side_buttons",
+        "smoothing",
         "tilt_scroll_wheel"
       ],
       "group_key": "buttons_features"
@@ -152,11 +167,10 @@
       "group_key": "construction"
     },
     {
-      "count": 2,
+      "count": 1,
       "display_name": "controls",
       "field_keys": [
-        "switch_life_span",
-        "switches_link"
+        "switch_life_span"
       ],
       "group_key": "controls"
     },
@@ -223,28 +237,15 @@
       "group_key": "general"
     },
     {
-      "count": 19,
+      "count": 6,
       "display_name": "Sensor & Performance",
       "field_keys": [
         "acceleration",
         "dpi",
         "flawless_sensor",
         "hardware_acceleration",
-        "ips",
-        "lift",
-        "lift_settings",
-        "motion_sync",
-        "nvidia_reflex",
         "polling_rate",
-        "sensor",
-        "sensor_brand",
-        "sensor_date",
-        "sensor_latency",
-        "sensor_latency_list",
-        "sensor_link",
-        "sensor_type",
-        "shift_latency",
-        "smoothing"
+        "sensor"
       ],
       "group_key": "sensor_performance"
     },
@@ -262,6 +263,14 @@
         "switch_type"
       ],
       "group_key": "switches"
+    },
+    {
+      "count": 1,
+      "display_name": "Unsorted",
+      "field_keys": [
+        "switches_link"
+      ],
+      "group_key": "unsorted"
     }
   ],
   "version": 1

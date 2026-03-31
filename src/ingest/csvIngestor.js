@@ -1,8 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { toPosixKey } from '../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
 import { nowIso, buildProductId } from '../shared/primitives.js';
 import { upsertQueueProduct } from '../queue/queueState.js';
 
@@ -235,18 +233,11 @@ export async function ingestCsvFile({
   }
 
   for (const job of jobs) {
-    const s3key = toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${job.productId}.json`);
-    await storage.writeObject(
-      s3key,
-      Buffer.from(JSON.stringify(job, null, 2), 'utf8'),
-      { contentType: 'application/json' }
-    );
-
     await upsertQueueProduct({
       storage,
       category,
       productId: job.productId,
-      s3key,
+      s3key: '',
       patch: {
         status: 'pending',
         next_action_hint: 'fast_pass'
@@ -284,7 +275,7 @@ export async function ingestCsvFile({
     invalid_rows: invalidRows,
     jobs: jobs.map((job) => ({
       productId: job.productId,
-      s3key: toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${job.productId}.json`)
+      s3key: ''
     }))
   };
 }

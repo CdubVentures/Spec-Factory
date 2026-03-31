@@ -5,9 +5,6 @@ import { createReviewCandidateRuntime } from '../reviewCandidateRuntime.js';
 
 function createReviewCandidateRuntimeHarness(overrides = {}) {
   return createReviewCandidateRuntime({
-    componentReviewPath: () => 'component_review.json',
-    safeReadJson: async () => ({}),
-    fs: { writeFile: async () => {} },
     getSpecDb: () => null,
     config: {},
     normalizePathToken: (value) => String(value || '').trim(),

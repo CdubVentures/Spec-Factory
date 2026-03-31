@@ -12,11 +12,6 @@ function createMockStorage(files = {}) {
   const store = new Map(Object.entries(files));
   return {
     store,
-    async listInputKeys(category) {
-      return [...store.keys()]
-        .filter(k => k.startsWith(`specs/inputs/${category}/products/`) && k.endsWith('.json'))
-        .sort();
-    },
     async readJsonOrNull(key) {
       const data = store.get(key);
       return data ? JSON.parse(JSON.stringify(data)) : null;
@@ -39,9 +34,6 @@ function createMockStorage(files = {}) {
     resolveOutputKey(...parts) {
       return ['specs/outputs', ...parts].join('/');
     },
-    resolveInputKey(...parts) {
-      return ['specs/inputs', ...parts].join('/');
-    }
   };
 }
 
@@ -54,6 +46,17 @@ function makeProduct(productId, brand, model, variant, extra = {}) {
     anchors: {},
     ...extra
   };
+}
+
+// WHY: scanOrphans now reads from specDb.getAllProducts() instead of fixture files.
+function mockSpecDbFromProducts(products) {
+  const rows = Object.values(products).map((p) => ({
+    product_id: p.productId,
+    brand: p.identityLock?.brand || '',
+    model: p.identityLock?.model || '',
+    variant: p.identityLock?.variant || '',
+  }));
+  return { getAllProducts: () => rows };
 }
 
 function makeQueueState(category, productIds) {
@@ -71,16 +74,16 @@ function makeQueueState(category, productIds) {
 // --- scanOrphans ---
 
 test('scanOrphans: detects fabricated variants as orphans when canonical exists', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
-      makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310', {
-        seed: { source: 'field_studio' }
-      })
-  });
+  const products = {
+    'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310', {
+      seed: { source: 'field_studio' }
+    }),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.total_scanned, 2);
   assert.equal(result.canonical_count, 1);
@@ -92,13 +95,13 @@ test('scanOrphans: detects fabricated variants as orphans when canonical exists'
 });
 
 test('scanOrphans: fabricated variant WITHOUT canonical is a warning, not orphan', async () => {
-  const storage = createMockStorage({
-    // Only the fabricated version exists, no canonical
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310')
-  });
+  const products = {
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.orphan_count, 0);
   assert.equal(result.warning_count, 1);
@@ -106,14 +109,14 @@ test('scanOrphans: fabricated variant WITHOUT canonical is a warning, not orphan
 });
 
 test('scanOrphans: real variants are NOT flagged', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json':
-      makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', ''),
-    'specs/inputs/mouse/products/mouse-razer-viper-v3-pro-wireless.json':
-      makeProduct('mouse-razer-viper-v3-pro-wireless', 'Razer', 'Viper V3 Pro', 'Wireless')
-  });
+  const products = {
+    'mouse-razer-viper-v3-pro': makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', ''),
+    'mouse-razer-viper-v3-pro-wireless': makeProduct('mouse-razer-viper-v3-pro-wireless', 'Razer', 'Viper V3 Pro', 'Wireless'),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.canonical_count, 2);
   assert.equal(result.orphan_count, 0);
@@ -121,32 +124,30 @@ test('scanOrphans: real variants are NOT flagged', async () => {
 });
 
 test('scanOrphans: empty variant products are canonical', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-logitech-g-pro-x-superlight-2.json':
-      makeProduct('mouse-logitech-g-pro-x-superlight-2', 'Logitech', 'G Pro X Superlight 2', '')
-  });
+  const products = {
+    'mouse-logitech-g-pro-x-superlight-2': makeProduct('mouse-logitech-g-pro-x-superlight-2', 'Logitech', 'G Pro X Superlight 2', ''),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.canonical_count, 1);
   assert.equal(result.orphan_count, 0);
 });
 
 test('scanOrphans: multiple orphans detected in batch', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
-      makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
-    'specs/inputs/mouse/products/mouse-alienware-pro.json':
-      makeProduct('mouse-alienware-pro', 'Alienware', 'Pro', ''),
-    'specs/inputs/mouse/products/mouse-alienware-pro-pro.json':
-      makeProduct('mouse-alienware-pro-pro', 'Alienware', 'Pro', 'Pro'),
-    'specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json':
-      makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', '')
-  });
+  const products = {
+    'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+    'mouse-alienware-pro': makeProduct('mouse-alienware-pro', 'Alienware', 'Pro', ''),
+    'mouse-alienware-pro-pro': makeProduct('mouse-alienware-pro-pro', 'Alienware', 'Pro', 'Pro'),
+    'mouse-razer-viper-v3-pro': makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', ''),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.total_scanned, 5);
   assert.equal(result.canonical_count, 3);
@@ -160,7 +161,8 @@ test('scanOrphans: multiple orphans detected in batch', async () => {
 
 test('scanOrphans: handles empty category gracefully', async () => {
   const storage = createMockStorage({});
-  const result = await scanOrphans({ storage, category: 'mouse' });
+  const specDb = mockSpecDbFromProducts({});
+  const result = await scanOrphans({ storage, category: 'mouse', specDb });
 
   assert.equal(result.total_scanned, 0);
   assert.equal(result.orphan_count, 0);
@@ -200,20 +202,20 @@ test('scanOrphans: uses canonical source when categoryAuthorityRoot is provided'
     }
   }, null, 2), 'utf8');
 
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
-      makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
-    'specs/inputs/mouse/products/mouse-unknown-brand-x1.json':
-      makeProduct('mouse-unknown-brand-x1', 'Unknown', 'Brand X1', '')
-  });
+  const products = {
+    'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+    'mouse-unknown-brand-x1': makeProduct('mouse-unknown-brand-x1', 'Unknown', 'Brand X1', ''),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
   try {
     const result = await scanOrphans({
       storage,
       category: 'mouse',
-      config: { categoryAuthorityRoot: helperRoot }
+      config: { categoryAuthorityRoot: helperRoot },
+      specDb,
     });
 
     assert.equal(result.canonical_source, 'product_catalog');
@@ -230,21 +232,19 @@ test('scanOrphans: uses canonical source when categoryAuthorityRoot is provided'
 // --- reconcileOrphans ---
 
 test('reconcileOrphans: dry-run mode does NOT delete anything', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
-      makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310')
-  });
+  const products = {
+    'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: true });
+  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: true, specDb });
 
   assert.equal(result.dry_run, true);
   assert.equal(result.orphan_count, 1);
   assert.equal(result.deleted_count, 0);
   assert.equal(result.deleted[0].would_delete, true);
-  // File still exists
-  assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-acer-cestus-310-310.json'));
 });
 
 test('reconcileOrphans: live mode deletes orphan files', async () => {
@@ -252,37 +252,32 @@ test('reconcileOrphans: live mode deletes orphan files', async () => {
     'mouse-acer-cestus-310',
     'mouse-acer-cestus-310-310'
   ]);
-
+  const products = {
+    'mouse-acer-cestus-310': makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+  };
   const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-acer-cestus-310.json':
-      makeProduct('mouse-acer-cestus-310', 'Acer', 'Cestus 310', ''),
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
-    // Modern queue state key: _queue/<category>/state.json
     '_queue/mouse/state.json': queueState
   });
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false });
+  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false, specDb });
 
   assert.equal(result.dry_run, false);
   assert.equal(result.orphan_count, 1);
   assert.equal(result.deleted_count, 1);
   assert.equal(result.deleted[0].productId, 'mouse-acer-cestus-310-310');
   assert.equal(result.queue_cleaned, 1);
-
-  // Orphan file deleted
-  assert.ok(!storage.store.has('specs/inputs/mouse/products/mouse-acer-cestus-310-310.json'));
-  // Canonical still exists
-  assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-acer-cestus-310.json'));
 });
 
 test('reconcileOrphans: no orphans returns clean report', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json':
-      makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', '')
-  });
+  const products = {
+    'mouse-razer-viper-v3-pro': makeProduct('mouse-razer-viper-v3-pro', 'Razer', 'Viper V3 Pro', ''),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false });
+  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false, specDb });
 
   assert.equal(result.orphan_count, 0);
   assert.equal(result.deleted_count, 0);
@@ -290,35 +285,32 @@ test('reconcileOrphans: no orphans returns clean report', async () => {
 });
 
 test('reconcileOrphans: warnings are reported but not deleted', async () => {
-  const storage = createMockStorage({
-    // Fabricated variant but NO canonical — should be a warning, not deleted
-    'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json':
-      makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310')
-  });
+  const products = {
+    'mouse-acer-cestus-310-310': makeProduct('mouse-acer-cestus-310-310', 'Acer', 'Cestus 310', '310'),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false });
+  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false, specDb });
 
   assert.equal(result.orphan_count, 0);
   assert.equal(result.warning_count, 1);
   assert.equal(result.deleted_count, 0);
-  // File still exists — warnings are NOT deleted
-  assert.ok(storage.store.has('specs/inputs/mouse/products/mouse-acer-cestus-310-310.json'));
 });
 
 test('reconcileOrphans: Redragon Woki M994 real-world case', async () => {
-  const storage = createMockStorage({
-    'specs/inputs/mouse/products/mouse-redragon-woki-m994.json':
-      makeProduct('mouse-redragon-woki-m994', 'Redragon', 'Woki M994', ''),
-    'specs/inputs/mouse/products/mouse-redragon-woki-m994-m994.json':
-      makeProduct('mouse-redragon-woki-m994-m994', 'Redragon', 'Woki M994', 'M994', {
-        seed: { source: 'field_studio', field_studio_source_path: 'C:\\old\\path\\mouseData.xlsm' }
-      })
-  });
+  const products = {
+    'mouse-redragon-woki-m994': makeProduct('mouse-redragon-woki-m994', 'Redragon', 'Woki M994', ''),
+    'mouse-redragon-woki-m994-m994': makeProduct('mouse-redragon-woki-m994-m994', 'Redragon', 'Woki M994', 'M994', {
+      seed: { source: 'field_studio', field_studio_source_path: 'C:\\old\\path\\mouseData.xlsm' }
+    }),
+  };
+  const storage = createMockStorage({});
+  const specDb = mockSpecDbFromProducts(products);
 
-  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false });
+  const result = await reconcileOrphans({ storage, category: 'mouse', dryRun: false, specDb });
 
   assert.equal(result.orphan_count, 1);
   assert.equal(result.deleted_count, 1);
   assert.equal(result.deleted[0].productId, 'mouse-redragon-woki-m994-m994');
-  assert.ok(!storage.store.has('specs/inputs/mouse/products/mouse-redragon-woki-m994-m994.json'));
 });

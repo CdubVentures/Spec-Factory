@@ -205,13 +205,23 @@ async function ensurePhase1Artifacts({ category, generatedRoot }) {
     });
   }
   artifacts.sort((a, b) => a.path.localeCompare(b.path));
+  // WHY: source_map_hash lets the session cache compare content instead of
+  // timestamps when deciding if compiled artifacts are stale.
+  let sourceMapHash = null;
+  try {
+    const { hashJson } = await import('../ingest/compileUtils.js');
+    const mapPath = path.join(path.dirname(generatedRoot), '_control_plane', 'field_studio_map.json');
+    const mapContent = await readJsonIfExists(mapPath);
+    if (mapContent) sourceMapHash = hashJson(mapContent);
+  } catch { /* best-effort */ }
   await writeJsonStable(manifestPath, {
     version: 1,
     category,
     generated_at: new Date().toISOString(),
     algorithm: 'sha256',
     artifact_count: artifacts.length,
-    artifacts
+    artifacts,
+    source_map_hash: sourceMapHash,
   });
 
   return {

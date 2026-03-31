@@ -195,7 +195,7 @@ describe('sessionCache', () => {
     assert.deepEqual(result.cleanFieldOrder, ['dpi_max', 'polling_rate', 'weight']);
   });
 
-  it('compileStale is true when map docs are newer than compiled manifest', async () => {
+  it('compileStale is true when map was saved after compile', async () => {
     const deps = makeDeps({
       manifest: { generated_at: '2026-02-19T12:00:00.000Z' },
       mapMtimeIso: '2026-02-20T12:00:00.000Z',
@@ -208,7 +208,7 @@ describe('sessionCache', () => {
     assert.equal(result.mapSavedAt, '2026-02-20T12:00:00.000Z');
   });
 
-  it('compileStale is false when compiled manifest is newer than map docs', async () => {
+  it('compileStale is false when compile is newer than map save', async () => {
     const deps = makeDeps({
       manifest: { generated_at: '2026-02-21T12:00:00.000Z' },
       mapMtimeIso: '2026-02-20T12:00:00.000Z',

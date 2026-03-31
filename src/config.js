@@ -55,11 +55,8 @@ export function loadConfigWithUserSettings(overrides = {}) {
   }
 
   // Fallback: CLI usage or snapshot read failure
-  const helperRoot = String(
-    config.categoryAuthorityRoot || 'category_authority'
-  ).trim();
   try {
-    const userSettings = loadUserSettingsSync({ categoryAuthorityRoot: helperRoot });
+    const userSettings = loadUserSettingsSync();
     applyRuntimeSettingsToConfig(config, userSettings.runtime);
   } catch { /* best-effort — CLI may run without persisted settings */ }
   return config;

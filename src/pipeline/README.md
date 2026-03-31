@@ -15,8 +15,6 @@ Product indexing pipeline orchestrator: coordinates the full crawl → learn →
 - `seams/bootstrapRunProductExecutionState.js` → prepare execution state (planner, LLM runtime, learning stores)
 - `urlQualityGate.js` → `isLowValueHost`
 - `dedupeOutcomeEvent.js` → `dedupeOutcomeToEventKey`, `buildDedupeOutcomeEvent`
-- `componentReviewBatch.js` → `runComponentReviewBatch`
-
 ## Dependencies (Allowed Imports)
 
 - `src/core/*` (config, LLM client)

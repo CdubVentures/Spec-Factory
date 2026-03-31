@@ -171,7 +171,6 @@ export function makeEnumRouteHarness(overrides = {}) {
     cascadeEnumChange: async () => {},
     loadQueueState: async () => ({ state: { products: {} } }),
     saveQueueState: async () => ({ ok: true }),
-    markEnumSuggestionStatus: async () => {},
     isReviewFieldPathEnabled: async () => true,
     broadcastWs: () => {},
     ...overrides,

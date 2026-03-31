@@ -155,22 +155,6 @@ async function handleSourceFetchFailed(state, deps, { ts, url, row }) {
   });
 }
 
-async function handleFetchTraceWritten(state, deps, { ts, url, row }) {
-  await startStage(state, 'fetch', ts, { trigger: 'fetch_trace_written' });
-  await finishFetchUrl(state, {
-    url, ts,
-    status: asInt(row.status, 0),
-    fetchMs: asInt(row.fetch_ms, 0),
-    fetcherKind: String(row.fetcher_kind || ''),
-    hostBudgetScore: asFloat(row.host_budget_score, 0),
-    hostBudgetState: String(row.host_budget_state || ''),
-    finalUrl: String(row.final_url || ''),
-    contentType: String(row.content_type || ''),
-    contentHash: String(row.content_hash || ''),
-    bytes: asInt(row.bytes, 0)
-  });
-}
-
 async function handleSourceProcessed(state, deps, { ts, url, row }) {
   await startStage(state, 'fetch', ts, { trigger: 'source_processed' });
   await startStage(state, 'parse', ts, { trigger: 'source_processed' });
@@ -528,7 +512,7 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
   const originalScope = String(row.scope || '').trim();
   const _screenshotFilename = String(row.screenshot_filename || '').trim();
   await emit(state, 'search', 'search_results_collected', {
-    scope: originalScope === 'frontier_cache' ? 'frontier_cache' : 'query',
+    scope: originalScope === 'frontier_cache' ? 'cooldown_skip' : 'query',
     query: String(row.query || '').trim(),
     provider: String(row.provider || '').trim(),
     dedupe_count: asInt(row.dedupe_count, 0),
@@ -917,7 +901,6 @@ const EVENT_HANDLERS = new Map([
   ['source_fetch_skipped',            handleSourceFetchSkipped],
   ['source_fetch_retrying',           handleSourceFetchRetrying],
   ['source_fetch_failed',             handleSourceFetchFailed],
-  ['fetch_trace_written',             handleFetchTraceWritten],
   ['source_processed',                handleSourceProcessed],
   ['fields_filled_from_source',       handleFieldsFilledFromSource],
   ['visual_asset_captured',           handleVisualAssetCaptured],

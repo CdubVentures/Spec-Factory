@@ -25,11 +25,6 @@ function buildPlan(bodyOverrides = {}, optionOverrides = {}) {
     helperRoot: path.resolve('category_authority'),
     outputRoot: path.resolve('gui-output-root'),
     indexLabRoot: path.resolve('gui-indexlab-root'),
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-    },
     env: {},
     pathApi: path,
     buildRunIdFn: () => 'generated-run-1234',
@@ -39,7 +34,6 @@ function buildPlan(bodyOverrides = {}, optionOverrides = {}) {
 
 test('buildProcessStartLaunchPlan normalizes launch request into preflight paths, cli args, and env overrides', () => {
   const overrideRoot = makeTmpDir();
-  const localStorageRoot = path.resolve('C:/SpecFactoryRuns');
   try {
     const result = buildPlan({
       requestedRunId: 'bad',
@@ -51,17 +45,11 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       searchEngines: 'bing,brave,duckduckgo',
       profile: 'thorough',
       dryRun: true,
-      localOutputRoot: path.resolve('ignored-local-output-root'),
-      indexlabOut: path.resolve('ignored-indexlab-root'),
-      specDbDir: path.resolve('ignored-spec-db-root'),
+      localOutputRoot: path.resolve('body-local-output-root'),
+      indexlabOut: path.resolve('body-indexlab-root'),
+      specDbDir: path.resolve('body-spec-db-root'),
       maxRunSeconds: 600,
       llmFallbackEnabled: false,
-    }, {
-      runDataStorageState: {
-        enabled: true,
-        destinationType: 'local',
-        localDirectory: localStorageRoot,
-      },
     });
 
     assert.equal(result.ok, true);
@@ -90,14 +78,14 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
       '--search-engines',
       'bing,brave,duckduckgo',
       '--out',
-      path.join(localStorageRoot, 'runs'),
+      path.resolve('body-indexlab-root'),
       '--profile',
       'thorough',
       '--dry-run',
     ]);
 
-    assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.join(localStorageRoot, 'output'));
-    assert.equal(result.envOverrides.SPEC_DB_DIR, path.join(localStorageRoot, 'db'));
+    assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.resolve('body-local-output-root'));
+    assert.equal(result.envOverrides.SPEC_DB_DIR, path.resolve('body-spec-db-root'));
     assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
     // WHY: Plan 05 Step 6 — runtime settings are snapshot-only, not individual env vars.
@@ -108,8 +96,8 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
     assert.equal(Object.hasOwn(result.envOverrides, 'LLM_PLAN_FALLBACK_MODEL'), false,
       'LLM_PLAN_FALLBACK_MODEL is snapshot-only');
     assert.ok(
-      result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT.startsWith(path.join(overrideRoot, '_runtime', 'snapshots')),
-      'snapshot path stays inside the requested override root',
+      result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT.includes(path.join('runtime', 'snapshots')),
+      'snapshot path is inside .workspace/runtime/snapshots/',
     );
     assert.equal(fs.existsSync(result.envOverrides.RUNTIME_SETTINGS_SNAPSHOT), true);
   } finally {

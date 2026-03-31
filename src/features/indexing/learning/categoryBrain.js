@@ -1,5 +1,6 @@
 import { toPosixKey } from '../../../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
+// WHY: Inline constant after INPUT_KEY_PREFIX removal from storageKeyPrefixes.
+const INPUT_KEY_PREFIX = 'specs/inputs';
 import { nowIso } from '../../../shared/primitives.js';
 import { promotionSuggestionsKey } from '../../../intel/sourceIntel.js';
 import { defaultFieldLexicon, updateFieldLexicon } from './fieldLexicon.js';

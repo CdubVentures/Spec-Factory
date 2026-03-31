@@ -2,13 +2,14 @@ import { parseCsvList, looksHttpUrl, assertCategorySchemaReady, parseJsonArg } f
 import pathNode from 'node:path';
 import fsNode from 'node:fs/promises';
 import { configInt } from '../../../shared/settingsAccessor.js';
-import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 import { buildProductId } from '../../../shared/primitives.js';
 import { buildCrawlCheckpoint } from '../../../pipeline/checkpoint/buildCrawlCheckpoint.js';
 import { writeCrawlCheckpoint } from '../../../pipeline/checkpoint/writeCrawlCheckpoint.js';
 import { buildProductCheckpoint } from '../../../pipeline/checkpoint/buildProductCheckpoint.js';
 import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProductCheckpoint.js';
+import { buildJobFromDb } from '../../../features/indexing/orchestration/bootstrap/buildJobFromDb.js';
 import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
+import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js';
 
 export function createPipelineCommands({
   asBool,
@@ -20,7 +21,7 @@ export function createPipelineCommands({
 }) {
   async function commandRunOne(config, storage, args) {
     const s3Key =
-      args.s3key || `${INPUT_KEY_PREFIX}/mouse/products/mouse-razer-viper-v3-pro.json`;
+      args.s3key || 'specs/inputs/mouse/products/mouse-razer-viper-v3-pro.json';
 
     const result = await runProduct({ storage, config, s3Key });
     const urlsCrawled = result.crawlResults?.length ?? 0;
@@ -49,7 +50,7 @@ export function createPipelineCommands({
     const buildInputKey = (pid) => {
       const normalized = String(pid || '').trim().replace(/\.json$/i, '');
       if (!normalized) return '';
-      return toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${normalized}.json`);
+      return toPosixKey('specs/inputs', category, 'products', `${normalized}.json`);
     };
 
     let s3Key = String(args.s3key || '').trim();
@@ -126,6 +127,35 @@ export function createPipelineCommands({
       specDb = new SpecDb({ dbPath: pathNode.join(specDbDir, 'spec.sqlite'), category });
     } catch { /* best-effort: pipeline still works without SQL event logging */ }
 
+    // WHY: DB-first job resolution. The products table in spec.sqlite is the SSOT
+    // for product identity. This eliminates the "unknown unknown-model" problem
+    // when fixture files don't exist or were created without identity args.
+    // Precedence: 1) CLI args  2) DB lookup  3) fixture file (legacy fallback)
+    let jobOverride = null;
+    const cliBrand = String(args.brand || '').trim();
+    const cliModel = String(args.model || '').trim();
+    const resolvedProductId = productIdArg || s3Key.replace(/.*\//, '').replace(/\.json$/i, '');
+    if (cliBrand && cliModel) {
+      jobOverride = {
+        productId: resolvedProductId,
+        category,
+        identityLock: {
+          brand: cliBrand,
+          model: cliModel,
+          variant: String(args.variant || '').trim(),
+          sku: String(args.sku || '').trim(),
+          title: String(args.title || '').trim(),
+        },
+        seedUrls: parseCsvList(args['seed-urls']),
+      };
+      const cliFields = parseCsvList(args.fields);
+      if (cliFields.length > 0) {
+        jobOverride.requirements = { requiredFields: cliFields };
+      }
+    } else if (specDb && resolvedProductId) {
+      jobOverride = buildJobFromDb({ productId: resolvedProductId, category, specDb });
+    }
+
     const bridge = new IndexLabRuntimeBridge({
       outRoot,
       specDb,
@@ -198,6 +228,7 @@ export function createPipelineCommands({
         storage,
         config: runConfig,
         s3Key,
+        jobOverride,
         runIdOverride: requestedRunId || undefined,
       });
 
@@ -206,6 +237,24 @@ export function createPipelineCommands({
       // reads bridge state which is still populated (finalize clears it after).
       try {
         const runSummary = await serializeRunSummary(bridge).catch(() => null);
+        // WHY: run.json v3 — embed pre-built panel data so old runs can be
+        // replayed without re-querying bridge_events SQL. The builders are
+        // called once here against the serialized events; the GUI serves
+        // directly from these snapshots for completed runs.
+        let runtimeOpsPanels = null;
+        try {
+          const summaryEvents = runSummary?.telemetry?.events || [];
+          const summaryMeta = runSummary?.telemetry?.meta || {};
+          runtimeOpsPanels = buildRuntimeOpsPanels({
+            events: summaryEvents,
+            meta: summaryMeta,
+            artifacts: {
+              needset: bridge.needSet,
+              search_profile: bridge.searchProfile,
+            },
+            config: runConfig,
+          });
+        } catch { /* best-effort: v2 checkpoint still written without panels */ }
         const checkpoint = buildCrawlCheckpoint({
           crawlResults: result.crawlResults,
           runId: result.runId,
@@ -219,6 +268,7 @@ export function createPipelineCommands({
           runSummary,
           status: 'completed',
           identityLock: result.job?.identityLock || null,
+          runtimeOpsPanels,
         });
         writeCrawlCheckpoint({
           checkpoint,
@@ -313,7 +363,7 @@ export function createPipelineCommands({
     }
 
     const s3Key =
-      args.s3key || toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`);
+      args.s3key || toPosixKey('specs/inputs', category, 'products', `${productId}.json`);
 
     await storage.writeObject(
       s3Key,

@@ -18,7 +18,7 @@ export const resultProcessingPhase = {
       config: ctx.config, storage: ctx.storage,
       categoryConfig: ctx.categoryConfig, job: ctx.job,
       runId: ctx.runId, logger: ctx.logger,
-      runtimeTraceWriter: ctx.traceWriter, frontierDb: ctx.frontierDb,
+      frontierDb: ctx.frontierDb,
       variables: ctx.variables, identityLock: ctx.identityLock,
       brandResolution: ctx.brandResolution,
       missingFields: ctx.missingFields, learning: ctx.learning,

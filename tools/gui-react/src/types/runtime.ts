@@ -7,13 +7,6 @@ export interface RuntimeOverrides {
   [key: string]: unknown;
 }
 
-export interface TraceEntry {
-  file: string;
-  section: string;
-  ts: string;
-  data: Record<string, unknown> | null;
-}
-
 export interface FrontierEntry {
   url: string;
   rootDomain: string;
@@ -23,13 +16,3 @@ export interface FrontierEntry {
   status: string;
 }
 
-export interface LlmTraceEntry {
-  ts: string;
-  model: string;
-  purpose: string;
-  inputTokens: number;
-  outputTokens: number;
-  costUsd: number;
-  durationMs: number;
-  field: string | null;
-}

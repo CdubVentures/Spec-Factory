@@ -9,6 +9,7 @@ import { AppDb } from '../../db/appDb.js';
 import { seedAppDb } from '../../db/appDbSeed.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from '../services/specDbSyncService.js';
 import { safeReadJson } from '../helpers/fileHelpers.js';
+import { defaultUserSettingsRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 export function createBootstrapSessionLayer({
   config, HELPER_ROOT, storage,
@@ -50,7 +51,7 @@ export function createBootstrapSessionLayer({
   seedAppDb({
     appDb,
     brandRegistryPath: path.resolve(HELPER_ROOT, '_global', 'brand_registry.json'),
-    userSettingsPath: path.resolve(HELPER_ROOT, '_runtime', 'user-settings.json'),
+    userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
   });
 
   return {

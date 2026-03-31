@@ -6,13 +6,10 @@ import {
 } from '../../features/review/api/mutationResolvers.js';
 import { createReviewCandidateRuntime } from '../reviewCandidateRuntime.js';
 import { createReviewGridStateRuntime } from '../reviewGridStateRuntime.js';
-import { componentReviewPath } from '../../engine/curationSuggestions.js';
 import {
   createCatalogBuilder,
   createCompiledComponentDbPatcher,
 } from '../../app/api/catalogHelpers.js';
-import { loadQueueState } from '../../queue/queueState.js';
-import { loadProductCatalog } from '../../features/catalog/index.js';
 import {
   buildComponentReviewSyntheticCandidateId,
 } from '../../utils/candidateIdentifier.js';
@@ -48,24 +45,18 @@ export function createBootstrapDomainRuntimes({
     remapPendingComponentReviewItemsForNameChange,
     propagateSharedLaneDecision,
   } = createReviewCandidateRuntime({
-    componentReviewPath,
-    safeReadJson,
-    fs,
     getSpecDb,
     config,
     normalizePathToken,
     buildComponentReviewSyntheticCandidateId,
   });
 
-  // ── Catalog builder ──
+  // ── Catalog builder (SQL-first: reads from specDb products + queue tables) ──
   const buildCatalog = createCatalogBuilder({
     config,
     storage,
     getSpecDb,
-    loadQueueState,
-    loadProductCatalog,
     cleanVariant,
-    path,
   });
 
   const patchCompiledComponentDb = createCompiledComponentDbPatcher({

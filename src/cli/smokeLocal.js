@@ -37,7 +37,7 @@ export async function main() {
 
   const config = loadConfigWithUserSettings({
     dryRun: true,
-    localInputRoot: 'fixtures/s3',
+    localInputRoot: '.workspace',
     localOutputRoot: outputRoot,
     discoveryEnabled: false
   });
@@ -69,7 +69,7 @@ export async function main() {
     } else {
       const llmConfig = loadConfigWithUserSettings({
         dryRun: true,
-        localInputRoot: 'fixtures/s3',
+        localInputRoot: '.workspace',
         localOutputRoot: outputRoot,
         discoveryEnabled: false
       });

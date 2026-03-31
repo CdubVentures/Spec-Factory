@@ -350,9 +350,6 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
         if (typeof resolvedNewValuePolicy.mark_needs_curation !== 'boolean') {
           errors.push(`field ${fieldKey}: new_value_policy.mark_needs_curation boolean required`);
         }
-        if (!normalizeText(resolvedNewValuePolicy.suggestion_target)) {
-          errors.push(`field ${fieldKey}: new_value_policy.suggestion_target required`);
-        }
       }
     }
     if (resolvedPublishGate && typeof resolvedBlockPublishWhenUnk !== 'boolean') {

@@ -5,51 +5,41 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": false,
-      "hash": "0e2a0eac68595ba4d094a0aa469f62a07f84ed8e92162ae1299a37a4affe9059",
+      "changed": true,
+      "hash": "0a9192107b4933ee41c5cbf95723da12ff3903a8de43ef455ce606e738998fa5",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
-    "field_rules_full": {
-      "hash": "339774cc930d3e075bc5ce486ff26249e66b3a947f01d2a812f58b2b7198d6da",
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_rules.full.json"
-    },
-    "field_rules_runtime": {
-      "bytes": 301886,
-      "hash": "0e2a0eac68595ba4d094a0aa469f62a07f84ed8e92162ae1299a37a4affe9059",
-      "identical_to_field_rules": true,
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.runtime.json"
-    },
     "key_migrations": {
-      "hash": "f5ac63ffd0e1d4ec3c25ebb185ffa9c1f9b23a22d79c6bfc36974aa781095fe5",
+      "hash": "34f37b0d15f823f9e08d727dca8712fba2206432b21f919cd1bf61ffc85f8522",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "46ced7e5a1e5835f61d55a15992a02361b8a486a3e674520e5bad82ddad6201c",
+      "hash": "9116d91d762836065a950325bbe28f38af760e2f983fbcf6e30e855f0d9003f6",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "bc829c372219cc9b55535ee37c6dcedb0d7e830af7ad87cb54e3986f2108be59",
+      "hash": "ba13d1c1c8dcad528065e9c327558bb8b15e9e854fc5d06091bf8cb60ab47c7a",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-03-09T19:55:27.491Z",
+  "compiled_at": "2026-03-31T06:24:22.543Z",
   "counts": {
     "component_types": 4,
     "critical": 1,
-    "deep": 8,
+    "deep": 9,
     "enums": 14,
-    "expected_easy": 49,
+    "expected_easy": 48,
     "expected_sometimes": 8,
     "fields": 80,
     "identity": 1,
     "required": 13
   },
   "diff": {
-    "changed": false,
-    "current_hash": "0e2a0eac68595ba4d094a0aa469f62a07f84ed8e92162ae1299a37a4affe9059",
+    "changed": true,
+    "current_hash": "0a9192107b4933ee41c5cbf95723da12ff3903a8de43ef455ce606e738998fa5",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -58,14 +48,14 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "0e2a0eac68595ba4d094a0aa469f62a07f84ed8e92162ae1299a37a4affe9059"
+    "previous_hash": "d0105f75958f958b92996bb60842d583d28ca7853463b8d162f8c159478acf00"
   },
   "errors": [],
-  "field_studio_map_hash": "8bddb1c0e0d311c384e945d298028be5b7105e15a9d405b32225cfa8aa822730",
+  "field_studio_map_hash": "0840e9807a661c90e5a17dd3cfed16402dc1fff35f55afca925984f66a35a026",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-03-09T19:55:27.491Z",
+  "generated_at": "2026-03-31T06:24:22.543Z",
   "source_summary": {
     "component_sheets": 4,
     "component_sources": 4,

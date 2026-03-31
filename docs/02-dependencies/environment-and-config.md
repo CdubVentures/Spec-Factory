@@ -16,7 +16,7 @@
 | composite LLM policy schema | `src/core/llm/llmPolicySchema.js` | `src/features/settings-authority/llmPolicyHandler.js`, GUI adapters | runtime plus GUI | structured view over managed runtime keys |
 | config persistence context | `src/features/settings/api/configPersistenceContext.js` | runtime, UI, and LLM policy handlers | runtime | applies persisted sections back into live config and UI state |
 | primary persisted settings store | `.workspace/db/app.sqlite` via `src/db/appDb.js` | bootstrap and settings handlers | persisted runtime state | canonical store when `appDb` is available |
-| JSON fallback settings store | `category_authority/_runtime/user-settings.json` | early boot path, tests, fallback writes | persisted runtime state | fallback only when `appDb` is unavailable |
+| JSON fallback settings store | `.workspace/global/user-settings.json` | early boot path, tests, fallback writes | persisted runtime state | fallback only when `appDb` is unavailable |
 
 ## `.env.example` Reality
 

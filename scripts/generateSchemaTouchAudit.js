@@ -27,13 +27,6 @@ const SURFACES = [
     description: 'Global cross-category SQLite surface for brands, settings, and studio maps.',
   },
   {
-    key: 'frontier',
-    label: 'Frontier SQLite',
-    group: 'Auxiliary',
-    schemaFiles: ['src/research/frontierSqlite.js'],
-    description: 'Query frontier cache and fetch-yield memory.',
-  },
-  {
     key: 'learning',
     label: 'Learning Stores',
     group: 'Auxiliary',
@@ -52,7 +45,6 @@ const SURFACES = [
 const PRIMARY_PUBLIC_FILES = new Map([
   ['src/db/specDb.js', 'dot'],
   ['src/db/appDb.js', 'dot'],
-  ['src/research/frontierSqlite.js', 'dot'],
   ['src/index/evidenceIndexDb.js', 'plain'],
   ['src/db/appDbSeed.js', 'plain'],
 ]);
@@ -508,13 +500,6 @@ function preferTableForFile(candidates, relPath, text) {
     }
   }
 
-  if (text.includes('FrontierDbSqlite') || text.includes('frontier_sqlite') || lower.includes('frontiersqlite')) {
-    const frontier = candidates.find((entry) => entry.surfaceKey === 'frontier');
-    if (frontier) {
-      return frontier;
-    }
-  }
-
   if (
     text.includes('ComponentLexiconStore') ||
     text.includes('FieldAnchorsStore') ||
@@ -535,8 +520,7 @@ function buildAliasMap(textByFile, tableEntries) {
   for (const [relPath, text] of textByFile.entries()) {
     if (
       relPath === 'src/db/specDbStatements.js' ||
-      relPath === 'src/db/appDb.js' ||
-      relPath === 'src/research/frontierSqlite.js'
+      relPath === 'src/db/appDb.js'
     ) {
       for (const [alias, refs] of extractPreparedAliases(text, tableEntries).entries()) {
         aliases.set(alias, refs);
@@ -550,7 +534,6 @@ function buildDefinitions(textByFile, tableEntries, aliasMap) {
   const relevantPrefixes = [
     'src/db/',
     'src/index/evidenceIndexDb.js',
-    'src/research/frontierSqlite.js',
     'src/features/indexing/learning/learningStores.js',
   ];
 

@@ -1,4 +1,3 @@
-import { INPUT_KEY_PREFIX } from '../../../shared/storageKeyPrefixes.js';
 import { buildProductId } from '../../../shared/primitives.js';
 
 export function createQueueCommand({
@@ -24,48 +23,12 @@ export function createQueueCommand({
     if (action === 'add') {
       const brand = String(args.brand || '').trim();
       const model = String(args.model || '').trim();
-      const variant = String(args.variant || '').trim();
       const productId = String(args['product-id'] || '').trim() || buildProductId(category);
       if (!productId) {
         throw new Error('queue add requires --product-id or --brand/--model');
       }
-
-      const s3key = String(
-        args.s3key || toPosixKey(INPUT_KEY_PREFIX, category, 'products', `${productId}.json`)
-      ).trim();
-      if (!s3key) {
-        throw new Error('queue add could not resolve s3key');
-      }
-
-      const hasJobPayload = await storage.objectExists(s3key);
-      if (!hasJobPayload) {
-        if (!brand || !model) {
-          throw new Error('queue add requires an existing --s3key job or --brand/--model to create one');
-        }
-        const identityLock = {
-          brand,
-          model,
-          variant,
-          sku: String(args.sku || '').trim(),
-          mpn: String(args.mpn || '').trim(),
-          gtin: String(args.gtin || '').trim()
-        };
-        const job = {
-          productId,
-          category,
-          identityLock,
-          seedUrls: parseCsvList(args['seed-urls']),
-          anchors: parseJsonArg('anchors-json', args['anchors-json'], {})
-        };
-        const requirements = parseJsonArg('requirements-json', args['requirements-json'], null);
-        if (requirements && typeof requirements === 'object') {
-          job.requirements = requirements;
-        }
-        await storage.writeObject(
-          s3key,
-          Buffer.from(JSON.stringify(job, null, 2), 'utf8'),
-          { contentType: 'application/json' }
-        );
+      if (!brand || !model) {
+        throw new Error('queue add requires --brand and --model');
       }
 
       const priority = parseQueuePriority(args.priority, 3);
@@ -73,7 +36,7 @@ export function createQueueCommand({
         storage,
         category,
         productId,
-        s3key,
+        s3key: '',
         patch: {
           status: 'pending',
           priority,

@@ -197,7 +197,9 @@ export function createBatchCommand({
     const specDb = await openSpecDbForCategory?.(config, category) ?? null;
     try {
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
-    const allKeys = await storage.listInputKeys(category);
+    // WHY: SQL is the source of truth for products — no fixture scan needed.
+    const allProducts = specDb ? specDb.getAllProducts() : [];
+    const allKeys = allProducts.map((p) => p.product_id);
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
     const strategy = normalizeBatchStrategy(args.strategy || 'bandit');
     const metadataRows = await runWithConcurrency(keys, config.concurrency, async (key) =>

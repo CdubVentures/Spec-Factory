@@ -38,14 +38,13 @@ const FIXTURE_SETTINGS = {
 
 async function tmpConfig() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'settings-char-'));
-  return { categoryAuthorityRoot: dir, _tmpDir: dir };
+  return { settingsRoot: dir, _tmpDir: dir };
 }
 
 async function writeFixture(config) {
-  const runtimeDir = path.join(config.categoryAuthorityRoot, '_runtime');
-  await fs.mkdir(runtimeDir, { recursive: true });
+  await fs.mkdir(config.settingsRoot, { recursive: true });
   await fs.writeFile(
-    path.join(runtimeDir, 'user-settings.json'),
+    path.join(config.settingsRoot, 'user-settings.json'),
     JSON.stringify(FIXTURE_SETTINGS, null, 2),
     'utf8',
   );
@@ -62,7 +61,7 @@ describe('characterization: loadUserSettingsSync', () => {
     const config = await tmpConfig();
     try {
       await writeFixture(config);
-      const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: config.categoryAuthorityRoot });
+      const snapshot = loadUserSettingsSync({ settingsRoot: config.settingsRoot });
       assert.equal(snapshot.schemaVersion, 2);
       assert.equal(typeof snapshot.runtime, 'object');
       assert.equal(typeof snapshot.convergence, 'object');
@@ -77,7 +76,7 @@ describe('characterization: loadUserSettingsSync', () => {
   it('returns defaults for missing file', async () => {
     const config = await tmpConfig();
     try {
-      const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: config.categoryAuthorityRoot });
+      const snapshot = loadUserSettingsSync({ settingsRoot: config.settingsRoot });
       assert.equal(typeof snapshot.runtime, 'object');
       assert.equal(typeof snapshot.ui, 'object');
     } finally {
@@ -89,7 +88,7 @@ describe('characterization: loadUserSettingsSync', () => {
     const config = await tmpConfig();
     try {
       await writeFixture(config);
-      const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: config.categoryAuthorityRoot });
+      const snapshot = loadUserSettingsSync({ settingsRoot: config.settingsRoot });
       assert.equal(typeof snapshot.runtime.autoScrollEnabled, 'boolean');
       assert.equal(typeof snapshot.runtime.llmTimeoutMs, 'number');
       assert.equal(typeof snapshot.runtime.llmProvider, 'string');

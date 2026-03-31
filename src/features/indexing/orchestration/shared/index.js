@@ -24,8 +24,6 @@ export {
 export {
   createEmptyProvenance,
   ensureProvenanceField,
-  mergePhase08Rows,
-  buildPhase08SummaryFromBatches,
   tsvRowFromFields,
 } from './provenanceHelpers.js';
 

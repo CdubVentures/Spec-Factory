@@ -1,7 +1,7 @@
 /**
  * SpecDb — SQLite-backed spec candidate/review data store.
  *
- * Follows the pattern from src/research/frontierSqlite.js:
+ * Pattern:
  * - better-sqlite3 synchronous API
  * - WAL journal mode + NORMAL sync
  * - Schema auto-created on construction
@@ -34,6 +34,7 @@ import { createRunArtifactStore } from './stores/runArtifactStore.js';
 import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createProvenanceStore } from './stores/provenanceStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
+import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
 
 export class SpecDb {
   constructor({ dbPath, category }) {
@@ -146,6 +147,21 @@ export class SpecDb {
     });
     this._fieldStudioMapStore = createFieldStudioMapStore({
       stmts: { _getFieldStudioMap: this._getFieldStudioMap, _upsertFieldStudioMap: this._upsertFieldStudioMap },
+    });
+    this._crawlLedgerStore = createCrawlLedgerStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertUrlCrawlEntry: this._upsertUrlCrawlEntry,
+        _getUrlCrawlEntry: this._getUrlCrawlEntry,
+        _getUrlCrawlEntriesByProduct: this._getUrlCrawlEntriesByProduct,
+        _aggregateDomainStats: this._aggregateDomainStats,
+        _upsertQueryCooldown: this._upsertQueryCooldown,
+        _getQueryCooldown: this._getQueryCooldown,
+        _getQueryCooldownRaw: this._getQueryCooldownRaw,
+        _getQueryCooldownsByProduct: this._getQueryCooldownsByProduct,
+        _purgeExpiredCooldowns: this._purgeExpiredCooldowns,
+      },
     });
   }
 
@@ -738,6 +754,16 @@ export class SpecDb {
   getUrlIndexByCategory(cat, limit) { return this._telemetryIndexStore.getUrlIndexByCategory(cat, limit); }
   insertPromptIndexEntry(row) { this._telemetryIndexStore.insertPromptIndexEntry(row); }
   getPromptIndexByCategory(cat, limit) { return this._telemetryIndexStore.getPromptIndexByCategory(cat, limit); }
+
+  // --- Crawl Ledger ---
+  upsertUrlCrawlEntry(row) { this._crawlLedgerStore.upsertUrlCrawlEntry(row); }
+  getUrlCrawlEntry(url, pid) { return this._crawlLedgerStore.getUrlCrawlEntry(url, pid); }
+  getUrlCrawlEntriesByProduct(pid) { return this._crawlLedgerStore.getUrlCrawlEntriesByProduct(pid); }
+  aggregateDomainStats(domains, pid) { return this._crawlLedgerStore.aggregateDomainStats(domains, pid); }
+  upsertQueryCooldown(row) { this._crawlLedgerStore.upsertQueryCooldown(row); }
+  getQueryCooldown(hash, pid) { return this._crawlLedgerStore.getQueryCooldown(hash, pid); }
+  buildQueryExecutionHistory(pid) { return this._crawlLedgerStore.buildQueryExecutionHistory(pid); }
+  purgeExpiredCooldowns() { return this._crawlLedgerStore.purgeExpiredCooldowns(); }
 
   // --- LLM Cache ---
 

@@ -23,15 +23,7 @@ test('resolveOutputKey strips existing output prefix from parts to prevent doubl
   assert.equal(nested, 'specs/outputs/_runtime/traces/runs/run-1/llm/call.json');
 });
 
-test('resolveInputKey strips existing input prefix from parts to prevent double-nesting', () => {
-  const storage = makeStorage();
-  const single = storage.resolveInputKey('mouse', 'products');
-  const nested = storage.resolveInputKey(single, 'product-1.json');
-
-  assert.ok(nested.startsWith('specs/inputs/'), `missing prefix: ${nested}`);
-  assert.ok(!nested.includes('specs/inputs/specs/inputs'), `double prefix: ${nested}`);
-  assert.equal(nested, 'specs/inputs/mouse/products/product-1.json');
-});
+// WHY: resolveInputKey test removed — INPUT_KEY_PREFIX and input paths eliminated.
 
 test('resolveOutputKey passes through parts that do not start with prefix', () => {
   const storage = makeStorage();
@@ -46,4 +38,25 @@ test('resolveOutputKey handles empty and falsy parts', () => {
 
   assert.ok(key.startsWith('specs/outputs/'));
   assert.ok(key.endsWith('data.json'));
+});
+
+test('resolveLocalPath strips output prefix from key to prevent double-nesting', () => {
+  const storage = makeStorage();
+  const key = storage.resolveOutputKey('_billing', 'monthly', '2026-03.txt');
+
+  assert.equal(key, 'specs/outputs/_billing/monthly/2026-03.txt');
+
+  const localPath = storage.resolveLocalPath(key);
+  const expected = path.join(tmpdir, '_billing', 'monthly', '2026-03.txt');
+
+  assert.equal(localPath, expected, `double-nested: ${localPath}`);
+  assert.ok(!localPath.includes('specs'), `path should not contain S3 prefix segments: ${localPath}`);
+});
+
+test('resolveLocalPath passes through keys without output prefix unchanged', () => {
+  const storage = makeStorage();
+  const localPath = storage.resolveLocalPath('_billing/latest.txt');
+  const expected = path.join(tmpdir, '_billing', 'latest.txt');
+
+  assert.equal(localPath, expected);
 });

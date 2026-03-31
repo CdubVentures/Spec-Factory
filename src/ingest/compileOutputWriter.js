@@ -1,6 +1,6 @@
 // WHY: Extracted from categoryCompile.js — all file-system write operations
 // for the compilation output (control plane, generated artifacts, component DB,
-// suggestions, compile report).
+// compile report).
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -9,7 +9,6 @@ import {
   normalizeText,
   normalizeToken,
   sortDeep,
-  fileExists
 } from './compileUtils.js';
 import {
   writeJsonStable,
@@ -155,19 +154,7 @@ export async function writeCompileOutput({
     await writeJsonStable(path.join(componentRoot, `${outputName}.json`), payload);
   }
 
-  // ── Write suggestions & finalize ──
-  const suggestionsRoot = path.join(categoryRoot, '_suggestions');
-  await fs.mkdir(suggestionsRoot, { recursive: true });
-  const suggestionDefaults = {
-    enums: { version: 1, category, suggestions: [] },
-    components: { version: 1, category, suggestions: [] }
-  };
-  for (const [name, payload] of Object.entries(suggestionDefaults)) {
-    const filePath = path.join(suggestionsRoot, `${name}.json`);
-    if (!(await fileExists(filePath))) {
-      await writeJsonStable(filePath, payload);
-    }
-  }
+  // ── Finalize ──
   await fs.mkdir(path.join(categoryRoot, '_overrides'), { recursive: true });
 
   await writeJsonStable(path.join(generatedRoot, '_compile_report.json'), compileReport);

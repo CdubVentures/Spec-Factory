@@ -360,12 +360,18 @@ export function buildPreFetchPhases(events, meta, artifacts) {
         if (!artProfile.query_count && Array.isArray(artProfile.query_rows)) {
           projected.query_count = artProfile.query_rows.length;
         }
-        // WHY: Filter frontier_cache rows from query_rows before sending to UI.
+        // WHY: Mark cooldown-skipped queries for GUI visibility.
         if (Array.isArray(projected.query_rows)) {
-          projected.query_rows = projected.query_rows.filter((r) => !r?.frontier_cache);
+          projected.query_rows = projected.query_rows.map((r) => ({
+            ...r,
+            cooldown_skipped: Boolean(r?.cooldown_skipped || r?.frontier_cache),
+          }));
         }
         if (Array.isArray(projected.deterministic_query_rows)) {
-          projected.deterministic_query_rows = projected.deterministic_query_rows.filter((r) => !r?.frontier_cache);
+          projected.deterministic_query_rows = projected.deterministic_query_rows.map((r) => ({
+            ...r,
+            cooldown_skipped: Boolean(r?.cooldown_skipped || r?.frontier_cache),
+          }));
         }
         return projected;
       })()

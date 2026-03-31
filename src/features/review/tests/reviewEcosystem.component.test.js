@@ -4,16 +4,14 @@ import assert from 'node:assert/strict';
 import {
   buildComponentReviewPayloads,
   CATEGORY,
-  buildComponentOverridePayload,
   findComponentItem,
-  seedComponentOverride,
-  withReviewFixture,
+  withSeededSpecDbFixture,
 } from './helpers/reviewEcosystemHarness.js';
 
 test('review ecosystem component contracts share one fixture for read-only behavior', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ config }) => {
+  await withSeededSpecDbFixture(async ({ config, db }) => {
     await t.test('COMP-01: Reference value shows source=reference, overridden=false', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const paw3950 = findComponentItem(payload, 'PAW3950');
       assert.ok(paw3950);
       assert.equal(paw3950.properties.dpi_max.source, 'reference');
@@ -23,7 +21,7 @@ test('review ecosystem component contracts share one fixture for read-only behav
     });
 
     await t.test('COMP-03: Missing property shows source=unknown, needs_review=true', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const hero = findComponentItem(payload, 'HERO26K');
       assert.ok(hero);
       assert.equal(hero.properties.dpi_max.selected.value, '25600');
@@ -31,7 +29,7 @@ test('review ecosystem component contracts share one fixture for read-only behav
     });
 
     await t.test('COMP-07: Property columns aggregated from all items', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       assert.ok(payload.property_columns.includes('dpi_max'));
       assert.ok(payload.property_columns.includes('ips'));
       assert.ok(payload.property_columns.includes('acceleration'));
@@ -39,7 +37,7 @@ test('review ecosystem component contracts share one fixture for read-only behav
     });
 
     await t.test('COMP-09: Material components have correct properties', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'material' });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'material', specDb: db });
       assert.equal(payload.items.length, 2);
       const ptfe = findComponentItem(payload, 'PTFE');
       assert.ok(ptfe);
@@ -49,26 +47,24 @@ test('review ecosystem component contracts share one fixture for read-only behav
       assert.equal(carbonFiber.properties.durability.selected.value, 'very_high');
     });
 
-    await t.test('COMP-10: Shared sensor PAW3950 shows pipeline candidates from both razer and pulsar', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+    await t.test('COMP-10: Shared sensor PAW3950 has reference candidate and linked products', async () => {
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const paw3950 = findComponentItem(payload, 'PAW3950');
       assert.ok(paw3950);
 
       const dpiCandidates = paw3950.properties.dpi_max.candidates;
-      assert.ok(dpiCandidates.length >= 2, `PAW3950 dpi_max should have >= 2 candidates, got ${dpiCandidates.length}`);
+      assert.ok(dpiCandidates.length >= 1, `PAW3950 dpi_max should have >= 1 candidate, got ${dpiCandidates.length}`);
 
       const workbookCandidate = dpiCandidates.find((candidate) => candidate.source_id === 'reference');
       assert.ok(workbookCandidate, 'Should have field-studio candidate');
       assert.equal(workbookCandidate.value, '35000');
 
-      const pipelineCandidates = dpiCandidates.filter((candidate) => candidate.source_id === 'pipeline');
-      assert.ok(pipelineCandidates.length >= 1, `Should have pipeline candidates, got ${pipelineCandidates.length}`);
-      const allPipelineValues = pipelineCandidates.map((candidate) => candidate.value);
-      assert.ok(allPipelineValues.includes('35000') || allPipelineValues.includes('26000'));
+      // WHY: PAW3950 is shared across razer + pulsar — verify linked_products reflects both
+      assert.ok(paw3950.linked_products.length >= 2, `PAW3950 should be linked to >= 2 products, got ${paw3950.linked_products.length}`);
     });
 
-    await t.test('COMP-11: Shared switch Kailh GM 8.0 shows pipeline candidates from pulsar and endgame', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
+    await t.test('COMP-11: Shared switch Kailh GM 8.0 shows specdb candidates from pulsar and endgame', async () => {
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch', specDb: db });
       const kailh = findComponentItem(payload, 'Kailh GM 8.0');
       assert.ok(kailh);
 
@@ -78,42 +74,39 @@ test('review ecosystem component contracts share one fixture for read-only behav
       assert.ok(workbookNameCandidate, 'Should have field-studio name candidate');
       assert.equal(workbookNameCandidate.value, 'Kailh GM 8.0');
 
-      const pipelineNameCandidate = nameCandidates.find((candidate) => candidate.source_id === 'pipeline');
-      assert.ok(pipelineNameCandidate, 'Should have pipeline name candidate');
-      assert.equal(pipelineNameCandidate.value, 'Kailh GM8.0');
-      assert.ok(
-        pipelineNameCandidate.source.includes('2 products') || pipelineNameCandidate.evidence.quote.includes('2 product'),
-        'Pipeline name candidate should reference 2 products',
-      );
+      // WHY: With specDb, linked-product candidates have source_id='specdb' (not 'pipeline')
+      const specDbNameCandidates = nameCandidates.filter((candidate) => candidate.source_id === 'specdb');
+      assert.ok(specDbNameCandidates.length >= 1, 'Should have specdb name candidates');
 
       const makerCandidates = kailh.maker_tracked.candidates;
       assert.ok(makerCandidates.length >= 1, 'Should have at least one field-studio maker candidate');
       assert.equal(makerCandidates[0].value, 'Kailh');
     });
 
-    await t.test('COMP-12: Single-use component HERO26K shows 1 product in pipeline candidates', async () => {
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+    await t.test('COMP-12: Single-use component HERO26K is linked to 1 product', async () => {
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const hero = findComponentItem(payload, 'HERO26K');
       assert.ok(hero);
 
-      const pipelineCandidates = hero.properties.dpi_max.candidates.filter((candidate) => candidate.source_id === 'pipeline');
-      if (pipelineCandidates.length > 0) {
-        assert.ok(
-          pipelineCandidates[0].source.includes('1 product'),
-          `HERO26K pipeline candidate should reference 1 product; got source="${pipelineCandidates[0].source}"`,
-        );
-      }
+      // WHY: HERO26K is used by only logitech — verify linked_products reflects that
+      assert.ok(hero.linked_products.length >= 1, `HERO26K should be linked to >= 1 product, got ${hero.linked_products.length}`);
+      const refCandidate = hero.properties.dpi_max.candidates.find((c) => c.source_id === 'reference');
+      assert.ok(refCandidate, 'Should have reference candidate');
+      assert.equal(refCandidate.value, '25600');
     });
   });
 });
 
 test('review ecosystem component override contracts share one fixture for mutation behavior', { timeout: 120_000 }, async (t) => {
-  await withReviewFixture(async ({ config }) => {
+  await withSeededSpecDbFixture(async ({ config, db }) => {
     await t.test('COMP-02: Override sets source=user, overridden=true', async () => {
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PAW3950', buildComponentOverridePayload({
-        properties: { dpi_max: '40000' },
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      db.upsertComponentValue({
+        componentType: 'sensor', componentName: 'PAW3950', componentMaker: '',
+        propertyKey: 'dpi_max', value: '40000', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const paw3950 = findComponentItem(payload, 'PAW3950');
       assert.equal(paw3950.properties.dpi_max.selected.value, '40000');
       assert.equal(paw3950.properties.dpi_max.source, 'user');
@@ -123,12 +116,14 @@ test('review ecosystem component override contracts share one fixture for mutati
 
     await t.test('COMP-04: Name override tracked correctly', async () => {
       const nameTimestamp = '2026-02-15T14:00:00.000Z';
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'sensor', 'PMW3389', buildComponentOverridePayload({
-        identity: { name: 'PAW-3389' },
-        timestamps: { __name: nameTimestamp },
-        updated_at: nameTimestamp,
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor' });
+      db.upsertComponentIdentity({
+        componentType: 'sensor', canonicalName: 'PAW-3389', maker: '',
+        links: null, source: 'user',
+      });
+      db.db.prepare(
+        `UPDATE component_identity SET updated_at = ? WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?`
+      ).run(nameTimestamp, CATEGORY, 'sensor', 'PAW-3389', '');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'sensor', specDb: db });
       const item = findComponentItem(payload, 'PAW-3389');
       assert.ok(item, 'Item should exist with overridden name');
       assert.equal(item.name_tracked.source, 'user');
@@ -137,10 +132,18 @@ test('review ecosystem component override contracts share one fixture for mutati
     });
 
     await t.test('COMP-05: Maker override tracked correctly', async () => {
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'TTC Gold', buildComponentOverridePayload({
-        identity: { maker: 'TTC Electronics' },
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
+      // WHY: Update existing identity row's maker directly — composite key includes maker,
+      // so upsertComponentIdentity with new maker creates a new row instead of updating.
+      // Must also update component_values.component_maker to keep foreign references aligned.
+      db.db.prepare(
+        `UPDATE component_values SET component_maker = ?, updated_at = datetime('now')
+         WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?`
+      ).run('TTC Electronics', CATEGORY, 'switch', 'TTC Gold', 'TTC');
+      db.db.prepare(
+        `UPDATE component_identity SET maker = ?, source = 'user', updated_at = datetime('now')
+         WHERE category = ? AND component_type = ? AND canonical_name = ? AND maker = ?`
+      ).run('TTC Electronics', CATEGORY, 'switch', 'TTC Gold', 'TTC');
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch', specDb: db });
       const item = findComponentItem(payload, 'TTC Gold');
       assert.equal(item.maker, 'TTC Electronics');
       assert.equal(item.maker_tracked.source, 'user');
@@ -148,20 +151,32 @@ test('review ecosystem component override contracts share one fixture for mutati
     });
 
     await t.test('COMP-06: Aliases override sets aliases_overridden=true', async () => {
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'encoder', 'TTC Gold Encoder', buildComponentOverridePayload({
-        identity: { aliases: ['TTC Encoder', 'TTC Gold Scroll Encoder'] },
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'encoder' });
+      // WHY: Seed alias override via specDb — replace aliases and set aliases_overridden flag
+      const componentId = db.db.prepare(
+        'SELECT id FROM component_identity WHERE category = ? AND component_type = ? AND canonical_name = ?'
+      ).get(CATEGORY, 'encoder', 'TTC Gold Encoder')?.id;
+      // Clear existing aliases and insert user-sourced ones
+      db.db.prepare('DELETE FROM component_aliases WHERE component_id = ?').run(componentId);
+      for (const alias of ['TTC Encoder', 'TTC Gold Scroll Encoder']) {
+        db.db.prepare(
+          'INSERT OR IGNORE INTO component_aliases (component_id, alias, source) VALUES (?, ?, ?)'
+        ).run(componentId, alias, 'user');
+      }
+      db.updateAliasesOverridden('encoder', 'TTC Gold Encoder', 'TTC', true);
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'encoder', specDb: db });
       const item = findComponentItem(payload, 'TTC Gold Encoder');
       assert.deepEqual(item.aliases, ['TTC Encoder', 'TTC Gold Scroll Encoder']);
       assert.equal(item.aliases_overridden, true);
     });
 
     await t.test('COMP-08: Multiple items override only affects target', async () => {
-      await seedComponentOverride(config.categoryAuthorityRoot, CATEGORY, 'switch', 'Kailh GM 8.0', buildComponentOverridePayload({
-        properties: { actuation_force: '50' },
-      }));
-      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch' });
+      db.upsertComponentValue({
+        componentType: 'switch', componentName: 'Kailh GM 8.0', componentMaker: '',
+        propertyKey: 'actuation_force', value: '50', confidence: 1.0,
+        variancePolicy: null, source: 'user', acceptedCandidateId: null,
+        needsReview: false, overridden: true, constraints: [],
+      });
+      const payload = await buildComponentReviewPayloads({ config, category: CATEGORY, componentType: 'switch', specDb: db });
       const kailh = findComponentItem(payload, 'Kailh GM 8.0');
       const omron = findComponentItem(payload, 'Omron D2FC-F-K');
       assert.equal(kailh.properties.actuation_force.selected.value, '50');

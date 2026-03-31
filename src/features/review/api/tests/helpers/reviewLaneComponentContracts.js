@@ -10,7 +10,7 @@ import {
 } from '../fixtures/reviewLaneApiHarness.js';
 
 export async function runReviewLaneComponentContracts(t, harness) {
-  const { baseUrl, db, componentIdentifier, findComponentRow, readReviewDoc } = harness;
+  const { baseUrl, db, componentIdentifier, findComponentRow } = harness;
 
   await t.test('component shared accept with candidate-id collision does not mutate enum slot state', async () => {
     const collisionCandidateId = 'collision_shared_candidate';
@@ -172,9 +172,9 @@ export async function runReviewLaneComponentContracts(t, harness) {
     assert.equal(afterConfirm.ai_confirm_shared_status, 'pending');
     assert.equal(afterConfirm.user_accept_shared_status, 'accepted');
 
-    const reviewDoc = await readReviewDoc();
-    const review35000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-35000');
-    const review26000 = reviewDoc.items.find((item) => item.review_id === 'rv-cmp-26000');
+    const reviewItems = db.getComponentReviewItems('sensor') || [];
+    const review35000 = reviewItems.find((item) => item.review_id === 'rv-cmp-35000');
+    const review26000 = reviewItems.find((item) => item.review_id === 'rv-cmp-26000');
     assert.equal(review35000?.status, 'pending_ai');
     assert.equal(review26000?.status, 'pending_ai');
 

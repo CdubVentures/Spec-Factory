@@ -1,12 +1,10 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
-import { toInt, normalizePathToken, normalizeJsonText } from '../../../../shared/valueNormalizers.js';
+import { toInt } from '../../../../shared/valueNormalizers.js';
 import { safeReadJson } from '../../../../shared/fileHelpers.js';
-import { classifyLlmTracePhase } from '../../../../api/helpers/llmHelpers.js';
 import { normalizeAutomationQuery } from './automationQueueHelpers.js';
 import {
   resolveTotalFields, resolveResultCount, resolveSearchQuery,
-  resolveUrl, normalizeLlmUsage, resolveMetaPath,
+  resolveUrl,
 } from '../../../../shared/payloadAliases.js';
 
 // ---------------------------------------------------------------------------
@@ -349,113 +347,11 @@ export function createRunArtifactReaders({
     };
   }
 
-  async function readIndexLabRunLlmTraces(runId, limit = 80) {
-    const context = await resolveContext(runId);
-    if (!context) return null;
-
-    // WHY: Phase D convergence — try {runDir}/traces/llm/ first (new layout),
-    // fall back to legacy {outputRoot}/_runtime/traces/runs/{runId}/{productId}/llm/
-    const runDir = await resolveRunDir(context.resolvedRunId);
-    const primaryTraceRoot = runDir ? path.join(runDir, 'traces', 'llm') : '';
-    const outputRoot = getOutputRoot();
-    const legacyTraceRoot = path.join(
-      outputRoot,
-      '_runtime',
-      'traces',
-      'runs',
-      normalizePathToken(context.resolvedRunId, 'run'),
-      normalizePathToken(context.productId, 'product'),
-      'llm'
-    );
-
-    let traceRoot = legacyTraceRoot;
-    if (primaryTraceRoot) {
-      try {
-        await fs.access(primaryTraceRoot);
-        traceRoot = primaryTraceRoot;
-      } catch { /* primary doesn't exist, use legacy */ }
-    }
-
-    let entries = [];
-    try {
-      entries = await fs.readdir(traceRoot, { withFileTypes: true });
-    } catch {
-      return {
-        generated_at: new Date().toISOString(),
-        run_id: context.resolvedRunId,
-        category: context.category,
-        product_id: context.productId,
-        count: 0,
-        traces: []
-      };
-    }
-    const fileRows = entries
-      .filter((entry) => entry.isFile() && /^call_\d+\.json$/i.test(entry.name))
-      .map((entry) => entry.name)
-      .sort((a, b) => a.localeCompare(b));
-    const traces = [];
-    for (const name of fileRows) {
-      const filePath = path.join(traceRoot, name);
-      const row = await safeReadJson(filePath);
-      if (!row || typeof row !== 'object') continue;
-      const usage = row.usage && typeof row.usage === 'object'
-        ? row.usage
-        : {};
-      const prompt = row.prompt && typeof row.prompt === 'object'
-        ? row.prompt
-        : {};
-      const response = row.response && typeof row.response === 'object'
-        ? row.response
-        : {};
-      const routeRole = String(row.route_role || '').trim().toLowerCase();
-      const purpose = String(row.purpose || '').trim();
-      const ts = String(row.ts || '').trim();
-      const tsMs = Date.parse(ts);
-      traces.push({
-        id: `${context.resolvedRunId}:${name}`,
-        ts: ts || null,
-        ts_ms: Number.isFinite(tsMs) ? tsMs : 0,
-        phase: classifyLlmTracePhase(purpose, routeRole),
-        role: routeRole || null,
-        purpose: purpose || null,
-        status: String(row.status || '').trim() || null,
-        provider: String(row.provider || '').trim() || null,
-        model: String(row.model || '').trim() || null,
-        retry_without_schema: Boolean(row.retry_without_schema),
-        json_schema_requested: Boolean(row.json_schema_requested),
-        max_tokens_applied: toInt(row.max_tokens_applied, 0),
-        target_fields: Array.isArray(row.target_fields)
-          ? row.target_fields.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 80)
-          : [],
-        target_fields_count: toInt(row.target_fields_count, 0),
-        prompt_preview: normalizeJsonText(prompt, 8000),
-        response_preview: normalizeJsonText(response, 12000),
-        error: String(row.error || '').trim() || null,
-        usage: normalizeLlmUsage(usage, toInt),
-        trace_file: name
-      });
-    }
-    traces.sort((a, b) => {
-      if (b.ts_ms !== a.ts_ms) return b.ts_ms - a.ts_ms;
-      return String(b.trace_file || '').localeCompare(String(a.trace_file || ''));
-    });
-    const maxRows = Math.max(1, toInt(limit, 80));
-    return {
-      generated_at: new Date().toISOString(),
-      run_id: context.resolvedRunId,
-      category: context.category,
-      product_id: context.productId,
-      count: traces.length,
-      traces: traces.slice(0, maxRows).map(({ ts_ms, ...row }) => row)
-    };
-  }
-
   return {
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
     readIndexLabRunItemIndexingPacket,
     readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
-    readIndexLabRunLlmTraces,
   };
 }

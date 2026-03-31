@@ -6,11 +6,15 @@ export function createDiscoverCommand({
   runDiscoverySeedPlan,
   EventLogger,
   buildRunId,
+  openSpecDbForCategory,
 }) {
   return async function commandDiscover(config, storage, args) {
     const category = args.category || 'mouse';
     const categoryConfig = await loadCategoryConfig(category, { storage, config });
-    const allKeys = await storage.listInputKeys(category);
+    // WHY: SQL is the source of truth for products — no fixture scan needed.
+    const specDb = await openSpecDbForCategory?.(config, category) ?? null;
+    const allProducts = specDb ? specDb.getAllProducts() : [];
+    const allKeys = allProducts.map((p) => p.product_id);
     const keys = await filterKeysByBrand(storage, allKeys, args.brand);
     const logger = new EventLogger({
       storage,

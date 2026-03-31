@@ -24,10 +24,6 @@ export function resolveControlPlaneRoot(category, config = {}) {
   return path.join(resolveHelperRoot(config), category, '_control_plane');
 }
 
-export function resolveSuggestionsRoot(category, config = {}) {
-  return path.join(resolveHelperRoot(config), category, '_suggestions');
-}
-
 export function resolveOverridesRoot(category, config = {}) {
   return path.join(resolveHelperRoot(config), category, '_overrides');
 }

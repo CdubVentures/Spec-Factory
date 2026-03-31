@@ -57,10 +57,10 @@ describe('runtimeSettingsSnapshotTransport — Plan 05', () => {
     ok('settings' in snapshot);
   }));
 
-  it('creates nested _runtime/snapshots directory', () => withTempDirSync('sf-snapshot-test-', (tmpDir) => {
-    const snapshotPath = writeRuntimeSettingsSnapshot('dir-test', {}, tmpDir);
-    ok(snapshotPath.includes('_runtime'));
-    ok(snapshotPath.includes('snapshots'));
+  it('creates snapshot directory and writes file', () => withTempDirSync('sf-snapshot-test-', (tmpDir) => {
+    const snapshotDir = path.join(tmpDir, 'nested', 'snapshots');
+    const snapshotPath = writeRuntimeSettingsSnapshot('dir-test', {}, snapshotDir);
+    ok(snapshotPath.startsWith(snapshotDir), 'snapshot path is inside the provided directory');
     ok(fs.existsSync(snapshotPath));
   }));
 

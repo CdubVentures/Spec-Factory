@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   appendEnumCurationSuggestions,
-  enumSuggestionPath
 } from '../curationSuggestions.js';
 
 function createMockSpecDb() {
@@ -75,5 +74,4 @@ test('appendEnumCurationSuggestions returns zeros when no specDb provided', asyn
   });
   assert.equal(result.appended_count, 0);
   assert.equal(result.total_count, 0);
-  assert.ok(result.path);
 });

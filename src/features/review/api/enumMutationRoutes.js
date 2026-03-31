@@ -16,7 +16,6 @@ import {
   resolveEnumPreAffectedProductIds,
   sanitizeExistingAcceptedCandidateId,
   resolveEnumRequiredCandidate,
-  applyEnumSuggestionStatusByAction,
 } from '../services/enumMutationService.js';
 
 // Re-export for characterization tests and any external consumers
@@ -28,7 +27,6 @@ export {
   resolveEnumPreAffectedProductIds,
   sanitizeExistingAcceptedCandidateId,
   resolveEnumRequiredCandidate,
-  applyEnumSuggestionStatusByAction,
 };
 
 async function handleEnumOverrideEndpoint({
@@ -55,7 +53,6 @@ async function handleEnumOverrideEndpoint({
     cascadeEnumChange,
     loadQueueState,
     saveQueueState,
-    markEnumSuggestionStatus,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -380,15 +377,6 @@ async function handleEnumOverrideEndpoint({
           specDb: runtimeSpecDb,
         });
       }
-      await applyEnumSuggestionStatusByAction({
-        action,
-        markEnumSuggestionStatus,
-        category,
-        field,
-        value,
-        priorValue,
-      });
-
       return sendDataChangeResponse({
         jsonRes,
         res,
@@ -428,7 +416,6 @@ async function handleEnumRenameEndpoint({
     cascadeEnumChange,
     loadQueueState,
     saveQueueState,
-    markEnumSuggestionStatus,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -510,7 +497,6 @@ async function handleEnumRenameEndpoint({
         saveQueueState,
         specDb: runtimeSpecDb,
       });
-      try { await markEnumSuggestionStatus(category, field, oldValue, 'accepted'); } catch { /* best-effort */ }
 
       return sendDataChangeResponse({
         jsonRes,

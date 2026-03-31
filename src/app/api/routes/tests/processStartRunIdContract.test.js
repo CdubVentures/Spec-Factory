@@ -211,7 +211,7 @@ test('process/start forwards the launch plan cli args and env overrides to start
     HELPER_FILES_ROOT: path.resolve('category_authority_override'),
     LOCAL_OUTPUT_ROOT: path.resolve('forwarded-output-root'),
     SPEC_DB_DIR: path.resolve('forwarded-specdb-root'),
-    RUNTIME_SETTINGS_SNAPSHOT: path.resolve('category_authority_override', '_runtime', 'snapshots', `${requestedRunId}.json`),
+    RUNTIME_SETTINGS_SNAPSHOT: path.resolve('.workspace', 'runtime', 'snapshots', `${requestedRunId}.json`),
   };
   let capturedCommand = null;
   let capturedArgs = null;

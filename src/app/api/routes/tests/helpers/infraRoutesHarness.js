@@ -46,11 +46,6 @@ export function createInfraRoutesContext(overrides = {}) {
       env: {},
       pkg: undefined,
     },
-    runDataStorageState: {
-      enabled: false,
-      destinationType: 'local',
-      localDirectory: '',
-    },
     getSerperApiKey: () => '',
     getSerperEnabled: () => true,
     getSearxngStatus: async () => ({ ok: true }),

@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { extractRootDomain } from '../shared/valueNormalizers.js';
 import { toPosixKey } from '../s3/storage.js';
-import { INPUT_KEY_PREFIX } from '../shared/storageKeyPrefixes.js';
+// WHY: Inline constant after INPUT_KEY_PREFIX removal from storageKeyPrefixes.
+const INPUT_KEY_PREFIX = 'specs/inputs';
 import {
   ruleRequiredLevel,
   ruleAvailability,

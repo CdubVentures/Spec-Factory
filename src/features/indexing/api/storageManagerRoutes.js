@@ -5,7 +5,6 @@ export function createStorageManagerHandler({
   broadcastWs,
   listIndexLabRuns,
   resolveIndexLabRunDirectory,
-  runDataStorageState,
   indexLabRoot,
   outputRoot,
   storage,
@@ -15,25 +14,11 @@ export function createStorageManagerHandler({
 }) {
 
   function resolveBackend() {
-    const s = runDataStorageState || {};
-    if (!s.enabled) return { type: 'disabled' };
-    const dest = String(s.destinationType || '').trim().toLowerCase();
-    return dest === 's3' ? { type: 's3' } : { type: 'local' };
+    return { type: 'local' };
   }
 
   function resolveBackendDetail() {
-    const s = runDataStorageState || {};
-    const dest = String(s.destinationType || '').trim().toLowerCase();
-    if (dest === 's3') {
-      return {
-        bucket: String(s.s3Bucket || ''),
-        prefix: String(s.s3Prefix || ''),
-        region: String(s.awsRegion || ''),
-      };
-    }
-    return {
-      root_path: String(s.localDirectory || ''),
-    };
+    return { root_path: String(indexLabRoot || '') };
   }
 
   return async function handleStorageManagerRoutes(parts, params, method, req, res) {

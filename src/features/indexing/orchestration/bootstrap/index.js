@@ -7,8 +7,7 @@ export {
   createRunLoggerBootstrap,
   buildRunBootstrapLogPayload,
 } from './createRunLoggerBootstrap.js';
-export { createRunTraceWriter } from './createRunTraceWriter.js';
-export { createResearchBootstrap } from './createResearchBootstrap.js';
+
 export { filterResumeSeedUrls } from './filterResumeSeedUrls.js';
 export { buildRunRuntimePhaseCallsiteContext } from './buildRunRuntimePhaseCallsiteContext.js';
 export { buildRunRuntimeContext } from './buildRunRuntimeContext.js';
@@ -20,10 +19,8 @@ export { buildRunLoggerBootstrapPhaseCallsiteContext } from './buildRunLoggerBoo
 export { buildRunLoggerBootstrapContext } from './buildRunLoggerBootstrapContext.js';
 export { buildRunBootstrapLogPayloadPhaseCallsiteContext } from './buildRunBootstrapLogPayloadPhaseCallsiteContext.js';
 export { buildRunBootstrapLogPayloadContext } from './buildRunBootstrapLogPayloadContext.js';
-export { buildRunTraceWriterPhaseCallsiteContext } from './buildRunTraceWriterPhaseCallsiteContext.js';
-export { buildRunTraceWriterContext } from './buildRunTraceWriterContext.js';
-export { buildResearchBootstrapPhaseCallsiteContext } from './buildResearchBootstrapPhaseCallsiteContext.js';
-export { buildResearchBootstrapContext } from './buildResearchBootstrapContext.js';
+
 export { createRunLlmRuntime } from './createRunLlmRuntime.js';
 export { loadLearningStoreHintsForRun } from './loadLearningStoreHintsForRun.js';
 export { bootstrapRunEventIndexing } from './bootstrapRunEventIndexing.js';
+export { buildJobFromDb } from './buildJobFromDb.js';

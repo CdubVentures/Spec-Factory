@@ -6,7 +6,11 @@ function extractHost(url) {
   try { return new URL(String(url || '')).hostname; } catch { return ''; }
 }
 
+function isOkStatus(s) { return s >= 200 && s < 400; }
+function isBlockedStatus(s) { return s === 403 || s === 429; }
+
 function mapProductSource(src, runId) {
+  const status = Number(src.status || 0);
   return {
     url: String(src.url || ''),
     final_url: String(src.final_url || src.finalUrl || src.url || ''),
@@ -14,9 +18,15 @@ function mapProductSource(src, runId) {
     content_hash: src.content_hash || null,
     html_file: src.html_file || null,
     screenshot_count: Number(src.screenshot_count || 0),
-    status: Number(src.status || 0),
+    status,
     first_seen_run_id: String(runId || ''),
     last_seen_run_id: String(runId || ''),
+    domain: String(src.domain || '') || extractHost(src.url),
+    elapsed_ms: Number(src.elapsed_ms || 0),
+    fetch_count: Number(src.fetch_count || 1),
+    ok_count: Number(src.ok_count || (isOkStatus(status) ? 1 : 0)),
+    blocked_count: Number(src.blocked_count || (isBlockedStatus(status) ? 1 : 0)),
+    timeout_count: Number(src.timeout_count || 0),
   };
 }
 
@@ -39,6 +49,9 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
       variant: String(id.variant || ''),
       sku: String(id.sku || ''),
       title: String(id.title || ''),
+      seed_urls: Array.isArray(id.seed_urls) ? id.seed_urls : [],
+      identifier: String(id.identifier || ''),
+      status: String(id.status || 'active'),
     },
     latest_run_id: String(runId || ''),
     runs_completed: 1,

@@ -1,11 +1,13 @@
 // WHY: Read-merge-write for product.json. Each run's sources are merged into
 // the accumulated product state, deduped by content_hash. Each product gets
-// its own file at {outRoot}/products/{productId}/product.json keyed by the
+// its own file at {productRoot}/{productId}/product.json keyed by the
 // unique productId (not by category/brand/model which can be renamed).
+// productRoot defaults to .workspace/products/ — the rebuild SSOT location.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { mergeProductSources } from './mergeProductSources.js';
+import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 function safeReadJson(filePath) {
   try {
@@ -16,12 +18,13 @@ function safeReadJson(filePath) {
 }
 
 /**
- * @param {{ productCheckpoint: object, outRoot: string, runId: string }} opts
+ * @param {{ productCheckpoint: object, outRoot?: string, productRoot?: string, runId: string }} opts
  * @returns {{ productPath: string, sourcesAdded: number, sourcesUpdated: number }}
  */
-export function writeProductCheckpoint({ productCheckpoint, outRoot, runId }) {
+export function writeProductCheckpoint({ productCheckpoint, outRoot, productRoot, runId }) {
   const productId = String(productCheckpoint.product_id || '').trim();
-  const productDir = path.join(outRoot, 'products', productId);
+  const resolvedRoot = productRoot || defaultProductRoot();
+  const productDir = path.join(resolvedRoot, productId);
   const productPath = path.join(productDir, 'product.json');
   const existing = safeReadJson(productPath);
 

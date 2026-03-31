@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-01",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 1",
+    "variant": "happy_path",
+    "id": 9001,
+    "identifier": "test001a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 1,
+    "name": "happy_path",
+    "description": "All 80 fields with valid values",
+    "category": "Coverage"
+  }
+}

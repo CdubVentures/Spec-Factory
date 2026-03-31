@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-06",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 6",
+    "variant": "new_sensor",
+    "id": 9006,
+    "identifier": "test006a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 6,
+    "name": "new_sensor",
+    "description": "Unknown sensor â†’ new_component suggestion",
+    "category": "Components"
+  }
+}

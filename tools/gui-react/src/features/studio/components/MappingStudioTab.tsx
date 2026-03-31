@@ -218,8 +218,11 @@ export function MappingStudioTab({
   }, [wbMap, mapSeedVersion, seededVersion, rules]);
 
   const assembleMap = useCallback((): StudioConfig => {
+    // WHY: strip data_lists so only enum_lists is persisted — prevents stale
+    // data_lists from shadowing enum_lists edits on reload (seeding prefers data_lists).
+    const { data_lists: _stale, manual_enum_values: _legacy, ...cleanMap } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
     return {
-      ...wbMap,
+      ...cleanMap,
       tooltip_source: {
         path: tooltipPath,
       },

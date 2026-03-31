@@ -30,7 +30,6 @@ export function registerTestModeRoutes(ctx) {
     buildValidationChecks,
     loadComponentIdentityPools,
     runTestProduct,
-    runComponentReviewBatch,
     purgeTestModeCategoryState,
     resetTestModeSharedReviewState,
     resetTestModeProductReviewState,
@@ -69,7 +68,6 @@ export function registerTestModeRoutes(ctx) {
       await fs.mkdir(compDbDir, { recursive: true });
       await fs.mkdir(path.join(testDir, '_control_plane'), { recursive: true });
       await fs.mkdir(path.join(testDir, '_overrides'), { recursive: true });
-      await fs.mkdir(path.join(testDir, '_suggestions'), { recursive: true });
 
       // Copy generated rule files with progress broadcasts
       const ruleFiles = ['field_rules.json', 'known_values.json',
@@ -225,13 +223,6 @@ export function registerTestModeRoutes(ctx) {
       await fs.mkdir(productsDir, { recursive: true });
       const outputsCategoryDir = path.join(OUTPUT_ROOT, 'specs', 'outputs', category);
       await fs.rm(outputsCategoryDir, { recursive: true, force: true });
-      const suggestionsDir = path.join(HELPER_ROOT, category, '_suggestions');
-      await fs.mkdir(suggestionsDir, { recursive: true });
-      await Promise.all([
-        fs.rm(path.join(suggestionsDir, 'enums.json'), { force: true }),
-        fs.rm(path.join(suggestionsDir, 'components.json'), { force: true }),
-        fs.rm(path.join(suggestionsDir, 'component_review.json'), { force: true }),
-      ]);
 
       let contractAnalysis = null;
       try {
@@ -391,12 +382,6 @@ export function registerTestModeRoutes(ctx) {
         }
       }
 
-      if (body.aiReview) {
-        try {
-          await runComponentReviewBatch({ config, category, logger: null });
-        } catch { /* non-fatal */ }
-      }
-
       const resyncSpecDb = body?.resyncSpecDb !== false;
       if (runtimeSpecDb && resyncSpecDb) {
         try {
@@ -441,8 +426,16 @@ export function registerTestModeRoutes(ctx) {
       let passed = 0;
       let failed = 0;
 
-      const suggestionsEnums = await safeReadJson(path.join(HELPER_ROOT, category, '_suggestions', 'enums.json')) || { suggestions: [] };
-      const suggestionsComponents = await safeReadJson(path.join(HELPER_ROOT, category, '_suggestions', 'components.json')) || { suggestions: [] };
+      // SQL is now the SSOT for curation suggestions
+      let suggestionsEnums = { suggestions: [] };
+      let suggestionsComponents = { suggestions: [] };
+      try {
+        const runtimeSpecDb = await getSpecDbReady(category);
+        if (runtimeSpecDb) {
+          suggestionsEnums = { suggestions: runtimeSpecDb.getCurationSuggestions('enum_value') || [] };
+          suggestionsComponents = { suggestions: runtimeSpecDb.getCurationSuggestions('new_component') || [] };
+        }
+      } catch { /* non-fatal — specDb may not be ready */ }
 
       let contractAnalysis = null;
       try {

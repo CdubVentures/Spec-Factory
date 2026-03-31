@@ -42,9 +42,10 @@ category_authority/{category}/
 │   │                                          Written by: ingest (compile only)
 │   │                                          Read by: compile context loader, contract tests
 │   │
-│   └── product_catalog.json                  ACTIVE — product identity registry (mouse only)
-│                                              Written by: catalog (add/edit/delete product)
-│                                              Read by: catalog loader, identity gate, seeder
+│   └── product_catalog.json                  READ-ONLY BOOT SEED — product identity registry
+│                                              Written by: never (static seed file)
+│                                              Read by: seed.js at boot (populates empty SQL)
+│                                              SSOT: SQL products table + .workspace/products/{pid}/product.json
 │
 ├── _generated/                               COMPILE-ONLY OUTPUT (deterministic from field_studio_map)
 │   ├── field_rules.json                      ACTIVE — compiled rules (seeds SQL, 40+ readers)
@@ -219,7 +220,7 @@ All construct paths directly with `path.join(HELPER_ROOT, category, '_generated/
 | File/Directory | Owner (writer) | Barrel export | Cross-boundary readers |
 |---------------|---------------|---------------|----------------------|
 | `_control_plane/field_studio_map.json` | `src/ingest/` | `loadFieldStudioMap()`, `saveFieldStudioMap()` | studio, field-rules/sessionCache |
-| `_control_plane/product_catalog.json` | `src/features/catalog/` | `loadProductCatalog()`, `saveProductCatalog()` | ingest/catalogSeed, db/seed |
+| `_control_plane/product_catalog.json` | read-only (static boot seed) | `loadProductCatalog()` | db/seed (boot only). SSOT: SQL `products` table |
 | `_generated/*` (all compile output) | `src/ingest/` + `src/field-rules/` | `resolveGeneratedRoot()` | categories/loader, field-rules/loader, engine, studio, review, db/seed |
 | `_overrides/*.overrides.json` | `src/features/review/` | `resolveOverrideFilePath()` | field-rules/loader, ingest, db/seed, publish |
 | `_overrides/components/*.json` | `src/features/review/` | (via review barrel) | field-rules/loader |

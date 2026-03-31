@@ -91,7 +91,7 @@ export function createGuiServerRuntime({
   return withProcessBootstrapOverrides({ env, argv, cwd }, () => {
     const {
       env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
-      storage: { storage, runDataStorageState, getIndexLabRoot },
+      storage: { storage, getIndexLabRoot },
       session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
       realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
       process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
@@ -113,7 +113,6 @@ export function createGuiServerRuntime({
         getPendingComponentSharedCandidateIdsAsync, getPendingEnumSharedCandidateIds,
         syncSyntheticCandidatesFromComponentReview,
         remapPendingComponentReviewItemsForNameChange, propagateSharedLaneDecision,
-        markEnumSuggestionStatusBound,
         buildCatalog, patchCompiledComponentDb,
       },
     } = bootstrapServer({ projectRoot });
@@ -127,7 +126,7 @@ export function createGuiServerRuntime({
     const routeCtx = {
       infraRouteContext: createInfraRouteContext({
         jsonRes, readJsonBody, listDirs, canonicalSlugify, HELPER_ROOT, DIST_ROOT: resolvedDistRoot,
-        OUTPUT_ROOT, INDEXLAB_ROOT, fs, path, runDataStorageState,
+        OUTPUT_ROOT, INDEXLAB_ROOT, fs, path,
         getSerperApiKey: () => config.serperApiKey,
         getSerperEnabled: () => config.serperEnabled,
         getSearxngStatus, startSearxngStack, startProcess, stopProcess, processStatus,
@@ -162,7 +161,7 @@ export function createGuiServerRuntime({
       }),
       configRouteContext: createConfigRouteContext({
         jsonRes, readJsonBody, config, configGate, toInt,
-        getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, runDataStorageState, appDb,
+        getSpecDb, storage, OUTPUT_ROOT, broadcastWs, HELPER_ROOT, appDb,
       }),
       studioRouteContext: createStudioRouteContext({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
@@ -184,7 +183,7 @@ export function createGuiServerRuntime({
       }),
       indexlabRouteContext: createIndexlabRouteContext({
         jsonRes, toInt, toFloat, config, safeJoin, safeReadJson, path, INDEXLAB_ROOT,
-        processStatus, readJsonBody, broadcastWs, runDataStorageState, storage, OUTPUT_ROOT,
+        processStatus, readJsonBody, broadcastWs, storage, OUTPUT_ROOT,
         getIndexLabRoot, getSpecDb,
       }),
       reviewRouteContext: createReviewRouteContext({
@@ -200,7 +199,7 @@ export function createGuiServerRuntime({
         remapPendingComponentReviewItemsForNameChange,
         getPendingComponentSharedCandidateIdsAsync, getPendingEnumSharedCandidateIds,
         annotateCandidatePrimaryReviews, ensureGridKeyReviewState,
-        markEnumSuggestionStatusBound, patchCompiledComponentDb,
+        patchCompiledComponentDb,
       }),
     };
 

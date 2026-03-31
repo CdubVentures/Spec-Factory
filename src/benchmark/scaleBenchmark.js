@@ -103,11 +103,10 @@ export async function buildScaleBenchmarkReport({
   specDb = null
 }) {
   const normalizedSizes = parseSizes(sizes);
-  const keys = await storage.listInputKeys(category);
-  const productIds = keys
-    .map((key) => String(key || ''))
-    .filter((key) => key.endsWith('.json'))
-    .map((key) => key.split('/').pop()?.replace(/\.json$/i, '') || '')
+  // WHY: SQL is the source of truth for products — no fixture scan needed.
+  const productRows = specDb ? specDb.getAllProducts() : [];
+  const productIds = productRows
+    .map((row) => String(row.product_id || '').trim())
     .filter(Boolean)
     .sort();
 

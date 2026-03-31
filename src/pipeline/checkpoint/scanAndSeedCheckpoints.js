@@ -5,6 +5,7 @@
 import path from 'node:path';
 import { listDirs, safeReadJson } from '../../shared/fileHelpers.js';
 import { seedFromCheckpoint } from './seedFromCheckpoint.js';
+import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 function categoryMatches(checkpoint, specDb) {
   const cpCat = String(
@@ -13,7 +14,7 @@ function categoryMatches(checkpoint, specDb) {
   return cpCat === specDb.category;
 }
 
-export async function scanAndSeedCheckpoints({ specDb, indexLabRoot }) {
+export async function scanAndSeedCheckpoints({ specDb, indexLabRoot, productRoot }) {
   if (!specDb) throw new Error('scanAndSeedCheckpoints requires specDb');
   if (!indexLabRoot) throw new Error('scanAndSeedCheckpoints requires indexLabRoot');
 
@@ -28,10 +29,16 @@ export async function scanAndSeedCheckpoints({ specDb, indexLabRoot }) {
   };
 
   // Phase 1: Product checkpoints (products first → seeds products + queue tables)
-  const productsDir = path.join(indexLabRoot, 'products');
-  const productDirs = await listDirs(productsDir);
-  for (const dir of productDirs) {
-    const filePath = path.join(productsDir, dir, 'product.json');
+  // WHY: Scan productRoot (.workspace/products/). Fall back to indexLabRoot/products when
+  // productRoot is not provided (backward compat for tests/callers).
+  const scanDirs = [];
+  const effectiveProductRoot = productRoot || path.join(indexLabRoot, 'products');
+  const primaryDirs = await listDirs(effectiveProductRoot);
+  for (const d of primaryDirs) {
+    scanDirs.push({ dir: d, base: effectiveProductRoot });
+  }
+  for (const { dir, base } of scanDirs) {
+    const filePath = path.join(base, dir, 'product.json');
     const cp = await safeReadJson(filePath);
     if (!cp || cp.checkpoint_type !== 'product') continue;
     stats.products_found += 1;

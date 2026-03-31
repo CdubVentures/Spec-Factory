@@ -19,7 +19,7 @@
 | Category | Canonical owner | Derived/read model surfaces |
 |----------|-----------------|----------------------------|
 | Category rules, labels, maps | `category_authority/{category}/_generated/*`, `category_authority/{category}/_control_plane/*`, `user-settings.json` | `sessionCache`, review layouts, runtime idx badges |
-| Product catalog and brand registry | `category_authority/{category}/_control_plane/product_catalog.json`, brand registry helpers in `src/features/catalog/identity/brandRegistry.js` | `products`, `brands`, queue snapshots, review payload identity blocks |
+| Product catalog and brand registry | SQL `products` table (SSOT), `.workspace/products/{pid}/product.json` (rebuild file), `product_catalog.json` (read-only boot seed) | `products`, `brands`, queue snapshots, review payload identity blocks |
 | Accepted field/component/list values | `item_field_state`, `component_values`, `list_values` | review payloads, normalized output, learning reports |
 | Queue state | `product_queue` plus file-backed queue helpers in `src/queue/queueState.js` | runtime dashboards, review queue, daemon selection |
 | Billing and learning telemetry | `billing_entries`, `learning_profiles`, `category_brain`, `_billing/*`, `_learning/*` | Billing GUI, learning suggestions, reports |

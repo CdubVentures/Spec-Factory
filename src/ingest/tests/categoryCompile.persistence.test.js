@@ -198,7 +198,6 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
     assert.equal(first.field_count > 20, true);
 
     const controlRoot = path.join(helperRoot, 'mouse', '_control_plane');
-    const suggestionsRoot = path.join(helperRoot, 'mouse', '_suggestions');
     const fieldRulesPath = path.join(generatedRoot, 'field_rules.json');
     const knownValuesPath = path.join(generatedRoot, 'known_values.json');
     const uiCatalogPath = path.join(generatedRoot, 'ui_field_catalog.json');
@@ -206,8 +205,6 @@ test('compileCategoryFieldStudio writes deterministic generated artifacts', asyn
     assert.equal(await fs.stat(fieldRulesPath).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(knownValuesPath).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(uiCatalogPath).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(suggestionsRoot, 'enums.json')).then(() => true).catch(() => false), true);
-    assert.equal(await fs.stat(path.join(suggestionsRoot, 'components.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(componentRoot, 'sensors.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(componentRoot, 'switches.json')).then(() => true).catch(() => false), true);
     assert.equal(await fs.stat(path.join(componentRoot, 'encoders.json')).then(() => true).catch(() => false), true);

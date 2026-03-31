@@ -103,7 +103,7 @@ Why it is wrong:
 Do instead:
 
 - Put operational mutable data in AppDb or SpecDb through the existing DB layers.
-- Put authored category or global control-plane data under the existing `category_authority/` contracts such as `category_authority/_runtime/user-settings.json`, `category_authority/*/sources.json`, and spec-seed files.
+- Put authored category or global control-plane data under the existing `category_authority/` contracts such as `category_authority/*/sources.json` and spec-seed files. User settings live in `.workspace/global/user-settings.json`.
 
 ## Deep-Importing Another Feature's Internals
 

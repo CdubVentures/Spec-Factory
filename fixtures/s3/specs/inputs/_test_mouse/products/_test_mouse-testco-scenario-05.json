@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-05",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 5",
+    "variant": "similar_material",
+    "id": 9005,
+    "identifier": "test005a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 5,
+    "name": "similar_material",
+    "description": "Material alias match (\"Material alpha 01\" â†’ \"Material Alpha 01\")",
+    "category": "Components"
+  }
+}

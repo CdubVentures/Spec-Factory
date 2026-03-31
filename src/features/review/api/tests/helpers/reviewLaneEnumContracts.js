@@ -8,7 +8,7 @@ import {
 } from '../fixtures/reviewLaneApiHarness.js';
 
 export async function runReviewLaneEnumContracts(t, harness) {
-  const { baseUrl, db, readReviewDoc } = harness;
+  const { baseUrl, db } = harness;
 
   await t.test('enum accept and confirm remain decoupled and confirm is candidate scoped', async () => {
     const enumSlot = getEnumSlotIds(db, CATEGORY, 'connection', '2.4GHz');
@@ -57,9 +57,9 @@ export async function runReviewLaneEnumContracts(t, harness) {
     assert.equal(afterConfirm.ai_confirm_shared_status, 'pending');
     assert.equal(afterConfirm.user_accept_shared_status, 'accepted');
 
-    const reviewDoc = await readReviewDoc();
-    const review24 = reviewDoc.items.find((item) => item.review_id === 'rv-enum-24');
-    const reviewWireless = reviewDoc.items.find((item) => item.review_id === 'rv-enum-wireless');
+    const reviewItems = db.getComponentReviewItems('sensor') || [];
+    const review24 = reviewItems.find((item) => item.review_id === 'rv-enum-24');
+    const reviewWireless = reviewItems.find((item) => item.review_id === 'rv-enum-wireless');
     assert.equal(review24?.status, 'pending_ai');
     assert.equal(reviewWireless?.status, 'pending_ai');
 

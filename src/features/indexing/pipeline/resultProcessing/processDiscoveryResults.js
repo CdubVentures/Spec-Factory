@@ -36,7 +36,7 @@ export async function processDiscoveryResults({
   // From executeSearchQueries return (deduped, video-filtered, crawled-filtered)
   searchResults, searchAttempts, searchJournal, internalSatisfied, externalSearchReason,
   // Core services
-  config, storage, categoryConfig, job, runId, logger, runtimeTraceWriter, frontierDb,
+  config, storage, categoryConfig, job, runId, logger, frontierDb,
   // Identity & learning
   variables, identityLock, brandResolution, missingFields, learning,
   // LLM & planning
@@ -195,28 +195,6 @@ export async function processDiscoveryResults({
   const auditSamples = sampleRejectAudit({ hardDrops, notSelected });
   const auditTrail = buildAuditTrail({ auditSamples, hardDrops, notSelected, selected });
 
-  // ── Trace writing + logging ──
-  if (runtimeTraceWriter) {
-    const trace = await runtimeTraceWriter.writeJson({
-      section: 'search',
-      prefix: 'selected_urls',
-      payload: {
-        selected_count: discovered.length,
-        selected_urls: discovered.map((row) => ({
-          url: row.url,
-          host: row.host,
-          tier: row.tierName || '',
-          reason: row.triage_disposition || ''
-        }))
-      },
-      ringSize: 60
-    });
-    logger?.info?.('discovery_urls_selected', {
-      selected_count: discovered.length,
-      selected_hosts_top: [...new Set(discovered.map((row) => row.host).filter(Boolean))],
-      trace_path: trace.trace_path
-    });
-  }
   logger?.info?.('discovery_results_reranked', {
     discovered_count: candidateRowsFinal.length,
     approved_count: discovered.filter((item) => item.approvedDomain).length
@@ -295,7 +273,7 @@ export async function processDiscoveryResults({
       result_count: attempt?.result_count || 0,
       attempts: attempt?.attempts || 0,
       providers: attempt?.providers || [],
-      frontier_cache: attempt?.frontier_cache || false
+      cooldown_skipped: attempt?.cooldown_skipped || false
     };
   });
 

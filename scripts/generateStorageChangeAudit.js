@@ -71,7 +71,6 @@ const PHASES = [
       'src/features/indexing/orchestration/shared/runtimeHelpers.js',
       'src/features/indexing/orchestration/bootstrap/loadLearningStoreHintsForRun.js',
       'src/api/guiServerRuntimeConfig.js',
-      'src/research/frontierDb.js',
       'SpecFactory.bat',
       'scripts/verify-wave4.js',
     ],
@@ -116,10 +115,10 @@ const PHASES = [
   },
   {
     key: 'phase-e',
-    title: 'Phase E: Frontier, Learning, Crawlee, and Junk Cleanup',
-    target: 'Move frontier and learning storage, stop writing junk to legacy roots, and formalize runtime-only directories.',
+    title: 'Phase E: Crawl Ledger, Learning, Crawlee, and Junk Cleanup',
+    target: 'Frontier eliminated — crawl ledger now in spec.sqlite. Learning storage moved. Runtime-only directories formalized.',
     primaryFiles: [
-      'src/research/frontierDb.js',
+      'src/db/stores/crawlLedgerStore.js',
       'src/features/indexing/learning/learningStores.js',
       'src/features/crawl/crawlSession.js',
       'src/features/crawl/videoCleanup.js',

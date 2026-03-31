@@ -6,8 +6,6 @@ import {
   setManualOverride, applySharedLaneState, cascadeComponentChange,
   cascadeEnumChange,
 } from '../../review-curation/index.js';
-import { componentReviewPath } from '../../../engine/curationSuggestions.js';
-import { runComponentReviewBatch } from '../../../pipeline/componentReviewBatch.js';
 import {
   resolveGridFieldStateForMutation, resolveComponentMutationContext,
   resolveEnumMutationContext,
@@ -36,7 +34,7 @@ export function createReviewRouteContext(options = {}) {
     getPendingComponentSharedCandidateIdsAsync,
     getPendingEnumSharedCandidateIds,
     annotateCandidatePrimaryReviews, ensureGridKeyReviewState,
-    markEnumSuggestionStatusBound, patchCompiledComponentDb,
+    patchCompiledComponentDb,
   } = options;
 
   return {
@@ -46,7 +44,7 @@ export function createReviewRouteContext(options = {}) {
     buildComponentReviewPayloads, buildEnumReviewPayloads, loadCategoryConfig,
     loadProductCatalog, readLatestArtifacts, sessionCache, reviewLayoutByCategory,
     broadcastWs, specDbCache, findProductsReferencingComponent,
-    componentReviewPath, runComponentReviewBatch, invalidateFieldRulesCache,
+    invalidateFieldRulesCache,
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,
     setOverrideFromCandidate, setManualOverride,
     syncPrimaryLaneAcceptFromItemSelection, resolveKeyReviewForLaneMutation,
@@ -59,7 +57,7 @@ export function createReviewRouteContext(options = {}) {
     remapPendingComponentReviewItemsForNameChange,
     getPendingComponentSharedCandidateIdsAsync, resolveEnumMutationContext,
     getPendingEnumSharedCandidateIds, cascadeEnumChange,
-    markEnumSuggestionStatusBound, runEnumConsistencyReview,
+    runEnumConsistencyReview,
     annotateCandidatePrimaryReviews, ensureGridKeyReviewState,
     patchCompiledComponentDb,
   };

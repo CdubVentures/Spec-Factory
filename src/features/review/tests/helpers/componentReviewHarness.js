@@ -42,20 +42,10 @@ export function makeCategoryAuthorityConfig(tempRoot) {
   return { categoryAuthorityRoot: path.join(tempRoot, 'category_authority') };
 }
 
-export async function writeComponentReviewItems(tempRoot, items, category = CATEGORY) {
-  const reviewPath = path.join(
-    tempRoot,
-    'category_authority',
-    category,
-    '_suggestions',
-    'component_review.json',
-  );
-  await fs.mkdir(path.dirname(reviewPath), { recursive: true });
-  await fs.writeFile(
-    reviewPath,
-    `${JSON.stringify({ version: 1, category, items }, null, 2)}\n`,
-    'utf8',
-  );
+export function writeComponentReviewItems(specDb, items) {
+  for (const item of items) {
+    specDb.upsertComponentReviewItem(item);
+  }
 }
 
 export function getComponentIdentityId(specDb, componentType, canonicalName, maker = '') {

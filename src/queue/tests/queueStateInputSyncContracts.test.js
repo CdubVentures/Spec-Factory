@@ -27,37 +27,30 @@ test('syncQueueFromInputs applies the identity gate and rejects conflicting vari
       }
     }, null, 2), 'utf8');
 
-    await storage.writeObject(
-      'specs/inputs/mouse/products/mouse-acer-cestus-310.json',
-      Buffer.from(JSON.stringify({
-        productId: 'mouse-acer-cestus-310',
-        category: 'mouse',
-        identityLock: { brand: 'Acer', model: 'Cestus 310', variant: '' },
-        seedUrls: [],
-        anchors: {}
-      }), 'utf8')
-    );
-    await storage.writeObject(
-      'specs/inputs/mouse/products/mouse-acer-cestus-310-310.json',
-      Buffer.from(JSON.stringify({
-        productId: 'mouse-acer-cestus-310-310',
-        category: 'mouse',
-        identityLock: { brand: 'Acer', model: 'Cestus 310', variant: '310' },
-        seedUrls: [],
-        anchors: {}
-      }), 'utf8')
-    );
+    // WHY: syncQueueFromInputs now reads products from specDb instead of fixture files.
+    const queueRows = new Map();
+    const mockSpecDb = {
+      getAllProducts: () => [
+        { product_id: 'mouse-acer-cestus-310', brand: 'Acer', model: 'Cestus 310', variant: '' },
+        { product_id: 'mouse-acer-cestus-310-310', brand: 'Acer', model: 'Cestus 310', variant: '310' },
+      ],
+      getAllQueueProducts: () => [...queueRows.values()],
+      getQueueProduct: (pid) => queueRows.get(pid) || null,
+      upsertQueueProduct: (row) => { queueRows.set(row.product_id, row); },
+      db: { transaction: (fn) => fn },
+    };
 
     const sync = await syncQueueFromInputs({
       storage,
       category,
+      specDb: mockSpecDb,
       config: { categoryAuthorityRoot: helperRoot }
     });
 
     assert.equal(sync.added, 1);
     assert.equal(sync.rejected_by_identity_gate, 1);
 
-    const loaded = await loadQueueState({ storage, category });
+    const loaded = await loadQueueState({ storage, category, specDb: mockSpecDb });
     assert.equal(Boolean(loaded.state.products['mouse-acer-cestus-310']), true);
     assert.equal(Boolean(loaded.state.products['mouse-acer-cestus-310-310']), false);
   });

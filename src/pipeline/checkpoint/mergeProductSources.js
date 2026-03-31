@@ -20,7 +20,15 @@ export function mergeProductSources({ existing = [], incoming = [], runId }) {
 
   for (const src of incoming) {
     if (src.content_hash && hashIndex.has(src.content_hash)) {
-      hashIndex.get(src.content_hash).last_seen_run_id = String(runId || '');
+      const target = hashIndex.get(src.content_hash);
+      target.last_seen_run_id = String(runId || '');
+      // WHY: Accumulate fetch counters across runs for URL crawl ledger rebuild.
+      target.fetch_count = (target.fetch_count || 0) + (src.fetch_count || 0);
+      target.ok_count = (target.ok_count || 0) + (src.ok_count || 0);
+      target.blocked_count = (target.blocked_count || 0) + (src.blocked_count || 0);
+      target.timeout_count = (target.timeout_count || 0) + (src.timeout_count || 0);
+      if (src.elapsed_ms) target.elapsed_ms = src.elapsed_ms;
+      if (src.domain) target.domain = src.domain;
     } else {
       merged.push({
         ...src,

@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-14",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 14",
+    "variant": "component_constraints",
+    "id": 9014,
+    "identifier": "test014a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 14,
+    "name": "component_constraints",
+    "description": "Violate component constraints: sensor_date <= release_date",
+    "category": "Constraints"
+  }
+}

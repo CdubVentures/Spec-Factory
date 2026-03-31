@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-09",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 9",
+    "variant": "similar_switch",
+    "id": 9009,
+    "identifier": "test009a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 9,
+    "name": "similar_switch",
+    "description": "Switch alias match (\"Switch alpha 01\" â†’ \"Switch Alpha 01\")",
+    "category": "Components"
+  }
+}

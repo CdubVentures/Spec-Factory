@@ -114,8 +114,6 @@
 | Key | Type | Default | What it controls |
 |-----|------|---------|-----------------|
 | `runtimeScreencastEnabled` | bool | `true` | Live CDP screencast feed to GUI |
-| `runtimeTraceEnabled` | bool | `true` | Runtime trace file output |
-| `runtimeTraceLlmPayloads` | bool | `true` | Include LLM payloads in traces |
 
 ## Video & Screenshots (GUI: extraction)
 

@@ -119,7 +119,7 @@ export function createPublishingCommands({
       args['helper-root'] || config.categoryAuthorityRoot || 'category_authority'
     ).trim();
     const categoriesRoot = String(args['categories-root'] || 'categories').trim();
-    const goldenRoot = String(args['golden-root'] || 'fixtures/golden').trim();
+    const goldenRoot = String(args['golden-root'] || 'test/golden').trim();
     const result = await bootstrapExpansionCategories({
       config: {
         ...config,

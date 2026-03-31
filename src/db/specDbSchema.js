@@ -973,6 +973,57 @@ CREATE TABLE IF NOT EXISTS prompt_index (
 CREATE INDEX IF NOT EXISTS idx_pi_cat ON prompt_index(category);
 CREATE INDEX IF NOT EXISTS idx_pi_run ON prompt_index(run_id);
 
+-- URL crawl ledger (per-product URL fetch history, rebuildable from product.json)
+CREATE TABLE IF NOT EXISTS url_crawl_ledger (
+  canonical_url      TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  category           TEXT NOT NULL DEFAULT '',
+  original_url       TEXT NOT NULL DEFAULT '',
+  domain             TEXT NOT NULL DEFAULT '',
+  path_sig           TEXT NOT NULL DEFAULT '',
+  final_url          TEXT NOT NULL DEFAULT '',
+  content_hash       TEXT NOT NULL DEFAULT '',
+  content_type       TEXT NOT NULL DEFAULT '',
+  http_status        INTEGER DEFAULT 0,
+  bytes              INTEGER DEFAULT 0,
+  elapsed_ms         INTEGER DEFAULT 0,
+  fetch_count        INTEGER DEFAULT 1,
+  ok_count           INTEGER DEFAULT 0,
+  blocked_count      INTEGER DEFAULT 0,
+  timeout_count      INTEGER DEFAULT 0,
+  server_error_count INTEGER DEFAULT 0,
+  redirect_count     INTEGER DEFAULT 0,
+  notfound_count     INTEGER DEFAULT 0,
+  gone_count         INTEGER DEFAULT 0,
+  first_seen_ts      TEXT NOT NULL DEFAULT '',
+  last_seen_ts       TEXT NOT NULL DEFAULT '',
+  first_seen_run_id  TEXT NOT NULL DEFAULT '',
+  last_seen_run_id   TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (canonical_url, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ucl_product ON url_crawl_ledger(product_id);
+CREATE INDEX IF NOT EXISTS idx_ucl_domain ON url_crawl_ledger(domain);
+
+-- Query cooldowns (per-product query TTL, ephemeral — not checkpointed)
+CREATE TABLE IF NOT EXISTS query_cooldowns (
+  query_hash         TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  category           TEXT NOT NULL DEFAULT '',
+  query_text         TEXT NOT NULL,
+  provider           TEXT NOT NULL DEFAULT '',
+  tier               TEXT DEFAULT NULL,
+  group_key          TEXT DEFAULT NULL,
+  normalized_key     TEXT DEFAULT NULL,
+  hint_source        TEXT DEFAULT NULL,
+  attempt_count      INTEGER DEFAULT 1,
+  result_count       INTEGER DEFAULT 0,
+  last_executed_at   TEXT NOT NULL DEFAULT '',
+  cooldown_until     TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (query_hash, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_qc_product ON query_cooldowns(product_id);
+CREATE INDEX IF NOT EXISTS idx_qc_cooldown ON query_cooldowns(cooldown_until);
+
 -- Field studio map (per-category control-plane config persisted in SQL)
 CREATE TABLE IF NOT EXISTS field_studio_map (
   id INTEGER PRIMARY KEY CHECK (id = 1),

@@ -37,7 +37,6 @@
 
 - Writes accepted field values, component aliases/values, enum rows, candidate review state, and key review state into SQLite.
 - May write component override JSON under `category_authority/{category}/_overrides/components/`.
-- Running component review batch invokes `src/pipeline/componentReviewBatch.js` and can invalidate caches.
 
 ## Error Paths
 

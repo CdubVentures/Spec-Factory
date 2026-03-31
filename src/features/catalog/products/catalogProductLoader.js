@@ -4,7 +4,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { cleanVariant } from '../identity/identityDedup.js';
+import { cleanVariant, isFabricatedVariant } from '../identity/identityDedup.js';
 
 function helperRootFromConfig(config = {}) {
   return path.resolve(String(config?.categoryAuthorityRoot || 'category_authority'));
@@ -57,11 +57,16 @@ function normalizeCatalogProducts(catalogDoc = {}) {
     if (!brand || !model) {
       continue;
     }
+    // WHY: Defense-in-depth — strip fabricated variants at read boundary.
+    let variant = cleanVariant(row.variant);
+    if (variant && isFabricatedVariant(model, variant)) {
+      variant = '';
+    }
     rows.push({
       productId: String(productId || '').trim(),
       brand,
       model,
-      variant: cleanVariant(row.variant),
+      variant,
     });
   }
 

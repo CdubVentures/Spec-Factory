@@ -1,24 +1,9 @@
-import path from 'node:path';
 import { nowIso } from '../shared/primitives.js';
 import { normalizeFieldKey } from './engineTextHelpers.js';
 import { generateSuggestionId, deduplicateByKey } from './curationPureDomain.js';
 
-function normalizeCategory(value) {
-  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+$/g, '') || 'category';
-}
-
 function normalizeValueToken(value) {
   return String(value ?? '').trim();
-}
-
-export function enumSuggestionPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'enums.json');
-}
-
-export function componentSuggestionPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'components.json');
 }
 
 export async function appendComponentCurationSuggestions({
@@ -29,9 +14,7 @@ export async function appendComponentCurationSuggestions({
   suggestions = [],
   specDb = null
 }) {
-  const filePath = componentSuggestionPath({ config, category });
-
-  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+  if (!specDb) return { appended_count: 0, total_count: 0 };
 
   const existing = specDb.getCurationSuggestions('new_component') || [];
 
@@ -72,7 +55,6 @@ export async function appendComponentCurationSuggestions({
   const totalCount = (specDb.getCurationSuggestions('new_component') || []).length;
 
   return {
-    path: filePath,
     appended_count: appended.length,
     total_count: totalCount
   };
@@ -86,9 +68,7 @@ export async function appendEnumCurationSuggestions({
   suggestions = [],
   specDb = null
 }) {
-  const filePath = enumSuggestionPath({ config, category });
-
-  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+  if (!specDb) return { appended_count: 0, total_count: 0 };
 
   const existing = specDb.getCurationSuggestions('enum_value') || [];
 
@@ -133,18 +113,12 @@ export async function appendEnumCurationSuggestions({
   const totalCount = (specDb.getCurationSuggestions('enum_value') || []).length;
 
   return {
-    path: filePath,
     appended_count: appended.length,
     total_count: totalCount
   };
 }
 
 // ── Component Review Items (flagged for AI review) ────────────────
-
-export function componentReviewPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'component_review.json');
-}
 
 export async function appendComponentReviewItems({
   config = {},
@@ -154,9 +128,7 @@ export async function appendComponentReviewItems({
   items = [],
   specDb = null
 }) {
-  const filePath = componentReviewPath({ config, category });
-
-  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+  if (!specDb) return { appended_count: 0, total_count: 0 };
 
   // Collect unique component types from incoming items for SQL read
   const componentTypes = new Set();
@@ -225,18 +197,12 @@ export async function appendComponentReviewItems({
   }
 
   return {
-    path: filePath,
     appended_count: appendedCount,
     total_count: totalCount
   };
 }
 
 // ── Component Identity Observations (successful matches) ──────────
-
-export function componentIdentityPath({ config = {}, category }) {
-  const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
-  return path.join(helperRoot, normalizeCategory(category), '_suggestions', 'component_identity.json');
-}
 
 export async function appendComponentIdentityObservations({
   config = {},
@@ -246,9 +212,7 @@ export async function appendComponentIdentityObservations({
   observations = [],
   specDb = null
 }) {
-  const filePath = componentIdentityPath({ config, category });
-
-  if (!specDb) return { path: filePath, appended_count: 0, total_count: 0 };
+  if (!specDb) return { appended_count: 0, total_count: 0 };
 
   const incoming = observations
     .map((row) => {
@@ -290,7 +254,6 @@ export async function appendComponentIdentityObservations({
   }
 
   return {
-    path: filePath,
     appended_count: upsertedCount,
     total_count: upsertedCount
   };

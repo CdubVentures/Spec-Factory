@@ -104,10 +104,10 @@ export function createTestingQualityCommands({
     if (productId) {
       productIds.push(productId);
     } else {
-      const allKeys = await storage.listInputKeys(category);
-      for (const key of allKeys) {
-        const job = await storage.readJsonOrNull(key);
-        if (job?.productId) productIds.push(job.productId);
+      // WHY: SQL is the source of truth for products — no fixture scan needed.
+      const allProducts = specDb ? specDb.getAllProducts() : [];
+      for (const row of allProducts) {
+        if (row.product_id) productIds.push(row.product_id);
       }
     }
 
@@ -131,7 +131,7 @@ export function createTestingQualityCommands({
       }
     }
 
-    const goldenDir = `fixtures/golden/${category}`;
+    const goldenDir = `test/golden/${category}`;
     const goldenKeys = await storage.listKeys?.(goldenDir) || [];
     const groundTruth = {};
     for (const gk of goldenKeys) {

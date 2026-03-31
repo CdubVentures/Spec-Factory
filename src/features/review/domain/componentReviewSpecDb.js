@@ -54,10 +54,8 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
   );
 
-  // Still load pipeline component_review.json (kept for Phase 2 migration)
-  const reviewPath = path.join(helperRoot, category, '_suggestions', 'component_review.json');
-  const reviewDoc = await safeReadJson(reviewPath);
-  const reviewItems = Array.isArray(reviewDoc?.items) ? reviewDoc.items : [];
+  // Load review items from SQL (component_review_queue table)
+  const reviewItems = specDb.getComponentReviewItems(componentType) || [];
 
   // Immutable reference baseline for this component type from component DB.
   const refDbByIdentity = new Map();
@@ -322,7 +320,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       needs_review: nameNeedsReview,
       reason_codes: nameIsOverridden ? ['manual_override'] : (nameNeedsReview ? ['new_component'] : []),
       source: nameIsOverridden ? 'user' : (nameIsPipeline ? 'pipeline' : 'reference'),
-      source_timestamp: null,
+      source_timestamp: nameIsOverridden ? (String(identity.updated_at || '').trim() || null) : null,
       variance_policy: null,
       constraints: [],
       overridden: nameIsOverridden,
@@ -356,7 +354,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       needs_review: makerNeedsReview,
       reason_codes: makerIsOverridden ? ['manual_override'] : (makerNeedsReview ? ['new_component'] : []),
       source: makerIsOverridden ? 'user' : (itemMaker ? 'reference' : 'unknown'),
-      source_timestamp: null,
+      source_timestamp: makerIsOverridden ? (String(identity.updated_at || '').trim() || null) : null,
       variance_policy: null,
       constraints: [],
       overridden: makerIsOverridden,
@@ -367,13 +365,15 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
 
     // Links tracked state
     const effectiveLinks = toArray(identity.links ? JSON.parse(identity.links) : []);
+    const linksOverridden = nameIsOverridden;
+    const linksTimestamp = linksOverridden ? (String(identity.updated_at || '').trim() || null) : null;
     const links_tracked = effectiveLinks.map((url) => ({
-      selected: { value: url, confidence: 1.0, status: 'reference', color: confidenceColor(1.0, []) },
+      selected: { value: url, confidence: 1.0, status: linksOverridden ? 'override' : 'reference', color: confidenceColor(1.0, []) },
       needs_review: false,
-      reason_codes: [],
-      source: 'reference',
-      source_timestamp: null,
-      overridden: false,
+      reason_codes: linksOverridden ? ['manual_override'] : [],
+      source: linksOverridden ? 'user' : 'reference',
+      source_timestamp: linksTimestamp,
+      overridden: linksOverridden,
     }));
 
     const reviewItemsForName = reviewByComponent.get(String(itemName || '').toLowerCase()) || [];
@@ -420,7 +420,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         needs_review: needsReview,
         reason_codes: reasonCodes,
         source: isOverridden ? 'user' : (source === 'component_db' ? 'reference' : source),
-        source_timestamp: null,
+        source_timestamp: isOverridden ? (String(dbRow?.updated_at || '').trim() || null) : null,
         variance_policy: variance,
         constraints: fieldConstraints,
         overridden: isOverridden,

@@ -17,7 +17,6 @@ import {
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
 } from '../../features/settings-authority/index.js';
-import { markEnumSuggestionStatus } from '../helpers/fileHelpers.js';
 import { toInt } from '../helpers/valueNormalizers.js';
 import { createConfigMutationGate } from '../../core/config/configMutationGate.js';
 import { configValue } from '../../shared/settingsAccessor.js';
@@ -64,7 +63,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
   );
   config.categoryAuthorityRoot = resolvedCategoryAuthorityRoot;
   config.localOutputRoot = resolveProjectPath(configValue(config, 'localOutputRoot'), defaultLocalOutputRoot());
-  config.localInputRoot = resolveProjectPath(configValue(config, 'localInputRoot'), 'fixtures/s3');
+  config.localInputRoot = resolveProjectPath(configValue(config, 'localInputRoot'), '.workspace');
   const HELPER_ROOT = resolveProjectPath(config.categoryAuthorityRoot, 'category_authority');
   const LAUNCH_CWD = path.resolve(process.cwd());
   assertNoShadowHelperRuntime({
@@ -72,7 +71,7 @@ export function createBootstrapEnvironment({ projectRoot }) {
     launchCwd: LAUNCH_CWD,
     existsSync: fsSync.existsSync,
   });
-  const userSettings = loadUserSettingsSync({ categoryAuthorityRoot: HELPER_ROOT });
+  const userSettings = loadUserSettingsSync();
   applyRuntimeSettingsToConfig(config, userSettings.runtime);
   normalizeRuntimeArtifactWorkspaceDefaults({
     config,
@@ -83,9 +82,6 @@ export function createBootstrapEnvironment({ projectRoot }) {
     repoDefaultOutputRoot: SETTINGS_DEFAULTS.runtime?.localOutputRoot,
   });
 
-  // WHY: Static stub — relocation feature was removed. Downstream consumers
-  // (storage manager, process lifecycle) still read enabled=false and degrade gracefully.
-  const runDataStorageState = Object.freeze({ enabled: false });
   // WHY: Gate created after all INIT mutations. Runtime mutations flow through applyPatch().
   const configGate = createConfigMutationGate(config);
 
@@ -93,14 +89,11 @@ export function createBootstrapEnvironment({ projectRoot }) {
   const INDEXLAB_ROOT = resolveProjectPath(argVal('indexlab-root', ''), defaultIndexLabRoot());
   const storage = createStorage(config);
 
-  const markEnumSuggestionStatusBound = (category, field, value, status = 'accepted') =>
-    markEnumSuggestionStatus(category, field, value, status, HELPER_ROOT);
-
   return {
     config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD,
-    storage, runDataStorageState,
+    storage,
     resolveProjectPath,
-    cleanVariant, markEnumSuggestionStatusBound,
+    cleanVariant,
     userSettings,
   };
 }

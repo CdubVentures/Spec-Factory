@@ -15,7 +15,6 @@ interface UseIndexingRunViewHandlersInput {
   clearProcessOutput: () => void;
   clearIndexLabRun: (runId: string) => void;
   setClearedRunViewId: (value: string) => void;
-  setSelectedLlmTraceId: (value: string) => void;
   replayPending: boolean;
   setReplayPending: (value: boolean) => void;
   setRuntimeProcessStatus: (status: ProcessStatus) => void;
@@ -29,7 +28,6 @@ export function useIndexingRunViewHandlers(input: UseIndexingRunViewHandlersInpu
     clearProcessOutput,
     clearIndexLabRun,
     setClearedRunViewId,
-    setSelectedLlmTraceId,
     replayPending,
     setReplayPending,
     setRuntimeProcessStatus,
@@ -70,19 +68,16 @@ export function useIndexingRunViewHandlers(input: UseIndexingRunViewHandlersInpu
     clearProcessOutput();
     if (!runId) {
       setClearedRunViewId('');
-      setSelectedLlmTraceId('');
       return;
     }
     clearIndexLabRun(runId);
     removeRunScopedQueries(runId);
     queryClient.removeQueries({ queryKey: ['indexing', 'domain-checklist'] });
     setClearedRunViewId(runId);
-    setSelectedLlmTraceId('');
   }, [
     selectedIndexLabRunId,
     clearProcessOutput,
     setClearedRunViewId,
-    setSelectedLlmTraceId,
     clearIndexLabRun,
     removeRunScopedQueries,
     queryClient,

@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-12",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 12",
+    "variant": "closed_enum_reject",
+    "id": 9012,
+    "identifier": "test012a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 12,
+    "name": "closed_enum_reject",
+    "description": "Invalid values for all 1 closed enum fields",
+    "category": "Enums"
+  }
+}

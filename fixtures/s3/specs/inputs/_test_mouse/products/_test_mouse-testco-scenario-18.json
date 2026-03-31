@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-18",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 18",
+    "variant": "preserve_all_candidates",
+    "id": 9018,
+    "identifier": "test018a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 18,
+    "name": "preserve_all_candidates",
+    "description": "2 fields use preserve_all_candidates â€” multiple sources merged not resolved (click_latency_list, sensor_latency_list)",
+    "category": "Edge Cases"
+  }
+}

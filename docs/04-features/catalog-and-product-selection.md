@@ -1,8 +1,8 @@
 # Catalog And Product Selection
 
-> **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to catalog storage and SpecDb mirrors.
+> **Purpose:** Trace the verified category, product, brand, and queue-seeding flow from the GUI to SQL storage and per-product rebuild files.
 > **Prerequisites:** [../03-architecture/data-model.md](../03-architecture/data-model.md), [../03-architecture/routing-and-gui.md](../03-architecture/routing-and-gui.md)
-> **Last validated:** 2026-03-24
+> **Last validated:** 2026-03-31
 
 ## Entry Points
 
@@ -17,28 +17,35 @@
 ## Dependencies
 
 - `src/features/catalog/products/productCatalog.js`
-- `src/features/catalog/products/upsertCatalogProductRow.js` - SpecDb product row upsert extracted from inline route logic
+- `src/features/catalog/products/upsertCatalogProductRow.js` - SpecDb product row upsert
+- `src/features/catalog/products/writeProductIdentity.js` - writes `.workspace/products/{pid}/product.json`
 - `src/features/catalog/identity/brandRegistry.js`
 - `src/features/catalog/products/reconciler.js`
 - `src/features/catalog/contracts/catalogShapes.js` - Zod-style shape descriptors for catalog/brand responses
 - `src/queue/queueState.js`
 - `src/db/specDb.js`
-- `category_authority/{category}/_control_plane/product_catalog.json`
+
+## SSOT
+
+- **SQL `products` table** in `spec.sqlite` is the live queryable SSOT for product identity.
+- **`.workspace/products/{pid}/product.json`** is the per-product rebuild file (created at add time, grown after runs).
+- **`product_catalog.json`** is a read-only boot seed — read at first startup to populate an empty SQL database. Never mutated on CRUD.
+- **No fixture input files** — the `fixtures/` directory and `INPUT_KEY_PREFIX` pattern have been eliminated.
 
 ## Flow
 
-1. A user adds or edits a product in `tools/gui-react/src/features/catalog/components/CatalogPage.tsx`.
-2. The GUI calls `POST`, `PUT`, or `DELETE` on `/api/v1/catalog/:category/products` through `tools/gui-react/src/api/client.ts`.
-3. `src/features/catalog/api/catalogRoutes.js` delegates to `catalogAddProduct`, `catalogUpdateProduct`, `catalogRemoveProduct`, or bulk/seed helpers.
-4. Catalog helpers update `product_catalog.json` under `category_authority/{category}/_control_plane/` and may queue the product through `upsertQueueProduct()`.
-5. The route mirrors the catalog state into SQLite via `upsertCatalogProductRow()` (in `src/features/catalog/products/upsertCatalogProductRow.js`) when SpecDb is available.
-6. The route emits `data-change` events so review, indexing, and studio screens refresh cached product lists.
-7. Brand rename/delete actions in `src/features/catalog/api/brandRoutes.js` cascade into catalog rows, queue state, and SpecDb product mirrors.
+1. A user adds or edits a product in `CatalogPage.tsx`.
+2. The GUI calls `POST`, `PUT`, or `DELETE` on `/api/v1/catalog/:category/products`.
+3. `catalogRoutes.js` delegates to `catalogAddProduct`, `catalogUpdateProduct`, `catalogRemoveProduct`, or bulk/seed helpers.
+4. `productCatalog.js` creates `.workspace/products/{pid}/product.json` via `writeProductIdentity()` and queues the product.
+5. The route mirrors identity into SQLite via `upsertCatalogProductRow()`.
+6. The route emits `data-change` events so review, indexing, and studio screens refresh.
+7. Brand rename/delete actions cascade into SQL product rows and queue state.
 
 ## Side Effects
 
-- Writes `product_catalog.json` and brand registry artifacts.
-- Writes `products` and `product_queue` rows in SQLite when SpecDb is ready.
+- Writes `.workspace/products/{pid}/product.json` (rebuild SSOT).
+- Writes `products` and `product_queue` rows in SQLite.
 - Emits `catalog-*` and `brand-*` data-change events.
 - `POST /catalog/:category/products/seed` can enqueue many products in one operation.
 
@@ -53,7 +60,8 @@
 
 | Entity | Transition |
 |--------|------------|
-| Product catalog row | absent -> active row -> updated row -> removed |
+| Product SQL row | absent -> active -> updated -> deleted |
+| Product.json | absent -> created (at add) -> grown (after runs) |
 | Queue row | absent -> queued/pending -> retried/paused/requeued |
 | Brand slug | original slug -> renamed slug with cascaded product ids |
 
@@ -73,12 +81,12 @@ sequenceDiagram
   box Database
     participant SpecDb as SpecDb<br/>(src/db/specDb.js)
   end
-  box ControlPlane
-    participant Files as product_catalog.json<br/>(category_authority/{category}/_control_plane/product_catalog.json)
+  box Filesystem
+    participant ProductJson as product.json<br/>(.workspace/products/{pid}/product.json)
   end
   CatalogPage->>CatalogRoute: POST /api/v1/catalog/:category/products
   CatalogRoute->>CatalogSvc: catalogAddProduct(...)
-  CatalogSvc->>Files: write updated catalog file
+  CatalogSvc->>ProductJson: writeProductIdentity()
   CatalogRoute->>SpecDb: upsertProduct(...)
   CatalogRoute-->>CatalogPage: created product + queue status
 ```

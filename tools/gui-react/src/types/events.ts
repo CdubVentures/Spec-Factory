@@ -19,8 +19,8 @@ export interface ProcessStatus {
   brand?: string | null;
   model?: string | null;
   variant?: string | null;
-  storage_destination?: 'local' | 's3';
-  storageDestination?: 'local' | 's3';
+  storage_destination?: 'local';
+  storageDestination?: 'local';
   pid?: number;
   command?: string;
   startedAt?: string;

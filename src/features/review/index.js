@@ -15,6 +15,6 @@ export {
   buildComponentReviewPayloads, buildEnumReviewPayloads,
   findProductsReferencingComponent, cascadeComponentChange, cascadeEnumChange,
   normalizeFieldKey, applySharedLaneState, confidenceColor, runQaJudge,
-  startReviewQueueWebSocket, suggestionFilePath, appendReviewSuggestion,
+  startReviewQueueWebSocket, appendReviewSuggestion,
   evaluateVariance, evaluateVarianceBatch,
 } from './domain/index.js';

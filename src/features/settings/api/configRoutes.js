@@ -30,18 +30,10 @@ export function registerConfigRoutes(ctx) {
     HELPER_ROOT,
     appDb,
   } = ctx;
-  const settingsRoot =
-    HELPER_ROOT
-    || config?.categoryAuthorityRoot
-    || 'category_authority';
-  const initialUserSettings = loadUserSettingsSync({
-    categoryAuthorityRoot: settingsRoot,
-    appDb,
-  });
+  const initialUserSettings = loadUserSettingsSync({ appDb });
 
   const persistenceCtx = createConfigPersistenceContext({
     config,
-    settingsRoot,
     initialUserSettings,
     appDb,
   });

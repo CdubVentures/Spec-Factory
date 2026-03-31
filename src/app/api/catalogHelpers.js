@@ -10,6 +10,69 @@ function assertObject(name, value) {
   }
 }
 
+// WHY: SQL-first catalog builder. When loadProductCatalog/loadQueueState are omitted,
+// reads directly from specDb (products + product_queue tables). This eliminates the
+// dependency on product_catalog.json and fixture input files for the GUI dropdown.
+// Legacy path (JSON + fixtures) is kept for backward compat when those deps are provided.
+
+function buildQueueLookup(queueRows) {
+  const map = new Map();
+  for (const row of queueRows) {
+    if (row.product_id) map.set(row.product_id, row);
+  }
+  return map;
+}
+
+async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) {
+  if (!specDb) return [];
+
+  const allProducts = specDb.getAllProducts() || [];
+  const queueRows = specDb.getAllQueueProducts?.() || [];
+  const queueLookup = buildQueueLookup(queueRows);
+
+  const seen = new Map();
+
+  for (const row of allProducts) {
+    const pid = row.product_id;
+    const brand = String(row.brand || '').trim();
+    const model = String(row.model || '').trim();
+    const variant = cleanVariant(row.variant);
+    if (!brand || !model) continue;
+    if (seen.has(pid)) continue;
+
+    const summary = specDb.getSummaryForProduct?.(pid) || null;
+    const qp = queueLookup.get(pid) || {};
+    const hasFinal = await storage.objectExists(`final/${category}/${pid}/normalized.json`).catch(() => false);
+
+    seen.set(pid, {
+      productId: pid,
+      id: row.id || 0,
+      identifier: String(row.identifier || '').trim(),
+      brand,
+      model,
+      base_model: '',
+      variant,
+      status: qp.status || (summary ? 'complete' : 'pending'),
+      hasFinal,
+      validated: !!(summary?.validated),
+      confidence: summary?.confidence || 0,
+      coverage: (summary?.coverage_overall_percent || 0) / 100,
+      fieldsFilled: summary?.fields_filled || 0,
+      fieldsTotal: summary?.fields_total || 0,
+      lastRun: summary?.lastRun || summary?.generated_at || '',
+      inActive: true,
+    });
+  }
+
+  const rows = [...seen.values()];
+  rows.sort((a, b) =>
+    a.brand.localeCompare(b.brand) ||
+    a.model.localeCompare(b.model) ||
+    a.variant.localeCompare(b.variant)
+  );
+  return rows;
+}
+
 export function createCatalogBuilder({
   config,
   storage,
@@ -22,15 +85,25 @@ export function createCatalogBuilder({
   assertObject('config', config);
   assertObject('storage', storage);
   assertFunction('getSpecDb', getSpecDb);
-  assertFunction('loadQueueState', loadQueueState);
-  assertFunction('loadProductCatalog', loadProductCatalog);
   assertFunction('cleanVariant', cleanVariant);
-  assertObject('path', path);
+
+  // WHY: SQL-first path — when loadProductCatalog/loadQueueState are not provided,
+  // read entirely from specDb. This is the new default for the GUI catalog.
+  const useSqlPath = typeof loadProductCatalog !== 'function' || typeof loadQueueState !== 'function';
+
+  if (!useSqlPath) {
+    assertObject('path', path);
+  }
 
   return async function buildCatalog(category) {
-    const catalog = await loadProductCatalog(config, category);
-    const inputKeys = await storage.listInputKeys(category);
     const specDb = getSpecDb(category);
+
+    if (useSqlPath) {
+      return buildCatalogFromSql({ specDb, storage, cleanVariant, category });
+    }
+
+    // Legacy path — reads from catalog JSON
+    const catalog = await loadProductCatalog(config, category);
     const queue = await loadQueueState({ storage, category, specDb }).catch(() => ({ state: { products: {} } }));
     const queueProducts = queue.state?.products || {};
 
@@ -62,12 +135,8 @@ export function createCatalogBuilder({
       });
     }
 
-    for (const inputKey of inputKeys) {
-      const input = await storage.readJsonOrNull(inputKey);
-      if (!input) continue;
-      const existingProductId = input.productId || path.basename(inputKey, '.json');
-      if (!seen.has(existingProductId)) continue;
-
+    // WHY: Enrich each product from catalog with summary/queue data — no fixture scan.
+    for (const [existingProductId, existing] of seen) {
       const latestBase = storage.resolveOutputKey(category, existingProductId, 'latest');
       const [summary, hasFinal] = await Promise.all([
         specDb
@@ -77,7 +146,6 @@ export function createCatalogBuilder({
       ]);
       const qp = queueProducts[existingProductId] || {};
 
-      const existing = seen.get(existingProductId);
       Object.assign(existing, {
         status: qp.status || (summary ? 'complete' : 'pending'),
         hasFinal,
@@ -87,7 +155,6 @@ export function createCatalogBuilder({
         fieldsFilled: summary?.fields_filled || 0,
         fieldsTotal: summary?.fields_total || 0,
         lastRun: summary?.lastRun || summary?.generated_at || '',
-        inActive: existing.inActive || !!input.active || !!(input.targets && Object.keys(input.targets).length),
       });
     }
 

@@ -13,7 +13,6 @@ const root = path.resolve(__dirname, '..');
 // ── Load schema sources ──
 const specSchema = fs.readFileSync(path.join(root, 'src/db/specDbSchema.js'), 'utf8');
 const appSchema = fs.readFileSync(path.join(root, 'src/db/appDbSchema.js'), 'utf8');
-const frontierSrc = fs.readFileSync(path.join(root, 'src/research/frontierSqlite.js'), 'utf8');
 const migrationsSrc = fs.readFileSync(path.join(root, 'src/db/specDbMigrations.js'), 'utf8');
 
 // ── Parse CREATE TABLE blocks ──
@@ -138,7 +137,7 @@ const storeMap = {
   brand_domains: 'specDb (direct)', data_authority_sync: 'specDb (direct)',
   evidence_documents: 'evidenceIndex', evidence_chunks: 'evidenceIndex', evidence_facts: 'evidenceIndex', evidence_chunks_fts: 'evidenceIndex',
   brands: 'appDb', brand_categories: 'appDb', brand_renames: 'appDb', settings: 'appDb', studio_maps: 'appDb',
-  queries: 'frontierSqlite', urls: 'frontierSqlite', yields: 'frontierSqlite',
+  url_crawl_ledger: 'crawlLedgerStore', query_cooldowns: 'crawlLedgerStore',
 };
 
 // ── Domain groups ──
@@ -163,27 +162,22 @@ const specDbGroups = [
   { label: 'Crawl Artifacts', tables: ['crawl_sources', 'source_screenshots', 'source_videos', 'source_pdfs'] },
   { label: 'Telemetry Indexes', tables: ['knob_snapshots', 'query_index', 'url_index', 'prompt_index'] },
   { label: 'Field Studio', tables: ['field_studio_map'] },
+  { label: 'Crawl Ledger', tables: ['url_crawl_ledger', 'query_cooldowns'] },
 ];
 
 const appDbGroups = [
   { label: 'Global State', tables: ['brands', 'brand_categories', 'brand_renames', 'settings', 'studio_maps'] },
 ];
 
-const frontierGroups = [
-  { label: 'Discovery Frontier', tables: ['queries', 'urls', 'yields'] },
-];
-
 // ── Parse everything ──
 const specTables = parseTables(specSchema);
 const appTables = parseTables(appSchema);
-const frontierTables = parseTables(frontierSrc);
-const allTables = [...specTables, ...appTables, ...frontierTables];
+const allTables = [...specTables, ...appTables];
 const tableMap = Object.fromEntries(allTables.map(t => [t.name, t]));
 
 const specIndexes = { ...parseIndexes(specSchema), ...parseIndexes(migrationsSrc) };
 const appIndexes = parseIndexes(appSchema);
-const frontierIndexes = parseIndexes(frontierSrc);
-const allIndexes = { ...specIndexes, ...appIndexes, ...frontierIndexes };
+const allIndexes = { ...specIndexes, ...appIndexes };
 
 // Merge migration columns
 const migCols = parseMigrationColumns(migrationsSrc);
@@ -337,7 +331,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
 
 <header class="header">
   <h1>Schema Reference</h1>
-  <p>Complete inventory of all SQL tables across Spec Factory's three database surfaces. Each table shows its columns, primary key, foreign keys, indexes, and owning store module.</p>
+  <p>Complete inventory of all SQL tables across Spec Factory's two database surfaces. Each table shows its columns, primary key, foreign keys, indexes, and owning store module.</p>
   <div class="meta">
     <span>Generated ${new Date().toISOString().slice(0, 10)}</span>
     <span>Post-consolidation</span>
@@ -348,8 +342,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   <div class="stat"><div class="n">${specTables.filter(t => !t.isVirtual).length}</div><div class="l">SpecDb Tables</div></div>
   <div class="stat"><div class="n">${specTables.filter(t => t.isVirtual).length}</div><div class="l">Virtual (FTS)</div></div>
   <div class="stat"><div class="n">${appTables.length}</div><div class="l">AppDb Tables</div></div>
-  <div class="stat"><div class="n">${frontierTables.length}</div><div class="l">Frontier Tables</div></div>
-  <div class="stat"><div class="n">17</div><div class="l">Store Modules</div></div>
+  <div class="stat"><div class="n">18</div><div class="l">Store Modules</div></div>
   <div class="stat"><div class="n">${allTables.length}</div><div class="l">Total Tables</div></div>
 </div>
 
@@ -363,7 +356,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
     <span class="tag" style="background:var(--accent-s);color:var(--accent)">Per-Category</span>
     <span class="tag tag-cols">${specTables.length} tables</span>
   </div>
-  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, and source intelligence.</p>
+  <p class="surface-desc">One SQLite database per category (<code>.workspace/db/{category}/spec.sqlite</code>). Holds all domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, URL crawl ledger, and query cooldowns.</p>
   ${renderGroups(specDbGroups)}
 </section>
 
@@ -377,15 +370,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:
   ${renderGroups(appDbGroups)}
 </section>
 
-<section class="surface">
-  <div class="surface-head">
-    <h2>FrontierDb</h2>
-    <span class="tag" style="background:var(--amber-s);color:var(--amber)">Per-Category</span>
-    <span class="tag tag-cols">${frontierTables.length} tables</span>
-  </div>
-  <p class="surface-desc">Discovery frontier cache at <code>.workspace/runs/{category}/_intel/frontier/frontier.db</code>. Tracks search queries, URL fetch history, and per-field yield statistics.</p>
-  ${renderGroups(frontierGroups)}
-</section>
 
 </div>
 
@@ -410,4 +394,4 @@ filter?.addEventListener('input', () => {
 const outPath = path.join(root, 'docs/implementation/sql-full-migration/schema-reference.html');
 fs.writeFileSync(outPath, html, 'utf8');
 console.log(`Written ${(html.length / 1024).toFixed(1)}KB to ${path.relative(root, outPath)}`);
-console.log(`Tables: ${specTables.length} spec + ${appTables.length} app + ${frontierTables.length} frontier = ${allTables.length} total`);
+console.log(`Tables: ${specTables.length} spec + ${appTables.length} app = ${allTables.length} total`);

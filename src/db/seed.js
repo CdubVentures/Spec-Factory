@@ -35,6 +35,7 @@ async function readJsonIfExists(filePath) {
 }
 
 import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
+import { cleanVariant, isFabricatedVariant } from '../features/catalog/identity/identityDedup.js';
 
 function isKnownToken(v) {
   const token = normalizeToken(v);
@@ -301,7 +302,9 @@ async function collectListSeedRows(fieldRules, config, category) {
     }
   }
 
-  // From _suggestions/enums.json — pending pipeline enum suggestions
+  // WHY: Test harnesses write _suggestions/enums.json before seedSpecDb runs.
+  // This reads pending suggestions into list_values so reconciliation is aware of them.
+  // In production the file won't exist (directory deleted), so this is a no-op.
   const suggestPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
   const suggestDoc = await readJsonIfExists(suggestPath);
   if (Array.isArray(suggestDoc?.suggestions)) {
@@ -1123,104 +1126,9 @@ async function seedQueueState(db, config, category) {
   return { count };
 }
 
-// ── Curation suggestions seeding ─────────────────────────────────────────────
+// ── Curation suggestions seeding (removed — SQL is now the SSOT) ─────────────
 
-async function seedCurationSuggestions(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
-  const enumPath = path.join(helperRoot, category, '_suggestions', 'enums.json');
-  const compPath = path.join(helperRoot, category, '_suggestions', 'components.json');
-
-  let count = 0;
-  const tx = db.db.transaction(() => {
-    // Enum suggestions
-    const enumDoc = null; // Read synchronously not available, seed from already-loaded data
-    // We'll handle this lazily — the file was already seeded to list_values in seedListValues
-    // For curation_suggestions table, parse the enums.json suggestions array
-  });
-
-  // Async reads then sync insert
-  const enumDoc = await readJsonIfExists(enumPath);
-  const compDoc = await readJsonIfExists(compPath);
-
-  const txInsert = db.db.transaction(() => {
-    if (enumDoc && Array.isArray(enumDoc.suggestions)) {
-      for (const s of enumDoc.suggestions) {
-        if (!s.field_key || !s.value) continue;
-        db.upsertCurationSuggestion({
-          suggestion_id: s.suggestion_id || `enum_${s.field_key}_${normalizeToken(s.value)}`,
-          suggestion_type: s.suggestion_type || 'enum_value',
-          field_key: s.field_key,
-          value: s.value,
-          status: s.status || 'pending',
-          source: s.source || 'pipeline',
-          product_id: s.product_id || null,
-          run_id: s.run_id || null,
-          first_seen_at: s.first_seen_at || new Date().toISOString(),
-          last_seen_at: s.last_seen_at || new Date().toISOString()
-        });
-        count++;
-      }
-    }
-
-    if (compDoc && Array.isArray(compDoc.suggestions)) {
-      for (const s of compDoc.suggestions) {
-        if (!s.component_type || !s.value) continue;
-        db.upsertCurationSuggestion({
-          suggestion_id: s.suggestion_id || `comp_${s.component_type}_${normalizeToken(s.value)}`,
-          suggestion_type: s.suggestion_type || 'new_component',
-          component_type: s.component_type,
-          field_key: s.field_key || null,
-          value: s.value,
-          status: s.status || 'pending',
-          source: s.source || 'pipeline',
-          product_id: s.product_id || null,
-          run_id: s.run_id || null,
-          first_seen_at: s.first_seen_at || new Date().toISOString(),
-          last_seen_at: s.last_seen_at || new Date().toISOString()
-        });
-        count++;
-      }
-    }
-  });
-  txInsert();
-  return { count };
-}
-
-// ── Component review queue seeding ───────────────────────────────────────────
-
-async function seedComponentReviewQueue(db, config, category) {
-  const helperRoot = path.resolve(config?.categoryAuthorityRoot || 'category_authority');
-  const reviewPath = path.join(helperRoot, category, '_suggestions', 'component_review.json');
-  const reviewDoc = await readJsonIfExists(reviewPath);
-  if (!reviewDoc || !Array.isArray(reviewDoc.items)) return { count: 0 };
-
-  let count = 0;
-  const tx = db.db.transaction(() => {
-    for (const item of reviewDoc.items) {
-      if (!item.component_type || !item.raw_query) continue;
-      db.upsertComponentReviewItem({
-        review_id: item.review_id || `cr_${item.component_type}_${normalizeToken(item.raw_query)}`,
-        component_type: item.component_type,
-        field_key: item.field_key || null,
-        raw_query: item.raw_query,
-        matched_component: item.matched_component || null,
-        match_type: item.match_type || 'fuzzy_flagged',
-        name_score: item.name_score ?? 0,
-        property_score: item.property_score ?? 0,
-        combined_score: item.combined_score ?? 0,
-        alternatives: item.alternatives || [],
-        product_id: item.product_id || null,
-        run_id: item.run_id || null,
-        status: item.status || 'pending_ai',
-        product_attributes: item.product_attributes || {},
-        reasoning_note: item.reasoning_note || null
-      });
-      count++;
-    }
-  });
-  tx();
-  return { count };
-}
+// ── Component review queue seeding (removed — SQL is now the SSOT) ───────────
 
 // ── Product catalog seeding ───────────────────────────────────────────────────
 
@@ -1234,11 +1142,17 @@ async function seedProductCatalog(db, config, category) {
   const tx = db.db.transaction(() => {
     for (const [productId, entry] of Object.entries(catalog.products)) {
       if (!isObject(entry)) continue;
+      const model = String(entry.model || '').trim();
+      let variant = cleanVariant(entry.variant);
+      // WHY: Fabricated variants (tokens already in model) must never reach the DB.
+      if (variant && isFabricatedVariant(model, variant)) {
+        variant = '';
+      }
       db.upsertProduct({
         product_id: productId,
         brand: entry.brand || '',
-        model: entry.model || '',
-        variant: entry.variant || '',
+        model,
+        variant,
         status: entry.status || 'active',
         seed_urls: Array.isArray(entry.seed_urls) ? entry.seed_urls : [],
         identifier: entry.identifier || null
@@ -1882,17 +1796,7 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     logger.log?.('info', `[seed] Queue state: ${queueResult.count} products`);
   }
 
-  // Step 7: Curation suggestions from JSON
-  const sugResult = await seedCurationSuggestions(db, config, category);
-  if (logger && sugResult.count > 0) {
-    logger.log?.('info', `[seed] Curation suggestions: ${sugResult.count}`);
-  }
-
-  // Step 8: Component review queue from JSON
-  const crqResult = await seedComponentReviewQueue(db, config, category);
-  if (logger && crqResult.count > 0) {
-    logger.log?.('info', `[seed] Component review queue: ${crqResult.count}`);
-  }
+  // Step 7-8: (removed — curation suggestions and component review queue are now SQL-only)
 
   // Clear stale candidate pointers before deriving source/key-review tables.
   const preIntegrityResult = typeof db.pruneOrphanCandidateReferences === 'function'
@@ -1940,8 +1844,8 @@ export async function seedSpecDb({ db, config, category, fieldRules, logger }) {
     component_links_backfilled: backfillResult.backfilled,
     catalog_seeded: catalogResult.count,
     queue_seeded: queueResult.count,
-    suggestions_seeded: sugResult.count,
-    review_queue_seeded: crqResult.count,
+    suggestions_seeded: 0,
+    review_queue_seeded: 0,
     source_registry_seeded: skrResult.sourceRegistryCount,
     source_assertions_seeded: skrResult.sourceAssertionCount,
     source_evidence_refs_seeded: skrResult.sourceEvidenceRefCount,

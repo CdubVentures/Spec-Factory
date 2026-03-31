@@ -69,8 +69,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     buildEnumReviewPayloads,
     loadCategoryConfig,
     findProductsReferencingComponent,
-    componentReviewPath,
-    runComponentReviewBatch,
     safeReadJson,
     invalidateFieldRulesCache,
     path,
@@ -83,7 +81,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     broadcastWs,
     loadQueueState,
     saveQueueState,
-    markEnumSuggestionStatusBound,
     runEnumConsistencyReview,
   } = context;
 
@@ -277,9 +274,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
               specDb,
             });
           }
-          if (typeof markEnumSuggestionStatusBound === 'function') {
-            try { await markEnumSuggestionStatusBound(category, field, rawValue, 'accepted'); } catch { /* best-effort */ }
-          }
           applied.mapped += 1;
           applied.changed += 1;
           continue;
@@ -316,9 +310,6 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
               confirmStatusOverride: 'confirmed',
               updateSelection: false,
             });
-          }
-          if (typeof markEnumSuggestionStatusBound === 'function') {
-            try { await markEnumSuggestionStatusBound(category, field, rawValue, 'accepted'); } catch { /* best-effort */ }
           }
           applied.kept += 1;
           applied.changed += 1;
@@ -384,9 +375,26 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
   // Get component review items (flagged for AI/human review)
   if (parts[0] === 'review-components' && parts[1] && parts[2] === 'component-review' && method === 'GET') {
     const category = parts[1];
-    const filePath = componentReviewPath({ config, category });
-    const data = await safeReadJson(filePath);
-    return jsonRes(res, 200, data || { version: 1, category, items: [], updated_at: null });
+    const specDb = getSpecDb(category);
+    if (!specDb) {
+      return jsonRes(res, 200, { version: 1, category, items: [], updated_at: null });
+    }
+    // Collect all component types from the review queue
+    const allItems = [];
+    try {
+      const typeRows = specDb.db.prepare(
+        'SELECT DISTINCT component_type FROM component_review_queue WHERE category = ?'
+      ).all(category);
+      for (const typeRow of typeRows) {
+        const ct = String(typeRow?.component_type || '').trim();
+        if (!ct) continue;
+        const rows = specDb.getComponentReviewItems(ct) || [];
+        allItems.push(...rows);
+      }
+    } catch {
+      // best-effort
+    }
+    return jsonRes(res, 200, { version: 1, category, items: allItems, updated_at: null });
   }
 
   // Component review action (approve_new, merge_alias, dismiss)
@@ -396,18 +404,29 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
     const { review_id, action, merge_target } = body;
     if (!review_id || !action) return jsonRes(res, 400, { error: 'review_id and action required' });
 
-    const filePath = componentReviewPath({ config, category });
-    const data = await safeReadJson(filePath);
-    if (!data || !Array.isArray(data.items)) return jsonRes(res, 404, { error: 'No review data found' });
+    const specDb = getSpecDb(category);
+    if (!specDb) return jsonRes(res, 404, { error: 'No review data found' });
 
-    const item = data.items.find((i) => i.review_id === review_id);
+    // Find the review item by review_id from SQL
+    let item = null;
+    try {
+      item = specDb.db.prepare(
+        'SELECT * FROM component_review_queue WHERE category = ? AND review_id = ? LIMIT 1'
+      ).get(category, review_id);
+      if (item?.alternatives) try { item.alternatives = JSON.parse(item.alternatives); } catch { /* */ }
+      if (item?.product_attributes) try { item.product_attributes = JSON.parse(item.product_attributes); } catch { /* */ }
+    } catch {
+      // best-effort
+    }
     if (!item) return jsonRes(res, 404, { error: 'Review item not found' });
 
+    let newStatus;
     if (action === 'approve_new') {
-      item.status = 'approved_new';
+      newStatus = 'approved_new';
     } else if (action === 'merge_alias' && merge_target) {
-      item.status = 'accepted_alias';
-      item.matched_component = merge_target;
+      newStatus = 'accepted_alias';
+      // Update matched_component in SQL
+      specDb.updateComponentReviewQueueMatchedComponent(category, review_id, merge_target);
       // Write alias to overrides
       const slug = String(merge_target).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const overrideDir = path.join(HELPER_ROOT, category, '_overrides', 'components');
@@ -425,9 +444,8 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       await fs.writeFile(overridePath, JSON.stringify(existing, null, 2));
       invalidateFieldRulesCache(category);
       sessionCache.invalidateSessionCache(category);
-      // Dual-write alias to SpecDb
-      const specDb = getSpecDb(category);
-      if (specDb && alias) {
+      // Write alias to SpecDb
+      if (alias) {
         try {
           const idRow = specDb.getComponentIdentity(item.component_type, merge_target, '');
           if (idRow) {
@@ -442,14 +460,19 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
         }
       }
     } else if (action === 'dismiss') {
-      item.status = 'dismissed';
+      newStatus = 'dismissed';
     } else {
       return jsonRes(res, 400, { error: `Unknown action: ${action}` });
     }
 
-    item.human_reviewed_at = new Date().toISOString();
-    data.updated_at = new Date().toISOString();
-    await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+    // Update status in SQL
+    try {
+      specDb.db.prepare(
+        `UPDATE component_review_queue SET status = ?, updated_at = datetime('now') WHERE category = ? AND review_id = ?`
+      ).run(newStatus, category, review_id);
+    } catch {
+      // best-effort
+    }
     emitDataChange({
       broadcastWs,
       event: 'component-review',
@@ -460,30 +483,7 @@ export async function handleComponentReviewRoute({ parts, params, method, req, r
       },
     });
 
-    return jsonRes(res, 200, { ok: true, review_id, action, status: item.status });
-  }
-
-  // Manually trigger AI batch review
-  if (parts[0] === 'review-components' && parts[1] && parts[2] === 'run-component-review-batch' && method === 'POST') {
-    const category = parts[1];
-    try {
-      const result = await runComponentReviewBatch({ config, category, logger: null });
-      if (result.accepted_alias > 0) {
-        invalidateFieldRulesCache(category);
-        sessionCache.invalidateSessionCache(category);
-      }
-      emitDataChange({
-        broadcastWs,
-        event: 'component-review',
-        category,
-        meta: {
-          accepted_alias: Number(result?.accepted_alias || 0),
-        },
-      });
-      return jsonRes(res, 200, result);
-    } catch (err) {
-      return jsonRes(res, 500, { error: err.message });
-    }
+    return jsonRes(res, 200, { ok: true, review_id, action, status: newStatus });
   }
 
   return false;

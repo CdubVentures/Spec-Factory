@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
 import {
   CATEGORY,
   PRODUCT_A,
@@ -7,11 +6,10 @@ import {
 } from '../fixtures/reviewLaneApiHarness.js';
 
 export async function runReviewLaneReadContracts(t, harness) {
-  const { baseUrl, db, reviewDocPath } = harness;
+  const { baseUrl, db } = harness;
 
   await t.test('component review GET does not mutate synthetic candidates on read', async () => {
-    const reviewDoc = JSON.parse(await fs.readFile(reviewDocPath, 'utf8'));
-    reviewDoc.items.push({
+    db.upsertComponentReviewItem({
       review_id: 'rv-cmp-unknown-like',
       category: CATEGORY,
       component_type: 'sensor',
@@ -24,7 +22,6 @@ export async function runReviewLaneReadContracts(t, harness) {
       created_at: '2026-02-18T00:00:04.000Z',
       product_attributes: { sku: 'unk', dpi_max: '35500' },
     });
-    await fs.writeFile(reviewDocPath, `${JSON.stringify(reviewDoc, null, 2)}\n`, 'utf8');
 
     const syntheticBefore = db.db.prepare(
       `SELECT COUNT(*) AS c

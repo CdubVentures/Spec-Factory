@@ -71,14 +71,12 @@
 | GET | `/api/v1/indexlab/run/:runId/events` | replay run events | none | none | `{ run_id, count, events }` |
 | GET | `/api/v1/indexlab/run/:runId/needset` | read run needset | none | none | needset payload |
 | GET | `/api/v1/indexlab/run/:runId/search-profile` | read run search profile | none | none | search profile payload |
-| GET | `/api/v1/indexlab/run/:runId/phase07-retrieval` | read retrieval packet | none | none | retrieval payload |
-| GET | `/api/v1/indexlab/run/:runId/phase08-extraction` | read extraction packet | none | none | extraction payload |
+| GET | `/api/v1/indexlab/run/:runId/phase07-prime-sources` | read prime sources packet | none | none | prime sources payload |
 | GET | `/api/v1/indexlab/run/:runId/dynamic-fetch-dashboard` | read dynamic-fetch dashboard | none | none | dynamic-fetch payload |
 | GET | `/api/v1/indexlab/run/:runId/source-indexing-packets` | read source packet collection | none | none | source packet payload |
 | GET | `/api/v1/indexlab/run/:runId/item-indexing-packet` | read item packet | none | none | item packet payload |
 | GET | `/api/v1/indexlab/run/:runId/run-meta-packet` | read run-meta packet | none | none | run-meta packet payload |
 | GET | `/api/v1/indexlab/run/:runId/serp` | read SERP explorer payload | none | none | SERP payload |
-| GET | `/api/v1/indexlab/run/:runId/llm-traces` | read LLM trace slice | none | none | trace payload |
 | GET | `/api/v1/indexlab/run/:runId/automation-queue` | read automation queue | none | none | automation queue payload |
 | GET | `/api/v1/indexlab/run/:runId/evidence-index` | query evidence index | none | none | evidence search payload |
 | GET | `/api/v1/indexlab/run/:runId/rounds` | summarize run rounds from events | none | none | round summary |
@@ -214,7 +212,7 @@ No verified `POST /api/v1/review/:category/finalize` endpoint exists in the curr
 | GET | `/api/v1/test-mode/contract-summary` | read test-mode contract summary | none | none | `{ ok, summary, matrices, scenarioDefs }` |
 | GET | `/api/v1/test-mode/status` | read test-mode fixture/run status | none | none | `{ ok, exists, testCategory, testCases, runResults }` |
 | POST | `/api/v1/test-mode/generate-products` | generate synthetic products | none | `{ category }` | `{ ok, products, testCases }` |
-| POST | `/api/v1/test-mode/run` | attempt synthetic product runs; currently returns per-product error rows because `runTestProduct` is stubbed in route context | none | `{ category, productId?, useLlm?, aiReview?, resetState?, resyncSpecDb? }` | `{ ok, results }` with `status: 'error'` rows on the current worktree |
+| POST | `/api/v1/test-mode/run` | run synthetic products through consensus + validation pipeline | none | `{ category, productId?, useLlm?, aiReview?, resetState?, resyncSpecDb? }` | `{ ok, results }` with per-product `{ productId, status, confidence, coverage, trafficLight, ... }` |
 | POST | `/api/v1/test-mode/validate` | validate synthetic run outputs | none | `{ category }` | validation results + summary |
 | DELETE | `/api/v1/test-mode/:category` | delete `_test_*` category artifacts | none | none | `{ ok, deleted }` |
 

@@ -14,11 +14,9 @@ import {
 } from '../../../observability/settingsPersistenceCounters.js';
 import { AppDb } from '../../../db/appDb.js';
 
-async function makeHelperRoot(prefix) {
+async function makeSettingsRoot(prefix) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
-  const runtimeRoot = path.join(root, '_runtime');
-  await fs.mkdir(runtimeRoot, { recursive: true });
-  return { root, runtimeRoot };
+  return root;
 }
 
 function makeInMemoryAppDb() {
@@ -26,8 +24,8 @@ function makeInMemoryAppDb() {
 }
 
 test('loadUserSettingsSync records stale-read + migration telemetry for outdated schema payloads', async () => {
-  const { root, runtimeRoot } = await makeHelperRoot('settings-telemetry-load-');
-  await fs.writeFile(path.join(runtimeRoot, 'user-settings.json'), JSON.stringify({
+  const settingsRoot = await makeSettingsRoot('settings-telemetry-load-');
+  await fs.writeFile(path.join(settingsRoot, 'user-settings.json'), JSON.stringify({
     schemaVersion: 1,
     runtime: {
       domainClassifierUrlCap: 7,
@@ -35,7 +33,7 @@ test('loadUserSettingsSync records stale-read + migration telemetry for outdated
   }, null, 2), 'utf8');
 
   resetSettingsPersistenceCounters();
-  const snapshot = loadUserSettingsSync({ categoryAuthorityRoot: root });
+  const snapshot = loadUserSettingsSync({ settingsRoot });
   const counters = getSettingsPersistenceCountersSnapshot();
 
   assert.equal(snapshot.runtime.domainClassifierUrlCap, 7);

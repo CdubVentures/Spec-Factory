@@ -181,13 +181,11 @@ export async function initCategory({
   const helperCategoryRoot = path.join(helperRoot, normalizedCategory);
   const sourceRoot = path.join(helperCategoryRoot, '_source');
   const generatedRoot = path.join(helperCategoryRoot, '_generated');
-  const suggestionsRoot = path.join(helperCategoryRoot, '_suggestions');
   const overridesRoot = path.join(helperCategoryRoot, '_overrides');
   const categoryConfigRoot = helperCategoryRoot;
 
   await fs.mkdir(sourceRoot, { recursive: true });
   await fs.mkdir(generatedRoot, { recursive: true });
-  await fs.mkdir(suggestionsRoot, { recursive: true });
   await fs.mkdir(overridesRoot, { recursive: true });
   await fs.mkdir(path.join(sourceRoot, 'component_db'), { recursive: true });
   await fs.mkdir(path.join(sourceRoot, 'overrides'), { recursive: true });
@@ -216,7 +214,6 @@ export async function initCategory({
       helper_category_root: helperCategoryRoot,
       source_root: sourceRoot,
       generated_root: generatedRoot,
-      suggestions_root: suggestionsRoot,
       overrides_root: overridesRoot,
       category_root: categoryConfigRoot
     }

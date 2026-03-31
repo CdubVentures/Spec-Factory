@@ -160,7 +160,6 @@ function makeRunArgs(overrides = {}) {
     requiredFields: [],
     llmContext: {},
     frontierDb: null,
-    traceWriter: null,
     learningStoreHints: null,
     planner: makePlanner(),
     normalizeFieldListFn: stubNormalizeFieldList,

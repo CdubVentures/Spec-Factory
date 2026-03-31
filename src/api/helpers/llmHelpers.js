@@ -13,35 +13,6 @@ export function llmProviderFromModel(model, registryLookup) {
   return providerFromModelToken(model) || 'openai';
 }
 
-export function classifyLlmTracePhase(purpose = '', routeRole = '') {
-  const reason = String(purpose || '').trim().toLowerCase();
-  const role = String(routeRole || '').trim().toLowerCase();
-  if (role === 'extract') return 'extract';
-  if (role === 'validate') return 'validate';
-  if (role === 'write') return 'write';
-  if (role === 'plan') return 'plan';
-  if (
-    reason.includes('discovery_planner') ||
-    reason.includes('search_profile') ||
-    reason.includes('searchprofile')
-  ) {
-    return 'phase_02';
-  }
-  if (
-    reason.includes('serp') ||
-    reason.includes('triage') ||
-    reason.includes('rerank') ||
-    reason.includes('discovery_query_plan')
-  ) {
-    return 'phase_03';
-  }
-  if (reason.includes('extract')) return 'extract';
-  if (reason.includes('validate') || reason.includes('verify')) return 'validate';
-  if (reason.includes('write') || reason.includes('summary')) return 'write';
-  if (reason.includes('planner') || reason.includes('plan')) return 'plan';
-  return 'other';
-}
-
 export function resolveLlmRoleDefaults(cfg = {}) {
   const plan = String(cfg.llmModelPlan || '').trim();
   return {

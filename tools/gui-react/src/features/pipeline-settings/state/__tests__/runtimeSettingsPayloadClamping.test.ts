@@ -87,8 +87,6 @@ function makeInput(
     autoScrollEnabled: false,
     robotsTxtCompliant: true,
     runtimeScreencastEnabled: false,
-    runtimeTraceEnabled: false,
-    runtimeTraceLlmPayloads: false,
     runtimeSettingsFallbackBaseline: makeBaselineZeros() as never,
     resolveModelTokenDefaults,
     ...overrides,

@@ -28,10 +28,7 @@ function formatRelativeDate(iso: string | null): string {
 }
 
 function backendDetailText(overview: StorageOverviewResponse): string {
-  const d = overview.backend_detail;
-  if (d.root_path) return d.root_path;
-  if (d.bucket) return `s3://${d.bucket}/${d.prefix ?? ''}`;
-  return '';
+  return overview.backend_detail.root_path ?? '';
 }
 
 interface StorageOverviewBarProps {
@@ -58,7 +55,7 @@ export function StorageOverviewBar({ overview, isLoading }: StorageOverviewBarPr
       trailing={
         <Chip
           label={overview.storage_backend}
-          className={overview.storage_backend === 's3' ? 'sf-chip-accent' : 'sf-chip-neutral'}
+          className="sf-chip-neutral"
         />
       }
       footer={

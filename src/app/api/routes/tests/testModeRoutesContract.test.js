@@ -52,7 +52,6 @@ function makeCtx(overrides = {}) {
     buildValidationChecks: () => [],
     loadComponentIdentityPools: async () => ({}),
     runTestProduct: async () => ({ ok: true }),
-    runComponentReviewBatch: async () => {},
     purgeTestModeCategoryState: () => {},
     resetTestModeSharedReviewState: () => {},
     resetTestModeProductReviewState: () => {},

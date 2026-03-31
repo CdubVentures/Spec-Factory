@@ -468,26 +468,6 @@ test('readIndexLabRunSerpExplorer: builds from run summary fallback', async () =
 });
 
 // ---------------------------------------------------------------------------
-// Factory: readIndexLabRunLlmTraces
-// ---------------------------------------------------------------------------
-
-test('readIndexLabRunLlmTraces: null context → null', async () => {
-  const readers = makeReaders({ resolveContext: async () => null });
-  assert.equal(await readers.readIndexLabRunLlmTraces('run-1'), null);
-});
-
-test('readIndexLabRunLlmTraces: empty trace dir → empty traces array', async () => {
-  const readers = makeReaders();
-  const result = await readers.readIndexLabRunLlmTraces('run-1');
-  assert.ok(result);
-  assert.equal(result.count, 0);
-  assert.deepStrictEqual(result.traces, []);
-  assert.equal(result.run_id, 'run-1');
-  assert.equal(result.category, 'mouse');
-  assert.equal(result.product_id, 'mouse-test');
-});
-
-// ---------------------------------------------------------------------------
 // Characterization: alias fallback behavior (lock before extraction)
 // ---------------------------------------------------------------------------
 

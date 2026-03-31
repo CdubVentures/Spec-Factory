@@ -97,7 +97,14 @@ test('buildScaleBenchmarkReport reads latest summaries and writes benchmark repo
   const report = await buildScaleBenchmarkReport({
     storage,
     category: 'mouse',
-    sizes: '1,2'
+    sizes: '1,2',
+    specDb: {
+      getAllProducts: () => [
+        { product_id: 'mouse-a', brand: 'A', model: 'A' },
+        { product_id: 'mouse-b', brand: 'B', model: 'B' },
+      ],
+      getSummaryForProduct: () => null,
+    },
   });
 
   assert.equal(report.input_product_count, 2);

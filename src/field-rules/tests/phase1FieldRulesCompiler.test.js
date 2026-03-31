@@ -271,7 +271,6 @@ test('initCategory creates category scaffolding only in category_authority for c
     assert.equal(initResult.created, true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_source')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_generated')), true);
-    assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_suggestions')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', '_overrides')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'schema.json')), true);
     assert.equal(await pathExists(path.join(helperRoot, 'monitor', 'sources.json')), true);

@@ -6,7 +6,6 @@ import { captureKnobSnapshot } from '../features/indexing/telemetry/index.js';
 import { defaultIndexLabRoot } from '../core/config/runtimeArtifactRoots.js';
 import { CONFIG_MANIFEST_DEFAULTS } from '../core/config/manifest.js';
 import {
-  toBool,
   resolveIdentityAmbiguitySnapshot, buildRunIdentityFingerprint,
   resolveRuntimeControlKey, defaultRuntimeOverrides, normalizeRuntimeOverrides,
   resolveScreencastCallback,
@@ -27,21 +26,16 @@ import {
   buildRunBootstrapLogPayload,
   buildRunBootstrapLogPayloadPhaseCallsiteContext,
   buildRunBootstrapLogPayloadContext,
-  createRunTraceWriter,
-  buildRunTraceWriterPhaseCallsiteContext,
-  buildRunTraceWriterContext,
-  createResearchBootstrap,
-  buildResearchBootstrapPhaseCallsiteContext,
-  buildResearchBootstrapContext,
+
   bootstrapRunEventIndexing,
 } from '../features/indexing/orchestration/bootstrap/index.js';
-import { createFrontier } from '../research/frontierDb.js';
-import { RuntimeTraceWriter } from '../runtime/runtimeTraceWriter.js';
+import { createCrawlLedgerAdapter } from '../features/indexing/orchestration/shared/crawlLedgerAdapter.js';
+import { configInt } from '../shared/settingsAccessor.js';
+
 import {
   normalizeAmbiguityLevel,
   resolveIdentityLockStatus
 } from '../utils/identityNormalize.js';
-import { UberAggressiveOrchestrator } from '../research/uberAggressiveOrchestrator.js';
 import { bootstrapRunProductExecutionState } from './seams/bootstrapRunProductExecutionState.js';
 // --- new crawl pipeline ---
 import { resolveAdapter } from '../features/crawl/adapters/adapterRegistry.js';
@@ -148,18 +142,6 @@ export async function runProduct({
     },
   });
 
-  const traceWriter = createRunTraceWriter({
-    ...buildRunTraceWriterContext({
-      ...buildRunTraceWriterPhaseCallsiteContext({
-        runDir,
-        config,
-        runId,
-        productId,
-        toBool,
-        createRuntimeTraceWriter: (options) => new RuntimeTraceWriter(options),
-      }),
-    }),
-  });
   const runtimeOverridesLoader = createRuntimeOverridesLoader({
     ...buildRuntimeOverridesLoaderContext({
       ...buildRuntimeOverridesLoaderPhaseCallsiteContext({
@@ -173,16 +155,12 @@ export async function runProduct({
   });
   let runtimeOverrides = runtimeOverridesLoader.getRuntimeOverrides();
 
-  const { frontierDb } = await createResearchBootstrap({
-    ...buildResearchBootstrapContext({
-      ...buildResearchBootstrapPhaseCallsiteContext({
-        storage,
-        config,
-        logger,
-        createFrontier,
-        createUberAggressiveOrchestrator: (options) => new UberAggressiveOrchestrator(options),
-      }),
-    }),
+  const frontierDb = createCrawlLedgerAdapter({
+    specDb: config.specDb || null,
+    productId,
+    category,
+    runId,
+    queryCooldownDays: configInt(config, 'queryCooldownDays') ?? 30,
   });
 
   // --- Session + browser pool warm-up (runs in parallel with discovery) ---
@@ -252,7 +230,6 @@ export async function runProduct({
       identityLock,
       identityLockStatus,
       runArtifactsBase,
-      traceWriter,
       syncRuntimeOverrides: async ({ force = false } = {}) => {
         runtimeOverrides = await runtimeOverridesLoader.loadRuntimeOverrides({ force });
         return runtimeOverrides;

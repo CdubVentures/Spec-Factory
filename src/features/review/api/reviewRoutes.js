@@ -72,8 +72,6 @@ export function registerReviewRoutes(ctx) {
     broadcastWs,
     specDbCache,
     findProductsReferencingComponent,
-    componentReviewPath,
-    runComponentReviewBatch,
     invalidateFieldRulesCache,
     safeReadJson,
     slugify,
@@ -105,7 +103,6 @@ export function registerReviewRoutes(ctx) {
     resolveEnumMutationContext,
     getPendingEnumSharedCandidateIds,
     cascadeEnumChange,
-    markEnumSuggestionStatusBound,
     runEnumConsistencyReview = runEnumConsistencyReviewDefault,
     // Candidate enrichment helpers
     annotateCandidatePrimaryReviews,
@@ -136,13 +133,13 @@ export function registerReviewRoutes(ctx) {
     getSpecDb, getSpecDbReady, sessionCache,
     buildComponentReviewLayout, buildComponentReviewPayloads, buildEnumReviewPayloads,
     loadCategoryConfig, findProductsReferencingComponent,
-    componentReviewPath, runComponentReviewBatch, safeReadJson,
+    safeReadJson,
     invalidateFieldRulesCache, path, fs,
     HELPER_ROOT, OUTPUT_ROOT,
     applySharedLaneState, cascadeEnumChange,
     specDbCache, broadcastWs,
     loadQueueState, saveQueueState,
-    markEnumSuggestionStatusBound, runEnumConsistencyReview,
+    runEnumConsistencyReview,
   };
 
   return async function handleReviewRoutes(parts, params, method, req, res) {
@@ -240,7 +237,6 @@ export function registerReviewRoutes(ctx) {
         cascadeEnumChange,
         loadQueueState,
         saveQueueState,
-        markEnumSuggestionStatus: markEnumSuggestionStatusBound,
         isReviewFieldPathEnabled: isReviewFieldPathEnabledForCategory,
         broadcastWs,
       },

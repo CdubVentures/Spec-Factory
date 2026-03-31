@@ -373,9 +373,7 @@ export async function compileCategoryFieldStudio({
           : true,
         mark_needs_curation: typeof merged.new_value_policy?.mark_needs_curation === 'boolean'
           ? merged.new_value_policy.mark_needs_curation
-          : true,
-        suggestion_target: normalizeText(merged.new_value_policy?.suggestion_target)
-          || '_suggestions/enums.json'
+          : true
       };
     }
 

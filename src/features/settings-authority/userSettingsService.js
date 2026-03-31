@@ -1,6 +1,7 @@
 ﻿import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { defaultUserSettingsRoot } from '../../core/config/runtimeArtifactRoots.js';
 import {
   migrateUserSettingsDocument,
   readUserSettingsDocumentMeta,
@@ -212,18 +213,15 @@ function sanitizeUiSettings(raw, fallback = UI_SETTINGS_DEFAULTS) {
   };
 }
 
-function resolveRuntimeRoot(rootPath = 'category_authority') {
-  const helperRoot = path.resolve(String(rootPath || 'category_authority'));
-  return path.join(helperRoot, '_runtime');
-}
-
-function resolveSettingsAuthorityRoot(options = {}) {
+// WHY: Settings JSON lives under .workspace/global/ (not category_authority/_runtime/).
+// Callers may pass an explicit settingsRoot for tests; production uses default.
+function resolveSettingsRoot(options = {}) {
   const source = asRecord(options);
-  const categoryAuthorityRoot = source.categoryAuthorityRoot;
-  if (typeof categoryAuthorityRoot === 'string' && categoryAuthorityRoot.trim().length > 0) {
-    return categoryAuthorityRoot;
+  const explicit = source.settingsRoot ?? source.categoryAuthorityRoot;
+  if (typeof explicit === 'string' && explicit.trim().length > 0) {
+    return path.resolve(explicit.trim());
   }
-  return 'category_authority';
+  return defaultUserSettingsRoot();
 }
 
 function buildUserSettingsSnapshot(runtime, studio = {}, ui = UI_SETTINGS_DEFAULTS) {
@@ -348,7 +346,7 @@ function assertValidSnapshot(snapshot) {
 }
 
 export function loadUserSettingsSync(options = {}) {
-  const { categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
+  const { settingsRoot = null, categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
   if (appDb) {
     const raw = readSettingsFromAppDb(appDb);
     const snapshot = deriveSettingsArtifactsFromUserSettings(raw).snapshot;
@@ -357,11 +355,8 @@ export function loadUserSettingsSync(options = {}) {
   }
   // WHY: JSON fallback for boot path — config.js + createBootstrapEnvironment.js
   // run before appDb is created. This path is used only during initial startup.
-  const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-    categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
-  });
-  const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
-  const userPayload = readJsonFileSync(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
+  const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
+  const userPayload = readJsonFileSync(path.join(resolvedRoot, USER_SETTINGS_FILE), { strict: strictRead });
   recordUserSettingsMigrationTelemetry(userPayload);
   const userSettingsRaw = migrateUserSettingsDocument(userPayload);
 
@@ -371,13 +366,10 @@ export function loadUserSettingsSync(options = {}) {
 }
 
 export async function loadUserSettings(options = {}) {
-  const { categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
+  const { settingsRoot = null, categoryAuthorityRoot = null, strictRead = false, appDb = null } = options;
   if (appDb) return loadUserSettingsSync({ appDb });
-  const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-    categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
-  });
-  const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
-  const userRaw = await readJsonFile(path.join(runtimeRoot, USER_SETTINGS_FILE), { strict: strictRead });
+  const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
+  const userRaw = await readJsonFile(path.join(resolvedRoot, USER_SETTINGS_FILE), { strict: strictRead });
   recordUserSettingsMigrationTelemetry(userRaw);
   const userSettingsRaw = migrateUserSettingsDocument(userRaw);
   const snapshot = deriveSettingsArtifactsFromUserSettings(userSettingsRaw).snapshot;
@@ -444,6 +436,7 @@ function resolveRequestedSections({
 
 export async function persistUserSettingsSections(options = {}) {
   const {
+    settingsRoot = null,
     categoryAuthorityRoot = null,
     appDb = null,
     runtime = null,
@@ -510,12 +503,9 @@ export async function persistUserSettingsSections(options = {}) {
   const prev = userSettingsPersistQueue;
   const next = (async () => {
     await prev.catch(() => {});
-    const settingsAuthorityRoot = resolveSettingsAuthorityRoot({
-      categoryAuthorityRoot: categoryAuthorityRoot || 'category_authority',
-    });
-    const runtimeRoot = resolveRuntimeRoot(settingsAuthorityRoot);
+    const resolvedRoot = resolveSettingsRoot({ settingsRoot, categoryAuthorityRoot });
     try {
-      const existing = await loadUserSettings({ categoryAuthorityRoot, strictRead: true });
+      const existing = await loadUserSettings({ settingsRoot: resolvedRoot, strictRead: true });
       const existingStudio = sanitizeStudioSettings(existing.studio);
       let nextStudio = existingStudio;
       if (studio !== null) {
@@ -533,7 +523,7 @@ export async function persistUserSettingsSections(options = {}) {
       };
       const payload = deriveSettingsArtifactsFromUserSettings(sections).snapshot;
       assertValidSnapshot(payload);
-      const filePath = path.join(runtimeRoot, USER_SETTINGS_FILE);
+      const filePath = path.join(resolvedRoot, USER_SETTINGS_FILE);
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, JSON.stringify(payload, null, 2));
       recordSettingsWriteOutcome({

@@ -245,35 +245,13 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
   });
 
   describe('Panel 07 — Phase 07 Retrieval', () => {
-    it('GET /run/{id}/phase07-retrieval returns data or 404', async () => {
+    it('GET /run/{id}/phase07-prime-sources returns data or 404', async () => {
       if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/phase07-retrieval`);
+      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/phase07-prime-sources`);
       assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
       if (status === 200) {
         assert.ok(data.run_id);
       }
-    });
-  });
-
-  describe('Panel 08 — Phase 08 Extraction', () => {
-    it('GET /run/{id}/phase08-extraction returns data or 404', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/phase08-extraction`);
-      assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
-      if (status === 200) {
-        assert.ok(data.run_id);
-      }
-    });
-  });
-
-  describe('Panel — LLM Traces', () => {
-    it('GET /run/{id}/llm-traces returns trace data', async () => {
-      if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/llm-traces`);
-      assert.equal(status, 200);
-      assert.ok(data.run_id);
-      assert.ok(typeof data.count === 'number');
-      assert.ok(Array.isArray(data.traces));
     });
   });
 

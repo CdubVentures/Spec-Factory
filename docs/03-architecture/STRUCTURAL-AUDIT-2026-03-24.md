@@ -39,7 +39,7 @@ Historical architecture audit retained for traceability. It may contain then-cur
 | 8 | **High** | Documentation | 17+ dirs missing README.md contracts | — | `ingest/`, `intel/`, `queue/`, `publish/`, `retrieve/`, `research/`, `cli/`, `daemon/`, `utils/`, `exporter/`, `runtime/`, `inference/`, `training/`, `billing/`, `observability/`, `diagnostics/`, `cache/` | CLAUDE.md mandates domain contract README in every boundary. LLM agents arrive blind. | Add README with Purpose, Public API, Dependencies, Invariants | Each affected directory |
 | 9 | **High** | Testing | 9/10 feature modules have no feature-level tests | — | All features except `crawl/` | Only `crawl` follows TDD discipline. Review, indexing, catalog, settings-authority have zero in-feature test directories. | Add characterization test suites before any decomposition | Feature READMEs |
 | 10 | **Medium** | Backend | `ingest/` (6,767 LOC, 13 files) outside features | 6,767 | Category compilation, CSV ingest, catalog seeding | Domain logic masquerading as infrastructure. Should be under `features/`. | Migrate to `features/catalog/ingest/` or `features/category-authority/` | Folder map, backend architecture |
-| 11 | **Medium** | Backend | `review/domain/` — 4 files over 700 LOC | 3,233 | `reviewGridData` (885), `overrideWorkflow` (814), `componentReviewLegacy` (791), `componentReviewSpecDb` (743) | Review domain is in-progress; contracts not frozen. Each file mixes state machine, persistence, and validation. | Characterize first, then split after contracts freeze | `src/features/review/README.md` |
+| 11 | **Medium** | Backend | `review/domain/` — 3 files over 700 LOC | 2,442 | `reviewGridData` (885), `overrideWorkflow` (814), `componentReviewSpecDb` (743) | Review domain is in-progress; contracts not frozen. Each file mixes state machine, persistence, and validation. `componentReviewLegacy.js` deleted (Phase 6 dead code removal). | Characterize first, then split after contracts freeze | `src/features/review/README.md` |
 | 12 | **Medium** | Architecture | Partial migrations incomplete | ~3,100 | `src/api/` ↔ `src/app/api/`, `src/cli/` ↔ `src/app/cli/` | Two locations for same concern. Ambiguous canonical path confuses agents. | Complete migration; leave thin re-export shims | Folder map, backend architecture |
 | 13 | **Medium** | Backend | `review-curation/` deprecated facade (32 LOC) | 32 | Re-exports 31 functions from `features/review/` | Dead indirection. Consumers should import from `features/review/index.js` directly. | Migrate 4 remaining consumers, then delete | Folder map |
 | 14 | **Low** | Backend | `src/scoring/` empty barrel (5 LOC) | 5 | Comment: "stripped during pipeline rework" | Dead code. Violates Subtractive Engineering Mandate. | Delete | Folder map |
@@ -265,7 +265,7 @@ Historical architecture audit retained for traceability. It may contain then-cur
 
 #### F-10: Review Domain — 4 Files Over 700 LOC (Medium)
 
-**Affected:** `reviewGridData.js` (885), `overrideWorkflow.js` (814), `componentReviewLegacy.js` (791), `componentReviewSpecDb.js` (743)
+**Affected:** `reviewGridData.js` (885), `overrideWorkflow.js` (814), `componentReviewSpecDb.js` (743). `componentReviewLegacy.js` (791 LOC) was deleted in Phase 6 dead code removal.
 
 **Why it matters:** Review feature is in-progress with unfrozen contracts. Each file mixes state machine, persistence queries, and validation logic.
 
@@ -520,7 +520,7 @@ src/features/catalog/products/reconciler.js
 ### Phase 3: Characterization Tests (High — prerequisite for decomposition)
 
 **Step 3.1:** Characterization tests for `review/domain/` (F-07, F-10)
-- Lock down `reviewGridData.js`, `overrideWorkflow.js`, `componentReviewLegacy.js`, `componentReviewSpecDb.js`
+- Lock down `reviewGridData.js`, `overrideWorkflow.js`, `componentReviewSpecDb.js`
 - Place in `src/features/review/tests/`
 
 **Step 3.2:** Characterization tests for `catalog/` (F-07)

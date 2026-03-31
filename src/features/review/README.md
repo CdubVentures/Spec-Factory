@@ -22,7 +22,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
   - Overrides: `resolveOverrideFilePath`, `readReviewArtifacts`, `setOverrideFromCandidate`, `setManualOverride`, `approveGreenOverrides`, `buildReviewMetrics`, `finalizeOverrides`
   - Component/enum review: `resolvePropertyFieldMeta`, `buildComponentReviewLayout`, `buildComponentReviewPayloads`, `buildEnumReviewPayloads`
   - Cascade impact: `findProductsReferencingComponent`, `cascadeComponentChange`, `cascadeEnumChange`
-  - Utilities: `normalizeFieldKey`, `applySharedLaneState`, `confidenceColor`, `runQaJudge`, `startReviewQueueWebSocket`, `suggestionFilePath`, `appendReviewSuggestion`, `evaluateVariance`, `evaluateVarianceBatch`
+  - Utilities: `normalizeFieldKey`, `applySharedLaneState`, `confidenceColor`, `runQaJudge`, `startReviewQueueWebSocket`, `appendReviewSuggestion`, `evaluateVariance`, `evaluateVarianceBatch`
 - Consumers must import from `index.js`, not from internal paths.
 
 ### Services (domain logic, stateless exports)
@@ -42,7 +42,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 - `api/reviewRouteContext.js` — DI context factory.
 
 ## Dependencies
-- Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`, `src/pipeline/componentReviewBatch.js`.
+- Allowed: `src/core/` (including `src/core/events/dataChangeContract.js`), `src/shared/`, `src/db/`, `src/features/catalog/index.js`, `src/features/indexing/index.js`, `src/features/settings-authority/index.js`, `src/utils/` (common, candidateIdentifier, componentIdentifier, fieldKeys, slotValueShape), `src/engine/` (ruleAccessors, fieldRulesEngine, runtimeGate), `src/field-rules/consumerGate.js`, `src/categories/loader.js`, `src/queue/queueState.js`.
 - Forbidden: `src/api/` (all HTTP handling is self-contained), deep imports into other feature internals.
 - Legacy: `src/review/*.js` shims re-export from `domain/` for backward compatibility. New consumers should use `src/features/review/index.js`.
 

@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Factory — Architecture Reference</title>
+<style>
+:root {
+  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
+  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
+  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
+  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
+  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
+  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
+  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
+  --rose: #f43f5e; --cyan: #06b6d4;
+  --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
+  --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.page{max-width:1280px;margin:0 auto;padding:48px 24px 96px}
+.header{margin-bottom:48px}
+.header h1{font-size:2rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.header p{color:var(--t2);max-width:720px;font-size:0.92rem}
+.header .meta{display:flex;gap:24px;margin-top:16px;font-size:0.8rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.stat{background:var(--s1);padding:20px 24px;display:flex;flex-direction:column;gap:4px}
+.stat .n{font-size:1.75rem;font-weight:700;letter-spacing:-0.02em}
+.stat .l{font-size:0.75rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
+.surface{margin-bottom:56px}
+.surface-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.surface-head h2{font-size:1.35rem;font-weight:700;letter-spacing:-0.02em}
+.surface-desc{color:var(--t2);font-size:0.88rem;margin-bottom:24px;max-width:800px}
+.domain-group{margin-bottom:32px}
+.domain-label{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;padding-left:2px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden;transition:border-color 0.15s}
+.card:hover{border-color:var(--border-f)}
+.card summary{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;list-style:none;font-size:0.9rem;gap:8px}
+.card summary::-webkit-details-marker{display:none}
+.card summary::after{content:"+";font-size:1.1rem;font-weight:300;color:var(--t3);transition:transform 0.15s;margin-left:auto;flex-shrink:0}
+.card[open] summary::after{content:"\2212"}
+.card-body{border-top:1px solid var(--border);padding:16px}
+.tname{font-family:var(--mono);font-weight:600;font-size:0.88rem;letter-spacing:-0.01em}
+.tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tag{font-size:0.68rem;font-weight:700;letter-spacing:0.04em;padding:2px 8px;border-radius:99px;text-transform:uppercase;white-space:nowrap}
+.tag-store{background:var(--accent-s);color:var(--accent)}
+.tag-pk{background:var(--green-s);color:var(--green)}
+.tag-fk{background:var(--violet-s);color:var(--violet)}
+.tag-virtual{background:var(--amber-s);color:var(--amber)}
+.tag-cols{background:var(--s2);color:var(--t2)}
+.tag-path{background:var(--violet-s);color:var(--violet);font-family:var(--mono);font-size:0.72rem;text-transform:none;letter-spacing:0}
+.tag-mutable{background:var(--amber-s);color:var(--amber)}
+.tag-immutable{background:var(--green-s);color:var(--green)}
+.tag-sql{background:var(--accent-s);color:var(--accent)}
+.tag-rose{background:rgba(244,63,94,0.12);color:var(--rose)}
+.tag-cyan{background:rgba(6,182,212,0.12);color:var(--cyan)}
+.col-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.col-table th{text-align:left;padding:6px 10px;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--border)}
+.col-table td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.col-table tr:last-child td{border-bottom:none}
+.col-table .cn{font-family:var(--mono);font-weight:500;color:var(--text);font-size:0.82rem}
+.col-table .ct{font-family:var(--mono);color:var(--t3);font-size:0.78rem}
+.col-table .cc{color:var(--t2);font-size:0.78rem}
+.filter-wrap{margin-bottom:32px}
+.filter-input{width:min(480px,100%);background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font:inherit;font-size:0.88rem;color:var(--text);outline:none;transition:border-color 0.15s}
+.filter-input:focus{border-color:var(--accent)}
+.filter-input::placeholder{color:var(--t3)}
+code{font-family:var(--mono);font-size:0.85em;background:var(--s2);padding:1px 5px;border-radius:4px}
+.json-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.7;overflow-x:auto;white-space:pre;margin:8px 0}
+.principle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;margin-bottom:24px}
+.principle-card{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color 0.15s}
+.principle-card:hover{border-color:var(--border-f)}
+.principle-card h4{font-size:0.88rem;font-weight:700;margin-bottom:6px;letter-spacing:-0.01em}
+.principle-card p{font-size:0.82rem;color:var(--t2);line-height:1.55}
+.tree-block{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:0.82rem;color:var(--t2);line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:24px}
+.tree-block .dir{color:var(--accent);font-weight:600}
+.tree-block .file{color:var(--text)}
+.tree-block .comment{color:var(--t3);font-style:italic}
+svg text{font-family:var(--sans)}
+.svg-wrap{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px;overflow-x:auto}
+.nav-links{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:36px}
+.nav-links a{font-size:0.78rem;color:var(--accent);text-decoration:none;background:var(--accent-s);padding:4px 12px;border-radius:6px;font-weight:600;letter-spacing:0.02em;transition:background 0.15s}
+.nav-links a:hover{background:rgba(59,130,246,0.2)}
+.hidden{display:none!important}
+@media(max-width:768px){.page{padding:24px 16px 64px}.header h1{font-size:1.5rem}.stats{grid-template-columns:repeat(2,1fr)}.tags{gap:4px}.card summary{flex-wrap:wrap;gap:8px}.principle-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="header">
+  <h1>Spec Factory &mdash; Architecture Reference</h1>
+  <p>Complete system architecture. SQLite as durable store. JSON as config + checkpoint safety net. This documents the completed state of the system, not plans.</p>
+  <div class="meta">
+    <span>Generated 2026-03-30</span>
+    <span>Post-consolidation</span>
+  </div>
+</header>
+
+<!-- ================================================================== -->
+<!-- STATS BAR                                                          -->
+<!-- ================================================================== -->
+<div class="stats">
+  <div class="stat"><div class="n" style="color:var(--accent)">3</div><div class="l">Databases</div></div>
+  <div class="stat"><div class="n" style="color:var(--green)">61</div><div class="l">SQL Tables</div></div>
+  <div class="stat"><div class="n" style="color:var(--violet)">140+</div><div class="l">Runtime Settings</div></div>
+  <div class="stat"><div class="n" style="color:var(--amber)">11</div><div class="l">RuntimeOps Panels</div></div>
+  <div class="stat"><div class="n" style="color:var(--cyan)">4</div><div class="l">Component DBs</div></div>
+  <div class="stat"><div class="n" style="color:var(--rose)">80</div><div class="l">Field Definitions</div></div>
+</div>
+
+<!-- ================================================================== -->
+<!-- NAV LINKS                                                          -->
+<!-- ================================================================== -->
+<nav class="nav-links">
+  <a href="#overview">System Overview</a>
+  <a href="#databases">Database Surfaces</a>
+  <a href="#json-inventory">JSON File Inventory</a>
+  <a href="#settings">Settings Registry</a>
+  <a href="#stores">Store Modules</a>
+  <a href="#api-routes">API Routes</a>
+  <a href="#directory">Runtime Directory</a>
+  <a href="#principles">Architecture Principles</a>
+</nav>
+
+<div class="filter-wrap">
+  <input class="filter-input" id="filter" type="search" placeholder="Filter sections, tables, files, routes&hellip;">
+</div>
+
+<!-- ================================================================== -->
+<!-- 1. SYSTEM OVERVIEW DIAGRAM                                         -->
+<!-- ================================================================== -->
+<section class="surface" id="overview" data-search="system overview diagram architecture">
+  <div class="surface-head">
+    <h2>System Overview</h2>
+  </div>
+  <p class="surface-desc">High-level architecture showing how the GUI, API server, feature modules, pipeline, and storage layers connect. SQLite is the single source of truth for all mutable state. JSON files serve as immutable config or rebuildable checkpoint safety nets.</p>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-width:960px">
+      <defs>
+        <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#3b82f6" stroke-width="1.2"/></marker>
+        <marker id="ah-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#22c55e" stroke-width="1.2"/></marker>
+        <marker id="ah-a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#f59e0b" stroke-width="1.2"/></marker>
+        <marker id="ah-v" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="none" stroke="#8b5cf6" stroke-width="1.2"/></marker>
+      </defs>
+
+      <!-- GUI Layer -->
+      <rect x="20" y="20" width="200" height="64" rx="10" fill="#18181b" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="120" y="46" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">GUI</text>
+      <text x="120" y="64" text-anchor="middle" fill="#a1a1aa" font-size="10">React / TypeScript</text>
+
+      <!-- API Server -->
+      <rect x="280" y="20" width="200" height="64" rx="10" fill="#18181b" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="380" y="46" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">API Server</text>
+      <text x="380" y="64" text-anchor="middle" fill="#a1a1aa" font-size="10">Node.js HTTP + WebSocket</text>
+
+      <!-- Features -->
+      <rect x="540" y="20" width="200" height="64" rx="10" fill="#18181b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="640" y="46" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">Feature Modules</text>
+      <text x="640" y="64" text-anchor="middle" fill="#a1a1aa" font-size="10">Indexing / Catalog / Review / Settings</text>
+
+      <!-- Core -->
+      <rect x="760" y="20" width="180" height="64" rx="10" fill="#18181b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="850" y="46" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">Core</text>
+      <text x="850" y="64" text-anchor="middle" fill="#a1a1aa" font-size="10">Config / LLM / Logging</text>
+
+      <!-- Arrows: GUI -> API -> Features -> Core -->
+      <line x1="220" y1="52" x2="278" y2="52" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#ah)"/>
+      <line x1="480" y1="52" x2="538" y2="52" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#ah)"/>
+      <line x1="740" y1="52" x2="758" y2="52" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#ah)"/>
+
+      <!-- Category Authority -->
+      <rect x="20" y="130" width="220" height="72" rx="10" fill="#18181b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="130" y="158" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">Category Authority</text>
+      <text x="130" y="176" text-anchor="middle" fill="#a1a1aa" font-size="10">_generated/ JSON configs</text>
+      <text x="130" y="190" text-anchor="middle" fill="#71717a" font-size="9">field_rules, known_values, component_db</text>
+
+      <!-- Pipeline -->
+      <rect x="300" y="130" width="220" height="72" rx="10" fill="#18181b" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="410" y="152" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">Pipeline</text>
+      <text x="410" y="170" text-anchor="middle" fill="#a1a1aa" font-size="10">Discovery &rarr; Search &rarr; Crawl &rarr; Extract</text>
+      <text x="410" y="184" text-anchor="middle" fill="#71717a" font-size="9">NeedSet-driven, multi-round</text>
+
+      <!-- Bridge Events -->
+      <rect x="580" y="130" width="200" height="72" rx="10" fill="#18181b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="680" y="158" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="700">Bridge Events</text>
+      <text x="680" y="176" text-anchor="middle" fill="#a1a1aa" font-size="10">Logger &rarr; runtime_events SQL</text>
+
+      <!-- Arrow: CatAuth -> Pipeline -->
+      <line x1="240" y1="166" x2="298" y2="166" stroke="#f59e0b" stroke-width="1.2" marker-end="url(#ah-a)"/>
+      <!-- Arrow: Pipeline -> Bridge -->
+      <line x1="520" y1="166" x2="578" y2="166" stroke="#22c55e" stroke-width="1.2" marker-end="url(#ah-g)"/>
+      <!-- Arrow: Bridge -> GUI (curved) -->
+      <path d="M780,166 Q860,166 860,100 Q860,52 220,52" fill="none" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah-v)"/>
+
+      <!-- SQLite databases -->
+      <rect x="20" y="250" width="290" height="90" rx="10" fill="#18181b" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="165" y="276" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700">SPECDB (per-category)</text>
+      <text x="165" y="294" text-anchor="middle" fill="#a1a1aa" font-size="10">.workspace/db/{category}/spec.sqlite</text>
+      <text x="165" y="310" text-anchor="middle" fill="#fafafa" font-size="12" font-weight="600">53 tables</text>
+      <text x="165" y="326" text-anchor="middle" fill="#71717a" font-size="9">Products, candidates, evidence, billing, telemetry</text>
+
+      <rect x="340" y="250" width="220" height="90" rx="10" fill="#18181b" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="450" y="276" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">APPDB (global)</text>
+      <text x="450" y="294" text-anchor="middle" fill="#a1a1aa" font-size="10">.workspace/db/app.sqlite</text>
+      <text x="450" y="310" text-anchor="middle" fill="#fafafa" font-size="12" font-weight="600">5 tables</text>
+      <text x="450" y="326" text-anchor="middle" fill="#71717a" font-size="9">Brands, settings, studio maps</text>
+
+      <rect x="590" y="250" width="220" height="90" rx="10" fill="#18181b" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="700" y="276" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">FRONTIERDB (per-category)</text>
+      <text x="700" y="294" text-anchor="middle" fill="#a1a1aa" font-size="10">.workspace/runs/{cat}/_intel/frontier/</text>
+      <text x="700" y="310" text-anchor="middle" fill="#fafafa" font-size="12" font-weight="600">3 tables</text>
+      <text x="700" y="326" text-anchor="middle" fill="#71717a" font-size="9">Queries, URLs, yields</text>
+
+      <!-- Checkpoint files -->
+      <rect x="20" y="390" width="290" height="80" rx="10" fill="#18181b" stroke="#71717a" stroke-width="1" stroke-dasharray="5,3"/>
+      <text x="165" y="416" text-anchor="middle" fill="#a1a1aa" font-size="11" font-weight="700">CHECKPOINT FILES (safety net)</text>
+      <text x="165" y="434" text-anchor="middle" fill="#71717a" font-size="10">run.json &mdash; per-crawl checkpoint</text>
+      <text x="165" y="450" text-anchor="middle" fill="#71717a" font-size="10">product.json &mdash; cross-run accumulator</text>
+      <text x="165" y="464" text-anchor="middle" fill="#71717a" font-size="9">Rebuildable from SQL. Dual-write for recovery.</text>
+
+      <!-- RuntimeOps Panels -->
+      <rect x="340" y="390" width="280" height="80" rx="10" fill="#18181b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="480" y="416" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="700">RUNTIMEOPS PANELS (11)</text>
+      <text x="480" y="434" text-anchor="middle" fill="#a1a1aa" font-size="10">Pre-built at finalize, cached in run_summary</text>
+      <text x="480" y="450" text-anchor="middle" fill="#71717a" font-size="9">summary, pipeline_flow, metrics_rail, documents</text>
+      <text x="480" y="464" text-anchor="middle" fill="#71717a" font-size="9">prefetch, fetch, extraction_plugins, workers, llm, fallbacks, queue</text>
+
+      <!-- Settings Registry -->
+      <rect x="650" y="390" width="200" height="80" rx="10" fill="#18181b" stroke="#f43f5e" stroke-width="1.5"/>
+      <text x="750" y="416" text-anchor="middle" fill="#f43f5e" font-size="11" font-weight="700">SETTINGS REGISTRY</text>
+      <text x="750" y="434" text-anchor="middle" fill="#a1a1aa" font-size="10">140+ entries (SSOT)</text>
+      <text x="750" y="450" text-anchor="middle" fill="#71717a" font-size="10">Drives: config, TS types, UI, validation</text>
+      <text x="750" y="464" text-anchor="middle" fill="#71717a" font-size="9">O(1) feature scaling</text>
+
+      <!-- Arrow annotations -->
+      <line x1="165" y1="202" x2="165" y2="248" stroke="#22c55e" stroke-width="1.2" marker-end="url(#ah-g)"/>
+      <line x1="450" y1="84" x2="450" y2="248" stroke="#3b82f6" stroke-width="1.2" marker-end="url(#ah)"/>
+      <line x1="680" y1="202" x2="700" y2="248" stroke="#f59e0b" stroke-width="1.2" marker-end="url(#ah-a)"/>
+      <line x1="165" y1="340" x2="165" y2="388" stroke="#71717a" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="480" y1="340" x2="480" y2="388" stroke="#8b5cf6" stroke-width="1.2" marker-end="url(#ah-v)"/>
+
+      <!-- Legend -->
+      <rect x="20" y="510" width="920" height="90" rx="10" fill="rgba(24,24,27,0.6)" stroke="var(--border)" stroke-width="1"/>
+      <text x="40" y="534" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.08em">LEGEND</text>
+      <line x1="40" y1="554" x2="72" y2="554" stroke="#3b82f6" stroke-width="2"/><text x="80" y="558" fill="#a1a1aa" font-size="10">Request flow</text>
+      <line x1="200" y1="554" x2="232" y2="554" stroke="#22c55e" stroke-width="2"/><text x="240" y="558" fill="#a1a1aa" font-size="10">Data write</text>
+      <line x1="370" y1="554" x2="402" y2="554" stroke="#8b5cf6" stroke-width="2"/><text x="410" y="558" fill="#a1a1aa" font-size="10">Event / panel flow</text>
+      <line x1="570" y1="554" x2="602" y2="554" stroke="#f59e0b" stroke-width="2"/><text x="610" y="558" fill="#a1a1aa" font-size="10">Config feed</text>
+      <line x1="760" y1="554" x2="792" y2="554" stroke="#71717a" stroke-width="1.5" stroke-dasharray="5,3"/><text x="800" y="558" fill="#a1a1aa" font-size="10">Safety net / rebuild</text>
+      <rect x="40" y="572" width="10" height="10" rx="2" fill="#18181b" stroke="#22c55e" stroke-width="1.2"/><text x="58" y="582" fill="#a1a1aa" font-size="10">SQLite (SSOT)</text>
+      <rect x="200" y="572" width="10" height="10" rx="2" fill="#18181b" stroke="#71717a" stroke-width="1" stroke-dasharray="3,2"/><text x="218" y="582" fill="#a1a1aa" font-size="10">JSON checkpoint (rebuildable)</text>
+      <rect x="440" y="572" width="10" height="10" rx="2" fill="#18181b" stroke="#f43f5e" stroke-width="1.2"/><text x="458" y="582" fill="#a1a1aa" font-size="10">Registry (drives everything)</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 2. DATABASE SURFACES                                               -->
+<!-- ================================================================== -->
+<section class="surface" id="databases" data-search="database surfaces sqlite specdb appdb frontierdb">
+  <div class="surface-head">
+    <h2>Database Surfaces</h2>
+    <span class="tag tag-cols">3 databases</span>
+    <span class="tag" style="background:var(--green-s);color:var(--green)">61 total tables</span>
+  </div>
+  <p class="surface-desc">All mutable domain state lives in SQLite. Three database surfaces partition data by scope: per-category domain data (SpecDb), global application data (AppDb), and per-category frontier intelligence (FrontierDb). Full column-level schema is in <a href="schema-reference.html" style="color:var(--accent)">schema-reference.html</a>.</p>
+
+  <table class="col-table" style="margin-bottom:24px">
+    <thead><tr><th>Database</th><th>Scope</th><th>Path</th><th>Tables</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td class="cn" style="color:var(--green)">SpecDb</td><td class="ct">Per-category</td><td class="ct">.workspace/db/{category}/spec.sqlite</td><td class="cc">53 (incl. 1 FTS virtual)</td><td class="cc">All domain data: products, candidates, components, reviews, evidence, billing, telemetry, source intelligence, run metadata</td></tr>
+      <tr><td class="cn" style="color:var(--accent)">AppDb</td><td class="ct">Global</td><td class="ct">.workspace/db/app.sqlite</td><td class="cc">5</td><td class="cc">Brands, user settings, studio field maps, brand categories, brand renames</td></tr>
+      <tr><td class="cn" style="color:var(--amber)">FrontierDb</td><td class="ct">Per-category</td><td class="ct">.workspace/runs/{cat}/_intel/frontier/frontier.db</td><td class="cc">3</td><td class="cc">Cross-run search intelligence: queries, URLs, yields</td></tr>
+    </tbody>
+  </table>
+
+  <div class="domain-group">
+    <div class="domain-label">SpecDb &mdash; Tables by Domain (53 tables)</div>
+    <table class="col-table">
+      <thead><tr><th>Domain</th><th>Tables</th><th>Store Module</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">Candidate Pipeline</td><td class="ct">candidates, candidate_reviews</td><td class="cc">candidateStore</td></tr>
+        <tr><td class="cn">Components</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">componentStore</td></tr>
+        <tr><td class="cn">Enum Lists</td><td class="ct">enum_lists, list_values</td><td class="cc">enumListStore</td></tr>
+        <tr><td class="cn">Item State</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">itemStateStore</td></tr>
+        <tr><td class="cn">Key Review</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">keyReviewStore</td></tr>
+        <tr><td class="cn">Run Metadata</td><td class="ct">runs</td><td class="cc">runMetaStore</td></tr>
+        <tr><td class="cn">Run Artifacts</td><td class="ct">run_artifacts</td><td class="cc">runArtifactStore</td></tr>
+        <tr><td class="cn">Billing</td><td class="ct">billing_entries</td><td class="cc">billingStore</td></tr>
+        <tr><td class="cn">Source Intelligence</td><td class="ct">source_intel_domains, source_intel_field_rewards, llm_cache, learning_profiles, category_brain, source_corpus, runtime_events, bridge_events</td><td class="cc">sourceIntelStore</td></tr>
+        <tr><td class="cn">LLM Route / Source</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">llmRouteSourceStore</td></tr>
+        <tr><td class="cn">Evidence Index</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts (virtual)</td><td class="cc">evidenceIndex</td></tr>
+        <tr><td class="cn">Crawl Artifacts</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">artifactStore</td></tr>
+        <tr><td class="cn">Telemetry Index</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">telemetryIndexStore</td></tr>
+        <tr><td class="cn">Field History</td><td class="ct">field_history</td><td class="cc">fieldHistoryStore</td></tr>
+        <tr><td class="cn">Queue / Products</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue, audit_log</td><td class="cc">queueProductStore</td></tr>
+        <tr><td class="cn">Field Studio Map</td><td class="ct">field_studio_map</td><td class="cc">fieldStudioMapStore</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">AppDb &mdash; Tables (5 tables)</div>
+    <table class="col-table">
+      <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">brands</td><td class="cc">Brand definitions (name, aliases, website, categories)</td></tr>
+        <tr><td class="cn">settings</td><td class="cc">User settings key-value store (primary for dual-write)</td></tr>
+        <tr><td class="cn">studio_maps</td><td class="cc">Field-to-sheet mapping for studio export</td></tr>
+        <tr><td class="cn">brand_categories</td><td class="cc">Brand-to-category associations</td></tr>
+        <tr><td class="cn">brand_renames</td><td class="cc">Brand rename history log</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">FrontierDb &mdash; Tables (3 tables)</div>
+    <table class="col-table">
+      <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">queries</td><td class="cc">Cross-run search query intelligence</td></tr>
+        <tr><td class="cn">urls</td><td class="cc">Cross-run URL discovery intelligence</td></tr>
+        <tr><td class="cn">yields</td><td class="cc">Cross-run yield tracking per query/URL</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 3. JSON FILE INVENTORY                                             -->
+<!-- ================================================================== -->
+<section class="surface" id="json-inventory" data-search="json file inventory config checkpoint">
+  <div class="surface-head">
+    <h2>JSON File Inventory</h2>
+  </div>
+  <p class="surface-desc">Every JSON file the system reads or writes, organized by purpose. JSON is config-only (immutable) or checkpoint safety net (rebuildable from SQL). No JSON file is the sole source of truth for mutable state.</p>
+
+  <!-- A. Runtime Disk Files -->
+  <div class="domain-group">
+    <div class="domain-label">A. Runtime Disk Files (per-run)</div>
+
+    <details class="card" data-search="run.json crawl checkpoint">
+      <summary><span class="tname">run.json</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/run.json</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Crawl checkpoint &mdash; records run metadata, phase cursor, and product-level results. Schema v2/v3. Written by the pipeline at each phase transition. SQL (runs + run_artifacts tables) is the SSOT; this file is the rebuild safety net.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/buildCrawlCheckpoint.js<br><strong>Mutable?</strong> Yes (updated each phase)<br><strong>In SQL?</strong> Yes &mdash; runs + run_artifacts tables are authoritative</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="product.json cross-run accumulator">
+      <summary><span class="tname">product.json</span><span class="tags"><span class="tag tag-path">.workspace/products/{pid}/product.json</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem;margin-bottom:8px"><strong>Purpose:</strong> Cross-run accumulator &mdash; grows after each run with field values, evidence, confidence scores. Created at product add time. SQL (products + item_field_state + candidates) is the SSOT; this file is the rebuild safety net.</p>
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Written by:</strong> pipeline/checkpoint/buildProductCheckpoint.js<br><strong>Mutable?</strong> Yes (grows after each run)<br><strong>In SQL?</strong> Yes &mdash; products, item_field_state, candidates</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="traces diagnostic">
+      <summary><span class="tname">traces/*.json</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/traces/</span><span class="tag tag-mutable">Write-once</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Diagnostic traces for debugging LLM calls, pipeline decisions. Deletable without data loss. Not in SQL.<br><strong>Written by:</strong> Pipeline LLM call sites<br><strong>Mutable?</strong> Write-once (append-only per run)</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="html.gz crawled pages content-addressed">
+      <summary><span class="tname">html/*.html.gz</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/html/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Content-addressed crawled pages. Gzipped HTML snapshots of fetched web pages. Referenced by crawl_sources table.<br><strong>Written by:</strong> Crawl session (Crawlee request handler)<br><strong>Mutable?</strong> No (content-addressed by hash)</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="screenshots jpeg visual proof">
+      <summary><span class="tname">screenshots/*.jpeg</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/screenshots/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Visual proof screenshots of spec tables on crawled pages. Referenced by source_screenshots table.<br><strong>Written by:</strong> Screenshot capture plugin<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="video webm recording">
+      <summary><span class="tname">video/*.webm</span><span class="tags"><span class="tag tag-path">.workspace/runs/{runId}/video/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> WebM video recordings of each crawled page session. Referenced by source_videos table.<br><strong>Written by:</strong> Video recording plugin<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- B. Category Authority -->
+  <div class="domain-group">
+    <div class="domain-label">B. Category Authority (_generated/)</div>
+
+    <details class="card" data-search="field_rules.json field definitions constraints">
+      <summary><span class="tname">field_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">80 defs</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> 80 field definitions with constraints, types, validation rules, display metadata. Compiled from category authority source sheets.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No (recompiled, not edited)</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="known_values.json enumerated values">
+      <summary><span class="tname">known_values.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Enumerated known values per field. Used by the pipeline for value normalization and validation.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="field_groups.json semantic groupings">
+      <summary><span class="tname">field_groups.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">12 groups</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> 12 semantic field groupings that organize fields into logical categories for UI display and pipeline logic.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="ui_field_catalog.json ui rendering metadata">
+      <summary><span class="tname">ui_field_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> UI rendering metadata for fields. Controls how each field appears in the GUI (display name, input type, hints, ordering).<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="parse_templates.json parsing rules library">
+      <summary><span class="tname">parse_templates.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Parsing rules library used by the extraction pipeline to parse structured values from LLM output and raw HTML.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="cross_validation_rules.json business rules constraints">
+      <summary><span class="tname">cross_validation_rules.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Business rule constraints for cross-field validation. Enforces logical relationships between field values.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="key_migrations.json field key renames">
+      <summary><span class="tname">key_migrations.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Field key rename history. Maps old field keys to new canonical keys for backward compatibility.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="manifest.json artifact integrity sha256">
+      <summary><span class="tname">manifest.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Artifact integrity manifest with SHA256 hashes for all compiled files. Enables fast cache invalidation.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="_compile_report.json compilation metadata">
+      <summary><span class="tname">_compile_report.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/</span><span class="tag tag-immutable">Immutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Compilation metadata &mdash; timestamps, source file hashes, warnings, field counts from the last compile.<br><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="component_db encoders sensors switches materials">
+      <summary><span class="tname">component_db/*.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/_generated/component_db/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">4 files</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Component reference databases for hardware component identification and normalization.</p>
+        <table class="col-table" style="margin-top:8px">
+          <thead><tr><th>File</th><th>Items</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td class="cn">encoders.json</td><td class="ct">40</td><td class="cc">Encoder component models and specs</td></tr>
+            <tr><td class="cn">sensors.json</td><td class="ct">116</td><td class="cc">Sensor component models and specs</td></tr>
+            <tr><td class="cn">switches.json</td><td class="ct">106</td><td class="cc">Switch component models and specs</td></tr>
+            <tr><td class="cn">materials.json</td><td class="ct">3</td><td class="cc">Material type definitions</td></tr>
+          </tbody>
+        </table>
+        <p style="color:var(--t2);font-size:0.82rem;margin-top:8px"><strong>Written by:</strong> Category authority compiler<br><strong>Mutable?</strong> No (recompiled, not edited)</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- C. Control Plane -->
+  <div class="domain-group">
+    <div class="domain-label">C. Control Plane</div>
+
+    <details class="card" data-search="product_catalog.json product inventory">
+      <summary><span class="tname">product_catalog.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/</span><span class="tag tag-immutable">Read-Only Seed</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Read-only boot seed for product identity. Read once at startup to populate an empty SQL database. Never mutated on CRUD.<br><strong>SSOT:</strong> SQL products table + .workspace/products/{pid}/product.json<br><strong>Written by:</strong> Never (static seed file)<br><strong>Mutable?</strong> No</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="field_studio_map.json sheet-to-field mapping">
+      <summary><span class="tname">field_studio_map.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Sheet-to-field mapping for export. Maps internal field keys to spreadsheet column names. SQL (field_studio_map + studio_maps in AppDb) is authoritative.<br><strong>Written by:</strong> studioRoutes.js<br><strong>Mutable?</strong> Yes<br><strong>In SQL?</strong> Yes</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="rename_log.json product name change history">
+      <summary><span class="tname">rename_log.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/</span><span class="tag tag-mutable">Mutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Product name change history log. Records brand/model renames for audit trail.<br><strong>Written by:</strong> catalogRoutes.js / brandRoutes.js<br><strong>Mutable?</strong> Yes (append-only)</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- D. Global Files -->
+  <div class="domain-group">
+    <div class="domain-label">D. Global Files</div>
+
+    <details class="card" data-search="user-settings.json settings dual-write">
+      <summary><span class="tname">user-settings.json</span><span class="tags"><span class="tag tag-path">category_authority/_runtime/</span><span class="tag tag-mutable">Mutable</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> User settings file. Dual-write: app.sqlite settings table is primary, JSON is fallback for bootstrap/recovery.<br><strong>Written by:</strong> configPersistenceContext.js<br><strong>Mutable?</strong> Yes<br><strong>In SQL?</strong> Yes &mdash; app.sqlite settings table (primary)</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="brand_registry.json brand definitions">
+      <summary><span class="tname">brand_registry.json</span><span class="tags"><span class="tag tag-path">category_authority/{cat}/</span><span class="tag tag-immutable">Seed</span><span class="tag tag-sql">In SQL</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Brand definitions seed file. Seeds the app.sqlite brands table on first boot. SQL is authoritative after initial seed.<br><strong>Written by:</strong> Manual / compiler<br><strong>Mutable?</strong> Seed-only<br><strong>In SQL?</strong> Yes &mdash; app.sqlite brands table</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="settings snapshots per-run capped">
+      <summary><span class="tname">{runId}-settings.json</span><span class="tags"><span class="tag tag-path">category_authority/_runtime/snapshots/</span><span class="tag tag-immutable">Immutable</span><span class="tag tag-cols">Capped: 10</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Per-run settings snapshots. Captures the full resolved settings at run start for reproducibility. Capped at 10 files (oldest auto-deleted).<br><strong>Written by:</strong> Run bootstrap (createRunLlmRuntime.js)<br><strong>Mutable?</strong> No (write-once per run)</p>
+      </div>
+    </details>
+
+    <details class="card" data-search="product identity rebuild ssot">
+      <summary><span class="tname">product.json</span><span class="tags"><span class="tag tag-path">.workspace/products/{pid}/</span><span class="tag tag-mutable">Mutable</span></span></summary>
+      <div class="card-body">
+        <p style="color:var(--t2);font-size:0.82rem"><strong>Purpose:</strong> Per-product rebuild SSOT. Created at add time, grown after runs (sources merge in). Contains identity, seed_urls, identifier, status, accumulated sources, fields, provenance.<br><strong>Written by:</strong> writeProductIdentity (create), writeProductCheckpoint (run merge)<br><strong>Mutable?</strong> Yes (read-merge-write after runs)</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 4. SETTINGS REGISTRY (SSOT)                                        -->
+<!-- ================================================================== -->
+<section class="surface" id="settings" data-search="settings registry runtime ssot configuration knobs">
+  <div class="surface-head">
+    <h2>Settings Registry (SSOT)</h2>
+    <span class="tag" style="background:rgba(244,63,94,0.12);color:var(--rose)">140+ entries</span>
+    <span class="tag tag-cols">O(1) scaling</span>
+  </div>
+  <p class="surface-desc">The <code>RUNTIME_SETTINGS_REGISTRY</code> in <code>src/shared/settingsRegistry.js</code> is the single source of truth for all runtime configuration. Each entry is a plain object defining key, type, default, constraints, and UI metadata. Adding one entry auto-derives: config manifest, TypeScript types, UI rendering, validation, clamping, and API payloads.</p>
+
+  <div class="domain-group">
+    <div class="domain-label">Registry Entry Shape</div>
+    <div class="json-block">{
+  key: "llmModelPlan",           // Canonical key (camelCase)
+  type: "string",                // "string" | "int" | "float" | "bool" | "enum"
+  default: "gemini-2.5-flash",   // Default value
+  min: undefined,                // Min (int/float only)
+  max: undefined,                // Max (int/float only)
+  allowed: undefined,            // Enum values (enum only)
+  secret: false,                 // Redact in UI/logs
+  allowEmpty: false,             // Allow empty string
+  aliases: ["phase2LlmModel"],   // Legacy key aliases
+  configKey: "llmModelPlan",     // Config object key
+  envKey: "LLM_MODEL_PLAN",      // Environment variable
+  group: "llm",                  // Settings group
+  policyGroup: "models",         // LLM policy group
+  policyField: "plan",           // LLM policy field
+  uiCategory: "extraction",     // UI tab
+  uiSection: "models",          // UI section
+  uiGroup: "Plan Phase",        // UI group heading
+  uiHero: false,                // Show as hero toggle
+  uiTip: "Model ID used...",    // Tooltip text
+  disabledBy: undefined,        // Conditional disable
+  tokenClamped: false,           // Token limit clamping
+  clampModelKey: undefined       // Model key for clamping
+}</div>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Settings Groups</div>
+    <table class="col-table">
+      <thead><tr><th>Group</th><th>Count</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td class="cn" style="color:var(--accent)">llm</td><td class="ct">25+</td><td class="cc">llmProvider, llmModelPlan, llmModelReasoning, llmMaxOutputTokens, llmCostInputPer1M, anthropicApiKey, deepseekApiKey, openaiApiKey</td></tr>
+        <tr><td class="cn" style="color:var(--green)">runtime</td><td class="ct">20+</td><td class="cc">crawleeHeadless, capturePageScreenshotEnabled, crawlVideoRecordingEnabled, stealthEnabled, fetchLoadingDelayMs, fetchSuiteMode, runtimeControlFile</td></tr>
+        <tr><td class="cn" style="color:var(--amber)">misc</td><td class="ct">30+</td><td class="cc">maxRunSeconds, serperEnabled, googleSearchTimeoutMs, domainClassifierUrlCap, searchProfileQueryCap, pipelineSchemaEnforcementMode, autoScrollEnabled</td></tr>
+        <tr><td class="cn" style="color:var(--violet)">paths</td><td class="ct">4</td><td class="cc">categoryAuthorityRoot, localInputRoot, runOutputRoot, workspaceRoot</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">What the Registry Drives</div>
+    <div class="principle-grid">
+      <div class="principle-card">
+        <h4>Config Manifest</h4>
+        <p>The runtime config object is built by iterating the registry. Each entry's <code>configKey</code> + <code>envKey</code> + <code>default</code> produces the resolved value. No manual wiring.</p>
+      </div>
+      <div class="principle-card">
+        <h4>TypeScript Types</h4>
+        <p>GUI frontend types (<code>runtimeSettingsManifestTypes.ts</code>) are derived from registry keys. The <code>settingsPropagationContract.ts</code> enforces alignment.</p>
+      </div>
+      <div class="principle-card">
+        <h4>UI Rendering</h4>
+        <p>The settings page reads <code>uiCategory</code>, <code>uiSection</code>, <code>uiGroup</code>, <code>uiHero</code>, <code>uiTip</code>, and <code>disabledBy</code> to auto-generate the full settings UI.</p>
+      </div>
+      <div class="principle-card">
+        <h4>Validation + Clamping</h4>
+        <p>Type, min/max, allowed, tokenClamped, and clampModelKey drive server-side validation. Invalid values are clamped or rejected before persistence.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 5. STORE MODULE REGISTRY                                           -->
+<!-- ================================================================== -->
+<section class="surface" id="stores" data-search="store module registry sql tables ownership">
+  <div class="surface-head">
+    <h2>Store Module Registry</h2>
+    <span class="tag tag-store">17 modules</span>
+  </div>
+  <p class="surface-desc">Each store module owns a set of SQL tables and provides the read/write API for its domain. No other module may directly query another store's tables. Store modules are initialized at database open time and exposed through the SpecDb/AppDb facade.</p>
+
+  <table class="col-table">
+    <thead><tr><th>Store Module</th><th>Owned Tables</th><th>Table Count</th></tr></thead>
+    <tbody>
+      <tr><td class="cn">candidateStore</td><td class="ct">candidates, candidate_reviews</td><td class="cc">2</td></tr>
+      <tr><td class="cn">componentStore</td><td class="ct">component_identity, component_aliases, component_values</td><td class="cc">3</td></tr>
+      <tr><td class="cn">enumListStore</td><td class="ct">enum_lists, list_values</td><td class="cc">2</td></tr>
+      <tr><td class="cn">itemStateStore</td><td class="ct">item_field_state, item_component_links, item_list_links, product_review_state</td><td class="cc">4</td></tr>
+      <tr><td class="cn">keyReviewStore</td><td class="ct">key_review_state, key_review_runs, key_review_run_sources, key_review_audit</td><td class="cc">4</td></tr>
+      <tr><td class="cn">runMetaStore</td><td class="ct">runs</td><td class="cc">1</td></tr>
+      <tr><td class="cn">runArtifactStore</td><td class="ct">run_artifacts</td><td class="cc">1</td></tr>
+      <tr><td class="cn">billingStore</td><td class="ct">billing_entries</td><td class="cc">1</td></tr>
+      <tr><td class="cn">sourceIntelStore</td><td class="ct">source_intel_domains, source_intel_field_rewards, llm_cache, learning_profiles, category_brain, source_corpus, runtime_events, bridge_events</td><td class="cc">8</td></tr>
+      <tr><td class="cn">llmRouteSourceStore</td><td class="ct">llm_route_matrix, source_registry, source_artifacts, source_assertions, source_evidence_refs</td><td class="cc">5</td></tr>
+      <tr><td class="cn">evidenceIndex</td><td class="ct">evidence_documents, evidence_chunks, evidence_facts, evidence_chunks_fts</td><td class="cc">4</td></tr>
+      <tr><td class="cn">artifactStore</td><td class="ct">crawl_sources, source_screenshots, source_videos, source_pdfs</td><td class="cc">4</td></tr>
+      <tr><td class="cn">telemetryIndexStore</td><td class="ct">knob_snapshots, query_index, url_index, prompt_index</td><td class="cc">4</td></tr>
+      <tr><td class="cn">fieldHistoryStore</td><td class="ct">field_history</td><td class="cc">1</td></tr>
+      <tr><td class="cn">queueProductStore</td><td class="ct">products, product_queue, product_runs, curation_suggestions, component_review_queue, audit_log</td><td class="cc">6</td></tr>
+      <tr><td class="cn">fieldStudioMapStore</td><td class="ct">field_studio_map</td><td class="cc">1</td></tr>
+      <tr><td class="cn" style="color:var(--amber)">frontierStore</td><td class="ct" style="color:var(--amber)">queries, urls, yields (FrontierDb)</td><td class="cc">3</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ================================================================== -->
+<!-- 6. API ROUTES                                                      -->
+<!-- ================================================================== -->
+<section class="surface" id="api-routes" data-search="api routes endpoints http rest">
+  <div class="surface-head">
+    <h2>API Routes</h2>
+    <span class="tag tag-cols">13 route registrars</span>
+  </div>
+  <p class="surface-desc">All API routes are registered via the GUI server runtime (<code>src/api/guiServerRuntime.js</code>). Each registrar receives a context object with database accessors, config, and helpers. Routes are prefixed with <code>/api/v1/</code>.</p>
+
+  <div class="domain-group">
+    <div class="domain-label">Route Registrar Map</div>
+    <table class="col-table">
+      <thead><tr><th>Key</th><th>Registrar</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">infra</td><td class="ct">registerInfraRoutes</td><td class="cc">src/app/api/routes/infraRoutes.js</td></tr>
+        <tr><td class="cn">config</td><td class="ct">registerConfigRoutes</td><td class="cc">src/features/settings/api/configRoutes.js</td></tr>
+        <tr><td class="cn">indexlab</td><td class="ct">registerIndexlabRoutes</td><td class="cc">src/features/indexing/api/indexlabRoutes.js</td></tr>
+        <tr><td class="cn">runtimeOps</td><td class="ct">registerRuntimeOpsRoutes</td><td class="cc">src/features/indexing/api/runtimeOpsRoutes.js</td></tr>
+        <tr><td class="cn">catalog</td><td class="ct">registerCatalogRoutes</td><td class="cc">src/features/catalog/api/catalogRoutes.js</td></tr>
+        <tr><td class="cn">brand</td><td class="ct">registerBrandRoutes</td><td class="cc">src/features/catalog/api/brandRoutes.js</td></tr>
+        <tr><td class="cn">studio</td><td class="ct">registerStudioRoutes</td><td class="cc">src/features/studio/api/studioRoutes.js</td></tr>
+        <tr><td class="cn">dataAuthority</td><td class="ct">registerDataAuthorityRoutes</td><td class="cc">src/features/category-authority/api/dataAuthorityRoutes.js</td></tr>
+        <tr><td class="cn">queueBillingLearning</td><td class="ct">registerQueueBillingLearningRoutes</td><td class="cc">src/features/indexing/api/queueBillingLearningRoutes.js</td></tr>
+        <tr><td class="cn">review</td><td class="ct">registerReviewRoutes</td><td class="cc">src/features/review/api/reviewRoutes.js</td></tr>
+        <tr><td class="cn">testMode</td><td class="ct">registerTestModeRoutes</td><td class="cc">src/app/api/routes/testModeRoutes.js</td></tr>
+        <tr><td class="cn">sourceStrategy</td><td class="ct">registerSourceStrategyRoutes</td><td class="cc">src/features/indexing/api/sourceStrategyRoutes.js</td></tr>
+        <tr><td class="cn">specSeeds</td><td class="ct">registerSpecSeedsRoutes</td><td class="cc">src/features/indexing/api/specSeedsRoutes.js</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">IndexLab Routes (Run Data)</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Data Source</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/indexlab/runs</td><td class="ct">GET</td><td class="cc">specDb.listRuns()</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}</td><td class="ct">GET</td><td class="cc">SQL runs + run_artifacts + events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/events</td><td class="ct">GET</td><td class="cc">SQL runtime_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/needset</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (needset)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/search-profile</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (search_profile)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/rounds</td><td class="ct">GET</td><td class="cc">Aggregated from runtime_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/evidence-index</td><td class="ct">GET</td><td class="cc">evidence_chunks_fts (FTS search)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/serp</td><td class="ct">GET</td><td class="cc">SQL run_artifacts (serp_explorer)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/learning</td><td class="ct">GET</td><td class="cc">Filtered runtime_events</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/source-indexing-packets</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/item-indexing-packet</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/automation-queue</td><td class="ct">GET</td><td class="cc">SQL run_artifacts</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">RuntimeOps Routes (Live + Cached Panels)</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Builder</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/summary</td><td class="ct">GET</td><td class="cc">buildRuntimeOpsSummary</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/workers</td><td class="ct">GET</td><td class="cc">buildRuntimeOpsWorkers</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/workers/{wid}</td><td class="ct">GET</td><td class="cc">buildWorkerDetail</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/documents</td><td class="ct">GET</td><td class="cc">buildRuntimeOpsDocuments</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/documents/{url}</td><td class="ct">GET</td><td class="cc">buildRuntimeOpsDocumentDetail</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/metrics</td><td class="ct">GET</td><td class="cc">buildRuntimeOpsMetricsRail</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/fields</td><td class="ct">GET</td><td class="cc">buildExtractionFields</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/extraction/plugins</td><td class="ct">GET</td><td class="cc">buildExtractionPluginPhases</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/fallbacks</td><td class="ct">GET</td><td class="cc">buildFallbackEvents</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/queue</td><td class="ct">GET</td><td class="cc">buildQueueState</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/pipeline</td><td class="ct">GET</td><td class="cc">buildPipelineFlow</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/prefetch</td><td class="ct">GET</td><td class="cc">buildPreFetchPhases</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/fetch</td><td class="ct">GET</td><td class="cc">buildFetchPhases</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/llm-dashboard</td><td class="ct">GET</td><td class="cc">buildLlmCallsDashboard</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/screencast/{wid}/last</td><td class="ct">GET</td><td class="cc">Live frame or synthetic proof</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/video/{wid}</td><td class="ct">GET</td><td class="cc">Stream .webm file (range support)</td></tr>
+        <tr><td class="cn">/indexlab/run/{id}/runtime/assets/{file}</td><td class="ct">GET</td><td class="cc">Static file serve (screenshots)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Config Routes (Settings)</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Handler</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/config/runtime-settings</td><td class="ct">GET/PUT</td><td class="cc">createRuntimeSettingsHandler &mdash; RUNTIME_SETTINGS_REGISTRY</td></tr>
+        <tr><td class="cn">/config/ui-settings</td><td class="ct">GET/PUT</td><td class="cc">createUiSettingsHandler &mdash; user settings (dual-write)</td></tr>
+        <tr><td class="cn">/config/llm-settings</td><td class="ct">GET/PUT</td><td class="cc">createLlmSettingsHandler &mdash; LLM routing config</td></tr>
+        <tr><td class="cn">/config/llm-policy</td><td class="ct">GET/PUT</td><td class="cc">createLlmPolicyHandler &mdash; LLM policy groups</td></tr>
+        <tr><td class="cn">/config/indexing</td><td class="ct">GET</td><td class="cc">createIndexingMetricsHandler &mdash; domain checklist + LLM metrics</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Infra Routes</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Handler</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/infra/health</td><td class="ct">GET</td><td class="cc">healthRoutes &mdash; server identity + dist root</td></tr>
+        <tr><td class="cn">/infra/categories</td><td class="ct">GET</td><td class="cc">categoryRoutes &mdash; available categories</td></tr>
+        <tr><td class="cn">/infra/process/*</td><td class="ct">GET/POST</td><td class="cc">processRoutes &mdash; pipeline lifecycle (start/stop/status)</td></tr>
+        <tr><td class="cn">/infra/searxng/*</td><td class="ct">GET</td><td class="cc">searxngRoutes &mdash; SearXNG proxy</td></tr>
+        <tr><td class="cn">/infra/serper/*</td><td class="ct">GET</td><td class="cc">serperRoutes &mdash; Serper credit balance</td></tr>
+        <tr><td class="cn">/infra/graphql</td><td class="ct">POST</td><td class="cc">graphqlRoutes &mdash; GraphQL endpoint</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Catalog + Brand Routes</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/catalog/{cat}</td><td class="ct">GET</td><td class="cc">Category overview (all merges every category)</td></tr>
+        <tr><td class="cn">/catalog/{cat}/products</td><td class="ct">GET/POST</td><td class="cc">List / add products</td></tr>
+        <tr><td class="cn">/catalog/{cat}/products/{pid}</td><td class="ct">PUT/DELETE</td><td class="cc">Update / delete product</td></tr>
+        <tr><td class="cn">/catalog/{cat}/products/seed</td><td class="ct">POST</td><td class="cc">Seed products from fixtures</td></tr>
+        <tr><td class="cn">/catalog/{cat}/products/bulk</td><td class="ct">POST</td><td class="cc">Bulk add products</td></tr>
+        <tr><td class="cn">/catalog/{cat}/reconcile</td><td class="ct">POST</td><td class="cc">Reconcile catalog with SQL</td></tr>
+        <tr><td class="cn">/brands</td><td class="ct">GET/POST</td><td class="cc">List / add brands</td></tr>
+        <tr><td class="cn">/brands/{slug}</td><td class="ct">PUT/DELETE</td><td class="cc">Update / delete brand</td></tr>
+        <tr><td class="cn">/brands/{slug}/impact</td><td class="ct">GET</td><td class="cc">Impact analysis for rename/delete</td></tr>
+        <tr><td class="cn">/brands/seed</td><td class="ct">POST</td><td class="cc">Auto-seed from active filtering</td></tr>
+        <tr><td class="cn">/brands/bulk</td><td class="ct">POST</td><td class="cc">Bulk add brands</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">Additional Routes</div>
+    <table class="col-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">/source-strategy</td><td class="ct">GET/POST/PUT/DELETE</td><td class="cc">Source strategy CRUD</td></tr>
+        <tr><td class="cn">/spec-seeds/{cat}</td><td class="ct">GET/PUT</td><td class="cc">Per-category spec seed templates</td></tr>
+        <tr><td class="cn">/storage/*</td><td class="ct">GET/POST/DELETE</td><td class="cc">Storage manager (runs, cleanup, archival)</td></tr>
+        <tr><td class="cn">/test-mode/*</td><td class="ct">GET/POST/DELETE</td><td class="cc">Test mode (create, run, validate, cleanup)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 7. RUNTIME DIRECTORY STRUCTURE                                     -->
+<!-- ================================================================== -->
+<section class="surface" id="directory" data-search="runtime directory structure workspace files folders">
+  <div class="surface-head">
+    <h2>Runtime Directory Structure</h2>
+  </div>
+  <p class="surface-desc">The <code>.workspace/</code> directory is the sole runtime data directory (git-ignored). All mutable state, run output, and databases live here. The <code>category_authority/_runtime/</code> directory holds user settings and per-run snapshots.</p>
+
+  <div class="tree-block"><span class="dir">.workspace/</span>
+  <span class="dir">db/</span>
+    <span class="file">app.sqlite</span>                          <span class="comment">-- Global: brands, settings, studio maps (5 tables)</span>
+    <span class="dir">{category}/</span>
+      <span class="file">spec.sqlite</span>                      <span class="comment">-- Per-category: all domain data (53 tables)</span>
+  <span class="dir">runs/</span>
+    <span class="dir">{runId}/</span>
+      <span class="file">run.json</span>                         <span class="comment">-- Crawl checkpoint (rebuild safety net)</span>
+      <span class="dir">html/</span>
+        <span class="file">*.html.gz</span>                      <span class="comment">-- Content-addressed crawled pages</span>
+      <span class="dir">screenshots/</span>
+        <span class="file">*.jpeg</span>                         <span class="comment">-- Visual proof screenshots</span>
+      <span class="dir">video/</span>
+        <span class="file">*.webm</span>                         <span class="comment">-- Page session recordings</span>
+      <span class="dir">traces/</span>
+        <span class="file">*.json</span>                         <span class="comment">-- Diagnostic traces (deletable)</span>
+    <span class="dir">{category}/</span>
+      <span class="dir">_intel/frontier/</span>
+        <span class="file">frontier.db</span>                    <span class="comment">-- Cross-run search intelligence (3 tables)</span>
+  <span class="dir">products/</span>
+    <span class="dir">{productId}/</span>
+      <span class="file">product.json</span>                     <span class="comment">-- Cross-run accumulator (rebuild safety net)</span>
+  <span class="dir">output/</span>                                <span class="comment">-- Pipeline output artifacts</span>
+  <span class="dir">crawlee/</span>                               <span class="comment">-- Crawlee internal bookkeeping (ephemeral)</span></div>
+
+  <div class="tree-block"><span class="dir">category_authority/</span>
+  <span class="dir">{category}/</span>
+    <span class="dir">_generated/</span>                          <span class="comment">-- Compiled authority files (immutable)</span>
+      <span class="file">field_rules.json</span>                 <span class="comment">-- 80 field definitions</span>
+      <span class="file">known_values.json</span>                <span class="comment">-- Enumerated values per field</span>
+      <span class="file">field_groups.json</span>                <span class="comment">-- 12 semantic field groupings</span>
+      <span class="file">ui_field_catalog.json</span>            <span class="comment">-- UI rendering metadata</span>
+      <span class="file">parse_templates.json</span>             <span class="comment">-- Parsing rules library</span>
+      <span class="file">cross_validation_rules.json</span>      <span class="comment">-- Business rule constraints</span>
+      <span class="file">key_migrations.json</span>              <span class="comment">-- Field key renames</span>
+      <span class="file">manifest.json</span>                    <span class="comment">-- SHA256 integrity hashes</span>
+      <span class="file">_compile_report.json</span>             <span class="comment">-- Compilation metadata</span>
+      <span class="dir">component_db/</span>
+        <span class="file">encoders.json</span>                  <span class="comment">-- 40 encoder components</span>
+        <span class="file">sensors.json</span>                   <span class="comment">-- 116 sensor components</span>
+        <span class="file">switches.json</span>                  <span class="comment">-- 106 switch components</span>
+        <span class="file">materials.json</span>                 <span class="comment">-- 3 material types</span>
+    <span class="file">product_catalog.json</span>               <span class="comment">-- Product inventory (SQL authoritative)</span>
+    <span class="file">field_studio_map.json</span>              <span class="comment">-- Sheet-to-field mapping</span>
+    <span class="file">brand_registry.json</span>                <span class="comment">-- Brand seed file</span>
+  <span class="dir">_runtime/</span>                              <span class="comment">-- User settings + snapshots (git-ignored)</span>
+    <span class="file">user-settings.json</span>                 <span class="comment">-- Dual-write fallback (SQL primary)</span>
+    <span class="dir">snapshots/</span>                           <span class="comment">-- Per-run settings snapshots (capped: 10)</span>
+      <span class="file">{runId}-settings.json</span></div>
+</section>
+
+<!-- ================================================================== -->
+<!-- 8. KEY ARCHITECTURAL PRINCIPLES                                    -->
+<!-- ================================================================== -->
+<section class="surface" id="principles" data-search="architecture principles design decisions">
+  <div class="surface-head">
+    <h2>Key Architectural Principles</h2>
+  </div>
+  <p class="surface-desc">The foundational design decisions that shape every part of Spec Factory.</p>
+
+  <div class="principle-grid">
+    <div class="principle-card" style="border-color:var(--green)">
+      <h4 style="color:var(--green)">SQL is SSOT for All Mutable State</h4>
+      <p>SQLite owns every piece of mutable domain data. Products, candidates, evidence, run metadata, billing, telemetry, source intelligence &mdash; all in SQL. No JSON file is the authoritative source for mutable state.</p>
+    </div>
+
+    <div class="principle-card" style="border-color:var(--amber)">
+      <h4 style="color:var(--amber)">JSON is Config or Safety Net</h4>
+      <p>JSON files are either immutable config (category authority, component DBs) or checkpoint safety nets (run.json, product.json) that can be rebuilt from SQL. The dual-write pattern maintains JSON files for recovery without treating them as truth.</p>
+    </div>
+
+    <div class="principle-card" style="border-color:var(--violet)">
+      <h4 style="color:var(--violet)">Event-Driven Runtime</h4>
+      <p>Pipeline phases emit structured events via the Logger. Events flow through the Bridge into runtime_events SQL and bridge_events tables. The GUI consumes events via WebSocket for live updates and via pre-built panels for historical runs.</p>
+    </div>
+
+    <div class="principle-card" style="border-color:var(--accent)">
+      <h4 style="color:var(--accent)">Pre-Built Panels at Finalize</h4>
+      <p>At run finalization, 11 runtimeOps panel builders process the event stream once and cache the results in run_summary. Historical runs serve these pre-built panels directly &mdash; zero re-aggregation, instant load.</p>
+    </div>
+
+    <div class="principle-card" style="border-color:var(--rose)">
+      <h4 style="color:var(--rose)">O(1) Feature Scaling via Registry</h4>
+      <p>The RUNTIME_SETTINGS_REGISTRY (140+ entries) drives config, TypeScript types, UI rendering, and validation from a single definition. Adding a new setting requires modifying exactly one file &mdash; everything else auto-derives.</p>
+    </div>
+
+    <div class="principle-card" style="border-color:var(--cyan)">
+      <h4 style="color:var(--cyan)">Dual-Write Transition</h4>
+      <p>SQL is the primary store. File writes are maintained for recovery and backward compatibility. user-settings.json has a SQL primary (app.sqlite settings table) with JSON as fallback. product.json and run.json are rebuilt from SQL data.</p>
+    </div>
+  </div>
+
+  <div class="domain-group">
+    <div class="domain-label">RuntimeOps Panel Keys (11 Panels)</div>
+    <table class="col-table">
+      <thead><tr><th>Panel Key</th><th>Builder</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="cn">summary</td><td class="ct">buildRuntimeOpsSummary</td><td class="cc">Run overview: status, timing, product, category, round count</td></tr>
+        <tr><td class="cn">pipeline_flow</td><td class="ct">buildPipelineFlow</td><td class="cc">Phase-by-phase pipeline execution timeline</td></tr>
+        <tr><td class="cn">metrics_rail</td><td class="ct">buildRuntimeOpsMetricsRail</td><td class="cc">Key metrics: pages crawled, fields extracted, LLM cost</td></tr>
+        <tr><td class="cn">documents</td><td class="ct">buildRuntimeOpsDocuments</td><td class="cc">Crawled document inventory with status and extraction results</td></tr>
+        <tr><td class="cn">prefetch</td><td class="ct">buildPreFetchPhases</td><td class="cc">Pre-fetch phase data: needset, search profile, brand resolution</td></tr>
+        <tr><td class="cn">fetch</td><td class="ct">buildFetchPhases</td><td class="cc">Fetch phase data: crawl progress, page status, timing</td></tr>
+        <tr><td class="cn">extraction_plugins</td><td class="ct">buildExtractionPluginPhases</td><td class="cc">Extraction plugin execution: screenshot, video, dismiss suite</td></tr>
+        <tr><td class="cn">workers</td><td class="ct">buildRuntimeOpsWorkers</td><td class="cc">Per-worker detail: URL, status, extraction results, screenshots</td></tr>
+        <tr><td class="cn">llm_dashboard</td><td class="ct">buildLlmCallsDashboard</td><td class="cc">LLM call log: model, tokens, cost, latency, cache hits</td></tr>
+        <tr><td class="cn">fallbacks</td><td class="ct">buildFallbackEvents</td><td class="cc">Fallback events: retries, error recovery, degraded paths</td></tr>
+        <tr><td class="cn">queue</td><td class="ct">buildQueueState</td><td class="cc">Product queue state: pending, active, completed, failed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div><!-- /.page -->
+
+<script>
+(function(){
+  const input = document.getElementById('filter');
+  if (!input) return;
+
+  const allCards = Array.from(document.querySelectorAll('.card'));
+  const allSurfaces = Array.from(document.querySelectorAll('.surface'));
+  const allDomainGroups = Array.from(document.querySelectorAll('.domain-group'));
+  const allRows = Array.from(document.querySelectorAll('.col-table tbody tr'));
+
+  input.addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    if (!q) {
+      allCards.forEach(c => c.classList.remove('hidden'));
+      allSurfaces.forEach(s => s.classList.remove('hidden'));
+      allDomainGroups.forEach(g => g.classList.remove('hidden'));
+      allRows.forEach(r => r.classList.remove('hidden'));
+      return;
+    }
+
+    // Filter cards
+    allCards.forEach(card => {
+      const text = (card.textContent + ' ' + (card.dataset.search || '')).toLowerCase();
+      card.classList.toggle('hidden', !text.includes(q));
+    });
+
+    // Filter table rows
+    allRows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.classList.toggle('hidden', !text.includes(q));
+    });
+
+    // Show/hide domain groups based on visible children
+    allDomainGroups.forEach(group => {
+      const hasVisibleCard = group.querySelector('.card:not(.hidden)');
+      const hasVisibleRow = group.querySelector('.col-table tbody tr:not(.hidden)');
+      const groupText = (group.querySelector('.domain-label')?.textContent || '').toLowerCase();
+      group.classList.toggle('hidden', !hasVisibleCard && !hasVisibleRow && !groupText.includes(q));
+    });
+
+    // Show/hide sections based on visible children
+    allSurfaces.forEach(section => {
+      const sectionText = (section.dataset.search || '' + ' ' + (section.querySelector('.surface-head')?.textContent || '')).toLowerCase();
+      const hasVisibleChild = section.querySelector('.card:not(.hidden), .domain-group:not(.hidden), .col-table tbody tr:not(.hidden)');
+      section.classList.toggle('hidden', !hasVisibleChild && !sectionText.includes(q));
+    });
+  });
+})();
+</script>
+</body>
+</html>

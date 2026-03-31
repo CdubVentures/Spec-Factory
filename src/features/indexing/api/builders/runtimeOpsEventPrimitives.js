@@ -116,6 +116,7 @@ const COERCE_DEFAULTS = {
   float: 0,
   bool: false,
   array: () => [],
+  array_or_null: null,
   object_or_null: null,
   object_or_empty: () => ({}),
   passthrough: null,
@@ -136,6 +137,7 @@ export function projectShape(source, descriptors) {
       case 'float':   out[key] = toFloat(raw, 0); break;
       case 'bool':    out[key] = Boolean(raw); break;
       case 'array':   out[key] = Array.isArray(raw) ? raw : []; break;
+      case 'array_or_null':   out[key] = Array.isArray(raw) ? raw : null; break;
       case 'object_or_null':  out[key] = isPlainObject(raw) ? raw : null; break;
       case 'object_or_empty': out[key] = isPlainObject(raw) ? raw : {}; break;
       case 'passthrough':     out[key] = raw ?? null; break;

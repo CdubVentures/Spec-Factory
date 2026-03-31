@@ -77,10 +77,10 @@ export function deriveCompileReportsViewState({
 
   const activeArtifactGoal = compileProcessCommand
     ? processCommandToken.includes('compile-rules')
-      ? 10
+      ? Math.max(artifacts.length, 9)
       : 6
-    : 10;
-  const idleArtifactGoal = 10;
+    : Math.max(artifacts.length, 9);
+  const idleArtifactGoal = Math.max(artifacts.length, 1);
   const compileStartedAtMs = Date.parse(String(processStartedAt || ''));
   const artifactUpdatedThisRunCount = Number.isFinite(compileStartedAtMs)
     ? artifacts.filter((artifact) => {
@@ -107,14 +107,17 @@ export function deriveCompileReportsViewState({
   const artifactProgressGoal = progressActive
     ? activeArtifactGoal
     : idleArtifactGoal;
+  const idleArtifactCount = progressActive ? 0 : artifacts.length;
   const artifactProgressPercent = progressActive
     ? artifactProgressGoal > 0
       ? Math.round((artifactProgressCount / artifactProgressGoal) * 100)
       : 0
-    : 0;
+    : idleArtifactGoal > 0
+      ? Math.round((idleArtifactCount / idleArtifactGoal) * 100)
+      : 0;
   const artifactProgressLabel = progressActive
     ? `Artifacts ${artifactProgressCount} of ${artifactProgressGoal}`
-    : `Artifacts 0 of ${idleArtifactGoal}`;
+    : `Artifacts ${idleArtifactCount} of ${idleArtifactGoal}`;
 
   const compileBadge = compileProcessRunning
     ? {

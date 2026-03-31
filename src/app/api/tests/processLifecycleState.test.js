@@ -5,7 +5,6 @@ import {
   processStateReducer,
   deriveProcessStatus,
   normalizeRunIdToken,
-  resolveProcessStorageDestination,
 } from '../processLifecycleState.js';
 
 const STARTED_PAYLOAD = {
@@ -18,7 +17,7 @@ const STARTED_PAYLOAD = {
   brand: 'Razer',
   model: 'Viper V3 Pro',
   variant: 'White',
-  storageDestination: 's3',
+  storageDestination: 'local',
 };
 
 function reduceLifecycle(actions) {
@@ -44,8 +43,8 @@ describe('process lifecycle status contract', () => {
       brand: 'Razer',
       model: 'Viper V3 Pro',
       variant: 'White',
-      storage_destination: 's3',
-      storageDestination: 's3',
+      storage_destination: 'local',
+      storageDestination: 'local',
       pid: 1234,
       command: 'node src/cli/spec.js indexlab',
       startedAt: '2026-03-20T10:00:00.000Z',
@@ -81,42 +80,14 @@ describe('process lifecycle status contract', () => {
     }
   });
 
-  test('resolves public storage destination from snapshot first, then runtime settings, then local default', () => {
-    const snapshotStatus = deriveProcessStatus(
+  test('storage destination is always local', () => {
+    const status = deriveProcessStatus(
       reduceLifecycle([
         { type: 'PROCESS_STARTED', payload: STARTED_PAYLOAD },
       ]),
-      {
-        runDataStorageState: { enabled: true, destinationType: 'local' },
-      },
     );
-    assert.equal(snapshotStatus.storageDestination, 's3');
-    assert.equal(snapshotStatus.storage_destination, 's3');
-
-    const runtimeFallbackStatus = deriveProcessStatus(
-      reduceLifecycle([
-        {
-          type: 'PROCESS_STARTED',
-          payload: { ...STARTED_PAYLOAD, storageDestination: null },
-        },
-      ]),
-      {
-        runDataStorageState: { enabled: true, destinationType: 's3' },
-      },
-    );
-    assert.equal(runtimeFallbackStatus.storageDestination, 's3');
-    assert.equal(runtimeFallbackStatus.storage_destination, runtimeFallbackStatus.storageDestination);
-
-    const defaultStatus = deriveProcessStatus(
-      reduceLifecycle([
-        {
-          type: 'PROCESS_STARTED',
-          payload: { ...STARTED_PAYLOAD, storageDestination: null },
-        },
-      ]),
-      {},
-    );
-    assert.equal(defaultStatus.storageDestination, 'local');
+    assert.equal(status.storageDestination, 'local');
+    assert.equal(status.storage_destination, 'local');
   });
 });
 
@@ -138,20 +109,3 @@ describe('run id token contract', () => {
   });
 });
 
-describe('storage destination resolution contract', () => {
-  test('normalizes enabled destinations and defaults everything else to local', () => {
-    const cases = [
-      [null, 'local'],
-      [undefined, 'local'],
-      ['string', 'local'],
-      [{ enabled: false }, 'local'],
-      [{ enabled: true, destinationType: 's3' }, 's3'],
-      [{ enabled: true, destinationType: 'local' }, 'local'],
-      [{ enabled: true, destinationType: 'S3' }, 's3'],
-    ];
-
-    for (const [input, expected] of cases) {
-      assert.equal(resolveProcessStorageDestination(input), expected);
-    }
-  });
-});

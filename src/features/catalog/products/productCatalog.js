@@ -1,11 +1,11 @@
 /**
  * Product Catalog — per-category product management.
  *
- * Stored at: category_authority/{category}/_control_plane/product_catalog.json
- * Managed by: GUI Catalog page + API
+ * SSOT: SQL products table (spec.sqlite). product_catalog.json is a read-only boot seed.
+ * Per-product rebuild file: .workspace/products/{pid}/product.json (writeProductIdentity).
  *
- * Each product entry maps to an input file at specs/inputs/{cat}/products/{productId}.json
- * and a queue entry. Mutations here are atomic: catalog + input file + queue stay in sync.
+ * CRUD writes to SQL via upsertCatalogProductRow (called from catalogRoutes.js).
+ * No fixture files, no catalog JSON mutation.
  */
 
 import fs from 'node:fs/promises';
@@ -13,6 +13,7 @@ import path from 'node:path';
 import { normalizeProductIdentity } from '../identity/identityDedup.js';
 import { loadCatalogProducts, loadCatalogProductsWithFields } from './catalogProductLoader.js';
 import { generateIdentifier, nextAvailableId } from '../identity/productIdentity.js';
+import { writeProductIdentity } from './writeProductIdentity.js';
 import { buildProductId } from '../../../shared/primitives.js';
 import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
@@ -31,28 +32,6 @@ function emptyCatalog() {
     _doc: 'Per-category product catalog. Managed by GUI.',
     _version: 1,
     products: {}
-  };
-}
-
-/**
- * Build the standard input file JSON for a product.
- */
-function buildInputFile({ productId, category, brand, model, variant, id, identifier, seedUrls = [] }) {
-  return {
-    productId,
-    category,
-    identityLock: {
-      id: id || 0,
-      identifier: identifier || '',
-      brand,
-      model,
-      variant: variant || '',
-      sku: '',
-      mpn: '',
-      gtin: ''
-    },
-    seedUrls: Array.isArray(seedUrls) ? seedUrls : [],
-    anchors: {}
   };
 }
 
@@ -91,12 +70,9 @@ export async function loadProductCatalog(config, category) {
   }
 }
 
-export async function saveProductCatalog(config, category, catalog) {
-  const filePath = catalogPath(config, category);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
-  return catalog;
-}
+// WHY: saveProductCatalog removed — product_catalog.json is a read-only boot seed.
+// SQL products table is the live SSOT. CRUD writes go through upsertCatalogProductRow
+// in catalogRoutes.js. Per-product rebuild file is .workspace/products/{pid}/product.json.
 
 // ── CRUD ──────────────────────────────────────────────────────────
 
@@ -112,7 +88,8 @@ export async function addProduct({
   variant = '',
   seedUrls = [],
   storage = null,
-  upsertQueue = null
+  upsertQueue = null,
+  specDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const cleanBrand = String(brand ?? '').trim();
@@ -125,13 +102,25 @@ export async function addProduct({
   // Normalize identity (strips fabricated variants)
   const identity = normalizeProductIdentity(cat, cleanBrand, cleanModel, variant);
 
-  const catalog = await loadProductCatalog(config, cat);
-
-  const existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+  // WHY: Check SQL first (live SSOT), fall back to catalog JSON (boot seed)
+  let existingPid = null;
+  if (specDb) {
+    const allProducts = specDb.getAllProducts?.() || [];
+    existingPid = allProducts.find((r) =>
+      String(r.brand || '').trim().toLowerCase() === identity.brand.toLowerCase() &&
+      String(r.model || '').trim().toLowerCase() === identity.model.toLowerCase() &&
+      String(r.variant || '').trim().toLowerCase() === identity.variant.toLowerCase()
+    )?.product_id || null;
+  }
+  if (!existingPid) {
+    const catalog = await loadProductCatalog(config, cat);
+    existingPid = findProductByIdentity(catalog, identity.brand, identity.model, identity.variant);
+  }
   if (existingPid) {
     return { ok: false, error: 'product_already_exists', productId: existingPid };
   }
 
+  const catalog = await loadProductCatalog(config, cat);
   const pid = buildProductId(cat);
 
   const product = {
@@ -146,29 +135,20 @@ export async function addProduct({
     added_by: 'gui'
   };
 
-  catalog.products[pid] = product;
-  await saveProductCatalog(config, cat, catalog);
-
-  // Create input file if storage provided
-  if (storage) {
-    const inputKey = `specs/inputs/${cat}/products/${pid}.json`;
-    const inputFile = buildInputFile({
+  // WHY: Write the rebuild SSOT product.json at .workspace/products/{pid}/
+  try {
+    writeProductIdentity({
       productId: pid,
       category: cat,
-      brand: identity.brand,
-      model: identity.model,
-      variant: identity.variant,
-      id: product.id,
+      identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+      seedUrls,
       identifier: product.identifier,
-      seedUrls
     });
-    await storage.writeObject(inputKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
-  }
+  } catch { /* best-effort: pipeline still works without product.json */ }
 
   // Upsert queue entry
   if (upsertQueue) {
-    const s3key = `specs/inputs/${cat}/products/${pid}.json`;
-    await upsertQueue({ storage, category: cat, productId: pid, s3key, patch: { status: 'pending', next_action_hint: 'fast_pass' } });
+    await upsertQueue({ storage, category: cat, productId: pid, s3key: '', patch: { status: 'pending', next_action_hint: 'fast_pass' } });
   }
 
   return { ok: true, productId: pid, product };
@@ -280,32 +260,25 @@ export async function addProductsBulk({
       added_by: 'gui_bulk'
     };
 
-    let inputWritten = false;
-    const inputKey = `specs/inputs/${cat}/products/${pid}.json`;
     try {
       catalog.products[pid] = product;
 
-      if (storage) {
-        const inputFile = buildInputFile({
+      try {
+        writeProductIdentity({
           productId: pid,
           category: cat,
-          brand: identity.brand,
-          model: identity.model,
-          variant: identity.variant,
-          id: product.id,
+          identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+          seedUrls,
           identifier: product.identifier,
-          seedUrls
         });
-        await storage.writeObject(inputKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
-        inputWritten = true;
-      }
+      } catch { /* best-effort */ }
 
       if (upsertQueue) {
         await upsertQueue({
           storage,
           category: cat,
           productId: pid,
-          s3key: inputKey,
+          s3key: '',
           patch: { status: 'pending', next_action_hint: 'fast_pass' }
         });
       }
@@ -315,19 +288,12 @@ export async function addProductsBulk({
     } catch (error) {
       failed += 1;
       delete catalog.products[pid];
-      if (inputWritten && storage) {
-        try { await storage.deleteObject(inputKey); } catch {}
-      }
       results.push({
         ...normalizedResult,
         status: 'failed',
         reason: String(error?.message || error || 'bulk_add_failed')
       });
     }
-  }
-
-  if (created > 0) {
-    await saveProductCatalog(config, cat, catalog);
   }
 
   return {
@@ -390,27 +356,9 @@ export async function updateProduct({
   };
 
   catalog.products[productId] = updated;
-  await saveProductCatalog(config, cat, catalog);
-
-  // Write updated input file
-  if (storage) {
-    const inputKey = `specs/inputs/${cat}/products/${productId}.json`;
-    const inputFile = buildInputFile({
-      productId,
-      category: cat,
-      brand: identity.brand,
-      model: identity.model,
-      variant: identity.variant,
-      id: updated.id,
-      identifier: updated.identifier,
-      seedUrls: updated.seed_urls
-    });
-    await storage.writeObject(inputKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
-  }
 
   if (upsertQueue) {
-    const s3key = `specs/inputs/${cat}/products/${productId}.json`;
-    await upsertQueue({ storage, category: cat, productId, s3key, patch: { status: 'pending' }, specDb });
+    await upsertQueue({ storage, category: cat, productId, s3key: '', patch: { status: 'pending' }, specDb });
   }
 
   return { ok: true, productId, product: updated };
@@ -437,13 +385,7 @@ export async function removeProduct({
   }
 
   delete catalog.products[productId];
-  await saveProductCatalog(config, cat, catalog);
 
-  // Delete input file
-  if (storage) {
-    const inputKey = `specs/inputs/${cat}/products/${productId}.json`;
-    try { await storage.deleteObject(inputKey); } catch {}
-  }
   if (removeQueue) {
     await removeQueue({ storage, category: cat, productId });
   }
@@ -528,23 +470,17 @@ export async function seedFromCatalog({
       };
     }
 
-    // Create input file
-    if (storage) {
-      const inputKey = `specs/inputs/${cat}/products/${pid}.json`;
-      const exists = await storage.objectExists(inputKey);
-      if (!exists) {
+    // WHY: Write product.json for new products (rebuild SSOT)
+    if (!isExisting) {
+      try {
         const catEntry = catalog.products[pid];
-        const inputFile = buildInputFile({
+        writeProductIdentity({
           productId: pid,
           category: cat,
-          brand: identity.brand,
-          model: identity.model,
-          variant: identity.variant,
-          id: catEntry.id,
-          identifier: catEntry.identifier
+          identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+          identifier: catEntry.identifier,
         });
-        await storage.writeObject(inputKey, Buffer.from(JSON.stringify(inputFile, null, 2)));
-      }
+      } catch { /* best-effort */ }
     }
 
     // Full mode: write field value overrides (merge with existing, don't overwrite manual edits)
@@ -617,12 +553,9 @@ export async function seedFromCatalog({
 
     // Upsert queue
     if (upsertQueue) {
-      const s3key = `specs/inputs/${cat}/products/${pid}.json`;
-      await upsertQueue({ storage, category: cat, productId: pid, s3key, patch: { status: 'pending', next_action_hint: 'fast_pass' } });
+      await upsertQueue({ storage, category: cat, productId: pid, s3key: '', patch: { status: 'pending', next_action_hint: 'fast_pass' } });
     }
   }
-
-  await saveProductCatalog(config, cat, catalog);
 
   return {
     ok: true,

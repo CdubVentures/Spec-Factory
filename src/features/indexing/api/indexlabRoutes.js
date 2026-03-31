@@ -21,14 +21,12 @@ export function registerIndexlabRoutes(ctx) {
     readIndexLabRunEvents,
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
-    readIndexLabRunPhase07Retrieval,
-    readIndexLabRunPhase08Extraction,
+    readIndexLabRunPhase07PrimeSources,
     readIndexLabRunDynamicFetchDashboard,
     readIndexLabRunSourceIndexingPackets,
     readIndexLabRunItemIndexingPacket,
     readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,
-    readIndexLabRunLlmTraces,
     readIndexLabRunAutomationQueue,
     readIndexLabRunEvidenceIndex,
     listIndexLabRuns,
@@ -98,10 +96,10 @@ export function registerIndexlabRoutes(ctx) {
   }
 
   // WHY: Storage manager handler — delegates /storage/* routes to a dedicated handler.
-  const storageGuardOk = Boolean(ctx.readJsonBody && ctx.runDataStorageState);
+  const storageGuardOk = Boolean(ctx.readJsonBody);
   if (!storageGuardOk) {
     process.stderr.write('[indexlab-routes] Storage manager routes disabled: readJsonBody=' +
-      typeof ctx.readJsonBody + ' runDataStorageState=' + typeof ctx.runDataStorageState + '\n');
+      typeof ctx.readJsonBody + '\n');
   }
 
   const handleStorageManagerRoutes = storageGuardOk
@@ -112,7 +110,6 @@ export function registerIndexlabRoutes(ctx) {
       broadcastWs: ctx.broadcastWs || (() => {}),
       listIndexLabRuns,
       resolveIndexLabRunDirectory,
-      runDataStorageState: ctx.runDataStorageState,
       indexLabRoot: currentIndexLabRoot(),
       outputRoot: ctx.OUTPUT_ROOT || '',
       storage: ctx.storage || null,
@@ -196,23 +193,11 @@ export function registerIndexlabRoutes(ctx) {
       });
     }
 
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'phase07-retrieval' && method === 'GET') {
+    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'phase07-prime-sources' && method === 'GET') {
       const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunPhase07Retrieval(runId);
+      const payload = await readIndexLabRunPhase07PrimeSources(runId);
       if (!payload) {
-        return jsonRes(res, 404, { error: 'phase07_retrieval_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, {
-        run_id: runId,
-        ...payload
-      });
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'phase08-extraction' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunPhase08Extraction(runId);
-      if (!payload) {
-        return jsonRes(res, 404, { error: 'phase08_extraction_not_found', run_id: runId });
+        return jsonRes(res, 404, { error: 'phase07_prime_sources_not_found', run_id: runId });
       }
       return jsonRes(res, 200, {
         run_id: runId,
@@ -269,16 +254,6 @@ export function registerIndexlabRoutes(ctx) {
         run_id: runId,
         ...serp
       });
-    }
-
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'llm-traces' && method === 'GET') {
-      const runId = String(parts[2] || '').trim();
-      const limit = Math.max(1, toInt(params.get('limit'), 80));
-      const traces = await readIndexLabRunLlmTraces(runId, limit);
-      if (!traces) {
-        return jsonRes(res, 404, { error: 'llm_traces_not_found', run_id: runId });
-      }
-      return jsonRes(res, 200, traces);
     }
 
     if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'automation-queue' && method === 'GET') {
@@ -368,34 +343,35 @@ export function registerIndexlabRoutes(ctx) {
       if (!specDb) return jsonRes(res, 500, { error: 'db_unavailable' });
 
       // WHY: Primary source is the `runs` table (always populated).
-      // `product_runs` may be empty if the pipeline didn't write there.
       const allRunsMeta = specDb.getRunsByCategory(category, 500);
       const productRunsMeta = allRunsMeta.filter(
         (r) => String(r.product_id || '').trim() === productId
       );
       const runIdSet = new Set(productRunsMeta.map((r) => r.run_id));
 
-      // WHY: Enrich with cost/sources from product_runs if available.
-      const productRunsLookup = new Map();
-      const productRunsRows = specDb.getProductRuns(productId);
-      for (const pr of productRunsRows) {
-        productRunsLookup.set(pr.run_id, pr);
+      // WHY: Billing cost per run from billing_entries (the actual cost source).
+      const months = [...new Set(
+        productRunsMeta.map((r) => String(r.started_at || '').slice(0, 7)).filter(Boolean)
+      )];
+      const costByRun = new Map();
+      for (const m of months) {
+        const entries = specDb.getBillingEntriesForMonth(m);
+        for (const be of entries) {
+          if (be.product_id !== productId) continue;
+          costByRun.set(be.run_id, (costByRun.get(be.run_id) || 0) + (Number(be.cost_usd) || 0));
+        }
       }
 
-      const runs = productRunsMeta.map((rm) => {
-        const pr = productRunsLookup.get(rm.run_id);
-        return {
-          run_id: rm.run_id,
-          status: rm.status || pr?.status || '',
-          cost_usd_run: pr?.cost_usd_run ?? null,
-          sources_attempted: pr?.sources_attempted ?? 0,
-          run_at: pr?.run_at || rm.started_at || '',
-          started_at: rm.started_at || '',
-          ended_at: rm.ended_at || '',
-          is_latest: pr?.is_latest ?? false,
-          storage_state: pr?.storage_state || '',
-        };
-      });
+      const runs = productRunsMeta.map((rm) => ({
+        run_id: rm.run_id,
+        status: rm.status || '',
+        cost_usd: costByRun.get(rm.run_id) || 0,
+        started_at: rm.started_at || '',
+        ended_at: rm.ended_at || '',
+        is_latest: false,
+        storage_state: '',
+        counters: rm.counters || {},
+      }));
 
       const allQueries = specDb.getQueryIndexByCategory(category);
       const queries = allQueries
@@ -408,17 +384,21 @@ export function registerIndexlabRoutes(ctx) {
           ts: q.ts,
         }));
 
-      const allUrls = specDb.getUrlIndexByCategory(category);
-      const urls = allUrls
-        .filter((u) => runIdSet.has(u.run_id))
-        .map((u) => ({
-          url: u.url,
-          host: u.host,
-          tier: u.tier,
-          doc_kind: u.doc_kind,
-          fetch_success: u.fetch_success,
-          run_id: u.run_id,
-          ts: u.ts,
+      // WHY: crawl_sources is the truth for URL crawl data.
+      // url_index is a telemetry summary that's never populated by the event hook.
+      const crawlSources = specDb.getCrawlSourcesByProduct(productId);
+      const urls = crawlSources
+        .filter((cs) => runIdSet.has(cs.run_id))
+        .map((cs) => ({
+          url: cs.final_url || cs.source_url,
+          host: cs.host,
+          http_status: cs.http_status,
+          source_tier: cs.source_tier,
+          doc_kind: cs.doc_kind,
+          content_type: cs.content_type,
+          size_bytes: cs.size_bytes,
+          run_id: cs.run_id,
+          crawled_at: cs.crawled_at,
         }));
 
       const metrics = computeProductHistoryMetrics({ runs, queries, urls });

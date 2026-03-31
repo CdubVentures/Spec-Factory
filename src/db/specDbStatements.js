@@ -735,6 +735,96 @@ export function prepareStatements(db) {
       ORDER BY ifs.field_key
     `),
 
+    // URL crawl ledger
+    _upsertUrlCrawlEntry: db.prepare(`
+      INSERT INTO url_crawl_ledger (
+        canonical_url, product_id, category, original_url, domain, path_sig,
+        final_url, content_hash, content_type, http_status, bytes, elapsed_ms,
+        fetch_count, ok_count, blocked_count, timeout_count, server_error_count,
+        redirect_count, notfound_count, gone_count,
+        first_seen_ts, last_seen_ts, first_seen_run_id, last_seen_run_id
+      ) VALUES (
+        @canonical_url, @product_id, @category, @original_url, @domain, @path_sig,
+        @final_url, @content_hash, @content_type, @http_status, @bytes, @elapsed_ms,
+        @fetch_count, @ok_count, @blocked_count, @timeout_count, @server_error_count,
+        @redirect_count, @notfound_count, @gone_count,
+        @first_seen_ts, @last_seen_ts, @first_seen_run_id, @last_seen_run_id
+      )
+      ON CONFLICT(canonical_url, product_id) DO UPDATE SET
+        final_url = excluded.final_url,
+        content_hash = CASE WHEN excluded.content_hash != '' THEN excluded.content_hash ELSE url_crawl_ledger.content_hash END,
+        content_type = CASE WHEN excluded.content_type != '' THEN excluded.content_type ELSE url_crawl_ledger.content_type END,
+        http_status = excluded.http_status,
+        bytes = excluded.bytes,
+        elapsed_ms = excluded.elapsed_ms,
+        fetch_count = url_crawl_ledger.fetch_count + excluded.fetch_count,
+        ok_count = url_crawl_ledger.ok_count + excluded.ok_count,
+        blocked_count = url_crawl_ledger.blocked_count + excluded.blocked_count,
+        timeout_count = url_crawl_ledger.timeout_count + excluded.timeout_count,
+        server_error_count = url_crawl_ledger.server_error_count + excluded.server_error_count,
+        redirect_count = url_crawl_ledger.redirect_count + excluded.redirect_count,
+        notfound_count = url_crawl_ledger.notfound_count + excluded.notfound_count,
+        gone_count = url_crawl_ledger.gone_count + excluded.gone_count,
+        last_seen_ts = excluded.last_seen_ts,
+        last_seen_run_id = excluded.last_seen_run_id
+    `),
+    _getUrlCrawlEntry: db.prepare(`
+      SELECT * FROM url_crawl_ledger WHERE canonical_url = ? AND product_id = ?
+    `),
+    _getUrlCrawlEntriesByProduct: db.prepare(`
+      SELECT * FROM url_crawl_ledger WHERE product_id = ? ORDER BY last_seen_ts DESC
+    `),
+    _aggregateDomainStats: db.prepare(`
+      SELECT
+        domain,
+        SUM(fetch_count) AS fetch_count,
+        SUM(ok_count) AS ok_count,
+        SUM(blocked_count) AS blocked_count,
+        SUM(timeout_count) AS timeout_count,
+        SUM(server_error_count) AS server_error_count,
+        CASE WHEN SUM(fetch_count) > 0 THEN CAST(SUM(ok_count) AS REAL) / SUM(fetch_count) ELSE 0 END AS success_rate,
+        CASE WHEN SUM(fetch_count) > 0 THEN SUM(elapsed_ms) / SUM(fetch_count) ELSE 0 END AS avg_latency_ms,
+        MAX(last_seen_ts) AS last_seen_ts
+      FROM url_crawl_ledger
+      WHERE domain = ? AND product_id = ?
+      GROUP BY domain
+    `),
+
+    // Query cooldowns
+    _upsertQueryCooldown: db.prepare(`
+      INSERT INTO query_cooldowns (
+        query_hash, product_id, category, query_text, provider,
+        tier, group_key, normalized_key, hint_source,
+        attempt_count, result_count, last_executed_at, cooldown_until
+      ) VALUES (
+        @query_hash, @product_id, @category, @query_text, @provider,
+        @tier, @group_key, @normalized_key, @hint_source,
+        @attempt_count, @result_count, @last_executed_at, @cooldown_until
+      )
+      ON CONFLICT(query_hash, product_id) DO UPDATE SET
+        provider = excluded.provider,
+        tier = COALESCE(excluded.tier, query_cooldowns.tier),
+        group_key = COALESCE(excluded.group_key, query_cooldowns.group_key),
+        normalized_key = COALESCE(excluded.normalized_key, query_cooldowns.normalized_key),
+        hint_source = COALESCE(excluded.hint_source, query_cooldowns.hint_source),
+        attempt_count = query_cooldowns.attempt_count + excluded.attempt_count,
+        result_count = excluded.result_count,
+        last_executed_at = excluded.last_executed_at,
+        cooldown_until = excluded.cooldown_until
+    `),
+    _getQueryCooldown: db.prepare(`
+      SELECT * FROM query_cooldowns WHERE query_hash = ? AND product_id = ? AND cooldown_until > ?
+    `),
+    _getQueryCooldownRaw: db.prepare(`
+      SELECT * FROM query_cooldowns WHERE query_hash = ? AND product_id = ?
+    `),
+    _getQueryCooldownsByProduct: db.prepare(`
+      SELECT * FROM query_cooldowns WHERE product_id = ? ORDER BY last_executed_at DESC
+    `),
+    _purgeExpiredCooldowns: db.prepare(`
+      DELETE FROM query_cooldowns WHERE cooldown_until <= ?
+    `),
+
     // Field studio map (per-category control-plane config)
     _getFieldStudioMap: db.prepare(
       'SELECT map_json, map_hash, updated_at FROM field_studio_map WHERE id = 1'

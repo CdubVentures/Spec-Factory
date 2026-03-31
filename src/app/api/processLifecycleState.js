@@ -5,21 +5,6 @@ export function normalizeRunIdToken(value) {
   return token;
 }
 
-function normalizeStorageDestinationToken(value) {
-  const token = String(value || '').trim().toLowerCase();
-  return token === 's3' ? 's3' : 'local';
-}
-
-export function resolveProcessStorageDestination(runDataStorageState = {}) {
-  if (!runDataStorageState || typeof runDataStorageState !== 'object') {
-    return 'local';
-  }
-  if (runDataStorageState.enabled !== true) {
-    return 'local';
-  }
-  return normalizeStorageDestinationToken(runDataStorageState.destinationType);
-}
-
 export function createInitialProcessState() {
   return {
     phase: 'idle',
@@ -80,16 +65,13 @@ export function processStateReducer(state, action) {
   }
 }
 
-export function deriveProcessStatus(state, { runDataStorageState } = {}) {
+export function deriveProcessStatus(state) {
   const running = state.phase === 'running';
   const { snapshot } = state;
 
   const runId = normalizeRunIdToken(snapshot.runId || '');
   const productId = String(snapshot.productId || '').trim();
-  const storageDestination = normalizeStorageDestinationToken(
-    snapshot.storageDestination
-    || resolveProcessStorageDestination(runDataStorageState),
-  );
+  const storageDestination = 'local';
 
   return {
     running,

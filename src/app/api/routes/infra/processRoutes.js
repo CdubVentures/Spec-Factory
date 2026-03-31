@@ -29,7 +29,6 @@ export function createInfraProcessRoutes({
   INDEXLAB_ROOT,
   fs,
   pathApi,
-  runDataStorageState,
   startProcess,
   stopProcess,
   processStatus,
@@ -50,7 +49,6 @@ export function createInfraProcessRoutes({
         helperRoot: HELPER_ROOT,
         outputRoot: OUTPUT_ROOT,
         indexLabRoot: INDEXLAB_ROOT,
-        runDataStorageState,
         env: processRef.env,
         pathApi,
       });

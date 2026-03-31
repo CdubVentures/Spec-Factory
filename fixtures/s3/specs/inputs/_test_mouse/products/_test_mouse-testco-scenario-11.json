@@ -1,0 +1,19 @@
+{
+  "productId": "_test_mouse-testco-scenario-11",
+  "category": "_test_mouse",
+  "identityLock": {
+    "brand": "TestCo",
+    "model": "Scenario 11",
+    "variant": "similar_enum_values",
+    "id": 9011,
+    "identifier": "test011a"
+  },
+  "seedUrls": [],
+  "anchors": {},
+  "_testCase": {
+    "id": 11,
+    "name": "similar_enum_values",
+    "description": "Near-match values â†’ fuzzy resolve to canonical",
+    "category": "Enums"
+  }
+}

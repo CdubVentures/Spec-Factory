@@ -47,7 +47,6 @@ export function makeExecutionArgs(overrides = {}) {
     config: makeConfig(),
     storage: null,
     logger: makeLogger(),
-    runtimeTraceWriter: null,
     frontierDb: null,
     categoryConfig: makeCategoryConfig(),
     job: { productId: 'mouse-test', category: 'mouse' },

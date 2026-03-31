@@ -299,7 +299,6 @@ export async function buildSearchPlan({
         round: run.round,
         reason: 'needset_search_planner',
         evidence_chars: payloadJson.length,
-        traceWriter: llmContext.traceWriter || null,
         trace_context: { purpose: 'needset_search_plan', target_groups: activeGroupKeys },
       },
     });

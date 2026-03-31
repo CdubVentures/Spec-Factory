@@ -11,7 +11,6 @@ import {
 
 export function createConfigPersistenceContext({
   config,
-  settingsRoot,
   initialUserSettings,
   appDb = null,
 }) {
@@ -34,7 +33,6 @@ export function createConfigPersistenceContext({
     studio = null,
   } = {}) {
     const persisted = await persistUserSettingsSections({
-      categoryAuthorityRoot: settingsRoot,
       appDb,
       runtime,
       ui,

@@ -6,7 +6,6 @@ import {
   processStateReducer,
   deriveProcessStatus,
   normalizeRunIdToken,
-  resolveProcessStorageDestination,
 } from './processLifecycleState.js';
 
 function assertFunction(name, value) {
@@ -58,7 +57,6 @@ export function createProcessRuntime({
   syncSpecDbForCategory,
   handleCompileProcessCompletion,
   handleIndexLabProcessCompletion,
-  runDataStorageState,
   indexLabRoot,
   outputRoot,
   outputPrefix = 'specs/outputs',
@@ -83,7 +81,6 @@ export function createProcessRuntime({
   assertFunction('syncSpecDbForCategory', syncSpecDbForCategory);
   assertFunction('handleCompileProcessCompletion', handleCompileProcessCompletion);
   assertFunction('handleIndexLabProcessCompletion', handleIndexLabProcessCompletion);
-  assertObject('runDataStorageState', runDataStorageState);
   assertObject('processRef', processRef);
   assertFunction('setTimeoutFn', setTimeoutFn);
   assertFunction('clearTimeoutFn', clearTimeoutFn);
@@ -101,7 +98,7 @@ export function createProcessRuntime({
   }
 
   function processStatus() {
-    return deriveProcessStatus(state, { runDataStorageState });
+    return deriveProcessStatus(state);
   }
 
   function sleep(ms) {
@@ -154,7 +151,7 @@ export function createProcessRuntime({
         brand: extractCliArgValue(cliArgs, '--brand') || null,
         model: extractCliArgValue(cliArgs, '--model') || null,
         variant: extractCliArgValue(cliArgs, '--variant') || null,
-        storageDestination: resolveProcessStorageDestination(runDataStorageState),
+        storageDestination: 'local',
       },
     });
 

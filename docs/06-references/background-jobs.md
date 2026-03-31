@@ -9,8 +9,7 @@
 | Job | Trigger | Schedule | File | Purpose |
 |-----|---------|----------|------|---------|
 | GUI process child run | `POST /api/v1/process/start` | on demand | `src/app/api/processRuntime.js`, `src/app/api/routes/infra/processRoutes.js` | spawn `src/cli/spec.js` commands such as IndexLab or compile-rules |
-| Component review batch | `POST /api/v1/review-components/:category/run-component-review-batch` | on demand | `src/pipeline/componentReviewBatch.js`, `src/features/review/api/reviewRoutes.js` | run queued component-review decisions |
-| Test-mode run | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js`, `src/app/api/routes/testModeRouteContext.js` | attempt synthetic product runs; currently yields error rows because `runTestProduct` is stubbed |
+| Test-mode run | `POST /api/v1/test-mode/run` | on demand | `src/app/api/routes/testModeRoutes.js`, `src/testing/testRunner.js` | run synthetic products through consensus, normalization, and validation pipeline |
 | Intel Graph API server | CLI `intel-graph-api` | long-running local process | `src/api/intelGraphApi.js`, `src/cli/spec.js` | local GraphQL helper API on port `8787` |
 
 ## Scheduling Reality
@@ -27,12 +26,11 @@
 |------------|-------|--------|
 | GUI child process | HTTP request body + live config | child stdout/stderr broadcasts, runtime artifacts, process status |
 | Review/component batches | SpecDb, authority artifacts, review queues | SpecDb review tables, suggestions, component review outputs |
-| Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs, suggestions, optional SpecDb sync; current run step returns error rows because the route-context runner stub throws |
+| Test mode | `_test_*` authority categories, fixture inputs | synthetic fixtures, outputs (normalized/summary/provenance), suggestions, optional SpecDb sync |
 
 ## Worker Boundaries
 
 - `src/app/api/processRuntime.js` is the only verified GUI-side child-process manager.
-- `src/pipeline/componentReviewBatch.js` is a batch processor, not a general-purpose worker framework.
 - The default imports root is still `imports/` via `src/shared/settingsDefaults.js` and `src/config.js`, but that directory is created or supplied by operators as needed and is not currently checked into the repo root.
 
 ## Validated Against
@@ -42,9 +40,8 @@
 | source | `src/cli/spec.js` | CLI command entrypoints for `intel-graph-api` and other commands |
 | source | `src/app/api/processRuntime.js` | GUI child-process lifecycle manager |
 | source | `src/app/api/routes/infra/processRoutes.js` | process start/stop/status HTTP endpoints |
-| source | `src/features/review/api/reviewRoutes.js` | component review batch trigger |
 | source | `src/app/api/routes/testModeRoutes.js` | test-mode run lifecycle |
-| source | `src/app/api/routes/testModeRouteContext.js` | stubbed `runTestProduct` contract used by the route |
+| source | `src/testing/testRunner.js` | `runTestProduct` pipeline used by the route |
 | source | `src/api/intelGraphApi.js` | local GraphQL helper server |
 
 ## Related Documents
