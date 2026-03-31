@@ -23,18 +23,21 @@ export function ProductTable({ products, isLoading, onDeleteAll, onDeleteRun, is
   }
 
   return (
-    <DataTable<ProductGroup>
-      data={products}
-      columns={columns}
-      searchable
-      persistKey="storage:products"
-      renderExpandedRow={(product) => (
-        <RunSubTable
-          runs={product.runs}
-          onDeleteRun={onDeleteRun}
-          isDeleting={isDeleting}
-        />
-      )}
-    />
+    <div className="flex-1 min-h-0">
+      <DataTable<ProductGroup>
+        data={products}
+        columns={columns}
+        searchable
+        persistKey="storage:products"
+        maxHeight="max-h-[calc(100vh-420px)]"
+        renderExpandedRow={(product) => (
+          <RunSubTable
+            runs={product.runs}
+            onDeleteRun={onDeleteRun}
+            isDeleting={isDeleting}
+          />
+        )}
+      />
+    </div>
   );
 }

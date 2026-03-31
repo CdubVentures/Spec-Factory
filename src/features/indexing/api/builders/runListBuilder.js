@@ -223,6 +223,7 @@ export function createRunListBuilder({
         if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
         const rowRunId = toToken(sqlRow.run_id || dir);
         const rowProductId = toToken(sqlRow.product_id);
+        const resolved = resolveBrandModel(rowProductId);
         const rawStatus = String(sqlRow.status || 'unknown').trim();
         const resolvedStatus = (
           rawStatus.toLowerCase() === 'running' && !isRunStillActive(rowRunId)
@@ -231,6 +232,7 @@ export function createRunListBuilder({
           run_id: rowRunId,
           category: rowCategory,
           product_id: rowProductId,
+          ...resolved,
           status: resolvedStatus,
           started_at: String(sqlRow.started_at || '').trim(),
           ended_at: String(sqlRow.ended_at || '').trim(),
@@ -243,7 +245,7 @@ export function createRunListBuilder({
           run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
           storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolveBrandModel(rowProductId), runId: rowRunId }),
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolved, runId: rowRunId }),
           has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
           has_search_profile: Boolean(sqlRow.search_profile_summary || sqlRow.has_search_profile),
           counters: sqlRow.counters,

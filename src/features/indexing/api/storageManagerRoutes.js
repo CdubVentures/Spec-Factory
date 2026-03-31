@@ -70,7 +70,7 @@ export function createStorageManagerHandler({
         let identity = {};
         try {
           const runDir = typeof resolveIndexLabRunDirectory === 'function'
-            ? resolveIndexLabRunDirectory(runId)
+            ? await resolveIndexLabRunDirectory(runId)
             : '';
           if (runDir) {
             const { default: fsPromises } = await import('node:fs/promises');

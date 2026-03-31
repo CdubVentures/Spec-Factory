@@ -70,7 +70,7 @@ test('FRC-05-D - compiler coerces string property variance_policy to authoritati
   );
 });
 
-test('FRC-05-E - mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async (t) => {
+test('FRC-05-E - mouse sensor component policies remain numeric upper_bound for dpi/ips/acceleration', async () => {
   const loaded = await loadFieldStudioMap({
     category: 'mouse',
     config: {
@@ -81,10 +81,7 @@ test('FRC-05-E - mouse sensor component policies remain numeric upper_bound for 
 
   const sources = Array.isArray(loaded.map.component_sources) ? loaded.map.component_sources : [];
   const sensorSource = sources.find((row) => String(row?.type || row?.component_type || '').toLowerCase() === 'sensor');
-  if (!sensorSource) {
-    t.skip('sensor component source not present in current field_studio_map');
-    return;
-  }
+  assert.ok(sensorSource, 'sensor component source should exist in the current mouse field studio map');
 
   const props = Array.isArray(sensorSource?.roles?.properties) ? sensorSource.roles.properties : [];
   const findProp = (key) => props.find((prop) => (prop?.field_key || prop?.key) === key);

@@ -41,7 +41,7 @@ export function StorageManagerPanel() {
   const hasError = overview.error || runsQuery.error;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
       {hasError && (
         <AlertBanner
           severity="warning"
