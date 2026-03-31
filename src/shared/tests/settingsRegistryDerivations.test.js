@@ -254,10 +254,6 @@ describe('registry enrichment aliases', () => {
     }
   });
 
-  it('categoryAuthorityRoot has helperFilesRoot alias', () => {
-    ok(byKey.categoryAuthorityRoot.aliases?.includes('helperFilesRoot'));
-  });
-
   it('searchEngines has searchProvider alias', () => {
     ok(byKey.searchEngines.aliases?.includes('searchProvider'));
   });

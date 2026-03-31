@@ -30,6 +30,7 @@ test('buildJobFromDb — happy path returns full job object', () => {
       brand: 'Razer',
       model: 'Viper V3 Pro',
       variant: '4K',
+      brand_identifier: '',
       sku: '',
       title: '',
     },

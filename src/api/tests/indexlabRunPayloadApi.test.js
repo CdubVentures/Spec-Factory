@@ -228,7 +228,6 @@ async function startGuiServer(t, { helperRoot, indexlabRoot }) {
   const server = await startInProcessGuiServer(t, {
     env: {
       LOCAL_MODE: 'true',
-      HELPER_FILES_ROOT: helperRoot,
       CATEGORY_AUTHORITY_ROOT: helperRoot,
     },
     argv: ['--local', '--indexlab-root', indexlabRoot],

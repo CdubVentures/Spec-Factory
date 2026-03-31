@@ -135,7 +135,7 @@ const MANUAL_ENV_KEY_MAP = Object.freeze({
   llmTimeoutMs: 'LLM_TIMEOUT_MS',
   llmBaseUrl: 'LLM_BASE_URL',
   capturePageScreenshotSelectors: 'CAPTURE_PAGE_SCREENSHOT_SELECTORS',
-  categoryAuthorityRoot: 'HELPER_FILES_ROOT',
+  categoryAuthorityRoot: 'CATEGORY_AUTHORITY_ROOT',
 });
 
 function buildRuntimeConfigKeyMap() {

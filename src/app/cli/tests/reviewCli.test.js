@@ -18,7 +18,7 @@ test('review CLI suggest appends a suggestion through the top-level command surf
     '--product-id', 'mouse-review-cli',
     ...workspace.localArgs(),
   ], {
-    env: { HELPER_FILES_ROOT: workspace.helperRoot },
+    env: { CATEGORY_AUTHORITY_ROOT: workspace.helperRoot },
   });
 
   assert.equal(result.command, 'review');

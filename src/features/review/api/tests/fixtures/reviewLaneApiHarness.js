@@ -420,7 +420,7 @@ export async function createReviewLaneApiHarness(t) {
         cwd: tempRoot,
         env: {
           ...process.env,
-          HELPER_FILES_ROOT: config.categoryAuthorityRoot,
+          CATEGORY_AUTHORITY_ROOT: config.categoryAuthorityRoot,
           LOCAL_OUTPUT_ROOT: config.localOutputRoot,
           LOCAL_INPUT_ROOT: path.join(tempRoot, 'fixtures'),
           OUTPUT_MODE: 'local',

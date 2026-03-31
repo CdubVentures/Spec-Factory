@@ -221,7 +221,7 @@ export async function updateBrand({ config, appDb, slug, patch = {} }) {
 /**
  * Remove a brand from the registry.
  */
-export async function removeBrand({ config, appDb, slug, force = false }) {
+export async function removeBrand({ config, appDb, slug, force = false, getSpecDb = null }) {
   const brandSlug = String(slug ?? '').trim();
   if (!brandSlug) return { ok: false, error: 'slug_required' };
 
@@ -232,9 +232,18 @@ export async function removeBrand({ config, appDb, slug, force = false }) {
   const productsByCategory = {};
   let totalProducts = 0;
   for (const category of categories) {
-    const catalog = await loadProductCatalog(config, category);
-    const count = Object.values(catalog.products || {})
-      .filter((row) => row.brand === brand.canonical_name).length;
+    // WHY: Phase F — query SQL by brand_identifier (survives renames), fall back to JSON display name
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+    let count = 0;
+    if (specDb?.db) {
+      count = specDb.db.prepare(
+        'SELECT COUNT(*) as c FROM products WHERE category = ? AND brand_identifier = ?'
+      ).get(category, brand.identifier)?.c || 0;
+    } else {
+      const catalog = await loadProductCatalog(config, category);
+      count = Object.values(catalog.products || {})
+        .filter((row) => row.brand === brand.canonical_name).length;
+    }
     productsByCategory[category] = count;
     totalProducts += count;
   }
@@ -500,7 +509,7 @@ export async function renameBrand({ config, appDb, slug, newName, storage, upser
 /**
  * Get impact analysis for a brand rename/delete.
  */
-export async function getBrandImpactAnalysis({ config, appDb, slug }) {
+export async function getBrandImpactAnalysis({ config, appDb, slug, getSpecDb = null }) {
   const brandSlug = String(slug ?? '').trim();
   if (!brandSlug) return { ok: false, error: 'slug_required' };
 
@@ -513,9 +522,18 @@ export async function getBrandImpactAnalysis({ config, appDb, slug }) {
   let total_products = 0;
 
   for (const category of categories) {
-    const catalog = await loadProductCatalog(config, category);
-    const matched = Object.entries(catalog.products || {})
-      .filter(([, p]) => p.brand === existing.canonical_name);
+    // WHY: Phase F — query SQL by brand_identifier (survives renames), fall back to JSON display name
+    const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+    let matched = [];
+    if (specDb?.db) {
+      matched = specDb.db.prepare(
+        'SELECT product_id FROM products WHERE category = ? AND brand_identifier = ?'
+      ).all(category, existing.identifier).map(r => [r.product_id]);
+    } else {
+      const catalog = await loadProductCatalog(config, category);
+      matched = Object.entries(catalog.products || {})
+        .filter(([, p]) => p.brand === existing.canonical_name);
+    }
     products_by_category[category] = matched.length;
     product_details[category] = matched.map(([pid]) => pid);
     total_products += matched.length;

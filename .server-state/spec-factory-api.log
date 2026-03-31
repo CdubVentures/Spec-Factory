@@ -6624,3 +6624,81 @@ Node.js v24.13.1
 [auto-seed] products failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\products\_generated\field_rules.json
 [auto-seed] run_repair_handoff_live_characterization_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\run_repair_handoff_live_characterization_001\_generated\field_rules.json
 [auto-seed] test_v3_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\test_v3_001\_generated\field_rules.json
+[gui-server] running on http://localhost:8788
+[gui-server] API:     http://localhost:8788/api/v1/health
+[gui-server] WS:      ws://localhost:8788/ws
+[gui-server] Project: C:\Users\Chris\Desktop\Spec Factory
+[gui-server] CWD:     C:\Users\Chris\Desktop\Spec Factory
+[gui-server] Helper:  C:\Users\Chris\Desktop\Spec Factory\category_authority
+[gui-server] Output:  C:\Users\Chris\Desktop\Spec Factory\.workspace\output
+[gui-server] IndexLab:C:\Users\Chris\Desktop\Spec Factory\.workspace\runs
+[gui-server] Canonical settings writes: ON
+[gui-server] Static:  C:\Users\Chris\Desktop\Spec Factory\tools\gui-react\dist
+[gui-server] Assets:  AlertBanner-ZOK04-CT.js, BillingPage-CrtB2_pG.js, BulkPasteGrid-Drn4ujmG.js, buttonClasses-DdWdVcJt.js, CatalogPage-C3BW212r.js, CategoryManager-DCFcWbDw.js, ComponentReviewPage-CgaIj4RT.js, DataTable-C356pbxG.js, DrawerShell-_0OOmjuV.js, fieldNormalize-BfWKSrbu.js, fieldRuleTaxonomy-DNVTpow1.js, FlagsSection-LKZxx5Ev.js, formatting-B6A_RRxb.js, index-CZU3Jty0.js, index-x8hG5Qiy.css, IndexingPage-BAt3LNU9.js, indexlabRunsQuery-CWwV1me6.js, LlmConfigPage-Bn_VjVuh.js, LlmGlobalSection-D4nnAO0M.js, LlmPhaseSection-CMPBpRWe.js, llmPolicyDefaults-BD6OPGNn.js, LlmProviderRegistrySection-CMsAMw7I.js, LlmSettingsPage-ChXZKZ9S.js, MetricRow-D_hTP0AY.js, ModelSelectDropdown-43wSkTAk.js, OverviewPage-CI1Wux8G.js, PipelineDeterministicStrategySection-BIOopi9D.js, PipelineSettingsPage-DXCouDO1.js, PipelineSourceStrategySection-DraNl2Du.js, ProductPage-BzoJXOAS.js, ReviewPage-C0SWZjQT.js, RuntimeFlowDraftPayload-YaEZtRae.js, RuntimeOpsPage-3BDCL4z4.js, SectionHeader-BNafy80O.js, settingsStatus-ChPFkMto.js, SidebarShell-B_RB9o97.js, sortable.esm-DHLR6drX.js, StoragePage-DgeeyIUd.js, StudioPage-DNNKzgWh.js, TabStrip-r04xn31b.js, TestModePage-DL8Da6s4.js, TierHierarchyPanel-tsYdj7p-.js, TrafficLight-BYBM14Ok.js, useFieldLabels-C7YGFt2p.js, useSessionPersistence-B_2l7dj1.js, vendor-charts-jGqlw67L.js, vendor-query-DYRqEj8c.js, vendor-react-yyJz49DP.js, vendor-ui-ComJg1Ad.js, VideoSectionPanel-B-ncE7q-.js
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[auto-seed] papaudit310a failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\papaudit310a\_generated\field_rules.json
+[auto-seed] products failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\products\_generated\field_rules.json
+[auto-seed] run_repair_handoff_live_characterization_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\run_repair_handoff_live_characterization_001\_generated\field_rules.json
+[auto-seed] test_v3_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\test_v3_001\_generated\field_rules.json

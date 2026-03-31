@@ -98,7 +98,7 @@ export function registerBrandRoutes(ctx) {
 
     // GET /api/v1/brands/{slug}/impact - impact analysis for rename/delete
     if (parts[0] === 'brands' && parts[1] && parts[2] === 'impact' && method === 'GET') {
-      const result = await getBrandImpactAnalysis({ config, appDb, slug: parts[1] });
+      const result = await getBrandImpactAnalysis({ config, appDb, slug: parts[1], getSpecDb: resolveSpecDb });
       return jsonRes(res, result.ok ? 200 : 404, result);
     }
 
@@ -210,7 +210,7 @@ export function registerBrandRoutes(ctx) {
     // DELETE /api/v1/brands/{slug}
     if (parts[0] === 'brands' && parts[1] && method === 'DELETE') {
       const force = params.get('force') === 'true';
-      const result = await removeBrand({ config, appDb, slug: parts[1], force });
+      const result = await removeBrand({ config, appDb, slug: parts[1], force, getSpecDb: resolveSpecDb });
       if (result?.ok) {
         const categories = Object.keys(result?.products_by_category || {}).filter(Boolean);
         emitDataChange({

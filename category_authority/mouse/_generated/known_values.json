@@ -8,12 +8,8 @@
       "rubber grips"
     ],
     "connection": [
-      "1",
-      "2",
       "bluetooth",
-      "he",
       "hybrid",
-      "unk",
       "wired",
       "wireless"
     ],
@@ -49,7 +45,6 @@
     "form_factor": [
       "ambidextrous",
       "left",
-      "lets",
       "right"
     ],
     "front_flare": [

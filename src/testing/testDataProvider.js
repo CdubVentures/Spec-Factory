@@ -2067,7 +2067,7 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
       continue;
     }
 
-    // 6. numeric (no range) — universal default, category-agnostic
+    // 6. numeric (no range) — derive from contract unit or use safe universal default
     if (type === 'number' || type === 'integer') {
       const base = 100;
       const offsets = [0, 0.08, -0.06, 0.12, -0.10, 0.15, -0.08, 0.05, 0.10, -0.12];

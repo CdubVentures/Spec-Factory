@@ -119,7 +119,7 @@ test('publish CLI publishes approved overrides and exposes provenance/changelog 
   await seedHelperArtifacts(helperRoot);
   await seedLatest(outputRoot, productId, '59');
   await seedApprovedOverride(helperRoot, productId, '58');
-  const env = { HELPER_FILES_ROOT: helperRoot, CATEGORY_AUTHORITY_ROOT: helperRoot };
+  const env = { CATEGORY_AUTHORITY_ROOT: helperRoot };
 
   const published = await runCli([
     'publish',
@@ -163,7 +163,6 @@ test('publish CLI surfaces provenance validation errors through the top-level co
       ...workspace.localArgs(),
     ], {
       env: {
-        HELPER_FILES_ROOT: workspace.helperRoot,
         CATEGORY_AUTHORITY_ROOT: workspace.helperRoot,
       },
     }),

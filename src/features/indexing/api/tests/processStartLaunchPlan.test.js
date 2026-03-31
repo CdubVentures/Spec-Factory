@@ -86,7 +86,6 @@ test('buildProcessStartLaunchPlan normalizes launch request into preflight paths
 
     assert.equal(result.envOverrides.LOCAL_OUTPUT_ROOT, path.resolve('body-local-output-root'));
     assert.equal(result.envOverrides.SPEC_DB_DIR, path.resolve('body-spec-db-root'));
-    assert.equal(result.envOverrides.HELPER_FILES_ROOT, overrideRoot);
     assert.equal(result.envOverrides.CATEGORY_AUTHORITY_ROOT, overrideRoot);
     // WHY: Plan 05 Step 6 — runtime settings are snapshot-only, not individual env vars.
     assert.equal(Object.hasOwn(result.envOverrides, 'MAX_RUN_SECONDS'), false,

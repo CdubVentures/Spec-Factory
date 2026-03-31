@@ -89,7 +89,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const manifestDefaultedEnvKeys = manifestApplicator.getDefaultedEnvKeys();
 
   const explicitCategoryAuthorityRoot = String(process.env.CATEGORY_AUTHORITY_ROOT || '').trim();
-  const explicitLegacyHelperRoot = String(process.env.HELPER_FILES_ROOT || '').trim();
   const explicitEnvKeys = new Set(
     Object.entries(process.env)
       .filter(([key, value]) => {
@@ -115,9 +114,6 @@ export function buildRawConfig({ manifestApplicator }) {
   const normalizedRetrievalInternalsMap = normalizeRetrievalInternalsMap({});
   const resolvedCategoryAuthorityRoot =
     explicitCategoryAuthorityRoot ||
-    explicitLegacyHelperRoot ||
-    process.env.CATEGORY_AUTHORITY_ROOT ||
-    process.env.HELPER_FILES_ROOT ||
     'category_authority';
 
   // WHY: O(1) scaling — simple settings assembled from registry SSOT.

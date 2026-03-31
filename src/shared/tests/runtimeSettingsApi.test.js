@@ -47,7 +47,6 @@ test('runtime-settings API', { timeout: 60_000 }, async (t) => {
   });
   const server = await startInProcessGuiServer(t, {
     env: {
-      HELPER_FILES_ROOT: _helperRoot,
       CATEGORY_AUTHORITY_ROOT: _helperRoot,
       LOCAL_INPUT_ROOT: _inputRoot,
       LOCAL_OUTPUT_ROOT: _outputRoot,

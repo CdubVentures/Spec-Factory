@@ -115,7 +115,7 @@ export function assertNoShadowHelperRuntime({
       'shadow_helper_runtime_detected',
       `launch_runtime=${shadowRuntimeRoot}`,
       `canonical_helper_root=${canonicalHelperRoot}`,
-      'Remove the launch-cwd legacy helper shadow path or set HELPER_FILES_ROOT to the canonical project location.',
+      'Remove the launch-cwd legacy helper shadow path or set CATEGORY_AUTHORITY_ROOT to the canonical project location.',
     ].join(';'),
   );
 }

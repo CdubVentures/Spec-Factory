@@ -63,7 +63,7 @@ describe('settingsAccessor', () => {
     });
 
     it('looks up by configKey when configKey differs from key', () => {
-      // Registry: key=categoryAuthorityRoot, configKey=categoryAuthorityRoot, aliases=["helperFilesRoot"]
+      // Registry: key=categoryAuthorityRoot, configKey=categoryAuthorityRoot
       // The config object uses configKey names, so configValue should
       // accept the registry key and find the default
       const config = {};

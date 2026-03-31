@@ -208,7 +208,6 @@ test('process/start forwards the launch plan cli args and env overrides to start
   const forwardedArgs = ['indexlab', '--run-id', requestedRunId, '--search-engines', 'duckduckgo'];
   const forwardedEnv = {
     CATEGORY_AUTHORITY_ROOT: path.resolve('category_authority_override'),
-    HELPER_FILES_ROOT: path.resolve('category_authority_override'),
     LOCAL_OUTPUT_ROOT: path.resolve('forwarded-output-root'),
     SPEC_DB_DIR: path.resolve('forwarded-specdb-root'),
     RUNTIME_SETTINGS_SNAPSHOT: path.resolve('.workspace', 'runtime', 'snapshots', `${requestedRunId}.json`),

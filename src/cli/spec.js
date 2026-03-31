@@ -89,6 +89,7 @@ function usage() {
     '  seed-db --category <category> [--local]',
     '  seed-checkpoint --category <category> [--out <path>] [--local]',
     '  migrate-product-ids --category <category> [--dry-run] [--local]',
+    '  backfill-brand-identifiers --category <category> [--dry-run] [--local]',
     '  migrate-to-sqlite --category <category> [--phase <1-9>] [--local]',
     '',
     'Global options:',

@@ -3,22 +3,37 @@
  *
  * For each product with an empty brand_identifier, resolves the brand display
  * name to its stable 8-hex identifier via appDb. Batch UPDATEs in a single
- * SQLite transaction. Safe to re-run (idempotent).
+ * SQLite transaction. Also patches product_catalog.json for seed parity.
+ * Safe to re-run (idempotent).
  *
  * Pattern follows idFormatMigration.js exactly.
  */
 
 import { resolveBrandIdentifier } from '../identity/resolveBrandIdentifier.js';
+import { loadProductCatalog } from '../products/productCatalog.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+// WHY: saveProductCatalog was removed (catalog JSON is now read-only boot seed).
+// Inline save for backfill parity, same pattern as idFormatMigration.js.
+async function saveProductCatalog(config, category, catalog) {
+  const root = config?.categoryAuthorityRoot || 'category_authority';
+  const filePath = path.resolve(root, category, '_control_plane', 'product_catalog.json');
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(catalog, null, 2), 'utf8');
+}
 
 /**
  * @param {object} opts
+ * @param {object} [opts.config] — app config (for categoryAuthorityRoot, used for JSON patching)
  * @param {string} opts.category — category to backfill
  * @param {object} opts.appDb — global AppDb instance (brands table)
  * @param {object} opts.specDb — open SpecDb for this category
  * @param {boolean} [opts.dryRun=false] — if true, report without writing
- * @returns {{ ok, category, total, backfilled, skipped, dryRun, results[] }}
+ * @returns {{ ok, category, total, backfilled, skipped, failed, dryRun, results[] }}
  */
 export async function backfillBrandIdentifier({
+  config,
   category,
   appDb,
   specDb,
@@ -36,6 +51,7 @@ export async function backfillBrandIdentifier({
   const results = [];
   let backfilled = 0;
   let skipped = 0;
+  let failed = 0;
   const updates = []; // collect { product_id, brand_identifier } for batch UPDATE
 
   for (const product of allProducts) {
@@ -77,12 +93,26 @@ export async function backfillBrandIdentifier({
     tx();
   }
 
+  // Patch product_catalog.json for seed parity (same pattern as idFormatMigration.js)
+  if (!dryRun && updates.length > 0 && config) {
+    try {
+      const catalog = await loadProductCatalog(config, cat);
+      const updateMap = new Map(updates.map(u => [u.product_id, u.brand_identifier]));
+      for (const [pid, entry] of Object.entries(catalog.products || {})) {
+        const bi = updateMap.get(pid);
+        if (bi) entry.brand_identifier = bi;
+      }
+      await saveProductCatalog(config, cat, catalog);
+    } catch { /* best-effort: SQL is SSOT, JSON is seed-only */ }
+  }
+
   return {
     ok: true,
     category: cat,
     total: allProducts.length,
     backfilled,
     skipped,
+    failed,
     dryRun,
     results,
   };

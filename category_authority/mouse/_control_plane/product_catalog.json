@@ -11,7 +11,8 @@
       "added_at": "2026-02-15T03:49:54.678Z",
       "added_by": "seed",
       "id": 1,
-      "identifier": "121cc826"
+      "identifier": "121cc826",
+      "brand_identifier": "0b32ea8f"
     },
     "mouse-34500132": {
       "brand": "Alienware",
@@ -22,7 +23,8 @@
       "added_at": "2026-02-15T03:49:54.700Z",
       "added_by": "seed",
       "id": 2,
-      "identifier": "34500132"
+      "identifier": "34500132",
+      "brand_identifier": "0b32ea8f"
     },
     "mouse-b5936172": {
       "brand": "Alienware",
@@ -33,7 +35,8 @@
       "added_at": "2026-02-15T03:49:54.722Z",
       "added_by": "seed",
       "id": 3,
-      "identifier": "b5936172"
+      "identifier": "b5936172",
+      "brand_identifier": "0b32ea8f"
     },
     "mouse-f97115ea": {
       "brand": "Alienware",
@@ -44,7 +47,8 @@
       "added_at": "2026-02-15T03:49:54.755Z",
       "added_by": "seed",
       "id": 4,
-      "identifier": "f97115ea"
+      "identifier": "f97115ea",
+      "brand_identifier": "0b32ea8f"
     },
     "mouse-c7151694": {
       "brand": "Alienware",
@@ -55,7 +59,8 @@
       "added_at": "2026-02-15T03:49:54.773Z",
       "added_by": "seed",
       "id": 5,
-      "identifier": "c7151694"
+      "identifier": "c7151694",
+      "brand_identifier": "0b32ea8f"
     },
     "mouse-c730517d": {
       "brand": "Acer",
@@ -66,7 +71,8 @@
       "added_at": "2026-02-15T03:49:54.800Z",
       "added_by": "seed",
       "id": 6,
-      "identifier": "c730517d"
+      "identifier": "c730517d",
+      "brand_identifier": "6f1f6e73"
     },
     "mouse-e2edde94": {
       "brand": "Acer",
@@ -77,7 +83,8 @@
       "added_at": "2026-02-15T03:49:54.823Z",
       "added_by": "seed",
       "id": 7,
-      "identifier": "e2edde94"
+      "identifier": "e2edde94",
+      "brand_identifier": "6f1f6e73"
     },
     "mouse-08be9e3f": {
       "brand": "Aorus",
@@ -88,7 +95,8 @@
       "added_at": "2026-02-15T03:49:54.893Z",
       "added_by": "seed",
       "id": 10,
-      "identifier": "08be9e3f"
+      "identifier": "08be9e3f",
+      "brand_identifier": "d5345f96"
     },
     "mouse-098d418e": {
       "brand": "Aorus",
@@ -99,7 +107,8 @@
       "added_at": "2026-02-15T03:49:54.922Z",
       "added_by": "seed",
       "id": 11,
-      "identifier": "098d418e"
+      "identifier": "098d418e",
+      "brand_identifier": "d5345f96"
     },
     "mouse-7793814a": {
       "brand": "Aorus",
@@ -110,7 +119,8 @@
       "added_at": "2026-02-15T03:49:54.938Z",
       "added_by": "seed",
       "id": 12,
-      "identifier": "7793814a"
+      "identifier": "7793814a",
+      "brand_identifier": "d5345f96"
     },
     "mouse-06ac86e8": {
       "brand": "Aorus",
@@ -121,7 +131,8 @@
       "added_at": "2026-02-15T03:49:54.955Z",
       "added_by": "seed",
       "id": 13,
-      "identifier": "06ac86e8"
+      "identifier": "06ac86e8",
+      "brand_identifier": "d5345f96"
     },
     "mouse-dc354956": {
       "brand": "Aorus",
@@ -132,7 +143,8 @@
       "added_at": "2026-02-15T03:49:54.968Z",
       "added_by": "seed",
       "id": 14,
-      "identifier": "dc354956"
+      "identifier": "dc354956",
+      "brand_identifier": "d5345f96"
     },
     "mouse-6edf2199": {
       "brand": "Cooler Master",
@@ -143,7 +155,8 @@
       "added_at": "2026-02-15T03:49:54.983Z",
       "added_by": "seed",
       "id": 15,
-      "identifier": "6edf2199"
+      "identifier": "6edf2199",
+      "brand_identifier": "cba919ca"
     },
     "mouse-9dbdf1e7": {
       "brand": "Cooler Master",
@@ -154,7 +167,8 @@
       "added_at": "2026-02-15T03:49:55.003Z",
       "added_by": "seed",
       "id": 16,
-      "identifier": "9dbdf1e7"
+      "identifier": "9dbdf1e7",
+      "brand_identifier": "cba919ca"
     },
     "mouse-70ee0843": {
       "brand": "Cooler Master",
@@ -165,7 +179,8 @@
       "added_at": "2026-02-15T03:49:55.019Z",
       "added_by": "seed",
       "id": 17,
-      "identifier": "70ee0843"
+      "identifier": "70ee0843",
+      "brand_identifier": "cba919ca"
     },
     "mouse-aa37e442": {
       "brand": "Cooler Master",
@@ -176,7 +191,8 @@
       "added_at": "2026-02-15T03:49:55.034Z",
       "added_by": "seed",
       "id": 18,
-      "identifier": "aa37e442"
+      "identifier": "aa37e442",
+      "brand_identifier": "cba919ca"
     },
     "mouse-faded1f9": {
       "brand": "Cooler Master",
@@ -187,7 +203,8 @@
       "added_at": "2026-02-15T03:49:55.052Z",
       "added_by": "seed",
       "id": 19,
-      "identifier": "faded1f9"
+      "identifier": "faded1f9",
+      "brand_identifier": "cba919ca"
     },
     "mouse-df9fd3ce": {
       "brand": "Cooler Master",
@@ -198,7 +215,8 @@
       "added_at": "2026-02-15T03:49:55.066Z",
       "added_by": "seed",
       "id": 20,
-      "identifier": "df9fd3ce"
+      "identifier": "df9fd3ce",
+      "brand_identifier": "cba919ca"
     },
     "mouse-aee1e8e4": {
       "brand": "Corsair",
@@ -209,7 +227,8 @@
       "added_at": "2026-02-15T03:49:55.086Z",
       "added_by": "seed",
       "id": 21,
-      "identifier": "aee1e8e4"
+      "identifier": "aee1e8e4",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-763ee931": {
       "brand": "Corsair",
@@ -220,7 +239,8 @@
       "added_at": "2026-02-15T03:49:55.102Z",
       "added_by": "seed",
       "id": 22,
-      "identifier": "763ee931"
+      "identifier": "763ee931",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-64c69842": {
       "brand": "Corsair",
@@ -231,7 +251,8 @@
       "added_at": "2026-02-15T03:49:55.117Z",
       "added_by": "seed",
       "id": 23,
-      "identifier": "64c69842"
+      "identifier": "64c69842",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-1d3c6fa6": {
       "brand": "Corsair",
@@ -242,7 +263,8 @@
       "added_at": "2026-02-15T03:49:55.142Z",
       "added_by": "seed",
       "id": 24,
-      "identifier": "1d3c6fa6"
+      "identifier": "1d3c6fa6",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b794700f": {
       "brand": "Corsair",
@@ -253,7 +275,8 @@
       "added_at": "2026-02-15T03:49:55.160Z",
       "added_by": "seed",
       "id": 25,
-      "identifier": "b794700f"
+      "identifier": "b794700f",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-d6f32365": {
       "brand": "Corsair",
@@ -264,7 +287,8 @@
       "added_at": "2026-02-15T03:49:55.175Z",
       "added_by": "seed",
       "id": 26,
-      "identifier": "d6f32365"
+      "identifier": "d6f32365",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b01900d7": {
       "brand": "Corsair",
@@ -275,7 +299,8 @@
       "added_at": "2026-02-15T03:49:55.193Z",
       "added_by": "seed",
       "id": 27,
-      "identifier": "b01900d7"
+      "identifier": "b01900d7",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-92849336": {
       "brand": "Corsair",
@@ -286,7 +311,8 @@
       "added_at": "2026-02-15T03:49:55.212Z",
       "added_by": "seed",
       "id": 28,
-      "identifier": "92849336"
+      "identifier": "92849336",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-372705b4": {
       "brand": "Corsair",
@@ -297,7 +323,8 @@
       "added_at": "2026-02-15T03:49:55.232Z",
       "added_by": "seed",
       "id": 29,
-      "identifier": "372705b4"
+      "identifier": "372705b4",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-0cc7c5c8": {
       "brand": "Corsair",
@@ -308,7 +335,8 @@
       "added_at": "2026-02-15T03:49:55.249Z",
       "added_by": "seed",
       "id": 30,
-      "identifier": "0cc7c5c8"
+      "identifier": "0cc7c5c8",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-184b7bb7": {
       "brand": "Corsair",
@@ -319,7 +347,8 @@
       "added_at": "2026-02-15T03:49:55.266Z",
       "added_by": "seed",
       "id": 31,
-      "identifier": "184b7bb7"
+      "identifier": "184b7bb7",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b3c4105e": {
       "brand": "Corsair",
@@ -330,7 +359,8 @@
       "added_at": "2026-02-15T03:49:55.286Z",
       "added_by": "seed",
       "id": 32,
-      "identifier": "b3c4105e"
+      "identifier": "b3c4105e",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-68b79bca": {
       "brand": "Corsair",
@@ -341,7 +371,8 @@
       "added_at": "2026-02-15T03:49:55.305Z",
       "added_by": "seed",
       "id": 33,
-      "identifier": "68b79bca"
+      "identifier": "68b79bca",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-7d32758a": {
       "brand": "Corsair",
@@ -352,7 +383,8 @@
       "added_at": "2026-02-15T03:49:55.415Z",
       "added_by": "seed",
       "id": 34,
-      "identifier": "7d32758a"
+      "identifier": "7d32758a",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-7e1fb4e6": {
       "brand": "Corsair",
@@ -363,7 +395,8 @@
       "added_at": "2026-02-15T03:49:55.432Z",
       "added_by": "seed",
       "id": 35,
-      "identifier": "7e1fb4e6"
+      "identifier": "7e1fb4e6",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-26743cde": {
       "brand": "Corsair",
@@ -374,7 +407,8 @@
       "added_at": "2026-02-15T03:49:55.448Z",
       "added_by": "seed",
       "id": 36,
-      "identifier": "26743cde"
+      "identifier": "26743cde",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-08c80ef0": {
       "brand": "Corsair",
@@ -385,7 +419,8 @@
       "added_at": "2026-02-15T03:49:55.468Z",
       "added_by": "seed",
       "id": 37,
-      "identifier": "08c80ef0"
+      "identifier": "08c80ef0",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-8081869a": {
       "brand": "Corsair",
@@ -396,7 +431,8 @@
       "added_at": "2026-02-15T03:49:55.486Z",
       "added_by": "seed",
       "id": 38,
-      "identifier": "8081869a"
+      "identifier": "8081869a",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-4b9b9a1e": {
       "brand": "Corsair",
@@ -407,7 +443,8 @@
       "added_at": "2026-02-15T03:49:55.515Z",
       "added_by": "seed",
       "id": 39,
-      "identifier": "4b9b9a1e"
+      "identifier": "4b9b9a1e",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-bd466b80": {
       "brand": "Corsair",
@@ -418,7 +455,8 @@
       "added_at": "2026-02-15T03:49:55.534Z",
       "added_by": "seed",
       "id": 40,
-      "identifier": "bd466b80"
+      "identifier": "bd466b80",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-2d095ed8": {
       "brand": "Corsair",
@@ -429,7 +467,8 @@
       "added_at": "2026-02-15T03:49:55.549Z",
       "added_by": "seed",
       "id": 41,
-      "identifier": "2d095ed8"
+      "identifier": "2d095ed8",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-119c3efc": {
       "brand": "Corsair",
@@ -440,7 +479,8 @@
       "added_at": "2026-02-15T03:49:55.566Z",
       "added_by": "seed",
       "id": 42,
-      "identifier": "119c3efc"
+      "identifier": "119c3efc",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-01280363": {
       "brand": "Corsair",
@@ -451,7 +491,8 @@
       "added_at": "2026-02-15T03:49:55.583Z",
       "added_by": "seed",
       "id": 43,
-      "identifier": "01280363"
+      "identifier": "01280363",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-ec67b773": {
       "brand": "Corsair",
@@ -462,7 +503,8 @@
       "added_at": "2026-02-15T03:49:55.603Z",
       "added_by": "seed",
       "id": 44,
-      "identifier": "ec67b773"
+      "identifier": "ec67b773",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b922b435": {
       "brand": "Corsair",
@@ -473,7 +515,8 @@
       "added_at": "2026-02-15T03:49:55.619Z",
       "added_by": "seed",
       "id": 45,
-      "identifier": "b922b435"
+      "identifier": "b922b435",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-e1e1d17f": {
       "brand": "Corsair",
@@ -484,7 +527,8 @@
       "added_at": "2026-02-15T03:49:55.637Z",
       "added_by": "seed",
       "id": 46,
-      "identifier": "e1e1d17f"
+      "identifier": "e1e1d17f",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-38f6f6da": {
       "brand": "Corsair",
@@ -495,7 +539,8 @@
       "added_at": "2026-02-15T03:49:55.765Z",
       "added_by": "seed",
       "id": 47,
-      "identifier": "38f6f6da"
+      "identifier": "38f6f6da",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b3e16868": {
       "brand": "Corsair",
@@ -506,7 +551,8 @@
       "added_at": "2026-02-15T03:49:55.825Z",
       "added_by": "seed",
       "id": 48,
-      "identifier": "b3e16868"
+      "identifier": "b3e16868",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-a79e0b95": {
       "brand": "Corsair",
@@ -517,7 +563,8 @@
       "added_at": "2026-02-15T03:49:55.843Z",
       "added_by": "seed",
       "id": 49,
-      "identifier": "a79e0b95"
+      "identifier": "a79e0b95",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-bcf659ca": {
       "brand": "Corsair",
@@ -528,7 +575,8 @@
       "added_at": "2026-02-15T03:49:55.865Z",
       "added_by": "seed",
       "id": 50,
-      "identifier": "bcf659ca"
+      "identifier": "bcf659ca",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-430aab0b": {
       "brand": "Corsair",
@@ -539,7 +587,8 @@
       "added_at": "2026-02-15T03:49:55.882Z",
       "added_by": "seed",
       "id": 51,
-      "identifier": "430aab0b"
+      "identifier": "430aab0b",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-a974c9b2": {
       "brand": "Corsair",
@@ -550,7 +599,8 @@
       "added_at": "2026-02-15T03:49:55.901Z",
       "added_by": "seed",
       "id": 52,
-      "identifier": "a974c9b2"
+      "identifier": "a974c9b2",
+      "brand_identifier": "8b2d6222"
     },
     "mouse-b3ab70c1": {
       "brand": "Asus",
@@ -561,7 +611,8 @@
       "added_at": "2026-02-15T03:49:55.917Z",
       "added_by": "seed",
       "id": 53,
-      "identifier": "b3ab70c1"
+      "identifier": "b3ab70c1",
+      "brand_identifier": "067bd3df"
     },
     "mouse-d33a425f": {
       "brand": "Asus",
@@ -572,7 +623,8 @@
       "added_at": "2026-02-15T03:49:55.934Z",
       "added_by": "seed",
       "id": 54,
-      "identifier": "d33a425f"
+      "identifier": "d33a425f",
+      "brand_identifier": "067bd3df"
     },
     "mouse-f7a7d717": {
       "brand": "Asus",
@@ -583,7 +635,8 @@
       "added_at": "2026-02-15T03:49:55.954Z",
       "added_by": "seed",
       "id": 55,
-      "identifier": "f7a7d717"
+      "identifier": "f7a7d717",
+      "brand_identifier": "067bd3df"
     },
     "mouse-7f69b779": {
       "brand": "Asus",
@@ -594,7 +647,8 @@
       "added_at": "2026-02-15T03:49:55.969Z",
       "added_by": "seed",
       "id": 56,
-      "identifier": "7f69b779"
+      "identifier": "7f69b779",
+      "brand_identifier": "067bd3df"
     },
     "mouse-9cc534a2": {
       "brand": "Asus",
@@ -605,7 +659,8 @@
       "added_at": "2026-02-15T03:49:55.984Z",
       "added_by": "seed",
       "id": 57,
-      "identifier": "9cc534a2"
+      "identifier": "9cc534a2",
+      "brand_identifier": "067bd3df"
     },
     "mouse-8cb46ba9": {
       "brand": "Asus",
@@ -616,7 +671,8 @@
       "added_at": "2026-02-15T03:49:56.000Z",
       "added_by": "seed",
       "id": 58,
-      "identifier": "8cb46ba9"
+      "identifier": "8cb46ba9",
+      "brand_identifier": "067bd3df"
     },
     "mouse-48daf257": {
       "brand": "Asus",
@@ -627,7 +683,8 @@
       "added_at": "2026-02-15T03:49:56.018Z",
       "added_by": "seed",
       "id": 59,
-      "identifier": "48daf257"
+      "identifier": "48daf257",
+      "brand_identifier": "067bd3df"
     },
     "mouse-d22591fa": {
       "brand": "Asus",
@@ -638,7 +695,8 @@
       "added_at": "2026-02-15T03:49:56.036Z",
       "added_by": "seed",
       "id": 60,
-      "identifier": "d22591fa"
+      "identifier": "d22591fa",
+      "brand_identifier": "067bd3df"
     },
     "mouse-83df3295": {
       "brand": "Asus",
@@ -649,7 +707,8 @@
       "added_at": "2026-02-15T03:49:56.054Z",
       "added_by": "seed",
       "id": 61,
-      "identifier": "83df3295"
+      "identifier": "83df3295",
+      "brand_identifier": "067bd3df"
     },
     "mouse-b7965ea6": {
       "brand": "Asus",
@@ -660,7 +719,8 @@
       "added_at": "2026-02-15T03:49:56.068Z",
       "added_by": "seed",
       "id": 62,
-      "identifier": "b7965ea6"
+      "identifier": "b7965ea6",
+      "brand_identifier": "067bd3df"
     },
     "mouse-bd209d9b": {
       "brand": "Asus",
@@ -671,7 +731,8 @@
       "added_at": "2026-02-15T03:49:56.084Z",
       "added_by": "seed",
       "id": 63,
-      "identifier": "bd209d9b"
+      "identifier": "bd209d9b",
+      "brand_identifier": "067bd3df"
     },
     "mouse-f87e0f0c": {
       "brand": "Asus",
@@ -682,7 +743,8 @@
       "added_at": "2026-02-15T03:49:56.102Z",
       "added_by": "seed",
       "id": 64,
-      "identifier": "f87e0f0c"
+      "identifier": "f87e0f0c",
+      "brand_identifier": "067bd3df"
     },
     "mouse-22ffc286": {
       "brand": "Asus",
@@ -693,7 +755,8 @@
       "added_at": "2026-02-15T03:49:56.119Z",
       "added_by": "seed",
       "id": 65,
-      "identifier": "22ffc286"
+      "identifier": "22ffc286",
+      "brand_identifier": "067bd3df"
     },
     "mouse-51a69e6f": {
       "brand": "Asus",
@@ -704,7 +767,8 @@
       "added_at": "2026-02-15T03:49:56.134Z",
       "added_by": "seed",
       "id": 66,
-      "identifier": "51a69e6f"
+      "identifier": "51a69e6f",
+      "brand_identifier": "067bd3df"
     },
     "mouse-b514e1df": {
       "brand": "Asus",
@@ -715,7 +779,8 @@
       "added_at": "2026-02-15T03:49:56.150Z",
       "added_by": "seed",
       "id": 67,
-      "identifier": "b514e1df"
+      "identifier": "b514e1df",
+      "brand_identifier": "067bd3df"
     },
     "mouse-ae26a21e": {
       "brand": "Asus",
@@ -726,7 +791,8 @@
       "added_at": "2026-02-15T03:49:56.164Z",
       "added_by": "seed",
       "id": 68,
-      "identifier": "ae26a21e"
+      "identifier": "ae26a21e",
+      "brand_identifier": "067bd3df"
     },
     "mouse-52f0d374": {
       "brand": "Asus",
@@ -737,7 +803,8 @@
       "added_at": "2026-02-15T03:49:56.181Z",
       "added_by": "seed",
       "id": 69,
-      "identifier": "52f0d374"
+      "identifier": "52f0d374",
+      "brand_identifier": "067bd3df"
     },
     "mouse-69b6ce63": {
       "brand": "Asus",
@@ -748,7 +815,8 @@
       "added_at": "2026-02-15T03:49:56.200Z",
       "added_by": "seed",
       "id": 70,
-      "identifier": "69b6ce63"
+      "identifier": "69b6ce63",
+      "brand_identifier": "067bd3df"
     },
     "mouse-0f81ef57": {
       "brand": "Asus",
@@ -759,7 +827,8 @@
       "added_at": "2026-02-15T03:49:56.220Z",
       "added_by": "seed",
       "id": 71,
-      "identifier": "0f81ef57"
+      "identifier": "0f81ef57",
+      "brand_identifier": "067bd3df"
     },
     "mouse-eb4e26c9": {
       "brand": "Asus",
@@ -770,7 +839,8 @@
       "added_at": "2026-02-15T03:49:56.241Z",
       "added_by": "seed",
       "id": 72,
-      "identifier": "eb4e26c9"
+      "identifier": "eb4e26c9",
+      "brand_identifier": "067bd3df"
     },
     "mouse-fe151452": {
       "brand": "Glorious",
@@ -781,7 +851,8 @@
       "added_at": "2026-02-15T03:49:56.260Z",
       "added_by": "seed",
       "id": 73,
-      "identifier": "fe151452"
+      "identifier": "fe151452",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-f8078e74": {
       "brand": "Glorious",
@@ -792,7 +863,8 @@
       "added_at": "2026-02-15T03:49:56.274Z",
       "added_by": "seed",
       "id": 74,
-      "identifier": "f8078e74"
+      "identifier": "f8078e74",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-809d5a63": {
       "brand": "Glorious",
@@ -803,7 +875,8 @@
       "added_at": "2026-02-15T03:49:56.305Z",
       "added_by": "seed",
       "id": 75,
-      "identifier": "809d5a63"
+      "identifier": "809d5a63",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-07680515": {
       "brand": "Glorious",
@@ -814,7 +887,8 @@
       "added_at": "2026-02-15T03:49:56.334Z",
       "added_by": "seed",
       "id": 76,
-      "identifier": "07680515"
+      "identifier": "07680515",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-46d9f51f": {
       "brand": "Glorious",
@@ -825,7 +899,8 @@
       "added_at": "2026-02-15T03:49:56.357Z",
       "added_by": "seed",
       "id": 77,
-      "identifier": "46d9f51f"
+      "identifier": "46d9f51f",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-981f0219": {
       "brand": "Glorious",
@@ -836,7 +911,8 @@
       "added_at": "2026-02-15T03:49:56.375Z",
       "added_by": "seed",
       "id": 78,
-      "identifier": "981f0219"
+      "identifier": "981f0219",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-f821cfe9": {
       "brand": "Glorious",
@@ -847,7 +923,8 @@
       "added_at": "2026-02-15T03:49:56.391Z",
       "added_by": "seed",
       "id": 79,
-      "identifier": "f821cfe9"
+      "identifier": "f821cfe9",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-66aadffb": {
       "brand": "Glorious",
@@ -858,7 +935,8 @@
       "added_at": "2026-02-15T03:49:56.410Z",
       "added_by": "seed",
       "id": 80,
-      "identifier": "66aadffb"
+      "identifier": "66aadffb",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-9a2ebed6": {
       "brand": "Glorious",
@@ -869,7 +947,8 @@
       "added_at": "2026-02-15T03:49:56.434Z",
       "added_by": "seed",
       "id": 81,
-      "identifier": "9a2ebed6"
+      "identifier": "9a2ebed6",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-9c60af25": {
       "brand": "Glorious",
@@ -880,7 +959,8 @@
       "added_at": "2026-02-15T03:49:56.451Z",
       "added_by": "seed",
       "id": 82,
-      "identifier": "9c60af25"
+      "identifier": "9c60af25",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-7fed4e87": {
       "brand": "Glorious",
@@ -891,7 +971,8 @@
       "added_at": "2026-02-15T03:49:56.470Z",
       "added_by": "seed",
       "id": 83,
-      "identifier": "7fed4e87"
+      "identifier": "7fed4e87",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-489a7906": {
       "brand": "Glorious",
@@ -902,7 +983,8 @@
       "added_at": "2026-02-15T03:49:56.487Z",
       "added_by": "seed",
       "id": 84,
-      "identifier": "489a7906"
+      "identifier": "489a7906",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-f07cb6ba": {
       "brand": "Glorious",
@@ -913,7 +995,8 @@
       "added_at": "2026-02-15T03:49:56.507Z",
       "added_by": "seed",
       "id": 85,
-      "identifier": "f07cb6ba"
+      "identifier": "f07cb6ba",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-c5a81d79": {
       "brand": "Glorious",
@@ -924,7 +1007,8 @@
       "added_at": "2026-02-15T03:49:56.525Z",
       "added_by": "seed",
       "id": 86,
-      "identifier": "c5a81d79"
+      "identifier": "c5a81d79",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-7a6deb42": {
       "brand": "Glorious",
@@ -935,7 +1019,8 @@
       "added_at": "2026-02-15T03:49:56.541Z",
       "added_by": "seed",
       "id": 87,
-      "identifier": "7a6deb42"
+      "identifier": "7a6deb42",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-7444cd0b": {
       "brand": "Glorious",
@@ -946,7 +1031,8 @@
       "added_at": "2026-02-15T03:49:56.557Z",
       "added_by": "seed",
       "id": 88,
-      "identifier": "7444cd0b"
+      "identifier": "7444cd0b",
+      "brand_identifier": "0831f4ad"
     },
     "mouse-4a8c34c6": {
       "brand": "HyperX",
@@ -957,7 +1043,8 @@
       "added_at": "2026-02-15T03:49:56.574Z",
       "added_by": "seed",
       "id": 89,
-      "identifier": "4a8c34c6"
+      "identifier": "4a8c34c6",
+      "brand_identifier": "c9258059"
     },
     "mouse-0aaa6298": {
       "brand": "HyperX",
@@ -968,7 +1055,8 @@
       "added_at": "2026-02-15T03:49:56.588Z",
       "added_by": "seed",
       "id": 90,
-      "identifier": "0aaa6298"
+      "identifier": "0aaa6298",
+      "brand_identifier": "c9258059"
     },
     "mouse-8966deeb": {
       "brand": "HyperX",
@@ -979,7 +1067,8 @@
       "added_at": "2026-02-15T03:49:56.606Z",
       "added_by": "seed",
       "id": 91,
-      "identifier": "8966deeb"
+      "identifier": "8966deeb",
+      "brand_identifier": "c9258059"
     },
     "mouse-3c8dd1f0": {
       "brand": "HyperX",
@@ -990,7 +1079,8 @@
       "added_at": "2026-02-15T03:49:56.624Z",
       "added_by": "seed",
       "id": 92,
-      "identifier": "3c8dd1f0"
+      "identifier": "3c8dd1f0",
+      "brand_identifier": "c9258059"
     },
     "mouse-c5a85a6c": {
       "brand": "HyperX",
@@ -1001,7 +1091,8 @@
       "added_at": "2026-02-15T03:49:56.639Z",
       "added_by": "seed",
       "id": 93,
-      "identifier": "c5a85a6c"
+      "identifier": "c5a85a6c",
+      "brand_identifier": "c9258059"
     },
     "mouse-8fbbccff": {
       "brand": "HyperX",
@@ -1012,7 +1103,8 @@
       "added_at": "2026-02-15T03:49:56.659Z",
       "added_by": "seed",
       "id": 94,
-      "identifier": "8fbbccff"
+      "identifier": "8fbbccff",
+      "brand_identifier": "c9258059"
     },
     "mouse-b84c3bba": {
       "brand": "HyperX",
@@ -1023,7 +1115,8 @@
       "added_at": "2026-02-15T03:49:56.674Z",
       "added_by": "seed",
       "id": 95,
-      "identifier": "b84c3bba"
+      "identifier": "b84c3bba",
+      "brand_identifier": "c9258059"
     },
     "mouse-bf2aa496": {
       "brand": "HyperX",
@@ -1034,7 +1127,8 @@
       "added_at": "2026-02-15T03:49:56.689Z",
       "added_by": "seed",
       "id": 96,
-      "identifier": "bf2aa496"
+      "identifier": "bf2aa496",
+      "brand_identifier": "c9258059"
     },
     "mouse-a514e783": {
       "brand": "HyperX",
@@ -1045,7 +1139,8 @@
       "added_at": "2026-02-15T03:49:56.707Z",
       "added_by": "seed",
       "id": 97,
-      "identifier": "a514e783"
+      "identifier": "a514e783",
+      "brand_identifier": "c9258059"
     },
     "mouse-42331300": {
       "brand": "Logitech G",
@@ -1056,7 +1151,8 @@
       "added_at": "2026-02-15T03:49:56.725Z",
       "added_by": "seed",
       "id": 98,
-      "identifier": "42331300"
+      "identifier": "42331300",
+      "brand_identifier": "84a009b9"
     },
     "mouse-64110d84": {
       "brand": "Logitech G",
@@ -1067,7 +1163,8 @@
       "added_at": "2026-02-15T03:49:56.741Z",
       "added_by": "seed",
       "id": 99,
-      "identifier": "64110d84"
+      "identifier": "64110d84",
+      "brand_identifier": "84a009b9"
     },
     "mouse-5659e87a": {
       "brand": "Logitech G",
@@ -1078,7 +1175,8 @@
       "added_at": "2026-02-15T03:49:56.757Z",
       "added_by": "seed",
       "id": 100,
-      "identifier": "5659e87a"
+      "identifier": "5659e87a",
+      "brand_identifier": "84a009b9"
     },
     "mouse-e3e0576c": {
       "brand": "Logitech G",
@@ -1089,7 +1187,8 @@
       "added_at": "2026-02-15T03:49:56.772Z",
       "added_by": "seed",
       "id": 101,
-      "identifier": "e3e0576c"
+      "identifier": "e3e0576c",
+      "brand_identifier": "84a009b9"
     },
     "mouse-bdcfb5df": {
       "brand": "Logitech G",
@@ -1100,7 +1199,8 @@
       "added_at": "2026-02-15T03:49:56.791Z",
       "added_by": "seed",
       "id": 102,
-      "identifier": "bdcfb5df"
+      "identifier": "bdcfb5df",
+      "brand_identifier": "84a009b9"
     },
     "mouse-bfa8d0a1": {
       "brand": "Logitech G",
@@ -1111,7 +1211,8 @@
       "added_at": "2026-02-15T03:49:56.814Z",
       "added_by": "seed",
       "id": 103,
-      "identifier": "bfa8d0a1"
+      "identifier": "bfa8d0a1",
+      "brand_identifier": "84a009b9"
     },
     "mouse-143cf827": {
       "brand": "Logitech G",
@@ -1122,7 +1223,8 @@
       "added_at": "2026-02-15T03:49:56.833Z",
       "added_by": "seed",
       "id": 104,
-      "identifier": "143cf827"
+      "identifier": "143cf827",
+      "brand_identifier": "84a009b9"
     },
     "mouse-83165eba": {
       "brand": "Logitech G",
@@ -1133,7 +1235,8 @@
       "added_at": "2026-02-15T03:49:56.857Z",
       "added_by": "seed",
       "id": 105,
-      "identifier": "83165eba"
+      "identifier": "83165eba",
+      "brand_identifier": "84a009b9"
     },
     "mouse-93969710": {
       "brand": "Logitech G",
@@ -1144,7 +1247,8 @@
       "added_at": "2026-02-15T03:49:56.885Z",
       "added_by": "seed",
       "id": 106,
-      "identifier": "93969710"
+      "identifier": "93969710",
+      "brand_identifier": "84a009b9"
     },
     "mouse-d05bc0c5": {
       "brand": "Logitech G",
@@ -1155,7 +1259,8 @@
       "added_at": "2026-02-15T03:49:56.909Z",
       "added_by": "seed",
       "id": 107,
-      "identifier": "d05bc0c5"
+      "identifier": "d05bc0c5",
+      "brand_identifier": "84a009b9"
     },
     "mouse-2844f036": {
       "brand": "Logitech G",
@@ -1166,7 +1271,8 @@
       "added_at": "2026-02-15T03:49:56.926Z",
       "added_by": "seed",
       "id": 108,
-      "identifier": "2844f036"
+      "identifier": "2844f036",
+      "brand_identifier": "84a009b9"
     },
     "mouse-08e5f27a": {
       "brand": "Logitech G",
@@ -1177,7 +1283,8 @@
       "added_at": "2026-02-15T03:49:56.949Z",
       "added_by": "seed",
       "id": 109,
-      "identifier": "08e5f27a"
+      "identifier": "08e5f27a",
+      "brand_identifier": "84a009b9"
     },
     "mouse-532b11c0": {
       "brand": "Logitech G",
@@ -1188,7 +1295,8 @@
       "added_at": "2026-02-15T03:49:56.971Z",
       "added_by": "seed",
       "id": 110,
-      "identifier": "532b11c0"
+      "identifier": "532b11c0",
+      "brand_identifier": "84a009b9"
     },
     "mouse-c2e832ba": {
       "brand": "Logitech G",
@@ -1199,7 +1307,8 @@
       "added_at": "2026-02-15T03:49:56.987Z",
       "added_by": "seed",
       "id": 111,
-      "identifier": "c2e832ba"
+      "identifier": "c2e832ba",
+      "brand_identifier": "84a009b9"
     },
     "mouse-7101f1a5": {
       "brand": "Logitech G",
@@ -1210,7 +1319,8 @@
       "added_at": "2026-02-15T03:49:57.005Z",
       "added_by": "seed",
       "id": 112,
-      "identifier": "7101f1a5"
+      "identifier": "7101f1a5",
+      "brand_identifier": "84a009b9"
     },
     "mouse-dbe9d673": {
       "brand": "Logitech G",
@@ -1221,7 +1331,8 @@
       "added_at": "2026-02-15T03:49:57.021Z",
       "added_by": "seed",
       "id": 113,
-      "identifier": "dbe9d673"
+      "identifier": "dbe9d673",
+      "brand_identifier": "84a009b9"
     },
     "mouse-fca02f8c": {
       "brand": "Logitech G",
@@ -1232,7 +1343,8 @@
       "added_at": "2026-02-15T03:49:57.036Z",
       "added_by": "seed",
       "id": 114,
-      "identifier": "fca02f8c"
+      "identifier": "fca02f8c",
+      "brand_identifier": "84a009b9"
     },
     "mouse-487e89fc": {
       "brand": "Logitech G",
@@ -1243,7 +1355,8 @@
       "added_at": "2026-02-15T03:49:57.058Z",
       "added_by": "seed",
       "id": 115,
-      "identifier": "487e89fc"
+      "identifier": "487e89fc",
+      "brand_identifier": "84a009b9"
     },
     "mouse-e3745dd1": {
       "brand": "Logitech G",
@@ -1254,7 +1367,8 @@
       "added_at": "2026-02-15T03:49:57.077Z",
       "added_by": "seed",
       "id": 116,
-      "identifier": "e3745dd1"
+      "identifier": "e3745dd1",
+      "brand_identifier": "84a009b9"
     },
     "mouse-50e18c34": {
       "brand": "MSI",
@@ -1265,7 +1379,8 @@
       "added_at": "2026-02-15T03:49:57.092Z",
       "added_by": "seed",
       "id": 117,
-      "identifier": "50e18c34"
+      "identifier": "50e18c34",
+      "brand_identifier": "b52151d9"
     },
     "mouse-66057ed8": {
       "brand": "MSI",
@@ -1276,7 +1391,8 @@
       "added_at": "2026-02-15T03:49:57.107Z",
       "added_by": "seed",
       "id": 118,
-      "identifier": "66057ed8"
+      "identifier": "66057ed8",
+      "brand_identifier": "b52151d9"
     },
     "mouse-8c2598aa": {
       "brand": "MSI",
@@ -1287,7 +1403,8 @@
       "added_at": "2026-02-15T03:49:57.125Z",
       "added_by": "seed",
       "id": 119,
-      "identifier": "8c2598aa"
+      "identifier": "8c2598aa",
+      "brand_identifier": "b52151d9"
     },
     "mouse-5c8b7c3a": {
       "brand": "MSI",
@@ -1298,7 +1415,8 @@
       "added_at": "2026-02-15T03:49:57.140Z",
       "added_by": "seed",
       "id": 120,
-      "identifier": "5c8b7c3a"
+      "identifier": "5c8b7c3a",
+      "brand_identifier": "b52151d9"
     },
     "mouse-cb856d84": {
       "brand": "MSI",
@@ -1309,7 +1427,8 @@
       "added_at": "2026-02-15T03:49:57.156Z",
       "added_by": "seed",
       "id": 121,
-      "identifier": "cb856d84"
+      "identifier": "cb856d84",
+      "brand_identifier": "b52151d9"
     },
     "mouse-535284bd": {
       "brand": "MSI",
@@ -1320,7 +1439,8 @@
       "added_at": "2026-02-15T03:49:57.188Z",
       "added_by": "seed",
       "id": 122,
-      "identifier": "535284bd"
+      "identifier": "535284bd",
+      "brand_identifier": "b52151d9"
     },
     "mouse-40ae24b8": {
       "brand": "MSI",
@@ -1331,7 +1451,8 @@
       "added_at": "2026-02-15T03:49:57.203Z",
       "added_by": "seed",
       "id": 123,
-      "identifier": "40ae24b8"
+      "identifier": "40ae24b8",
+      "brand_identifier": "b52151d9"
     },
     "mouse-4b4b9a56": {
       "brand": "MSI",
@@ -1342,7 +1463,8 @@
       "added_at": "2026-02-15T03:49:57.219Z",
       "added_by": "seed",
       "id": 124,
-      "identifier": "4b4b9a56"
+      "identifier": "4b4b9a56",
+      "brand_identifier": "b52151d9"
     },
     "mouse-aa3a36c5": {
       "brand": "MSI",
@@ -1353,7 +1475,8 @@
       "added_at": "2026-02-15T03:49:57.238Z",
       "added_by": "seed",
       "id": 125,
-      "identifier": "aa3a36c5"
+      "identifier": "aa3a36c5",
+      "brand_identifier": "b52151d9"
     },
     "mouse-a6c8d5fe": {
       "brand": "MSI",
@@ -1364,7 +1487,8 @@
       "added_at": "2026-02-15T03:49:57.256Z",
       "added_by": "seed",
       "id": 126,
-      "identifier": "a6c8d5fe"
+      "identifier": "a6c8d5fe",
+      "brand_identifier": "b52151d9"
     },
     "mouse-efba2dc1": {
       "brand": "MSI",
@@ -1375,7 +1499,8 @@
       "added_at": "2026-02-15T03:49:57.274Z",
       "added_by": "seed",
       "id": 127,
-      "identifier": "efba2dc1"
+      "identifier": "efba2dc1",
+      "brand_identifier": "b52151d9"
     },
     "mouse-36aa6f10": {
       "brand": "MSI",
@@ -1386,7 +1511,8 @@
       "added_at": "2026-02-15T03:49:57.288Z",
       "added_by": "seed",
       "id": 128,
-      "identifier": "36aa6f10"
+      "identifier": "36aa6f10",
+      "brand_identifier": "b52151d9"
     },
     "mouse-a4c20298": {
       "brand": "MSI",
@@ -1397,7 +1523,8 @@
       "added_at": "2026-02-15T03:49:57.310Z",
       "added_by": "seed",
       "id": 129,
-      "identifier": "a4c20298"
+      "identifier": "a4c20298",
+      "brand_identifier": "b52151d9"
     },
     "mouse-2918f1ca": {
       "brand": "MSI",
@@ -1408,7 +1535,8 @@
       "added_at": "2026-02-15T03:49:57.333Z",
       "added_by": "seed",
       "id": 130,
-      "identifier": "2918f1ca"
+      "identifier": "2918f1ca",
+      "brand_identifier": "b52151d9"
     },
     "mouse-8c9175e2": {
       "brand": "MSI",
@@ -1419,7 +1547,8 @@
       "added_at": "2026-02-15T03:49:57.351Z",
       "added_by": "seed",
       "id": 131,
-      "identifier": "8c9175e2"
+      "identifier": "8c9175e2",
+      "brand_identifier": "b52151d9"
     },
     "mouse-160b8c6d": {
       "brand": "MSI",
@@ -1430,7 +1559,8 @@
       "added_at": "2026-02-15T03:49:57.369Z",
       "added_by": "seed",
       "id": 132,
-      "identifier": "160b8c6d"
+      "identifier": "160b8c6d",
+      "brand_identifier": "b52151d9"
     },
     "mouse-3995e482": {
       "brand": "MSI",
@@ -1441,7 +1571,8 @@
       "added_at": "2026-02-15T03:49:57.385Z",
       "added_by": "seed",
       "id": 133,
-      "identifier": "3995e482"
+      "identifier": "3995e482",
+      "brand_identifier": "b52151d9"
     },
     "mouse-5ae596e2": {
       "brand": "Razer",
@@ -1452,7 +1583,8 @@
       "added_at": "2026-02-15T03:49:57.411Z",
       "added_by": "seed",
       "id": 134,
-      "identifier": "5ae596e2"
+      "identifier": "5ae596e2",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-e49216f1": {
       "brand": "Razer",
@@ -1463,7 +1595,8 @@
       "added_at": "2026-02-15T03:49:57.435Z",
       "added_by": "seed",
       "id": 135,
-      "identifier": "e49216f1"
+      "identifier": "e49216f1",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-d8d1e1f5": {
       "brand": "Razer",
@@ -1474,7 +1607,8 @@
       "added_at": "2026-02-15T03:49:57.453Z",
       "added_by": "seed",
       "id": 136,
-      "identifier": "d8d1e1f5"
+      "identifier": "d8d1e1f5",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-307a7df0": {
       "brand": "Razer",
@@ -1485,7 +1619,8 @@
       "added_at": "2026-02-15T03:49:57.575Z",
       "added_by": "seed",
       "id": 137,
-      "identifier": "307a7df0"
+      "identifier": "307a7df0",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-d4a6fce6": {
       "brand": "Razer",
@@ -1496,7 +1631,8 @@
       "added_at": "2026-02-15T03:49:57.593Z",
       "added_by": "seed",
       "id": 138,
-      "identifier": "d4a6fce6"
+      "identifier": "d4a6fce6",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-e6a3960e": {
       "brand": "Razer",
@@ -1507,7 +1643,8 @@
       "added_at": "2026-02-15T03:49:57.613Z",
       "added_by": "seed",
       "id": 139,
-      "identifier": "e6a3960e"
+      "identifier": "e6a3960e",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-4b80eddc": {
       "brand": "Razer",
@@ -1518,7 +1655,8 @@
       "added_at": "2026-02-15T03:49:57.633Z",
       "added_by": "seed",
       "id": 140,
-      "identifier": "4b80eddc"
+      "identifier": "4b80eddc",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-113c2fa1": {
       "brand": "Razer",
@@ -1529,7 +1667,8 @@
       "added_at": "2026-02-15T03:49:57.649Z",
       "added_by": "seed",
       "id": 141,
-      "identifier": "113c2fa1"
+      "identifier": "113c2fa1",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-cf44792e": {
       "brand": "Razer",
@@ -1540,7 +1679,8 @@
       "added_at": "2026-02-15T03:49:57.668Z",
       "added_by": "seed",
       "id": 142,
-      "identifier": "cf44792e"
+      "identifier": "cf44792e",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-9f2a6c42": {
       "brand": "Razer",
@@ -1551,7 +1691,8 @@
       "added_at": "2026-02-15T03:49:57.688Z",
       "added_by": "seed",
       "id": 143,
-      "identifier": "9f2a6c42"
+      "identifier": "9f2a6c42",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-71d18839": {
       "brand": "Razer",
@@ -1562,7 +1703,8 @@
       "added_at": "2026-02-15T03:49:57.705Z",
       "added_by": "seed",
       "id": 144,
-      "identifier": "71d18839"
+      "identifier": "71d18839",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-6de02a10": {
       "brand": "Razer",
@@ -1573,7 +1715,8 @@
       "added_at": "2026-02-15T03:49:57.723Z",
       "added_by": "seed",
       "id": 145,
-      "identifier": "6de02a10"
+      "identifier": "6de02a10",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-fe3834e3": {
       "brand": "Razer",
@@ -1584,7 +1727,8 @@
       "added_at": "2026-02-15T03:49:57.740Z",
       "added_by": "seed",
       "id": 146,
-      "identifier": "fe3834e3"
+      "identifier": "fe3834e3",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-74b98f20": {
       "brand": "Razer",
@@ -1595,7 +1739,8 @@
       "added_at": "2026-02-15T03:49:57.757Z",
       "added_by": "seed",
       "id": 147,
-      "identifier": "74b98f20"
+      "identifier": "74b98f20",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-0f96e516": {
       "brand": "Razer",
@@ -1606,7 +1751,8 @@
       "added_at": "2026-02-15T03:49:57.774Z",
       "added_by": "seed",
       "id": 148,
-      "identifier": "0f96e516"
+      "identifier": "0f96e516",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-8a415ba4": {
       "brand": "Razer",
@@ -1617,7 +1763,8 @@
       "added_at": "2026-02-15T03:49:57.802Z",
       "added_by": "seed",
       "id": 149,
-      "identifier": "8a415ba4"
+      "identifier": "8a415ba4",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-94fb079d": {
       "brand": "Razer",
@@ -1628,7 +1775,8 @@
       "added_at": "2026-02-15T03:49:57.875Z",
       "added_by": "seed",
       "id": 150,
-      "identifier": "94fb079d"
+      "identifier": "94fb079d",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-2e40d794": {
       "brand": "Redragon",
@@ -1639,7 +1787,8 @@
       "added_at": "2026-02-15T03:49:57.955Z",
       "added_by": "seed",
       "id": 151,
-      "identifier": "2e40d794"
+      "identifier": "2e40d794",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-5e2860f5": {
       "brand": "Redragon",
@@ -1650,7 +1799,8 @@
       "added_at": "2026-02-15T03:49:57.993Z",
       "added_by": "seed",
       "id": 152,
-      "identifier": "5e2860f5"
+      "identifier": "5e2860f5",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-2c031bf1": {
       "brand": "Redragon",
@@ -1661,7 +1811,8 @@
       "added_at": "2026-02-15T03:49:58.018Z",
       "added_by": "seed",
       "id": 153,
-      "identifier": "2c031bf1"
+      "identifier": "2c031bf1",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-853cd9bc": {
       "brand": "Redragon",
@@ -1672,7 +1823,8 @@
       "added_at": "2026-02-15T03:49:58.036Z",
       "added_by": "seed",
       "id": 154,
-      "identifier": "853cd9bc"
+      "identifier": "853cd9bc",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-f33eca09": {
       "brand": "Redragon",
@@ -1683,7 +1835,8 @@
       "added_at": "2026-02-15T03:49:58.053Z",
       "added_by": "seed",
       "id": 155,
-      "identifier": "f33eca09"
+      "identifier": "f33eca09",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-3c878435": {
       "brand": "Redragon",
@@ -1694,7 +1847,8 @@
       "added_at": "2026-02-15T03:49:58.070Z",
       "added_by": "seed",
       "id": 156,
-      "identifier": "3c878435"
+      "identifier": "3c878435",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-3dcf2450": {
       "brand": "Redragon",
@@ -1705,7 +1859,8 @@
       "added_at": "2026-02-15T03:49:58.086Z",
       "added_by": "seed",
       "id": 157,
-      "identifier": "3dcf2450"
+      "identifier": "3dcf2450",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-dd2b2f2e": {
       "brand": "Redragon",
@@ -1716,7 +1871,8 @@
       "added_at": "2026-02-15T03:49:58.101Z",
       "added_by": "seed",
       "id": 158,
-      "identifier": "dd2b2f2e"
+      "identifier": "dd2b2f2e",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-da10dc12": {
       "brand": "Redragon",
@@ -1727,7 +1883,8 @@
       "added_at": "2026-02-15T03:49:58.119Z",
       "added_by": "seed",
       "id": 159,
-      "identifier": "da10dc12"
+      "identifier": "da10dc12",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-7c04d043": {
       "brand": "Redragon",
@@ -1738,7 +1895,8 @@
       "added_at": "2026-02-15T03:49:58.136Z",
       "added_by": "seed",
       "id": 160,
-      "identifier": "7c04d043"
+      "identifier": "7c04d043",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-93d45c3e": {
       "brand": "Redragon",
@@ -1749,7 +1907,8 @@
       "added_at": "2026-02-15T03:49:58.149Z",
       "added_by": "seed",
       "id": 161,
-      "identifier": "93d45c3e"
+      "identifier": "93d45c3e",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-8aad1217": {
       "brand": "Redragon",
@@ -1760,7 +1919,8 @@
       "added_at": "2026-02-15T03:49:58.166Z",
       "added_by": "seed",
       "id": 162,
-      "identifier": "8aad1217"
+      "identifier": "8aad1217",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-56b72df3": {
       "brand": "Redragon",
@@ -1771,7 +1931,8 @@
       "added_at": "2026-02-15T03:49:58.183Z",
       "added_by": "seed",
       "id": 163,
-      "identifier": "56b72df3"
+      "identifier": "56b72df3",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-a3d79007": {
       "brand": "Redragon",
@@ -1782,7 +1943,8 @@
       "added_at": "2026-02-15T03:49:58.201Z",
       "added_by": "seed",
       "id": 164,
-      "identifier": "a3d79007"
+      "identifier": "a3d79007",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-853ef2ef": {
       "brand": "Redragon",
@@ -1793,7 +1955,8 @@
       "added_at": "2026-02-15T03:49:58.233Z",
       "added_by": "seed",
       "id": 165,
-      "identifier": "853ef2ef"
+      "identifier": "853ef2ef",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-ffb4ccf4": {
       "brand": "Redragon",
@@ -1804,7 +1967,8 @@
       "added_at": "2026-02-15T03:49:58.251Z",
       "added_by": "seed",
       "id": 166,
-      "identifier": "ffb4ccf4"
+      "identifier": "ffb4ccf4",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-7b0de1a2": {
       "brand": "Redragon",
@@ -1815,7 +1979,8 @@
       "added_at": "2026-02-15T03:49:58.271Z",
       "added_by": "seed",
       "id": 167,
-      "identifier": "7b0de1a2"
+      "identifier": "7b0de1a2",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-19a98602": {
       "brand": "Redragon",
@@ -1826,7 +1991,8 @@
       "added_at": "2026-02-15T03:49:58.289Z",
       "added_by": "seed",
       "id": 168,
-      "identifier": "19a98602"
+      "identifier": "19a98602",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-a714eb25": {
       "brand": "Redragon",
@@ -1837,7 +2003,8 @@
       "added_at": "2026-02-15T03:49:58.318Z",
       "added_by": "seed",
       "id": 169,
-      "identifier": "a714eb25"
+      "identifier": "a714eb25",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-be3a7930": {
       "brand": "Redragon",
@@ -1848,7 +2015,8 @@
       "added_at": "2026-02-15T03:49:58.342Z",
       "added_by": "seed",
       "id": 170,
-      "identifier": "be3a7930"
+      "identifier": "be3a7930",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-117577e1": {
       "brand": "Redragon",
@@ -1859,7 +2027,8 @@
       "added_at": "2026-02-15T03:49:58.376Z",
       "added_by": "seed",
       "id": 171,
-      "identifier": "117577e1"
+      "identifier": "117577e1",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-6c645ea1": {
       "brand": "Redragon",
@@ -1870,7 +2039,8 @@
       "added_at": "2026-02-15T03:49:58.397Z",
       "added_by": "seed",
       "id": 172,
-      "identifier": "6c645ea1"
+      "identifier": "6c645ea1",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-8acb1bcd": {
       "brand": "Redragon",
@@ -1881,7 +2051,8 @@
       "added_at": "2026-02-15T03:49:58.415Z",
       "added_by": "seed",
       "id": 173,
-      "identifier": "8acb1bcd"
+      "identifier": "8acb1bcd",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-87dc8f62": {
       "brand": "Redragon",
@@ -1892,7 +2063,8 @@
       "added_at": "2026-02-15T03:49:58.432Z",
       "added_by": "seed",
       "id": 174,
-      "identifier": "87dc8f62"
+      "identifier": "87dc8f62",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-53e67328": {
       "brand": "Redragon",
@@ -1903,7 +2075,8 @@
       "added_at": "2026-02-15T03:49:58.451Z",
       "added_by": "seed",
       "id": 175,
-      "identifier": "53e67328"
+      "identifier": "53e67328",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-d8c6e57a": {
       "brand": "Redragon",
@@ -1914,7 +2087,8 @@
       "added_at": "2026-02-15T03:49:58.467Z",
       "added_by": "seed",
       "id": 176,
-      "identifier": "d8c6e57a"
+      "identifier": "d8c6e57a",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-6a36e4a6": {
       "brand": "Redragon",
@@ -1925,7 +2099,8 @@
       "added_at": "2026-02-15T03:49:58.493Z",
       "added_by": "seed",
       "id": 177,
-      "identifier": "6a36e4a6"
+      "identifier": "6a36e4a6",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-f81c13f6": {
       "brand": "Redragon",
@@ -1936,7 +2111,8 @@
       "added_at": "2026-02-15T03:49:58.521Z",
       "added_by": "seed",
       "id": 178,
-      "identifier": "f81c13f6"
+      "identifier": "f81c13f6",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-b3ed137a": {
       "brand": "Redragon",
@@ -1947,7 +2123,8 @@
       "added_at": "2026-02-15T03:49:58.551Z",
       "added_by": "seed",
       "id": 179,
-      "identifier": "b3ed137a"
+      "identifier": "b3ed137a",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-798a040b": {
       "brand": "Redragon",
@@ -1958,7 +2135,8 @@
       "added_at": "2026-02-15T03:49:58.567Z",
       "added_by": "seed",
       "id": 180,
-      "identifier": "798a040b"
+      "identifier": "798a040b",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-d53ce2a5": {
       "brand": "Redragon",
@@ -1969,7 +2147,8 @@
       "added_at": "2026-02-15T03:49:58.587Z",
       "added_by": "seed",
       "id": 181,
-      "identifier": "d53ce2a5"
+      "identifier": "d53ce2a5",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-a6343d7c": {
       "brand": "Redragon",
@@ -1980,7 +2159,8 @@
       "added_at": "2026-02-15T03:49:58.607Z",
       "added_by": "seed",
       "id": 182,
-      "identifier": "a6343d7c"
+      "identifier": "a6343d7c",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-acdeea27": {
       "brand": "Redragon",
@@ -1991,7 +2171,8 @@
       "added_at": "2026-02-15T03:49:58.630Z",
       "added_by": "seed",
       "id": 183,
-      "identifier": "acdeea27"
+      "identifier": "acdeea27",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-e94fc932": {
       "brand": "Redragon",
@@ -2002,7 +2183,8 @@
       "added_at": "2026-02-15T03:49:58.652Z",
       "added_by": "seed",
       "id": 184,
-      "identifier": "e94fc932"
+      "identifier": "e94fc932",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-bc04f901": {
       "brand": "Redragon",
@@ -2013,7 +2195,8 @@
       "added_at": "2026-02-15T03:49:58.671Z",
       "added_by": "seed",
       "id": 185,
-      "identifier": "bc04f901"
+      "identifier": "bc04f901",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-da08a7d3": {
       "brand": "Redragon",
@@ -2024,7 +2207,8 @@
       "added_at": "2026-02-15T03:49:58.689Z",
       "added_by": "seed",
       "id": 186,
-      "identifier": "da08a7d3"
+      "identifier": "da08a7d3",
+      "brand_identifier": "04d6e32e"
     },
     "mouse-f5da730c": {
       "brand": "Cougar",
@@ -2035,7 +2219,8 @@
       "added_at": "2026-02-15T03:49:58.706Z",
       "added_by": "seed",
       "id": 187,
-      "identifier": "f5da730c"
+      "identifier": "f5da730c",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-92d2afe4": {
       "brand": "Cougar",
@@ -2046,7 +2231,8 @@
       "added_at": "2026-02-15T03:49:58.744Z",
       "added_by": "seed",
       "id": 188,
-      "identifier": "92d2afe4"
+      "identifier": "92d2afe4",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-0719bafc": {
       "brand": "Cougar",
@@ -2057,7 +2243,8 @@
       "added_at": "2026-02-15T03:49:58.760Z",
       "added_by": "seed",
       "id": 189,
-      "identifier": "0719bafc"
+      "identifier": "0719bafc",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-0d596e80": {
       "brand": "Cougar",
@@ -2068,7 +2255,8 @@
       "added_at": "2026-02-15T03:49:58.775Z",
       "added_by": "seed",
       "id": 190,
-      "identifier": "0d596e80"
+      "identifier": "0d596e80",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-a4e10836": {
       "brand": "Cougar",
@@ -2079,7 +2267,8 @@
       "added_at": "2026-02-15T03:49:58.859Z",
       "added_by": "seed",
       "id": 191,
-      "identifier": "a4e10836"
+      "identifier": "a4e10836",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-00897461": {
       "brand": "Cougar",
@@ -2090,7 +2279,8 @@
       "added_at": "2026-02-15T03:49:58.883Z",
       "added_by": "seed",
       "id": 192,
-      "identifier": "00897461"
+      "identifier": "00897461",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-fc6013c8": {
       "brand": "Cougar",
@@ -2101,7 +2291,8 @@
       "added_at": "2026-02-15T03:49:58.903Z",
       "added_by": "seed",
       "id": 193,
-      "identifier": "fc6013c8"
+      "identifier": "fc6013c8",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-f0143da2": {
       "brand": "Cougar",
@@ -2112,7 +2303,8 @@
       "added_at": "2026-02-15T03:49:58.919Z",
       "added_by": "seed",
       "id": 194,
-      "identifier": "f0143da2"
+      "identifier": "f0143da2",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-ef76bd53": {
       "brand": "Cougar",
@@ -2123,7 +2315,8 @@
       "added_at": "2026-02-15T03:49:58.939Z",
       "added_by": "seed",
       "id": 195,
-      "identifier": "ef76bd53"
+      "identifier": "ef76bd53",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-2594a5a3": {
       "brand": "Cougar",
@@ -2134,7 +2327,8 @@
       "added_at": "2026-02-15T03:49:58.955Z",
       "added_by": "seed",
       "id": 196,
-      "identifier": "2594a5a3"
+      "identifier": "2594a5a3",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-6845ddb6": {
       "brand": "Cougar",
@@ -2145,7 +2339,8 @@
       "added_at": "2026-02-15T03:49:58.972Z",
       "added_by": "seed",
       "id": 197,
-      "identifier": "6845ddb6"
+      "identifier": "6845ddb6",
+      "brand_identifier": "d5e3438d"
     },
     "mouse-accabfdf": {
       "brand": "Endgame Gear",
@@ -2156,7 +2351,8 @@
       "added_at": "2026-02-15T03:49:58.991Z",
       "added_by": "seed",
       "id": 198,
-      "identifier": "accabfdf"
+      "identifier": "accabfdf",
+      "brand_identifier": "a8158910"
     },
     "mouse-f86e946a": {
       "brand": "Endgame Gear",
@@ -2167,7 +2363,8 @@
       "added_at": "2026-02-15T03:49:59.024Z",
       "added_by": "seed",
       "id": 199,
-      "identifier": "f86e946a"
+      "identifier": "f86e946a",
+      "brand_identifier": "a8158910"
     },
     "mouse-f1156ded": {
       "brand": "Endgame Gear",
@@ -2178,7 +2375,8 @@
       "added_at": "2026-02-15T03:49:59.038Z",
       "added_by": "seed",
       "id": 200,
-      "identifier": "f1156ded"
+      "identifier": "f1156ded",
+      "brand_identifier": "a8158910"
     },
     "mouse-6655dc93": {
       "brand": "Endgame Gear",
@@ -2189,7 +2387,8 @@
       "added_at": "2026-02-15T03:49:59.054Z",
       "added_by": "seed",
       "id": 201,
-      "identifier": "6655dc93"
+      "identifier": "6655dc93",
+      "brand_identifier": "a8158910"
     },
     "mouse-4e77b421": {
       "brand": "Endgame Gear",
@@ -2200,7 +2399,8 @@
       "added_at": "2026-02-15T03:49:59.071Z",
       "added_by": "seed",
       "id": 202,
-      "identifier": "4e77b421"
+      "identifier": "4e77b421",
+      "brand_identifier": "a8158910"
     },
     "mouse-2eccfb0a": {
       "brand": "Endgame Gear",
@@ -2211,7 +2411,8 @@
       "added_at": "2026-02-15T03:49:59.089Z",
       "added_by": "seed",
       "id": 203,
-      "identifier": "2eccfb0a"
+      "identifier": "2eccfb0a",
+      "brand_identifier": "a8158910"
     },
     "mouse-e95bfe6f": {
       "brand": "Endgame Gear",
@@ -2222,7 +2423,8 @@
       "added_at": "2026-02-15T03:49:59.107Z",
       "added_by": "seed",
       "id": 204,
-      "identifier": "e95bfe6f"
+      "identifier": "e95bfe6f",
+      "brand_identifier": "a8158910"
     },
     "mouse-0cb71efb": {
       "brand": "Endgame Gear",
@@ -2233,7 +2435,8 @@
       "added_at": "2026-02-15T03:49:59.139Z",
       "added_by": "seed",
       "id": 205,
-      "identifier": "0cb71efb"
+      "identifier": "0cb71efb",
+      "brand_identifier": "a8158910"
     },
     "mouse-c8bc0510": {
       "brand": "Endgame Gear",
@@ -2244,7 +2447,8 @@
       "added_at": "2026-02-15T03:49:59.164Z",
       "added_by": "seed",
       "id": 206,
-      "identifier": "c8bc0510"
+      "identifier": "c8bc0510",
+      "brand_identifier": "a8158910"
     },
     "mouse-f74080c4": {
       "brand": "Endgame Gear",
@@ -2255,7 +2459,8 @@
       "added_at": "2026-02-15T03:49:59.177Z",
       "added_by": "seed",
       "id": 207,
-      "identifier": "f74080c4"
+      "identifier": "f74080c4",
+      "brand_identifier": "a8158910"
     },
     "mouse-c640d0bd": {
       "brand": "EVGA",
@@ -2266,7 +2471,8 @@
       "added_at": "2026-02-15T03:49:59.200Z",
       "added_by": "seed",
       "id": 208,
-      "identifier": "c640d0bd"
+      "identifier": "c640d0bd",
+      "brand_identifier": "e32b9c0e"
     },
     "mouse-c5513b8d": {
       "brand": "EVGA",
@@ -2277,7 +2483,8 @@
       "added_at": "2026-02-15T03:49:59.219Z",
       "added_by": "seed",
       "id": 209,
-      "identifier": "c5513b8d"
+      "identifier": "c5513b8d",
+      "brand_identifier": "e32b9c0e"
     },
     "mouse-99e662a8": {
       "brand": "EVGA",
@@ -2288,7 +2495,8 @@
       "added_at": "2026-02-15T03:49:59.248Z",
       "added_by": "seed",
       "id": 210,
-      "identifier": "99e662a8"
+      "identifier": "99e662a8",
+      "brand_identifier": "e32b9c0e"
     },
     "mouse-2422839d": {
       "brand": "EVGA",
@@ -2299,7 +2507,8 @@
       "added_at": "2026-02-15T03:49:59.273Z",
       "added_by": "seed",
       "id": 211,
-      "identifier": "2422839d"
+      "identifier": "2422839d",
+      "brand_identifier": "e32b9c0e"
     },
     "mouse-399a46bc": {
       "brand": "Finalmouse",
@@ -2310,7 +2519,8 @@
       "added_at": "2026-02-15T03:49:59.293Z",
       "added_by": "seed",
       "id": 212,
-      "identifier": "399a46bc"
+      "identifier": "399a46bc",
+      "brand_identifier": "84711e4e"
     },
     "mouse-029f6c14": {
       "brand": "Finalmouse",
@@ -2321,7 +2531,8 @@
       "added_at": "2026-02-15T03:49:59.310Z",
       "added_by": "seed",
       "id": 213,
-      "identifier": "029f6c14"
+      "identifier": "029f6c14",
+      "brand_identifier": "84711e4e"
     },
     "mouse-d7369a1a": {
       "brand": "Finalmouse",
@@ -2332,7 +2543,8 @@
       "added_at": "2026-02-15T03:49:59.327Z",
       "added_by": "seed",
       "id": 214,
-      "identifier": "d7369a1a"
+      "identifier": "d7369a1a",
+      "brand_identifier": "84711e4e"
     },
     "mouse-780c8397": {
       "brand": "Finalmouse",
@@ -2343,7 +2555,8 @@
       "added_at": "2026-02-15T03:49:59.343Z",
       "added_by": "seed",
       "id": 215,
-      "identifier": "780c8397"
+      "identifier": "780c8397",
+      "brand_identifier": "84711e4e"
     },
     "mouse-4e7df0d7": {
       "brand": "Fnatic",
@@ -2354,7 +2567,8 @@
       "added_at": "2026-02-15T03:49:59.359Z",
       "added_by": "seed",
       "id": 216,
-      "identifier": "4e7df0d7"
+      "identifier": "4e7df0d7",
+      "brand_identifier": "c1eaf3bc"
     },
     "mouse-6e0bd352": {
       "brand": "Fnatic",
@@ -2365,7 +2579,8 @@
       "added_at": "2026-02-15T03:49:59.374Z",
       "added_by": "seed",
       "id": 217,
-      "identifier": "6e0bd352"
+      "identifier": "6e0bd352",
+      "brand_identifier": "c1eaf3bc"
     },
     "mouse-a164bdca": {
       "brand": "Fnatic",
@@ -2376,7 +2591,8 @@
       "added_at": "2026-02-15T03:49:59.389Z",
       "added_by": "seed",
       "id": 218,
-      "identifier": "a164bdca"
+      "identifier": "a164bdca",
+      "brand_identifier": "c1eaf3bc"
     },
     "mouse-062b81e9": {
       "brand": "Fnatic",
@@ -2387,7 +2603,8 @@
       "added_at": "2026-02-15T03:49:59.405Z",
       "added_by": "seed",
       "id": 219,
-      "identifier": "062b81e9"
+      "identifier": "062b81e9",
+      "brand_identifier": "c1eaf3bc"
     },
     "mouse-0258a321": {
       "brand": "G-Wolves",
@@ -2398,7 +2615,8 @@
       "added_at": "2026-02-15T03:49:59.423Z",
       "added_by": "seed",
       "id": 220,
-      "identifier": "0258a321"
+      "identifier": "0258a321",
+      "brand_identifier": "8315b94d"
     },
     "mouse-a520c5af": {
       "brand": "G-Wolves",
@@ -2409,7 +2627,8 @@
       "added_at": "2026-02-15T03:49:59.454Z",
       "added_by": "seed",
       "id": 221,
-      "identifier": "a520c5af"
+      "identifier": "a520c5af",
+      "brand_identifier": "8315b94d"
     },
     "mouse-a7efbfe1": {
       "brand": "G-Wolves",
@@ -2420,7 +2639,8 @@
       "added_at": "2026-02-15T03:49:59.471Z",
       "added_by": "seed",
       "id": 222,
-      "identifier": "a7efbfe1"
+      "identifier": "a7efbfe1",
+      "brand_identifier": "8315b94d"
     },
     "mouse-472b0564": {
       "brand": "G-Wolves",
@@ -2431,7 +2651,8 @@
       "added_at": "2026-02-15T03:49:59.484Z",
       "added_by": "seed",
       "id": 223,
-      "identifier": "472b0564"
+      "identifier": "472b0564",
+      "brand_identifier": "8315b94d"
     },
     "mouse-58394e24": {
       "brand": "G-Wolves",
@@ -2442,7 +2663,8 @@
       "added_at": "2026-02-15T03:49:59.500Z",
       "added_by": "seed",
       "id": 224,
-      "identifier": "58394e24"
+      "identifier": "58394e24",
+      "brand_identifier": "8315b94d"
     },
     "mouse-af971c4c": {
       "brand": "G-Wolves",
@@ -2453,7 +2675,8 @@
       "added_at": "2026-02-15T03:49:59.521Z",
       "added_by": "seed",
       "id": 225,
-      "identifier": "af971c4c"
+      "identifier": "af971c4c",
+      "brand_identifier": "8315b94d"
     },
     "mouse-8c7fcee6": {
       "brand": "G-Wolves",
@@ -2464,7 +2687,8 @@
       "added_at": "2026-02-15T03:49:59.537Z",
       "added_by": "seed",
       "id": 226,
-      "identifier": "8c7fcee6"
+      "identifier": "8c7fcee6",
+      "brand_identifier": "8315b94d"
     },
     "mouse-6f1799a2": {
       "brand": "G-Wolves",
@@ -2475,7 +2699,8 @@
       "added_at": "2026-02-15T03:49:59.552Z",
       "added_by": "seed",
       "id": 227,
-      "identifier": "6f1799a2"
+      "identifier": "6f1799a2",
+      "brand_identifier": "8315b94d"
     },
     "mouse-3fce1580": {
       "brand": "G-Wolves",
@@ -2486,7 +2711,8 @@
       "added_at": "2026-02-15T03:49:59.568Z",
       "added_by": "seed",
       "id": 228,
-      "identifier": "3fce1580"
+      "identifier": "3fce1580",
+      "brand_identifier": "8315b94d"
     },
     "mouse-e262efd5": {
       "brand": "G-Wolves",
@@ -2497,7 +2723,8 @@
       "added_at": "2026-02-15T03:49:59.583Z",
       "added_by": "seed",
       "id": 229,
-      "identifier": "e262efd5"
+      "identifier": "e262efd5",
+      "brand_identifier": "8315b94d"
     },
     "mouse-ce22f43d": {
       "brand": "G-Wolves",
@@ -2508,7 +2735,8 @@
       "added_at": "2026-02-15T03:49:59.599Z",
       "added_by": "seed",
       "id": 230,
-      "identifier": "ce22f43d"
+      "identifier": "ce22f43d",
+      "brand_identifier": "8315b94d"
     },
     "mouse-cf7164ed": {
       "brand": "G-Wolves",
@@ -2519,7 +2747,8 @@
       "added_at": "2026-02-15T03:49:59.617Z",
       "added_by": "seed",
       "id": 231,
-      "identifier": "cf7164ed"
+      "identifier": "cf7164ed",
+      "brand_identifier": "8315b94d"
     },
     "mouse-a5c42140": {
       "brand": "G-Wolves",
@@ -2530,7 +2759,8 @@
       "added_at": "2026-02-15T03:49:59.648Z",
       "added_by": "seed",
       "id": 232,
-      "identifier": "a5c42140"
+      "identifier": "a5c42140",
+      "brand_identifier": "8315b94d"
     },
     "mouse-bce4060c": {
       "brand": "G-Wolves",
@@ -2541,7 +2771,8 @@
       "added_at": "2026-02-15T03:49:59.675Z",
       "added_by": "seed",
       "id": 233,
-      "identifier": "bce4060c"
+      "identifier": "bce4060c",
+      "brand_identifier": "8315b94d"
     },
     "mouse-86673285": {
       "brand": "G-Wolves",
@@ -2552,7 +2783,8 @@
       "added_at": "2026-02-15T03:49:59.719Z",
       "added_by": "seed",
       "id": 234,
-      "identifier": "86673285"
+      "identifier": "86673285",
+      "brand_identifier": "8315b94d"
     },
     "mouse-f959894f": {
       "brand": "G-Wolves",
@@ -2563,7 +2795,8 @@
       "added_at": "2026-02-15T03:49:59.740Z",
       "added_by": "seed",
       "id": 235,
-      "identifier": "f959894f"
+      "identifier": "f959894f",
+      "brand_identifier": "8315b94d"
     },
     "mouse-f09ff7b3": {
       "brand": "G-Wolves",
@@ -2574,7 +2807,8 @@
       "added_at": "2026-02-15T03:49:59.756Z",
       "added_by": "seed",
       "id": 236,
-      "identifier": "f09ff7b3"
+      "identifier": "f09ff7b3",
+      "brand_identifier": "8315b94d"
     },
     "mouse-074d5e38": {
       "brand": "G-Wolves",
@@ -2585,7 +2819,8 @@
       "added_at": "2026-02-15T03:49:59.772Z",
       "added_by": "seed",
       "id": 237,
-      "identifier": "074d5e38"
+      "identifier": "074d5e38",
+      "brand_identifier": "8315b94d"
     },
     "mouse-de5ffd7a": {
       "brand": "G-Wolves",
@@ -2596,7 +2831,8 @@
       "added_at": "2026-02-15T03:49:59.787Z",
       "added_by": "seed",
       "id": 238,
-      "identifier": "de5ffd7a"
+      "identifier": "de5ffd7a",
+      "brand_identifier": "8315b94d"
     },
     "mouse-5633b101": {
       "brand": "G-Wolves",
@@ -2607,7 +2843,8 @@
       "added_at": "2026-02-15T03:49:59.804Z",
       "added_by": "seed",
       "id": 239,
-      "identifier": "5633b101"
+      "identifier": "5633b101",
+      "brand_identifier": "8315b94d"
     },
     "mouse-7e26cc5e": {
       "brand": "G-Wolves",
@@ -2618,7 +2855,8 @@
       "added_at": "2026-02-15T03:49:59.818Z",
       "added_by": "seed",
       "id": 240,
-      "identifier": "7e26cc5e"
+      "identifier": "7e26cc5e",
+      "brand_identifier": "8315b94d"
     },
     "mouse-e7d826ac": {
       "brand": "G-Wolves",
@@ -2629,7 +2867,8 @@
       "added_at": "2026-02-15T03:49:59.835Z",
       "added_by": "seed",
       "id": 241,
-      "identifier": "e7d826ac"
+      "identifier": "e7d826ac",
+      "brand_identifier": "8315b94d"
     },
     "mouse-6195b80f": {
       "brand": "G-Wolves",
@@ -2640,7 +2879,8 @@
       "added_at": "2026-02-15T03:49:59.858Z",
       "added_by": "seed",
       "id": 242,
-      "identifier": "6195b80f"
+      "identifier": "6195b80f",
+      "brand_identifier": "8315b94d"
     },
     "mouse-7c7efd31": {
       "brand": "G-Wolves",
@@ -2651,7 +2891,8 @@
       "added_at": "2026-02-15T03:49:59.890Z",
       "added_by": "seed",
       "id": 243,
-      "identifier": "7c7efd31"
+      "identifier": "7c7efd31",
+      "brand_identifier": "8315b94d"
     },
     "mouse-d0035553": {
       "brand": "Lamzu",
@@ -2662,7 +2903,8 @@
       "added_at": "2026-02-15T03:49:59.910Z",
       "added_by": "seed",
       "id": 244,
-      "identifier": "d0035553"
+      "identifier": "d0035553",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-5f87e147": {
       "brand": "Lamzu",
@@ -2673,7 +2915,8 @@
       "added_at": "2026-02-15T03:49:59.932Z",
       "added_by": "seed",
       "id": 245,
-      "identifier": "5f87e147"
+      "identifier": "5f87e147",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-30465f5c": {
       "brand": "Lamzu",
@@ -2684,7 +2927,8 @@
       "added_at": "2026-02-15T03:49:59.949Z",
       "added_by": "seed",
       "id": 246,
-      "identifier": "30465f5c"
+      "identifier": "30465f5c",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-ec1dd907": {
       "brand": "Lamzu",
@@ -2695,7 +2939,8 @@
       "added_at": "2026-02-15T03:49:59.965Z",
       "added_by": "seed",
       "id": 247,
-      "identifier": "ec1dd907"
+      "identifier": "ec1dd907",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-b9baec2d": {
       "brand": "Lamzu",
@@ -2706,7 +2951,8 @@
       "added_at": "2026-02-15T03:49:59.982Z",
       "added_by": "seed",
       "id": 248,
-      "identifier": "b9baec2d"
+      "identifier": "b9baec2d",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-f1bd6f3a": {
       "brand": "Lamzu",
@@ -2717,7 +2963,8 @@
       "added_at": "2026-02-15T03:49:59.999Z",
       "added_by": "seed",
       "id": 249,
-      "identifier": "f1bd6f3a"
+      "identifier": "f1bd6f3a",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-8bb1c93f": {
       "brand": "Lamzu",
@@ -2728,7 +2975,8 @@
       "added_at": "2026-02-15T03:50:00.023Z",
       "added_by": "seed",
       "id": 250,
-      "identifier": "8bb1c93f"
+      "identifier": "8bb1c93f",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-8e24cd3e": {
       "brand": "Lamzu",
@@ -2739,7 +2987,8 @@
       "added_at": "2026-02-15T03:50:00.043Z",
       "added_by": "seed",
       "id": 251,
-      "identifier": "8e24cd3e"
+      "identifier": "8e24cd3e",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-21aca032": {
       "brand": "Lamzu",
@@ -2750,7 +2999,8 @@
       "added_at": "2026-02-15T03:50:00.058Z",
       "added_by": "seed",
       "id": 252,
-      "identifier": "21aca032"
+      "identifier": "21aca032",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-6e24b6b0": {
       "brand": "Lamzu",
@@ -2761,7 +3011,8 @@
       "added_at": "2026-02-15T03:50:00.077Z",
       "added_by": "seed",
       "id": 253,
-      "identifier": "6e24b6b0"
+      "identifier": "6e24b6b0",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-323211ab": {
       "brand": "Lamzu",
@@ -2772,7 +3023,8 @@
       "added_at": "2026-02-15T03:50:00.104Z",
       "added_by": "seed",
       "id": 254,
-      "identifier": "323211ab"
+      "identifier": "323211ab",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-e716588d": {
       "brand": "Lamzu",
@@ -2783,7 +3035,8 @@
       "added_at": "2026-02-15T03:50:00.120Z",
       "added_by": "seed",
       "id": 255,
-      "identifier": "e716588d"
+      "identifier": "e716588d",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-4189c1f1": {
       "brand": "Lamzu",
@@ -2794,7 +3047,8 @@
       "added_at": "2026-02-15T03:50:00.136Z",
       "added_by": "seed",
       "id": 256,
-      "identifier": "4189c1f1"
+      "identifier": "4189c1f1",
+      "brand_identifier": "3e1b76af"
     },
     "mouse-802ca291": {
       "brand": "Lenovo Legion",
@@ -2805,7 +3059,8 @@
       "added_at": "2026-02-15T03:50:00.154Z",
       "added_by": "seed",
       "id": 257,
-      "identifier": "802ca291"
+      "identifier": "802ca291",
+      "brand_identifier": "449660b9"
     },
     "mouse-15167d3f": {
       "brand": "Lenovo Legion",
@@ -2816,7 +3071,8 @@
       "added_at": "2026-02-15T03:50:00.172Z",
       "added_by": "seed",
       "id": 258,
-      "identifier": "15167d3f"
+      "identifier": "15167d3f",
+      "brand_identifier": "449660b9"
     },
     "mouse-f6727c7b": {
       "brand": "Lenovo Legion",
@@ -2827,7 +3083,8 @@
       "added_at": "2026-02-15T03:50:00.189Z",
       "added_by": "seed",
       "id": 259,
-      "identifier": "f6727c7b"
+      "identifier": "f6727c7b",
+      "brand_identifier": "449660b9"
     },
     "mouse-6b48c3f7": {
       "brand": "Lenovo Legion",
@@ -2838,7 +3095,8 @@
       "added_at": "2026-02-15T03:50:00.216Z",
       "added_by": "seed",
       "id": 260,
-      "identifier": "6b48c3f7"
+      "identifier": "6b48c3f7",
+      "brand_identifier": "449660b9"
     },
     "mouse-f7dc9399": {
       "brand": "Lenovo Legion",
@@ -2849,7 +3107,8 @@
       "added_at": "2026-02-15T03:50:00.248Z",
       "added_by": "seed",
       "id": 261,
-      "identifier": "f7dc9399"
+      "identifier": "f7dc9399",
+      "brand_identifier": "449660b9"
     },
     "mouse-d271c914": {
       "brand": "Mad Catz",
@@ -2860,7 +3119,8 @@
       "added_at": "2026-02-15T03:50:00.288Z",
       "added_by": "seed",
       "id": 262,
-      "identifier": "d271c914"
+      "identifier": "d271c914",
+      "brand_identifier": "281c6b22"
     },
     "mouse-2d538583": {
       "brand": "Mad Catz",
@@ -2871,7 +3131,8 @@
       "added_at": "2026-02-15T03:50:00.309Z",
       "added_by": "seed",
       "id": 263,
-      "identifier": "2d538583"
+      "identifier": "2d538583",
+      "brand_identifier": "281c6b22"
     },
     "mouse-91a405e1": {
       "brand": "Mad Catz",
@@ -2882,7 +3143,8 @@
       "added_at": "2026-02-15T03:50:00.332Z",
       "added_by": "seed",
       "id": 264,
-      "identifier": "91a405e1"
+      "identifier": "91a405e1",
+      "brand_identifier": "281c6b22"
     },
     "mouse-7454a2ea": {
       "brand": "Mad Catz",
@@ -2893,7 +3155,8 @@
       "added_at": "2026-02-15T03:50:00.360Z",
       "added_by": "seed",
       "id": 265,
-      "identifier": "7454a2ea"
+      "identifier": "7454a2ea",
+      "brand_identifier": "281c6b22"
     },
     "mouse-de25c40d": {
       "brand": "Mad Catz",
@@ -2904,7 +3167,8 @@
       "added_at": "2026-02-15T03:50:00.376Z",
       "added_by": "seed",
       "id": 266,
-      "identifier": "de25c40d"
+      "identifier": "de25c40d",
+      "brand_identifier": "281c6b22"
     },
     "mouse-89e9d8ec": {
       "brand": "Mad Catz",
@@ -2915,7 +3179,8 @@
       "added_at": "2026-02-15T03:50:00.393Z",
       "added_by": "seed",
       "id": 267,
-      "identifier": "89e9d8ec"
+      "identifier": "89e9d8ec",
+      "brand_identifier": "281c6b22"
     },
     "mouse-9b985e9a": {
       "brand": "Mad Catz",
@@ -2926,7 +3191,8 @@
       "added_at": "2026-02-15T03:50:00.409Z",
       "added_by": "seed",
       "id": 268,
-      "identifier": "9b985e9a"
+      "identifier": "9b985e9a",
+      "brand_identifier": "281c6b22"
     },
     "mouse-d4a15dde": {
       "brand": "Mad Catz",
@@ -2937,7 +3203,8 @@
       "added_at": "2026-02-15T03:50:00.427Z",
       "added_by": "seed",
       "id": 269,
-      "identifier": "d4a15dde"
+      "identifier": "d4a15dde",
+      "brand_identifier": "281c6b22"
     },
     "mouse-e0ee8894": {
       "brand": "Mad Catz",
@@ -2948,7 +3215,8 @@
       "added_at": "2026-02-15T03:50:00.455Z",
       "added_by": "seed",
       "id": 270,
-      "identifier": "e0ee8894"
+      "identifier": "e0ee8894",
+      "brand_identifier": "281c6b22"
     },
     "mouse-9a32f359": {
       "brand": "Mad Catz",
@@ -2959,7 +3227,8 @@
       "added_at": "2026-02-15T03:50:00.475Z",
       "added_by": "seed",
       "id": 271,
-      "identifier": "9a32f359"
+      "identifier": "9a32f359",
+      "brand_identifier": "281c6b22"
     },
     "mouse-f0ba4861": {
       "brand": "Mad Catz",
@@ -2970,7 +3239,8 @@
       "added_at": "2026-02-15T03:50:00.501Z",
       "added_by": "seed",
       "id": 272,
-      "identifier": "f0ba4861"
+      "identifier": "f0ba4861",
+      "brand_identifier": "281c6b22"
     },
     "mouse-1b2066ca": {
       "brand": "Mad Catz",
@@ -2981,7 +3251,8 @@
       "added_at": "2026-02-15T03:50:00.526Z",
       "added_by": "seed",
       "id": 273,
-      "identifier": "1b2066ca"
+      "identifier": "1b2066ca",
+      "brand_identifier": "281c6b22"
     },
     "mouse-02cd263f": {
       "brand": "Mad Catz",
@@ -2992,7 +3263,8 @@
       "added_at": "2026-02-15T03:50:00.551Z",
       "added_by": "seed",
       "id": 274,
-      "identifier": "02cd263f"
+      "identifier": "02cd263f",
+      "brand_identifier": "281c6b22"
     },
     "mouse-401fda81": {
       "brand": "Mad Catz",
@@ -3003,7 +3275,8 @@
       "added_at": "2026-02-15T03:50:00.567Z",
       "added_by": "seed",
       "id": 275,
-      "identifier": "401fda81"
+      "identifier": "401fda81",
+      "brand_identifier": "281c6b22"
     },
     "mouse-d952a904": {
       "brand": "NZXT",
@@ -3014,7 +3287,8 @@
       "added_at": "2026-02-15T03:50:00.594Z",
       "added_by": "seed",
       "id": 276,
-      "identifier": "d952a904"
+      "identifier": "d952a904",
+      "brand_identifier": "8c765c04"
     },
     "mouse-f635660a": {
       "brand": "NZXT",
@@ -3025,7 +3299,8 @@
       "added_at": "2026-02-15T03:50:00.609Z",
       "added_by": "seed",
       "id": 277,
-      "identifier": "f635660a"
+      "identifier": "f635660a",
+      "brand_identifier": "8c765c04"
     },
     "mouse-d6d8a4da": {
       "brand": "NZXT",
@@ -3036,7 +3311,8 @@
       "added_at": "2026-02-15T03:50:00.623Z",
       "added_by": "seed",
       "id": 278,
-      "identifier": "d6d8a4da"
+      "identifier": "d6d8a4da",
+      "brand_identifier": "8c765c04"
     },
     "mouse-6bf3d159": {
       "brand": "Turtle Beach",
@@ -3047,7 +3323,8 @@
       "added_at": "2026-02-15T03:50:00.639Z",
       "added_by": "seed",
       "id": 279,
-      "identifier": "6bf3d159"
+      "identifier": "6bf3d159",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-7000e6fc": {
       "brand": "Turtle Beach",
@@ -3058,7 +3335,8 @@
       "added_at": "2026-02-15T03:50:00.659Z",
       "added_by": "seed",
       "id": 280,
-      "identifier": "7000e6fc"
+      "identifier": "7000e6fc",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-bfcd2d6d": {
       "brand": "Turtle Beach",
@@ -3069,7 +3347,8 @@
       "added_at": "2026-02-15T03:50:00.676Z",
       "added_by": "seed",
       "id": 281,
-      "identifier": "bfcd2d6d"
+      "identifier": "bfcd2d6d",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-305f2278": {
       "brand": "Turtle Beach",
@@ -3080,7 +3359,8 @@
       "added_at": "2026-02-15T03:50:00.692Z",
       "added_by": "seed",
       "id": 282,
-      "identifier": "305f2278"
+      "identifier": "305f2278",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-e2fc401f": {
       "brand": "Turtle Beach",
@@ -3091,7 +3371,8 @@
       "added_at": "2026-02-15T03:50:00.709Z",
       "added_by": "seed",
       "id": 283,
-      "identifier": "e2fc401f"
+      "identifier": "e2fc401f",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-47c86be0": {
       "brand": "Turtle Beach",
@@ -3102,7 +3383,8 @@
       "added_at": "2026-02-15T03:50:00.735Z",
       "added_by": "seed",
       "id": 284,
-      "identifier": "47c86be0"
+      "identifier": "47c86be0",
+      "brand_identifier": "8dd5b4bf"
     },
     "mouse-77865bf6": {
       "brand": "Pulsar",
@@ -3113,7 +3395,8 @@
       "added_at": "2026-02-15T03:50:00.759Z",
       "added_by": "seed",
       "id": 285,
-      "identifier": "77865bf6"
+      "identifier": "77865bf6",
+      "brand_identifier": "1c27799b"
     },
     "mouse-7d047f46": {
       "brand": "Pulsar",
@@ -3124,7 +3407,8 @@
       "added_at": "2026-02-15T03:50:00.786Z",
       "added_by": "seed",
       "id": 286,
-      "identifier": "7d047f46"
+      "identifier": "7d047f46",
+      "brand_identifier": "1c27799b"
     },
     "mouse-913fc6af": {
       "brand": "Pulsar",
@@ -3135,7 +3419,8 @@
       "added_at": "2026-02-15T03:50:00.820Z",
       "added_by": "seed",
       "id": 287,
-      "identifier": "913fc6af"
+      "identifier": "913fc6af",
+      "brand_identifier": "1c27799b"
     },
     "mouse-e552cc6e": {
       "brand": "Pulsar",
@@ -3146,7 +3431,8 @@
       "added_at": "2026-02-15T03:50:00.837Z",
       "added_by": "seed",
       "id": 288,
-      "identifier": "e552cc6e"
+      "identifier": "e552cc6e",
+      "brand_identifier": "1c27799b"
     },
     "mouse-a58940cf": {
       "brand": "Pulsar",
@@ -3157,7 +3443,8 @@
       "added_at": "2026-02-15T03:50:00.860Z",
       "added_by": "seed",
       "id": 289,
-      "identifier": "a58940cf"
+      "identifier": "a58940cf",
+      "brand_identifier": "1c27799b"
     },
     "mouse-6bb997f4": {
       "brand": "Pulsar",
@@ -3168,7 +3455,8 @@
       "added_at": "2026-02-15T03:50:00.883Z",
       "added_by": "seed",
       "id": 290,
-      "identifier": "6bb997f4"
+      "identifier": "6bb997f4",
+      "brand_identifier": "1c27799b"
     },
     "mouse-0e7a2d62": {
       "brand": "Pulsar",
@@ -3179,7 +3467,8 @@
       "added_at": "2026-02-15T03:50:00.905Z",
       "added_by": "seed",
       "id": 291,
-      "identifier": "0e7a2d62"
+      "identifier": "0e7a2d62",
+      "brand_identifier": "1c27799b"
     },
     "mouse-c922210b": {
       "brand": "Pulsar",
@@ -3190,7 +3479,8 @@
       "added_at": "2026-02-15T03:50:00.924Z",
       "added_by": "seed",
       "id": 292,
-      "identifier": "c922210b"
+      "identifier": "c922210b",
+      "brand_identifier": "1c27799b"
     },
     "mouse-348fa48a": {
       "brand": "Pulsar",
@@ -3201,7 +3491,8 @@
       "added_at": "2026-02-15T03:50:00.942Z",
       "added_by": "seed",
       "id": 293,
-      "identifier": "348fa48a"
+      "identifier": "348fa48a",
+      "brand_identifier": "1c27799b"
     },
     "mouse-e1d50742": {
       "brand": "Pulsar",
@@ -3212,7 +3503,8 @@
       "added_at": "2026-02-15T03:50:00.966Z",
       "added_by": "seed",
       "id": 294,
-      "identifier": "e1d50742"
+      "identifier": "e1d50742",
+      "brand_identifier": "1c27799b"
     },
     "mouse-aa242665": {
       "brand": "Pulsar",
@@ -3223,7 +3515,8 @@
       "added_at": "2026-02-15T03:50:00.983Z",
       "added_by": "seed",
       "id": 295,
-      "identifier": "aa242665"
+      "identifier": "aa242665",
+      "brand_identifier": "1c27799b"
     },
     "mouse-05aa322f": {
       "brand": "Pulsar",
@@ -3234,7 +3527,8 @@
       "added_at": "2026-02-15T03:50:01.000Z",
       "added_by": "seed",
       "id": 296,
-      "identifier": "05aa322f"
+      "identifier": "05aa322f",
+      "brand_identifier": "1c27799b"
     },
     "mouse-b43fcb57": {
       "brand": "Pulsar",
@@ -3245,7 +3539,8 @@
       "added_at": "2026-02-15T03:50:01.016Z",
       "added_by": "seed",
       "id": 297,
-      "identifier": "b43fcb57"
+      "identifier": "b43fcb57",
+      "brand_identifier": "1c27799b"
     },
     "mouse-dfc6c326": {
       "brand": "Pulsar",
@@ -3256,7 +3551,8 @@
       "added_at": "2026-02-15T03:50:01.050Z",
       "added_by": "seed",
       "id": 298,
-      "identifier": "dfc6c326"
+      "identifier": "dfc6c326",
+      "brand_identifier": "1c27799b"
     },
     "mouse-4d67f537": {
       "brand": "Pulsar",
@@ -3267,7 +3563,8 @@
       "added_at": "2026-02-15T03:50:01.077Z",
       "added_by": "seed",
       "id": 299,
-      "identifier": "4d67f537"
+      "identifier": "4d67f537",
+      "brand_identifier": "1c27799b"
     },
     "mouse-02428298": {
       "brand": "Pulsar",
@@ -3278,7 +3575,8 @@
       "added_at": "2026-02-15T03:50:01.104Z",
       "added_by": "seed",
       "id": 300,
-      "identifier": "02428298"
+      "identifier": "02428298",
+      "brand_identifier": "1c27799b"
     },
     "mouse-8b8e1987": {
       "brand": "Pulsar",
@@ -3289,7 +3587,8 @@
       "added_at": "2026-02-15T03:50:01.124Z",
       "added_by": "seed",
       "id": 301,
-      "identifier": "8b8e1987"
+      "identifier": "8b8e1987",
+      "brand_identifier": "1c27799b"
     },
     "mouse-e3aa14d4": {
       "brand": "Pulsar",
@@ -3300,7 +3599,8 @@
       "added_at": "2026-02-15T03:50:01.152Z",
       "added_by": "seed",
       "id": 302,
-      "identifier": "e3aa14d4"
+      "identifier": "e3aa14d4",
+      "brand_identifier": "1c27799b"
     },
     "mouse-eb51d393": {
       "brand": "Pulsar",
@@ -3311,7 +3611,8 @@
       "added_at": "2026-02-15T03:50:01.174Z",
       "added_by": "seed",
       "id": 303,
-      "identifier": "eb51d393"
+      "identifier": "eb51d393",
+      "brand_identifier": "1c27799b"
     },
     "mouse-e4d8d7b3": {
       "brand": "Pulsar",
@@ -3322,7 +3623,8 @@
       "added_at": "2026-02-15T03:50:01.203Z",
       "added_by": "seed",
       "id": 304,
-      "identifier": "e4d8d7b3"
+      "identifier": "e4d8d7b3",
+      "brand_identifier": "1c27799b"
     },
     "mouse-48a74f60": {
       "brand": "Pulsar",
@@ -3333,7 +3635,8 @@
       "added_at": "2026-02-15T03:50:01.224Z",
       "added_by": "seed",
       "id": 305,
-      "identifier": "48a74f60"
+      "identifier": "48a74f60",
+      "brand_identifier": "1c27799b"
     },
     "mouse-d5a99d9e": {
       "brand": "Pulsar",
@@ -3344,7 +3647,8 @@
       "added_at": "2026-02-15T03:50:01.300Z",
       "added_by": "seed",
       "id": 306,
-      "identifier": "d5a99d9e"
+      "identifier": "d5a99d9e",
+      "brand_identifier": "1c27799b"
     },
     "mouse-142b19ff": {
       "brand": "Pulsar",
@@ -3355,7 +3659,8 @@
       "added_at": "2026-02-15T03:50:01.375Z",
       "added_by": "seed",
       "id": 307,
-      "identifier": "142b19ff"
+      "identifier": "142b19ff",
+      "brand_identifier": "1c27799b"
     },
     "mouse-b57f27c4": {
       "brand": "Pulsar",
@@ -3366,7 +3671,8 @@
       "added_at": "2026-02-15T03:50:01.471Z",
       "added_by": "seed",
       "id": 308,
-      "identifier": "b57f27c4"
+      "identifier": "b57f27c4",
+      "brand_identifier": "1c27799b"
     },
     "mouse-ed950e65": {
       "brand": "Pulsar",
@@ -3377,7 +3683,8 @@
       "added_at": "2026-02-15T03:50:01.511Z",
       "added_by": "seed",
       "id": 309,
-      "identifier": "ed950e65"
+      "identifier": "ed950e65",
+      "brand_identifier": "1c27799b"
     },
     "mouse-c0623650": {
       "brand": "Pulsar",
@@ -3388,7 +3695,8 @@
       "added_at": "2026-02-15T03:50:01.542Z",
       "added_by": "seed",
       "id": 310,
-      "identifier": "c0623650"
+      "identifier": "c0623650",
+      "brand_identifier": "1c27799b"
     },
     "mouse-93b4d312": {
       "brand": "Pulsar",
@@ -3399,7 +3707,8 @@
       "added_at": "2026-02-15T03:50:01.558Z",
       "added_by": "seed",
       "id": 311,
-      "identifier": "93b4d312"
+      "identifier": "93b4d312",
+      "brand_identifier": "1c27799b"
     },
     "mouse-14751a57": {
       "brand": "Pulsar",
@@ -3410,7 +3719,8 @@
       "added_at": "2026-02-15T03:50:01.576Z",
       "added_by": "seed",
       "id": 312,
-      "identifier": "14751a57"
+      "identifier": "14751a57",
+      "brand_identifier": "1c27799b"
     },
     "mouse-f0a37ee8": {
       "brand": "Pulsar",
@@ -3421,7 +3731,8 @@
       "added_at": "2026-02-15T03:50:01.602Z",
       "added_by": "seed",
       "id": 313,
-      "identifier": "f0a37ee8"
+      "identifier": "f0a37ee8",
+      "brand_identifier": "1c27799b"
     },
     "mouse-a7ca85e8": {
       "brand": "Pulsar",
@@ -3432,7 +3743,8 @@
       "added_at": "2026-02-15T03:50:01.618Z",
       "added_by": "seed",
       "id": 314,
-      "identifier": "a7ca85e8"
+      "identifier": "a7ca85e8",
+      "brand_identifier": "1c27799b"
     },
     "mouse-03db7b1e": {
       "brand": "Pulsar",
@@ -3443,7 +3755,8 @@
       "added_at": "2026-02-15T03:50:01.636Z",
       "added_by": "seed",
       "id": 315,
-      "identifier": "03db7b1e"
+      "identifier": "03db7b1e",
+      "brand_identifier": "1c27799b"
     },
     "mouse-7d593cd9": {
       "brand": "Pulsar",
@@ -3454,7 +3767,8 @@
       "added_at": "2026-02-15T03:50:01.651Z",
       "added_by": "seed",
       "id": 316,
-      "identifier": "7d593cd9"
+      "identifier": "7d593cd9",
+      "brand_identifier": "1c27799b"
     },
     "mouse-c2c1f00b": {
       "brand": "Pulsar",
@@ -3465,7 +3779,8 @@
       "added_at": "2026-02-15T03:50:01.668Z",
       "added_by": "seed",
       "id": 317,
-      "identifier": "c2c1f00b"
+      "identifier": "c2c1f00b",
+      "brand_identifier": "1c27799b"
     },
     "mouse-ec9669d4": {
       "brand": "Pulsar",
@@ -3476,7 +3791,8 @@
       "added_at": "2026-02-15T03:50:01.684Z",
       "added_by": "seed",
       "id": 318,
-      "identifier": "ec9669d4"
+      "identifier": "ec9669d4",
+      "brand_identifier": "1c27799b"
     },
     "mouse-ca28de65": {
       "brand": "Pulsar",
@@ -3487,7 +3803,8 @@
       "added_at": "2026-02-15T03:50:01.783Z",
       "added_by": "seed",
       "id": 319,
-      "identifier": "ca28de65"
+      "identifier": "ca28de65",
+      "brand_identifier": "1c27799b"
     },
     "mouse-79710aca": {
       "brand": "Pulsar",
@@ -3498,7 +3815,8 @@
       "added_at": "2026-02-15T03:50:01.883Z",
       "added_by": "seed",
       "id": 320,
-      "identifier": "79710aca"
+      "identifier": "79710aca",
+      "brand_identifier": "1c27799b"
     },
     "mouse-4f6ef937": {
       "brand": "Pulsar",
@@ -3509,7 +3827,8 @@
       "added_at": "2026-02-15T03:50:01.941Z",
       "added_by": "seed",
       "id": 321,
-      "identifier": "4f6ef937"
+      "identifier": "4f6ef937",
+      "brand_identifier": "1c27799b"
     },
     "mouse-af049bc3": {
       "brand": "Pulsar",
@@ -3520,7 +3839,8 @@
       "added_at": "2026-02-15T03:50:01.964Z",
       "added_by": "seed",
       "id": 322,
-      "identifier": "af049bc3"
+      "identifier": "af049bc3",
+      "brand_identifier": "1c27799b"
     },
     "mouse-a539b9da": {
       "brand": "Pulsar",
@@ -3531,7 +3851,8 @@
       "added_at": "2026-02-15T03:50:01.981Z",
       "added_by": "seed",
       "id": 323,
-      "identifier": "a539b9da"
+      "identifier": "a539b9da",
+      "brand_identifier": "1c27799b"
     },
     "mouse-81c621ba": {
       "brand": "Pulsar",
@@ -3542,7 +3863,8 @@
       "added_at": "2026-02-15T03:50:01.997Z",
       "added_by": "seed",
       "id": 324,
-      "identifier": "81c621ba"
+      "identifier": "81c621ba",
+      "brand_identifier": "1c27799b"
     },
     "mouse-65b04193": {
       "brand": "Pulsar",
@@ -3553,7 +3875,8 @@
       "added_at": "2026-02-15T03:50:02.013Z",
       "added_by": "seed",
       "id": 325,
-      "identifier": "65b04193"
+      "identifier": "65b04193",
+      "brand_identifier": "1c27799b"
     },
     "mouse-69afb17a": {
       "brand": "Pulsar",
@@ -3564,7 +3887,8 @@
       "added_at": "2026-02-15T03:50:02.032Z",
       "added_by": "seed",
       "id": 326,
-      "identifier": "69afb17a"
+      "identifier": "69afb17a",
+      "brand_identifier": "1c27799b"
     },
     "mouse-e01b1b6d": {
       "brand": "Pulsar",
@@ -3575,7 +3899,8 @@
       "added_at": "2026-02-15T03:50:02.050Z",
       "added_by": "seed",
       "id": 327,
-      "identifier": "e01b1b6d"
+      "identifier": "e01b1b6d",
+      "brand_identifier": "1c27799b"
     },
     "mouse-532bf4ac": {
       "brand": "Pwnage",
@@ -3586,7 +3911,8 @@
       "added_at": "2026-02-15T03:50:02.065Z",
       "added_by": "seed",
       "id": 328,
-      "identifier": "532bf4ac"
+      "identifier": "532bf4ac",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-b7396841": {
       "brand": "Pwnage",
@@ -3597,7 +3923,8 @@
       "added_at": "2026-02-15T03:50:02.082Z",
       "added_by": "seed",
       "id": 329,
-      "identifier": "b7396841"
+      "identifier": "b7396841",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-878cdf4a": {
       "brand": "Pwnage",
@@ -3608,7 +3935,8 @@
       "added_at": "2026-02-15T03:50:02.098Z",
       "added_by": "seed",
       "id": 330,
-      "identifier": "878cdf4a"
+      "identifier": "878cdf4a",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-546fcf6f": {
       "brand": "Pwnage",
@@ -3619,7 +3947,8 @@
       "added_at": "2026-02-15T03:50:02.126Z",
       "added_by": "seed",
       "id": 331,
-      "identifier": "546fcf6f"
+      "identifier": "546fcf6f",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-fbdc9a44": {
       "brand": "Pwnage",
@@ -3630,7 +3959,8 @@
       "added_at": "2026-02-15T03:50:02.141Z",
       "added_by": "seed",
       "id": 332,
-      "identifier": "fbdc9a44"
+      "identifier": "fbdc9a44",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-81767df7": {
       "brand": "Pwnage",
@@ -3641,7 +3971,8 @@
       "added_at": "2026-02-15T03:50:02.157Z",
       "added_by": "seed",
       "id": 333,
-      "identifier": "81767df7"
+      "identifier": "81767df7",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-43b6613f": {
       "brand": "Pwnage",
@@ -3652,7 +3983,8 @@
       "added_at": "2026-02-15T03:50:02.175Z",
       "added_by": "seed",
       "id": 334,
-      "identifier": "43b6613f"
+      "identifier": "43b6613f",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-50e49039": {
       "brand": "Pwnage",
@@ -3663,7 +3995,8 @@
       "added_at": "2026-02-15T03:50:02.191Z",
       "added_by": "seed",
       "id": 335,
-      "identifier": "50e49039"
+      "identifier": "50e49039",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-847ccad2": {
       "brand": "Pwnage",
@@ -3674,7 +4007,8 @@
       "added_at": "2026-02-15T03:50:02.204Z",
       "added_by": "seed",
       "id": 336,
-      "identifier": "847ccad2"
+      "identifier": "847ccad2",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-5e1092cf": {
       "brand": "Pwnage",
@@ -3685,7 +4019,8 @@
       "added_at": "2026-02-15T03:50:02.220Z",
       "added_by": "seed",
       "id": 337,
-      "identifier": "5e1092cf"
+      "identifier": "5e1092cf",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-ee655502": {
       "brand": "Pwnage",
@@ -3696,7 +4031,8 @@
       "added_at": "2026-02-15T03:50:02.236Z",
       "added_by": "seed",
       "id": 338,
-      "identifier": "ee655502"
+      "identifier": "ee655502",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-83cc269f": {
       "brand": "Pwnage",
@@ -3707,7 +4043,8 @@
       "added_at": "2026-02-15T03:50:02.254Z",
       "added_by": "seed",
       "id": 339,
-      "identifier": "83cc269f"
+      "identifier": "83cc269f",
+      "brand_identifier": "6e8dfe82"
     },
     "mouse-4a756528": {
       "brand": "Cooler Master",
@@ -3718,7 +4055,8 @@
       "added_at": "2026-02-15T03:50:02.272Z",
       "added_by": "seed",
       "id": 340,
-      "identifier": "4a756528"
+      "identifier": "4a756528",
+      "brand_identifier": "cba919ca"
     },
     "mouse-8048f950": {
       "brand": "Cooler Master",
@@ -3729,7 +4067,8 @@
       "added_at": "2026-02-15T03:50:02.288Z",
       "added_by": "seed",
       "id": 341,
-      "identifier": "8048f950"
+      "identifier": "8048f950",
+      "brand_identifier": "cba919ca"
     },
     "mouse-343eb2f8": {
       "brand": "Razer",
@@ -3740,7 +4079,8 @@
       "added_at": "2026-02-15T03:50:02.318Z",
       "added_by": "seed",
       "id": 342,
-      "identifier": "343eb2f8"
+      "identifier": "343eb2f8",
+      "brand_identifier": "b5a50d8f"
     },
     "mouse-5b2844dc": {
       "brand": "Acer",
@@ -3752,7 +4092,8 @@
       "added_by": "seed",
       "id": 8,
       "identifier": "5b2844dc",
-      "updated_at": "2026-02-15T22:13:32.008Z"
+      "updated_at": "2026-02-15T22:13:32.008Z",
+      "brand_identifier": "6f1f6e73"
     },
     "mouse-3186be5c": {
       "brand": "Acer",
@@ -3764,7 +4105,8 @@
       "added_by": "seed",
       "id": 9,
       "identifier": "3186be5c",
-      "updated_at": "2026-02-15T22:28:52.248Z"
+      "updated_at": "2026-02-15T22:28:52.248Z",
+      "brand_identifier": "6f1f6e73"
     },
     "mouse-4bff34cf": {
       "brand": "SteelSeries",

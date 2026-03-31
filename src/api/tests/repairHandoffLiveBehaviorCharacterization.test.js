@@ -109,7 +109,6 @@ test('characterization: live-style 404 and blocked failures surface as domain_ba
   const server = await startInProcessGuiServer(t, {
     env: {
       LOCAL_MODE: 'true',
-      HELPER_FILES_ROOT: helperRoot,
       CATEGORY_AUTHORITY_ROOT: helperRoot,
     },
     argv: ['--local', '--indexlab-root', indexlabRoot],

@@ -144,7 +144,7 @@ export function createDataUtilityCommands({
     const appDb = new AppDb({ dbPath: appDbPath });
 
     try {
-      const result = await backfillBrandIdentifier({ category, appDb, specDb, dryRun });
+      const result = await backfillBrandIdentifier({ config, category, appDb, specDb, dryRun });
       return { command: 'backfill-brand-identifiers', spec_db_path: specDbPath, ...result };
     } finally {
       specDb.close();

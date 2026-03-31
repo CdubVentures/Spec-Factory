@@ -63,7 +63,7 @@ export function buildProcessStartLaunchPlan(options = {}) {
 
   const effectiveHelperRoot = categoryAuthorityRoot
     ? pathApi.resolve(categoryAuthorityRoot)
-    : pathApi.resolve(String(env.CATEGORY_AUTHORITY_ROOT || env.HELPER_FILES_ROOT || helperRoot || 'category_authority'));
+    : pathApi.resolve(String(env.CATEGORY_AUTHORITY_ROOT || helperRoot || 'category_authority'));
   const generatedRulesCandidates = [
     pathApi.join(effectiveHelperRoot, cat, '_generated', 'field_rules.json'),
   ];
@@ -119,7 +119,6 @@ export function buildProcessStartLaunchPlan(options = {}) {
   const specDbDirNormalized = String(effectiveSpecDbDir || '').trim();
   if (specDbDirNormalized) envOverrides.SPEC_DB_DIR = specDbDirNormalized;
   if (categoryAuthorityRoot) {
-    envOverrides.HELPER_FILES_ROOT = categoryAuthorityRoot;
     envOverrides.CATEGORY_AUTHORITY_ROOT = categoryAuthorityRoot;
   }
   const localOutputNormalized = String(effectiveLocalOutputRoot || '').trim();

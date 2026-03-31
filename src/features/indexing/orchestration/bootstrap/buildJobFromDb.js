@@ -42,6 +42,7 @@ export function buildJobFromDb({ productId, category, specDb }) {
       brand,
       model,
       variant,
+      brand_identifier: String(row.brand_identifier || ''),
       sku: '',
       title: '',
     },

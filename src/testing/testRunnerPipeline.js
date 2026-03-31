@@ -1383,6 +1383,10 @@ function buildFieldUncertainty(fields, provenance, contradictions, criticalField
   return map;
 }
 
+// WHY: constraint graph uses ONLY contract-driven cross-validation failures
+// from the field rules engine. Hardcoded mouse-specific rules (wireless/battery,
+// bluetooth, dimensions, polling_rate, sensor_brand) were removed — those
+// constraints belong in the category's cross_validation_rules.json, not in code.
 function evaluateConstraintGraph({
   fields = {},
   provenance = {},
@@ -1390,11 +1394,6 @@ function evaluateConstraintGraph({
   crossValidationFailures = [],
 }) {
   const contradictions = [];
-  ruleWirelessNeedsBattery(fields, contradictions);
-  ruleBluetoothNeedsWireless(fields, contradictions);
-  ruleDimensionSanity(fields, contradictions);
-  rulePerformanceSanity(fields, contradictions);
-  ruleDependencyPairs(fields, contradictions);
   for (const failure of crossValidationFailures) {
     if (failure.reason_code === 'compound_range_conflict') {
       addContradiction(contradictions, {

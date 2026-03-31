@@ -150,6 +150,7 @@ export async function loadCatalogProducts({ category, config = {} }) {
       brand: row.brand,
       model: row.model,
       variant: row.variant,
+      brand_identifier: row.brand_identifier || '',
     }));
   } catch {
     return [];
@@ -176,6 +177,7 @@ export async function loadCatalogProductsWithFields({ category, config = {} }) {
       brand: row.brand,
       model: row.model,
       variant: row.variant,
+      brand_identifier: row.brand_identifier || '',
       canonical_fields: canonicalByProduct[row.productId] || {},
     }));
   } catch {
