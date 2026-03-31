@@ -60,6 +60,7 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     id: 10,
     identifier: 'abc123',
     brand: 'Acme',
+    brand_identifier: '',
     model: 'Orbit X1',
     base_model: '',
     variant: '',

@@ -36,6 +36,7 @@ export function backfillProductJsons({ specDb, category, productRoot }) {
         brand: row.brand || '',
         model,
         variant,
+        brand_identifier: row.brand_identifier || '',
       },
       seedUrls: Array.isArray(seedUrls) ? seedUrls : [],
       identifier: row.identifier || '',

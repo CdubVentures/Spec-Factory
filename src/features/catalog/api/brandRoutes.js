@@ -1,5 +1,5 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { upsertCatalogProductRow } from '../products/upsertCatalogProductRow.js';
+
 
 export function registerBrandRoutes(ctx) {
   const {
@@ -30,21 +30,10 @@ export function registerBrandRoutes(ctx) {
     return getSpecDb(cat);
   }
 
-  // WHY: After brand rename, upsert updated product rows in specDb (productId is immutable)
-  async function syncRenameCascadeProducts(cascadeResults = []) {
-    const rows = Array.isArray(cascadeResults) ? cascadeResults : [];
-    for (const row of rows) {
-      if (!row?.ok) continue;
-      const category = String(row?.category || '').trim().toLowerCase();
-      const pid = String(row?.productId || '').trim();
-      if (!category || !pid) continue;
-      const specDb = resolveSpecDb(category);
-      if (!specDb) continue;
-      // WHY: SQL is the source of truth — read product directly from specDb.
-      const product = specDb.getProduct(pid) || null;
-      upsertCatalogProductRow(specDb, category, pid, product);
-    }
-  }
+  // WHY: Phase F — renameBrand now applies the SQL UPDATE directly via brand_identifier.
+  // The old per-product cascade is gone, so this sync is no longer needed.
+  // Kept as a no-op for API compatibility (callers still pass cascade_results).
+  async function syncRenameCascadeProducts() {}
 
   return async function handleBrandRoutes(parts, params, method, req, res) {
     // GET /api/v1/brands?category=mouse  (optional filter)

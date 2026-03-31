@@ -47,6 +47,7 @@ export function buildProductCheckpoint({ identity, category, productId, runId, s
       brand: String(id.brand || ''),
       model: String(id.model || ''),
       variant: String(id.variant || ''),
+      brand_identifier: String(id.brand_identifier || ''),
       sku: String(id.sku || ''),
       title: String(id.title || ''),
       seed_urls: Array.isArray(id.seed_urls) ? id.seed_urls : [],

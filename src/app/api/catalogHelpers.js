@@ -121,6 +121,7 @@ export function createCatalogBuilder({
         id: entry.id || 0,
         identifier: entry.identifier || '',
         brand,
+        brand_identifier: String(entry.brand_identifier || '').trim(),
         model,
         base_model: String(entry.base_model || '').trim(),
         variant,

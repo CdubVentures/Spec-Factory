@@ -67,6 +67,7 @@ function normalizeCatalogProducts(catalogDoc = {}) {
       brand,
       model,
       variant,
+      brand_identifier: String(row.brand_identifier || '').trim(),
     });
   }
 

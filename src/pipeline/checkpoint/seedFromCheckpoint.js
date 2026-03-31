@@ -131,6 +131,7 @@ function seedProductCheckpoint(specDb, cp) {
     status: identity.status || 'active',
     seed_urls: Array.isArray(identity.seed_urls) ? JSON.stringify(identity.seed_urls) : (identity.seed_urls || null),
     identifier: identity.identifier || null,
+    brand_identifier: identity.brand_identifier || '',
   });
 
   specDb.upsertQueueProduct({
