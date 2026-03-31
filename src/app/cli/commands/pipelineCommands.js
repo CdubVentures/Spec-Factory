@@ -10,6 +10,8 @@ import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProduc
 import { buildJobFromDb } from '../../../features/indexing/orchestration/bootstrap/buildJobFromDb.js';
 import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js';
+import { setPhaseCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
+import { writeRunMeta } from '../../../indexlab/runtimeBridgeArtifacts.js';
 
 export function createPipelineCommands({
   asBool,
@@ -98,6 +100,7 @@ export function createPipelineCommands({
           brand,
           model,
           variant,
+          brand_identifier: '',
           sku,
           title
         },
@@ -143,6 +146,7 @@ export function createPipelineCommands({
           brand: cliBrand,
           model: cliModel,
           variant: String(args.variant || '').trim(),
+          brand_identifier: '',
           sku: String(args.sku || '').trim(),
           title: String(args.title || '').trim(),
         },
@@ -232,11 +236,18 @@ export function createPipelineCommands({
         runIdOverride: requestedRunId || undefined,
       });
 
+      // WHY: Advance stepper to "Finalize" so the GUI shows post-crawl progress
+      // instead of appearing stuck on the last crawl phase.
+      setPhaseCursor(bridge, 'phase_10_finalize');
+      await writeRunMeta(bridge);
+
       // WHY: Write run.json + product.json BEFORE finalize. If finalize or the
       // process exit crashes, both JSONs are already on disk. serializeRunSummary
       // reads bridge state which is still populated (finalize clears it after).
+      // Serialize ONCE — pass the payload to finalize() to avoid redundant SQL read.
+      let runSummary = null;
       try {
-        const runSummary = await serializeRunSummary(bridge).catch(() => null);
+        runSummary = await serializeRunSummary(bridge).catch(() => null);
         // WHY: run.json v3 — embed pre-built panel data so old runs can be
         // replayed without re-querying bridge_events SQL. The builders are
         // called once here against the serialized events; the GUI serves
@@ -270,21 +281,20 @@ export function createPipelineCommands({
           identityLock: result.job?.identityLock || null,
           runtimeOpsPanels,
         });
-        writeCrawlCheckpoint({
-          checkpoint,
-          outRoot,
-          runId: result.runId,
-          upsertRunArtifact: specDb ? (row) => specDb.upsertRunArtifact(row) : undefined,
-          category,
-        });
-        // WHY: Product.json accumulates sources across runs. Content-addressed
-        // dedup means same page content → update last_seen, not duplicate.
+        // WHY: Checkpoint writes are independent — run in parallel.
         const productCp = buildProductCheckpoint({
           identity: result.job?.identityLock || {},
           category,
           productId: result.productId,
           runId: result.runId,
           sources: checkpoint.sources,
+        });
+        writeCrawlCheckpoint({
+          checkpoint,
+          outRoot,
+          runId: result.runId,
+          upsertRunArtifact: specDb ? (row) => specDb.upsertRunArtifact(row) : undefined,
+          category,
         });
         writeProductCheckpoint({ productCheckpoint: productCp, outRoot, runId: result.runId });
       } catch { /* best-effort: pipeline continues without checkpoints */ }
@@ -294,11 +304,15 @@ export function createPipelineCommands({
         productId: result.productId,
         s3Key
       });
+      // WHY: Pass pre-built runSummary to finalize to avoid redundant SQL read.
+      // Previously serializeRunSummary was called twice — once here and once inside
+      // finalize — each doing specDb.getBridgeEventsByRunId(runId, 6000).
       await bridge.finalize({
         status: 'completed',
         run_id: result.runId,
         run_base: result.exportInfo?.runBase || '',
-        latest_base: result.exportInfo?.latestBase || ''
+        latest_base: result.exportInfo?.latestBase || '',
+        runSummaryPayload: runSummary,
       });
 
       return {

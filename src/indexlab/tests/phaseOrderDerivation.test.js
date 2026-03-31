@@ -18,10 +18,11 @@ const EXPECTED_ORDER = [
   'phase_07_serp_selector', 'phase_07_prime_sources',
   'phase_08_domain_classifier',
   'phase_09_crawl',
+  'phase_10_finalize',
 ];
 
 describe('PHASE_ORDER derivation from pipeline registry', () => {
-  it('derived order matches the canonical 15-entry sequence', () => {
+  it('derived order matches the canonical 16-entry sequence', () => {
     assert.deepEqual(PHASE_ORDER, EXPECTED_ORDER);
   });
 

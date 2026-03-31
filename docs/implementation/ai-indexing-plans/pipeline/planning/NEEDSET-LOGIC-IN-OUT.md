@@ -75,10 +75,8 @@ NeedSet packages data for three downstream query tiers:
 ### Tier 1 — Broad Seeds
 - `{brand} {model} {variant} specifications`
 - `{brand} {model} {variant} {source}`
-- Complete when: query searched + enough URLs scraped + at least 1 new field closed
-- Cooldown: `seedCooldownMs` after successful completion
-- NeedSet emits: `seed_status` with per-seed `last_status`, `cooldown_until_ms`,
-  `new_fields_closed_last_run`
+- Cooldown: `queryCooldownDays` (default 30 days) — uses `cooldown_until` from DB, same pattern as group cooldown
+- NeedSet emits: `seed_status` with per-seed `is_needed`, `cooldown_until_ms`, `attempt_count`
 
 ### Tier 2 — Group Searches
 - `{brand} {model} {variant} {group} {description}`

@@ -93,6 +93,8 @@ export function useStudioPageDocsController({
       fieldRulesActions.clearRenames();
       fieldRulesActions.clearEdited();
       invalidateFieldRulesQueries(queryClient, category);
+      // WHY: refetch compileStale after save — map_hash changed in SQL
+      queryClient.invalidateQueries({ queryKey: ['studio', category] });
     },
   });
   const previousCategoryRef = useRef(category);

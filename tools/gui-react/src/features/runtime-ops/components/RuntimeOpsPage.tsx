@@ -9,7 +9,7 @@ import { useIndexLabStore } from '../../indexing/state/indexlabStore.ts';
 import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery.ts';
 import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types.ts';
 import { resolveRunActiveScope } from '../selectors/runActivityScopeHelpers.js';
-import { StageStepperBar } from './StageStepperBar.tsx';
+import { PipelineStepperBar } from './PipelineStepperBar.tsx';
 import { MetricsRail } from '../panels/overview/MetricsRail.tsx';
 import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
 import { WorkersTab } from '../panels/workers/WorkersTab.tsx';
@@ -257,7 +257,7 @@ export function RuntimeOpsPage() {
       const next = [...prev, point];
       return next.length > 60 ? next.slice(-60) : next;
     });
-  }, [summary?.docs_per_min, summary?.fields_per_min]);
+  }, [summary]);
 
   const { data: workersResp } = useQuery({
     queryKey: ['runtime-ops', effectiveRunId, 'workers'],
@@ -301,10 +301,11 @@ export function RuntimeOpsPage() {
     <div className="flex flex-col h-full -ml-4">
       <div className="flex items-center gap-2 border-b sf-border-default sf-surface-shell px-4 h-[40px]">
         {effectiveRunId && (
-          <StageStepperBar
+          <PipelineStepperBar
             phaseCursor={summary?.phase_cursor ?? ''}
             isRunning={isSelectedRunActive}
-            isCompleted={selectedRun?.status === 'completed'}
+            runStatus={selectedRun?.status ?? ''}
+            bootProgress={summary?.boot_progress}
           />
         )}
         <label className="shrink-0 sf-text-caption sf-text-muted font-medium">Run:</label>
@@ -354,6 +355,7 @@ export function RuntimeOpsPage() {
               {activeTab === 'overview' && (
                 <OverviewTab
                   summary={summary}
+                  metrics={metricsResp}
                   throughputHistory={throughputHistory}
                   runId={effectiveRunId}
                   isRunning={isSelectedRunActive}

@@ -3,7 +3,7 @@ import { computeQueryIndexSummary, computeUrlIndexSummary } from '../pipeline/sh
 import { computePromptIndexSummary } from '../pipeline/shared/createPromptIndex.js';
 import { computeKnobSnapshots } from '../telemetry/knobTelemetryCapture.js';
 import { computeProductHistoryMetrics } from '../domain/computeProductHistoryMetrics.js';
-import { extractRunFunnelSummary, extractDomainBreakdown } from '../domain/extractRunFunnelSummary.js';
+import { extractRunFunnelSummary, extractDomainBreakdown, extractFetchErrors, extractExtractionSummary } from '../domain/extractRunFunnelSummary.js';
 
 export function registerIndexlabRoutes(ctx) {
   const {
@@ -390,11 +390,13 @@ export function registerIndexlabRoutes(ctx) {
         let events = [];
         try {
           const summary = specDb.getRunArtifact(rm.run_id, 'run_summary');
-          events = summary?.telemetry?.events || [];
+          events = summary?.payload?.telemetry?.events || [];
         } catch { /* no artifact — funnel will use counters only */ }
 
         const funnel = extractRunFunnelSummary(events, rm.counters || {});
         const domains = extractDomainBreakdown(events, crawlSourcesByRun.get(rm.run_id) || []);
+        const errors = extractFetchErrors(events);
+        const extraction = extractExtractionSummary(events);
 
         return {
           run_id: rm.run_id,
@@ -404,6 +406,8 @@ export function registerIndexlabRoutes(ctx) {
           ended_at: rm.ended_at || '',
           funnel,
           domains,
+          errors,
+          extraction,
         };
       });
 

@@ -100,16 +100,16 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
   assert.deepEqual(payload.manual_enum_values, {
     modern_key: ['Legacy'],
   });
-  assert.deepEqual(payload.enum_lists, [
-    {
-      field: 'modern_key',
-      values: ['Legacy'],
-    },
-  ]);
   assert.deepEqual(payload.data_lists, [
     {
       field: 'modern_key',
       normalize: 'csv',
+    },
+  ]);
+  assert.deepEqual(payload.enum_lists, [
+    {
+      field: 'modern_key',
+      values: ['Legacy'],
     },
   ]);
   assert.deepEqual(payload.component_sources, [
@@ -224,4 +224,40 @@ test('studio page persistence keeps autosave attempt gating stable for force and
     }),
     true,
   );
+});
+
+test('studio page persistence preserves data_lists and manual_enum_values through the base map', async () => {
+  const { buildStudioPersistMap } = await loadStudioPagePersistence();
+
+  const payload = buildStudioPersistMap({
+    baseMap: {
+      version: 2,
+      selected_keys: ['field_a'],
+      field_overrides: {},
+      data_lists: [
+        { field: 'field_a', normalize: 'csv' },
+      ],
+      manual_enum_values: {
+        field_a: ['ValueA'],
+      },
+      enum_lists: [
+        { field: 'field_a', values: ['ValueA'] },
+      ],
+    },
+    snapshot: {
+      fieldOrder: ['field_a'],
+      rules: {
+        field_a: { required_level: 'required' },
+      },
+      renames: {},
+    },
+  });
+
+  // WHY: buildStudioPersistMap saves selected_keys + field_overrides on
+  // top of the full base map. data_lists and manual_enum_values are live
+  // data — only assembleMap (MappingStudioTab) migrates them to enum_lists.
+  assert.ok(Array.isArray(payload.data_lists), 'data_lists must be preserved');
+  assert.deepEqual(payload.data_lists, [{ field: 'field_a', normalize: 'csv' }]);
+  assert.deepEqual(payload.manual_enum_values, { field_a: ['ValueA'] });
+  assert.ok(Array.isArray(payload.enum_lists), 'enum_lists must be preserved');
 });

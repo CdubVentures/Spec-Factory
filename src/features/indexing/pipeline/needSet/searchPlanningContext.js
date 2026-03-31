@@ -236,20 +236,26 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, c
   function seedStatusFor(matchFn) {
     const matches = queries.filter(matchFn);
     if (matches.length === 0) {
-      return { is_needed: true, last_status: 'never_run', last_completed_at_ms: null, cooldown_until_ms: null, new_fields_closed_last_run: 0 };
+      return { is_needed: true, last_completed_at_ms: null, cooldown_until_ms: null, attempt_count: 0 };
     }
     const latest = matches.reduce((a, b) => ((b.completed_at_ms || 0) > (a.completed_at_ms || 0) ? b : a), matches[0]);
-    const isDone = latest.status === 'scrape_complete' || latest.status === 'exhausted';
-    const fieldsOk = (latest.new_fields_closed || 0) >= 1;
-    const completedAt = latest.completed_at_ms || null;
-    const cooldownUntil = (isDone && fieldsOk && completedAt) ? completedAt + cooldownMs : null;
-    const onCooldown = cooldownUntil !== null && now < cooldownUntil;
+    // WHY: Use cooldown_until from DB — same pattern as computeGroupQueryCount().
+    // Previously this checked status === 'scrape_complete' and new_fields_closed >= 1,
+    // but the DB never stored those fields, so seeds never went on cooldown.
+    let onCooldown = false;
+    let cooldownUntilMs = null;
+    if (latest.cooldown_until) {
+      const expiresAt = new Date(latest.cooldown_until).getTime();
+      if (expiresAt > 0 && expiresAt > now) {
+        onCooldown = true;
+        cooldownUntilMs = expiresAt;
+      }
+    }
     return {
-      is_needed: !(isDone && fieldsOk && onCooldown),
-      last_status: latest.status || 'never_run',
-      last_completed_at_ms: completedAt,
-      cooldown_until_ms: cooldownUntil,
-      new_fields_closed_last_run: latest.new_fields_closed || 0,
+      is_needed: !onCooldown,
+      last_completed_at_ms: latest.completed_at_ms || null,
+      cooldown_until_ms: cooldownUntilMs,
+      attempt_count: latest.attempt_count || 1,
     };
   }
 
@@ -281,7 +287,8 @@ export function deriveSeedStatus(queryExecutionHistory, identity, config = {}, c
     sourceSeeds[name] = seedStatusFor((q) => q.tier === 'seed' && q.source_name === name);
   }
 
-  const complete = queries.filter((q) => q.status === 'scrape_complete' || q.status === 'exhausted').length;
+  // WHY: A query is "complete" if it has a cooldown_until value (was executed and recorded).
+  const complete = queries.filter((q) => !!q.cooldown_until).length;
   return {
     specs_seed: specsSeed,
     brand_seed: brandSeed,

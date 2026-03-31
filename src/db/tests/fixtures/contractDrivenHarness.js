@@ -365,8 +365,6 @@ export async function createContractDrivenSeedReviewHarness(t, options = {}) {
       Object.entries(productArtifacts).map(async ([productId, { artifacts }]) => {
         const latestDir = path.join(
           config.localOutputRoot,
-          'specs',
-          'outputs',
           CATEGORY,
           productId,
           'latest',

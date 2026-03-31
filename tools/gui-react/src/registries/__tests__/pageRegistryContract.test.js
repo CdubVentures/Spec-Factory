@@ -44,9 +44,9 @@ describe('PAGE_REGISTRY structural invariants', () => {
     assert.equal(new Set(paths).size, paths.length, `duplicate paths found: ${paths}`);
   });
 
-  it('tabGroup values are only catalog or ops', async () => {
+  it('tabGroup values are only catalog, ops, or settings', async () => {
     const { PAGE_REGISTRY } = await getModule();
-    const allowed = new Set(['catalog', 'ops']);
+    const allowed = new Set(['catalog', 'ops', 'settings']);
     for (const entry of PAGE_REGISTRY) {
       assert.ok(allowed.has(entry.tabGroup), `unexpected tabGroup "${entry.tabGroup}" on ${entry.path}`);
     }

@@ -7,6 +7,7 @@ import {
   makeLlmResponse,
   makeFocusGroup,
   installFetchMock,
+  extractLlmPayload,
 } from './helpers/searchPlanBuilderHarness.js';
 
 describe('buildSearchPlan', () => {
@@ -33,10 +34,7 @@ describe('buildSearchPlan', () => {
       });
 
       assert.ok(fetchMock.calls.length >= 1);
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const userContent = body.messages.find(m => m.role === 'user')?.content;
-      assert.ok(userContent, 'user message present');
-      const payload = JSON.parse(userContent);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.ok(payload.identity, 'identity in payload');
       assert.ok(payload.focus_groups, 'focus_groups in payload');
       assert.ok(payload.limits, 'limits in payload');
@@ -55,9 +53,7 @@ describe('buildSearchPlan', () => {
         config: makeConfig(),
       });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const userContent = body.messages.find(m => m.role === 'user')?.content;
-      const payload = JSON.parse(userContent);
+      const payload = extractLlmPayload(fetchMock.calls);
       const groupKeys = payload.focus_groups.map(g => g.key);
       assert.ok(groupKeys.includes('active'));
       assert.ok(!groupKeys.includes('held'));
@@ -76,9 +72,7 @@ describe('buildSearchPlan', () => {
         config: makeConfig(),
       });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const userContent = body.messages.find(m => m.role === 'user')?.content;
-      const payload = JSON.parse(userContent);
+      const payload = extractLlmPayload(fetchMock.calls);
       const hints = payload.focus_groups[0].domain_hints_union;
       assert.ok(!hints.includes('spam.com'));
       assert.ok(hints.includes('razer.com'));
@@ -98,8 +92,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].preferred_content_types_union, ['spec_sheet', 'review']);
     });
 
@@ -112,8 +105,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].domains_tried_union, ['razer.com', 'rtings.com']);
     });
 
@@ -126,8 +118,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].host_classes_tried_union, ['manufacturer', 'review']);
     });
 
@@ -140,8 +131,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].evidence_classes_tried_union, ['html', 'pdf']);
     });
 
@@ -154,8 +144,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.equal(payload.focus_groups[0].no_value_attempts, 7);
     });
 
@@ -173,8 +162,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.equal(payload.focus_groups[0].source_target, 'spec_sheet');
       assert.equal(payload.focus_groups[0].search_intent, 'exact_match');
       assert.equal(payload.focus_groups[0].host_class, 'lab_review');
@@ -189,8 +177,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.equal(payload.focus_groups[0].urls_examined_count, 15);
       assert.equal(payload.focus_groups[0].query_count, 8);
     });
@@ -204,8 +191,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].aliases_union, ['GPX2', 'G Pro X2']);
     });
   });
@@ -222,8 +208,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.focus_groups[0].weak_field_keys, ['polling_rate']);
       assert.deepStrictEqual(payload.focus_groups[0].conflict_field_keys, ['weight']);
     });
@@ -234,8 +219,7 @@ describe('buildSearchPlan', () => {
       ctx.needset.missing_critical_fields = ['sensor', 'dpi', 'weight'];
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.deepStrictEqual(payload.missing_critical_fields, ['sensor', 'dpi', 'weight']);
     });
 
@@ -248,8 +232,7 @@ describe('buildSearchPlan', () => {
       });
       await buildSearchPlan({ searchPlanningContext: ctx, config: makeConfig() });
 
-      const body = JSON.parse(fetchMock.calls[0].opts.body);
-      const payload = JSON.parse(body.messages.find(m => m.role === 'user')?.content);
+      const payload = extractLlmPayload(fetchMock.calls);
       assert.equal(payload.focus_groups[0].core_unresolved_count, 5);
       assert.equal(payload.focus_groups[0].secondary_unresolved_count, 3);
     });

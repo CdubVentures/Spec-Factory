@@ -266,14 +266,13 @@ test('readIndexLabRunNeedSet: empty runId → null', async () => {
   assert.equal(await readers.readIndexLabRunNeedSet(null), null);
 });
 
-test('readIndexLabRunNeedSet: no run dir → falls back to events (not null)', async () => {
+test('readIndexLabRunNeedSet: no run dir → null (SQL is SSOT, no file fallback)', async () => {
   const readers = makeReaders({ resolveRunDir: async () => '' });
   const result = await readers.readIndexLabRunNeedSet('run-1');
-  assert.ok(result, 'should fall through to events fallback, not return null');
-  assert.equal(result.source, 'empty_fallback');
+  assert.equal(result, null);
 });
 
-test('readIndexLabRunNeedSet: falls back to events when no artifacts', async () => {
+test('readIndexLabRunNeedSet: null when no SQL artifacts (no events fallback)', async () => {
   const readers = makeReaders({
     readEvents: async () => [
       {
@@ -284,11 +283,7 @@ test('readIndexLabRunNeedSet: falls back to events when no artifacts', async () 
     ],
   });
   const result = await readers.readIndexLabRunNeedSet('run-1');
-  assert.ok(result);
-  assert.equal(result.fields.length, 1);
-  assert.equal(result.fields[0].field_key, 'weight');
-  assert.equal(result.total_fields, 30);
-  assert.equal(result.source, 'events_fallback');
+  assert.equal(result, null);
 });
 
 // ---------------------------------------------------------------------------
@@ -306,7 +301,7 @@ test('readIndexLabRunSearchProfile: no run dir + no events → null (events fall
   assert.equal(result, null);
 });
 
-test('readIndexLabRunSearchProfile: no run dir + search events → events fallback', async () => {
+test('readIndexLabRunSearchProfile: no run dir + search events → null (SQL is SSOT)', async () => {
   const readers = makeReaders({
     resolveRunDir: async () => '',
     readEvents: async () => [
@@ -315,11 +310,10 @@ test('readIndexLabRunSearchProfile: no run dir + search events → events fallba
     ],
   });
   const result = await readers.readIndexLabRunSearchProfile('run-1');
-  assert.ok(result, 'should return events fallback');
-  assert.equal(result.source, 'events_fallback');
+  assert.equal(result, null);
 });
 
-test('readIndexLabRunSearchProfile: returns storage artifact when available', async () => {
+test('readIndexLabRunSearchProfile: null when no SQL artifact (no storage fallback)', async () => {
   const storedProfile = { query_count: 5, source: 'stored' };
   const readers = makeReaders({
     getStorage: () => ({
@@ -329,11 +323,10 @@ test('readIndexLabRunSearchProfile: returns storage artifact when available', as
     }),
   });
   const result = await readers.readIndexLabRunSearchProfile('run-1');
-  assert.ok(result);
-  assert.equal(result.source, 'stored');
+  assert.equal(result, null);
 });
 
-test('readIndexLabRunSearchProfile: falls back to events when no artifacts', async () => {
+test('readIndexLabRunSearchProfile: null when no SQL artifacts (no events fallback)', async () => {
   const readers = makeReaders({
     readEvents: async () => [
       { event: 'search_started', payload: { query: 'test query' } },
@@ -341,10 +334,7 @@ test('readIndexLabRunSearchProfile: falls back to events when no artifacts', asy
     ],
   });
   const result = await readers.readIndexLabRunSearchProfile('run-1');
-  assert.ok(result);
-  assert.equal(result.source, 'events_fallback');
-  assert.equal(result.queries.length, 1);
-  assert.equal(result.queries[0].query, 'test query');
+  assert.equal(result, null);
 });
 
 // ---------------------------------------------------------------------------
@@ -420,7 +410,7 @@ test('readIndexLabRunSerpExplorer: empty runId → null', async () => {
   assert.equal(await readers.readIndexLabRunSerpExplorer(''), null);
 });
 
-test('readIndexLabRunSerpExplorer: returns search_profile.serp_explorer when available', async () => {
+test('readIndexLabRunSerpExplorer: null when search_profile returns null (SQL is SSOT)', async () => {
   const serpData = { urls_selected: 5, selected_urls: [] };
   const readers = makeReaders({
     getStorage: () => ({
@@ -435,8 +425,8 @@ test('readIndexLabRunSerpExplorer: returns search_profile.serp_explorer when ava
     }),
   });
   const result = await readers.readIndexLabRunSerpExplorer('run-1');
-  assert.ok(result);
-  assert.equal(result.urls_selected, 5);
+  // serp_explorer depends on readIndexLabRunSearchProfile which is SQL-only now
+  assert.equal(result, null);
 });
 
 test('readIndexLabRunSerpExplorer: builds from run summary fallback', async () => {

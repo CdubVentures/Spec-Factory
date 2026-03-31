@@ -59,13 +59,31 @@ export function createStorageManagerHandler({
     if (parts[1] === 'runs') {
       const runId = parts[2] ? String(parts[2]).trim() : '';
 
-      // GET /storage/runs/:runId — single run detail
+      // GET /storage/runs/:runId — single run detail (includes sources from run.json)
       if (runId && !parts[3] && method === 'GET') {
         const meta = typeof readRunMeta === 'function'
           ? await readRunMeta(runId)
           : null;
         if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
-        return jsonRes(res, 200, { run_id: runId, ...meta });
+        // WHY: Enrich with sources + identity from run.json for URL-level expansion.
+        let sources = [];
+        let identity = {};
+        try {
+          const runDir = typeof resolveIndexLabRunDirectory === 'function'
+            ? resolveIndexLabRunDirectory(runId)
+            : '';
+          if (runDir) {
+            const { default: fsPromises } = await import('node:fs/promises');
+            const { join } = await import('node:path');
+            const raw = await fsPromises.readFile(join(runDir, 'run.json'), 'utf-8').catch(() => '');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              sources = Array.isArray(parsed.sources) ? parsed.sources : [];
+              identity = parsed.identity && typeof parsed.identity === 'object' ? parsed.identity : {};
+            }
+          }
+        } catch { /* best-effort */ }
+        return jsonRes(res, 200, { run_id: runId, ...meta, sources, identity });
       }
 
       // DELETE /storage/runs/:runId — delete single run

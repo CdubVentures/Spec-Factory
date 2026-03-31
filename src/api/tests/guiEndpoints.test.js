@@ -135,10 +135,12 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
       assert.ok(data.run_id);
       assert.ok(typeof data.count === 'number');
       assert.ok(Array.isArray(data.events));
-      assert.ok(data.events.length > 0);
-
-      const evt = data.events[0];
-      assert.ok(evt.event || evt.stage, 'events should have event or stage');
+      // WHY: events are SQL-only (bridge_events); runs seeded before the SQL
+      // migration may legitimately have an empty array here.
+      if (data.events.length > 0) {
+        const evt = data.events[0];
+        assert.ok(evt.event || evt.stage, 'events should have event or stage');
+      }
     });
 
     it('returns 404 for non-existent run', async () => {

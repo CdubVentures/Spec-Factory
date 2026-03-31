@@ -78,7 +78,7 @@ test('monitoring helpers produce trend, source health, and llm metrics', async (
     const recentTs2 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 3600_000).toISOString();
     const recentTs3 = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 7200_000).toISOString();
     await writeText(
-      path.join(tempRoot, 'out', 'specs', 'outputs', 'final', category, productId, 'evidence', 'sources.jsonl'),
+      path.join(tempRoot, 'out', 'final', category, productId, 'evidence', 'sources.jsonl'),
       [
         JSON.stringify({ ts: recentTs, host: 'manufacturer.example', status: 200 }),
         JSON.stringify({ ts: recentTs2, host: 'manufacturer.example', status: 403 }),

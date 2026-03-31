@@ -916,7 +916,9 @@ export interface TimedIndexLabEvent {
 export interface RunFunnelSummary {
   queries_executed: number;
   results_found: number;
-  candidates_triaged: number;
+  candidates_unique: number;
+  llm_kept: number;
+  llm_dropped: number;
   urls_selected: number;
   urls_ok: number;
   urls_blocked: number;
@@ -937,6 +939,33 @@ export interface DomainBreakdownRow {
   avg_size: number;
 }
 
+export interface FetchErrorRow {
+  url: string;
+  host: string;
+  error_type: string;
+  http_status: number;
+  response_ms: number;
+  domain_role: string;
+  domain_safety: string;
+}
+
+export interface ExtractionPluginSummary {
+  urls: number;
+  artifacts: number;
+  total_bytes: number;
+}
+
+export interface ExtractionSummary {
+  plugins: Record<string, ExtractionPluginSummary>;
+  total_artifacts: number;
+  total_bytes: number;
+  urls_parsed: number;
+  total_candidates: number;
+  structured_data_found: number;
+  articles_extracted: number;
+  low_quality_articles: number;
+}
+
 export interface ProductHistoryRunRow {
   run_id: string;
   status: string;
@@ -945,6 +974,8 @@ export interface ProductHistoryRunRow {
   ended_at: string;
   funnel: RunFunnelSummary;
   domains: DomainBreakdownRow[];
+  errors: FetchErrorRow[];
+  extraction: ExtractionSummary;
 }
 
 export interface ProductHistoryQueryRow {

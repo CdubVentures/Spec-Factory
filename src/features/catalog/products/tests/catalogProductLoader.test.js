@@ -122,8 +122,8 @@ test('loadCatalogProducts: reads identities from product catalog', async () => {
       config: { categoryAuthorityRoot: root }
     });
     assert.deepEqual(products, [
-      { productId: 'mouse-logitech-g502', brand: 'Logitech', model: 'G502', variant: '' },
-      { productId: 'mouse-razer-viper-v3-pro', brand: 'Razer', model: 'Viper V3 Pro', variant: '' }
+      { productId: 'mouse-logitech-g502', brand: 'Logitech', model: 'G502', variant: '', brand_identifier: '' },
+      { productId: 'mouse-razer-viper-v3-pro', brand: 'Razer', model: 'Viper V3 Pro', variant: '', brand_identifier: '' }
     ]);
   } finally {
     await cleanup(root);
@@ -194,6 +194,7 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
       brand: 'Logitech',
       model: 'G502',
       variant: '',
+      brand_identifier: '',
       canonical_fields: {
         weight: '89g',
         connection: 'wireless'
@@ -204,6 +205,7 @@ test('loadCatalogProductsWithFields: merges catalog identities with override val
       brand: 'Razer',
       model: 'Viper V3 Pro',
       variant: '',
+      brand_identifier: '',
       canonical_fields: {}
     });
   } finally {

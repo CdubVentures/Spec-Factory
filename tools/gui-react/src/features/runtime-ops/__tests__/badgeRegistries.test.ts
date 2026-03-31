@@ -101,8 +101,8 @@ registerChipFamilyCases('resolveStatusBadge', resolveStatusBadge, [
 
 registerChipFamilyCases('resolveWorkerStateBadge', resolveWorkerStateBadge, [
   ['running', 'info'],
-  ['blocked', 'warning'],
-  ['captcha', 'danger'],
+  ['blocked', 'neutral'],
+  ['captcha', 'neutral'],
   ['queued', 'neutral'],
 ]);
 

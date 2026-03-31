@@ -662,7 +662,13 @@ async function collectPerSourceCandidates(outputRoot, productId, runId) {
 // ── Steps 3-7: Per-product seeding ───────────────────────────────────────────
 
 async function seedProducts(db, config, category, fieldRules, fieldMeta) {
-  const outputRoot = path.join(config.localOutputRoot || 'out', 'specs', 'outputs', category);
+  // WHY: Storage now strips the specs/outputs/ prefix from resolved paths.
+  // Check the new path first, fall back to legacy specs/outputs/ layout.
+  const baseOut = config.localOutputRoot || 'out';
+  const newPath = path.join(baseOut, category);
+  const legacyPath = path.join(baseOut, 'specs', 'outputs', category);
+  let outputRoot = newPath;
+  try { if (!(await fs.stat(newPath)).isDirectory()) outputRoot = legacyPath; } catch { outputRoot = legacyPath; }
   const helperRoot = config.categoryAuthorityRoot || 'category_authority';
   const overridesDir = path.join(helperRoot, category, '_overrides');
 

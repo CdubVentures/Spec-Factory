@@ -195,8 +195,13 @@ export function MappingStudioTab({
       }
     }
     setDataLists(seededLists);
+    // WHY: assembleMap converts data_lists + manual_enum_values into the
+    // derived enum_lists on save. The seeded fingerprint must use the same
+    // shape so the auto-save dedup gate sees a match and doesn't fire a
+    // spurious save after every rehydration.
+    const { data_lists: _omitSeedDl, manual_enum_values: _omitSeedMev, ...cleanSeedBase } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
     const seededPayload: StudioConfig = {
-      ...wbMap,
+      ...cleanSeedBase,
       tooltip_source: {
         path: wbMap.tooltip_source?.path || "",
       },
@@ -218,9 +223,12 @@ export function MappingStudioTab({
   }, [wbMap, mapSeedVersion, seededVersion, rules]);
 
   const assembleMap = useCallback((): StudioConfig => {
-    // WHY: strip data_lists so only enum_lists is persisted — prevents stale
-    // data_lists from shadowing enum_lists edits on reload (seeding prefers data_lists).
-    const { data_lists: _stale, manual_enum_values: _legacy, ...cleanMap } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
+    // WHY: assembleMap converts the UI's dataLists state into the derived
+    // enum_lists array. data_lists (authoring config) and manual_enum_values
+    // (scratch-mode values) are omitted because the enum_lists output below
+    // already carries the merged result. On reload, seeding re-derives them
+    // from whichever source is present.
+    const { data_lists: _omitDl, manual_enum_values: _omitMev, ...cleanMap } = wbMap as StudioConfig & { data_lists?: unknown; manual_enum_values?: unknown };
     return {
       ...cleanMap,
       tooltip_source: {

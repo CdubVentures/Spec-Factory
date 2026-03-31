@@ -218,6 +218,39 @@ describe('sessionCache', () => {
     assert.equal(result.compileStale, false);
   });
 
+  it('compileStale is false when SQL updated_at is bare UTC before compiled ISO string', async () => {
+    // WHY: SQLite datetime('now') returns UTC without Z suffix.
+    // JavaScript new Date() parses bare datetimes as local time, shifting
+    // by the host's UTC offset. On UTC-7 this made 18:22 look like 01:22
+    // next day — always after the compile timestamp.
+    const deps = makeDeps({
+      manifest: { generated_at: '2026-03-31T18:31:23.683Z' },
+      sqlRow: {
+        map_json: JSON.stringify(MAP_DOC),
+        map_hash: 'hash1',
+        updated_at: '2026-03-31 18:22:56',
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+    assert.equal(result.compileStale, false,
+      'bare SQLite datetime must be treated as UTC, not local time');
+  });
+
+  it('compileStale is true when SQL updated_at is bare UTC after compiled ISO string', async () => {
+    const deps = makeDeps({
+      manifest: { generated_at: '2026-03-31T18:00:00.000Z' },
+      sqlRow: {
+        map_json: JSON.stringify(MAP_DOC),
+        map_hash: 'hash1',
+        updated_at: '2026-03-31 18:22:56',
+      },
+    });
+    const cache = await createCache(deps);
+    const result = await cache.getSessionRules('mouse');
+    assert.equal(result.compileStale, true);
+  });
+
   it('compileStale is false when no map docs exist', async () => {
     const deps = makeDeps({
       mapDoc: null,

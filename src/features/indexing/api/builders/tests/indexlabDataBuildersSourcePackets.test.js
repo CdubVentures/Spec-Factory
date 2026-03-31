@@ -73,7 +73,8 @@ test('readIndexLabRunSourceIndexingPackets: local live run reads packet collecti
 
   try {
     const result = await readIndexLabRunSourceIndexingPackets(requestedRunId);
-    assert.deepEqual(result, expectedPacketCollection);
+    // SQL is SSOT — no output-root file fallback
+    assert.equal(result, null);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

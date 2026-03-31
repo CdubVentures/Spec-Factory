@@ -146,6 +146,7 @@ describe('bootstrapPhase.execute return contract', () => {
       brand: 'Razer',
       model: 'Viper V3',
       variant: 'Pro',
+      brand_identifier: '',
       productId: 'test-product',
     });
     assert.deepEqual(result.missingFields, ['weight', 'sensor_model', 'dpi']);

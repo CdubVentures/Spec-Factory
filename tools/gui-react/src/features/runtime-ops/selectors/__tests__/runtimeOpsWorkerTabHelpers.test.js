@@ -27,7 +27,7 @@ test('buildWorkerButtonLabel prefers fetch assignment labels and keeps search sl
   );
 });
 
-test('buildWorkerButtonSubtitle keeps the canonical fetch id visible when an assignment label is shown', () => {
+test('buildWorkerButtonSubtitle shows URL path and proxy label for fetch workers', () => {
   assert.equal(
     buildWorkerButtonSubtitle({
       worker_id: 'fetch-11',
@@ -35,7 +35,7 @@ test('buildWorkerButtonSubtitle keeps the canonical fetch id visible when an ass
       display_label: 'fetch-a1',
       current_url: 'https://www.razer.com/gaming-mice/razer-viper-v3-pro',
     }),
-    'fetch-11 · razer.com',
+    'razer.com/gaming-mice/razer-viper-v3-pro \u00b7 direct',
   );
 });
 

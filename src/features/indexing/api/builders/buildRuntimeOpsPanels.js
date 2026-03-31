@@ -77,7 +77,10 @@ export function buildRuntimeOpsPanels({
   }
   catch { panels.workers = null; }
 
-  try { panels.llm_dashboard = buildLlmCallsDashboard(events); }
+  // WHY: Pass pre-built workers to avoid rebuilding the 484-line worker pool
+  // a second time. buildLlmCallsDashboard previously called buildRuntimeOpsWorkers
+  // internally, adding 4 redundant full passes over all events.
+  try { panels.llm_dashboard = buildLlmCallsDashboard(events, { preBuiltWorkers: panels.workers }); }
   catch { panels.llm_dashboard = null; }
 
   try { panels.fallbacks = buildFallbackEvents(events, { limit: 500 }); }

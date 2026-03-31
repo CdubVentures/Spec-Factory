@@ -830,13 +830,20 @@ export function prepareStatements(db) {
     _getFieldStudioMap: db.prepare(
       'SELECT map_json, map_hash, updated_at FROM field_studio_map WHERE id = 1'
     ),
+    // WHY: only bump updated_at when the hash actually changes — the compile
+    // re-sync (compileProcessCompletion) upserts the normalized map after every
+    // compile, and unconditionally bumping updated_at would always set it AFTER
+    // manifest.generated_at, making the compileStale indicator permanently orange.
     _upsertFieldStudioMap: db.prepare(`
       INSERT INTO field_studio_map (id, map_json, map_hash, updated_at)
       VALUES (1, @map_json, @map_hash, datetime('now'))
       ON CONFLICT(id) DO UPDATE SET
         map_json = excluded.map_json,
         map_hash = excluded.map_hash,
-        updated_at = datetime('now')
+        updated_at = CASE
+          WHEN field_studio_map.map_hash != excluded.map_hash THEN datetime('now')
+          ELSE field_studio_map.updated_at
+        END
     `),
   };
 }

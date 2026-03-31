@@ -95,7 +95,7 @@ describe('prefetchContract', () => {
       strictEqual(keys.length, new Set(keys).size, `duplicate keys in ${name}`);
     });
     it(`${name} entries all have valid coerce types`, () => {
-      const validTypes = new Set(['string', 'int', 'float', 'bool', 'array', 'object_or_null', 'object_or_empty', 'passthrough']);
+      const validTypes = new Set(['string', 'int', 'float', 'bool', 'array', 'array_or_null', 'object_or_null', 'object_or_empty', 'passthrough']);
       for (const { key, coerce } of descriptor) {
         ok(validTypes.has(coerce), `${name}.${key} has invalid coerce type: ${coerce}`);
       }

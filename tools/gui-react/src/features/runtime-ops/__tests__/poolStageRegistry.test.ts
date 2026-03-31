@@ -13,8 +13,8 @@ const REQUIRED_PROPS: (keyof PoolStageVisuals)[] = [
 ];
 
 describe('POOL_STAGE_REGISTRY', () => {
-  it('POOL_STAGE_KEYS contains exactly the 5 canonical pool keys', () => {
-    const expected = ['search', 'fetch', 'parse', 'llm', 'index'];
+  it('POOL_STAGE_KEYS contains exactly the 6 canonical pool keys', () => {
+    const expected = ['search', 'fetch', 'parse', 'llm', 'index', 'extraction'];
     strictEqual(POOL_STAGE_KEYS.length, expected.length);
     for (const key of expected) {
       ok(POOL_STAGE_KEYS.includes(key as never), `missing key: ${key}`);
@@ -27,7 +27,7 @@ describe('POOL_STAGE_REGISTRY', () => {
     }
   });
 
-  for (const key of ['search', 'fetch', 'parse', 'llm', 'index'] as const) {
+  for (const key of ['search', 'fetch', 'parse', 'llm', 'index', 'extraction'] as const) {
     describe(`entry "${key}"`, () => {
       for (const prop of REQUIRED_PROPS) {
         it(`has string property "${prop}"`, () => {

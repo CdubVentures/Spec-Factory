@@ -24,7 +24,10 @@ function makeStore(db) {
       ON CONFLICT(id) DO UPDATE SET
         map_json = excluded.map_json,
         map_hash = excluded.map_hash,
-        updated_at = datetime('now')
+        updated_at = CASE
+          WHEN field_studio_map.map_hash != excluded.map_hash THEN datetime('now')
+          ELSE field_studio_map.updated_at
+        END
     `),
   };
   return createFieldStudioMapStore({ stmts });
@@ -85,5 +88,38 @@ test('updated_at auto-populated on upsert', () => {
 
   // WHY: SQLite datetime('now') returns ISO-ish format YYYY-MM-DD HH:MM:SS
   assert.match(row.updated_at, /^\d{4}-\d{2}-\d{2}/);
+  db.close();
+});
+
+test('upsert with unchanged hash preserves updated_at (compile re-sync must not bump timestamp)', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+
+  store.upsertFieldStudioMap('{"v":1}', 'hash1');
+  // Pin updated_at to a known past time so we can detect if it changes
+  db.prepare("UPDATE field_studio_map SET updated_at = '2020-01-01 00:00:00' WHERE id = 1").run();
+
+  // Re-upsert identical hash (simulates compileProcessCompletion re-sync)
+  store.upsertFieldStudioMap('{"v":1}', 'hash1');
+  const row = store.getFieldStudioMap();
+
+  assert.equal(row.updated_at, '2020-01-01 00:00:00',
+    'updated_at must not change when map_hash is unchanged');
+  db.close();
+});
+
+test('upsert with changed hash updates updated_at', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+
+  store.upsertFieldStudioMap('{"v":1}', 'hash1');
+  db.prepare("UPDATE field_studio_map SET updated_at = '2020-01-01 00:00:00' WHERE id = 1").run();
+
+  // Upsert with different hash (simulates real user edit)
+  store.upsertFieldStudioMap('{"v":2}', 'hash2');
+  const row = store.getFieldStudioMap();
+
+  assert.notEqual(row.updated_at, '2020-01-01 00:00:00',
+    'updated_at must change when map_hash changes');
   db.close();
 });

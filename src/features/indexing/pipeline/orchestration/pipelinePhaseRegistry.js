@@ -45,6 +45,7 @@ function buildPhaseOrder() {
     }
   }
   order.push('phase_09_crawl');
+  order.push('phase_10_finalize');
   return order;
 }
 

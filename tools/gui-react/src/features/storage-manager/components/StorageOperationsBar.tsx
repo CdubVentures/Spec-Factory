@@ -1,52 +1,25 @@
 import { useState } from 'react';
 import { Spinner } from '@/shared/ui/feedback/Spinner';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
-import {
-  useDeleteRun,
-  usePruneRuns,
-  usePurgeRuns,
-} from '../state/useStorageActions.ts';
-import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
+import { usePruneRuns, usePurgeRuns } from '../state/useStorageActions.ts';
 import { PurgeConfirmModal } from './PurgeConfirmModal.tsx';
 
 interface StorageOperationsBarProps {
-  selectedRunIds: Set<string>;
   totalRuns: number;
-  onClearSelection: () => void;
 }
 
-export function StorageOperationsBar({
-  selectedRunIds,
-  totalRuns,
-  onClearSelection,
-}: StorageOperationsBarProps) {
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+export function StorageOperationsBar({ totalRuns }: StorageOperationsBarProps) {
   const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [pruneDays, setPruneDays] = useState(30);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
-  const deleteRun = useDeleteRun();
   const pruneRuns = usePruneRuns();
   const purgeRuns = usePurgeRuns();
-
-  const selectedIds = [...selectedRunIds];
 
   function showResult(msg: string) {
     setResultMessage(msg);
     setTimeout(() => setResultMessage(null), 6000);
   }
-
-  const handleDeleteConfirm = () => {
-    const doDelete = async () => {
-      for (const id of selectedIds) {
-        await deleteRun.mutateAsync(id);
-      }
-      onClearSelection();
-      setShowDeleteModal(false);
-      showResult(`Deleted ${selectedIds.length} run(s).`);
-    };
-    doDelete();
-  };
 
   const handlePrune = () => {
     pruneRuns.mutate({ olderThanDays: pruneDays }, {
@@ -64,7 +37,6 @@ export function StorageOperationsBar({
     purgeRuns.mutate(undefined, {
       onSuccess: (data) => {
         setShowPurgeModal(false);
-        onClearSelection();
         showResult(`Purged ${data.purged} runs.`);
       },
     });
@@ -74,20 +46,11 @@ export function StorageOperationsBar({
     window.open('/api/v1/storage/export', '_blank');
   };
 
-  const anyPending = deleteRun.isPending || pruneRuns.isPending || purgeRuns.isPending;
+  const anyPending = pruneRuns.isPending || purgeRuns.isPending;
 
   return (
     <div className="space-y-2 pt-3 border-t sf-border-soft">
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="rounded bg-red-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
-          disabled={selectedRunIds.size === 0 || anyPending}
-          onClick={() => setShowDeleteModal(true)}
-        >
-          Delete Selected ({selectedRunIds.size})
-        </button>
-
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -111,7 +74,7 @@ export function StorageOperationsBar({
 
         <button
           type="button"
-          className="rounded sf-icon-button px-3 py-1.5 text-xs text-red-500"
+          className="rounded sf-icon-button px-3 py-1.5 text-xs sf-status-text-danger"
           disabled={anyPending}
           onClick={handlePruneFailed}
         >
@@ -120,7 +83,7 @@ export function StorageOperationsBar({
 
         <button
           type="button"
-          className="rounded sf-icon-button px-3 py-1.5 text-xs text-red-500"
+          className="rounded sf-icon-button px-3 py-1.5 text-xs sf-status-text-danger"
           disabled={totalRuns === 0 || anyPending}
           onClick={() => setShowPurgeModal(true)}
         >
@@ -140,15 +103,6 @@ export function StorageOperationsBar({
 
       {resultMessage && (
         <AlertBanner severity="info" title="Storage operation" message={resultMessage} onDismiss={() => setResultMessage(null)} />
-      )}
-
-      {showDeleteModal && (
-        <DeleteConfirmModal
-          runIds={selectedIds}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setShowDeleteModal(false)}
-          isPending={deleteRun.isPending}
-        />
       )}
 
       {showPurgeModal && (

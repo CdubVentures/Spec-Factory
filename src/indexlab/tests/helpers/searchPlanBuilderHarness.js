@@ -1,4 +1,5 @@
 // Shared factories and fetch wiring for searchPlanBuilder test slices.
+import assert from 'node:assert/strict';
 
 export function makeIdentity(overrides = {}) {
   return {
@@ -170,6 +171,19 @@ function stableHash(value) {
 }
 export function defaultQueryHash(query) {
   return stableHash(String(query || '').trim().toLowerCase().replace(/\s+/g, ' '));
+}
+
+// --- Payload extraction (handles both OpenAI and Gemini message formats) ---
+
+export function extractLlmPayload(fetchCalls) {
+  const body = JSON.parse(fetchCalls[0].opts.body);
+  const userMsg = body.messages.find(m => m.role === 'user');
+  assert.ok(userMsg, 'user message present');
+  const content = userMsg.content;
+  // Gemini merges system+user into one message; JSON starts at first '{'
+  const jsonStart = content.indexOf('{');
+  assert.ok(jsonStart >= 0, 'JSON payload found in user message');
+  return JSON.parse(content.slice(jsonStart));
 }
 
 // --- Mock fetch wiring ---

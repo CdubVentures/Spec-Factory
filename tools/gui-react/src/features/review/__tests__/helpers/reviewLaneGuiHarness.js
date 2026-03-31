@@ -183,6 +183,25 @@ async function seedComponentReviewSuggestions(helperRoot, category) {
 }
 
 function seedStrictLaneCandidates(db, category) {
+  // WHY: seedSpecDb scopes raw candidate IDs (e.g. "PRODUCT::field::raw").
+  // These explicit rows ensure the EXACT unscoped IDs that the key review
+  // state and GUI contract tests reference are present in the candidates table.
+  replaceCandidateRow(db, {
+    candidateId: 'p1-weight-1',
+    category,
+    productId: PRODUCT_A,
+    fieldKey: 'weight',
+    value: '49',
+    score: 0.95,
+  });
+  replaceCandidateRow(db, {
+    candidateId: 'p1-dpi-1',
+    category,
+    productId: PRODUCT_A,
+    fieldKey: 'dpi',
+    value: '35000',
+    score: 0.97,
+  });
   replaceCandidateRow(db, {
     candidateId: 'collision_primary_candidate',
     category,

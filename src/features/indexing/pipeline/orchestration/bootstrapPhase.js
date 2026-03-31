@@ -66,6 +66,7 @@ export const bootstrapPhase = {
       brand: resolvedIdentity.brand,
       model: resolvedIdentity.model,
       variant: resolvedIdentity.variant,
+      brand_identifier: resolvedIdentity.brand_identifier || ctx.job?.identityLock?.brand_identifier || '',
       productId: ctx.job?.productId || '',
     };
 

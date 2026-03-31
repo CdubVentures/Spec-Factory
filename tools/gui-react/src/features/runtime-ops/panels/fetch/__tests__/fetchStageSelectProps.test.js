@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBundledModule } from '../../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
-const EXPECTED_KEYS = ['stealth', 'cookie_consent', 'auto_scroll', 'dom_expansion', 'css_override'];
+const EXPECTED_KEYS = ['stealth', 'cookie_consent', 'overlay_dismissal', 'auto_scroll', 'dom_expansion', 'css_override'];
 
 function buildPanelStub(exportName) {
   return `export function ${exportName}() { return null; }`;
@@ -58,6 +58,7 @@ async function createFetchHarness() {
           `,
           './FetchStealthPanel.tsx': buildPanelStub('FetchStealthPanel'),
           './FetchCookieConsentPanel.tsx': buildPanelStub('FetchCookieConsentPanel'),
+          './FetchOverlayDismissalPanel.tsx': buildPanelStub('FetchOverlayDismissalPanel'),
           './FetchAutoScrollPanel.tsx': buildPanelStub('FetchAutoScrollPanel'),
           './FetchDomExpansionPanel.tsx': buildPanelStub('FetchDomExpansionPanel'),
           './FetchCssOverridePanel.tsx': buildPanelStub('FetchCssOverridePanel'),

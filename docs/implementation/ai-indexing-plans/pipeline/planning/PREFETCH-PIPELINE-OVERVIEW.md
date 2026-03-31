@@ -272,9 +272,8 @@ The discovery search system operates on three query tiers. NeedSet's job is to r
 - `{brand} {model} {variant} specifications`
 - `{brand} {model} {variant} {source}`
 - Query completion model: 1 query = parent, up to 10 SERP URLs = children. Parent done only when child scrape work done.
-- Complete when: `scrape_complete` or `exhausted` AND `new_fields_closed >= 1`
-- Cooldown: `seedCooldownMs` (default 30 days) via Unix timestamp comparison
-- NeedSet emits `seed_status` with per-seed `last_status`, `cooldown_until_ms`, `new_fields_closed_last_run`
+- Cooldown: `queryCooldownDays` (default 30 days) — uses `cooldown_until` from DB, same pattern as group cooldown
+- NeedSet emits `seed_status` with per-seed `is_needed`, `cooldown_until_ms`, `attempt_count`
 - Source seeds include: category source hosts (`categoryConfig.sourceHosts`), identity official/support domains, and previously executed seed queries from frontier
 
 ### Tier 2 — Group Searches (conditional)
@@ -503,17 +502,17 @@ Seed-phase carry-through:
 
 ### Per-Query History
 
-Every query that executes gets recorded in the **frontier database** with:
-- `query_hash` — deterministic hash of the query text
-- `status` — `never_run` / `searched` / `scrape_complete` / `exhausted`
-- `results_returned` — how many results the search engine gave
-- `admitted_count` — how many results passed triage
-- `fields_extracted_unique` — how many new field values were found
-- `new_fields_closed` — how many fields went from unknown to resolved
+Every query that executes gets recorded in `query_cooldowns` (spec.sqlite) with:
+- `query_hash` — deterministic hash of product_id + normalized query text
+- `tier` — `seed` / `group_search` / `key_search`
+- `group_key` / `normalized_key` — tier-specific targeting
+- `attempt_count` — how many times this query has been executed
+- `result_count` — how many results the search engine returned
+- `cooldown_until` — ISO timestamp when query becomes eligible for re-execution
 
 This history is loaded as `queryExecutionHistory` at the start of each round and drives:
-- Seed completion checks (did the seed query find anything new?)
-- Group query counting (how many broad searches has this group had?)
+- Seed cooldown checks (is `cooldown_until > now`? if so, seed is not needed)
+- Group query counting (how many broad searches with active cooldowns has this group had?)
 - Tier allocation budgets
 
 ### Per-Field History

@@ -8,7 +8,9 @@ import { estimateTokensFromText, computeLlmCostUsd, normalizeUsage } from '../..
 const FALLBACK_PRICING = { llmModelPricingMap: buildDefaultModelPricingMap() };
 
 export function buildLlmCallsDashboard(events, options) {
-  const workers = buildRuntimeOpsWorkers(events, options);
+  // WHY: Accept pre-built workers to avoid redundant 484-line rebuild.
+  // buildRuntimeOpsPanels already built workers — reuse them.
+  const workers = options?.preBuiltWorkers || buildRuntimeOpsWorkers(events, options);
   const llmWorkers = workers.filter((w) => w.pool === 'llm');
 
   llmWorkers.sort((a, b) => parseTsMs(a.started_at) - parseTsMs(b.started_at));

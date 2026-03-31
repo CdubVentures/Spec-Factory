@@ -24,12 +24,15 @@ describe('extraction plugin registry contract', () => {
 
   // ── 2. Every stage def has a registered plugin (no phantom tabs) ──
 
-  it('every EXTRACTION_STAGE_DEF has a matching plugin in EXTRACTION_PLUGIN_REGISTRY', () => {
-    const phantom = stageDefKeys.filter((k) => !registryKeys.includes(k));
+  // WHY: Some stage defs are display-only (e.g. video — persisted via callback,
+  // not an extraction plugin). Only require plugins for stage defs that have one.
+  it('every EXTRACTION_STAGE_DEF either has a plugin or is display-only', () => {
+    const displayOnlyStages = new Set(['video']);
+    const phantom = stageDefKeys.filter((k) => !registryKeys.includes(k) && !displayOnlyStages.has(k));
     assert.deepEqual(
       phantom, [],
-      `Stage def(s) exist but no plugin registered: ${phantom.join(', ')}. ` +
-      'Either add the plugin to EXTRACTION_PLUGIN_REGISTRY or remove the stage def.',
+      `Stage def(s) exist but no plugin registered (and not display-only): ${phantom.join(', ')}. ` +
+      'Either add the plugin to EXTRACTION_PLUGIN_REGISTRY, mark as display-only, or remove the stage def.',
     );
   });
 

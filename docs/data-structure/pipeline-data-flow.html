@@ -6,14 +6,14 @@
 <title>Spec Factory — Pipeline Data Flow</title>
 <style>
 :root {
-  --bg: #09090b; --s1: #18181b; --s2: #27272a; --s3: #3f3f46;
-  --border: rgba(161,161,170,0.12); --border-f: rgba(161,161,170,0.25);
-  --text: #fafafa; --t2: #a1a1aa; --t3: #71717a;
-  --accent: #3b82f6; --accent-s: rgba(59,130,246,0.12);
-  --green: #22c55e; --green-s: rgba(34,197,94,0.12);
-  --amber: #f59e0b; --amber-s: rgba(245,158,11,0.12);
-  --violet: #8b5cf6; --violet-s: rgba(139,92,246,0.12);
-  --rose: #f43f5e; --cyan: #06b6d4;
+  --bg: #f8fafc; --s1: #ffffff; --s2: #f1f5f9; --s3: #e2e8f0;
+  --border: rgba(15,23,42,0.08); --border-f: rgba(15,23,42,0.15);
+  --text: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --accent: #2563eb; --accent-s: rgba(37,99,235,0.08);
+  --green: #16a34a; --green-s: rgba(22,163,74,0.08);
+  --amber: #d97706; --amber-s: rgba(217,119,6,0.08);
+  --violet: #7c3aed; --violet-s: rgba(124,58,237,0.08);
+  --rose: #e11d48; --cyan: #0891b2;
   --mono: "SF Mono","Cascadia Code","Fira Code","JetBrains Mono",Consolas,monospace;
   --sans: "Inter","Segoe UI",system-ui,-apple-system,sans-serif;
 }
@@ -135,15 +135,15 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
   <p>Complete run lifecycle from start to completion. Every phase, every data read/write, every SQL table touched.</p>
   <div class="meta">
     <span>Spec Factory</span>
-    <span>Generated 2026-03-30</span>
-    <span>Post-consolidation</span>
+    <span>Audited 2026-03-31</span>
+    <span>Live-validated</span>
   </div>
 </header>
 
 <!-- ═══════════════════════ STATS ═══════════════════════ -->
 <div class="stats">
   <div class="stat"><div class="n">10+</div><div class="l">Pipeline Phases</div></div>
-  <div class="stat"><div class="n">61</div><div class="l">SQL Tables</div></div>
+  <div class="stat"><div class="n">60</div><div class="l">SQL Tables (base)</div></div>
   <div class="stat"><div class="n">11</div><div class="l">RuntimeOps Panels</div></div>
   <div class="stat"><div class="n">6</div><div class="l">Fetch Plugins</div></div>
   <div class="stat"><div class="n">3</div><div class="l">Worker Pools</div></div>
@@ -168,7 +168,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <svg viewBox="0 0 1200 680" width="1200" height="680" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
       <defs>
         <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#71717a"/>
+          <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#94a3b8"/>
         </marker>
         <marker id="arrow-green" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#22c55e"/>
@@ -177,8 +177,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <path d="M 0 0 L 10 3.5 L 0 7 z" fill="#8b5cf6"/>
         </marker>
         <linearGradient id="phaseBg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#27272a"/>
-          <stop offset="100%" stop-color="#18181b"/>
+          <stop offset="0%" stop-color="#f1f5f9"/>
+          <stop offset="100%" stop-color="#ffffff"/>
         </linearGradient>
         <filter id="glow">
           <feGaussianBlur stdDeviation="3" result="blur"/>
@@ -193,41 +193,41 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <rect width="1200" height="680" fill="url(#grid)"/>
 
       <!-- Title -->
-      <text x="600" y="36" text-anchor="middle" fill="#fafafa" font-size="15" font-weight="700" letter-spacing="-0.02em">Run Lifecycle &mdash; Phase Progression</text>
+      <text x="600" y="36" text-anchor="middle" fill="#0f172a" font-size="15" font-weight="700" letter-spacing="-0.02em">Run Lifecycle &mdash; Phase Progression</text>
 
       <!-- Phase boxes: Row 1 (y=60) -->
       <!-- Phase 00: Bootstrap -->
       <rect x="30" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="130" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 00</text>
-      <text x="130" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Bootstrap</text>
-      <text x="130" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">processRuntime.startProcess</text>
+      <text x="130" y="96" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 00</text>
+      <text x="130" y="116" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Bootstrap</text>
+      <text x="130" y="136" text-anchor="middle" fill="#475569" font-size="10">processRuntime.startProcess</text>
 
       <!-- Arrow 00->01 -->
       <line x1="230" y1="111" x2="270" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 01: Category Config -->
       <rect x="280" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="380" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 01</text>
-      <text x="380" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Category Config</text>
-      <text x="380" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">Load authority + components</text>
+      <text x="380" y="96" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 01</text>
+      <text x="380" y="116" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">NeedSet + Brand</text>
+      <text x="380" y="136" text-anchor="middle" fill="#475569" font-size="10">Parallel: gaps + brand domain</text>
 
       <!-- Arrow 01->02 -->
       <line x1="480" y1="111" x2="520" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 02: NeedSet -->
       <rect x="530" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="630" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 02</text>
-      <text x="630" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">NeedSet</text>
-      <text x="630" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">computeNeedSet</text>
+      <text x="630" y="96" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 02</text>
+      <text x="630" y="116" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Bootstrap Conv.</text>
+      <text x="630" y="136" text-anchor="middle" fill="#475569" font-size="10">Identity + learning merge</text>
 
       <!-- Arrow 02->03 -->
       <line x1="730" y1="111" x2="770" y2="111" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 03: Discovery Seed Plan -->
       <rect x="780" y="70" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="880" y="96" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 03</text>
-      <text x="880" y="116" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Discovery Seed Plan</text>
-      <text x="880" y="136" text-anchor="middle" fill="#a1a1aa" font-size="10">buildDiscoverySeedPlanContext</text>
+      <text x="880" y="96" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 03</text>
+      <text x="880" y="116" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Search Profile</text>
+      <text x="880" y="136" text-anchor="middle" fill="#475569" font-size="10">runSearchProfile</text>
 
       <!-- Connector row 1 to row 2 -->
       <path d="M 980 111 L 1040 111 L 1040 220 L 980 220" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
@@ -235,36 +235,36 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <!-- Phase boxes: Row 2 (y=180) — right to left -->
       <!-- Phase 04: Search Execution -->
       <rect x="780" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="880" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 04</text>
-      <text x="880" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Search Execution</text>
-      <text x="880" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">executeSearchQueries</text>
+      <text x="880" y="206" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 04</text>
+      <text x="880" y="226" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Search Planner</text>
+      <text x="880" y="246" text-anchor="middle" fill="#475569" font-size="10">runSearchPlanner (LLM)</text>
 
       <!-- Arrow 04->05 -->
       <line x1="780" y1="221" x2="730" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 05: SERP Selection -->
       <rect x="530" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="630" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 05</text>
-      <text x="630" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">SERP Selection</text>
-      <text x="630" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">Domain classification</text>
+      <text x="630" y="206" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 05</text>
+      <text x="630" y="226" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Query Journey</text>
+      <text x="630" y="246" text-anchor="middle" fill="#475569" font-size="10">runQueryJourney</text>
 
       <!-- Arrow 05->06 -->
       <line x1="530" y1="221" x2="480" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 06: Fetch Plan -->
       <rect x="280" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3f3f46" stroke-width="1"/>
-      <text x="380" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 06</text>
-      <text x="380" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Fetch Plan</text>
-      <text x="380" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">buildOrderedFetchPlan</text>
+      <text x="380" y="206" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 06</text>
+      <text x="380" y="226" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Search Execution</text>
+      <text x="380" y="246" text-anchor="middle" fill="#475569" font-size="10">executeSearchQueries</text>
 
       <!-- Arrow 06->07 -->
       <line x1="280" y1="221" x2="230" y2="221" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 07: Crawl Execution -->
       <rect x="30" y="180" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3b82f6" stroke-width="1.5"/>
-      <text x="130" y="206" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 07</text>
-      <text x="130" y="226" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Crawl Execution</text>
-      <text x="130" y="246" text-anchor="middle" fill="#a1a1aa" font-size="10">session.runFetchPlan</text>
+      <text x="130" y="206" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 07</text>
+      <text x="130" y="226" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">SERP Selector</text>
+      <text x="130" y="246" text-anchor="middle" fill="#475569" font-size="10">processDiscoveryResults</text>
 
       <!-- Connector row 2 to row 3 -->
       <path d="M 130 262 L 130 300" fill="none" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
@@ -272,60 +272,60 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <!-- Phase boxes: Row 3 (y=310) — left to right -->
       <!-- Phase 08: Result Processing -->
       <rect x="30" y="310" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#3b82f6" stroke-width="1.5"/>
-      <text x="130" y="336" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 08</text>
-      <text x="130" y="356" text-anchor="middle" fill="#fafafa" font-size="13" font-weight="600">Result Processing</text>
-      <text x="130" y="376" text-anchor="middle" fill="#a1a1aa" font-size="10">processDiscoveryResults</text>
+      <text x="130" y="336" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 08</text>
+      <text x="130" y="356" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600">Domain Classifier</text>
+      <text x="130" y="376" text-anchor="middle" fill="#475569" font-size="10">Final result assembly</text>
 
       <!-- Arrow 08->09 -->
       <line x1="230" y1="351" x2="270" y2="351" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
       <!-- Phase 09: Checkpoint + Finalize -->
       <rect x="280" y="310" width="200" height="82" rx="8" fill="url(#phaseBg)" stroke="#22c55e" stroke-width="1.5"/>
-      <text x="380" y="336" text-anchor="middle" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 09</text>
-      <text x="380" y="356" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="600">Checkpoint + Finalize</text>
-      <text x="380" y="376" text-anchor="middle" fill="#a1a1aa" font-size="10">buildCheckpoint + finalize</text>
+      <text x="380" y="336" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">PHASE 09</text>
+      <text x="380" y="356" text-anchor="middle" fill="#22c55e" font-size="13" font-weight="600">Crawl + Finalize</text>
+      <text x="380" y="376" text-anchor="middle" fill="#475569" font-size="10">runFetchPlan + checkpoint</text>
 
       <!-- Data stores annotation block -->
-      <rect x="600" y="310" width="560" height="135" rx="10" fill="rgba(24,24,27,0.8)" stroke="rgba(161,161,170,0.12)" stroke-width="1"/>
-      <text x="624" y="336" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.1em">DATA STORES TOUCHED ACROSS ALL PHASES</text>
+      <rect x="600" y="310" width="560" height="135" rx="10" fill="rgba(241,245,249,0.9)" stroke="rgba(15,23,42,0.08)" stroke-width="1"/>
+      <text x="624" y="336" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.1em">DATA STORES TOUCHED ACROSS ALL PHASES</text>
 
       <!-- SQL indicator -->
       <circle cx="624" cy="360" r="5" fill="#22c55e"/>
-      <text x="636" y="364" fill="#a1a1aa" font-size="11">SQL: SpecDb (52 tables), AppDb (5 tables), Frontier (3 tables), FTS (1 virtual)</text>
+      <text x="636" y="364" fill="#475569" font-size="11">SQL: SpecDb (55 base), AppDb (5 tables) = 60 total (+ runtime tables)</text>
 
       <!-- File indicator -->
       <circle cx="624" cy="384" r="5" fill="#f59e0b"/>
-      <text x="636" y="388" fill="#a1a1aa" font-size="11">Files: run.json, product.json, *.html.gz, screenshots/*.jpeg, video/*.webm</text>
+      <text x="636" y="388" fill="#475569" font-size="11">Files: run.json, product.json, *.html.gz, screenshots/*.jpg, video/*.webm</text>
 
       <!-- IPC indicator -->
       <circle cx="624" cy="408" r="5" fill="#8b5cf6"/>
-      <text x="636" y="412" fill="#a1a1aa" font-size="11">IPC: ~20 bridge event types, WebSocket broadcasts, process-status signals</text>
+      <text x="636" y="412" fill="#475569" font-size="11">IPC: 40+ bridge event types, WebSocket broadcasts, process-status signals</text>
 
       <!-- Read indicator -->
       <circle cx="624" cy="432" r="5" fill="#3b82f6"/>
-      <text x="636" y="436" fill="#a1a1aa" font-size="11">Reads: category_authority/_generated/, component_db/, learning_profiles, frontier</text>
+      <text x="636" y="436" fill="#475569" font-size="11">Reads: category_authority/{category}/_generated/, component_db/, learning_profiles, crawl_ledger</text>
 
       <!-- Worker pool annotations -->
       <rect x="600" y="460" width="170" height="48" rx="6" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1"/>
       <text x="685" y="480" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700" letter-spacing="0.06em">SEARCH WORKERS</text>
-      <text x="685" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 04</text>
+      <text x="685" y="496" text-anchor="middle" fill="#475569" font-size="9">Phase 04</text>
 
       <rect x="790" y="460" width="170" height="48" rx="6" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
       <text x="875" y="480" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700" letter-spacing="0.06em">FETCH WORKERS</text>
-      <text x="875" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 07</text>
+      <text x="875" y="496" text-anchor="middle" fill="#475569" font-size="9">Phase 07</text>
 
       <rect x="980" y="460" width="170" height="48" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
       <text x="1065" y="480" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700" letter-spacing="0.06em">LLM WORKERS</text>
-      <text x="1065" y="496" text-anchor="middle" fill="#a1a1aa" font-size="9">Phase 08</text>
+      <text x="1065" y="496" text-anchor="middle" fill="#475569" font-size="9">Phase 08</text>
 
       <!-- Fetch plugins annotation -->
-      <rect x="30" y="460" width="540" height="48" rx="6" fill="rgba(161,161,170,0.04)" stroke="rgba(161,161,170,0.08)" stroke-width="1"/>
-      <text x="50" y="480" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.08em">6 FETCH PLUGINS</text>
-      <text x="50" y="496" fill="#a1a1aa" font-size="9.5">stealth &bull; cookie_consent &bull; overlay_dismissal &bull; auto_scroll &bull; dom_expansion &bull; css_override</text>
+      <rect x="30" y="460" width="540" height="48" rx="6" fill="rgba(15,23,42,0.03)" stroke="rgba(15,23,42,0.06)" stroke-width="1"/>
+      <text x="50" y="480" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.08em">6 FETCH PLUGINS</text>
+      <text x="50" y="496" fill="#475569" font-size="9.5">stealth &bull; cookieConsent &bull; overlayDismissal &bull; autoScroll &bull; domExpansion &bull; cssOverride</text>
 
       <!-- Bridge event bus line -->
       <line x1="30" y1="540" x2="1160" y2="540" stroke="rgba(139,92,246,0.3)" stroke-width="2" stroke-dasharray="6,4"/>
-      <text x="600" y="560" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="600" letter-spacing="0.06em">BRIDGE EVENT BUS &mdash; onRuntimeEvent() &rarr; dispatchRuntimeEvent (table-driven) &rarr; ~20 handlers &rarr; emit() &rarr; SQL artifacts</text>
+      <text x="600" y="560" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="600" letter-spacing="0.06em">BRIDGE EVENT BUS &mdash; onRuntimeEvent() &rarr; dispatchRuntimeEvent (table-driven) &rarr; 40 handlers + 3 LLM &rarr; emit() &rarr; SQL artifacts</text>
 
       <!-- WebSocket broadcast line -->
       <line x1="30" y1="585" x2="1160" y2="585" stroke="rgba(139,92,246,0.15)" stroke-width="1.5" stroke-dasharray="3,3"/>
@@ -394,8 +394,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">01</span>
-        <span class="phase-title">Category Config Load</span>
-        <span class="tag tag-info">Authority + Components</span>
+        <span class="phase-title">NeedSet + Brand Resolver</span>
+        <span class="tag tag-info">Parallel: field gaps + brand domain</span>
       </div>
       <div class="phase-tags">
         <span class="tag tag-read">Reads</span>
@@ -406,13 +406,13 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-read">File Reads</div>
         <ul class="op-list read">
-          <li><code>category_authority/_generated/field_rules.json</code> &mdash; field definitions, validation, and constraints</li>
-          <li><code>category_authority/_generated/known_values.json</code> &mdash; canonical known value enums</li>
-          <li><code>category_authority/_generated/cross_validation_rules.json</code> &mdash; inter-field validation</li>
-          <li><code>category_authority/_generated/field_groups.json</code> &mdash; field grouping/ordering</li>
-          <li><code>category_authority/_generated/parse_templates.json</code> &mdash; extraction templates</li>
-          <li><code>category_authority/_generated/key_migrations.json</code> &mdash; field key migration maps</li>
-          <li><code>category_authority/_generated/component_db/*.json</code> &mdash; encoders, materials, sensors, switches</li>
+          <li><code>category_authority/{category}/_generated/field_rules.json</code> &mdash; field definitions, validation, and constraints</li>
+          <li><code>category_authority/{category}/_generated/known_values.json</code> &mdash; canonical known value enums</li>
+          <li><code>category_authority/{category}/_generated/cross_validation_rules.json</code> &mdash; inter-field validation</li>
+          <li><code>category_authority/{category}/_generated/field_groups.json</code> &mdash; field grouping/ordering</li>
+          <li><code>category_authority/{category}/_generated/parse_templates.json</code> &mdash; extraction templates</li>
+          <li><code>category_authority/{category}/_generated/key_migrations.json</code> &mdash; field key migration maps</li>
+          <li><code>category_authority/{category}/_generated/component_db/*.json</code> &mdash; encoders, materials, sensors, switches</li>
           <li>Loads route matrix and learning profile configuration</li>
         </ul>
       </div>
@@ -431,7 +431,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">02</span>
-        <span class="phase-title">NeedSet Computation</span>
+        <span class="phase-title">Bootstrap Convergence</span>
         <span class="tag tag-info">computeNeedSet</span>
       </div>
       <div class="phase-tags">
@@ -466,7 +466,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
-          <li><code>needset_generated</code> &mdash; signals NeedSet computation complete, carries field gap summary</li>
+          <li><code>needset_computed</code> &mdash; signals NeedSet computation complete, carries field gap summary</li>
         </ul>
       </div>
     </div>
@@ -477,7 +477,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">03</span>
-        <span class="phase-title">Discovery Seed Plan</span>
+        <span class="phase-title">Search Profile</span>
         <span class="tag tag-info">buildDiscoverySeedPlanContext &rarr; runDiscoverySeedPlan</span>
       </div>
       <div class="phase-tags">
@@ -491,7 +491,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Description</div>
         <ul class="op-list">
           <li>Translates the NeedSet into concrete search queries targeting missing fields</li>
-          <li>Leverages learning profiles and frontier intelligence to build an optimized search plan</li>
+          <li>Leverages learning profiles and crawl ledger intelligence to build an optimized search plan</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -499,7 +499,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <ul class="op-list read">
           <li>NeedSet (from Phase 02 artifact)</li>
           <li><code>learning_profiles</code> &mdash; domain-aware search strategies</li>
-          <li>Frontier queries and URLs &mdash; previously attempted searches</li>
+          <li><code>query_cooldowns</code>, <code>url_crawl_ledger</code> &mdash; previously attempted searches</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -512,7 +512,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
           <li><code>search_profile_generated</code> &mdash; search profile is ready</li>
-          <li><code>search_plan_ready</code> &mdash; plan fully built, ready for execution</li>
+          <li><code>search_plan_generated</code> &mdash; plan fully built, ready for execution</li>
         </ul>
       </div>
     </div>
@@ -523,7 +523,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">04</span>
-        <span class="phase-title">Search Execution</span>
+        <span class="phase-title">Search Planner</span>
         <span class="tag tag-info">executeSearchQueries</span>
       </div>
       <div class="phase-tags">
@@ -550,16 +550,16 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-sql">SQL Writes</div>
         <ul class="op-list sql">
-          <li><code>INSERT frontier_queries</code> &mdash; records executed queries in frontier DB</li>
+          <li><code>INSERT query_cooldowns (SpecDb)</code> &mdash; records executed queries with cooldown state</li>
           <li><code>INSERT query_index</code> &mdash; indexes query results for deduplication</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
-          <li><code>search_slot_started</code> &mdash; search worker begins processing a query slot</li>
-          <li><code>search_slot_finished</code> &mdash; search worker completes a query slot</li>
-          <li><code>search_results_received</code> &mdash; raw SERP results ingested</li>
+          <li><code>search_started</code> &mdash; search worker begins processing a query slot</li>
+          <li><code>search_finished</code> &mdash; search worker completes a query slot</li>
+          <li><code>search_results_collected</code> &mdash; raw SERP results ingested</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -576,7 +576,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">05</span>
-        <span class="phase-title">SERP Selection + Domain Classification</span>
+        <span class="phase-title">Query Journey</span>
       </div>
       <div class="phase-tags">
         <span class="tag tag-read">Reads</span>
@@ -610,8 +610,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
-          <li><code>serp_selection_completed</code> &mdash; URL selection pass complete</li>
-          <li><code>domain_classification</code> &mdash; domain tier/quality classification results</li>
+          <li><code>serp_selector_completed</code> &mdash; URL selection pass complete</li>
+          <li><code>domains_classified</code> &mdash; domain tier/quality classification results</li>
         </ul>
       </div>
     </div>
@@ -622,7 +622,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">06</span>
-        <span class="phase-title">Fetch Plan Building</span>
+        <span class="phase-title">Search Execution</span>
         <span class="tag tag-info">buildOrderedFetchPlan</span>
       </div>
       <div class="phase-tags">
@@ -643,14 +643,14 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-read">Reads</div>
         <ul class="op-list read">
           <li>Selected URLs (from Phase 05)</li>
-          <li><code>frontier_urls</code> table &mdash; previously attempted URLs and their state</li>
+          <li><code>url_crawl_ledger (SpecDb)</code> &mdash; previously attempted URLs and their state</li>
           <li>Cooldown state &mdash; per-domain rate-limiting timers</li>
         </ul>
       </div>
       <div class="phase-section">
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
-          <li><code>crawl_fetch_plan_state</code> &mdash; ordered fetch plan ready for execution</li>
+          <li><code>discovery_enqueue_summary</code> &mdash; ordered fetch plan ready for execution</li>
         </ul>
       </div>
     </div>
@@ -661,7 +661,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">07</span>
-        <span class="phase-title">Crawl Execution</span>
+        <span class="phase-title">SERP Selector (Result Processing)</span>
         <span class="tag tag-info">session.runFetchPlan</span>
       </div>
       <div class="phase-tags">
@@ -676,7 +676,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-info">Description</div>
         <ul class="op-list">
           <li>Parallel fetch workers using Crawlee/Playwright browser automation</li>
-          <li>6 fetch plugins operate on every page: stealth, cookie_consent, overlay_dismissal, auto_scroll, dom_expansion, css_override</li>
+          <li>6 fetch plugins operate on every page: stealth, cookieConsent, overlayDismissal, autoScroll, domExpansion, cssOverride</li>
           <li>Captures page content, screenshots, and video recordings</li>
         </ul>
       </div>
@@ -684,7 +684,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-file">File Writes</div>
         <ul class="op-list file">
           <li><code>*.html.gz</code> &mdash; content-addressed compressed HTML snapshots</li>
-          <li><code>screenshots/*.jpeg</code> &mdash; page screenshots for visual verification</li>
+          <li><code>screenshots/*.jpg</code> &mdash; page screenshots for visual verification</li>
           <li><code>video/*.webm</code> &mdash; crawl session video recordings</li>
         </ul>
       </div>
@@ -702,7 +702,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <ul class="op-list ipc">
           <li><code>source_fetch_queued</code> &mdash; URL added to fetch queue</li>
           <li><code>source_fetch_started</code> &mdash; fetch worker begins URL</li>
-          <li><code>source_fetch_finished</code> &mdash; fetch completed successfully</li>
+          <li><code>fetch_finished</code> &mdash; fetch completed successfully</li>
           <li><code>source_fetch_failed</code> &mdash; fetch failed (timeout, blocked, error)</li>
           <li><code>visual_asset_captured</code> &mdash; screenshot or video captured</li>
         </ul>
@@ -721,7 +721,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <summary>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="phase-num">08</span>
-        <span class="phase-title">Result Processing</span>
+        <span class="phase-title">Domain Classifier</span>
         <span class="tag tag-info">processDiscoveryResults</span>
       </div>
       <div class="phase-tags">
@@ -775,8 +775,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-ipc">Bridge Events</div>
         <ul class="op-list ipc">
           <li><code>parse_finished</code> &mdash; document parsing complete</li>
-          <li><code>extraction_completed</code> &mdash; evidence extraction pass complete</li>
-          <li><code>candidates_generated</code> &mdash; candidate values produced and reviewed</li>
+          <li><code>source_processed</code> &mdash; evidence extraction pass complete</li>
+          <li><code>index_finished</code> &mdash; candidate values produced and reviewed</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -814,9 +814,8 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <div class="phase-section">
         <div class="phase-section-label label-file">File Writes</div>
         <ul class="op-list file">
-          <li><code>buildCrawlCheckpoint</code> &rarr; writes <code>run.json</code> (schema v2/v3) to <code>.workspace/runs/</code></li>
-          <li><code>buildProductCheckpoint</code> &rarr; writes/updates <code>product.json</code> in <code>.workspace/products/</code></li>
-          <li><code>writeProductCheckpoint</code> &rarr; merges accumulated sources into product checkpoint</li>
+          <li><code>writeCrawlCheckpoint</code> &rarr; writes <code>run.json</code> (schema v2/v3) to <code>.workspace/runs/</code></li>
+          <li><code>writeProductCheckpoint</code> &rarr; writes/updates <code>product.json</code> in <code>.workspace/products/</code></li>
         </ul>
       </div>
       <div class="phase-section">
@@ -857,31 +856,31 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <svg viewBox="0 0 1000 120" width="1000" height="120" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,Segoe UI,system-ui,sans-serif">
         <rect x="10" y="30" width="160" height="56" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
         <text x="90" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">Pipeline Logger</text>
-        <text x="90" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">emits raw events</text>
+        <text x="90" y="72" text-anchor="middle" fill="#475569" font-size="9">emits raw events</text>
 
         <line x1="170" y1="58" x2="210" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <rect x="220" y="30" width="180" height="56" rx="6" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.25)" stroke-width="1"/>
         <text x="310" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">onRuntimeEvent()</text>
-        <text x="310" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">bridge entry point</text>
+        <text x="310" y="72" text-anchor="middle" fill="#475569" font-size="9">bridge entry point</text>
 
         <line x1="400" y1="58" x2="440" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <rect x="450" y="30" width="180" height="56" rx="6" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.4)" stroke-width="1.5"/>
         <text x="540" y="55" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">dispatchRuntimeEvent</text>
-        <text x="540" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">table-driven dispatch</text>
+        <text x="540" y="72" text-anchor="middle" fill="#475569" font-size="9">table-driven dispatch</text>
 
         <line x1="630" y1="58" x2="670" y2="58" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <rect x="680" y="30" width="130" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
         <text x="745" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">~20 Handlers</text>
-        <text x="745" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">emit() &rarr; SQL</text>
+        <text x="745" y="72" text-anchor="middle" fill="#475569" font-size="9">emit() &rarr; SQL</text>
 
         <line x1="810" y1="58" x2="850" y2="58" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
 
         <rect x="860" y="30" width="120" height="56" rx="6" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.25)" stroke-width="1"/>
         <text x="920" y="55" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">SQL Artifacts</text>
-        <text x="920" y="72" text-anchor="middle" fill="#a1a1aa" font-size="9">run_artifacts table</text>
+        <text x="920" y="72" text-anchor="middle" fill="#475569" font-size="9">run_artifacts table</text>
       </svg>
     </div>
   </div>
@@ -899,7 +898,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       </thead>
       <tbody>
         <tr>
-          <td class="event-name">needset_generated</td>
+          <td class="event-name">needset_computed</td>
           <td>02</td>
           <td>Serializes computed needset to artifact</td>
           <td class="event-writes">run_artifacts (needset)</td>
@@ -911,43 +910,43 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <td class="event-writes">run_artifacts (search_profile)</td>
         </tr>
         <tr>
-          <td class="event-name">search_plan_ready</td>
+          <td class="event-name">search_plan_generated</td>
           <td>03</td>
           <td>Signals plan readiness, updates run state</td>
           <td class="event-writes">runs (status update)</td>
         </tr>
         <tr>
-          <td class="event-name">search_slot_started</td>
+          <td class="event-name">search_started</td>
           <td>04</td>
           <td>Tracks worker slot activation</td>
           <td class="event-writes">run_artifacts (telemetry)</td>
         </tr>
         <tr>
-          <td class="event-name">search_slot_finished</td>
+          <td class="event-name">search_finished</td>
           <td>04</td>
           <td>Records slot completion metrics</td>
           <td class="event-writes">run_artifacts (telemetry)</td>
         </tr>
         <tr>
-          <td class="event-name">search_results_received</td>
+          <td class="event-name">search_results_collected</td>
           <td>04</td>
-          <td>Ingests raw SERP data, updates frontier</td>
-          <td class="event-writes">frontier_queries, query_index</td>
+          <td>Ingests raw SERP data, updates crawl ledger</td>
+          <td class="event-writes">query_cooldowns, query_index</td>
         </tr>
         <tr>
-          <td class="event-name">serp_selection_completed</td>
+          <td class="event-name">serp_selector_completed</td>
           <td>05</td>
           <td>Finalizes URL selection pass</td>
           <td class="event-writes">run_artifacts (serp_selection)</td>
         </tr>
         <tr>
-          <td class="event-name">domain_classification</td>
+          <td class="event-name">domains_classified</td>
           <td>05</td>
           <td>Persists domain quality scoring</td>
           <td class="event-writes">source_intel_domains</td>
         </tr>
         <tr>
-          <td class="event-name">crawl_fetch_plan_state</td>
+          <td class="event-name">discovery_enqueue_summary</td>
           <td>06</td>
           <td>Stores ordered fetch manifest</td>
           <td class="event-writes">run_artifacts (fetch_plan)</td>
@@ -965,7 +964,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <td class="event-writes">crawl_sources (status=started)</td>
         </tr>
         <tr>
-          <td class="event-name">source_fetch_finished</td>
+          <td class="event-name">fetch_finished</td>
           <td>07</td>
           <td>Stores crawl result (content hash, timing)</td>
           <td class="event-writes">crawl_sources (status=finished)</td>
@@ -989,13 +988,13 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
           <td class="event-writes">evidence_documents</td>
         </tr>
         <tr>
-          <td class="event-name">extraction_completed</td>
+          <td class="event-name">source_processed</td>
           <td>08</td>
           <td>Persists extracted evidence chain</td>
           <td class="event-writes">evidence_chunks, evidence_facts</td>
         </tr>
         <tr>
-          <td class="event-name">candidates_generated</td>
+          <td class="event-name">index_finished</td>
           <td>08</td>
           <td>Stores candidates with review verdicts</td>
           <td class="event-writes">candidates, candidate_reviews</td>
@@ -1017,7 +1016,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
     <h2>RuntimeOps Panels</h2>
     <span class="tag tag-info">11 Panels</span>
   </div>
-  <p class="surface-desc">The GUI's RuntimeOps view is built from 11 panels. During a live run, panels are populated via SQL re-aggregation on each poll. After completion, the cached <code>run_summary</code> artifact (serialized from <code>run.json</code>) provides all panel data without re-querying.</p>
+  <p class="surface-desc">The GUI's RuntimeOps view is built from 11 panels. During a live run, panels are built by <code>readRunSummaryEvents()</code> + event-driven builders in <code>runtimeOpsRoutes.js</code> and <code>buildRuntimeOpsPanels.js</code>. After completion, the <code>run_artifacts.run_summary</code> provides cached panel data. Note: <code>run.json</code> is a separate checkpoint file written by <code>writeCrawlCheckpoint</code>, not the source of panel data.</p>
 
   <table class="data-table">
     <thead>
@@ -1056,7 +1055,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
       <tr>
         <td class="panel-name">prefetch</td>
         <td class="panel-desc">Search planner, query journey, SERP selector, domain classifier</td>
-        <td>SQL from <code>frontier_queries</code>, <code>source_intel_domains</code></td>
+        <td>Event-driven from bridge_events + run meta/artifacts</td>
         <td>Cached in <code>run_summary</code> artifact</td>
       </tr>
       <tr>
@@ -1113,14 +1112,14 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <!-- Scan phase -->
         <rect x="20" y="20" width="240" height="70" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1.5"/>
         <text x="140" y="48" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">scanAndSeedCheckpoints</text>
-        <text x="140" y="68" text-anchor="middle" fill="#a1a1aa" font-size="9">Scans .workspace/runs/ and .workspace/products/</text>
+        <text x="140" y="68" text-anchor="middle" fill="#475569" font-size="9">Scans indexLabRoot; falls back to ${indexLabRoot}/products</text>
 
         <line x1="260" y1="55" x2="310" y2="55" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- Seed detection -->
         <rect x="320" y="20" width="200" height="70" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.25)" stroke-width="1.5"/>
         <text x="420" y="48" text-anchor="middle" fill="#3b82f6" font-size="11" font-weight="700">seedFromCheckpoint</text>
-        <text x="420" y="68" text-anchor="middle" fill="#a1a1aa" font-size="9">Detects type: crawl or product</text>
+        <text x="420" y="68" text-anchor="middle" fill="#475569" font-size="9">Detects type: crawl or product</text>
 
         <!-- Branch: Crawl -->
         <line x1="420" y1="90" x2="420" y2="110" stroke="#71717a" stroke-width="1"/>
@@ -1133,30 +1132,30 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <!-- Crawl checkpoint -->
         <rect x="100" y="150" width="300" height="70" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1.5"/>
         <text x="250" y="173" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">seedCrawlCheckpoint</text>
-        <text x="250" y="193" text-anchor="middle" fill="#a1a1aa" font-size="9">Source: run.json from .workspace/runs/</text>
+        <text x="250" y="193" text-anchor="middle" fill="#475569" font-size="9">Source: run.json from .workspace/runs/</text>
 
         <!-- Product checkpoint -->
         <rect x="550" y="150" width="300" height="70" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" stroke-width="1.5"/>
         <text x="700" y="173" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">seedProductCheckpoint</text>
-        <text x="700" y="193" text-anchor="middle" fill="#a1a1aa" font-size="9">Source: product.json from .workspace/products/</text>
+        <text x="700" y="193" text-anchor="middle" fill="#475569" font-size="9">Source: product.json from .workspace/products/</text>
 
         <!-- Crawl SQL targets -->
         <line x1="250" y1="220" x2="250" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
         <rect x="60" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="80" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="80" y="296" fill="#a1a1aa" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources</text>
-        <text x="80" y="312" fill="#71717a" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
+        <text x="80" y="296" fill="#475569" font-size="9.5">runs &bull; product_runs &bull; run_artifacts &bull; crawl_sources</text>
+        <text x="80" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Product SQL targets -->
         <line x1="700" y1="220" x2="700" y2="250" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
         <rect x="510" y="255" width="380" height="70" rx="8" fill="rgba(34,197,94,0.06)" stroke="rgba(34,197,94,0.2)" stroke-width="1"/>
         <text x="530" y="278" fill="#22c55e" font-size="10" font-weight="700">SQL UPSERTS (transaction-wrapped)</text>
-        <text x="530" y="296" fill="#a1a1aa" font-size="9.5">products &bull; product_queue</text>
-        <text x="530" y="312" fill="#71717a" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
+        <text x="530" y="296" fill="#475569" font-size="9.5">products &bull; product_queue</text>
+        <text x="530" y="312" fill="#94a3b8" font-size="8.5">Idempotent: ON CONFLICT DO UPDATE</text>
 
         <!-- Labels -->
-        <text x="250" y="138" text-anchor="middle" fill="#71717a" font-size="9" font-weight="600">CRAWL TYPE</text>
-        <text x="700" y="138" text-anchor="middle" fill="#71717a" font-size="9" font-weight="600">PRODUCT TYPE</text>
+        <text x="250" y="138" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600">CRAWL TYPE</text>
+        <text x="700" y="138" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600">PRODUCT TYPE</text>
       </svg>
     </div>
   </div>
@@ -1177,7 +1176,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <div class="phase-section-label label-file">Source File</div>
         <ul class="op-list file">
           <li><code>.workspace/runs/{run_id}/run.json</code> &mdash; full crawl checkpoint (schema v2/v3)</li>
-          <li>Written by <code>buildCrawlCheckpoint</code> during Phase 09</li>
+          <li>Written by <code>writeCrawlCheckpoint</code> during Phase 09</li>
         </ul>
       </div>
       <div class="phase-section">
@@ -1267,58 +1266,58 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
         <!-- Step 1: GUI -->
         <rect x="20" y="20" width="160" height="90" rx="8" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.3)" stroke-width="1.5"/>
         <text x="100" y="45" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="700">GUI</text>
-        <text x="100" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">PUT /api/config/</text>
-        <text x="100" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">{category}/runtime</text>
-        <text x="100" y="94" text-anchor="middle" fill="#71717a" font-size="8">User modifies settings</text>
+        <text x="100" y="62" text-anchor="middle" fill="#475569" font-size="9">PUT /api/v1/</text>
+        <text x="100" y="78" text-anchor="middle" fill="#475569" font-size="9">runtime-settings</text>
+        <text x="100" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">User modifies settings</text>
 
         <line x1="180" y1="65" x2="220" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- Step 2: Validate -->
-        <rect x="230" y="20" width="160" height="90" rx="8" fill="rgba(161,161,170,0.06)" stroke="rgba(161,161,170,0.15)" stroke-width="1"/>
-        <text x="310" y="45" text-anchor="middle" fill="#fafafa" font-size="10" font-weight="700">Validate</text>
-        <text x="310" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">Schema validation</text>
-        <text x="310" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">Range clamping</text>
-        <text x="310" y="94" text-anchor="middle" fill="#71717a" font-size="8">Rejects invalid values</text>
+        <rect x="230" y="20" width="160" height="90" rx="8" fill="rgba(15,23,42,0.04)" stroke="rgba(15,23,42,0.1)" stroke-width="1"/>
+        <text x="310" y="45" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="700">Validate</text>
+        <text x="310" y="62" text-anchor="middle" fill="#475569" font-size="9">Schema validation</text>
+        <text x="310" y="78" text-anchor="middle" fill="#475569" font-size="9">Range clamping</text>
+        <text x="310" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Rejects invalid values</text>
 
         <line x1="390" y1="65" x2="430" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- Step 3: Persist -->
         <rect x="440" y="20" width="160" height="90" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)" stroke-width="1.5"/>
         <text x="520" y="45" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">Persist Snapshot</text>
-        <text x="520" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">category_authority/</text>
-        <text x="520" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">_runtime/snapshots/</text>
-        <text x="520" y="94" text-anchor="middle" fill="#71717a" font-size="8">Capped at 10 files</text>
+        <text x="520" y="62" text-anchor="middle" fill="#475569" font-size="9">.workspace/</text>
+        <text x="520" y="78" text-anchor="middle" fill="#475569" font-size="9">runtime/snapshots/</text>
+        <text x="520" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Capped at 10 files</text>
 
         <line x1="600" y1="65" x2="640" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- Step 4: Broadcast -->
         <rect x="650" y="20" width="160" height="90" rx="8" fill="rgba(139,92,246,0.08)" stroke="rgba(139,92,246,0.3)" stroke-width="1.5"/>
         <text x="730" y="45" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">broadcastWs</text>
-        <text x="730" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">WebSocket push to</text>
-        <text x="730" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">all connected clients</text>
-        <text x="730" y="94" text-anchor="middle" fill="#71717a" font-size="8">Real-time GUI update</text>
+        <text x="730" y="62" text-anchor="middle" fill="#475569" font-size="9">WebSocket push to</text>
+        <text x="730" y="78" text-anchor="middle" fill="#475569" font-size="9">all connected clients</text>
+        <text x="730" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Real-time GUI update</text>
 
         <line x1="810" y1="65" x2="850" y2="65" stroke="#71717a" stroke-width="1.5" marker-end="url(#arrow)"/>
 
         <!-- Step 5: Sync to process -->
         <rect x="860" y="20" width="210" height="90" rx="8" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.3)" stroke-width="1.5"/>
         <text x="965" y="45" text-anchor="middle" fill="#22c55e" font-size="10" font-weight="700">Active Process</text>
-        <text x="965" y="62" text-anchor="middle" fill="#a1a1aa" font-size="9">syncRuntimeOverrides()</text>
-        <text x="965" y="78" text-anchor="middle" fill="#a1a1aa" font-size="9">Merged into execution context</text>
-        <text x="965" y="94" text-anchor="middle" fill="#71717a" font-size="8">Takes effect immediately</text>
+        <text x="965" y="62" text-anchor="middle" fill="#475569" font-size="9">syncRuntimeOverrides()</text>
+        <text x="965" y="78" text-anchor="middle" fill="#475569" font-size="9">Merged into execution context</text>
+        <text x="965" y="94" text-anchor="middle" fill="#94a3b8" font-size="8">Takes effect immediately</text>
 
         <!-- Snapshot persistence detail -->
-        <rect x="20" y="140" width="1050" height="100" rx="8" fill="rgba(161,161,170,0.03)" stroke="rgba(161,161,170,0.08)" stroke-width="1"/>
-        <text x="44" y="165" fill="#71717a" font-size="10" font-weight="700" letter-spacing="0.08em">SETTINGS LIFECYCLE DETAIL</text>
+        <rect x="20" y="140" width="1050" height="100" rx="8" fill="rgba(15,23,42,0.02)" stroke="rgba(15,23,42,0.06)" stroke-width="1"/>
+        <text x="44" y="165" fill="#94a3b8" font-size="10" font-weight="700" letter-spacing="0.08em">SETTINGS LIFECYCLE DETAIL</text>
 
         <circle cx="44" cy="188" r="4" fill="#f59e0b"/>
-        <text x="56" y="192" fill="#a1a1aa" font-size="9.5">Snapshot persisted to <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#fafafa">category_authority/_runtime/snapshots/{timestamp}.json</tspan> (max 10, oldest pruned)</text>
+        <text x="56" y="192" fill="#475569" font-size="9.5">Snapshot persisted to <tspan font-family="SF Mono,Cascadia Code,Consolas,monospace" fill="#0f172a">.workspace/runtime/snapshots/{timestamp}.json</tspan> (max 10, oldest pruned)</text>
 
         <circle cx="44" cy="210" r="4" fill="#8b5cf6"/>
-        <text x="56" y="214" fill="#a1a1aa" font-size="9.5">WebSocket broadcast ensures all open GUI tabs receive the update in real time</text>
+        <text x="56" y="214" fill="#475569" font-size="9.5">WebSocket broadcast ensures all open GUI tabs receive the update in real time</text>
 
         <circle cx="44" cy="232" r="4" fill="#22c55e"/>
-        <text x="56" y="236" fill="#a1a1aa" font-size="9.5">If a pipeline process is actively running, overrides are merged via IPC; otherwise they take effect on next run start</text>
+        <text x="56" y="236" fill="#475569" font-size="9.5">If a pipeline process is actively running, overrides are merged via IPC; otherwise they take effect on next run start</text>
       </svg>
     </div>
   </div>
@@ -1326,7 +1325,7 @@ code{font-family:var(--mono);font-size:0.84em;background:var(--s2);padding:1px 5
 
 <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
 <footer style="margin-top:64px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
-  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Generated 2026-03-30</p>
+  <p style="color:var(--t3);font-size:0.78rem;letter-spacing:0.02em">Spec Factory &mdash; Pipeline Data Flow Reference &mdash; Audited 2026-03-31</p>
   <p style="color:var(--t3);font-size:0.72rem;margin-top:4px">Post-consolidation. Replaces PIPELINE-DATA-FLOW.mmd and .png.</p>
 </footer>
 

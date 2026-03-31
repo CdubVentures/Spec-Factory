@@ -253,7 +253,7 @@ describe('buildRuntimeAssetCandidatePaths', () => {
     assert.ok(result[0].includes('some'));
   });
 
-  test('builds archive candidates for run-like paths', () => {
+  test('builds candidates for run-like paths', () => {
     const result = buildRuntimeAssetCandidatePaths({
       filename: 'runs/run123/screenshots/img.png',
       storage: null,
@@ -261,9 +261,9 @@ describe('buildRuntimeAssetCandidatePaths', () => {
       path: fakePath,
       runId: 'run123',
     });
-    assert.ok(result.length >= 2);
-    assert.ok(result.some((p) => p.includes('run_output')));
-    assert.ok(result.some((p) => p.includes('latest_snapshot')));
+    // Archive candidate logic retired — single OUTPUT_ROOT-joined candidate
+    assert.ok(result.length >= 1);
+    assert.ok(result[0].length > 0);
   });
 
   test('uses runDir for simple filenames', () => {

@@ -203,7 +203,7 @@ test('runtime ops page synthesizes a live fallback row while run history is stil
 
     assert.equal(pickerProps?.runs?.length, 1);
     assert.equal(pickerProps?.runs?.[0]?.picker_label, 'Mouse \u2022 Razer Viper V3 Pro White - 6a0b3');
-    assert.equal(pickerProps?.runs?.[0]?.storage_origin, 's3');
+    assert.equal(pickerProps?.runs?.[0]?.storage_origin, 'local');
     assert.equal(pickerProps?.runs?.[0]?.storage_state, 'live');
   } finally {
     harness.cleanup();

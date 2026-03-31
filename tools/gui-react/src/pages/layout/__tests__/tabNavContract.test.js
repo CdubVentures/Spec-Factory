@@ -56,6 +56,11 @@ async function loadTabNavModule() {
         export const jsxs = jsx;
         export const Fragment = Symbol.for('fragment');
       `,
+      '@tanstack/react-query': `
+        export function useQuery() {
+          return { data: undefined, isLoading: false, isFetching: false };
+        }
+      `,
       'react-router-dom': `
         export function NavLink(props) {
           const harness = globalThis.__tabNavHarness || {};
@@ -86,6 +91,25 @@ async function loadTabNavModule() {
         export function isTestCategory(category) {
           const harness = globalThis.__tabNavHarness || {};
           return harness.isTestMode === true || String(category || '').startsWith('_test_');
+        }
+      `,
+      '../../hooks/useSerperCreditQuery.ts': `
+        export function useSerperCreditQuery() {
+          return { data: undefined, isLoading: false, isFetching: false };
+        }
+        export function creditChipClass() { return ''; }
+        export function formatCredit() { return ''; }
+      `,
+      '../../hooks/llmKeyGateHelpers.js': `
+        export function hasLlmKeyGateErrors() { return false; }
+        export function deriveSerperKeyGateError() { return null; }
+      `,
+      '../../api/client.ts': `
+        export const api = { get: async () => ({}) };
+      `,
+      '../../shared/ui/feedback/Chip.tsx': `
+        export function Chip(props) {
+          return { type: 'span', props: { className: props.className, children: props.label } };
         }
       `,
     },

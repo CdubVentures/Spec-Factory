@@ -3,299 +3,475 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product Run History Panel v3 — Pipeline Funnel</title>
+<title>Product Run History — Premium Dashboard v5</title>
 <style>
+  /* ── SF Design System Tokens ───────────────────────────────────── */
   :root {
-    --sf-bg: #0a1330; --sf-elevated: #111f41; --sf-panel: #0d1834;
-    --sf-border: #243a65; --sf-text: #ecf1ff; --sf-muted: #adc2eb; --sf-subtle: #94a3b8;
-    --sf-accent: #6366f1; --sf-accent-s: #818cf8;
-    --sf-ok: #86efac; --sf-ok-bg: rgba(34,197,94,0.2);
-    --sf-err: #f87171; --sf-err-bg: rgba(248,113,113,0.2);
-    --sf-warn: #fcd34d; --sf-warn-bg: rgba(234,179,8,0.2);
-    --sf-info: #93c5fd; --sf-info-bg: rgba(14,165,233,0.2);
-    --sf-font: "Segoe UI","Inter",sans-serif;
-    --sf-mono: "SFMono-Regular","Consolas",monospace;
+    --bg-start: #060b1a; --bg-end: #0f1a35;
+    --surface: #0a1330; --elevated: #111f41; --panel: #0d1834;
+    --border: #243a65; --border-soft: rgba(36,58,101,0.76);
+    --text: #ecf1ff; --muted: #adc2eb; --subtle: #94a3b8;
+    --accent: #6366f1; --accent-s: #818cf8;
+    --ok: #86efac; --ok-bg: rgba(34,197,94,0.15);
+    --err: #f87171; --err-bg: rgba(248,113,113,0.15);
+    --warn: #fcd34d; --warn-bg: rgba(234,179,8,0.15);
+    --info: #93c5fd; --info-bg: rgba(14,165,233,0.15);
+    --purple: #c084fc; --purple-bg: rgba(147,51,234,0.12);
+    --font: "Segoe UI","Inter",sans-serif;
+    --mono: "SFMono-Regular","Consolas",monospace;
+    --r-sm: 4px; --r-md: 6px; --r-lg: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--sf-font); background: var(--sf-bg); color: var(--sf-text); padding: 20px; line-height: 1.45; }
+  body { font-family: var(--font); background: linear-gradient(180deg, var(--bg-start), var(--bg-end)); color: var(--text); padding: 24px; line-height: 1.45; min-height: 100vh; }
 
-  .note { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--sf-accent-s); }
-  .note strong { color: #a5b4fc; }
+  .note { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 24px; font-size: 13px; color: var(--accent-s); }
 
-  .panel { background: var(--sf-panel); border: 1px solid var(--sf-border); border-radius: 6px; padding: 12px; margin-bottom: 16px; }
-  .panel-header { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 14px; font-weight: 600; }
-  .panel-header .mono { font-family: var(--sf-mono); font-size: 11px; color: var(--sf-muted); font-weight: 400; }
+  /* ── Outer Panel ────────────────────────────────────────────── */
+  .panel {
+    background: linear-gradient(180deg, var(--elevated), var(--surface));
+    border: 1px solid var(--border); border-radius: var(--r-lg);
+  }
+  .panel-pad { padding: 20px 24px; }
+  .panel-header { display: flex; align-items: center; gap: 10px; padding: 16px 24px 0; }
+  .panel-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .panel-mono { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .tip { width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--subtle); color: var(--subtle); font-size: 9px; cursor: help; }
 
-  /* ── Metrics ───────────────────────────── */
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 8px; margin-bottom: 14px; }
-  .mc { background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; padding: 8px 10px; }
-  .mc-label { font-size: 10px; color: var(--sf-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
-  .mc-value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .mc-delta { font-size: 10px; margin-top: 1px; }
-  .green { color: var(--sf-ok); } .red { color: var(--sf-err); } .yellow { color: var(--sf-warn); }
-  .blue { color: var(--sf-info); } .accent { color: var(--sf-accent-s); } .muted { color: var(--sf-muted); }
+  /* ── KPI Card Grid ──────────────────────────────────────────── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--elevated); border: 1px solid var(--border);
+    border-radius: var(--r-lg); padding: 20px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .kpi-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .kpi-value { font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 6px; }
+  .kpi-delta { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; margin-top: 4px; }
+  .kpi-delta.up { background: var(--ok-bg); color: var(--ok); }
+  .kpi-delta.down { background: var(--err-bg); color: var(--err); }
+  .kpi-delta.flat { background: rgba(148,163,184,0.1); color: var(--subtle); }
+  /* Sparkline placeholder */
+  .sparkline-wrap { width: 80px; height: 32px; opacity: 0.7; }
+  .sparkline-wrap svg { display: block; }
 
-  /* ── Run Selector ──────────────────────── */
-  .run-strip { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding: 4px; }
-  .run-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; }
-  .run-chip:hover { border-color: var(--sf-accent); }
-  .run-chip.active { border-color: var(--sf-accent); background: rgba(99,102,241,0.12); }
-  .run-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .run-chip .dot.ok { background: var(--sf-ok); } .run-chip .dot.err { background: var(--sf-err); }
-  .run-chip .run-date { color: var(--sf-muted); }
-  .run-chip .run-cost { font-family: var(--sf-mono); color: var(--sf-warn); font-size: 11px; }
+  /* ── Run Selector ───────────────────────────────────────────── */
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .run-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; }
+  .run-chip {
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    background: var(--elevated); border: 1.5px solid var(--border);
+    border-radius: var(--r-lg); cursor: pointer; white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .run-chip:hover { border-color: var(--accent); }
+  .run-chip.active { border-color: var(--accent); background: rgba(99,102,241,0.08); box-shadow: 0 0 0 1px var(--accent); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok { background: var(--ok); box-shadow: 0 0 6px rgba(34,197,94,0.35); }
+  .mono { font-family: var(--mono); font-size: 11px; }
 
-  /* ── Pipeline Funnel ───────────────────── */
-  .funnel { display: flex; align-items: stretch; gap: 0; margin-bottom: 14px; }
-  .funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; position: relative; min-height: 80px; }
-  .funnel-step:not(:last-child)::after { content: '→'; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--sf-subtle); z-index: 1; }
-  .funnel-count { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .funnel-label { font-size: 10px; color: var(--sf-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
-  .funnel-pct { font-size: 9px; color: var(--sf-subtle); margin-top: 1px; }
-  .funnel-step .funnel-bg { position: absolute; inset: 0; border-radius: 4px; opacity: 0.08; z-index: 0; }
-  .funnel-step > * { position: relative; z-index: 1; }
-  .funnel-sub { display: flex; gap: 4px; margin-top: 3px; font-size: 10px; }
-  .funnel-sub span { padding: 1px 4px; border-radius: 3px; font-weight: 500; }
+  /* ── Pipeline Flow Strip ────────────────────────────────────── */
+  .card { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 14px; }
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .flow-step {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 6px; text-align: center; background: rgba(255,255,255,0.015);
+    border: 1px solid rgba(36,58,101,0.4); border-radius: var(--r-lg);
+    transition: all 0.15s;
+  }
+  .flow-step:hover { background: rgba(99,102,241,0.03); border-color: var(--border); }
+  .flow-badge { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .flow-num { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .flow-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .flow-sub { display: flex; gap: 4px; margin-top: 6px; }
+  .flow-sub .mini { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
+  .flow-arrow { width: 16px; display: flex; align-items: center; justify-content: center; color: var(--subtle); font-size: 12px; flex-shrink: 0; opacity: 0.5; }
 
-  /* ── Tabs ───────────────────────────────── */
-  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--sf-elevated); border-radius: 6px; margin-bottom: 10px; }
-  .tab { padding: 4px 12px; height: 28px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 500; color: var(--sf-muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
-  .tab:hover { color: var(--sf-text); background: rgba(99,102,241,0.08); }
-  .tab.active { color: var(--sf-text); background: var(--sf-accent); }
-  .tab-count { margin-left: 4px; font-size: 11px; opacity: 0.7; }
+  /* Badge colors */
+  .b-search { background: rgba(99,102,241,0.12); color: var(--accent-s); }
+  .b-triage { background: var(--warn-bg); color: var(--warn); }
+  .b-fetch { background: var(--info-bg); color: var(--info); }
+  .b-ok { background: var(--ok-bg); color: var(--ok); }
+  .b-parse { background: var(--purple-bg); color: var(--purple); }
+
+  /* ── Charts Row ─────────────────────────────────────────────── */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-card { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; }
+  .chart-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.04em; }
+  /* Donut */
+  .donut-layout { display: flex; align-items: center; gap: 24px; }
+  .donut-legend { font-size: 12px; }
+  .donut-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .donut-swatch { width: 12px; height: 12px; border-radius: 3px; }
+  .donut-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* Domain bars */
+  .domain-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 11px; }
+  .domain-bar-label { width: 140px; font-family: var(--mono); font-size: 10px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .domain-bar-track { flex: 1; height: 16px; background: rgba(148,163,184,0.06); border-radius: 3px; overflow: hidden; display: flex; }
+  .domain-bar-ok { background: var(--ok); border-radius: 3px 0 0 3px; min-width: 1px; transition: width 0.5s; }
+  .domain-bar-err { background: var(--err); min-width: 0; transition: width 0.5s; }
+  .domain-bar-count { width: 40px; text-align: right; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── Tabs ────────────────────────────────────────────────────── */
+  .tabs {
+    display: flex; gap: 4px; padding: 3px;
+    background: var(--elevated); border: 1px solid var(--border);
+    border-radius: var(--r-md); margin-bottom: 14px;
+  }
+  .tab {
+    padding: 6px 16px; height: 32px; display: inline-flex; align-items: center;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    background: transparent; border: none; border-radius: var(--r-sm);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); background: rgba(99,102,241,0.05); }
+  .tab.active { color: var(--text); background: var(--accent); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .tab-count { margin-left: 5px; font-size: 11px; opacity: 0.6; }
   .tab-content { display: none; } .tab-content.active { display: block; }
 
-  /* ── Tables ─────────────────────────────── */
-  .tw { background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; overflow: hidden; max-height: 350px; overflow-y: auto; }
-  .search-bar { padding: 6px 10px; border-bottom: 1px solid var(--sf-border); }
-  .search-bar input { width: 100%; background: var(--sf-bg); border: 1px solid var(--sf-border); border-radius: 4px; padding: 4px 8px; font-size: 12px; color: var(--sf-text); outline: none; }
+  /* ── Tables ──────────────────────────────────────────────────── */
+  .tbl-shell { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .tbl-search { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .tbl-search input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 12px; font-size: 12px; color: var(--text); outline: none; transition: border-color 0.15s; }
+  .tbl-search input:focus { border-color: var(--accent); }
+  .tbl-scroll { max-height: 320px; overflow-y: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: var(--sf-panel); padding: 6px 8px; text-align: left; font-weight: 600; color: var(--sf-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--sf-border); white-space: nowrap; }
-  td { padding: 5px 8px; border-bottom: 1px solid rgba(36,58,101,0.4); }
-  tr:hover td { background: rgba(99,102,241,0.04); }
-  .mono { font-family: var(--sf-mono); font-size: 11px; }
-  .chip { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-family: var(--sf-mono); font-weight: 600; }
-  .chip-ok { background: var(--sf-ok-bg); color: var(--sf-ok); }
-  .chip-err { background: var(--sf-err-bg); color: var(--sf-err); }
-  .chip-warn { background: var(--sf-warn-bg); color: var(--sf-warn); }
-  .chip-info { background: var(--sf-info-bg); color: var(--sf-info); }
-  .chip-n { background: rgba(148,163,184,0.15); color: var(--sf-muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .dot-ok { background: var(--sf-ok); } .dot-err { background: var(--sf-err); } .dot-warn { background: var(--sf-warn); }
-  .truncate { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  thead { position: sticky; top: 0; z-index: 1; }
+  th { background: var(--panel); padding: 8px 12px; text-align: left; font-weight: 600; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); cursor: pointer; }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(36,58,101,0.3); }
+  tr:hover td { background: rgba(99,102,241,0.025); }
+  .chip { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-family: var(--mono); font-weight: 600; }
+  .c-ok { background: var(--ok-bg); color: var(--ok); } .c-err { background: var(--err-bg); color: var(--err); }
+  .c-warn { background: var(--warn-bg); color: var(--warn); } .c-info { background: var(--info-bg); color: var(--info); }
+  .c-accent { background: rgba(99,102,241,0.1); color: var(--accent-s); } .c-n { background: rgba(148,163,184,0.1); color: var(--subtle); }
+  .c-purple { background: var(--purple-bg); color: var(--purple); }
+  .trunc { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 
-  @media (max-width: 768px) { .metrics { grid-template-columns: repeat(2,1fr); } .funnel { flex-wrap: wrap; } }
+  /* ── Error Cards ─────────────────────────────────────────────── */
+  .error-summary { display: flex; gap: 12px; margin-bottom: 16px; }
+  .error-stat { flex: 1; background: var(--elevated); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; text-align: center; }
+  .error-stat-num { font-size: 28px; font-weight: 700; line-height: 1; }
+  .error-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-top: 6px; }
+
+  .error-list { display: flex; flex-direction: column; gap: 0; background: var(--elevated); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .error-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid rgba(36,58,101,0.3); transition: background 0.1s; }
+  .error-item:last-child { border-bottom: none; }
+  .error-item:hover { background: rgba(99,102,241,0.02); }
+  .error-badge { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; font-family: var(--mono); }
+  .error-badge.b403 { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(234,179,8,0.3); }
+  .error-badge.bto { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(147,51,234,0.25); }
+  .error-body { flex: 1; min-width: 0; }
+  .error-url { font-family: var(--mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .error-meta { font-size: 10px; color: var(--muted); margin-top: 3px; display: flex; gap: 16px; }
+  .error-type { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 12px; flex-shrink: 0; white-space: nowrap; }
+
+  .problem-domains { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .problem-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px 18px; }
+  .problem-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .problem-name { font-family: var(--mono); font-weight: 700; font-size: 12px; }
+  .problem-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* ── Responsive ──────────────────────────────────────────────── */
+  @media (max-width: 900px) { .kpi-grid, .charts-grid, .problem-domains { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr; } .charts-grid { grid-template-columns: 1fr; } .flow { flex-wrap: wrap; } .flow-arrow { display: none; } }
 </style>
 </head>
 <body>
 
 <div class="note">
-  <strong>Design Preview v3</strong> — Pipeline funnel storytelling. Data sourced from <code>run_artifacts</code>, <code>crawl_sources</code>, <code>billing_entries</code> (all SQL).
-  Shows: 10 queries → 100 results → 57 triaged → 25 selected → 21 OK + 1 blocked + 3 timeout → 24 parsed.
+  <strong>Premium Dashboard v5</strong> — Follows the 5 principles: (1) Card-based layout with whitespace, (2) KPI cards with sparklines, (3) Interactive charts, (4) Data tables for drill-down, (5) Seamless state transitions. Tab order: Queries → Domains → URLs → Errors.
 </div>
 
 <div class="panel">
   <div class="panel-header">
-    <span>-</span>
-    <span>Run History</span>
-    <span class="mono">mouse-f74080c4</span>
+    <span class="panel-title">Run History</span>
+    <span class="panel-mono">mouse-f74080c4 &middot; Endgame Gear XM1 RGB</span>
+    <span class="tip" title="Pipeline run history: searches, triage, crawl, parse. KPI sparklines show trends across runs.">?</span>
   </div>
 
-  <!-- ── Aggregate Metrics ───────────────── -->
-  <div class="metrics">
-    <div class="mc"><div class="mc-label">Total Runs</div><div class="mc-value accent">1</div></div>
-    <div class="mc"><div class="mc-label">Success Rate</div><div class="mc-value green">100%</div></div>
-    <div class="mc"><div class="mc-label">Total Cost</div><div class="mc-value yellow">$0.0016</div></div>
-    <div class="mc"><div class="mc-label">Avg Duration</div><div class="mc-value" style="color:var(--sf-text)">2m 31s</div></div>
-    <div class="mc"><div class="mc-label">URLs Crawled</div><div class="mc-value blue">24</div></div>
-    <div class="mc"><div class="mc-label">Crawl Success</div><div class="mc-value green">87.5%</div><div class="mc-delta green">21 of 24</div></div>
-    <div class="mc"><div class="mc-label">Queries</div><div class="mc-value accent">10</div></div>
-    <div class="mc"><div class="mc-label">Unique Hosts</div><div class="mc-value" style="color:var(--sf-text)">11</div></div>
-  </div>
+  <div class="panel-pad">
 
-  <!-- ── Run Selector ────────────────────── -->
-  <div style="font-size:11px; color:var(--sf-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:6px;">Select Run</div>
-  <div class="run-strip">
-    <div class="run-chip active">
-      <span class="dot ok"></span>
-      <span class="mono">20260331-93f8c3</span>
-      <span class="run-date">Mar 31</span>
-      <span class="run-cost">$0.0016</span>
-      <span class="muted">2m 31s</span>
-    </div>
-    <div class="run-chip" style="opacity:0.5;">
-      <span class="dot" style="background:var(--sf-subtle)"></span>
-      <span class="mono muted">future runs appear here...</span>
-    </div>
-  </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 1. KPI CARDS WITH SPARKLINES                               -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-value" style="color:var(--accent-s);">1</div>
+            <div class="kpi-label">Total Runs</div>
+          </div>
+          <div class="sparkline-wrap">
+            <svg width="80" height="32"><polyline points="0,28 80,28" fill="none" stroke="var(--accent-s)" stroke-width="2" opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="kpi-delta flat">— first run</div>
+      </div>
 
-  <!-- ── Pipeline Funnel ─────────────────── -->
-  <div style="font-size:11px; color:var(--sf-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:6px;">Pipeline Funnel — Run 20260331-93f8c3</div>
-  <div class="funnel">
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-accent-s);"></div>
-      <div class="funnel-count accent">10</div>
-      <div class="funnel-label">Queries</div>
-    </div>
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-info);"></div>
-      <div class="funnel-count blue">100</div>
-      <div class="funnel-label">Results</div>
-      <div class="funnel-pct">10/query avg</div>
-    </div>
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-warn);"></div>
-      <div class="funnel-count yellow">57</div>
-      <div class="funnel-label">Triaged</div>
-      <div class="funnel-pct">57% of results</div>
-    </div>
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-accent-s);"></div>
-      <div class="funnel-count accent">25</div>
-      <div class="funnel-label">Selected</div>
-      <div class="funnel-pct">44% of triaged</div>
-    </div>
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-ok);"></div>
-      <div class="funnel-count green">21</div>
-      <div class="funnel-label">Fetched OK</div>
-      <div class="funnel-sub">
-        <span style="background:var(--sf-err-bg); color:var(--sf-err);">1 blocked</span>
-        <span style="background:var(--sf-warn-bg); color:var(--sf-warn);">3 timeout</span>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-value" style="color:var(--warn);">$0.0016</div>
+            <div class="kpi-label">Total Cost</div>
+          </div>
+          <div class="sparkline-wrap">
+            <svg width="80" height="32"><polyline points="0,28 80,28" fill="none" stroke="var(--warn)" stroke-width="2" opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="kpi-delta flat">avg $0.0016/run</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-value" style="color:var(--ok);">87.5%</div>
+            <div class="kpi-label">Crawl Success</div>
+          </div>
+          <div class="sparkline-wrap">
+            <svg width="80" height="32"><polyline points="0,6 80,6" fill="none" stroke="var(--ok)" stroke-width="2" opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="kpi-delta up">21 of 24 URLs</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div>
+            <div class="kpi-value" style="color:var(--text);">2:31</div>
+            <div class="kpi-label">Avg Duration</div>
+          </div>
+          <div class="sparkline-wrap">
+            <svg width="80" height="32"><polyline points="0,16 80,16" fill="none" stroke="var(--info)" stroke-width="2" opacity="0.4"/></svg>
+          </div>
+        </div>
+        <div class="kpi-delta flat">151 seconds</div>
       </div>
     </div>
-    <div class="funnel-step">
-      <div class="funnel-bg" style="background:var(--sf-ok);"></div>
-      <div class="funnel-count green">24</div>
-      <div class="funnel-label">Parsed</div>
-      <div class="funnel-pct">96% of fetched</div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 2. RUN SELECTOR                                            -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="section-label">Select Run</div>
+    <div class="run-strip">
+      <div class="run-chip active">
+        <span class="dot dot-ok"></span>
+        <span class="mono" style="font-weight:600;">20260331-93f8c3</span>
+        <span style="font-size:11px;color:var(--muted);">Mar 31</span>
+        <span class="mono" style="font-size:10px;color:var(--warn);">$0.0016</span>
+        <span style="font-size:10px;color:var(--subtle);">2m 31s</span>
+      </div>
     </div>
-  </div>
 
-  <!-- ── Tabs ────────────────────────────── -->
-  <div class="tabs">
-    <button class="tab active" data-tab="domains" onclick="switchTab('domains')">Domains<span class="tab-count">(11)</span></button>
-    <button class="tab" data-tab="urls" onclick="switchTab('urls')">URLs<span class="tab-count">(24)</span></button>
-    <button class="tab" data-tab="queries" onclick="switchTab('queries')">Queries<span class="tab-count">(10)</span></button>
-  </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 3. PIPELINE FLOW STRIP (Interactive Visual)                -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="card">
+      <div class="card-title">Pipeline Flow</div>
+      <div class="flow">
+        <div class="flow-step"><span class="flow-badge b-search">Search</span><span class="flow-num" style="color:var(--accent-s);">10</span><span class="flow-label">queries</span></div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step"><span class="flow-badge b-search">Results</span><span class="flow-num" style="color:var(--info);">100</span><span class="flow-label">10/q avg</span></div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step"><span class="flow-badge b-triage">Triaged</span><span class="flow-num" style="color:var(--warn);">57</span><span class="flow-label">57% kept</span></div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step"><span class="flow-badge b-fetch">Selected</span><span class="flow-num" style="color:var(--accent-s);">25</span><span class="flow-label">44% of triaged</span></div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <span class="flow-badge b-ok">Fetched</span><span class="flow-num" style="color:var(--ok);">21</span>
+          <div class="flow-sub">
+            <span class="mini" style="background:var(--err-bg);color:var(--err);">1 blocked</span>
+            <span class="mini" style="background:var(--purple-bg);color:var(--purple);">3 timeout</span>
+          </div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step"><span class="flow-badge b-parse">Parsed</span><span class="flow-num" style="color:var(--purple);">24</span><span class="flow-label">96%</span></div>
+      </div>
+    </div>
 
-  <!-- ── DOMAINS TAB ─────────────────────── -->
-  <div class="tab-content active" id="tab-domains">
-    <div class="tw">
-      <table>
-        <thead><tr>
-          <th>Domain</th><th>Role</th><th>Safety</th><th>URLs</th><th>OK</th><th>Errors</th><th>Avg Size</th>
-        </tr></thead>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 4. CHARTS ROW (Visual before tables)                       -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="charts-grid">
+      <!-- Donut: URL Outcome Breakdown -->
+      <div class="chart-card">
+        <div class="chart-title">URL Outcomes</div>
+        <div class="donut-layout">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(148,163,184,0.08)" stroke-width="18"/>
+            <!-- OK: 84% (21/25) -->
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--ok)" stroke-width="18"
+              stroke-dasharray="274.4 52.5" stroke-dashoffset="81.7" stroke-linecap="round" opacity="0.9"/>
+            <!-- Timeout: 12% (3/25) -->
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--purple)" stroke-width="18"
+              stroke-dasharray="39.3 287.6" stroke-dashoffset="-192.7" stroke-linecap="round" opacity="0.9"/>
+            <!-- Blocked: 4% (1/25) -->
+            <circle cx="65" cy="65" r="52" fill="none" stroke="var(--warn)" stroke-width="18"
+              stroke-dasharray="13.1 313.8" stroke-dashoffset="-232" stroke-linecap="round" opacity="0.9"/>
+            <text x="65" y="61" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Segoe UI">84%</text>
+            <text x="65" y="78" text-anchor="middle" fill="var(--muted)" font-size="10" font-family="Segoe UI">success</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="donut-row"><div class="donut-swatch" style="background:var(--ok);"></div><span class="donut-val">21</span><span style="color:var(--muted);margin-left:4px;">OK</span></div>
+            <div class="donut-row"><div class="donut-swatch" style="background:var(--purple);"></div><span class="donut-val">3</span><span style="color:var(--muted);margin-left:4px;">Timeout</span></div>
+            <div class="donut-row"><div class="donut-swatch" style="background:var(--warn);"></div><span class="donut-val">1</span><span style="color:var(--muted);margin-left:4px;">Blocked</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Domain Health Bars -->
+      <div class="chart-card">
+        <div class="chart-title">Domain Health</div>
+        <div class="domain-bar-row"><span class="domain-bar-label">endgamegear.com</span><div class="domain-bar-track"><div class="domain-bar-ok" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--ok);">5/5</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">help.endgamegear.com</span><div class="domain-bar-track"><div class="domain-bar-ok" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--ok);">5/5</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">reddit.com</span><div class="domain-bar-track"><div class="domain-bar-ok" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--ok);">4/4</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">amazon.com</span><div class="domain-bar-track"><div class="domain-bar-err" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--err);">0/3</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">techpowerup.com</span><div class="domain-bar-track"><div class="domain-bar-ok" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--ok);">2/2</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">bestbuy.ca</span><div class="domain-bar-track"><div class="domain-bar-err" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--err);">0/1</span></div>
+        <div class="domain-bar-row"><span class="domain-bar-label">prosettings.net</span><div class="domain-bar-track"><div class="domain-bar-ok" style="width:100%;"></div></div><span class="domain-bar-count" style="color:var(--ok);">1/1</span></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 5. TABS: Queries → Domains → URLs → Errors                 -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="tabs">
+      <button class="tab active" data-tab="queries" onclick="switchTab('queries')">Queries<span class="tab-count">(10)</span></button>
+      <button class="tab" data-tab="domains" onclick="switchTab('domains')">Domains<span class="tab-count">(11)</span></button>
+      <button class="tab" data-tab="urls" onclick="switchTab('urls')">URLs<span class="tab-count">(24)</span></button>
+      <button class="tab" data-tab="errors" onclick="switchTab('errors')">Errors<span class="tab-count">(4)</span></button>
+    </div>
+
+    <!-- Queries Tab -->
+    <div class="tab-content active" id="tab-queries">
+      <div class="tbl-shell">
+        <div class="tbl-search"><input type="text" placeholder="Search queries..." /></div>
+        <div class="tbl-scroll"><table>
+          <thead><tr><th>Query</th><th>Provider</th><th>Results</th><th>Target Domain</th></tr></thead>
+          <tbody>
+            <tr><td>Endgame Gear XM1 RGB specifications</td><td><span class="chip c-accent">google</span></td><td>10</td><td style="color:var(--muted);">general</td></tr>
+            <tr><td>Endgame Gear XM1 RGB endgamegear.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">endgamegear.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB endgamegear.com/support</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">endgamegear.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB rtings.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">rtings.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB techpowerup.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">techpowerup.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB tomshardware.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">tomshardware.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB lttlabs.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">lttlabs.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB igorslab.de</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">igorslab.de</td></tr>
+            <tr><td>Endgame Gear XM1 RGB techgearlab.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">techgearlab.com</td></tr>
+            <tr><td>Endgame Gear XM1 RGB pcpartpicker.com</td><td><span class="chip c-accent">google</span></td><td>10</td><td class="mono" style="color:var(--muted);">pcpartpicker.com</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- Domains Tab -->
+    <div class="tab-content" id="tab-domains">
+      <div class="tbl-shell"><div class="tbl-scroll"><table>
+        <thead><tr><th>Domain</th><th>Role</th><th>Safety</th><th>URLs</th><th>OK</th><th>Errors</th><th>Avg Size</th></tr></thead>
         <tbody>
-          <tr>
-            <td class="mono">endgamegear.com</td>
-            <td><span class="chip chip-info">manufacturer</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>5</td><td class="green">5</td><td>0</td><td class="mono muted">348 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">help.endgamegear.com</td>
-            <td><span class="chip chip-info">support</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>5</td><td class="green">5</td><td>0</td><td class="mono muted">98 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">reddit.com</td>
-            <td><span class="chip chip-n">community</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>4</td><td class="green">4</td><td>0</td><td class="mono muted">1.0 MB</td>
-          </tr>
-          <tr>
-            <td class="mono">amazon.com</td>
-            <td><span class="chip chip-n">retail</span></td>
-            <td><span class="chip chip-warn">caution</span></td>
-            <td>3</td><td class="red">0</td><td class="red">3</td><td class="mono muted">3.0 MB</td>
-          </tr>
-          <tr>
-            <td class="mono">techpowerup.com</td>
-            <td><span class="chip chip-info">review</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>2</td><td class="green">2</td><td>0</td><td class="mono muted">55 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">bestbuy.ca</td>
-            <td><span class="chip chip-n">retail</span></td>
-            <td><span class="chip chip-warn">caution</span></td>
-            <td>1</td><td class="red">0</td><td class="red">1</td><td class="mono muted">-</td>
-          </tr>
-          <tr>
-            <td class="mono">prosettings.net</td>
-            <td><span class="chip chip-info">review</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">179 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">us.maxgaming.com</td>
-            <td><span class="chip chip-n">retail</span></td>
-            <td><span class="chip chip-warn">caution</span></td>
-            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">673 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">unbxtech.com</td>
-            <td><span class="chip chip-info">review</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">366 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">pcpartpicker.com</td>
-            <td><span class="chip chip-n">database</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">1 KB</td>
-          </tr>
-          <tr>
-            <td class="mono">it.pcpartpicker.com</td>
-            <td><span class="chip chip-n">database</span></td>
-            <td><span class="chip chip-ok">safe</span></td>
-            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">1 KB</td>
-          </tr>
+          <tr><td class="mono">endgamegear.com</td><td><span class="chip c-info">manufacturer</span></td><td><span class="chip c-ok">safe</span></td><td>5</td><td style="color:var(--ok);">5</td><td style="color:var(--muted);">0</td><td class="mono" style="color:var(--muted);">348 KB</td></tr>
+          <tr><td class="mono">help.endgamegear.com</td><td><span class="chip c-info">support</span></td><td><span class="chip c-ok">safe</span></td><td>5</td><td style="color:var(--ok);">5</td><td style="color:var(--muted);">0</td><td class="mono" style="color:var(--muted);">98 KB</td></tr>
+          <tr><td class="mono">reddit.com</td><td><span class="chip c-n">community</span></td><td><span class="chip c-ok">safe</span></td><td>4</td><td style="color:var(--ok);">4</td><td style="color:var(--muted);">0</td><td class="mono" style="color:var(--muted);">1.0 MB</td></tr>
+          <tr><td class="mono">amazon.com</td><td><span class="chip c-n">retail</span></td><td><span class="chip c-warn">caution</span></td><td>3</td><td style="color:var(--muted);">0</td><td style="color:var(--err);">3</td><td class="mono" style="color:var(--muted);">3.0 MB</td></tr>
+          <tr><td class="mono">techpowerup.com</td><td><span class="chip c-info">review</span></td><td><span class="chip c-ok">safe</span></td><td>2</td><td style="color:var(--ok);">2</td><td style="color:var(--muted);">0</td><td class="mono" style="color:var(--muted);">55 KB</td></tr>
+          <tr><td class="mono">bestbuy.ca</td><td><span class="chip c-n">retail</span></td><td><span class="chip c-warn">caution</span></td><td>1</td><td style="color:var(--muted);">0</td><td style="color:var(--err);">1</td><td class="mono" style="color:var(--muted);">—</td></tr>
         </tbody>
-      </table>
+      </table></div></div>
     </div>
-  </div>
 
-  <!-- ── URLS TAB ────────────────────────── -->
-  <div class="tab-content" id="tab-urls">
-    <div class="tw">
-      <div class="search-bar"><input type="text" placeholder="Search URLs, hosts..." /></div>
-      <table>
-        <thead><tr><th>Status</th><th>HTTP</th><th>URL</th><th>Host</th><th>Tier</th><th>Kind</th><th>Size</th><th>Time</th></tr></thead>
-        <tbody>
-          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate" title="endgamegear.com/en-us/xm1rgb/gaming-mice">endgamegear.com/en-us/xm1rgb/gaming-mice</td><td>endgamegear.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">561 KB</td><td class="muted">56m</td></tr>
-          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate" title="rtings.com review">techpowerup.com/review/endgame-gear-xm1-rgb</td><td>techpowerup.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">56 KB</td><td class="muted">56m</td></tr>
-          <tr><td><span class="dot dot-err"></span></td><td><span class="chip chip-err">403</span></td><td class="mono truncate" title="bestbuy.ca">bestbuy.ca/en-ca/product/endgame-gear...</td><td>bestbuy.ca</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">-</td><td class="muted">56m</td></tr>
-          <tr><td><span class="dot dot-warn"></span></td><td><span class="chip chip-warn">200</span></td><td class="mono truncate" title="amazon timeout">amazon.com/ENDGAME-GEAR-XM1-Gaming-Mouse...</td><td>amazon.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">3.2 MB</td><td class="muted">55m</td></tr>
-          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate">prosettings.net/reviews/endgame-gear-xm1-rgb</td><td>prosettings.net</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">179 KB</td><td class="muted">56m</td></tr>
-        </tbody>
-      </table>
+    <!-- URLs Tab -->
+    <div class="tab-content" id="tab-urls">
+      <div class="tbl-shell">
+        <div class="tbl-search"><input type="text" placeholder="Search URLs, hosts..." /></div>
+        <div class="tbl-scroll"><table>
+          <thead><tr><th style="width:28px;"></th><th>HTTP</th><th>URL</th><th>Host</th><th>Tier</th><th>Kind</th><th>Size</th><th>Time</th></tr></thead>
+          <tbody>
+            <tr><td><span class="dot dot-ok"></span></td><td><span class="chip c-ok">200</span></td><td class="mono trunc">endgamegear.com/en-us/xm1rgb/gaming-mice</td><td>endgamegear.com</td><td><span class="chip c-n">T5</span></td><td><span class="chip c-n">html</span></td><td class="mono" style="color:var(--muted);">561 KB</td><td style="color:var(--muted);">56m</td></tr>
+            <tr><td><span class="dot dot-ok"></span></td><td><span class="chip c-ok">200</span></td><td class="mono trunc">techpowerup.com/review/endgame-gear-xm1-rgb</td><td>techpowerup.com</td><td><span class="chip c-n">T5</span></td><td><span class="chip c-n">html</span></td><td class="mono" style="color:var(--muted);">56 KB</td><td style="color:var(--muted);">56m</td></tr>
+            <tr><td><span class="dot dot-ok"></span></td><td><span class="chip c-ok">200</span></td><td class="mono trunc">prosettings.net/reviews/endgame-gear-xm1-rgb</td><td>prosettings.net</td><td><span class="chip c-n">T5</span></td><td><span class="chip c-n">html</span></td><td class="mono" style="color:var(--muted);">179 KB</td><td style="color:var(--muted);">56m</td></tr>
+            <tr><td><span class="dot dot-ok"></span></td><td><span class="chip c-ok">200</span></td><td class="mono trunc">help.endgamegear.com/hc/en-us/p/downloads</td><td>help.endgamegear.com</td><td><span class="chip c-n">T5</span></td><td><span class="chip c-n">html</span></td><td class="mono" style="color:var(--muted);">79 KB</td><td style="color:var(--muted);">56m</td></tr>
+            <tr><td><span class="dot dot-ok"></span></td><td><span class="chip c-ok">200</span></td><td class="mono trunc">reddit.com/r/MouseReview/comments/itx6bv...</td><td>reddit.com</td><td><span class="chip c-n">T5</span></td><td><span class="chip c-n">html</span></td><td class="mono" style="color:var(--muted);">785 KB</td><td style="color:var(--muted);">55m</td></tr>
+          </tbody>
+        </table></div>
+      </div>
     </div>
-  </div>
 
-  <!-- ── QUERIES TAB ─────────────────────── -->
-  <div class="tab-content" id="tab-queries">
-    <div class="tw">
-      <table>
-        <thead><tr><th>Query</th><th>Provider</th><th>Results</th><th>Domain Target</th></tr></thead>
-        <tbody>
-          <tr><td>Endgame Gear XM1 RGB specifications</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="muted">general</td></tr>
-          <tr><td>Endgame Gear XM1 RGB endgamegear.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">endgamegear.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB endgamegear.com/support</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">endgamegear.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB rtings.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">rtings.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB techpowerup.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">techpowerup.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB tomshardware.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">tomshardware.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB lttlabs.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">lttlabs.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB igorslab.de</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">igorslab.de</td></tr>
-          <tr><td>Endgame Gear XM1 RGB techgearlab.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">techgearlab.com</td></tr>
-          <tr><td>Endgame Gear XM1 RGB pcpartpicker.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">pcpartpicker.com</td></tr>
-        </tbody>
-      </table>
+    <!-- Errors Tab -->
+    <div class="tab-content" id="tab-errors">
+      <!-- Error summary KPIs -->
+      <div class="error-summary">
+        <div class="error-stat">
+          <div class="error-stat-num" style="color:var(--err);">4</div>
+          <div class="error-stat-label">Total Issues</div>
+        </div>
+        <div class="error-stat">
+          <div class="error-stat-num" style="color:var(--warn);">1</div>
+          <div class="error-stat-label">HTTP Blocked</div>
+        </div>
+        <div class="error-stat">
+          <div class="error-stat-num" style="color:var(--purple);">3</div>
+          <div class="error-stat-label">Timeouts</div>
+        </div>
+        <div class="error-stat">
+          <div class="error-stat-num" style="color:var(--text);">2</div>
+          <div class="error-stat-label">Domains Affected</div>
+        </div>
+      </div>
+
+      <!-- Error list -->
+      <div class="error-list">
+        <div class="error-item">
+          <div class="error-badge b403">403</div>
+          <div class="error-body">
+            <div class="error-url">https://www.bestbuy.ca/en-ca/product/endgame-gear-xm1-rgb-gaming-mouse/15927445</div>
+            <div class="error-meta"><span>bestbuy.ca</span><span>retail</span><span>2.1s response</span></div>
+          </div>
+          <span class="error-type" style="background:var(--warn-bg);color:var(--warn);border:1px solid rgba(234,179,8,0.3);">HTTP 403</span>
+        </div>
+        <div class="error-item">
+          <div class="error-badge bto">T/O</div>
+          <div class="error-body">
+            <div class="error-url">https://www.amazon.com/ENDGAME-GEAR-XM1-Gaming-Mouse-B08VDN4WSN</div>
+            <div class="error-meta"><span>amazon.com</span><span>retail</span><span>45.1s (threshold: 45s)</span></div>
+          </div>
+          <span class="error-type" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(147,51,234,0.25);">Timeout</span>
+        </div>
+        <div class="error-item">
+          <div class="error-badge bto">T/O</div>
+          <div class="error-body">
+            <div class="error-url">https://www.amazon.com/ENDGAME-GEAR-XM1-Gaming-Mouse-B08VD1ZX5T</div>
+            <div class="error-meta"><span>amazon.com</span><span>retail</span><span>45.1s (threshold: 45s)</span></div>
+          </div>
+          <span class="error-type" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(147,51,234,0.25);">Timeout</span>
+        </div>
+        <div class="error-item">
+          <div class="error-badge bto">T/O</div>
+          <div class="error-body">
+            <div class="error-url">https://www.amazon.com/ENDGAME-GEAR-XM1-Gaming-Mouse-B08HVBGR7F</div>
+            <div class="error-meta"><span>amazon.com</span><span>retail</span><span>45.1s (threshold: 45s)</span></div>
+          </div>
+          <span class="error-type" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(147,51,234,0.25);">Timeout</span>
+        </div>
+      </div>
+
+      <!-- Problematic Domains -->
+      <div style="margin-top:16px;">
+        <div class="section-label">Problematic Domains</div>
+        <div class="problem-domains">
+          <div class="problem-card">
+            <div class="problem-header"><span class="problem-name">amazon.com</span><span class="chip c-warn">caution</span></div>
+            <div class="problem-detail">3 of 3 URLs timed out <span style="color:var(--err);">(100% failure)</span><br/>Pattern: all requests exceeded 45s timeout threshold</div>
+          </div>
+          <div class="problem-card">
+            <div class="problem-header"><span class="problem-name">bestbuy.ca</span><span class="chip c-warn">caution</span></div>
+            <div class="problem-detail">1 of 1 URLs blocked <span style="color:var(--err);">(100% failure)</span><br/>Pattern: HTTP 403 — bot detection likely</div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
+
+  </div><!-- panel-pad -->
+</div><!-- panel -->
 
 <script>
 function switchTab(id) {

@@ -129,6 +129,28 @@ export function createRunListBuilder({
     };
   };
 
+  // WHY: Walks run subdirectories to compute total artifact size on disk.
+  // Called once per run per list request (cached by React Query ~15s).
+  async function computeRunDirSize(runDir) {
+    let total = 0;
+    for (const subdir of ['html', 'screenshots', 'video']) {
+      try {
+        const files = await fs.readdir(path.join(runDir, subdir));
+        const stats = await Promise.all(
+          files.map((f) => safeStat(path.join(runDir, subdir, f))),
+        );
+        for (const st of stats) {
+          if (st) total += st.size;
+        }
+      } catch { /* subdir doesn't exist */ }
+    }
+    const rjStat = await safeStat(path.join(runDir, 'run.json'));
+    if (rjStat) total += rjStat.size;
+    const rsStat = await safeStat(path.join(runDir, 'run-summary.json'));
+    if (rsStat) total += rsStat.size;
+    return total;
+  }
+
   async function listIndexLabRuns({ limit = 50, category = '', catalogProducts = null } = {}) {
     // WHY: catalogProducts is an optional Map<productId, {brand, model, variant}> for label resolution.
     // With hex-based product IDs, parsing the ID as a slug produces garbage labels.
@@ -228,8 +250,55 @@ export function createRunListBuilder({
         };
       }
 
-      // No SQL row — run not in database, skip
-      return null;
+      // WHY: File fallback — when no category filter is provided, SQL lookup
+      // never runs (specDb is per-category). Read run.json or run-summary.json
+      // from disk so the storage panel can discover all runs across categories.
+      const runDir = runLocations.get(dir);
+      if (!runDir) return null;
+      const meta = await safeReadJson(path.join(runDir, 'run-summary.json'))
+        || await safeReadJson(path.join(runDir, 'run.json'));
+      if (!meta) return null;
+      const run = meta.run && typeof meta.run === 'object' ? meta.run : meta;
+      const telemetry = meta.telemetry && typeof meta.telemetry === 'object' ? meta.telemetry : {};
+      const teleMeta = telemetry.meta && typeof telemetry.meta === 'object' ? telemetry.meta : {};
+      const fileRunId = toToken(run.run_id || dir);
+      const fileCategory = toToken(run.category || teleMeta.category);
+      const fileProductId = toToken(run.product_id || teleMeta.product_id);
+      const fileStatus = toToken(run.status || teleMeta.status || 'unknown');
+      const resolvedStatus = (
+        fileStatus.toLowerCase() === 'running' && !isRunStillActive(fileRunId)
+      ) ? 'completed' : fileStatus;
+      const fileCounters = run.counters || teleMeta.counters || {};
+      const identity = run.identity && typeof run.identity === 'object' ? run.identity : {};
+      const fileBrand = toToken(identity.brand);
+      const fileModel = toToken(identity.model);
+      const fileVariant = toToken(identity.variant);
+      const sizeBytes = await computeRunDirSize(runDir);
+      return {
+        run_id: fileRunId,
+        category: fileCategory,
+        product_id: fileProductId,
+        brand: fileBrand,
+        model: fileModel,
+        variant: fileVariant,
+        status: resolvedStatus,
+        started_at: toToken(run.started_at || teleMeta.started_at),
+        ended_at: toToken(run.ended_at || teleMeta.ended_at),
+        identity_fingerprint: toToken(run.identity_fingerprint || teleMeta.identity_fingerprint),
+        identity_lock_status: toToken(run.identity_lock_status || teleMeta.identity_lock_status),
+        dedupe_mode: toToken(run.dedupe_mode || teleMeta.dedupe_mode),
+        phase_cursor: toToken(run.phase_cursor || teleMeta.phase_cursor),
+        startup_ms: normalizeStartupMs(teleMeta.startup_ms || {}),
+        events_path: '',
+        run_dir: runDir,
+        storage_origin: 'local',
+        storage_state: resolveStorageState(resolvedStatus),
+        size_bytes: sizeBytes,
+        picker_label: buildPickerLabel({ category: fileCategory, productId: fileProductId, brand: fileBrand, model: fileModel, variant: fileVariant, runId: fileRunId }),
+        has_needset: false,
+        has_search_profile: false,
+        counters: fileCounters,
+      };
     }
 
     const settled = await Promise.allSettled(dirs.map((dir) => processRun(dir)));

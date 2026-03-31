@@ -46,21 +46,15 @@
           "_doc": "Per-query completion state from frontierDb. Null on round 0.",
           "queries": [
             {
-              "query_hash": "string",
               "query_text": "string",
-              "status": "not_run | searched | urls_admitted | scraping_in_progress | scrape_incomplete | scrape_complete | exhausted",
-              "completed_at_ms": "number | null",
-              "results_returned": "number",
-              "admitted_count": "number",
-              "scraped_complete_count": "number",
-              "scraped_incomplete_count": "number",
-              "pending_count": "number",
-              "fields_extracted_unique": "number",
-              "new_fields_closed": "number",
+              "completed_at_ms": "number (epoch ms from last_executed_at)",
+              "attempt_count": "number",
+              "cooldown_until": "string (ISO timestamp from DB)",
               "tier": "seed | group_search | key_search",
               "group_key": "string | null",
               "normalized_key": "string | null",
-              "source_name": "string | null"
+              "hint_source": "string | null",
+              "source_name": "string (provider)"
             }
           ]
         },
@@ -221,18 +215,16 @@
       "_doc": "Shape of seedStatus. Consumed by Search Profile phase for seed dispatch via determineQueryModes().",
       "specs_seed": {
         "is_needed": "boolean",
-        "last_status": "string — never_run | searched | scrape_incomplete | scrape_complete | exhausted",
         "last_completed_at_ms": "number | null",
         "cooldown_until_ms": "number | null",
-        "new_fields_closed_last_run": "number"
+        "attempt_count": "number"
       },
       "source_seeds": {
         "[sourceName]": {
           "is_needed": "boolean",
-          "last_status": "string",
           "last_completed_at_ms": "number | null",
           "cooldown_until_ms": "number | null",
-          "new_fields_closed_last_run": "number"
+          "attempt_count": "number"
         }
       },
       "query_completion_summary": {

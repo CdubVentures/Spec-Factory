@@ -24,8 +24,9 @@ it('returns all required top-level keys with correct types', async () => {
 
   // Top-level keys
   assert.equal(result.enabled, true);
-  assert.equal(typeof result.discoveryKey, 'string');
-  assert.equal(typeof result.candidatesKey, 'string');
+  // writeDiscoveryPayloads is a no-op stub — keys are undefined
+  assert.equal(result.discoveryKey, undefined);
+  assert.equal(result.candidatesKey, undefined);
   assert.ok(Array.isArray(result.candidates), 'candidates is array');
   assert.ok(Array.isArray(result.selectedUrls), 'selectedUrls is array');
   assert.ok(Array.isArray(result.queries), 'queries is array');

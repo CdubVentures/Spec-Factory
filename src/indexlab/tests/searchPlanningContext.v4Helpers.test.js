@@ -175,7 +175,8 @@ describe('V4 - deriveSeedStatus', () => {
   it('specs seed needed when never run', () => {
     const status = deriveSeedStatus(null, { official_domain: 'razer.com', manufacturer: 'Razer' });
     assert.equal(status.specs_seed.is_needed, true);
-    assert.equal(status.specs_seed.last_status, 'never_run');
+    assert.equal(status.specs_seed.cooldown_until_ms, null);
+    assert.equal(status.specs_seed.attempt_count, 0);
   });
 
   it('brand_seed is_needed when identity has manufacturer', () => {
@@ -196,33 +197,32 @@ describe('V4 - deriveSeedStatus', () => {
     assert.equal(status.source_seeds['support.razer.com'], undefined);
   });
 
-  it('specs seed not needed when complete and on cooldown', () => {
+  it('specs seed not needed when on active cooldown', () => {
     const now = Date.now();
+    const future = new Date(now + 30 * 86400000).toISOString();
     const history = {
       queries: [{
         tier: 'seed',
         source_name: null,
-        status: 'scrape_complete',
         completed_at_ms: now - 1000,
-        new_fields_closed: 3,
-        pending_count: 0,
+        attempt_count: 1,
+        cooldown_until: future,
       }],
     };
     const status = deriveSeedStatus(history, {});
     assert.equal(status.specs_seed.is_needed, false);
-    assert.equal(status.specs_seed.last_status, 'scrape_complete');
     assert.ok(status.specs_seed.cooldown_until_ms > now);
   });
 
-  it('specs seed needed when complete but no fields closed', () => {
+  it('specs seed needed when cooldown expired', () => {
+    const past = new Date(Date.now() - 86400000).toISOString();
     const history = {
       queries: [{
         tier: 'seed',
         source_name: null,
-        status: 'scrape_complete',
-        completed_at_ms: Date.now() - 1000,
-        new_fields_closed: 0,
-        pending_count: 0,
+        completed_at_ms: Date.now() - 31 * 86400000,
+        attempt_count: 1,
+        cooldown_until: past,
       }],
     };
     const status = deriveSeedStatus(history, {});
@@ -231,10 +231,11 @@ describe('V4 - deriveSeedStatus', () => {
   });
 
   it('source seeds are tracked per source_name', () => {
+    const future = new Date(Date.now() + 30 * 86400000).toISOString();
     const history = {
       queries: [
-        { tier: 'seed', source_name: 'rtings.com', status: 'scrape_complete', completed_at_ms: Date.now() - 1000, new_fields_closed: 2, pending_count: 0 },
-        { tier: 'seed', source_name: 'amazon.com', status: 'scrape_incomplete', completed_at_ms: null, new_fields_closed: 0, pending_count: 3 },
+        { tier: 'seed', source_name: 'rtings.com', completed_at_ms: Date.now() - 1000, attempt_count: 1, cooldown_until: future },
+        { tier: 'seed', source_name: 'amazon.com', completed_at_ms: Date.now() - 1000, attempt_count: 1, cooldown_until: '' },
       ],
     };
     const status = deriveSeedStatus(history, { official_domain: 'razer.com', manufacturer: 'Razer' });
@@ -245,17 +246,17 @@ describe('V4 - deriveSeedStatus', () => {
   });
 
   it('query_completion_summary counts correctly', () => {
+    const future = new Date(Date.now() + 30 * 86400000).toISOString();
     const history = {
       queries: [
-        { tier: 'seed', status: 'scrape_complete', pending_count: 0 },
-        { tier: 'group_search', status: 'scrape_incomplete', pending_count: 3 },
-        { tier: 'key_search', status: 'exhausted', pending_count: 0 },
+        { tier: 'seed', cooldown_until: future },
+        { tier: 'group_search', cooldown_until: '' },
+        { tier: 'key_search', cooldown_until: future },
       ],
     };
     const status = deriveSeedStatus(history, {});
     assert.equal(status.query_completion_summary.total_queries, 3);
     assert.equal(status.query_completion_summary.complete, 2);
     assert.equal(status.query_completion_summary.incomplete, 1);
-    assert.equal(status.query_completion_summary.pending_scrapes, 3);
   });
 });

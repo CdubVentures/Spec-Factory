@@ -110,10 +110,9 @@ describe('V4 - Schema 3 top-level seed_status and pass_seed', () => {
         queries: [{
           tier: 'seed',
           source_name: null,
-          status: 'scrape_complete',
           completed_at_ms: now - 1000,
-          new_fields_closed: 3,
-          pending_count: 0,
+          attempt_count: 1,
+          cooldown_until: new Date(now + 30 * 86400000).toISOString(),
         }],
       },
     });

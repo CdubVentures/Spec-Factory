@@ -15,9 +15,9 @@ async function getModule() {
 }
 
 describe('STAGE_GROUP_KEYS', () => {
-  it('contains exactly prefetch, fetch, extraction, validation', async () => {
+  it('contains exactly prefetch, fetch, extraction', async () => {
     const { STAGE_GROUP_KEYS } = await getModule();
-    assert.deepEqual([...STAGE_GROUP_KEYS], ['prefetch', 'fetch', 'extraction', 'validation']);
+    assert.deepEqual([...STAGE_GROUP_KEYS], ['prefetch', 'fetch', 'extraction']);
   });
 });
 

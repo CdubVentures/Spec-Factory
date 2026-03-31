@@ -117,14 +117,14 @@ describe('runtimeOpsShapeContract — buildRuntimeOpsMetricsRail', () => {
     deepStrictEqual(sorted(Object.keys(result)), sorted(METRICS_RAIL_KEYS));
   });
 
-  it('pool_metrics sub-keys are search, fetch, parse, llm', () => {
+  it('pool_metrics sub-keys are search, fetch, parse, llm, extraction', () => {
     const result = buildRuntimeOpsMetricsRail([], {});
-    deepStrictEqual(sorted(Object.keys(result.pool_metrics)), ['fetch', 'llm', 'parse', 'search']);
+    deepStrictEqual(sorted(Object.keys(result.pool_metrics)), ['extraction', 'fetch', 'llm', 'parse', 'search']);
   });
 
   it('each pool metric has POOL_METRIC_KEYS', () => {
     const result = buildRuntimeOpsMetricsRail([], {});
-    for (const pool of ['search', 'fetch', 'parse', 'llm']) {
+    for (const pool of ['search', 'fetch', 'parse', 'llm', 'extraction']) {
       deepStrictEqual(sorted(Object.keys(result.pool_metrics[pool])), sorted(POOL_METRIC_KEYS));
     }
   });

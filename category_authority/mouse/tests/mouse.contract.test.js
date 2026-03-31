@@ -11,7 +11,7 @@ const harness = createCategoryAuthorityHarness({ category: CATEGORY, importMetaU
 
 test('mouse search hints use approved real hostnames instead of tier tokens', async () => {
   const [full, sources] = await Promise.all([
-    harness.readCategoryJson('_control_plane', 'field_rules.full.json'),
+    harness.readCategoryJson('_generated', 'field_rules.json'),
     harness.readCategoryJson('sources.json'),
   ]);
   const approvedDomains = approvedDomainsFromSources(sources);

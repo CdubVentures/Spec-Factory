@@ -41,9 +41,18 @@ export async function startStage(state, stage, ts = '', payload = {}) {
     parse: 'parse_started',
     index: 'index_started'
   };
+  // WHY: fetch stage can fire during discovery (phase_05_fetch) or after discovery
+  // completes (phase_09_crawl). If the cursor is already past phase_08, the backward
+  // guard in setPhaseCursor would silently reject phase_05_fetch. Use phase_09_crawl
+  // when discovery is complete so the stepper advances to the Crawl stage.
+  const crawlIdx = PHASE_ORDER.indexOf('phase_09_crawl');
+  const currentIdx = PHASE_ORDER.indexOf(state.phaseCursor);
+  const fetchPhase = stage === 'fetch' && currentIdx >= 0 && crawlIdx >= 0 && currentIdx >= crawlIdx - 1
+    ? 'phase_09_crawl'
+    : 'phase_05_fetch';
   const phaseByStage = {
     search: 'phase_02_search',
-    fetch: 'phase_05_fetch',
+    fetch: fetchPhase,
     parse: 'phase_06_parse',
     index: 'phase_06_index'
   };

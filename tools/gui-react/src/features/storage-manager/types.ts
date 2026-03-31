@@ -46,14 +46,34 @@ export interface RunInventoryRow {
   run_id: string;
   category: string;
   product_id: string;
+  brand?: string;
+  model?: string;
+  variant?: string;
   status: string;
   started_at: string;
   ended_at: string;
   counters: RunCounters;
+  size_bytes?: number;
   storage_metrics?: StorageMetrics;
   picker_label?: string;
   storage_origin?: string;
   storage_state?: 'live' | 'local' | 's3' | 'synced';
+}
+
+export interface RunSourceEntry {
+  url: string;
+  final_url?: string;
+  status: number;
+  success: boolean;
+  blocked: boolean;
+  block_reason: string | null;
+  worker_id: string;
+  content_hash: string;
+  html_file: string;
+  screenshot_count: number;
+  video_file: string | null;
+  timeout_rescued: boolean;
+  fetch_error: string | null;
 }
 
 export interface StorageRunsResponse {
@@ -66,6 +86,7 @@ export interface StageTimestamp {
 }
 
 export interface RunDetailResponse extends RunInventoryRow {
+  sources?: RunSourceEntry[];
   out_root: string;
   events_path: string;
   run_base: string;

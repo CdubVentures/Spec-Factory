@@ -72,10 +72,8 @@ test('readIndexLabRunNeedSet: falls back to empty payload when run exists withou
     });
 
     const payload = await readIndexLabRunNeedSet(runId);
-    assert.ok(payload && typeof payload === 'object');
-    assert.ok(Array.isArray(payload.fields));
-    assert.equal(payload.fields.length, 0);
-    assert.equal(payload.total_fields, 0);
+    // SQL is SSOT — no file/events fallback, returns null when no SQL artifact
+    assert.equal(payload, null);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

@@ -136,7 +136,7 @@ export function makeRunContext(overrides = {}) {
 export function makeSeedStatus(overrides = {}) {
   return {
     brand_seed: { is_needed: false, brand_name: '' },
-    specs_seed: { is_needed: true, last_status: 'never_run' },
+    specs_seed: { is_needed: true, cooldown_until_ms: null, attempt_count: 0 },
     source_seeds: {},
     query_completion_summary: { total_queries: 0, complete: 0, incomplete: 0, pending_scrapes: 0 },
     ...overrides,

@@ -21,7 +21,7 @@ function makeJob(overrides = {}) {
 function makeSeedStatus(sourceHosts = []) {
   const source_seeds = {};
   for (const host of sourceHosts) {
-    source_seeds[host] = { is_needed: true, last_status: 'never_run' };
+    source_seeds[host] = { is_needed: true };
   }
   return {
     specs_seed: { is_needed: true },

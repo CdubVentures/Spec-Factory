@@ -29,7 +29,7 @@ function createHarness(overrides = {}) {
     invalidateCalls: [],
     persistenceCalls: [],
     storeCalls: [],
-    queryClient: {},
+    queryClient: { invalidateQueries() {} },
     fieldRulesStore: {
       editedRules: {},
       editedFieldOrder: [],
@@ -374,7 +374,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
   const { useStudioPageDocsController } = await loadStudioPageDocsControllerModule();
   const harness = createHarness({
     authorityVersionToken: 'auth-v2',
-    queryClient: { id: 'query-client' },
+    queryClient: { id: 'query-client', invalidateQueries() {} },
     fieldRulesStore: {
       editedRules: { dpi: { label: 'DPI', _edited: true } },
       editedFieldOrder: ['dpi'],

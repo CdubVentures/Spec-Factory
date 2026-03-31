@@ -650,7 +650,11 @@ async function main(argv = process.argv.slice(2)) {
   if (output !== undefined) {
     process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
   }
-  process.exitCode = exitCode;
+  // WHY: Force exit after all critical work is done. Without this, Node waits
+  // for dangling handles (Playwright browser processes on Windows, keep-alive
+  // sockets) which can delay exit by 30-60+ seconds after the run is complete.
+  // All DB writes, checkpoint saves, and bridge finalize are done by this point.
+  process.exit(exitCode);
 }
 
 function isDirectCliExecution() {

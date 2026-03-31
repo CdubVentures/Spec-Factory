@@ -1,41 +1,47 @@
-import { useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useStorageOverview } from '../state/useStorageOverview.ts';
 import { useStorageRuns } from '../state/useStorageRuns.ts';
+import { useDeleteRun, useBulkDeleteRuns } from '../state/useStorageActions.ts';
+import { useUiStore } from '../../../stores/uiStore.ts';
+import { groupRunsByProduct } from '../helpers.ts';
 import { StorageOverviewBar } from './StorageOverviewBar.tsx';
-import { RunInventoryTable } from './RunInventoryTable.tsx';
+import { ProductTable } from './tables/ProductTable.tsx';
 import { StorageOperationsBar } from './StorageOperationsBar.tsx';
+import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
 
 export function StorageManagerPanel() {
-  const [selectedRunIds, setSelectedRunIds] = useState<Set<string>>(new Set());
+  const category = useUiStore((s) => s.category);
+  const categoryScope = category === 'all' ? undefined : category;
 
   const overview = useStorageOverview(true);
-  const runsQuery = useStorageRuns(true);
+  const runsQuery = useStorageRuns(true, categoryScope);
   const runs = runsQuery.data?.runs ?? [];
 
-  const handleToggleSelect = useCallback((runId: string) => {
-    setSelectedRunIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(runId)) next.delete(runId);
-      else next.add(runId);
-      return next;
-    });
-  }, []);
+  const products = useMemo(() => groupRunsByProduct(runs), [runs]);
 
-  const handleSelectAll = useCallback(() => {
-    setSelectedRunIds(new Set(runs.map((r) => r.run_id)));
-  }, [runs]);
+  /* ── Delete state ───────────────────────────────────────── */
+  const [deleteTarget, setDeleteTarget] = useState<string[] | null>(null);
+  const singleDelete = useDeleteRun();
+  const bulkDelete = useBulkDeleteRuns();
+  const isDeleting = singleDelete.isPending || bulkDelete.isPending;
 
-  const handleClearSelection = useCallback(() => {
-    setSelectedRunIds(new Set());
-  }, []);
+  const handleDeleteRun = useCallback((runId: string) => setDeleteTarget([runId]), []);
+  const handleBulkDelete = useCallback((runIds: string[]) => setDeleteTarget(runIds), []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    if (deleteTarget.length === 1) {
+      singleDelete.mutate(deleteTarget[0], { onSuccess: () => setDeleteTarget(null) });
+    } else {
+      bulkDelete.mutate(deleteTarget, { onSuccess: () => setDeleteTarget(null) });
+    }
+  }, [deleteTarget, singleDelete, bulkDelete]);
 
   const hasError = overview.error || runsQuery.error;
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-bold">Storage Manager</h2>
-
       {hasError && (
         <AlertBanner
           severity="warning"
@@ -46,23 +52,28 @@ export function StorageManagerPanel() {
 
       <StorageOverviewBar
         overview={overview.data}
+        runs={runs}
         isLoading={overview.isLoading}
       />
 
-      <RunInventoryTable
-        runs={runs}
+      <ProductTable
+        products={products}
         isLoading={runsQuery.isLoading}
-        selectedRunIds={selectedRunIds}
-        onToggleSelect={handleToggleSelect}
-        onSelectAll={handleSelectAll}
-        onClearSelection={handleClearSelection}
+        onDeleteAll={handleBulkDelete}
+        onDeleteRun={handleDeleteRun}
+        isDeleting={isDeleting}
       />
 
-      <StorageOperationsBar
-        selectedRunIds={selectedRunIds}
-        totalRuns={runs.length}
-        onClearSelection={handleClearSelection}
-      />
+      <StorageOperationsBar totalRuns={runs.length} />
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          runIds={deleteTarget}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+          isPending={isDeleting}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,20 @@
 import path from 'node:path';
 import { isObject } from '../shared/primitives.js';
 
+// WHY: SQLite datetime('now') returns UTC without a timezone marker
+// (e.g. '2026-03-31 18:22:56'). JavaScript's new Date() parses that as
+// LOCAL time, shifting it by the host's UTC offset. This makes every
+// timestamp comparison wrong for anyone not running on UTC.
+function parseUtcTimestamp(ts) {
+  if (!ts) return null;
+  const s = String(ts).trim();
+  if (!s) return null;
+  // Already has explicit timezone → parse directly
+  if (s.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(s)) return new Date(s);
+  // Bare SQLite format → treat as UTC
+  return new Date(s.replace(' ', 'T') + 'Z');
+}
+
 function mergeFieldOverrides(compiledFields, fieldOverrides) {
   if (!isObject(fieldOverrides)) return compiledFields;
   const allKeys = Object.keys({ ...compiledFields, ...fieldOverrides });
@@ -182,8 +196,12 @@ export function createSessionCache({
     // WHY: both timestamps live in DB. map updated_at changes only when
     // auto-save detects a real content change (fingerprint dedup).
     // If map was saved after compile → stale. Simple.
+    // parseUtcTimestamp normalises SQLite's bare datetime('now') format
+    // so the comparison isn't poisoned by the host's timezone offset.
+    const mapTs = parseUtcTimestamp(mapSavedAt);
+    const compileTs = parseUtcTimestamp(compiledAt);
     const compileStale = Boolean(
-      mapSavedAt && (!compiledAt || new Date(mapSavedAt) > new Date(compiledAt))
+      mapTs && (!compileTs || mapTs > compileTs)
     );
 
     return {

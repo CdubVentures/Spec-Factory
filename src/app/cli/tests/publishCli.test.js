@@ -45,7 +45,7 @@ async function seedHelperArtifacts(helperRoot) {
 }
 
 async function seedLatest(outputRoot, productId, weight = '59') {
-  const base = path.join(outputRoot, 'specs', 'outputs', 'mouse', productId, 'latest');
+  const base = path.join(outputRoot, 'mouse', productId, 'latest');
   await writeJson(path.join(base, 'normalized.json'), {
     identity: { brand: 'Synthetic', model: 'Probe One', variant: 'Wireless' },
     fields: { weight }

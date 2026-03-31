@@ -135,8 +135,10 @@ export class IndexLabRuntimeBridge {
         });
         // WHY: Serialize all run telemetry BEFORE maps/trackers are cleared.
         // run-summary.json captures events + LLM agg + observability for the GUI.
+        // If caller already serialized (pipelineCommands passes runSummaryPayload),
+        // reuse it to avoid a redundant SQL read of 6000+ events.
         try {
-          const runSummaryPayload = await serializeRunSummary(this);
+          const runSummaryPayload = summary.runSummaryPayload || await serializeRunSummary(this);
           await writeRunSummaryArtifact(this, runSummaryPayload);
           // WHY: bridge_events are now captured in run-summary.json. Purge the
           // per-run SQL rows to keep WAL lean. Product artifacts stay untouched.

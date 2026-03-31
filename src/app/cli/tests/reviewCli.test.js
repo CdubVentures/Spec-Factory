@@ -12,7 +12,7 @@ test('review CLI suggest appends a suggestion through the top-level command surf
     '--category', 'mouse',
     '--type', 'enum',
     '--field', 'switch_type',
-    '--value', 'synthetic-optical',
+    '--value', `synthetic-optical-${Date.now()}`,
     '--evidence-url', 'https://manufacturer.example/spec',
     '--evidence-quote', 'Switch Type: Synthetic Optical',
     '--product-id', 'mouse-review-cli',

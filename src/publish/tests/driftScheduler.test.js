@@ -54,7 +54,7 @@ async function seedFinalSourceHistory(tempRoot, category, productId, rows = []) 
 }
 
 async function seedLatestArtifacts(tempRoot, category, productId, fields, provenance = {}, summary = {}) {
-  const latestBase = path.join(tempRoot, 'out', 'specs', 'outputs', category, productId, 'latest');
+  const latestBase = path.join(tempRoot, 'out', category, productId, 'latest');
   await writeJson(path.join(latestBase, 'normalized.json'), {
     identity: { brand: 'Razer', model: 'Viper V3 Pro', variant: 'Wireless' },
     fields

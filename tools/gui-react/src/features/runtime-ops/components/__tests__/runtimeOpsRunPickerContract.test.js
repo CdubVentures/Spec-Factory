@@ -114,7 +114,7 @@ test('runtime ops run picker renders readable labels with storage-origin badges'
   assert.match(text, /\bLive\b/);
 });
 
-test('runtime ops run picker caps itself at 400px and keeps the selected summary to one inline label plus badges', async () => {
+test('runtime ops run picker caps itself at 360px and keeps the selected summary to one inline label plus badges', async () => {
   const { RuntimeOpsRunPicker } = await loadRunPickerModule();
   const tree = renderElement(RuntimeOpsRunPicker({
     runs: [
@@ -145,7 +145,7 @@ test('runtime ops run picker caps itself at 400px and keeps the selected summary
 
   const details = findFirst(tree, (node) => node.type === 'details');
   assert.ok(details, 'expected a details root');
-  assert.match(String(details.props?.className || ''), /w-\[400px\]/);
+  assert.match(String(details.props?.className || ''), /w-\[360px\]/);
 
   const summary = findFirst(tree, (node) => node.type === 'summary');
   const summaryText = flattenText(summary);

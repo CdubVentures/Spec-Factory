@@ -72,7 +72,7 @@ it('search_profile exposes executed query stats and embedded serp explorer count
     attempts: 2,
     result_count: 3,
     providers: ['google', 'bing'],
-    frontier_cache: false,
+    cooldown_skipped: false,
   });
   assert.equal(searchProfile.serp_explorer.query_count, searchProfile.query_rows.length);
   assert.equal(searchProfile.serp_explorer.urls_selected, searchProfile.selected_count);

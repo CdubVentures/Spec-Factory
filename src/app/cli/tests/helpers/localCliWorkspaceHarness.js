@@ -13,6 +13,7 @@ export async function createLocalCliWorkspace(testContext, prefix) {
   const outputRoot = path.join(tempRoot, 'out');
   const importsRoot = path.join(tempRoot, 'imports');
   const helperRoot = path.join(tempRoot, 'category_authority');
+  const specDbDir = path.join(tempRoot, 'db');
 
   return {
     tempRoot,
@@ -20,6 +21,7 @@ export async function createLocalCliWorkspace(testContext, prefix) {
     outputRoot,
     importsRoot,
     helperRoot,
+    specDbDir,
     localArgs() {
       return [
         '--local',
@@ -27,6 +29,7 @@ export async function createLocalCliWorkspace(testContext, prefix) {
         '--local-input-root', inputRoot,
         '--local-output-root', outputRoot,
         '--imports-root', importsRoot,
+        // specDbDir is set via env SPEC_DB_DIR, not a CLI arg
       ];
     },
   };

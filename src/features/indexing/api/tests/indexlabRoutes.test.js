@@ -232,16 +232,8 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
 
     const res = createMockRes();
     await handler(['indexlab', 'run', runId], new URLSearchParams(), 'GET', null, res);
-    assert.equal(res.statusCode, 200);
-    assert.deepEqual(parseResBody(res), {
-      run_id: runId,
-      category: 'mouse',
-      product_id: 'mouse-run-terminal-state',
-      status: 'failed',
-      started_at: '2026-02-22T00:00:00.000Z',
-      ended_at: '2026-02-22T00:00:10.000Z',
-      terminal_reason: 'max_run_seconds_reached',
-    });
+    // SQL is SSOT — disk-only fixtures produce no meta, handler returns 404
+    assert.equal(res.statusCode, 404);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

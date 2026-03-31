@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractRunFunnelSummary, extractDomainBreakdown } from '../extractRunFunnelSummary.js';
+import { extractRunFunnelSummary, extractDomainBreakdown, extractFetchErrors, extractExtractionSummary } from '../extractRunFunnelSummary.js';
 
 // ── Event factories (match actual telemetry.events shape) ────────
 
@@ -52,7 +52,7 @@ describe('extractRunFunnelSummary', () => {
 
     assert.equal(f.queries_executed, 3);
     assert.equal(f.results_found, 28);
-    assert.equal(f.candidates_triaged, 57);
+    assert.equal(f.candidates_unique, 57);
     assert.equal(f.urls_selected, 3);
     assert.equal(f.urls_ok, 2);
     assert.equal(f.urls_blocked, 0);
@@ -67,7 +67,7 @@ describe('extractRunFunnelSummary', () => {
     const f = extractRunFunnelSummary([], {});
     assert.equal(f.queries_executed, 0);
     assert.equal(f.results_found, 0);
-    assert.equal(f.candidates_triaged, 0);
+    assert.equal(f.candidates_unique, 0);
     assert.equal(f.urls_selected, 0);
     assert.equal(f.urls_ok, 0);
     assert.equal(f.urls_blocked, 0);
@@ -98,7 +98,7 @@ describe('extractRunFunnelSummary', () => {
     const f = extractRunFunnelSummary(events, {});
     assert.equal(f.queries_executed, 1);
     assert.equal(f.results_found, 0);
-    assert.equal(f.candidates_triaged, 0);
+    assert.equal(f.candidates_unique, 0);
   });
 });
 
@@ -153,5 +153,108 @@ describe('extractDomainBreakdown', () => {
   it('returns empty for no data', () => {
     const domains = extractDomainBreakdown([], []);
     assert.equal(domains.length, 0);
+  });
+});
+
+// ── extractFetchErrors ───────────────────────────────────────────
+
+describe('extractFetchErrors', () => {
+
+  it('extracts HTTP 403 and timeout errors', () => {
+    const events = [
+      domainsClassified([
+        { domain: 'bestbuy.ca', role: 'retail', safety_class: 'caution' },
+        { domain: 'amazon.com', role: 'retail', safety_class: 'caution' },
+      ]),
+      { stage: 'fetch', event: 'fetch_finished', payload: { url: 'https://bestbuy.ca/product/123', status: 403, status_class: 'blocked', ms: 2100 } },
+      { stage: 'fetch', event: 'fetch_finished', payload: { url: 'https://amazon.com/dp/B08VDN', status: 200, status_class: 'ok', ms: 45100, error: 'requestHandler timed out after 45 seconds.' } },
+      { stage: 'fetch', event: 'fetch_finished', payload: { url: 'https://endgamegear.com/xm1', status: 200, status_class: 'ok', ms: 3000 } },
+    ];
+
+    const errors = extractFetchErrors(events);
+    assert.equal(errors.length, 2);
+
+    const blocked = errors.find((e) => e.error_type === 'http_403');
+    assert.ok(blocked);
+    assert.equal(blocked.host, 'bestbuy.ca');
+    assert.equal(blocked.domain_safety, 'caution');
+    assert.equal(blocked.response_ms, 2100);
+
+    const timeout = errors.find((e) => e.error_type === 'timeout');
+    assert.ok(timeout);
+    assert.equal(timeout.host, 'amazon.com');
+    assert.equal(timeout.response_ms, 45100);
+  });
+
+  it('returns empty for no errors', () => {
+    const events = [
+      { stage: 'fetch', event: 'fetch_finished', payload: { url: 'https://ok.com', status: 200, status_class: 'ok', ms: 500 } },
+    ];
+    assert.equal(extractFetchErrors(events).length, 0);
+  });
+
+  it('returns empty for no events', () => {
+    assert.equal(extractFetchErrors([]).length, 0);
+  });
+});
+
+// ── extractExtractionSummary ─────────────────────────────────────
+
+describe('extractExtractionSummary', () => {
+
+  it('aggregates plugin artifacts from extraction_plugin_completed events', () => {
+    const events = [
+      { event: 'extraction_plugin_completed', payload: { plugin: 'screenshot', result: { screenshot_count: 1, total_bytes: 250000 } } },
+      { event: 'extraction_plugin_completed', payload: { plugin: 'screenshot', result: { screenshot_count: 2, total_bytes: 500000 } } },
+      { event: 'extraction_plugin_completed', payload: { plugin: 'video', result: { total_bytes: 100000 } } },
+      { event: 'extraction_artifacts_persisted', payload: { plugin: 'screenshot', filenames: ['a.jpg', 'b.jpg'] } },
+      { event: 'extraction_artifacts_persisted', payload: { plugin: 'screenshot', filenames: ['c.jpg'] } },
+      { event: 'extraction_artifacts_persisted', payload: { plugin: 'video', filenames: ['v.webm'] } },
+    ];
+
+    const s = extractExtractionSummary(events);
+    assert.equal(s.plugins.screenshot.urls, 2);
+    assert.equal(s.plugins.screenshot.artifacts, 3);
+    assert.equal(s.plugins.screenshot.total_bytes, 750000);
+    assert.equal(s.plugins.video.urls, 1);
+    assert.equal(s.plugins.video.artifacts, 1);
+    assert.equal(s.plugins.video.total_bytes, 100000);
+    assert.equal(s.total_artifacts, 4);
+    assert.equal(s.total_bytes, 850000);
+  });
+
+  it('aggregates parse quality from parse_finished events', () => {
+    const events = [
+      { event: 'parse_finished', payload: { candidate_count: 5, article_char_count: 1000, article_low_quality: false, structured_json_ld_count: 2, structured_microdata_count: 0, structured_opengraph_count: 1 } },
+      { event: 'parse_finished', payload: { candidate_count: 0, article_char_count: 0, article_low_quality: false, structured_json_ld_count: 0, structured_microdata_count: 0, structured_opengraph_count: 0 } },
+      { event: 'parse_finished', payload: { candidate_count: 3, article_char_count: 500, article_low_quality: true, structured_json_ld_count: 0, structured_microdata_count: 0, structured_opengraph_count: 0 } },
+    ];
+
+    const s = extractExtractionSummary(events);
+    assert.equal(s.urls_parsed, 3);
+    assert.equal(s.total_candidates, 8);
+    assert.equal(s.structured_data_found, 1);
+    assert.equal(s.articles_extracted, 2);
+    assert.equal(s.low_quality_articles, 1);
+  });
+
+  it('returns zeros for empty events', () => {
+    const s = extractExtractionSummary([]);
+    assert.equal(s.total_artifacts, 0);
+    assert.equal(s.total_bytes, 0);
+    assert.equal(s.urls_parsed, 0);
+    assert.deepEqual(s.plugins, {});
+  });
+
+  it('auto-discovers new plugin types', () => {
+    const events = [
+      { event: 'extraction_plugin_completed', payload: { plugin: 'pdf', result: { total_bytes: 50000 } } },
+      { event: 'extraction_artifacts_persisted', payload: { plugin: 'pdf', filenames: ['doc.pdf'] } },
+    ];
+    const s = extractExtractionSummary(events);
+    assert.ok(s.plugins.pdf);
+    assert.equal(s.plugins.pdf.urls, 1);
+    assert.equal(s.plugins.pdf.artifacts, 1);
+    assert.equal(s.plugins.pdf.total_bytes, 50000);
   });
 });
