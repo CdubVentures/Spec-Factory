@@ -3,779 +3,307 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Product Run History Panel - Design Preview v2</title>
+<title>Product Run History Panel v3 — Pipeline Funnel</title>
 <style>
   :root {
-    --sf-token-surface-base: #0a1330;
-    --sf-token-surface-elevated: #111f41;
-    --sf-token-surface-panel: #0d1834;
-    --sf-token-border-default: #243a65;
-    --sf-token-border-subtle: #94a3b8;
-    --sf-token-text-primary: #ecf1ff;
-    --sf-token-text-muted: #adc2eb;
-    --sf-token-text-subtle: #94a3b8;
-    --sf-token-accent: #6366f1;
-    --sf-token-accent-strong: #818cf8;
-    --sf-token-state-success-fg: #86efac;
-    --sf-token-state-success-bg: rgba(34, 197, 94, 0.2);
-    --sf-token-state-error-fg: #f87171;
-    --sf-token-state-error-bg: rgba(248, 113, 113, 0.2);
-    --sf-token-state-warning-fg: #fcd34d;
-    --sf-token-state-warning-bg: rgba(234, 179, 8, 0.2);
-    --sf-token-state-info-fg: #93c5fd;
-    --sf-token-state-info-bg: rgba(14, 165, 233, 0.2);
-    --sf-token-font-family-ui: "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
-    --sf-token-font-family-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
-    --sf-token-font-size-caption: 11px;
-    --sf-token-font-size-label: 12px;
-    --sf-token-font-size-body-sm: 14px;
-    --sf-token-radius-sm: 0.25rem;
-    --sf-token-radius-md: 0.375rem;
+    --sf-bg: #0a1330; --sf-elevated: #111f41; --sf-panel: #0d1834;
+    --sf-border: #243a65; --sf-text: #ecf1ff; --sf-muted: #adc2eb; --sf-subtle: #94a3b8;
+    --sf-accent: #6366f1; --sf-accent-s: #818cf8;
+    --sf-ok: #86efac; --sf-ok-bg: rgba(34,197,94,0.2);
+    --sf-err: #f87171; --sf-err-bg: rgba(248,113,113,0.2);
+    --sf-warn: #fcd34d; --sf-warn-bg: rgba(234,179,8,0.2);
+    --sf-info: #93c5fd; --sf-info-bg: rgba(14,165,233,0.2);
+    --sf-font: "Segoe UI","Inter",sans-serif;
+    --sf-mono: "SFMono-Regular","Consolas",monospace;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: var(--sf-token-font-family-ui);
-    background: var(--sf-token-surface-base);
-    color: var(--sf-token-text-primary);
-    padding: 24px;
-    line-height: 1.45;
-  }
+  body { font-family: var(--sf-font); background: var(--sf-bg); color: var(--sf-text); padding: 20px; line-height: 1.45; }
 
-  .design-note {
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.4);
-    border-radius: var(--sf-token-radius-md);
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    font-size: var(--sf-token-font-size-body-sm);
-    color: var(--sf-token-accent-strong);
-  }
-  .design-note strong { color: #a5b4fc; }
+  .note { background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.4); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--sf-accent-s); }
+  .note strong { color: #a5b4fc; }
 
-  .sf-panel {
-    background: var(--sf-token-surface-panel);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-md);
-    padding: 12px;
-    margin-bottom: 16px;
-  }
-  .sf-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .sf-panel-title {
-    font-size: var(--sf-token-font-size-body-sm);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .sf-panel-title .collapse-btn {
-    width: 20px; height: 20px;
-    display: inline-flex; align-items: center; justify-content: center;
-    background: transparent; border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-sm);
-    color: var(--sf-token-text-muted);
-    cursor: pointer; font-size: 12px;
-  }
+  .panel { background: var(--sf-panel); border: 1px solid var(--sf-border); border-radius: 6px; padding: 12px; margin-bottom: 16px; }
+  .panel-header { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 14px; font-weight: 600; }
+  .panel-header .mono { font-family: var(--sf-mono); font-size: 11px; color: var(--sf-muted); font-weight: 400; }
 
-  .picker-context {
-    background: var(--sf-token-surface-panel);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-md);
-    padding: 12px;
-    margin-bottom: 16px;
-    opacity: 0.6;
-  }
-  .picker-context .label {
-    font-size: var(--sf-token-font-size-caption);
-    color: var(--sf-token-text-muted);
-  }
-  .picker-context .product-id {
-    font-family: var(--sf-token-font-family-mono);
-    font-size: var(--sf-token-font-size-label);
-    color: var(--sf-token-accent-strong);
-  }
+  /* ── Metrics ───────────────────────────── */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 8px; margin-bottom: 14px; }
+  .mc { background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; padding: 8px 10px; }
+  .mc-label { font-size: 10px; color: var(--sf-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .mc-value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mc-delta { font-size: 10px; margin-top: 1px; }
+  .green { color: var(--sf-ok); } .red { color: var(--sf-err); } .yellow { color: var(--sf-warn); }
+  .blue { color: var(--sf-info); } .accent { color: var(--sf-accent-s); } .muted { color: var(--sf-muted); }
 
-  /* ── Metric Cards ────────────────────────────────────────────── */
-  .metric-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .metric-card {
-    background: var(--sf-token-surface-elevated);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-md);
-    padding: 10px 12px;
-  }
-  .metric-card .metric-label {
-    font-size: var(--sf-token-font-size-caption);
-    color: var(--sf-token-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
-  .metric-card .metric-value {
-    font-size: 22px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-  .metric-card .metric-delta {
-    font-size: var(--sf-token-font-size-caption);
-    margin-top: 2px;
-  }
-  .metric-value.success { color: var(--sf-token-state-success-fg); }
-  .metric-value.error { color: var(--sf-token-state-error-fg); }
-  .metric-value.accent { color: var(--sf-token-accent-strong); }
-  .metric-value.info { color: var(--sf-token-state-info-fg); }
-  .metric-value.warning { color: var(--sf-token-state-warning-fg); }
-  .metric-delta.success { color: var(--sf-token-state-success-fg); }
-  .metric-delta.error { color: var(--sf-token-state-error-fg); }
-  .metric-delta.muted { color: var(--sf-token-text-muted); }
+  /* ── Run Selector ──────────────────────── */
+  .run-strip { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding: 4px; }
+  .run-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; }
+  .run-chip:hover { border-color: var(--sf-accent); }
+  .run-chip.active { border-color: var(--sf-accent); background: rgba(99,102,241,0.12); }
+  .run-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .run-chip .dot.ok { background: var(--sf-ok); } .run-chip .dot.err { background: var(--sf-err); }
+  .run-chip .run-date { color: var(--sf-muted); }
+  .run-chip .run-cost { font-family: var(--sf-mono); color: var(--sf-warn); font-size: 11px; }
 
-  /* ── Charts ──────────────────────────────────────────────────── */
-  .charts-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .chart-card {
-    background: var(--sf-token-surface-elevated);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-md);
-    padding: 12px;
-  }
-  .chart-title {
-    font-size: var(--sf-token-font-size-label);
-    font-weight: 600;
-    color: var(--sf-token-text-muted);
-    margin-bottom: 10px;
-  }
+  /* ── Pipeline Funnel ───────────────────── */
+  .funnel { display: flex; align-items: stretch; gap: 0; margin-bottom: 14px; }
+  .funnel-step { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; position: relative; min-height: 80px; }
+  .funnel-step:not(:last-child)::after { content: '→'; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--sf-subtle); z-index: 1; }
+  .funnel-count { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .funnel-label { font-size: 10px; color: var(--sf-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+  .funnel-pct { font-size: 9px; color: var(--sf-subtle); margin-top: 1px; }
+  .funnel-step .funnel-bg { position: absolute; inset: 0; border-radius: 4px; opacity: 0.08; z-index: 0; }
+  .funnel-step > * { position: relative; z-index: 1; }
+  .funnel-sub { display: flex; gap: 4px; margin-top: 3px; font-size: 10px; }
+  .funnel-sub span { padding: 1px 4px; border-radius: 3px; font-weight: 500; }
 
-  /* ── Tabs ────────────────────────────────────────────────────── */
-  .tab-strip {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--sf-token-surface-elevated);
-    border-radius: var(--sf-token-radius-md);
-    margin-bottom: 12px;
-  }
-  .tab-item {
-    padding: 4px 12px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--sf-token-text-muted);
-    background: transparent;
-    border: none;
-    border-radius: var(--sf-token-radius-sm);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.15s;
-  }
-  .tab-item:hover { color: var(--sf-token-text-primary); background: rgba(99, 102, 241, 0.08); }
-  .tab-item.active {
-    color: var(--sf-token-text-primary);
-    background: var(--sf-token-accent);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
+  /* ── Tabs ───────────────────────────────── */
+  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--sf-elevated); border-radius: 6px; margin-bottom: 10px; }
+  .tab { padding: 4px 12px; height: 28px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 500; color: var(--sf-muted); background: transparent; border: none; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .tab:hover { color: var(--sf-text); background: rgba(99,102,241,0.08); }
+  .tab.active { color: var(--sf-text); background: var(--sf-accent); }
   .tab-count { margin-left: 4px; font-size: 11px; opacity: 0.7; }
+  .tab-content { display: none; } .tab-content.active { display: block; }
 
-  /* ── Tables ──────────────────────────────────────────────────── */
-  .table-wrapper {
-    background: var(--sf-token-surface-elevated);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-md);
-    overflow: hidden;
-    max-height: 400px;
-    overflow-y: auto;
-  }
-  .search-bar {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--sf-token-border-default);
-  }
-  .search-bar input {
-    width: 100%;
-    background: var(--sf-token-surface-base);
-    border: 1px solid var(--sf-token-border-default);
-    border-radius: var(--sf-token-radius-sm);
-    padding: 5px 10px;
-    font-size: var(--sf-token-font-size-label);
-    color: var(--sf-token-text-primary);
-    outline: none;
-  }
-  .search-bar input:focus { border-color: var(--sf-token-accent); }
-  table { width: 100%; border-collapse: collapse; font-size: var(--sf-token-font-size-label); }
-  thead { position: sticky; top: 0; z-index: 1; }
-  th {
-    background: var(--sf-token-surface-panel);
-    padding: 8px 10px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--sf-token-text-muted);
-    font-size: var(--sf-token-font-size-caption);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 1px solid var(--sf-token-border-default);
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-  }
-  th:hover { color: var(--sf-token-text-primary); }
-  th .sort-arrow { margin-left: 4px; font-size: 9px; opacity: 0.5; }
-  td {
-    padding: 7px 10px;
-    border-bottom: 1px solid rgba(36, 58, 101, 0.4);
-    color: var(--sf-token-text-primary);
-  }
-  tr:hover td { background: rgba(99, 102, 241, 0.04); }
+  /* ── Tables ─────────────────────────────── */
+  .tw { background: var(--sf-elevated); border: 1px solid var(--sf-border); border-radius: 6px; overflow: hidden; max-height: 350px; overflow-y: auto; }
+  .search-bar { padding: 6px 10px; border-bottom: 1px solid var(--sf-border); }
+  .search-bar input { width: 100%; background: var(--sf-bg); border: 1px solid var(--sf-border); border-radius: 4px; padding: 4px 8px; font-size: 12px; color: var(--sf-text); outline: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--sf-panel); padding: 6px 8px; text-align: left; font-weight: 600; color: var(--sf-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--sf-border); white-space: nowrap; }
+  td { padding: 5px 8px; border-bottom: 1px solid rgba(36,58,101,0.4); }
+  tr:hover td { background: rgba(99,102,241,0.04); }
+  .mono { font-family: var(--sf-mono); font-size: 11px; }
+  .chip { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-family: var(--sf-mono); font-weight: 600; }
+  .chip-ok { background: var(--sf-ok-bg); color: var(--sf-ok); }
+  .chip-err { background: var(--sf-err-bg); color: var(--sf-err); }
+  .chip-warn { background: var(--sf-warn-bg); color: var(--sf-warn); }
+  .chip-info { background: var(--sf-info-bg); color: var(--sf-info); }
+  .chip-n { background: rgba(148,163,184,0.15); color: var(--sf-muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-ok { background: var(--sf-ok); } .dot-err { background: var(--sf-err); } .dot-warn { background: var(--sf-warn); }
+  .truncate { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* ── Status indicators ───────────────────────────────────────── */
-  .traffic-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  .traffic-dot.green { background: var(--sf-token-state-success-fg); box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
-  .traffic-dot.red { background: var(--sf-token-state-error-fg); box-shadow: 0 0 4px rgba(248, 113, 113, 0.4); }
-  .traffic-dot.blue { background: var(--sf-token-state-info-fg); box-shadow: 0 0 4px rgba(14, 165, 233, 0.3); }
-
-  .chip {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: var(--sf-token-radius-sm);
-    font-size: 11px;
-    font-family: var(--sf-token-font-family-mono);
-    background: rgba(99, 102, 241, 0.12);
-    color: var(--sf-token-accent-strong);
-  }
-  .chip.neutral { background: rgba(148, 163, 184, 0.15); color: var(--sf-token-text-muted); }
-  .chip.success { background: var(--sf-token-state-success-bg); color: var(--sf-token-state-success-fg); }
-  .chip.warn { background: var(--sf-token-state-warning-bg); color: var(--sf-token-state-warning-fg); }
-  .chip.cost { background: rgba(234, 179, 8, 0.12); color: var(--sf-token-state-warning-fg); font-weight: 500; }
-
-  .mono { font-family: var(--sf-token-font-family-mono); font-size: 11px; }
-  .muted { color: var(--sf-token-text-muted); }
-  .truncate { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* ── Bar Chart ───────────────────────────────────────────────── */
-  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding-top: 4px; }
-  .bar-group { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
-  .bar-stack { display: flex; flex-direction: column-reverse; gap: 1px; width: 100%; }
-  .bar-segment { border-radius: 2px 2px 0 0; min-height: 2px; transition: all 0.3s; }
-  .bar-segment:hover { opacity: 0.8; filter: brightness(1.2); }
-  .bar-segment.success { background: var(--sf-token-state-success-fg); }
-  .bar-segment.failed { background: var(--sf-token-state-error-fg); }
-  .bar-label { font-size: 9px; color: var(--sf-token-text-muted); margin-top: 4px; white-space: nowrap; }
-
-  /* ── Donut Chart ─────────────────────────────────────────────── */
-  .donut-wrap { display: flex; align-items: center; gap: 20px; }
-  .donut-legend { font-size: var(--sf-token-font-size-label); }
-  .donut-legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-
-  .progress-bar-wrap {
-    display: flex; align-items: center; gap: 8px;
-    font-size: var(--sf-token-font-size-caption);
-    color: var(--sf-token-text-muted);
-  }
-  .progress-track { flex: 1; height: 6px; background: rgba(148, 163, 184, 0.15); border-radius: 3px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-  .progress-fill.success { background: var(--sf-token-state-success-fg); }
-  .progress-fill.error { background: var(--sf-token-state-error-fg); }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--sf-token-text-muted);
-    font-size: var(--sf-token-font-size-body-sm);
-  }
-  .empty-state .icon { font-size: 32px; margin-bottom: 8px; opacity: 0.4; }
-
-  @media (max-width: 768px) {
-    .charts-row { grid-template-columns: 1fr; }
-    .metric-row { grid-template-columns: repeat(2, 1fr); }
-  }
+  @media (max-width: 768px) { .metrics { grid-template-columns: repeat(2,1fr); } .funnel { flex-wrap: wrap; } }
 </style>
 </head>
 <body>
 
-<div class="design-note">
-  <strong>Design Preview v2</strong> &mdash; Product Run History Panel.
-  Removed: confidence, validation, fields yielded, fields column.
-  Focus: crawl status, extraction data, costs, run outcomes.
-  Click tabs to switch views.
+<div class="note">
+  <strong>Design Preview v3</strong> — Pipeline funnel storytelling. Data sourced from <code>run_artifacts</code>, <code>crawl_sources</code>, <code>billing_entries</code> (all SQL).
+  Shows: 10 queries → 100 results → 57 triaged → 25 selected → 21 OK + 1 blocked + 3 timeout → 24 parsed.
 </div>
 
-<!-- ── Picker (context) ────────────────────────────────────────── -->
-<div class="picker-context">
-  <div style="display:flex; align-items:center; justify-content:space-between;">
-    <span class="label">Product Picker &mdash; selected:</span>
-    <span class="product-id">razer-deathadder-v3-pro-4k</span>
-  </div>
-  <div class="label" style="margin-top:4px;">Razer DeathAdder V3 Pro 4K &mdash; gaming_mice</div>
-</div>
-
-<!-- ══════════════════════════════════════════════════════════════ -->
-<!-- ── PRODUCT RUN HISTORY PANEL ──────────────────────────────── -->
-<!-- ══════════════════════════════════════════════════════════════ -->
-<div class="sf-panel">
-  <div class="sf-panel-header">
-    <div class="sf-panel-title">
-      <button class="collapse-btn">&minus;</button>
-      <span>Run History</span>
-      <span class="muted" style="font-weight:400; font-size:11px;">razer-deathadder-v3-pro-4k</span>
-    </div>
+<div class="panel">
+  <div class="panel-header">
+    <span>-</span>
+    <span>Run History</span>
+    <span class="mono">mouse-f74080c4</span>
   </div>
 
-  <!-- ── Metric Cards ────────────────────────────────────────── -->
-  <div class="metric-row">
-    <div class="metric-card">
-      <div class="metric-label">Total Runs</div>
-      <div class="metric-value accent">7</div>
+  <!-- ── Aggregate Metrics ───────────────── -->
+  <div class="metrics">
+    <div class="mc"><div class="mc-label">Total Runs</div><div class="mc-value accent">1</div></div>
+    <div class="mc"><div class="mc-label">Success Rate</div><div class="mc-value green">100%</div></div>
+    <div class="mc"><div class="mc-label">Total Cost</div><div class="mc-value yellow">$0.0016</div></div>
+    <div class="mc"><div class="mc-label">Avg Duration</div><div class="mc-value" style="color:var(--sf-text)">2m 31s</div></div>
+    <div class="mc"><div class="mc-label">URLs Crawled</div><div class="mc-value blue">24</div></div>
+    <div class="mc"><div class="mc-label">Crawl Success</div><div class="mc-value green">87.5%</div><div class="mc-delta green">21 of 24</div></div>
+    <div class="mc"><div class="mc-label">Queries</div><div class="mc-value accent">10</div></div>
+    <div class="mc"><div class="mc-label">Unique Hosts</div><div class="mc-value" style="color:var(--sf-text)">11</div></div>
+  </div>
+
+  <!-- ── Run Selector ────────────────────── -->
+  <div style="font-size:11px; color:var(--sf-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:6px;">Select Run</div>
+  <div class="run-strip">
+    <div class="run-chip active">
+      <span class="dot ok"></span>
+      <span class="mono">20260331-93f8c3</span>
+      <span class="run-date">Mar 31</span>
+      <span class="run-cost">$0.0016</span>
+      <span class="muted">2m 31s</span>
     </div>
-    <div class="metric-card">
-      <div class="metric-label">Completed</div>
-      <div class="metric-value success">5</div>
-      <div class="metric-delta success">71.4%</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Failed</div>
-      <div class="metric-value error">2</div>
-      <div class="metric-delta error">28.6%</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Total Cost</div>
-      <div class="metric-value warning">$1.86</div>
-      <div class="metric-delta muted">avg $0.27/run</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">URLs Crawled</div>
-      <div class="metric-value info">142</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Crawl Success</div>
-      <div class="metric-value success">119</div>
-      <div class="metric-delta success">83.8%</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Queries Fired</div>
-      <div class="metric-value accent">53</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">Unique Hosts</div>
-      <div class="metric-value" style="color: var(--sf-token-text-primary);">12</div>
+    <div class="run-chip" style="opacity:0.5;">
+      <span class="dot" style="background:var(--sf-subtle)"></span>
+      <span class="mono muted">future runs appear here...</span>
     </div>
   </div>
 
-  <!-- ── Charts Row ──────────────────────────────────────────── -->
-  <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">Runs Over Time (status)</div>
-      <div class="bar-chart">
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment success" style="height:60px;"></div></div>
-          <div class="bar-label">Mar 21</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack">
-            <div class="bar-segment failed" style="height:25px;"></div>
-            <div class="bar-segment success" style="height:45px;"></div>
-          </div>
-          <div class="bar-label">Mar 23</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment success" style="height:80px;"></div></div>
-          <div class="bar-label">Mar 25</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment success" style="height:70px;"></div></div>
-          <div class="bar-label">Mar 26</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment failed" style="height:30px;"></div></div>
-          <div class="bar-label">Mar 27</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment success" style="height:95px;"></div></div>
-          <div class="bar-label">Mar 28</div>
-        </div>
-        <div class="bar-group">
-          <div class="bar-stack"><div class="bar-segment success" style="height:110px;"></div></div>
-          <div class="bar-label">Mar 29</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:16px; margin-top:8px; font-size:11px;">
-        <span style="display:flex; align-items:center; gap:4px;"><span class="traffic-dot green"></span> <span class="muted">Completed</span></span>
-        <span style="display:flex; align-items:center; gap:4px;"><span class="traffic-dot red"></span> <span class="muted">Failed</span></span>
+  <!-- ── Pipeline Funnel ─────────────────── -->
+  <div style="font-size:11px; color:var(--sf-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:6px;">Pipeline Funnel — Run 20260331-93f8c3</div>
+  <div class="funnel">
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-accent-s);"></div>
+      <div class="funnel-count accent">10</div>
+      <div class="funnel-label">Queries</div>
+    </div>
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-info);"></div>
+      <div class="funnel-count blue">100</div>
+      <div class="funnel-label">Results</div>
+      <div class="funnel-pct">10/query avg</div>
+    </div>
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-warn);"></div>
+      <div class="funnel-count yellow">57</div>
+      <div class="funnel-label">Triaged</div>
+      <div class="funnel-pct">57% of results</div>
+    </div>
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-accent-s);"></div>
+      <div class="funnel-count accent">25</div>
+      <div class="funnel-label">Selected</div>
+      <div class="funnel-pct">44% of triaged</div>
+    </div>
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-ok);"></div>
+      <div class="funnel-count green">21</div>
+      <div class="funnel-label">Fetched OK</div>
+      <div class="funnel-sub">
+        <span style="background:var(--sf-err-bg); color:var(--sf-err);">1 blocked</span>
+        <span style="background:var(--sf-warn-bg); color:var(--sf-warn);">3 timeout</span>
       </div>
     </div>
-
-    <div class="chart-card">
-      <div class="chart-title">URL Crawl Results</div>
-      <div class="donut-wrap">
-        <svg width="120" height="120" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(34,197,94,0.2)" stroke-width="16"/>
-          <circle cx="60" cy="60" r="50" fill="none"
-            stroke="#86efac" stroke-width="16"
-            stroke-dasharray="263.9 50.3"
-            stroke-dashoffset="78.5"
-            stroke-linecap="round"/>
-          <circle cx="60" cy="60" r="50" fill="none"
-            stroke="#f87171" stroke-width="16"
-            stroke-dasharray="50.3 263.9"
-            stroke-dashoffset="-185.4"
-            stroke-linecap="round"/>
-          <text x="60" y="56" text-anchor="middle" fill="#ecf1ff" font-size="18" font-weight="600" font-family="Segoe UI">83.8%</text>
-          <text x="60" y="72" text-anchor="middle" fill="#adc2eb" font-size="10" font-family="Segoe UI">crawled</text>
-        </svg>
-        <div class="donut-legend">
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--sf-token-state-success-fg);"></div>
-            <span>Crawled OK <span class="muted">(119)</span></span>
-          </div>
-          <div class="donut-legend-item">
-            <div class="donut-legend-dot" style="background:var(--sf-token-state-error-fg);"></div>
-            <span>Errored <span class="muted">(23)</span></span>
-          </div>
-          <div style="margin-top:12px;">
-            <div style="font-size:11px; color:var(--sf-token-text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; font-weight:600;">Success by Tier</div>
-            <div class="progress-bar-wrap" style="margin-bottom:4px;">
-              <span style="width:30px;">T1</span>
-              <div class="progress-track"><div class="progress-fill success" style="width:95%;"></div></div>
-              <span>95%</span>
-            </div>
-            <div class="progress-bar-wrap" style="margin-bottom:4px;">
-              <span style="width:30px;">T2</span>
-              <div class="progress-track"><div class="progress-fill success" style="width:82%;"></div></div>
-              <span>82%</span>
-            </div>
-            <div class="progress-bar-wrap">
-              <span style="width:30px;">T3</span>
-              <div class="progress-track"><div class="progress-fill error" style="width:61%;"></div></div>
-              <span>61%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="funnel-step">
+      <div class="funnel-bg" style="background:var(--sf-ok);"></div>
+      <div class="funnel-count green">24</div>
+      <div class="funnel-label">Parsed</div>
+      <div class="funnel-pct">96% of fetched</div>
     </div>
   </div>
 
-  <!-- ── Tab Strip ───────────────────────────────────────────── -->
-  <div class="tab-strip" id="tabStrip">
-    <button class="tab-item active" data-tab="runs" onclick="switchTab('runs')">Runs<span class="tab-count">(7)</span></button>
-    <button class="tab-item" data-tab="queries" onclick="switchTab('queries')">Queries<span class="tab-count">(53)</span></button>
-    <button class="tab-item" data-tab="urls" onclick="switchTab('urls')">URLs<span class="tab-count">(142)</span></button>
+  <!-- ── Tabs ────────────────────────────── -->
+  <div class="tabs">
+    <button class="tab active" data-tab="domains" onclick="switchTab('domains')">Domains<span class="tab-count">(11)</span></button>
+    <button class="tab" data-tab="urls" onclick="switchTab('urls')">URLs<span class="tab-count">(24)</span></button>
+    <button class="tab" data-tab="queries" onclick="switchTab('queries')">Queries<span class="tab-count">(10)</span></button>
   </div>
 
-  <!-- ── RUNS TAB ────────────────────────────────────────────── -->
-  <div class="tab-content active" id="tab-runs">
-    <div class="table-wrapper">
+  <!-- ── DOMAINS TAB ─────────────────────── -->
+  <div class="tab-content active" id="tab-domains">
+    <div class="tw">
       <table>
-        <thead>
-          <tr>
-            <th style="width:40px;">Status</th>
-            <th>Run ID <span class="sort-arrow">&#9660;</span></th>
-            <th>Started</th>
-            <th>Duration</th>
-            <th>Cost</th>
-            <th>Sources</th>
-            <th>Storage</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Domain</th><th>Role</th><th>Safety</th><th>URLs</th><th>OK</th><th>Errors</th><th>Avg Size</th>
+        </tr></thead>
         <tbody>
           <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="mono">r_2026-03-29_001</td>
-            <td class="muted">12 min ago</td>
-            <td class="mono">3m 42s</td>
-            <td><span class="chip cost">$0.34</span></td>
-            <td>18</td>
-            <td><span class="chip success">live</span></td>
+            <td class="mono">endgamegear.com</td>
+            <td><span class="chip chip-info">manufacturer</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>5</td><td class="green">5</td><td>0</td><td class="mono muted">348 KB</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="mono">r_2026-03-28_003</td>
-            <td class="muted">1 day ago</td>
-            <td class="mono">4m 11s</td>
-            <td><span class="chip cost">$0.41</span></td>
-            <td>22</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">help.endgamegear.com</td>
+            <td><span class="chip chip-info">support</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>5</td><td class="green">5</td><td>0</td><td class="mono muted">98 KB</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot red"></span></td>
-            <td class="mono">r_2026-03-27_002</td>
-            <td class="muted">2 days ago</td>
-            <td class="mono">0m 38s</td>
-            <td><span class="chip cost">$0.08</span></td>
-            <td>4</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">reddit.com</td>
+            <td><span class="chip chip-n">community</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>4</td><td class="green">4</td><td>0</td><td class="mono muted">1.0 MB</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="mono">r_2026-03-26_001</td>
-            <td class="muted">3 days ago</td>
-            <td class="mono">3m 55s</td>
-            <td><span class="chip cost">$0.38</span></td>
-            <td>20</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">amazon.com</td>
+            <td><span class="chip chip-n">retail</span></td>
+            <td><span class="chip chip-warn">caution</span></td>
+            <td>3</td><td class="red">0</td><td class="red">3</td><td class="mono muted">3.0 MB</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="mono">r_2026-03-25_001</td>
-            <td class="muted">4 days ago</td>
-            <td class="mono">2m 50s</td>
-            <td><span class="chip cost">$0.29</span></td>
-            <td>15</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">techpowerup.com</td>
+            <td><span class="chip chip-info">review</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>2</td><td class="green">2</td><td>0</td><td class="mono muted">55 KB</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot red"></span></td>
-            <td class="mono">r_2026-03-23_001</td>
-            <td class="muted">6 days ago</td>
-            <td class="mono">0m 22s</td>
-            <td><span class="chip cost">$0.05</span></td>
-            <td>2</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">bestbuy.ca</td>
+            <td><span class="chip chip-n">retail</span></td>
+            <td><span class="chip chip-warn">caution</span></td>
+            <td>1</td><td class="red">0</td><td class="red">1</td><td class="mono muted">-</td>
           </tr>
           <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="mono">r_2026-03-21_001</td>
-            <td class="muted">8 days ago</td>
-            <td class="mono">3m 15s</td>
-            <td><span class="chip cost">$0.31</span></td>
-            <td>17</td>
-            <td><span class="chip neutral">s3</span></td>
+            <td class="mono">prosettings.net</td>
+            <td><span class="chip chip-info">review</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">179 KB</td>
+          </tr>
+          <tr>
+            <td class="mono">us.maxgaming.com</td>
+            <td><span class="chip chip-n">retail</span></td>
+            <td><span class="chip chip-warn">caution</span></td>
+            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">673 KB</td>
+          </tr>
+          <tr>
+            <td class="mono">unbxtech.com</td>
+            <td><span class="chip chip-info">review</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">366 KB</td>
+          </tr>
+          <tr>
+            <td class="mono">pcpartpicker.com</td>
+            <td><span class="chip chip-n">database</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">1 KB</td>
+          </tr>
+          <tr>
+            <td class="mono">it.pcpartpicker.com</td>
+            <td><span class="chip chip-n">database</span></td>
+            <td><span class="chip chip-ok">safe</span></td>
+            <td>1</td><td class="green">1</td><td>0</td><td class="mono muted">1 KB</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- ── QUERIES TAB ─────────────────────────────────────────── -->
-  <div class="tab-content" id="tab-queries">
-    <div class="table-wrapper">
-      <div class="search-bar">
-        <input type="text" placeholder="Search queries..." />
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Query <span class="sort-arrow">&#9660;</span></th>
-            <th>Provider</th>
-            <th>Results</th>
-            <th>Run</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>razer deathadder v3 pro 4k specifications</td>
-            <td><span class="chip">google</span></td>
-            <td>10</td>
-            <td class="mono muted">r_2026-03-29_001</td>
-            <td class="muted">12 min ago</td>
-          </tr>
-          <tr>
-            <td>deathadder v3 pro 4khz sensor dpi weight</td>
-            <td><span class="chip">google</span></td>
-            <td>8</td>
-            <td class="mono muted">r_2026-03-29_001</td>
-            <td class="muted">13 min ago</td>
-          </tr>
-          <tr>
-            <td>razer deathadder v3 pro 4k review rtings</td>
-            <td><span class="chip">google</span></td>
-            <td>6</td>
-            <td class="mono muted">r_2026-03-29_001</td>
-            <td class="muted">14 min ago</td>
-          </tr>
-          <tr>
-            <td>razer deathadder v3 pro 4k polling rate</td>
-            <td><span class="chip">searxng</span></td>
-            <td>12</td>
-            <td class="mono muted">r_2026-03-29_001</td>
-            <td class="muted">14 min ago</td>
-          </tr>
-          <tr>
-            <td>"deathadder v3 pro" specifications weight dimensions</td>
-            <td><span class="chip">google</span></td>
-            <td>5</td>
-            <td class="mono muted">r_2026-03-28_003</td>
-            <td class="muted">1 day ago</td>
-          </tr>
-          <tr>
-            <td>razer deathadder v3 pro 4k sensor focus pro 36k</td>
-            <td><span class="chip">searxng</span></td>
-            <td>9</td>
-            <td class="mono muted">r_2026-03-28_003</td>
-            <td class="muted">1 day ago</td>
-          </tr>
-          <tr>
-            <td>deathadder v3 pro 4k vs standard comparison specs</td>
-            <td><span class="chip">google</span></td>
-            <td>7</td>
-            <td class="mono muted">r_2026-03-26_001</td>
-            <td class="muted">3 days ago</td>
-          </tr>
-          <tr>
-            <td>razer deathadder v3 pro 4k switch type optical</td>
-            <td><span class="chip">google</span></td>
-            <td>4</td>
-            <td class="mono muted">r_2026-03-25_001</td>
-            <td class="muted">4 days ago</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ── URLS TAB ────────────────────────────────────────────── -->
+  <!-- ── URLS TAB ────────────────────────── -->
   <div class="tab-content" id="tab-urls">
-    <div class="table-wrapper">
-      <div class="search-bar">
-        <input type="text" placeholder="Search URLs, hosts, tiers..." />
-      </div>
+    <div class="tw">
+      <div class="search-bar"><input type="text" placeholder="Search URLs, hosts..." /></div>
       <table>
-        <thead>
-          <tr>
-            <th style="width:40px;">Crawled</th>
-            <th>URL</th>
-            <th>Host</th>
-            <th>Tier</th>
-            <th>Doc Kind</th>
-            <th>Run</th>
-            <th>Time</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Status</th><th>HTTP</th><th>URL</th><th>Host</th><th>Tier</th><th>Kind</th><th>Size</th><th>Time</th></tr></thead>
         <tbody>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://www.rtings.com/mouse/reviews/razer/deathadder-v3-pro-4k">rtings.com/mouse/reviews/razer/deathadder-v3-pro-4k</td>
-            <td>rtings.com</td>
-            <td><span class="chip success">T1</span></td>
-            <td><span class="chip neutral">review</span></td>
-            <td class="mono muted">r_..29_001</td>
-            <td class="muted">12m</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://www.razer.com/gaming-mice/razer-deathadder-v3-pro-4k/specs">razer.com/.../razer-deathadder-v3-pro-4k/specs</td>
-            <td>razer.com</td>
-            <td><span class="chip success">T1</span></td>
-            <td><span class="chip neutral">spec_page</span></td>
-            <td class="mono muted">r_..29_001</td>
-            <td class="muted">13m</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://www.techpowerup.com/review/razer-deathadder-v3-pro-4k/">techpowerup.com/review/razer-deathadder-v3-pro-4k/</td>
-            <td>techpowerup.com</td>
-            <td><span class="chip">T2</span></td>
-            <td><span class="chip neutral">review</span></td>
-            <td class="mono muted">r_..29_001</td>
-            <td class="muted">14m</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot red"></span></td>
-            <td class="truncate mono" title="https://www.amazon.com/dp/B0DXYZ1234">amazon.com/dp/B0DXYZ1234</td>
-            <td>amazon.com</td>
-            <td><span class="chip warn">T3</span></td>
-            <td><span class="chip neutral">listing</span></td>
-            <td class="mono muted">r_..29_001</td>
-            <td class="muted">15m</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://www.mousereview.net/razer-deathadder-v3-pro-4k-review/">mousereview.net/razer-deathadder-v3-pro-4k-review/</td>
-            <td>mousereview.net</td>
-            <td><span class="chip">T2</span></td>
-            <td><span class="chip neutral">review</span></td>
-            <td class="mono muted">r_..29_001</td>
-            <td class="muted">15m</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot red"></span></td>
-            <td class="truncate mono" title="https://www.bestbuy.com/site/razer-deathadder-v3-pro/6598432.p">bestbuy.com/.../razer-deathadder-v3-pro/6598432.p</td>
-            <td>bestbuy.com</td>
-            <td><span class="chip warn">T3</span></td>
-            <td><span class="chip neutral">listing</span></td>
-            <td class="mono muted">r_..28_003</td>
-            <td class="muted">1d</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://www.razer.com/gaming-mice/razer-deathadder-v3-pro-4k">razer.com/gaming-mice/razer-deathadder-v3-pro-4k</td>
-            <td>razer.com</td>
-            <td><span class="chip success">T1</span></td>
-            <td><span class="chip neutral">product</span></td>
-            <td class="mono muted">r_..28_003</td>
-            <td class="muted">1d</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot green"></span></td>
-            <td class="truncate mono" title="https://sensor.fyi/mice/razer-deathadder-v3-pro-4k/">sensor.fyi/mice/razer-deathadder-v3-pro-4k/</td>
-            <td>sensor.fyi</td>
-            <td><span class="chip success">T1</span></td>
-            <td><span class="chip neutral">reference</span></td>
-            <td class="mono muted">r_..26_001</td>
-            <td class="muted">3d</td>
-          </tr>
-          <tr>
-            <td><span class="traffic-dot red"></span></td>
-            <td class="truncate mono" title="https://www.newegg.com/razer-rz01-0511/p/2S7-003W-001V2">newegg.com/razer-rz01-0511/p/2S7-003W-001V2</td>
-            <td>newegg.com</td>
-            <td><span class="chip warn">T3</span></td>
-            <td><span class="chip neutral">listing</span></td>
-            <td class="mono muted">r_..25_001</td>
-            <td class="muted">4d</td>
-          </tr>
+          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate" title="endgamegear.com/en-us/xm1rgb/gaming-mice">endgamegear.com/en-us/xm1rgb/gaming-mice</td><td>endgamegear.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">561 KB</td><td class="muted">56m</td></tr>
+          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate" title="rtings.com review">techpowerup.com/review/endgame-gear-xm1-rgb</td><td>techpowerup.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">56 KB</td><td class="muted">56m</td></tr>
+          <tr><td><span class="dot dot-err"></span></td><td><span class="chip chip-err">403</span></td><td class="mono truncate" title="bestbuy.ca">bestbuy.ca/en-ca/product/endgame-gear...</td><td>bestbuy.ca</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">-</td><td class="muted">56m</td></tr>
+          <tr><td><span class="dot dot-warn"></span></td><td><span class="chip chip-warn">200</span></td><td class="mono truncate" title="amazon timeout">amazon.com/ENDGAME-GEAR-XM1-Gaming-Mouse...</td><td>amazon.com</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">3.2 MB</td><td class="muted">55m</td></tr>
+          <tr><td><span class="dot dot-ok"></span></td><td><span class="chip chip-ok">200</span></td><td class="mono truncate">prosettings.net/reviews/endgame-gear-xm1-rgb</td><td>prosettings.net</td><td><span class="chip chip-n">T5</span></td><td><span class="chip chip-n">html</span></td><td class="mono muted">179 KB</td><td class="muted">56m</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-</div>
-
-<!-- ── Empty State ───────────────────────────────────────────── -->
-<div class="design-note" style="margin-top:24px;">
-  <strong>Empty State</strong> &mdash; Shown when product has no run history.
-</div>
-<div class="sf-panel">
-  <div class="sf-panel-header">
-    <div class="sf-panel-title">
-      <button class="collapse-btn">&minus;</button>
-      <span>Run History</span>
-      <span class="muted" style="font-weight:400; font-size:11px;">logitech-g-pro-x-superlight-2</span>
+  <!-- ── QUERIES TAB ─────────────────────── -->
+  <div class="tab-content" id="tab-queries">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Query</th><th>Provider</th><th>Results</th><th>Domain Target</th></tr></thead>
+        <tbody>
+          <tr><td>Endgame Gear XM1 RGB specifications</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="muted">general</td></tr>
+          <tr><td>Endgame Gear XM1 RGB endgamegear.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">endgamegear.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB endgamegear.com/support</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">endgamegear.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB rtings.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">rtings.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB techpowerup.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">techpowerup.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB tomshardware.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">tomshardware.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB lttlabs.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">lttlabs.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB igorslab.de</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">igorslab.de</td></tr>
+          <tr><td>Endgame Gear XM1 RGB techgearlab.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">techgearlab.com</td></tr>
+          <tr><td>Endgame Gear XM1 RGB pcpartpicker.com</td><td><span class="chip chip-info">google</span></td><td>10</td><td class="mono muted">pcpartpicker.com</td></tr>
+        </tbody>
+      </table>
     </div>
-  </div>
-  <div class="empty-state">
-    <div class="icon">&#9776;</div>
-    <p>No run history for this product yet.</p>
-    <p class="muted" style="font-size:12px; margin-top:4px;">Run IndexLab above to start building history.</p>
   </div>
 </div>
 
 <script>
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-item').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-  document.querySelector(`.tab-item[data-tab="${tabId}"]`).classList.add('active');
-  document.getElementById(`tab-${tabId}`).classList.add('active');
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${id}"]`).classList.add('active');
+  document.getElementById(`tab-${id}`).classList.add('active');
 }
 </script>
-
 </body>
 </html>

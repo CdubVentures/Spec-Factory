@@ -3,6 +3,7 @@ import { computeQueryIndexSummary, computeUrlIndexSummary } from '../pipeline/sh
 import { computePromptIndexSummary } from '../pipeline/shared/createPromptIndex.js';
 import { computeKnobSnapshots } from '../telemetry/knobTelemetryCapture.js';
 import { computeProductHistoryMetrics } from '../domain/computeProductHistoryMetrics.js';
+import { extractRunFunnelSummary, extractDomainBreakdown } from '../domain/extractRunFunnelSummary.js';
 
 export function registerIndexlabRoutes(ctx) {
   const {
@@ -362,34 +363,13 @@ export function registerIndexlabRoutes(ctx) {
         }
       }
 
-      const runs = productRunsMeta.map((rm) => ({
-        run_id: rm.run_id,
-        status: rm.status || '',
-        cost_usd: costByRun.get(rm.run_id) || 0,
-        started_at: rm.started_at || '',
-        ended_at: rm.ended_at || '',
-        is_latest: false,
-        storage_state: '',
-        counters: rm.counters || {},
-      }));
-
-      const allQueries = specDb.getQueryIndexByCategory(category);
-      const queries = allQueries
-        .filter((q) => q.product_id === productId)
-        .map((q) => ({
-          query: q.query,
-          provider: q.provider,
-          result_count: q.result_count,
-          run_id: q.run_id,
-          ts: q.ts,
-        }));
-
       // WHY: crawl_sources is the truth for URL crawl data.
-      // url_index is a telemetry summary that's never populated by the event hook.
       const crawlSources = specDb.getCrawlSourcesByProduct(productId);
-      const urls = crawlSources
-        .filter((cs) => runIdSet.has(cs.run_id))
-        .map((cs) => ({
+      const crawlSourcesByRun = new Map();
+      const urls = [];
+      for (const cs of crawlSources) {
+        if (!runIdSet.has(cs.run_id)) continue;
+        const mapped = {
           url: cs.final_url || cs.source_url,
           host: cs.host,
           http_status: cs.http_status,
@@ -399,17 +379,61 @@ export function registerIndexlabRoutes(ctx) {
           size_bytes: cs.size_bytes,
           run_id: cs.run_id,
           crawled_at: cs.crawled_at,
-        }));
+        };
+        urls.push(mapped);
+        if (!crawlSourcesByRun.has(cs.run_id)) crawlSourcesByRun.set(cs.run_id, []);
+        crawlSourcesByRun.get(cs.run_id).push(mapped);
+      }
 
-      const metrics = computeProductHistoryMetrics({ runs, queries, urls });
+      // WHY: Extract funnel + domain breakdown per run from run_summary telemetry events.
+      const runs = productRunsMeta.map((rm) => {
+        let events = [];
+        try {
+          const summary = specDb.getRunArtifact(rm.run_id, 'run_summary');
+          events = summary?.telemetry?.events || [];
+        } catch { /* no artifact — funnel will use counters only */ }
+
+        const funnel = extractRunFunnelSummary(events, rm.counters || {});
+        const domains = extractDomainBreakdown(events, crawlSourcesByRun.get(rm.run_id) || []);
+
+        return {
+          run_id: rm.run_id,
+          status: rm.status || '',
+          cost_usd: costByRun.get(rm.run_id) || 0,
+          started_at: rm.started_at || '',
+          ended_at: rm.ended_at || '',
+          funnel,
+          domains,
+        };
+      });
+
+      // WHY: Dedup queries by query text (query_index has duplicate rows per search attempt).
+      const allQueries = specDb.getQueryIndexByCategory(category);
+      const seenQueries = new Set();
+      const queries = [];
+      for (const q of allQueries) {
+        if (q.product_id !== productId) continue;
+        const key = `${q.query}||${q.run_id}`;
+        if (seenQueries.has(key)) continue;
+        seenQueries.add(key);
+        queries.push({
+          query: q.query,
+          provider: q.provider,
+          result_count: q.result_count,
+          run_id: q.run_id,
+          ts: q.ts,
+        });
+      }
+
+      const metrics = computeProductHistoryMetrics({ runs, urls });
 
       return jsonRes(res, 200, {
         product_id: productId,
         category,
+        aggregate: metrics,
         runs,
         queries,
         urls,
-        metrics,
       });
     }
 

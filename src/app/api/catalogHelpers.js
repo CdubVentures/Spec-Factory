@@ -49,6 +49,7 @@ async function buildCatalogFromSql({ specDb, storage, cleanVariant, category }) 
       id: row.id || 0,
       identifier: String(row.identifier || '').trim(),
       brand,
+      brand_identifier: String(row.brand_identifier || '').trim(),
       model,
       base_model: '',
       variant,

@@ -2067,11 +2067,9 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
       continue;
     }
 
-    // 6. numeric (no range) â€” vary per scenario
+    // 6. numeric (no range) — universal default, category-agnostic
     if (type === 'number' || type === 'integer') {
-      const defaults = { weight: 85, dpi: 26000, ips: 650, acceleration: 50, height: 40, width: 68, lngth: 125, polling_rate: 1000, battery_hours: 70, click_force: 55, lift_off_distance: 1.5, cable_length: 1.8 };
-      const base = defaults[key] || 100;
-      // Offsets create variation across products so pipeline candidates differ from baseline
+      const base = 100;
       const offsets = [0, 0.08, -0.06, 0.12, -0.10, 0.15, -0.08, 0.05, 0.10, -0.12];
       const offset = offsets[scenarioIdx % offsets.length] || 0;
       values[key] = String(Math.round(base * (1 + offset) * 100) / 100);
@@ -2109,22 +2107,6 @@ export function buildBaseValues(contractAnalysis, scenarioIdx = 0, options = {})
 
   for (const [componentType, makerValue] of componentMakerAssignments.entries()) {
     applyComponentMakerOverride(values, fieldKeys, componentType, makerValue);
-  }
-
-  // Post-processing: ensure cross-validation coherence
-  // If connection is a garbage value like '1', '2', 'he', fix it to a valid known_value
-  if (values.connection) {
-    const connLower = values.connection.toLowerCase();
-    if (/^\d+$/.test(connLower) || connLower.length < 3 || connLower === 'unk') {
-      values.connection = 'wired';
-    }
-  }
-  // connectivity should contain wireless/bluetooth if bluetooth is yes
-  if (values.bluetooth === 'yes' && values.connectivity) {
-    const connLower = values.connectivity.toLowerCase();
-    if (!connLower.includes('wireless') && !connLower.includes('bluetooth')) {
-      values.connectivity = 'wired, wireless, bluetooth';
-    }
   }
 
   return values;

@@ -39,6 +39,8 @@ export const MIGRATIONS = [
   // don't have it. The CREATE TABLE IF NOT EXISTS is a no-op for existing tables, so
   // the column must be added via ALTER TABLE before any index references it.
   `ALTER TABLE llm_route_matrix ADD COLUMN scope TEXT DEFAULT 'field'`,
+  // WHY: Phase F — stable brand FK on products, enables O(1) rename cascade
+  `ALTER TABLE products ADD COLUMN brand_identifier TEXT DEFAULT ''`,
   // WHY: source_intel consolidation — brands/paths folded into source_intel_domains
   // with scope/scope_key columns. PK change requires DROP + recreate. Data is
   // rebuilt on next pipeline run via persistSourceIntelFull().
@@ -102,6 +104,7 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_krs_component_identity_slot ON key_review_state(component_identity_id, property_key);
   CREATE INDEX IF NOT EXISTS idx_krs_list_slot ON key_review_state(list_value_id, enum_list_id);
   CREATE INDEX IF NOT EXISTS idx_pr_storage_state ON product_runs(storage_state);
+  CREATE INDEX IF NOT EXISTS idx_prod_brand_id ON products(category, brand_identifier);
 `;
 
 /**

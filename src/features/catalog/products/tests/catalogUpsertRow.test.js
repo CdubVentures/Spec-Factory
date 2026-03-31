@@ -55,6 +55,41 @@ describe('upsertCatalogProductRow contract', () => {
   });
 });
 
+// WHY: Phase F — brand_identifier pass-through
+describe('upsertCatalogProductRow — brand_identifier', () => {
+  function capturingSpecDb() {
+    let captured = null;
+    return {
+      specDb: createSpecDb({ upsertProduct(row) { captured = row; } }),
+      getCaptured: () => captured,
+    };
+  }
+
+  it('passes brand_identifier through when present', () => {
+    const { specDb, getCaptured } = capturingSpecDb();
+    upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
+      brand: 'Razer', model: 'Viper', brand_identifier: 'b5a50d8f',
+    });
+    strictEqual(getCaptured().brand_identifier, 'b5a50d8f');
+  });
+
+  it('passes empty string when brand_identifier absent', () => {
+    const { specDb, getCaptured } = capturingSpecDb();
+    upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
+      brand: 'Razer', model: 'Viper',
+    });
+    strictEqual(getCaptured().brand_identifier, '');
+  });
+
+  it('trims whitespace from brand_identifier', () => {
+    const { specDb, getCaptured } = capturingSpecDb();
+    upsertCatalogProductRow(specDb, 'mouse', 'pid-1', {
+      brand: 'Razer', model: 'Viper', brand_identifier: '  b5a50d8f  ',
+    });
+    strictEqual(getCaptured().brand_identifier, 'b5a50d8f');
+  });
+});
+
 // WHY: Fabricated variant stripping — variant tokens already in model must be stripped at write boundary.
 describe('upsertCatalogProductRow — fabricated variant stripping', () => {
   function capturingSpecDb() {

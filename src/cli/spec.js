@@ -590,6 +590,8 @@ async function executeCommand({ command, config, storage, args }) {
       return (await loadDataUtilityCommands()).commandSeedCheckpoint(config, storage, args);
     case 'migrate-product-ids':
       return (await loadDataUtilityCommands()).commandMigrateProductIds(config, storage, args);
+    case 'backfill-brand-identifiers':
+      return (await loadDataUtilityCommands()).commandBackfillBrandIdentifiers(config, storage, args);
     case 'migrate-to-sqlite':
       return (await loadMigrateToSqliteCommandHandler())(config, storage, args);
     default:

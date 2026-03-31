@@ -1,14 +1,11 @@
 /**
- * Pure metrics computation for product run history.
- * No side effects — takes raw rows, returns aggregate metrics.
+ * Compute aggregate metrics across all runs for a product.
+ * Runs are enriched with funnel data from extractRunFunnelSummary.
  *
- * URLs use http_status (from crawl_sources), not fetch_success (from url_index).
- * Cost uses cost_usd (from billing_entries sum), not cost_usd_run (from product_runs).
- *
- * @param {{ runs: Array, queries: Array, urls: Array }} data
- * @returns {object} Aggregate metrics object
+ * @param {{ runs: Array, urls: Array }} data
+ * @returns {object} Aggregate metrics
  */
-export function computeProductHistoryMetrics({ runs = [], queries = [], urls = [] }) {
+export function computeProductHistoryMetrics({ runs = [], urls = [] }) {
   const totalRuns = runs.length;
   const completedRuns = runs.filter((r) => r.status === 'completed').length;
   const failedRuns = runs.filter((r) => r.status === 'failed').length;
@@ -16,8 +13,13 @@ export function computeProductHistoryMetrics({ runs = [], queries = [], urls = [
   const totalCost = runs.reduce((sum, r) => sum + (Number(r.cost_usd) || 0), 0);
   const avgCost = totalRuns > 0 ? totalCost / totalRuns : 0;
 
-  const totalQueries = queries.length;
-  const uniqueQueries = new Set(queries.map((q) => q.query)).size;
+  const totalDurationMs = runs.reduce((sum, r) => {
+    if (!r.started_at || !r.ended_at) return sum;
+    return sum + (new Date(r.ended_at).getTime() - new Date(r.started_at).getTime());
+  }, 0);
+  const avgDurationMs = totalRuns > 0 ? Math.round(totalDurationMs / totalRuns) : 0;
+
+  const totalQueries = runs.reduce((sum, r) => sum + (r.funnel?.queries_executed || 0), 0);
 
   const totalUrls = urls.length;
   const urlsSuccess = urls.filter((u) => {
@@ -33,8 +35,8 @@ export function computeProductHistoryMetrics({ runs = [], queries = [], urls = [
     failed_runs: failedRuns,
     total_cost_usd: round4(totalCost),
     avg_cost_per_run: round4(avgCost),
+    avg_duration_ms: avgDurationMs,
     total_queries: totalQueries,
-    unique_queries: uniqueQueries,
     total_urls: totalUrls,
     urls_success: urlsSuccess,
     urls_failed: urlsFailed,

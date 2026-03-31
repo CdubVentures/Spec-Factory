@@ -197,7 +197,8 @@ export function createQueueProductStore({ db, category, stmts }) {
       variant: row.variant ?? '',
       status: row.status || 'active',
       seed_urls: Array.isArray(row.seed_urls) ? JSON.stringify(row.seed_urls) : (row.seed_urls ?? null),
-      identifier: row.identifier ?? null
+      identifier: row.identifier ?? null,
+      brand_identifier: row.brand_identifier ?? '',
     });
   }
 

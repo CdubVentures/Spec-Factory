@@ -60,14 +60,6 @@ const LIST_FIELDS = new Set([
   'click_latency_list',
 ]);
 
-const KNOWN_LIST_VALUES = {
-  form_factor: ['symmetrical', 'ergonomic', 'ambi'],
-  shape: ['low', 'mid', 'high'],
-  connection: ['wired', 'wireless', 'dual'],
-  feet_material: ['ptfe', 'glass', 'uhmwpe'],
-  sensor_brand: ['pixart', 'razer', 'logitech', 'steelseries'],
-};
-
 const INSTRUMENTED_HOST_HINTS = new Set(['rtings.com', 'techpowerup.com']);
 
 // --- Consensus engine constants (from src/scoring/consensusEngine.js) ---
@@ -884,18 +876,6 @@ function runConsensusEngine({
       provenance.battery_hours.meets_pass_target = true;
     }
   }
-  for (const [field, allowedValues] of Object.entries(KNOWN_LIST_VALUES)) {
-    const current = fields[field];
-    if (!hasValue(current) || current === 'n/a') {
-      continue;
-    }
-    const values = splitListValue(current).map((item) => item.toLowerCase());
-    for (const value of values) {
-      if (!allowedValues.includes(value)) {
-        newValuesProposed.push({ field, value });
-      }
-    }
-  }
   return {
     fields,
     provenance,
@@ -1546,7 +1526,6 @@ export {
   COMMONLY_WRONG_FIELDS,
   NUMERIC_FIELDS,
   LIST_FIELDS,
-  KNOWN_LIST_VALUES,
   INSTRUMENTED_HOST_HINTS,
   METHOD_WEIGHT,
   TIER_WEIGHT,

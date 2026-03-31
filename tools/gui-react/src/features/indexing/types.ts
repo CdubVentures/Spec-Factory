@@ -913,20 +913,38 @@ export interface TimedIndexLabEvent {
 
 /* ── Product Run History ─────────────────────────────────────────── */
 
+export interface RunFunnelSummary {
+  queries_executed: number;
+  results_found: number;
+  candidates_triaged: number;
+  urls_selected: number;
+  urls_ok: number;
+  urls_blocked: number;
+  urls_error: number;
+  docs_parsed: number;
+  domains_total: number;
+  domains_safe: number;
+  domains_caution: number;
+}
+
+export interface DomainBreakdownRow {
+  domain: string;
+  role: string;
+  safety: string;
+  urls: number;
+  ok: number;
+  errors: number;
+  avg_size: number;
+}
+
 export interface ProductHistoryRunRow {
   run_id: string;
   status: string;
   cost_usd: number;
   started_at: string;
   ended_at: string;
-  is_latest: boolean | number;
-  storage_state: string;
-  counters: {
-    fetched_ok?: number;
-    fetched_error?: number;
-    parse_completed?: number;
-    search_workers?: number;
-  };
+  funnel: RunFunnelSummary;
+  domains: DomainBreakdownRow[];
 }
 
 export interface ProductHistoryQueryRow {
@@ -949,14 +967,14 @@ export interface ProductHistoryUrlRow {
   crawled_at: string;
 }
 
-export interface ProductHistoryMetrics {
+export interface ProductHistoryAggregate {
   total_runs: number;
   completed_runs: number;
   failed_runs: number;
   total_cost_usd: number;
   avg_cost_per_run: number;
+  avg_duration_ms: number;
   total_queries: number;
-  unique_queries: number;
   total_urls: number;
   urls_success: number;
   urls_failed: number;
@@ -966,8 +984,8 @@ export interface ProductHistoryMetrics {
 export interface ProductHistoryResponse {
   product_id: string;
   category: string;
+  aggregate: ProductHistoryAggregate;
   runs: ProductHistoryRunRow[];
   queries: ProductHistoryQueryRow[];
   urls: ProductHistoryUrlRow[];
-  metrics: ProductHistoryMetrics;
 }

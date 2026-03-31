@@ -135,7 +135,7 @@ export async function loadCompileContext({
   };
 
   const previousUiFieldCatalog = await readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json'));
-  const previousKnownValuesArtifact = await readJsonIfExists(path.join(generatedRoot, 'known_values.json'));
+  // WHY: no carry-forward of previous known_values — only current map sources are authoritative.
   const extractedKeyRows = buildFallbackKeyRows({
     map,
     baselineFieldRules,
@@ -178,7 +178,7 @@ export async function loadCompileContext({
     byField: {},
     columns: []
   };
-  const enumLists = normalizeKnownValuesFieldsDoc(previousKnownValuesArtifact);
+  const enumLists = {};
   // Merge manual_enum_values into pulled enum lists
   const manualEnumValues2 = isObject(map.manual_enum_values) ? map.manual_enum_values : {};
   for (const [field, values] of Object.entries(manualEnumValues2)) {

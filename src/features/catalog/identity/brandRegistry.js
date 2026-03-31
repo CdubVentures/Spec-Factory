@@ -13,7 +13,7 @@
 import { slugify } from './slugify.js';
 import { loadCatalogProducts, discoverCategoriesLocal } from '../products/catalogProductLoader.js';
 import { generateIdentifier } from './productIdentity.js';
-import { loadProductCatalog, updateProduct as catalogUpdateProduct } from '../products/productCatalog.js';
+import { loadProductCatalog } from '../products/productCatalog.js';
 
 function nowIso() {
   return new Date().toISOString();
@@ -460,34 +460,25 @@ export async function renameBrand({ config, appDb, slug, newName, storage, upser
     new_name: trimmedNew,
   });
 
-  // Cascade to all product catalogs
+  // WHY: Phase F — O(1) cascade via brand_identifier instead of per-product iteration.
+  // Products with brand_identifier set get their display name updated in a single SQL UPDATE.
   const categories = appDb.getCategoriesForBrand(existing.identifier);
   const cascade_results = [];
   let cascaded_products = 0;
   let cascade_failures = 0;
 
   for (const category of categories) {
-    const catalog = await loadProductCatalog(config, category);
-    const productsToUpdate = Object.entries(catalog.products || {})
-      .filter(([, p]) => p.brand === oldCanonicalName);
     const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
-
-    for (const [pid] of productsToUpdate) {
+    if (specDb) {
       try {
-        const result = await catalogUpdateProduct({
-          config,
-          category,
-          productId: pid,
-          patch: { brand: trimmedNew },
-          storage: storage || null,
-          upsertQueue: upsertQueue || null,
-          specDb: specDb || null,
-        });
-        cascade_results.push({ category, productId: pid, ok: result.ok });
-        if (result.ok) cascaded_products++;
-        else cascade_failures++;
+        const db = specDb._db || specDb.db;
+        const changes = db.prepare(
+          'UPDATE products SET brand = ?, updated_at = datetime(\'now\') WHERE category = ? AND brand_identifier = ?'
+        ).run(trimmedNew, category, existing.identifier).changes;
+        cascade_results.push({ category, ok: true, updated: changes });
+        cascaded_products += changes;
       } catch (err) {
-        cascade_results.push({ category, productId: pid, ok: false, error: err.message || String(err) });
+        cascade_results.push({ category, ok: false, error: err.message || String(err) });
         cascade_failures++;
       }
     }

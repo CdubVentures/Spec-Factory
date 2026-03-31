@@ -126,11 +126,38 @@ export function createDataUtilityCommands({
     }
   }
 
+  async function commandBackfillBrandIdentifiers(config, storage, args) {
+    const category = String(args.category || '').trim();
+    if (!category) throw new Error('backfill-brand-identifiers requires --category');
+
+    const { SpecDb } = await import('../../../db/specDb.js');
+    const { AppDb } = await import('../../../db/appDb.js');
+    const { backfillBrandIdentifier } = await import('../../../features/catalog/migrations/brandIdentifierBackfill.js');
+
+    const dryRun = asBool(args['dry-run']);
+    const dbDir = pathNode.join(config.specDbDir || '.workspace/db', category);
+    await fsNode.mkdir(dbDir, { recursive: true });
+    const specDbPath = pathNode.join(dbDir, 'spec.sqlite');
+    const appDbPath = pathNode.join(config.specDbDir || '.workspace/db', 'app.sqlite');
+
+    const specDb = new SpecDb({ dbPath: specDbPath, category });
+    const appDb = new AppDb({ dbPath: appDbPath });
+
+    try {
+      const result = await backfillBrandIdentifier({ category, appDb, specDb, dryRun });
+      return { command: 'backfill-brand-identifiers', spec_db_path: specDbPath, ...result };
+    } finally {
+      specDb.close();
+      appDb.close();
+    }
+  }
+
   return {
     commandIngestCsv,
     commandSeedDb,
     commandSeedCheckpoint,
     commandMigrateProductIds,
+    commandBackfillBrandIdentifiers,
     commandTestS3,
     commandGenerateTypes,
   };

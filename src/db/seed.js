@@ -1155,7 +1155,8 @@ async function seedProductCatalog(db, config, category) {
         variant,
         status: entry.status || 'active',
         seed_urls: Array.isArray(entry.seed_urls) ? entry.seed_urls : [],
-        identifier: entry.identifier || null
+        identifier: entry.identifier || null,
+        brand_identifier: entry.brand_identifier || '',
       });
       count++;
     }

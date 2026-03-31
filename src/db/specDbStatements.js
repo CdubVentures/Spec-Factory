@@ -242,9 +242,9 @@ export function prepareStatements(db) {
 
     _upsertProduct: db.prepare(`
       INSERT INTO products (
-        category, product_id, brand, model, variant, status, seed_urls, identifier
+        category, product_id, brand, model, variant, status, seed_urls, identifier, brand_identifier
       ) VALUES (
-        @category, @product_id, @brand, @model, @variant, @status, @seed_urls, @identifier
+        @category, @product_id, @brand, @model, @variant, @status, @seed_urls, @identifier, @brand_identifier
       )
       ON CONFLICT(category, product_id) DO UPDATE SET
         brand = COALESCE(excluded.brand, brand),
@@ -253,6 +253,7 @@ export function prepareStatements(db) {
         status = excluded.status,
         seed_urls = COALESCE(excluded.seed_urls, seed_urls),
         identifier = COALESCE(excluded.identifier, identifier),
+        brand_identifier = COALESCE(NULLIF(excluded.brand_identifier, ''), brand_identifier),
         updated_at = datetime('now')
     `),
 

@@ -30,14 +30,6 @@ function legacyMonthlyRollupKey(storage, month) {
   return storage.resolveOutputKey('_billing', 'monthly', `${month}.json`);
 }
 
-function legacyMonthlyDigestKey(storage, month) {
-  return storage.resolveOutputKey('_billing', 'monthly', `${month}.txt`);
-}
-
-function legacyLatestDigestKey(storage) {
-  return storage.resolveOutputKey('_billing', 'latest.txt');
-}
-
 function ledgerKey(_storage, month) {
   return `_billing/ledger/${month}.jsonl`;
 }
@@ -315,8 +307,6 @@ async function writeBillingDigest({
   });
   const digestKey = monthlyDigestKey(storage, month);
   const latestKey = latestDigestKey(storage);
-  const legacyDigestKey = legacyMonthlyDigestKey(storage, month);
-  const legacyLatestKey = legacyLatestDigestKey(storage);
   await storage.writeObject(
     digestKey,
     Buffer.from(text, 'utf8'),
@@ -327,21 +317,7 @@ async function writeBillingDigest({
     Buffer.from(text, 'utf8'),
     { contentType: 'text/plain; charset=utf-8' }
   );
-  await storage.writeObject(
-    legacyDigestKey,
-    Buffer.from(text, 'utf8'),
-    { contentType: 'text/plain; charset=utf-8' }
-  );
-  await storage.writeObject(
-    legacyLatestKey,
-    Buffer.from(text, 'utf8'),
-    { contentType: 'text/plain; charset=utf-8' }
-  );
-  return {
-    digestKey,
-    legacyDigestKey,
-    latestDigestKey: latestKey
-  };
+  return { digestKey, latestDigestKey: latestKey };
 }
 
 export async function readMonthlyRollup({ storage, month, specDb = null }) {

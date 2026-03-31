@@ -32,6 +32,7 @@ export function registerCatalogRoutes(ctx) {
     loadQueueState,
     saveQueueState,
     getSpecDb,
+    appDb,
   } = ctx;
   function resolveSpecDb(category) {
     if (!getSpecDb) return null;
@@ -169,6 +170,7 @@ export function registerCatalogRoutes(ctx) {
           mode,
           storage,
           upsertQueue: makeQueueUpsert(category),
+          appDb,
         });
         if (result?.ok) {
           await syncCategoryCatalogToSpecDb(category);
@@ -198,7 +200,8 @@ export function registerCatalogRoutes(ctx) {
           brand: body.brand || '',
           rows,
           storage,
-          upsertQueue: makeQueueUpsert(category)
+          upsertQueue: makeQueueUpsert(category),
+          appDb,
         });
         if (result?.ok) {
           if (Number(result?.created || 0) > 0) {
@@ -232,7 +235,8 @@ export function registerCatalogRoutes(ctx) {
           variant: body.variant || '',
           seedUrls: body.seedUrls || [],
           storage,
-          upsertQueue: makeQueueUpsert(category)
+          upsertQueue: makeQueueUpsert(category),
+          appDb,
         });
         if (result?.ok) {
           upsertCatalogProductRow(resolveSpecDb(category), category, result.productId, result.product);
@@ -259,6 +263,7 @@ export function registerCatalogRoutes(ctx) {
           storage,
           upsertQueue: makeQueueUpsert(category),
           specDb: resolveSpecDb(category),
+          appDb,
         });
         if (result?.ok) {
           const syncedSpecDb = resolveSpecDb(category);

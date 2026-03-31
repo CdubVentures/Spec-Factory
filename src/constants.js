@@ -205,12 +205,4 @@ export const LIST_FIELDS = new Set([
   'click_latency_list'
 ]);
 
-export const KNOWN_LIST_VALUES = {
-  form_factor: ['symmetrical', 'ergonomic', 'ambi'],
-  shape: ['low', 'mid', 'high'],
-  connection: ['wired', 'wireless', 'dual'],
-  feet_material: ['ptfe', 'glass', 'uhmwpe'],
-  sensor_brand: ['pixart', 'razer', 'logitech', 'steelseries']
-};
-
 export const INSTRUMENTED_HOST_HINTS = new Set(['rtings.com', 'techpowerup.com']);

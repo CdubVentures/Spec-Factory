@@ -172,7 +172,7 @@ export function createGuiServerRuntime({
       catalogRouteContext: createCatalogRouteContext({
         jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
         loadProductCatalog, readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
-        resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb,
+        resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
       }),
       testModeRouteContext: createTestModeRouteContext({
         jsonRes, readJsonBody, toInt, toUnitRatio, config, storage, HELPER_ROOT,

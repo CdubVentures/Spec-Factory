@@ -17,6 +17,7 @@ import { writeProductIdentity } from './writeProductIdentity.js';
 import { buildProductId } from '../../../shared/primitives.js';
 import { migrateProductArtifacts, appendRenameLog } from '../migrations/artifactMigration.js';
 import { buildUserFieldOverrideCandidateId } from '../../../utils/candidateIdentifier.js';
+import { resolveBrandIdentifier } from '../identity/resolveBrandIdentifier.js';
 
 function catalogPath(config, category) {
   const root = config?.categoryAuthorityRoot || 'category_authority';
@@ -90,6 +91,7 @@ export async function addProduct({
   storage = null,
   upsertQueue = null,
   specDb = null,
+  appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const cleanBrand = String(brand ?? '').trim();
@@ -129,6 +131,7 @@ export async function addProduct({
     brand: identity.brand,
     model: identity.model,
     variant: identity.variant,
+    brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
     status: 'active',
     seed_urls: Array.isArray(seedUrls) ? seedUrls.filter(Boolean) : [],
     added_at: nowIso(),
@@ -140,7 +143,7 @@ export async function addProduct({
     writeProductIdentity({
       productId: pid,
       category: cat,
-      identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+      identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
       seedUrls,
       identifier: product.identifier,
     });
@@ -165,7 +168,8 @@ export async function addProductsBulk({
   brand = '',
   rows = [],
   storage = null,
-  upsertQueue = null
+  upsertQueue = null,
+  appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   const defaultBrand = String(brand ?? '').trim();
@@ -254,6 +258,7 @@ export async function addProductsBulk({
       brand: identity.brand,
       model: identity.model,
       variant: identity.variant,
+      brand_identifier: resolveBrandIdentifier(appDb, identity.brand),
       status: 'active',
       seed_urls: seedUrls,
       added_at: nowIso(),
@@ -267,7 +272,7 @@ export async function addProductsBulk({
         writeProductIdentity({
           productId: pid,
           category: cat,
-          identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+          identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: product.brand_identifier },
           seedUrls,
           identifier: product.identifier,
         });
@@ -321,6 +326,7 @@ export async function updateProduct({
   storage = null,
   upsertQueue = null,
   specDb = null,
+  appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   if (!cat) return { ok: false, error: 'category_required' };
@@ -347,11 +353,17 @@ export async function updateProduct({
   // WHY: Normalize identity (strip fabricated variants) but productId stays immutable
   const identity = normalizeProductIdentity(cat, newBrand, newModel, newVariant);
 
+  // WHY: Resolve brand_identifier when brand changes; preserve existing otherwise
+  const newBrandIdentifier = patch.brand !== undefined
+    ? resolveBrandIdentifier(appDb, identity.brand)
+    : (existing.brand_identifier || '');
+
   const updated = {
     ...existing,
     brand: identity.brand,
     model: identity.model,
     variant: identity.variant,
+    brand_identifier: newBrandIdentifier,
     updated_at: nowIso()
   };
 
@@ -407,7 +419,8 @@ export async function seedFromCatalog({
   category,
   mode = 'identity',
   storage = null,
-  upsertQueue = null
+  upsertQueue = null,
+  appDb = null,
 }) {
   const cat = String(category ?? '').trim().toLowerCase();
   if (!cat) return { ok: false, error: 'category_required' };
@@ -463,6 +476,7 @@ export async function seedFromCatalog({
         brand: identity.brand,
         model: identity.model,
         variant: identity.variant,
+        brand_identifier: row.brand_identifier || resolveBrandIdentifier(appDb, identity.brand),
         status: 'active',
         seed_urls: [],
         added_at: nowIso(),
@@ -477,7 +491,7 @@ export async function seedFromCatalog({
         writeProductIdentity({
           productId: pid,
           category: cat,
-          identity: { brand: identity.brand, model: identity.model, variant: identity.variant },
+          identity: { brand: identity.brand, model: identity.model, variant: identity.variant, brand_identifier: catEntry.brand_identifier },
           identifier: catEntry.identifier,
         });
       } catch { /* best-effort */ }

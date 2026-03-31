@@ -180,3 +180,44 @@ test('cost ledger appends entries via SQL and rolls up month totals', async () =
   const digest = storage.map.get(report.digest_key)?.toString('utf8') || '';
   assert.equal(digest.includes('Run Totals (Newest First)'), true);
 });
+
+test('writeBillingDigest writes exactly 2 keys (no legacy duplicates)', async () => {
+  const storage = makeMemoryStorage();
+  const specDb = makeMockSpecDb();
+  const config = { llmProvider: 'anthropic' };
+  const entry = {
+    ts: '2026-02-15T10:00:00Z',
+    provider: 'anthropic',
+    model: 'claude-3',
+    category: 'mouse',
+    productId: 'mouse-a',
+    runId: 'run-1',
+    round: 1,
+    prompt_tokens: 100,
+    completion_tokens: 50,
+    total_tokens: 150,
+    cost_usd: 0.001,
+    reason: 'extract',
+  };
+
+  await appendCostLedgerEntry({ storage, config, entry, specDb });
+  const keysBefore = [...storage.map.keys()];
+
+  const report = await buildBillingReport({
+    storage,
+    month: '2026-02',
+    config,
+    specDb,
+  });
+
+  const keysAfter = [...storage.map.keys()];
+  const newKeys = keysAfter.filter((k) => !keysBefore.includes(k));
+
+  assert.equal(newKeys.length, 2, `expected 2 new keys, got ${newKeys.length}: ${JSON.stringify(newKeys)}`);
+  assert.ok(newKeys.some((k) => k === '_billing/monthly/2026-02.txt'), 'missing monthly digest key');
+  assert.ok(newKeys.some((k) => k === '_billing/latest.txt'), 'missing latest digest key');
+
+  for (const k of newKeys) {
+    assert.ok(!k.startsWith('specs/outputs/'), `legacy-prefixed key should not be written: ${k}`);
+  }
+});

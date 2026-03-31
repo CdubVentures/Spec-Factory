@@ -317,6 +317,96 @@ describe('characterization: renameBrand', () => {
   });
 });
 
+// ── renameBrand with brand_identifier (Phase F O(1) cascade) ──
+
+describe('renameBrand: O(1) brand_identifier cascade', () => {
+  it('updates products via brand_identifier in a single SQL UPDATE', async () => {
+    const config = await tmpConfig();
+    const appDb = createTestAppDb();
+    const { SpecDb } = await import('../../../../db/specDb.js');
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    try {
+      const addResult = await addBrand({ config, appDb, name: 'Acme', categories: ['mouse'] });
+      const identifier = addResult.brand.identifier;
+
+      // Insert a product WITH brand_identifier set
+      specDb.upsertProduct({
+        category: 'mouse', product_id: 'mouse-aabb1122',
+        brand: 'Acme', model: 'Widget', variant: '',
+        status: 'active', seed_urls: [], identifier: 'aabb1122',
+        brand_identifier: identifier,
+      });
+
+      const result = await renameBrand({
+        config, appDb, slug: 'acme', newName: 'Acme Corp',
+        getSpecDb: () => specDb,
+      });
+
+      assert.equal(result.ok, true);
+      assert.equal(result.cascaded_products, 1);
+
+      const row = specDb.getProduct('mouse-aabb1122');
+      assert.equal(row.brand, 'Acme Corp');
+    } finally {
+      specDb.close();
+      await cleanup(config, appDb);
+    }
+  });
+
+  it('products without brand_identifier are unaffected', async () => {
+    const config = await tmpConfig();
+    const appDb = createTestAppDb();
+    const { SpecDb } = await import('../../../../db/specDb.js');
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    try {
+      await addBrand({ config, appDb, name: 'Acme', categories: ['mouse'] });
+
+      // Insert a product WITHOUT brand_identifier
+      specDb.upsertProduct({
+        category: 'mouse', product_id: 'mouse-ccdd3344',
+        brand: 'Acme', model: 'Legacy', variant: '',
+        status: 'active', seed_urls: [], identifier: 'ccdd3344',
+        brand_identifier: '',
+      });
+
+      const result = await renameBrand({
+        config, appDb, slug: 'acme', newName: 'Acme Corp',
+        getSpecDb: () => specDb,
+      });
+
+      assert.equal(result.ok, true);
+      assert.equal(result.cascaded_products, 0);
+
+      // Brand display name unchanged on this product
+      const row = specDb.getProduct('mouse-ccdd3344');
+      assert.equal(row.brand, 'Acme');
+    } finally {
+      specDb.close();
+      await cleanup(config, appDb);
+    }
+  });
+
+  it('rename with 0 matching products returns cascaded_products: 0', async () => {
+    const config = await tmpConfig();
+    const appDb = createTestAppDb();
+    const { SpecDb } = await import('../../../../db/specDb.js');
+    const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+    try {
+      await addBrand({ config, appDb, name: 'Acme', categories: ['mouse'] });
+      const result = await renameBrand({
+        config, appDb, slug: 'acme', newName: 'Acme Corp',
+        getSpecDb: () => specDb,
+      });
+      assert.equal(result.ok, true);
+      assert.equal(result.cascaded_products, 0);
+      assert.equal(result.cascade_failures, 0);
+    } finally {
+      specDb.close();
+      await cleanup(config, appDb);
+    }
+  });
+});
+
 // ── getBrandImpactAnalysis shape ──
 
 describe('characterization: getBrandImpactAnalysis', () => {

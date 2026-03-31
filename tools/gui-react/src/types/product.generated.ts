@@ -16,6 +16,7 @@ export interface CatalogProductGen {
   id: number;
   identifier: string;
   brand: string;
+  brand_identifier?: string;
   model: string;
   variant: string;
   status: string;
@@ -30,6 +31,7 @@ export interface CatalogRowGen {
   id: number;
   identifier: string;
   brand: string;
+  brand_identifier?: string;
   model: string;
   base_model: string;
   variant: string;

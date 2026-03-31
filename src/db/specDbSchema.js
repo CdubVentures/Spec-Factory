@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category TEXT NOT NULL, product_id TEXT NOT NULL,
   brand TEXT DEFAULT '', model TEXT DEFAULT '', variant TEXT DEFAULT '',
-  status TEXT DEFAULT 'active', seed_urls TEXT, identifier TEXT,
+  status TEXT DEFAULT 'active', seed_urls TEXT, identifier TEXT, brand_identifier TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')),
   UNIQUE(category, product_id)
 );

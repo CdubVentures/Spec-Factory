@@ -6620,3 +6620,7 @@ Node.js v24.13.1
 [source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
 [source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
 [source-registry] _test_mouse: population gate BLOCKED — total entries 0 < 3; distinct tiers 0 < 3; retailer hosts 0 < 2; lab/aggregator hosts 0 < 1
+[auto-seed] papaudit310a failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\papaudit310a\_generated\field_rules.json
+[auto-seed] products failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\products\_generated\field_rules.json
+[auto-seed] run_repair_handoff_live_characterization_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\run_repair_handoff_live_characterization_001\_generated\field_rules.json
+[auto-seed] test_v3_001 failed: missing_field_rules:C:\Users\Chris\Desktop\Spec Factory\category_authority\test_v3_001\_generated\field_rules.json
