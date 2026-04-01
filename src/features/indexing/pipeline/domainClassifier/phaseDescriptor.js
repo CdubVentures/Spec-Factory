@@ -4,7 +4,7 @@
 
 export const domainClassifierPhase = {
   id: 'domainClassifier',
-  phaseCursor: 'phase_08_domain_classifier',
+  stageCursor: 'stage:domain-classifier',
   checkpoint: 'final',
 
   execute(ctx) {

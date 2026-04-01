@@ -83,6 +83,7 @@ export const MIGRATIONS = [
   )`,
   // WHY: Tier column on query_index — enables per-query tier display in run history panel.
   `ALTER TABLE query_index ADD COLUMN tier TEXT DEFAULT NULL`,
+  `ALTER TABLE runs RENAME COLUMN phase_cursor TO stage_cursor`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -116,7 +117,7 @@ export const SECONDARY_INDEXES = `
 export function applyMigrations(db) {
   for (const sql of MIGRATIONS) {
     try { db.exec(sql); } catch (e) {
-      if (!e.message.includes('duplicate column')) throw e;
+      if (!e.message.includes('duplicate column') && !e.message.includes('no such column')) throw e;
     }
   }
   db.exec(SECONDARY_INDEXES);

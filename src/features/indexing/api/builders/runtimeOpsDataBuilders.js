@@ -108,7 +108,7 @@ export function buildRuntimeOpsSummary(events, meta) {
   return {
     status,
     round,
-    phase_cursor: String(safeMeta.phase_cursor || '').trim(),
+    stage_cursor: String(safeMeta.stage_cursor || '').trim(),
     boot_step: bootStep,
     boot_progress: bootProgress,
     browser_pool: browserPool,

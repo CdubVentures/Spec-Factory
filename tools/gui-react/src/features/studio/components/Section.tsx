@@ -9,6 +9,7 @@ interface SectionProps {
   defaultOpen?: boolean;
   titleTooltip?: string;
   centerTitle?: boolean;
+  disabled?: boolean;
 }
 
 export function Section({
@@ -18,6 +19,7 @@ export function Section({
   defaultOpen = false,
   titleTooltip,
   centerTitle = false,
+  disabled = false,
 }: SectionProps) {
   const [open, , setOpen] = usePersistedToggle(persistKey, defaultOpen);
   const titleCls = centerTitle
@@ -58,7 +60,7 @@ export function Section({
           <Tip text={titleTooltip} />
         </span>
       ) : null}
-      {open ? <div className="p-3 space-y-3">{children}</div> : null}
+      {open ? <div className={`p-3 space-y-3${disabled ? ' opacity-50 pointer-events-none select-none' : ''}`}>{children}</div> : null}
     </div>
   );
 }

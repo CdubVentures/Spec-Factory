@@ -77,7 +77,7 @@ function goldenMasterMeta() {
     status: 'completed',
     started_at: '2026-03-30T12:00:00.000Z',
     ended_at: '2026-03-30T12:35:00.000Z',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     round: 1,
   };
 }

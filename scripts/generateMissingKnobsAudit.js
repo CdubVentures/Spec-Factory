@@ -237,8 +237,8 @@ const hdr2 = styleHeader(ws2);
 hdr2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E5090' } };
 
 const aliases = [
-  { backendKey: 'llmModelPlan', renderedAs: 'phase2LlmModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Planner & Triage', notes: 'Same model selection. phase2LlmModel is the canonical GUI key used for the Planner model selector.' },
-  { backendKey: 'llmModelTriage', renderedAs: 'phase3LlmModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Planner & Triage', notes: 'Same model selection. phase3LlmModel is the canonical GUI key used for the Triage model selector.' },
+  { backendKey: 'llmModelPlan', renderedAs: 'planLlmModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Planner & Triage', notes: 'Same model selection. planLlmModel is the canonical GUI key used for the Planner model selector.' },
+  { backendKey: 'llmModelTriage', renderedAs: 'triageLlmModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Planner & Triage', notes: 'Same model selection. triageLlmModel is the canonical GUI key used for the Triage model selector.' },
   { backendKey: 'llmPlanFallbackModel', renderedAs: 'llmFallbackPlanModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Fallback Routing', notes: 'Reversed word order alias (Plan+Fallback vs Fallback+Plan). Both resolve to the same setting.' },
   { backendKey: 'llmExtractFallbackModel', renderedAs: 'llmFallbackExtractModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Fallback Routing', notes: 'Reversed word order alias. Both resolve to the same fallback extract model setting.' },
   { backendKey: 'llmValidateFallbackModel', renderedAs: 'llmFallbackValidateModel', defaultValue: 'gemini-2.5-flash-lite', type: 'string', section: 'Fallback Routing', notes: 'Reversed word order alias. Both resolve to the same fallback validate model setting.' },

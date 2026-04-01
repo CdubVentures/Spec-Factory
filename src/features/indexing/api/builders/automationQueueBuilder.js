@@ -255,7 +255,7 @@ export function createAutomationQueueBuilder({
           scheduledAt: ts,
           priority: 20,
           fieldTargets,
-          reasonTags: [reason || 'repair_signal', 'phase_04_signal'],
+          reasonTags: [reason || 'repair_signal', 'search-planner-signal'],
           domain,
           url,
           query,
@@ -713,7 +713,7 @@ export function createAutomationQueueBuilder({
         ...typeCounts
       },
       policies: {
-        owner: 'phase_06b',
+        owner: 'search-results-automation',
         loops: {
           repair_search: true,
           staleness_refresh: true,

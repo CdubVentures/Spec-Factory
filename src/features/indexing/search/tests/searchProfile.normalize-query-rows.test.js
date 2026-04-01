@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeQueryRows } from './helpers/phase02SearchProfileHarness.js';
+import { normalizeQueryRows } from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - normalizeQueryRows Coercion', () => {
   it('converts flat string array to structured rows', () => {

@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallel Features Roadmap — Spec Factory</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-alt: #fafbfc;
+    --border: #e2e5ea;
+    --border-soft: #eef0f4;
+    --text: #1a1d23;
+    --text-2: #4a5568;
+    --text-3: #8899a6;
+    --accent: #4f6ef7;
+    --accent-soft: rgba(79,110,247,0.08);
+    --purple: #7c5cfc;
+    --purple-soft: rgba(124,92,252,0.08);
+    --green: #10b981;
+    --green-soft: rgba(16,185,129,0.08);
+    --orange: #f59e0b;
+    --orange-soft: rgba(245,158,11,0.08);
+    --red: #ef4444;
+    --red-soft: rgba(239,68,68,0.07);
+    --cyan: #06b6d4;
+    --cyan-soft: rgba(6,182,212,0.08);
+    --pink: #ec4899;
+    --pink-soft: rgba(236,72,153,0.08);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+  .mono { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9em; letter-spacing: -0.02em; }
+
+  /* ═══ LAYOUT ═══ */
+  .page { max-width: 1140px; margin: 0 auto; padding: 40px 24px 80px; }
+  .header-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 40px; padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-bar h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+  .header-bar .subtitle { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+  .header-bar .badge {
+    font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+    background: var(--accent-soft); color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* ═══ TABLE OF CONTENTS ═══ */
+  .toc {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 24px; margin-bottom: 32px; box-shadow: var(--shadow-sm);
+  }
+  .toc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; }
+  .toc a {
+    font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500;
+    padding: 3px 0; display: flex; align-items: center; gap: 8px;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .toc .num { font-size: 10px; font-weight: 700; color: var(--text-3); min-width: 18px; }
+
+  /* ═══ SECTIONS ═══ */
+  .section { margin-bottom: 40px; }
+  .section-anchor { scroll-margin-top: 24px; }
+  .section-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-head h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .section-num {
+    font-size: 11px; font-weight: 800; color: var(--accent);
+    background: var(--accent-soft); padding: 2px 8px; border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+  h4 { font-size: 13px; font-weight: 700; margin: 16px 0 8px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  p, li { font-size: 14px; color: var(--text-2); }
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ═══ CARDS ═══ */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px;
+    box-shadow: var(--shadow-sm); margin-bottom: 16px;
+  }
+  .card-accent { border-left: 3px solid var(--accent); }
+  .card-purple { border-left: 3px solid var(--purple); }
+  .card-green { border-left: 3px solid var(--green); }
+  .card-orange { border-left: 3px solid var(--orange); }
+  .card-cyan { border-left: 3px solid var(--cyan); }
+  .card-pink { border-left: 3px solid var(--pink); }
+
+  .card-title {
+    font-size: 14px; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .tag-feature { background: var(--accent-soft); color: var(--accent); }
+  .tag-phase { background: var(--purple-soft); color: var(--purple); }
+  .tag-data { background: var(--green-soft); color: var(--green); }
+  .tag-llm { background: var(--orange-soft); color: var(--orange); }
+  .tag-ui { background: var(--cyan-soft); color: var(--cyan); }
+  .tag-critical { background: var(--red-soft); color: var(--red); }
+  .tag-eg { background: var(--pink-soft); color: var(--pink); }
+
+  /* ═══ FLOW DIAGRAMS ═══ */
+  .flow {
+    background: var(--surface-alt); border: 1px solid var(--border-soft);
+    border-radius: var(--radius); padding: 24px;
+    margin: 16px 0; overflow-x: auto;
+  }
+  .flow-row {
+    display: flex; align-items: center; gap: 0;
+    flex-wrap: wrap; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .flow-row:last-child { margin-bottom: 0; }
+  .flow-box {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; padding: 8px 14px;
+    border-radius: var(--radius-sm); white-space: nowrap;
+    border: 1px solid var(--border);
+  }
+  .flow-box.primary { background: var(--accent-soft); color: var(--accent); border-color: rgba(79,110,247,0.2); }
+  .flow-box.purple { background: var(--purple-soft); color: var(--purple); border-color: rgba(124,92,252,0.2); }
+  .flow-box.green { background: var(--green-soft); color: var(--green); border-color: rgba(16,185,129,0.2); }
+  .flow-box.orange { background: var(--orange-soft); color: var(--orange); border-color: rgba(245,158,11,0.2); }
+  .flow-box.cyan { background: var(--cyan-soft); color: var(--cyan); border-color: rgba(6,182,212,0.2); }
+  .flow-box.pink { background: var(--pink-soft); color: var(--pink); border-color: rgba(236,72,153,0.2); }
+  .flow-box.neutral { background: var(--surface); color: var(--text-2); }
+  .flow-arrow { font-size: 16px; color: var(--text-3); padding: 0 6px; flex-shrink: 0; }
+  .flow-arrow-down { display: block; text-align: center; font-size: 16px; color: var(--text-3); padding: 4px 0; }
+
+  /* ═══ TABLES ═══ */
+  .tbl-wrap { overflow-x: auto; margin: 12px 0 16px; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  th {
+    text-align: left; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-3); padding: 10px 14px;
+    background: var(--surface-alt); border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border-soft);
+    color: var(--text-2); vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code, p code, li code {
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 12px; background: var(--surface-alt);
+    padding: 1px 6px; border-radius: 4px;
+    border: 1px solid var(--border-soft); color: var(--text);
+  }
+
+  /* ═══ CODE BLOCKS ═══ */
+  pre {
+    background: #1e2028; color: #c9d1d9; padding: 16px 20px;
+    border-radius: var(--radius-sm); overflow-x: auto;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 12.5px; line-height: 1.7; margin: 12px 0 16px;
+    border: 1px solid #2d3139;
+  }
+  pre .comment { color: #6e7681; }
+  pre .key { color: #79c0ff; }
+  pre .str { color: #a5d6ff; }
+  pre .type { color: #d2a8ff; }
+  pre .num { color: #56d364; }
+  pre .kw { color: #ff7b72; }
+
+  /* ═══ CALLOUTS ═══ */
+  .callout {
+    display: flex; gap: 12px; padding: 14px 18px;
+    border-radius: var(--radius-sm); margin: 12px 0;
+    font-size: 13px; line-height: 1.5;
+  }
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout-info { background: var(--accent-soft); border: 1px solid rgba(79,110,247,0.15); }
+  .callout-warn { background: var(--orange-soft); border: 1px solid rgba(245,158,11,0.15); }
+  .callout-critical { background: var(--red-soft); border: 1px solid rgba(239,68,68,0.12); }
+  .callout p { margin-bottom: 0; }
+
+  /* ═══ PHASE TIMELINE ═══ */
+  .timeline { position: relative; padding-left: 32px; margin: 16px 0; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--border); border-radius: 1px;
+  }
+  .tl-item { position: relative; margin-bottom: 20px; }
+  .tl-item:last-child { margin-bottom: 0; }
+  .tl-dot {
+    position: absolute; left: -25px; top: 6px;
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--accent);
+    background: var(--accent);
+  }
+  .tl-dot.purple { background: var(--purple); box-shadow: 0 0 0 2px var(--purple); }
+  .tl-dot.green { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+  .tl-dot.orange { background: var(--orange); box-shadow: 0 0 0 2px var(--orange); }
+  .tl-dot.cyan { background: var(--cyan); box-shadow: 0 0 0 2px var(--cyan); }
+  .tl-dot.pink { background: var(--pink); box-shadow: 0 0 0 2px var(--pink); }
+  .tl-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .tl-body { font-size: 13px; color: var(--text-2); }
+
+  /* ═══ SPLIT LAYOUT ═══ */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .split-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .split, .split-3 { grid-template-columns: 1fr; } .toc-grid { grid-template-columns: 1fr; } }
+
+  /* ═══ VERDICT BOX ═══ */
+  .verdict {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin: 16px 0; text-align: center;
+  }
+  .verdict-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 8px; }
+  .verdict-text { font-size: 16px; font-weight: 700; color: var(--text); }
+
+  .sep { height: 1px; background: var(--border); margin: 32px 0; }
+
+  /* ═══ PARALLEL LANES ═══ */
+  .lanes {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px;
+    margin: 16px 0;
+  }
+  .lane {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; text-align: center;
+    position: relative;
+  }
+  .lane-head {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 8px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .lane-head.accent { color: var(--accent); border-color: var(--accent); }
+  .lane-head.purple { color: var(--purple); border-color: var(--purple); }
+  .lane-head.orange { color: var(--orange); border-color: var(--orange); }
+  .lane-head.green { color: var(--green); border-color: var(--green); }
+  .lane-step {
+    font-size: 12px; color: var(--text-2); padding: 6px 0;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .lane-step:last-child { border-bottom: none; }
+  @media (max-width: 900px) { .lanes { grid-template-columns: 1fr 1fr; } }
+
+  /* ═══ SWATCH DEMO ═══ */
+  .swatch-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .swatch {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .swatch-label { font-size: 13px; color: var(--text-2); }
+
+  /* ═══ LAUNCH PANEL MOCKUP ═══ */
+  .mockup {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin: 16px 0;
+    box-shadow: var(--shadow-md);
+  }
+  .mockup-header {
+    background: var(--surface-alt); padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; font-weight: 700; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .mockup-body { padding: 20px; }
+  .mockup-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-soft);
+  }
+  .mockup-row:last-child { border-bottom: none; }
+  .mockup-toggle {
+    width: 36px; height: 20px; border-radius: 10px;
+    background: var(--green); position: relative; flex-shrink: 0;
+    cursor: default;
+  }
+  .mockup-toggle::after {
+    content: ''; position: absolute; top: 2px; right: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: white; box-shadow: var(--shadow-sm);
+  }
+  .mockup-toggle.off { background: var(--border); }
+  .mockup-toggle.off::after { right: auto; left: 2px; }
+  .mockup-label { font-size: 13px; font-weight: 600; flex: 1; }
+  .mockup-desc { font-size: 11px; color: var(--text-3); }
+  .mockup-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <div class="header-bar">
+    <div>
+      <h1>Identity Validation Roadmap</h1>
+      <div class="subtitle">Color Registry &bull; Release Date &bull; Color &amp; Edition Variants &bull; Visual Verification &bull; URL Validation</div>
+    </div>
+    <div class="badge">Draft &mdash; April 2026</div>
+  </div>
+
+  <!-- ═══════════════════════ TOC ═══════════════════════ -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <div class="toc-grid">
+      <a href="#overview"><span class="num">01</span> Overview &amp; Execution Model</a>
+      <a href="#color-registry"><span class="num">02</span> Color Registry (Global Tab)</a>
+      <a href="#launch-panel"><span class="num">03</span> Identity Validation Panel</a>
+      <a href="#cooldowns"><span class="num">03</span> Cooldowns &amp; Completion Logic</a>
+      <a href="#category-angles"><span class="num">04</span> Category Shot Angles (O(1) Config)</a>
+      <a href="#color-edition"><span class="num">05</span> Feature: Color &amp; Edition Variants</a>
+      <a href="#eg-format"><span class="num">06</span> EG Site Output Format</a>
+      <a href="#color-schema"><span class="num">07</span> Color/Edition LLM Schema</a>
+      <a href="#color-hex"><span class="num">08</span> Hex Color Mapping</a>
+      <a href="#visual-verification"><span class="num">09</span> Feature: Visual Verification</a>
+      <a href="#image-pipeline"><span class="num">10</span> Image Acquisition Pipeline</a>
+      <a href="#release-date"><span class="num">11</span> Feature: Release Date</a>
+      <a href="#validation"><span class="num">12</span> Feature: URL Validation (Separate)</a>
+      <a href="#identity"><span class="num">13</span> The Identity Problem</a>
+      <a href="#validation-schema"><span class="num">14</span> Validation LLM Schema</a>
+      <a href="#data-model"><span class="num">15</span> Data Model (All Features)</a>
+      <a href="#architecture"><span class="num">16</span> Architecture &amp; File Map</a>
+      <a href="#gui"><span class="num">17</span> GUI Integration</a>
+      <a href="#sequence"><span class="num">18</span> Implementation Sequence</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 01 OVERVIEW ═══════════════════════ -->
+  <div class="section" id="overview">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2>Overview &amp; Execution Model</h2>
+    </div>
+
+    <p>Four features, three of which run <strong>in parallel with the crawl pipeline</strong>. They are independent vertical slices &mdash; each has its own backend module, LLM phase, DB tables, and API endpoints. They share only the product identity anchor as input.</p>
+
+    <div class="callout callout-critical">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Key change from v1:</strong> These are NOT post-crawl features. Color/Edition, Image, and Release Date finders <strong>launch alongside the pipeline</strong> and run concurrently. Validation runs after all four complete (it needs reference images from the Visual Verification).</p></div>
+    </div>
+
+    <h3>Parallel Execution Model</h3>
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-head accent">Crawl Pipeline</div>
+        <div class="lane-step">NeedSet</div>
+        <div class="lane-step">Brand Resolver</div>
+        <div class="lane-step">Search Profile</div>
+        <div class="lane-step">Search Execution</div>
+        <div class="lane-step">Domain Classifier</div>
+        <div class="lane-step">Crawl &amp; Extract</div>
+        <div class="lane-step">Checkpoint</div>
+      </div>
+      <div class="lane">
+        <div class="lane-head green">Release Date</div>
+        <div class="lane-step">Check: already found?</div>
+        <div class="lane-step">GPT-5.4 xhigh + web</div>
+        <div class="lane-step">Search Keepa/Camel</div>
+        <div class="lane-step">Persist to DB</div>
+        <div class="lane-step" style="color:var(--green)">Done (permanent)</div>
+        <div class="lane-step">&nbsp;</div>
+        <div class="lane-step">&nbsp;</div>
+      </div>
+      <div class="lane">
+        <div class="lane-head purple">Color &amp; Edition</div>
+        <div class="lane-step">Check: 30-day cooldown</div>
+        <div class="lane-step">GPT-5.4 xhigh + web</div>
+        <div class="lane-step">Discover variants</div>
+        <div class="lane-step">Map hex colors</div>
+        <div class="lane-step">Format EG output</div>
+        <div class="lane-step">Persist to DB</div>
+        <div class="lane-step" style="color:var(--green)">Done (30d cooldown)</div>
+      </div>
+      <div class="lane">
+        <div class="lane-head orange">Visual Verification</div>
+        <div class="lane-step">Check: all angles covered?</div>
+        <div class="lane-step">GPT-5.4 xhigh + web</div>
+        <div class="lane-step">Find cutout URLs</div>
+        <div class="lane-step">Download PNGs</div>
+        <div class="lane-step">Gemini vision gate</div>
+        <div class="lane-step">Persist to disk</div>
+        <div class="lane-step" style="color:var(--green)">Done (until new variants)</div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="flow-box primary">All 4 tracks complete</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box cyan">URL Validation (uses reference images from Visual Verification)</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box green">Verified Product Data</div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-label">Architecture</div>
+      <div class="verdict-text">3 parallel finders launched with pipeline &bull; 1 validation pass after completion</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 02 COLOR REGISTRY ═══════════════════════ -->
+  <div class="section" id="color-registry">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2>Color Registry (Global Tab)</h2>
+    </div>
+
+    <p>A <strong>global color atom registry</strong> &mdash; the SSOT for every valid color name and its hex code. Lives in its own tab after Brands in the global tab group. The LLM must return only registered atoms. Multi-color variants join atoms with <code>+</code> in dominant color order.</p>
+
+    <div class="callout callout-critical">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>This must be built FIRST</strong> &mdash; before the Color &amp; Edition Finder runs. The finder&rsquo;s LLM prompt references the registry as a closed enum. Without it, there&rsquo;s no enforcement.</p></div>
+    </div>
+
+    <h3>Data Model</h3>
+    <pre><span class="comment">// appDb table (global, cross-category)</span>
+<span class="kw">CREATE TABLE</span> color_registry (
+  name       <span class="type">TEXT PRIMARY KEY</span>,   <span class="comment">-- "black", "light-blue", "dark-green"</span>
+  hex        <span class="type">TEXT NOT NULL</span>,       <span class="comment">-- "#3A3F41", "#60a5fa"</span>
+  css_var    <span class="type">TEXT NOT NULL</span>,       <span class="comment">-- "--color-black", "--color-light-blue"</span>
+  created_at <span class="type">TEXT NOT NULL DEFAULT</span> (datetime(<span class="str">'now'</span>))
+);</pre>
+
+    <h3>Multi-Color Variant Format</h3>
+    <div class="card card-purple">
+      <div class="card-title">Dominant Color Ordering <span class="tag tag-critical">Critical</span></div>
+      <p><code>"+"</code> joins atoms in <strong>dominant color order</strong>: 1st dominant + 2nd dominant + 3rd dominant + &hellip;</p>
+      <ul>
+        <li><code>"black+red"</code> = mostly black, red accents</li>
+        <li><code>"white+orange+blue"</code> = white dominant, orange secondary, blue tertiary</li>
+        <li><code>"white+black+red"</code> = white dominant, black secondary, red tertiary</li>
+      </ul>
+      <p>Infinite valid combinations. The registry validates <strong>each atom</strong>, not the combo.</p>
+    </div>
+
+    <h3>Naming Convention: Modifier-First</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Correct (modifier-first)</th><th>Wrong (modifier-last)</th><th>CSS Variable</th><th>Hex</th></tr></thead>
+        <tbody>
+          <tr><td><code>light-blue</code></td><td><s>blue-light</s></td><td><code>--color-light-blue</code></td><td><code>#60a5fa</code></td></tr>
+          <tr><td><code>dark-green</code></td><td><s>green-dark</s></td><td><code>--color-dark-green</code></td><td><code>#15803d</code></td></tr>
+          <tr><td><code>light-gray</code></td><td><s>gray-light</s></td><td><code>--color-light-gray</code></td><td><code>#6b7280</code></td></tr>
+          <tr><td><code>dark-blue</code></td><td><s>blue-dark</s></td><td><code>--color-dark-blue</code></td><td><code>#1d4ed8</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>GUI: Color Registry Tab</h3>
+    <ul>
+      <li><strong>Location:</strong> Global tab group, after Brands</li>
+      <li><strong>One entry in <code>pageRegistry.ts</code></strong> (O(1) tab registration)</li>
+      <li><strong>Table view:</strong> Name, hex swatch, CSS variable, edit/delete actions</li>
+      <li><strong>Add color form:</strong> Name + hex picker</li>
+      <li><strong>Pre-seeded:</strong> ~30 canonical EG colors on first load</li>
+      <li><strong>Used by:</strong> Color &amp; Edition Finder LLM prompt (closed enum), review grid validation, swatch rendering</li>
+    </ul>
+
+    <h3>LLM Integration</h3>
+    <p>The Color &amp; Edition Finder&rsquo;s prompt includes the full registry as a closed enum. The model must return only registered atom names. Multi-color variants split on <code>+</code>, each atom validated against the registry. Unknown atoms are rejected or flagged.</p>
+
+    <h3>Parse-Time Validation (Future)</h3>
+    <p>A custom parse hook splits each color token on <code>+</code> and validates each atom against the registry. Invalid atoms are flagged in the review grid. This replaces the current <code>open</code> enum policy with registry-backed validation.</p>
+  </div>
+
+  <!-- ═══════════════════════ 03 LAUNCH PANEL ═══════════════════════ -->
+  <div class="section" id="launch-panel">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2>Identity Validation Panel</h2>
+    </div>
+
+    <p>A new panel in the IndexLab UI, positioned <strong>between the product picker and run history</strong>. Four feature toggles with <strong>smart cooldowns and completion checkmarks</strong>. When the user clicks "Start", the crawl pipeline launches AND whichever features are enabled (and not on cooldown) also fire off concurrently.</p>
+
+    <h3>UI Mockup</h3>
+    <div class="mockup">
+      <div class="mockup-header">Identity Validation</div>
+      <div class="mockup-body">
+        <div class="mockup-row">
+          <div class="mockup-toggle"></div>
+          <div>
+            <div class="mockup-label">Release Date</div>
+            <div class="mockup-desc">Look up release/availability date via Keepa, CamelCamelCamel, press</div>
+          </div>
+          <div class="mockup-badge" style="background:var(--green-soft);color:var(--green);">GPT-5.4 + WEB</div>
+          <div class="mockup-badge" style="background:var(--surface-alt);color:var(--text-3);margin-left:4px;">ONCE</div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-toggle"></div>
+          <div>
+            <div class="mockup-label">Color &amp; Edition Variants</div>
+            <div class="mockup-desc">Discover all color variants, editions, SKUs, and hex mappings</div>
+          </div>
+          <div class="mockup-badge" style="background:var(--purple-soft);color:var(--purple);">GPT-5.4 + WEB</div>
+          <div class="mockup-badge" style="background:var(--surface-alt);color:var(--text-3);margin-left:4px;">30 DAY</div>
+        </div>
+        <div class="mockup-row">
+          <div class="mockup-toggle"></div>
+          <div>
+            <div class="mockup-label">Visual Verification</div>
+            <div class="mockup-desc">Acquire studio cutout images for each color/edition (category-defined angles)</div>
+          </div>
+          <div class="mockup-badge" style="background:var(--orange-soft);color:var(--orange);">GPT-5.4 + GEMINI</div>
+          <div class="mockup-badge" style="background:var(--surface-alt);color:var(--text-3);margin-left:4px;">COVERAGE</div>
+        </div>
+        <div style="padding:8px 0 0;border-top:1px solid var(--border-soft);margin-top:4px;">
+          <div style="font-size:11px;color:var(--text-3);">URL Validation is a separate feature with its own dedicated tab and panel.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>Checked off = satisfied.</strong> Each row shows a checkmark when its completion condition is met. Checked-off features are <em>skipped</em> on launch unless the user manually forces a re-run. Cooldown badges show time remaining.</p></div>
+    </div>
+
+    <h3>Launch Orchestration</h3>
+    <p>When the user clicks "Start" in IndexLab:</p>
+    <ol>
+      <li><strong>Pipeline starts</strong> as normal (<code>runProduct</code>)</li>
+      <li>For each enabled feature, check its <strong>cooldown/completion state</strong></li>
+      <li>Skip features that are satisfied (checked off) unless user forces re-run</li>
+      <li>Spawn remaining features as <strong>parallel async tasks</strong></li>
+      <li>Each receives the identity anchor: <code>{ brand, model, variant, category, product_id }</code></li>
+      <li>Features run independently &mdash; no dependencies between them</li>
+      <li>Results stream back to GUI via existing WebSocket/event system</li>
+      <li>If URL Validation is enabled, it waits for pipeline + Visual Verification to complete first</li>
+    </ol>
+  </div>
+
+  <!-- ═══════════════════════ 03 COOLDOWNS ═══════════════════════ -->
+  <div class="section" id="cooldowns">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2>Cooldowns &amp; Completion Logic</h2>
+    </div>
+
+    <p>Each feature has a <strong>completion condition</strong> and a <strong>cooldown strategy</strong>. When satisfied, the feature shows a checkmark in the panel and is skipped on launch.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>Cooldown</th><th>Checked Off When</th><th>Re-Triggers When</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Release Date</strong></td>
+            <td>Permanent (one-and-done)</td>
+            <td>A release date with confidence &ge; threshold is stored</td>
+            <td>Never automatically. User can force re-run.</td>
+          </tr>
+          <tr>
+            <td><strong>Color &amp; Edition</strong></td>
+            <td>30 days</td>
+            <td>Variants discovered and stored; cooldown timer starts</td>
+            <td>30-day timer expires. Catches new editions, seasonal colors, limited drops.</td>
+          </tr>
+          <tr>
+            <td><strong>Visual Verification</strong></td>
+            <td>Coverage-based</td>
+            <td>Every known color/edition variant has <strong>all category-defined angles</strong> covered with validated images</td>
+            <td>Color &amp; Edition finder discovers new variants that lack images</td>
+          </tr>
+          <tr>
+            <td><strong>URL Validation</strong></td>
+            <td>Per content_hash</td>
+            <td>All crawled URLs for this product have been validated</td>
+            <td>New crawl run produces new content_hashes</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cooldown State Storage</h3>
+    <pre><span class="comment">// Stored per product in identity_validation_state table</span>
+{
+  <span class="key">"product_id"</span>: <span class="str">"mouse-1d3c6fa6"</span>,
+  <span class="key">"release_date_completed"</span>: <span class="kw">true</span>,
+  <span class="key">"release_date_completed_at"</span>: <span class="str">"2026-04-01T12:00:00Z"</span>,
+
+  <span class="key">"color_edition_completed"</span>: <span class="kw">true</span>,
+  <span class="key">"color_edition_completed_at"</span>: <span class="str">"2026-04-01T12:00:00Z"</span>,
+  <span class="key">"color_edition_cooldown_days"</span>: <span class="num">30</span>,
+  <span class="key">"color_edition_next_eligible"</span>: <span class="str">"2026-05-01T12:00:00Z"</span>,
+
+  <span class="key">"visual_verification_complete"</span>: <span class="kw">false</span>,
+  <span class="key">"visual_verification_coverage"</span>: {
+    <span class="key">"total_needed"</span>: <span class="num">6</span>,           <span class="comment">// 3 colors &times; 2 angles</span>
+    <span class="key">"total_acquired"</span>: <span class="num">4</span>,
+    <span class="key">"missing"</span>: [<span class="str">"top---white+blue"</span>, <span class="str">"left---white+blue"</span>]
+  }
+}</pre>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Visual Verification depends on Color &amp; Edition.</strong> When Color &amp; Edition discovers new variants, the Visual Verification coverage calculation updates automatically. If new variants are found, Visual Verification un-checks itself and becomes eligible to run again on the next launch.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 04 CATEGORY ANGLES ═══════════════════════ -->
+  <div class="section" id="category-angles">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2>Category Shot Angles (O(1) Config)</h2>
+    </div>
+
+    <p>The "industry standard" image angles are <strong>user-defined per category</strong> in the Categories tab. This is the single source of truth &mdash; Visual Verification reads it, the coverage checker uses it, and it propagates instantly to all future runs.</p>
+
+    <div class="callout callout-critical">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Not hardcoded.</strong> The shot angle table from the earlier draft is replaced by this user-configurable field. The user defines angles when creating a category and can edit them at any time. Changes take effect on the next run.</p></div>
+    </div>
+
+    <h3>Category Config Extension</h3>
+    <pre><span class="comment">// Added to category definition (stored in category config)</span>
+{
+  <span class="key">"category"</span>: <span class="str">"mouse"</span>,
+  <span class="comment">// ... existing fields ...</span>
+
+  <span class="key">"image_angles"</span>: [
+    { <span class="key">"view"</span>: <span class="str">"top"</span>, <span class="key">"label"</span>: <span class="str">"Top-down"</span>, <span class="key">"required"</span>: <span class="kw">true</span> },
+    { <span class="key">"view"</span>: <span class="str">"left"</span>, <span class="key">"label"</span>: <span class="str">"Left profile"</span>, <span class="key">"required"</span>: <span class="kw">true</span> }
+  ]
+}</pre>
+
+    <h3>Default Angle Presets (Suggested at Category Creation)</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Default Angles</th><th>EG View Stems</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Mouse</strong></td><td>Top-down, Left profile</td><td><code>top</code>, <code>left</code></td></tr>
+          <tr><td><strong>Keyboard</strong></td><td>Top-down</td><td><code>top</code></td></tr>
+          <tr><td><strong>Monitor</strong></td><td>Front</td><td><code>front</code></td></tr>
+          <tr><td><strong>Mouse Pad</strong></td><td>Top-down</td><td><code>top</code></td></tr>
+          <tr><td><strong>GPU</strong></td><td>Side, Angled 3/4</td><td><code>left</code>, <code>sangle</code></td></tr>
+          <tr><td><strong>Headset</strong></td><td>Side profile, Angled 3/4</td><td><code>left</code>, <code>sangle</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>These are <strong>suggestions only</strong>. The user sets the actual values. Editable at any time from the Categories tab.</p>
+
+    <h3>O(1) Propagation</h3>
+    <ul>
+      <li><strong>Visual Verification</strong> reads <code>category.image_angles</code> to know which views to find</li>
+      <li><strong>Coverage checker</strong> computes: <code>total_needed = variants.length &times; angles.length</code></li>
+      <li><strong>LLM prompt</strong> includes the angle list so the model searches for the right views</li>
+      <li><strong>No code changes</strong> when angles change &mdash; everything reads from the category config at runtime</li>
+    </ul>
+
+    <h3>Categories Tab UI Extension</h3>
+    <div class="mockup">
+      <div class="mockup-header">Category: Mouse &mdash; Image Angles</div>
+      <div class="mockup-body">
+        <div class="mockup-row">
+          <div style="font-size:13px;font-weight:600;color:var(--text);width:80px;">top</div>
+          <div style="font-size:13px;color:var(--text-2);flex:1;">Top-down</div>
+          <div class="mockup-badge" style="background:var(--green-soft);color:var(--green);">REQUIRED</div>
+        </div>
+        <div class="mockup-row">
+          <div style="font-size:13px;font-weight:600;color:var(--text);width:80px;">left</div>
+          <div style="font-size:13px;color:var(--text-2);flex:1;">Left profile</div>
+          <div class="mockup-badge" style="background:var(--green-soft);color:var(--green);">REQUIRED</div>
+        </div>
+        <div class="mockup-row" style="opacity:0.5;">
+          <div style="font-size:13px;color:var(--text-3);width:80px;">+ Add angle</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ═══════════════════════ 03 COLOR & EDITION ═══════════════════════ -->
+  <div class="section" id="color-edition">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">05</span>
+      <h2>Feature: Color &amp; Edition Variants</h2>
+    </div>
+
+    <p>Uses GPT-5.4 xhigh with web search to discover every color variant and special edition of a product. Output must match the <strong>EG site format</strong> exactly &mdash; <code>"+"</code> delimited color strings, kebab-case edition slugs, and hex-to-CSS-variable mappings.</p>
+
+    <h3>What It Discovers</h3>
+    <div class="split-3">
+      <div class="card card-purple">
+        <div class="card-title">Color Variants <span class="tag tag-data">Data</span></div>
+        <p>Every available color using <code>"+"</code> notation.</p>
+        <p>Examples: <code>"black"</code>, <code>"white+blue"</code>, <code>"black+red"</code>, <code>"white+orange+blue"</code></p>
+      </div>
+      <div class="card card-pink">
+        <div class="card-title">Special Editions <span class="tag tag-data">Data</span></div>
+        <p>Limited/special editions as kebab-case slugs.</p>
+        <p>Examples: <code>"cyberpunk-2077-edition"</code>, <code>"sf6-chun-li"</code></p>
+      </div>
+      <div class="card card-green">
+        <div class="card-title">Per-Variant Metadata <span class="tag tag-data">Data</span></div>
+        <p>SKU, availability, product URL, and which editions map to which colors.</p>
+      </div>
+    </div>
+
+    <h3>LLM Configuration</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Model</td><td><code>gpt-5.4</code></td></tr>
+          <tr><td>Provider</td><td>Lab OpenAI (<code>localhost:5001</code>)</td></tr>
+          <tr><td>Thinking effort</td><td><code>xhigh</code></td></tr>
+          <tr><td>Web search</td><td>Enabled</td></tr>
+          <tr><td>Structured output</td><td>JSON schema (Zod-derived)</td></tr>
+          <tr><td>Max output tokens</td><td>8,192</td></tr>
+          <tr><td>Timeout</td><td>120s (web search latency)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 04 EG FORMAT ═══════════════════════ -->
+  <div class="section" id="eg-format">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">06</span>
+      <h2>EG Site Output Format</h2>
+    </div>
+
+    <p>The enrichment output must produce data that integrates directly into the EG site's product JSON format. This is the <strong>target schema</strong> the LLM response must map to.</p>
+
+    <div class="callout callout-critical">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Format is non-negotiable.</strong> The EG site uses this exact structure. Any deviation means manual cleanup before integration.</p></div>
+    </div>
+
+    <h3>EG Product JSON &mdash; Color &amp; Media Fields</h3>
+    <pre><span class="comment">// Target output format (matches EG site product JSON)</span>
+{
+  <span class="key">"colors"</span>: [<span class="str">"black"</span>, <span class="str">"black+red"</span>, <span class="str">"white+orange+blue"</span>],
+
+  <span class="key">"media"</span>: {
+    <span class="key">"defaultColor"</span>: <span class="str">"black"</span>,
+    <span class="key">"colors"</span>: [<span class="str">"black"</span>, <span class="str">"black+red"</span>, <span class="str">"white+orange+blue"</span>],
+    <span class="key">"editions"</span>: [<span class="str">"cyberpunk-2077-edition"</span>],
+    <span class="key">"images"</span>: [
+      { <span class="key">"stem"</span>: <span class="str">"top"</span>, <span class="key">"view"</span>: <span class="str">"top"</span> },
+      { <span class="key">"stem"</span>: <span class="str">"top---black"</span>, <span class="key">"view"</span>: <span class="str">"top"</span>, <span class="key">"color"</span>: <span class="str">"black"</span> },
+      { <span class="key">"stem"</span>: <span class="str">"top---black+red"</span>, <span class="key">"view"</span>: <span class="str">"top"</span>, <span class="key">"color"</span>: <span class="str">"black+red"</span> },
+      { <span class="key">"stem"</span>: <span class="str">"left___cyberpunk-2077-edition---black+red"</span>,
+        <span class="key">"view"</span>: <span class="str">"left"</span>, <span class="key">"color"</span>: <span class="str">"black+red"</span>, <span class="key">"edition"</span>: <span class="str">"cyberpunk-2077-edition"</span> }
+    ]
+  }
+}</pre>
+
+    <h3>EG Image Stem Convention</h3>
+    <div class="card card-pink">
+      <div class="card-title">Filename Encoding <span class="tag tag-eg">EG Format</span></div>
+      <pre style="margin:8px 0 0;background:#1e2028;padding:12px;font-size:12px;"><span class="comment">// Pattern: {view}[___edition][---color]</span>
+
+<span class="str">"top"</span>                                      <span class="comment">// base view, no color/edition</span>
+<span class="str">"top---black"</span>                               <span class="comment">// view + color</span>
+<span class="str">"top---white+blue"</span>                          <span class="comment">// view + multi-color</span>
+<span class="str">"top___cyberpunk-2077-edition---black+red"</span>  <span class="comment">// view + edition + color</span>
+<span class="str">"left___sf6-chun-li---white+blue"</span>           <span class="comment">// view + edition + multi-color</span></pre>
+    </div>
+
+    <h3>Color "+" Notation Rules</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Rule</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Single color</td><td><code>"black"</code></td><td>Lowercase, no spaces</td></tr>
+          <tr><td>Two colors</td><td><code>"black+red"</code></td><td>Rendered as 45&deg; linear gradient swatch</td></tr>
+          <tr><td>Three+ colors</td><td><code>"white+orange+blue"</code></td><td>Rendered as conic gradient swatch</td></tr>
+          <tr><td>Light/dark variants</td><td><code>"gray-light"</code>, <code>"blue-dark"</code></td><td>Hyphenated modifier</td></tr>
+          <tr><td>Edition-specific colors</td><td><code>"black+red"</code> on <code>"cyberpunk-2077-edition"</code></td><td>Color+edition pair in images array</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Visual: How Swatches Render</h3>
+    <div class="card">
+      <div class="swatch-row">
+        <div class="swatch" style="background:#3A3F41;"></div>
+        <div class="swatch-label"><code>"black"</code> &rarr; solid <code>--color-black: #3A3F41</code></div>
+      </div>
+      <div class="swatch-row">
+        <div class="swatch" style="background:linear-gradient(45deg, #3A3F41 50%, #ef4444 50%);"></div>
+        <div class="swatch-label"><code>"black+red"</code> &rarr; 45&deg; gradient</div>
+      </div>
+      <div class="swatch-row">
+        <div class="swatch" style="background:conic-gradient(from 0deg, #ffffff 0deg 120deg, #f97316 120deg 240deg, #3b82f6 240deg 360deg);"></div>
+        <div class="swatch-label"><code>"white+orange+blue"</code> &rarr; conic gradient</div>
+      </div>
+      <div class="swatch-row">
+        <div class="swatch" style="background:linear-gradient(45deg, #ffffff 50%, #3b82f6 50%);"></div>
+        <div class="swatch-label"><code>"white+blue"</code> &rarr; 45&deg; gradient</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 05 COLOR SCHEMA ═══════════════════════ -->
+  <div class="section" id="color-schema">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">07</span>
+      <h2>Color/Edition LLM Response Schema</h2>
+    </div>
+
+    <p>The structured output schema the LLM must return. This is the contract between the GPT-5.4 call and the storage layer.</p>
+
+    <pre><span class="comment">// colorEditionSchema.js &mdash; Zod schema for LLM structured output</span>
+{
+  <span class="key">"colors"</span>: [                             <span class="comment">// EG-format "+" strings</span>
+    <span class="str">"black"</span>,
+    <span class="str">"white"</span>,
+    <span class="str">"black+red"</span>,
+    <span class="str">"white+orange+blue"</span>
+  ],
+  <span class="key">"default_color"</span>: <span class="str">"black"</span>,                <span class="comment">// most common / marketing default</span>
+
+  <span class="key">"editions"</span>: [                            <span class="comment">// kebab-case slugs</span>
+    {
+      <span class="key">"slug"</span>: <span class="str">"cyberpunk-2077-edition"</span>,
+      <span class="key">"display_name"</span>: <span class="str">"Cyberpunk 2077 Edition"</span>,
+      <span class="key">"colors"</span>: [<span class="str">"black+red"</span>],          <span class="comment">// which colors this edition comes in</span>
+      <span class="key">"url"</span>: <span class="str">"https://..."</span>                <span class="comment">// product page for this edition</span>
+    }
+  ],
+
+  <span class="key">"variants"</span>: [                            <span class="comment">// full variant manifest</span>
+    {
+      <span class="key">"color"</span>: <span class="str">"black"</span>,                   <span class="comment">// EG "+" format</span>
+      <span class="key">"edition"</span>: <span class="kw">null</span>,                   <span class="comment">// null = standard, or edition slug</span>
+      <span class="key">"sku"</span>: <span class="str">"CH-931A1B1-NA"</span>,
+      <span class="key">"availability"</span>: <span class="str">"in_stock"</span>,         <span class="comment">// in_stock | discontinued | announced | unknown</span>
+      <span class="key">"product_url"</span>: <span class="str">"https://corsair.com/..."</span>
+    },
+    {
+      <span class="key">"color"</span>: <span class="str">"black+red"</span>,
+      <span class="key">"edition"</span>: <span class="str">"cyberpunk-2077-edition"</span>,
+      <span class="key">"sku"</span>: <span class="str">"CH-931A1B1-CP"</span>,
+      <span class="key">"availability"</span>: <span class="str">"discontinued"</span>,
+      <span class="key">"product_url"</span>: <span class="str">"https://corsair.com/..."</span>
+    }
+  ],
+
+  <span class="key">"hex_map"</span>: {                             <span class="comment">// individual color &rarr; hex (for CSS vars)</span>
+    <span class="str">"black"</span>: <span class="str">"#3A3F41"</span>,
+    <span class="str">"red"</span>: <span class="str">"#ef4444"</span>,
+    <span class="str">"white"</span>: <span class="str">"#ffffff"</span>,
+    <span class="str">"orange"</span>: <span class="str">"#f97316"</span>,
+    <span class="str">"blue"</span>: <span class="str">"#3b82f6"</span>
+  },
+
+  <span class="key">"search_sources"</span>: [<span class="str">"corsair.com"</span>, <span class="str">"amazon.com"</span>, <span class="str">"bestbuy.com"</span>],
+  <span class="key">"confidence"</span>: <span class="num">0.95</span>
+}</pre>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>hex_map keys are individual color atoms</strong>, not "+" strings. The "+" string <code>"black+red"</code> is rendered by splitting on <code>"+"</code> and looking up each atom in the hex_map. This matches how the EG site's <code>getCircleStyle()</code> works &mdash; it splits on <code>"+"</code> and maps each segment to <code>var(--color-{name})</code>.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 06 HEX COLOR ═══════════════════════ -->
+  <div class="section" id="color-hex">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">08</span>
+      <h2>Hex Color Mapping</h2>
+    </div>
+
+    <p>The EG site defines ~30 named colors as CSS custom properties. The LLM must map discovered product colors to these canonical names. If a product color doesn't match a known name, the LLM provides the hex value and a suggested canonical name.</p>
+
+    <h3>EG Site Canonical Color Palette</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>CSS Variable</th><th>Hex</th><th>Swatch</th><th>CSS Variable</th><th>Hex</th><th>Swatch</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>--color-black</code></td><td><code>#3A3F41</code></td><td><div class="swatch" style="background:#3A3F41;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-white</code></td><td><code>#ffffff</code></td><td><div class="swatch" style="background:#ffffff;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-red</code></td><td><code>#ef4444</code></td><td><div class="swatch" style="background:#ef4444;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-blue</code></td><td><code>#3b82f6</code></td><td><div class="swatch" style="background:#3b82f6;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-green</code></td><td><code>#22c55e</code></td><td><div class="swatch" style="background:#22c55e;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-yellow</code></td><td><code>#ffd83a</code></td><td><div class="swatch" style="background:#ffd83a;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-orange</code></td><td><code>#f97316</code></td><td><div class="swatch" style="background:#f97316;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-purple</code></td><td><code>#a855f7</code></td><td><div class="swatch" style="background:#a855f7;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-pink</code></td><td><code>#ec4899</code></td><td><div class="swatch" style="background:#ec4899;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-gray</code></td><td><code>#586062</code></td><td><div class="swatch" style="background:#586062;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-teal</code></td><td><code>#14b8a6</code></td><td><div class="swatch" style="background:#14b8a6;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-cyan</code></td><td><code>#06b6d4</code></td><td><div class="swatch" style="background:#06b6d4;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-gold</code></td><td><code>#d4a017</code></td><td><div class="swatch" style="background:#d4a017;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-silver</code></td><td><code>#c0c0c0</code></td><td><div class="swatch" style="background:#c0c0c0;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+          <tr>
+            <td><code>--color-gray-light</code></td><td><code>#a0aec0</code></td><td><div class="swatch" style="background:#a0aec0;width:18px;height:18px;display:inline-block;"></div></td>
+            <td><code>--color-blue-dark</code></td><td><code>#1d4ed8</code></td><td><div class="swatch" style="background:#1d4ed8;width:18px;height:18px;display:inline-block;"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>LLM color mapping instruction:</strong> The prompt tells the model to use canonical EG color names whenever possible. For colors not in the palette (e.g., "Glacier Blue"), the model returns the nearest canonical name + the actual hex. A human review step flags new colors that need CSS variable additions.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 07 IMAGE FINDER ═══════════════════════ -->
+  <div class="section" id="visual-verification">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">09</span>
+      <h2>Feature: Visual Verification</h2>
+    </div>
+
+    <p>Acquires studio cutout PNG images for each color variant. Two views per product (category-dependent angles). Images are validated by Gemini Pro vision before persistence.</p>
+
+    <h3>Category-Specific Shot Angles</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>View 1</th><th>View 2</th><th>EG Stem</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Mouse</strong></td><td>Top-down</td><td>Left profile</td><td><code>top---{color}</code>, <code>left---{color}</code></td></tr>
+          <tr><td><strong>Keyboard</strong></td><td>Top-down</td><td>&mdash;</td><td><code>top---{color}</code></td></tr>
+          <tr><td><strong>Monitor</strong></td><td>Front</td><td>&mdash;</td><td><code>front---{color}</code></td></tr>
+          <tr><td><strong>Mouse Pad</strong></td><td>Top-down</td><td>&mdash;</td><td><code>top---{color}</code></td></tr>
+          <tr><td><strong>GPU</strong></td><td>Side</td><td>Angled 3/4</td><td><code>left---{color}</code>, <code>sangle---{color}</code></td></tr>
+          <tr><td><strong>Headset</strong></td><td>Side profile</td><td>Front/3/4</td><td><code>left---{color}</code>, <code>sangle---{color}</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>LLM Configuration</h3>
+    <div class="split">
+      <div class="card card-orange">
+        <div class="card-title">Discovery: GPT-5.4 <span class="tag tag-llm">LLM</span></div>
+        <p>xhigh thinking + web search. Finds studio cutout image URLs from manufacturer sites and major retailers. Returns direct image URLs (not page URLs).</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">Validation: Gemini Pro <span class="tag tag-llm">LLM</span></div>
+        <p>Vision model confirms: (a) correct product, (b) correct angle, (c) studio cutout quality (clean background, no watermarks). Rejects failures.</p>
+      </div>
+    </div>
+
+    <h3>Image Quality Gate</h3>
+    <ul>
+      <li>White/transparent background only (studio cutout)</li>
+      <li>No watermarks, no lifestyle photography, no box art</li>
+      <li>Minimum resolution: 400px on shortest side</li>
+      <li>Max file size: 10MB</li>
+      <li>Format: PNG preferred, JPEG/WebP accepted (converted to PNG)</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════ 08 IMAGE PIPELINE ═══════════════════════ -->
+  <div class="section" id="image-pipeline">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">10</span>
+      <h2>Image Acquisition Pipeline</h2>
+    </div>
+
+    <div class="flow">
+      <div class="flow-row">
+        <div class="flow-box orange">GPT-5.4 Web Search</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box neutral">Image URLs per variant</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box primary">Download PNGs</div>
+      </div>
+      <div class="flow-arrow-down">&darr;</div>
+      <div class="flow-row">
+        <div class="flow-box purple">Gemini Pro Vision Gate</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box green">Persist: disk + DB</div>
+        <span class="flow-arrow">&rarr;</span>
+        <div class="flow-box pink">Generate EG image stems</div>
+      </div>
+    </div>
+
+    <h3>Storage Layout</h3>
+    <pre><span class="comment"># Per-product image directory</span>
+.workspace/products/mouse-1d3c6fa6/
+  product.json
+  images/
+    top---black.png
+    left---black.png
+    top---white.png
+    left---white.png
+    top___cyberpunk-2077-edition---black+red.png
+    left___cyberpunk-2077-edition---black+red.png
+    manifest.json</pre>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>Filenames use EG stem convention directly.</strong> The <code>{view}[___edition][---color]</code> pattern means images are already named for direct integration into the EG site's image pipeline.</p></div>
+    </div>
+
+    <h3>Image Manifest</h3>
+    <pre>{
+  <span class="key">"product_id"</span>: <span class="str">"mouse-1d3c6fa6"</span>,
+  <span class="key">"images"</span>: [
+    {
+      <span class="key">"stem"</span>: <span class="str">"top---black"</span>,
+      <span class="key">"view"</span>: <span class="str">"top"</span>,
+      <span class="key">"color"</span>: <span class="str">"black"</span>,
+      <span class="key">"edition"</span>: <span class="kw">null</span>,
+      <span class="key">"source_url"</span>: <span class="str">"https://corsair.com/media/..."</span>,
+      <span class="key">"source_domain"</span>: <span class="str">"corsair.com"</span>,
+      <span class="key">"resolution"</span>: { <span class="key">"w"</span>: <span class="num">1200</span>, <span class="key">"h"</span>: <span class="num">900</span> },
+      <span class="key">"validated"</span>: <span class="kw">true</span>,
+      <span class="key">"validated_by"</span>: <span class="str">"gemini-2.5-pro"</span>,
+      <span class="key">"is_reference"</span>: <span class="kw">true</span>
+    }
+  ],
+  <span class="key">"eg_media_fragment"</span>: {                  <span class="comment">// ready to merge into EG product JSON</span>
+    <span class="key">"defaultColor"</span>: <span class="str">"black"</span>,
+    <span class="key">"colors"</span>: [<span class="str">"black"</span>, <span class="str">"white"</span>, <span class="str">"black+red"</span>],
+    <span class="key">"editions"</span>: [<span class="str">"cyberpunk-2077-edition"</span>],
+    <span class="key">"images"</span>: [
+      { <span class="key">"stem"</span>: <span class="str">"top---black"</span>, <span class="key">"view"</span>: <span class="str">"top"</span>, <span class="key">"color"</span>: <span class="str">"black"</span> },
+      { <span class="key">"stem"</span>: <span class="str">"left---black"</span>, <span class="key">"view"</span>: <span class="str">"left"</span>, <span class="key">"color"</span>: <span class="str">"black"</span> }
+    ]
+  },
+  <span class="key">"updated_at"</span>: <span class="str">"2026-04-01T12:00:00Z"</span>
+}</pre>
+  </div>
+
+  <!-- ═══════════════════════ 09 RELEASE DATE ═══════════════════════ -->
+  <div class="section" id="release-date">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">11</span>
+      <h2>Feature: Release Date Finder</h2>
+    </div>
+
+    <p>The simplest of the three finders. One GPT-5.4 web search call per product. Checks Keepa, CamelCamelCamel, and manufacturer press releases for release/availability dates.</p>
+
+    <h3>Source Priority</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Source</th><th>Method</th><th>Reliability</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>Keepa</strong></td><td>LLM web search &rarr; Keepa product page</td><td>High &mdash; tracks first Amazon listing date</td></tr>
+          <tr><td>2</td><td><strong>CamelCamelCamel</strong></td><td>LLM web search &rarr; price history page</td><td>High &mdash; first tracked price date</td></tr>
+          <tr><td>3</td><td><strong>Manufacturer press</strong></td><td>LLM web search &rarr; news/press releases</td><td>Medium &mdash; announcement != availability</td></tr>
+          <tr><td>4</td><td><strong>Retailer metadata</strong></td><td>LLM web search &rarr; product page meta</td><td>Low &mdash; listing date != release date</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>LLM Response Schema</h3>
+    <pre>{
+  <span class="key">"release_date"</span>: <span class="str">"2024-08-15"</span>,
+  <span class="key">"release_date_precision"</span>: <span class="str">"day"</span>,       <span class="comment">// day | month | quarter | year</span>
+  <span class="key">"release_date_source"</span>: <span class="str">"keepa.com"</span>,
+  <span class="key">"release_date_url"</span>: <span class="str">"https://keepa.com/#!product/..."</span>,
+  <span class="key">"release_date_confidence"</span>: <span class="num">0.92</span>,
+  <span class="key">"announcement_date"</span>: <span class="str">"2024-07-20"</span>,    <span class="comment">// distinct from release if known</span>
+  <span class="key">"announcement_source"</span>: <span class="str">"corsair.com/press"</span>
+}</pre>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Future upgrade path:</strong> Keepa has a paid API ($15/mo for 10K lookups). When volume justifies, swap the LLM web search step for a direct API call. Same schema, different data source. No downstream changes needed.</p></div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ═══════════════════════ 10 VALIDATION ═══════════════════════ -->
+  <div class="section" id="validation">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">12</span>
+      <h2>Feature: URL Validation (Separate Feature &amp; Tab)</h2>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>Separate full feature.</strong> URL Validation has its own dedicated ops tab and panel &mdash; it is NOT part of the Identity Validation panel in IndexLab. This is the feature that finds and verifies all field key/values per source URL. It uses reference images from Visual Verification as identity anchors.</p></div>
+    </div>
+
+    <p>Per-URL accuracy verification using LLM vision. For each crawled URL, the model checks whether the page data actually belongs to the correct product, and whether extracted field values are consistent with what the page shows.</p>
+
+    <h3>What Validation Answers</h3>
+    <div class="split">
+      <div class="card card-accent">
+        <div class="card-title">Identity Match</div>
+        <p>Does this page contain information about this <em>exact</em> product? Catches comparison pages, wrong variants, bundled products.</p>
+      </div>
+      <div class="card card-green">
+        <div class="card-title">Field Consistency</div>
+        <p>For each known field value visible on this page, does it match what we have? Catches extraction errors, outdated data.</p>
+      </div>
+      <div class="card card-purple">
+        <div class="card-title">New Discoveries</div>
+        <p>Are there values visible that we don't have yet? Catches missed extractions.</p>
+      </div>
+      <div class="card card-orange">
+        <div class="card-title">Source Quality</div>
+        <p>Combined identity + field accuracy = quality score per URL. Feeds back into source ranking.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 11 IDENTITY ═══════════════════════ -->
+  <div class="section" id="identity">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">13</span>
+      <h2>The Identity Problem</h2>
+    </div>
+
+    <div class="callout callout-critical">
+      <span class="callout-icon">&#9888;</span>
+      <div><p><strong>Core invariant:</strong> We never validate data for the wrong item. Every validation call includes sufficient identity evidence to prevent misidentification &mdash; even on comparison pages, accessory listings, or multi-product pages.</p></div>
+    </div>
+
+    <h3>Identity Evidence Package (Sent Per Validation Call)</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Content</th><th>Tokens</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Identity Anchor</strong></td>
+            <td><code>{ brand, model, variant, sku }</code></td>
+            <td>~50</td>
+            <td>Text-level product identity</td>
+          </tr>
+          <tr>
+            <td><strong>Reference Image</strong></td>
+            <td>Studio cutout PNG from Visual Verification (<code>is_reference: true</code>)</td>
+            <td>~1,000</td>
+            <td>Visual anchor &mdash; the LLM sees what the product looks like</td>
+          </tr>
+          <tr>
+            <td><strong>Known Values</strong></td>
+            <td>Current accepted field values from <code>item_field_state</code></td>
+            <td>~200&ndash;500</td>
+            <td>Context for consistency checking</td>
+          </tr>
+          <tr>
+            <td><strong>Source Screenshot</strong></td>
+            <td>Full page screenshot from crawl artifacts</td>
+            <td>~2,000</td>
+            <td>The actual page being validated</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Total per call:</strong> ~3,500&ndash;4,000 tokens. Acceptable for accuracy-critical work.</p>
+
+    <h3>Why the Reference Image Matters</h3>
+    <div class="card card-orange">
+      <div class="card-title">Failure Modes Without Visual Anchor <span class="tag tag-critical">Risk</span></div>
+      <ul>
+        <li><strong>Comparison pages</strong> (rtings.com) &mdash; specs for 2+ products side-by-side. LLM may pick the wrong column.</li>
+        <li><strong>Variant confusion</strong> &mdash; "M75 Air" vs "M75 Air Wireless" differ by one word but look different.</li>
+        <li><strong>Accessory listings</strong> &mdash; product page also shows compatible accessories with their own specs.</li>
+        <li><strong>Bundled products</strong> &mdash; retailer bundles keyboard + mouse. Page has specs for both.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 12 VALIDATION SCHEMA ═══════════════════════ -->
+  <div class="section" id="validation-schema">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">14</span>
+      <h2>Validation LLM Response Schema</h2>
+    </div>
+
+    <pre><span class="comment">// validationSchema.js &mdash; Zod schema for validation structured output</span>
+{
+  <span class="comment">// === Identity Check ===</span>
+  <span class="key">"identity_match"</span>: <span class="str">"exact"</span>,            <span class="comment">// exact | partial | wrong_product | multi_product | not_found</span>
+  <span class="key">"identity_confidence"</span>: <span class="num">0.97</span>,
+  <span class="key">"identity_notes"</span>: <span class="str">"Product page for exact model, single product listing."</span>,
+
+  <span class="comment">// === Field Checks ===</span>
+  <span class="key">"field_checks"</span>: [
+    {
+      <span class="key">"field_key"</span>: <span class="str">"weight"</span>,
+      <span class="key">"our_value"</span>: <span class="str">"60g"</span>,
+      <span class="key">"page_value"</span>: <span class="str">"60g"</span>,
+      <span class="key">"status"</span>: <span class="str">"confirmed"</span>,          <span class="comment">// confirmed | contradicted | not_visible</span>
+      <span class="key">"confidence"</span>: <span class="num">0.99</span>
+    },
+    {
+      <span class="key">"field_key"</span>: <span class="str">"sensor"</span>,
+      <span class="key">"our_value"</span>: <span class="str">"PAW3950"</span>,
+      <span class="key">"page_value"</span>: <span class="str">"PixArt PAW3950"</span>,
+      <span class="key">"status"</span>: <span class="str">"confirmed"</span>,
+      <span class="key">"confidence"</span>: <span class="num">0.95</span>
+    }
+  ],
+
+  <span class="comment">// === Discoveries ===</span>
+  <span class="key">"discoveries"</span>: [
+    {
+      <span class="key">"field_key"</span>: <span class="str">"polling_rate"</span>,
+      <span class="key">"value"</span>: <span class="str">"8000Hz"</span>,
+      <span class="key">"confidence"</span>: <span class="num">0.90</span>,
+      <span class="key">"location_hint"</span>: <span class="str">"specs table, row 5"</span>
+    }
+  ]
+}</pre>
+  </div>
+
+  <!-- ═══════════════════════ 13 DATA MODEL ═══════════════════════ -->
+  <div class="section" id="data-model">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">15</span>
+      <h2>Data Model (All Features)</h2>
+    </div>
+
+    <h3>New SQL Tables</h3>
+
+    <h4>product_variants (Color &amp; Edition Finder)</h4>
+    <pre><span class="kw">CREATE TABLE</span> product_variants (
+  id            <span class="type">INTEGER PRIMARY KEY</span>,
+  product_id    <span class="type">TEXT NOT NULL</span>,
+  color         <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- EG "+" format: "black+red"</span>
+  edition       <span class="type">TEXT</span>,                     <span class="comment">-- kebab slug or NULL for standard</span>
+  sku           <span class="type">TEXT</span>,
+  availability  <span class="type">TEXT DEFAULT 'unknown'</span>,   <span class="comment">-- in_stock | discontinued | announced | unknown</span>
+  product_url   <span class="type">TEXT</span>,
+  is_default    <span class="type">INTEGER DEFAULT 0</span>,
+  discovered_by <span class="type">TEXT</span>,
+  discovered_at <span class="type">TEXT NOT NULL</span>,
+  <span class="kw">UNIQUE</span>(product_id, color, edition)
+);</pre>
+
+    <h4>product_color_hex (Color &amp; Edition Finder)</h4>
+    <pre><span class="kw">CREATE TABLE</span> product_color_hex (
+  id            <span class="type">INTEGER PRIMARY KEY</span>,
+  category      <span class="type">TEXT NOT NULL</span>,
+  color_name    <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- atomic: "black", "red" (no "+")</span>
+  hex_value     <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- "#3A3F41"</span>
+  css_var       <span class="type">TEXT</span>,                     <span class="comment">-- "--color-black" (EG CSS variable name)</span>
+  is_canonical  <span class="type">INTEGER DEFAULT 1</span>,       <span class="comment">-- 1 = matches EG palette, 0 = new color</span>
+  <span class="kw">UNIQUE</span>(category, color_name)
+);</pre>
+
+    <h4>product_images (Visual Verification)</h4>
+    <pre><span class="kw">CREATE TABLE</span> product_images (
+  id            <span class="type">INTEGER PRIMARY KEY</span>,
+  product_id    <span class="type">TEXT NOT NULL</span>,
+  stem          <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- EG stem: "top---black"</span>
+  view          <span class="type">TEXT NOT NULL</span>,           <span class="comment">-- top | left | front | sangle</span>
+  color         <span class="type">TEXT</span>,                     <span class="comment">-- EG "+" format or NULL</span>
+  edition       <span class="type">TEXT</span>,                     <span class="comment">-- kebab slug or NULL</span>
+  file_path     <span class="type">TEXT NOT NULL</span>,
+  source_url    <span class="type">TEXT</span>,
+  source_domain <span class="type">TEXT</span>,
+  width         <span class="type">INTEGER</span>,
+  height        <span class="type">INTEGER</span>,
+  is_reference  <span class="type">INTEGER DEFAULT 0</span>,
+  validated     <span class="type">INTEGER DEFAULT 0</span>,
+  validated_by  <span class="type">TEXT</span>,
+  acquired_at   <span class="type">TEXT NOT NULL</span>
+);</pre>
+
+    <h4>product_release_dates (Release Date Finder)</h4>
+    <pre><span class="kw">CREATE TABLE</span> product_release_dates (
+  id            <span class="type">INTEGER PRIMARY KEY</span>,
+  product_id    <span class="type">TEXT NOT NULL UNIQUE</span>,
+  release_date  <span class="type">TEXT</span>,
+  precision     <span class="type">TEXT DEFAULT 'unknown'</span>,
+  source        <span class="type">TEXT</span>,
+  source_url    <span class="type">TEXT</span>,
+  confidence    <span class="type">REAL</span>,
+  announcement_date <span class="type">TEXT</span>,
+  announcement_source <span class="type">TEXT</span>,
+  discovered_by <span class="type">TEXT</span>,
+  discovered_at <span class="type">TEXT NOT NULL</span>
+);</pre>
+
+    <h4>validation_results (URL Validation)</h4>
+    <pre><span class="kw">CREATE TABLE</span> validation_results (
+  id                   <span class="type">INTEGER PRIMARY KEY</span>,
+  product_id           <span class="type">TEXT NOT NULL</span>,
+  run_id               <span class="type">TEXT NOT NULL</span>,
+  content_hash         <span class="type">TEXT NOT NULL</span>,
+  source_url           <span class="type">TEXT NOT NULL</span>,
+  identity_match       <span class="type">TEXT NOT NULL</span>,
+  identity_confidence  <span class="type">REAL</span>,
+  identity_notes       <span class="type">TEXT</span>,
+  field_checks_json    <span class="type">TEXT</span>,
+  discoveries_json     <span class="type">TEXT</span>,
+  fields_confirmed     <span class="type">INTEGER DEFAULT 0</span>,
+  fields_contradicted  <span class="type">INTEGER DEFAULT 0</span>,
+  discoveries_count    <span class="type">INTEGER DEFAULT 0</span>,
+  model_used           <span class="type">TEXT</span>,
+  cost_usd             <span class="type">REAL</span>,
+  validated_at         <span class="type">TEXT NOT NULL</span>,
+  <span class="kw">UNIQUE</span>(product_id, content_hash)
+);</pre>
+  </div>
+
+  <!-- ═══════════════════════ 14 ARCHITECTURE ═══════════════════════ -->
+  <div class="section" id="architecture">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">16</span>
+      <h2>Architecture &amp; File Map</h2>
+    </div>
+
+    <h3>Backend Features (4 New Vertical Slices)</h3>
+    <div class="split">
+      <div class="card card-purple">
+        <div class="card-title">src/features/color-edition/ <span class="tag tag-feature">Feature</span></div>
+        <pre style="margin:8px 0 0;font-size:11.5px;padding:12px;">color-edition/
+  index.js
+  colorEditionFinder.js
+  colorEditionSchema.js
+  hexMapper.js
+  egFormatBuilder.js
+  colorEditionStore.js
+  README.md</pre>
+      </div>
+      <div class="card card-orange">
+        <div class="card-title">src/features/visual-verification/ <span class="tag tag-feature">Feature</span></div>
+        <pre style="margin:8px 0 0;font-size:11.5px;padding:12px;">visual-verification/
+  index.js
+  imageFinder.js
+  imageDownloader.js
+  imageValidator.js
+  egStemBuilder.js
+  imageStore.js
+  README.md</pre>
+      </div>
+      <div class="card card-green">
+        <div class="card-title">src/features/release-date/ <span class="tag tag-feature">Feature</span></div>
+        <pre style="margin:8px 0 0;font-size:11.5px;padding:12px;">release-date/
+  index.js
+  releaseDateFinder.js
+  releaseDateSchema.js
+  releaseDateStore.js
+  README.md</pre>
+      </div>
+      <div class="card card-cyan">
+        <div class="card-title">src/features/validation/ <span class="tag tag-feature">Feature</span></div>
+        <pre style="margin:8px 0 0;font-size:11.5px;padding:12px;">validation/
+  index.js
+  validationEngine.js
+  identityEvidence.js
+  validationPrompt.js
+  validationSchema.js
+  validationStore.js
+  README.md</pre>
+      </div>
+    </div>
+
+    <h3>Dependency Rules</h3>
+    <ul>
+      <li>All four features import <code>src/core/llm/</code> and <code>src/db/</code> &mdash; standard dependency direction</li>
+      <li><strong>No cross-feature imports</strong> between the three finders</li>
+      <li><strong>Validation reads enrichment data via DB/disk only</strong> &mdash; never imports finder internals</li>
+      <li>Visual Verification reads Color/Edition results from DB to know which variants need images</li>
+      <li>All four register LLM phases in <code>llmPhaseDefs.js</code></li>
+    </ul>
+
+    <h3>LLM Settings Integration (O(1) Phase Registration)</h3>
+    <div class="card card-orange">
+      <div class="card-title">Every call is configurable through LLM Settings <span class="tag tag-critical">Critical</span></div>
+      <p>Each identity validation feature registers as an <strong>LLM phase</strong> in <code>src/core/config/llmPhaseDefs.js</code>. This is the existing O(1) pattern &mdash; one entry auto-generates the GUI settings tab via codegen.</p>
+    </div>
+
+    <h4>New Phase Entries (Added to llmPhaseDefs.js)</h4>
+    <pre><span class="comment">// src/core/config/llmPhaseDefs.js &mdash; new entries</span>
+{ <span class="key">id</span>: <span class="str">'colorEdition'</span>,   <span class="key">uiId</span>: <span class="str">'color-edition'</span>,   <span class="key">label</span>: <span class="str">'Color &amp; Edition'</span>,
+  <span class="key">subtitle</span>: <span class="str">'GPT-5.4 + Web'</span>, <span class="key">roles</span>: [<span class="str">'plan'</span>],
+  <span class="key">tip</span>: <span class="str">'Discovers color variants, editions, hex mappings via web search.'</span>,
+  <span class="key">globalModel</span>: <span class="str">'llmModelPlan'</span>, <span class="key">groupToggle</span>: <span class="str">'llmPlanUseReasoning'</span>,
+  <span class="key">globalTokens</span>: <span class="str">'llmMaxOutputTokensPlan'</span>, <span class="key">globalTimeout</span>: <span class="str">'llmTimeoutMs'</span>,
+  <span class="key">globalContextTokens</span>: <span class="str">'llmMaxTokens'</span> },
+
+{ <span class="key">id</span>: <span class="str">'visualVerification'</span>, <span class="key">uiId</span>: <span class="str">'visual-verification'</span>, <span class="key">label</span>: <span class="str">'Visual Verification'</span>,
+  <span class="key">subtitle</span>: <span class="str">'GPT-5.4 + Gemini'</span>, <span class="key">roles</span>: [<span class="str">'plan'</span>],
+  <span class="key">tip</span>: <span class="str">'Finds and validates studio cutout product images per variant.'</span>,
+  <span class="key">globalModel</span>: <span class="str">'llmModelPlan'</span>, <span class="key">groupToggle</span>: <span class="str">'llmPlanUseReasoning'</span>,
+  <span class="key">globalTokens</span>: <span class="str">'llmMaxOutputTokensPlan'</span>, <span class="key">globalTimeout</span>: <span class="str">'llmTimeoutMs'</span>,
+  <span class="key">globalContextTokens</span>: <span class="str">'llmMaxTokens'</span> },
+
+{ <span class="key">id</span>: <span class="str">'releaseDate'</span>,  <span class="key">uiId</span>: <span class="str">'release-date'</span>,  <span class="key">label</span>: <span class="str">'Release Date'</span>,
+  <span class="key">subtitle</span>: <span class="str">'GPT-5.4 + Web'</span>, <span class="key">roles</span>: [<span class="str">'plan'</span>],
+  <span class="key">tip</span>: <span class="str">'Looks up product release dates via Keepa, CamelCamelCamel, press.'</span>,
+  <span class="key">globalModel</span>: <span class="str">'llmModelPlan'</span>, <span class="key">groupToggle</span>: <span class="str">'llmPlanUseReasoning'</span>,
+  <span class="key">globalTokens</span>: <span class="str">'llmMaxOutputTokensPlan'</span>, <span class="key">globalTimeout</span>: <span class="str">'llmTimeoutMs'</span>,
+  <span class="key">globalContextTokens</span>: <span class="str">'llmMaxTokens'</span> },
+
+<span class="comment">// 'validate' phase already exists at line 23 &mdash; URL Validation uses it</span></pre>
+
+    <h4>What This Gets You Automatically</h4>
+    <ul>
+      <li><strong>GUI settings tabs:</strong> Run <code>generateLlmPhaseRegistry.js</code> &rarr; new tabs appear in LLM Config for each phase</li>
+      <li><strong>Per-phase model override:</strong> User can set a different model for Color &amp; Edition vs Visual Verification vs Release Date</li>
+      <li><strong>Per-phase token budget:</strong> Each phase can have its own max output tokens</li>
+      <li><strong>Per-phase timeout:</strong> Web search phases can have longer timeouts (120s) without affecting the crawl pipeline</li>
+      <li><strong>Per-phase reasoning toggle:</strong> Enable/disable thinking mode per phase</li>
+      <li><strong>Cost tracking:</strong> Each phase's LLM calls are tagged with the phase ID for billing breakdown</li>
+      <li><strong>Category-scoped overrides:</strong> Via <code>llm_route_matrix</code> table, different categories can use different models per phase</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>Zero manual frontend work.</strong> The codegen script reads <code>llmPhaseDefs.js</code> and generates 4 TypeScript files: phase types, phase registry, phase-to-config key maps, and the override schema. The LLM Config page renders tabs for all phases automatically.</p></div>
+    </div>
+
+    <h3>API Route Families (New)</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Family</th><th>Endpoints</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Color &amp; Edition</strong></td>
+            <td><code>POST /api/v1/color-edition/start</code>, <code>GET /.../:productId/result</code></td>
+          </tr>
+          <tr>
+            <td><strong>Visual Verification</strong></td>
+            <td><code>POST /api/v1/images/start</code>, <code>GET /.../:productId/manifest</code>, <code>PUT /.../:imageId/reference</code></td>
+          </tr>
+          <tr>
+            <td><strong>Release Date</strong></td>
+            <td><code>POST /api/v1/release-date/start</code>, <code>GET /.../:productId/result</code></td>
+          </tr>
+          <tr>
+            <td><strong>Validation</strong></td>
+            <td><code>POST /api/v1/validate/start</code>, <code>GET /.../:productId/results</code>, <code>GET /.../:productId/summary</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 15 GUI ═══════════════════════ -->
+  <div class="section" id="gui">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">17</span>
+      <h2>GUI Integration</h2>
+    </div>
+
+    <h3>IndexLab Panel (Primary UI)</h3>
+    <p>The main interaction point is the <strong>launch panel inside IndexLab</strong> (Section 02). Toggle features on/off before starting a run. Results display in the existing run history panel after completion.</p>
+
+    <h3>Dedicated Validation Tab</h3>
+    <p>Validation gets its own tab in the <code>ops</code> group for reviewing results across all products.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Surface</th><th>Location</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Launch toggles</strong></td><td>IndexLab panel (between picker &amp; history)</td><td>Enable/disable finders per run</td></tr>
+          <tr><td><strong>Finder results</strong></td><td>IndexLab run history (new sub-tabs)</td><td>View colors, images, dates per product</td></tr>
+          <tr><td><strong>Validation tab</strong></td><td><code>pageRegistry.ts</code> &rarr; <code>/validation</code> (ops group)</td><td>Cross-product validation review</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">&#8505;</span>
+      <div><p><strong>O(1) registration:</strong> Validation tab requires one line in <code>pageRegistry.ts</code>. Finder results integrate into the existing IndexLab run history panel &mdash; no new top-level tabs needed for the three finders.</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ 16 SEQUENCE ═══════════════════════ -->
+  <div class="section" id="sequence">
+    <div class="section-anchor"></div>
+    <div class="section-head">
+      <span class="section-num">18</span>
+      <h2>Implementation Sequence</h2>
+    </div>
+
+    <h3>Phase 1: Color &amp; Edition Finder</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot purple"></div>
+        <div class="tl-title">1A. Schema &amp; Store</div>
+        <div class="tl-body"><code>product_variants</code> + <code>product_color_hex</code> tables. Zod schema for LLM response. Store module.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot purple"></div>
+        <div class="tl-title">1B. Finder Engine</div>
+        <div class="tl-body">GPT-5.4 web search call. EG format builder (colors array, editions, hex_map). LLM phase registration.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot purple"></div>
+        <div class="tl-title">1C. API + Launch Integration</div>
+        <div class="tl-body">API routes. Wire into IndexLab launch panel as toggle. WebSocket events for progress.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">1D. Proof</div>
+        <div class="tl-body">Run on Corsair M75 Air Wireless. Verify: all colors discovered (black, white, black+red), editions found, hex_map populated, EG format output correct.</div>
+      </div>
+    </div>
+
+    <h3>Phase 2: Visual Verification</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot orange"></div>
+        <div class="tl-title">2A. Schema &amp; Store</div>
+        <div class="tl-body"><code>product_images</code> table. Image manifest schema. Disk storage layout.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot orange"></div>
+        <div class="tl-title">2B. Finder + Vision Gate</div>
+        <div class="tl-body">GPT-5.4 image URL discovery. HTTP downloader. Gemini Pro vision validation. EG stem builder.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot orange"></div>
+        <div class="tl-title">2C. API + Launch Integration</div>
+        <div class="tl-body">API routes. IndexLab toggle. Reference image selection in GUI.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">2D. Proof</div>
+        <div class="tl-body">Download studio cutouts for a real product. Verify: correct angles, Gemini validated, EG stems correct, reference image tagged.</div>
+      </div>
+    </div>
+
+    <h3>Phase 3: Release Date Finder</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">3A. Schema &amp; Store</div>
+        <div class="tl-body"><code>product_release_dates</code> table. Zod schema.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">3B. Finder Engine</div>
+        <div class="tl-body">GPT-5.4 web search call. Source priority logic. LLM phase registration.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">3C. API + Launch Integration</div>
+        <div class="tl-body">API routes. IndexLab toggle.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">3D. Proof</div>
+        <div class="tl-body">Find release date for a known product. Cross-check against Keepa manually.</div>
+      </div>
+    </div>
+
+    <h3>Phase 4: URL Validation</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot cyan"></div>
+        <div class="tl-title">4A. Schema &amp; Store</div>
+        <div class="tl-body"><code>validation_results</code> table. Zod schema for LLM response.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot cyan"></div>
+        <div class="tl-title">4B. Validation Engine</div>
+        <div class="tl-body">Identity evidence builder (reads reference images from Visual Verification). Validation prompt. Result storage.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot cyan"></div>
+        <div class="tl-title">4C. API + GUI Tab</div>
+        <div class="tl-body">API routes. <code>pageRegistry.ts</code> entry. Validation results page with URL list, field check table, discoveries panel.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green"></div>
+        <div class="tl-title">4D. Proof</div>
+        <div class="tl-body">Validate URLs from a completed crawl. Verify: identity matching works on comparison pages, wrong-product pages caught, field contradictions flagged.</div>
+      </div>
+    </div>
+
+    <h3>Future Enhancements (Not In Scope)</h3>
+    <ul>
+      <li>Auto-run finders on product creation</li>
+      <li>Auto-validate after every crawl</li>
+      <li>Keepa API direct integration</li>
+      <li>Local model support</li>
+      <li>Validation score feeding back into source ranking</li>
+      <li>Batch operations across entire categories</li>
+      <li>EG site direct export (generate complete product JSON)</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border);text-align:center;">
+    <p style="font-size:12px;color:var(--text-3);">Spec Factory &mdash; Parallel Features Roadmap &mdash; Draft April 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

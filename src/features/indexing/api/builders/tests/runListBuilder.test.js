@@ -29,7 +29,7 @@ function sampleRun(overrides = {}) {
     status: 'completed',
     started_at: '2026-01-01T00:00:00Z',
     ended_at: '2026-01-01T00:05:00Z',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     identity_fingerprint: '',
     identity_lock_status: '',
     dedupe_mode: '',

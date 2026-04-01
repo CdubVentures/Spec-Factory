@@ -112,22 +112,22 @@ const CALL_TYPE_TO_TAB = {
   domain_classifier: 'domain_classifier',
 };
 
-// WHY: Maps phase_cursor values to the prefetch tab that stage belongs to.
+// WHY: Maps stage_cursor values to the prefetch tab that stage belongs to.
 // Used as a fallback for fast stages where the LLM call finishes before
 // the GUI poll catches it running (e.g. needset completes in <2s).
-const PHASE_CURSOR_TO_TAB = {
-  phase_01_needset: 'needset',
-  phase_02_brand_resolver: 'brand_resolver',
-  phase_03_search_profile: 'search_profile',
-  phase_04_search_planner: 'search_planner',
-  phase_05_query_journey: 'query_journey',
+const STAGE_CURSOR_TO_TAB = {
+  'stage:needset': 'needset',
+  'stage:brand-resolver': 'brand_resolver',
+  'stage:search-profile': 'search_profile',
+  'stage:search-planner': 'search_planner',
+  'stage:query-journey': 'query_journey',
 };
 
 export function buildBusyPrefetchTabs({
   isRunning,
   workers = [],
   prefetchData,
-  phaseCursor,
+  stageCursor,
   tabKeys = DEFAULT_PREFETCH_TAB_KEYS,
 } = {}) {
   if (!isRunning) return new Set();
@@ -165,10 +165,10 @@ export function buildBusyPrefetchTabs({
   }
 
   // WHY: Fast stages (needset, brand resolver) complete before the GUI poll
-  // catches a running worker. The phase_cursor tells us what's actively running
+  // catches a running worker. The stage_cursor tells us what's actively running
   // — use it as a fallback so the ball always bounces for the current stage.
   if (busy.size === 0) {
-    const cursorTab = PHASE_CURSOR_TO_TAB[String(phaseCursor || '').trim()];
+    const cursorTab = STAGE_CURSOR_TO_TAB[String(stageCursor || '').trim()];
     if (cursorTab && tabs.includes(cursorTab)) {
       busy.add(cursorTab);
     }

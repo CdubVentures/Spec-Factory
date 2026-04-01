@@ -33,7 +33,7 @@ function sampleSqlRun(overrides = {}) {
     status: 'completed',
     started_at: '2026-03-26T10:00:00.000Z',
     ended_at: '2026-03-26T10:30:00.000Z',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     identity_fingerprint: 'fp-sql',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
@@ -127,7 +127,7 @@ test('SQL row shape matches expected run list contract', async () => {
     assert.ok(row);
     for (const key of [
       'run_id', 'category', 'product_id', 'status', 'started_at', 'ended_at',
-      'identity_fingerprint', 'identity_lock_status', 'dedupe_mode', 'phase_cursor',
+      'identity_fingerprint', 'identity_lock_status', 'dedupe_mode', 'stage_cursor',
       'startup_ms', 'run_dir', 'storage_origin', 'storage_state', 'picker_label',
       'has_needset', 'has_search_profile', 'counters'
     ]) {

@@ -7,7 +7,7 @@ import {
 import type { StepperStageState } from '../pipelineStepperRegistry.ts';
 
 interface PipelineStepperBarProps {
-  phaseCursor: string;
+  stageCursor: string;
   isRunning: boolean;
   runStatus: string;
   bootProgress?: number;
@@ -63,13 +63,13 @@ function ElapsedTimer({ startedAt, endedAt, isRunning }: { startedAt: string; en
 }
 
 export const PipelineStepperBar = memo(function PipelineStepperBar({
-  phaseCursor,
+  stageCursor,
   isRunning,
   runStatus,
   startedAt,
   endedAt,
 }: PipelineStepperBarProps) {
-  const activeIdx = cursorToStageIndex(phaseCursor);
+  const activeIdx = cursorToStageIndex(stageCursor);
 
   return (
     <div className="flex items-center shrink-0 gap-1.5">

@@ -7,4 +7,5 @@ export interface KeySectionBaseProps {
   category: string;
   BadgeRenderer: ComponentType<{ p: string }>;
   saveIfAutoSaveEnabled: () => void;
+  disabled?: boolean;
 }

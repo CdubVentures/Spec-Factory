@@ -17,7 +17,7 @@ function sampleRunRow(overrides = {}) {
     status: 'running',
     started_at: '2026-03-26T10:00:00.000Z',
     ended_at: '',
-    phase_cursor: 'phase_00_bootstrap',
+    stage_cursor: 'stage:bootstrap',
     identity_fingerprint: 'fp-abc123',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
@@ -55,7 +55,7 @@ test('_upsertRun INSERT + _getRunByRunId roundtrip preserves scalar columns', ()
   assert.equal(result.status, 'running');
   assert.equal(result.started_at, '2026-03-26T10:00:00.000Z');
   assert.equal(result.ended_at, '');
-  assert.equal(result.phase_cursor, 'phase_00_bootstrap');
+  assert.equal(result.stage_cursor, 'stage:bootstrap');
   assert.equal(result.identity_fingerprint, 'fp-abc123');
   assert.equal(result.identity_lock_status, 'locked');
   assert.equal(result.dedupe_mode, 'content_hash');
@@ -81,19 +81,19 @@ test('_upsertRun conflict path updates all columns on same run_id', () => {
   specDb._upsertRun.run(sampleRunRow());
   const before = specDb._getRunByRunId.get('run-test-001');
   assert.equal(before.status, 'running');
-  assert.equal(before.phase_cursor, 'phase_00_bootstrap');
+  assert.equal(before.stage_cursor, 'stage:bootstrap');
 
   specDb._upsertRun.run(sampleRunRow({
     status: 'completed',
     ended_at: '2026-03-26T10:30:00.000Z',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     counters: '{"pages_checked":50,"fetched_ok":40}',
   }));
   const after = specDb._getRunByRunId.get('run-test-001');
 
   assert.equal(after.status, 'completed');
   assert.equal(after.ended_at, '2026-03-26T10:30:00.000Z');
-  assert.equal(after.phase_cursor, 'completed');
+  assert.equal(after.stage_cursor, 'completed');
   assert.equal(after.counters, '{"pages_checked":50,"fetched_ok":40}');
 
   const count = specDb.db.prepare('SELECT COUNT(*) as c FROM runs WHERE run_id = ?').get('run-test-001');

@@ -22,7 +22,7 @@ export async function serializeRunSummary(state) {
     status: state.status || 'running',
     started_at: state.startedAt || '',
     ended_at: state.endedAt || '',
-    phase_cursor: state.phaseCursor || '',
+    stage_cursor: state.stageCursor || '',
     boot_step: state.bootStep || '',
     boot_progress: state.bootProgress || 0,
     identity_fingerprint: state.identityFingerprint || '',

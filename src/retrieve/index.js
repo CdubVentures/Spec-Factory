@@ -4,4 +4,4 @@ export {
   filterByIdentityGate,
   buildTierAwareFieldRetrieval
 } from './tierAwareRetriever.js';
-export { buildPhase07PrimeSources } from './primeSourcesBuilder.js';
+export { buildPrimeSources } from './primeSourcesBuilder.js';

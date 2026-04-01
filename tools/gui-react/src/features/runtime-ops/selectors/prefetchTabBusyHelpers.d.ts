@@ -6,7 +6,7 @@ export interface PrefetchBusyTabOptions {
   isRunning?: boolean;
   workers?: Array<{ pool: string; state: string; call_type?: string | null }>;
   prefetchData?: PreFetchPhasesResponse | undefined;
-  phaseCursor?: string;
+  stageCursor?: string;
   tabKeys?: PrefetchTabKey[] | readonly PrefetchTabKey[];
 }
 

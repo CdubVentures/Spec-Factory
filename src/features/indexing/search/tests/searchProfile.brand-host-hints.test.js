@@ -5,7 +5,7 @@ import {
   makeCategoryConfig,
   makeJob,
   makeSeedStatus,
-} from './helpers/phase02SearchProfileHarness.js';
+} from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - BRAND_HOST_HINTS Sync', () => {
   it('includes alienware and dell manufacturer domains in soft host-biased queries', () => {

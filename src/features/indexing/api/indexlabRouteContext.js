@@ -1,7 +1,7 @@
 import {
   readIndexLabRunEvents, readIndexLabRunMeta, resolveIndexLabRunDirectory,
   readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-  readIndexLabRunPhase07PrimeSources,
+  readIndexLabRunPrimeSources,
   readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
   readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
   readIndexLabRunSerpExplorer,
@@ -37,7 +37,7 @@ export function createIndexlabRouteContext(options = {}) {
     getIndexLabRoot, getSpecDb,
     readIndexLabRunMeta, resolveIndexLabRunDirectory,
     readIndexLabRunEvents, readIndexLabRunNeedSet, readIndexLabRunSearchProfile,
-    readIndexLabRunPhase07PrimeSources,
+    readIndexLabRunPrimeSources,
     readIndexLabRunDynamicFetchDashboard, readIndexLabRunSourceIndexingPackets,
     readIndexLabRunItemIndexingPacket, readIndexLabRunRunMetaPacket,
     readIndexLabRunSerpExplorer,

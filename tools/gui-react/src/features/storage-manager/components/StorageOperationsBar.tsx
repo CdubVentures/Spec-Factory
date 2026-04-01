@@ -3,6 +3,7 @@ import { Spinner } from '@/shared/ui/feedback/Spinner';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
 import { usePruneRuns, usePurgeRuns } from '../state/useStorageActions.ts';
 import { PurgeConfirmModal } from './PurgeConfirmModal.tsx';
+import { usePersistedNumber } from '../../../stores/tabStore.ts';
 
 interface StorageOperationsBarProps {
   totalRuns: number;
@@ -10,7 +11,7 @@ interface StorageOperationsBarProps {
 
 export function StorageOperationsBar({ totalRuns }: StorageOperationsBarProps) {
   const [showPurgeModal, setShowPurgeModal] = useState(false);
-  const [pruneDays, setPruneDays] = useState(30);
+  const [pruneDays, setPruneDays] = usePersistedNumber('storage:ops:pruneDays', 30);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
   const pruneRuns = usePruneRuns();

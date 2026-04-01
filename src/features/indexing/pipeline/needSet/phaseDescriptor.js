@@ -8,7 +8,7 @@ import { buildSearchPlan } from './searchPlanBuilder.js';
 
 export const needSetPhase = {
   id: 'needset',
-  phaseCursor: 'phase_01_needset',
+  stageCursor: 'stage:needset',
   checkpoint: null,
 
   async execute(ctx) {

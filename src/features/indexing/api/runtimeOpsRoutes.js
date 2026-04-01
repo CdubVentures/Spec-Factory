@@ -500,7 +500,7 @@ export function registerRuntimeOpsRoutes(ctx) {
       return jsonRes(res, 200, {
         run_id: runId,
         ...prefetch,
-        phase_cursor: String(resolvedMeta?.phase_cursor || '').trim(),
+        stage_cursor: String(resolvedMeta?.stage_cursor || '').trim(),
         idx_runtime: buildRuntimeIdxBadgesBySurface(fieldRulesPayload),
       });
     }

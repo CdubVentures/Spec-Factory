@@ -22,6 +22,7 @@ export function KeyHintsSection({
   updateField,
   category,
   BadgeRenderer: B,
+  disabled,
 }: KeyHintsSectionProps) {
   return (
     <>

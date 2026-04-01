@@ -302,7 +302,7 @@ export function RuntimeOpsPage() {
       <div className="flex items-center gap-2 border-b sf-border-default sf-surface-shell px-4 h-[40px]">
         {effectiveRunId && (
           <PipelineStepperBar
-            phaseCursor={summary?.phase_cursor ?? ''}
+            stageCursor={summary?.stage_cursor ?? ''}
             isRunning={isSelectedRunActive}
             runStatus={selectedRun?.status ?? ''}
             bootProgress={summary?.boot_progress}

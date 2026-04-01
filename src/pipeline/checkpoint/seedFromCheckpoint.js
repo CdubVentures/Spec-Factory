@@ -22,7 +22,7 @@ function seedCrawlCheckpoint(specDb, cp) {
     status: run.status || 'completed',
     started_at: createdAt,
     ended_at: createdAt,
-    phase_cursor: '',
+    stage_cursor: '',
     identity_fingerprint: '',
     identity_lock_status: '',
     dedupe_mode: '',

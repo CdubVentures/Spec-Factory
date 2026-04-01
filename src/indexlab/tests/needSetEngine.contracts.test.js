@@ -5,7 +5,7 @@ import {
   makeIdentityLocked,
   makeIdentityUnlocked,
   makeBaseInput,
-} from './helpers/phase01NeedSetHarness.js';
+} from './helpers/needSetHarness.js';
 
 // --- Test groups ---
 
@@ -62,7 +62,7 @@ describe('Phase 01 â€” Top-Level Output Shape', () => {
 
 describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', () => {
   it('needset_computed event payload matches new NeedSet output shape', async () => {
-    const { createAuditHarness, makeRunStartedEvent, makeNeedsetComputedEvent } = await import('./helpers/phase00AuditHarness.js');
+    const { createAuditHarness, makeRunStartedEvent, makeNeedsetComputedEvent } = await import('./helpers/auditHarness.js');
     const harness = createAuditHarness();
     const bridge = await harness.setup();
     const runId = 'r_needset_event_test';
@@ -104,7 +104,7 @@ describe('Phase 01 â€” NeedSet Event Payload Shape (via runtimeBridge)', ()
   });
 
   it('runtimeBridge preserves identity in artifact via passthrough', async () => {
-    const { createAuditHarness, makeRunStartedEvent, makeNeedsetComputedEvent } = await import('./helpers/phase00AuditHarness.js');
+    const { createAuditHarness, makeRunStartedEvent, makeNeedsetComputedEvent } = await import('./helpers/auditHarness.js');
     const harness = createAuditHarness();
     await harness.setup();
     const runId = 'r_needset_identity_breakdown';

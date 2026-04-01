@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDeterministicAliases } from './helpers/phase02SearchProfileHarness.js';
+import { buildDeterministicAliases } from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - Deterministic Aliases', () => {
   it('generates spacing and hyphen variants for alphanumeric models', () => {

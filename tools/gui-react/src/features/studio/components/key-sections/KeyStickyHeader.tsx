@@ -26,6 +26,7 @@ export interface KeyStickyHeaderProps {
   updateField: (key: string, path: string, value: unknown) => void;
   saveIfAutoSaveEnabled: () => void;
   category: string;
+  isEgLocked?: boolean;
 }
 
 export function KeyStickyHeader({
@@ -42,6 +43,7 @@ export function KeyStickyHeader({
   onDeleteKey,
   onSetAutoSaveEnabled,
   updateField,
+  isEgLocked = false,
 }: KeyStickyHeaderProps) {
   // Label edit state
   const [editingLabel, setEditingLabel] = useState(false);
@@ -225,24 +227,26 @@ export function KeyStickyHeader({
               |
             </span>
             <span
-              className="text-sm sf-text-muted font-mono truncate cursor-pointer hover:text-accent transition-colors leading-snug"
-              onClick={() => {
+              className={`text-sm sf-text-muted font-mono truncate leading-snug${isEgLocked ? '' : ' cursor-pointer hover:text-accent transition-colors'}`}
+              onClick={isEgLocked ? undefined : () => {
                 setRenamingKey(true);
                 setRenameValue(selectedKey);
               }}
-              title="Click to rename key"
+              title={isEgLocked ? 'EG-locked field (rename disabled)' : 'Click to rename key'}
             >
               {selectedKey}
             </span>
-            <span
-              className="text-[10px] sf-text-subtle cursor-pointer hover:text-accent transition-colors flex-shrink-0"
-              onClick={() => {
-                setRenamingKey(true);
-                setRenameValue(selectedKey);
-              }}
-            >
-              &#9998;
-            </span>
+            {!isEgLocked && (
+              <span
+                className="text-[10px] sf-text-subtle cursor-pointer hover:text-accent transition-colors flex-shrink-0"
+                onClick={() => {
+                  setRenamingKey(true);
+                  setRenameValue(selectedKey);
+                }}
+              >
+                &#9998;
+              </span>
+            )}
             {Boolean(currentRule._edited) && (
               <span className="px-1.5 py-0.5 text-[10px] font-medium rounded-full sf-chip-warning-strong flex-shrink-0">
                 Modified
@@ -295,34 +299,36 @@ export function KeyStickyHeader({
                 />
               )}
             </button>
-            {!confirmDelete ? (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="px-3 py-1.5 text-xs font-medium sf-danger-text rounded border sf-danger-action-outline sf-danger-action-outline-hover transition-colors"
-              >
-                Delete
-              </button>
-            ) : (
-              <span className="flex items-center gap-1.5">
-                <span className="text-xs sf-danger-text-soft font-medium">
-                  Delete?
+            {!isEgLocked && (
+              !confirmDelete ? (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="px-3 py-1.5 text-xs font-medium sf-danger-text rounded border sf-danger-action-outline sf-danger-action-outline-hover transition-colors"
+                >
+                  Delete
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-xs sf-danger-text-soft font-medium">
+                    Delete?
+                  </span>
+                  <button
+                    onClick={() => {
+                      onDeleteKey();
+                      setConfirmDelete(false);
+                    }}
+                    className="px-2.5 py-1 text-xs font-medium rounded sf-danger-solid-button"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-2.5 py-1 text-xs sf-text-muted hover:sf-text-muted sf-dk-hover-fg-300"
+                  >
+                    No
+                  </button>
                 </span>
-                <button
-                  onClick={() => {
-                    onDeleteKey();
-                    setConfirmDelete(false);
-                  }}
-                  className="px-2.5 py-1 text-xs font-medium rounded sf-danger-solid-button"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="px-2.5 py-1 text-xs sf-text-muted hover:sf-text-muted sf-dk-hover-fg-300"
-                >
-                  No
-                </button>
-              </span>
+              )
             )}
           </div>
         </div>

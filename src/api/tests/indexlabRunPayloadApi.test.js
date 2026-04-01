@@ -11,8 +11,8 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-async function seedPhase07Run(indexlabRoot) {
-  const runId = 'run-phase07-001';
+async function seedPrimeSourcesRun(indexlabRoot) {
+  const runId = 'run-prime-sources-001';
   const category = 'mouse';
   const productId = 'mouse-fnatic-x-lamzu-maya-x-8k';
   const runDir = path.join(indexlabRoot, runId);
@@ -27,7 +27,7 @@ async function seedPhase07Run(indexlabRoot) {
       started_at: '2026-02-19T11:00:00.000Z',
       ended_at: '2026-02-19T11:04:00.000Z',
     }),
-    writeJson(path.join(runDir, 'phase07_retrieval.json'), {
+    writeJson(path.join(runDir, 'prime_sources_retrieval.json'), {
       run_id: runId,
       category,
       product_id: productId,
@@ -197,16 +197,16 @@ async function seedSchemaPacketsRun(indexlabRoot) {
         identity_rejected_evidence_total: 0,
       },
       phase_summary: {
-        phase_01_static_html: { enabled: true, executed_sources: 1, assertion_count: 1, evidence_count: 1, error_count: 0, duration_ms: 10 },
-        phase_02_dynamic_js: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_03_main_article: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_04_html_spec_table: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_05_embedded_json: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_06_text_pdf: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_07_scanned_pdf_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_08_image_ocr: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_09_chart_graph: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
-        phase_10_office_mixed_doc: { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:static-html': { enabled: true, executed_sources: 1, assertion_count: 1, evidence_count: 1, error_count: 0, duration_ms: 10 },
+        'extract:dynamic-js': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:article-text': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:html-table': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:structured-meta': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:text-pdf': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:scanned-pdf-ocr': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:image-ocr': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:chart-graph': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
+        'extract:office-doc': { enabled: true, executed_sources: 0, assertion_count: 0, evidence_count: 0, error_count: 0, duration_ms: 0 },
       },
       output_refs: {
         source_packet_refs: [{ source_packet_id: 'sha256:source-01', source_version_id: 'sha256:source-version-01', source_id: 'src_01' }],
@@ -248,23 +248,23 @@ test('indexlab payload endpoints share one gui server harness without weakening 
   });
 
   const [
-    phase07Run,
+    primeSourcesRun,
     schemaPacketsRun,
   ] = await Promise.all([
-    seedPhase07Run(indexlabRoot),
+    seedPrimeSourcesRun(indexlabRoot),
     seedSchemaPacketsRun(indexlabRoot),
   ]);
   const server = await startGuiServer(t, { helperRoot, indexlabRoot });
   if (!server) return;
 
-  await t.test('phase07 endpoint returns tier retrieval and prime source payload', async () => {
-    const response = await fetch(`${server.baseUrl}/api/v1/indexlab/run/${encodeURIComponent(phase07Run.runId)}/phase07-prime-sources`);
+  await t.test('prime sources endpoint returns tier retrieval and prime source payload', async () => {
+    const response = await fetch(`${server.baseUrl}/api/v1/indexlab/run/${encodeURIComponent(primeSourcesRun.runId)}/prime-sources`);
     assert.equal(response.status, 200, `unexpected status ${response.status} stderr=${server.getStderr()}`);
     const payload = await response.json();
 
-    assert.equal(payload.run_id, phase07Run.runId);
-    assert.equal(payload.category, phase07Run.category);
-    assert.equal(payload.product_id, phase07Run.productId);
+    assert.equal(payload.run_id, primeSourcesRun.runId);
+    assert.equal(payload.category, primeSourcesRun.category);
+    assert.equal(payload.product_id, primeSourcesRun.productId);
     assert.equal(Number(payload.summary?.fields_attempted || 0), 3);
     assert.equal(Number(payload.summary?.refs_selected_total || 0), 3);
     assert.equal(Array.isArray(payload.fields), true);

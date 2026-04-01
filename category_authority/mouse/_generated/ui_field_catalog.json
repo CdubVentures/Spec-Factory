@@ -127,7 +127,7 @@
       "display_mode": "all",
       "effort": 3,
       "examples": [],
-      "group": "General",
+      "group": "general",
       "guidance_md": null,
       "input_control": "token_list",
       "key": "colors",
@@ -1964,6 +1964,37 @@
     },
     {
       "aliases": [
+        "editions"
+      ],
+      "array_handling": "none",
+      "availability": "sometimes",
+      "canonical_key": "editions",
+      "difficulty": "easy",
+      "display_decimals": 0,
+      "display_mode": "all",
+      "effort": 3,
+      "examples": [],
+      "group": "general",
+      "guidance_md": null,
+      "input_control": "token_list",
+      "key": "editions",
+      "label": "Editions",
+      "order": 76,
+      "placeholder": "unk",
+      "prefix": null,
+      "required_level": "optional",
+      "shape": "list",
+      "short_label": null,
+      "suffix": null,
+      "surfaces": {},
+      "tooltip_key": null,
+      "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition).",
+      "tooltip_source": null,
+      "type": "string",
+      "unit": ""
+    },
+    {
+      "aliases": [
         "Encoder Life Span",
         "encoder_life_span"
       ],
@@ -2388,6 +2419,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-03-31T06:24:22.543Z",
+  "generated_at": "2026-04-01T20:40:25.715Z",
   "version": 1
 }

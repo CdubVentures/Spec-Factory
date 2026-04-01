@@ -708,7 +708,7 @@ CREATE TABLE IF NOT EXISTS runs (
   status TEXT NOT NULL DEFAULT 'running',
   started_at TEXT NOT NULL DEFAULT '',
   ended_at TEXT NOT NULL DEFAULT '',
-  phase_cursor TEXT NOT NULL DEFAULT '',
+  stage_cursor TEXT NOT NULL DEFAULT '',
   identity_fingerprint TEXT NOT NULL DEFAULT '',
   identity_lock_status TEXT NOT NULL DEFAULT '',
   dedupe_mode TEXT NOT NULL DEFAULT '',

@@ -71,7 +71,7 @@
 | GET | `/api/v1/indexlab/run/:runId/events` | replay run events | none | none | `{ run_id, count, events }` |
 | GET | `/api/v1/indexlab/run/:runId/needset` | read run needset | none | none | needset payload |
 | GET | `/api/v1/indexlab/run/:runId/search-profile` | read run search profile | none | none | search profile payload |
-| GET | `/api/v1/indexlab/run/:runId/phase07-prime-sources` | read prime sources packet | none | none | prime sources payload |
+| GET | `/api/v1/indexlab/run/:runId/prime-sources` | read prime sources packet | none | none | prime sources payload |
 | GET | `/api/v1/indexlab/run/:runId/dynamic-fetch-dashboard` | read dynamic-fetch dashboard | none | none | dynamic-fetch payload |
 | GET | `/api/v1/indexlab/run/:runId/source-indexing-packets` | read source packet collection | none | none | source packet payload |
 | GET | `/api/v1/indexlab/run/:runId/item-indexing-packet` | read item packet | none | none | item packet payload |

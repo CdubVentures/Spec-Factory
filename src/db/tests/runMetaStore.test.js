@@ -17,7 +17,7 @@ function sampleRun(overrides = {}) {
     status: 'running',
     started_at: '2026-03-26T10:00:00.000Z',
     ended_at: '',
-    phase_cursor: 'phase_00_bootstrap',
+    stage_cursor: 'stage:bootstrap',
     identity_fingerprint: 'fp-abc123',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
@@ -63,14 +63,14 @@ test('upsertRun conflict path updates all columns on same run_id', () => {
   specDb.upsertRun(sampleRun({
     status: 'completed',
     ended_at: '2026-03-26T10:30:00.000Z',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     counters: { pages_checked: 50, fetched_ok: 40 },
   }));
   const after = specDb.getRunByRunId('run-store-001');
 
   assert.equal(after.status, 'completed');
   assert.equal(after.ended_at, '2026-03-26T10:30:00.000Z');
-  assert.equal(after.phase_cursor, 'completed');
+  assert.equal(after.stage_cursor, 'completed');
   assert.deepEqual(after.counters, { pages_checked: 50, fetched_ok: 40 });
 
   const count = specDb.db.prepare('SELECT COUNT(*) as c FROM runs WHERE run_id = ?').get('run-store-001');

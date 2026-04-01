@@ -189,7 +189,7 @@ export function makeRunContextEvent(runId, overrides = {}) {
     identity_fingerprint: 'fp_abc123',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
-    phase_cursor: 'phase_00_bootstrap',
+    stage_cursor: 'stage:bootstrap',
     run_profile: 'indexlab',
     runtime_mode: 'single',
     ...overrides
@@ -342,7 +342,7 @@ export function makeRunCompletedEvent(runId, overrides = {}) {
     identity_fingerprint: 'fp_abc123',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
-    phase_cursor: 'completed',
+    stage_cursor: 'completed',
     confidence: 0.88,
     validated: true,
     missing_required_fields: ['weight'],

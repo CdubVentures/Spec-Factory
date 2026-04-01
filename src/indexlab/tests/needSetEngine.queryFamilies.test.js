@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveQueryFamilies } from './helpers/phase01NeedSetHarness.js';
+import { deriveQueryFamilies } from './helpers/needSetHarness.js';
 
 describe('deriveQueryFamilies', () => {
   const cases = [

@@ -128,46 +128,46 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "phase_01_static_html",
-        "phase_02_dynamic_js",
-        "phase_03_main_article",
-        "phase_04_html_spec_table",
-        "phase_05_embedded_json",
-        "phase_06_text_pdf",
-        "phase_07_scanned_pdf_ocr",
-        "phase_08_image_ocr",
-        "phase_09_chart_graph",
-        "phase_10_office_mixed_doc"
+        "extract:static-html",
+        "extract:dynamic-js",
+        "extract:article-text",
+        "extract:html-table",
+        "extract:structured-meta",
+        "extract:text-pdf",
+        "extract:scanned-pdf-ocr",
+        "extract:image-ocr",
+        "extract:chart-graph",
+        "extract:office-doc"
       ],
       "properties": {
-        "phase_01_static_html": {
+        "extract:static-html": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_02_dynamic_js": {
+        "extract:dynamic-js": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_03_main_article": {
+        "extract:article-text": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_04_html_spec_table": {
+        "extract:html-table": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_05_embedded_json": {
+        "extract:structured-meta": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_06_text_pdf": {
+        "extract:text-pdf": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_07_scanned_pdf_ocr": {
+        "extract:scanned-pdf-ocr": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_08_image_ocr": {
+        "extract:image-ocr": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_09_chart_graph": {
+        "extract:chart-graph": {
           "$ref": "#/$defs/phaseStats"
         },
-        "phase_10_office_mixed_doc": {
+        "extract:office-doc": {
           "$ref": "#/$defs/phaseStats"
         }
       }

@@ -10,7 +10,7 @@ import {
   makeCategoryConfig,
   makeSeedStatus,
   makeFocusGroup,
-} from './helpers/phase02SearchProfileHarness.js';
+} from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - determineQueryModes', () => {
   it('returns runTier1Seeds=true when specs_seed.is_needed', () => {

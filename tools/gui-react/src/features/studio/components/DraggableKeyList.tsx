@@ -30,6 +30,7 @@ interface DraggableKeyListProps {
   onDeleteGroup: (group: string) => void;
   onRenameGroup: (oldName: string, newName: string) => void;
   existingGroups: string[];
+  egLockedKeys?: readonly string[];
 }
 
 function SortableGroupHeader({
@@ -143,6 +144,7 @@ function SortableKeyItem({
   id,
   isSelected,
   isEdited,
+  isEgLocked,
   label,
   onSelectKey,
 }: {
@@ -150,6 +152,7 @@ function SortableKeyItem({
   id: string;
   isSelected: boolean;
   isEdited: boolean;
+  isEgLocked: boolean;
   label: string;
   onSelectKey: (key: string) => void;
 }) {
@@ -169,6 +172,14 @@ function SortableKeyItem({
       >
         &#x2630;
       </span>
+      {isEgLocked && (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className="sf-text-subtle flex-shrink-0" aria-label="EG-locked field">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      )}
       <button
         onClick={() => onSelectKey(keyName)}
         className={`block flex-1 text-left px-2 py-1 text-sm rounded ${
@@ -196,6 +207,7 @@ export default function DraggableKeyList({
   onDeleteGroup,
   onRenameGroup,
   existingGroups,
+  egLockedKeys = [],
 }: DraggableKeyListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -257,6 +269,7 @@ export default function DraggableKeyList({
               id={item}
               isSelected={selectedKey === item}
               isEdited={!!editedRules[item]?._edited}
+              isEgLocked={egLockedKeys.includes(item)}
               label={displayLabel(item, editedRules[item] || rules[item])}
               onSelectKey={onSelectKey}
             />

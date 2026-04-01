@@ -4,7 +4,7 @@ import { api } from '../../../api/client.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { humanizeField } from '../../../utils/fieldNormalize.ts';
 import { buildNextConsumerOverrides } from '../state/studioBehaviorContracts.ts';
-import { useStudioFieldRulesActions } from '../state/studioFieldRulesController.ts';
+import { useStudioFieldRulesActions, useStudioFieldRulesState } from '../state/studioFieldRulesController.ts';
 import { SystemBadges } from './SystemBadges.tsx';
 import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent.tsx';
 import { strN } from './workbenchHelpers.ts';
@@ -81,6 +81,8 @@ export function WorkbenchDrawer({
   const [consistencyMessage, setConsistencyMessage] = useState('');
   const [consistencyError, setConsistencyError] = useState('');
   const { updateField } = useStudioFieldRulesActions();
+  const { egLockedKeys } = useStudioFieldRulesState();
+  const isEgLocked = egLockedKeys.includes(fieldKey);
 
   const update = (path: string, value: unknown) => updateField(fieldKey, path, value);
 
@@ -214,6 +216,13 @@ export function WorkbenchDrawer({
           ))}
         </div>
       </div>
+
+      {isEgLocked && (
+        <div className="mx-4 mt-3 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle flex items-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span>EG-managed field. Only search hints and aliases can be customized.</span>
+        </div>
+      )}
 
       <div className="p-4 space-y-3">
         <WorkbenchDrawerTabContent

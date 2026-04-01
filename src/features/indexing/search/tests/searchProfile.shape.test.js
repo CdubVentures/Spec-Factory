@@ -6,7 +6,7 @@ import {
   makeFocusGroup,
   makeJob,
   makeSeedStatus,
-} from './helpers/phase02SearchProfileHarness.js';
+} from './helpers/searchProfileHarness.js';
 
 function makeWeightFocusGroup(overrides = {}) {
   return {

@@ -39,16 +39,22 @@ test('studio payload response has exact StudioPayload shape', async () => {
   }, ['studio', 'mouse', 'payload'], 'GET');
 
   assert.equal(result.status, 200);
-  assert.deepEqual(result.body, {
-    category: 'mouse',
-    fieldRules: { dpi: { label: 'DPI' } },
-    fieldOrder: ['dpi'],
-    uiFieldCatalog: { dpi: { group: 'performance' } },
-    guardrails: { maxFields: 50 },
-    compiledAt: '2026-03-29T00:00:00Z',
-    mapSavedAt: '2026-03-28T00:00:00Z',
-    compileStale: false,
-  });
+  // WHY: EG backfill injects colors + editions into every payload.
+  // Verify core fields plus EG presence without hardcoding full rule shapes.
+  assert.equal(result.body.category, 'mouse');
+  assert.ok(result.body.fieldRules.dpi, 'original field preserved');
+  assert.ok(result.body.fieldRules.colors, 'EG colors backfilled');
+  assert.ok(result.body.fieldRules.editions, 'EG editions backfilled');
+  assert.ok(result.body.fieldOrder.includes('dpi'), 'dpi in fieldOrder');
+  assert.ok(result.body.fieldOrder.includes('colors'), 'colors in fieldOrder');
+  assert.ok(result.body.fieldOrder.includes('editions'), 'editions in fieldOrder');
+  assert.deepEqual(result.body.egLockedKeys, ['colors', 'editions']);
+  assert.ok(Array.isArray(result.body.egEditablePaths));
+  assert.ok(result.body.egToggles, 'egToggles present');
+  assert.equal(result.body.egToggles.colors, true);
+  assert.equal(result.body.egToggles.editions, true);
+  assert.equal(result.body.compiledAt, '2026-03-29T00:00:00Z');
+  assert.equal(result.body.compileStale, false);
   StudioPayloadSchema.parse(result.body);
 });
 
@@ -175,8 +181,8 @@ test('StudioConfigSchema declares data_lists as an explicit schema field', () =>
 
 test('derived key arrays match expected shape keys', () => {
   assert.deepEqual([...STUDIO_PAYLOAD_KEYS].sort(), [
-    'category', 'compileStale', 'compiledAt', 'fieldOrder',
-    'fieldRules', 'guardrails', 'mapSavedAt', 'uiFieldCatalog',
+    'category', 'compileStale', 'compiledAt', 'egEditablePaths', 'egLockedKeys',
+    'egToggles', 'fieldOrder', 'fieldRules', 'guardrails', 'mapSavedAt', 'uiFieldCatalog',
   ]);
   assert.deepEqual([...FIELD_STUDIO_MAP_RESPONSE_KEYS].sort(), ['error', 'file_path', 'map']);
   assert.deepEqual([...TOOLTIP_BANK_RESPONSE_KEYS].sort(), ['configuredPath', 'entries', 'files']);

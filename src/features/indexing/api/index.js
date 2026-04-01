@@ -9,7 +9,7 @@ export {
   resolveIndexLabRunContext,
   readIndexLabRunNeedSet,
   readIndexLabRunSearchProfile,
-  readIndexLabRunPhase07PrimeSources,
+  readIndexLabRunPrimeSources,
   readIndexLabRunDynamicFetchDashboard,
   readIndexLabRunSourceIndexingPackets,
   readIndexLabRunItemIndexingPacket,

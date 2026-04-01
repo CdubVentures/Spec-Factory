@@ -83,7 +83,7 @@ function selectPrimeSourcesForField({
   };
 }
 
-export function buildPhase07PrimeSources({
+export function buildPrimeSources({
   runId = '',
   category = '',
   productId = '',

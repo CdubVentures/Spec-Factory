@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { normalizeFieldKey, normalizeToken, titleCase } from './compilerPrimitives.js';
 import { ensureSharedSchemaPack, writeIfMissing, writeJsonStable } from './compilerFileOps.js';
+import { buildAllEgDefaults, EG_LOCKED_KEYS } from '../features/studio/index.js';
 
 export const TEMPLATE_PRESETS = {
   electronics: {
@@ -237,11 +238,21 @@ export async function scaffoldCategory({ category, template = 'electronics', con
     ...(preset.common_media || []),
   ];
 
+  // WHY: EG-locked fields are always present in every category.
+  // Seed them into the initial field_overrides so the compile chain picks them up.
+  // O(1): buildAllEgDefaults() derives from EG_PRESET_REGISTRY.
+  const egOverrides = buildAllEgDefaults();
+
+  // Ensure EG keys are in selected_keys (at the end of the general section).
+  for (const k of EG_LOCKED_KEYS) {
+    if (!selectedKeys.includes(k)) selectedKeys.push(k);
+  }
+
   // Dynamic import avoids circular dep (compiler.js imports from this file)
   const { compileRules } = await import('./compiler.js');
   const compileResult = await compileRules({
     category: initResult.category,
-    fieldStudioMap: { version: 1, selected_keys: selectedKeys, field_overrides: {} },
+    fieldStudioMap: { version: 1, selected_keys: selectedKeys, field_overrides: egOverrides },
     config,
   });
 

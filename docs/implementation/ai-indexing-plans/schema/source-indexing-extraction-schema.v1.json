@@ -137,16 +137,16 @@
     "phaseId": {
       "type": "string",
       "enum": [
-        "phase_01_static_html",
-        "phase_02_dynamic_js",
-        "phase_03_main_article",
-        "phase_04_html_spec_table",
-        "phase_05_embedded_json",
-        "phase_06_text_pdf",
-        "phase_07_scanned_pdf_ocr",
-        "phase_08_image_ocr",
-        "phase_09_chart_graph",
-        "phase_10_office_mixed_doc"
+        "extract:static-html",
+        "extract:dynamic-js",
+        "extract:article-text",
+        "extract:html-table",
+        "extract:structured-meta",
+        "extract:text-pdf",
+        "extract:scanned-pdf-ocr",
+        "extract:image-ocr",
+        "extract:chart-graph",
+        "extract:office-doc"
       ]
     },
     "sourceSurface": {
@@ -397,46 +397,46 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "phase_01_static_html",
-            "phase_02_dynamic_js",
-            "phase_03_main_article",
-            "phase_04_html_spec_table",
-            "phase_05_embedded_json",
-            "phase_06_text_pdf",
-            "phase_07_scanned_pdf_ocr",
-            "phase_08_image_ocr",
-            "phase_09_chart_graph",
-            "phase_10_office_mixed_doc"
+            "extract:static-html",
+            "extract:dynamic-js",
+            "extract:article-text",
+            "extract:html-table",
+            "extract:structured-meta",
+            "extract:text-pdf",
+            "extract:scanned-pdf-ocr",
+            "extract:image-ocr",
+            "extract:chart-graph",
+            "extract:office-doc"
           ],
           "properties": {
-            "phase_01_static_html": {
+            "extract:static-html": {
               "type": "boolean"
             },
-            "phase_02_dynamic_js": {
+            "extract:dynamic-js": {
               "type": "boolean"
             },
-            "phase_03_main_article": {
+            "extract:article-text": {
               "type": "boolean"
             },
-            "phase_04_html_spec_table": {
+            "extract:html-table": {
               "type": "boolean"
             },
-            "phase_05_embedded_json": {
+            "extract:structured-meta": {
               "type": "boolean"
             },
-            "phase_06_text_pdf": {
+            "extract:text-pdf": {
               "type": "boolean"
             },
-            "phase_07_scanned_pdf_ocr": {
+            "extract:scanned-pdf-ocr": {
               "type": "boolean"
             },
-            "phase_08_image_ocr": {
+            "extract:image-ocr": {
               "type": "boolean"
             },
-            "phase_09_chart_graph": {
+            "extract:chart-graph": {
               "type": "boolean"
             },
-            "phase_10_office_mixed_doc": {
+            "extract:office-doc": {
               "type": "boolean"
             }
           }

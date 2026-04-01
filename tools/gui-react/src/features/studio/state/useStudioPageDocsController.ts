@@ -45,6 +45,9 @@ export interface UseStudioPageDocsControllerInput {
   mapSavedAt?: string | null;
   compiledAt?: string | null;
   queryClient: QueryClient;
+  egLockedKeys?: readonly string[];
+  egEditablePaths?: readonly string[];
+  egToggles?: Record<string, boolean>;
 }
 
 export interface UseStudioPageDocsControllerResult {
@@ -77,6 +80,9 @@ export function useStudioPageDocsController({
   mapSavedAt,
   compiledAt,
   queryClient,
+  egLockedKeys,
+  egEditablePaths,
+  egToggles,
 }: UseStudioPageDocsControllerInput): UseStudioPageDocsControllerResult {
   const hydrated = useRef(false);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>(
@@ -140,10 +146,10 @@ export function useStudioPageDocsController({
       hydrated.current = false;
     }
     if (action.hydrate) {
-      fieldRulesActions.hydrate(rules, fieldOrder);
+      fieldRulesActions.hydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
     }
     if (action.rehydrate) {
-      fieldRulesActions.rehydrate(rules, fieldOrder);
+      fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
       hydrated.current = false;
     }
     if (
@@ -361,7 +367,7 @@ export function useStudioPageDocsController({
 
   const reloadAuthoritySnapshot = useCallback(() => {
     if (Object.keys(rules).length === 0) return;
-    fieldRulesActions.rehydrate(rules, fieldOrder);
+    fieldRulesActions.rehydrate(rules, fieldOrder, egLockedKeys, egEditablePaths, egToggles);
     authorityVersionRef.current = authoritySnapshotVersion;
     ignoredConflictVersionRef.current = '';
     setAuthorityConflictVersion('');

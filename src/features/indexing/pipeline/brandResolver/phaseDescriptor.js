@@ -6,7 +6,7 @@ import { resolveBrandDomain } from './resolveBrandDomain.js';
 
 export const brandResolverPhase = {
   id: 'brandResolver',
-  phaseCursor: 'phase_02_brand_resolver',
+  stageCursor: 'stage:brand-resolver',
   checkpoint: null,
 
   async execute(ctx) {

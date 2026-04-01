@@ -26,14 +26,14 @@ test('buildRuntimeOpsSummary: meta forwards status round and phase cursor while 
   const withCursor = buildRuntimeOpsSummary([], makeMeta({
     status: 'running',
     round: 3,
-    phase_cursor: 'phase_03_search_profile',
+    stage_cursor: 'stage:search-profile',
   }));
   const withoutCursor = buildRuntimeOpsSummary([], makeMeta());
 
   assert.equal(withCursor.status, 'running');
   assert.equal(withCursor.round, 3);
-  assert.equal(withCursor.phase_cursor, 'phase_03_search_profile');
-  assert.equal(withoutCursor.phase_cursor, '');
+  assert.equal(withCursor.stage_cursor, 'stage:search-profile');
+  assert.equal(withoutCursor.stage_cursor, '');
 });
 
 test('buildRuntimeOpsSummary: counts real fetch and parse work while ignoring stage-scope lifecycle markers', () => {

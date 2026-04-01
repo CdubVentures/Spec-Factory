@@ -4,7 +4,7 @@ import {
   buildSearchProfile,
   makeCategoryConfig,
   makeJob,
-} from './helpers/phase02SearchProfileHarness.js';
+} from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - Variant Guard Terms', () => {
   it('includes identity tokens and digit groups in variant_guard_terms', () => {

@@ -11,7 +11,7 @@ import { writeProductCheckpoint } from '../../../pipeline/checkpoint/writeProduc
 import { buildJobFromDb } from '../../../features/indexing/orchestration/bootstrap/buildJobFromDb.js';
 import { serializeRunSummary } from '../../../indexlab/runSummarySerializer.js';
 import { buildRuntimeOpsPanels } from '../../../features/indexing/api/builders/buildRuntimeOpsPanels.js';
-import { setPhaseCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
+import { setStageCursor } from '../../../indexlab/runtimeBridgeStageLifecycle.js';
 import { writeRunMeta } from '../../../indexlab/runtimeBridgeArtifacts.js';
 
 export function createPipelineCommands({
@@ -247,7 +247,7 @@ export function createPipelineCommands({
 
       // WHY: Advance stepper to "Finalize" so the GUI shows post-crawl progress
       // instead of appearing stuck on the last crawl phase.
-      setPhaseCursor(bridge, 'phase_10_finalize');
+      setStageCursor(bridge, 'stage:finalize');
       await writeRunMeta(bridge);
 
       // WHY: Write run.json + product.json BEFORE finalize. If finalize or the

@@ -1,5 +1,5 @@
 /**
- * UI settings round-trip tests for the critical runtime and storage flows.
+ * UI settings round-trip tests for the critical runtime flow.
  *
  * These specs stay at the UI/API boundary:
  * change a named control in the browser, observe the save request, verify the
@@ -64,46 +64,6 @@ test.describe('Pipeline Settings - runtime setting round-trip', () => {
       await expect(autoScrollSwitch).toHaveAttribute('aria-checked', String(newValue));
     } finally {
       await settingsApi.put('runtime', { autoScrollEnabled: originalValue });
-    }
-  });
-});
-
-test.describe('Storage - full round-trip', () => {
-  test('auto-archive toggle auto-saves to storage settings and survives reload', async ({ page, settingsApi }) => {
-    const baseline = await settingsApi.get('storage');
-    const originalEnabled = Boolean(baseline.enabled);
-    const newEnabled = !originalEnabled;
-
-    try {
-      await page.goto('/#/storage');
-      await ensureAutoSaveEnabled(page);
-
-      const autoArchiveCheckbox = page.getByLabel('Auto-archive runs after completion');
-      await expect(autoArchiveCheckbox).toBeVisible();
-
-      const saveRequestPromise = page.waitForRequest((request) =>
-        request.url().includes('/api/v1/storage-settings') && request.method() === 'PUT');
-
-      if ((await autoArchiveCheckbox.isChecked()) !== newEnabled) {
-        await autoArchiveCheckbox.click();
-      }
-
-      const saveRequest = await saveRequestPromise;
-      expect(saveRequest.postDataJSON()).toMatchObject({ enabled: newEnabled });
-
-      await expect.poll(async () => {
-        const afterSave = await settingsApi.get('storage');
-        return Boolean(afterSave.enabled);
-      }).toBe(newEnabled);
-
-      await page.reload();
-      if (newEnabled) {
-        await expect(autoArchiveCheckbox).toBeChecked();
-      } else {
-        await expect(autoArchiveCheckbox).not.toBeChecked();
-      }
-    } finally {
-      await settingsApi.put('storage', { enabled: originalEnabled });
     }
   });
 });

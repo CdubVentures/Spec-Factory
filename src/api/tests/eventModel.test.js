@@ -12,7 +12,7 @@ import {
   makeRunStartedEvent,
   makeSearchEvent,
   makeSourceProcessedEvent,
-} from '../../indexlab/tests/helpers/phase00AuditHarness.js';
+} from '../../indexlab/tests/helpers/auditHarness.js';
 import { buildRoundSummaryFromEvents } from '../roundSummary.js';
 import { buildEvidenceSearchPayload } from '../evidenceSearch.js';
 
@@ -119,7 +119,7 @@ describe('Phase 00 event model contract', () => {
       {
         eventName: 'run_context',
         filter: {},
-        keys: ['identity_fingerprint', 'identity_lock_status', 'dedupe_mode', 'phase_cursor'],
+        keys: ['identity_fingerprint', 'identity_lock_status', 'dedupe_mode', 'stage_cursor'],
       },
     ];
 
@@ -145,7 +145,7 @@ describe('Phase 00 event model contract', () => {
       'identity_fingerprint',
       'identity_lock_status',
       'dedupe_mode',
-      'phase_cursor',
+      'stage_cursor',
       'startup_ms',
     ];
 

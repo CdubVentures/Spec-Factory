@@ -240,9 +240,9 @@ async function main() {
   const activePhases = phases.filter(p => p.field_count > 0);
   const allMethods = new Set();
   for (const p of phases) for (const m of (p.methods_used || [])) allMethods.add(m);
-  const p01 = phases.find(p => p.phase_id === 'phase_01_static_html');
-  const p05 = phases.find(p => p.phase_id === 'phase_05_embedded_json');
-  const cc = phases.find(p => p.phase_id === 'cross_cutting');
+  const staticHtml = phases.find(p => p.phase_id === 'extract:static-html');
+  const structuredMeta = phases.find(p => p.phase_id === 'extract:structured-meta');
+  const postProcess = phases.find(p => p.phase_id === 'extract:post-process');
   const observed = phases.filter(p => (p.methods_used || []).length > 0);
   const unobserved = phases.filter(p => p.field_count === 0);
   // Also get single-worker phases for DP-10 (zero-count phases shown)
@@ -250,14 +250,14 @@ async function main() {
 
   check('DP-01', 'Phase count > 0', activePhases.length >= 1, `${activePhases.length}/10 active`);
   check('DP-02', 'Method count > 0', allMethods.size >= 1, `${allMethods.size} methods`);
-  check('DP-03', 'P01 Static HTML active', p01?.field_count > 0, `fields=${p01?.field_count} methods=${JSON.stringify(p01?.methods_used)}`);
-  check('DP-04', 'P05 Structured Meta active', p05?.field_count > 0 || (p05?.methods_used || []).length > 0, `fields=${p05?.field_count} methods=${JSON.stringify(p05?.methods_used)}`);
+  check('DP-03', 'Static HTML active', staticHtml?.field_count > 0, `fields=${staticHtml?.field_count} methods=${JSON.stringify(staticHtml?.methods_used)}`);
+  check('DP-04', 'Structured Meta active', structuredMeta?.field_count > 0 || (structuredMeta?.methods_used || []).length > 0, `fields=${structuredMeta?.field_count} methods=${JSON.stringify(structuredMeta?.methods_used)}`);
   check('DP-05', 'Observed methods full opacity', observed.length > 0, `${observed.length} phases with methods`);
   check('DP-06', 'Unobserved methods dimmed', unobserved.length > 0, `${unobserved.length} inactive phases`);
-  check('DP-07', 'Cross-cutting section active', (cc?.methods_used || []).length > 0, `fields=${cc?.field_count} methods=${JSON.stringify(cc?.methods_used)}`);
+  check('DP-07', 'Post-processing section active', (postProcess?.methods_used || []).length > 0, `fields=${postProcess?.field_count} methods=${JSON.stringify(postProcess?.methods_used)}`);
   check('DP-08', 'Phase lineage source identified', phases.length > 0, 'backend phase_lineage present');
-  check('DP-09', 'ConfidenceBar on active phase', (p01?.confidence_avg || 0) > 0, `P01 conf_avg=${p01?.confidence_avg}`);
-  check('DP-10', 'Zero-count phases shown', singleWorkerPhases.length === 11, `${singleWorkerPhases.length} phases (10 + cross_cutting)`);
+  check('DP-09', 'ConfidenceBar on active phase', (staticHtml?.confidence_avg || 0) > 0, `staticHtml conf_avg=${staticHtml?.confidence_avg}`);
+  check('DP-10', 'Zero-count phases shown', singleWorkerPhases.length === 11, `${singleWorkerPhases.length} phases (10 + extract:post-process)`);
 
   // ===== SECTION 11: PARSER METHOD COVERAGE (35 tests) =====
   console.log('\n--- Section 11: Parser Method Coverage (35 tests) ---');

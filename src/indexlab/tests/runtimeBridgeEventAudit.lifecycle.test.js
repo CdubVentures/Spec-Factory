@@ -16,7 +16,7 @@ test('run_completed event is emitted by bridge', async () => {
     identity_fingerprint: 'fp-abc',
     identity_lock_status: 'locked',
     dedupe_mode: 'content_hash',
-    phase_cursor: 'completed'
+    stage_cursor: 'completed'
   }));
   await bridge.queue;
 

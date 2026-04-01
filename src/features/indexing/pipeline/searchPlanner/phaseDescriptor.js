@@ -5,7 +5,7 @@ import { runSearchPlanner } from './runSearchPlanner.js';
 
 export const searchPlannerPhase = {
   id: 'searchPlanner',
-  phaseCursor: 'phase_04_search_planner',
+  stageCursor: 'stage:search-planner',
   checkpoint: 'afterPlanner',
 
   async execute(ctx) {

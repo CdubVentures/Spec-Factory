@@ -10,7 +10,7 @@ import { toArray } from '../shared/discoveryIdentity.js';
 
 export const searchExecutionPhase = {
   id: 'searchExecution',
-  phaseCursor: 'phase_06_search_results',
+  stageCursor: 'stage:search-results',
   checkpoint: 'afterExecution',
 
   async execute(ctx) {

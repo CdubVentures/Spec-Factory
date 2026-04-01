@@ -25,7 +25,7 @@ export function createRunMetaStore({ db, category, stmts }) {
       status: row.status || 'running',
       started_at: row.started_at || '',
       ended_at: row.ended_at || '',
-      phase_cursor: row.phase_cursor || '',
+      stage_cursor: row.stage_cursor || '',
       identity_fingerprint: row.identity_fingerprint || '',
       identity_lock_status: row.identity_lock_status || '',
       dedupe_mode: row.dedupe_mode || '',

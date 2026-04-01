@@ -20,6 +20,24 @@ export {
   applyEnumConsistencyToSuggestions,
 } from './api/studioRouteHelpers.js';
 
+// EG compatibility presets (colors + editions field rule SSOT).
+export {
+  EG_CANONICAL_COLORS,
+  EG_PRESET_REGISTRY,
+  EG_LOCKED_KEYS,
+  EG_EDITABLE_PATHS,
+  EG_DEFAULT_TOGGLES,
+  buildEgColorFieldRule,
+  buildEgEditionFieldRule,
+  buildAllEgDefaults,
+  getEgPresetForKey,
+  preserveEgEditablePaths,
+  sanitizeEgLockedOverrides,
+  isEgLockedField,
+  isEgEditablePath,
+  resolveEgLockedKeys,
+} from './contracts/egPresets.js';
+
 // Schema contracts (O(1) SSOT for studio shapes).
 export {
   StudioPayloadSchema,

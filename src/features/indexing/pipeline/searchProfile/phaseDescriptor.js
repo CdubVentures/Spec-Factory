@@ -5,7 +5,7 @@ import { runSearchProfile } from './runSearchProfile.js';
 
 export const searchProfilePhase = {
   id: 'searchProfile',
-  phaseCursor: 'phase_03_search_profile',
+  stageCursor: 'stage:search-profile',
   checkpoint: 'afterProfile',
 
   execute(ctx) {

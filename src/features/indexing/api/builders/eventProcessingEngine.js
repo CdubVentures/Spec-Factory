@@ -77,7 +77,7 @@ function createRegistry() {
         return {
           status: String(safeMeta.status || '').trim() || 'unknown',
           round: toInt(safeMeta.round, 0),
-          phase_cursor: String(safeMeta.phase_cursor || '').trim(),
+          stage_cursor: String(safeMeta.stage_cursor || '').trim(),
           boot_step: bootStep,
           boot_progress: bootProgress,
           browser_pool: browserPool,

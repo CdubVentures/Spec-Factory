@@ -276,24 +276,24 @@ test('buildWorkerDetail: source indexing packets backfill extraction, screenshot
         source_metadata: { source_url: url },
         parser_execution: {
           phase_lineage: {
-            phase_01_static_html: false,
-            phase_02_dynamic_js: false,
-            phase_03_main_article: false,
-            phase_04_html_spec_table: true,
-            phase_05_embedded_json: true,
-            phase_06_text_pdf: false,
-            phase_07_scanned_pdf_ocr: false,
-            phase_08_image_ocr: false,
-            phase_09_chart_graph: false,
-            phase_10_office_mixed_doc: false,
+            'extract:static-html': false,
+            'extract:dynamic-js': false,
+            'extract:article-text': false,
+            'extract:html-table': true,
+            'extract:structured-meta': true,
+            'extract:text-pdf': false,
+            'extract:scanned-pdf-ocr': false,
+            'extract:image-ocr': false,
+            'extract:chart-graph': false,
+            'extract:office-doc': false,
           },
           phase_stats: {
-            phase_04_html_spec_table: {
+            'extract:html-table': {
               executed: true,
               assertion_count: 2,
               evidence_count: 2,
             },
-            phase_05_embedded_json: {
+            'extract:structured-meta': {
               executed: true,
               assertion_count: 1,
               evidence_count: 1,
@@ -317,7 +317,7 @@ test('buildWorkerDetail: source indexing packets backfill extraction, screenshot
                     value_normalized: '60g',
                     confidence: 0.94,
                     extraction_method: 'spec_table_match',
-                    parser_phase: 'phase_04_html_spec_table',
+                    parser_phase: 'extract:html-table',
                   },
                 ],
               },
@@ -333,7 +333,7 @@ test('buildWorkerDetail: source indexing packets backfill extraction, screenshot
                     value_normalized: '8000 Hz',
                     confidence: 0.88,
                     extraction_method: 'network_json',
-                    parser_phase: 'phase_05_embedded_json',
+                    parser_phase: 'extract:structured-meta',
                   },
                 ],
               },
@@ -364,8 +364,8 @@ test('buildWorkerDetail: source indexing packets backfill extraction, screenshot
   assert.equal(result.screenshots[0].height, 900);
   assert.equal(result.screenshots[0].bytes, 81234);
 
-  const phase04 = result.phase_lineage.phases.find((row) => row.phase_id === 'phase_04_html_spec_table');
-  const phase05 = result.phase_lineage.phases.find((row) => row.phase_id === 'phase_05_embedded_json');
+  const phase04 = result.phase_lineage.phases.find((row) => row.phase_id === 'extract:html-table');
+  const phase05 = result.phase_lineage.phases.find((row) => row.phase_id === 'extract:structured-meta');
   assert.equal(phase04?.doc_count, 1);
   assert.equal(phase04?.field_count, 2);
   assert.deepEqual(phase04?.methods_used, ['spec_table_match']);

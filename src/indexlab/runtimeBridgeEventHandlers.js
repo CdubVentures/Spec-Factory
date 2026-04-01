@@ -13,7 +13,7 @@ import {
   applySearchProfilePlannedPayload, extractRuntimeEventPayload,
   emit, finishFetchUrl
 } from './runtimeBridgeArtifacts.js';
-import { setPhaseCursor, recordStartupMs, startStage, finishStage } from './runtimeBridgeStageLifecycle.js';
+import { setStageCursor, recordStartupMs, startStage, finishStage } from './runtimeBridgeStageLifecycle.js';
 import { dedupeOutcomeToEventKey } from '../pipeline/dedupeOutcomeEvent.js';
 
 // ── Individual event handlers ──────────────────────────────────────────────
@@ -24,7 +24,7 @@ async function handleRunStarted(state, deps, { ts, row }) {
     category: row.category || row.cat || state.context.category || '',
     productId: row.productId || row.product_id || state.context.productId || ''
   });
-  setPhaseCursor(state, 'phase_00_bootstrap');
+  setStageCursor(state, 'stage:bootstrap');
   await ensureBaselineArtifacts(state, ts);
   await startStage(state, 'search', ts, { trigger: 'run_started' });
 }
@@ -33,9 +33,9 @@ async function handleRunContext(state, deps, { ts, row }) {
   state.identityFingerprint = String(row.identity_fingerprint || state.identityFingerprint || '').trim();
   state.identityLockStatus = String(row.identity_lock_status || state.identityLockStatus || '').trim();
   state.dedupeMode = String(row.dedupe_mode || state.dedupeMode || '').trim();
-  const phaseCursor = String(row.phase_cursor || '').trim();
-  if (phaseCursor) {
-    setPhaseCursor(state, phaseCursor);
+  const stageCursor = String(row.stage_cursor || '').trim();
+  if (stageCursor) {
+    setStageCursor(state, stageCursor);
   }
   await emit(state, 'runtime', 'run_context', {
     scope: 'run',
@@ -44,13 +44,13 @@ async function handleRunContext(state, deps, { ts, row }) {
     identity_fingerprint: state.identityFingerprint,
     identity_lock_status: state.identityLockStatus,
     dedupe_mode: state.dedupeMode,
-    phase_cursor: state.phaseCursor
+    stage_cursor: state.stageCursor
   }, ts);
   await writeRunMeta(state);
 }
 
 async function handleSearchProfileGenerated(state, deps, { ts, row }) {
-  setPhaseCursor(state, 'phase_03_search_profile');
+  setStageCursor(state, 'stage:search-profile');
   const payload = extractRuntimeEventPayload(row);
   const applied = applySearchProfilePlannedPayload(state, payload, ts);
   if (applied) {
@@ -386,7 +386,7 @@ async function handleBlockedDomainCooldownApplied(state, deps, { ts, row }) {
 
 async function handleNeedsetComputed(state, deps, { ts, row }) {
   await startStage(state, 'index', ts, { trigger: 'needset_computed' });
-  setPhaseCursor(state, 'phase_01_needset');
+  setStageCursor(state, 'stage:needset');
   const payload = toNeedSetSnapshot(row, ts);
   payload.status = 'executed';
   payload.source = 'runtime_bridge';
@@ -437,7 +437,7 @@ async function handleNeedsetComputed(state, deps, { ts, row }) {
 
 async function handleBrandResolved(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'brand_resolved' });
-  setPhaseCursor(state, 'phase_02_brand_resolver');
+  setStageCursor(state, 'stage:brand-resolver');
   const brandPayload = {
     scope: 'brand',
     brand: String(row.brand || '').trim(),
@@ -491,7 +491,7 @@ async function handleBrandResolved(state, deps, { ts, row }) {
 
 async function handleSearchPlanGenerated(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'search_plan_generated' });
-  setPhaseCursor(state, 'phase_04_search_planner');
+  setStageCursor(state, 'stage:search-planner');
   await emit(state, 'search', 'search_plan_generated', {
     scope: 'plan',
     pass_index: asInt(row.pass_index, 0),
@@ -508,7 +508,7 @@ async function handleSearchPlanGenerated(state, deps, { ts, row }) {
 }
 
 async function handleQueryJourneyCompleted(state, deps, { ts, row }) {
-  setPhaseCursor(state, 'phase_05_query_journey');
+  setStageCursor(state, 'stage:query-journey');
   // WHY: Populate query_journey data in prefetch so the GUI gate allows
   // search_results bouncy ball only after query journey finishes.
   if (!state.prefetchData) state.prefetchData = {};
@@ -556,7 +556,7 @@ async function handleSearchResultsCollected(state, deps, { ts, row }) {
 
 async function handleSerpSelectorCompleted(state, deps, { ts, row }) {
   await startStage(state, 'search', ts, { trigger: 'serp_selector_completed' });
-  setPhaseCursor(state, 'phase_07_serp_selector');
+  setStageCursor(state, 'stage:serp-selector');
   await emit(state, 'search', 'serp_selector_completed', {
     scope: 'triage',
     query: String(row.query || '').trim(),
@@ -635,11 +635,11 @@ async function handleEvidenceIndexResult(state, deps, { ts, row }) {
 }
 
 
-async function handlePhase07PrimeSourcesBuilt(state, deps, { ts, row }) {
-  await startStage(state, 'index', ts, { trigger: 'phase07_prime_sources_built' });
-  setPhaseCursor(state, 'phase_07_prime_sources');
-  await emit(state, 'index', 'phase07_prime_sources_built', {
-    scope: 'phase07',
+async function handlePrimeSourcesBuilt(state, deps, { ts, row }) {
+  await startStage(state, 'index', ts, { trigger: 'prime_sources_built' });
+  setStageCursor(state, 'stage:prime-sources');
+  await emit(state, 'index', 'prime_sources_built', {
+    scope: 'prime-sources',
     fields_attempted: asInt(row.fields_attempted, 0),
     fields_with_hits: asInt(row.fields_with_hits, 0),
     fields_satisfied_min_refs: asInt(row.fields_satisfied_min_refs, 0),
@@ -655,7 +655,7 @@ async function handleRunCompleted(state, deps, { ts, row }) {
   state.identityFingerprint = String(row.identity_fingerprint || state.identityFingerprint || '').trim();
   state.identityLockStatus = String(row.identity_lock_status || state.identityLockStatus || '').trim();
   state.dedupeMode = String(row.dedupe_mode || state.dedupeMode || '').trim();
-  setPhaseCursor(state, String(row.phase_cursor || '').trim() || 'completed');
+  setStageCursor(state, String(row.stage_cursor || '').trim() || 'completed');
   await finishStage(state, 'search', ts, { reason: 'run_completed' });
   await finishStage(state, 'fetch', ts, { reason: 'run_completed' });
   await finishStage(state, 'parse', ts, { reason: 'run_completed' });
@@ -665,7 +665,7 @@ async function handleRunCompleted(state, deps, { ts, row }) {
     identity_fingerprint: state.identityFingerprint,
     identity_lock_status: state.identityLockStatus,
     dedupe_mode: state.dedupeMode,
-    phase_cursor: state.phaseCursor,
+    stage_cursor: state.stageCursor,
     counters: { ...state.counters }
   }, ts);
   await ensureBaselineArtifacts(state, ts);
@@ -679,7 +679,7 @@ async function handleSearchEvent(state, deps, { eventName, ts, row }) {
   const { searchSlots } = deps;
 
   if (eventName === 'discovery_query_started') {
-    setPhaseCursor(state, 'phase_06_search_results');
+    setStageCursor(state, 'stage:search-results');
     const query = String(row.query || '').trim();
     const provider = String(row.provider || '').trim();
     const queryKey = searchSlots.searchQueryKey(row);
@@ -817,7 +817,7 @@ async function handleSearchQueued(state, deps, { ts, row }) {
 }
 
 async function handleDiscoveryEnqueueSummary(state, deps, { ts, row }) {
-  setPhaseCursor(state, 'phase_08_domain_classifier');
+  setStageCursor(state, 'stage:domain-classifier');
   await emit(state, 'search', 'discovery_enqueue_summary', {
     scope: 'enqueue',
     input_selected_count: asInt(row.input_selected_count, 0),
@@ -945,7 +945,7 @@ const EVENT_HANDLERS = new Map([
   ['serp_selector_completed',           handleSerpSelectorCompleted],
   ['domains_classified',              handleDomainsClassified],
   ['evidence_index_result',           handleEvidenceIndexResult],
-  ['phase07_prime_sources_built',     handlePhase07PrimeSourcesBuilt],
+  ['prime_sources_built',             handlePrimeSourcesBuilt],
   ['discovery_enqueue_summary',       handleDiscoveryEnqueueSummary],
   ['search_queued',                   handleSearchQueued],
   ['bootstrap_step',                  handleBootstrapStep],

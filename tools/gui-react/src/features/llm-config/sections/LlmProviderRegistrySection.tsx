@@ -8,6 +8,7 @@ import { createDefaultProvider, createDefaultModel } from '../state/llmProviderR
 import { ROLE_BADGE_STYLE, MODEL_ROLE_OPTIONS } from '../state/llmRoleBadgeStyles.ts';
 import { ModelBadgeGroup } from '../components/ModelAccessBadges.tsx';
 import { isDefaultProvider } from '../state/llmDefaultProviderRegistry.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
 
 /* ── Model row ─────────────────────────────────────────── */
@@ -166,22 +167,7 @@ function ProviderPanel({
   onRemove: () => void;
 }) {
   const [showKey, setShowKey] = useState(false);
-  const modelsStorageKey = `sf:llm-provider-models:${provider.id}`;
-  const [modelsOpen, setModelsOpen] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(modelsStorageKey);
-      if (raw === '1') return true;
-      if (raw === '0') return false;
-    } catch { /* noop */ }
-    return false;
-  });
-  const toggleModels = useCallback(() => {
-    setModelsOpen((prev) => {
-      const next = !prev;
-      try { sessionStorage.setItem(modelsStorageKey, next ? '1' : '0'); } catch { /* noop */ }
-      return next;
-    });
-  }, [modelsStorageKey]);
+  const [modelsOpen, toggleModels] = usePersistedToggle(`sf:llm-provider-models:${provider.id}`, false);
   const isDefault = isDefaultProvider(provider.id);
 
   const updateField = useCallback(<K extends keyof LlmProviderEntry>(key: K, value: LlmProviderEntry[K]) => {

@@ -19,6 +19,14 @@ import {
   KnownValuesResponseSchema,
   ComponentDbResponseSchema,
 } from '../contracts/studioSchemas.js';
+import {
+  EG_LOCKED_KEYS,
+  EG_EDITABLE_PATHS,
+  EG_DEFAULT_TOGGLES,
+  getEgPresetForKey,
+  sanitizeEgLockedOverrides,
+  resolveEgLockedKeys,
+} from '../contracts/egPresets.js';
 
 export function registerStudioRoutes(ctx) {
   const {
@@ -66,15 +74,63 @@ export function registerStudioRoutes(ctx) {
       const category = parts[1];
       const catConfig = await loadCategoryConfig(category, { storage, config }).catch(() => ({}));
       const session = await sessionCache.getSessionRules(category);
+
+      // WHY: Read eg_toggles from the studio map to determine which keys are actively locked.
+      const mapData = hasStudioMapHandlers ? await loadFieldStudioMap(category).catch(() => null) : null;
+      const egToggles = mapData?.map?.eg_toggles || { ...EG_DEFAULT_TOGGLES };
+      const activeLockedKeys = resolveEgLockedKeys(egToggles);
+
+      // WHY: Backfill EG fields for categories created before this feature.
+      // O(1): generic loop over EG_LOCKED_KEYS — new registry entries auto-backfill.
+      const fields = { ...session.mergedFields };
+      let needsMigrate = false;
+      for (const k of EG_LOCKED_KEYS) {
+        if (!fields[k] && egToggles[k] !== false) {
+          fields[k] = getEgPresetForKey(k);
+          needsMigrate = true;
+        }
+      }
+
+      const order = [...session.mergedFieldOrder];
+      for (const k of EG_LOCKED_KEYS) {
+        if (!order.includes(k)) order.push(k);
+      }
+
+      // WHY: Write-on-read migration — persist so next load doesn't need backfill.
+      // Fire-and-forget; does not block the response.
+      if (needsMigrate && mapData?.map && hasStudioMapHandlers) {
+        const patched = { ...mapData.map };
+        const overrides = { ...(patched.field_overrides || {}) };
+        for (const k of EG_LOCKED_KEYS) {
+          if (!overrides[k]) overrides[k] = getEgPresetForKey(k);
+        }
+        patched.field_overrides = overrides;
+        if (!patched.eg_toggles) patched.eg_toggles = { ...EG_DEFAULT_TOGGLES };
+        const keys = [...(patched.selected_keys || [])];
+        for (const k of EG_LOCKED_KEYS) { if (!keys.includes(k)) keys.push(k); }
+        patched.selected_keys = keys;
+        const specDb = getSpecDb(category);
+        if (specDb) {
+          try {
+            specDb.upsertFieldStudioMap(JSON.stringify(patched), hashJson(patched));
+            saveFieldStudioMap(category, patched).catch(() => {});
+            sessionCache.invalidateSessionCache(category);
+          } catch { /* non-critical migration write */ }
+        }
+      }
+
       return jsonRes(res, 200, StudioPayloadSchema.parse({
         category,
-        fieldRules: session.mergedFields,
-        fieldOrder: session.mergedFieldOrder,
+        fieldRules: fields,
+        fieldOrder: order,
         uiFieldCatalog: catConfig.uiFieldCatalog || null,
         guardrails: catConfig.guardrails || null,
         compiledAt: session.compiledAt,
         mapSavedAt: session.mapSavedAt,
         compileStale: session.compileStale,
+        egLockedKeys: activeLockedKeys,
+        egEditablePaths: [...EG_EDITABLE_PATHS],
+        egToggles,
       }));
     }
 
@@ -355,6 +411,13 @@ export function registerStudioRoutes(ctx) {
       const normalizedFieldStudioMap = validation?.normalized && typeof validation.normalized === 'object'
         ? validation.normalized
         : body;
+      // WHY: Server-side lock enforcement — reset non-editable paths on locked fields to preset.
+      if (normalizedFieldStudioMap.field_overrides) {
+        normalizedFieldStudioMap.field_overrides = sanitizeEgLockedOverrides(
+          normalizedFieldStudioMap.field_overrides,
+          normalizedFieldStudioMap.eg_toggles
+        );
+      }
       try {
         const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
         if (params.get('allowEmptyOverwrite') !== 'true') {

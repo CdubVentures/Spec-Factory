@@ -25,7 +25,7 @@ function makeMockBridge({ events = [], llmAgg = null, observability = null } = {
     status: 'completed',
     startedAt: '2026-03-27T10:00:00Z',
     endedAt: '2026-03-27T10:05:00Z',
-    phaseCursor: 'completed',
+    stageCursor: 'completed',
     bootStep: '',
     bootProgress: 100,
     identityFingerprint: 'fp-abc',
@@ -118,7 +118,7 @@ describe('serializeRunSummary — happy path', () => {
     strictEqual(meta.run_id, 'run-001');
     strictEqual(meta.category, 'mouse');
     strictEqual(meta.status, 'completed');
-    strictEqual(meta.phase_cursor, 'completed');
+    strictEqual(meta.stage_cursor, 'completed');
     strictEqual(meta.identity_fingerprint, 'fp-abc');
     deepStrictEqual(meta.counters, bridge.counters);
     deepStrictEqual(meta.stages, bridge.stageState);

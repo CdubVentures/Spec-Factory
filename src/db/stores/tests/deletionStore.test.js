@@ -54,7 +54,7 @@ function seedRun(specDb, { runId, productId, url, contentHash }) {
   specDb.upsertRun({
     run_id: runId, category: cat, product_id: productId,
     status: 'completed', started_at: now, ended_at: now,
-    phase_cursor: '', identity_fingerprint: '', identity_lock_status: '',
+    stage_cursor: '', identity_fingerprint: '', identity_lock_status: '',
     dedupe_mode: '', s3key: '', out_root: '', counters: {},
   });
 

@@ -258,8 +258,8 @@ describe('registry enrichment aliases', () => {
     ok(byKey.searchEngines.aliases?.includes('searchProvider'));
   });
 
-  it('llmModelPlan has phase2LlmModel alias', () => {
-    ok(byKey.llmModelPlan.aliases?.includes('phase2LlmModel'));
+  it('llmModelPlan has planLlmModel alias', () => {
+    ok(byKey.llmModelPlan.aliases?.includes('planLlmModel'));
   });
 
   it('llmMaxOutputTokensPlan has llmTokensPlan alias', () => {

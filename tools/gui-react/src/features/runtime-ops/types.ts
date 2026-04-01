@@ -680,7 +680,7 @@ export interface PreFetchPhasesResponse {
   cross_query_url_counts?: Record<string, number>;
   serp_selector: SerpSelectorResult[];
   domain_health: DomainHealthRow[];
-  phase_cursor?: string;
+  stage_cursor?: string;
   idx_runtime?: Partial<Record<PrefetchTabKey, RuntimeIdxBadge[]>>;
 }
 

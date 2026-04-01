@@ -24,7 +24,7 @@ export function registerIndexlabRoutes(ctx) {
     readIndexLabRunEvents,
     readIndexLabRunNeedSet,
     readIndexLabRunSearchProfile,
-    readIndexLabRunPhase07PrimeSources,
+    readIndexLabRunPrimeSources,
     readIndexLabRunDynamicFetchDashboard,
     readIndexLabRunSourceIndexingPackets,
     readIndexLabRunItemIndexingPacket,
@@ -213,11 +213,11 @@ export function registerIndexlabRoutes(ctx) {
       });
     }
 
-    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'phase07-prime-sources' && method === 'GET') {
+    if (parts[0] === 'indexlab' && parts[1] === 'run' && parts[2] && parts[3] === 'prime-sources' && method === 'GET') {
       const runId = String(parts[2] || '').trim();
-      const payload = await readIndexLabRunPhase07PrimeSources(runId);
+      const payload = await readIndexLabRunPrimeSources(runId);
       if (!payload) {
-        return jsonRes(res, 404, { error: 'phase07_prime_sources_not_found', run_id: runId });
+        return jsonRes(res, 404, { error: 'prime_sources_not_found', run_id: runId });
       }
       return jsonRes(res, 200, {
         run_id: runId,

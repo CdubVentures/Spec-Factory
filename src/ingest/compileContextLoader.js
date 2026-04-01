@@ -25,6 +25,7 @@ import {
   buildFallbackKeyRows,
 } from './compileFileIo.js';
 import { declaredComponentPropertyKeysFromMap } from './compileComponentHelpers.js';
+import { EG_LOCKED_KEYS, getEgPresetForKey } from '../features/studio/index.js';
 
 export async function loadCompileContext({
   category,
@@ -134,6 +135,15 @@ export async function loadCompileContext({
     ...draftFieldOverrides
   };
 
+  // WHY: Ensure EG-locked defaults always appear in compiled output, even if
+  // the category's field_studio_map was created before this default existed.
+  // O(1): derived from EG_PRESET_REGISTRY — new registry entries auto-compile.
+  for (const k of EG_LOCKED_KEYS) {
+    if (!effectiveFieldOverrides[k]) {
+      effectiveFieldOverrides[k] = getEgPresetForKey(k);
+    }
+  }
+
   const previousUiFieldCatalog = await readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json'));
   // WHY: no carry-forward of previous known_values — only current map sources are authoritative.
   const extractedKeyRows = buildFallbackKeyRows({
@@ -142,6 +152,8 @@ export async function loadCompileContext({
     baselineUiFieldCatalog: previousUiFieldCatalog
   });
   const selectedKeySet = new Set(toArray(map.selected_keys).map((field) => normalizeFieldKey(field)).filter(Boolean));
+  // WHY: Ensure EG-locked keys are always in the selected set for compile.
+  for (const k of EG_LOCKED_KEYS) { selectedKeySet.add(k); }
   const componentPropertyKeySet = declaredComponentPropertyKeysFromMap(map);
   const extractedKeySet = new Set(extractedKeyRows.map((row) => normalizeFieldKey(row.key)).filter(Boolean));
   const declaredOnlyKeyRows = [...componentPropertyKeySet]

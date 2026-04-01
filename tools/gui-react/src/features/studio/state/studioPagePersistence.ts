@@ -8,6 +8,7 @@ export interface StudioPersistSnapshot {
   rules: Record<string, Record<string, unknown>>;
   fieldOrder: string[];
   renames: Record<string, string>;
+  egToggles?: Record<string, boolean>;
 }
 
 export interface StudioPersistMapOptions {
@@ -141,6 +142,11 @@ export function buildStudioPersistMap({
     selected_keys: selectedKeys,
     field_overrides: prunedOverrides,
   };
+
+  // WHY: Merge store's eg_toggles into the persist map so toggle state is saved.
+  if (snapshot.egToggles && Object.keys(snapshot.egToggles).length > 0) {
+    (withStudioDocs as Record<string, unknown>).eg_toggles = snapshot.egToggles;
+  }
 
   return applyStudioMapRenames(withStudioDocs, snapshot.renames);
 }

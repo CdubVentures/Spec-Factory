@@ -21,12 +21,14 @@ export function KeyParseRulesSection({
   updateField,
   category,
   BadgeRenderer: B,
+  disabled,
 }: KeyParseRulesSectionProps) {
   return (
     <Section
       title="Parse Rules"
       persistKey={`studio:keyNavigator:section:parse:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_parse}
+      disabled={disabled}
     >
       {(() => {
         const pt = strN(

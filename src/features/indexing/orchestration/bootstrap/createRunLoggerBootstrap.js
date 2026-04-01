@@ -65,7 +65,7 @@ export function buildRunBootstrapLogPayload({
       family_model_count: identityLock.family_model_count || 0,
       ambiguity_level: identityLock.ambiguity_level || 'unknown',
       dedupe_mode: dedupeMode,
-      phase_cursor: 'phase_00_bootstrap',
+      stage_cursor: 'stage:bootstrap',
     },
   };
 }

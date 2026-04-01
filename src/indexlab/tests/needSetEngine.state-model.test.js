@@ -7,7 +7,7 @@ import {
   makeIdentityConflict,
   makeBaseRules,
   makeBaseInput,
-} from './helpers/phase01NeedSetHarness.js';
+} from './helpers/needSetHarness.js';
 
 // --- Test groups ---
 

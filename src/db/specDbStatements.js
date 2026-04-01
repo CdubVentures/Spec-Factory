@@ -560,13 +560,13 @@ export function prepareStatements(db) {
     _upsertRun: db.prepare(`
       INSERT INTO runs (
         run_id, category, product_id, status, started_at, ended_at,
-        phase_cursor,
+        stage_cursor,
         identity_fingerprint, identity_lock_status, dedupe_mode,
         s3key, out_root, counters,
         updated_at
       ) VALUES (
         @run_id, @category, @product_id, @status, @started_at, @ended_at,
-        @phase_cursor,
+        @stage_cursor,
         @identity_fingerprint, @identity_lock_status, @dedupe_mode,
         @s3key, @out_root, @counters,
         datetime('now')
@@ -577,7 +577,7 @@ export function prepareStatements(db) {
         status = excluded.status,
         started_at = excluded.started_at,
         ended_at = excluded.ended_at,
-        phase_cursor = excluded.phase_cursor,
+        stage_cursor = excluded.stage_cursor,
         identity_fingerprint = excluded.identity_fingerprint,
         identity_lock_status = excluded.identity_lock_status,
         dedupe_mode = excluded.dedupe_mode,

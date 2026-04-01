@@ -7,7 +7,7 @@ import { SLOT_LABELS } from '../shared/discoveryIdentity.js';
 
 export const queryJourneyPhase = {
   id: 'queryJourney',
-  phaseCursor: 'phase_05_query_journey',
+  stageCursor: 'stage:query-journey',
   checkpoint: 'afterJourney',
 
   async execute(ctx) {

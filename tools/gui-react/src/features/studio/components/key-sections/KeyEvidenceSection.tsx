@@ -20,12 +20,14 @@ export function KeyEvidenceSection({
   updateField,
   category,
   BadgeRenderer: B,
+  disabled,
 }: KeyEvidenceSectionProps) {
   return (
     <Section
       title="Evidence Requirements"
       persistKey={`studio:keyNavigator:section:evidence:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_evidence}
+      disabled={disabled}
     >
       <div className="grid grid-cols-3 gap-3 items-start">
         <div className="space-y-2">

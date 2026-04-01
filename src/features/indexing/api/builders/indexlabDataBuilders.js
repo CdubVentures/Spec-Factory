@@ -309,8 +309,8 @@ export async function readIndexLabRunSearchProfile(runId) {
   return _artifactReaders.readIndexLabRunSearchProfile(runId);
 }
 
-export async function readIndexLabRunPhase07PrimeSources(runId) {
-  return _phaseReaders.readIndexLabRunPhase07PrimeSources(runId);
+export async function readIndexLabRunPrimeSources(runId) {
+  return _phaseReaders.readIndexLabRunPrimeSources(runId);
 }
 
 export async function readIndexLabRunDynamicFetchDashboard(runId) {

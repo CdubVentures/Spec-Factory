@@ -101,6 +101,9 @@ export function StudioPage() {
   const rules = studio?.fieldRules || {};
   const fieldOrder = studio?.fieldOrder || Object.keys(rules);
   const wbMap = wbMapRes?.map || ({} as StudioConfig);
+  const egLockedKeys = studio?.egLockedKeys;
+  const egEditablePaths = studio?.egEditablePaths;
+  const egToggles = studio?.egToggles;
 
   const {
     saveMapMut,
@@ -128,6 +131,9 @@ export function StudioPage() {
     mapSavedAt: studio?.mapSavedAt || null,
     compiledAt: studio?.compiledAt || null,
     queryClient,
+    egLockedKeys,
+    egEditablePaths,
+    egToggles,
   });
 
   const studioPageShellControllerState = buildStudioPageShellControllerState({

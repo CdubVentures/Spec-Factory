@@ -45,7 +45,9 @@ import {
   inputCls,
   STUDIO_TIPS,
 } from "./studioConstants.ts";
+
 import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts.ts";
+import { getEgPresetForKey, EG_TOGGLEABLE_KEY_SET } from "../state/egPresetsClient.ts";
 import {
   btnPrimary,
   btnSecondary,
@@ -74,9 +76,10 @@ export function KeyNavigatorTab({
   onRunEnumConsistency,
   enumConsistencyPending,
 }: KeyNavigatorTabProps) {
-  const { editedRules, editedFieldOrder } = useStudioFieldRulesState();
+  const { editedRules, editedFieldOrder, egLockedKeys, egToggles } = useStudioFieldRulesState();
   const {
     updateField,
+    setEgToggle,
     addKey,
     removeKey,
     renameKey,
@@ -497,12 +500,15 @@ export function KeyNavigatorTab({
             onDeleteGroup={handleDeleteGroup}
             onRenameGroup={handleRenameGroup}
             existingGroups={existingGroups}
+            egLockedKeys={egLockedKeys}
           />
         </div>
 
         {/* Key detail editor */}
         <div className="flex-1 overflow-y-auto max-h-[calc(100vh-350px)] pr-2">
-          {selectedKey && currentRule ? (
+          {selectedKey && currentRule ? (() => {
+            const isSelectedEgLocked = egLockedKeys.includes(selectedKey);
+            return (
             <div key={selectedKey} className="space-y-3">
               <KeyStickyHeader
                 selectedKey={selectedKey}
@@ -522,9 +528,26 @@ export function KeyNavigatorTab({
                 updateField={updateField}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
                 category={category}
+                isEgLocked={egLockedKeys.includes(selectedKey)}
               />
 
-              {/* ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Field Coupling Summary ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
+              {EG_TOGGLEABLE_KEY_SET.has(selectedKey) && (
+                <label className="flex items-center gap-2 px-3 py-2 text-xs sf-surface-alt rounded border sf-border-soft mt-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={egToggles[selectedKey] !== false}
+                    onChange={(e) => {
+                      const preset = getEgPresetForKey(selectedKey);
+                      if (preset) setEgToggle(selectedKey, e.target.checked, preset);
+                    }}
+                    className="rounded sf-border-soft"
+                  />
+                  <span className="font-medium sf-text-default">EG Defaults</span>
+                  <span className="sf-text-subtle">Lock and pre-populate with EG format</span>
+                </label>
+              )}
+
+              {/*ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Field Coupling Summary ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
               {(() => {
                 const pt = strN(
                   currentRule,
@@ -594,6 +617,7 @@ export function KeyNavigatorTab({
                 category={category}
                 BadgeRenderer={B}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                disabled={isSelectedEgLocked}
               />
 
               <KeyPrioritySection
@@ -603,6 +627,7 @@ export function KeyNavigatorTab({
                 category={category}
                 BadgeRenderer={B}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                disabled={isSelectedEgLocked}
               />
 
               <KeyParseRulesSection
@@ -612,6 +637,7 @@ export function KeyNavigatorTab({
                 category={category}
                 BadgeRenderer={B}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                disabled={isSelectedEgLocked}
               />
 
               {/* ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Enum ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
@@ -619,6 +645,7 @@ export function KeyNavigatorTab({
                 title="Enum Policy"
                 persistKey={`studio:keyNavigator:section:enum:${category}`}
                 titleTooltip={STUDIO_TIPS.key_section_enum}
+                disabled={isSelectedEgLocked}
               >
                 <EnumConfigurator
                   persistTabKey={`studio:keyNavigator:enumSourceTab:${category}:${selectedKey}`}
@@ -688,6 +715,7 @@ export function KeyNavigatorTab({
                 componentSources={componentSources}
                 knownValues={knownValues}
                 editedRules={editedRules}
+                disabled={isSelectedEgLocked}
               />
 
               <Section
@@ -699,6 +727,7 @@ export function KeyNavigatorTab({
                 }
                 persistKey={`studio:keyNavigator:section:constraints:${category}`}
                 titleTooltip={STUDIO_TIPS.key_section_constraints}
+                disabled={isSelectedEgLocked}
               >
                 <KeyConstraintEditor
                   currentKey={selectedKey}
@@ -718,6 +747,7 @@ export function KeyNavigatorTab({
                 category={category}
                 BadgeRenderer={B}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                disabled={isSelectedEgLocked}
               />
 
               <KeyHintsSection
@@ -744,7 +774,8 @@ export function KeyNavigatorTab({
                 </div>
               </details>
             </div>
-          ) : (
+            );
+          })() : (
             <div className="text-sm sf-text-subtle mt-12 text-center">
               Select a key from the list to configure its field rule. Each key
               has Contract, Priority, Parse, Enum, Evidence, UI, and Search

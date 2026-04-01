@@ -57,7 +57,7 @@ export async function writeRunMeta(state, extra = {}) {
         status: extra.status || state.status || 'running',
         started_at: extra.started_at || state.startedAt || '',
         ended_at: extra.ended_at || state.endedAt || '',
-        phase_cursor: state.phaseCursor || '',
+        stage_cursor: state.stageCursor || '',
         identity_fingerprint: state.identityFingerprint || '',
         identity_lock_status: state.identityLockStatus || '',
         dedupe_mode: state.dedupeMode || '',
@@ -312,7 +312,7 @@ export function extractRuntimeEventPayload(row = {}) {
     'identity_fingerprint',
     'identity_lock_status',
     'dedupe_mode',
-    'phase_cursor'
+    'stage_cursor'
   ]);
 
   return Object.fromEntries(

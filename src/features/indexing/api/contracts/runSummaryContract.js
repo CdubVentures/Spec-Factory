@@ -15,7 +15,7 @@ export const RUN_SUMMARY_META_SHAPE = Object.freeze([
   { key: 'status', coerce: 'string' },
   { key: 'started_at', coerce: 'string' },
   { key: 'ended_at', coerce: 'string' },
-  { key: 'phase_cursor', coerce: 'string' },
+  { key: 'stage_cursor', coerce: 'string' },
   { key: 'boot_step', coerce: 'string', optional: true },
   { key: 'boot_progress', coerce: 'int', optional: true },
   { key: 'identity_fingerprint', coerce: 'string' },

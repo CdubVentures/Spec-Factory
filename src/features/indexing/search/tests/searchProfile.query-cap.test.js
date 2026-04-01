@@ -4,7 +4,7 @@ import {
   buildSearchProfile,
   makeCategoryConfig,
   makeJob,
-} from './helpers/phase02SearchProfileHarness.js';
+} from './helpers/searchProfileHarness.js';
 
 describe('Phase 02 - Query Cap and Reject Log', () => {
   it('respects maxQueries cap and logs rejections', () => {

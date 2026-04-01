@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
@@ -10,6 +10,8 @@ import { TabStrip, type TabItem } from '../../../shared/ui/navigation/TabStrip.t
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
+import { usePersistedTab } from '../../../stores/tabStore.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import type {
   ProductHistoryResponse,
   ProductHistoryRunRow,
@@ -90,6 +92,7 @@ function trunc(url: string, max = 50): string {
 /* ── Tab + chart types ────────────────────────────────────────────── */
 
 type HistTab = 'queries' | 'domains' | 'urls' | 'errors';
+const HIST_TAB_KEYS: readonly HistTab[] = ['queries', 'domains', 'urls', 'errors'] as const;
 
 function buildTabs(run: ProductHistoryRunRow | undefined, urls: ProductHistoryUrlRow[], queries: ProductHistoryQueryRow[]): ReadonlyArray<TabItem<HistTab>> {
   const rUrls = run ? urls.filter((u) => u.run_id === run.run_id) : urls;
@@ -422,9 +425,9 @@ const EMPTY_AGG: ProductHistoryResponse['aggregate'] = {
 interface ProductHistoryPanelProps { productId: string; category: string }
 
 export function ProductHistoryPanel({ productId, category }: ProductHistoryPanelProps) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [tab, setTab] = useState<HistTab>('queries');
-  const [selRunId, setSelRunId] = useState('');
+  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:history:collapsed:${productId}`, false);
+  const [tab, setTab] = usePersistedTab<HistTab>(`indexing:history:tab:${productId}`, 'queries', { validValues: HIST_TAB_KEYS });
+  const [selRunId, setSelRunId] = usePersistedTab<string>(`indexing:history:run:${productId}`, '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['indexlab', 'product-history', category, productId],
@@ -509,7 +512,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     <div className="sf-surface-panel p-0 order-[-10] flex flex-col flex-1 min-h-0">
       {/* Header */}
       <div className="flex items-center gap-2.5 px-6 pt-4 pb-0">
-        <button onClick={() => setCollapsed((c) => !c)} className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button" title={collapsed ? 'Expand' : 'Collapse'}>
+        <button onClick={toggleCollapsed} className="inline-flex items-center justify-center w-5 h-5 sf-text-caption sf-icon-button" title={collapsed ? 'Expand' : 'Collapse'}>
           {collapsed ? '+' : '-'}
         </button>
         <span className="text-[15px] font-bold sf-text-primary">Run History</span>

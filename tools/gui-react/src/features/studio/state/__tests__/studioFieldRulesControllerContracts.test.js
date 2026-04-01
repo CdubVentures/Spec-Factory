@@ -69,6 +69,8 @@ test('studioFieldRulesController exposes selected state without leaking the full
   assert.deepEqual(Object.keys(state).sort(), [
     'editedFieldOrder',
     'editedRules',
+    'egLockedKeys',
+    'egToggles',
     'initialized',
     'pendingRenames',
   ]);
@@ -100,6 +102,7 @@ test('studioFieldRulesController exposes mutation methods and snapshot getter th
     'renameKey',
     'reorder',
     'reset',
+    'setEgToggle',
     'updateField',
   ]);
   assert.deepEqual(snapshot.fieldOrder, ['dpi']);

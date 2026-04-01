@@ -97,7 +97,7 @@ export interface RunDetailResponse extends RunInventoryRow {
   latest_base: string;
   identity_fingerprint: string;
   dedupe_mode: string;
-  phase_cursor: string;
+  stage_cursor: string;
   stages?: {
     search?: StageTimestamp;
     fetch?: StageTimestamp;

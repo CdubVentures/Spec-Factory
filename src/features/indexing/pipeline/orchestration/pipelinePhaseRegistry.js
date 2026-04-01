@@ -26,26 +26,26 @@ export const PIPELINE_PHASES = [
 // WHY: Stage sub-cursors are bridge concerns (lifecycle timing), not pipeline phases.
 // They interleave after the pipeline phase that triggers them.
 const STAGE_SUB_CURSORS = Object.freeze({
-  'phase_02_brand_resolver': ['phase_02_search'],
-  'phase_05_query_journey': ['phase_05_fetch'],
-  'phase_06_search_results': ['phase_06_parse', 'phase_06_index'],
-  'phase_07_serp_selector': ['phase_07_prime_sources'],
+  'stage:brand-resolver': ['stage:search'],
+  'stage:query-journey': ['stage:fetch'],
+  'stage:search-results': ['stage:parse', 'stage:index'],
+  'stage:serp-selector': ['stage:prime-sources'],
 });
 
 function buildPhaseOrder() {
-  const order = ['phase_00_bootstrap'];
+  const order = ['stage:bootstrap'];
   for (const phase of PIPELINE_PHASES) {
     const cursors = phase.parallel
-      ? phase.parallel.map((p) => p.phaseCursor).filter(Boolean)
-      : phase.phaseCursor ? [phase.phaseCursor] : [];
+      ? phase.parallel.map((p) => p.stageCursor).filter(Boolean)
+      : phase.stageCursor ? [phase.stageCursor] : [];
     for (const cursor of cursors) {
       order.push(cursor);
       const subs = STAGE_SUB_CURSORS[cursor];
       if (subs) order.push(...subs);
     }
   }
-  order.push('phase_09_crawl');
-  order.push('phase_10_finalize');
+  order.push('stage:crawl');
+  order.push('stage:finalize');
   return order;
 }
 

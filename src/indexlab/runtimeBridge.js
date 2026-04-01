@@ -8,7 +8,7 @@ import {
   writeRunSummaryArtifact
 } from './runtimeBridgeArtifacts.js';
 import { serializeRunSummary } from './runSummarySerializer.js';
-import { setPhaseCursor, finishStage } from './runtimeBridgeStageLifecycle.js';
+import { setStageCursor, finishStage } from './runtimeBridgeStageLifecycle.js';
 import { dispatchRuntimeEvent } from './runtimeBridgeEventHandlers.js';
 
 export class IndexLabRuntimeBridge {
@@ -30,7 +30,7 @@ export class IndexLabRuntimeBridge {
     this.identityFingerprint = '';
     this.identityLockStatus = '';
     this.dedupeMode = '';
-    this.phaseCursor = 'phase_00_bootstrap';
+    this.stageCursor = 'stage:bootstrap';
     this.startupMs = {
       first_event: null,
       search_started: null,
@@ -126,7 +126,7 @@ export class IndexLabRuntimeBridge {
         await finishStage(this, 'fetch', endedAt, { reason: 'run_finalize' });
         await finishStage(this, 'parse', endedAt, { reason: 'run_finalize' });
         await finishStage(this, 'index', endedAt, { reason: 'run_finalize' });
-        setPhaseCursor(this, String(summary?.phase_cursor || '').trim() || 'completed');
+        setStageCursor(this, String(summary?.stage_cursor || '').trim() || 'completed');
         await ensureBaselineArtifacts(this, endedAt);
         await writeRunMeta(this, {
           ...summary,

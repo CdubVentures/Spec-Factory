@@ -5,13 +5,13 @@ import { toIso } from './runtimeBridgeCoercers.js';
 import { emit, writeRunMeta } from './runtimeBridgeArtifacts.js';
 import { PHASE_ORDER } from '../features/indexing/pipeline/orchestration/pipelinePhaseRegistry.js';
 
-export function setPhaseCursor(state, next = '') {
+export function setStageCursor(state, next = '') {
   const token = String(next || '').trim();
-  if (!token || token === state.phaseCursor) return false;
-  const currentIdx = PHASE_ORDER.indexOf(state.phaseCursor);
+  if (!token || token === state.stageCursor) return false;
+  const currentIdx = PHASE_ORDER.indexOf(state.stageCursor);
   const nextIdx = PHASE_ORDER.indexOf(token);
   if (currentIdx >= 0 && nextIdx >= 0 && nextIdx < currentIdx) return false;
-  state.phaseCursor = token;
+  state.stageCursor = token;
   return true;
 }
 
@@ -41,28 +41,28 @@ export async function startStage(state, stage, ts = '', payload = {}) {
     parse: 'parse_started',
     index: 'index_started'
   };
-  // WHY: fetch stage can fire during discovery (phase_05_fetch) or after discovery
-  // completes (phase_09_crawl). If the cursor is already past phase_08, the backward
-  // guard in setPhaseCursor would silently reject phase_05_fetch. Use phase_09_crawl
+  // WHY: fetch stage can fire during discovery (stage:fetch) or after discovery
+  // completes (stage:crawl). If the cursor is already past domain-classifier, the backward
+  // guard in setStageCursor would silently reject stage:fetch. Use stage:crawl
   // when discovery is complete so the stepper advances to the Crawl stage.
-  const crawlIdx = PHASE_ORDER.indexOf('phase_09_crawl');
-  const currentIdx = PHASE_ORDER.indexOf(state.phaseCursor);
+  const crawlIdx = PHASE_ORDER.indexOf('stage:crawl');
+  const currentIdx = PHASE_ORDER.indexOf(state.stageCursor);
   const fetchPhase = stage === 'fetch' && currentIdx >= 0 && crawlIdx >= 0 && currentIdx >= crawlIdx - 1
-    ? 'phase_09_crawl'
-    : 'phase_05_fetch';
+    ? 'stage:crawl'
+    : 'stage:fetch';
   const phaseByStage = {
-    search: 'phase_02_search',
+    search: 'stage:search',
     fetch: fetchPhase,
-    parse: 'phase_06_parse',
-    index: 'phase_06_index'
+    parse: 'stage:parse',
+    index: 'stage:index'
   };
   const startupKey = startupKeyByStage[stage];
   if (startupKey) {
     recordStartupMs(state, startupKey, stageState.started_at);
   }
-  const phaseCursorUpdated = setPhaseCursor(state, phaseByStage[stage] || '');
+  const stageCursorUpdated = setStageCursor(state, phaseByStage[stage] || '');
   await emit(state, stage, `${stage}_started`, { scope: 'stage', ...payload }, stageState.started_at);
-  if (startupKey || phaseCursorUpdated) {
+  if (startupKey || stageCursorUpdated) {
     await writeRunMeta(state);
   }
 }

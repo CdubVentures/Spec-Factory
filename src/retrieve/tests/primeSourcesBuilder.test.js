@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPhase07PrimeSources } from '../primeSourcesBuilder.js';
+import { buildPrimeSources } from '../primeSourcesBuilder.js';
 import { buildTierAwareFieldRetrieval } from '../tierAwareRetriever.js';
 
-test('phase07 builder enforces min refs + distinct source policy for critical field', () => {
-  const payload = buildPhase07PrimeSources({
-    runId: 'run-phase07-unit-001',
+test('prime sources builder enforces min refs + distinct source policy for critical field', () => {
+  const payload = buildPrimeSources({
+    runId: 'run-prime-sources-unit-001',
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
@@ -75,9 +75,9 @@ test('phase07 builder enforces min refs + distinct source policy for critical fi
   assert.equal(row.prime_sources.length >= 2, true);
 });
 
-test('phase07 retriever generates deterministic snippet ids when missing', () => {
-  const payload = buildPhase07PrimeSources({
-    runId: 'run-phase07-unit-002',
+test('prime sources retriever generates deterministic snippet ids when missing', () => {
+  const payload = buildPrimeSources({
+    runId: 'run-prime-sources-unit-002',
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
@@ -124,9 +124,9 @@ test('phase07 retriever generates deterministic snippet ids when missing', () =>
   assert.equal(String(row.hits[0].snippet_id || '').startsWith('sn_'), true);
 });
 
-test('phase07 builder falls back to sourceResults evidence packs when provenance evidence is empty', () => {
-  const payload = buildPhase07PrimeSources({
-    runId: 'run-phase07-unit-003',
+test('prime sources builder falls back to sourceResults evidence packs when provenance evidence is empty', () => {
+  const payload = buildPrimeSources({
+    runId: 'run-prime-sources-unit-003',
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
@@ -279,8 +279,8 @@ test('default tier_preference [1,2,3] scores tier-1 highest', () => {
 });
 
 test('E2E: two fields with different tier_preferences produce different top hits', () => {
-  const payload = buildPhase07PrimeSources({
-    runId: 'run-phase07-tier-pref',
+  const payload = buildPrimeSources({
+    runId: 'run-prime-sources-tier-pref',
     category: 'mouse',
     productId: 'mouse-test',
     needSet: {
@@ -339,7 +339,7 @@ test('E2E: two fields with different tier_preferences produce different top hits
   assert.equal(weightField.hits[0].tier, 1, 'weight top hit should be tier-1 with preference [1]');
 });
 
-test('phase07 builder uses default maxHitsPerField=24 and maxPrimeSourcesPerField=8', () => {
+test('prime sources builder uses default maxHitsPerField=24 and maxPrimeSourcesPerField=8', () => {
   const evidence = Array.from({ length: 30 }, (_, i) => ({
     url: `https://source-${i}.com/specs`,
     host: `source-${i}.com`,
@@ -347,7 +347,7 @@ test('phase07 builder uses default maxHitsPerField=24 and maxPrimeSourcesPerFiel
     method: 'table',
     quote: `Weight is ${50 + i}g`
   }));
-  const payload = buildPhase07PrimeSources({
+  const payload = buildPrimeSources({
     runId: 'run-defaults-test',
     category: 'mouse',
     productId: 'mouse-defaults',
@@ -362,7 +362,7 @@ test('phase07 builder uses default maxHitsPerField=24 and maxPrimeSourcesPerFiel
   assert.ok(field.prime_sources.length <= 8, `prime_sources should be capped at 8 (default), got ${field.prime_sources.length}`);
 });
 
-test('phase07 builder respects custom maxHitsPerField and maxPrimeSourcesPerField options', () => {
+test('prime sources builder respects custom maxHitsPerField and maxPrimeSourcesPerField options', () => {
   const evidence = Array.from({ length: 30 }, (_, i) => ({
     url: `https://source-${i}.com/specs`,
     host: `source-${i}.com`,
@@ -370,7 +370,7 @@ test('phase07 builder respects custom maxHitsPerField and maxPrimeSourcesPerFiel
     method: 'table',
     quote: `Weight is ${50 + i}g`
   }));
-  const payload = buildPhase07PrimeSources({
+  const payload = buildPrimeSources({
     runId: 'run-custom-limits',
     category: 'mouse',
     productId: 'mouse-custom',

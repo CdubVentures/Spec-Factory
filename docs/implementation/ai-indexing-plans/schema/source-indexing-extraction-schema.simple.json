@@ -30,22 +30,22 @@
   },
   "parser_execution": {
     "supported_source_kinds": [
-      "phase_05_embedded_json"
+      "extract:structured-meta"
     ],
     "phase_lineage": {
-      "phase_01_static_html": false,
-      "phase_02_dynamic_js": false,
-      "phase_03_main_article": false,
-      "phase_04_html_spec_table": false,
-      "phase_05_embedded_json": true,
-      "phase_06_text_pdf": false,
-      "phase_07_scanned_pdf_ocr": false,
-      "phase_08_image_ocr": false,
-      "phase_09_chart_graph": false,
-      "phase_10_office_mixed_doc": false
+      "extract:static-html": false,
+      "extract:dynamic-js": false,
+      "extract:article-text": false,
+      "extract:html-table": false,
+      "extract:structured-meta": true,
+      "extract:text-pdf": false,
+      "extract:scanned-pdf-ocr": false,
+      "extract:image-ocr": false,
+      "extract:chart-graph": false,
+      "extract:office-doc": false
     },
     "phase_stats": {
-      "phase_05_embedded_json": {
+      "extract:structured-meta": {
         "executed": true,
         "duration_ms": 0,
         "assertion_count": 1,
@@ -63,7 +63,7 @@
   "artifact_index": {
     "art_1bae940a73ad": {
       "artifact_id": "art_1bae940a73ad",
-      "phase_id": "phase_05_embedded_json",
+      "phase_id": "extract:structured-meta",
       "artifact_kind": "html",
       "content_hash": "sha256:852ce986388e7ab894c4774ef27fb4735b89eb8c84db6182718962e686714169",
       "mime_type": "text/html",
@@ -78,7 +78,7 @@
       "source_url": "https://example.com/product-page",
       "source_host": "example.com",
       "source_root_domain": "example.com",
-      "phase_id": "phase_05_embedded_json",
+      "phase_id": "extract:structured-meta",
       "source_surface": "network_json",
       "target_match": {
         "page_product_cluster_id": "cluster_main_product",
@@ -133,7 +133,7 @@
               "value_type": "number",
               "unit": "Hz",
               "extraction_method": "network_json",
-              "parser_phase": "phase_05_embedded_json",
+              "parser_phase": "extract:structured-meta",
               "parser_confidence": 0.98,
               "confidence": 0.98,
               "target_match": {

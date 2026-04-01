@@ -30,12 +30,14 @@ export function KeyComponentsSection({
   componentSources,
   knownValues,
   editedRules,
+  disabled,
 }: KeyComponentsSectionProps) {
   return (
     <Section
       title="Components"
       persistKey={`studio:keyNavigator:section:components:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_components}
+      disabled={disabled}
     >
       <div className="grid grid-cols-4 gap-3">
         <div>

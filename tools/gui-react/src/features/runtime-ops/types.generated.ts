@@ -9,7 +9,7 @@
 export interface RuntimeOpsSummary {
   status: string;
   round: number;
-  phase_cursor?: string;
+  stage_cursor?: string;
   boot_step?: string;
   boot_progress?: number;
   total_fetches: number;

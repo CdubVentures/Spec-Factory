@@ -7,42 +7,42 @@ const CROSS_CUTTING_METHODS = new Set([
 ]);
 
 const PHASE_LABELS = {
-  phase_01_static_html: 'Static HTML',
-  phase_02_dynamic_js: 'Dynamic JS',
-  phase_03_main_article: 'Article Text',
-  phase_04_html_spec_table: 'HTML Tables',
-  phase_05_embedded_json: 'Structured Meta',
-  phase_06_text_pdf: 'Text PDF',
-  phase_07_scanned_pdf_ocr: 'Scanned PDF OCR',
-  phase_08_image_ocr: 'Image OCR',
-  phase_09_chart_graph: 'Chart/Graph',
-  phase_10_office_mixed_doc: 'Office Docs',
-  cross_cutting: 'Post-Processing',
+  'extract:static-html': 'Static HTML',
+  'extract:dynamic-js': 'Dynamic JS',
+  'extract:article-text': 'Article Text',
+  'extract:html-table': 'HTML Tables',
+  'extract:structured-meta': 'Structured Meta',
+  'extract:text-pdf': 'Text PDF',
+  'extract:scanned-pdf-ocr': 'Scanned PDF OCR',
+  'extract:image-ocr': 'Image OCR',
+  'extract:chart-graph': 'Chart/Graph',
+  'extract:office-doc': 'Office Docs',
+  'extract:post-process': 'Post-Processing',
 };
 
 // WHY: Inlined from deleted indexingSchemaPackets.js during pipeline rework.
-const PHASE_IDS = Object.keys(PHASE_LABELS).filter((k) => k !== 'cross_cutting');
+const PHASE_IDS = Object.keys(PHASE_LABELS).filter((k) => k !== 'extract:post-process');
 
 const METHOD_TO_PHASE = {
-  static_dom: 'phase_01_static_html',
-  html_table: 'phase_04_html_spec_table',
-  html_kv: 'phase_01_static_html',
-  dom: 'phase_01_static_html',
-  json_ld: 'phase_05_embedded_json',
-  microdata: 'phase_05_embedded_json',
-  opengraph: 'phase_05_embedded_json',
-  network_json: 'phase_02_dynamic_js',
-  embedded_state: 'phase_02_dynamic_js',
-  article_text: 'phase_03_main_article',
-  readability: 'phase_03_main_article',
-  pdf_kv: 'phase_06_text_pdf',
-  pdf_table: 'phase_06_text_pdf',
-  scanned_pdf_ocr_kv: 'phase_07_scanned_pdf_ocr',
-  scanned_pdf_ocr_table: 'phase_07_scanned_pdf_ocr',
+  static_dom: 'extract:static-html',
+  html_table: 'extract:html-table',
+  html_kv: 'extract:static-html',
+  dom: 'extract:static-html',
+  json_ld: 'extract:structured-meta',
+  microdata: 'extract:structured-meta',
+  opengraph: 'extract:structured-meta',
+  network_json: 'extract:dynamic-js',
+  embedded_state: 'extract:dynamic-js',
+  article_text: 'extract:article-text',
+  readability: 'extract:article-text',
+  pdf_kv: 'extract:text-pdf',
+  pdf_table: 'extract:text-pdf',
+  scanned_pdf_ocr_kv: 'extract:scanned-pdf-ocr',
+  scanned_pdf_ocr_table: 'extract:scanned-pdf-ocr',
 };
 
 function phaseFromMethod(method) {
-  return METHOD_TO_PHASE[String(method || '').trim()] || 'phase_01_static_html';
+  return METHOD_TO_PHASE[String(method || '').trim()] || 'extract:static-html';
 }
 
 function createPhaseBuckets() {
@@ -50,7 +50,7 @@ function createPhaseBuckets() {
   for (const id of PHASE_IDS) {
     buckets[id] = { field_count: 0, methods: new Set(), confidences: [], urls: new Set() };
   }
-  buckets.cross_cutting = { field_count: 0, methods: new Set(), confidences: [], urls: new Set() };
+  buckets['extract:post-process'] = { field_count: 0, methods: new Set(), confidences: [], urls: new Set() };
   return buckets;
 }
 
@@ -75,7 +75,7 @@ function addPhaseBucketEntry(buckets, {
 
 function finalizePhaseBuckets(buckets) {
   return {
-    phases: [...PHASE_IDS, 'cross_cutting'].map((id) => {
+    phases: [...PHASE_IDS, 'extract:post-process'].map((id) => {
       const b = buckets[id];
       const avgConf = b.confidences.length > 0
         ? Math.round((b.confidences.reduce((s, v) => s + v, 0) / b.confidences.length) * 100) / 100
@@ -99,7 +99,7 @@ function addExtractionFieldsToPhaseBuckets(buckets, extractionFields) {
 
     let bucketId;
     if (CROSS_CUTTING_METHODS.has(method)) {
-      bucketId = 'cross_cutting';
+      bucketId = 'extract:post-process';
     } else {
       bucketId = phaseFromMethod(method);
     }
@@ -202,7 +202,7 @@ export function collectPacketAssertions(packet = {}) {
           confidence,
           method,
           source_url: sourceUrl,
-          phase_id: String(row?.parser_phase || phaseFromMethod(method)).trim() || 'phase_01_static_html',
+          phase_id: String(row?.parser_phase || phaseFromMethod(method)).trim() || 'extract:static-html',
         };
         assertions.push(entry);
 
@@ -295,7 +295,7 @@ function addRuntimeTelemetryPhaseSignals(
     const articleChars = toInt(payload.article_char_count, 0);
     if (articleMethod || articleChars > 0) {
       addRuntimePhaseMetric({
-        phaseId: 'phase_03_main_article',
+        phaseId: 'extract:article-text',
         sourceUrl,
         method: articleMethod || 'article_text',
         fieldCount: 0,
@@ -305,7 +305,7 @@ function addRuntimeTelemetryPhaseSignals(
     const staticDomAccepted = toInt(payload.static_dom_accepted_field_candidates, 0);
     if (staticDomAccepted > 0 || String(payload.static_dom_mode || '').trim()) {
       addRuntimePhaseMetric({
-        phaseId: 'phase_01_static_html',
+        phaseId: 'extract:static-html',
         sourceUrl,
         method: 'static_dom',
         fieldCount: staticDomAccepted,
@@ -322,7 +322,7 @@ function addRuntimeTelemetryPhaseSignals(
       if (count <= 0) continue;
       structuredCount += count;
       addRuntimePhaseMetric({
-        phaseId: 'phase_05_embedded_json',
+        phaseId: 'extract:structured-meta',
         sourceUrl,
         method,
         fieldCount: count,
@@ -331,7 +331,7 @@ function addRuntimeTelemetryPhaseSignals(
     const structuredCandidates = toInt(payload.structured_candidates, 0);
     if (structuredCandidates > structuredCount) {
       addRuntimePhaseMetric({
-        phaseId: 'phase_05_embedded_json',
+        phaseId: 'extract:structured-meta',
         sourceUrl,
         fieldCount: structuredCandidates - structuredCount,
       });
@@ -346,7 +346,7 @@ function addRuntimeTelemetryPhaseSignals(
       if (count <= 0) continue;
       pdfCount += count;
       addRuntimePhaseMetric({
-        phaseId: 'phase_06_text_pdf',
+        phaseId: 'extract:text-pdf',
         sourceUrl,
         method,
         fieldCount: count,
@@ -355,7 +355,7 @@ function addRuntimeTelemetryPhaseSignals(
     const pdfPairsTotal = toInt(payload.pdf_pairs_total, 0);
     if (pdfPairsTotal > pdfCount) {
       addRuntimePhaseMetric({
-        phaseId: 'phase_06_text_pdf',
+        phaseId: 'extract:text-pdf',
         sourceUrl,
         method: pdfCount === 0 ? 'pdf_text' : '',
         fieldCount: pdfPairsTotal - pdfCount,
@@ -372,7 +372,7 @@ function addRuntimeTelemetryPhaseSignals(
       if (count <= 0) continue;
       scannedPdfCount += count;
       addRuntimePhaseMetric({
-        phaseId: 'phase_07_scanned_pdf_ocr',
+        phaseId: 'extract:scanned-pdf-ocr',
         sourceUrl,
         method,
         fieldCount: count,
@@ -381,7 +381,7 @@ function addRuntimeTelemetryPhaseSignals(
     const scannedPdfDocsAttempted = toInt(payload.scanned_pdf_ocr_docs_attempted, 0);
     if (scannedPdfDocsAttempted > 0 && scannedPdfCount === 0) {
       addRuntimePhaseMetric({
-        phaseId: 'phase_07_scanned_pdf_ocr',
+        phaseId: 'extract:scanned-pdf-ocr',
         sourceUrl,
         method: 'scanned_pdf_ocr',
         fieldCount: 0,
@@ -422,8 +422,8 @@ export function buildPhaseLineageFromSourcePackets(
     for (const assertion of assertions) {
       const method = String(assertion.method || '').trim();
       const phaseId = CROSS_CUTTING_METHODS.has(method)
-        ? 'cross_cutting'
-        : (String(assertion.phase_id || phaseFromMethod(method)).trim() || 'phase_01_static_html');
+        ? 'extract:post-process'
+        : (String(assertion.phase_id || phaseFromMethod(method)).trim() || 'extract:static-html');
       assertionCounts[phaseId] = (assertionCounts[phaseId] || 0) + 1;
       if (!confidenceByPhase[phaseId]) confidenceByPhase[phaseId] = [];
       confidenceByPhase[phaseId].push(toFloat(assertion.confidence, 0));
@@ -468,28 +468,28 @@ export function buildPhaseLineageFromSourcePackets(
       }
     }
 
-    if ((assertionCounts.cross_cutting || 0) > 0) {
+    if ((assertionCounts['extract:post-process'] || 0) > 0) {
       if (!packetPhaseIndex.has(sourceUrl)) {
         packetPhaseIndex.set(sourceUrl, new Set());
       }
-      packetPhaseIndex.get(sourceUrl).add('cross_cutting');
+      packetPhaseIndex.get(sourceUrl).add('extract:post-process');
 
       addPhaseBucketEntry(buckets, {
-        phaseId: 'cross_cutting',
+        phaseId: 'extract:post-process',
         sourceUrl,
-        fieldCount: assertionCounts.cross_cutting,
+        fieldCount: assertionCounts['extract:post-process'],
       });
-      for (const method of methodsByPhase.cross_cutting || []) {
+      for (const method of methodsByPhase['extract:post-process'] || []) {
         addPhaseBucketEntry(buckets, {
-          phaseId: 'cross_cutting',
+          phaseId: 'extract:post-process',
           method,
           sourceUrl,
           fieldCount: 0,
         });
       }
-      for (const confidence of confidenceByPhase.cross_cutting || []) {
+      for (const confidence of confidenceByPhase['extract:post-process'] || []) {
         addPhaseBucketEntry(buckets, {
-          phaseId: 'cross_cutting',
+          phaseId: 'extract:post-process',
           confidence,
           sourceUrl,
           fieldCount: 0,

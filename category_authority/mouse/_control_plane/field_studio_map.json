@@ -1826,7 +1826,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "click_force",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -1903,7 +1903,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "text",
         "label": "Click Force",
@@ -1987,7 +1987,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "click_latency",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -2065,7 +2065,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "number",
         "label": "Click Latency",
@@ -2177,7 +2177,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "click_latency_list",
       "list_rules": {
         "dedupe": true,
@@ -2323,7 +2323,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "structured_list_editor",
         "label": "Click Latency (By Mode)",
@@ -2513,16 +2513,17 @@
       },
       "aliases": [],
       "availability": "expected",
-      "block_publish_when_unk": false,
-      "canonical_key": "colors",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "dedupe": true,
+          "max_items": 100,
+          "min_items": 0,
+          "sort": "none"
+        },
         "shape": "list",
         "type": "string",
-        "unit": null,
-        "unknown_reason_required": true,
         "unknown_token": "unk"
       },
       "data_type": "string",
@@ -2533,7 +2534,10 @@
         "match": {
           "strategy": "alias"
         },
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
         "source": null
       },
@@ -2564,56 +2568,29 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "colors",
-      "min_evidence_refs": 1,
       "output_shape": "list",
       "parse": {
         "delimiters": [
           ",",
           "/",
           "|",
-          ";",
-          "+"
+          ";"
         ],
-        "range_separators": [],
-        "strict_unit_required": false,
         "template": "list_of_tokens_delimited",
         "token_map": {
           "grey": "gray"
-        },
-        "unit": null,
-        "unit_accepts": [],
-        "unit_conversions": {}
+        }
       },
-      "parse_rules": {
-        "delimiters": [
-          ",",
-          "/",
-          "|",
-          ";",
-          "+"
-        ],
-        "separators": [],
-        "token_map": {
-          "grey": "gray"
-        },
-        "unit": "None",
-        "unit_accepts": [],
-        "unit_conversions": {}
-      },
-      "parse_template": "list_of_tokens_delimited",
       "priority": {
         "availability": "expected",
-        "block_publish_when_unk": false,
         "difficulty": "easy",
         "effort": 3,
         "publish_gate": false,
         "required_level": "expected"
       },
-      "publish_gate": false,
       "required_level": "expected",
-      "round": "none",
       "search_hints": {
         "content_types": [
           "product_page"
@@ -2624,9 +2601,6 @@
           "amazon.com",
           "mousespecs.org"
         ],
-        "query_templates": [
-          "{brand} {model} color options available"
-        ],
         "query_terms": [
           "colors",
           "color options",
@@ -2634,15 +2608,11 @@
           "colorways"
         ]
       },
-      "selection_policy": {},
-      "shape": "list",
-      "type": "string",
       "ui": {
-        "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Colors",
@@ -2655,9 +2625,7 @@
         "tooltip_md": "Colorway tokens. Use list<string>. Normalize grey?gray; multi-colorways may use '+'.",
         "tooltip_source": null
       },
-      "unknown_reason_default": "not_found_after_search",
-      "value_form": "set",
-      "value_form_sample": "list"
+      "unknown_reason_default": "not_found_after_search"
     },
     "computer_side_connector": {
       "ai_assist": {
@@ -3185,7 +3153,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "debounce",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3252,7 +3220,7 @@
         "display_decimals": 2,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "number",
         "label": "Debounce",
@@ -3330,7 +3298,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "design",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -3401,7 +3369,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Design",
@@ -3476,7 +3444,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "discontinued",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -3568,7 +3536,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "text",
         "label": "Discontinued",
@@ -3746,6 +3714,114 @@
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "upper_bound"
+    },
+    "editions": {
+      "ai_assist": {
+        "max_calls": null,
+        "max_tokens": null,
+        "mode": null,
+        "model_strategy": "auto",
+        "reasoning_note": ""
+      },
+      "aliases": [
+        "editions"
+      ],
+      "availability": "sometimes",
+      "component": null,
+      "constraints": [],
+      "contract": {
+        "list_rules": {
+          "dedupe": true,
+          "max_items": 50,
+          "min_items": 0,
+          "sort": "none"
+        },
+        "shape": "list",
+        "type": "string",
+        "unknown_token": "unk"
+      },
+      "data_type": "string",
+      "difficulty": "easy",
+      "display_name": "Editions",
+      "effort": 3,
+      "enum": {
+        "match": {
+          "strategy": "exact"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
+        "source": null
+      },
+      "enum_policy": "open",
+      "evidence": {
+        "conflict_policy": "resolve_by_tier_else_unknown",
+        "min_evidence_refs": 1,
+        "required": true,
+        "tier_preference": [
+          "tier1",
+          "tier2",
+          "tier3"
+        ]
+      },
+      "evidence_required": true,
+      "field_key": "editions",
+      "field_studio_hints": {
+        "dataEntry": {
+          "key_cell": null,
+          "row": null,
+          "sample_values": [],
+          "sheet": "dataEntry"
+        }
+      },
+      "group": "ungrouped",
+      "key": "editions",
+      "output_shape": "list",
+      "parse": {
+        "delimiters": [
+          ","
+        ],
+        "template": "list_of_tokens_delimited",
+        "token_map": {}
+      },
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "easy",
+        "effort": 3,
+        "publish_gate": false,
+        "required_level": "optional"
+      },
+      "required_level": "optional",
+      "search_hints": {
+        "content_types": [],
+        "domain_hints": [],
+        "query_terms": [
+          "special edition",
+          "limited edition",
+          "editions",
+          "collaboration"
+        ]
+      },
+      "ui": {
+        "display_decimals": 0,
+        "display_mode": "all",
+        "examples": [],
+        "group": "ungrouped",
+        "guidance_md": null,
+        "input_control": "token_list",
+        "label": "Editions",
+        "order": 76,
+        "placeholder": "unk",
+        "prefix": null,
+        "short_label": null,
+        "suffix": null,
+        "tooltip_key": null,
+        "tooltip_md": "Special/limited editions. Kebab-case slugs (e.g. cyberpunk-2077-edition).",
+        "tooltip_source": null
+      },
+      "unknown_reason_default": "not_found_after_search"
     },
     "encoder": {
       "ai_assist": {
@@ -5674,7 +5750,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "hot_swappable",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -5770,7 +5846,7 @@
         "display_decimals": 1,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "text",
         "label": "Hot Swappable",
@@ -6500,7 +6576,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "lighting",
       "min_evidence_refs": 1,
       "output_shape": "list",
@@ -6573,7 +6649,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "token_list",
         "label": "Lighting",
@@ -8554,7 +8630,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "price_range",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -8616,7 +8692,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "text",
         "label": "Price (MSRP)",
@@ -9015,7 +9091,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "release_date",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9088,7 +9164,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "text",
         "label": "Release Date",
@@ -9169,7 +9245,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "rgb",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -9265,7 +9341,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "text",
         "label": "RGB",
@@ -11126,7 +11202,7 @@
           "sheet": "dataEntry"
         }
       },
-      "group": "general",
+      "group": "ungrouped",
       "key": "sku",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11187,7 +11263,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "General",
+        "group": "ungrouped",
         "guidance_md": null,
         "input_control": "text",
         "label": "SKU / Part #",
@@ -11447,7 +11523,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "switch",
       "min_evidence_refs": 2,
       "output_shape": "scalar",
@@ -11514,7 +11590,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "component_picker",
         "label": "Switch",
@@ -11594,7 +11670,7 @@
         },
         "related_to": "switch"
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "switch_brand",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11659,7 +11735,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "text",
         "label": "Switch Brand",
@@ -11752,7 +11828,7 @@
           "sheet": "data_lists"
         }
       },
-      "group": "switches",
+      "group": "Switche",
       "key": "switch_type",
       "min_evidence_refs": 1,
       "output_shape": "scalar",
@@ -11812,7 +11888,7 @@
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
-        "group": "Switches",
+        "group": "Switche",
         "guidance_md": null,
         "input_control": "text",
         "label": "Switch Type",
@@ -13025,6 +13101,7 @@
     "switch_brand",
     "switch_type",
     "colors",
+    "editions",
     "design",
     "discontinued",
     "lighting",

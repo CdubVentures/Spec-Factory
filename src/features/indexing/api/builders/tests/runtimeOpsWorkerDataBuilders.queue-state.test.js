@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildQueueState,
   makeEvent,
-} from './helpers/runtimeOpsPhase132DataBuildersHarness.js';
+} from './helpers/runtimeOpsWorkerDataBuildersHarness.js';
 
 test('buildQueueState: returns empty structure for no events', () => {
   const result = buildQueueState([], {});

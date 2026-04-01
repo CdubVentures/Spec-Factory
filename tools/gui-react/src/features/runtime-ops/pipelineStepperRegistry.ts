@@ -1,4 +1,4 @@
-// WHY: Single source of truth mapping backend phase_cursor values to visual macro-stages.
+// WHY: Single source of truth mapping backend stage_cursor values to visual macro-stages.
 // Adding a pipeline phase = add its cursor string to the correct stage's cursors array.
 // Source of truth for cursor names: src/features/indexing/pipeline/orchestration/pipelinePhaseRegistry.js
 
@@ -14,40 +14,40 @@ export const PIPELINE_STEPPER_STAGES: readonly PipelineStepperStage[] = [
   {
     key: 'boot',
     label: 'Boot',
-    cursors: ['phase_00_bootstrap'],
+    cursors: ['stage:bootstrap'],
   },
   {
     key: 'discover',
     label: 'Discover',
-    cursors: ['phase_01_needset', 'phase_02_brand_resolver', 'phase_02_search'],
+    cursors: ['stage:needset', 'stage:brand-resolver', 'stage:search'],
   },
   {
     key: 'plan',
     label: 'Plan',
-    cursors: ['phase_03_search_profile', 'phase_04_search_planner'],
+    cursors: ['stage:search-profile', 'stage:search-planner'],
   },
   {
     key: 'search',
     label: 'Search',
     cursors: [
-      'phase_05_query_journey', 'phase_05_fetch',
-      'phase_06_search_results', 'phase_06_parse', 'phase_06_index',
+      'stage:query-journey', 'stage:fetch',
+      'stage:search-results', 'stage:parse', 'stage:index',
     ],
   },
   {
     key: 'select',
     label: 'Select',
-    cursors: ['phase_07_serp_selector', 'phase_07_prime_sources', 'phase_08_domain_classifier'],
+    cursors: ['stage:serp-selector', 'stage:prime-sources', 'stage:domain-classifier'],
   },
   {
     key: 'crawl',
     label: 'Crawl',
-    cursors: ['phase_09_crawl'],
+    cursors: ['stage:crawl'],
   },
   {
     key: 'finalize',
     label: 'Finalize',
-    cursors: ['phase_10_finalize'],
+    cursors: ['stage:finalize'],
   },
 ];
 

@@ -28,12 +28,14 @@ export function KeyPrioritySection({
   updateField,
   category,
   BadgeRenderer: B,
+  disabled,
 }: KeyPrioritySectionProps) {
   return (
     <Section
       title="Priority & Effort"
       persistKey={`studio:keyNavigator:section:priority:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_priority}
+      disabled={disabled}
     >
       <div className="grid grid-cols-4 gap-3">
         <div>

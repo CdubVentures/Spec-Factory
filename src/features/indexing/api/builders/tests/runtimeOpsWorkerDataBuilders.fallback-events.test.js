@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFallbackEvents,
   makeEvent,
-} from './helpers/runtimeOpsPhase132DataBuildersHarness.js';
+} from './helpers/runtimeOpsWorkerDataBuildersHarness.js';
 
 test('buildFallbackEvents: returns empty arrays for no events', () => {
   const result = buildFallbackEvents([], {});

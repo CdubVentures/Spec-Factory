@@ -61,7 +61,7 @@ describe('runSummaryContract — meta shape', () => {
 
   it('contains counter and stage fields', () => {
     const keys = RUN_SUMMARY_META_KEYS;
-    for (const required of ['counters', 'stages', 'startup_ms', 'phase_cursor']) {
+    for (const required of ['counters', 'stages', 'startup_ms', 'stage_cursor']) {
       ok(keys.includes(required), `META_KEYS must include ${required}`);
     }
   });

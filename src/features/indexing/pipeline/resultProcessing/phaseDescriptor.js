@@ -4,7 +4,7 @@ import { processDiscoveryResults } from './processDiscoveryResults.js';
 
 export const resultProcessingPhase = {
   id: 'resultProcessing',
-  phaseCursor: 'phase_07_serp_selector',
+  stageCursor: 'stage:serp-selector',
   checkpoint: null,
 
   async execute(ctx) {

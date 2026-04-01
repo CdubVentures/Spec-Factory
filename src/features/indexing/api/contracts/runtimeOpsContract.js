@@ -8,7 +8,7 @@
 export const SUMMARY_SHAPE = Object.freeze([
   { key: 'status', coerce: 'string' },
   { key: 'round', coerce: 'int' },
-  { key: 'phase_cursor', coerce: 'string', optional: true },
+  { key: 'stage_cursor', coerce: 'string', optional: true },
   { key: 'boot_step', coerce: 'string', optional: true },
   { key: 'boot_progress', coerce: 'int', optional: true },
   { key: 'total_fetches', coerce: 'int' },

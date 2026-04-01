@@ -36,8 +36,8 @@ export function createIndexingMetricsHandler({
       const roleDefaults = resolveLlmRoleDefaults(config);
       const knobDefaults = resolveLlmKnobDefaults(config);
       const roleTokenDefaults = {
-        plan: toInt(knobDefaults.phase_02_planner?.token_cap, 1200),
-        triage: toInt(knobDefaults.phase_03_triage?.token_cap, 1200),
+        plan: toInt(knobDefaults['llm:search-planner']?.token_cap, 1200),
+        triage: toInt(knobDefaults['llm:triage']?.token_cap, 1200),
         reasoning: toInt(knobDefaults.reasoning_pass?.token_cap, 4096)
       };
       const fallbackDefaults = {

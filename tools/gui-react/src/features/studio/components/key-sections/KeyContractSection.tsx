@@ -26,6 +26,7 @@ export function KeyContractSection({
   updateField,
   category,
   BadgeRenderer: B,
+  disabled,
 }: KeyContractSectionProps) {
   const currentContractType = currentRule
     ? strN(currentRule, "contract.type", "string")
@@ -60,6 +61,7 @@ export function KeyContractSection({
       title="Contract (Type, Shape, Unit)"
       persistKey={`studio:keyNavigator:section:contract:${category}`}
       titleTooltip={STUDIO_TIPS.key_section_contract}
+      disabled={disabled}
     >
       <div className="grid grid-cols-4 gap-3">
         <div>

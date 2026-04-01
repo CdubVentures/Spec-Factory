@@ -190,7 +190,7 @@ export function buildOrderedFetchPlan({
 
   logger?.info?.('crawl_phase_started', {
     total_queued: workerSeq,
-    phase_cursor: 'phase_09_crawl',
+    stage_cursor: 'stage:crawl',
   });
 
   logger?.info?.('discovery_enqueue_summary', {

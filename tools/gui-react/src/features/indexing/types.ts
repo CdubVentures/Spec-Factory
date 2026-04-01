@@ -15,7 +15,7 @@ export interface IndexLabRunSummary {
   identity_fingerprint?: string;
   identity_lock_status?: string;
   dedupe_mode?: string;
-  phase_cursor?: string;
+  stage_cursor?: string;
   startup_ms?: {
     first_event?: number | null;
     search_started?: number | null;
@@ -692,7 +692,7 @@ export interface IndexLabEvidenceIndexResponse {
   };
 }
 
-export interface IndexLabPhase07HitRow {
+export interface IndexLabPrimeSourceHitRow {
   rank?: number;
   score?: number;
   url?: string;
@@ -722,7 +722,7 @@ export interface IndexLabPhase07HitRow {
   };
 }
 
-export interface IndexLabPhase07FieldRow {
+export interface IndexLabPrimeSourceFieldRow {
   field_key: string;
   required_level?: string;
   need_score?: number;
@@ -739,11 +739,11 @@ export interface IndexLabPhase07FieldRow {
   component_hint?: string | null;
   doc_hints?: string[];
   retrieval_query?: string;
-  hits?: IndexLabPhase07HitRow[];
-  prime_sources?: IndexLabPhase07HitRow[];
+  hits?: IndexLabPrimeSourceHitRow[];
+  prime_sources?: IndexLabPrimeSourceHitRow[];
 }
 
-export interface IndexLabPhase07Response {
+export interface IndexLabPrimeSourceResponse {
   run_id?: string;
   category?: string;
   product_id?: string;
@@ -759,7 +759,7 @@ export interface IndexLabPhase07Response {
     avg_hits_per_field?: number;
     evidence_pool_size?: number;
   };
-  fields?: IndexLabPhase07FieldRow[];
+  fields?: IndexLabPrimeSourceFieldRow[];
 }
 
 export interface IndexLabPhase08BatchRow {

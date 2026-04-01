@@ -18,7 +18,7 @@ function buildMockState(overrides = {}) {
     identityFingerprint: 'fp-test',
     identityLockStatus: 'locked',
     dedupeMode: 'content_hash',
-    phaseCursor: 'phase_02_search',
+    stageCursor: 'stage:search',
     specDb: null,
     ...overrides,
   };
@@ -35,7 +35,7 @@ test('writeRunMeta writes to SQL with slim columns', async () => {
   assert.equal(sqlRow.status, 'running');
   assert.equal(sqlRow.category, 'mouse');
   assert.equal(sqlRow.product_id, 'mouse-razer-viper');
-  assert.equal(sqlRow.phase_cursor, 'phase_02_search');
+  assert.equal(sqlRow.stage_cursor, 'stage:search');
   assert.equal(sqlRow.identity_fingerprint, 'fp-test');
   assert.deepEqual(sqlRow.counters, { pages_checked: 5, fetched_ok: 3, fetched_404: 0, fetched_blocked: 0, fetched_error: 0 });
 });

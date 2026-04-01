@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment } from 'react';
+import { useMemo, Fragment } from 'react';
 import { Chip } from '@/shared/ui/feedback/Chip';
 import { Spinner } from '@/shared/ui/feedback/Spinner';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
@@ -6,6 +6,7 @@ import type { ProductGroup } from '../../helpers.ts';
 import type { RunInventoryRow, RunSourceEntry } from '../../types.ts';
 import { formatBytes, formatDuration, formatRelativeDate, runSizeBytes } from '../../helpers.ts';
 import { useRunDetail } from '../../state/useRunDetail.ts';
+import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
 
 /* ── Constants ────────────────────────────────────────────────── */
 
@@ -58,8 +59,7 @@ interface SourceRowsProps {
 function SourceRows({ runId, productId, category, onDeleteUrl, isDeletingUrl }: SourceRowsProps) {
   const { data: detail, isLoading, error } = useRunDetail(runId);
   const sources: RunSourceEntry[] = detail?.sources ?? [];
-  const [expandedUrls, setExpandedUrls] = useState<Record<string, boolean>>({});
-  const toggleUrl = (url: string) => setExpandedUrls((p) => ({ ...p, [url]: !p[url] }));
+  const [expandedUrls, toggleUrl] = usePersistedExpandMap(`storage:urls:${runId}`);
 
   if (isLoading) {
     return (
@@ -132,8 +132,7 @@ interface RunRowsProps {
 }
 
 function RunRows({ runs, onDeleteRun, isDeleting, onDeleteUrl, isDeletingUrl }: RunRowsProps) {
-  const [expandedRuns, setExpandedRuns] = useState<Record<string, boolean>>({});
-  const toggleRun = (id: string) => setExpandedRuns((p) => ({ ...p, [id]: !p[id] }));
+  const [expandedRuns, toggleRun] = usePersistedExpandMap('storage:runs');
 
   return (
     <>
@@ -201,12 +200,11 @@ type SortField = 'product' | 'runs' | 'size';
 type SortDir = 'asc' | 'desc';
 
 export function ProductTable({ products, isLoading, onDeleteAll, onDeleteRun, isDeleting, onDeleteUrl, isDeletingUrl, onPurgeHistory, isPurgingHistory }: ProductTableProps) {
-  const [filter, setFilter] = useState('');
-  const [brandFilter, setBrandFilter] = useState('');
-  const [sortField, setSortField] = useState<SortField>('size');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [expandedProducts, setExpandedProducts] = useState<Record<string, boolean>>({});
-  const toggleProduct = (key: string) => setExpandedProducts((p) => ({ ...p, [key]: !p[key] }));
+  const [filter, setFilter] = usePersistedTab<string>('storage:table:filter', '');
+  const [brandFilter, setBrandFilter] = usePersistedTab<string>('storage:table:brandFilter', '');
+  const [sortField, setSortField] = usePersistedTab<SortField>('storage:table:sortField', 'size');
+  const [sortDir, setSortDir] = usePersistedTab<SortDir>('storage:table:sortDir', 'desc');
+  const [expandedProducts, toggleProduct] = usePersistedExpandMap('storage:products');
 
   const brands = useMemo(
     () => [...new Set(products.map((p) => p.brand).filter(Boolean))].sort(),
@@ -214,7 +212,7 @@ export function ProductTable({ products, isLoading, onDeleteAll, onDeleteRun, is
   );
 
   function handleSort(field: SortField) {
-    if (field === sortField) { setSortDir((d) => d === 'asc' ? 'desc' : 'asc'); }
+    if (field === sortField) { setSortDir(sortDir === 'asc' ? 'desc' : 'asc'); }
     else { setSortField(field); setSortDir(field === 'product' ? 'asc' : 'desc'); }
   }
 

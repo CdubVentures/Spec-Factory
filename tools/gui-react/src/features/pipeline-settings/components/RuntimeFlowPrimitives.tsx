@@ -1,6 +1,7 @@
 import { memo, useState, type ReactNode } from 'react';
 import type { NumberBound, RuntimeDraft } from '../types/settingPrimitiveTypes.ts';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 
 function settingLabel(label: string, tip: string) {
   return (
@@ -9,16 +10,6 @@ function settingLabel(label: string, tip: string) {
       <Tip text={tip} />
     </span>
   );
-}
-
-function readCollapsed(storageKey: string | undefined, fallback: boolean): boolean {
-  if (!storageKey) return fallback;
-  try {
-    const raw = sessionStorage.getItem(storageKey);
-    if (raw === '1') return true;
-    if (raw === '0') return false;
-  } catch { /* SSR / security sandbox */ }
-  return fallback;
 }
 
 export function SettingGroupBlock({
@@ -34,20 +25,12 @@ export function SettingGroupBlock({
   defaultCollapsed?: boolean;
   storageKey?: string;
 }) {
-  const [collapsed, setCollapsed] = useState(() => collapsible ? readCollapsed(storageKey, defaultCollapsed) : false);
-
-  const toggle = () => {
-    if (!collapsible) return;
-    const next = !collapsed;
-    setCollapsed(next);
-    if (storageKey) {
-      try { sessionStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* noop */ }
-    }
-  };
+  const [collapsed, toggle] = usePersistedToggle(storageKey ?? `settingGroup:${title}`, defaultCollapsed);
+  const isCollapsed = collapsible ? collapsed : false;
 
   return (
     <section
-      className={`rounded border px-3 py-2.5 ${collapsed ? '' : 'space-y-2.5'}`}
+      className={`rounded border px-3 py-2.5 ${isCollapsed ? '' : 'space-y-2.5'}`}
       style={{
         borderColor: 'var(--sf-border)',
         backgroundColor: 'var(--sf-surface)',
@@ -63,7 +46,7 @@ export function SettingGroupBlock({
         {collapsible && (
           <svg
             viewBox="0 0 20 20"
-            className={`h-3.5 w-3.5 shrink-0 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+            className={`h-3.5 w-3.5 shrink-0 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
             fill="currentColor"
             style={{ color: 'var(--sf-muted)' }}
             aria-hidden="true"
@@ -76,7 +59,7 @@ export function SettingGroupBlock({
         </div>
         <div className="h-px flex-1" style={{ backgroundColor: 'var(--sf-border)' }} />
       </div>
-      {!collapsed && children}
+      {!isCollapsed && children}
     </section>
   );
 }

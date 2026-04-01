@@ -34,11 +34,11 @@ export function resolveLlmKnobDefaults(cfg = {}) {
     reasoning: toInt(cfg.llmMaxOutputTokensReasoning, toInt(cfg.llmReasoningBudget, 4096))
   };
   return {
-    phase_02_planner: {
+    'llm:search-planner': {
       model: modelDefaults.plan,
       token_cap: tokenDefaults.plan
     },
-    phase_03_triage: {
+    'llm:triage': {
       model: modelDefaults.plan,
       token_cap: tokenDefaults.triage
     },

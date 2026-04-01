@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildExtractionFields,
   makeEvent,
-} from './helpers/runtimeOpsPhase132DataBuildersHarness.js';
+} from './helpers/runtimeOpsWorkerDataBuildersHarness.js';
 
 test('buildExtractionFields: returns empty array for no events', () => {
   const result = buildExtractionFields([], {});
@@ -258,7 +258,7 @@ test('buildExtractionFields: fills from sourcePackets when events lack candidate
               value_normalized: 'PAW3950',
               confidence: 0.92,
               extraction_method: 'spec_table_match',
-              parser_phase: 'phase_04_html_spec_table',
+              parser_phase: 'extract:html-table',
             }],
           }],
         },
@@ -270,7 +270,7 @@ test('buildExtractionFields: fills from sourcePackets when events lack candidate
               value_normalized: '30000',
               confidence: 0.88,
               extraction_method: 'dom',
-              parser_phase: 'phase_01_static_html',
+              parser_phase: 'extract:static-html',
             }],
           }],
         },

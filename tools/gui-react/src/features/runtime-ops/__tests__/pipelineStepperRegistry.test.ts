@@ -8,33 +8,33 @@ import {
 } from '../pipelineStepperRegistry.ts';
 import type { StepperStageState } from '../pipelineStepperRegistry.ts';
 
-// WHY: Table-driven tests ensure every backend phase_cursor maps to exactly one macro-stage.
+// WHY: Table-driven tests ensure every backend stage_cursor maps to exactly one macro-stage.
 // Source of truth: src/features/indexing/pipeline/orchestration/pipelinePhaseRegistry.js
 
 const CURSOR_TO_STAGE_TABLE: [string, number][] = [
   // Boot (index 0)
-  ['phase_00_bootstrap', 0],
+  ['stage:bootstrap', 0],
   // Discover (index 1)
-  ['phase_01_needset', 1],
-  ['phase_02_brand_resolver', 1],
-  ['phase_02_search', 1],
+  ['stage:needset', 1],
+  ['stage:brand-resolver', 1],
+  ['stage:search', 1],
   // Plan (index 2)
-  ['phase_03_search_profile', 2],
-  ['phase_04_search_planner', 2],
+  ['stage:search-profile', 2],
+  ['stage:search-planner', 2],
   // Search (index 3)
-  ['phase_05_query_journey', 3],
-  ['phase_05_fetch', 3],
-  ['phase_06_search_results', 3],
-  ['phase_06_parse', 3],
-  ['phase_06_index', 3],
+  ['stage:query-journey', 3],
+  ['stage:fetch', 3],
+  ['stage:search-results', 3],
+  ['stage:parse', 3],
+  ['stage:index', 3],
   // Select (index 4)
-  ['phase_07_serp_selector', 4],
-  ['phase_07_prime_sources', 4],
-  ['phase_08_domain_classifier', 4],
+  ['stage:serp-selector', 4],
+  ['stage:prime-sources', 4],
+  ['stage:domain-classifier', 4],
   // Crawl (index 5)
-  ['phase_09_crawl', 5],
+  ['stage:crawl', 5],
   // Finalize (index 6)
-  ['phase_10_finalize', 6],
+  ['stage:finalize', 6],
 ];
 
 describe('PIPELINE_STEPPER_STAGES', () => {
@@ -84,7 +84,7 @@ describe('cursorToStageIndex', () => {
   });
 
   it('unknown cursor → -1 (no silent fallback)', () => {
-    strictEqual(cursorToStageIndex('phase_99_unknown'), -1);
+    strictEqual(cursorToStageIndex('stage:unknown'), -1);
   });
 
   it('"completed" is a status not a cursor → -1', () => {
@@ -94,7 +94,7 @@ describe('cursorToStageIndex', () => {
 
 describe('cursorSubProgress', () => {
   it('Boot has 1 cursor → position 0, total 1', () => {
-    deepStrictEqual(cursorSubProgress('phase_00_bootstrap'), {
+    deepStrictEqual(cursorSubProgress('stage:bootstrap'), {
       stageIndex: 0,
       subPosition: 0,
       subTotal: 1,
@@ -102,7 +102,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('Plan first cursor → position 0, total 2', () => {
-    deepStrictEqual(cursorSubProgress('phase_03_search_profile'), {
+    deepStrictEqual(cursorSubProgress('stage:search-profile'), {
       stageIndex: 2,
       subPosition: 0,
       subTotal: 2,
@@ -110,7 +110,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('Plan second cursor → position 1, total 2', () => {
-    deepStrictEqual(cursorSubProgress('phase_04_search_planner'), {
+    deepStrictEqual(cursorSubProgress('stage:search-planner'), {
       stageIndex: 2,
       subPosition: 1,
       subTotal: 2,
@@ -118,7 +118,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('Search middle cursor → position 2, total 5', () => {
-    deepStrictEqual(cursorSubProgress('phase_06_search_results'), {
+    deepStrictEqual(cursorSubProgress('stage:search-results'), {
       stageIndex: 3,
       subPosition: 2,
       subTotal: 5,
@@ -126,7 +126,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('Select last cursor → position 2, total 3', () => {
-    deepStrictEqual(cursorSubProgress('phase_08_domain_classifier'), {
+    deepStrictEqual(cursorSubProgress('stage:domain-classifier'), {
       stageIndex: 4,
       subPosition: 2,
       subTotal: 3,
@@ -134,7 +134,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('Finalize has 1 cursor → position 0, total 1', () => {
-    deepStrictEqual(cursorSubProgress('phase_10_finalize'), {
+    deepStrictEqual(cursorSubProgress('stage:finalize'), {
       stageIndex: 6,
       subPosition: 0,
       subTotal: 1,
@@ -150,7 +150,7 @@ describe('cursorSubProgress', () => {
   });
 
   it('unknown cursor → stageIndex -1', () => {
-    deepStrictEqual(cursorSubProgress('phase_99_bogus'), {
+    deepStrictEqual(cursorSubProgress('stage:bogus'), {
       stageIndex: -1,
       subPosition: 0,
       subTotal: 1,

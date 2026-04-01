@@ -14,14 +14,14 @@ export function createPhaseDataReaders({
   getStorage,
   readOutputRootJson,
 }) {
-  // WHY: on-disk artifact name stays `phase07_retrieval.json` for backward compat with existing run data.
-  async function readIndexLabRunPhase07PrimeSources(runId) {
+  // WHY: on-disk artifact name stays `prime_sources_retrieval.json` for backward compat with existing run data.
+  async function readIndexLabRunPrimeSources(runId) {
     const token = String(runId || '').trim();
     if (!token) return null;
     const runDir = await resolveRunDir(token);
     if (!runDir) return null;
 
-    const directPath = path.join(runDir, 'phase07_retrieval.json');
+    const directPath = path.join(runDir, 'prime_sources_retrieval.json');
     const direct = await safeReadJson(directPath);
     if (direct && typeof direct === 'object') {
       return direct;
@@ -38,7 +38,7 @@ export function createPhaseDataReaders({
     if (!productId) return null;
 
     const storage = getStorage();
-    const runKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'phase07_retrieval.json');
+    const runKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'analysis', 'prime_sources_retrieval.json');
     const runPayload = await storage.readJsonOrNull(runKey);
     if (runPayload && typeof runPayload === 'object') {
       return runPayload;
@@ -46,13 +46,13 @@ export function createPhaseDataReaders({
 
     const runSummaryKey = storage.resolveOutputKey(category, productId, 'runs', resolvedRunId, 'logs', 'summary.json');
     const runSummary = await storage.readJsonOrNull(runSummaryKey);
-    if (runSummary?.phase07 && typeof runSummary.phase07 === 'object') {
+    if (runSummary?.prime_sources && typeof runSummary.prime_sources === 'object') {
       return {
         run_id: resolvedRunId,
         category,
         product_id: productId,
         generated_at: String(runSummary.generated_at || '').trim() || null,
-        summary: runSummary.phase07,
+        summary: runSummary.prime_sources,
         fields: [],
         summary_only: true
       };
@@ -167,7 +167,7 @@ export function createPhaseDataReaders({
   }
 
   return {
-    readIndexLabRunPhase07PrimeSources,
+    readIndexLabRunPrimeSources,
     readIndexLabRunDynamicFetchDashboard,
     readIndexLabRunSourceIndexingPackets,
   };

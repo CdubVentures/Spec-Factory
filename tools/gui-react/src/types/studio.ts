@@ -119,6 +119,9 @@ export interface StudioPayload {
   compiledAt: string | null;
   mapSavedAt: string | null;
   compileStale: boolean;
+  egLockedKeys?: string[];
+  egEditablePaths?: string[];
+  egToggles?: Record<string, boolean>;
 }
 
 export interface FieldStudioMapResponse {

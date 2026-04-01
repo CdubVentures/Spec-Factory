@@ -246,10 +246,10 @@ describe('GUI IndexLab Endpoints (integration)', async () => {
     });
   });
 
-  describe('Panel 07 — Phase 07 Retrieval', () => {
-    it('GET /run/{id}/phase07-prime-sources returns data or 404', async () => {
+  describe('Prime Sources Retrieval', () => {
+    it('GET /run/{id}/prime-sources returns data or 404', async () => {
       if (!serverUp || !richRunId) return;
-      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/phase07-prime-sources`);
+      const { status, data } = await fetchJson(`/api/v1/indexlab/run/${richRunId}/prime-sources`);
       assert.ok(status === 200 || status === 404, `should be 200 or 404, got ${status}`);
       if (status === 200) {
         assert.ok(data.run_id);

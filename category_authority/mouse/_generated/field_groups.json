@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-03-31T06:24:22.543Z",
+  "generated_at": "2026-04-01T20:40:25.715Z",
   "group_index": {
     "buttons_features": [
       "adjustable_scroll_wheel",
@@ -75,6 +75,7 @@
       "colors",
       "design",
       "discontinued",
+      "editions",
       "encoder_life_span",
       "encoder_steps",
       "encoder_type",
@@ -218,12 +219,13 @@
       "group_key": "ergonomics"
     },
     {
-      "count": 12,
+      "count": 13,
       "display_name": "General",
       "field_keys": [
         "colors",
         "design",
         "discontinued",
+        "editions",
         "encoder_life_span",
         "encoder_steps",
         "encoder_type",

@@ -121,7 +121,7 @@ export function WorkersTab({ workers, selectedWorker, onSelectWorker, runId, cat
       isRunning,
       workers,
       prefetchData,
-      phaseCursor: prefetchData?.phase_cursor,
+      stageCursor: prefetchData?.stage_cursor,
       tabKeys: PREFETCH_STAGE_KEYS,
     }),
     [isRunning, workers, prefetchData],

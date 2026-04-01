@@ -125,6 +125,9 @@ export const StudioPayloadSchema = z.object({
   compiledAt: z.string().nullable(),
   mapSavedAt: z.string().nullable(),
   compileStale: z.boolean(),
+  egLockedKeys: z.array(z.string()).optional(),
+  egEditablePaths: z.array(z.string()).optional(),
+  egToggles: z.record(z.string(), z.boolean()).optional(),
 });
 
 // WHY: .passthrough() — GET handler returns raw objects with pass-through keys

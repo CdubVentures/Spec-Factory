@@ -154,7 +154,7 @@ export function deriveModelTokenDefaults(options: {
 
 export function deriveSelectedLlmPricingRows(input: SelectedLlmPricingRowsInput): LlmPricingRow[] {
   const entries = [
-    { knob: 'phase 02 planner', knob_key: 'phase_02_planner', model: input.llmModelPlan, token_cap: input.llmMaxOutputTokensPlan },
+    { knob: 'search planner', knob_key: 'llm:search-planner', model: input.llmModelPlan, token_cap: input.llmMaxOutputTokensPlan },
     { knob: 'reasoning pass', knob_key: 'reasoning_pass', model: input.llmModelReasoning, token_cap: input.llmMaxOutputTokensReasoning },
   ];
   const knobDefaults = input.indexingLlmConfig?.knob_defaults || {};
