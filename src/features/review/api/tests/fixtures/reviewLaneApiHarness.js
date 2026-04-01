@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { SpecDb } from '../../../../../db/specDb.js';
 import { seedSpecDb } from '../../../../../db/seed.js';
 import { buildComponentIdentifier } from '../../../../../utils/componentIdentifier.js';
-import { skipIfSpawnEperm } from '../../../../../shared/tests/helpers/spawnEperm.js';
+import { throwIfSpawnEperm } from '../../../../../shared/tests/helpers/spawnEperm.js';
 import {
   PRODUCT_A,
   PRODUCT_B,
@@ -429,9 +429,7 @@ export async function createReviewLaneApiHarness(t) {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (error) {
-      if (skipIfSpawnEperm(t, error)) {
-        return null;
-      }
+      throwIfSpawnEperm(error, 'review lane API harness requires spawning the GUI server');
       throw error;
     }
 

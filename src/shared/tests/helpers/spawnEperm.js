@@ -1,24 +1,32 @@
-import assert from 'node:assert/strict';
+function unwrapSpawnFailure(value) {
+  const subject = value && typeof value === 'object'
+    ? value
+    : null;
+  const error = subject && 'error' in subject
+    ? subject.error
+    : value;
+  return { subject, error };
+}
 
 export function isSpawnEperm(value) {
-  const error = value && typeof value === 'object' && 'error' in value
-    ? value.error
-    : value;
+  const { error } = unwrapSpawnFailure(value);
   const code = String(error?.code || '').trim().toUpperCase();
   const message = String(error?.message || '').trim();
   return code === 'EPERM' || (message.includes('spawn') && message.includes('EPERM'));
 }
 
-export function skipIfSpawnEperm(t, value, reason = 'sandbox blocks child-process spawn') {
+export function throwIfSpawnEperm(value, reason = 'child-process spawn is required for this contract') {
   if (!isSpawnEperm(value)) return false;
-  const error = value && typeof value === 'object' && 'error' in value
-    ? value.error
-    : value;
-  const stderr = String(value?.stderr || '').trim();
-  const stdout = String(value?.stdout || '').trim();
-  const message = String(error?.message || '').trim() || 'spawn EPERM';
-  const details = [reason, message];
-  if (stderr) details.push(`stderr: ${stderr}`);
-  if (stdout) details.push(`stdout: ${stdout}`);
-  assert.fail(details.join('\n'));
+
+  const { subject, error } = unwrapSpawnFailure(value);
+  const details = [
+    String(error?.message || '').trim(),
+    String(subject?.stderr || '').trim(),
+  ].filter(Boolean);
+
+  throw new Error(
+    details.length > 0
+      ? `${reason}: ${details.join(' | ')}`
+      : reason,
+  );
 }

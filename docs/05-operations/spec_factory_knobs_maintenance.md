@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the live knob authority surfaces, inventory counts, and maintenance rules without treating this file as the canonical runtime source.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../04-features/pipeline-and-runtime-settings.md](../04-features/pipeline-and-runtime-settings.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 This file is supplemental. Canonical behavior still lives in the source files that define registries, defaults, manifest derivation, persistence, and route mounting.
 
@@ -18,7 +18,7 @@ This file is supplemental. Canonical behavior still lives in the source files th
 | config assembly | `src/config.js`, `src/core/config/configBuilder.js` | merges manifest defaults, env values, runtime defaults, and persisted settings |
 | settings persistence | `src/features/settings-authority/userSettingsService.js`, `src/features/settings/api/configPersistenceContext.js` | persists settings to AppDb when available, with JSON fallback only when AppDb is unavailable |
 | mounted settings API | `src/features/settings/api/configRoutes.js` | mounts `ui-settings`, `indexing/*`, `llm-settings/*`, `runtime-settings`, and `llm-policy`; no live `storage-settings` or `convergence-settings` route is mounted |
-| bootstrap storage state | `src/api/bootstrap/createBootstrapEnvironment.js` | exposes `runDataStorageState = Object.freeze({ enabled: false })` as a compatibility stub after relocation/storage-settings removal |
+| storage manager inventory | `src/features/indexing/api/storageManagerRoutes.js` | inventory/maintenance surface only; currently reports `storage_backend: "local"` and is not a knob-editing API |
 | source strategy SSOT | `category_authority/<category>/sources.json`, `src/features/indexing/sources/sourceFileService.js`, `src/features/indexing/api/sourceStrategyRoutes.js` | file-backed source registry; `sources` is an object keyed by `sourceId`, not an array |
 | spec seed SSOT | `src/features/indexing/sources/specSeedsFileService.js`, `src/features/indexing/api/specSeedsRoutes.js` | file-backed deterministic query templates per category |
 | GUI pipeline settings | `tools/gui-react/src/features/pipeline-settings/components/PipelineSettingsPage.tsx` | edits runtime settings, source strategy, and spec seeds; no storage-settings editor exists here |
@@ -28,10 +28,10 @@ This file is supplemental. Canonical behavior still lives in the source files th
 ## Audit Corrections From This Pass
 
 - Older maintenance content described a live `storage-settings` settings surface. The current server does not mount that route family, and `src/features/settings/api/configStorageSettingsHandler.js` does not exist.
-- Older maintenance content described a live storage registry/defaults surface. The current source exports only runtime (`138`), bootstrap (`3`), and UI (`4`) registry entries, while `SETTINGS_DEFAULTS.storage` remains `{}`.
-- Older maintenance content treated the emitted manifest as a 7-section or 10-section current-state object. The current exported `CONFIG_MANIFEST` emits 5 populated sections with 138 entries.
+- Older maintenance content described a live storage registry/defaults surface. The current source exports only runtime (`136`), bootstrap (`3`), and UI (`4`) registry entries, while `SETTINGS_DEFAULTS.storage` remains `{}`.
+- Older maintenance content treated the emitted manifest as a 7-section or 10-section current-state object. The current exported `CONFIG_MANIFEST` emits 5 populated sections with 136 entries.
 - Older maintenance content described source inventories as arrays. The current `sources.json` files store entries under a keyed `sources` object, and enabled state lives under `discovery.enabled`.
-- Older maintenance content implied active run-data relocation. The current bootstrap layer hard-codes `runDataStorageState.enabled = false`, and the live storage manager is inventory/maintenance only.
+- Older maintenance content implied active run-data relocation. The live storage manager is inventory/maintenance only and currently reports a local backend rooted at the IndexLab runs directory.
 
 ## Live Snapshot
 
@@ -39,16 +39,16 @@ This file is supplemental. Canonical behavior still lives in the source files th
 
 | Registry | Count | Evidence |
 |----------|-------|----------|
-| `RUNTIME_SETTINGS_REGISTRY` | `138` | `src/shared/settingsRegistry.js` |
+| `RUNTIME_SETTINGS_REGISTRY` | `136` | `src/shared/settingsRegistry.js` |
 | `BOOTSTRAP_ENV_REGISTRY` | `3` | `src/shared/settingsRegistry.js` |
 | `UI_SETTINGS_REGISTRY` | `4` | `src/shared/settingsRegistry.js` |
-| **Total exported registry entries** | **145** | summed from the three live exported registries |
+| **Total exported registry entries** | **143** | summed from the three live exported registries |
 
 ### Shared Defaults (`SETTINGS_DEFAULTS`)
 
 | Section | Leaf count | Evidence |
 |---------|------------|----------|
-| `runtime` | `138` | `src/shared/settingsDefaults.js` |
+| `runtime` | `136` | `src/shared/settingsDefaults.js` |
 | `convergence` | `0` | `src/shared/settingsDefaults.js` |
 | `storage` | `0` | `src/shared/settingsDefaults.js` |
 | `ui` | `4` | `src/shared/settingsDefaults.js` |
@@ -59,10 +59,10 @@ This file is supplemental. Canonical behavior still lives in the source files th
 | Metric | Count | Evidence |
 |--------|-------|----------|
 | populated emitted sections | `5` | `src/core/config/manifest/index.js` |
-| total manifest entries | `138` | `src/core/config/manifest/index.js` |
+| total manifest entries | `136` | `src/core/config/manifest/index.js` |
 | section: `llm` | `23` | `src/core/config/manifest/index.js` |
 | section: `discovery` | `1` | `src/core/config/manifest/index.js` |
-| section: `runtime` | `57` | `src/core/config/manifest/index.js` |
+| section: `runtime` | `55` | `src/core/config/manifest/index.js` |
 | section: `paths` | `4` | `src/core/config/manifest/index.js` |
 | section: `misc` | `53` | `src/core/config/manifest/index.js` |
 
@@ -91,7 +91,7 @@ Declared but currently unpopulated manifest groups remain `core`, `caching`, `st
 2. Let `src/shared/settingsDefaults.js`, `src/shared/settingsClampingRanges.js`, `src/core/config/manifest/index.js`, and generated GUI typings derive from that registry change instead of hardcoding parallel maps.
 3. When persistence semantics change, update both `src/features/settings-authority/userSettingsService.js` and `src/features/settings/api/configPersistenceContext.js`.
 4. Do not document or generate new code against `storage-settings` or `convergence-settings` routes unless those handlers are reintroduced and mounted in `src/features/settings/api/configRoutes.js`.
-5. Treat `runDataStorageState` as a degraded compatibility stub until a real writable storage-state feature is reintroduced.
+5. Treat `/api/v1/storage/*` as inventory and maintenance only; do not present it as knob-editing infrastructure unless a writable settings surface is reintroduced.
 6. Update `category_authority/<category>/sources.json` and `src/features/indexing/sources/sourceFileService.js` together when source entry shape, approved-host derivation, or mutable-key rules change.
 7. Update `src/features/indexing/sources/specSeedsFileService.js` and `src/features/indexing/api/specSeedsRoutes.js` together when deterministic query templates change shape.
 
@@ -110,7 +110,7 @@ Declared but currently unpopulated manifest groups remain `core`, `caching`, `st
 | source | `src/features/settings-authority/userSettingsService.js` | AppDb-first settings persistence |
 | source | `src/features/settings/api/configPersistenceContext.js` | JSON fallback and persistence counters |
 | source | `src/features/settings/api/configRoutes.js` | mounted settings routes exclude `storage-settings` and `convergence-settings` |
-| source | `src/api/bootstrap/createBootstrapEnvironment.js` | `runDataStorageState` degraded stub |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | storage inventory surface is separate from knob editing and reports local backend metadata |
 | source | `src/features/indexing/sources/sourceFileService.js` | `sources.json` keyed-object contract and approved-host derivation |
 | source | `src/features/indexing/sources/specSeedsFileService.js` | per-category spec-seed file ownership |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | mounted spec-seed GET/PUT contract |

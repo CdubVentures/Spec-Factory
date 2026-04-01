@@ -2,7 +2,7 @@
 
 > **Purpose:** Describe the verified server entrypoints, request pipeline, route families, settings boundaries, process runtime, and error behavior with exact file paths.
 > **Prerequisites:** [system-map.md](./system-map.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Server Entrypoints
 
@@ -73,7 +73,7 @@
 - `src/api/bootstrap/createBootstrapEnvironment.js` resolves:
   - `OUTPUT_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/output`
   - `INDEXLAB_ROOT` from `src/core/config/runtimeArtifactRoots.js` default `.workspace/runs`
-- The same bootstrap initializes `runDataStorageState` as `Object.freeze({ enabled: false })`.
+- `src/features/indexing/api/storageManagerRoutes.js` currently reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` for the `/storage/*` inventory surface.
 - `src/s3/storage.js` still supports S3 when `config.outputMode === 's3'`, but there is no live operator-facing storage-settings API in the current server source.
 
 ## Process Runtime and Long-Running Work
@@ -116,7 +116,7 @@
 | source | `src/app/api/routeRegistry.js` | stale `GUI_API_ROUTE_ORDER` export is not mounted SSOT |
 | source | `src/features/settings/api/configRoutes.js` | live mounted settings families |
 | source | `src/features/indexing/api/storageManagerRoutes.js` | actual `/storage/*` endpoint family |
-| source | `src/api/bootstrap/createBootstrapEnvironment.js` | runtime roots and disabled storage-state stub |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | runtime roots and live storage adapter bootstrap |
 | source | `src/features/settings/api/configPersistenceContext.js` | AppDb-first persistence boundary |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy read/write behavior |
 | source | `src/app/api/processRuntime.js` | child-process lifecycle and SearXNG control |

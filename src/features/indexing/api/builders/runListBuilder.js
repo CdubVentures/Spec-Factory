@@ -129,9 +129,10 @@ export function createRunListBuilder({
     };
   };
 
-  // WHY: Walks run subdirectories to compute total artifact size on disk.
+  // WHY: Walks run subdirectories to compute artifact size + type breakdown.
   // Called once per run per list request (cached by React Query ~15s).
-  async function computeRunDirSize(runDir) {
+  async function computeRunStorageMetrics(runDir) {
+    const breakdown = [];
     let total = 0;
     for (const subdir of ['html', 'screenshots', 'video']) {
       try {
@@ -139,8 +140,14 @@ export function createRunListBuilder({
         const stats = await Promise.all(
           files.map((f) => safeStat(path.join(runDir, subdir, f))),
         );
+        let subtotal = 0;
+        let count = 0;
         for (const st of stats) {
-          if (st) total += st.size;
+          if (st) { subtotal += st.size; count += 1; }
+        }
+        if (count > 0) {
+          breakdown.push({ type: subdir, count, size_bytes: subtotal, path: subdir });
+          total += subtotal;
         }
       } catch { /* subdir doesn't exist */ }
     }
@@ -148,7 +155,11 @@ export function createRunListBuilder({
     if (rjStat) total += rjStat.size;
     const rsStat = await safeStat(path.join(runDir, 'run-summary.json'));
     if (rsStat) total += rsStat.size;
-    return total;
+    return {
+      total_size_bytes: total,
+      artifact_breakdown: breakdown,
+      computed_at: new Date().toISOString(),
+    };
   }
 
   async function listIndexLabRuns({ limit = 50, category = '', catalogProducts = null } = {}) {
@@ -199,9 +210,10 @@ export function createRunListBuilder({
     // WHY: SQL fast path — one query replaces N async safeReadJson() calls.
     // Only when category is known (specDb is per-category).
     let sqlRunMap = new Map();
+    let specDb = null;
     if (categoryFilter && typeof getSpecDbReady === 'function') {
       try {
-        const specDb = await getSpecDbReady(categoryFilter);
+        specDb = await getSpecDbReady(categoryFilter);
         if (specDb) {
           const sqlRows = specDb.getRunsByCategory(categoryFilter, scanLimit);
           for (const row of sqlRows) {
@@ -223,7 +235,40 @@ export function createRunListBuilder({
         if (categoryFilter && rowCategory.toLowerCase() !== categoryFilter) return null;
         const rowRunId = toToken(sqlRow.run_id || dir);
         const rowProductId = toToken(sqlRow.product_id);
-        const resolved = resolveBrandModel(rowProductId);
+        const runDir = safeJoin(getIndexLabRoot(), rowRunId) || '';
+        // WHY: products SQL table is the SSOT for brand/model. Catalog JSON is seed-only.
+        let brand = '';
+        let model = '';
+        let variant = '';
+        if (specDb) {
+          try {
+            const product = specDb.getProduct(rowProductId);
+            if (product) {
+              brand = toToken(product.brand);
+              model = toToken(product.model);
+              variant = toToken(product.variant);
+            }
+          } catch { /* best-effort */ }
+        }
+        if (!brand) {
+          const resolved = resolveBrandModel(rowProductId);
+          brand = resolved.brand || '';
+          model = resolved.model || '';
+          variant = resolved.variant || '';
+        }
+        // WHY: Tier 3 — runs for unregistered products (not in products table or catalog).
+        // Read identity from run.json as last resort.
+        if (!brand && runDir) {
+          const fileMeta = await safeReadJson(path.join(runDir, 'run.json'));
+          const identity = fileMeta?.identity && typeof fileMeta.identity === 'object' ? fileMeta.identity : {};
+          const idBrand = toToken(identity.brand);
+          if (idBrand && idBrand.toLowerCase() !== 'unknown') {
+            brand = idBrand;
+            model = toToken(identity.model) || '';
+            variant = toToken(identity.variant) || '';
+          }
+        }
+        const metrics = runDir ? await computeRunStorageMetrics(runDir) : { total_size_bytes: 0, artifact_breakdown: [], computed_at: '' };
         const rawStatus = String(sqlRow.status || 'unknown').trim();
         const resolvedStatus = (
           rawStatus.toLowerCase() === 'running' && !isRunStillActive(rowRunId)
@@ -232,7 +277,9 @@ export function createRunListBuilder({
           run_id: rowRunId,
           category: rowCategory,
           product_id: rowProductId,
-          ...resolved,
+          brand,
+          model,
+          variant,
           status: resolvedStatus,
           started_at: String(sqlRow.started_at || '').trim(),
           ended_at: String(sqlRow.ended_at || '').trim(),
@@ -242,10 +289,12 @@ export function createRunListBuilder({
           phase_cursor: String(sqlRow.phase_cursor || '').trim(),
           startup_ms: normalizeStartupMs(sqlRow.startup_ms || {}),
           events_path: '',
-          run_dir: safeJoin(getIndexLabRoot(), rowRunId) || '',
+          run_dir: runDir,
           storage_origin: 'local',
           storage_state: resolveStorageState(resolvedStatus),
-          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, ...resolved, runId: rowRunId }),
+          size_bytes: metrics.total_size_bytes,
+          storage_metrics: metrics,
+          picker_label: buildPickerLabel({ category: rowCategory, productId: rowProductId, brand, model, variant, runId: rowRunId }),
           has_needset: Boolean(sqlRow.needset_summary || sqlRow.has_needset),
           has_search_profile: Boolean(sqlRow.search_profile_summary || sqlRow.has_search_profile),
           counters: sqlRow.counters,
@@ -275,7 +324,7 @@ export function createRunListBuilder({
       const fileBrand = toToken(identity.brand);
       const fileModel = toToken(identity.model);
       const fileVariant = toToken(identity.variant);
-      const sizeBytes = await computeRunDirSize(runDir);
+      const fileMetrics = await computeRunStorageMetrics(runDir);
       return {
         run_id: fileRunId,
         category: fileCategory,
@@ -295,7 +344,8 @@ export function createRunListBuilder({
         run_dir: runDir,
         storage_origin: 'local',
         storage_state: resolveStorageState(resolvedStatus),
-        size_bytes: sizeBytes,
+        size_bytes: fileMetrics.total_size_bytes,
+        storage_metrics: fileMetrics,
         picker_label: buildPickerLabel({ category: fileCategory, productId: fileProductId, brand: fileBrand, model: fileModel, variant: fileVariant, runId: fileRunId }),
         has_needset: false,
         has_search_profile: false,

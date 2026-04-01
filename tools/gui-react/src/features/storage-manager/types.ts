@@ -74,6 +74,9 @@ export interface RunSourceEntry {
   video_file: string | null;
   timeout_rescued: boolean;
   fetch_error: string | null;
+  html_size?: number;
+  video_size?: number;
+  total_size?: number;
 }
 
 export interface StorageRunsResponse {

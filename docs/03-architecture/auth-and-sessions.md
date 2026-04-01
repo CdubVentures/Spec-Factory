@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the live reality of authentication, session-like persistence, and permission checks so an arriving LLM does not invent a user-auth system.
 > **Prerequisites:** [backend-architecture.md](./backend-architecture.md), [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Verified Reality
 
@@ -37,6 +37,7 @@
 
 ## Current Sensitive Exposure
 
+- `GET /api/v1/runtime-settings` is unauthenticated and the derived runtime GET map includes provider API key fields.
 - `GET /api/v1/llm-policy` is unauthenticated and returns provider-registry entries that include `apiKey` fields when configured.
 - `GET /api/v1/indexing/llm-config` is unauthenticated and returns `resolved_api_keys` when configured.
 - Treat the live server as trusted-network-only until an explicit auth-hardening task changes that contract.
@@ -55,6 +56,8 @@
 | source | `src/app/api/requestDispatch.js` | no request-auth wrapping in dispatch |
 | source | `src/shared/settingsRegistry.js` | absence of live auth/session registry entries |
 | source | `src/core/config/manifest/index.js` | declared group IDs versus emitted manifest sections |
+| source | `src/core/config/settingsKeyMap.js` | runtime-settings GET map is registry-derived |
+| source | `src/features/settings/api/configRuntimeSettingsHandler.js` | unauthenticated `/runtime-settings` response contract |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | unauthenticated `/llm-policy` response contract |
 | source | `src/features/settings/api/configIndexingMetricsHandler.js` | unauthenticated `/indexing/llm-config` resolved key exposure |
 | source | `src/field-rules/sessionCache.js` | non-auth session cache semantics |

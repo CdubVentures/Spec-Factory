@@ -2,7 +2,7 @@
 
 > **Purpose:** Inventory the verified HTTP endpoints exposed by the GUI server, grouped by route family and backed by concrete file paths.
 > **Prerequisites:** [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md), [../04-features/feature-index.md](../04-features/feature-index.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Global Notes
 
@@ -12,14 +12,14 @@
 - Route parsing and category alias normalization live in `src/app/api/requestDispatch.js`
 - Mounted route-family order lives in `src/api/guiServerRuntime.js`
 - There is no live `/api/v1/storage-settings` or `/api/v1/convergence-settings` endpoint in the current server
-- `GET /api/v1/llm-policy` and `GET /api/v1/indexing/llm-config` can return secret-bearing key material when configured
+- `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` can return secret-bearing key material when configured
 
 ## Infra And Process Endpoints
 
 | Method | Path | Purpose | Auth | Request body | Response shape |
 |--------|------|---------|------|--------------|----------------|
-| GET | `/health` | root health alias | none | none | `{ ok, service, dist_root, cwd, isPkg }` |
-| GET | `/api/v1/health` | GUI/API health | none | none | `{ ok, service, dist_root, cwd, isPkg }` |
+| GET | `/health` | root health alias | none | none | `{ ok, service, dist_root, cwd, isPkg, ffmpegAvailable }` |
+| GET | `/api/v1/health` | GUI/API health | none | none | `{ ok, service, dist_root, cwd, isPkg, ffmpegAvailable }` |
 | GET | `/api/v1/categories` | list authored categories | none | none | `string[]` |
 | POST | `/api/v1/categories` | create category skeleton | none | `{ name }` | `{ ok, slug, categories }` |
 | GET | `/api/v1/searxng/status` | SearXNG local status | none | none | status object |
@@ -45,7 +45,7 @@
 | GET | `/api/v1/llm-policy` | read the composite global LLM policy assembled from managed runtime keys | none | none | `{ ok, policy }` |
 | PUT | `/api/v1/llm-policy` | persist the composite global LLM policy back into runtime settings | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
 | POST | `/api/v1/llm-policy` | compatibility write alias for the composite global LLM policy | none | `LlmPolicy` composite | `{ ok, policy }` or `422 { ok: false, error: 'invalid_model', rejected }` |
-| GET | `/api/v1/runtime-settings` | read runtime settings | none | none | runtime settings |
+| GET | `/api/v1/runtime-settings` | read runtime settings, including provider-key-backed flat fields when configured | none | none | runtime settings |
 | PUT | `/api/v1/runtime-settings` | persist runtime settings | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 | POST | `/api/v1/runtime-settings` | compatibility write alias for runtime-settings autosave | none | runtime settings patch | `{ ok, applied, snapshot, rejected }` |
 

@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified build, packaging, startup, and promotion surfaces for the live local-first runtime.
 > **Prerequisites:** [../02-dependencies/setup-and-installation.md](../02-dependencies/setup-and-installation.md), [../03-architecture/system-map.md](../03-architecture/system-map.md)
-> **Last validated:** 2026-03-25
+> **Last validated:** 2026-03-31
 
 ## Deployment Model
 
@@ -28,7 +28,7 @@
 | Start IndexLab CLI directly | `npm run run:indexlab` | `package.json`, `src/cli/spec.js` |
 | Start local GraphQL helper API | `npm run intel:api` | `package.json`, `src/cli/spec.js`, `src/api/intelGraphApi.js` |
 
-Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-03-25, producing the currently served `tools/gui-react/dist/` bundle.
+Current audit note: `npm run gui:build` is present in `package.json` and succeeded on 2026-03-31, producing the currently served `tools/gui-react/dist/` bundle.
 
 ## Build And Packaging Flow
 

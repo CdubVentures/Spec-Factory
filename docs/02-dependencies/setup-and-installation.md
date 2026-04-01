@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the exact local setup path from install to verified GUI runtime using only repo-backed commands and files.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md), [environment-and-config.md](./environment-and-config.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@
    npm run env:check
    ```
 
-   Current observed behavior on 2026-03-30: this command fails with `Missing keys in config manifest: PORT`. Treat it as a narrow helper, not a complete manifest audit.
+   Current observed behavior on 2026-03-31: this command fails with `Missing keys in config manifest: PORT`. Treat it as a narrow helper, not a complete manifest audit.
 
 5. Build the GUI.
 
@@ -48,7 +48,7 @@
    npm run gui:build
    ```
 
-   Current observed behavior on 2026-03-30: this command succeeds and writes the served assets to `tools/gui-react/dist/`.
+   Current observed behavior on 2026-03-31: this command succeeds and writes the served assets to `tools/gui-react/dist/`.
 
 6. Start the GUI API server.
 
@@ -100,7 +100,7 @@
    npm test
    ```
 
-   Observed on 2026-03-30: `npm test` failed. The current worktree does not have a green full-suite baseline.
+   Observed on 2026-03-31: `npm test` passed.
 
 ## Useful Local Commands
 
@@ -122,9 +122,9 @@
 | config | `.env.example` | local env bootstrap starting point |
 | source | `src/api/guiServer.js` | default GUI/API server runtime |
 | source | `tools/specfactory-launcher.mjs` | launcher-based setup path |
-| command | `npm run env:check` | failing March 30 env-check result |
-| command | `npm run gui:build` | successful March 30 GUI build result |
-| command | `npm test` | failing March 30 suite result |
+| command | `npm run env:check` | failing March 31 env-check result |
+| command | `npm run gui:build` | successful March 31 GUI build result |
+| command | `npm test` | successful March 31 suite result |
 | runtime | `http://127.0.0.1:8788/api/v1/health` | live server health endpoint responded |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory returned `keyboard`, `monitor`, and `mouse` |
 

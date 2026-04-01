@@ -161,7 +161,6 @@ export function Sidebar() {
           onChange={(e) => setCategory(e.target.value)}
           className={`${selectCls}${testMode ? ' border-amber-400 dark:border-amber-500 ring-1 ring-amber-300 dark:ring-amber-600' : ''}`}
         >
-          <option value="all">All Categories</option>
           {realCategories.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}

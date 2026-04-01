@@ -2,16 +2,16 @@
 
 > **Purpose:** Map the live configuration surfaces, environment manifests, and user-editable settings contracts so an arriving LLM can locate the single source of truth for each knob.
 > **Prerequisites:** [stack-and-toolchain.md](./stack-and-toolchain.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Config Surfaces
 
 | Surface | Defined in | Consumed by | Scope | Notes |
 |---------|------------|-------------|-------|-------|
-| process env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | `src/config.js` | runtime | manifest is derived from registry entries; no per-group manifest files remain |
+| process env manifest | `src/core/config/manifest/index.js`, `src/core/config/manifest.js` | `src/config.js` | runtime | emitted manifest is derived from registry entries; no per-group manifest files remain |
 | resolved config object | `src/config.js` | backend runtime, CLI, process launch plans | runtime | merges manifest defaults, env, registry defaults, and persisted runtime settings |
-| settings registry SSOT | `src/shared/settingsRegistry.js` | config assembly, settings routes, GUI manifests | runtime plus GUI | exports `145` live entries: `138` runtime, `3` bootstrap env, `4` UI |
-| shared defaults | `src/shared/settingsDefaults.js` | config normalization and GUI bootstrapping | runtime plus GUI | runtime defaults are derived from registry; `storage` and `convergence` remain empty objects |
+| settings registry SSOT | `src/shared/settingsRegistry.js` | config assembly, settings routes, GUI manifests | runtime plus GUI | exports `143` live entries: `136` runtime, `3` bootstrap env, `4` UI |
+| shared defaults | `src/shared/settingsDefaults.js` | config normalization and GUI bootstrapping | runtime plus GUI | runtime defaults are derived from registry; `storage` and `convergence` remain empty compatibility objects |
 | settings accessor | `src/shared/settingsAccessor.js` | config resolution, runtime helpers | runtime | null-safe reads with registry-backed clamping |
 | composite LLM policy schema | `src/core/llm/llmPolicySchema.js` | `src/features/settings-authority/llmPolicyHandler.js`, GUI adapters | runtime plus GUI | structured view over managed runtime keys |
 | config persistence context | `src/features/settings/api/configPersistenceContext.js` | runtime, UI, and LLM policy handlers | runtime | applies persisted sections back into live config and UI state |
@@ -23,22 +23,22 @@
 - `.env.example` is not a complete manifest mirror.
 - It is a partial env bootstrap file, not the authoritative registry of every supported config key.
 - Use `src/shared/settingsRegistry.js`, `src/core/config/manifest/index.js`, and `src/config.js` as the SSOT chain.
-- `npm run env:check` failed on 2026-03-30 with `Missing keys in config manifest: PORT`.
+- `npm run env:check` failed on 2026-03-31 with `Missing keys in config manifest: PORT`.
 - `tools/check-env-example-sync.mjs` is a narrow fixed-file scan, not a full manifest-to-code proof.
 
 ## Emitted Manifest Inventory
 
-`src/core/config/manifest/index.js` declares 10 possible group IDs, but the current emitted `CONFIG_MANIFEST` contains only 5 populated sections and 138 total entries.
+`src/core/config/manifest/index.js` declares 10 possible group IDs, but the current emitted `CONFIG_MANIFEST` array contains only 5 populated sections and 136 total entries.
 
 | Manifest section | Entry count | Notes |
 |------------------|-------------|-------|
 | `llm` | `23` | provider IDs, models, budgets, API keys, registry JSON |
 | `discovery` | `1` | current discovery/search-provider env surface |
-| `runtime` | `57` | crawl, fetch, screenshot, and runtime behavior knobs |
+| `runtime` | `55` | crawl, fetch, screenshot, and runtime behavior knobs |
 | `paths` | `4` | category authority root, input root, output root, SpecDb dir |
 | `misc` | `53` | planner, search, browser, and compatibility settings |
 
-Unpopulated declared sections: `core`, `caching`, `storage`, `security`, and `observability`.
+Declared but unpopulated group IDs: `core`, `caching`, `storage`, `security`, and `observability`.
 
 ## User-Editable HTTP Surfaces
 
@@ -76,6 +76,7 @@ No live `/api/v1/convergence-settings` route is mounted in `src/features/setting
 
 ## Sensitive Surfaces
 
+- `GET /api/v1/runtime-settings` is unauthenticated and the derived `RUNTIME_SETTINGS_ROUTE_GET` maps include `geminiApiKey`, `deepseekApiKey`, `anthropicApiKey`, and `openaiApiKey`.
 - `GET /api/v1/llm-policy` is unauthenticated and returns provider-registry entries that include `apiKey` fields when configured.
 - `GET /api/v1/indexing/llm-config` is unauthenticated and returns `resolved_api_keys` when configured.
 - Treat the current runtime as trusted-network-only until an explicit auth hardening task changes that contract.
@@ -85,18 +86,21 @@ No live `/api/v1/convergence-settings` route is mounted in `src/features/setting
 | Source | Path | What was verified |
 |--------|------|-------------------|
 | source | `src/core/config/manifest/index.js` | emitted manifest sections and counts |
+| source | `src/core/config/settingsKeyMap.js` | runtime-settings GET map derives from the runtime registry |
+| source | `src/features/settings-authority/runtimeSettingsRouteContract.js` | runtime-settings PUT map includes provider credential fields |
 | source | `src/config.js` | config merge order and env consumption |
 | source | `src/shared/settingsRegistry.js` | live registry counts and key ownership |
 | source | `src/shared/settingsDefaults.js` | derived defaults and empty storage/convergence sections |
 | source | `src/features/settings/api/configRoutes.js` | mounted settings route families |
 | source | `src/features/settings/api/configPersistenceContext.js` | AppDb-first persistence behavior |
 | source | `src/features/settings-authority/userSettingsService.js` | AppDb primary plus JSON fallback persistence model |
+| source | `src/features/settings/api/configRuntimeSettingsHandler.js` | runtime-settings read/write surface |
 | source | `src/features/settings-authority/llmPolicyHandler.js` | composite LLM policy route and managed-key persistence |
 | source | `src/features/indexing/api/sourceStrategyRoutes.js` | source-strategy write surface |
 | source | `src/features/indexing/api/specSeedsRoutes.js` | deterministic spec-seed write surface |
 | config | `.env.example` | partial env bootstrap file |
 | source | `tools/check-env-example-sync.mjs` | env-check scope and limitations |
-| command | `npm run env:check` | failing March 30 env-check result |
+| command | `npm run env:check` | failing March 31 env-check result |
 
 ## Related Documents
 

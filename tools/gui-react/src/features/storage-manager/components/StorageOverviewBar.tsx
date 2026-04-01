@@ -1,16 +1,9 @@
-import { Chip } from '@/shared/ui/feedback/Chip';
+import { useMemo } from 'react';
 import { Tip } from '@/shared/ui/feedback/Tip';
-import type { StorageOverviewResponse, RunInventoryRow } from '../types.ts';
-import { formatBytes } from '../helpers.ts';
+import type { RunInventoryRow } from '../types.ts';
+import { formatBytes, runSizeBytes } from '../helpers.ts';
 import { StorageBreakdownDonut } from './StorageBreakdownDonut.tsx';
 import { RunStatusBar } from './RunStatusBar.tsx';
-
-/* ── Helpers ──────────────────────────────────────────────────── */
-
-function formatSizeOrDash(overview: StorageOverviewResponse): string {
-  if (overview.total_runs > 0 && overview.total_size_bytes === 0) return '--';
-  return formatBytes(overview.total_size_bytes);
-}
 
 /* ── KPI Card (mirrors RuntimeOps OverviewTab pattern) ────────── */
 
@@ -41,58 +34,64 @@ function KpiCard({ value, label, accentClass = 'sf-meter-fill', tip }: KpiCardPr
 /* ── Props ────────────────────────────────────────────────────── */
 
 interface StorageOverviewBarProps {
-  overview: StorageOverviewResponse | undefined;
   runs: RunInventoryRow[];
   isLoading: boolean;
 }
 
 /* ── Component ────────────────────────────────────────────────── */
 
-export function StorageOverviewBar({ overview, runs, isLoading }: StorageOverviewBarProps) {
-  if (isLoading || !overview) {
+export function StorageOverviewBar({ runs, isLoading }: StorageOverviewBarProps) {
+  // WHY: Derive all overview stats from runs array — no separate overview endpoint needed.
+  const stats = useMemo(() => {
+    const totalRuns = runs.length;
+    const totalSize = runs.reduce((s, r) => s + runSizeBytes(r), 0);
+    const products = new Set(runs.map((r) => r.product_id).filter(Boolean));
+    const avgSize = totalRuns > 0 ? Math.round(totalSize / totalRuns) : 0;
+    let oldest = '';
+    let newest = '';
+    for (const r of runs) {
+      const started = (r.started_at || '').trim();
+      if (started && (!oldest || started < oldest)) oldest = started;
+      if (started && (!newest || started > newest)) newest = started;
+    }
+    return { totalRuns, totalSize, productsIndexed: products.size, avgSize, oldest: oldest || null, newest: newest || null };
+  }, [runs]);
+
+  if (isLoading) {
     return (
       <div className="sf-surface-card rounded-lg p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold sf-text-primary">Storage Overview</h2>
-        </div>
+        <h2 className="text-lg font-bold sf-text-primary mb-2">Storage Overview</h2>
         <div className="text-sm sf-text-muted">Loading storage data...</div>
       </div>
     );
   }
 
-  const detailText = overview.backend_detail.root_path ?? '';
-
   return (
     <div className="space-y-3">
-      {/* ── Header ──────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg font-bold sf-text-primary">Storage Overview</h2>
-        <Chip label={overview.storage_backend} className="sf-chip-neutral" />
-        {detailText && <Tip text={detailText} className="ml-auto" />}
-      </div>
+      <h2 className="text-lg font-bold sf-text-primary">Storage Overview</h2>
 
       {/* ── Row 1: KPI Cards ────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
-          value={overview.total_runs}
+          value={stats.totalRuns}
           label="Total Runs"
           accentClass="sf-meter-fill"
-          tip="Total number of indexing runs stored for this category."
+          tip="Total indexing runs stored for this category."
         />
         <KpiCard
-          value={formatSizeOrDash(overview)}
+          value={stats.totalSize > 0 ? formatBytes(stats.totalSize) : '0 B'}
           label="Total Size"
           accentClass="sf-meter-fill-success"
           tip="Combined disk usage of all stored run artifacts."
         />
         <KpiCard
-          value={overview.products_indexed}
+          value={stats.productsIndexed}
           label="Products"
           accentClass="sf-meter-fill-info"
-          tip="Number of distinct products with at least one stored run."
+          tip="Distinct products with at least one stored run."
         />
         <KpiCard
-          value={formatBytes(overview.avg_run_size_bytes)}
+          value={stats.avgSize > 0 ? formatBytes(stats.avgSize) : '0 B'}
           label="Avg Run Size"
           accentClass="sf-meter-fill-warning"
           tip="Average disk usage per run."
@@ -102,11 +101,7 @@ export function StorageOverviewBar({ overview, runs, isLoading }: StorageOvervie
       {/* ── Row 2: Donut + Status ───────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <StorageBreakdownDonut runs={runs} />
-        <RunStatusBar
-          runs={runs}
-          oldestRun={overview.oldest_run}
-          newestRun={overview.newest_run}
-        />
+        <RunStatusBar runs={runs} oldestRun={stats.oldest} newestRun={stats.newest} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 > **Purpose:** Show the verified runtime topology and file-backed relationships between the GUI, API server, workers, storage, and optional external services.
 > **Prerequisites:** [../02-dependencies/stack-and-toolchain.md](../02-dependencies/stack-and-toolchain.md), [../02-dependencies/external-services.md](../02-dependencies/external-services.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ```mermaid
 graph TD
@@ -72,6 +72,7 @@ graph TD
 | Authority content root | `category_authority/` |
 | Runtime artifact roots | `src/core/config/runtimeArtifactRoots.js` |
 | Storage adapter | `src/s3/storage.js` |
+| Storage manager routes | `src/features/indexing/api/storageManagerRoutes.js` |
 | SearXNG stack | `tools/searxng/docker-compose.yml` |
 | GraphQL helper API | `src/api/intelGraphApi.js` |
 | GraphQL proxy | `src/app/api/routes/infra/graphqlRoutes.js` |
@@ -86,7 +87,7 @@ graph TD
   - global AppDb tables in `.workspace/db/app.sqlite`
   - per-category SpecDb files in `.workspace/db/<category>/spec.sqlite`
   - file-backed control-plane content in `category_authority/`
-- `src/api/bootstrap/createBootstrapEnvironment.js` initializes `runDataStorageState` as `{ enabled: false }`, so the removed storage-settings/relocation subsystem is not part of the live topology even though the storage inventory APIs are still mounted.
+- `src/features/indexing/api/storageManagerRoutes.js` reports `storage_backend: "local"` and `backend_detail.root_path = indexLabRoot` for the `/storage/*` inventory surface.
 - Default runtime roots are `.workspace/output` and `.workspace/runs`, not the checked-in `storage/` folder.
 
 ## Validated Against
@@ -100,7 +101,8 @@ graph TD
 | source | `src/app/api/realtimeBridge.js` | WebSocket handling and file watchers |
 | source | `src/app/api/processRuntime.js` | child-process runtime and SearXNG control |
 | source | `src/api/bootstrap/createBootstrapSessionLayer.js` | AppDb bootstrap location |
-| source | `src/api/bootstrap/createBootstrapEnvironment.js` | workspace roots and disabled storage-state stub |
+| source | `src/api/bootstrap/createBootstrapEnvironment.js` | workspace roots and live storage adapter bootstrap |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | storage-manager backend reporting surface |
 | source | `tools/gui-react/src/App.tsx` | browser entry shell |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | browser route registry |
 

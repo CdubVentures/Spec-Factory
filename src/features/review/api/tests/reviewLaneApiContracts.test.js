@@ -8,7 +8,6 @@ import { runReviewLaneReadContracts } from './helpers/reviewLaneReadContracts.js
 
 test('review lane API contracts share one seeded harness without weakening lane-specific coverage', { timeout: 240_000 }, async (t) => {
   const harness = await createReviewLaneApiHarness(t);
-  if (!harness) return;
 
   await runReviewLaneGridContracts(t, harness);
   await runReviewLaneComponentContracts(t, harness);

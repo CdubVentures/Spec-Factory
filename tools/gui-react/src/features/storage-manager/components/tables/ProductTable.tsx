@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { DataTable } from '@/shared/ui/data-display/DataTable';
 import type { ProductGroup } from '../../helpers.ts';
 import { buildProductColumns } from '../columns/productTableColumns.tsx';
-import { RunSubTable } from './RunSubTable.tsx';
+import { RunList } from '../RunList.tsx';
 
 interface ProductTableProps {
   products: ProductGroup[];
@@ -31,7 +31,7 @@ export function ProductTable({ products, isLoading, onDeleteAll, onDeleteRun, is
         persistKey="storage:products"
         maxHeight="max-h-[calc(100vh-420px)]"
         renderExpandedRow={(product) => (
-          <RunSubTable
+          <RunList
             runs={product.runs}
             onDeleteRun={onDeleteRun}
             isDeleting={isDeleting}

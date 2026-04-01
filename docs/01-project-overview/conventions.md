@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the enforced repository rules, code organization patterns, and notable absences so an LLM edits in-bounds.
 > **Prerequisites:** [scope.md](./scope.md), [folder-map.md](./folder-map.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Non-Negotiable Repo Rules
 
@@ -11,7 +11,7 @@
 - GUI source under `tools/gui-react/` is TypeScript plus React. New `any`, `@ts-ignore`, and `@ts-nocheck` are forbidden.
 - Feature-first organization is required. Do not create generic dumping-ground modules such as `src/utils` or `src/services` for new feature logic when an existing feature boundary owns the behavior.
 - Tests use Node's built-in runner via `node --test`.
-- `docs/implementation/` is excluded from this documentation pass and is not current-state authority here.
+- `docs/implementation/` and `docs/data-structure/` are excluded from this documentation pass and are not current-state authority here.
 
 ## File Placement Rules
 
@@ -47,10 +47,10 @@
 - Current test roots: `test/`, `src/**/tests/`, `tools/gui-react/**/__tests__/`, and `e2e/`.
 - Prefer behavior-level tests over implementation-coupled file-content tests.
 - Playwright browser coverage is configured in `playwright.config.ts`.
-- Validation snapshot from 2026-03-30:
+- Validation snapshot from 2026-03-31:
   - `npm run gui:build` passed.
+  - `npm test` passed.
   - `npm run env:check` failed with `Missing keys in config manifest: PORT`.
-  - `npm test` failed; visible failures included `src/indexlab/tests/searchPlanBuilder.payload.test.js`, `tools/gui-react/src/features/review/__tests__/reviewLaneGuiContracts.test.js`, multiple runtime-ops GUI contract suites, and `tools/gui-react/src/pages/layout/__tests__/tabNavContract.test.js`.
 
 ## Branching, Commit, PR, and Review Conventions
 
@@ -74,9 +74,9 @@
 | source | `tools/gui-react/src/pages/layout/TabNav.tsx` | tabs derive from the page registry |
 | config | `package.json` | test runner and root toolchain expectations |
 | config | `playwright.config.ts` | Playwright root and base URL |
-| command | `npm run gui:build` | successful March 30 GUI build baseline |
-| command | `npm run env:check` | failing March 30 env-check baseline |
-| command | `npm test` | failing March 30 suite baseline |
+| command | `npm run gui:build` | successful March 31 GUI build baseline |
+| command | `npm run env:check` | failing March 31 env-check baseline |
+| command | `npm test` | successful March 31 suite baseline |
 
 ## Related Documents
 

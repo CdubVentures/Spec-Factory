@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 import { SpecDb } from '../../../../../../../src/db/specDb.js';
 import { seedSpecDb } from '../../../../../../../src/db/seed.js';
 import { buildComponentIdentifier } from '../../../../../../../src/utils/componentIdentifier.js';
-import { skipIfSpawnEperm } from '../../../../../../../src/shared/tests/helpers/spawnEperm.js';
+import { throwIfSpawnEperm } from '../../../../../../../src/shared/tests/helpers/spawnEperm.js';
 import {
   PRODUCT_A,
   PRODUCT_B,
@@ -123,63 +123,64 @@ async function seedProductCatalog(helperRoot, category) {
   });
 }
 
-async function seedComponentReviewSuggestions(helperRoot, category) {
-  await writeJson(path.join(helperRoot, category, '_suggestions', 'component_review.json'), {
-    items: [
-      {
-        review_id: 'rv-cmp-35000',
-        category,
-        component_type: 'sensor',
-        field_key: 'sensor',
-        raw_query: 'PAW3950',
-        matched_component: 'paw3950',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_A,
-        created_at: '2026-02-18T00:00:00.000Z',
-        product_attributes: { dpi_max: '35000', ips: '750', sensor_brand: 'PixArt' },
-      },
-      {
-        review_id: 'rv-cmp-26000',
-        category,
-        component_type: 'sensor',
-        field_key: 'sensor',
-        raw_query: 'PAW3950',
-        matched_component: 'paw3950',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_B,
-        created_at: '2026-02-18T00:00:01.000Z',
-        product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' },
-      },
-      {
-        review_id: 'rv-enum-24',
-        category,
-        component_type: 'sensor',
-        field_key: 'connection',
-        raw_query: '2.4GHz',
-        matched_component: '',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_A,
-        created_at: '2026-02-18T00:00:02.000Z',
-        product_attributes: { connection: '2.4GHz' },
-      },
-      {
-        review_id: 'rv-enum-wireless',
-        category,
-        component_type: 'sensor',
-        field_key: 'connection',
-        raw_query: 'Wireless',
-        matched_component: '',
-        match_type: 'exact',
-        status: 'pending_ai',
-        product_id: PRODUCT_B,
-        created_at: '2026-02-18T00:00:03.000Z',
-        product_attributes: { connection: 'Wireless' },
-      },
-    ],
-  });
+function seedComponentReviewSuggestions(db, category) {
+  const items = [
+    {
+      review_id: 'rv-cmp-35000',
+      category,
+      component_type: 'sensor',
+      field_key: 'sensor',
+      raw_query: 'PAW3950',
+      matched_component: 'paw3950',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_A,
+      created_at: '2026-02-18T00:00:00.000Z',
+      product_attributes: { dpi_max: '35000', ips: '750', sensor_brand: 'PixArt' },
+    },
+    {
+      review_id: 'rv-cmp-26000',
+      category,
+      component_type: 'sensor',
+      field_key: 'sensor',
+      raw_query: 'PAW3950',
+      matched_component: 'paw3950',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_B,
+      created_at: '2026-02-18T00:00:01.000Z',
+      product_attributes: { dpi_max: '26000', sensor_brand: 'PixArt' },
+    },
+    {
+      review_id: 'rv-enum-24',
+      category,
+      component_type: 'sensor',
+      field_key: 'connection',
+      raw_query: '2.4GHz',
+      matched_component: '',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_A,
+      created_at: '2026-02-18T00:00:02.000Z',
+      product_attributes: { connection: '2.4GHz' },
+    },
+    {
+      review_id: 'rv-enum-wireless',
+      category,
+      component_type: 'sensor',
+      field_key: 'connection',
+      raw_query: 'Wireless',
+      matched_component: '',
+      match_type: 'exact',
+      status: 'pending_ai',
+      product_id: PRODUCT_B,
+      created_at: '2026-02-18T00:00:03.000Z',
+      product_attributes: { connection: 'Wireless' },
+    },
+  ];
+  for (const item of items) {
+    db.upsertComponentReviewItem(item);
+  }
 }
 
 function seedStrictLaneCandidates(db, category) {
@@ -583,7 +584,6 @@ export async function createReviewLaneGuiHarness(t) {
         Object.entries(PRODUCTS).map(([productId, product]) =>
           seedLatestArtifacts(storage, CATEGORY, productId, product)),
       ),
-      seedComponentReviewSuggestions(config.categoryAuthorityRoot, CATEGORY),
     ]);
 
     const dbPath = path.join(tempRoot, '.workspace', 'db', CATEGORY, 'spec.sqlite');
@@ -596,6 +596,7 @@ export async function createReviewLaneGuiHarness(t) {
       fieldRules: buildFieldRulesForSeed(),
       logger: null,
     });
+    seedComponentReviewSuggestions(db, CATEGORY);
     seedStrictLaneCandidates(db, CATEGORY);
     seedKeyReviewState(db, componentIdentifier);
 
@@ -615,19 +616,18 @@ export async function createReviewLaneGuiHarness(t) {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (error) {
-      if (skipIfSpawnEperm(t, error)) return null;
+      throwIfSpawnEperm(error, 'review lane GUI harness requires spawning the GUI server');
       throw error;
     }
 
     child.stdout.on('data', (chunk) => logs.push(String(chunk)));
     child.stderr.on('data', (chunk) => logs.push(String(chunk)));
     const browserPromise = chromium.launch({ headless: true }).catch((error) => {
-      if (skipIfSpawnEperm(t, error, 'sandbox blocks Playwright browser launch')) return null;
+      throwIfSpawnEperm(error, 'review lane GUI harness requires launching Playwright');
       throw error;
     });
     await waitForServerReady(baseUrl, child);
     browser = await browserPromise;
-    if (!browser) return null;
 
     context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
     page = await context.newPage();

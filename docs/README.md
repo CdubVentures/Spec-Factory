@@ -2,7 +2,7 @@
 
 > **Purpose:** Master entrypoint for the LLM-oriented current-state documentation set for this repository.
 > **Prerequisites:** None.
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 Spec Factory is a local-first Node.js plus React workbench for crawl-first product-spec indexing, review, category-authority maintenance, and runtime diagnostics. The live server is assembled in `src/api/guiServerRuntime.js`, served through `src/api/guiServer.js`, mounts `/api/v1/*` plus `/ws`, serves the built GUI from `tools/gui-react/dist/`, persists global state in `.workspace/db/app.sqlite`, persists per-category state in `.workspace/db/<category>/spec.sqlite`, and reads authored control-plane files from `category_authority/`.
 
@@ -89,24 +89,19 @@ Spec Factory is a local-first Node.js plus React workbench for crawl-first produ
 - [Canonical Examples](./07-patterns/canonical-examples.md)
 - [Anti-Patterns](./07-patterns/anti-patterns.md)
 
-### Supplemental
+## Excluded Subtrees
 
-- [Pipeline Audit 2026-03-25](./03-architecture/PIPELINE-AUDIT-2026-03-25.md)
-- [Structural Audit 2026-03-23](./03-architecture/STRUCTURAL-AUDIT-2026-03-23.md)
-- [Structural Audit 2026-03-24](./03-architecture/STRUCTURAL-AUDIT-2026-03-24.md)
-- [App API Wiring Audit](./test-audit/app-api-wiring-audit.md)
-- [App UI Component Audit](./test-audit/app-ui-component-audit.md)
-
-## Excluded Subtree
-
-- `docs/implementation/` exists on disk but is explicitly excluded from this pass and from the current-state reading order. Do not use it as live authority unless a separate task re-audits it.
+- `docs/implementation/` exists on disk but was explicitly excluded from this pass. Do not use it as current-state authority unless a separate task re-audits it.
+- `docs/data-structure/` exists on disk but was explicitly excluded from this pass. Do not use it as current-state authority unless a separate task re-audits it.
 
 ## Current Validation Snapshot
 
-- `npm run gui:build` succeeded on 2026-03-30.
-- `npm run env:check` failed on 2026-03-30 with `Missing keys in config manifest: PORT`.
-- `npm test` failed on 2026-03-30; see [05-operations/known-issues.md](./05-operations/known-issues.md) for the currently observed failing areas.
-- `GET http://127.0.0.1:8788/api/v1/categories` returned `["keyboard","monitor","mouse"]` on 2026-03-30. `category_authority/tests/` exists on disk but is intentionally filtered from the default categories API.
+- `npm run gui:build` succeeded on 2026-03-31.
+- `npm test` succeeded on 2026-03-31.
+- `npm run env:check` failed on 2026-03-31 with `Missing keys in config manifest: PORT`.
+- Runtime validation on 2026-03-31 confirmed live responses from `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/runtime-settings`, `/api/v1/llm-policy`, and `/api/v1/storage/overview`.
+- `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]`; `category_authority/tests/`, `_global/`, `_runtime/`, and `_test_mouse/` are present on disk but filtered from the default categories API.
+- `GET /api/v1/runtime-settings`, `GET /api/v1/llm-policy`, and `GET /api/v1/indexing/llm-config` remain unauthenticated and can expose secret-bearing fields when configured.
 
 ## Validated Against
 
@@ -117,13 +112,19 @@ Spec Factory is a local-first Node.js plus React workbench for crawl-first produ
 | source | `tools/gui-react/src/App.tsx` | HashRouter shell and standalone `/test-mode` mount |
 | source | `tools/gui-react/src/registries/pageRegistry.ts` | GUI route and tab inventory SSOT |
 | source | `src/app/api/routes/infra/categoryRoutes.js` | categories endpoint filters `tests` by default |
+| source | `src/features/settings/api/configRuntimeSettingsHandler.js` | live runtime-settings surface |
+| source | `src/features/settings-authority/llmPolicyHandler.js` | live LLM policy surface |
+| source | `src/features/indexing/api/storageManagerRoutes.js` | live storage-manager surface reports local backend metadata |
 | source | `src/db/appDbSchema.js` | global `app.sqlite` persistence boundary |
 | config | `package.json` | root scripts and backend dependency surface |
 | config | `tools/gui-react/package.json` | GUI scripts and frontend dependency surface |
-| command | `npm run env:check` | failing March 30 baseline caused by missing `PORT` in `.env.example` |
-| command | `npm run gui:build` | successful March 30 GUI build baseline |
-| command | `npm test` | failing March 30 suite baseline |
-| runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory excludes the `tests` harness directory by default |
+| command | `npm run env:check` | failing March 31 baseline caused by missing `PORT` in `.env.example` |
+| command | `npm run gui:build` | successful March 31 GUI build baseline |
+| command | `npm test` | successful March 31 full-suite baseline |
+| runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory excludes harness and underscored directories by default |
+| runtime | `http://127.0.0.1:8788/api/v1/runtime-settings` | live unauthenticated runtime-settings contract |
+| runtime | `http://127.0.0.1:8788/api/v1/llm-policy` | live unauthenticated LLM policy contract |
+| runtime | `http://127.0.0.1:8788/api/v1/storage/overview` | live storage overview reports `storage_backend: "local"` |
 
 ## Related Documents
 

@@ -12,7 +12,8 @@ export { buildRuntimeOpsWorkers } from './runtimeOpsWorkerPoolBuilders.js';
 export { buildWorkerDetail } from './runtimeOpsWorkerDetailBuilders.js';
 export { buildLlmCallsDashboard } from './runtimeOpsLlmDashboardBuilders.js';
 
-const SUMMARY_HANDLERS = {
+// WHY: Exported for single-pass engine. Standalone builder still works as-is.
+export const SUMMARY_HANDLERS = {
   fetch_started: (payload, _evt, s) => { s.fetchStarted += 1; },
   fetch_finished: (payload, evt, s) => {
     s.fetchFinished += 1;
@@ -38,7 +39,7 @@ const SUMMARY_HANDLERS = {
 };
 
 // WHY: scope-filtered types skip stage-lifecycle markers before dispatch
-const SUMMARY_SCOPE_FILTERED = new Set([
+export const SUMMARY_SCOPE_FILTERED = new Set([
   'fetch_started', 'fetch_finished', 'parse_started', 'parse_finished',
 ]);
 
@@ -121,7 +122,7 @@ export function buildRuntimeOpsSummary(events, meta) {
   };
 }
 
-const DOCUMENT_HANDLERS = {
+export const DOCUMENT_HANDLERS = {
   fetch_started: (_payload, doc) => { doc.status = 'fetching'; },
   fetch_finished: (payload, doc) => {
     const code = fetchStatusCode(payload, 0);
@@ -289,7 +290,7 @@ export function buildRuntimeOpsDocumentDetail(events, docUrl) {
   };
 }
 
-const METRICS_HANDLERS = {
+export const METRICS_HANDLERS = {
   search_started: (payload, url, ms) => {
     ms.activeSearch.add(String(payload.query || url || '').trim());
   },
@@ -632,7 +633,7 @@ export function buildQueueState(events, options) {
   return { jobs, lane_summary, blocked_hosts: blocked };
 }
 
-const PIPELINE_STAGES = ['search', 'fetch', 'parse', 'index', 'llm'];
+export const PIPELINE_STAGES = ['search', 'fetch', 'parse', 'index', 'llm'];
 
 export function buildPipelineFlow(events) {
   const stageData = {};

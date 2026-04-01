@@ -2,7 +2,7 @@
 
 > **Purpose:** Record the exact live stack, resolved direct dependency versions, and runtime/tooling compatibility notes so an arriving LLM does not guess the framework mix.
 > **Prerequisites:** [../01-project-overview/scope.md](../01-project-overview/scope.md), [../01-project-overview/conventions.md](../01-project-overview/conventions.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Runtime and Build Toolchain
 
@@ -73,9 +73,9 @@
 - Backend is JavaScript ESM even though the GUI package is TypeScript.
 - The GUI route model is `HashRouter`, not filesystem routing.
 - The audit used resolved versions from the lockfiles where they differ from loose manifest ranges.
-- `npm run gui:build` succeeded on 2026-03-30 and wrote `tools/gui-react/dist/`.
-- `npm run env:check` failed on 2026-03-30 because `.env.example` is missing `PORT`.
-- `npm test` failed on 2026-03-30. Do not assume a green suite baseline.
+- `npm run gui:build` succeeded on 2026-03-31 and wrote `tools/gui-react/dist/`.
+- `npm run env:check` failed on 2026-03-31 because `.env.example` is missing `PORT`.
+- `npm test` succeeded on 2026-03-31.
 
 ## Validated Against
 
@@ -86,9 +86,9 @@
 | config | `tools/gui-react/package.json` | GUI scripts and declared frontend dependencies |
 | config | `tools/gui-react/package-lock.json` | exact resolved GUI dependency versions |
 | config | `tools/gui-react/vite.config.ts` | Vite usage and dev proxy boundary |
-| command | `npm run gui:build` | successful March 30 GUI build baseline |
-| command | `npm run env:check` | failing March 30 env-check baseline |
-| command | `npm test` | failing March 30 suite baseline |
+| command | `npm run gui:build` | successful March 31 GUI build baseline |
+| command | `npm run env:check` | failing March 31 env-check baseline |
+| command | `npm test` | successful March 31 suite baseline |
 
 ## Related Documents
 

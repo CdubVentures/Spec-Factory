@@ -2,7 +2,7 @@
 
 > **Purpose:** Map the live GUI route table, shared layouts, and client/server boundaries with exact file ownership.
 > **Prerequisites:** [frontend-architecture.md](./frontend-architecture.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Route Source Of Truth
 
@@ -51,7 +51,8 @@
   - GraphQL proxy client: `tools/gui-react/src/api/graphql.ts`
 - Sensitive settings pages:
   - `/llm-config` reads unauthenticated `/api/v1/llm-policy` and `/api/v1/indexing/llm-config`, both of which can return secret-bearing fields when configured.
-  - `/pipeline-settings` reads `/api/v1/runtime-settings`, `/api/v1/source-strategy`, and `/api/v1/spec-seeds`; it does not call a live `/api/v1/storage-settings` or `/api/v1/convergence-settings` route.
+  - `/pipeline-settings` reads unauthenticated `/api/v1/runtime-settings`, `/api/v1/source-strategy`, and `/api/v1/spec-seeds`; `/api/v1/runtime-settings` can return secret-bearing provider key fields when configured.
+  - `/pipeline-settings` does not call a live `/api/v1/storage-settings` or `/api/v1/convergence-settings` route.
   - `/storage` uses `/api/v1/storage/*` only; it does not render a storage-settings form in the current code.
 
 ## Component Ownership Notes

@@ -80,6 +80,23 @@ export function createStorageManagerHandler({
               const parsed = JSON.parse(raw);
               sources = Array.isArray(parsed.sources) ? parsed.sources : [];
               identity = parsed.identity && typeof parsed.identity === 'object' ? parsed.identity : {};
+              // WHY: Enrich each source with per-artifact file sizes from disk.
+              for (const source of sources) {
+                let urlSize = 0;
+                if (source.html_file) {
+                  try {
+                    const st = await fsPromises.stat(join(runDir, 'html', source.html_file));
+                    source.html_size = st.size; urlSize += st.size;
+                  } catch { /* file may not exist */ }
+                }
+                if (source.video_file) {
+                  try {
+                    const st = await fsPromises.stat(join(runDir, 'video', source.video_file));
+                    source.video_size = st.size; urlSize += st.size;
+                  } catch { /* file may not exist */ }
+                }
+                source.total_size = urlSize;
+              }
             }
           }
         } catch { /* best-effort */ }

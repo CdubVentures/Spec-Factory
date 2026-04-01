@@ -39,25 +39,30 @@ export function runSizeBytes(run: RunInventoryRow): number {
   return run.size_bytes ?? run.storage_metrics?.total_size_bytes ?? 0;
 }
 
+// WHY: Group by product_id (stable), not picker_label (contains run tokens).
+// Display name is derived from brand+model when available, else cleaned product_id.
 export function groupRunsByProduct(runs: RunInventoryRow[]): ProductGroup[] {
   const map = new Map<string, RunInventoryRow[]>();
   for (const run of runs) {
-    const brand = run.brand || '';
-    const model = run.model || '';
-    const key = brand && model ? `${brand} ${model}` : run.picker_label || run.product_id;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(run);
+    const groupKey = run.product_id || 'unknown';
+    if (!map.has(groupKey)) map.set(groupKey, []);
+    map.get(groupKey)!.push(run);
   }
 
   return [...map.entries()]
-    .map(([key, prodRuns]) => {
+    .map(([, prodRuns]) => {
       const first = prodRuns[0];
+      const brand = first.brand || '';
+      const model = first.model || '';
+      const displayName = brand && model
+        ? `${brand} ${model}`
+        : brand || model || first.product_id;
       return {
-        key,
-        brand: first.brand || '',
-        model: first.model || '',
+        key: displayName,
+        brand,
+        model,
         runs: prodRuns.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()),
-        totalSize: prodRuns.reduce((s, r) => s + (r.size_bytes ?? r.storage_metrics?.total_size_bytes ?? 0), 0),
+        totalSize: prodRuns.reduce((s, r) => s + runSizeBytes(r), 0),
       };
     })
     .sort((a, b) => b.totalSize - a.totalSize);

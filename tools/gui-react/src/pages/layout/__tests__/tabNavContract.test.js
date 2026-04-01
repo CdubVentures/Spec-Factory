@@ -178,3 +178,18 @@ test('TabNav disables test-mode tabs without removing still-supported routes', a
   assert.equal(runtimeOpsDisabled?.props?.title, 'Not available in Field Test');
   assert.ok(storageLink, 'expected Storage to remain reachable in test mode');
 });
+
+test('TabNav renders Categories and Billing as navigable links in the global group', async () => {
+  globalThis.__tabNavHarness = { category: 'mouse', currentPath: '/categories' };
+  const { TabNav } = await loadTabNavModule();
+  const tree = renderElement(TabNav());
+
+  const anchors = collectNodes(tree, (node) => node.type === 'a');
+  const categoriesLink = anchors.find((node) => node.props?.children === 'Categories');
+  const billingLink = anchors.find((node) => node.props?.children === 'Billing');
+
+  assert.ok(categoriesLink, 'expected Categories nav link in global group');
+  assert.equal(categoriesLink?.props?.href, '/categories');
+  assert.ok(billingLink, 'expected Billing nav link in global group');
+  assert.equal(billingLink?.props?.href, '/billing');
+});

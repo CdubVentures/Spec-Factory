@@ -2,7 +2,7 @@
 
 > **Purpose:** Define project-specific domain terms and overloaded words that would otherwise cause an arriving LLM to hallucinate generic meanings.
 > **Prerequisites:** [scope.md](./scope.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 | Term | Meaning in this repo | Primary evidence |
 |------|----------------------|------------------|
@@ -28,7 +28,7 @@
 | Storage Manager | GUI/API surface for run inventory, delete, prune, purge, and export under `/api/v1/storage/*` | `tools/gui-react/src/features/storage-manager/components/StorageManagerPanel.tsx`, `src/features/indexing/api/storageManagerRoutes.js` |
 | Test mode | GUI/API surface for creating `_test_*` categories, generating fixtures, attempting runs, and validating results | `src/app/api/routes/testModeRoutes.js`, `tools/gui-react/src/pages/test-mode/TestModePage.tsx` |
 | Crawl module | Plugin-based browser automation subsystem that replaced the older extraction-heavy pipeline | `src/features/crawl/index.js`, `src/features/crawl/README.md` |
-| Frontier DB | URL-level crawl state persistence used by the crawl subsystem | `src/pipeline/runCrawlProcessingLifecycle.js` |
+| Frontier DB / Crawl ledger | URL-level crawl state persistence adapter used during crawl execution; currently built through `createCrawlLedgerAdapter()` and consumed by `session.runFetchPlan()` | `src/features/indexing/orchestration/shared/crawlLedgerAdapter.js`, `src/pipeline/runProduct.js`, `src/features/crawl/crawlSession.js` |
 
 ## Validated Against
 

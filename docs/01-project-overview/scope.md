@@ -2,7 +2,7 @@
 
 > **Purpose:** Define the live system boundary, intended operators, and explicit non-goals so an arriving LLM does not invent missing systems.
 > **Prerequisites:** [../README.md](../README.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 Spec Factory is a local-first indexing and review workbench for product-spec discovery, crawl execution, review curation, category-authority maintenance, and runtime diagnostics. The live repo contains a Node.js HTTP/WebSocket server in `src/api/guiServer.js` and `src/api/guiServerRuntime.js`, a React/Vite operator GUI in `tools/gui-react/`, a global `app.sqlite` plus per-category `spec.sqlite` persistence layer in `src/db/`, authored control-plane content under `category_authority/`, and a CLI/orchestration surface in `src/cli/spec.js`.
 
@@ -18,7 +18,7 @@ Spec Factory is a local-first indexing and review workbench for product-spec dis
 - Not a public website, hosted SaaS, or server-rendered web product. No Next.js, Remix, Astro, or hosted edge runtime was verified.
 - Not a multi-user system with accounts, login flows, org tenancy, or operator-role authorization.
 - Not a cloud-first deployment repo with checked-in CI/CD workflows, Kubernetes manifests, Terraform, or hosted environment inventories.
-- Not a repo where `docs/implementation/` is current-state authority for this documentation pass.
+- Not a repo where `docs/implementation/` or `docs/data-structure/` is current-state authority for this documentation pass.
 
 ## Explicit Exclusions
 
@@ -39,12 +39,12 @@ Spec Factory is a local-first indexing and review workbench for product-spec dis
 ## Current Status
 
 - Status: active internal/local development workbench.
-- Evidence collected on 2026-03-30:
+- Evidence collected on 2026-03-31:
   - `npm run gui:build` succeeded and produced the current `tools/gui-react/dist/` bundle.
-  - `npm run env:check` failed with `Missing keys in config manifest: PORT`.
-  - `npm test` failed; current failing areas include search-plan payload parsing and multiple GUI contract suites under `tools/gui-react/src/features/runtime-ops/`, `tools/gui-react/src/features/review/`, and `tools/gui-react/src/pages/layout/`.
-  - `GET http://127.0.0.1:8788/api/v1/categories` returned `["keyboard","monitor","mouse"]`.
-  - `category_authority/tests/` still exists on disk as a harness directory, but `src/app/api/routes/infra/categoryRoutes.js` filters it out of the default categories API.
+  - `npm test` succeeded across the current worktree.
+  - `npm run env:check` still failed with `Missing keys in config manifest: PORT`.
+  - Runtime validation confirmed `/health`, `/api/v1/categories`, `/api/v1/process/status`, `/api/v1/runtime-settings`, `/api/v1/llm-policy`, and `/api/v1/storage/overview`.
+  - `GET /api/v1/categories` returned `["keyboard","monitor","mouse"]` even though `category_authority/` also contains `_global/`, `_runtime/`, `_test_mouse/`, and `tests/`.
   - `Dockerfile` still points at `src/cli/run-batch.js`, which does not exist in the current repo.
 
 ## Validated Against
@@ -58,9 +58,9 @@ Spec Factory is a local-first indexing and review workbench for product-spec dis
 | source | `src/app/api/routes/infra/categoryRoutes.js` | default categories API excludes the `tests` harness directory |
 | config | `package.json` | scripts and local run surfaces |
 | config | `Dockerfile` | stale batch entrypoint mismatch |
-| command | `npm run env:check` | failing March 30 env-parity baseline |
-| command | `npm run gui:build` | successful March 30 GUI build baseline |
-| command | `npm test` | failing March 30 suite baseline |
+| command | `npm run env:check` | failing March 31 env-parity baseline |
+| command | `npm run gui:build` | successful March 31 GUI build baseline |
+| command | `npm test` | successful March 31 suite baseline |
 | runtime | `http://127.0.0.1:8788/api/v1/categories` | live category inventory |
 
 ## Related Documents

@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the verified `/llm-config` feature, including the composite `LlmPolicy` shape, provider-registry editing flow, and the `/api/v1/llm-policy` persistence contract.
 > **Prerequisites:** [../02-dependencies/environment-and-config.md](../02-dependencies/environment-and-config.md), [../03-architecture/frontend-architecture.md](../03-architecture/frontend-architecture.md), [../03-architecture/backend-architecture.md](../03-architecture/backend-architecture.md)
-> **Last validated:** 2026-03-30
+> **Last validated:** 2026-03-31
 
 ## Entry Points
 
@@ -25,9 +25,9 @@
 - `src/features/settings-authority/userSettingsService.js`
 - `tools/gui-react/src/stores/runtimeSettingsValueStore.ts`
 - `tools/gui-react/src/features/llm-config/state/llmPolicyAdapter.generated.ts`
-- `tools/gui-react/src/features/llm-config/state/llmPhaseOverridesBridge.ts`
+- `tools/gui-react/src/features/llm-config/state/llmPhaseOverridesBridge.generated.ts`
 - `tools/gui-react/src/features/llm-config/types/llmProviderRegistryTypes.ts`
-- `tools/gui-react/src/features/llm-config/types/llmPhaseOverrideTypes.ts`
+- `tools/gui-react/src/features/llm-config/types/llmPhaseOverrideTypes.generated.ts`
 
 ## Policy Shape
 
@@ -93,6 +93,7 @@
 
 ## Security Note
 
+- `GET /api/v1/runtime-settings` is also unauthenticated and exposes the same managed provider API key fields because the flat runtime store is the underlying source for this feature.
 - `GET /api/v1/llm-policy` is unauthenticated and returns provider-registry `apiKey` fields when configured.
 - `GET /api/v1/indexing/llm-config` is unauthenticated and returns `resolved_api_keys` when configured.
 - The GUI deliberately consumes those responses to prefill provider credential state. Treat this entire feature as trusted-network-only until an auth-hardening task changes the contract.

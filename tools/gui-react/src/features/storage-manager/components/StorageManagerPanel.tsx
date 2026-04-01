@@ -1,5 +1,4 @@
 import { useMemo, useState, useCallback } from 'react';
-import { useStorageOverview } from '../state/useStorageOverview.ts';
 import { useStorageRuns } from '../state/useStorageRuns.ts';
 import { useDeleteRun, useBulkDeleteRuns } from '../state/useStorageActions.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
@@ -14,7 +13,6 @@ export function StorageManagerPanel() {
   const category = useUiStore((s) => s.category);
   const categoryScope = category === 'all' ? undefined : category;
 
-  const overview = useStorageOverview(true);
   const runsQuery = useStorageRuns(true, categoryScope);
   const runs = runsQuery.data?.runs ?? [];
 
@@ -38,7 +36,7 @@ export function StorageManagerPanel() {
     }
   }, [deleteTarget, singleDelete, bulkDelete]);
 
-  const hasError = overview.error || runsQuery.error;
+  const hasError = Boolean(runsQuery.error);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-4">
@@ -51,9 +49,8 @@ export function StorageManagerPanel() {
       )}
 
       <StorageOverviewBar
-        overview={overview.data}
         runs={runs}
-        isLoading={overview.isLoading}
+        isLoading={runsQuery.isLoading}
       />
 
       <ProductTable

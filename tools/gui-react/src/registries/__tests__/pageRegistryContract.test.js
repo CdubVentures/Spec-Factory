@@ -16,10 +16,11 @@ async function getModule() {
 }
 
 describe('PAGE_REGISTRY structural invariants', () => {
-  it('is a non-empty registry with catalog and ops entries', async () => {
+  it('is a non-empty registry with global, catalog, and ops entries', async () => {
     const { PAGE_REGISTRY } = await getModule();
     assert.ok(Array.isArray(PAGE_REGISTRY), 'PAGE_REGISTRY must be an array');
     assert.ok(PAGE_REGISTRY.length > 0, 'PAGE_REGISTRY must not be empty');
+    assert.ok(PAGE_REGISTRY.some((entry) => entry.tabGroup === 'global'));
     assert.ok(PAGE_REGISTRY.some((entry) => entry.tabGroup === 'catalog'));
     assert.ok(PAGE_REGISTRY.some((entry) => entry.tabGroup === 'ops'));
   });
@@ -46,7 +47,7 @@ describe('PAGE_REGISTRY structural invariants', () => {
 
   it('tabGroup values are only catalog, ops, or settings', async () => {
     const { PAGE_REGISTRY } = await getModule();
-    const allowed = new Set(['catalog', 'ops', 'settings']);
+    const allowed = new Set(['global', 'catalog', 'ops', 'settings']);
     for (const entry of PAGE_REGISTRY) {
       assert.ok(allowed.has(entry.tabGroup), `unexpected tabGroup "${entry.tabGroup}" on ${entry.path}`);
     }
@@ -161,6 +162,60 @@ describe('OPS_TABS derivation', () => {
     );
     const actual = Object.fromEntries(
       OPS_TABS.map((tab) => [
+        tab.label,
+        {
+          disabledOnAll: tab.disabledOnAll,
+          disabledOnTest: tab.disabledOnTest,
+        },
+      ]),
+    );
+
+    assert.deepEqual(actual, expected);
+  });
+});
+
+describe('GLOBAL_TABS derivation', () => {
+  it('contains exactly the global registry entries in registry order', async () => {
+    const { PAGE_REGISTRY, GLOBAL_TABS } = await getModule();
+    const expected = PAGE_REGISTRY
+      .filter((entry) => entry.tabGroup === 'global')
+      .map((entry) => ({ path: entry.path, label: entry.label }));
+
+    assert.deepEqual(
+      GLOBAL_TABS.map((tab) => ({ path: tab.path, label: tab.label })),
+      expected,
+    );
+  });
+
+  it('preserves divider metadata', async () => {
+    const { PAGE_REGISTRY, GLOBAL_TABS } = await getModule();
+    const expected = Object.fromEntries(
+      PAGE_REGISTRY
+        .filter((entry) => entry.tabGroup === 'global')
+        .map((entry) => [entry.label, { dividerAfter: entry.dividerAfter, dividerBefore: entry.dividerBefore }]),
+    );
+    const actual = Object.fromEntries(
+      GLOBAL_TABS.map((tab) => [tab.label, { dividerAfter: tab.dividerAfter, dividerBefore: tab.dividerBefore }]),
+    );
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('preserves disabled flags', async () => {
+    const { PAGE_REGISTRY, GLOBAL_TABS } = await getModule();
+    const expected = Object.fromEntries(
+      PAGE_REGISTRY
+        .filter((entry) => entry.tabGroup === 'global')
+        .map((entry) => [
+          entry.label,
+          {
+            disabledOnAll: entry.disabledOnAll,
+            disabledOnTest: entry.disabledOnTest,
+          },
+        ]),
+    );
+    const actual = Object.fromEntries(
+      GLOBAL_TABS.map((tab) => [
         tab.label,
         {
           disabledOnAll: tab.disabledOnAll,
